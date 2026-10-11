@@ -2655,6 +2655,7 @@ def monde_comptes():
     n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
     n.brancher()
     n.activer("comptes")                        # active aussi droits
+    n.identite.unix = lambda nom: "/bin/bash" if nom == "fastuser" else None          # le « fastuser » du système, factice
     return tmp, n
 
 
@@ -2678,6 +2679,36 @@ class ComptesEtSessions(unittest.TestCase):
         self.assertFalse(self.creer("b@x.fr")["resultat"]["admin"])
         self.assertTrue(self.n.droits.est_admin("a@x.fr"))
         self.assertFalse(self.n.droits.est_admin("b@x.fr"))
+
+    def test_le_premier_compte_est_le_superadmin_adosse_a_fastuser_avec_bash(self):
+        r = self.creer("a@x.fr")["resultat"]
+        self.assertEqual((r["superadmin"], r["unix_user"]), (True, "fastuser"))
+        m = self.ex("comptes.lire", compte="a@x.fr")["resultat"]
+        self.assertEqual((m["superadmin"], m["admin"], m["unix_user"], m["fp_account"]), (True, True, "fastuser", "fastuser"))
+        b = self.creer("b@x.fr")["resultat"]
+        self.assertEqual((b["superadmin"], b["unix_user"]), (False, ""))
+        self.assertEqual([c["compte"] for c in self.ex("comptes.lister")["resultat"]["comptes"] if c["superadmin"]], ["a@x.fr"])
+
+    def test_sans_fastuser_ou_sans_bash_le_premier_compte_est_refuse(self):
+        self.n.identite.unix = lambda nom: None
+        r = self.creer("a@x.fr")
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("n'existe pas", r["erreur"])
+        self.n.identite.unix = lambda nom: "/usr/sbin/nologin"
+        self.assertIn("bash", self.creer("a@x.fr")["erreur"])
+        self.assertFalse(self.n.identite.existe("a@x.fr"))
+        self.n.identite.unix = lambda nom: "/bin/bash"
+        self.assertEqual(self.creer("a@x.fr")["statut"], "faite")
+        self.n.identite.unix = lambda nom: None                    # le suivant n'a pas besoin de cet utilisateur
+        self.assertEqual(self.creer("b@x.fr")["statut"], "faite")
+
+    def test_le_superadmin_supprime_puis_restaure_reste_superadmin(self):
+        self.creer("a@x.fr")
+        self.creer("b@x.fr")
+        r = self.ex("comptes.supprimer", compte="a@x.fr")
+        self.ex("comptes.restaurer", corbeille=r["resultat"]["corbeille"])
+        m = self.ex("comptes.lire", compte="a@x.fr")["resultat"]
+        self.assertEqual((m["superadmin"], m["unix_user"], m["admin"]), (True, "fastuser", True))
 
     def test_l_identifiant_est_une_adresse_et_le_mot_de_passe_suit_les_regles(self):
         self.assertEqual(self.creer("pas-un-mail")["statut"], "echec")

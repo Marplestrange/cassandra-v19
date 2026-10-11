@@ -91,14 +91,30 @@ def ip_nature(ip) -> str:
     return "local" if ip.startswith(("fc", "fd", "fe80")) else "internet"
 
 
+def interpreteur_unix(nom: str):
+    """L'interpréteur de commandes de l'utilisateur système `nom`, ou None s'il n'existe pas."""
+    try:
+        import pwd
+        return pwd.getpwnam(nom).pw_shell
+    except (ImportError, KeyError):
+        return None
+
+
+def shell_de_connexion(shell) -> bool:
+    """Un vrai interpréteur (bash, sh, zsh...), pas nologin ni false : le superadmin doit pouvoir ouvrir une session système."""
+    return bool(shell) and shell.rsplit("/", 1)[-1] in ("bash", "sh", "dash", "zsh", "ksh", "fish")
+
+
 def _empreinte(jeton: str) -> str:
     return hashlib.sha256(jeton.encode("utf-8")).hexdigest()
 
 
 class Identite:
-    def __init__(self, base, droits, ttl_heures=TTL_SESSION_HEURES):
+    def __init__(self, base, droits, ttl_heures=TTL_SESSION_HEURES, unix_superadmin="fastuser", unix=None):
         self.base = base
         self.droits = droits
+        self.unix_superadmin = unix_superadmin       # l'utilisateur système du premier compte, comme « fastuser » chez FastPanel
+        self.unix = unix or interpreteur_unix        # nom -> son interpréteur de commandes (None : l'utilisateur n'existe pas)
         self.ttl = int(ttl_heures) * 3600
         self._faux = hacher("sel-de-leurre")      # un compte inconnu coûte le même temps qu'un mauvais mot de passe
 
@@ -119,11 +135,12 @@ class Identite:
             return None
         d = self._ligne(r[0])
         d["admin"] = self.droits.est_admin(d["compte"])
+        d["superadmin"] = bool(d["superadmin"])
         return d
 
     def lister(self) -> list:
         admins = set(self.droits.etat()["admins"])
-        return [dict(self._ligne(r), admin=r["compte"] in admins) for r in self.base.lire("SELECT * FROM comptes ORDER BY compte")]
+        return [dict(self._ligne(r), admin=r["compte"] in admins, superadmin=bool(r["superadmin"])) for r in self.base.lire("SELECT * FROM comptes ORDER BY compte")]
 
     def creer(self, compte: str, mdp: str, sites=None, **profil) -> dict:
         compte = (compte or "").strip().lower()
@@ -137,16 +154,27 @@ class Identite:
         if self.existe(compte):
             return {"ok": False, "error": "Ce compte existe déjà"}
         premier = not self.base.lire("SELECT 1 FROM comptes LIMIT 1")
+        unix = ""
+        if premier:
+            # Comme FastPanel : le premier compte est le SUPERADMINISTRATEUR et il est adossé à l'utilisateur système « fastuser » avec bash.
+            # Il s'inscrit tout de même avec une adresse e-mail (c'est elle qui crée son coffre).
+            shell = self.unix(self.unix_superadmin)
+            if shell is None:
+                return {"ok": False, "error": "L'utilisateur système « %s » n'existe pas : le premier compte lui est adossé (install.sh le crée)" % self.unix_superadmin}
+            if not shell_de_connexion(shell):
+                return {"ok": False, "error": "L'utilisateur système « %s » n'a pas d'interpréteur de commandes (%s) : il lui faut bash" % (self.unix_superadmin, shell)}
+            unix = self.unix_superadmin
         now = time.time()
         champs = {k: str(profil.get(k) or "").strip() for k in CHAMPS_PROFIL}
         champs["lang"] = (champs["lang"].lower()[:5] or "fr")
-        self.base.ecrire("INSERT INTO comptes(compte, hash, display_name, role_label, contact_email, phone, lang, fp_account, sites, cree, maj) "
-                         "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        self.base.ecrire("INSERT INTO comptes(compte, hash, display_name, role_label, contact_email, phone, lang, fp_account, sites, cree, maj, unix_user, superadmin) "
+                         "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
                          (compte, hacher(mdp), champs["display_name"], champs["role_label"], champs["contact_email"], champs["phone"],
-                          champs["lang"], champs["fp_account"], json.dumps(sorted({norm_domain(s) for s in (sites or []) if s})), now, now))
-        if premier:                                    # comme en V18 : le premier compte est administrateur
+                          champs["lang"], champs["fp_account"] or unix, json.dumps(sorted({norm_domain(s) for s in (sites or []) if s})), now, now,
+                          unix, 1 if premier else 0))
+        if premier:                                    # le superadministrateur est administrateur : il détient tous les droits
             self.droits.regler_admin(compte, True)
-        return {"ok": True, "compte": compte, "admin": premier}
+        return {"ok": True, "compte": compte, "admin": premier, "superadmin": premier, "unix_user": unix}
 
     def modifier(self, compte: str, sites=None, **profil) -> dict:
         avant = self.lire(compte)
@@ -207,9 +235,9 @@ class Identite:
         if self.existe(s["compte"]):
             return {"ok": False, "error": "Un compte porte déjà cet identifiant"}
         with self.base.transaction() as c:
-            c.execute("INSERT INTO comptes(compte, hash, display_name, role_label, contact_email, phone, lang, fp_account, sites, cree, maj) "
-                      "VALUES(?,?,?,?,?,?,?,?,?,?,?)", (s["compte"], s["hash"], s["display_name"], s["role_label"], s["contact_email"], s["phone"],
-                                                        s["lang"], s["fp_account"], s["sites"], s["cree"], time.time()))
+            c.execute("INSERT INTO comptes(compte, hash, display_name, role_label, contact_email, phone, lang, fp_account, sites, cree, maj, unix_user, superadmin) "
+                      "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", (s["compte"], s["hash"], s["display_name"], s["role_label"], s["contact_email"], s["phone"],
+                                                            s["lang"], s["fp_account"], s["sites"], s["cree"], time.time(), s.get("unix_user", ""), s.get("superadmin", 0)))
             c.execute("DELETE FROM comptes_corbeille WHERE id=?", (corbeille,))
         if s.get("admin"):
             self.droits.regler_admin(s["compte"], True)

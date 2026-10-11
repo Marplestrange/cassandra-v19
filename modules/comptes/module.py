@@ -48,7 +48,7 @@ def brancher(ctx):
         ctx.emettre("compte.cree", objet=("compte", (compte or "").strip().lower()), donnees={"admin": r.get("admin"), "ok": r["ok"]}) if r["ok"] else None
         if not r["ok"]:
             raise ValueError(r["error"])
-        return {"compte": r["compte"], "admin": r["admin"]}
+        return {"compte": r["compte"], "admin": r["admin"], "superadmin": r["superadmin"], "unix_user": r["unix_user"]}
 
     def prouver_creer(ctx, res):
         return idt.existe(res["compte"])

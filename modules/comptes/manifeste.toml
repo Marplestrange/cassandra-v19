@@ -1,7 +1,7 @@
 [module]
 id = "comptes"
 nom = "Comptes"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "Les comptes et la preuve qu'on en est : identifiant (une adresse e-mail), mot de passe (règles de la V18, scrypt salé), sessions, jetons de mise en place du mot de passe. Le rôle d'administrateur, lui, vit dans les droits."
 confiance = "interne"

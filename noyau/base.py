@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS droit_accords(
 CREATE TABLE IF NOT EXISTS comptes(
   compte TEXT PRIMARY KEY, hash TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT '', role_label TEXT NOT NULL DEFAULT '',
   contact_email TEXT NOT NULL DEFAULT '', phone TEXT NOT NULL DEFAULT '', lang TEXT NOT NULL DEFAULT 'fr',
-  fp_account TEXT NOT NULL DEFAULT '', sites TEXT NOT NULL DEFAULT '[]', cree REAL NOT NULL, maj REAL NOT NULL);
+  fp_account TEXT NOT NULL DEFAULT '', sites TEXT NOT NULL DEFAULT '[]', cree REAL NOT NULL, maj REAL NOT NULL,
+  unix_user TEXT NOT NULL DEFAULT '', superadmin INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS comptes_corbeille(id INTEGER PRIMARY KEY AUTOINCREMENT, compte TEXT NOT NULL, instantane TEXT NOT NULL, ts REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS sessions(
   id TEXT PRIMARY KEY, compte TEXT NOT NULL, court TEXT NOT NULL, cree REAL NOT NULL, derniere REAL NOT NULL,
@@ -62,6 +63,9 @@ class Base:
         c = self._ouvrir()   # executescript valide d'office : il ne vit pas dans notre transaction
         try:
             c.executescript(SCHEMA)
+            for col, defn in (("unix_user", "TEXT NOT NULL DEFAULT ''"), ("superadmin", "INTEGER NOT NULL DEFAULT 0")):    # une base d'avant les colonnes
+                if col not in [r[1] for r in c.execute("PRAGMA table_info(comptes)")]:
+                    c.execute("ALTER TABLE comptes ADD COLUMN %s %s" % (col, defn))
         finally:
             c.close()
 

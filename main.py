@@ -66,7 +66,8 @@ class Noyau:
         self.etat_modules = Modules(self.base)
         self.catalogue = Catalogue(self.base)
         self.droits = Droits(self.base)
-        self.identite = Identite(self.base, self.droits, (self.config.get("comptes") or {}).get("session_heures", 24))
+        self.identite = Identite(self.base, self.droits, (self.config.get("comptes") or {}).get("session_heures", 24),
+                                 str((self.config.get("comptes") or {}).get("superadmin_unix", "fastuser")))
         self.executeur = Executeur(self.catalogue, self.bus, self.en_crise, self.droits)
         self.detecteurs = []       # (module, Detecteur, fonction)
         self._derniere = {}        # (module, detecteur) -> dernier passage
