@@ -596,9 +596,9 @@ def _donnees() -> Path:
 
 
 def _extensions():
-    """Le dossier des modules greffés après coup : $CASSANDRA_EXTENSIONS. Il est surveillé MÊME s'il n'existe pas
+    """Le dossier des modules greffés après coup : $CASSANDRA_CUSTOM. Il est surveillé MÊME s'il n'existe pas
     encore : une greffe déposée après le démarrage doit être vue."""
-    return os.environ.get("CASSANDRA_EXTENSIONS") or None
+    return os.environ.get("CASSANDRA_CUSTOM") or os.environ.get("CASSANDRA_EXTENSIONS") or None   # l'ancien nom reste lu
 
 
 def _actifs():

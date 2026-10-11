@@ -5,7 +5,7 @@ jamais par import. C'est ce qui empêche de reconstruire un monolithe en morceau
 
 Deux provenances de modules :
   - `modules/`     livrés avec le noyau (confiance « interne » permise) ;
-  - `extensions/`  greffés après coup, hors des versions du noyau : un déploiement n'y touche jamais, et ils
+  - `custom/`  greffés après coup, hors des versions du noyau : un déploiement n'y touche jamais, et ils
                    ne peuvent pas se déclarer « interne ». On y dépose un dossier, on l'ajoute aux modules
                    actifs, et le noyau le branche à chaud.
 """
