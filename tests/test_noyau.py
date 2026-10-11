@@ -2870,6 +2870,137 @@ class ComptesEtSessions(unittest.TestCase):
             self.assertIn(x["dit"], r["legende"])
 
 
+def charger_courtier():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("courtier", RACINE / "exploitation" / "courtier.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+EMPREINTE_OK = "$6$salsalsal$" + "A" * 86
+
+
+class Courtier(unittest.TestCase):
+    """Le courtier est le seul morceau qui agit en root : sa politique est testée à nu."""
+
+    def setUp(self):
+        self.c = charger_courtier()
+        self.demande = {"action": "adosser_superadmin", "utilisateur": "fastuser", "empreinte": EMPREINTE_OK}
+
+    def decider(self, demande=None, admin="fastuser", marqueur=False, verrouille=True):
+        return self.c.decider(self.demande if demande is None else demande, admin, marqueur, verrouille)
+
+    def test_une_demande_en_regle_est_accordee(self):
+        self.assertEqual(self.decider(), (True, "accordé"))
+
+    def test_l_utilisateur_vise_est_celui_de_la_configuration_pas_celui_de_la_demande(self):
+        self.assertFalse(self.decider(dict(self.demande, utilisateur="root"))[0])
+        self.assertFalse(self.decider(admin="")[0])
+
+    def test_une_empreinte_mal_formee_ou_un_mot_de_passe_en_clair_est_refuse(self):
+        for e in ("Motdepasse1!", "$1$sel$" + "A" * 22, "$6$sel$court", "$6$" + "a" * 40 + "$" + "A" * 86, "", None, 5):
+            self.assertFalse(self.decider(dict(self.demande, empreinte=e))[0], e)
+
+    def test_une_seule_fois_et_jamais_sur_un_mot_de_passe_existant(self):
+        self.assertIn("une fois", self.decider(marqueur=True)[1])
+        self.assertIn("verrouillé", self.decider(verrouille=False)[1])
+
+    def test_une_action_inconnue_est_refusee(self):
+        for d in ({"action": "useradd"}, {}, [], "x", 5):
+            self.assertFalse(self.decider(d)[0])
+
+    @unittest.skipUnless(hasattr(os, "O_NOFOLLOW") and hasattr(os, "O_DIRECTORY"), "demande de fichiers POSIX")
+    def test_le_courtier_traite_chaque_demande_et_la_supprime(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        spool, cfg = Path(tmp.name) / "courtier", Path(tmp.name) / "config"
+        spool.mkdir()
+        cfg.mkdir()
+        (cfg / "admin.initial").write_text("fastuser\n")
+        import json
+        (spool / "a.json").write_text(json.dumps(self.demande))
+        (spool / "b.json").write_text(json.dumps(dict(self.demande, utilisateur="root")))
+        (spool / "c.json").write_text("pas du json")
+        (spool / "d.json").write_text(json.dumps(dict(self.demande, rempli="x" * 3000)))
+        appels = []
+
+        class R:
+            def __init__(self, code=0, out=""):
+                self.returncode, self.stdout = code, out
+
+        def faux(cmd, **kw):
+            appels.append((cmd, kw.get("input")))
+            return R(0, "fastuser L 2026-10-11 0 99999 7 -1") if cmd[0] == "passwd" else R(0)
+
+        journal = []
+        n = self.c.traiter(str(spool), str(cfg), os.getuid(), faux, journal.append)
+        self.assertEqual(n, 1)                                                       # seule la demande en règle passe
+        self.assertEqual(os.listdir(spool), [])                                      # toutes supprimées, accordées ou non
+        self.assertTrue((cfg / ".superadmin_adosse").exists())
+        poses = [i for c, i in appels if c[0] == "chpasswd"]
+        self.assertEqual(poses, ["fastuser:%s\n" % EMPREINTE_OK])                    # par l'entrée standard, jamais en argument
+        (spool / "e.json").write_text(json.dumps(self.demande))
+        self.assertEqual(self.c.traiter(str(spool), str(cfg), os.getuid(), faux, journal.append), 0)      # la deuxième fois : refusée
+        self.assertEqual(os.listdir(spool), [])
+
+    @unittest.skipUnless(hasattr(os, "O_NOFOLLOW") and hasattr(os, "O_DIRECTORY") and hasattr(os, "symlink"), "POSIX")
+    def test_un_lien_et_le_fichier_d_un_autre_utilisateur_sont_refuses(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        spool, cfg = Path(tmp.name) / "courtier", Path(tmp.name) / "config"
+        spool.mkdir()
+        cfg.mkdir()
+        (cfg / "admin.initial").write_text("fastuser\n")
+        import json
+        vrai = Path(tmp.name) / "ailleurs.json"
+        vrai.write_text(json.dumps(self.demande))
+        os.symlink(vrai, spool / "lien.json")
+        (spool / "autre.json").write_text(json.dumps(self.demande))
+        class R:
+            returncode, stdout = 0, "fastuser L x"
+        n = self.c.traiter(str(spool), str(cfg), os.getuid() + 1, lambda *a, **k: R(), lambda m: None)    # le noyau serait un autre uid
+        self.assertEqual(n, 0)
+        self.assertTrue(vrai.exists())                                                # la cible du lien n'est pas touchée
+
+
+class DemandeAuCourtier(unittest.TestCase):
+    def setUp(self):
+        self.tmp, self.n = monde_comptes()
+        self.addCleanup(self.tmp.cleanup)
+        self.demandes = []
+        self.n.identite.adosser = lambda u, m: self.demandes.append((u, m)) or True
+
+    def test_le_premier_compte_demande_le_mot_de_passe_pour_fastuser_et_lui_seul(self):
+        r = self.n.executeur.executer("comptes.creer", "humain", {"compte": "a@x.fr", "mot_de_passe": MDP})
+        self.assertEqual((r["statut"], r["resultat"]["unix_demande"]), ("faite", True))
+        self.assertEqual(self.demandes, [("fastuser", MDP)])
+        self.n.executeur.executer("comptes.creer", "humain", {"compte": "b@x.fr", "mot_de_passe": MDP})
+        self.assertEqual(len(self.demandes), 1)                                      # pas pour les suivants
+
+    def test_si_le_courtier_est_absent_le_compte_se_cree_quand_meme(self):
+        def boum(u, m):
+            raise OSError("pas de courtier")
+        self.n.identite.adosser = boum
+        r = self.n.executeur.executer("comptes.creer", "humain", {"compte": "a@x.fr", "mot_de_passe": MDP})
+        self.assertEqual((r["statut"], r["resultat"]["unix_demande"]), ("faite", False))
+
+    @unittest.skipUnless(__import__("shutil").which("openssl"), "openssl absent")
+    def test_la_demande_deposee_ne_contient_que_l_empreinte(self):
+        from noyau import identite
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.assertTrue(identite.deposer_demande(tmp.name, "fastuser", MDP))
+        fichiers = [f for f in os.listdir(tmp.name)]
+        self.assertEqual(len(fichiers), 1)
+        self.assertTrue(fichiers[0].endswith(".json"))
+        texte = (Path(tmp.name) / fichiers[0]).read_text()
+        self.assertNotIn(MDP, texte)
+        self.assertRegex(texte, r'"empreinte": "\$6\$')
+        self.assertTrue(charger_courtier().EMPREINTE.match(__import__("json").loads(texte)["empreinte"]))      # le courtier la reconnaît
+        self.assertEqual(identite.deposer_demande(None, "fastuser", MDP), False)
+
+
 V18_SOURCE = RACINE.parent / "Cassandra" / "V18" / "cassandra.py"
 
 

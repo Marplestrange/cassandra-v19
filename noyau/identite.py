@@ -15,7 +15,9 @@ import hashlib
 import hmac
 import json
 import re
+import os
 import secrets
+import subprocess
 import time
 
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -91,6 +93,33 @@ def ip_nature(ip) -> str:
     return "local" if ip.startswith(("fc", "fd", "fe80")) else "internet"
 
 
+def empreinte_sha512(mdp: str):
+    """L'empreinte SHA-512 salée du mot de passe, au format de /etc/shadow ($6$...), calculée par openssl (mot de passe par l'entrée standard,
+    jamais en argument). C'est tout ce qui part vers le courtier : le mot de passe, lui, ne quitte jamais cette fonction."""
+    try:
+        r = subprocess.run(["openssl", "passwd", "-6", "-stdin"], input=mdp + "\n", capture_output=True, text=True, timeout=15)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    h = (r.stdout or "").strip()
+    return h if r.returncode == 0 and h.startswith("$6$") else None
+
+
+def deposer_demande(dossier, utilisateur: str, mdp: str) -> bool:
+    """Dépose la demande « adosser_superadmin » pour le courtier (voir exploitation/courtier.py). Écrite entière puis renommée : le courtier
+    ne voit jamais un fichier à moitié écrit."""
+    h = empreinte_sha512(mdp)
+    if not h or not dossier:
+        return False
+    os.makedirs(dossier, exist_ok=True)
+    nom = "adosser-%d-%s" % (int(time.time()), secrets.token_hex(4))
+    tmp = os.path.join(dossier, nom + ".tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump({"action": "adosser_superadmin", "utilisateur": utilisateur, "empreinte": h}, f)
+    os.replace(tmp, os.path.join(dossier, nom + ".json"))
+    return True
+
+
 def interpreteur_unix(nom: str):
     """L'interpréteur de commandes de l'utilisateur système `nom`, ou None s'il n'existe pas."""
     try:
@@ -110,11 +139,13 @@ def _empreinte(jeton: str) -> str:
 
 
 class Identite:
-    def __init__(self, base, droits, ttl_heures=TTL_SESSION_HEURES, unix_superadmin="fastuser", unix=None):
+    def __init__(self, base, droits, ttl_heures=TTL_SESSION_HEURES, unix_superadmin="fastuser", unix=None, courtier=None):
         self.base = base
         self.droits = droits
         self.unix_superadmin = unix_superadmin       # l'utilisateur système du premier compte, comme « fastuser » chez FastPanel
         self.unix = unix or interpreteur_unix        # nom -> son interpréteur de commandes (None : l'utilisateur n'existe pas)
+        self.courtier = courtier                     # le dossier où l'on dépose les demandes au courtier (root) ; None : pas de courtier
+        self.adosser = lambda utilisateur, mdp: deposer_demande(self.courtier, utilisateur, mdp)
         self.ttl = int(ttl_heures) * 3600
         self._faux = hacher("sel-de-leurre")      # un compte inconnu coûte le même temps qu'un mauvais mot de passe
 
@@ -175,9 +206,14 @@ class Identite:
                          (compte, hacher(mdp), champs["display_name"], champs["role_label"], champs["contact_email"], champs["phone"],
                           champs["lang"], champs["fp_account"] or unix, json.dumps(sorted({norm_domain(s) for s in (sites or []) if s})), now, now,
                           unix, 1 if premier else 0))
+        demande = False
         if premier:                                    # le superadministrateur est administrateur : il détient tous les droits
             self.droits.regler_admin(compte, True)
-        return {"ok": True, "compte": compte, "admin": premier, "superadmin": premier, "unix_user": unix}
+            try:                                       # et « fastuser » reçoit le mot de passe choisi : par le courtier, car le noyau n'a aucun privilège
+                demande = bool(self.adosser(unix, mdp))
+            except Exception:
+                demande = False                        # le compte existe quand même : l'adossement se rattrape, il ne bloque rien
+        return {"ok": True, "compte": compte, "admin": premier, "superadmin": premier, "unix_user": unix, "unix_demande": demande}
 
     def modifier(self, compte: str, sites=None, **profil) -> dict:
         avant = self.lire(compte)

@@ -186,6 +186,7 @@ basculer "$DEST"
 
 dire "service systemd (l'unité vit dans $CONFIG, liée depuis /etc/systemd/system)"
 poser_unite "$DEST"
+poser_courtier "$DEST"
 
 demarrer() {
   [ "$SANS_SERVICE" -eq 0 ] || return 0

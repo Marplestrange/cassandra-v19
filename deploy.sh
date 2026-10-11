@@ -105,8 +105,10 @@ revenir() {
 
 dire "bascule"
 install -d -o root -g root -m 0755 "$EXTENSIONS_DIR"   # les greffes vivent ici, hors des versions : un déploiement n'y touche jamais
+preparer_dossiers             # idempotent : le dossier des demandes au courtier existe aussi sur une installation plus ancienne
 creer_premier_admin            # idempotent : fastuser (avec bash) existe après CHAQUE déploiement, pas seulement à l'installation
 poser_unite "$DEST"
+poser_courtier "$DEST"
 basculer "$DEST"
 systemctl restart "$UNITE" || { journalctl -u "$UNITE" -n 25 --no-pager >&2; revenir "le noyau ne démarre pas"; }
 as_service python3 "$DEST/main.py" etat >/dev/null || revenir "l'état du noyau est illisible"
