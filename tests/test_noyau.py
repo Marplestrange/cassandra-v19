@@ -676,17 +676,44 @@ class Greffe(unittest.TestCase):
         self.assertEqual(r["ordre"], ["labo"])
         self.assertIn("importe", " ".join(r["refuses"][0]["raisons"]))
 
-    def test_une_extension_ne_peut_pas_prendre_l_id_d_un_module_livre(self):
+    def _surcharge(self, livre_toml, ext_toml, config=None):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         base = Path(tmp.name)
-        ecrire_module(base / "modules", "labo", LABO_TOML, LABO_PY)
-        ecrire_module(base / "extensions", "labo", LABO_TOML.replace('version = "0.1.0"', 'version = "9.9.9"'), LABO_PY)
-        n = moteur.Noyau(base / "d", base / "modules", {"labo": {"jouets": {}, "drapeaux": {}}}, extensions=base / "extensions")
-        r = n.brancher()
+        ecrire_module(base / "modules", "labo", livre_toml, LABO_PY)
+        ecrire_module(base / "extensions", "labo", ext_toml.replace('noyau_min = "0.1.0"', 'noyau_min = "0.1.0"\nconfiance = "local"'), LABO_PY)
+        cfg = {"labo": {"jouets": {}, "drapeaux": {}}}
+        cfg.update(config or {})
+        n = moteur.Noyau(base / "d", base / "modules", cfg, extensions=base / "extensions")
+        return n, n.brancher()
+
+    def test_une_extension_remplace_un_module_livre_ordinaire(self):
+        """Comme `custom` l'emporte sur `htdocs` : le remplaçant prend la place, et le noyau le dit."""
+        n, r = self._surcharge(LABO_TOML, LABO_TOML.replace('version = "0.1.0"', 'version = "9.9.9"'))
         self.assertEqual(r["ordre"], ["labo"])
-        self.assertEqual(n.registre.proprietaires["jouet"], "labo")
-        self.assertIn("déjà présent", " ".join(r["refuses"][0]["raisons"]))
+        self.assertEqual(r["refuses"], [])
+        self.assertEqual(r["remplaces"], {"labo": {"livre": "0.1.0", "extension": "9.9.9"}})
+        evt = [e for e in n.bus.recents(portee=TOUT, limite=100) if e["type"] == "noyau.module_remplace"]
+        self.assertEqual(evt[-1]["donnees"], {"module": "labo", "livre": "0.1.0", "extension": "9.9.9"})
+        ligne = next(x for x in n.catalogue_modules() if x["id"] == "labo")
+        self.assertEqual((ligne["version"], ligne["extension"], ligne["remplace"]), ("9.9.9", True, "0.1.0"))
+
+    def test_un_module_essentiel_ne_se_remplace_que_si_l_administrateur_le_decide(self):
+        essentiel = LABO_TOML.replace('noyau_min = "0.1.0"', 'noyau_min = "0.1.0"\nessentiel = true')
+        ext = essentiel.replace('version = "0.1.0"', 'version = "9.9.9"').replace("essentiel = true", "")
+        n, r = self._surcharge(essentiel, ext)
+        self.assertEqual(r["remplaces"], {})
+        self.assertIn("réglage de l'administrateur", " ".join(r["refuses"][0]["raisons"]))
+        self.assertEqual(next(x for x in n.catalogue_modules() if x["id"] == "labo" and not x["extension"])["version"], "0.1.0")
+        n, r = self._surcharge(essentiel, ext, {"surcharge": {"essentiels": ["labo"]}})      # le choix de l'administrateur
+        self.assertEqual(r["remplaces"]["labo"]["extension"], "9.9.9")
+
+    def test_un_remplacant_ecarte_rend_sa_place_au_module_livre(self):
+        casse = LABO_TOML.replace('noyau_min = "0.1.0"', 'noyau_min = "0.1.0"\nrequiert = ["fantome"]')
+        n, r = self._surcharge(LABO_TOML, casse)
+        self.assertEqual(r["ordre"], ["labo"])
+        self.assertEqual(r["remplaces"], {})
+        self.assertIn("reprend sa place", " ".join(r["refuses"][0]["raisons"]))
 
     def test_un_deploiement_ne_touche_pas_aux_extensions(self):
         # les extensions vivent hors des versions du noyau : `modules/` change, `extensions/` reste

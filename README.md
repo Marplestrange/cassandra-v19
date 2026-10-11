@@ -214,7 +214,18 @@ Trois voies, un seul contrat (le manifeste) :
 3. **Un moteur de plus sur un module existant, sans le modifier** : une extension qui écoute ses événements (`evenements.ecoute`) et
    déclare son moteur `sur` l'un d'eux. Le module d'origine n'est jamais retouché.
 
-Garde-fous de la greffe : une extension ne peut pas se dire « interne » ni prendre l'id d'un module livré ; une extension illisible, qui
+**La surcharge, comme `custom` l'emporte sur `htdocs` dans Dolibarr.** Une extension qui porte l'identifiant d'un module livré **le remplace** ; le module
+livré est mis de côté, pas perdu (événement `noyau.module_remplace`, et le menu des modules montre la version remplacée). Si le remplaçant est écarté
+(manifeste, isolation, dépendance), le module livré **reprend sa place**. Dolibarr exclut `core/` de la surcharge ; l'équivalent ici est le module
+*essentiel* (`droits`, `menus`...), que seul l'administrateur peut décider de remplacer, par un réglage et non un interdit :
+
+```
+"surcharge": {"essentiels": ["droits"]}          dans la configuration du noyau
+```
+
+Reste à faire : le retour au module livré quand le remplaçant échoue À L'EXÉCUTION (pas seulement au branchement) ; aujourd'hui la panne se dit, le retrait est à faire.
+
+Garde-fous de la greffe : une extension ne peut pas se dire « interne » ; une extension illisible, qui
 importe un autre module ou dont une dépendance manque est **écartée et dite une fois au bus** (`noyau.greffe_refusee`), sans jamais
 empêcher le noyau de démarrer ni ce qui tourne déjà. Le code d'une extension tourne dans le processus du noyau, sous l'utilisateur
 dédié et l'unité durcie : c'est un niveau de confiance « local ». Un module de tiers non fiable exigera une cage par processus.

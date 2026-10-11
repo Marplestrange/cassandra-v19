@@ -101,12 +101,16 @@ class Noyau:
         if annoncer and self.droits.amorcer(str((self.config.get("droits") or {}).get("admin_initial", "fastuser"))):
             self.bus.emettre("noyau.admin_amorce", source="noyau", donnees={"compte": (self.config.get("droits") or {}).get("admin_initial", "fastuser")})
         self.actifs = self._actifs_courants()
-        self.rapport = chargeur.brancher(self._racines(), self._fabriquer, self.catalogue, self.registre, self.actifs, tolerant=self.gerer)
+        self.rapport = chargeur.brancher(self._racines(), self._fabriquer, self.catalogue, self.registre, self.actifs, tolerant=self.gerer,
+                                         surcharges=self._surcharges())
         self._branches |= set(self.rapport["branches"])
         self._cabler_moteurs()
         self._signature = self._signer()
         if annoncer:
             self._dire_refus(self.rapport["refuses"])
+            for mid, v in self.rapport.get("remplaces", {}).items():
+                self.bus.emettre("noyau.module_remplace", source="noyau", objet=("module", mid),
+                                 donnees={"module": mid, "livre": v["livre"], "extension": v["extension"]})
             for mid in self.rapport["introuvables"]:
                 self.bus.emettre("noyau.module_introuvable", source="noyau", objet=("module", mid), donnees={"module": mid})
             self.bus.emettre("noyau.demarre", source="noyau", donnees={"modules": self.rapport["ordre"], "a_porter": len(self.rapport["a_porter"])})
@@ -142,8 +146,13 @@ class Noyau:
         return {"constats": n, "moteurs": sum(1 for m in self.etat_moteurs() if m["cle"].startswith(mid + ".") and m["etat"] != "actif")}
 
     def _connus(self):
-        ms, refus = chargeur.decouvrir_tout(self._racines())
+        self._remplaces = {}
+        ms, refus = chargeur.decouvrir_tout(self._racines(), self._surcharges(), self._remplaces)
         return {m.id: (m, ext) for m, ext in ms}, refus
+
+    def _surcharges(self):
+        """Les modules ESSENTIELS qu'une extension peut remplacer : le choix de l'administrateur ([surcharge] essentiels)."""
+        return tuple((self.config.get("surcharge") or {}).get("essentiels", ()))
 
     def _plan_activation(self, mid: str, avec_dependances: bool = True) -> dict:
         connus, refus = self._connus()
@@ -266,6 +275,7 @@ class Noyau:
                 "permissions": {"espace_utilisateur": m.permissions.espace_utilisateur, "reseau": list(m.permissions.reseau),
                                 "ecritures": list(m.permissions.ecritures), "privileges": list(m.permissions.privileges)},
                 "confiance": m.confiance, "essentiel": m.essentiel, "extension": ext, "etat": etat,
+                "remplace": (getattr(self, "_remplaces", {}).get(mid).version if getattr(self, "_remplaces", {}).get(mid) else ""),
                 "requiert": list(m.requiert), "requis_par": sorted(requis_par.get(mid, [])),
                 "objets": len(m.objets), "capacites": len(m.capacites), "implementees": sum(1 for x in mine if x.implementee) if etat == "actif" else None,
                 "moteurs": len(m.moteurs), "detecteurs": len(m.detecteurs), "ecrans": len(m.ecrans),

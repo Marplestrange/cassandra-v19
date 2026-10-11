@@ -8,6 +8,10 @@ Deux provenances de modules :
   - `extensions/`  greffés après coup, hors des versions du noyau : un déploiement n'y touche jamais, et ils
                    ne peuvent pas se déclarer « interne ». On y dépose un dossier, on l'ajoute aux modules
                    actifs, et le noyau le branche à chaud.
+
+Surcharge (comme `custom` l'emporte sur `htdocs` dans Dolibarr) : une extension qui porte l'identifiant d'un module livré LE REMPLACE.
+Le module livré est alors mis de côté, jamais perdu : si le remplaçant est écarté, il revient. Un module ESSENTIEL (le « core/ » de Cassandra,
+que Dolibarr exclut de la surcharge) ne se remplace que si l'administrateur l'a décidé ([surcharge] essentiels = ["droits"]) : un réglage, pas un interdit.
 """
 from __future__ import annotations
 
@@ -50,8 +54,10 @@ def charger_module_py(dossier: Path, mid: str):
     return mod
 
 
-def decouvrir_tout(racines):
+def decouvrir_tout(racines, surcharges=(), remplaces=None):
     """`racines` : liste de (dossier, est_extension). Rend (manifestes, refus).
+    `surcharges` : les modules essentiels que l'administrateur autorise à remplacer. `remplaces` (un dict, s'il est donné) reçoit
+    {id: manifeste livré mis de côté} pour chaque module livré qu'une extension remplace.
     Un défaut dans un module LIVRÉ avec le noyau est une erreur de développement : on lève. Un défaut dans une
     EXTENSION (manifeste illisible, confiance « interne », id déjà pris) ne doit jamais empêcher le noyau de
     démarrer : l'extension est écartée, et le refus est rendu pour être dit au bus."""
@@ -78,10 +84,23 @@ def decouvrir_tout(racines):
                     refus.append({"module": f.parent.name, "raisons": ex.erreurs})
         for m in trouves:
             if m.id in vus:
-                if extension:
-                    refus.append({"module": m.id, "raisons": ["déjà présent dans %s" % vus[m.id]]})
-                else:
+                if not extension:
                     erreurs.append("module « %s » présent dans %s et dans %s" % (m.id, vus[m.id], dossier))
+                    continue
+                livre = next(x for x, e in ms if x.id == m.id)
+                if m.confiance == "interne":
+                    refus.append({"module": m.id, "raisons": ["la confiance « interne » est réservée aux modules livrés avec le noyau"]})
+                elif vus[m.id] in [r for r, e in racines if e]:
+                    refus.append({"module": m.id, "raisons": ["déjà présent dans %s" % vus[m.id]]})      # deux extensions de même nom
+                elif livre.essentiel and m.id not in set(surcharges):
+                    refus.append({"module": m.id, "raisons": [
+                        "« %s » est un module essentiel : le remplacer est un réglage de l'administrateur ([surcharge] essentiels = [\"%s\"])" % (m.id, m.id)]})
+                else:
+                    ms[:] = [(x, e) for x, e in ms if x.id != m.id]          # le module livré est mis de côté, pas perdu
+                    if remplaces is not None:
+                        remplaces[m.id] = livre
+                    vus[m.id] = dossier
+                    ms.append((m, extension))
                 continue
             if extension and m.confiance == "interne":
                 refus.append({"module": m.id, "raisons": ["la confiance « interne » est réservée aux modules livrés avec le noyau"]})
@@ -93,25 +112,31 @@ def decouvrir_tout(racines):
     return ms, refus
 
 
-def _ecarter(ms, refus, motifs, extension_ids):
-    """Écarte les extensions citées dans `motifs` (« id »). Rend True si quelque chose a bougé."""
+def _ecarter(ms, refus, motifs, extension_ids, remplaces=None):
+    """Écarte les extensions citées dans `motifs` (« id »). Rend True si quelque chose a bougé.
+    Un remplaçant écarté rend sa place au module livré qu'il remplaçait."""
     cites = {i for i in extension_ids if any("« %s »" % i in x for x in motifs)}
     if not cites:
         return False
     for m, ext in list(ms):
         if m.id in cites:
             ms.remove((m, ext))
-            refus.append({"module": m.id, "raisons": [x for x in motifs if "« %s »" % m.id in x][:3]})
+            raisons = [x for x in motifs if "« %s »" % m.id in x][:3]
+            if remplaces and m.id in remplaces:
+                ms.append((remplaces.pop(m.id), False))
+                raisons.append("le module livré « %s » reprend sa place" % m.id)
+            refus.append({"module": m.id, "raisons": raisons})
     return True
 
 
-def brancher(racines, fabriquer_contexte, catalogue, registre, actifs=None, deja=frozenset(), tolerant=False) -> dict:
+def brancher(racines, fabriquer_contexte, catalogue, registre, actifs=None, deja=frozenset(), tolerant=False, surcharges=()) -> dict:
     """Branche les modules ACTIFS (`actifs=None` : tous, pour le développement) qui ne le sont pas encore (`deja`).
     `racines` : un dossier, ou une liste de (dossier, est_extension). Rend un rapport : ordre, branches (les nouveaux),
     refuses (extensions écartées, avec leurs raisons), capacités non portées, modules sans code."""
     if isinstance(racines, (str, Path)):
         racines = [(racines, False)]
-    ms, refus = decouvrir_tout(racines)
+    remplaces = {}
+    ms, refus = decouvrir_tout(racines, surcharges, remplaces)
     refuses_ids = {r["module"] for r in refus}
     if actifs is not None:
         inconnus = sorted(set(actifs) - {m.id for m, _ in ms} - refuses_ids)
@@ -123,6 +148,9 @@ def brancher(racines, fabriquer_contexte, catalogue, registre, actifs=None, deja
         iso = verifier_isolation(Path(m.source).parent, [x.id for x, _ in ms if x.id != m.id])
         if iso and ext:
             ms.remove((m, ext))
+            if m.id in remplaces:
+                ms.append((remplaces.pop(m.id), False))
+                iso = iso + ["le module livré « %s » reprend sa place" % m.id]
             refus.append({"module": m.id, "raisons": iso})
         elif iso:
             raise mf.ManifesteInvalide(iso)
@@ -131,13 +159,14 @@ def brancher(racines, fabriquer_contexte, catalogue, registre, actifs=None, deja
         defauts = mf.verifier_ensemble([m for m, _ in ms])
         if not defauts:
             break
-        if not _ecarter(ms, refus, defauts, ext_ids):
+        if not _ecarter(ms, refus, defauts, ext_ids, remplaces):
             raise mf.ManifesteInvalide(defauts)
         ext_ids = {m.id for m, e in ms if e}
     mods = [m for m, _ in ms]
     ordre = mf.ordre_installation(mods)
     par_id = {m.id: m for m in mods}
     rapport = {"ordre": ordre, "branches": [], "refuses": refus, "sans_code": [], "a_porter": [],
+               "remplaces": {i: {"livre": l.version, "extension": par_id[i].version} for i, l in remplaces.items() if i in par_id},
                "introuvables": sorted(set(actifs or ()) - {m.id for m, _ in ms} - refuses_ids) if tolerant else []}
     for mid in ordre:
         if mid in deja:
