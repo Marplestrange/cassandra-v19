@@ -46,6 +46,37 @@ python -m unittest discover -s tests -v
 
 Les données vont dans `donnees/` (ou `$CASSANDRA_DONNEES`).
 
+## Les moteurs : le noyau les ordonnance
+
+Une boucle ou une passe qui tourne seule se déclare au manifeste (`[[moteurs]]`) et s'inscrit par `ctx.moteur(id, fonction)`.
+Le module n'ouvre jamais de thread : le noyau l'exécute dans un fil surveillé.
+
+| Mode | Se réveille | Exemple |
+|---|---|---|
+| `periodique` (`toutes_les_s`, 10 s minimum) | à intervalle | mesurer le disque |
+| `evenement` (`sur`, un type écouté par le module) | quand l'événement paraît, avec la lignée | réagir à un certificat renouvelé |
+| `demande` | seulement si un humain ou un agent le lance (`lancer`) | un export |
+
+Pour chaque moteur le noyau mesure la durée, empêche qu'il s'empile s'il dépasse `duree_max_s` (il est alors dit « figé »),
+compte les échecs, dit chaque échec au bus et le suspend après cinq échecs de suite (`lancer` le réarme : voie humaine).
+`python main.py moteurs` les liste avec leur état.
+
+## Greffer un module après coup
+
+Trois voies, un seul contrat (le manifeste) :
+
+1. **Un module livré avec le noyau** : on ajoute `modules/<id>/` au dépôt, `deploy.sh` le pousse (inactif), `install.sh --module <id>` l'active.
+2. **Une extension, à chaud** : `install.sh --extension ./mon_module`. Elle est copiée dans `extensions/` (hors des versions : `deploy.sh`
+   n'y touche jamais), vérifiée, prouvée par son `verifier.sh`, ajoutée aux modules actifs, et **le noyau la branche sans redémarrer**.
+   Exemple complet : `exemples/sentinelle/` (un moteur, un détecteur, un type d'objet, des événements).
+3. **Un moteur de plus sur un module existant, sans le modifier** : une extension qui écoute ses événements (`evenements.ecoute`) et
+   déclare son moteur `sur` l'un d'eux. Le module d'origine n'est jamais retouché.
+
+Garde-fous de la greffe : une extension ne peut pas se dire « interne » ni prendre l'id d'un module livré ; une extension illisible, qui
+importe un autre module ou dont une dépendance manque est **écartée et dite une fois au bus** (`noyau.greffe_refusee`), sans jamais
+empêcher le noyau de démarrer ni ce qui tourne déjà. Le code d'une extension tourne dans le processus du noyau, sous l'utilisateur
+dédié et l'unité durcie : c'est un niveau de confiance « local ». Un module de tiers non fiable exigera une cage par processus.
+
 ## Exploitation
 
 ```

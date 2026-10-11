@@ -9,7 +9,8 @@ le cycle : percevoir (les détecteurs), décider (le palier de la capacité), ag
     python main.py ordre [id ...]    ordre d'installation des modules demandés et de leurs dépendances (un id par ligne)
     python main.py versions          « id version » de chaque module (pour deploy.sh)
     python main.py etat              résume le noyau sans rien écrire (modules, objets, constats, paliers)
-    python main.py tick              une passe de détection
+    python main.py moteurs           les moteurs déclarés par les modules actifs, avec leur état
+    python main.py tick              une passe de détection et des moteurs échus
     python main.py demarrer          le cycle en continu (sous systemd : type notify, chien de garde)
 
 Modules actifs : `$CASSANDRA_CONFIG/modules.actifs` (un id par ligne). Sans ce fichier, tous les modules du
@@ -24,6 +25,7 @@ import logging
 import os
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -41,9 +43,11 @@ SEUIL_PANNES = 5   # pannes de suite d'un détecteur avant qu'il soit suspendu (
 
 
 class Noyau:
-    def __init__(self, donnees, modules=None, config=None, actifs=None):
+    def __init__(self, donnees, modules=None, config=None, actifs=None, extensions=None, lire_actifs=None):
         self.modules = Path(modules or RACINE / "modules")
+        self.extensions = Path(extensions) if extensions else None   # dossier des modules greffés après coup
         self.actifs = actifs         # None : tous les modules du dossier ; sinon la liste des modules actifs
+        self.lire_actifs = lire_actifs   # appelable : relit la liste des modules actifs (greffe à chaud)
         self.battement = lambda: None   # appelé entre deux détecteurs : le chien de garde de systemd
         self.config = dict(config or {})
         self.base = Base(Path(donnees) / "noyau.db")
@@ -55,20 +59,171 @@ class Noyau:
         self._derniere = {}        # (module, detecteur) -> dernier passage
         self._pannes = {}          # (module, detecteur) -> pannes de suite
         self._suspendus = set()    # détecteurs coupés par leur disjoncteur
+        self.moteurs = []          # (module, Moteur, fonction)
+        self._branches = set()     # modules déjà branchés (la greffe à chaud n'ajoute que les autres)
+        self._cables = set()       # moteurs sur événement déjà reliés au bus
+        self._fils_moteurs = {}    # (module, moteur) -> dernier thread lancé
+        self._figes = set()        # moteurs tenus pour figés
+        self._moteurs_derniere = {}
+        self._moteurs_suspendus = set()
+        self._signature = None
+        self._refus_dits = set()
         self.rapport = {}
 
     # ---------- démarrage ----------
+    def _racines(self) -> list:
+        r = [(self.modules, False)]
+        if self.extensions:
+            r.append((self.extensions, True))
+        return r
+
+    def _fabriquer(self, m):
+        ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs)
+        self.executeur.contextes[m.id] = ctx
+        return ctx
+
     def brancher(self, annoncer: bool = True) -> dict:
         """Branche les modules. `annoncer=False` pour une lecture (état, vérification) : rien n'est écrit au bus."""
-        def fabriquer(m):
-            ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id))
-            self.executeur.contextes[m.id] = ctx
-            return ctx
-        self.rapport = chargeur.brancher(self.modules, fabriquer, self.catalogue, self.registre, self.actifs)
+        self.rapport = chargeur.brancher(self._racines(), self._fabriquer, self.catalogue, self.registre, self.actifs)
+        self._branches |= set(self.rapport["branches"])
+        self._cabler_moteurs()
+        self._signature = self._signer()
         if annoncer:
+            self._dire_refus(self.rapport["refuses"])
             self.bus.emettre("noyau.demarre", source="noyau", donnees={"modules": self.rapport["ordre"], "a_porter": len(self.rapport["a_porter"])})
             self.rapport["reprises"] = self.reprendre()
         return self.rapport
+
+    # ---------- greffe à chaud ----------
+    def _signer(self):
+        """Empreinte de ce qui peut changer sans redémarrage : la liste des modules actifs et les extensions déposées."""
+        ext = []
+        if self.extensions and self.extensions.is_dir():
+            for d in sorted(self.extensions.iterdir()):
+                f = d / "manifeste.toml"
+                if f.exists():
+                    ext.append((d.name, f.stat().st_mtime_ns))
+        actifs = tuple(self.lire_actifs() or ()) if self.lire_actifs else (tuple(self.actifs) if self.actifs is not None else None)
+        return (actifs, tuple(ext))
+
+    def _dire_refus(self, refus) -> None:
+        """Une extension écartée se dit UNE fois au bus, avec ses raisons ; elle n'empêche rien de ce qui tourne."""
+        for r in refus:
+            cle = (r["module"], "|".join(r["raisons"]))
+            if cle not in self._refus_dits:
+                self._refus_dits.add(cle)
+                self.bus.emettre("noyau.greffe_refusee", source="noyau", objet=("module", r["module"]),
+                                 donnees={"module": r["module"], "raisons": r["raisons"][:6]})
+
+    def recharger(self) -> dict:
+        """Greffe à chaud : branche les modules devenus actifs ou déposés depuis le démarrage, sans toucher à ceux qui
+        tournent. Un dépôt refusé (manifeste invalide, extension « interne », import d'un autre module) est dit une
+        fois au bus, et n'empêche rien de ce qui tourne déjà."""
+        if self.lire_actifs:
+            self.actifs = self.lire_actifs()
+        self._signature = self._signer()
+        try:
+            r = chargeur.brancher(self._racines(), self._fabriquer, self.catalogue, self.registre, self.actifs, deja=self._branches)
+        except manifeste.ManifesteInvalide as ex:
+            self.bus.emettre("noyau.greffe_refusee", source="noyau", donnees={"erreurs": ex.erreurs[:10]})
+            return {"refuse": ex.erreurs}
+        self._dire_refus(r["refuses"])
+        self._branches |= set(r["branches"])
+        self._cabler_moteurs()
+        for mid in r["branches"]:
+            self.bus.emettre("noyau.greffe", source="noyau", objet=("module", mid), donnees={"module": mid})
+        self.rapport = dict(self.rapport, ordre=r["ordre"], a_porter=r["a_porter"])
+        return {"branches": r["branches"], "refuses": r["refuses"]}
+
+    def _surveiller(self) -> None:
+        if (self.lire_actifs or self.extensions) and self._signer() != self._signature:
+            self.recharger()
+
+    # ---------- les moteurs : le noyau les ordonnance ----------
+    def _cabler_moteurs(self) -> None:
+        for module, mo, fn in list(self.moteurs):
+            if (module, mo.id) in self._cables or mo.mode != "evenement":
+                continue
+            self._cables.add((module, mo.id))
+            self.bus.ecouter(mo.sur, lambda ev, m=module, mo=mo, fn=fn: self._lancer_moteur(m, mo, fn, ev), module)
+
+    def _lancer_moteur(self, module: str, mo, fn, ev=None) -> dict:
+        """Exécute un moteur dans un fil surveillé : durée mesurée, jamais deux fois en même temps, figé s'il dépasse
+        sa durée maximale, suspendu après SEUIL_PANNES échecs de suite. Un échec se dit toujours au bus."""
+        k = (module, mo.id)
+        if k in self._moteurs_suspendus:
+            return {"statut": "suspendu"}
+        t = self._fils_moteurs.get(k)
+        if t is not None and t.is_alive():
+            return {"statut": "fige"}
+        self._figes.discard(k)
+        ctx = self.executeur.contextes[module]
+        sortie = {}
+
+        def cible():
+            ctx._cause.valeur = ev["id"] if ev else None
+            ctx._compte.valeur = ev["compte"] if ev else ""
+            d0 = time.time()
+            try:
+                fn(ctx, ev) if ev is not None else fn(ctx)
+            except Exception as ex:
+                log.exception("moteur en échec : %s.%s", module, mo.id)
+                sortie["erreur"] = str(ex)[:300]
+            sortie["duree"] = time.time() - d0
+
+        t = threading.Thread(target=cible, daemon=True, name="moteur-%s.%s" % k)
+        self._fils_moteurs[k] = t
+        t.start()
+        t.join(mo.duree_max_s)
+        if t.is_alive():
+            self._figes.add(k)
+            self._noter_moteur(k, mo.duree_max_s, "", fige=True)
+            self.bus.emettre("moteur.fige", source=module, objet=("moteur", "%s.%s" % k), cause=ev["id"] if ev else None,
+                             donnees={"moteur": mo.id, "depuis_s": mo.duree_max_s})
+            return {"statut": "fige"}
+        erreur = sortie.get("erreur", "")
+        de_suite = self._noter_moteur(k, sortie.get("duree", 0.0), erreur)
+        if erreur:
+            self.bus.emettre("moteur.echoue", source=module, objet=("moteur", "%s.%s" % k), cause=ev["id"] if ev else None,
+                             donnees={"moteur": mo.id, "erreur": erreur, "de_suite": de_suite})
+            if de_suite >= SEUIL_PANNES:
+                self._moteurs_suspendus.add(k)
+                self.bus.emettre("moteur.suspendu", source=module, objet=("moteur", "%s.%s" % k), donnees={"moteur": mo.id, "apres": de_suite})
+            return {"statut": "echec", "erreur": erreur}
+        return {"statut": "fait", "duree": sortie.get("duree", 0.0)}
+
+    def _noter_moteur(self, k, duree: float, erreur: str, fige: bool = False) -> int:
+        cle = "%s.%s" % k
+        echec = 1 if (erreur or fige) else 0
+        self.base.ecrire(
+            "INSERT INTO moteurs_etat(cle, derniere, duree, executions, echecs, echecs_de_suite, erreur, figes) VALUES (?,?,?,1,?,?,?,?) "
+            "ON CONFLICT(cle) DO UPDATE SET derniere=excluded.derniere, duree=excluded.duree, executions=executions+1, echecs=echecs+excluded.echecs, "
+            "echecs_de_suite=CASE WHEN excluded.echecs>0 THEN echecs_de_suite+1 ELSE 0 END, erreur=excluded.erreur, figes=figes+excluded.figes",
+            (cle, time.time(), duree, echec, echec, erreur, 1 if fige else 0))
+        return self.base.lire("SELECT echecs_de_suite FROM moteurs_etat WHERE cle=?", (cle,))[0]["echecs_de_suite"]
+
+    def lancer(self, cle: str, acteur: str = "humain") -> dict:
+        """Lance un moteur à la main (humain, agent). Voie parallèle : le moteur n'attend pas qu'on le lui demande,
+        mais on peut le lui demander. Un moteur sur événement ne se lance pas sans événement."""
+        for module, mo, fn in self.moteurs:
+            if "%s.%s" % (module, mo.id) == cle:
+                if mo.mode == "evenement":
+                    return {"statut": "refuse", "raison": "ce moteur se réveille sur « %s »" % mo.sur}
+                self.bus.emettre("moteur.demande", source=module, acteur=acteur, objet=("moteur", cle), donnees={"moteur": mo.id})
+                self._moteurs_suspendus.discard((module, mo.id))
+                return self._lancer_moteur(module, mo, fn)
+        return {"statut": "refuse", "raison": "moteur inconnu : %s" % cle}
+
+    def etat_moteurs(self) -> list:
+        etat = {r["cle"]: r for r in self.base.lire("SELECT * FROM moteurs_etat")}
+        sortie = []
+        for module, mo, _ in self.moteurs:
+            cle = "%s.%s" % (module, mo.id)
+            e = etat.get(cle, {})
+            sortie.append({"cle": cle, "mode": mo.mode, "toutes_les_s": mo.toutes_les_s, "sur": mo.sur, "executions": e.get("executions", 0),
+                           "echecs": e.get("echecs", 0), "derniere": e.get("derniere"), "duree": e.get("duree"), "erreur": e.get("erreur", ""),
+                           "etat": "suspendu" if (module, mo.id) in self._moteurs_suspendus else ("fige" if (module, mo.id) in self._figes else "actif")})
+        return sortie
 
     # ---------- résilience ----------
     def reprendre(self) -> list:
@@ -138,7 +293,7 @@ class Noyau:
     def tick(self, maintenant=None) -> dict:
         """Une passe : chaque détecteur échu perçoit, chaque nouveau constat décide et agit selon le palier."""
         maintenant = time.time() if maintenant is None else maintenant
-        rapport = {"detecteurs": 0, "ouverts": 0, "resolus": 0, "pannes": 0, "actions": []}
+        rapport = {"detecteurs": 0, "moteurs": 0, "ouverts": 0, "resolus": 0, "pannes": 0, "actions": []}
         for module, d, fonction in list(self.detecteurs):
             self.battement()
             k = (module, d.id)
@@ -186,6 +341,15 @@ class Noyau:
                     self.bus.emettre("constat.resolu", source=module, acteur="sonde", cause=o["evenement"], compte=origine.get("compte", ""),
                                      donnees={"cle": o["cle"]})
                     rapport["resolus"] += 1
+        for module, mo, fn in list(self.moteurs):
+            k = (module, mo.id)
+            if mo.mode != "periodique" or maintenant - self._moteurs_derniere.get(k, 0) < mo.toutes_les_s:
+                continue
+            self.battement()
+            self._moteurs_derniere[k] = maintenant
+            rapport["moteurs"] += 1
+            if self._lancer_moteur(module, mo, fn)["statut"] in ("echec", "fige"):
+                rapport["pannes"] += 1
         return rapport
 
     def boucle(self, pause: float = 5.0) -> None:
@@ -197,6 +361,7 @@ class Noyau:
         try:
             while True:
                 try:
+                    self._surveiller()
                     r = self.tick()
                     systemd.battement("passe : %d ouvert(s), %d résolu(s), %d panne(s)" % (r["ouverts"], r["resolus"], r["pannes"]))
                 except Exception:
@@ -215,7 +380,8 @@ class Noyau:
         return {
             "version": manifeste.VERSION_NOYAU, "modules": self.rapport.get("ordre", []),
             "capacites": len(caps), "implementees": sum(1 for e in caps if e.implementee), "paliers": paliers,
-            "objets": self.registre.compter(portee=TOUT), "detecteurs": len(self.detecteurs), "suspendus": sorted("%s.%s" % k for k in self._suspendus),
+            "objets": self.registre.compter(portee=TOUT), "detecteurs": len(self.detecteurs), "moteurs": len(self.moteurs),
+            "moteurs_a_surveiller": sorted(m["cle"] for m in self.etat_moteurs() if m["etat"] != "actif"), "suspendus": sorted("%s.%s" % k for k in self._suspendus),
             "constats_ouverts": self.base.lire("SELECT COUNT(*) AS n FROM constats WHERE etat='ouvert'")[0]["n"],
             "evenements": self.base.lire("SELECT COUNT(*) AS n FROM evenements")[0]["n"],
             "crise": self.en_crise(),
@@ -227,6 +393,12 @@ def _donnees() -> Path:
     return Path(os.environ.get("CASSANDRA_DONNEES") or RACINE / "donnees")
 
 
+def _extensions():
+    """Le dossier des modules greffés après coup : $CASSANDRA_EXTENSIONS. Il est surveillé MÊME s'il n'existe pas
+    encore : une greffe déposée après le démarrage doit être vue."""
+    return os.environ.get("CASSANDRA_EXTENSIONS") or None
+
+
 def _actifs():
     """Les modules actifs, lus dans $CASSANDRA_CONFIG/modules.actifs ; None (tous) si le fichier n'existe pas."""
     dossier = os.environ.get("CASSANDRA_CONFIG")
@@ -236,15 +408,31 @@ def _actifs():
     return [l.strip() for l in f.read_text(encoding="utf-8").splitlines() if l.strip() and not l.lstrip().startswith("#")]
 
 
+def _manifestes(avec_extensions: bool = True) -> list:
+    racines = [(RACINE / "modules", False)]
+    if avec_extensions and _extensions():
+        racines.append((Path(_extensions()), True))
+    ms, _ = chargeur.decouvrir_tout(racines)
+    return [m for m, _ in ms]
+
+
 def verifier() -> int:
+    """Manifestes, isolation, ordre. Une extension refusée n'arrête pas le noyau au démarrage, mais ICI elle fait
+    échouer la vérification : c'est ce qu'on veut avant d'activer une greffe."""
     try:
         with tempfile.TemporaryDirectory() as tmp:
-            n = Noyau(tmp)
-            rapport = n.brancher()
+            n = Noyau(tmp, extensions=_extensions())
+            rapport = n.brancher(annoncer=False)
     except manifeste.ManifesteInvalide as ex:
         print(ex, file=sys.stderr)
         return 1
-    par_id = {m.id: m for m in manifeste.decouvrir(n.modules)}
+    if rapport["refuses"]:
+        for r in rapport["refuses"]:
+            print("extension refusée : %s" % r["module"], file=sys.stderr)
+            for x in r["raisons"]:
+                print("  - %s" % x, file=sys.stderr)
+        return 1
+    par_id = {m.id: m for m in _manifestes()}
     print("noyau %s : %d module(s), ordre d'installation :" % (manifeste.VERSION_NOYAU, len(rapport["ordre"])))
     for i, mid in enumerate(rapport["ordre"], 1):
         m = par_id[mid]
@@ -262,7 +450,7 @@ def main(argv) -> int:
         return verifier()
     if commande in ("ordre", "versions"):
         try:
-            ms = manifeste.decouvrir(RACINE / "modules")
+            ms = _manifestes(avec_extensions=commande == "ordre")
             if commande == "versions":
                 print(chr(10).join("%s %s" % (m.id, m.version) for m in ms))
             else:
@@ -271,9 +459,9 @@ def main(argv) -> int:
             print(ex, file=sys.stderr)
             return 1
         return 0
-    if commande in ("etat", "tick", "demarrer"):
+    if commande in ("etat", "tick", "demarrer", "moteurs"):
         try:
-            n = Noyau(_donnees(), actifs=_actifs())
+            n = Noyau(_donnees(), actifs=_actifs(), extensions=_extensions(), lire_actifs=_actifs)
             n.brancher(annoncer=commande != "etat")
         except manifeste.ManifesteInvalide as ex:
             print(ex, file=sys.stderr)
@@ -281,12 +469,16 @@ def main(argv) -> int:
         if commande == "etat":
             for k, v in n.etat().items():
                 print("%-16s %s" % (k, v))
+        elif commande == "moteurs":
+            for m in n.etat_moteurs():
+                quand = "toutes les %d s" % m["toutes_les_s"] if m["mode"] == "periodique" else ("sur " + m["sur"] if m["mode"] == "evenement" else "à la demande")
+                print("%-34s %-9s %-26s %4d exéc. %3d échec(s) %s" % (m["cle"], m["etat"], quand, m["executions"], m["echecs"], m["erreur"][:40]))
         elif commande == "tick":
             print(n.tick())
         else:
             n.boucle()
         return 0
-    print("commande inconnue : %s (verifier | ordre | versions | etat | tick | demarrer)" % commande, file=sys.stderr)
+    print("commande inconnue : %s (verifier | ordre | versions | etat | moteurs | tick | demarrer)" % commande, file=sys.stderr)
     return 2
 
 

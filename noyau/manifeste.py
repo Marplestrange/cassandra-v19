@@ -20,6 +20,7 @@ VERSION_NOYAU = "0.1.0"
 RISQUES = ("lecture", "faible", "moyen", "eleve")
 PALIERS = ("raconter", "auto", "maitre")
 ACTEURS = ("cassandra", "itare", "humain", "compte")
+MODES_MOTEUR = ("periodique", "evenement", "demande")
 CONFIANCES = ("interne", "signe", "tiers", "local")
 
 _ID = re.compile(r"^[a-z][a-z0-9_]{1,40}$")
@@ -68,6 +69,17 @@ class Detecteur:
 
 
 @dataclass(frozen=True)
+class Moteur:
+    """Une boucle ou une passe qui tourne seule. Le noyau l'ordonnance : le module n'ouvre jamais de thread."""
+    id: str
+    libelle: str
+    mode: str                  # periodique | evenement | demande
+    toutes_les_s: int = 0      # mode periodique
+    sur: str = ""              # mode evenement : le type d'événement qui le réveille (doit être dans evenements.ecoute)
+    duree_max_s: int = 60      # au-delà, le moteur est tenu pour figé et ne s'empile pas
+
+
+@dataclass(frozen=True)
 class Ecran:
     id: str
     libelle: str
@@ -96,6 +108,7 @@ class Manifeste:
     ecoute: tuple = ()
     capacites: tuple = ()
     detecteurs: tuple = ()
+    moteurs: tuple = ()
     ecrans: tuple = ()
     installation: Installation = field(default_factory=Installation)
     source: str = ""
@@ -218,6 +231,29 @@ def valider(brut: dict) -> list:
         if d.get("capacite") and d["capacite"] not in ids:
             e.append("%s.capacite : « %s » n'est pas une capacité de ce module" % (nom, d["capacite"]))
 
+    mids = []
+    for i, mo in enumerate(brut.get("moteurs", []) or []):
+        nom = "moteurs[%d]" % i
+        if not isinstance(mo, dict) or not _ID.match(str(mo.get("id", ""))):
+            e.append("%s.id : identifiant invalide" % nom)
+            continue
+        if mo["id"] in mids:
+            e.append("%s.id : « %s » est déclaré deux fois" % (nom, mo["id"]))
+        mids.append(mo["id"])
+        nom = "moteur « %s »" % mo["id"]
+        if not str(mo.get("libelle", "")).strip():
+            e.append("%s : libellé obligatoire" % nom)
+        mode = mo.get("mode")
+        if mode not in MODES_MOTEUR:
+            e.append("%s.mode : %s" % (nom, " | ".join(MODES_MOTEUR)))
+        elif mode == "periodique" and (not isinstance(mo.get("toutes_les_s"), int) or mo["toutes_les_s"] < 10):
+            e.append("%s.toutes_les_s : entier d'au moins 10 secondes" % nom)
+        elif mode == "evenement" and mo.get("sur") not in ecoute:
+            e.append("%s.sur : « %s » doit figurer dans evenements.ecoute (un moteur n'écoute que ce que son module a déclaré)" % (nom, mo.get("sur")))
+        d = mo.get("duree_max_s", 60)
+        if not isinstance(d, int) or not 1 <= d <= 3600:
+            e.append("%s.duree_max_s : entier entre 1 et 3600" % nom)
+
     for i, s in enumerate(brut.get("ecrans", []) or []):
         if not isinstance(s, dict) or not _ID.match(str(s.get("id", ""))) or not str(s.get("libelle", "")).strip():
             e.append("ecrans[%d] : « id » et « libelle » obligatoires" % i)
@@ -252,6 +288,8 @@ def construire(brut: dict, source="") -> Manifeste:
         objets=tuple(Objet(o["type"], o["libelle"]) for o in brut.get("objets", []) or []),
         emet=tuple(ev.get("emet", ())), ecoute=tuple(ev.get("ecoute", ())), capacites=caps,
         detecteurs=tuple(Detecteur(d["id"], d.get("libelle", d["id"]), d["frequence_s"], d.get("capacite", "")) for d in brut.get("detecteurs", []) or []),
+        moteurs=tuple(Moteur(m["id"], m["libelle"], m["mode"], m.get("toutes_les_s", 0), m.get("sur", ""), m.get("duree_max_s", 60))
+                      for m in brut.get("moteurs", []) or []),
         ecrans=tuple(Ecran(s["id"], s["libelle"], s.get("domaine", "")) for s in brut.get("ecrans", []) or []),
         installation=Installation(ins.get("script", ""), ins.get("verification", ""), ins.get("retrait", ""), ins.get("migrations", "")),
         source=str(source),

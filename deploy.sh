@@ -111,6 +111,7 @@ revenir() {
 }
 
 dire "bascule"
+install -d -o root -g root -m 0755 "$PREFIXE/extensions"   # les greffes vivent ici, hors des versions : un déploiement n'y touche jamais
 sed -e "s|@PREFIXE@|$PREFIXE|g" -e "s|@DONNEES@|$DONNEES|g" -e "s|@CONFIG@|$CONFIG|g" -e "s|@JOURNAL@|$JOURNAL|g" \
     -e "s|@UTILISATEUR@|$UTILISATEUR|g" -e "s|@UNITE@|$UNITE|g" "$DEST/exploitation/$UNITE" > "/etc/systemd/system/$UNITE.new"
 mv "/etc/systemd/system/$UNITE.new" "/etc/systemd/system/$UNITE"

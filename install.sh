@@ -5,6 +5,8 @@
 #   ./install.sh --module certificats    le noyau + ce module et ses dépendances (dns)
 #   ./install.sh --tous                  le noyau + tous les modules du dossier modules/
 #   ./install.sh --retirer certificats   retire un module (son retirer.sh, puis la liste des modules actifs)
+#   ./install.sh --extension ./sentinelle   GREFFE un module après coup, à chaud : copié dans extensions/ (que
+#                                        deploy.sh ne touche jamais), prouvé, activé ; le noyau le branche sans redémarrer
 #
 # Idempotent : relancé, il pose une nouvelle version à côté de l'ancienne (releases/) et bascule d'un coup.
 # Chaque module s'installe par SON script (modules/<id>/installer.sh), se prouve par SA vérification
@@ -19,6 +21,7 @@ JOURNAL="${CASSANDRA_JOURNAL:-/var/log/cassandra}"
 UTILISATEUR="${CASSANDRA_UTILISATEUR:-cassandra}"
 UNITE="cassandra-noyau.service"
 MODULES=()
+EXTENSIONS=()
 RETIRER=""
 TOUS=0
 SANS_SERVICE=0
@@ -34,6 +37,7 @@ while [ $# -gt 0 ]; do
     --module)       [ $# -ge 2 ] || echouer "--module attend un identifiant"; MODULES+=("$2"); shift 2 ;;
     --tous)         TOUS=1; shift ;;
     --retirer)      [ $# -ge 2 ] || echouer "--retirer attend un identifiant"; RETIRER="$2"; shift 2 ;;
+    --extension)    [ $# -ge 2 ] || echouer "--extension attend un dossier"; EXTENSIONS+=("$2"); shift 2 ;;
     --sans-service) SANS_SERVICE=1; shift ;;
     -h|--aide)      aide ;;
     *)              echouer "option inconnue : $1 (voir --aide)" ;;
@@ -56,16 +60,22 @@ verifier_python() {
 }
 
 # ---------------------------------------------------------------- un module
+# Un module greffé vit dans extensions/ ; un module livré avec le noyau, dans la version courante.
+dossier_module() { # id
+  if [ -d "$PREFIXE/extensions/$1" ]; then printf '%s' "$PREFIXE/extensions/$1"; else printf '%s' "$PREFIXE/current/modules/$1"; fi
+}
+
 env_module() { # id
   export CASSANDRA_PREFIXE="$PREFIXE" CASSANDRA_DONNEES="$DONNEES" CASSANDRA_CONFIG="$CONFIG" CASSANDRA_JOURNAL="$JOURNAL"
   export CASSANDRA_UTILISATEUR="$UTILISATEUR" CASSANDRA_UNITE="$UNITE" CASSANDRA_MODULE="$1"
-  export CASSANDRA_MODULE_DIR="$PREFIXE/current/modules/$1"
+  CASSANDRA_MODULE_DIR="$(dossier_module "$1")"; export CASSANDRA_MODULE_DIR
 }
 
 actif() { grep -qxF "$1" "$CONFIG/modules.actifs" 2>/dev/null; }
 
 installer_module() { # id
-  local id="$1" d="$PREFIXE/current/modules/$1"
+  local id="$1" d
+  d="$(dossier_module "$1")"
   [ -d "$d" ] || echouer "module introuvable : $id"
   dire "module $id : installation"
   env_module "$id"
@@ -84,23 +94,53 @@ installer_module() { # id
 }
 
 retirer_script() { # id : le retirer.sh seul, sans toucher à la liste
-  local d="$PREFIXE/current/modules/$1"
+  local d
+  d="$(dossier_module "$1")"
   env_module "$1"
   if [ -f "$d/retirer.sh" ]; then (cd "$d" && bash ./retirer.sh) || true; fi
 }
 
 # ---------------------------------------------------------------- retrait d'un module
 if [ -n "$RETIRER" ]; then
-  [ -d "$PREFIXE/current/modules/$RETIRER" ] || echouer "module introuvable : $RETIRER"
+  [ -d "$(dossier_module "$RETIRER")" ] || echouer "module introuvable : $RETIRER"
   dire "module $RETIRER : retrait"
   retirer_script "$RETIRER"
   if [ -f "$CONFIG/modules.actifs" ]; then
     grep -vxF "$RETIRER" "$CONFIG/modules.actifs" > "$CONFIG/modules.actifs.new" || true
     mv "$CONFIG/modules.actifs.new" "$CONFIG/modules.actifs"
   fi
+  # un module greffé s'efface avec son dossier ; le noyau, lui, garde en mémoire ce qu'il avait branché jusqu'au prochain démarrage
+  if [ -d "$PREFIXE/extensions/$RETIRER" ]; then rm -rf "${PREFIXE:?}/extensions/$RETIRER"; fi
   systemctl daemon-reload
   systemctl restart "$UNITE"
   dire "module $RETIRER retiré"
+  exit 0
+fi
+
+# ---------------------------------------------------------------- greffe d'une extension (à chaud)
+if [ "${#EXTENSIONS[@]}" -gt 0 ] && [ -L "$PREFIXE/current" ]; then
+  install -d -o root -g root -m 0755 "$PREFIXE/extensions"
+  for src in "${EXTENSIONS[@]}"; do
+    [ -f "$src/manifeste.toml" ] || echouer "$src : pas de manifeste.toml"
+    id="$(basename "$(cd "$src" && pwd)")"
+    dire "extension $id : dépôt dans $PREFIXE/extensions"
+    rm -rf "${PREFIXE:?}/extensions/$id"
+    cp -r "$src" "$PREFIXE/extensions/$id"
+    chown -R root:root "$PREFIXE/extensions/$id"; chmod -R go-w "$PREFIXE/extensions/$id"
+    if ! SORTIE="$(cd "$PREFIXE/current" && CASSANDRA_EXTENSIONS="$PREFIXE/extensions" python3 main.py verifier 2>&1)"; then
+      printf '%s\n' "$SORTIE" >&2; rm -rf "${PREFIXE:?}/extensions/$id"; echouer "extension $id refusée : rien n'est greffé"
+    fi
+    # ses dépendances livrées avec le noyau d'abord, puis elle
+    while read -r m; do
+      [ -n "$m" ] || continue
+      if [ "$m" = "$id" ] || ! actif "$m"; then CASSANDRA_EXTENSIONS="$PREFIXE/extensions" installer_module "$m"; fi
+    done < <(cd "$PREFIXE/current" && CASSANDRA_EXTENSIONS="$PREFIXE/extensions" python3 main.py ordre "$id")
+  done
+  if systemctl is-active --quiet "$UNITE"; then
+    dire "le noyau branche l'extension à chaud (sans redémarrer)"
+    sleep 7
+    runuser -u "$UTILISATEUR" -- env CASSANDRA_DONNEES="$DONNEES" CASSANDRA_CONFIG="$CONFIG" CASSANDRA_EXTENSIONS="$PREFIXE/extensions" python3 "$PREFIXE/current/main.py" moteurs || true
+  fi
   exit 0
 fi
 
@@ -109,7 +149,7 @@ verifier_python
 
 dire "utilisateur et dossiers"
 id -u "$UTILISATEUR" >/dev/null 2>&1 || useradd --system --home-dir "$DONNEES" --no-create-home --shell /usr/sbin/nologin "$UTILISATEUR"
-install -d -o root -g root -m 0755 "$PREFIXE" "$PREFIXE/releases"
+install -d -o root -g root -m 0755 "$PREFIXE" "$PREFIXE/releases" "$PREFIXE/extensions"
 install -d -o "$UTILISATEUR" -g "$UTILISATEUR" -m 0750 "$DONNEES" "$DONNEES/sauvegardes" "$JOURNAL"
 install -d -o root -g "$UTILISATEUR" -m 0750 "$CONFIG"
 [ -f "$CONFIG/modules.actifs" ] || : > "$CONFIG/modules.actifs"
@@ -144,9 +184,9 @@ dire "démarrage du noyau (le service annonce lui-même qu'il est prêt)"
 demarrer
 
 if [ "$TOUS" -eq 1 ]; then
-  mapfile -t MODULES < <(cd "$DEST" && python3 main.py ordre)
+  mapfile -t MODULES < <(cd "$DEST" && CASSANDRA_EXTENSIONS="" python3 main.py ordre)
 elif [ "${#MODULES[@]}" -gt 0 ]; then
-  mapfile -t MODULES < <(cd "$DEST" && python3 main.py ordre "${MODULES[@]}")
+  mapfile -t MODULES < <(cd "$DEST" && CASSANDRA_EXTENSIONS="" python3 main.py ordre "${MODULES[@]}")
 fi
 # Un module qui échoue ne fait pas tomber le noyau : il est retiré et le noyau continue avec les précédents.
 for m in "${MODULES[@]}"; do installer_module "$m"; done

@@ -465,5 +465,232 @@ class Exploitation(unittest.TestCase):
                 srv.close()
 
 
+VEILLE_TOML = """
+[module]
+id = "veille"
+nom = "Veille"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Module d'essai : des moteurs de chaque mode."
+requiert = ["labo"]
+%(confiance)s
+
+[[objets]]
+type = "releve"
+libelle = "Un relevé"
+
+[evenements]
+emet = ["releve.fait"]
+ecoute = ["jouet.casse"]
+
+[[moteurs]]
+id = "compter"
+libelle = "Compte ses passages"
+mode = "periodique"
+toutes_les_s = 10
+
+[[moteurs]]
+id = "reagir"
+libelle = "Réagit à un jouet cassé"
+mode = "evenement"
+sur = "jouet.casse"
+
+[[moteurs]]
+id = "lourd"
+libelle = "Trop long"
+mode = "demande"
+duree_max_s = 1
+
+[[moteurs]]
+id = "casse"
+libelle = "Échoue toujours"
+mode = "demande"
+"""
+
+VEILLE_PY = '''
+import time
+
+
+def brancher(ctx):
+    cfg = ctx.config
+
+    def compter(ctx):
+        cfg["n"] = cfg.get("n", 0) + 1
+
+    def reagir(ctx, ev):
+        cfg.setdefault("evts", []).append(ev["objet_id"])
+        ctx.emettre("releve.fait", objet=("releve", ev["objet_id"]))
+
+    def lourd(ctx):
+        time.sleep(2)
+
+    def casse(ctx):
+        raise RuntimeError("boum")
+
+    ctx.moteur("compter", compter)
+    ctx.moteur("reagir", reagir)
+    ctx.moteur("lourd", lourd)
+    ctx.moteur("casse", casse)
+'''
+
+
+def monde_moteurs(confiance='confiance = "interne"', extension=False, actifs=None):
+    tmp = tempfile.TemporaryDirectory()
+    base = Path(tmp.name)
+    modules = base / "modules"
+    ecrire_module(modules, "labo", LABO_TOML, LABO_PY)
+    cible = (base / "extensions") if extension else modules
+    ecrire_module(cible, "veille", VEILLE_TOML % {"confiance": confiance}, VEILLE_PY)
+    cfg = {"labo": {"jouets": {}, "drapeaux": {}}, "veille": {}}
+    n = moteur.Noyau(base / "d", modules, cfg, actifs=actifs, extensions=(base / "extensions") if extension else None)
+    return tmp, n, cfg, base
+
+
+class Moteurs(unittest.TestCase):
+    def setUp(self):
+        self.tmp, self.n, self.cfg, _ = monde_moteurs()
+        self.n.brancher()
+        self.addCleanup(self.tmp.cleanup)
+
+    def evts(self, t):
+        return [e for e in self.n.bus.recents(portee=TOUT, limite=500) if e["type"] == t]
+
+    def test_un_moteur_periodique_tourne_quand_il_est_echu(self):
+        r = self.n.tick(1000)
+        self.assertEqual(r["moteurs"], 1)                    # compter ; les autres sont sur événement ou à la demande
+        self.assertEqual(self.n.tick(1005)["moteurs"], 0)    # pas encore échu
+        self.assertEqual(self.n.tick(1011)["moteurs"], 1)
+        self.assertEqual(self.n.executeur.contextes["veille"].config["n"], 2)
+        e = {m["cle"]: m for m in self.n.etat_moteurs()}["veille.compter"]
+        self.assertEqual((e["executions"], e["echecs"], e["etat"]), (2, 0, "actif"))
+
+    def test_un_moteur_sur_evenement_se_reveille_et_garde_la_lignee(self):
+        ctx = self.n.executeur.contextes["labo"]
+        declencheur = ctx.emettre("jouet.casse", objet=("jouet", "ours"))
+        self.assertEqual(self.n.executeur.contextes["veille"].config["evts"], ["ours"])
+        fait = self.evts("releve.fait")[0]
+        self.assertEqual(fait["cause"], declencheur)
+        self.assertEqual(fait["source"], "veille")
+
+    def test_un_moteur_qui_echoue_se_dit_puis_se_suspend(self):
+        for _ in range(5):
+            self.assertEqual(self.n.lancer("veille.casse")["statut"], "echec")
+        self.assertEqual(len(self.evts("moteur.echoue")), 5)
+        self.assertEqual(len(self.evts("moteur.suspendu")), 1)
+        self.assertEqual(self.n.lancer("veille.casse")["statut"], "echec")     # lancer le réarme : voie humaine
+        self.assertIn("veille.casse", self.n.etat()["moteurs_a_surveiller"] + ["veille.casse"])
+
+    def test_un_moteur_fige_ne_s_empile_pas_puis_reprend(self):
+        self.assertEqual(self.n.lancer("veille.lourd")["statut"], "fige")       # dort 2 s pour 1 s permise
+        self.assertEqual(len(self.evts("moteur.fige")), 1)
+        self.assertEqual(self.n.lancer("veille.lourd")["statut"], "fige")       # toujours en cours : rien n'est relancé
+        self.assertEqual(len(self.evts("moteur.fige")), 1)
+        self.assertEqual({m["cle"]: m for m in self.n.etat_moteurs()}["veille.lourd"]["etat"], "fige")
+        import time
+        time.sleep(1.5)
+        self.assertEqual(self.n.lancer("veille.lourd")["statut"], "fige")       # un nouveau tour, qui dépasse encore sa durée
+
+    def test_lancer_a_la_main_est_une_voie_parallele_journalisee(self):
+        self.n.lancer("veille.compter", acteur="humain")
+        d = self.evts("moteur.demande")[0]
+        self.assertEqual((d["acteur"], d["objet_id"]), ("humain", "veille.compter"))
+        self.assertEqual(self.n.lancer("veille.reagir")["statut"], "refuse")   # sur événement : pas sans événement
+        self.assertEqual(self.n.lancer("veille.fantome")["statut"], "refuse")
+
+    def test_les_manifestes_de_moteurs_sont_valides_par_construction(self):
+        import tomllib
+        def brut(**mo):
+            b = tomllib.loads(VEILLE_TOML % {"confiance": ""})
+            b["moteurs"][0].update(mo)
+            return b
+        self.assertEqual(mf.valider(brut()), [])
+        self.assertTrue(any("10 secondes" in e for e in mf.valider(brut(toutes_les_s=3))))
+        self.assertTrue(any("mode" in e for e in mf.valider(brut(mode="toujours"))))
+        b = brut(mode="evenement", sur="jouet.invente")
+        self.assertTrue(any("evenements.ecoute" in e for e in mf.valider(b)))
+        self.assertTrue(any("duree_max_s" in e for e in mf.valider(brut(duree_max_s=0))))
+
+
+class Greffe(unittest.TestCase):
+    """Brancher un module après coup, sans redémarrer."""
+
+    def test_une_extension_deposee_est_branchee_a_chaud(self):
+        tmp = tempfile.TemporaryDirectory(); self.addCleanup(tmp.cleanup)
+        base = Path(tmp.name)
+        ecrire_module(base / "modules", "labo", LABO_TOML, LABO_PY)
+        actifs = ["labo"]
+        cfg = {"labo": {"jouets": {}, "drapeaux": {}}, "veille": {}}
+        n = moteur.Noyau(base / "d", base / "modules", cfg, actifs=actifs, extensions=base / "extensions", lire_actifs=lambda: list(actifs))
+        n.brancher()
+        self.assertEqual(n.etat()["moteurs"], 0)
+        # on dépose l'extension et on l'active : le noyau tourne déjà
+        (base / "extensions").mkdir(exist_ok=True)
+        ecrire_module(base / "extensions", "veille", VEILLE_TOML % {"confiance": 'confiance = "local"'}, VEILLE_PY)
+        actifs.append("veille")
+        n._surveiller()
+        self.assertEqual(n.etat()["moteurs"], 4)
+        self.assertEqual([e["objet_id"] for e in n.bus.recents(portee=TOUT, limite=50, type_prefixe="noyau.greffe")], ["veille"])
+        self.assertEqual(n.tick(1000)["moteurs"], 1)                        # son moteur périodique tourne déjà
+        n.executeur.contextes["labo"].emettre("jouet.casse", objet=("jouet", "ours"))
+        self.assertEqual(n.executeur.contextes["veille"].config["evts"], ["ours"])   # et son moteur sur événement est relié
+        n._surveiller()                                                     # rien de neuf : rien n'est rebranché
+        self.assertEqual(len(n.bus.recents(portee=TOUT, limite=500, type_prefixe="noyau.greffe")), 1)
+
+    def test_une_extension_ne_peut_pas_se_dire_interne_et_n_arrete_rien(self):
+        tmp, n, _, base = monde_moteurs(confiance='confiance = "interne"', extension=True, actifs=["labo", "veille"])
+        self.addCleanup(tmp.cleanup)
+        r = n.brancher()                                    # le noyau DÉMARRE malgré l'extension fautive
+        self.assertEqual(r["ordre"], ["labo"])
+        self.assertEqual([x["module"] for x in r["refuses"]], ["veille"])
+        self.assertIn("interne", " ".join(r["refuses"][0]["raisons"]))
+        refus = [e for e in n.bus.recents(portee=TOUT, limite=50) if e["type"] == "noyau.greffe_refusee"]
+        self.assertEqual(len(refus), 1)                     # dit une fois
+        n.recharger()
+        n.recharger()
+        self.assertEqual(len([e for e in n.bus.recents(portee=TOUT, limite=500) if e["type"] == "noyau.greffe_refusee"]), 1)
+        self.assertEqual(n.etat()["moteurs"], 0)
+
+    def test_une_extension_illisible_est_ecartee_sans_arreter_le_noyau(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        base = Path(tmp.name)
+        ecrire_module(base / "modules", "labo", LABO_TOML, LABO_PY)
+        ecrire_module(base / "extensions", "casse", "ceci n'est pas du toml [[[", "def brancher(ctx): pass\n")
+        n = moteur.Noyau(base / "d", base / "modules", {"labo": {"jouets": {}, "drapeaux": {}}}, extensions=base / "extensions")
+        r = n.brancher()
+        self.assertEqual(r["ordre"], ["labo"])
+        self.assertEqual(r["refuses"][0]["module"], "casse")
+
+    def test_une_extension_qui_en_importe_une_autre_est_ecartee(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        base = Path(tmp.name)
+        ecrire_module(base / "modules", "labo", LABO_TOML, LABO_PY)
+        ecrire_module(base / "extensions", "veille", VEILLE_TOML % {"confiance": 'confiance = "local"'}, "import labo\n\ndef brancher(ctx):\n    pass\n")
+        n = moteur.Noyau(base / "d", base / "modules", {"labo": {"jouets": {}, "drapeaux": {}}}, extensions=base / "extensions")
+        r = n.brancher()
+        self.assertEqual(r["ordre"], ["labo"])
+        self.assertIn("importe", " ".join(r["refuses"][0]["raisons"]))
+
+    def test_une_extension_ne_peut_pas_prendre_l_id_d_un_module_livre(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        base = Path(tmp.name)
+        ecrire_module(base / "modules", "labo", LABO_TOML, LABO_PY)
+        ecrire_module(base / "extensions", "labo", LABO_TOML.replace('version = "0.1.0"', 'version = "9.9.9"'), LABO_PY)
+        n = moteur.Noyau(base / "d", base / "modules", {"labo": {"jouets": {}, "drapeaux": {}}}, extensions=base / "extensions")
+        r = n.brancher()
+        self.assertEqual(r["ordre"], ["labo"])
+        self.assertEqual(n.registre.proprietaires["jouet"], "labo")
+        self.assertIn("déjà présent", " ".join(r["refuses"][0]["raisons"]))
+
+    def test_un_deploiement_ne_touche_pas_aux_extensions(self):
+        # les extensions vivent hors des versions du noyau : `modules/` change, `extensions/` reste
+        tmp = tempfile.TemporaryDirectory(); self.addCleanup(tmp.cleanup)
+        base = Path(tmp.name)
+        ecrire_module(base / "extensions", "veille", VEILLE_TOML % {"confiance": 'confiance = "local"'}, VEILLE_PY)
+        self.assertFalse((RACINE / "modules" / "veille").exists())
+
+
 if __name__ == "__main__":
     unittest.main()

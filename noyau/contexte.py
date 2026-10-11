@@ -22,14 +22,17 @@ class _Compte(threading.local):
 
 
 class Contexte:
-    def __init__(self, manifeste, bus, registre, catalogue, detecteurs, config=None):
+    def __init__(self, manifeste, bus, registre, catalogue, detecteurs, config=None, moteurs=None):
         self.manifeste = manifeste
         self.module = manifeste.id
         self.config = dict(config or {})
         self.log = logging.getLogger("module.%s" % manifeste.id)
         self._bus, self._registre, self._catalogue, self._detecteurs = bus, registre, catalogue, detecteurs
+        self._moteurs = moteurs if moteurs is not None else []
         self._cause = _Fil()
         self._compte = _Compte()
+
+    TOUT = "*"   # la portée des agents (voir bus.py) : un module la passe explicitement, jamais par défaut
 
     @property
     def compte(self) -> str:
@@ -66,6 +69,15 @@ class Contexte:
     # ---- capacités et détecteurs ----
     def implementer(self, cid: str, faire, prouver=None, defaire=None, simuler=None) -> None:
         self._catalogue.implementer(self.module, cid, faire, prouver, defaire, simuler)
+
+    def moteur(self, mid: str, fonction) -> None:
+        """Inscrit un moteur déclaré au manifeste. `fonction(ctx)` pour un moteur périodique ou à la demande,
+        `fonction(ctx, evenement)` pour un moteur sur événement. Le module n'ouvre jamais de thread : le noyau
+        l'ordonnance, mesure sa durée, l'empêche de s'empiler et le suspend s'il échoue trop."""
+        mo = next((x for x in self.manifeste.moteurs if x.id == mid), None)
+        if mo is None:
+            raise KeyError("le module « %s » n'a pas déclaré le moteur « %s » ([[moteurs]])" % (self.module, mid))
+        self._moteurs.append((self.module, mo, fonction))
 
     def detecteur(self, did: str, fonction) -> None:
         d = next((x for x in self.manifeste.detecteurs if x.id == did), None)
