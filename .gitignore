@@ -5,3 +5,4 @@ donnees/
 *.db-wal
 *.db-shm
 .venv/
+.porte/
