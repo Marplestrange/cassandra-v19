@@ -87,7 +87,7 @@ class Noyau:
 
     def _fabriquer(self, m):
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
-                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs})
+                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "lecture": self._lecture})
         self.executeur.contextes[m.id] = ctx
         return ctx
 
@@ -122,6 +122,14 @@ class Noyau:
     def _manifestes_actifs(self) -> list:
         connus, _ = self._connus()
         return [connus[i][0] for i in sorted(self._branches) if i in connus]
+
+    def _lecture(self, cle: str, args: dict):
+        """Une lecture pour le compte d'un module : jamais une écriture, et un échec rend None au lieu de casser l'appelant."""
+        e = self.catalogue.get(cle)
+        if e is None or e.capacite.ecrit:
+            raise PermissionError("« %s » n'est pas une capacité de lecture" % cle)
+        r = self.executeur.executer(cle, "cassandra", args)
+        return r.get("resultat") if r["statut"] == "faite" else None
 
     def _compteurs(self, mid: str) -> dict:
         n = self.base.lire("SELECT COUNT(*) AS n FROM constats WHERE module=? AND etat='ouvert'", (mid,))[0]["n"]

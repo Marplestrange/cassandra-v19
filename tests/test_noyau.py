@@ -1,4 +1,5 @@
 """Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -v"""
+import os
 import sys
 import tempfile
 import textwrap
@@ -981,7 +982,7 @@ class Paquets(unittest.TestCase):
     def test_un_paquet_signe_se_verifie(self):
         a = self.paquets.construire(self.src, self.priv, self.base / "s.cmod")
         v = self.paquets.verifier(a, self.cles)
-        self.assertEqual((v["id"], v["version"], v["signe"], v["editeur"]), ("sentinelle", "0.1.1", True, "atek"))
+        self.assertEqual((v["id"], v["version"], v["signe"], v["editeur"]), ("sentinelle", mf.charger(self.src / "manifeste.toml").version, True, "atek"))
 
     def test_la_construction_est_reproductible(self):
         a = self.paquets.construire(self.src, self.priv, self.base / "a.cmod").read_bytes()
@@ -1393,6 +1394,531 @@ class LigneDeCommandeAgir(unittest.TestCase):
             self.assertEqual((r["statut"], r["resultat"]["arbre"]), ("faite", []))     # rien d'assemblé tant que le service n'a pas tourné
             with contextlib.redirect_stdout(_io.StringIO()):
                 self.assertEqual(moteur.commande_agir(["main.py", "agir", "menus.inconnue"]), 1)
+        finally:
+            for k, v in ancien.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+
+
+SRC_TOML = """
+[module]
+id = "src"
+nom = "Source"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Module d'essai pour l'affichage : tuiles, source de données, accent."
+famille = "reseau"
+
+[[objets]]
+type = "src_o"
+libelle = "Un objet"
+
+[[capacites]]
+id = "lire_n"
+libelle = "Lire n"
+risque = "lecture"
+
+[[capacites]]
+id = "casse"
+libelle = "Une lecture qui plante"
+risque = "lecture"
+
+[theme]
+accent = "#1d6fa5"
+
+[theme.tokens]
+fond-carte = "#ffffff"
+espace = "12px"
+
+[[ecrans]]
+id = "e1"
+libelle = "Page source"
+gabarit = "liste_detail"
+
+[[widgets]]
+id = "compteur"
+libelle = "Compteur"
+ordre = 5
+composant = "nombre"
+source = "lire_n"
+rafraichir_s = 5
+
+[[widgets]]
+id = "etat_admin"
+libelle = "État réservé"
+zone = "lateral"
+role = "admin"
+composant = "etat"
+
+[[widgets]]
+id = "plante"
+libelle = "Source en panne"
+ordre = 50
+source = "casse"
+
+[[widgets]]
+id = "sur_page"
+libelle = "Sur la page"
+ecran = "e1"
+composant = "liste"
+"""
+
+SRC_PY = """
+def brancher(ctx):
+    etat = ctx.config["etat"]
+
+    def casse(ctx):
+        raise RuntimeError("source HS")
+    ctx.implementer("lire_n", lambda ctx: {"n": etat["n"]})
+    ctx.implementer("casse", casse)
+"""
+
+PALE_TOML = """
+[module]
+id = "pale"
+nom = "Pâle"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Module d'essai : un accent lisible seulement en thème sombre."
+famille = "travail"
+
+[[objets]]
+type = "pale_o"
+libelle = "Un objet"
+
+[theme]
+accent = "#f0f0a0"
+"""
+
+
+def monde_affichage():
+    import shutil
+    tmp = tempfile.TemporaryDirectory()
+    base = Path(tmp.name)
+    mods = base / "modules"
+    shutil.copytree(RACINE / "modules" / "affichage", mods / "affichage")
+    ecrire_module(mods, "src", SRC_TOML, SRC_PY)
+    ecrire_module(mods, "pale", PALE_TOML, "def brancher(ctx):\n    pass\n")
+    etat = {"n": 7}
+    n = moteur.Noyau(base / "d", mods, {"src": {"etat": etat}}, gerer_modules=True)
+    n.brancher()
+    return tmp, n, etat
+
+
+def charger_affichage():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("aff_test", RACINE / "modules" / "affichage" / "module.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+class AffichageAssemble(unittest.TestCase):
+    def setUp(self):
+        self.tmp, self.n, self.etat = monde_affichage()
+        self.addCleanup(self.tmp.cleanup)
+        self.n.activer("affichage")
+        self.n.activer("src")
+        self.n.activer("pale")
+
+    def lire(self, cap, **args):
+        r = self.n.executeur.executer("affichage." + cap, "humain", args)
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        return r["resultat"]
+
+    def ecran(self, ecran="accueil", role="utilisateur", compte=""):
+        return self.lire("lire_ecran", ecran=ecran, role=role, compte=compte)
+
+    def ids(self, ecran, zone, **kw):
+        return [w["id"] for w in self.ecran(ecran, **kw)["zones"][zone]]
+
+    def perso_w(self, widget, compte="", **kw):
+        return self.n.executeur.executer("affichage.personnaliser_widget", "humain", dict(widget=widget, compte=compte, **kw))
+
+    def perso_t(self, compte="", **kw):
+        return self.n.executeur.executer("affichage.personnaliser_theme", "humain", dict(compte=compte, **kw))
+
+    def evts(self, t):
+        return [e for e in self.n.bus.recents(portee=TOUT, limite=800) if e["type"] == t]
+
+    # --- mise en page ---
+    def test_les_tuiles_se_placent_par_zone_ordre_et_role(self):
+        self.assertEqual(self.ids("accueil", "principal"), ["src:compteur", "src:plante"])           # par ordre (5 puis 50)
+        self.assertEqual(self.ids("accueil", "lateral"), [])                                         # réservée aux administrateurs
+        self.assertEqual(self.ids("accueil", "lateral", role="admin"), ["src:etat_admin"])
+
+    def test_un_ecran_de_module_porte_son_gabarit_et_ses_tuiles(self):
+        e = self.ecran("src:e1")
+        self.assertEqual((e["existe"], e["titre"], e["gabarit"]), (True, "Page source", "liste_detail"))
+        self.assertEqual([w["id"] for w in e["zones"]["principal"]], ["src:sur_page"])
+        self.assertFalse(self.ecran("src:inconnu")["existe"])
+
+    def test_la_donnee_d_une_tuile_est_lue_par_un_moteur_pas_par_l_interface(self):
+        self.n.tick(1000)
+        tuiles = {w["id"]: w for w in self.ecran()["zones"]["principal"]}
+        self.assertEqual(tuiles["src:compteur"]["donnees"], {"valeur": {"n": 7}, "erreur": ""})
+        self.etat["n"] = 8
+        self.n.tick(1001)                                                  # moins de 5 s : pas relue
+        self.assertEqual({w["id"]: w for w in self.ecran()["zones"]["principal"]}["src:compteur"]["donnees"]["valeur"], {"n": 7})
+
+    def test_une_source_en_panne_se_dit_dans_la_tuile_sans_casser_l_ecran(self):
+        self.n.tick(1000)
+        tuiles = {w["id"]: w for w in self.ecran()["zones"]["principal"]}
+        self.assertIsNone(tuiles["src:plante"]["donnees"]["valeur"])
+        self.assertEqual(tuiles["src:compteur"]["donnees"]["valeur"], {"n": 7})     # les autres tuiles vivent
+
+    def test_activer_et_desactiver_un_module_fait_venir_et_partir_ses_tuiles(self):
+        etag = self.ecran()["etag"]
+        self.n.desactiver("src")
+        self.assertEqual(self.ids("accueil", "principal"), [])
+        self.assertFalse(self.ecran("src:e1")["existe"])
+        self.assertNotEqual(self.ecran()["etag"], etag)
+        self.assertEqual(self.n.registre.lister(portee=TOUT, type="widget_donnees"), [])           # leurs données partent avec
+        self.n.activer("src")
+        self.assertEqual(self.ids("accueil", "principal"), ["src:compteur", "src:plante"])
+        self.assertGreaterEqual(len(self.evts("affichage_catalogue.change")), 3)
+
+    # --- personnalisation des tuiles ---
+    def test_masquer_deplacer_reordonner_une_tuile(self):
+        self.perso_w("src:compteur", masque=True)
+        self.assertEqual(self.ids("accueil", "principal"), ["src:plante"])
+        self.perso_w("src:compteur", masque=False, zone="lateral", ordre=0)
+        self.assertEqual(self.ids("accueil", "lateral"), ["src:compteur"])
+
+    def test_la_personnalisation_d_un_compte_ne_touche_pas_les_autres(self):
+        self.perso_w("src:compteur", compte="sandrine@x.fr", masque=True)
+        self.assertEqual(self.ids("accueil", "principal", compte="sandrine@x.fr"), ["src:plante"])
+        self.assertEqual(self.ids("accueil", "principal", compte="drisse@x.fr"), ["src:compteur", "src:plante"])
+
+    def test_une_personnalisation_invalide_n_ecrit_rien(self):
+        for mauvais in (dict(widget="x:y", masque=True), dict(widget="src:compteur", zone="dehors"), dict(widget="src:compteur", taille="xl"),
+                        dict(widget="src:compteur", ordre=-5)):
+            self.assertEqual(self.n.executeur.executer("affichage.personnaliser_widget", "humain", mauvais)["statut"], "echec", msg=str(mauvais))
+        self.assertEqual(self.n.registre.lister(portee=TOUT, type="widget_perso"), [])
+
+    def test_reinitialiser_rend_la_tuile_d_origine(self):
+        self.perso_w("src:compteur", masque=True)
+        self.perso_w("src:compteur", reinitialiser=True)
+        self.assertIn("src:compteur", self.ids("accueil", "principal"))
+
+    # --- thème ---
+    def theme(self, **kw):
+        return self.lire("lire_theme", **kw)
+
+    def test_le_theme_suit_le_systeme_sauf_choix(self):
+        self.assertEqual(self.theme(systeme="clair")["variables"]["--bg"], "#eef1f5")
+        self.assertEqual(self.theme(systeme="sombre")["variables"]["--bg"], "#0c1116")
+        self.perso_t(theme="sombre")
+        self.assertEqual(self.theme(systeme="clair")["mode"], "sombre")             # le choix l'emporte sur le système
+
+    def test_un_module_ne_peut_que_poser_sa_touche_de_couleur(self):
+        v = self.theme(systeme="clair")["variables"]
+        self.assertEqual(v["--accent-src"], "#1d6fa5")
+        self.assertEqual(v["--mod-src-fond-carte"], "#ffffff")                       # ses jetons sont préfixés : il n'écrase rien du noyau
+        self.assertEqual(v["--accent"], "#0b7c74")
+        self.assertNotIn("--fond-carte", v)
+
+    def test_un_accent_sans_contraste_n_est_pas_applique(self):
+        self.assertNotIn("--accent-pale", self.theme(systeme="clair")["variables"])             # #f0f0a0 sur fond clair : illisible
+        self.assertIn("--accent-pale", self.theme(systeme="sombre")["variables"])               # lisible en sombre
+
+    def test_l_accent_choisi_remplace_l_accent_s_il_est_lisible(self):
+        self.assertEqual(self.perso_t(accent="#a85a0b", theme="clair")["statut"], "faite")
+        v = self.theme(systeme="clair")["variables"]
+        self.assertEqual((v["--accent"], v["--on-accent"]), ("#a85a0b", "#ffffff"))
+        self.assertTrue(v["--accent-bg"].startswith("rgba(168,90,11"))
+
+    def test_un_accent_illisible_est_refuse_et_rien_n_est_ecrit(self):
+        r = self.perso_t(accent="#f0f0a0", theme="clair")
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("contraste", r["erreur"])
+        self.assertEqual(self.n.registre.lister(portee=TOUT, type="theme_perso"), [])
+        self.assertEqual(self.perso_t(accent="#5b46c4")["statut"], "echec")           # lisible en clair, pas en sombre : refusé en « auto »
+
+    def test_la_densite_et_les_choix_d_un_compte_ne_touchent_pas_les_autres(self):
+        self.perso_t(compte="sandrine@x.fr", densite="compacte", theme="sombre")
+        s = self.theme(compte="sandrine@x.fr")
+        d = self.theme(compte="drisse@x.fr")
+        self.assertEqual((s["mode"], s["variables"]["--gap"]), ("sombre", "10px"))
+        self.assertEqual((d["mode"], d["variables"]["--gap"]), ("clair", "16px"))
+
+    def test_le_choix_global_vaut_pour_tous_et_celui_du_compte_l_emporte(self):
+        self.perso_t(theme="sombre")
+        self.perso_t(compte="sandrine@x.fr", theme="clair")
+        self.assertEqual(self.theme(compte="drisse@x.fr")["mode"], "sombre")
+        self.assertEqual(self.theme(compte="sandrine@x.fr")["mode"], "clair")
+
+    def test_l_empreinte_du_theme_change_avec_le_theme(self):
+        a = self.theme(systeme="clair")["etag"]
+        self.assertNotEqual(a, self.theme(systeme="sombre")["etag"])
+        self.assertEqual(a, self.theme(systeme="clair")["etag"])
+
+    # --- garde-fous ---
+    def test_le_module_d_affichage_ne_se_desactive_pas(self):
+        r = self.n.desactiver("affichage")
+        self.assertFalse(r["ok"])
+        self.assertTrue(r["essentiel"])
+
+    def test_on_ne_peut_appeler_que_des_lectures(self):
+        ctx = self.n.executeur.contextes["affichage"]
+        with self.assertRaises(PermissionError):
+            ctx.executer_lecture("affichage.personnaliser_theme")                    # une écriture : refusée
+        with self.assertRaises(PermissionError):
+            self.n.executeur.contextes["src"].executer_lecture("src.lire_n")         # « src » n'a pas demandé les lectures
+
+    def test_le_contraste_suit_la_regle(self):
+        a = charger_affichage()
+        self.assertTrue(a.accent_ok("#0b7c74", "clair"))
+        self.assertFalse(a.accent_ok("#ffffff", "clair"))
+        self.assertFalse(a.accent_ok("pas-une-couleur", "clair"))
+        self.assertAlmostEqual(a.contraste("#000000", "#ffffff"), 21.0, places=1)
+        self.assertEqual(a.meilleur_texte("#ffff00"), "#101828")
+
+
+class ContratDeLAffichage(unittest.TestCase):
+    def brut(self):
+        import tomllib
+        return tomllib.loads(SRC_TOML)
+
+    def test_le_manifeste_d_exemple_est_valide(self):
+        self.assertEqual(mf.valider(self.brut()), [])
+
+    def test_les_defauts_d_une_tuile_sont_dits(self):
+        cas = [({"ecran": "inconnu"}, "ecran"), ({"zone": "dehors"}, "zone"), ({"taille": "xl"}, "taille"), ({"composant": "camembert"}, "composant"),
+               ({"ordre": 99999}, "ordre"), ({"source": "casse_inexistante"}, "source"), ({"rafraichir_s": 2}, "rafraichir_s"), ({"role": "dieu"}, "role")]
+        for modif, mot in cas:
+            b = self.brut()
+            b["widgets"][0].update(modif)
+            self.assertTrue(any(mot in x for x in mf.valider(b)), msg=str(modif))
+
+    def test_une_source_doit_etre_une_lecture_du_module(self):
+        b = self.brut()
+        b["capacites"].append({"id": "ecrire_x", "libelle": "x", "risque": "faible", "perimetre": ["x"], "preuve": "p", "retour": "r"})
+        b["widgets"][0]["source"] = "ecrire_x"
+        self.assertTrue(any("LECTURE" in x for x in mf.valider(b)))
+
+    def test_le_theme_est_borne(self):
+        for modif, mot in (({"accent": "bleu"}, "accent"),):
+            b = self.brut()
+            b["theme"].update(modif)
+            self.assertTrue(any(mot in x for x in mf.valider(b)))
+        b = self.brut()
+        b["theme"]["tokens"] = {"fond": "url(http://evil)", "Mauvais Nom": "#fff"}
+        e = " ".join(mf.valider(b))
+        self.assertIn("ni une couleur ni une dimension", e)
+        self.assertIn("pas valide", e)
+
+    def test_un_gabarit_inconnu_est_refuse(self):
+        b = self.brut()
+        b["ecrans"][0]["gabarit"] = "carrousel"
+        self.assertTrue(any("gabarit" in x for x in mf.valider(b)))
+
+
+class FauxCollecteur:
+    """Un collecteur de poche : le protocole du Sensorium (une requête texte, une réponse JSON) sur un socket Unix."""
+
+    def __init__(self, chemin):
+        import socket
+        import threading
+        self.chemin = chemin
+        self.sante = {"health_status": "healthy", "health_score": 97, "failed_units": 0, "oom_events_24h": 0}
+        self.metriques = {"cpu": 12.3, "ram": 41.0, "disk": 33.3, "swap": 0.0, "load_1m": 0.4, "ram_used_gb": 3.1, "ram_total_gb": 7.6,
+                          "disk_used_gb": 22.0, "disk_total_gb": 70.0, "top_processes": [{"name": "python3", "cpu": 3.0}]}
+        self.requetes = []
+        self.srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.srv.bind(chemin)
+        self.srv.listen(5)
+        self.srv.settimeout(0.2)
+        self.vivant = True
+        self.fil = threading.Thread(target=self._boucle, daemon=True)
+        self.fil.start()
+
+    def _boucle(self):
+        import json
+        while self.vivant:
+            try:
+                c, _ = self.srv.accept()
+            except OSError:
+                continue
+            try:
+                r = c.recv(4096).decode().strip()
+                self.requetes.append(r)
+                if r == "PING":
+                    c.sendall(b"PONG")
+                elif r == "GET_DASHBOARD":
+                    c.sendall(json.dumps(self.sante).encode())
+                elif r == "GET_METRICS":
+                    c.sendall(json.dumps(self.metriques).encode())
+                elif r.startswith("GET_WORLD"):
+                    c.sendall(json.dumps([{"wkey": "disk.root", "value": "33%"}]).encode())
+                elif r == "GET_ENTITY:open_ports":
+                    c.sendall(json.dumps([{"port": 22}]).encode())
+                elif r.startswith("GET_HISTORY:") or r.startswith("GET_CHANGES"):
+                    c.sendall(b"[]")
+                else:
+                    c.sendall(b"ERROR")
+            finally:
+                c.close()
+
+    def arreter(self):
+        self.vivant = False
+        self.srv.close()
+        self.fil.join(2)
+        try:
+            os.unlink(self.chemin)
+        except OSError:
+            pass
+
+
+@unittest.skipUnless(sys.platform != "win32", "sockets Unix : Linux")
+class SensoriumRelieAuNoyau(unittest.TestCase):
+    def setUp(self):
+        import shutil
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        base = Path(self.tmp.name)
+        self.sock = str(base / "k.sock")
+        self.ancien = os.environ.get("SENSORIUM_SOCKET")
+        os.environ["SENSORIUM_SOCKET"] = self.sock
+        self.addCleanup(lambda: os.environ.__setitem__("SENSORIUM_SOCKET", self.ancien) if self.ancien else os.environ.pop("SENSORIUM_SOCKET", None))
+        self.faux = FauxCollecteur(self.sock)
+        self.addCleanup(self.faux.arreter)
+        mods = base / "modules"
+        shutil.copytree(RACINE / "modules" / "sensorium", mods / "sensorium")
+        self.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
+        self.n.brancher()
+        self.n.etat_modules.poser("sensorium", installe=True, par="test")        # ce que fait install.sh après sa preuve
+        self.assertTrue(self.n.activer("sensorium")["ok"])
+
+    def evts(self, t):
+        return [e for e in self.n.bus.recents(portee=TOUT, limite=800) if e["type"] == t]
+
+    def machine(self):
+        return self.n.registre.lire("machine", "hote", portee=TOUT)
+
+    def releve(self):
+        self.n.lancer("sensorium.releve")
+
+    def test_une_releve_fait_de_la_machine_un_objet_du_registre(self):
+        self.releve()
+        m = self.machine()
+        self.assertEqual((m["etat"], m["donnees"]["score"], m["donnees"]["cpu"]), ("healthy", 97, 12.3))
+        self.assertEqual(m["donnees"]["processus"], [{"nom": "python3", "cpu": 3.0}])
+
+    def test_une_releve_identique_n_ecrit_rien_de_plus(self):
+        self.releve()
+        n = len(self.n.bus.chronologie("machine", "hote", portee=TOUT))
+        self.releve()
+        self.releve()
+        self.assertEqual(len(self.n.bus.chronologie("machine", "hote", portee=TOUT)), n)       # rien de plus n'est écrit sur la machine
+        self.assertEqual(len([e for e in self.n.bus.chronologie("machine", "hote", portee=TOUT) if e["type"].startswith("objet.")]), 1)
+
+    def test_un_changement_de_sante_se_dit(self):
+        self.releve()
+        self.faux.sante = dict(self.faux.sante, health_status="degraded", health_score=60)
+        self.releve()
+        ev = self.evts("machine.sante_change")
+        self.assertEqual(len(ev), 1)
+        self.assertEqual((ev[0]["donnees"]["de"], ev[0]["donnees"]["a"]), ("healthy", "degraded"))
+
+    def test_un_collecteur_muet_se_voit_puis_reprend(self):
+        self.releve()
+        self.faux.arreter()
+        self.releve()
+        self.releve()
+        self.assertEqual(self.machine()["etat"], "muet")
+        self.assertEqual(len(self.evts("machine.muette")), 1)                  # dit une fois
+        r = self.n.tick(1000)
+        self.assertEqual(self.n.etat()["constats_ouverts"], 1)                  # un silence est un constat, jamais un silence
+        self.faux = FauxCollecteur(self.sock)
+        self.addCleanup(self.faux.arreter)
+        self.releve()
+        self.assertEqual(self.machine()["etat"], "healthy")
+        self.assertEqual(len(self.evts("machine.reprise")), 1)
+        self.n.tick(1100)
+        self.assertEqual(self.n.etat()["constats_ouverts"], 0)
+
+    def test_des_unites_en_echec_ouvrent_un_constat(self):
+        self.faux.sante = dict(self.faux.sante, failed_units=2)
+        self.releve()
+        self.n.tick(1000)
+        titres = [r["titre"] for r in self.n.base.lire("SELECT titre FROM constats WHERE etat='ouvert'")]
+        self.assertEqual(titres, ["2 unités systemd en échec"])
+
+    def test_les_lectures_passent_par_le_collecteur(self):
+        e = self.n.executeur.executer
+        self.assertEqual(e("sensorium.metriques", "humain")["resultat"]["cpu"], 12.3)
+        self.assertEqual(e("sensorium.monde", "humain", {"prefixe": "disk"})["resultat"][0]["wkey"], "disk.root")
+        self.assertEqual(e("sensorium.entite", "humain", {"nom": "open_ports"})["resultat"], [{"port": 22}])
+        self.assertEqual(e("sensorium.historique", "humain", {"cle": "disk.root"})["resultat"], [])
+        self.assertEqual(e("sensorium.changements", "humain", {"depuis": "2026-10-11T00:00:00"})["resultat"], [])
+        self.assertIsNone(e("sensorium.sante", "humain")["resultat"])           # pas encore de relève
+        self.releve()
+        self.assertEqual(e("sensorium.sante", "humain")["resultat"]["score"], 97)
+
+    def test_les_arguments_sont_valides_avant_de_toucher_le_socket(self):
+        e = self.n.executeur.executer
+        avant = len(self.faux.requetes)
+        for cap, args in (("monde", {"prefixe": "a\nGET_METRICS"}), ("entite", {"nom": "../etc/passwd"}), ("historique", {"cle": "x y"}),
+                          ("changements", {"depuis": "hier; rm"})):
+            r = e("sensorium." + cap, "humain", args)
+            self.assertEqual(r["statut"], "echec", msg=cap)
+        self.assertEqual(len(self.faux.requetes), avant)
+
+    def test_une_lecture_sur_un_collecteur_muet_echoue_sans_planter(self):
+        self.faux.arreter()
+        r = self.n.executeur.executer("sensorium.metriques", "humain")
+        self.assertEqual(r["statut"], "echec")
+        self.assertEqual(len([e for e in self.evts("capacite.echouee") if e["objet_id"] == "sensorium.metriques"]), 1)
+
+    def test_une_entite_refusee_par_le_collecteur_est_un_echec(self):
+        r = self.n.executeur.executer("sensorium.entite", "humain", {"nom": "inconnue"})
+        self.assertEqual(r["statut"], "echec")
+
+    def test_les_tuiles_du_sensorium_sont_declarees_au_catalogue_d_affichage(self):
+        import shutil
+        base = Path(self.tmp.name)
+        shutil.copytree(RACINE / "modules" / "affichage", base / "modules" / "affichage")
+        n = moteur.Noyau(base / "d", base / "modules", {}, gerer_modules=True)
+        n.brancher()
+        n.activer("affichage")
+        n.tick(2000)
+        r = n.executeur.executer("affichage.lire_ecran", "humain", {"ecran": "accueil", "role": "admin"})["resultat"]
+        self.assertEqual([w["id"] for w in r["zones"]["principal"]], ["sensorium:sante"])
+
+
+class SensoriumGardeEntier(unittest.TestCase):
+    """Le collecteur de la V18 devient sensorium.py : renommé, jamais découpé, seuls des chemins deviennent configurables."""
+
+    def test_le_fichier_compile_et_n_est_pas_decoupe(self):
+        import py_compile
+        f = RACINE / "modules" / "sensorium" / "sensorium.py"
+        py_compile.compile(str(f), doraise=True)
+        self.assertGreater(len(f.read_text(encoding="utf-8").splitlines()), 6000)
+
+    def test_les_chemins_se_reglent_par_l_environnement_et_gardent_leurs_defauts(self):
+        import importlib.util
+        f = RACINE / "modules" / "sensorium" / "sensorium.py"
+        noms = ("SENSORIUM_DB", "SENSORIUM_SOCKET", "SENSORIUM_CONFIG_JSON", "SENSORIUM_DNS_LOCAL_CONF", "SENSORIUM_DNS_LOCAL_NOMS")
+        ancien = {k: os.environ.get(k) for k in noms}
+
+        def charger():
+            spec = importlib.util.spec_from_file_location("sensorium_test", f)
+            m = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(m)
+            return m
+        try:
+            for k in noms:
+                os.environ.pop(k, None)
+            m = charger()
+            self.assertEqual((m.DB_PATH, m.SOCKET_PATH), ("/var/lib/cassandra/cassandra.db", "/run/cassandra/knowledge.sock"))   # les défauts de la V18
+            os.environ["SENSORIUM_DB"] = "/x/s.db"
+            os.environ["SENSORIUM_SOCKET"] = "/x/k.sock"
+            os.environ["SENSORIUM_CONFIG_JSON"] = "/x/c.json"
+            m = charger()
+            self.assertEqual((m.DB_PATH, m.SOCKET_PATH, m.CASSANDRA_CONFIG), ("/x/s.db", "/x/k.sock", "/x/c.json"))
         finally:
             for k, v in ancien.items():
                 if v is None:

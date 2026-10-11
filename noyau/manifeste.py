@@ -23,6 +23,12 @@ PALIERS = ("raconter", "auto", "maitre")
 ACTEURS = ("cassandra", "itare", "humain", "compte")
 MODES_MOTEUR = ("periodique", "evenement", "demande")
 ROLES_MENU = ("utilisateur", "admin")
+GABARITS = ("tableau", "liste_detail", "libre")                  # comment l'interface compose un écran
+ZONES = ("entete", "principal", "lateral")
+TAILLES = ("s", "m", "l")
+COMPOSANTS = ("nombre", "jauge", "liste", "etat", "serie", "texte")   # ce que l'interface sait dessiner pour une tuile
+_COULEUR = re.compile(r"^#[0-9a-fA-F]{6}$")
+_VALEUR_THEME = re.compile(r"^(#[0-9a-fA-F]{3,8}|rgba?\([0-9., %]+\)|\d+(\.\d+)?(px|rem|em|%))$")
 BADGES_MENU = ("", "constats", "moteurs")
 # Les événements du noyau lui-même : un module peut les écouter sans qu'aucun module ne les « émette ».
 EVENEMENTS_DU_NOYAU = ("noyau.", "module.", "capacite.", "constat.", "objet.", "moteur.", "savoir.", "humain.")
@@ -99,10 +105,34 @@ class Menu:
 
 
 @dataclass(frozen=True)
+class Widget:
+    """Une tuile qu'un module propose d'afficher. Le module dit CE QU'IL MONTRE ; le module d'affichage du noyau décide où et comment."""
+    id: str
+    libelle: str
+    ecran: str = "accueil"     # « accueil », ou un écran du module
+    zone: str = "principal"    # entete | principal | lateral
+    taille: str = "m"          # s | m | l
+    ordre: int = 100
+    role: str = "utilisateur"
+    composant: str = "nombre"  # nombre | jauge | liste | etat | serie | texte
+    source: str = ""           # une capacité de LECTURE du module qui fournit la donnée
+    rafraichir_s: int = 0      # 0 : pas de rafraîchissement ; sinon au moins 5 secondes
+
+
+@dataclass(frozen=True)
+class Theme:
+    """La touche de couleur d'un module. Il n'écrase jamais le thème du noyau : ses jetons s'appellent --mod-<module>-<nom>."""
+    accent: str = ""
+    tokens: tuple = ()         # ((nom, valeur), ...)
+
+
+@dataclass(frozen=True)
 class Ecran:
     id: str
     libelle: str
     domaine: str = ""
+    gabarit: str = "libre"     # tableau | liste_detail | libre
+    titre: str = ""
 
 
 @dataclass(frozen=True)
@@ -122,6 +152,7 @@ class Permissions:
     ecritures: tuple = ()              # chemins système écrits (hors son espace)
     privileges: tuple = ()             # ce que ses scripts font en root (« installer »...)
     introspection: bool = False        # peut lire les manifestes des modules actifs et leurs compteurs (module de menus, de supervision)
+    lectures: bool = False             # peut appeler les capacités de LECTURE des autres modules (module d'affichage)
 
 
 @dataclass(frozen=True)
@@ -147,6 +178,8 @@ class Manifeste:
     detecteurs: tuple = ()
     moteurs: tuple = ()
     menus: tuple = ()
+    widgets: tuple = ()
+    theme: Theme = field(default_factory=Theme)
     ecrans: tuple = ()
     installation: Installation = field(default_factory=Installation)
     source: str = ""
@@ -211,7 +244,7 @@ def valider(brut: dict) -> list:
         perm = {}
     for champ in ("reseau", "ecritures", "privileges"):
         _liste_de_textes(perm.get(champ), "permissions.%s" % champ, e)
-    for champ in ("espace_utilisateur", "introspection"):
+    for champ in ("espace_utilisateur", "introspection", "lectures"):
         if champ in perm and not isinstance(perm[champ], bool):
             e.append("permissions.%s : vrai ou faux" % champ)
     for chemin in perm.get("ecritures", []) if isinstance(perm.get("ecritures"), list) else []:
@@ -330,6 +363,46 @@ def valider(brut: dict) -> list:
             e.append("ecrans[%d] : « id » et « libelle » obligatoires" % i)
         else:
             ecrans_ids.append(s["id"])
+            if s.get("gabarit", "libre") not in GABARITS:
+                e.append("ecrans[%d].gabarit : %s" % (i, " | ".join(GABARITS)))
+
+    lectures = [c.get("id") for c in (brut.get("capacites", []) or []) if isinstance(c, dict) and c.get("risque") == "lecture"]
+    wids = []
+    for i, w in enumerate(brut.get("widgets", []) or []):
+        nom = "widgets[%d]" % i
+        if not isinstance(w, dict) or not _ID.match(str(w.get("id", ""))):
+            e.append("%s.id : identifiant invalide" % nom)
+            continue
+        if w["id"] in wids:
+            e.append("%s.id : « %s » est déclaré deux fois" % (nom, w["id"]))
+        wids.append(w["id"])
+        nom = "widget « %s »" % w["id"]
+        if not str(w.get("libelle", "")).strip():
+            e.append("%s : libellé obligatoire" % nom)
+        if w.get("ecran", "accueil") != "accueil" and w.get("ecran") not in ecrans_ids:
+            e.append("%s.ecran : « accueil » ou un écran de ce module ([[ecrans]])" % nom)
+        for champ, valides in (("zone", ZONES), ("taille", TAILLES), ("composant", COMPOSANTS), ("role", ROLES_MENU)):
+            if w.get(champ, valides[0] if champ != "zone" else "principal") not in valides and champ in w:
+                e.append("%s.%s : %s" % (nom, champ, " | ".join(valides)))
+        o = w.get("ordre", 100)
+        if not isinstance(o, int) or isinstance(o, bool) or not 0 <= o <= 9999:
+            e.append("%s.ordre : entier entre 0 et 9999" % nom)
+        if w.get("source") and w["source"] not in lectures:
+            e.append("%s.source : « %s » doit être une capacité de LECTURE de ce module" % (nom, w["source"]))
+        r = w.get("rafraichir_s", 0)
+        if not isinstance(r, int) or isinstance(r, bool) or not (r == 0 or 5 <= r <= 86400):
+            e.append("%s.rafraichir_s : 0, ou entre 5 et 86400 secondes" % nom)
+    th = brut.get("theme", {}) or {}
+    if not isinstance(th, dict):
+        e.append("theme : une table est attendue")
+        th = {}
+    if th.get("accent") and not _COULEUR.match(str(th["accent"])):
+        e.append("theme.accent : une couleur #rrggbb")
+    for k, v in (th.get("tokens", {}) or {}).items() if isinstance(th.get("tokens", {}), dict) else []:
+        if not re.match(r"^[a-z][a-z0-9_-]{0,30}$", str(k)):
+            e.append("theme.tokens : le nom « %s » n'est pas valide (minuscules, chiffres, - et _)" % k)
+        if not _VALEUR_THEME.match(str(v)):
+            e.append("theme.tokens.%s : « %s » n'est ni une couleur ni une dimension" % (k, v))
 
     menus = [x for x in (brut.get("menus", []) or []) if isinstance(x, dict)]
     menu_ids, parents = [], {}
@@ -402,7 +475,8 @@ def construire(brut: dict, source="") -> Manifeste:
                                 tuple((brut.get("permissions") or {}).get("reseau", ())),
                                 tuple((brut.get("permissions") or {}).get("ecritures", ())),
                                 tuple((brut.get("permissions") or {}).get("privileges", ())),
-                                bool((brut.get("permissions") or {}).get("introspection", False))),
+                                bool((brut.get("permissions") or {}).get("introspection", False)),
+                                bool((brut.get("permissions") or {}).get("lectures", False))),
         objets=tuple(Objet(o["type"], o["libelle"]) for o in brut.get("objets", []) or []),
         emet=tuple(ev.get("emet", ())), ecoute=tuple(ev.get("ecoute", ())), capacites=caps,
         detecteurs=tuple(Detecteur(d["id"], d.get("libelle", d["id"]), d["frequence_s"], d.get("capacite", "")) for d in brut.get("detecteurs", []) or []),
@@ -411,7 +485,11 @@ def construire(brut: dict, source="") -> Manifeste:
                       for m in brut.get("moteurs", []) or []),
         menus=tuple(Menu(x["id"], x["libelle"], x.get("ecran", ""), x.get("parent", ""), x.get("ordre", 100), x.get("role", "utilisateur"),
                          x.get("icone", ""), x.get("badge", "")) for x in brut.get("menus", []) or []),
-        ecrans=tuple(Ecran(s["id"], s["libelle"], s.get("domaine", "")) for s in brut.get("ecrans", []) or []),
+        widgets=tuple(Widget(w["id"], w["libelle"], w.get("ecran", "accueil"), w.get("zone", "principal"), w.get("taille", "m"), w.get("ordre", 100),
+                             w.get("role", "utilisateur"), w.get("composant", "nombre"), w.get("source", ""), w.get("rafraichir_s", 0))
+                      for w in brut.get("widgets", []) or []),
+        theme=Theme(str((brut.get("theme") or {}).get("accent", "")), tuple(sorted(((brut.get("theme") or {}).get("tokens") or {}).items()))),
+        ecrans=tuple(Ecran(s["id"], s["libelle"], s.get("domaine", ""), s.get("gabarit", "libre"), s.get("titre", "")) for s in brut.get("ecrans", []) or []),
         installation=Installation(ins.get("script", ""), ins.get("verification", ""), ins.get("retrait", ""), ins.get("migrations", "")),
         source=str(source),
     )

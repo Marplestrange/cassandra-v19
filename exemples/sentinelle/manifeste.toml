@@ -1,7 +1,7 @@
 [module]
 id = "sentinelle"
 nom = "Sentinelle du disque"
-version = "0.1.1"
+version = "0.1.2"
 noyau_min = "0.1.0"
 description = "Mesure l'occupation du disque racine et ouvre un constat au-delà du seuil. Exemple de greffe à chaud : un moteur, un détecteur, un type d'objet, des événements."
 confiance = "local"
@@ -25,10 +25,38 @@ id = "disque_plein"
 libelle = "Disque occupé à plus de 90 %"
 frequence_s = 30
 
+[[capacites]]
+id = "lire_mesure"
+libelle = "Lire la dernière mesure d'occupation du disque racine"
+risque = "lecture"
+
+[theme]
+accent = "#a85a0b"
+
 [[ecrans]]
 id = "vue_disque"
 libelle = "Disque"
 domaine = "supervision"
+gabarit = "tableau"
+
+[[widgets]]
+id = "occupation"
+libelle = "Occupation du disque"
+ecran = "accueil"
+zone = "principal"
+taille = "s"
+ordre = 10
+composant = "jauge"
+source = "lire_mesure"
+rafraichir_s = 20
+
+[[widgets]]
+id = "detail"
+libelle = "Détail de la mesure"
+ecran = "vue_disque"
+composant = "liste"
+source = "lire_mesure"
+rafraichir_s = 20
 
 [[menus]]
 id = "disque"

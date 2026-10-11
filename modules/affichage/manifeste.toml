@@ -1,0 +1,98 @@
+[module]
+id = "affichage"
+nom = "Affichage"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte."
+confiance = "interne"
+famille = "socle"
+essentiel = true
+
+[[objets]]
+type = "affichage_catalogue"
+libelle = "Les écrans, tuiles et touches de couleur déclarés par les modules actifs"
+
+[[objets]]
+type = "widget_donnees"
+libelle = "La dernière donnée d'une tuile (lue par un moteur, servie à l'interface)"
+
+[[objets]]
+type = "theme_perso"
+libelle = "Le choix de thème, de densité et d'accent, global ou d'un compte"
+
+[[objets]]
+type = "widget_perso"
+libelle = "La personnalisation d'une tuile (masquée, déplacée, réordonnée), globale ou d'un compte"
+
+[evenements]
+emet = ["affichage_catalogue.change"]
+ecoute = ["noyau.greffe", "noyau.module_debranche"]
+
+[[moteurs]]
+id = "reconstruire"
+libelle = "Rebâtit le catalogue d'affichage quand un module est branché ou débranché"
+mode = "evenement"
+sur = ["noyau.greffe", "noyau.module_debranche"]
+duree_max_s = 20
+
+[[moteurs]]
+id = "reconstruire_regulierement"
+libelle = "Rebâtit le catalogue régulièrement (filet)"
+mode = "periodique"
+toutes_les_s = 300
+duree_max_s = 20
+
+[[moteurs]]
+id = "donnees_widgets"
+libelle = "Lit les sources des tuiles à leur rythme, pour que l'interface lise une donnée prête"
+mode = "periodique"
+toutes_les_s = 10
+duree_max_s = 30
+
+[[capacites]]
+id = "lire_theme"
+libelle = "Lire le thème résolu (jetons CSS) pour un compte et une préférence du système"
+risque = "lecture"
+
+[[capacites]]
+id = "lire_ecran"
+libelle = "Lire la mise en page d'un écran : zones, tuiles, données"
+risque = "lecture"
+
+[[capacites]]
+id = "personnaliser_theme"
+libelle = "Choisir le thème, la densité et l'accent, pour tous ou pour un compte"
+risque = "faible"
+perimetre = ["objets theme_perso du compte demandé"]
+preuve = "relire le choix écrit"
+retour = "restaurer le choix précédent, ou le retirer s'il n'y en avait pas"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "personnaliser_widget"
+libelle = "Masquer, déplacer ou réordonner une tuile, pour tous ou pour un compte"
+risque = "faible"
+perimetre = ["objets widget_perso du compte demandé"]
+preuve = "relire la personnalisation écrite"
+retour = "restaurer la personnalisation précédente, ou la retirer s'il n'y en avait pas"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[ecrans]]
+id = "vue_affichage"
+libelle = "Affichage"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[menus]]
+id = "affichage"
+libelle = "Affichage"
+ecran = "vue_affichage"
+ordre = 30
+role = "admin"
+icone = "palette"
+
+[permissions]
+introspection = true
+lectures = true

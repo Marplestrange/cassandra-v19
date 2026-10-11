@@ -22,5 +22,10 @@ def brancher(ctx):
             return [{"objet": ("disque", "/"), "titre": "Disque racine occupé à %s %%" % d["donnees"]["pct"]}]
         return []
 
+    def lire_mesure(ctx):
+        d = ctx.lire("disque", "/", portee=ctx.TOUT)
+        return d["donnees"] if d else None
+
+    ctx.implementer("lire_mesure", lire_mesure)
     ctx.moteur("mesurer", mesurer)
     ctx.detecteur("disque_plein", plein)

@@ -61,6 +61,23 @@ Pour chaque moteur le noyau mesure la durée, empêche qu'il s'empile s'il dépa
 compte les échecs, dit chaque échec au bus et le suspend après cinq échecs de suite (`lancer` le réarme : voie humaine).
 `python main.py moteurs` les liste avec leur état.
 
+## Le Sensorium : le collecteur de la V18, gardé entier
+
+`cassandra_knowledge_collector.py` (6 560 lignes) devient `modules/sensorium/sensorium.py` : **renommé, jamais découpé**. Il reste un service à part,
+qui tourne en root pour tout voir et ne peut écrire que dans son dossier (`donnees/sensorium/`, 0700) et son socket (`/run/sensorium/`). Seules
+**six lignes** diffèrent de la V18 : des chemins devenus réglables par variable d'environnement (`SENSORIUM_DB`, `SENSORIUM_SOCKET`...), avec les mêmes
+valeurs par défaut, pour qu'il tienne dans le dossier unique de Cassandra.
+
+Le module qui l'entoure le relie au noyau, sans rien mesurer lui-même :
+
+- un moteur relève la santé et les ressources (toutes les 30 s) et en fait un objet `machine` du registre ; un changement de santé est un événement ;
+- un **collecteur muet est un constat**, jamais un silence ; des unités systemd en échec aussi ;
+- des lectures (`sante`, `metriques`, `monde`, `entite`, `historique`, `changements`) aux arguments validés avant de toucher le socket ;
+- un menu, un écran, et deux tuiles (santé sur l'accueil, ressources).
+
+`install.sh --module sensorium` installe le service (son unité vit dans `config/`, liée dans systemd), l'ouvre au groupe du noyau pour ce seul socket, et ne
+valide l'installation que si le collecteur répond **à root et au noyau**. `deploy.sh` rejoue l'installation d'un module à scripts quand il change.
+
 ## Les menus : un module déclare, le noyau assemble
 
 Un module ne touche jamais à l'interface pour s'y inscrire. Il déclare ses entrées dans son manifeste :

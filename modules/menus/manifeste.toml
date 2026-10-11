@@ -1,7 +1,7 @@
 [module]
 id = "menus"
 nom = "Menus"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "Assemble, à chaud, l'arbre de navigation que les modules actifs déclarent : familles, ordre, rôles, compteurs, personnalisation par compte."
 confiance = "interne"
@@ -77,11 +77,13 @@ icone = "menu"
 id = "vue_modules"
 libelle = "Modules"
 domaine = "socle"
+gabarit = "liste_detail"
 
 [[ecrans]]
 id = "vue_menus"
 libelle = "Menus"
 domaine = "socle"
+gabarit = "liste_detail"
 
 [permissions]
 introspection = true

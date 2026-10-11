@@ -52,6 +52,13 @@ class Contexte:
         self._exiger_introspection()
         return self._intro["manifestes"]()
 
+    def executer_lecture(self, capacite: str, **args):
+        """Appelle une capacité de LECTURE d'un autre module (« module.capacite ») et rend son résultat (None si elle échoue).
+        Réservé aux modules qui l'ont demandé ([permissions] lectures) ; jamais une écriture."""
+        if not self.manifeste.permissions.lectures:
+            raise PermissionError("le module « %s » n'a pas demandé d'appeler les lectures des autres ([permissions] lectures)" % self.module)
+        return self._intro["lecture"](capacite, args)
+
     def compteurs(self, module: str) -> dict:
         """{'constats': ouverts du module, 'moteurs': ceux à surveiller} : de quoi afficher un badge."""
         self._exiger_introspection()

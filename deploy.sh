@@ -114,9 +114,13 @@ for id in "${CHANGES[@]}"; do
   as_service python3 "$DEST/main.py" module actif "$id" >/dev/null 2>&1 || continue
   v="$DEST/modules/$id/verifier.sh"
   [ -f "$v" ] || continue
-  dire "preuve du module $id"
   exporter_pour_modules
   export CASSANDRA_MODULE="$id" CASSANDRA_MODULE_DIR="$PREFIXE/current/modules/$id"
+  if [ -f "$DEST/modules/$id/installer.sh" ]; then
+    dire "module $id : réinstallation (son installation est idempotente : unité remise à jour, service relancé)"
+    (cd "$DEST/modules/$id" && bash ./installer.sh) || revenir "l'installation du module $id échoue"
+  fi
+  dire "preuve du module $id"
   (cd "$DEST/modules/$id" && bash ./verifier.sh) || revenir "le module $id n'est pas prouvé"
 done
 

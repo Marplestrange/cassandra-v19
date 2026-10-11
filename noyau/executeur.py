@@ -55,7 +55,12 @@ class Executeur:
             ctx._cause.valeur, ctx._compte.valeur = demande, compte
         try:
             if not c.ecrit:
-                res = e.faire(ctx, **args)
+                try:
+                    res = e.faire(ctx, **args)
+                except Exception as ex:      # une lecture (socket muet, source en panne) se dit, elle ne fait pas tomber l'appelant
+                    log.warning("lecture en échec : %s : %s", e.cle, ex)
+                    self._evt("capacite.echouee", e, acteur, demande, {"erreur": str(ex)[:300], "lecture": True}, compte)
+                    return {"statut": "echec", "erreur": str(ex), "evenement": demande}
                 self._evt("capacite.faite", e, acteur, demande, {"lecture": True}, compte)
                 return {"statut": "faite", "resultat": res, "evenement": demande}
 

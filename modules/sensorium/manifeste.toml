@@ -1,0 +1,111 @@
+[module]
+id = "sensorium"
+nom = "Sensorium"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Les sens de Cassandra. Le collecteur (sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles."
+confiance = "interne"
+famille = "supervision"
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[objets]]
+type = "machine"
+libelle = "Une machine observée par le Sensorium"
+
+[evenements]
+emet = ["machine.sante_change", "machine.muette", "machine.reprise"]
+
+[[moteurs]]
+id = "releve"
+libelle = "Relève la santé et les ressources auprès du collecteur"
+mode = "periodique"
+toutes_les_s = 30
+duree_max_s = 20
+
+[[detecteurs]]
+id = "collecteur_muet"
+libelle = "Le collecteur ne répond plus"
+frequence_s = 30
+
+[[detecteurs]]
+id = "unites_en_echec"
+libelle = "Des unités systemd sont en échec"
+frequence_s = 60
+
+[[capacites]]
+id = "sante"
+libelle = "La dernière relève : score de santé, ressources, unités en échec"
+risque = "lecture"
+
+[[capacites]]
+id = "metriques"
+libelle = "Les ressources, mesurées à l'instant (compter une fraction de seconde)"
+risque = "lecture"
+
+[[capacites]]
+id = "monde"
+libelle = "Le modèle du monde : ce que le collecteur sait, par préfixe de clé"
+risque = "lecture"
+
+[[capacites]]
+id = "entite"
+libelle = "Une entité surveillée (services, ports, certificats, sauvegardes...)"
+risque = "lecture"
+
+[[capacites]]
+id = "historique"
+libelle = "L'histoire d'une mesure sur trente jours"
+risque = "lecture"
+
+[[capacites]]
+id = "changements"
+libelle = "Ce qui a changé sur la machine depuis une date"
+risque = "lecture"
+
+[[ecrans]]
+id = "vue_sensorium"
+libelle = "Sensorium"
+domaine = "supervision"
+gabarit = "tableau"
+
+[[menus]]
+id = "sensorium"
+libelle = "Sensorium"
+ecran = "vue_sensorium"
+ordre = 5
+role = "admin"
+icone = "radar"
+badge = "constats"
+
+[[widgets]]
+id = "sante"
+libelle = "Santé de la machine"
+ecran = "accueil"
+zone = "principal"
+taille = "s"
+ordre = 1
+role = "admin"
+composant = "jauge"
+source = "sante"
+rafraichir_s = 30
+
+[[widgets]]
+id = "ressources"
+libelle = "Ressources"
+ecran = "vue_sensorium"
+composant = "liste"
+source = "sante"
+rafraichir_s = 30
+
+[theme]
+accent = "#4a56c8"
+
+[permissions]
+privileges = ["installer : le service sensorium.service tourne en root, pour tout voir"]
+ecritures = ["/run/sensorium"]
+
+[installation]
+script = "installer.sh"
+verification = "verifier.sh"
+retrait = "retirer.sh"
