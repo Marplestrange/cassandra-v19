@@ -34,12 +34,13 @@ COMPTES_SYSTEME = {
     "noyau": ("Le noyau", True),              # (libellé, administrateur ?) : ses moteurs, ses détecteurs, la reprise après incident
     "operateur": ("L'opérateur local (root, ligne de commande)", True),
     "cassandra": ("Cassandra", True),         # la patronne : souveraine, donc administratrice par défaut (l'administrateur peut le changer)
-    "itare": ("Itare", False),                # le sous-chef : les droits par défaut seulement, à étendre par choix
+    "itare": ("Itare Citadelle (itare_citadelle) : celui qui parle à Cassandra et touche à la machine", False),   # le sous-chef : droits par défaut, à étendre par choix
     # Les rôles d'agents, un compte chacun pour que chaque acte ait son auteur. Aucun n'est administrateur : l'administrateur leur donne ce qu'il veut.
-    "itare_compte": ("Itare personnalisé par compte (la clé API et le modèle du compte, sinon le local)", False),
+    "itare_user": ("Itare du compte (itare_user, « Votre Itare » du Desk) : la clé et le modèle du compte, sinon le modèle local", False),
     "vision": ("Itare Vision : lit les images de tous les comptes", False),
-    "second_avis": ("Second avis (Proactivité, règles) : relit les actes à risque élevé", False),
-    "restauration": ("Restauration (Proactivité, règles) : remet en l'état ce qui doit l'être", False),
+    # Le second avis est un MODÈLE qui relit un geste avant qu'il parte (V18 : aut_second_avis, réglé dans Proactivité › règles). Le point de
+    # restauration, lui, est un mécanisme (un instantané avant un geste en plusieurs étapes), pas un agent : il agit sous le compte « noyau ».
+    "second_avis": ("Second avis (Proactivité, règles) : un modèle relit les gestes qui ne sont pas pleinement réversibles", False),
 }
 RE_AGENT = re.compile(r"^agent:[a-z][a-z0-9_-]{1,30}$")
 CHAMPS_PROFIL = ("display_name", "role_label", "contact_email", "phone", "lang", "fp_account")
@@ -200,6 +201,10 @@ class Identite:
     def amorcer_systeme(self) -> None:
         """Les comptes système existent toujours. Leurs droits ne sont posés qu'UNE fois : ce que l'administrateur règle ensuite lui appartient."""
         now = time.time()
+        for r in self.base.lire("SELECT compte FROM comptes WHERE type='systeme'"):       # un compte système qui n'existe plus au catalogue est retiré
+            if r["compte"] not in COMPTES_SYSTEME:
+                self.base.ecrire("DELETE FROM comptes WHERE compte=?", (r["compte"],))
+                self.droits.regler_admin(r["compte"], False)
         for cid, (libelle, admin) in COMPTES_SYSTEME.items():
             self.base.ecrire("INSERT OR IGNORE INTO comptes(compte, hash, display_name, cree, maj, type) VALUES(?,?,?,?,?,'systeme')", (cid, "", libelle, now, now))
         if not self.base.lire("SELECT 1 FROM etat_noyau WHERE cle='comptes_systeme_amorces'"):

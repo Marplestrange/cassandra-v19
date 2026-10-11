@@ -2898,7 +2898,7 @@ class SansCompte(unittest.TestCase):
 
     def test_les_comptes_systeme_existent_et_ne_se_connectent_pas(self):
         tous = {c["compte"]: c for c in self.ex("comptes.lister")["resultat"]["comptes"]}
-        self.assertEqual({k for k, c in tous.items() if c["type"] == "systeme"}, {"noyau", "operateur", "cassandra", "itare", "itare_compte", "vision", "second_avis", "restauration"})
+        self.assertEqual({k for k, c in tous.items() if c["type"] == "systeme"}, {"noyau", "operateur", "cassandra", "itare", "itare_user", "vision", "second_avis"})
         self.assertEqual(tous["cassandra"]["admin"], True)
         self.assertEqual(tous["itare"]["admin"], False)
         for cid in tous:
