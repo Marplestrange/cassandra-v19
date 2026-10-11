@@ -1,0 +1,47 @@
+[module]
+id = "certificats"
+nom = "Certificats"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Surveille l'expiration des certificats TLS, les renouvelle et prouve le renouvellement. Module pilote de la V19."
+confiance = "interne"
+requiert = ["dns"]
+
+[[objets]]
+type = "certificat"
+libelle = "Certificat TLS d'un hôte"
+
+[evenements]
+emet = ["certificat.proche_expiration", "certificat.renouvele"]
+ecoute = ["dns.derive"]
+
+[[capacites]]
+id = "relire_expiration"
+libelle = "Relire la date d'expiration d'un certificat servi"
+risque = "lecture"
+
+[[capacites]]
+id = "renouveler_certificat"
+libelle = "Renouveler le certificat d'un hôte et le poser"
+risque = "faible"
+perimetre = ["certificats des hôtes déclarés", "fichier certs_map du courrier"]
+preuve = "relire l'expiration sur le port servi après le renouvellement"
+retour = "restaurer le certificat et le fichier de correspondance sauvegardés avant l'écriture"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["cassandra", "itare", "humain"]
+
+[[detecteurs]]
+id = "expiration_proche"
+libelle = "Certificat à moins de 21 jours de l'expiration"
+frequence_s = 3600
+capacite = "renouveler_certificat"
+
+[[ecrans]]
+id = "vue_certificats"
+libelle = "Certificats"
+domaine = "securite"
+
+[installation]
+script = "installer.sh"
+verification = "verifier.sh"
+retrait = "retirer.sh"

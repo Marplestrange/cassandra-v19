@@ -1,0 +1,44 @@
+[module]
+id = "dns"
+nom = "Domaines et DNS"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Relève les zones suivies, garde une référence versionnée et corrige les enregistrements dérivés de l'adresse publique."
+confiance = "interne"
+
+[[objets]]
+type = "domaine"
+libelle = "Domaine suivi"
+
+[[objets]]
+type = "dns"
+libelle = "Enregistrement DNS d'une zone suivie"
+
+[evenements]
+emet = ["dns.derive", "dns.corrige", "domaine.proche_expiration"]
+
+[[capacites]]
+id = "relever_zone"
+libelle = "Relever les enregistrements d'une zone"
+risque = "lecture"
+
+[[capacites]]
+id = "corriger_enregistrement"
+libelle = "Corriger un enregistrement A dérivé de l'adresse publique"
+risque = "moyen"
+perimetre = ["zones suivies", "enregistrements A non proxifiés", "hors noms réservés"]
+preuve = "relire la valeur sur le serveur de noms après l'écriture"
+retour = "restaurer la version précédente de la référence"
+paliers = ["raconter", "auto"]
+qui = ["cassandra"]
+
+[[detecteurs]]
+id = "derive_dns"
+libelle = "Dérive entre la zone et la référence"
+frequence_s = 1800
+capacite = "corriger_enregistrement"
+
+[[ecrans]]
+id = "vue_domaine"
+libelle = "Domaines"
+domaine = "reseau"
