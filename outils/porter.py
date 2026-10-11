@@ -109,7 +109,7 @@ def main():
             continue
         cible = sortie / chemin
         cible.parent.mkdir(parents=True, exist_ok=True)
-        cible.write_text(parts[k + 1].strip("\n") + "\n", encoding="utf-8")
+        cible.write_bytes((parts[k + 1].strip(chr(10)) + chr(10)).encode('utf-8'))
         n += 1
     print("%d fichier(s) dans %s (sortie brute : %d octets, code %s)" % (n, sortie, len(r.stdout), r.returncode))
     return 0 if n else 1

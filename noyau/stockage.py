@@ -43,7 +43,7 @@ class Stockage(Base):
         faites = {r["version"]: r["empreinte"] for r in self.lire("SELECT version, empreinte FROM _migrations")}
         nouvelles = []
         for p in fichiers:
-            texte = p.read_text(encoding="utf-8")
+            texte = p.read_bytes().decode("utf-8").replace(chr(13) + chr(10), chr(10))      # CRLF ou LF : la même empreinte (un dépôt reclonné ne doit pas « modifier » une migration)
             emp = hashlib.sha256(texte.encode("utf-8")).hexdigest()
             if p.name in faites:
                 if faites[p.name] != emp:
