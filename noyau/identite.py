@@ -177,7 +177,7 @@ def _empreinte(jeton: str) -> str:
 
 
 class Identite:
-    def __init__(self, base, droits, ttl_heures=TTL_SESSION_HEURES, unix_superadmin="fastuser", unix=None, courtier=None):
+    def __init__(self, base, droits, ttl_heures=TTL_SESSION_HEURES, unix_superadmin="fastuser", unix=None, courtier=None, reglages=None):
         self.base = base
         self.droits = droits
         self.unix_superadmin = unix_superadmin       # l'utilisateur système du premier compte, comme « fastuser » chez FastPanel
@@ -188,7 +188,8 @@ class Identite:
         self.fastpanel = fastpanel_present            # appelable : FastPanel est-il là ? (verrou du superadministrateur)
         droits.verrou = self.verrou_superadmin
         droits.delegant = self.invite_par
-        self.ttl = int(ttl_heures) * 3600
+        self._ttl_depart = int(ttl_heures) * 3600
+        self.reglages = reglages                      # le service des réglages : la durée des sessions y est réglable (comptes.session_heures)
         self._faux = hacher("sel-de-leurre")      # un compte inconnu coûte le même temps qu'un mauvais mot de passe
         self.amorcer_systeme()
 
@@ -198,6 +199,14 @@ class Identite:
         if r and r[0]["superadmin"] and self.fastpanel():
             return "Verrouillé : « %s » est le superadministrateur et FastPanel est installé, qui dépend de son utilisateur système" % compte
         return ""
+
+    @property
+    def ttl(self) -> int:
+        """La durée d'une session, en secondes : le réglage `comptes.session_heures` s'il existe (module actif), sinon la valeur de départ."""
+        try:
+            return int(self.reglages.valeur("comptes.session_heures")) * 3600
+        except Exception:
+            return self._ttl_depart
 
     def amorcer_systeme(self) -> None:
         """Les comptes système existent toujours. Leurs droits ne sont posés qu'UNE fois : ce que l'administrateur règle ensuite lui appartient."""

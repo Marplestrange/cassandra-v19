@@ -71,18 +71,36 @@ def _dossier_config():
     return os.environ.get("CASSANDRA_CONFIG") or ""
 
 
+_CTX = None          # le contexte du module, posé au branchement : les réglages l'emportent sur le fichier
+
+
+def _reglages():
+    """Les réglages posés (non vides), ou {} : le module des réglages est peut-être absent."""
+    if _CTX is None:
+        return {}
+    try:
+        r = {"url": str(_CTX.reglage("url", "") or ""), "hote": str(_CTX.reglage("hote", "") or "")}
+        d = int(_CTX.reglage("delai", "") or 0)
+        if d:
+            r["delai"] = str(d)
+        return {k: v for k, v in r.items() if v}
+    except Exception:
+        return {}
+
+
 def lire_conf():
-    """La configuration, relue à chaque passe (un changement s'applique sans redémarrer). None si le pont n'est pas configuré."""
+    """La configuration, relue à chaque passe (un changement s'applique sans redémarrer). None si le pont n'est pas configuré.
+    Les réglages (module « réglages ») l'emportent sur config/dolibarr.conf, qui reste le repli."""
     f = os.path.join(_dossier_config(), "dolibarr.conf")
-    if not os.path.isfile(f):
-        return None
     conf = {"delai": "15"}
-    with open(f, encoding="utf-8") as fh:
-        for ligne in fh:
-            ligne = ligne.split("#", 1)[0].strip()
-            if "=" in ligne:
-                k, v = ligne.split("=", 1)
-                conf[k.strip()] = v.strip()
+    if os.path.isfile(f):
+        with open(f, encoding="utf-8") as fh:
+            for ligne in fh:
+                ligne = ligne.split("#", 1)[0].strip()
+                if "=" in ligne:
+                    k, v = ligne.split("=", 1)
+                    conf[k.strip()] = v.strip()
+    conf.update(_reglages())
     if not conf.get("url", "").startswith(("http://", "https://")):
         return None
     conf["fichier_cle"] = os.path.join(_dossier_config(), conf.get("fichier_cle", "dolibarr.key"))
@@ -240,6 +258,8 @@ def _champs(objet, champs):
 
 # ------------------------------------------------------------------ le module
 def brancher(ctx):
+    global _CTX
+    _CTX = ctx
     etat = {"comptes_t": 0.0}
     INSTANCE = ("dolibarr", "principal")
 

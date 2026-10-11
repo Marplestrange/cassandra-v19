@@ -1,7 +1,7 @@
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
-version = "0.2.1"
+version = "0.3.0"
 noyau_min = "0.1.0"
 description = "Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur."
 confiance = "interne"
@@ -16,6 +16,24 @@ libelle = "Une instance Dolibarr pilotée par Cassandra"
 [[objets]]
 type = "dolibarr_corbeille"
 libelle = "La copie entière d'un objet supprimé de Dolibarr, de quoi le recréer"
+
+[[reglages]]
+id = "url"
+libelle = "Adresse de l'API de Dolibarr (https://… ou http://…/api/index.php)"
+aide = "Vide : on lit config/dolibarr.conf. Rempli, ce réglage l'emporte."
+
+[[reglages]]
+id = "hote"
+libelle = "En-tête Host à envoyer (quand l'adresse est une IP)"
+
+[[reglages]]
+id = "delai"
+libelle = "Délai d'attente d'une requête, en secondes"
+type = "entier"
+defaut = 0
+minimum = 0
+maximum = 120
+aide = "0 : la valeur du fichier dolibarr.conf, sinon 15 secondes."
 
 [evenements]
 emet = ["dolibarr.injoignable", "dolibarr.acces_refuse", "dolibarr.reprise"]

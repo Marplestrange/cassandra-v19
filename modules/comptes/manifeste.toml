@@ -1,7 +1,7 @@
 [module]
 id = "comptes"
 nom = "Comptes"
-version = "0.4.0"
+version = "0.5.0"
 noyau_min = "0.1.0"
 description = "Les comptes et la preuve qu'on en est : identifiant (une adresse e-mail), mot de passe (règles de la V18, scrypt salé), sessions, jetons de mise en place du mot de passe. Le rôle d'administrateur, lui, vit dans les droits."
 confiance = "interne"
@@ -13,6 +13,15 @@ requiert = ["droits"]
 id = "gerer"
 libelle = "Gérer les comptes : créer, modifier, supprimer, inviter"
 sensible = true
+
+[[reglages]]
+id = "session_heures"
+libelle = "Durée d'une session, en heures (au-delà, il faut se reconnecter)"
+type = "entier"
+defaut = 24
+minimum = 1
+maximum = 720
+aide = "S'applique tout de suite, aux sessions déjà ouvertes aussi."
 
 [[objets]]
 type = "compte"

@@ -3251,6 +3251,14 @@ class ReglagesDesModules(unittest.TestCase):
         self.n.activer("boutique")
         self.assertEqual(self.conf()["nom"], "Gardé")
 
+    def test_la_duree_des_sessions_est_un_reglage_qui_s_applique_tout_de_suite(self):
+        r = self.ex("comptes.ouvrir_session", compte="bea@x.fr", mot_de_passe=MDP, ip="203.0.113.5")["resultat"]
+        self.n.base.ecrire("UPDATE sessions SET cree=cree-?", (2 * 3600,))                          # ouverte il y a deux heures
+        self.assertTrue(self.ex("comptes.valider_session", jeton=r["jeton"])["resultat"]["ok"])      # 24 h par défaut
+        self.assertEqual(self.ex("reglages.regler", cle="comptes.session_heures", valeur=1)["statut"], "faite")
+        self.assertFalse(self.ex("comptes.valider_session", jeton=r["jeton"])["resultat"]["ok"])     # une heure : elle a expiré
+        self.assertEqual(self.ex("reglages.regler", cle="comptes.session_heures", valeur=0)["statut"], "echec")        # borné de 1 à 720
+
     def test_le_manifeste_valide_les_reglages(self):
         base = {"module": {"id": "xx", "nom": "X", "version": "0.1.0", "noyau_min": "0.1.0", "description": "d"}}
         mauvais = [{"id": "a", "libelle": "A", "type": "inconnu"}, {"id": "a", "libelle": "A", "type": "choix"},
@@ -3353,6 +3361,57 @@ class Courtier(unittest.TestCase):
         n = self.c.traiter(str(spool), str(cfg), os.getuid() + 1, lambda *a, **k: R(), lambda m: None)    # le noyau serait un autre uid
         self.assertEqual(n, 0)
         self.assertTrue(vrai.exists())                                                # la cible du lien n'est pas touchée
+
+
+class DolibarrReglages(unittest.TestCase):
+    """Les réglages l'emportent sur config/dolibarr.conf, qui reste le repli."""
+
+    def setUp(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("dolibarr_mod", RACINE / "modules" / "dolibarr" / "module.py")
+        self.mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.mod)
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.ancien = os.environ.get("CASSANDRA_CONFIG")
+        os.environ["CASSANDRA_CONFIG"] = self.tmp.name
+        self.addCleanup(lambda: os.environ.pop("CASSANDRA_CONFIG", None) if self.ancien is None else os.environ.__setitem__("CASSANDRA_CONFIG", self.ancien))
+
+    def ctx(self, **valeurs):
+        class C:
+            def reglage(_, nom, compte=None):
+                return valeurs.get(nom, 0 if nom == "delai" else "")
+        return C()
+
+    def ecrire_conf(self, texte):
+        (Path(self.tmp.name) / "dolibarr.conf").write_text(texte)
+
+    def test_le_fichier_seul(self):
+        self.ecrire_conf("url = http://a.example/api\nhote = h.example\ndelai = 20\n")
+        c = self.mod.lire_conf()
+        self.assertEqual((c["url"], c["hote"], c["delai"]), ("http://a.example/api", "h.example", "20"))
+
+    def test_un_reglage_pose_l_emporte_et_un_reglage_vide_laisse_le_fichier(self):
+        self.ecrire_conf("url = http://a.example/api\nhote = h.example\ndelai = 20\n")
+        self.mod._CTX = self.ctx(url="https://b.example/api", delai=7)
+        c = self.mod.lire_conf()
+        self.assertEqual((c["url"], c["hote"], c["delai"]), ("https://b.example/api", "h.example", "7"))     # l'hôte, non réglé, vient du fichier
+        self.mod._CTX = self.ctx()
+        self.assertEqual(self.mod.lire_conf()["url"], "http://a.example/api")
+
+    def test_les_reglages_suffisent_sans_fichier(self):
+        self.assertIsNone(self.mod.lire_conf())
+        self.mod._CTX = self.ctx(url="http://c.example/api")
+        c = self.mod.lire_conf()
+        self.assertEqual((c["url"], c["delai"]), ("http://c.example/api", "15"))
+
+    def test_un_module_de_reglages_absent_ne_casse_rien(self):
+        class Casse:
+            def reglage(_, *a, **k):
+                raise KeyError("pas de module des réglages")
+        self.ecrire_conf("url = http://a.example/api\n")
+        self.mod._CTX = Casse()
+        self.assertEqual(self.mod.lire_conf()["url"], "http://a.example/api")
 
 
 class CourtierSudo(unittest.TestCase):

@@ -70,7 +70,7 @@ class Noyau:
         self.reglages = Reglages(self.base)
         self.identite = Identite(self.base, self.droits, (self.config.get("comptes") or {}).get("session_heures", 24),
                                  str((self.config.get("comptes") or {}).get("superadmin_unix", "fastuser")),
-                                 courtier=str(Path(donnees) / "courtier"))
+                                 courtier=str(Path(donnees) / "courtier"), reglages=self.reglages)
         self.executeur = Executeur(self.catalogue, self.bus, self.en_crise, self.droits, self.identite, exiger_compte)
         self.detecteurs = []       # (module, Detecteur, fonction)
         self._derniere = {}        # (module, detecteur) -> dernier passage
