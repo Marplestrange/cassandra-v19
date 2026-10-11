@@ -35,6 +35,11 @@ COMPTES_SYSTEME = {
     "operateur": ("L'opérateur local (root, ligne de commande)", True),
     "cassandra": ("Cassandra", True),         # la patronne : souveraine, donc administratrice par défaut (l'administrateur peut le changer)
     "itare": ("Itare", False),                # le sous-chef : les droits par défaut seulement, à étendre par choix
+    # Les rôles d'agents, un compte chacun pour que chaque acte ait son auteur. Aucun n'est administrateur : l'administrateur leur donne ce qu'il veut.
+    "itare_compte": ("Itare personnalisé par compte (la clé API et le modèle du compte, sinon le local)", False),
+    "vision": ("Itare Vision : lit les images de tous les comptes", False),
+    "second_avis": ("Second avis (Proactivité, règles) : relit les actes à risque élevé", False),
+    "restauration": ("Restauration (Proactivité, règles) : remet en l'état ce qui doit l'être", False),
 }
 RE_AGENT = re.compile(r"^agent:[a-z][a-z0-9_-]{1,30}$")
 CHAMPS_PROFIL = ("display_name", "role_label", "contact_email", "phone", "lang", "fp_account")
