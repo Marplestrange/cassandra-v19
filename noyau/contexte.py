@@ -43,7 +43,10 @@ class Contexte:
 
     # ---- disque ----
     def espace(self, utilisateur: str, creer: bool = True):
-        """L'espace de ce module chez un utilisateur : /var/www/<utilisateur>/data/cassandra/<module>. Rien ne sort de là."""
+        """L'espace de ce module chez un utilisateur : /var/www/<utilisateur>/data/cassandra/<module>. Rien ne sort de là.
+        Réservé aux modules qui l'ont demandé ([permissions] espace_utilisateur = true) : on le sait avant de les installer."""
+        if not self.manifeste.permissions.espace_utilisateur:
+            raise PermissionError("le module « %s » n'a pas demandé l'espace des utilisateurs ([permissions] espace_utilisateur)" % self.module)
         return chemins.espace_utilisateur(utilisateur, self.module, creer=creer)
 
     # ---- événements ----

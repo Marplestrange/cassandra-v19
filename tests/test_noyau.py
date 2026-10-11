@@ -47,6 +47,9 @@ id = "jouet_casse"
 libelle = "Un jouet est cassé"
 frequence_s = 10
 capacite = "reparer_jouet"
+
+[permissions]
+espace_utilisateur = true
 """
 
 LABO_PY = '''
@@ -934,6 +937,13 @@ class Chemins(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.chemins.espace_utilisateur("fastuser", "ged")
 
+    def test_l_espace_des_utilisateurs_n_est_donne_qu_a_qui_l_a_demande(self):
+        tmp, n, _, _ = monde_moteurs()                 # « veille » n'a déclaré aucune permission
+        self.addCleanup(tmp.cleanup)
+        n.brancher()
+        with self.assertRaises(PermissionError):
+            n.executeur.contextes["veille"].espace("fastuser")
+
     def test_un_module_demande_son_espace_par_le_contexte(self):
         m = Monde()
         self.addCleanup(m.fermer)
@@ -941,6 +951,159 @@ class Chemins(unittest.TestCase):
         self.assertEqual(ctx.espace("sandrinedeshayes"), Path(self.tmp.name) / "sandrinedeshayes" / "data" / "cassandra" / "labo")
         with self.assertRaises(ValueError):
             ctx.espace("../root")
+
+
+def _openssl_ok():
+    import shutil
+    return shutil.which("openssl") is not None
+
+
+@unittest.skipUnless(_openssl_ok(), "openssl absent")
+class Paquets(unittest.TestCase):
+    """Le paquet d'un module : intégrité, signature, extraction sûre."""
+
+    def setUp(self):
+        import subprocess
+        from noyau import paquets
+        self.paquets = paquets
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.base = Path(self.tmp.name)
+        self.cles = self.base / "cles"
+        self.cles.mkdir()
+        self.priv = self.base / "editeur.pem"
+        subprocess.run(["openssl", "genpkey", "-algorithm", "ed25519", "-out", str(self.priv)], check=True, capture_output=True)
+        subprocess.run(["openssl", "pkey", "-in", str(self.priv), "-pubout", "-out", str(self.cles / "atek.pub")], check=True, capture_output=True)
+        self.src = self.base / "src" / "sentinelle"
+        import shutil
+        shutil.copytree(RACINE / "exemples" / "sentinelle", self.src)
+
+    def test_un_paquet_signe_se_verifie(self):
+        a = self.paquets.construire(self.src, self.priv, self.base / "s.cmod")
+        v = self.paquets.verifier(a, self.cles)
+        self.assertEqual((v["id"], v["version"], v["signe"], v["editeur"]), ("sentinelle", "0.1.0", True, "atek"))
+
+    def test_la_construction_est_reproductible(self):
+        a = self.paquets.construire(self.src, self.priv, self.base / "a.cmod").read_bytes()
+        b = self.paquets.construire(self.src, self.priv, self.base / "b.cmod").read_bytes()
+        import gzip
+        self.assertEqual(gzip.decompress(a), gzip.decompress(b))       # même contenu, même archive (hors horodatage gzip)
+
+    def test_une_cle_inconnue_ne_donne_pas_la_confiance(self):
+        a = self.paquets.construire(self.src, self.priv, self.base / "s.cmod")
+        (self.cles / "atek.pub").unlink()
+        v = self.paquets.verifier(a, self.cles)
+        self.assertFalse(v["signe"])
+        with self.assertRaises(self.paquets.PaquetInvalide):
+            self.paquets.extraire(a, self.base / "dest", self.cles)
+        self.assertEqual(self.paquets.extraire(a, self.base / "dest", self.cles, exiger_signature=False)["id"], "sentinelle")
+
+    def test_un_paquet_modifie_apres_signature_est_refuse(self):
+        import tarfile, io
+        a = self.paquets.construire(self.src, self.priv, self.base / "s.cmod")
+        evil = self.base / "evil.cmod"
+        with tarfile.open(a, "r:gz") as ent, tarfile.open(evil, "w:gz") as sor:
+            for ti in ent.getmembers():
+                data = ent.extractfile(ti).read() if ti.isfile() else None
+                if ti.name.endswith("module.py"):
+                    data = data + b"\nimport os; os.system('id')\n"
+                    ti.size = len(data)
+                sor.addfile(ti, io.BytesIO(data) if data is not None else None)
+        with self.assertRaises(self.paquets.PaquetInvalide) as c:
+            self.paquets.verifier(evil, self.cles)
+        self.assertIn("modifié", str(c.exception))
+
+    def _archive(self, noms_types, nom="x.cmod"):
+        import tarfile, io
+        a = self.base / nom
+        with tarfile.open(a, "w:gz") as t:
+            for n, typ in noms_types:
+                ti = tarfile.TarInfo(n)
+                if typ == "lien":
+                    ti.type, ti.linkname = tarfile.SYMTYPE, "/etc/passwd"
+                    t.addfile(ti)
+                else:
+                    d = b"x"
+                    ti.size = len(d)
+                    t.addfile(ti, io.BytesIO(d))
+        return a
+
+    def test_une_archive_dangereuse_est_refusee(self):
+        for noms in ([("../evil", "f")], [("/etc/evil", "f")], [("a/lien", "lien")], [("a/x", "f"), ("b/y", "f")]):
+            with self.assertRaises(self.paquets.PaquetInvalide, msg=str(noms)):
+                self.paquets.verifier(self._archive(noms), self.cles)
+
+    def test_une_archive_demesuree_est_refusee(self):
+        a = self.paquets.construire(self.src, self.priv, self.base / "s.cmod")
+        ancien = self.paquets.MAX_OCTETS
+        self.paquets.MAX_OCTETS = 100
+        try:
+            with self.assertRaises(self.paquets.PaquetInvalide):
+                self.paquets.verifier(a, self.cles)
+        finally:
+            self.paquets.MAX_OCTETS = ancien
+
+    def test_un_paquet_ne_peut_pas_se_dire_interne(self):
+        t = (self.src / "manifeste.toml").read_text(encoding="utf-8").replace('confiance = "local"', 'confiance = "interne"')
+        (self.src / "manifeste.toml").write_text(t, encoding="utf-8")
+        with self.assertRaises(self.paquets.PaquetInvalide):
+            self.paquets.construire(self.src, self.priv, self.base / "s.cmod")
+
+    def test_la_ligne_de_commande_des_paquets(self):
+        import os
+        ancien = os.environ.get("CASSANDRA_CONFIG")
+        os.environ["CASSANDRA_CONFIG"] = str(self.base)              # les clés sont dans <config>/cles
+        try:
+            c = lambda *a: moteur.commande_paquet(["main.py", "paquet"] + [str(x) for x in a])
+            cmod = self.base / "p.cmod"
+            self.assertEqual(c("construire", self.src, "--cle", self.priv, "--sortie", cmod), 0)
+            self.assertEqual(c("verifier", cmod), 0)
+            self.assertEqual(c("extraire", cmod, self.base / "ext"), 0)
+            self.assertTrue((self.base / "ext" / "sentinelle" / "manifeste.toml").is_file())
+            (self.cles / "atek.pub").unlink()
+            self.assertEqual(c("verifier", cmod), 3)                  # intègre mais non signé
+            self.assertEqual(c("extraire", cmod, self.base / "ext2"), 1)
+            self.assertEqual(c("extraire", cmod, self.base / "ext2", "--non-signe"), 0)
+        finally:
+            if ancien is None:
+                os.environ.pop("CASSANDRA_CONFIG", None)
+            else:
+                os.environ["CASSANDRA_CONFIG"] = ancien
+
+
+class ContratDeStore(unittest.TestCase):
+    """Ce qu'un module store doit dire de lui, validé par le noyau."""
+
+    def brut(self, **mod):
+        import tomllib
+        b = tomllib.loads(LABO_TOML)
+        b["module"].update(mod)
+        return b
+
+    def test_la_version_d_api_doit_correspondre(self):
+        self.assertEqual(mf.valider(self.brut(api="1")), [])
+        self.assertTrue(any("API" in e for e in mf.valider(self.brut(api="2"))))
+        self.assertTrue(any("module.api" in e for e in mf.valider(self.brut(api="un"))))
+
+    def test_les_permissions_sont_validees(self):
+        b = self.brut()
+        b["permissions"] = {"ecritures": ["etc/relatif"], "reseau": "pas-une-liste"}
+        e = mf.valider(b)
+        self.assertTrue(any("chemin absolu" in x for x in e))
+        self.assertTrue(any("permissions.reseau" in x for x in e))
+        b["permissions"] = {"ecritures": ["/etc/exim4/certs_map"], "reseau": ["api.exemple.org"], "privileges": ["installer"]}
+        self.assertEqual(mf.valider(b), [])
+        m = mf.construire(b)
+        self.assertEqual((m.permissions.reseau, m.permissions.ecritures), (("api.exemple.org",), ("/etc/exim4/certs_map",)))
+
+    def test_le_menu_montre_permissions_auteur_et_api(self):
+        tmp, nouveau, _ = monde_menu()
+        self.addCleanup(tmp.cleanup)
+        n = nouveau()
+        n.brancher()
+        labo = {m["id"]: m for m in n.catalogue_modules()}["labo"]
+        self.assertTrue(labo["permissions"]["espace_utilisateur"])
+        self.assertEqual(labo["api"], "1")
 
 
 if __name__ == "__main__":

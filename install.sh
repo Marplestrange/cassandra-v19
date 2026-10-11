@@ -7,6 +7,7 @@
 #   ./install.sh --retirer certificats   retire un module (son retirer.sh, puis son état)
 #   ./install.sh --extension ./sentinelle   GREFFE un module après coup, à chaud : copié dans extensions/ (que
 #                                        deploy.sh ne touche jamais), prouvé, activé ; le noyau le branche sans redémarrer
+#   ./install.sh --extension mod.cmod [--non-signe]   un PAQUET : vérifié (intégrité, signature d'une clé de config/cles/) avant tout
 #   ./install.sh --racine /srv/cassandra    un autre dossier racine ;  --admin NOM : le premier administrateur (défaut : fastuser)
 #
 # La disposition (un dossier pour Cassandra, les dossiers des utilisateurs à la manière de FastPanel) est décrite dans
@@ -25,6 +26,7 @@ EXTENSIONS=()
 RETIRER=""
 TOUS=0
 SANS_SERVICE=0
+NON_SIGNE=0
 
 aide() { sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0; }
 
@@ -38,6 +40,7 @@ while [ $# -gt 0 ]; do
     --racine)       [ $# -ge 2 ] || echouer "--racine attend un dossier"; CASSANDRA_RACINE="$2"; shift 2 ;;
     # shellcheck disable=SC2034
     --admin)        [ $# -ge 2 ] || echouer "--admin attend un nom d'utilisateur"; CASSANDRA_ADMIN="$2"; shift 2 ;;
+    --non-signe)    NON_SIGNE=1; shift ;;
     --sans-service) SANS_SERVICE=1; shift ;;
     -h|--aide)      aide ;;
     *)              echouer "option inconnue : $1 (voir --aide)" ;;
@@ -126,6 +129,16 @@ if [ "${#EXTENSIONS[@]}" -gt 0 ]; then
   installation_presente
   install -d -o root -g root -m 0755 "$EXTENSIONS_DIR"
   for src in "${EXTENSIONS[@]}"; do
+    if [ -f "$src" ]; then
+      # un paquet : intégrité et signature vérifiées AVANT d'être déposé où que ce soit
+      DEPOT="$(mktemp -d)"
+      drapeau=(); [ "$NON_SIGNE" -eq 1 ] && drapeau=(--non-signe)
+      if ! RES="$(CASSANDRA_CONFIG="$CONFIG" python3 "$PREFIXE/current/main.py" paquet extraire "$src" "$DEPOT" "${drapeau[@]}" 2>&1)"; then
+        rm -rf "$DEPOT"; echouer "paquet refusé : $RES"
+      fi
+      dire "paquet : $RES"
+      src="$DEPOT/${RES%% *}"
+    fi
     [ -f "$src/manifeste.toml" ] || echouer "$src : pas de manifeste.toml"
     id="$(basename "$(cd "$src" && pwd)")"
     dire "extension $id : dépôt dans $EXTENSIONS_DIR"

@@ -9,6 +9,7 @@ le cycle : percevoir (les détecteurs), décider (le palier de la capacité), ag
     python main.py ordre [id ...]    ordre d'installation des modules demandés et de leurs dépendances (un id par ligne)
     python main.py versions          « id version » de chaque module (pour deploy.sh)
     python main.py etat              résume le noyau sans rien écrire (modules, objets, constats, paliers)
+    python main.py paquet <cmd>      construire / vérifier / extraire un paquet de module (.cmod, signé)
     python main.py module <cmd>      l'état des modules : liste | activer ID | desactiver ID | installe ID | oublier ID | actif ID
     python main.py moteurs           les moteurs déclarés par les modules actifs, avec leur état
     python main.py tick              une passe de détection et des moteurs échus
@@ -30,7 +31,7 @@ import threading
 import time
 from pathlib import Path
 
-from noyau import chargeur, manifeste, systemd
+from noyau import chargeur, manifeste, paquets, systemd
 from noyau.base import Base
 from noyau.bus import TOUT, Bus
 from noyau.catalogue import Catalogue
@@ -236,6 +237,9 @@ class Noyau:
             mine = [x for x in entrees if x.module == mid]
             sortie.append({
                 "id": mid, "nom": m.nom, "description": m.description, "version": m.version, "famille": m.famille or "autres",
+                "auteur": m.auteur, "licence": m.licence, "api": m.api,
+                "permissions": {"espace_utilisateur": m.permissions.espace_utilisateur, "reseau": list(m.permissions.reseau),
+                                "ecritures": list(m.permissions.ecritures), "privileges": list(m.permissions.privileges)},
                 "confiance": m.confiance, "essentiel": m.essentiel, "extension": ext, "etat": etat,
                 "requiert": list(m.requiert), "requis_par": sorted(requis_par.get(mid, [])),
                 "objets": len(m.objets), "capacites": len(m.capacites), "implementees": sum(1 for x in mine if x.implementee) if etat == "actif" else None,
@@ -638,6 +642,39 @@ def commande_module(argv) -> int:
     return 2
 
 
+def _cles() -> Path:
+    """Les clés de confiance des éditeurs : $CASSANDRA_CONFIG/cles/<editeur>.pub."""
+    c = os.environ.get("CASSANDRA_CONFIG")
+    return Path(c) / "cles" if c else RACINE / "cles"
+
+
+def commande_paquet(argv) -> int:
+    """python main.py paquet construire DOSSIER --cle PRIVEE.pem [--sortie F] | verifier ARCHIVE | extraire ARCHIVE DEST [--non-signe]"""
+    sous = argv[2] if len(argv) > 2 else ""
+    args = argv[3:]
+
+    def option(nom):
+        return args[args.index(nom) + 1] if nom in args and args.index(nom) + 1 < len(args) else None
+    pos = [a for i, a in enumerate(args) if not a.startswith("--") and (i == 0 or args[i - 1] not in ("--cle", "--sortie"))]
+    try:
+        if sous == "construire" and pos and option("--cle"):
+            print(paquets.construire(pos[0], option("--cle"), option("--sortie")))
+            return 0
+        if sous == "verifier" and pos:
+            v = paquets.verifier(pos[0], _cles())
+            print("%s %s %s" % (v["id"], v["version"], ("signé par " + v["editeur"]) if v["signe"] else "non signé"))
+            return 0 if v["signe"] else 3
+        if sous == "extraire" and len(pos) >= 2:
+            v = paquets.extraire(pos[0], pos[1], _cles(), exiger_signature="--non-signe" not in args)
+            print("%s %s %s" % (v["id"], v["version"], ("signé par " + v["editeur"]) if v["signe"] else "non signé"))
+            return 0
+    except (paquets.PaquetInvalide, manifeste.ManifesteInvalide) as ex:
+        print("paquet refusé : %s" % ex, file=sys.stderr)
+        return 1
+    print("paquet : construire DOSSIER --cle PRIVEE.pem | verifier ARCHIVE | extraire ARCHIVE DEST [--non-signe]", file=sys.stderr)
+    return 2
+
+
 def main(argv) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     commande = argv[1] if len(argv) > 1 else "verifier"
@@ -656,6 +693,8 @@ def main(argv) -> int:
         return 0
     if commande == "module":
         return commande_module(argv)
+    if commande == "paquet":
+        return commande_paquet(argv)
     if commande in ("etat", "tick", "demarrer", "moteurs"):
         try:
             gerer = bool(os.environ.get("CASSANDRA_CONFIG"))     # en exploitation : l'état des modules vit dans la base
@@ -677,7 +716,7 @@ def main(argv) -> int:
         else:
             n.boucle()
         return 0
-    print("commande inconnue : %s (verifier | ordre | versions | module | etat | moteurs | tick | demarrer)" % commande, file=sys.stderr)
+    print("commande inconnue : %s (verifier | ordre | versions | module | paquet | etat | moteurs | tick | demarrer)" % commande, file=sys.stderr)
     return 2
 
 

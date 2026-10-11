@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 VERSION_NOYAU = "0.1.0"
+API_NOYAU = "1.0"     # le contrat offert aux modules (ctx, manifeste). Sa version MAJEURE change quand on casse la compatibilité.
 
 RISQUES = ("lecture", "faible", "moyen", "eleve")
 PALIERS = ("raconter", "auto", "maitre")
@@ -95,6 +96,16 @@ class Installation:
 
 
 @dataclass(frozen=True)
+class Permissions:
+    """Ce qu'un module DEMANDE, dit avant l'installation (comme un module store l'affichera).
+    Appliqué par le noyau : espace_utilisateur. Déclaratif jusqu'à la cage par processus : reseau, ecritures, privileges."""
+    espace_utilisateur: bool = False   # peut demander l'espace d'un utilisateur (/var/www/<u>/data/cassandra/<module>)
+    reseau: tuple = ()                 # hôtes joints (« api.exemple.org »)
+    ecritures: tuple = ()              # chemins système écrits (hors son espace)
+    privileges: tuple = ()             # ce que ses scripts font en root (« installer »...)
+
+
+@dataclass(frozen=True)
 class Manifeste:
     id: str
     nom: str
@@ -103,6 +114,11 @@ class Manifeste:
     description: str
     confiance: str
     requiert: tuple = ()
+    auteur: str = ""
+    licence: str = ""
+    site: str = ""
+    api: str = "1"             # la version MAJEURE de l'API du noyau que ce module vise
+    permissions: Permissions = field(default_factory=Permissions)
     essentiel: bool = False    # un module essentiel ne se désactive pas (comptes, coffre, notifications...)
     famille: str = ""          # regroupement dans le menu des modules (« securite », « reseau »...)
     objets: tuple = ()
@@ -161,6 +177,25 @@ def valider(brut: dict) -> list:
         e.append("module.noyau_min : le module exige le noyau %s, ce noyau est en %s" % (m.get("noyau_min"), VERSION_NOYAU))
     if m.get("confiance", "interne") not in CONFIANCES:
         e.append("module.confiance : %s" % " | ".join(CONFIANCES))
+    for champ in ("auteur", "licence", "site"):
+        if champ in m and (not isinstance(m[champ], str) or len(m[champ]) > 200):
+            e.append("module.%s : un texte de 200 caractères au plus" % champ)
+    api = str(m.get("api", "1"))
+    if not re.match(r"^\d+$", api):
+        e.append("module.api : la version majeure de l'API visée (par exemple « 1 »)")
+    elif api != API_NOYAU.split(".")[0]:
+        e.append("module.api : ce module vise l'API %s, ce noyau offre l'API %s" % (api, API_NOYAU))
+    perm = brut.get("permissions", {}) or {}
+    if not isinstance(perm, dict):
+        e.append("permissions : une table est attendue")
+        perm = {}
+    for champ in ("reseau", "ecritures", "privileges"):
+        _liste_de_textes(perm.get(champ), "permissions.%s" % champ, e)
+    if "espace_utilisateur" in perm and not isinstance(perm["espace_utilisateur"], bool):
+        e.append("permissions.espace_utilisateur : vrai ou faux")
+    for chemin in perm.get("ecritures", []) if isinstance(perm.get("ecritures"), list) else []:
+        if not str(chemin).startswith("/") or ".." in str(chemin).split("/"):
+            e.append("permissions.ecritures : « %s » doit être un chemin absolu sans « .. »" % chemin)
     if "essentiel" in m and not isinstance(m["essentiel"], bool):
         e.append("module.essentiel : vrai ou faux")
     if "famille" in m and (not isinstance(m["famille"], str) or len(m["famille"]) > 40):
@@ -292,6 +327,11 @@ def construire(brut: dict, source="") -> Manifeste:
         id=m["id"], nom=m["nom"], version=m["version"], noyau_min=m["noyau_min"], description=m["description"].strip(),
         confiance=m.get("confiance", "interne"), requiert=tuple(m.get("requiert", ())),
         essentiel=bool(m.get("essentiel", False)), famille=str(m.get("famille", "")),
+        auteur=str(m.get("auteur", "")), licence=str(m.get("licence", "")), site=str(m.get("site", "")), api=str(m.get("api", "1")),
+        permissions=Permissions(bool((brut.get("permissions") or {}).get("espace_utilisateur", False)),
+                                tuple((brut.get("permissions") or {}).get("reseau", ())),
+                                tuple((brut.get("permissions") or {}).get("ecritures", ())),
+                                tuple((brut.get("permissions") or {}).get("privileges", ()))),
         objets=tuple(Objet(o["type"], o["libelle"]) for o in brut.get("objets", []) or []),
         emet=tuple(ev.get("emet", ())), ecoute=tuple(ev.get("ecoute", ())), capacites=caps,
         detecteurs=tuple(Detecteur(d["id"], d.get("libelle", d["id"]), d["frequence_s"], d.get("capacite", "")) for d in brut.get("detecteurs", []) or []),

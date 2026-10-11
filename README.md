@@ -86,6 +86,22 @@ répondent plus, abonnements retirés, constats ouverts suspendus. Les règles :
 Pour l'interface : `Noyau.catalogue_modules()` rend, par module, tout ce qu'un menu affiche (état, famille, dépendances et dépendants, nombre de
 moteurs, détecteurs et capacités, et pour chaque action si elle est possible et pourquoi pas), et `activer` / `desactiver` en sont les boutons.
 
+## Un module store à terme : le contrat est prêt
+
+Le noyau est pensé pour qu'un jour des modules viennent d'ailleurs (voir `docs/STORE.md`). Déjà en place :
+
+- le manifeste dit tout ce qu'une vitrine affiche (`auteur`, `licence`, `site`, `famille`, `version`) et ce que le module **demande**
+  (`[permissions]`) avant qu'il soit installé ; `api` fixe la version majeure du contrat visée (`API_NOYAU`) ;
+- un module est livré en **paquet** (`.cmod`) : empreinte de chaque fichier, signature Ed25519 de l'éditeur, extraction sûre ;
+- l'administrateur déclare les éditeurs de confiance par leur clé publique dans `config/cles/` ; un paquet falsifié, d'un éditeur inconnu ou
+  dangereux est refusé (`install.sh --extension mod.cmod`, `--non-signe` pour le choisir en connaissance de cause).
+
+```
+python main.py paquet construire DOSSIER --cle PRIVEE.pem        un paquet signé, reproductible
+python main.py paquet verifier ARCHIVE                           intégrité et signature (code de sortie 3 : intègre mais non signé)
+python main.py paquet extraire ARCHIVE DEST [--non-signe]
+```
+
 ## Greffer un module après coup
 
 Trois voies, un seul contrat (le manifeste) :
