@@ -70,7 +70,7 @@ for id in $(printf '%s\n' "${!AVANT[@]}" "${!APRES[@]}" | sort -u); do
   elif [ "$a" != "$b" ]; then printf '    ~ %-14s %s -> %s\n' "$id" "$a" "$b"; CHANGES+=("$id")
   else
     # même version, code différent ? on le dit : une version qui ne bouge pas malgré un changement est un oubli
-    if ! diff -rq "$ANCIENNE/modules/$id" "$DEST/modules/$id" >/dev/null 2>&1; then
+    if ! diff -rq -x __pycache__ "$ANCIENNE/modules/$id" "$DEST/modules/$id" >/dev/null 2>&1; then
       avertir "$id : le contenu a changé mais la version reste $a"
       CHANGES+=("$id")
     else printf '    = %-14s %s\n' "$id" "$b"; fi

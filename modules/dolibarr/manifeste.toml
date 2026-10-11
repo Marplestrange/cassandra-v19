@@ -1,7 +1,7 @@
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
-version = "0.2.0"
+version = "0.2.1"
 noyau_min = "0.1.0"
 description = "Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur."
 confiance = "interne"

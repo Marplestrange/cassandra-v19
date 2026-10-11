@@ -1,7 +1,7 @@
 [module]
 id = "menus"
 nom = "Menus"
-version = "0.1.2"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Assemble, à chaud, l'arbre de navigation que les modules actifs déclarent : familles, ordre, rôles, compteurs, personnalisation par compte."
 confiance = "interne"

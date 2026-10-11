@@ -1,7 +1,7 @@
 [module]
 id = "affichage"
 nom = "Affichage"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte."
 confiance = "interne"
