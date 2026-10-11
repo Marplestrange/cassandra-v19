@@ -67,6 +67,7 @@ class Capacite:
     paliers: tuple = ("raconter",)
     qui: tuple = ("cassandra", "itare", "humain")
     droit: str = ""            # le droit qu'un COMPTE doit détenir pour l'utiliser (voir [[droits]]) ; vide : aucun droit particulier
+    masque: tuple = ()         # noms d'arguments et de résultats qui ne vont JAMAIS au journal (mot de passe, jeton de session...)
 
     @property
     def ecrit(self) -> bool:
@@ -167,6 +168,7 @@ class Permissions:
     introspection: bool = False        # peut lire les manifestes des modules actifs et leurs compteurs (module de menus, de supervision)
     lectures: bool = False             # peut appeler les capacités de LECTURE des autres modules (module d'affichage)
     droits: bool = False               # peut administrer les droits des comptes (le module des droits)
+    identite: bool = False             # peut administrer l'identité des comptes : mots de passe, sessions (le module des comptes)
 
 
 @dataclass(frozen=True)
@@ -356,6 +358,7 @@ def valider(brut: dict) -> list:
             if not str(c.get("retour", "")).strip():
                 e.append("%s : une capacité qui écrit doit déclarer son retour arrière" % nom)
         _droit_ok(c.get("droit"), nom)
+        _liste_de_textes(c.get("masque"), nom + ".masque", e)
         if risque == "eleve" and "maitre" in paliers:
             e.append("%s : une capacité de risque élevé ne peut pas atteindre le palier « maitre »" % nom)
 
@@ -515,7 +518,7 @@ def construire(brut: dict, source="") -> Manifeste:
         id=c["id"], libelle=c["libelle"], risque=c["risque"],
         perimetre=tuple(c.get("perimetre", ())), preuve=str(c.get("preuve", "")).strip(), retour=str(c.get("retour", "")).strip(),
         paliers=tuple(c.get("paliers", ("raconter",))), qui=tuple(c.get("qui", ("cassandra", "itare", "humain"))),
-        droit=_qualifier(m["id"], c.get("droit")),
+        droit=_qualifier(m["id"], c.get("droit")), masque=tuple(c.get("masque", ())),
     ) for c in brut.get("capacites", []) or [])
     return Manifeste(
         id=m["id"], nom=m["nom"], version=m["version"], noyau_min=m["noyau_min"], description=m["description"].strip(),
@@ -528,7 +531,8 @@ def construire(brut: dict, source="") -> Manifeste:
                                 tuple((brut.get("permissions") or {}).get("privileges", ())),
                                 bool((brut.get("permissions") or {}).get("introspection", False)),
                                 bool((brut.get("permissions") or {}).get("lectures", False)),
-                                bool((brut.get("permissions") or {}).get("droits", False))),
+                                bool((brut.get("permissions") or {}).get("droits", False)),
+                                bool((brut.get("permissions") or {}).get("identite", False))),
         droits=tuple(Droit(d["id"], d["libelle"], bool(d.get("defaut", False)), bool(d.get("sensible", False))) for d in brut.get("droits", []) or []),
         objets=tuple(Objet(o["type"], o["libelle"]) for o in brut.get("objets", []) or []),
         emet=tuple(ev.get("emet", ())), ecoute=tuple(ev.get("ecoute", ())), capacites=caps,

@@ -40,6 +40,7 @@ from noyau.catalogue import Catalogue
 from noyau.contexte import Contexte
 from noyau.droits import Droits
 from noyau.executeur import Executeur
+from noyau.identite import Identite
 from noyau.modules import Modules
 from noyau.registre import Registre
 
@@ -65,6 +66,7 @@ class Noyau:
         self.etat_modules = Modules(self.base)
         self.catalogue = Catalogue(self.base)
         self.droits = Droits(self.base)
+        self.identite = Identite(self.base, self.droits, (self.config.get("comptes") or {}).get("session_heures", 24))
         self.executeur = Executeur(self.catalogue, self.bus, self.en_crise, self.droits)
         self.detecteurs = []       # (module, Detecteur, fonction)
         self._derniere = {}        # (module, detecteur) -> dernier passage
@@ -92,7 +94,7 @@ class Noyau:
     def _fabriquer(self, m):
         self.droits.declarer(m)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
-                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "lecture": self._lecture, "droits": self.droits})
+                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "lecture": self._lecture, "droits": self.droits, "identite": self.identite})
         self.executeur.contextes[m.id] = ctx
         return ctx
 

@@ -1,0 +1,203 @@
+[module]
+id = "comptes"
+nom = "Comptes"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Les comptes et la preuve qu'on en est : identifiant (une adresse e-mail), mot de passe (règles de la V18, scrypt salé), sessions, jetons de mise en place du mot de passe. Le rôle d'administrateur, lui, vit dans les droits."
+confiance = "interne"
+famille = "securite"
+essentiel = true
+requiert = ["droits"]
+
+[[droits]]
+id = "gerer"
+libelle = "Gérer les comptes : créer, modifier, supprimer, inviter"
+sensible = true
+
+[[objets]]
+type = "compte"
+libelle = "Un compte : identifiant, profil, sites. Jamais son mot de passe en clair, ni son empreinte dans un événement"
+
+[[objets]]
+type = "session"
+libelle = "Une session ouverte par un compte"
+
+[evenements]
+emet = ["compte.cree", "compte.modifie", "compte.supprime", "compte.restaure", "compte.mdp_change", "session.ouverte", "session.fermee", "session.refusee"]
+
+# ---------- lectures ----------
+[[capacites]]
+id = "moi"
+libelle = "Le profil du compte au nom duquel on agit"
+risque = "lecture"
+
+[[capacites]]
+id = "lire"
+libelle = "Le profil d'un compte"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "lister"
+libelle = "Tous les comptes"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "corbeille"
+libelle = "Les comptes supprimés qu'on peut encore restaurer"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "regles_mdp"
+libelle = "Les règles du mot de passe et leur légende"
+risque = "lecture"
+
+[[capacites]]
+id = "valider_session"
+libelle = "Un jeton de session est-il valable, et à quel compte appartient-il ?"
+risque = "lecture"
+masque = ["jeton"]
+
+[[capacites]]
+id = "mes_sessions"
+libelle = "Les sessions ouvertes du compte au nom duquel on agit"
+risque = "lecture"
+masque = ["courant"]
+
+# ---------- écritures ----------
+[[capacites]]
+id = "creer"
+libelle = "Créer un compte (le premier est administrateur)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la table comptes : une ligne, celle du compte créé"]
+preuve = "relire le compte créé"
+retour = "supprimer la ligne créée (et le statut d'administrateur qu'elle a pu donner)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["mot_de_passe"]
+
+[[capacites]]
+id = "modifier"
+libelle = "Modifier le profil ou les sites d'un compte"
+risque = "faible"
+droit = "gerer"
+perimetre = ["la ligne du compte demandé, hors mot de passe"]
+preuve = "relire le profil écrit"
+retour = "remettre le profil d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "modifier_moi"
+libelle = "Modifier son propre profil (nom, fonction, coordonnées, langue)"
+risque = "faible"
+perimetre = ["la ligne du compte au nom duquel on agit, hors mot de passe et sites"]
+preuve = "relire le profil écrit"
+retour = "remettre le profil d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "changer_mon_mot_de_passe"
+libelle = "Changer son propre mot de passe (l'actuel est exigé)"
+risque = "moyen"
+perimetre = ["l'empreinte du mot de passe du compte au nom duquel on agit"]
+preuve = "le nouveau mot de passe ouvre le compte"
+retour = "remettre l'ancienne empreinte"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["actuel", "nouveau", "ancien_hash"]
+
+[[capacites]]
+id = "creer_jeton"
+libelle = "Créer le lien de mise en place ou de réinitialisation du mot de passe d'un compte (72 h, usage unique)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["la table jetons_mdp : une ligne"]
+preuve = "relire le jeton créé"
+retour = "invalider le jeton"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+masque = ["jeton"]
+
+[[capacites]]
+id = "reinitialiser_mot_de_passe"
+libelle = "Poser un nouveau mot de passe avec un jeton (le jeton est consommé, les sessions du compte sont fermées)"
+risque = "moyen"
+perimetre = ["l'empreinte du mot de passe du compte du jeton, et ses sessions"]
+preuve = "le nouveau mot de passe ouvre le compte"
+retour = "remettre l'ancienne empreinte"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["jeton", "nouveau", "ancien_hash"]
+
+[[capacites]]
+id = "supprimer"
+libelle = "Supprimer un compte (copie entière en corbeille, sessions fermées)"
+risque = "eleve"
+droit = "gerer"
+perimetre = ["la ligne du compte, ses sessions et ses jetons"]
+preuve = "le compte n'existe plus et sa copie est en corbeille"
+retour = "restaurer le compte depuis la corbeille (son mot de passe revient ; ses sessions non)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "restaurer"
+libelle = "Restaurer un compte supprimé"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la table comptes : une ligne rendue"]
+preuve = "relire le compte rendu"
+retour = "le supprimer de nouveau (la copie reste en corbeille)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "ouvrir_session"
+libelle = "Ouvrir une session (identifiant et mot de passe ; dix échecs en cinq minutes bloquent)"
+risque = "faible"
+perimetre = ["la table sessions : une ligne"]
+preuve = "le jeton rendu est valable"
+retour = "fermer la session ouverte"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["mot_de_passe", "jeton"]
+
+[[capacites]]
+id = "fermer_session"
+libelle = "Fermer une session (déconnexion)"
+risque = "faible"
+perimetre = ["la ligne de la session désignée"]
+preuve = "le jeton n'est plus valable"
+retour = "aucun : une session fermée se rouvre par une connexion"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["jeton"]
+
+[[capacites]]
+id = "revoquer_session"
+libelle = "Fermer une autre session de son compte, désignée par ses six derniers caractères"
+risque = "faible"
+perimetre = ["les sessions du compte au nom duquel on agit"]
+preuve = "la session désignée n'existe plus"
+retour = "aucun : une session fermée se rouvre par une connexion"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "revoquer_autres_sessions"
+libelle = "Fermer toutes les autres sessions de son compte, en gardant la courante"
+risque = "faible"
+perimetre = ["les sessions du compte au nom duquel on agit, sauf la courante"]
+preuve = "il ne reste que la courante"
+retour = "aucun : des sessions fermées se rouvrent par une connexion"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["courant"]
+
+[permissions]
+identite = true

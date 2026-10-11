@@ -2641,5 +2641,242 @@ class DroitsDesComptes(unittest.TestCase):
         self.assertEqual(self.ex("compta.passer_ecriture", au_nom_de="sandrine")["statut"], "faite")
 
 
+MDP = "Abcdefgh1!"
+MDP2 = "Zyxwvuts2?"
+
+
+def monde_comptes():
+    import shutil
+    tmp = tempfile.TemporaryDirectory()
+    base = Path(tmp.name)
+    mods = base / "modules"
+    for m in ("droits", "comptes"):
+        shutil.copytree(RACINE / "modules" / m, mods / m)
+    n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
+    n.brancher()
+    n.activer("comptes")                        # active aussi droits
+    return tmp, n
+
+
+class ComptesEtSessions(unittest.TestCase):
+    def setUp(self):
+        self.tmp, self.n = monde_comptes()
+        self.addCleanup(self.tmp.cleanup)
+
+    def ex(self, cle, acteur="humain", au_nom_de="", **args):
+        return self.n.executeur.executer(cle, acteur, args, compte=au_nom_de)
+
+    def creer(self, compte, mdp=MDP):
+        return self.ex("comptes.creer", compte=compte, mot_de_passe=mdp)
+
+    def ouvrir(self, compte, mdp=MDP, ip="203.0.113.5"):
+        r = self.ex("comptes.ouvrir_session", compte=compte, mot_de_passe=mdp, ip=ip, agent="Firefox")
+        return r["resultat"]
+
+    def test_le_premier_compte_est_administrateur_pas_le_suivant(self):
+        self.assertTrue(self.creer("a@x.fr")["resultat"]["admin"])
+        self.assertFalse(self.creer("b@x.fr")["resultat"]["admin"])
+        self.assertTrue(self.n.droits.est_admin("a@x.fr"))
+        self.assertFalse(self.n.droits.est_admin("b@x.fr"))
+
+    def test_l_identifiant_est_une_adresse_et_le_mot_de_passe_suit_les_regles(self):
+        self.assertEqual(self.creer("pas-un-mail")["statut"], "echec")
+        r = self.creer("a@x.fr", "court")
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("il manque", r["erreur"])
+        self.assertEqual(self.creer("a@x.fr")["statut"], "faite")
+        self.assertEqual(self.creer("a@x.fr")["statut"], "echec")                  # déjà pris
+
+    def test_le_mot_de_passe_est_un_scrypt_sale_et_ne_sort_jamais(self):
+        self.creer("a@x.fr")
+        h = self.n.identite.hash_de("a@x.fr")
+        self.assertTrue(h.startswith("scrypt$"))
+        self.creer("b@x.fr")
+        self.assertNotEqual(h.split("$")[2], self.n.identite.hash_de("b@x.fr").split("$")[2])      # même mot de passe, empreintes différentes
+        self.assertNotIn("hash", self.ex("comptes.lire", compte="a@x.fr")["resultat"])
+        self.assertNotIn("hash", str(self.ex("comptes.lister")["resultat"]))
+
+    def test_ni_mot_de_passe_ni_jeton_dans_le_journal(self):
+        self.creer("a@x.fr")
+        s = self.ouvrir("a@x.fr")
+        self.ex("comptes.changer_mon_mot_de_passe", au_nom_de="a@x.fr", actuel=MDP, nouveau=MDP2)
+        j = self.ex("comptes.creer_jeton", compte="a@x.fr")["resultat"]["jeton"]
+        base = self.n.base
+        tout = " ".join(r["donnees"] for r in base.lire("SELECT donnees FROM evenements")) + " ".join(r["donnees"] for r in base.lire("SELECT donnees FROM objets"))
+        for secret in (MDP, MDP2, s["jeton"], j, self.n.identite.hash_de("a@x.fr")):
+            self.assertNotIn(secret, tout)
+
+    def test_ouvrir_une_session_puis_la_valider_puis_la_fermer(self):
+        self.creer("a@x.fr")
+        s = self.ouvrir("a@x.fr")
+        self.assertTrue(s["ok"])
+        v = self.ex("comptes.valider_session", jeton=s["jeton"])["resultat"]
+        self.assertEqual((v["ok"], v["compte"], v["admin"]), (True, "a@x.fr", True))
+        self.ex("comptes.fermer_session", jeton=s["jeton"])
+        self.assertFalse(self.ex("comptes.valider_session", jeton=s["jeton"])["resultat"]["ok"])
+        self.assertFalse(self.ex("comptes.valider_session", jeton="court")["resultat"]["ok"])
+
+    def test_une_session_expire_meme_sans_nouvelle_connexion(self):
+        self.creer("a@x.fr")
+        s = self.ouvrir("a@x.fr")
+        self.n.base.ecrire("UPDATE sessions SET cree=cree-?", (25 * 3600,))
+        self.assertFalse(self.ex("comptes.valider_session", jeton=s["jeton"])["resultat"]["ok"])
+
+    def test_mauvais_mot_de_passe_ou_compte_inconnu_meme_reponse(self):
+        self.creer("a@x.fr")
+        a = self.ouvrir("a@x.fr", "Mauvais1!x")
+        b = self.ouvrir("inconnu@x.fr", MDP)
+        self.assertEqual((a["ok"], b["ok"]), (False, False))
+        self.assertEqual(a["erreur"], b["erreur"])
+
+    def test_dix_echecs_bloquent_meme_avec_le_bon_mot_de_passe(self):
+        self.creer("a@x.fr")
+        for _ in range(10):
+            self.ouvrir("a@x.fr", "Mauvais1!x", ip="198.51.100.9")
+        r = self.ouvrir("a@x.fr", MDP, ip="198.51.100.9")
+        self.assertTrue(r["limite"])
+        self.assertGreater(r["attente_s"], 0)
+        self.assertTrue(self.ouvrir("a@x.fr", MDP, ip="198.51.100.77")["limite"])        # le compte est bloqué, pas seulement l'origine
+        self.n.base.ecrire("UPDATE tentatives SET ts=ts-400")                            # cinq minutes plus tard
+        self.assertTrue(self.ouvrir("a@x.fr", MDP, ip="198.51.100.9")["ok"])
+
+    def test_les_sessions_sont_celles_du_compte_qui_agit(self):
+        self.creer("a@x.fr")
+        self.creer("b@x.fr")
+        sa, sb = self.ouvrir("a@x.fr"), self.ouvrir("b@x.fr")
+        mes = self.ex("comptes.mes_sessions", au_nom_de="a@x.fr", courant=sa["jeton"])["resultat"]["sessions"]
+        self.assertEqual([(s["id"], s["current"], s["nature"]) for s in mes], [(sa["id"], True, "internet")])
+        r = self.ex("comptes.revoquer_session", au_nom_de="a@x.fr", court=sb["id"])             # six caractères du voisin
+        self.assertEqual(r["resultat"]["ferme"], 0)
+        self.assertTrue(self.ex("comptes.valider_session", jeton=sb["jeton"])["resultat"]["ok"])
+        self.assertEqual(self.ex("comptes.mes_sessions")["statut"], "echec")                     # sans compte : rien à dire
+
+    def test_revoquer_les_autres_garde_la_courante(self):
+        self.creer("a@x.fr")
+        s1, s2, s3 = (self.ouvrir("a@x.fr") for _ in range(3))
+        r = self.ex("comptes.revoquer_autres_sessions", au_nom_de="a@x.fr", courant=s2["jeton"])
+        self.assertEqual(r["resultat"]["ferme"], 2)
+        self.assertTrue(self.ex("comptes.valider_session", jeton=s2["jeton"])["resultat"]["ok"])
+        self.assertFalse(self.ex("comptes.valider_session", jeton=s1["jeton"])["resultat"]["ok"])
+
+    def test_changer_son_mot_de_passe_exige_l_actuel(self):
+        self.creer("a@x.fr")
+        r = self.ex("comptes.changer_mon_mot_de_passe", au_nom_de="a@x.fr", actuel="Mauvais1!x", nouveau=MDP2)
+        self.assertEqual(r["statut"], "echec")
+        self.assertEqual(self.ex("comptes.changer_mon_mot_de_passe", au_nom_de="a@x.fr", actuel=MDP, nouveau="faible")["statut"], "echec")
+        self.assertEqual(self.ex("comptes.changer_mon_mot_de_passe", au_nom_de="a@x.fr", actuel=MDP, nouveau=MDP2)["statut"], "faite")
+        self.assertFalse(self.ouvrir("a@x.fr", MDP)["ok"])
+        self.assertTrue(self.ouvrir("a@x.fr", MDP2)["ok"])
+
+    def test_le_jeton_de_reinitialisation_sert_une_fois_et_ferme_les_sessions(self):
+        self.creer("a@x.fr")
+        s = self.ouvrir("a@x.fr")
+        j = self.ex("comptes.creer_jeton", compte="a@x.fr")["resultat"]["jeton"]
+        self.assertEqual(self.ex("comptes.reinitialiser_mot_de_passe", jeton=j, nouveau="faible")["statut"], "echec")     # refusé : le jeton n'est pas consommé
+        self.assertEqual(self.ex("comptes.reinitialiser_mot_de_passe", jeton=j, nouveau=MDP2)["statut"], "faite")
+        self.assertEqual(self.ex("comptes.reinitialiser_mot_de_passe", jeton=j, nouveau=MDP)["statut"], "echec")           # usage unique
+        self.assertFalse(self.ex("comptes.valider_session", jeton=s["jeton"])["resultat"]["ok"])
+        self.assertTrue(self.ouvrir("a@x.fr", MDP2)["ok"])
+
+    def test_un_jeton_expire_ne_sert_plus(self):
+        self.creer("a@x.fr")
+        j = self.ex("comptes.creer_jeton", compte="a@x.fr")["resultat"]["jeton"]
+        self.n.base.ecrire("UPDATE jetons_mdp SET expire=expire-?", (73 * 3600,))
+        self.assertEqual(self.n.identite.jeton_compte(j), "")
+
+    def test_supprimer_garde_une_copie_et_restaurer_rend_le_compte(self):
+        self.creer("a@x.fr")
+        self.creer("b@x.fr")
+        s = self.ouvrir("b@x.fr")
+        self.ex("droits.admin", compte="b@x.fr")
+        r = self.ex("comptes.supprimer", compte="b@x.fr")
+        self.assertEqual(r["statut"], "faite")
+        self.assertFalse(self.n.identite.existe("b@x.fr"))
+        self.assertFalse(self.n.droits.est_admin("b@x.fr"))
+        self.assertFalse(self.ex("comptes.valider_session", jeton=s["jeton"])["resultat"]["ok"])     # les sessions ne reviennent pas
+        self.assertEqual(self.ex("comptes.restaurer", corbeille=r["resultat"]["corbeille"])["statut"], "faite")
+        self.assertTrue(self.ouvrir("b@x.fr")["ok"])                                                 # son mot de passe est revenu
+        self.assertTrue(self.n.droits.est_admin("b@x.fr"))
+
+    def test_le_retour_arriere_d_une_suppression_restaure(self):
+        self.creer("a@x.fr")
+        self.creer("b@x.fr")
+        r = self.ex("comptes.supprimer", compte="b@x.fr")
+        self.n.catalogue.get("comptes.supprimer").defaire(None, r["resultat"])
+        self.assertTrue(self.n.identite.existe("b@x.fr"))
+
+    def test_gerer_les_comptes_est_un_droit(self):
+        self.creer("a@x.fr")
+        self.creer("b@x.fr")
+        self.assertEqual(self.ex("comptes.lister", au_nom_de="b@x.fr")["statut"], "refuse")
+        self.assertEqual(self.ex("comptes.creer", au_nom_de="b@x.fr", compte="c@x.fr", mot_de_passe=MDP)["statut"], "refuse")
+        self.assertEqual(self.ex("comptes.lister", au_nom_de="a@x.fr")["statut"], "faite")           # administrateur
+        self.ex("droits.regler", sujet="b@x.fr", droit="comptes.gerer")
+        self.assertEqual(self.ex("comptes.lister", au_nom_de="b@x.fr")["statut"], "faite")
+
+    def test_chacun_modifie_son_profil_mais_pas_ses_sites(self):
+        self.creer("a@x.fr")
+        self.creer("b@x.fr")
+        r = self.ex("comptes.modifier_moi", au_nom_de="b@x.fr", display_name="Bea", lang="EN", sites=["http://www.evil.com/x"])
+        self.assertEqual(r["statut"], "faite")
+        m = self.ex("comptes.moi", au_nom_de="b@x.fr")["resultat"]
+        self.assertEqual((m["display_name"], m["lang"], m["sites"]), ("Bea", "en", []))
+        self.ex("comptes.modifier", compte="b@x.fr", sites=["http://www.Exemple.com/x"])
+        self.assertEqual(self.ex("comptes.moi", au_nom_de="b@x.fr")["resultat"]["sites"], ["exemple.com"])
+        self.n.catalogue.get("comptes.modifier_moi").defaire(None, r["resultat"])
+        self.assertEqual(self.ex("comptes.moi", au_nom_de="b@x.fr")["resultat"]["display_name"], "")
+
+    def test_un_agent_ne_connait_pas_le_mot_de_passe_mais_peut_inviter(self):
+        self.creer("a@x.fr")
+        self.assertEqual(self.ex("comptes.creer", "cassandra", compte="c@x.fr", mot_de_passe=MDP)["statut"], "refuse")   # humain et compte seulement
+        self.n.regler_palier("comptes.creer_jeton", "auto")
+        self.assertEqual(self.ex("comptes.creer_jeton", "cassandra", compte="a@x.fr")["statut"], "faite")
+
+    def test_les_regles_et_la_legende_viennent_de_la_meme_table(self):
+        r = self.ex("comptes.regles_mdp")["resultat"]
+        self.assertEqual([x["cle"] for x in r["regles"]], ["longueur", "majuscule", "chiffre", "special"])
+        for x in r["regles"]:
+            self.assertIn(x["dit"], r["legende"])
+
+
+V18_SOURCE = RACINE.parent / "Cassandra" / "V18" / "cassandra.py"
+
+
+@unittest.skipUnless(V18_SOURCE.exists(), "la source de la V18 n'est pas là")
+class ParitéComptesV18(unittest.TestCase):
+    """Le banc de parité : les règles portées donnent les mêmes réponses que les fonctions de la V18, exécutées telles quelles."""
+
+    @classmethod
+    def setUpClass(cls):
+        import ast
+        src = V18_SOURCE.read_text(encoding="utf-8")
+        arbre = ast.parse(src)
+        voulus = {"_norm_domain", "_ip_nature", "mdp_regles", "mdp_valider", "mdp_legende", "_MDP_MIN", "_MDP_REGLES"}
+        morceaux = []
+        for nd in arbre.body:
+            nom = nd.name if isinstance(nd, ast.FunctionDef) else (nd.targets[0].id if isinstance(nd, ast.Assign) and isinstance(nd.targets[0], ast.Name) else "")
+            if nom in voulus or (isinstance(nd, ast.Assign) and isinstance(nd.targets[0], ast.Tuple) and any(getattr(t, "id", "") == "_MDP_MIN" for t in nd.targets[0].elts)):
+                morceaux.append(ast.get_source_segment(src, nd))
+        cls.v18 = {}
+        exec("\n\n".join(morceaux), cls.v18)
+
+    def test_les_regles_de_mot_de_passe(self):
+        from noyau import identite
+        for p in ("", "court", "Abcdefgh1!", "abcdefghij", "ABCDEFGH1!", "Abcdefgh!!", "Abcdefgh11", "A1!" + "x" * 30, "Éàüö1234!A", "a b c D 1 !"):
+            self.assertEqual(identite.mdp_valider(p), self.v18["mdp_valider"](p), p)
+        self.assertEqual(identite.mdp_regles(), self.v18["mdp_regles"]())
+        self.assertEqual(identite.mdp_legende(), self.v18["mdp_legende"]())
+
+    def test_les_domaines(self):
+        from noyau import identite
+        for d in ("Exemple.COM", "http://www.exemple.com/page", "https://exemple.com", "www.exemple.com", " exemple.com ", "", None):
+            self.assertEqual(identite.norm_domain(d), self.v18["_norm_domain"](d), d)
+
+    def test_la_nature_d_une_adresse(self):
+        from noyau import identite
+        for ip in ("127.0.0.1", "::1", "10.1.2.3", "192.168.0.9", "172.16.0.1", "172.32.0.1", "8.8.8.8", "fd00::1", "fe80::1", "", None, "n'importe quoi"):
+            self.assertEqual(identite.ip_nature(ip), self.v18["_ip_nature"](ip), ip)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -66,6 +66,12 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé l'administration des droits ([permissions] droits)" % self.module)
         return self._intro["droits"]
 
+    def identite(self):
+        """Le service d'identité des comptes (mots de passe, sessions), pour le module qui les administre ([permissions] identite)."""
+        if not self.manifeste.permissions.identite:
+            raise PermissionError("le module « %s » n'a pas demandé l'identité des comptes ([permissions] identite)" % self.module)
+        return self._intro["identite"]
+
     def compteurs(self, module: str) -> dict:
         """{'constats': ouverts du module, 'moteurs': ceux à surveiller} : de quoi afficher un badge."""
         self._exiger_introspection()

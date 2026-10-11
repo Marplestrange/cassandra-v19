@@ -30,6 +30,13 @@ class Executeur:
         self.crise = crise            # appelable : True quand le noyau est en crise (seule la lecture passe)
         self.contextes = {}           # module -> Contexte
 
+    @staticmethod
+    def _masquer(donnees, cles):
+        """Remplace par *** les valeurs que la capacité déclare secrètes : ni mot de passe ni jeton ne doivent finir dans un journal."""
+        if not cles or not isinstance(donnees, dict):
+            return donnees
+        return {k: ("***" if k in cles else v) for k, v in donnees.items()}
+
     def _evt(self, type, e, acteur, cause, donnees=None, compte=""):
         return self.bus.emettre(type, source=e.module, acteur=acteur, objet=("capacite", e.cle), cause=cause, donnees=donnees or {}, compte=compte)
 
@@ -56,7 +63,7 @@ class Executeur:
             self._evt("capacite.refusee", e, acteur, cause, {"raison": "crise : seule la lecture passe"}, compte)
             return {"statut": "refuse", "raison": "le noyau est en crise : seule la lecture passe"}
 
-        demande = self._evt("capacite.demandee", e, acteur, cause, {"args": args, "essai": essai}, compte)
+        demande = self._evt("capacite.demandee", e, acteur, cause, {"args": self._masquer(args, c.masque), "essai": essai}, compte)
         ctx = self.contextes.get(e.module)
         if ctx is not None:
             ctx._cause.valeur, ctx._compte.valeur = demande, compte
@@ -78,7 +85,7 @@ class Executeur:
 
             palier = self.catalogue.savoir(cle)["palier"]
             if acteur != "humain" and palier == "raconter":
-                self._evt("capacite.racontee", e, acteur, demande, {"palier": palier, "args": args}, compte)
+                self._evt("capacite.racontee", e, acteur, demande, {"palier": palier, "args": self._masquer(args, c.masque)}, compte)
                 return {"statut": "racontee", "evenement": demande}
 
             return self._ecrire(e, acteur, args, demande, ctx, compte)
@@ -97,7 +104,7 @@ class Executeur:
             return {"statut": "echec", "erreur": str(ex), "evenement": demande}
         res = {} if res is None else res
         # consigné AVANT la preuve : de quoi prouver ou défaire après une mort du processus
-        fait = self._evt("capacite.faite", e, acteur, demande, {"resultat": res}, compte)
+        fait = self._evt("capacite.faite", e, acteur, demande, {"resultat": self._masquer(res, e.capacite.masque)}, compte)
         prouve, motif = self.prouver(e, ctx, res)
         if prouve:
             self._evt("capacite.prouvee", e, acteur, fait, {}, compte)

@@ -39,6 +39,18 @@ CREATE TABLE IF NOT EXISTS droit_groupes(groupe TEXT PRIMARY KEY, libelle TEXT N
 CREATE TABLE IF NOT EXISTS droit_membres(compte TEXT NOT NULL, groupe TEXT NOT NULL, PRIMARY KEY(compte, groupe));
 CREATE TABLE IF NOT EXISTS droit_accords(
   sujet_type TEXT NOT NULL, sujet TEXT NOT NULL, droit TEXT NOT NULL, accord INTEGER NOT NULL, PRIMARY KEY(sujet_type, sujet, droit));
+CREATE TABLE IF NOT EXISTS comptes(
+  compte TEXT PRIMARY KEY, hash TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT '', role_label TEXT NOT NULL DEFAULT '',
+  contact_email TEXT NOT NULL DEFAULT '', phone TEXT NOT NULL DEFAULT '', lang TEXT NOT NULL DEFAULT 'fr',
+  fp_account TEXT NOT NULL DEFAULT '', sites TEXT NOT NULL DEFAULT '[]', cree REAL NOT NULL, maj REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS comptes_corbeille(id INTEGER PRIMARY KEY AUTOINCREMENT, compte TEXT NOT NULL, instantane TEXT NOT NULL, ts REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS sessions(
+  id TEXT PRIMARY KEY, compte TEXT NOT NULL, court TEXT NOT NULL, cree REAL NOT NULL, derniere REAL NOT NULL,
+  ip TEXT NOT NULL DEFAULT '', agent TEXT NOT NULL DEFAULT '');
+CREATE INDEX IF NOT EXISTS sessions_compte ON sessions(compte);
+CREATE TABLE IF NOT EXISTS jetons_mdp(id TEXT PRIMARY KEY, compte TEXT NOT NULL, expire REAL NOT NULL, utilise INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS tentatives(cle TEXT NOT NULL, ts REAL NOT NULL);
+CREATE INDEX IF NOT EXISTS tentatives_cle ON tentatives(cle, ts);
 """
 
 
