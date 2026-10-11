@@ -49,7 +49,10 @@ class Executeur:
         if e is None:
             return {"statut": "refuse", "raison": "capacité inconnue : %s" % cle}
         c = e.capacite
-        if self.exiger_compte and not interne:
+        # Une capacité qui se déclare PUBLIQUE (qui = ["anonyme"]) s'exécute avant toute connexion (clé de sécurité, code de secours, robot Telegram) :
+        # l'acteur est « anonyme », sans compte, et rien d'autre que ce qu'elle déclare n'est joignable ainsi. L'acte reste journalisé, avec son origine.
+        public = acteur == "anonyme" and "anonyme" in c.qui and not c.ecrit_sans_preuve
+        if self.exiger_compte and not interne and not public:
             # Un acte sans compte n'est pas un acte anonyme ordinaire : c'est une anomalie (ou une attaque) qu'on refuse et qu'on signale.
             if not compte:
                 self._evt("capacite.refusee", e, acteur, cause, {"raison": "sans compte", "alerte": True}, compte)

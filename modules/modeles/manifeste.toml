@@ -1,0 +1,214 @@
+[module]
+id = "modeles"
+nom = "Modèles"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Registre des fournisseurs et modèles, clés, budgets."
+confiance = "interne"
+famille = "gestion"
+requiert = ["droits"]
+
+[[droits]]
+id = "gerer"
+libelle = "Gérer le registre des modèles et les rôles"
+sensible = true
+
+[[reglages]]
+id = "ollama_url"
+libelle = "Adresse locale d'Ollama"
+type = "texte"
+defaut = "http://127.0.0.1:11434"
+
+[[reglages]]
+id = "ollama_num_ctx"
+libelle = "Fenêtre par défaut (jetons) pour les modèles locaux Ollama"
+type = "entier"
+defaut = 8192
+minimum = 2048
+
+# Les réglages historiques pour la migration
+[[reglages]]
+id = "itare_citadelle_api_key"
+libelle = "itare citadelle api key"
+type = "secret"
+[[reglages]]
+id = "itare_api_key"
+libelle = "itare api key"
+type = "secret"
+[[reglages]]
+id = "itare_citadelle_provider"
+libelle = "itare citadelle provider"
+type = "texte"
+[[reglages]]
+id = "itare_provider"
+libelle = "itare provider"
+type = "texte"
+[[reglages]]
+id = "itare_citadelle_model"
+libelle = "itare citadelle model"
+type = "texte"
+[[reglages]]
+id = "itare_model"
+libelle = "itare model"
+type = "texte"
+[[reglages]]
+id = "itare_vision_api_key"
+libelle = "itare vision api key"
+type = "secret"
+[[reglages]]
+id = "itare_vision_provider"
+libelle = "itare vision provider"
+type = "texte"
+[[reglages]]
+id = "itare_vision_model"
+libelle = "itare vision model"
+type = "texte"
+[[reglages]]
+id = "evolution_relecteur_api_key"
+libelle = "evolution relecteur api key"
+type = "secret"
+[[reglages]]
+id = "evolution_relecteur_provider"
+libelle = "evolution relecteur provider"
+type = "texte"
+[[reglages]]
+id = "evolution_relecteur_model"
+libelle = "evolution relecteur model"
+type = "texte"
+
+[[objets]]
+type = "modele"
+libelle = "Un modèle d'IA"
+
+[evenements]
+emet = ["modele.pull_demande", "modele.pull_termine", "modele.pull_erreur"]
+ecoute = []
+
+[[moteurs]]
+id = "ollama_pull"
+libelle = "Téléchargement d'un modèle Ollama"
+mode = "demande"
+duree_max_s = 3600
+
+[[capacites]]
+id = "lister"
+libelle = "Lister les modèles du registre et les locaux"
+risque = "lecture"
+
+[[capacites]]
+id = "compte_etat"
+libelle = "L'état du modèle choisi par le compte"
+risque = "lecture"
+
+[[capacites]]
+id = "compte_ecrire"
+libelle = "Choisir le modèle pour son compte"
+risque = "faible"
+perimetre = ["la ligne compte_choix du compte qui agit"]
+preuve = "relire le choix"
+retour = "remettre l'état d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "compte_cle_ecrire"
+libelle = "Enregistrer sa clé API personnelle"
+risque = "faible"
+masque = ["cle"]
+perimetre = ["le coffre du compte"]
+preuve = "bouchon"
+retour = "bouchon"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "compte_cle_retirer"
+libelle = "Retirer sa clé API personnelle"
+risque = "faible"
+perimetre = ["le coffre du compte"]
+preuve = "bouchon"
+retour = "bouchon"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "ajouter"
+libelle = "Ajouter un modèle au registre"
+risque = "moyen"
+droit = "gerer"
+masque = ["cle"]
+perimetre = ["la table modeles_registre"]
+preuve = "relire la ligne"
+retour = "supprimer la ligne"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "retirer"
+libelle = "Retirer un modèle du registre"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la table modeles_registre"]
+preuve = "relire la ligne (absente)"
+retour = "remettre la ligne"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "essayer"
+libelle = "Essayer un modèle du registre"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["les colonnes essai_ de modeles_registre"]
+preuve = "relire les colonnes essai_"
+retour = "remettre l'état d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "role_set"
+libelle = "Lier un rôle à un modèle du registre"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la table modeles_roles"]
+preuve = "relire la ligne"
+retour = "remettre l'état d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "migrer"
+libelle = "Migrer les anciens réglages d'un rôle vers le registre"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["modeles_registre et modeles_roles"]
+preuve = "vérifier la présence"
+retour = "supprimer du registre"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "ollama_pull"
+libelle = "Télécharger un modèle Ollama (asynchrone)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["Ollama local"]
+preuve = "bouchon"
+retour = "bouchon"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "ollama_supprimer"
+libelle = "Supprimer un modèle Ollama local"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["Ollama local et le registre s'il y était"]
+preuve = "bouchon"
+retour = "remettre dans le registre s'il y était"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[permissions]
+stockage = true
+droits = true

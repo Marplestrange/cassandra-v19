@@ -20,7 +20,7 @@ API_NOYAU = "1.0"     # le contrat offert aux modules (ctx, manifeste). Sa versi
 
 RISQUES = ("lecture", "faible", "moyen", "eleve")
 PALIERS = ("raconter", "auto", "maitre")
-ACTEURS = ("cassandra", "itare", "humain", "compte", "agent")
+ACTEURS = ("cassandra", "itare", "humain", "compte", "agent", "anonyme")
 MODES_MOTEUR = ("periodique", "evenement", "demande")
 ROLES_MENU = ("utilisateur", "admin")
 GABARITS = ("tableau", "liste_detail", "libre")                  # comment l'interface compose un écran
@@ -72,6 +72,11 @@ class Capacite:
     @property
     def ecrit(self) -> bool:
         return self.risque != "lecture"
+
+    @property
+    def ecrit_sans_preuve(self) -> bool:
+        """Une capacité publique qui écrit doit porter sa preuve (elle l'a déjà : le manifeste l'exige) ; ici, jamais d'élévation du risque « eleve »."""
+        return self.risque == "eleve"
 
 
 @dataclass(frozen=True)

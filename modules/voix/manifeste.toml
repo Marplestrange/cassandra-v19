@@ -1,0 +1,77 @@
+[module]
+id = "voix"
+nom = "Voix"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Dictée et synthèse vocale. Écoute via faster-whisper, synthèse via Piper."
+confiance = "interne"
+famille = "gestion"
+requiert = ["droits"]
+
+[[droits]]
+id = "gerer"
+libelle = "Gérer les voix installées et les réglages machine d'écoute"
+sensible = true
+
+[[reglages]]
+id = "dossier_voix"
+libelle = "Dossier contenant les modèles de voix (fichiers .onnx)"
+type = "texte"
+defaut = "/var/lib/cassandra/voix"
+portee = "global"
+
+[[capacites]]
+id = "dispo"
+libelle = "Savoir si l'écoute et la synthèse sont installées"
+risque = "lecture"
+
+[[capacites]]
+id = "reglages"
+libelle = "Les voix posées, le catalogue et les choix actuels"
+risque = "lecture"
+
+[[capacites]]
+id = "ecouter"
+libelle = "Convertir de l'audio en texte"
+risque = "lecture"
+
+[[capacites]]
+id = "parler"
+libelle = "Convertir du texte en audio (rend un WAV en base64)"
+risque = "lecture"
+
+[[capacites]]
+id = "choisir"
+libelle = "Retenir le choix de voix de ce compte"
+risque = "faible"
+perimetre = ["la table voix_prefs du compte qui agit"]
+preuve = "relire les préférences"
+retour = "remettre l'état d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "machine_regler"
+libelle = "Changer le modèle d'écoute et son lexique"
+risque = "faible"
+droit = "gerer"
+perimetre = ["la table voix_machine"]
+preuve = "relire la configuration"
+retour = "remettre l'état d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra"]
+
+[[capacites]]
+id = "telecharger"
+libelle = "Télécharger une voix du catalogue depuis HuggingFace"
+risque = "faible"
+droit = "gerer"
+perimetre = ["le dossier des voix (disque)"]
+preuve = "vérifier la présence des fichiers .onnx sur le disque"
+retour = "supprimer les fichiers téléchargés"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[permissions]
+stockage = true
+droits = true

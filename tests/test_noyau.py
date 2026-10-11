@@ -3695,6 +3695,37 @@ class PasserelleHttp(unittest.TestCase):
         self.n.regler_palier("comptes.inviter_agent", "auto")
         self.assertEqual(self.req("GET", "/api/moi", entetes={"Authorization": "Bearer inconnu-inconnu-inconnu-inconnu"})[0], 401)
 
+    def test_une_capacite_publique_se_joint_avant_la_connexion_et_seulement_elle(self):
+        import shutil
+        mods = Path(self.tmp.name) / "modules"
+        ecrire_module(mods, "porte", """
+[module]
+id = "porte"
+nom = "Porte"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Une capacité publique et une privée."
+
+[[capacites]]
+id = "ouverte"
+libelle = "Publique : avant la connexion"
+risque = "lecture"
+qui = ["anonyme"]
+
+[[capacites]]
+id = "fermee"
+libelle = "Privée"
+risque = "lecture"
+""", "def brancher(ctx):\n    ctx.implementer('ouverte', lambda ctx: {'ok': True})\n    ctx.implementer('fermee', lambda ctx: {'ok': True})\n")
+        self.n.activer("porte")
+        st, c, _, _ = self.req("POST", "/api/public/porte.ouverte", {"args": {}})
+        self.assertEqual((st, c["statut"]), (200, "faite"))
+        self.assertEqual(self.req("POST", "/api/public/porte.fermee", {"args": {}})[0], 404)                 # une privée n'est jamais joignable ainsi
+        self.assertEqual(self.req("POST", "/api/public/comptes.moi", {"args": {}})[0], 404)
+        self.assertEqual(self.req("POST", "/api/agir/porte.ouverte", {"args": {}})[0], 401)                  # et par la porte normale, il faut un jeton
+        ev = [e for e in self.n.bus.recents(portee=TOUT, limite=100) if e["type"] == "capacite.demandee" and e["acteur"] == "anonyme"]
+        self.assertEqual(len(ev), 1)                                                                         # l'acte public est journalisé
+
     def test_la_deconnexion_ferme_la_session(self):
         jeton = self.connexion()[1]["jeton"]
         h = {"Authorization": "Bearer " + jeton}

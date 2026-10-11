@@ -156,6 +156,8 @@ class Passerelle:
                 return self._repondre(h, 200, {"ok": True, "version": self.noyau.etat()["version"]})
             if methode == "POST" and chemin == "/api/connexion":
                 return self._connexion(h)
+            if chemin.startswith("/api/public/"):
+                return self._public(h, methode, chemin[len("/api/public/"):])
             qui = self._qui(h)
             if qui is None:
                 return self._repondre(h, 401, {"erreur": "authentification requise"})
@@ -193,6 +195,28 @@ class Passerelle:
             return self._repondre(h, 429 if res.get("limite") else 401, {"erreur": res.get("erreur", "refusé"), "attente_s": res.get("attente_s", 0)})
         cookie = "%s=%s; Path=/; Max-Age=%d; HttpOnly; SameSite=Strict%s" % (COOKIE, res["jeton"], self.noyau.identite.ttl, "; Secure" if self.cookie_secure else "")
         return self._repondre(h, 200, {"ok": True, "compte": res["compte"], "jeton": res["jeton"]}, cookie=cookie)
+
+    def _public(self, h, methode, cle):
+        """Les capacités qui se DÉCLARENT publiques (qui = ["anonyme"]) : avant la connexion. Jamais les autres. L'origine est consignée."""
+        if methode != "POST" or not RE_CAPACITE.match(cle):
+            return self._repondre(h, 404, {"erreur": "route inconnue"})
+        e = self.noyau.catalogue.get(cle)
+        if e is None or "anonyme" not in e.capacite.qui:
+            return self._repondre(h, 404, {"erreur": "capacité inconnue ou non publique"})
+        corps = self._corps(h)
+        args = corps.get("args") or {}
+        if not isinstance(args, dict):
+            raise ValueError("« args » doit être un objet")
+        args = dict(args, ip=self._ip(h)) if "ip" in self._noms_args(e) else args
+        r = self.noyau.executeur.executer(cle, "anonyme", args, compte="")
+        return self._repondre(h, STATUTS_HTTP.get(r["statut"], 200), r)
+
+    @staticmethod
+    def _noms_args(e):
+        try:
+            return e.faire.__code__.co_varnames[:e.faire.__code__.co_argcount]
+        except AttributeError:
+            return ()
 
     def _agir(self, h, methode, cle, requete, compte, acteur):
         if not RE_CAPACITE.match(cle):
