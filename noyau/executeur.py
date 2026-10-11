@@ -41,6 +41,8 @@ class Executeur:
         if acteur not in c.qui:
             self._evt("capacite.refusee", e, acteur, cause, {"raison": "acteur non autorisé"}, compte)
             return {"statut": "refuse", "raison": "« %s » n'est pas autorisé à utiliser %s" % (acteur, cle)}
+        if not e.actif:
+            return {"statut": "refuse", "raison": "le module « %s » est désactivé" % e.module}
         if not e.implementee:
             return {"statut": "refuse", "raison": "capacité déclarée mais pas encore portée : %s" % cle}
         if c.ecrit and self.crise():

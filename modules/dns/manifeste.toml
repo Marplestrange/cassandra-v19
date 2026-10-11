@@ -5,6 +5,7 @@ version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Relève les zones suivies, garde une référence versionnée et corrige les enregistrements dérivés de l'adresse publique."
 confiance = "interne"
+famille = "reseau"
 
 [[objets]]
 type = "domaine"

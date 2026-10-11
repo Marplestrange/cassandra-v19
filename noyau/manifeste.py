@@ -103,6 +103,8 @@ class Manifeste:
     description: str
     confiance: str
     requiert: tuple = ()
+    essentiel: bool = False    # un module essentiel ne se désactive pas (comptes, coffre, notifications...)
+    famille: str = ""          # regroupement dans le menu des modules (« securite », « reseau »...)
     objets: tuple = ()
     emet: tuple = ()
     ecoute: tuple = ()
@@ -159,6 +161,10 @@ def valider(brut: dict) -> list:
         e.append("module.noyau_min : le module exige le noyau %s, ce noyau est en %s" % (m.get("noyau_min"), VERSION_NOYAU))
     if m.get("confiance", "interne") not in CONFIANCES:
         e.append("module.confiance : %s" % " | ".join(CONFIANCES))
+    if "essentiel" in m and not isinstance(m["essentiel"], bool):
+        e.append("module.essentiel : vrai ou faux")
+    if "famille" in m and (not isinstance(m["famille"], str) or len(m["famille"]) > 40):
+        e.append("module.famille : un texte de 40 caractères au plus")
     requiert = _liste_de_textes(m.get("requiert"), "module.requiert", e, _ID)
     if mid in requiert:
         e.append("module.requiert : un module ne peut pas se requérir lui-même")
@@ -285,6 +291,7 @@ def construire(brut: dict, source="") -> Manifeste:
     return Manifeste(
         id=m["id"], nom=m["nom"], version=m["version"], noyau_min=m["noyau_min"], description=m["description"].strip(),
         confiance=m.get("confiance", "interne"), requiert=tuple(m.get("requiert", ())),
+        essentiel=bool(m.get("essentiel", False)), famille=str(m.get("famille", "")),
         objets=tuple(Objet(o["type"], o["libelle"]) for o in brut.get("objets", []) or []),
         emet=tuple(ev.get("emet", ())), ecoute=tuple(ev.get("ecoute", ())), capacites=caps,
         detecteurs=tuple(Detecteur(d["id"], d.get("libelle", d["id"]), d["frequence_s"], d.get("capacite", "")) for d in brut.get("detecteurs", []) or []),

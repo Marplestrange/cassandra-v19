@@ -25,6 +25,7 @@ class Entree:
     prouver: object = None
     defaire: object = None
     simuler: object = None
+    actif: bool = True         # faux quand le module est désactivé : ses capacités ne répondent plus
 
     @property
     def implementee(self) -> bool:
@@ -42,6 +43,13 @@ class Catalogue:
             self._entrees[cle] = Entree(cle, manifeste.id, c)
             if self.base.lire("SELECT 1 FROM savoir WHERE capacite=?", (cle,)) == []:
                 self.base.ecrire("INSERT INTO savoir(capacite, palier, maj) VALUES (?,?,?)", (cle, c.paliers[0], time.time()))
+
+    def desactiver_module(self, module: str) -> int:
+        n = 0
+        for e in self._entrees.values():
+            if e.module == module and e.actif:
+                e.actif, n = False, n + 1
+        return n
 
     def implementer(self, module: str, cid: str, faire, prouver=None, defaire=None, simuler=None) -> None:
         e = self._entrees.get("%s.%s" % (module, cid))

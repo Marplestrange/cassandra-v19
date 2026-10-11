@@ -692,5 +692,210 @@ class Greffe(unittest.TestCase):
         self.assertFalse((RACINE / "modules" / "veille").exists())
 
 
+DUR_TOML = """
+[module]
+id = "dur"
+nom = "Dur"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Module essentiel d'essai."
+essentiel = true
+famille = "socle"
+
+[[objets]]
+type = "pilier"
+libelle = "Un pilier"
+"""
+
+
+def monde_menu(installation=False):
+    """Un noyau en gestion par état (comme en exploitation) avec labo, veille (requiert labo) et dur (essentiel)."""
+    tmp = tempfile.TemporaryDirectory()
+    base = Path(tmp.name)
+    mods = base / "modules"
+    ecrire_module(mods, "labo", LABO_TOML, LABO_PY)
+    veille = VEILLE_TOML % {"confiance": 'confiance = "interne"'}
+    if installation:
+        veille += '\n[installation]\nscript = "installer.sh"\nverification = "verifier.sh"\nretrait = "retirer.sh"\n'
+    ecrire_module(mods, "veille", veille, VEILLE_PY)
+    if installation:
+        for f in ("installer.sh", "verifier.sh", "retirer.sh"):
+            (mods / "veille" / f).write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    ecrire_module(mods, "dur", DUR_TOML, "def brancher(ctx):\n    pass\n")
+    cfg = {"labo": {"jouets": {}, "drapeaux": {}}, "veille": {}}
+
+    def noyau():
+        return moteur.Noyau(base / "d", mods, cfg, gerer_modules=True)
+    return tmp, noyau, cfg
+
+
+class MenuDesModules(unittest.TestCase):
+    def setUp(self):
+        self.tmp, self.nouveau, self.cfg = monde_menu()
+        self.addCleanup(self.tmp.cleanup)
+        self.n = self.nouveau()
+        self.n.brancher()
+
+    def etats(self):
+        return {m["id"]: m for m in self.n.catalogue_modules()}
+
+    def evts(self, t):
+        return [e for e in self.n.bus.recents(portee=TOUT, limite=500) if e["type"] == t]
+
+    def test_au_depart_rien_n_est_actif_et_tout_est_activable(self):
+        e = self.etats()
+        self.assertEqual({k: v["etat"] for k, v in e.items()}, {"labo": "inactif", "veille": "inactif", "dur": "inactif"})
+        self.assertEqual(self.n.etat()["modules"], [])
+        self.assertTrue(e["veille"]["peut_activer"]["ok"])
+        self.assertEqual(e["dur"]["famille"], "socle")
+
+    def test_activer_un_module_active_ses_dependances_d_abord(self):
+        r = self.n.activer("veille", acteur="humain")
+        self.assertEqual(r, {"ok": True, "actives": ["labo", "veille"]})
+        self.assertEqual(self.n.etat()["modules"], ["labo", "veille"])
+        self.assertEqual(self.n.etat()["moteurs"], 4)
+        ev = self.evts("module.active")
+        self.assertEqual([(e["objet_id"], e["acteur"]) for e in ev], [("labo", "humain"), ("veille", "humain")])
+        self.assertEqual(self.n.activer("veille")["actives"], [])                 # déjà actif : rien de plus
+
+    def test_activer_sans_ses_dependances_est_refuse(self):
+        r = self.n.activer("veille", avec_dependances=False)
+        self.assertFalse(r["ok"])
+        self.assertEqual(r["dependances"], ["labo"])
+        self.assertEqual(self.n.etat()["modules"], [])
+
+    def test_desactiver_un_module_requis_est_refuse_sauf_en_cascade(self):
+        self.n.activer("veille")
+        r = self.n.desactiver("labo")
+        self.assertFalse(r["ok"])
+        self.assertEqual(r["dependants"], ["veille"])
+        self.assertEqual(self.n.desactiver("labo", cascade=True), {"ok": True, "desactives": ["veille", "labo"]})   # les dépendants d'abord
+        self.assertEqual(self.n.etat()["modules"], [])
+        self.assertEqual(self.n.etat()["moteurs"], 0)
+
+    def test_desactiver_arrete_tout_mais_garde_les_donnees(self):
+        self.n.activer("veille")
+        self.cfg["labo"]["jouets"]["ours"] = "casse"
+        self.n.catalogue.regler_palier("labo.reparer_jouet", "auto")
+        self.n.tick(1000)                                                          # l'objet est posé, le jouet réparé
+        self.assertIsNotNone(self.n.registre.lire("jouet", "ours", portee=TOUT))
+        self.cfg["labo"]["jouets"]["ours"] = "casse"
+        self.n.catalogue.regler_palier("labo.reparer_jouet", "raconter")
+        self.n.tick(1020)                                                          # constat ouvert, seulement raconté
+        self.assertEqual(self.n.etat()["constats_ouverts"], 1)
+        self.n.desactiver("labo", cascade=True)
+        # plus rien ne répond
+        self.assertEqual(self.n.executeur.executer("labo.reparer_jouet", "humain", {"nom": "ours"})["statut"], "refuse")
+        self.assertIn("désactivé", self.n.executeur.executer("labo.reparer_jouet", "humain", {"nom": "ours"})["raison"])
+        self.assertEqual(self.n.lancer("veille.compter")["statut"], "refuse")
+        self.assertEqual(self.n.tick(2000)["detecteurs"], 0)
+        self.assertEqual(self.n.bus.desabonner("veille"), 0)                       # ses abonnements sont déjà partis
+        # les données restent ; le constat est suspendu, pas supprimé
+        self.assertIsNotNone(self.n.registre.lire("jouet", "ours", portee=TOUT))
+        self.assertEqual(self.n.base.lire("SELECT etat FROM constats")[0]["etat"], "suspendu")
+        self.assertEqual(self.n.etat()["constats_ouverts"], 0)
+        self.assertEqual(len(self.evts("noyau.module_debranche")), 2)
+
+    def test_reactiver_rebranche_et_retrouve_le_savoir_faire(self):
+        self.n.activer("labo")
+        self.n.catalogue.regler_palier("labo.reparer_jouet", "auto")
+        self.n.desactiver("labo")
+        self.assertEqual(self.n.catalogue.savoir("labo.reparer_jouet")["palier"], "auto")   # l'apprentissage survit
+        self.n.activer("labo")
+        self.assertEqual(self.n.agir_humain("labo.lire_jouet", {"nom": "x"})["statut"], "faite")
+        self.assertEqual(self.n.catalogue.savoir("labo.reparer_jouet")["palier"], "auto")
+        self.assertEqual(self.n.etat()["detecteurs"], 1)                            # branché une seule fois
+
+    def test_un_module_essentiel_ne_se_desactive_pas_sauf_force(self):
+        self.n.activer("dur")
+        r = self.n.desactiver("dur")
+        self.assertFalse(r["ok"])
+        self.assertTrue(r["essentiel"])
+        self.assertTrue(self.etats()["dur"]["essentiel"])
+        self.assertEqual(self.n.desactiver("dur", forcer=True)["desactives"], ["dur"])
+
+    def test_l_etat_survit_au_redemarrage(self):
+        self.n.activer("veille")
+        autre = self.nouveau()
+        autre.brancher()
+        self.assertEqual(autre.etat()["modules"], ["labo", "veille"])
+
+    def test_le_noyau_en_marche_voit_un_changement_d_etat_ecrit_ailleurs(self):
+        cli = self.nouveau()                                                        # comme `main.py module activer`
+        cli.activer("labo", appliquer=False)
+        self.assertEqual(self.n.etat()["modules"], [])
+        self.n._surveiller()                                                       # une passe de la boucle
+        self.assertEqual(self.n.etat()["modules"], ["labo"])
+        cli.desactiver("labo", appliquer=False)
+        self.n._surveiller()
+        self.assertEqual(self.n.etat()["modules"], [])
+
+    def test_un_module_actif_dont_le_dossier_a_disparu_n_arrete_pas_le_noyau(self):
+        self.n.etat_modules.poser("fantome", installe=True, actif=True, par="test")
+        autre = self.nouveau()
+        r = autre.brancher()                                                        # démarre quand même
+        self.assertEqual(r["introuvables"], ["fantome"])
+        self.assertEqual(len([e for e in autre.bus.recents(portee=TOUT, limite=50) if e["type"] == "noyau.module_introuvable"]), 1)
+
+    def test_l_ancienne_liste_amorce_un_etat_vide(self):
+        n = moteur.Noyau(Path(self.tmp.name) / "d2", Path(self.tmp.name) / "modules", self.cfg, gerer_modules=True, amorce=lambda: ["labo"])
+        n.brancher()
+        self.assertEqual(n.etat()["modules"], ["labo"])
+        self.assertEqual(n.etat_modules.get("labo")["par"], "amorce")
+
+    def test_les_liens_du_menu(self):
+        self.n.activer("veille")
+        e = self.etats()
+        self.assertEqual(e["labo"]["requis_par"], ["veille"])
+        self.assertEqual(e["veille"]["requiert"], ["labo"])
+        self.assertFalse(e["labo"]["peut_desactiver"]["ok"])
+        self.assertTrue(e["veille"]["peut_desactiver"]["ok"])
+        self.assertEqual((e["veille"]["moteurs"], e["veille"]["implementees"]), (4, 0))
+
+
+class MenuAvecInstallation(unittest.TestCase):
+    def test_un_module_a_installer_ne_s_active_que_s_il_l_est(self):
+        tmp, nouveau, _ = monde_menu(installation=True)
+        self.addCleanup(tmp.cleanup)
+        n = nouveau()
+        n.brancher()
+        self.assertEqual({m["id"]: m["etat"] for m in n.catalogue_modules()}["veille"], "a_installer")
+        r = n.activer("veille")
+        self.assertFalse(r["ok"])
+        self.assertEqual(r["a_installer"], "veille")
+        self.assertIn("install.sh --module veille", r["raison"])
+        n.etat_modules.poser("veille", installe=True, par="installateur")           # ce que fait install.sh après sa preuve
+        self.assertTrue(n.activer("veille")["ok"])
+
+
+class LigneDeCommandeModules(unittest.TestCase):
+    def test_module_activer_desactiver_actif(self):
+        import os
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        ancien = {k: os.environ.get(k) for k in ("CASSANDRA_DONNEES", "CASSANDRA_EXTENSIONS")}
+        os.environ["CASSANDRA_DONNEES"] = tmp.name
+        os.environ.pop("CASSANDRA_EXTENSIONS", None)
+        try:
+            c = lambda *a: moteur.commande_module(["main.py", "module"] + list(a))
+            self.assertEqual(c("actif", "dns"), 1)
+            self.assertEqual(c("activer", "dns"), 0)
+            self.assertEqual(c("actif", "dns"), 0)
+            self.assertEqual(c("activer", "certificats"), 1)         # s'installe d'abord par l'administrateur
+            self.assertEqual(c("installe", "certificats"), 0)
+            self.assertEqual(c("activer", "certificats"), 0)
+            self.assertEqual(c("desactiver", "dns"), 1)               # requis par certificats
+            self.assertEqual(c("desactiver", "dns", "--en-cascade"), 0)
+            self.assertEqual(c("actif", "certificats"), 1)
+            self.assertEqual(c("oublier", "dns"), 0)
+            self.assertEqual(c("liste"), 0)
+        finally:
+            for k, v in ancien.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+
+
 if __name__ == "__main__":
     unittest.main()

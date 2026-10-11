@@ -52,6 +52,12 @@ class Bus:
     def ecouter(self, type: str, fonction, module: str) -> None:
         self._abonnes.append((type, fonction, module))
 
+    def desabonner(self, module: str) -> int:
+        """Retire tous les abonnements d'un module (désactivation à chaud). Rend leur nombre."""
+        avant = len(self._abonnes)
+        self._abonnes = [a for a in self._abonnes if a[2] != module]
+        return avant - len(self._abonnes)
+
     def _distribuer(self, ev: dict) -> None:
         profondeur = getattr(self._pile, "n", 0)
         if profondeur >= PROFONDEUR_MAX:

@@ -41,7 +41,7 @@ done
 [ -L "$PREFIXE/current" ] || echouer "aucune installation dans $PREFIXE : lancer install.sh d'abord"
 [ -f "/etc/systemd/system/$UNITE" ] || echouer "le service $UNITE est absent : lancer install.sh d'abord"
 
-as_service() { runuser -u "$UTILISATEUR" -- env CASSANDRA_DONNEES="$DONNEES" CASSANDRA_CONFIG="$CONFIG" "$@"; }
+as_service() { runuser -u "$UTILISATEUR" -- env CASSANDRA_DONNEES="$DONNEES" CASSANDRA_CONFIG="$CONFIG" CASSANDRA_EXTENSIONS="$PREFIXE/extensions" "$@"; }
 ANCIENNE="$(readlink -f "$PREFIXE/current")"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 DEST="$PREFIXE/releases/$STAMP"
@@ -121,7 +121,7 @@ systemctl restart "$UNITE" || { journalctl -u "$UNITE" -n 25 --no-pager >&2; rev
 as_service python3 "$DEST/main.py" etat >/dev/null || revenir "l'état du noyau est illisible"
 
 for id in "${CHANGES[@]}"; do
-  grep -qxF "$id" "$CONFIG/modules.actifs" 2>/dev/null || continue
+  as_service python3 "$DEST/main.py" module actif "$id" >/dev/null 2>&1 || continue
   v="$DEST/modules/$id/verifier.sh"
   [ -f "$v" ] || continue
   dire "preuve du module $id"

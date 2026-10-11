@@ -105,7 +105,7 @@ def _ecarter(ms, refus, motifs, extension_ids):
     return True
 
 
-def brancher(racines, fabriquer_contexte, catalogue, registre, actifs=None, deja=frozenset()) -> dict:
+def brancher(racines, fabriquer_contexte, catalogue, registre, actifs=None, deja=frozenset(), tolerant=False) -> dict:
     """Branche les modules ACTIFS (`actifs=None` : tous, pour le développement) qui ne le sont pas encore (`deja`).
     `racines` : un dossier, ou une liste de (dossier, est_extension). Rend un rapport : ordre, branches (les nouveaux),
     refuses (extensions écartées, avec leurs raisons), capacités non portées, modules sans code."""
@@ -115,7 +115,7 @@ def brancher(racines, fabriquer_contexte, catalogue, registre, actifs=None, deja
     refuses_ids = {r["module"] for r in refus}
     if actifs is not None:
         inconnus = sorted(set(actifs) - {m.id for m, _ in ms} - refuses_ids)
-        if inconnus:
+        if inconnus and not tolerant:
             raise mf.ManifesteInvalide(["module actif introuvable : " + ", ".join(inconnus)])
         ms = [(m, e) for m, e in ms if m.id in set(actifs)]
     # isolation : une extension qui en importe une autre est écartée ; pour un module livré, c'est une erreur
@@ -137,7 +137,8 @@ def brancher(racines, fabriquer_contexte, catalogue, registre, actifs=None, deja
     mods = [m for m, _ in ms]
     ordre = mf.ordre_installation(mods)
     par_id = {m.id: m for m in mods}
-    rapport = {"ordre": ordre, "branches": [], "refuses": refus, "sans_code": [], "a_porter": []}
+    rapport = {"ordre": ordre, "branches": [], "refuses": refus, "sans_code": [], "a_porter": [],
+               "introuvables": sorted(set(actifs or ()) - {m.id for m, _ in ms} - refuses_ids) if tolerant else []}
     for mid in ordre:
         if mid in deja:
             continue
@@ -152,5 +153,5 @@ def brancher(racines, fabriquer_contexte, catalogue, registre, actifs=None, deja
             rapport["sans_code"].append(mid)
             continue
         code.brancher(ctx)
-    rapport["a_porter"] = [e.cle for e in catalogue.lister() if not e.implementee]
+    rapport["a_porter"] = [e.cle for e in catalogue.lister() if not e.implementee and e.actif]
     return rapport

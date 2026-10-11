@@ -4,7 +4,7 @@
 #   ./install.sh                         le noyau seul
 #   ./install.sh --module certificats    le noyau + ce module et ses dépendances (dns)
 #   ./install.sh --tous                  le noyau + tous les modules du dossier modules/
-#   ./install.sh --retirer certificats   retire un module (son retirer.sh, puis la liste des modules actifs)
+#   ./install.sh --retirer certificats   retire un module (son retirer.sh, puis son état)
 #   ./install.sh --extension ./sentinelle   GREFFE un module après coup, à chaud : copié dans extensions/ (que
 #                                        deploy.sh ne touche jamais), prouvé, activé ; le noyau le branche sans redémarrer
 #
@@ -46,7 +46,7 @@ done
 
 [ "$(id -u)" -eq 0 ] || echouer "à lancer en root"
 
-as_service() { runuser -u "$UTILISATEUR" -- env CASSANDRA_DONNEES="$DONNEES" CASSANDRA_CONFIG="$CONFIG" "$@"; }
+as_service() { runuser -u "$UTILISATEUR" -- env CASSANDRA_DONNEES="$DONNEES" CASSANDRA_CONFIG="$CONFIG" CASSANDRA_EXTENSIONS="$PREFIXE/extensions" "$@"; }
 
 # ---------------------------------------------------------------- prérequis
 verifier_python() {
@@ -71,7 +71,9 @@ env_module() { # id
   CASSANDRA_MODULE_DIR="$(dossier_module "$1")"; export CASSANDRA_MODULE_DIR
 }
 
-actif() { grep -qxF "$1" "$CONFIG/modules.actifs" 2>/dev/null; }
+# L'état des modules (installé, actif) vit dans la base du noyau ; le menu des modules et ce script lisent le même.
+etat_module() { as_service python3 "$PREFIXE/current/main.py" module "$@"; }
+actif() { etat_module actif "$1" >/dev/null 2>&1; }
 
 installer_module() { # id
   local id="$1" d
@@ -89,8 +91,9 @@ installer_module() { # id
       echouer "module $id non installé (pas de preuve qu'il fonctionne)"
     fi
   fi
-  actif "$id" || printf '%s\n' "$id" >> "$CONFIG/modules.actifs"
-  dire "module $id : installé et prouvé"
+  etat_module installe "$id"
+  etat_module activer "$id" --sans-dependances || echouer "module $id installé mais non activé"
+  dire "module $id : installé, prouvé et actif"
 }
 
 retirer_script() { # id : le retirer.sh seul, sans toucher à la liste
@@ -105,10 +108,8 @@ if [ -n "$RETIRER" ]; then
   [ -d "$(dossier_module "$RETIRER")" ] || echouer "module introuvable : $RETIRER"
   dire "module $RETIRER : retrait"
   retirer_script "$RETIRER"
-  if [ -f "$CONFIG/modules.actifs" ]; then
-    grep -vxF "$RETIRER" "$CONFIG/modules.actifs" > "$CONFIG/modules.actifs.new" || true
-    mv "$CONFIG/modules.actifs.new" "$CONFIG/modules.actifs"
-  fi
+  etat_module desactiver "$RETIRER" --en-cascade --forcer >/dev/null 2>&1 || true
+  etat_module oublier "$RETIRER"
   # un module greffé s'efface avec son dossier ; le noyau, lui, garde en mémoire ce qu'il avait branché jusqu'au prochain démarrage
   if [ -d "$PREFIXE/extensions/$RETIRER" ]; then rm -rf "${PREFIXE:?}/extensions/$RETIRER"; fi
   systemctl daemon-reload
@@ -152,8 +153,6 @@ id -u "$UTILISATEUR" >/dev/null 2>&1 || useradd --system --home-dir "$DONNEES" -
 install -d -o root -g root -m 0755 "$PREFIXE" "$PREFIXE/releases" "$PREFIXE/extensions"
 install -d -o "$UTILISATEUR" -g "$UTILISATEUR" -m 0750 "$DONNEES" "$DONNEES/sauvegardes" "$JOURNAL"
 install -d -o root -g "$UTILISATEUR" -m 0750 "$CONFIG"
-[ -f "$CONFIG/modules.actifs" ] || : > "$CONFIG/modules.actifs"
-chown root:"$UTILISATEUR" "$CONFIG/modules.actifs"; chmod 0640 "$CONFIG/modules.actifs"
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
 DEST="$PREFIXE/releases/$STAMP"
@@ -190,7 +189,6 @@ elif [ "${#MODULES[@]}" -gt 0 ]; then
 fi
 # Un module qui échoue ne fait pas tomber le noyau : il est retiré et le noyau continue avec les précédents.
 for m in "${MODULES[@]}"; do installer_module "$m"; done
-chown root:"$UTILISATEUR" "$CONFIG/modules.actifs"
 
 if [ "${#MODULES[@]}" -gt 0 ]; then
   dire "rechargement avec les modules actifs"

@@ -9,6 +9,7 @@ le cycle : percevoir (les détecteurs), décider (le palier de la capacité), ag
     python main.py ordre [id ...]    ordre d'installation des modules demandés et de leurs dépendances (un id par ligne)
     python main.py versions          « id version » de chaque module (pour deploy.sh)
     python main.py etat              résume le noyau sans rien écrire (modules, objets, constats, paliers)
+    python main.py module <cmd>      l'état des modules : liste | activer ID | desactiver ID | installe ID | oublier ID | actif ID
     python main.py moteurs           les moteurs déclarés par les modules actifs, avec leur état
     python main.py tick              une passe de détection et des moteurs échus
     python main.py demarrer          le cycle en continu (sous systemd : type notify, chien de garde)
@@ -35,6 +36,7 @@ from noyau.bus import TOUT, Bus
 from noyau.catalogue import Catalogue
 from noyau.contexte import Contexte
 from noyau.executeur import Executeur
+from noyau.modules import Modules
 from noyau.registre import Registre
 
 RACINE = Path(__file__).resolve().parent
@@ -43,16 +45,20 @@ SEUIL_PANNES = 5   # pannes de suite d'un détecteur avant qu'il soit suspendu (
 
 
 class Noyau:
-    def __init__(self, donnees, modules=None, config=None, actifs=None, extensions=None, lire_actifs=None):
+    def __init__(self, donnees, modules=None, config=None, actifs=None, extensions=None, lire_actifs=None,
+                 gerer_modules=False, amorce=None):
         self.modules = Path(modules or RACINE / "modules")
         self.extensions = Path(extensions) if extensions else None   # dossier des modules greffés après coup
         self.actifs = actifs         # None : tous les modules du dossier ; sinon la liste des modules actifs
         self.lire_actifs = lire_actifs   # appelable : relit la liste des modules actifs (greffe à chaud)
+        self.gerer = bool(gerer_modules)  # vrai en exploitation : l'état des modules (installé, actif) vit dans la base
+        self._amorce = amorce            # appelable : l'ancienne liste de modules actifs, pour amorcer un état vide
         self.battement = lambda: None   # appelé entre deux détecteurs : le chien de garde de systemd
         self.config = dict(config or {})
         self.base = Base(Path(donnees) / "noyau.db")
         self.bus = Bus(self.base)
         self.registre = Registre(self.base, self.bus)
+        self.etat_modules = Modules(self.base)
         self.catalogue = Catalogue(self.base)
         self.executeur = Executeur(self.catalogue, self.bus, self.en_crise)
         self.detecteurs = []       # (module, Detecteur, fonction)
@@ -84,15 +90,164 @@ class Noyau:
 
     def brancher(self, annoncer: bool = True) -> dict:
         """Branche les modules. `annoncer=False` pour une lecture (état, vérification) : rien n'est écrit au bus."""
-        self.rapport = chargeur.brancher(self._racines(), self._fabriquer, self.catalogue, self.registre, self.actifs)
+        self._amorcer()
+        self.actifs = self._actifs_courants()
+        self.rapport = chargeur.brancher(self._racines(), self._fabriquer, self.catalogue, self.registre, self.actifs, tolerant=self.gerer)
         self._branches |= set(self.rapport["branches"])
         self._cabler_moteurs()
         self._signature = self._signer()
         if annoncer:
             self._dire_refus(self.rapport["refuses"])
+            for mid in self.rapport["introuvables"]:
+                self.bus.emettre("noyau.module_introuvable", source="noyau", objet=("module", mid), donnees={"module": mid})
             self.bus.emettre("noyau.demarre", source="noyau", donnees={"modules": self.rapport["ordre"], "a_porter": len(self.rapport["a_porter"])})
             self.rapport["reprises"] = self.reprendre()
         return self.rapport
+
+    # ---------- l'état des modules ----------
+    def _actifs_courants(self):
+        if self.gerer:
+            return self.etat_modules.actifs()
+        return self.lire_actifs() if self.lire_actifs else self.actifs
+
+    def _amorcer(self) -> None:
+        """Premier démarrage en gestion par état : la liste d'avant (fichier modules.actifs) devient l'état."""
+        if self.gerer and self._amorce and not self.etat_modules.tous():
+            for mid in self._amorce() or []:
+                self.etat_modules.poser(mid, installe=True, actif=True, par="amorce")
+
+    def _connus(self):
+        ms, refus = chargeur.decouvrir_tout(self._racines())
+        return {m.id: (m, ext) for m, ext in ms}, refus
+
+    def _plan_activation(self, mid: str, avec_dependances: bool = True) -> dict:
+        connus, refus = self._connus()
+        if mid not in connus:
+            raisons = next((r["raisons"] for r in refus if r["module"] == mid), None)
+            return {"ok": False, "raison": ("module écarté : " + " ; ".join(raisons)) if raisons else "module inconnu : %s" % mid}
+        etats = self.etat_modules.tous()
+        chaine = manifeste.avec_dependances([m for m, _ in connus.values()], [mid])
+        if not avec_dependances:
+            manquants = [x for x in chaine if x != mid and not etats.get(x, {}).get("actif")]
+            if manquants:
+                return {"ok": False, "raison": "dépend de : " + ", ".join(manquants), "dependances": manquants}
+        a_activer = [x for x in chaine if not etats.get(x, {}).get("actif")]
+        for x in a_activer:
+            if connus[x][0].installation.script and not etats.get(x, {}).get("installe"):
+                return {"ok": False, "a_installer": x,
+                        "raison": "« %s » s'installe d'abord par l'administrateur système : install.sh --module %s" % (x, x)}
+        return {"ok": True, "modules": a_activer}
+
+    def _dependants(self, mid: str, connus: dict, actifs: set) -> list:
+        """Les modules ACTIFS qui requièrent `mid`, directement ou non, ceux qui dépendent le plus d'abord."""
+        voulus, front = set(), [mid]
+        while front:
+            cur = front.pop()
+            for i in actifs:
+                if i in connus and cur in connus[i][0].requiert and i not in voulus:
+                    voulus.add(i)
+                    front.append(i)
+        if not voulus:
+            return []
+        ordre = manifeste.ordre_installation([connus[i][0] for i in voulus | {mid} if i in connus])
+        return [i for i in reversed(ordre) if i in voulus]
+
+    def _plan_desactivation(self, mid: str, cascade: bool = False, forcer: bool = False) -> dict:
+        connus, _ = self._connus()
+        etats = self.etat_modules.tous()
+        if mid not in connus and mid not in etats:
+            return {"ok": False, "raison": "module inconnu : %s" % mid}
+        if not etats.get(mid, {}).get("actif"):
+            return {"ok": True, "modules": []}
+        if mid in connus and connus[mid][0].essentiel and not forcer:
+            return {"ok": False, "raison": "« %s » est un module essentiel : il ne se désactive pas" % mid, "essentiel": True}
+        actifs = {i for i, e in etats.items() if e["actif"]}
+        deps = self._dependants(mid, connus, actifs)
+        if deps and not cascade:
+            return {"ok": False, "raison": "requis par : " + ", ".join(deps), "dependants": deps}
+        for d in deps:
+            if connus[d][0].essentiel and not forcer:
+                return {"ok": False, "raison": "« %s » est essentiel et dépend de « %s »" % (d, mid), "essentiel": True}
+        return {"ok": True, "modules": deps + [mid]}
+
+    def activer(self, mid: str, acteur: str = "humain", avec_dependances: bool = True, appliquer: bool = True) -> dict:
+        """Active un module (et ses dépendances). Voie humaine ou agent : chaque activation est un événement avec son auteur.
+        `appliquer=False` écrit l'état seul ; le noyau en marche le voit et branche à chaud."""
+        plan = self._plan_activation(mid, avec_dependances)
+        if not plan["ok"]:
+            return plan
+        connus, _ = self._connus()
+        for x in plan["modules"]:
+            self.etat_modules.poser(x, installe=True, actif=True, par=acteur)
+            self.bus.emettre("module.active", source="noyau", acteur=acteur, objet=("module", x), donnees={"module": x, "demande": mid})
+        if appliquer and plan["modules"]:
+            self.recharger()
+        return {"ok": True, "actives": plan["modules"]}
+
+    def desactiver(self, mid: str, acteur: str = "humain", cascade: bool = False, forcer: bool = False, appliquer: bool = True) -> dict:
+        """Désactive un module à chaud : ses moteurs, détecteurs et capacités s'arrêtent, ses données restent."""
+        plan = self._plan_desactivation(mid, cascade, forcer)
+        if not plan["ok"]:
+            return plan
+        for x in plan["modules"]:
+            self.etat_modules.poser(x, actif=False, par=acteur)
+            self.bus.emettre("module.desactive", source="noyau", acteur=acteur, objet=("module", x), donnees={"module": x, "demande": mid})
+        if appliquer and plan["modules"]:
+            self.recharger()
+        return {"ok": True, "desactives": plan["modules"]}
+
+    def _debrancher(self, mid: str) -> dict:
+        """Retire un module du noyau en marche. Ses données (objets, événements, savoir-faire) ne sont pas touchées."""
+        abonnements = self.bus.desabonner(mid)
+        self.moteurs[:] = [x for x in self.moteurs if x[0] != mid]
+        self.detecteurs[:] = [x for x in self.detecteurs if x[0] != mid]
+        self._cables = {k for k in self._cables if k[0] != mid}
+        self._suspendus = {k for k in self._suspendus if k[0] != mid}
+        self._moteurs_suspendus = {k for k in self._moteurs_suspendus if k[0] != mid}
+        self._figes = {k for k in self._figes if k[0] != mid}
+        n = self.catalogue.desactiver_module(mid)
+        self.executeur.contextes.pop(mid, None)
+        self.base.ecrire("UPDATE constats SET etat='suspendu' WHERE module=? AND etat='ouvert'", (mid,))
+        self._branches.discard(mid)
+        self.bus.emettre("noyau.module_debranche", source="noyau", objet=("module", mid),
+                         donnees={"module": mid, "abonnements": abonnements, "capacites": n})
+        return {"module": mid, "abonnements": abonnements, "capacites": n}
+
+    def catalogue_modules(self) -> list:
+        """Ce que montre le menu des modules : un module par ligne, son état, ses liens, ce qu'on peut en faire."""
+        connus, refus = self._connus()
+        etats = self.etat_modules.tous()
+        requis_par = {}
+        for m, _ in connus.values():
+            for r in m.requiert:
+                requis_par.setdefault(r, []).append(m.id)
+        entrees = self.catalogue.lister()
+        sortie = []
+        for mid, (m, ext) in connus.items():
+            e = etats.get(mid, {})
+            if e.get("actif"):
+                etat = "actif"
+            elif m.installation.script and not e.get("installe"):
+                etat = "a_installer"
+            else:
+                etat = "inactif"
+            pa = self._plan_activation(mid) if etat != "actif" else {"ok": False, "raison": "déjà actif"}
+            pd = self._plan_desactivation(mid) if etat == "actif" else {"ok": False, "raison": "n'est pas actif"}
+            mine = [x for x in entrees if x.module == mid]
+            sortie.append({
+                "id": mid, "nom": m.nom, "description": m.description, "version": m.version, "famille": m.famille or "autres",
+                "confiance": m.confiance, "essentiel": m.essentiel, "extension": ext, "etat": etat,
+                "requiert": list(m.requiert), "requis_par": sorted(requis_par.get(mid, [])),
+                "objets": len(m.objets), "capacites": len(m.capacites), "implementees": sum(1 for x in mine if x.implementee) if etat == "actif" else None,
+                "moteurs": len(m.moteurs), "detecteurs": len(m.detecteurs), "ecrans": len(m.ecrans),
+                "peut_activer": pa, "peut_desactiver": pd, "depuis": e.get("maj"), "par": e.get("par", ""),
+            })
+        for r in refus:
+            sortie.append({"id": r["module"], "nom": r["module"], "description": "; ".join(r["raisons"][:2]), "version": "", "famille": "refusés",
+                           "confiance": "", "essentiel": False, "extension": True, "etat": "refuse", "requiert": [], "requis_par": [],
+                           "objets": 0, "capacites": 0, "implementees": None, "moteurs": 0, "detecteurs": 0, "ecrans": 0,
+                           "peut_activer": {"ok": False, "raison": "extension écartée"}, "peut_desactiver": {"ok": False, "raison": ""}, "depuis": None, "par": ""})
+        return sorted(sortie, key=lambda x: (x["famille"], x["nom"].lower()))
 
     # ---------- greffe à chaud ----------
     def _signer(self):
@@ -103,6 +258,8 @@ class Noyau:
                 f = d / "manifeste.toml"
                 if f.exists():
                     ext.append((d.name, f.stat().st_mtime_ns))
+        if self.gerer:
+            return (self.etat_modules.signature(), tuple(ext))
         actifs = tuple(self.lire_actifs() or ()) if self.lire_actifs else (tuple(self.actifs) if self.actifs is not None else None)
         return (actifs, tuple(ext))
 
@@ -119,11 +276,11 @@ class Noyau:
         """Greffe à chaud : branche les modules devenus actifs ou déposés depuis le démarrage, sans toucher à ceux qui
         tournent. Un dépôt refusé (manifeste invalide, extension « interne », import d'un autre module) est dit une
         fois au bus, et n'empêche rien de ce qui tourne déjà."""
-        if self.lire_actifs:
-            self.actifs = self.lire_actifs()
+        self.actifs = self._actifs_courants()
         self._signature = self._signer()
+        retires = [self._debrancher(m) for m in sorted(self._branches) if self.actifs is not None and m not in self.actifs]
         try:
-            r = chargeur.brancher(self._racines(), self._fabriquer, self.catalogue, self.registre, self.actifs, deja=self._branches)
+            r = chargeur.brancher(self._racines(), self._fabriquer, self.catalogue, self.registre, self.actifs, deja=self._branches, tolerant=self.gerer)
         except manifeste.ManifesteInvalide as ex:
             self.bus.emettre("noyau.greffe_refusee", source="noyau", donnees={"erreurs": ex.erreurs[:10]})
             return {"refuse": ex.erreurs}
@@ -133,10 +290,10 @@ class Noyau:
         for mid in r["branches"]:
             self.bus.emettre("noyau.greffe", source="noyau", objet=("module", mid), donnees={"module": mid})
         self.rapport = dict(self.rapport, ordre=r["ordre"], a_porter=r["a_porter"])
-        return {"branches": r["branches"], "refuses": r["refuses"]}
+        return {"branches": r["branches"], "refuses": r["refuses"], "debranches": [x["module"] for x in retires]}
 
     def _surveiller(self) -> None:
-        if (self.lire_actifs or self.extensions) and self._signer() != self._signature:
+        if (self.gerer or self.lire_actifs or self.extensions) and self._signer() != self._signature:
             self.recharger()
 
     # ---------- les moteurs : le noyau les ordonnance ----------
@@ -378,7 +535,7 @@ class Noyau:
             p = self.catalogue.savoir(e.cle)["palier"]
             paliers[p] = paliers.get(p, 0) + 1
         return {
-            "version": manifeste.VERSION_NOYAU, "modules": self.rapport.get("ordre", []),
+            "version": manifeste.VERSION_NOYAU, "modules": sorted(self._branches),
             "capacites": len(caps), "implementees": sum(1 for e in caps if e.implementee), "paliers": paliers,
             "objets": self.registre.compter(portee=TOUT), "detecteurs": len(self.detecteurs), "moteurs": len(self.moteurs),
             "moteurs_a_surveiller": sorted(m["cle"] for m in self.etat_moteurs() if m["etat"] != "actif"), "suspendus": sorted("%s.%s" % k for k in self._suspendus),
@@ -443,6 +600,44 @@ def verifier() -> int:
     return 0
 
 
+def commande_module(argv) -> int:
+    """python main.py module liste | activer ID | desactiver ID | installe ID | oublier ID | actif ID
+    N'agit que sur l'ÉTAT : le noyau en marche le voit et branche ou débranche à chaud. C'est aussi ce que
+    l'interface appellera pour son menu des modules."""
+    sous = argv[2] if len(argv) > 2 else "liste"
+    n = Noyau(_donnees(), extensions=_extensions(), gerer_modules=True, amorce=_actifs)
+    n._amorcer()
+    ids = [a for a in argv[3:] if not a.startswith("--")]
+    opts = {a for a in argv[3:] if a.startswith("--")}
+    if sous == "liste":
+        for m in n.catalogue_modules():
+            print("%-14s %-12s %-11s v%-7s %s%s" % (m["id"], m["famille"], m["etat"], m["version"], m["nom"], "  [essentiel]" if m["essentiel"] else ""))
+        return 0
+    if not ids:
+        print("module %s : un identifiant est attendu" % sous, file=sys.stderr)
+        return 2
+    mid = ids[0]
+    if sous == "actif":
+        e = n.etat_modules.get(mid)
+        return 0 if e and e["actif"] else 1
+    if sous == "installe":
+        n.etat_modules.poser(mid, installe=True, par="installateur")
+        return 0
+    if sous == "oublier":
+        n.etat_modules.oublier(mid)
+        return 0
+    if sous == "activer":
+        r = n.activer(mid, acteur="humain", avec_dependances="--sans-dependances" not in opts, appliquer=False)
+        print(("activé : " + ", ".join(r["actives"]) if r["actives"] else "déjà actif") if r["ok"] else "refusé : " + r["raison"], file=sys.stderr if not r["ok"] else sys.stdout)
+        return 0 if r["ok"] else 1
+    if sous == "desactiver":
+        r = n.desactiver(mid, acteur="humain", cascade="--en-cascade" in opts, forcer="--forcer" in opts, appliquer=False)
+        print(("désactivé : " + ", ".join(r["desactives"]) if r["desactives"] else "déjà inactif") if r["ok"] else "refusé : " + r["raison"], file=sys.stderr if not r["ok"] else sys.stdout)
+        return 0 if r["ok"] else 1
+    print("module : sous-commande inconnue : %s" % sous, file=sys.stderr)
+    return 2
+
+
 def main(argv) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     commande = argv[1] if len(argv) > 1 else "verifier"
@@ -459,9 +654,13 @@ def main(argv) -> int:
             print(ex, file=sys.stderr)
             return 1
         return 0
+    if commande == "module":
+        return commande_module(argv)
     if commande in ("etat", "tick", "demarrer", "moteurs"):
         try:
-            n = Noyau(_donnees(), actifs=_actifs(), extensions=_extensions(), lire_actifs=_actifs)
+            gerer = bool(os.environ.get("CASSANDRA_CONFIG"))     # en exploitation : l'état des modules vit dans la base
+            n = Noyau(_donnees(), actifs=None if gerer else _actifs(), extensions=_extensions(), lire_actifs=None if gerer else _actifs,
+                      gerer_modules=gerer, amorce=_actifs)
             n.brancher(annoncer=commande != "etat")
         except manifeste.ManifesteInvalide as ex:
             print(ex, file=sys.stderr)
@@ -478,7 +677,7 @@ def main(argv) -> int:
         else:
             n.boucle()
         return 0
-    print("commande inconnue : %s (verifier | ordre | versions | etat | moteurs | tick | demarrer)" % commande, file=sys.stderr)
+    print("commande inconnue : %s (verifier | ordre | versions | module | etat | moteurs | tick | demarrer)" % commande, file=sys.stderr)
     return 2
 
 

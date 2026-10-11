@@ -5,6 +5,7 @@ version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Mesure l'occupation du disque racine et ouvre un constat au-delà du seuil. Exemple de greffe à chaud : un moteur, un détecteur, un type d'objet, des événements."
 confiance = "local"
+famille = "supervision"
 
 [[objets]]
 type = "disque"

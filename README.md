@@ -61,11 +61,36 @@ Pour chaque moteur le noyau mesure la durée, empêche qu'il s'empile s'il dépa
 compte les échecs, dit chaque échec au bus et le suspend après cinq échecs de suite (`lancer` le réarme : voie humaine).
 `python main.py moteurs` les liste avec leur état.
 
+## Activer et désactiver un module (le menu des modules)
+
+Chaque module a un état, qui vit dans la base du noyau : **disponible** (le manifeste est là), **installé** (ses scripts ont posé et prouvé ce
+qu'il faut sur la machine), **actif** (le noyau l'a branché). Désactiver n'efface rien : les objets, les événements et le savoir-faire du module
+restent, comme dans Dolibarr ; réactiver retrouve tout.
+
+```
+python main.py module liste                     un module par ligne : famille, état, version
+python main.py module activer ID [--sans-dependances]
+python main.py module desactiver ID [--en-cascade] [--forcer]
+```
+
+Le noyau en marche voit le changement et **branche ou débranche à chaud**, sans redémarrer : moteurs arrêtés, détecteurs et capacités qui ne
+répondent plus, abonnements retirés, constats ouverts suspendus. Les règles :
+
+- activer un module active d'abord ses dépendances (`requiert`) ; désactiver un module requis par un module actif est refusé, sauf `--en-cascade`
+  (les dépendants d'abord) ;
+- un module `essentiel = true` ne se désactive pas (sauf `--forcer`) ;
+- un module qui a des scripts d'installation ne s'active que s'il est installé : cela demande l'administrateur système (`install.sh --module ID`) ;
+  le noyau tourne sans privilège et ne s'installe jamais lui-même ;
+- chaque changement est un événement (`module.active`, `module.desactive`) avec son auteur : un humain, un agent, Cassandra elle-même. Elle sait.
+
+Pour l'interface : `Noyau.catalogue_modules()` rend, par module, tout ce qu'un menu affiche (état, famille, dépendances et dépendants, nombre de
+moteurs, détecteurs et capacités, et pour chaque action si elle est possible et pourquoi pas), et `activer` / `desactiver` en sont les boutons.
+
 ## Greffer un module après coup
 
 Trois voies, un seul contrat (le manifeste) :
 
-1. **Un module livré avec le noyau** : on ajoute `modules/<id>/` au dépôt, `deploy.sh` le pousse (inactif), `install.sh --module <id>` l'active.
+1. **Un module livré avec le noyau** : on ajoute `modules/<id>/` au dépôt, `deploy.sh` le pousse (inactif), `install.sh --module <id>` l'installe et l'active.
 2. **Une extension, à chaud** : `install.sh --extension ./mon_module`. Elle est copiée dans `extensions/` (hors des versions : `deploy.sh`
    n'y touche jamais), vérifiée, prouvée par son `verifier.sh`, ajoutée aux modules actifs, et **le noyau la branche sans redémarrer**.
    Exemple complet : `exemples/sentinelle/` (un moteur, un détecteur, un type d'objet, des événements).
