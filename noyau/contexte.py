@@ -72,6 +72,13 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé l'identité des comptes ([permissions] identite)" % self.module)
         return self._intro["identite"]
 
+    @property
+    def stockage(self):
+        """La base de CE module (donnees/modules/<id>.db), migrations appliquées. Personne d'autre n'y touche ([permissions] stockage = true)."""
+        if not self.manifeste.permissions.stockage:
+            raise PermissionError("le module « %s » n'a pas demandé de stockage ([permissions] stockage)" % self.module)
+        return self._intro["stockage"](self.module)
+
     def reglage(self, nom: str, compte=None):
         """La valeur EFFECTIVE d'un réglage que CE module a déclaré (« nom » sans le préfixe du module). Pour un réglage de portée compte,
         celle du compte au nom duquel on agit (ou `compte`). Le module qui déclare un secret est le seul à le lire en clair."""

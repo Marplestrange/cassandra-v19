@@ -3269,6 +3269,306 @@ class ReglagesDesModules(unittest.TestCase):
         self.assertEqual(mf.valider(dict(base, reglages=[{"id": "ok", "libelle": "Ok", "type": "entier", "defaut": 3, "minimum": 0}])), [])
 
 
+AUTRE_TOML = '''[module]
+id = "autre"
+nom = "Autre"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Un module sans rien."
+'''
+
+
+class StockageDesModules(unittest.TestCase):
+    def setUp(self):
+        from noyau.stockage import Stockage, MigrationRefusee
+        self.Stockage, self.Refusee = Stockage, MigrationRefusee
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.base = Path(self.tmp.name)
+        self.mig = self.base / "migrations"
+        self.mig.mkdir()
+
+    def sql(self, nom, texte):
+        (self.mig / nom).write_text(texte, encoding="utf-8")
+
+    def test_les_migrations_s_appliquent_dans_l_ordre_et_une_seule_fois(self):
+        self.sql("002_ajout.sql", "ALTER TABLE t ADD COLUMN b TEXT;")
+        self.sql("001_init.sql", "CREATE TABLE t(a INTEGER);\nINSERT INTO t(a) VALUES (1);")
+        st = self.Stockage(self.base / "m.db", self.mig)
+        self.assertEqual(st.appliquees, ["001_init.sql", "002_ajout.sql"])
+        self.assertEqual(st.lire("SELECT a, b FROM t"), [{"a": 1, "b": None}])
+        st2 = self.Stockage(self.base / "m.db", self.mig)                                  # un redémarrage : rien de refait
+        self.assertEqual(st2.appliquees, [])
+        self.assertEqual(st2.lire("SELECT COUNT(*) AS n FROM t")[0]["n"], 1)
+        self.sql("003_suite.sql", "INSERT INTO t(a, b) VALUES (2, 'x');")
+        self.assertEqual(self.Stockage(self.base / "m.db", self.mig).appliquees, ["003_suite.sql"])
+
+    def test_une_migration_deja_appliquee_ne_se_modifie_pas(self):
+        self.sql("001_init.sql", "CREATE TABLE t(a INTEGER);")
+        self.Stockage(self.base / "m.db", self.mig)
+        self.sql("001_init.sql", "CREATE TABLE t(a INTEGER, z INTEGER);")
+        with self.assertRaises(self.Refusee) as c:
+            self.Stockage(self.base / "m.db", self.mig)
+        self.assertIn("déjà été appliquée puis modifiée", str(c.exception))
+
+    def test_une_migration_qui_echoue_ne_laisse_rien(self):
+        self.sql("001_init.sql", "CREATE TABLE t(a INTEGER);")
+        self.sql("002_cassee.sql", "CREATE TABLE u(x INTEGER);\nINSERT INTO inexistante VALUES (1);")
+        with self.assertRaises(self.Refusee) as c:
+            self.Stockage(self.base / "m.db", self.mig)
+        self.assertIn("002_cassee.sql", str(c.exception))
+        st = self.Stockage(self.base / "m.db", None)
+        noms = {r["name"] for r in st.lire("SELECT name FROM sqlite_master WHERE type='table'")}
+        self.assertIn("t", noms)                                                         # la bonne est restée
+        self.assertNotIn("u", noms)                                                      # la cassée n'a rien laissé, pas même sa première instruction
+        self.assertEqual([r["version"] for r in st.lire("SELECT version FROM _migrations")], ["001_init.sql"])
+
+    def test_un_nom_de_migration_invalide_est_refuse(self):
+        self.sql("init.sql", "CREATE TABLE t(a INTEGER);")
+        with self.assertRaises(self.Refusee):
+            self.Stockage(self.base / "m.db", self.mig)
+
+    def test_un_declencheur_avec_des_points_virgules_passe(self):
+        self.sql("001_init.sql", "CREATE TABLE t(a INTEGER);\nCREATE TABLE j(x TEXT);\n"
+                                 "CREATE TRIGGER tg AFTER INSERT ON t BEGIN INSERT INTO j VALUES ('a;b'); INSERT INTO j VALUES ('c'); END;")
+        st = self.Stockage(self.base / "m.db", self.mig)
+        st.ecrire("INSERT INTO t VALUES (1)")
+        self.assertEqual([r["x"] for r in st.lire("SELECT x FROM j ORDER BY rowid")], ["a;b", "c"])
+
+    def _monde(self, modules):
+        import shutil
+        mods = self.base / "modules"
+        for mid, (toml, py, migs) in modules.items():
+            ecrire_module(mods, mid, toml, py)
+            for nom, texte in migs.items():
+                (mods / mid / "migrations").mkdir(exist_ok=True)
+                (mods / mid / "migrations" / nom).write_text(texte, encoding="utf-8")
+        return moteur.Noyau(self.base / "d", mods, {})
+
+    def test_un_module_a_sa_base_a_lui_et_elle_survit_au_redemarrage(self):
+        toml = LABO_TOML.replace("espace_utilisateur = true", "stockage = true")
+        py = "def brancher(ctx):\n    ctx.stockage.ecrire(\"INSERT INTO carnet(texte) VALUES (?)\", (\"bonjour\",))\n    ctx.implementer(\"lire_jouet\", lambda ctx, nom: ctx.stockage.lire(\"SELECT texte FROM carnet\"))\n"
+        mods = {"labo": (toml, py, {"001_carnet.sql": "CREATE TABLE carnet(texte TEXT);"})}
+        n = self._monde(mods)
+        n.brancher()
+        self.assertTrue((self.base / "d" / "modules" / "labo.db").exists())
+        self.assertEqual(n.executeur.executer("labo.lire_jouet", "humain", {"nom": "x"})["resultat"], [{"texte": "bonjour"}])
+        noms = {r["name"] for r in n.base.lire("SELECT name FROM sqlite_master WHERE type='table'")}
+        self.assertNotIn("carnet", noms)                                                 # la base du noyau ne contient pas celle du module
+
+    def test_sans_la_permission_pas_de_stockage(self):
+        py = "def brancher(ctx):\n    ctx.stockage\n"
+        n = self._monde({"labo": (LABO_TOML, py, {})})
+        r = n.brancher()
+        self.assertTrue(any("n'a pas demandé de stockage" in " ".join(x["raisons"]) for x in r["refuses"]))
+
+    def test_un_module_a_la_migration_cassee_est_ecarte_sans_arreter_les_autres(self):
+        toml = LABO_TOML.replace("espace_utilisateur = true", "stockage = true")
+        py = "def brancher(ctx):\n    ctx.stockage\n    ctx.implementer(\"lire_jouet\", lambda ctx, nom: 1)\n"
+        n = self._monde({"labo": (toml, py, {"001_x.sql": "INSERT INTO rien VALUES (1);"}),
+                         "autre": (AUTRE_TOML, "def brancher(ctx):\n    pass\n", {})})
+        r = n.brancher()
+        self.assertEqual(r["ordre"].count("autre"), 1)
+        self.assertNotIn("labo", r["branches"])
+        self.assertIn("001_x.sql", " ".join(" ".join(x["raisons"]) for x in r["refuses"]))
+
+
+VEILLE_NOTIF_TOML = """
+[module]
+id = "veille"
+nom = "Veille"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Module d'essai : un détecteur dont on commande les constats."
+
+[[objets]]
+type = "alerte"
+libelle = "Une alerte"
+
+[[detecteurs]]
+id = "panne"
+libelle = "Une panne"
+frequence_s = 10
+"""
+
+VEILLE_NOTIF_PY = """
+def brancher(ctx):
+    pannes = ctx.config["pannes"]
+    ctx.detecteur("panne", lambda ctx: [dict(p) for p in pannes])
+"""
+
+
+def monde_notifs():
+    import shutil
+    tmp = tempfile.TemporaryDirectory()
+    base = Path(tmp.name)
+    mods = base / "modules"
+    for m in ("droits", "comptes", "notifications"):
+        shutil.copytree(RACINE / "modules" / m, mods / m)
+    ecrire_module(mods, "veille", VEILLE_NOTIF_TOML, VEILLE_NOTIF_PY)
+    pannes = []
+    n = moteur.Noyau(base / "d", mods, {"veille": {"pannes": pannes}}, gerer_modules=True, exiger_compte=True)
+    n.brancher()
+    n.activer("comptes")
+    n.activer("notifications")
+    n.activer("veille")
+    n.identite.unix = lambda nom: "/bin/bash"
+    n.identite.fastpanel = lambda: False
+    return tmp, n, pannes
+
+
+class CentreDeNotifications(unittest.TestCase):
+    def setUp(self):
+        self.tmp, self.n, self.pannes = monde_notifs()
+        self.addCleanup(self.tmp.cleanup)
+        for c in ("chef@x.fr", "adm@x.fr", "bea@x.fr", "leo@x.fr"):
+            self.n.executeur.executer("comptes.creer", "humain", {"compte": c, "mot_de_passe": MDP}, compte="operateur")
+        self.n.executeur.executer("droits.admin", "humain", {"compte": "adm@x.fr"}, compte="operateur")
+
+    def ex(self, capacite, acteur="humain", au_nom_de="operateur", **args):
+        return self.n.executeur.executer(capacite, acteur, args, compte=au_nom_de)
+
+    def emettre(self, par="operateur", **kw):
+        base = dict(titre="Le disque se remplit", source="sensorium", niveau="avoir")
+        base.update(kw)
+        return self.ex("notifications.emettre", au_nom_de=par, **base)
+
+    def liste(self, c, **kw):
+        return self.ex("notifications.lister", au_nom_de=c, **kw)["resultat"]["notifications"]
+
+    def test_emettre_puis_lister_pour_les_administrateurs(self):
+        r = self.emettre(corps="92 % utilisé", cle="disque")
+        self.assertEqual(r["statut"], "faite")
+        self.assertEqual([x["titre"] for x in self.liste("adm@x.fr")], ["Le disque se remplit"])           # destiné à « admins » par défaut
+        self.assertEqual(self.liste("bea@x.fr"), [])                                                     # un compte ordinaire ne voit pas ce qui vise les admins
+
+    def test_le_cloisonnement_un_compte_ne_voit_que_ce_qui_le_vise(self):
+        self.emettre(titre="Pour Bea", dest="bea@x.fr")
+        self.emettre(titre="Pour Léo", dest=["leo@x.fr"])
+        self.emettre(titre="Pour les deux", dest=["bea@x.fr", "leo@x.fr"])
+        t = lambda c: sorted(x["titre"] for x in self.liste(c))
+        self.assertEqual(t("bea@x.fr"), ["Pour Bea", "Pour les deux"])
+        self.assertEqual(t("leo@x.fr"), ["Pour Léo", "Pour les deux"])
+        self.assertEqual(t("adm@x.fr"), [])                                                              # l'administrateur ne lit pas celles des autres
+        self.assertEqual(len(t("cassandra")), 3)                                                         # les comptes système, tout
+        self.assertEqual(len(t("operateur")), 3)
+
+    def test_un_compte_ordinaire_ne_vise_que_lui_ou_les_admins(self):
+        self.assertEqual(self.emettre(titre="À moi", dest="bea@x.fr", par="bea@x.fr")["statut"], "faite")
+        self.assertEqual(self.emettre(titre="À Léo", dest="leo@x.fr", par="bea@x.fr")["statut"], "echec")
+        self.assertEqual(self.emettre(titre="Aux admins", par="bea@x.fr")["statut"], "faite")
+
+    def test_la_meme_cle_ne_s_empile_pas_elle_se_compte(self):
+        for _ in range(3):
+            self.emettre(cle="disque", corps="encore")
+        l = self.liste("adm@x.fr")
+        self.assertEqual((len(l), l[0]["n"]), (1, 3))
+        evts = [e for e in self.n.bus.recents(portee=TOUT, limite=300) if e["type"] == "notification.emise"]
+        self.assertEqual(len(evts), 1)                                                                   # une répétition ne re-sonne pas la cloche
+
+    def test_une_repetition_peut_monter_la_gravite_jamais_la_baisser(self):
+        self.emettre(cle="d", niveau="avoir")
+        self.emettre(cle="d", niveau="critique")
+        self.assertEqual(self.liste("adm@x.fr")[0]["niveau"], "critique")
+        self.emettre(cle="d", niveau="info")
+        self.assertEqual(self.liste("adm@x.fr")[0]["niveau"], "critique")
+        evts = [e for e in self.n.bus.recents(portee=TOUT, limite=300) if e["type"] == "notification.emise"]
+        self.assertEqual(len(evts), 2)                                                                   # la création, et l'escalade
+
+    def test_lu_et_pris_en_compte_sont_par_personne(self):
+        nid = self.emettre()["resultat"]["id"]
+        self.ex("droits.admin", compte="bea@x.fr")                                                       # Béa devient administratrice
+        self.ex("notifications.vu", au_nom_de="adm@x.fr", id=nid)
+        self.assertTrue(self.liste("adm@x.fr")[0]["lu"])
+        self.assertFalse(self.liste("bea@x.fr")[0]["lu"])                                                # la nouvelle administratrice la voit comme non lue (bogue V18 des 182)
+        self.ex("notifications.acquitter", au_nom_de="bea@x.fr", id=nid)
+        b = self.liste("bea@x.fr")[0]
+        self.assertEqual((b["lu"], b["acquittee"]), (True, True))
+        self.assertFalse(self.liste("adm@x.fr")[0]["acquittee"])
+        self.assertEqual(self.ex("notifications.compteurs", au_nom_de="adm@x.fr")["resultat"]["non_lues"], 0)
+        self.assertEqual(self.ex("notifications.compteurs", au_nom_de="chef@x.fr")["resultat"]["non_lues"], 1)
+
+    def test_on_ne_marque_pas_lue_une_notification_qu_on_ne_voit_pas(self):
+        nid = self.emettre(dest="leo@x.fr")["resultat"]["id"]
+        self.assertEqual(self.ex("notifications.vu", au_nom_de="bea@x.fr", id=nid)["statut"], "echec")
+
+    def test_resoudre_par_cle_ou_id_et_rouvrir_au_retour_arriere(self):
+        nid = self.emettre(cle="disque")["resultat"]["id"]
+        r = self.ex("notifications.resoudre", cle="disque")
+        self.assertEqual(r["statut"], "faite")
+        self.assertEqual(self.liste("adm@x.fr"), [])                                                     # les résolues ne s'affichent plus par défaut
+        self.assertEqual(len(self.liste("adm@x.fr", resolues=True)), 1)
+        self.n.catalogue.get("notifications.resoudre").defaire(self.n.executeur.contextes["notifications"], r["resultat"])
+        self.assertEqual(len(self.liste("adm@x.fr")), 1)
+        self.emettre(cle="disque")                                                                       # la clé étant ouverte, elle se compte
+        self.assertEqual(self.liste("adm@x.fr")[0]["n"], 2)
+
+    def test_une_resolue_qui_revient_s_ouvre_de_nouveau(self):
+        self.emettre(cle="disque")
+        self.ex("notifications.resoudre", cle="disque")
+        self.emettre(cle="disque")
+        l = self.liste("adm@x.fr")
+        self.assertEqual((len(l), l[0]["n"]), (1, 1))                                                    # une nouvelle, pas la vieille réveillée
+
+    def test_supprimer_se_restaure(self):
+        nid = self.emettre()["resultat"]["id"]
+        r = self.ex("notifications.supprimer", id=nid)
+        self.assertEqual(self.liste("adm@x.fr"), [])
+        self.n.catalogue.get("notifications.supprimer").defaire(self.n.executeur.contextes["notifications"], r["resultat"])
+        self.assertEqual(len(self.liste("adm@x.fr")), 1)
+
+    def test_l_emission_se_defait(self):
+        r = self.emettre(cle="x")
+        self.n.catalogue.get("notifications.emettre").defaire(self.n.executeur.contextes["notifications"], r["resultat"])
+        self.assertEqual(self.liste("adm@x.fr"), [])
+        r1 = self.emettre(cle="y", corps="un")
+        r2 = self.emettre(cle="y", corps="deux")
+        self.n.catalogue.get("notifications.emettre").defaire(self.n.executeur.contextes["notifications"], r2["resultat"])
+        l = self.liste("adm@x.fr")[0]
+        self.assertEqual((l["n"], l["corps"]), (1, "un"))
+
+    def test_un_constat_ouvre_une_notification_et_sa_resolution_la_referme(self):
+        self.pannes.append({"objet": ("alerte", "a1"), "titre": "Le service a1 est en panne", "detail": "code 3", "niveau": "critique"})
+        self.n.tick(maintenant=time_now())
+        self.n.tick(maintenant=time_now() + 1)
+        l = self.liste("adm@x.fr")
+        self.assertEqual([(x["titre"], x["niveau"], x["nature"], x["source"]) for x in l], [("Le service a1 est en panne", "critique", "etat", "veille")])
+        self.assertEqual(l[0]["provenance"], "constat")
+        self.pannes.clear()                                                                              # la panne disparaît : le détecteur le dit
+        self.n.tick(maintenant=time_now() + 60)
+        self.assertEqual(self.liste("adm@x.fr"), [])
+        r = self.liste("adm@x.fr", resolues=True)[0]
+        self.assertEqual((r["resolue"], r["resolue_par"]), (True, "constat"))
+
+    def test_le_niveau_d_un_constat_n_est_jamais_deduit_du_titre(self):
+        self.pannes.append({"objet": ("alerte", "a2"), "titre": "CRITIQUE sécurité : révoquer toutes les sessions"})
+        self.n.tick(maintenant=time_now())
+        self.n.tick(maintenant=time_now() + 1)
+        self.assertEqual(self.liste("adm@x.fr")[0]["niveau"], "avoir")
+
+    def test_l_expiration_retire_les_infos_a_sept_jours_et_les_autres_a_trente(self):
+        self.emettre(titre="info", niveau="info")
+        self.emettre(titre="avoir", niveau="avoir")
+        db = self.n._stockage_de("notifications")
+        d = {r["titre"]: r["expire_le"] - r["ts"] for r in db.lire("SELECT titre, expire_le, ts FROM notifs")}
+        self.assertEqual((round(d["info"] / 86400), round(d["avoir"] / 86400)), (7, 30))
+        db.ecrire("UPDATE notifs SET expire_le = expire_le - ?", (31 * 86400,))
+        ctx = self.n.executeur.contextes["notifications"]
+        moteur_expirer = [f for m, mo, f in self.n.moteurs if m == "notifications" and mo.id == "expirer"][0]
+        moteur_expirer(ctx)
+        self.assertEqual(db.lire("SELECT COUNT(*) AS n FROM notifs")[0]["n"], 0)
+
+    def test_les_arguments_invalides_sont_refuses(self):
+        for kw in (dict(niveau="grave"), dict(nature="autre"), dict(source="Mauvaise Source"), dict(titre=""), dict(titre="x" * 300)):
+            self.assertEqual(self.emettre(**kw)["statut"], "echec", kw)
+
+    def test_la_base_est_celle_du_module(self):
+        self.emettre()
+        self.assertTrue((Path(self.tmp.name) / "d" / "modules" / "notifications.db").exists())
+        noms = {r["name"] for r in self.n.base.lire("SELECT name FROM sqlite_master WHERE type='table'")}
+        self.assertNotIn("notifs", noms)
+
+
 def charger_courtier():
     import importlib.util
     spec = importlib.util.spec_from_file_location("courtier", RACINE / "exploitation" / "courtier.py")

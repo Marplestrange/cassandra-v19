@@ -92,6 +92,18 @@ dst = sqlite3.connect(sys.argv[2])
 src.backup(dst)
 dst.close(); src.close()
 PY
+  # les bases des modules (donnees/modules/*.db) sont sauvegardées avec celle du noyau, cohérentes (API de sauvegarde SQLite)
+  for f in "$DONNEES"/modules/*.db; do
+    [ -f "$f" ] || continue
+    as_service python3 - "$f" "$DONNEES/sauvegardes/$(basename "${f%.db}")-$STAMP.db" <<'PY'
+import sqlite3, sys
+src = sqlite3.connect("file:%s?mode=ro" % sys.argv[1], uri=True)
+dst = sqlite3.connect(sys.argv[2])
+src.backup(dst)
+dst.close(); src.close()
+PY
+  done
+  ls -1t "$DONNEES"/sauvegardes/*.db 2>/dev/null | tail -n +41 | xargs -r rm -f
   ls -1t "$DONNEES"/sauvegardes/noyau-*.db 2>/dev/null | tail -n +11 | xargs -r rm -f
 fi
 

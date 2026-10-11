@@ -64,14 +64,16 @@ CREATE INDEX IF NOT EXISTS tentatives_cle ON tentatives(cle, ts);
 
 
 class Base:
-    def __init__(self, chemin):
+    def __init__(self, chemin, schema=None):
+        """`schema` : None pour la base du noyau (son schéma et ses colonnes ajoutées après coup) ; un texte SQL pour le stockage d'un module."""
         self.chemin = str(chemin)
+        noyau = schema is None
         if self.chemin != ":memory:":
             Path(self.chemin).parent.mkdir(parents=True, exist_ok=True)
         c = self._ouvrir()   # executescript valide d'office : il ne vit pas dans notre transaction
         try:
-            c.executescript(SCHEMA)
-            for col, defn in (("unix_user", "TEXT NOT NULL DEFAULT ''"), ("superadmin", "INTEGER NOT NULL DEFAULT 0"), ("type", "TEXT NOT NULL DEFAULT 'humain'"), ("invite_par", "TEXT NOT NULL DEFAULT ''")):    # une base d'avant les colonnes
+            c.executescript(SCHEMA if noyau else schema)
+            for col, defn in (() if not noyau else (("unix_user", "TEXT NOT NULL DEFAULT ''"), ("superadmin", "INTEGER NOT NULL DEFAULT 0"), ("type", "TEXT NOT NULL DEFAULT 'humain'"), ("invite_par", "TEXT NOT NULL DEFAULT ''"))):    # une base d'avant les colonnes
                 if col not in [r[1] for r in c.execute("PRAGMA table_info(comptes)")]:
                     c.execute("ALTER TABLE comptes ADD COLUMN %s %s" % (col, defn))
         finally:

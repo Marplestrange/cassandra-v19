@@ -44,6 +44,7 @@ from noyau.identite import Identite
 from noyau.modules import Modules
 from noyau.registre import Registre
 from noyau.reglages import Reglages
+from noyau.stockage import Stockage
 
 RACINE = Path(__file__).resolve().parent
 log = logging.getLogger("noyau")
@@ -66,6 +67,8 @@ class Noyau:
         self.registre = Registre(self.base, self.bus)
         self.etat_modules = Modules(self.base)
         self.catalogue = Catalogue(self.base)
+        self._donnees = Path(donnees)
+        self._stockages = {}       # module -> son Stockage, ouvert une fois
         self.droits = Droits(self.base)
         self.reglages = Reglages(self.base)
         self.identite = Identite(self.base, self.droits, (self.config.get("comptes") or {}).get("session_heures", 24),
@@ -95,11 +98,20 @@ class Noyau:
             r.append((self.extensions, True))
         return r
 
+    def _stockage_de(self, mid: str):
+        """Le stockage d'un module, migrations appliquées au premier appel. Une migration qui échoue lève : le module est écarté, le noyau démarre."""
+        if mid not in self._stockages:
+            connus, _ = self._connus()
+            dossier = Path(connus[mid][0].source).parent / "migrations" if mid in connus else None
+            self._stockages[mid] = Stockage(self._donnees / "modules" / ("%s.db" % mid), dossier)
+        return self._stockages[mid]
+
     def _fabriquer(self, m):
         self.droits.declarer(m)
         self.reglages.declarer(m)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
-                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "droits": self.droits, "identite": self.identite, "reglages": self.reglages})
+                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
+                        "stockage": self._stockage_de})
         self.executeur.contextes[m.id] = ctx
         return ctx
 
@@ -561,7 +573,7 @@ class Noyau:
                     continue
                 compte = c.get("compte", "")
                 ev = self.bus.emettre("constat.ouvert", source=module, acteur="sonde", objet=tuple(c["objet"]), compte=compte,
-                                      donnees={"detecteur": d.id, "titre": c["titre"], "detail": c.get("detail", "")})
+                                      donnees={"detecteur": d.id, "titre": c["titre"], "detail": c.get("detail", ""), "niveau": c.get("niveau", "")})
                 self.base.ecrire(
                     "INSERT INTO constats(cle,module,detecteur,objet_type,objet_id,titre,etat,ouvert,ferme,evenement) VALUES (?,?,?,?,?,?,'ouvert',?,NULL,?) "
                     "ON CONFLICT(cle) DO UPDATE SET etat='ouvert', titre=excluded.titre, ouvert=excluded.ouvert, ferme=NULL, evenement=excluded.evenement",

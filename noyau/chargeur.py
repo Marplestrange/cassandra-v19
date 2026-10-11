@@ -181,6 +181,11 @@ def brancher(racines, fabriquer_contexte, catalogue, registre, actifs=None, deja
         if code is None or not hasattr(code, "brancher"):
             rapport["sans_code"].append(mid)
             continue
-        code.brancher(ctx)
+        try:
+            code.brancher(ctx)
+        except Exception as ex:                  # un module qui ne se branche pas est écarté ET dit ; il n'empêche pas les autres de démarrer
+            rapport["branches"].remove(mid)
+            catalogue.desactiver_module(mid)
+            refus.append({"module": mid, "raisons": ["le branchement a échoué : %s" % str(ex)[:300]]})
     rapport["a_porter"] = [e.cle for e in catalogue.lister() if not e.implementee and e.actif]
     return rapport
