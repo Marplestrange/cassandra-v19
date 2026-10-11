@@ -28,6 +28,15 @@ MDP_REGLES = (
     ("chiffre", "au moins un chiffre", lambda p: any(c.isdigit() for c in p)),
     ("special", "au moins un caractère spécial (!?#@…)", lambda p: any((not c.isalnum()) and not c.isspace() for c in p)),
 )
+# Les comptes SYSTÈME : ceux au nom desquels agissent le noyau, l'opérateur local (ligne de commande, root), Cassandra et Itare. Pas d'e-mail,
+# pas de mot de passe, aucune session possible : ils existent pour que TOUT acte ait un compte, donc un auteur retraçable.
+COMPTES_SYSTEME = {
+    "noyau": ("Le noyau", True),              # (libellé, administrateur ?) : ses moteurs, ses détecteurs, la reprise après incident
+    "operateur": ("L'opérateur local (root, ligne de commande)", True),
+    "cassandra": ("Cassandra", True),         # la patronne : souveraine, donc administratrice par défaut (l'administrateur peut le changer)
+    "itare": ("Itare", False),                # le sous-chef : les droits par défaut seulement, à étendre par choix
+}
+RE_AGENT = re.compile(r"^agent:[a-z][a-z0-9_-]{1,30}$")
 CHAMPS_PROFIL = ("display_name", "role_label", "contact_email", "phone", "lang", "fp_account")
 TENTATIVES_MAX, TENTATIVES_FENETRE = 10, 300       # comme la V18 : dix échecs en cinq minutes
 TTL_SESSION_HEURES = 24
@@ -93,6 +102,29 @@ def ip_nature(ip) -> str:
     return "local" if ip.startswith(("fc", "fd", "fe80")) else "internet"
 
 
+RE_UNIX = re.compile(r"^[a-z_][a-z0-9_-]{0,31}$")
+
+
+def fastpanel_present() -> bool:
+    """FastPanel est-il installé ? Il dépend de « fastuser » : tant qu'il l'est, le superadministrateur ne se touche pas."""
+    import shutil
+    return os.path.isdir("/usr/local/fastpanel2") or shutil.which("mogwai") is not None
+
+
+def deposer_sudo(dossier, utilisateur: str) -> bool:
+    """Demande au courtier (root) de mettre `utilisateur` dans le groupe sudo : le deuxième superadministrateur devient root par sudo, lui aussi."""
+    if not dossier:
+        return False
+    os.makedirs(dossier, exist_ok=True)
+    nom = "sudo-%d-%s" % (int(time.time()), secrets.token_hex(4))
+    tmp = os.path.join(dossier, nom + ".tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump({"action": "ajouter_sudo", "utilisateur": utilisateur}, f)
+    os.replace(tmp, os.path.join(dossier, nom + ".json"))
+    return True
+
+
 def empreinte_sha512(mdp: str):
     """L'empreinte SHA-512 salée du mot de passe, au format de /etc/shadow ($6$...), calculée par openssl (mot de passe par l'entrée standard,
     jamais en argument). C'est tout ce qui part vers le courtier : le mot de passe, lui, ne quitte jamais cette fonction."""
@@ -146,8 +178,30 @@ class Identite:
         self.unix = unix or interpreteur_unix        # nom -> son interpréteur de commandes (None : l'utilisateur n'existe pas)
         self.courtier = courtier                     # le dossier où l'on dépose les demandes au courtier (root) ; None : pas de courtier
         self.adosser = lambda utilisateur, mdp: deposer_demande(self.courtier, utilisateur, mdp)
+        self.sudo = lambda utilisateur: deposer_sudo(self.courtier, utilisateur)
+        self.fastpanel = fastpanel_present            # appelable : FastPanel est-il là ? (verrou du superadministrateur)
+        droits.verrou = self.verrou_superadmin
         self.ttl = int(ttl_heures) * 3600
         self._faux = hacher("sel-de-leurre")      # un compte inconnu coûte le même temps qu'un mauvais mot de passe
+        self.amorcer_systeme()
+
+    def verrou_superadmin(self, compte: str) -> str:
+        """Pourquoi on ne retire pas l'administration à ce compte ("" : on peut). Conditionnel : seul le superadmin ET seulement si FastPanel est là."""
+        r = self.base.lire("SELECT superadmin FROM comptes WHERE compte=?", (compte,))
+        if r and r[0]["superadmin"] and self.fastpanel():
+            return "Verrouillé : « %s » est le superadministrateur et FastPanel est installé, qui dépend de son utilisateur système" % compte
+        return ""
+
+    def amorcer_systeme(self) -> None:
+        """Les comptes système existent toujours. Leurs droits ne sont posés qu'UNE fois : ce que l'administrateur règle ensuite lui appartient."""
+        now = time.time()
+        for cid, (libelle, admin) in COMPTES_SYSTEME.items():
+            self.base.ecrire("INSERT OR IGNORE INTO comptes(compte, hash, display_name, cree, maj, type) VALUES(?,?,?,?,?,'systeme')", (cid, "", libelle, now, now))
+        if not self.base.lire("SELECT 1 FROM etat_noyau WHERE cle='comptes_systeme_amorces'"):
+            for cid, (libelle, admin) in COMPTES_SYSTEME.items():
+                if admin:
+                    self.droits.regler_admin(cid, True)
+            self.base.ecrire("INSERT OR REPLACE INTO etat_noyau(cle, valeur) VALUES('comptes_systeme_amorces', '1')")
 
     # ---- les comptes ----
     @staticmethod
@@ -159,6 +213,17 @@ class Identite:
 
     def existe(self, compte: str) -> bool:
         return bool(self.base.lire("SELECT 1 FROM comptes WHERE compte=?", (compte,)))
+
+    def creer_agent(self, nom: str, libelle: str = "") -> dict:
+        """Un agent INVITÉ (le compte s'ajoute à son jeton, il ne le remplace pas) : « agent:<nom> », sans mot de passe, sans droit tant qu'on ne lui en donne pas."""
+        cid = "agent:" + (nom or "").strip().lower()
+        if not RE_AGENT.match(cid):
+            return {"ok": False, "error": "Nom d'agent : minuscules, chiffres, - et _ (2 à 31 caractères)"}
+        if self.existe(cid):
+            return {"ok": False, "error": "Cet agent existe déjà"}
+        now = time.time()
+        self.base.ecrire("INSERT INTO comptes(compte, hash, display_name, cree, maj, type) VALUES(?,?,?,?,?,'agent')", (cid, "", (libelle or nom).strip(), now, now))
+        return {"ok": True, "compte": cid}
 
     def lire(self, compte: str):
         r = self.base.lire("SELECT * FROM comptes WHERE compte=?", ((compte or "").strip().lower(),))
@@ -182,7 +247,7 @@ class Identite:
         return [dict(self._ligne(r), admin=r["compte"] in admins, superadmin=bool(r["superadmin"]), unix_etat=self.unix_etat(r["unix_user"]))
                 for r in self.base.lire("SELECT * FROM comptes ORDER BY compte")]
 
-    def creer(self, compte: str, mdp: str, sites=None, **profil) -> dict:
+    def creer(self, compte: str, mdp: str, sites=None, superadmin: bool = False, unix_user: str = "", **profil) -> dict:
         compte = (compte or "").strip().lower()
         if not EMAIL.match(compte):
             return {"ok": False, "error": "Adresse e-mail invalide (ex : prenom@exemple.com)"}
@@ -193,11 +258,23 @@ class Identite:
             return {"ok": False, "error": v["error"], "manque": v["manque"]}
         if self.existe(compte):
             return {"ok": False, "error": "Ce compte existe déjà"}
-        premier = not self.base.lire("SELECT 1 FROM comptes LIMIT 1")
+        premier = not self.base.lire("SELECT 1 FROM comptes WHERE type='humain' LIMIT 1")
         # Comme FastPanel : le premier compte est le SUPERADMINISTRATEUR, adossé à l'utilisateur système « fastuser » avec bash. Il s'inscrit
         # tout de même par e-mail (c'est elle qui crée son coffre). Ce n'est pas un interdit : install.sh et deploy.sh créent fastuser et son bash ;
         # si le système ne l'a pas (encore), le compte se crée quand même et `unix_etat` le DIT, de quoi lever un constat.
         unix = self.unix_superadmin if premier else ""
+        if superadmin and not premier:
+            # Un superadministrateur de plus : il apporte l'identifiant de SON utilisateur système (bash), qui rejoint sudo tout seul.
+            unix = (unix_user or "").strip().lower()
+            if not RE_UNIX.match(unix) or unix == "root":
+                return {"ok": False, "error": "Identifiant système du superadministrateur : minuscules, chiffres, - et _ (pas root)"}
+            shell = self.unix(unix)
+            if shell is None or not shell_de_connexion(shell):
+                return {"ok": False, "error": "L'utilisateur système « %s » n'existe pas ou n'a pas d'interpréteur de commandes (bash)" % unix}
+            if self.base.lire("SELECT 1 FROM comptes WHERE unix_user=?", (unix,)):
+                return {"ok": False, "error": "L'utilisateur système « %s » est déjà adossé à un autre compte" % unix}
+        else:
+            superadmin = False
         now = time.time()
         champs = {k: str(profil.get(k) or "").strip() for k in CHAMPS_PROFIL}
         champs["lang"] = (champs["lang"].lower()[:5] or "fr")
@@ -205,8 +282,15 @@ class Identite:
                          "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
                          (compte, hacher(mdp), champs["display_name"], champs["role_label"], champs["contact_email"], champs["phone"],
                           champs["lang"], champs["fp_account"] or unix, json.dumps(sorted({norm_domain(s) for s in (sites or []) if s})), now, now,
-                          unix, 1 if premier else 0))
+                          unix, 1 if (premier or superadmin) else 0))
         demande = False
+        if superadmin and not premier:
+            self.droits.regler_admin(compte, True)
+            try:
+                demande = bool(self.sudo(unix))
+            except Exception:
+                demande = False
+            return {"ok": True, "compte": compte, "admin": True, "superadmin": True, "unix_user": unix, "unix_demande": demande}
         if premier:                                    # le superadministrateur est administrateur : il détient tous les droits
             self.droits.regler_admin(compte, True)
             try:                                       # et « fastuser » reçoit le mot de passe choisi : par le courtier, car le noyau n'a aucun privilège
@@ -254,6 +338,11 @@ class Identite:
         r = self.base.lire("SELECT * FROM comptes WHERE compte=?", (compte,))
         if not r:
             return {"ok": False, "error": "Compte inconnu"}
+        if r[0]["type"] == "systeme":
+            return {"ok": False, "error": "Compte système : il fait partie du noyau (il se recrée à chaque démarrage), on ne le supprime pas"}
+        raison = self.verrou_superadmin(compte)
+        if raison:
+            return {"ok": False, "error": raison}
         instantane = dict(r[0]) | {"admin": self.droits.est_admin(compte), "groupes": self.droits.groupes_de(compte)}
         with self.base.transaction() as c:
             cur = c.execute("INSERT INTO comptes_corbeille(compte, instantane, ts) VALUES(?,?,?)", (compte, json.dumps(instantane), time.time()))
@@ -277,6 +366,8 @@ class Identite:
             c.execute("INSERT INTO comptes(compte, hash, display_name, role_label, contact_email, phone, lang, fp_account, sites, cree, maj, unix_user, superadmin) "
                       "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", (s["compte"], s["hash"], s["display_name"], s["role_label"], s["contact_email"], s["phone"],
                                                             s["lang"], s["fp_account"], s["sites"], s["cree"], time.time(), s.get("unix_user", ""), s.get("superadmin", 0)))
+            if s.get("type", "humain") != "humain":
+                c.execute("UPDATE comptes SET type=? WHERE compte=?", (s["type"], s["compte"]))
             c.execute("DELETE FROM comptes_corbeille WHERE id=?", (corbeille,))
         if s.get("admin"):
             self.droits.regler_admin(s["compte"], True)

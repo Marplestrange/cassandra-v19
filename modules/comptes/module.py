@@ -43,8 +43,12 @@ def brancher(ctx):
         return {"sessions": idt.sessions(moi_ou_erreur(ctx), courant)}
 
     # ---- créer ----
-    def creer(ctx, compte="", mot_de_passe="", sites=None, **profil):
-        r = idt.creer(compte, mot_de_passe, sites, **profil)
+    def creer(ctx, compte="", mot_de_passe="", sites=None, superadmin=False, unix_user="", **profil):
+        if superadmin:
+            moi = idt.lire(ctx.compte) if ctx.compte else None
+            if ctx.compte != "operateur" and not (moi and moi["superadmin"]):
+                raise ValueError("Seul un superadministrateur (ou l'opérateur local) crée un superadministrateur")
+        r = idt.creer(compte, mot_de_passe, sites, bool(superadmin), unix_user, **profil)
         ctx.emettre("compte.cree", objet=("compte", (compte or "").strip().lower()), donnees={"admin": r.get("admin"), "ok": r["ok"]}) if r["ok"] else None
         if not r["ok"]:
             raise ValueError(r["error"])
@@ -57,6 +61,14 @@ def brancher(ctx):
         idt.base.ecrire("DELETE FROM comptes WHERE compte=?", (res["compte"],))
         idt.base.ecrire("DELETE FROM sessions WHERE compte=?", (res["compte"],))
         idt.droits.regler_admin(res["compte"], False)
+
+    def creer_agent(ctx, nom="", libelle=""):
+        r = ok_ou_erreur(idt.creer_agent(nom, libelle))
+        ctx.emettre("compte.cree", objet=("compte", r["compte"]), donnees={"type": "agent"})
+        return {"compte": r["compte"]}
+
+    def defaire_agent(ctx, res):
+        idt.base.ecrire("DELETE FROM comptes WHERE compte=? AND type='agent'", (res["compte"],))
 
     # ---- modifier ----
     def modifier(ctx, compte="", sites=None, **profil):
@@ -186,6 +198,7 @@ def brancher(ctx):
                    ("valider_session", valider_session), ("mes_sessions", mes_sessions)):
         ctx.implementer(nom, f)
     ctx.implementer("creer", creer, prouver_creer, defaire_creer)
+    ctx.implementer("creer_agent", creer_agent, prouver_creer, defaire_agent)
     ctx.implementer("modifier", modifier, prouver_modifier, defaire_modifier)
     ctx.implementer("modifier_moi", modifier_moi, prouver_modifier, defaire_modifier)
     ctx.implementer("changer_mon_mot_de_passe", changer_mon_mot_de_passe, prouver_mdp, defaire_mdp)

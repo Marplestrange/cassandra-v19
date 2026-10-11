@@ -2655,7 +2655,8 @@ def monde_comptes():
     n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
     n.brancher()
     n.activer("comptes")                        # active aussi droits
-    n.identite.unix = lambda nom: "/bin/bash" if nom == "fastuser" else None          # le « fastuser » du système, factice
+    n.identite.unix = lambda nom: "/bin/bash" if nom in ("fastuser", "alice") else None      # les utilisateurs du système, factices
+    n.identite.fastpanel = lambda: False
     return tmp, n
 
 
@@ -2870,6 +2871,164 @@ class ComptesEtSessions(unittest.TestCase):
             self.assertIn(x["dit"], r["legende"])
 
 
+def monde_strict():
+    import shutil
+    tmp = tempfile.TemporaryDirectory()
+    base = Path(tmp.name)
+    mods = base / "modules"
+    for m in ("droits", "comptes", "menus"):
+        shutil.copytree(RACINE / "modules" / m, mods / m)
+    n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True, exiger_compte=True)
+    n.brancher()
+    n.activer("comptes")
+    n.activer("menus")
+    n.identite.unix = lambda nom: "/bin/bash"
+    return tmp, n
+
+
+class SansCompte(unittest.TestCase):
+    """Un acte sans compte n'existe pas : il est refusé, et il est signalé."""
+
+    def setUp(self):
+        self.tmp, self.n = monde_strict()
+        self.addCleanup(self.tmp.cleanup)
+
+    def ex(self, cle, acteur="humain", au_nom_de="operateur", **args):
+        return self.n.executeur.executer(cle, acteur, args, compte=au_nom_de)
+
+    def test_les_comptes_systeme_existent_et_ne_se_connectent_pas(self):
+        tous = {c["compte"]: c for c in self.ex("comptes.lister")["resultat"]["comptes"]}
+        self.assertEqual({k for k, c in tous.items() if c["type"] == "systeme"}, {"noyau", "operateur", "cassandra", "itare"})
+        self.assertEqual(tous["cassandra"]["admin"], True)
+        self.assertEqual(tous["itare"]["admin"], False)
+        for cid in tous:
+            self.assertFalse(self.ex("comptes.ouvrir_session", compte=cid, mot_de_passe=MDP, au_nom_de="operateur")["resultat"]["ok"])
+
+    def test_sans_compte_est_refuse(self):
+        r = self.ex("comptes.regles_mdp", au_nom_de="")
+        self.assertEqual(r["statut"], "refuse")
+        self.assertIn("signalé", r["raison"])
+        ev = [e for e in self.n.bus.recents(portee=TOUT, limite=100) if e["type"] == "capacite.refusee" and e["donnees"].get("alerte")]
+        self.assertEqual(ev[-1]["donnees"]["raison"], "sans compte")
+
+    def test_un_compte_inconnu_est_refuse(self):
+        r = self.ex("comptes.regles_mdp", au_nom_de="fantome@x.fr")
+        self.assertEqual(r["statut"], "refuse")
+        self.assertIn("n'existe pas", r["raison"])
+
+    def test_chaque_agent_agit_sous_son_compte(self):
+        self.assertEqual(self.ex("comptes.regles_mdp", "cassandra", au_nom_de="cassandra")["statut"], "faite")
+        self.assertEqual(self.ex("comptes.regles_mdp", "itare", au_nom_de="itare")["statut"], "faite")
+        # Itare n'est pas administrateur : au nom d'Itare, gérer les comptes lui est refusé tant que l'administrateur ne le lui accorde pas
+        self.assertEqual(self.ex("comptes.lister", "itare", au_nom_de="itare")["statut"], "refuse")
+        self.ex("droits.regler", sujet="itare", droit="comptes.gerer")
+        self.assertEqual(self.ex("comptes.lister", "itare", au_nom_de="itare")["statut"], "faite")
+
+    def test_un_agent_invite_a_un_compte_sans_droit(self):
+        r = self.ex("comptes.creer_agent", nom="invite1", libelle="Un agent de passage")
+        self.assertEqual((r["statut"], r["resultat"]["compte"]), ("faite", "agent:invite1"))
+        self.assertEqual(self.ex("comptes.creer_agent", nom="Mauvais Nom")["statut"], "echec")
+        self.assertEqual(self.ex("comptes.lister", "itare", au_nom_de="agent:invite1")["statut"], "refuse")       # aucun droit tant qu'on ne lui en donne pas
+        self.assertEqual(self.ex("comptes.regles_mdp", "itare", au_nom_de="agent:invite1")["statut"], "faite")
+        self.assertFalse(self.ex("comptes.ouvrir_session", compte="agent:invite1", mot_de_passe=MDP)["resultat"]["ok"])
+
+    def test_un_compte_systeme_ne_se_supprime_pas(self):
+        self.assertEqual(self.ex("comptes.supprimer", compte="noyau")["statut"], "echec")
+
+    def test_le_premier_compte_humain_est_superadmin_malgre_les_comptes_systeme(self):
+        r = self.ex("comptes.creer", compte="a@x.fr", mot_de_passe=MDP)["resultat"]
+        self.assertEqual((r["superadmin"], r["unix_user"]), (True, "fastuser"))
+        self.assertEqual(self.ex("comptes.creer", compte="b@x.fr", mot_de_passe=MDP)["resultat"]["superadmin"], False)
+
+    def test_le_noyau_travaille_sous_son_propre_chemin_interne(self):
+        """Les lectures d'un module pour un autre (le menu lit les droits) passent par le noyau, pas par un acte sans compte."""
+        r = self.ex("menus.lire_menu", role="admin", compte="operateur")
+        self.assertEqual(r["statut"], "faite")
+
+    def test_la_surveillance_ouvre_un_constat_puis_le_ferme(self):
+        self.ex("comptes.regles_mdp", au_nom_de="")
+        self.ex("comptes.regles_mdp", au_nom_de="fantome@x.fr")
+        self.n.tick(maintenant=time_now())
+        ouverts = [c for c in self.n.base.lire("SELECT * FROM constats WHERE etat='ouvert'")]
+        self.assertEqual([c["objet_id"] for c in ouverts if c["module"] == "droits"], ["sans_compte"])
+        self.assertIn("2 acte(s)", ouverts[0]["titre"])
+        self.n.base.ecrire("UPDATE evenements SET ts=ts-2000")                         # trente-trois minutes plus tard : hors fenêtre
+        self.n.tick(maintenant=time_now() + 60)
+        self.assertEqual([c for c in self.n.base.lire("SELECT * FROM constats WHERE etat='ouvert' AND module='droits'")], [])
+
+
+def time_now():
+    import time
+    return time.time()
+
+
+class SuperadminSupplementaire(unittest.TestCase):
+    def setUp(self):
+        self.tmp, self.n = monde_comptes()
+        self.addCleanup(self.tmp.cleanup)
+        self.sudo = []
+        self.n.identite.sudo = lambda u: self.sudo.append(u) or True
+
+    def ex(self, cle, acteur="humain", au_nom_de="", **args):
+        return self.n.executeur.executer(cle, acteur, args, compte=au_nom_de)
+
+    def test_un_superadmin_de_plus_apporte_son_identifiant_systeme_et_rejoint_sudo(self):
+        self.ex("comptes.creer", compte="a@x.fr", mot_de_passe=MDP)
+        r = self.ex("comptes.creer", au_nom_de="a@x.fr", compte="b@x.fr", mot_de_passe=MDP, superadmin=True, unix_user="alice")
+        self.assertEqual(r["statut"], "faite")
+        self.assertEqual((r["resultat"]["superadmin"], r["resultat"]["unix_user"], r["resultat"]["unix_demande"]), (True, "alice", True))
+        self.assertEqual(self.sudo, ["alice"])
+        self.assertTrue(self.n.droits.est_admin("b@x.fr"))
+
+    def test_l_identifiant_systeme_est_obligatoire_et_doit_exister_avec_bash(self):
+        self.ex("comptes.creer", compte="a@x.fr", mot_de_passe=MDP)
+        for u in ("", "root", "Pas Bon", "inconnu"):
+            r = self.ex("comptes.creer", au_nom_de="a@x.fr", compte="c@x.fr", mot_de_passe=MDP, superadmin=True, unix_user=u)
+            self.assertEqual(r["statut"], "echec", u)
+        self.assertFalse(self.n.identite.existe("c@x.fr"))
+        self.assertEqual(self.sudo, [])
+
+    def test_un_utilisateur_systeme_n_est_adosse_qu_a_un_compte(self):
+        self.ex("comptes.creer", compte="a@x.fr", mot_de_passe=MDP)
+        self.ex("comptes.creer", au_nom_de="a@x.fr", compte="b@x.fr", mot_de_passe=MDP, superadmin=True, unix_user="alice")
+        r = self.ex("comptes.creer", au_nom_de="a@x.fr", compte="c@x.fr", mot_de_passe=MDP, superadmin=True, unix_user="alice")
+        self.assertEqual(r["statut"], "echec")
+
+    def test_seul_un_superadmin_en_cree_un(self):
+        self.ex("comptes.creer", compte="a@x.fr", mot_de_passe=MDP)
+        self.ex("comptes.creer", compte="b@x.fr", mot_de_passe=MDP)
+        self.ex("droits.regler", sujet="b@x.fr", droit="comptes.gerer")                   # b gère les comptes, il n'est pas pour autant superadmin
+        r = self.ex("comptes.creer", au_nom_de="b@x.fr", compte="c@x.fr", mot_de_passe=MDP, superadmin=True, unix_user="alice")
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("superadministrateur", r["erreur"])
+        self.assertEqual(self.ex("comptes.creer", au_nom_de="b@x.fr", compte="c@x.fr", mot_de_passe=MDP)["statut"], "faite")     # un compte ordinaire, oui
+
+    def test_sans_la_case_superadmin_l_identifiant_systeme_est_ignore(self):
+        self.ex("comptes.creer", compte="a@x.fr", mot_de_passe=MDP)
+        r = self.ex("comptes.creer", au_nom_de="a@x.fr", compte="b@x.fr", mot_de_passe=MDP, unix_user="alice")
+        self.assertEqual((r["resultat"]["superadmin"], r["resultat"]["unix_user"]), (False, ""))
+        self.assertEqual(self.sudo, [])
+
+    def test_le_verrou_n_existe_que_si_fastpanel_est_la(self):
+        self.ex("comptes.creer", compte="a@x.fr", mot_de_passe=MDP)
+        self.n.identite.fastpanel = lambda: True
+        r = self.ex("comptes.supprimer", compte="a@x.fr")
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("FastPanel", r["erreur"])
+        self.assertEqual(self.ex("droits.admin", compte="a@x.fr", admin=False)["statut"], "echec")        # pas rétrogradé non plus
+        self.assertTrue(self.n.droits.est_admin("a@x.fr"))
+        self.n.identite.fastpanel = lambda: False                                                         # FastPanel parti : plus de verrou
+        self.assertEqual(self.ex("droits.admin", compte="a@x.fr", admin=False)["statut"], "faite")
+
+    def test_le_verrou_ne_protege_que_le_superadmin(self):
+        self.ex("comptes.creer", compte="a@x.fr", mot_de_passe=MDP)
+        self.ex("comptes.creer", compte="b@x.fr", mot_de_passe=MDP)
+        self.ex("droits.admin", compte="b@x.fr")
+        self.n.identite.fastpanel = lambda: True
+        self.assertEqual(self.ex("droits.admin", compte="b@x.fr", admin=False)["statut"], "faite")
+        self.assertEqual(self.ex("comptes.supprimer", compte="b@x.fr")["statut"], "faite")
+
+
 def charger_courtier():
     import importlib.util
     spec = importlib.util.spec_from_file_location("courtier", RACINE / "exploitation" / "courtier.py")
@@ -2962,6 +3121,64 @@ class Courtier(unittest.TestCase):
         n = self.c.traiter(str(spool), str(cfg), os.getuid() + 1, lambda *a, **k: R(), lambda m: None)    # le noyau serait un autre uid
         self.assertEqual(n, 0)
         self.assertTrue(vrai.exists())                                                # la cible du lien n'est pas touchée
+
+
+class CourtierSudo(unittest.TestCase):
+    def setUp(self):
+        self.c = charger_courtier()
+        self.demande = {"action": "ajouter_sudo", "utilisateur": "alice"}
+
+    def decider(self, demande=None, infos=(1001, "/bin/bash"), connu=True):
+        return self.c.decider_sudo(self.demande if demande is None else demande, infos, connu)
+
+    def test_une_demande_en_regle_est_accordee(self):
+        self.assertEqual(self.decider(), (True, "accordé"))
+
+    def test_root_les_comptes_systeme_et_les_inconnus_sont_refuses(self):
+        self.assertFalse(self.decider(dict(self.demande, utilisateur="root"))[0])
+        self.assertFalse(self.decider(infos=(0, "/bin/bash"))[0])
+        self.assertFalse(self.decider(infos=(999, "/bin/bash"))[0])                        # un utilisateur du système, pas une personne
+        self.assertFalse(self.decider(infos=None)[0])
+        self.assertFalse(self.decider(infos=(1001, "/usr/sbin/nologin"))[0])
+
+    def test_sans_compte_superadmin_adosse_dans_la_base_rien_ne_passe(self):
+        self.assertIn("superadministrateur", self.decider(connu=False)[1])
+
+    def test_des_noms_hostiles_sont_refuses(self):
+        for u in ("a;b", "../x", "-o", "A B", "", None, 5, "x" * 40):
+            self.assertFalse(self.decider(dict(self.demande, utilisateur=u))[0], u)
+
+    @unittest.skipUnless(hasattr(os, "O_NOFOLLOW") and hasattr(os, "O_DIRECTORY"), "POSIX")
+    def test_le_courtier_ajoute_au_groupe_apres_verification_de_la_base(self):
+        import json
+        import sqlite3
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        racine = Path(tmp.name)
+        (racine / "courtier").mkdir()
+        (racine / "config").mkdir()
+        db = racine / "noyau.db"
+        c = sqlite3.connect(db)
+        c.execute("CREATE TABLE comptes(compte TEXT, superadmin INTEGER, unix_user TEXT)")
+        c.execute("INSERT INTO comptes VALUES('b@x.fr', 1, 'alice')")
+        c.commit()
+        c.close()
+        (racine / "courtier" / "a.json").write_text(json.dumps(self.demande))
+        (racine / "courtier" / "b.json").write_text(json.dumps({"action": "ajouter_sudo", "utilisateur": "mallory"}))
+        appels = []
+
+        class R:
+            returncode, stdout = 0, ""
+
+        def faux(cmd, **kw):
+            appels.append(cmd)
+            return R()
+
+        infos = lambda nom: (1001, "/bin/bash")
+        n = self.c.traiter(str(racine / "courtier"), str(racine / "config"), os.getuid(), faux, lambda m: None, str(db), infos, lambda: "sudo")
+        self.assertEqual(n, 1)
+        self.assertEqual(appels, [["usermod", "-aG", "sudo", "alice"]])                    # mallory n'a pas de compte superadmin : rien
+        self.assertEqual(os.listdir(racine / "courtier"), [])
 
 
 class DemandeAuCourtier(unittest.TestCase):

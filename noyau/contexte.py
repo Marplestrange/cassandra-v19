@@ -72,6 +72,11 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé l'identité des comptes ([permissions] identite)" % self.module)
         return self._intro["identite"]
 
+    def evenements(self, type_prefixe: str = "", limite: int = 200) -> list:
+        """Les événements récents (tous comptes), pour un module de surveillance ([permissions] introspection)."""
+        self._exiger_introspection()
+        return self._intro["evenements"](type_prefixe, limite)
+
     def compteurs(self, module: str) -> dict:
         """{'constats': ouverts du module, 'moteurs': ceux à surveiller} : de quoi afficher un badge."""
         self._exiger_introspection()

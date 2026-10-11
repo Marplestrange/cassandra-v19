@@ -1,7 +1,7 @@
 [module]
 id = "comptes"
 nom = "Comptes"
-version = "0.2.0"
+version = "0.3.0"
 noyau_min = "0.1.0"
 description = "Les comptes et la preuve qu'on en est : identifiant (une adresse e-mail), mot de passe (règles de la V18, scrypt salé), sessions, jetons de mise en place du mot de passe. Le rôle d'administrateur, lui, vit dans les droits."
 confiance = "interne"
@@ -78,6 +78,17 @@ retour = "supprimer la ligne créée (et le statut d'administrateur qu'elle a pu
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
 masque = ["mot_de_passe"]
+
+[[capacites]]
+id = "creer_agent"
+libelle = "Créer le compte d'un agent invité (« agent:nom ») : son jeton ne suffit pas, il lui faut aussi un compte"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la table comptes : une ligne de type agent, sans mot de passe ni droit"]
+preuve = "relire le compte créé"
+retour = "supprimer la ligne créée"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
 
 [[capacites]]
 id = "modifier"

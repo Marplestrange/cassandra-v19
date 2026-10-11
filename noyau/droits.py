@@ -24,6 +24,7 @@ class Droits:
     def __init__(self, base):
         self.base = base
         self.connus = {}              # « module.droit » -> Droit déclaré par un module branché
+        self.verrou = lambda compte: ""   # compte -> pourquoi on ne peut pas lui retirer l'administration ("" : rien ne s'y oppose)
         self._verrou = threading.Lock()
 
     # ---- ce que les modules déclarent ----
@@ -144,6 +145,9 @@ class Droits:
         if admin:
             self.base.ecrire("INSERT OR IGNORE INTO droit_admins(compte) VALUES(?)", (compte,))
         else:
+            raison = self.verrou(compte)
+            if raison:
+                raise ValueError(raison)
             self.base.ecrire("DELETE FROM droit_admins WHERE compte=?", (compte,))
 
     def etat(self) -> dict:

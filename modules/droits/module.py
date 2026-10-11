@@ -99,6 +99,23 @@ def brancher(ctx):
     def defaire_admin(ctx, res):
         d.regler_admin(res["compte"], res["avant"])
 
+    FENETRE_S = 900
+
+    def sans_compte(ctx):
+        """Un constat tant qu'au moins un acte refusé faute de compte date de moins de quinze minutes."""
+        import time
+        depuis = time.time() - FENETRE_S
+        faits = [e for e in ctx.evenements("capacite.refusee", 500)
+                 if e["ts"] >= depuis and e["donnees"].get("alerte") and e["donnees"].get("raison") in ("sans compte", "compte inconnu")]
+        if not faits:
+            return []
+        dernier = faits[-1]
+        prets = sorted({"%s (%s)" % (e["objet_id"], e["acteur"]) for e in faits})[:5]
+        return [{"objet": ("securite", "sans_compte"),
+                 "titre": "%d acte(s) refusé(s) faute de compte en %d min" % (len(faits), FENETRE_S // 60),
+                 "detail": "Dernier : %s par %s (%s). Parmi : %s." % (dernier["objet_id"], dernier["acteur"], dernier["donnees"].get("raison"), ", ".join(prets))}]
+
+    ctx.detecteur("sans_compte", sans_compte)
     ctx.implementer("mes_droits", mes_droits)
     ctx.implementer("verifier", verifier)
     ctx.implementer("catalogue", catalogue)

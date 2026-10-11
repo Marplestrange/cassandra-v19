@@ -23,7 +23,9 @@ log = logging.getLogger("noyau.executeur")
 
 
 class Executeur:
-    def __init__(self, catalogue, bus, crise, droits=None):
+    def __init__(self, catalogue, bus, crise, droits=None, identite=None, exiger_compte=False):
+        self.identite = identite
+        self.exiger_compte = exiger_compte   # vrai en service : un acte SANS compte, ou au nom d'un compte inconnu, est refusé ET surveillé
         self.droits = droits          # le service des droits (noyau/droits.py) ; None : aucun droit n'est vérifié
         self.catalogue = catalogue
         self.bus = bus
@@ -40,12 +42,21 @@ class Executeur:
     def _evt(self, type, e, acteur, cause, donnees=None, compte=""):
         return self.bus.emettre(type, source=e.module, acteur=acteur, objet=("capacite", e.cle), cause=cause, donnees=donnees or {}, compte=compte)
 
-    def executer(self, cle: str, acteur: str, args=None, cause=None, essai: bool = False, compte: str = "") -> dict:
+    def executer(self, cle: str, acteur: str, args=None, cause=None, essai: bool = False, compte: str = "", interne: bool = False) -> dict:
+        """`interne` : réservé au code du noyau lui-même (détecteurs, lectures d'un module pour un autre, reprise). Aucune entrée extérieure ne le pose."""
         args = dict(args or {})
         e = self.catalogue.get(cle)
         if e is None:
             return {"statut": "refuse", "raison": "capacité inconnue : %s" % cle}
         c = e.capacite
+        if self.exiger_compte and not interne:
+            # Un acte sans compte n'est pas un acte anonyme ordinaire : c'est une anomalie (ou une attaque) qu'on refuse et qu'on signale.
+            if not compte:
+                self._evt("capacite.refusee", e, acteur, cause, {"raison": "sans compte", "alerte": True}, compte)
+                return {"statut": "refuse", "raison": "aucun compte n'agit : tout acte a un compte, et celui-ci est signalé"}
+            if self.identite is not None and not self.identite.existe(compte):
+                self._evt("capacite.refusee", e, acteur, cause, {"raison": "compte inconnu", "alerte": True, "compte_pretendu": compte}, compte)
+                return {"statut": "refuse", "raison": "le compte « %s » n'existe pas : signalé" % compte}
         if acteur not in c.qui:
             self._evt("capacite.refusee", e, acteur, cause, {"raison": "acteur non autorisé"}, compte)
             return {"statut": "refuse", "raison": "« %s » n'est pas autorisé à utiliser %s" % (acteur, cle)}

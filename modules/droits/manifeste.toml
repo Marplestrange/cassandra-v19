@@ -1,7 +1,7 @@
 [module]
 id = "droits"
 nom = "Droits"
-version = "0.1.0"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Qui, parmi les comptes, peut utiliser quoi : les modules déclarent leurs droits, on les attribue à des comptes et à des groupes, l'exécuteur les vérifie. Modèle de Dolibarr."
 confiance = "interne"
@@ -30,6 +30,12 @@ libelle = "Une attribution de droit : à un compte, à un groupe, ou une nominat
 
 [evenements]
 emet = ["droit.change"]
+
+# Un acte SANS compte, ou au nom d'un compte qui n'existe pas, est refusé par l'exécuteur : ici, on le surveille.
+[[detecteurs]]
+id = "sans_compte"
+libelle = "Actes refusés faute de compte (ou au nom d'un compte inconnu) : une anomalie, peut-être une attaque"
+frequence_s = 30
 
 [[capacites]]
 id = "mes_droits"
@@ -101,3 +107,4 @@ qui = ["humain", "compte", "cassandra", "itare"]
 
 [permissions]
 droits = true
+introspection = true

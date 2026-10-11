@@ -51,7 +51,7 @@ SEUIL_PANNES = 5   # pannes de suite d'un détecteur avant qu'il soit suspendu (
 
 class Noyau:
     def __init__(self, donnees, modules=None, config=None, actifs=None, extensions=None, lire_actifs=None,
-                 gerer_modules=False, amorce=None):
+                 gerer_modules=False, amorce=None, exiger_compte=False):
         self.modules = Path(modules or RACINE / "modules")
         self.extensions = Path(extensions) if extensions else None   # dossier des modules greffés après coup
         self.actifs = actifs         # None : tous les modules du dossier ; sinon la liste des modules actifs
@@ -69,7 +69,7 @@ class Noyau:
         self.identite = Identite(self.base, self.droits, (self.config.get("comptes") or {}).get("session_heures", 24),
                                  str((self.config.get("comptes") or {}).get("superadmin_unix", "fastuser")),
                                  courtier=str(Path(donnees) / "courtier"))
-        self.executeur = Executeur(self.catalogue, self.bus, self.en_crise, self.droits)
+        self.executeur = Executeur(self.catalogue, self.bus, self.en_crise, self.droits, self.identite, exiger_compte)
         self.detecteurs = []       # (module, Detecteur, fonction)
         self._derniere = {}        # (module, detecteur) -> dernier passage
         self._pannes = {}          # (module, detecteur) -> pannes de suite
@@ -96,7 +96,7 @@ class Noyau:
     def _fabriquer(self, m):
         self.droits.declarer(m)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
-                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "lecture": self._lecture, "droits": self.droits, "identite": self.identite})
+                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "droits": self.droits, "identite": self.identite})
         self.executeur.contextes[m.id] = ctx
         return ctx
 
@@ -144,7 +144,7 @@ class Noyau:
         e = self.catalogue.get(cle)
         if e is None or e.capacite.ecrit:
             raise PermissionError("« %s » n'est pas une capacité de lecture" % cle)
-        r = self.executeur.executer(cle, "cassandra", args)
+        r = self.executeur.executer(cle, "cassandra", args, interne=True)
         return r.get("resultat") if r["statut"] == "faite" else None
 
     def _compteurs(self, mid: str) -> dict:
@@ -565,7 +565,7 @@ class Noyau:
                 rapport["ouverts"] += 1
                 cap = c.get("capacite") or d.capacite
                 if cap:
-                    r = self.executeur.executer("%s.%s" % (module, cap), "cassandra", c.get("args"), cause=ev, compte=compte)
+                    r = self.executeur.executer("%s.%s" % (module, cap), "cassandra", c.get("args"), cause=ev, compte=compte, interne=True)
                     rapport["actions"].append({"constat": cle, "capacite": cap, "statut": r["statut"]})
             for o in self.base.lire("SELECT cle, evenement FROM constats WHERE module=? AND detecteur=? AND etat='ouvert'", (module, d.id)):
                 if o["cle"] not in vus:
@@ -681,7 +681,7 @@ def commande_module(argv) -> int:
     N'agit que sur l'ÉTAT : le noyau en marche le voit et branche ou débranche à chaud. C'est aussi ce que
     l'interface appellera pour son menu des modules."""
     sous = argv[2] if len(argv) > 2 else "liste"
-    n = Noyau(_donnees(), extensions=_extensions(), gerer_modules=True, amorce=_actifs)
+    n = Noyau(_donnees(), extensions=_extensions(), gerer_modules=True, amorce=_actifs, exiger_compte=True)
     n._amorcer()
     ids = [a for a in argv[3:] if not a.startswith("--")]
     opts = {a for a in argv[3:] if a.startswith("--")}
@@ -721,7 +721,7 @@ def commande_agir(argv) -> int:
     if len(argv) < 3:
         print("agir CAPACITE [cle=valeur ...] [--acteur A] [--essai]", file=sys.stderr)
         return 2
-    cle, args, acteur, essai, compte = argv[2], {}, "humain", False, ""
+    cle, args, acteur, essai, compte = argv[2], {}, "humain", False, "operateur"      # la ligne de commande, c'est l'opérateur local (root)
     reste = argv[3:]
     i = 0
     while i < len(reste):
@@ -748,7 +748,7 @@ def commande_agir(argv) -> int:
         i += 1
     gerer = bool(os.environ.get("CASSANDRA_CONFIG"))
     try:
-        n = Noyau(_donnees(), actifs=None, extensions=_extensions(), gerer_modules=gerer, amorce=_actifs)
+        n = Noyau(_donnees(), actifs=None, extensions=_extensions(), gerer_modules=gerer, amorce=_actifs, exiger_compte=True)
         n.brancher(annoncer=False)
     except manifeste.ManifesteInvalide as ex:
         print(ex, file=sys.stderr)
@@ -763,7 +763,7 @@ def commande_palier(argv) -> int:
     python main.py palier CLE PALIER          règle jusqu'où Cassandra agit seule sur cette capacité (raconter | auto | maitre)"""
     gerer = bool(os.environ.get("CASSANDRA_CONFIG"))
     try:
-        n = Noyau(_donnees(), actifs=None, extensions=_extensions(), gerer_modules=gerer, amorce=_actifs)
+        n = Noyau(_donnees(), actifs=None, extensions=_extensions(), gerer_modules=gerer, amorce=_actifs, exiger_compte=True)
         n.brancher(annoncer=False)
     except manifeste.ManifesteInvalide as ex:
         print(ex, file=sys.stderr)
@@ -839,7 +839,7 @@ def main(argv) -> int:
         try:
             gerer = bool(os.environ.get("CASSANDRA_CONFIG"))     # en exploitation : l'état des modules vit dans la base
             n = Noyau(_donnees(), actifs=None if gerer else _actifs(), extensions=_extensions(), lire_actifs=None if gerer else _actifs,
-                      gerer_modules=gerer, amorce=_actifs)
+                      gerer_modules=gerer, amorce=_actifs, exiger_compte=True)
             n.brancher(annoncer=commande != "etat")
         except manifeste.ManifesteInvalide as ex:
             print(ex, file=sys.stderr)
