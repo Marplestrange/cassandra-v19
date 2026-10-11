@@ -208,7 +208,7 @@ python main.py paquet extraire ARCHIVE DEST [--non-signe]
 Trois voies, un seul contrat (le manifeste) :
 
 1. **Un module livré avec le noyau** : on ajoute `modules/<id>/` au dépôt, `deploy.sh` le pousse (inactif), `install.sh --module <id>` l'installe et l'active.
-2. **Une extension, à chaud** : `install.sh --extension ./mon_module`. Elle est copiée dans `custom/` (hors des versions : `deploy.sh`
+2. **Une extension, à chaud** : `install.sh --extension ./mon_module`. Elle est copiée dans `extensions/` (hors des versions : `deploy.sh`
    n'y touche jamais), vérifiée, prouvée par son `verifier.sh`, ajoutée aux modules actifs, et **le noyau la branche sans redémarrer**.
    Exemple complet : `exemples/sentinelle/` (un moteur, un détecteur, un type d'objet, des événements).
 3. **Un moteur de plus sur un module existant, sans le modifier** : une extension qui écoute ses événements (`evenements.ecoute`) et
@@ -225,7 +225,7 @@ dédié et l'unité durcie : c'est un niveau de confiance « local ». Un module
 /var/cassandra/                 UN seul dossier : on le sauvegarde, on le déplace d'un bloc (CASSANDRA_RACINE)
     releases/<horodatage>/      les versions du noyau ; l'ancienne reste à côté pour le retour arrière
     current -> releases/...     lien RELATIF : la racine peut changer de place sans rien casser
-    custom/                     les modules greffés après coup (un déploiement n'y touche jamais)
+    extensions/                 les modules greffés après coup (un déploiement n'y touche jamais)
     donnees/                    la base du noyau et ses sauvegardes
     config/                     la configuration et l'unité systemd (/etc/systemd/system n'en garde qu'un lien)
     journal/

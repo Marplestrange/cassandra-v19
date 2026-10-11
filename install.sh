@@ -5,7 +5,7 @@
 #   ./install.sh --module certificats    le noyau + ce module et ses dépendances (dns)
 #   ./install.sh --tous                  le noyau + tous les modules du dossier modules/
 #   ./install.sh --retirer certificats   retire un module (son retirer.sh, puis son état)
-#   ./install.sh --extension ./sentinelle   GREFFE un module après coup, à chaud : copié dans custom/ (que
+#   ./install.sh --extension ./sentinelle   GREFFE un module après coup, à chaud : copié dans extensions/ (que
 #                                        deploy.sh ne touche jamais), prouvé, activé ; le noyau le branche sans redémarrer
 #   ./install.sh --extension mod.cmod [--non-signe]   un PAQUET : vérifié (intégrité, signature d'une clé de config/cles/) avant tout
 #   ./install.sh --racine /srv/cassandra    un autre dossier racine ;  --admin NOM : le premier administrateur (défaut : fastuser)
@@ -62,9 +62,9 @@ verifier_python() {
 }
 
 # ---------------------------------------------------------------- un module
-# Un module greffé vit dans custom/ ; un module livré avec le noyau, dans la version courante.
+# Un module greffé vit dans extensions/ ; un module livré avec le noyau, dans la version courante.
 dossier_module() { # id
-  if [ -d "$CUSTOM_DIR/$1" ]; then printf '%s' "$CUSTOM_DIR/$1"; else printf '%s' "$PREFIXE/current/modules/$1"; fi
+  if [ -d "$EXTENSIONS_DIR/$1" ]; then printf '%s' "$EXTENSIONS_DIR/$1"; else printf '%s' "$PREFIXE/current/modules/$1"; fi
 }
 
 env_module() { # id
@@ -118,7 +118,7 @@ if [ -n "$RETIRER" ]; then
   etat_module desactiver "$RETIRER" --en-cascade --forcer >/dev/null 2>&1 || true
   etat_module oublier "$RETIRER"
   # un module greffé s'efface avec son dossier ; le noyau, lui, garde en mémoire ce qu'il avait branché jusqu'au prochain démarrage
-  if [ -d "$CUSTOM_DIR/$RETIRER" ]; then rm -rf "${CUSTOM_DIR:?}/$RETIRER"; fi
+  if [ -d "$EXTENSIONS_DIR/$RETIRER" ]; then rm -rf "${EXTENSIONS_DIR:?}/$RETIRER"; fi
   systemctl restart "$UNITE"
   dire "module $RETIRER retiré"
   exit 0
@@ -127,7 +127,7 @@ fi
 # ---------------------------------------------------------------- greffe d'une extension (à chaud)
 if [ "${#EXTENSIONS[@]}" -gt 0 ]; then
   installation_presente
-  install -d -o root -g root -m 0755 "$CUSTOM_DIR"
+  install -d -o root -g root -m 0755 "$EXTENSIONS_DIR"
   for src in "${EXTENSIONS[@]}"; do
     if [ -f "$src" ]; then
       # un paquet : intégrité et signature vérifiées AVANT d'être déposé où que ce soit
@@ -141,18 +141,18 @@ if [ "${#EXTENSIONS[@]}" -gt 0 ]; then
     fi
     [ -f "$src/manifeste.toml" ] || echouer "$src : pas de manifeste.toml"
     id="$(basename "$(cd "$src" && pwd)")"
-    dire "extension $id : dépôt dans $CUSTOM_DIR"
-    rm -rf "${CUSTOM_DIR:?}/$id"
-    cp -r "$src" "$CUSTOM_DIR/$id"
-    chown -R root:root "$CUSTOM_DIR/$id"; chmod -R go-w "$CUSTOM_DIR/$id"
-    if ! SORTIE="$(cd "$PREFIXE/current" && CASSANDRA_CUSTOM="$CUSTOM_DIR" python3 main.py verifier 2>&1)"; then
-      printf '%s\n' "$SORTIE" >&2; rm -rf "${CUSTOM_DIR:?}/$id"; echouer "extension $id refusée : rien n'est greffé"
+    dire "extension $id : dépôt dans $EXTENSIONS_DIR"
+    rm -rf "${EXTENSIONS_DIR:?}/$id"
+    cp -r "$src" "$EXTENSIONS_DIR/$id"
+    chown -R root:root "$EXTENSIONS_DIR/$id"; chmod -R go-w "$EXTENSIONS_DIR/$id"
+    if ! SORTIE="$(cd "$PREFIXE/current" && CASSANDRA_EXTENSIONS="$EXTENSIONS_DIR" python3 main.py verifier 2>&1)"; then
+      printf '%s\n' "$SORTIE" >&2; rm -rf "${EXTENSIONS_DIR:?}/$id"; echouer "extension $id refusée : rien n'est greffé"
     fi
     # ses dépendances livrées avec le noyau d'abord, puis elle
     while read -r m; do
       [ -n "$m" ] || continue
       if [ "$m" = "$id" ] || ! actif "$m"; then installer_module "$m"; fi
-    done < <(cd "$PREFIXE/current" && CASSANDRA_CUSTOM="$CUSTOM_DIR" python3 main.py ordre "$id")
+    done < <(cd "$PREFIXE/current" && CASSANDRA_EXTENSIONS="$EXTENSIONS_DIR" python3 main.py ordre "$id")
   done
   if systemctl is-active --quiet "$UNITE"; then
     dire "le noyau branche l'extension à chaud (sans redémarrer)"
@@ -197,9 +197,9 @@ dire "démarrage du noyau (le service annonce lui-même qu'il est prêt)"
 demarrer
 
 if [ "$TOUS" -eq 1 ]; then
-  mapfile -t MODULES < <(cd "$DEST" && CASSANDRA_CUSTOM="" python3 main.py ordre)
+  mapfile -t MODULES < <(cd "$DEST" && CASSANDRA_EXTENSIONS="" python3 main.py ordre)
 elif [ "${#MODULES[@]}" -gt 0 ]; then
-  mapfile -t MODULES < <(cd "$DEST" && CASSANDRA_CUSTOM="" python3 main.py ordre "${MODULES[@]}")
+  mapfile -t MODULES < <(cd "$DEST" && CASSANDRA_EXTENSIONS="" python3 main.py ordre "${MODULES[@]}")
 fi
 # Un module qui échoue ne fait pas tomber le noyau : il est retiré et le noyau continue avec les précédents.
 for m in "${MODULES[@]}"; do installer_module "$m"; done

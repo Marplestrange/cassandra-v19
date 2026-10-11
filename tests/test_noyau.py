@@ -877,9 +877,9 @@ class LigneDeCommandeModules(unittest.TestCase):
         import os
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        ancien = {k: os.environ.get(k) for k in ("CASSANDRA_DONNEES", "CASSANDRA_CUSTOM")}
+        ancien = {k: os.environ.get(k) for k in ("CASSANDRA_DONNEES", "CASSANDRA_EXTENSIONS")}
         os.environ["CASSANDRA_DONNEES"] = tmp.name
-        os.environ.pop("CASSANDRA_CUSTOM", None)
+        os.environ.pop("CASSANDRA_EXTENSIONS", None)
         try:
             c = lambda *a: moteur.commande_module(["main.py", "module"] + list(a))
             self.assertEqual(c("actif", "dns"), 1)
@@ -1381,10 +1381,10 @@ class LigneDeCommandeAgir(unittest.TestCase):
         import contextlib, io as _io, json, os
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        ancien = {k: os.environ.get(k) for k in ("CASSANDRA_DONNEES", "CASSANDRA_CONFIG", "CASSANDRA_CUSTOM")}
+        ancien = {k: os.environ.get(k) for k in ("CASSANDRA_DONNEES", "CASSANDRA_CONFIG", "CASSANDRA_EXTENSIONS")}
         os.environ["CASSANDRA_DONNEES"] = tmp.name
         os.environ.pop("CASSANDRA_CONFIG", None)
-        os.environ.pop("CASSANDRA_CUSTOM", None)
+        os.environ.pop("CASSANDRA_EXTENSIONS", None)
         try:
             sortie = _io.StringIO()
             with contextlib.redirect_stdout(sortie):
@@ -2348,9 +2348,9 @@ class DolibarrPont(unittest.TestCase):
     def test_la_ligne_de_commande_des_paliers(self):
         import contextlib
         import io as _io
-        ancien = {k: os.environ.get(k) for k in ("CASSANDRA_DONNEES", "CASSANDRA_CUSTOM")}
+        ancien = {k: os.environ.get(k) for k in ("CASSANDRA_DONNEES", "CASSANDRA_EXTENSIONS")}
         os.environ["CASSANDRA_DONNEES"] = str(Path(self.tmp.name) / "d")
-        os.environ.pop("CASSANDRA_CUSTOM", None)
+        os.environ.pop("CASSANDRA_EXTENSIONS", None)
         try:
             sortie = _io.StringIO()
             with contextlib.redirect_stdout(sortie):

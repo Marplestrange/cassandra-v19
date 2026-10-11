@@ -37,10 +37,10 @@ Ce document dit ce que le noyau garantit déjà pour que ce jour arrive sans rie
    ```
    Le client (`python main.py store chercher | voir | installer | mettre-a-jour`) vérifie l'index, résout les dépendances, affiche les permissions, télécharge,
    compare `sha256`, vérifie la signature, puis installe.
-2. **Installer sans être root.** Le noyau tourne sans privilège et `custom/` appartient à root. Un petit **courtier** (service root, activé par
+2. **Installer sans être root.** Le noyau tourne sans privilège et `extensions/` appartient à root. Un petit **courtier** (service root, activé par
    socket, liste blanche d'opérations : « déposer un paquet vérifié », « lancer l'installer.sh de ce module », « retirer ») permet à Cassandra d'installer
    un module du store seule, avec preuve et retour arrière, et sans jamais élargir ses droits.
-3. **Les versions côte à côte.** `custom/<id>@<version>/` et un lien `custom/<id>` : une mise à jour qui ne passe pas sa preuve revient à la
+3. **Les versions côte à côte.** `extensions/<id>@<version>/` et un lien `extensions/<id>` : une mise à jour qui ne passe pas sa preuve revient à la
    version précédente, comme `deploy.sh` le fait pour le noyau. Les mises à jour de module ne redémarrent pas le noyau.
 4. **Le stockage propre du module et ses migrations.** Un fichier SQLite par module (`donnees/modules/<id>.db`), des migrations numérotées appliquées à
    l'activation, supprimé à la purge : la désinstallation est nette, la sauvegarde isole le module.

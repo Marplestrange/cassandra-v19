@@ -104,9 +104,7 @@ revenir() {
 }
 
 dire "bascule"
-# l'ancien nom du dossier (extensions/) devient custom/ : ce qui y était greffé suit
-if [ -d "$RACINE/extensions" ] && [ ! -e "$CUSTOM_DIR" ]; then mv "$RACINE/extensions" "$CUSTOM_DIR"; dire "extensions/ devient custom/"; fi
-install -d -o root -g root -m 0755 "$CUSTOM_DIR"   # les greffes vivent ici, hors des versions : un déploiement n'y touche jamais
+install -d -o root -g root -m 0755 "$EXTENSIONS_DIR"   # les greffes vivent ici, hors des versions : un déploiement n'y touche jamais
 poser_unite "$DEST"
 basculer "$DEST"
 systemctl restart "$UNITE" || { journalctl -u "$UNITE" -n 25 --no-pager >&2; revenir "le noyau ne démarre pas"; }
