@@ -38,6 +38,7 @@ from noyau.base import Base
 from noyau.bus import TOUT, Bus
 from noyau.catalogue import Catalogue
 from noyau.contexte import Contexte
+from noyau.droits import Droits
 from noyau.executeur import Executeur
 from noyau.modules import Modules
 from noyau.registre import Registre
@@ -63,7 +64,8 @@ class Noyau:
         self.registre = Registre(self.base, self.bus)
         self.etat_modules = Modules(self.base)
         self.catalogue = Catalogue(self.base)
-        self.executeur = Executeur(self.catalogue, self.bus, self.en_crise)
+        self.droits = Droits(self.base)
+        self.executeur = Executeur(self.catalogue, self.bus, self.en_crise, self.droits)
         self.detecteurs = []       # (module, Detecteur, fonction)
         self._derniere = {}        # (module, detecteur) -> dernier passage
         self._pannes = {}          # (module, detecteur) -> pannes de suite
@@ -87,14 +89,17 @@ class Noyau:
         return r
 
     def _fabriquer(self, m):
+        self.droits.declarer(m)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
-                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "lecture": self._lecture})
+                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "lecture": self._lecture, "droits": self.droits})
         self.executeur.contextes[m.id] = ctx
         return ctx
 
     def brancher(self, annoncer: bool = True) -> dict:
         """Branche les modules. `annoncer=False` pour une lecture (état, vérification) : rien n'est écrit au bus."""
         self._amorcer()
+        if annoncer and self.droits.amorcer(str((self.config.get("droits") or {}).get("admin_initial", "fastuser"))):
+            self.bus.emettre("noyau.admin_amorce", source="noyau", donnees={"compte": (self.config.get("droits") or {}).get("admin_initial", "fastuser")})
         self.actifs = self._actifs_courants()
         self.rapport = chargeur.brancher(self._racines(), self._fabriquer, self.catalogue, self.registre, self.actifs, tolerant=self.gerer)
         self._branches |= set(self.rapport["branches"])
@@ -219,6 +224,7 @@ class Noyau:
     def _debrancher(self, mid: str) -> dict:
         """Retire un module du noyau en marche. Ses données (objets, événements, savoir-faire) ne sont pas touchées."""
         abonnements = self.bus.desabonner(mid)
+        self.droits.oublier(mid)
         self.moteurs[:] = [x for x in self.moteurs if x[0] != mid]
         self.detecteurs[:] = [x for x in self.detecteurs if x[0] != mid]
         self._cables = {k for k in self._cables if k[0] != mid}
@@ -678,19 +684,23 @@ def commande_module(argv) -> int:
 
 
 def commande_agir(argv) -> int:
-    """python main.py agir CAPACITE [cle=valeur ...] [--acteur humain|compte|cassandra|itare] [--essai]
+    """python main.py agir CAPACITE [cle=valeur ...] [--acteur humain|compte|cassandra|itare] [--compte C] [--essai]
     Lance une capacité à la main et imprime le résultat en JSON. Les valeurs sont lues comme du JSON (5, true, "x") sinon comme du texte."""
     import json
     if len(argv) < 3:
         print("agir CAPACITE [cle=valeur ...] [--acteur A] [--essai]", file=sys.stderr)
         return 2
-    cle, args, acteur, essai = argv[2], {}, "humain", False
+    cle, args, acteur, essai, compte = argv[2], {}, "humain", False, ""
     reste = argv[3:]
     i = 0
     while i < len(reste):
         a = reste[i]
         if a == "--acteur" and i + 1 < len(reste):
             acteur = reste[i + 1]
+            i += 2
+            continue
+        if a == "--compte" and i + 1 < len(reste):
+            compte = reste[i + 1]
             i += 2
             continue
         if a == "--essai":
@@ -712,7 +722,7 @@ def commande_agir(argv) -> int:
     except manifeste.ManifesteInvalide as ex:
         print(ex, file=sys.stderr)
         return 1
-    r = n.executeur.executer(cle, acteur, args, essai=essai)
+    r = n.executeur.executer(cle, acteur, args, essai=essai, compte=compte)
     print(json.dumps(r, ensure_ascii=False, indent=2, default=str))
     return 0 if r["statut"] in ("faite", "simulee", "racontee") else 1
 

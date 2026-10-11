@@ -1,0 +1,103 @@
+[module]
+id = "droits"
+nom = "Droits"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Qui, parmi les comptes, peut utiliser quoi : les modules déclarent leurs droits, on les attribue à des comptes et à des groupes, l'exécuteur les vérifie. Modèle de Dolibarr."
+confiance = "interne"
+famille = "securite"
+essentiel = true
+
+# Les droits de ce module lui-même.
+[[droits]]
+id = "voir"
+libelle = "Voir ses propres droits"
+defaut = true
+
+[[droits]]
+id = "gerer"
+libelle = "Administrer les droits : groupes, membres, accords et refus"
+sensible = true
+
+[[droits]]
+id = "nommer_admin"
+libelle = "Nommer ou révoquer un administrateur"
+sensible = true
+
+[[objets]]
+type = "droit"
+libelle = "Une attribution de droit : à un compte, à un groupe, ou une nomination d'administrateur"
+
+[evenements]
+emet = ["droit.change"]
+
+[[capacites]]
+id = "mes_droits"
+libelle = "Les droits d'un compte : administrateur ou non, groupes, tout ce qu'il détient"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "verifier"
+libelle = "Un compte a-t-il ce droit, et pourquoi ?"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "catalogue"
+libelle = "Tous les droits que les modules actifs déclarent"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "etat"
+libelle = "Les administrateurs, les groupes et leurs membres, les accords et refus"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "regler"
+libelle = "Accorder, refuser ou rendre héritier un droit, pour un compte ou un groupe"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["droit_accords du sujet et du droit demandés"]
+preuve = "relire l'accord écrit"
+retour = "remettre l'accord d'avant (ou le retirer s'il n'y en avait pas)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "groupe"
+libelle = "Créer, renommer ou supprimer un groupe"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["droit_groupes du groupe demandé (et, à la suppression, ses membres et accords)"]
+preuve = "relire le groupe écrit"
+retour = "recréer le groupe, ses membres et ses accords d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "membre"
+libelle = "Mettre un compte dans un groupe, ou l'en retirer"
+risque = "faible"
+droit = "gerer"
+perimetre = ["droit_membres du compte et du groupe demandés"]
+preuve = "relire l'appartenance"
+retour = "remettre l'appartenance d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "admin"
+libelle = "Nommer un administrateur, ou le révoquer"
+risque = "eleve"
+droit = "nommer_admin"
+perimetre = ["droit_admins du compte demandé"]
+preuve = "relire le statut"
+retour = "remettre le statut d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[permissions]
+droits = true

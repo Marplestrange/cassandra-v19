@@ -66,10 +66,21 @@ class Capacite:
     retour: str = ""
     paliers: tuple = ("raconter",)
     qui: tuple = ("cassandra", "itare", "humain")
+    droit: str = ""            # le droit qu'un COMPTE doit détenir pour l'utiliser (voir [[droits]]) ; vide : aucun droit particulier
 
     @property
     def ecrit(self) -> bool:
         return self.risque != "lecture"
+
+
+@dataclass(frozen=True)
+class Droit:
+    """Un droit qu'un module déclare (comme les « rights » d'un module Dolibarr). Qualifié « module.droit » partout ailleurs.
+    Le module des droits l'attribue à des comptes et à des groupes ; l'exécuteur le vérifie, en un seul endroit."""
+    id: str
+    libelle: str
+    defaut: bool = False       # accordé d'office à tout compte connu (sinon : à attribuer)
+    sensible: bool = False     # signalé comme tel à celui qui l'attribue (gestion des comptes, des secrets...)
 
 
 @dataclass(frozen=True)
@@ -102,6 +113,7 @@ class Menu:
     role: str = "utilisateur"  # qui le voit : utilisateur | admin
     icone: str = ""
     badge: str = ""            # compteur affiché : constats (ouverts du module) | moteurs (à surveiller)
+    droit: str = ""            # le droit qu'un compte doit détenir pour voir cette entrée
 
 
 @dataclass(frozen=True)
@@ -117,6 +129,7 @@ class Widget:
     composant: str = "nombre"  # nombre | jauge | liste | etat | serie | texte
     source: str = ""           # une capacité de LECTURE du module qui fournit la donnée
     rafraichir_s: int = 0      # 0 : pas de rafraîchissement ; sinon au moins 5 secondes
+    droit: str = ""            # le droit qu'un compte doit détenir pour voir cette tuile
 
 
 @dataclass(frozen=True)
@@ -153,6 +166,7 @@ class Permissions:
     privileges: tuple = ()             # ce que ses scripts font en root (« installer »...)
     introspection: bool = False        # peut lire les manifestes des modules actifs et leurs compteurs (module de menus, de supervision)
     lectures: bool = False             # peut appeler les capacités de LECTURE des autres modules (module d'affichage)
+    droits: bool = False               # peut administrer les droits des comptes (le module des droits)
 
 
 @dataclass(frozen=True)
@@ -172,6 +186,7 @@ class Manifeste:
     essentiel: bool = False    # un module essentiel ne se désactive pas (comptes, coffre, notifications...)
     famille: str = ""          # regroupement dans le menu des modules (« securite », « reseau »...)
     objets: tuple = ()
+    droits: tuple = ()         # les droits que ce module déclare ([[droits]])
     emet: tuple = ()
     ecoute: tuple = ()
     capacites: tuple = ()
@@ -280,6 +295,31 @@ def valider(brut: dict) -> list:
         if x in emet:
             e.append("evenements.ecoute : « %s » est émis par le module lui-même" % x)
 
+    # droits : déclarés par le module, qualifiés « module.droit » ailleurs
+    droits_ids = []
+    for i, d in enumerate(brut.get("droits", []) or []):
+        nom = "droits[%d]" % i
+        if not isinstance(d, dict) or not _ID.match(str(d.get("id", ""))):
+            e.append("%s.id : identifiant invalide" % nom)
+            continue
+        if d["id"] in droits_ids:
+            e.append("%s.id : « %s » est déclaré deux fois" % (nom, d["id"]))
+        droits_ids.append(d["id"])
+        if not str(d.get("libelle", "")).strip():
+            e.append("droit « %s » : libellé obligatoire" % d["id"])
+        for champ in ("defaut", "sensible"):
+            if champ in d and not isinstance(d[champ], bool):
+                e.append("droit « %s ».%s : vrai ou faux" % (d["id"], champ))
+
+    def _droit_ok(valeur, nom):
+        """Un droit cité : un droit de ce module (« lire »), ou celui d'un autre (« module.lire »)."""
+        if valeur in (None, ""):
+            return
+        if not isinstance(valeur, str) or not (_ID.match(valeur) or re.match(r"^[a-z][a-z0-9_]{1,40}\.[a-z][a-z0-9_]{1,40}$", valeur)):
+            e.append("%s.droit : « %s » n'a pas la forme attendue (un droit du module, ou « module.droit »)" % (nom, valeur))
+        elif "." not in valeur and valeur not in droits_ids:
+            e.append("%s.droit : « %s » n'est pas un droit de ce module ([[droits]])" % (nom, valeur))
+
     # capacités : une capacité qui écrit porte sa propre sûreté
     ids = []
     for i, c in enumerate(brut.get("capacites", []) or []):
@@ -315,6 +355,7 @@ def valider(brut: dict) -> list:
                 e.append("%s : une capacité qui écrit doit déclarer sa preuve (contrôle après coup)" % nom)
             if not str(c.get("retour", "")).strip():
                 e.append("%s : une capacité qui écrit doit déclarer son retour arrière" % nom)
+        _droit_ok(c.get("droit"), nom)
         if risque == "eleve" and "maitre" in paliers:
             e.append("%s : une capacité de risque élevé ne peut pas atteindre le palier « maitre »" % nom)
 
@@ -377,6 +418,7 @@ def valider(brut: dict) -> list:
             e.append("%s.id : « %s » est déclaré deux fois" % (nom, w["id"]))
         wids.append(w["id"])
         nom = "widget « %s »" % w["id"]
+        _droit_ok(w.get("droit"), nom)
         if not str(w.get("libelle", "")).strip():
             e.append("%s : libellé obligatoire" % nom)
         if w.get("ecran", "accueil") != "accueil" and w.get("ecran") not in ecrans_ids:
@@ -415,6 +457,7 @@ def valider(brut: dict) -> list:
             e.append("%s.id : « %s » est déclaré deux fois" % (nom, mn["id"]))
         menu_ids.append(mn["id"])
         nom = "menu « %s »" % mn["id"]
+        _droit_ok(mn.get("droit"), nom)
         if not str(mn.get("libelle", "")).strip():
             e.append("%s : libellé obligatoire" % nom)
         if mn.get("ecran") and mn["ecran"] not in ecrans_ids:
@@ -454,6 +497,13 @@ def valider(brut: dict) -> list:
     return e
 
 
+def _qualifier(module: str, droit) -> str:
+    """« lire » dans le module « dns » devient « dns.lire » ; « autre.lire » reste tel quel ; vide reste vide."""
+    if not droit:
+        return ""
+    return droit if "." in droit else "%s.%s" % (module, droit)
+
+
 def construire(brut: dict, source="") -> Manifeste:
     erreurs = valider(brut)
     if erreurs:
@@ -465,6 +515,7 @@ def construire(brut: dict, source="") -> Manifeste:
         id=c["id"], libelle=c["libelle"], risque=c["risque"],
         perimetre=tuple(c.get("perimetre", ())), preuve=str(c.get("preuve", "")).strip(), retour=str(c.get("retour", "")).strip(),
         paliers=tuple(c.get("paliers", ("raconter",))), qui=tuple(c.get("qui", ("cassandra", "itare", "humain"))),
+        droit=_qualifier(m["id"], c.get("droit")),
     ) for c in brut.get("capacites", []) or [])
     return Manifeste(
         id=m["id"], nom=m["nom"], version=m["version"], noyau_min=m["noyau_min"], description=m["description"].strip(),
@@ -476,7 +527,9 @@ def construire(brut: dict, source="") -> Manifeste:
                                 tuple((brut.get("permissions") or {}).get("ecritures", ())),
                                 tuple((brut.get("permissions") or {}).get("privileges", ())),
                                 bool((brut.get("permissions") or {}).get("introspection", False)),
-                                bool((brut.get("permissions") or {}).get("lectures", False))),
+                                bool((brut.get("permissions") or {}).get("lectures", False)),
+                                bool((brut.get("permissions") or {}).get("droits", False))),
+        droits=tuple(Droit(d["id"], d["libelle"], bool(d.get("defaut", False)), bool(d.get("sensible", False))) for d in brut.get("droits", []) or []),
         objets=tuple(Objet(o["type"], o["libelle"]) for o in brut.get("objets", []) or []),
         emet=tuple(ev.get("emet", ())), ecoute=tuple(ev.get("ecoute", ())), capacites=caps,
         detecteurs=tuple(Detecteur(d["id"], d.get("libelle", d["id"]), d["frequence_s"], d.get("capacite", "")) for d in brut.get("detecteurs", []) or []),
@@ -484,9 +537,9 @@ def construire(brut: dict, source="") -> Manifeste:
                              tuple([m["sur"]] if isinstance(m.get("sur"), str) else (m.get("sur") or ())), m.get("duree_max_s", 60))
                       for m in brut.get("moteurs", []) or []),
         menus=tuple(Menu(x["id"], x["libelle"], x.get("ecran", ""), x.get("parent", ""), x.get("ordre", 100), x.get("role", "utilisateur"),
-                         x.get("icone", ""), x.get("badge", "")) for x in brut.get("menus", []) or []),
+                         x.get("icone", ""), x.get("badge", ""), _qualifier(m["id"], x.get("droit"))) for x in brut.get("menus", []) or []),
         widgets=tuple(Widget(w["id"], w["libelle"], w.get("ecran", "accueil"), w.get("zone", "principal"), w.get("taille", "m"), w.get("ordre", 100),
-                             w.get("role", "utilisateur"), w.get("composant", "nombre"), w.get("source", ""), w.get("rafraichir_s", 0))
+                             w.get("role", "utilisateur"), w.get("composant", "nombre"), w.get("source", ""), w.get("rafraichir_s", 0), _qualifier(m["id"], w.get("droit")))
                       for w in brut.get("widgets", []) or []),
         theme=Theme(str((brut.get("theme") or {}).get("accent", "")), tuple(sorted(((brut.get("theme") or {}).get("tokens") or {}).items()))),
         ecrans=tuple(Ecran(s["id"], s["libelle"], s.get("domaine", ""), s.get("gabarit", "libre"), s.get("titre", "")) for s in brut.get("ecrans", []) or []),

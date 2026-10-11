@@ -2378,5 +2378,217 @@ class DolibarrPont(unittest.TestCase):
         self.assertEqual(self.faux.journal, [])
 
 
+COMPTA_TOML = """
+[module]
+id = "compta"
+nom = "Compta"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Module d'essai : des droits à vérifier."
+
+[[droits]]
+id = "lire"
+libelle = "Lire la compta"
+defaut = true
+
+[[droits]]
+id = "ecrire"
+libelle = "Écrire en compta"
+
+[[objets]]
+type = "ecriture"
+libelle = "Une écriture"
+
+[[capacites]]
+id = "voir_livre"
+libelle = "Voir le livre"
+risque = "lecture"
+droit = "lire"
+
+[[capacites]]
+id = "passer_ecriture"
+libelle = "Passer une écriture"
+risque = "faible"
+droit = "ecrire"
+perimetre = ["le livre"]
+preuve = "relire l'écriture"
+retour = "retirer l'écriture"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "sans_droit"
+libelle = "Une lecture ouverte à tous"
+risque = "lecture"
+
+[[ecrans]]
+id = "livre"
+libelle = "Livre"
+
+[[ecrans]]
+id = "secret"
+libelle = "Secret"
+
+[[menus]]
+id = "livre"
+libelle = "Livre"
+ecran = "livre"
+droit = "lire"
+
+[[menus]]
+id = "secret"
+libelle = "Secret"
+ecran = "secret"
+droit = "ecrire"
+"""
+
+COMPTA_PY = """
+def brancher(ctx):
+    ctx.implementer("voir_livre", lambda ctx: {"lignes": 3})
+    ctx.implementer("sans_droit", lambda ctx: {"ok": True})
+    ctx.implementer("passer_ecriture", lambda ctx, n=1: {"n": n}, lambda ctx, res: True, lambda ctx, res: None)
+"""
+
+
+def monde_droits():
+    import shutil
+    tmp = tempfile.TemporaryDirectory()
+    base = Path(tmp.name)
+    mods = base / "modules"
+    for m in ("droits", "menus"):
+        shutil.copytree(RACINE / "modules" / m, mods / m)
+    ecrire_module(mods, "compta", COMPTA_TOML, COMPTA_PY)
+    n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
+    n.brancher()
+    n.activer("droits")
+    n.activer("menus")
+    n.activer("compta")
+    return tmp, n
+
+
+class DroitsDesComptes(unittest.TestCase):
+    def setUp(self):
+        self.tmp, self.n = monde_droits()
+        self.addCleanup(self.tmp.cleanup)
+
+    def ex(self, cle, acteur="humain", au_nom_de="", **args):
+        """au_nom_de : le compte pour lequel on agit (les droits sont vérifiés pour lui) ; `compte=` reste un argument de la capacité."""
+        return self.n.executeur.executer(cle, acteur, args, compte=au_nom_de)
+
+    def test_le_manifeste_exige_un_droit_declare(self):
+        brut = {"module": {"id": "xx", "nom": "X", "version": "0.1.0", "noyau_min": "0.1.0", "description": "d"},
+                "capacites": [{"id": "voir", "libelle": "v", "risque": "lecture", "droit": "fantome"}]}
+        self.assertTrue(any("n'est pas un droit de ce module" in e for e in mf.valider(brut)))
+        brut["droits"] = [{"id": "fantome", "libelle": "f"}]
+        self.assertEqual(mf.valider(brut), [])
+        c = mf.construire(brut).capacites[0]
+        self.assertEqual(c.droit, "xx.fantome")                       # qualifié par le module
+
+    def test_sans_compte_aucun_droit_n_est_demande(self):
+        self.assertEqual(self.ex("compta.passer_ecriture")["statut"], "faite")                   # humain en ligne de commande
+        self.assertEqual(self.ex("compta.passer_ecriture", "cassandra")["statut"], "racontee")   # le palier borne l'agent, pas un droit
+
+    def test_un_compte_sans_le_droit_est_refuse_et_le_refus_se_journalise(self):
+        r = self.ex("compta.passer_ecriture", au_nom_de="sandrine")
+        self.assertEqual(r["statut"], "refuse")
+        self.assertEqual(r["droit"], "compta.ecrire")
+        ev = [e for e in self.n.bus.recents(portee=TOUT, limite=200) if e["type"] == "capacite.refusee" and e["donnees"].get("droit")]
+        self.assertEqual(ev[-1]["donnees"]["parce"], "non attribué")
+        self.assertEqual(ev[-1]["compte"], "sandrine")
+
+    def test_un_droit_par_defaut_est_accorde_a_tous_les_comptes(self):
+        self.assertEqual(self.ex("compta.voir_livre", au_nom_de="sandrine")["statut"], "faite")
+        self.assertEqual(self.ex("compta.sans_droit", au_nom_de="sandrine")["statut"], "faite")
+
+    def test_accorder_a_un_compte_puis_retirer(self):
+        self.assertEqual(self.ex("droits.regler", sujet="sandrine", droit="compta.ecrire")["statut"], "faite")
+        self.assertEqual(self.ex("compta.passer_ecriture", au_nom_de="sandrine")["statut"], "faite")
+        self.ex("droits.regler", sujet="sandrine", droit="compta.ecrire", valeur="herite")
+        self.assertEqual(self.ex("compta.passer_ecriture", au_nom_de="sandrine")["statut"], "refuse")
+
+    def test_un_groupe_accorde_ses_membres_et_un_refus_propre_l_emporte(self):
+        self.ex("droits.groupe", groupe="compta", libelle="Comptables")
+        self.ex("droits.regler", sujet_type="groupe", sujet="compta", droit="compta.ecrire")
+        self.ex("droits.membre", compte="jules", groupe="compta")
+        self.assertEqual(self.ex("compta.passer_ecriture", au_nom_de="jules")["statut"], "faite")
+        self.assertEqual(self.ex("compta.passer_ecriture", au_nom_de="paul")["statut"], "refuse")      # pas membre
+        self.ex("droits.regler", sujet="jules", droit="compta.ecrire", valeur="refuse")             # le refus propre l'emporte
+        self.assertEqual(self.ex("compta.passer_ecriture", au_nom_de="jules")["statut"], "refuse")
+
+    def test_un_refus_de_groupe_l_emporte_sur_un_accord_de_groupe(self):
+        for g in ("a", "b"):
+            self.ex("droits.groupe", groupe=g, libelle=g)
+            self.ex("droits.membre", compte="jules", groupe=g)
+        self.ex("droits.regler", sujet_type="groupe", sujet="a", droit="compta.ecrire")
+        self.ex("droits.regler", sujet_type="groupe", sujet="b", droit="compta.ecrire", valeur="refuse")
+        self.assertEqual(self.ex("compta.passer_ecriture", au_nom_de="jules")["statut"], "refuse")
+
+    def test_un_administrateur_detient_tout(self):
+        self.ex("droits.admin", compte="marie")
+        self.assertEqual(self.ex("compta.passer_ecriture", au_nom_de="marie")["statut"], "faite")
+        self.assertEqual(self.ex("droits.etat", au_nom_de="marie")["statut"], "faite")
+
+    def test_le_delegue_n_a_pas_plus_de_droits_que_le_compte_qu_il_sert(self):
+        """Itare qui agit AU NOM de Sandrine ne peut rien que Sandrine ne puisse."""
+        self.n.regler_palier("compta.passer_ecriture", "auto")
+        self.assertEqual(self.ex("compta.passer_ecriture", "itare", au_nom_de="sandrine")["statut"], "refuse")
+        self.ex("droits.regler", sujet="sandrine", droit="compta.ecrire")
+        self.assertEqual(self.ex("compta.passer_ecriture", "itare", au_nom_de="sandrine")["statut"], "faite")
+
+    def test_administrer_les_droits_exige_le_droit_d_administrer(self):
+        r = self.ex("droits.regler", au_nom_de="sandrine", sujet="sandrine", droit="compta.ecrire")     # s'octroyer un droit soi-même
+        self.assertEqual(r["statut"], "refuse")
+        self.assertEqual(r["droit"], "droits.gerer")
+        self.ex("droits.regler", sujet="sandrine", droit="droits.gerer")
+        self.assertEqual(self.ex("droits.regler", au_nom_de="sandrine", sujet="paul", droit="compta.ecrire")["statut"], "faite")
+
+    def test_nommer_un_admin_est_un_droit_a_part(self):
+        """Gérer les droits ne suffit pas à se nommer administrateur."""
+        self.ex("droits.regler", sujet="sandrine", droit="droits.gerer")
+        self.assertEqual(self.ex("droits.admin", compte="sandrine")["statut"], "faite")              # l'opérateur (sans compte) le peut
+        # mais Sandrine, agissant en son nom, ne peut pas nommer d'admin sans le droit dédié (elle est admin maintenant : on le lui retire)
+        self.ex("droits.admin", compte="sandrine", admin=False)
+        r = self.n.executeur.executer("droits.admin", "compte", {"compte": "sandrine"}, compte="sandrine")
+        self.assertEqual(r["statut"], "refuse")
+        self.assertEqual(r["droit"], "droits.nommer_admin")
+
+    def test_les_droits_se_defont(self):
+        self.ex("droits.groupe", groupe="g", libelle="G")
+        self.ex("droits.membre", compte="jules", groupe="g")
+        self.ex("droits.regler", sujet_type="groupe", sujet="g", droit="compta.ecrire")
+        r = self.ex("droits.groupe", groupe="g", supprimer=True)
+        self.assertEqual(r["statut"], "faite")
+        self.assertFalse(self.n.droits.membre("jules", "g"))             # supprimé : membres et accords partent avec
+        self.n.catalogue.get("droits.groupe").defaire(None, r["resultat"])
+        self.assertTrue(self.n.droits.membre("jules", "g"))              # le retour arrière rend tout
+        self.assertEqual(self.n.droits.accord("groupe", "g", "compta.ecrire"), "accorde")
+
+    def test_le_menu_se_filtre_par_les_droits_du_compte(self):
+        def titres(compte):
+            r = self.ex("menus.lire_menu", role="admin", compte=compte)["resultat"]["arbre"]
+            return sorted(x["libelle"] for f in r for x in f["enfants"])
+        self.assertIn("Livre", titres("sandrine"))                        # droit par défaut
+        self.assertNotIn("Secret", titres("sandrine"))
+        self.ex("droits.regler", sujet="sandrine", droit="compta.ecrire")
+        self.assertIn("Secret", titres("sandrine"))
+        self.assertIn("Secret", titres(""))                               # sans compte : tout (les agents voient tout)
+
+    def test_le_premier_administrateur_est_amorce_une_seule_fois(self):
+        self.assertTrue(self.n.droits.est_admin("fastuser"))
+        self.ex("droits.admin", compte="fastuser", admin=False)
+        self.n.brancher()                                                 # un redémarrage ne le remet pas
+        self.assertFalse(self.n.droits.est_admin("fastuser"))
+
+    def test_un_droit_inconnu_est_refuse_a_l_attribution(self):
+        self.assertEqual(self.ex("droits.regler", sujet="sandrine", droit="nimporte.quoi")["statut"], "echec")
+
+    def test_desactiver_un_module_retire_ses_droits_mais_pas_les_accords(self):
+        self.ex("droits.regler", sujet="sandrine", droit="compta.ecrire")
+        self.n.desactiver("compta")
+        self.assertNotIn("compta.ecrire", [d["droit"] for d in self.n.droits.catalogue()])
+        self.n.activer("compta")
+        self.assertEqual(self.ex("compta.passer_ecriture", au_nom_de="sandrine")["statut"], "faite")
+
+
 if __name__ == "__main__":
     unittest.main()

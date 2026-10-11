@@ -23,7 +23,8 @@ log = logging.getLogger("noyau.executeur")
 
 
 class Executeur:
-    def __init__(self, catalogue, bus, crise):
+    def __init__(self, catalogue, bus, crise, droits=None):
+        self.droits = droits          # le service des droits (noyau/droits.py) ; None : aucun droit n'est vérifié
         self.catalogue = catalogue
         self.bus = bus
         self.crise = crise            # appelable : True quand le noyau est en crise (seule la lecture passe)
@@ -45,6 +46,12 @@ class Executeur:
             return {"statut": "refuse", "raison": "le module « %s » est désactivé" % e.module}
         if not e.implementee:
             return {"statut": "refuse", "raison": "capacité déclarée mais pas encore portée : %s" % cle}
+        if compte and c.droit and self.droits is not None:
+            # quel que soit l'acteur : Itare ou Cassandra qui agissent AU NOM d'un compte n'ont pas plus de droits que lui
+            d = self.droits.raison(compte, c.droit)
+            if not d["accord"]:
+                self._evt("capacite.refusee", e, acteur, cause, {"raison": "droit manquant", "droit": c.droit, "parce": d["parce"]}, compte)
+                return {"statut": "refuse", "raison": "le compte « %s » n'a pas le droit « %s » (%s)" % (compte, c.droit, d["parce"]), "droit": c.droit}
         if c.ecrit and self.crise():
             self._evt("capacite.refusee", e, acteur, cause, {"raison": "crise : seule la lecture passe"}, compte)
             return {"statut": "refuse", "raison": "le noyau est en crise : seule la lecture passe"}

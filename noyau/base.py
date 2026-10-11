@@ -34,6 +34,11 @@ CREATE TABLE IF NOT EXISTS modules_etat(
 CREATE TABLE IF NOT EXISTS moteurs_etat(
   cle TEXT PRIMARY KEY, derniere REAL, duree REAL, executions INTEGER NOT NULL DEFAULT 0, echecs INTEGER NOT NULL DEFAULT 0,
   echecs_de_suite INTEGER NOT NULL DEFAULT 0, erreur TEXT NOT NULL DEFAULT '', figes INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS droit_admins(compte TEXT PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS droit_groupes(groupe TEXT PRIMARY KEY, libelle TEXT NOT NULL DEFAULT '');
+CREATE TABLE IF NOT EXISTS droit_membres(compte TEXT NOT NULL, groupe TEXT NOT NULL, PRIMARY KEY(compte, groupe));
+CREATE TABLE IF NOT EXISTS droit_accords(
+  sujet_type TEXT NOT NULL, sujet TEXT NOT NULL, droit TEXT NOT NULL, accord INTEGER NOT NULL, PRIMARY KEY(sujet_type, sujet, droit));
 """
 
 

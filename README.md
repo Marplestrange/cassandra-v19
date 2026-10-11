@@ -127,6 +127,41 @@ python main.py agir menus.lire_menu role=admin                                  
 python main.py agir menus.personnaliser_entree entree=dns:domaines masque=true  masquer une entrée
 ```
 
+## Les droits : le modèle de Dolibarr, appliqué en un seul endroit
+
+Un module **déclare** ses droits, comme les `rights` d'un module Dolibarr ; une capacité, une entrée de menu ou une tuile y renvoie par `droit = "..."`.
+Le module essentiel `droits` les attribue à des **comptes** et à des **groupes** ; l'exécuteur les vérifie, et lui seul.
+
+```toml
+[[droits]]
+id = "ecrire"
+libelle = "Écrire en compta"
+sensible = true            # signalé à celui qui l'attribue
+# defaut = true            # accordé d'office à tout compte
+
+[[capacites]]
+id = "passer_ecriture"
+droit = "ecrire"           # devient « compta.ecrire »
+```
+
+Résolution, du plus fort au plus faible : **administrateur** › accord ou refus propre au compte › refus d'un groupe › accord d'un groupe › défaut du droit › non.
+Le premier administrateur est `fastuser`, posé une seule fois (`[droits] admin_initial` pour en choisir un autre) ; s'il est retiré ensuite, il ne revient pas.
+
+Ce que cela règle : quand Itare ou Cassandra agissent **au nom d'un compte**, ils n'ont pas plus de droits que lui. Sans compte (infrastructure, agents seuls)
+aucun droit n'est demandé : les agents sont souverains, et c'est le **palier** de la capacité, réglé par l'administrateur, qui les borne.
+Un refus est un événement (`capacite.refusee`, avec le droit et la raison). Le menu se filtre par droits : un compte ne voit pas ce qu'il ne peut pas ouvrir.
+
+```
+python main.py agir droits.regler sujet=sandrine droit=compta.ecrire             accorder (valeur=refuse | herite)
+python main.py agir droits.groupe groupe=compta libelle=Comptables               créer un groupe (supprimer=true)
+python main.py agir droits.membre compte=jules groupe=compta                     l'y mettre (present=false : l'en retirer)
+python main.py agir droits.mes_droits compte=sandrine                            ce qu'elle détient
+python main.py agir compta.passer_ecriture --compte sandrine                     essayer comme elle : refusé, avec le droit manquant
+```
+
+Tout est réversible (l'état d'avant est gardé), et nommer un administrateur est un droit à part (`droits.nommer_admin`).
+Pas encore fait : filtrer les tuiles (le champ `droit` est déjà dans le contrat), l'authentification (mots de passe, WebAuthn) qui dira *quel* compte agit.
+
 ## Activer et désactiver un module (le menu des modules)
 
 Chaque module a un état, qui vit dans la base du noyau : **disponible** (le manifeste est là), **installé** (ses scripts ont posé et prouvé ce

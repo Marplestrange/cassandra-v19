@@ -59,6 +59,13 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé d'appeler les lectures des autres ([permissions] lectures)" % self.module)
         return self._intro["lecture"](capacite, args)
 
+    def droits(self):
+        """Le service des droits des comptes, pour le module qui les administre ([permissions] droits). Les autres n'en ont pas besoin :
+        l'exécuteur vérifie le droit d'une capacité avant même de l'appeler."""
+        if not self.manifeste.permissions.droits:
+            raise PermissionError("le module « %s » n'a pas demandé l'administration des droits ([permissions] droits)" % self.module)
+        return self._intro["droits"]
+
     def compteurs(self, module: str) -> dict:
         """{'constats': ouverts du module, 'moteurs': ceux à surveiller} : de quoi afficher un badge."""
         self._exiger_introspection()

@@ -32,7 +32,7 @@ def construire_plat(manifestes):
             if mn.parent:
                 parent = mn.parent if ":" in mn.parent else "%s:%s" % (m.id, mn.parent)
             plat[qid] = {"id": qid, "module": m.id, "libelle": mn.libelle, "ecran": ("%s:%s" % (m.id, mn.ecran)) if mn.ecran else "",
-                         "ordre": mn.ordre, "role": mn.role, "icone": mn.icone, "badge": mn.badge, "parent": parent,
+                         "ordre": mn.ordre, "role": mn.role, "icone": mn.icone, "badge": mn.badge, "parent": parent, "droit": mn.droit,
                          "famille": m.famille or "autres"}
     return _corriger(plat)
 
@@ -54,9 +54,11 @@ def _corriger(plat):
     return sorted(plat.values(), key=lambda e: e["id"])
 
 
-def assembler(plat, role="utilisateur"):
-    """L'arbre : familles, puis entrées du module, puis leurs enfants. Filtré par rôle ; une entrée sans page et sans enfant visible disparaît."""
-    voit = (lambda e: True) if role == "admin" else (lambda e: e["role"] == "utilisateur")
+def assembler(plat, role="utilisateur", droits=None):
+    """L'arbre : familles, puis entrées du module, puis leurs enfants. Filtré par rôle, puis par droits (`droits` : l'ensemble que détient le compte,
+    None = pas de compte, rien n'est filtré) ; une entrée sans page et sans enfant visible disparaît."""
+    par_role = (lambda e: True) if role == "admin" else (lambda e: e["role"] == "utilisateur")
+    voit = lambda e: par_role(e) and (droits is None or not e.get("droit") or e["droit"] in droits)
     par_id = {e["id"]: dict(e, enfants=[]) for e in plat if voit(e)}
     racines = []
     for e in par_id.values():
@@ -160,7 +162,14 @@ def brancher(ctx):
                   if o["compte"] in ("", compte)]
         plat = _appliquer_perso(actuel["donnees"]["plat"], persos)
         bd = ctx.lire(*BADGES, portee=ctx.TOUT)
-        return {"etag": actuel["donnees"]["etag"], "arbre": assembler(plat, "admin" if role == "admin" else "utilisateur"),
+        detenus = None
+        if compte:                                        # un compte ne voit que ce que ses droits ouvrent ; sans compte (agents), tout
+            try:
+                d = ctx.executer_lecture("droits.mes_droits", compte=compte)
+            except (PermissionError, KeyError):           # pas de module des droits : seules les entrées SANS droit restent visibles
+                d = None
+            detenus = set(d["droits"]) if d else set()
+        return {"etag": actuel["donnees"]["etag"], "arbre": assembler(plat, "admin" if role == "admin" else "utilisateur", detenus),
                 "badges": copy.deepcopy(bd["donnees"]) if bd else {}}
 
     def _plat_courant(ctx):

@@ -87,3 +87,4 @@ gabarit = "liste_detail"
 
 [permissions]
 introspection = true
+lectures = true
