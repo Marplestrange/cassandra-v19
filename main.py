@@ -72,6 +72,7 @@ class Noyau:
         self._suspendus = set()    # détecteurs coupés par leur disjoncteur
         self.moteurs = []          # (module, Moteur, fonction)
         self._branches = set()     # modules déjà branchés (la greffe à chaud n'ajoute que les autres)
+        self._sources = {}         # module -> manifeste.toml qui l'a branché : s'il change (remplacement, retrait), on rebranche
         self._cables = set()       # moteurs sur événement déjà reliés au bus
         self._fils_moteurs = {}    # (module, moteur) -> dernier thread lancé
         self._figes = set()        # moteurs tenus pour figés
@@ -105,6 +106,7 @@ class Noyau:
                                          surcharges=self._surcharges())
         self._branches |= set(self.rapport["branches"])
         self._cabler_moteurs()
+        self._noter_sources()
         self._signature = self._signer()
         if annoncer:
             self._dire_refus(self.rapport["refuses"])
@@ -318,18 +320,33 @@ class Noyau:
         self.actifs = self._actifs_courants()
         self._signature = self._signer()
         retires = [self._debrancher(m) for m in sorted(self._branches) if self.actifs is not None and m not in self.actifs]
+        # un module dont le manifeste qui le sert a changé (une extension le remplace, ou on la retire) est rebranché à chaud
+        connus, _ = self._connus()
+        changes = [m for m in sorted(self._branches) if m in connus and str(connus[m][0].source) != self._sources.get(m, str(connus[m][0].source))]
+        retires += [self._debrancher(m) for m in changes]
         try:
-            r = chargeur.brancher(self._racines(), self._fabriquer, self.catalogue, self.registre, self.actifs, deja=self._branches, tolerant=self.gerer)
+            r = chargeur.brancher(self._racines(), self._fabriquer, self.catalogue, self.registre, self.actifs, deja=self._branches, tolerant=self.gerer,
+                                  surcharges=self._surcharges())
         except manifeste.ManifesteInvalide as ex:
             self.bus.emettre("noyau.greffe_refusee", source="noyau", donnees={"erreurs": ex.erreurs[:10]})
             return {"refuse": ex.erreurs}
         self._dire_refus(r["refuses"])
         self._branches |= set(r["branches"])
         self._cabler_moteurs()
+        self._noter_sources()
         for mid in r["branches"]:
             self.bus.emettre("noyau.greffe", source="noyau", objet=("module", mid), donnees={"module": mid})
+            if mid in r.get("remplaces", {}):
+                self.bus.emettre("noyau.module_remplace", source="noyau", objet=("module", mid),
+                                 donnees={"module": mid, "livre": r["remplaces"][mid]["livre"], "extension": r["remplaces"][mid]["extension"]})
         self.rapport = dict(self.rapport, ordre=r["ordre"], a_porter=r["a_porter"])
         return {"branches": r["branches"], "refuses": r["refuses"], "debranches": [x["module"] for x in retires]}
+
+    def _noter_sources(self) -> None:
+        connus, _ = self._connus()
+        for mid in self._branches:
+            if mid in connus:
+                self._sources[mid] = str(connus[mid][0].source)
 
     def _surveiller(self) -> None:
         if (self.gerer or self.lire_actifs or self.extensions) and self._signer() != self._signature:

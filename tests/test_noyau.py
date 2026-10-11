@@ -715,6 +715,30 @@ class Greffe(unittest.TestCase):
         self.assertEqual(r["remplaces"], {})
         self.assertIn("reprend sa place", " ".join(r["refuses"][0]["raisons"]))
 
+    def test_le_remplacement_et_le_retrait_se_font_a_chaud(self):
+        """Dans le noyau EN MARCHE : déposer l'extension remplace le module branché, la retirer le rend."""
+        import shutil
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        base = Path(tmp.name)
+        ecrire_module(base / "modules", "labo", LABO_TOML, LABO_PY)
+        (base / "extensions").mkdir()
+        n = moteur.Noyau(base / "d", base / "modules", {"labo": {"jouets": {}, "drapeaux": {}}}, extensions=base / "extensions")
+        n.brancher()
+        version = lambda: next(m.version for m in n._manifestes_actifs() if m.id == "labo")
+        self.assertEqual(version(), "0.1.0")
+        ecrire_module(base / "extensions", "labo", LABO_TOML.replace('noyau_min = "0.1.0"', 'noyau_min = "0.1.0"\nconfiance = "local"')
+                      .replace('version = "0.1.0"', 'version = "9.9.9"'), LABO_PY)
+        n.recharger()
+        self.assertEqual(version(), "9.9.9")
+        self.assertEqual([m.id for m in n._manifestes_actifs()].count("labo"), 1)
+        self.assertEqual(n.executeur.executer("labo.lire_jouet", "humain", {"nom": "x"})["statut"], "faite")   # il répond encore
+        evt = [e["type"] for e in n.bus.recents(portee=TOUT, limite=200)]
+        self.assertIn("noyau.module_remplace", evt)
+        shutil.rmtree(base / "extensions" / "labo")
+        n.recharger()
+        self.assertEqual(version(), "0.1.0")
+
     def test_un_deploiement_ne_touche_pas_aux_extensions(self):
         # les extensions vivent hors des versions du noyau : `modules/` change, `extensions/` reste
         tmp = tempfile.TemporaryDirectory(); self.addCleanup(tmp.cleanup)
