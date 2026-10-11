@@ -136,11 +136,20 @@ class Identite:
         d = self._ligne(r[0])
         d["admin"] = self.droits.est_admin(d["compte"])
         d["superadmin"] = bool(d["superadmin"])
+        d["unix_etat"] = self.unix_etat(d["unix_user"])
         return d
+
+    def unix_etat(self, unix_user: str) -> str:
+        """'' (aucun adossement) | 'ok' | 'absent' (l'utilisateur système n'existe pas) | 'sans_shell' (nologin, false : pas de bash)."""
+        if not unix_user:
+            return ""
+        shell = self.unix(unix_user)
+        return "absent" if shell is None else ("ok" if shell_de_connexion(shell) else "sans_shell")
 
     def lister(self) -> list:
         admins = set(self.droits.etat()["admins"])
-        return [dict(self._ligne(r), admin=r["compte"] in admins, superadmin=bool(r["superadmin"])) for r in self.base.lire("SELECT * FROM comptes ORDER BY compte")]
+        return [dict(self._ligne(r), admin=r["compte"] in admins, superadmin=bool(r["superadmin"]), unix_etat=self.unix_etat(r["unix_user"]))
+                for r in self.base.lire("SELECT * FROM comptes ORDER BY compte")]
 
     def creer(self, compte: str, mdp: str, sites=None, **profil) -> dict:
         compte = (compte or "").strip().lower()
@@ -154,16 +163,10 @@ class Identite:
         if self.existe(compte):
             return {"ok": False, "error": "Ce compte existe déjà"}
         premier = not self.base.lire("SELECT 1 FROM comptes LIMIT 1")
-        unix = ""
-        if premier:
-            # Comme FastPanel : le premier compte est le SUPERADMINISTRATEUR et il est adossé à l'utilisateur système « fastuser » avec bash.
-            # Il s'inscrit tout de même avec une adresse e-mail (c'est elle qui crée son coffre).
-            shell = self.unix(self.unix_superadmin)
-            if shell is None:
-                return {"ok": False, "error": "L'utilisateur système « %s » n'existe pas : le premier compte lui est adossé (install.sh le crée)" % self.unix_superadmin}
-            if not shell_de_connexion(shell):
-                return {"ok": False, "error": "L'utilisateur système « %s » n'a pas d'interpréteur de commandes (%s) : il lui faut bash" % (self.unix_superadmin, shell)}
-            unix = self.unix_superadmin
+        # Comme FastPanel : le premier compte est le SUPERADMINISTRATEUR, adossé à l'utilisateur système « fastuser » avec bash. Il s'inscrit
+        # tout de même par e-mail (c'est elle qui crée son coffre). Ce n'est pas un interdit : install.sh et deploy.sh créent fastuser et son bash ;
+        # si le système ne l'a pas (encore), le compte se crée quand même et `unix_etat` le DIT, de quoi lever un constat.
+        unix = self.unix_superadmin if premier else ""
         now = time.time()
         champs = {k: str(profil.get(k) or "").strip() for k in CHAMPS_PROFIL}
         champs["lang"] = (champs["lang"].lower()[:5] or "fr")

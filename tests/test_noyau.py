@@ -2689,18 +2689,18 @@ class ComptesEtSessions(unittest.TestCase):
         self.assertEqual((b["superadmin"], b["unix_user"]), (False, ""))
         self.assertEqual([c["compte"] for c in self.ex("comptes.lister")["resultat"]["comptes"] if c["superadmin"]], ["a@x.fr"])
 
-    def test_sans_fastuser_ou_sans_bash_le_premier_compte_est_refuse(self):
+    def test_sans_fastuser_ou_sans_bash_le_compte_se_cree_et_le_dit(self):
+        """Ce n'est pas un interdit : le système rattrape (install.sh, deploy.sh), et l'état de l'adossement se lit."""
         self.n.identite.unix = lambda nom: None
-        r = self.creer("a@x.fr")
-        self.assertEqual(r["statut"], "echec")
-        self.assertIn("n'existe pas", r["erreur"])
-        self.n.identite.unix = lambda nom: "/usr/sbin/nologin"
-        self.assertIn("bash", self.creer("a@x.fr")["erreur"])
-        self.assertFalse(self.n.identite.existe("a@x.fr"))
-        self.n.identite.unix = lambda nom: "/bin/bash"
         self.assertEqual(self.creer("a@x.fr")["statut"], "faite")
-        self.n.identite.unix = lambda nom: None                    # le suivant n'a pas besoin de cet utilisateur
-        self.assertEqual(self.creer("b@x.fr")["statut"], "faite")
+        m = self.ex("comptes.lire", compte="a@x.fr")["resultat"]
+        self.assertEqual((m["superadmin"], m["unix_user"], m["unix_etat"]), (True, "fastuser", "absent"))
+        self.n.identite.unix = lambda nom: "/usr/sbin/nologin"
+        self.assertEqual(self.ex("comptes.lire", compte="a@x.fr")["resultat"]["unix_etat"], "sans_shell")
+        self.n.identite.unix = lambda nom: "/bin/bash"
+        self.assertEqual(self.ex("comptes.lire", compte="a@x.fr")["resultat"]["unix_etat"], "ok")
+        self.creer("b@x.fr")
+        self.assertEqual(self.ex("comptes.lire", compte="b@x.fr")["resultat"]["unix_etat"], "")
 
     def test_le_superadmin_supprime_puis_restaure_reste_superadmin(self):
         self.creer("a@x.fr")
