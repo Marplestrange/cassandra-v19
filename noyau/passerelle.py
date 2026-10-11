@@ -1,0 +1,213 @@
+"""La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
+
+Un module n'écrit aucune route. Il déclare des capacités, et la passerelle les rend toutes joignables par la même URL :
+
+    POST /api/agir/<module>.<capacite>      {"args": {...}, "essai": false}
+    GET  /api/agir/<module>.<capacite>?cle=valeur      (capacités de LECTURE seulement)
+
+Qui est-ce ? Un jeton de session (cookie HttpOnly SameSite=Strict, ou en-tête « Authorization: Bearer ») ou le jeton d'un agent invité. Le compte vient
+TOUJOURS du jeton, jamais du corps de la requête, et l'exécuteur (droits, paliers, preuve, journal) fait le reste : la passerelle n'a pas de règle à elle.
+
+    POST /api/connexion {"compte", "mot_de_passe"}     GET /api/moi      POST /api/deconnexion      GET /api/menu      GET /api/sante
+
+Sécurité de base : écoute locale par défaut, corps limité à 1 Mo, JSON seulement, un en-tête « X-Cassandra » exigé pour toute écriture au cookie
+(un site tiers ne peut pas le poser sans accord préalable du navigateur : c'est le garde-fou CSRF), aucune ouverture CORS, pas de cache.
+"""
+from __future__ import annotations
+
+import json
+import logging
+import re
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, unquote, urlparse
+
+log = logging.getLogger("noyau.passerelle")
+
+TAILLE_MAX = 1024 * 1024
+RE_CAPACITE = re.compile(r"^[a-z][a-z0-9_]{1,40}\.[a-z][a-z0-9_]{1,40}$")
+COOKIE = "cassandra_session"
+STATUTS_HTTP = {"faite": 200, "simulee": 200, "racontee": 202, "refuse": 403, "echec": 500, "annulee": 500, "annulation_impossible": 500}
+
+
+def _valeur(v: str):
+    try:
+        return json.loads(v)
+    except ValueError:
+        return v
+
+
+class Passerelle:
+    def __init__(self, noyau, hote="127.0.0.1", port=9000, cookie_secure=False, proxy_de_confiance=False):
+        self.noyau = noyau
+        self.hote, self.port = hote, int(port)
+        self.cookie_secure = cookie_secure
+        self.proxy = proxy_de_confiance          # croire X-Forwarded-For : seulement derrière notre propre reverse proxy
+        self.serveur = None
+        self.fil = None
+        passerelle = self
+
+        class Gestionnaire(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.1"
+            server_version = "Cassandra"
+            sys_version = ""
+
+            def log_message(self, fmt, *a):           # pas de bruit sur la sortie standard : le journal du noyau suffit
+                log.debug("%s " + fmt, self.address_string(), *a)
+
+            def do_GET(self):
+                passerelle._traiter(self, "GET")
+
+            def do_POST(self):
+                passerelle._traiter(self, "POST")
+
+            def do_OPTIONS(self):                      # aucune ouverture CORS : on le dit, on n'accorde rien
+                passerelle._repondre(self, 405, {"erreur": "méthode non permise"})
+
+        self._classe = Gestionnaire
+
+    # ---- cycle de vie ----
+    def demarrer(self) -> int:
+        self.serveur = ThreadingHTTPServer((self.hote, self.port), self._classe)
+        self.serveur.daemon_threads = True
+        self.port = self.serveur.server_address[1]       # le port réel (0 : le système choisit)
+        self.fil = threading.Thread(target=self.serveur.serve_forever, name="passerelle", daemon=True)
+        self.fil.start()
+        log.info("passerelle à l'écoute sur %s:%d", self.hote, self.port)
+        return self.port
+
+    def arreter(self) -> None:
+        if self.serveur is not None:
+            self.serveur.shutdown()
+            self.serveur.server_close()
+            self.serveur = None
+
+    # ---- une requête ----
+    def _repondre(self, h, code, corps, cookie=None):
+        donnees = json.dumps(corps, ensure_ascii=False, default=str).encode("utf-8")
+        h.send_response(code)
+        h.send_header("Content-Type", "application/json; charset=utf-8")
+        h.send_header("Content-Length", str(len(donnees)))
+        h.send_header("Cache-Control", "no-store")
+        h.send_header("X-Content-Type-Options", "nosniff")
+        h.send_header("Referrer-Policy", "no-referrer")
+        h.send_header("Content-Security-Policy", "default-src 'none'")
+        if cookie:
+            h.send_header("Set-Cookie", cookie)
+        h.end_headers()
+        h.wfile.write(donnees)
+
+    def _ip(self, h) -> str:
+        if self.proxy:
+            xff = h.headers.get("X-Forwarded-For", "")
+            if xff:
+                return xff.split(",")[0].strip()[:45]
+        return h.client_address[0][:45]
+
+    def _jeton(self, h):
+        """(jeton, venait_du_cookie)."""
+        a = h.headers.get("Authorization", "")
+        if a.startswith("Bearer "):
+            return a[7:].strip(), False
+        for part in h.headers.get("Cookie", "").split(";"):
+            k, _, v = part.strip().partition("=")
+            if k == COOKIE and v:
+                return v, True
+        return "", False
+
+    def _qui(self, h):
+        """(compte, acteur, admin) ou None. Une session donne un humain ; le jeton d'un agent invité donne un agent."""
+        jeton, _ = self._jeton(h)
+        if not jeton:
+            return None
+        idt = self.noyau.identite
+        if len(jeton) == 64:
+            v = idt.valider(jeton)
+            if v.get("ok"):
+                return v["compte"], "humain", v["admin"], jeton
+        else:
+            v = idt.valider_agent(jeton)
+            if v.get("ok"):
+                return v["compte"], "agent", False, jeton
+        return None
+
+    def _corps(self, h):
+        n = int(h.headers.get("Content-Length") or 0)
+        if n > TAILLE_MAX:
+            raise ValueError("corps trop grand (1 Mo au plus)")
+        if n == 0:
+            return {}
+        if "json" not in (h.headers.get("Content-Type") or ""):
+            raise ValueError("Content-Type : application/json attendu")
+        brut = h.rfile.read(n)
+        try:
+            d = json.loads(brut.decode("utf-8"))
+        except ValueError:
+            raise ValueError("JSON illisible")
+        if not isinstance(d, dict):
+            raise ValueError("un objet JSON est attendu")
+        return d
+
+    def _traiter(self, h, methode):
+        try:
+            url = urlparse(h.path)
+            chemin = unquote(url.path)
+            if methode == "GET" and chemin == "/api/sante":
+                return self._repondre(h, 200, {"ok": True, "version": self.noyau.etat()["version"]})
+            if methode == "POST" and chemin == "/api/connexion":
+                return self._connexion(h)
+            qui = self._qui(h)
+            if qui is None:
+                return self._repondre(h, 401, {"erreur": "authentification requise"})
+            compte, acteur, admin, jeton = qui
+            venait_cookie = self._jeton(h)[1]
+            if methode == "POST" and venait_cookie and h.headers.get("X-Cassandra") != "1":
+                return self._repondre(h, 403, {"erreur": "en-tête X-Cassandra: 1 exigé (protection contre les requêtes d'un autre site)"})
+            if methode == "GET" and chemin == "/api/moi":
+                return self._repondre(h, 200, {"compte": compte, "acteur": acteur, "admin": admin})
+            if methode == "POST" and chemin == "/api/deconnexion":
+                r = self.noyau.executeur.executer("comptes.fermer_session", acteur, {"jeton": jeton}, compte=compte)
+                return self._repondre(h, 200, {"ok": True}, cookie="%s=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict" % COOKIE)
+            if methode == "GET" and chemin == "/api/menu":
+                r = self.noyau.executeur.executer("menus.lire_menu", acteur, {"role": "admin" if admin else "utilisateur", "compte": compte}, compte=compte)
+                return self._repondre(h, STATUTS_HTTP.get(r["statut"], 200), r)
+            if chemin.startswith("/api/agir/"):
+                return self._agir(h, methode, chemin[len("/api/agir/"):], url.query, compte, acteur)
+            return self._repondre(h, 404, {"erreur": "route inconnue"})
+        except ValueError as ex:
+            return self._repondre(h, 400, {"erreur": str(ex)})
+        except Exception:
+            log.exception("passerelle : erreur interne")
+            return self._repondre(h, 500, {"erreur": "erreur interne"})
+
+    def _connexion(self, h):
+        corps = self._corps(h)
+        compte, mdp = str(corps.get("compte") or ""), str(corps.get("mot_de_passe") or "")
+        r = self.noyau.executeur.executer("comptes.ouvrir_session", "humain",
+                                          {"compte": compte, "mot_de_passe": mdp, "ip": self._ip(h), "agent": h.headers.get("User-Agent", "")},
+                                          compte="", interne=True)
+        if r["statut"] != "faite":
+            return self._repondre(h, 503, {"erreur": "la connexion est indisponible (module des comptes)"})
+        res = r["resultat"]
+        if not res.get("ok"):
+            return self._repondre(h, 429 if res.get("limite") else 401, {"erreur": res.get("erreur", "refusé"), "attente_s": res.get("attente_s", 0)})
+        cookie = "%s=%s; Path=/; Max-Age=%d; HttpOnly; SameSite=Strict%s" % (COOKIE, res["jeton"], self.noyau.identite.ttl, "; Secure" if self.cookie_secure else "")
+        return self._repondre(h, 200, {"ok": True, "compte": res["compte"], "jeton": res["jeton"]}, cookie=cookie)
+
+    def _agir(self, h, methode, cle, requete, compte, acteur):
+        if not RE_CAPACITE.match(cle):
+            return self._repondre(h, 404, {"erreur": "capacité inconnue"})
+        e = self.noyau.catalogue.get(cle)
+        if e is None:
+            return self._repondre(h, 404, {"erreur": "capacité inconnue : %s" % cle})
+        if methode == "GET":
+            if e.capacite.ecrit:
+                return self._repondre(h, 405, {"erreur": "une écriture se demande par POST"})
+            args, essai = {k: _valeur(v[-1]) for k, v in parse_qs(requete, keep_blank_values=True).items()}, False
+        else:
+            corps = self._corps(h)
+            args, essai = corps.get("args") or {}, bool(corps.get("essai"))
+            if not isinstance(args, dict):
+                raise ValueError("« args » doit être un objet")
+        r = self.noyau.executeur.executer(cle, acteur, args, essai=essai, compte=compte)
+        return self._repondre(h, STATUTS_HTTP.get(r["statut"], 200), r)

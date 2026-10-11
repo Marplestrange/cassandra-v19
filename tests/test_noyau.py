@@ -3569,6 +3569,170 @@ class CentreDeNotifications(unittest.TestCase):
         self.assertNotIn("notifs", noms)
 
 
+def monde_passerelle():
+    import shutil
+    from noyau.passerelle import Passerelle
+    tmp = tempfile.TemporaryDirectory()
+    base = Path(tmp.name)
+    mods = base / "modules"
+    for m in ("droits", "comptes", "menus", "notifications"):
+        shutil.copytree(RACINE / "modules" / m, mods / m)
+    n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True, exiger_compte=True)
+    n.brancher()
+    for m in ("comptes", "menus", "notifications"):
+        n.activer(m)
+    n.identite.unix = lambda nom: "/bin/bash"
+    n.identite.fastpanel = lambda: False
+    n.executeur.executer("comptes.creer", "humain", {"compte": "chef@x.fr", "mot_de_passe": MDP}, compte="operateur")
+    n.executeur.executer("comptes.creer", "humain", {"compte": "bea@x.fr", "mot_de_passe": MDP}, compte="operateur")
+    g = Passerelle(n, "127.0.0.1", 0)
+    g.demarrer()
+    return tmp, n, g
+
+
+class PasserelleHttp(unittest.TestCase):
+    def setUp(self):
+        self.tmp, self.n, self.g = monde_passerelle()
+        self.addCleanup(self.tmp.cleanup)
+        self.addCleanup(self.g.arreter)
+
+    def req(self, methode, chemin, corps=None, entetes=None, brut=None):
+        import http.client
+        import json
+        c = http.client.HTTPConnection("127.0.0.1", self.g.port, timeout=10)
+        h = dict(entetes or {})
+        data = brut
+        if corps is not None:
+            data = json.dumps(corps).encode()
+            h.setdefault("Content-Type", "application/json")
+        c.request(methode, chemin, body=data, headers=h)
+        r = c.getresponse()
+        texte = r.read().decode()
+        cookies = r.getheader("Set-Cookie")
+        entete = {k.lower(): v for k, v in r.getheaders()}
+        c.close()
+        try:
+            return r.status, json.loads(texte), cookies, entete
+        except ValueError:
+            return r.status, texte, cookies, entete
+
+    def connexion(self, compte="chef@x.fr", mdp=MDP):
+        st, corps, cookie, _ = self.req("POST", "/api/connexion", {"compte": compte, "mot_de_passe": mdp})
+        return st, corps, cookie
+
+    def test_sante_sans_authentification(self):
+        st, c, _, h = self.req("GET", "/api/sante")
+        self.assertEqual((st, c["ok"]), (200, True))
+        self.assertEqual(h["cache-control"], "no-store")
+        self.assertEqual(h["x-content-type-options"], "nosniff")
+
+    def test_tout_le_reste_exige_un_jeton(self):
+        for m, ch in (("GET", "/api/moi"), ("GET", "/api/menu"), ("POST", "/api/agir/notifications.lister"), ("GET", "/api/agir/comptes.regles_mdp")):
+            self.assertEqual(self.req(m, ch, {} if m == "POST" else None)[0], 401, ch)
+
+    def test_connexion_cookie_httponly_samesite_et_jeton(self):
+        st, corps, cookie = self.connexion()
+        self.assertEqual((st, corps["ok"], corps["compte"]), (200, True, "chef@x.fr"))
+        self.assertIn("HttpOnly", cookie)
+        self.assertIn("SameSite=Strict", cookie)
+        self.assertEqual(len(corps["jeton"]), 64)
+
+    def test_mauvais_mot_de_passe_401_et_blocage_429(self):
+        self.assertEqual(self.connexion(mdp="Mauvais1!x")[0], 401)
+        for _ in range(10):
+            self.connexion(mdp="Mauvais1!x")
+        st, corps, _ = self.connexion()
+        self.assertEqual(st, 429)
+        self.assertGreater(corps["attente_s"], 0)
+
+    def test_le_bearer_donne_le_compte_et_moi_le_dit(self):
+        jeton = self.connexion()[1]["jeton"]
+        st, c, _, _ = self.req("GET", "/api/moi", entetes={"Authorization": "Bearer " + jeton})
+        self.assertEqual((st, c["compte"], c["acteur"], c["admin"]), (200, "chef@x.fr", "humain", True))
+        jeton_b = self.connexion("bea@x.fr")[1]["jeton"]
+        c = self.req("GET", "/api/moi", entetes={"Authorization": "Bearer " + jeton_b})[1]
+        self.assertEqual((c["compte"], c["admin"]), ("bea@x.fr", False))
+
+    def test_le_compte_vient_du_jeton_jamais_du_corps(self):
+        jb = self.connexion("bea@x.fr")[1]["jeton"]
+        st, c, _, _ = self.req("POST", "/api/agir/comptes.moi", {"compte": "chef@x.fr", "acteur": "operateur"}, {"Authorization": "Bearer " + jb})
+        self.assertEqual(c["resultat"]["compte"], "bea@x.fr")                                           # on a beau réclamer un autre compte
+
+    def test_le_cookie_exige_l_entete_x_cassandra_pour_ecrire(self):
+        cookie = self.connexion()[2].split(";")[0]
+        sans = self.req("POST", "/api/agir/notifications.emettre", {"args": {"titre": "t", "source": "essai"}}, {"Cookie": cookie})
+        self.assertEqual(sans[0], 403)
+        avec = self.req("POST", "/api/agir/notifications.emettre", {"args": {"titre": "t", "source": "essai"}}, {"Cookie": cookie, "X-Cassandra": "1"})
+        self.assertEqual((avec[0], avec[1]["statut"]), (200, "faite"))
+        self.assertEqual(self.req("GET", "/api/moi", entetes={"Cookie": cookie})[0], 200)                # une lecture n'exige rien de plus
+
+    def test_get_pour_une_lecture_post_pour_une_ecriture(self):
+        jeton = self.connexion()[1]["jeton"]
+        h = {"Authorization": "Bearer " + jeton}
+        st, c, _, _ = self.req("GET", "/api/agir/notifications.compteurs", entetes=h)
+        self.assertEqual((st, c["statut"]), (200, "faite"))
+        st, c, _, _ = self.req("GET", "/api/agir/notifications.emettre?titre=x&source=essai", entetes=h)
+        self.assertEqual(st, 405)
+        st, c, _, _ = self.req("GET", "/api/agir/notifications.lister?non_lues=true&limite=5", entetes=h)
+        self.assertEqual(st, 200)                                                                        # les valeurs de l'adresse se lisent comme du JSON
+
+    def test_les_droits_de_l_executeur_s_appliquent_en_403(self):
+        jb = self.connexion("bea@x.fr")[1]["jeton"]
+        st, c, _, _ = self.req("GET", "/api/agir/comptes.lister", entetes={"Authorization": "Bearer " + jb})
+        self.assertEqual((st, c["statut"]), (403, "refuse"))
+        self.assertIn("comptes.gerer", c["raison"])
+
+    def test_un_agent_invite_entre_par_son_jeton_et_n_a_que_les_droits_de_son_invitant(self):
+        jc = self.connexion()[1]["jeton"]
+        r = self.req("POST", "/api/agir/comptes.inviter_agent", {"args": {"nom": "claude"}}, {"Authorization": "Bearer " + jc})[1]["resultat"]
+        ja = r["jeton"]
+        h = {"Authorization": "Bearer " + ja}
+        st, c, _, _ = self.req("GET", "/api/moi", entetes=h)
+        self.assertEqual((st, c["compte"], c["acteur"]), (200, "agent:claude", "agent"))
+        self.assertEqual(self.req("GET", "/api/agir/comptes.lister", entetes=h)[0], 200)                 # invité par un administrateur : il a tout
+        jb = self.connexion("bea@x.fr")[1]["jeton"]
+        self.req("POST", "/api/agir/comptes.inviter_agent", {"args": {"nom": "petit"}}, {"Authorization": "Bearer " + jb})
+        self.n.regler_palier("comptes.inviter_agent", "auto")
+        self.assertEqual(self.req("GET", "/api/moi", entetes={"Authorization": "Bearer inconnu-inconnu-inconnu-inconnu"})[0], 401)
+
+    def test_la_deconnexion_ferme_la_session(self):
+        jeton = self.connexion()[1]["jeton"]
+        h = {"Authorization": "Bearer " + jeton}
+        self.assertEqual(self.req("POST", "/api/deconnexion", {}, h)[0], 200)
+        self.assertEqual(self.req("GET", "/api/moi", entetes=h)[0], 401)
+
+    def test_le_menu_suit_le_compte(self):
+        jeton = self.connexion()[1]["jeton"]
+        st, c, _, _ = self.req("GET", "/api/menu", entetes={"Authorization": "Bearer " + jeton})
+        self.assertEqual((st, c["statut"]), (200, "faite"))
+
+    def test_routes_inconnues_corps_invalides_et_limites(self):
+        jeton = self.connexion()[1]["jeton"]
+        h = {"Authorization": "Bearer " + jeton}
+        self.assertEqual(self.req("GET", "/api/nimporte", entetes=h)[0], 404)
+        self.assertEqual(self.req("GET", "/api/agir/inconnue", entetes=h)[0], 404)
+        self.assertEqual(self.req("GET", "/api/agir/rien.du_tout", entetes=h)[0], 404)
+        self.assertEqual(self.req("POST", "/api/agir/notifications.emettre", brut=b"pas du json", entetes=dict(h, **{"Content-Type": "application/json"}))[0], 400)
+        self.assertEqual(self.req("POST", "/api/agir/notifications.emettre", brut=b"{}", entetes=dict(h, **{"Content-Type": "text/plain"}))[0], 400)
+        self.assertEqual(self.req("POST", "/api/agir/notifications.emettre", {"args": [1]}, h)[0], 400)
+        self.assertEqual(self.req("POST", "/api/agir/notifications.emettre", brut=b"x" * (1024 * 1024 + 1), entetes=dict(h, **{"Content-Type": "application/json"}))[0], 400)
+        self.assertEqual(self.req("OPTIONS", "/api/agir/notifications.lister", entetes=h)[0], 405)       # aucune ouverture CORS
+
+    def test_un_secret_ne_revient_pas_dans_les_journaux_de_la_passerelle(self):
+        self.connexion()
+        tout = " ".join(r["donnees"] for r in self.n.base.lire("SELECT donnees FROM evenements"))
+        self.assertNotIn(MDP, tout)
+
+    def test_l_ip_vient_de_la_connexion_sauf_derriere_notre_proxy(self):
+        self.req("POST", "/api/connexion", {"compte": "chef@x.fr", "mot_de_passe": MDP}, {"X-Forwarded-For": "203.0.113.9"})
+        ip = self.n.identite.base.lire("SELECT ip FROM sessions ORDER BY cree DESC LIMIT 1")[0]["ip"]
+        self.assertEqual(ip, "127.0.0.1")                                                                # un en-tête forgé ne dit pas d'où on vient
+        self.g.proxy = True
+        self.req("POST", "/api/connexion", {"compte": "chef@x.fr", "mot_de_passe": MDP}, {"X-Forwarded-For": "203.0.113.9"})
+        ip = self.n.identite.base.lire("SELECT ip FROM sessions ORDER BY cree DESC LIMIT 1")[0]["ip"]
+        self.assertEqual(ip, "203.0.113.9")
+
+
 def charger_courtier():
     import importlib.util
     spec = importlib.util.spec_from_file_location("courtier", RACINE / "exploitation" / "courtier.py")

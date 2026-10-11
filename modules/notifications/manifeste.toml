@@ -1,7 +1,7 @@
 [module]
 id = "notifications"
 nom = "Notifications"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "Le Centre de notifications : ce qui mérite l'attention de quelqu'un. Une notification ouverte par clé (elle se répète, elle ne s'empile pas), lue et prise en compte PAR PERSONNE, cloisonnée par compte, qui se referme seule quand la cause disparaît."
 confiance = "interne"

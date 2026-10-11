@@ -41,6 +41,7 @@ from noyau.contexte import Contexte
 from noyau.droits import Droits
 from noyau.executeur import Executeur
 from noyau.identite import Identite
+from noyau.passerelle import Passerelle
 from noyau.modules import Modules
 from noyau.registre import Registre
 from noyau.reglages import Reglages
@@ -74,6 +75,7 @@ class Noyau:
         self.identite = Identite(self.base, self.droits, (self.config.get("comptes") or {}).get("session_heures", 24),
                                  str((self.config.get("comptes") or {}).get("superadmin_unix", "fastuser")),
                                  courtier=str(Path(donnees) / "courtier"), reglages=self.reglages)
+        self.passerelle = None     # l'API HTTP, posée par `demarrer`
         self.executeur = Executeur(self.catalogue, self.bus, self.en_crise, self.droits, self.identite, exiger_compte)
         self.detecteurs = []       # (module, Detecteur, fonction)
         self._derniere = {}        # (module, detecteur) -> dernier passage
@@ -857,6 +859,11 @@ def main(argv) -> int:
             n = Noyau(_donnees(), actifs=None if gerer else _actifs(), extensions=_extensions(), lire_actifs=None if gerer else _actifs,
                       gerer_modules=gerer, amorce=_actifs, exiger_compte=True)
             n.brancher(annoncer=commande != "etat")
+            if commande == "demarrer":
+                hote, _, port = (os.environ.get("CASSANDRA_ECOUTE") or "127.0.0.1:9000").rpartition(":")
+                n.passerelle = Passerelle(n, hote or "127.0.0.1", int(port or 9000), cookie_secure=bool(os.environ.get("CASSANDRA_COOKIE_SECURE")),
+                                          proxy_de_confiance=bool(os.environ.get("CASSANDRA_PROXY")))
+                n.passerelle.demarrer()
         except manifeste.ManifesteInvalide as ex:
             print(ex, file=sys.stderr)
             return 1

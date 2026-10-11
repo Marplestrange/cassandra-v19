@@ -20,7 +20,7 @@ API_NOYAU = "1.0"     # le contrat offert aux modules (ctx, manifeste). Sa versi
 
 RISQUES = ("lecture", "faible", "moyen", "eleve")
 PALIERS = ("raconter", "auto", "maitre")
-ACTEURS = ("cassandra", "itare", "humain", "compte")
+ACTEURS = ("cassandra", "itare", "humain", "compte", "agent")
 MODES_MOTEUR = ("periodique", "evenement", "demande")
 ROLES_MENU = ("utilisateur", "admin")
 GABARITS = ("tableau", "liste_detail", "libre")                  # comment l'interface compose un écran
@@ -65,7 +65,7 @@ class Capacite:
     preuve: str = ""
     retour: str = ""
     paliers: tuple = ("raconter",)
-    qui: tuple = ("cassandra", "itare", "humain")
+    qui: tuple = ("cassandra", "itare", "humain", "agent")      # « agent » : un agent invité (jeton) ; ses droits restent ceux de son invitant
     droit: str = ""            # le droit qu'un COMPTE doit détenir pour l'utiliser (voir [[droits]]) ; vide : aucun droit particulier
     masque: tuple = ()         # noms d'arguments et de résultats qui ne vont JAMAIS au journal (mot de passe, jeton de session...)
 
@@ -567,7 +567,7 @@ def construire(brut: dict, source="") -> Manifeste:
     caps = tuple(Capacite(
         id=c["id"], libelle=c["libelle"], risque=c["risque"],
         perimetre=tuple(c.get("perimetre", ())), preuve=str(c.get("preuve", "")).strip(), retour=str(c.get("retour", "")).strip(),
-        paliers=tuple(c.get("paliers", ("raconter",))), qui=tuple(c.get("qui", ("cassandra", "itare", "humain"))),
+        paliers=tuple(c.get("paliers", ("raconter",))), qui=tuple(c.get("qui", ("cassandra", "itare", "humain", "agent"))),
         droit=_qualifier(m["id"], c.get("droit")), masque=tuple(c.get("masque", ())),
     ) for c in brut.get("capacites", []) or [])
     return Manifeste(
