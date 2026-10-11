@@ -2924,13 +2924,64 @@ class SansCompte(unittest.TestCase):
         self.ex("droits.regler", sujet="itare", droit="comptes.gerer")
         self.assertEqual(self.ex("comptes.lister", "itare", au_nom_de="itare")["statut"], "faite")
 
-    def test_un_agent_invite_a_un_compte_sans_droit(self):
-        r = self.ex("comptes.creer_agent", nom="invite1", libelle="Un agent de passage")
-        self.assertEqual((r["statut"], r["resultat"]["compte"]), ("faite", "agent:invite1"))
-        self.assertEqual(self.ex("comptes.creer_agent", nom="Mauvais Nom")["statut"], "echec")
-        self.assertEqual(self.ex("comptes.lister", "itare", au_nom_de="agent:invite1")["statut"], "refuse")       # aucun droit tant qu'on ne lui en donne pas
-        self.assertEqual(self.ex("comptes.regles_mdp", "itare", au_nom_de="agent:invite1")["statut"], "faite")
-        self.assertFalse(self.ex("comptes.ouvrir_session", compte="agent:invite1", mot_de_passe=MDP)["resultat"]["ok"])
+    def test_un_agent_invite_a_un_compte_ET_un_jeton(self):
+        r = self.ex("comptes.inviter_agent", nom="claude", libelle="Claude de passage")
+        self.assertEqual((r["statut"], r["resultat"]["compte"], r["resultat"]["nouveau"]), ("faite", "agent:claude", True))
+        jeton = r["resultat"]["jeton"]
+        v = self.ex("comptes.valider_jeton_agent", au_nom_de="agent:claude", jeton=jeton)["resultat"]
+        self.assertEqual((v["ok"], v["compte"], v["invite_par"]), (True, "agent:claude", "operateur"))        # on le reconnaît, il ne se déclare pas
+        self.assertFalse(self.ex("comptes.valider_jeton_agent", jeton="x" * 40)["resultat"]["ok"])
+        self.assertEqual(self.ex("comptes.inviter_agent", nom="Mauvais Nom")["statut"], "echec")
+        self.assertEqual(self.ex("comptes.inviter_agent", nom="tous")["statut"], "echec")
+        self.assertEqual(self.ex("comptes.inviter_agent", nom="cassandra")["statut"], "echec")               # un nom de résident est réservé
+        self.assertFalse(self.ex("comptes.ouvrir_session", compte="agent:claude", mot_de_passe=MDP)["resultat"]["ok"])
+
+    def test_la_seule_borne_d_un_invite_est_le_statut_de_son_invitant(self):
+        """V18 : invité par l'administrateur, il a tout ; invité par un compte ordinaire, il n'a que ce compte."""
+        self.ex("comptes.inviter_agent", nom="deadmin")                                  # invité par operateur, administrateur
+        self.assertEqual(self.ex("comptes.lister", "itare", au_nom_de="agent:deadmin")["statut"], "faite")
+        self.n.regler_palier("comptes.inviter_agent", "auto")                           # Itare agit seul seulement si l'administrateur l'a décidé
+        self.ex("comptes.inviter_agent", "itare", au_nom_de="itare", nom="deitare")      # invité par Itare, qui n'a pas comptes.gerer
+        self.assertEqual(self.ex("comptes.lister", "itare", au_nom_de="agent:deitare")["statut"], "refuse")
+        self.assertIn("agent invité par itare", self.ex("comptes.lister", "itare", au_nom_de="agent:deitare")["raison"])
+        self.ex("droits.regler", sujet="itare", droit="comptes.gerer")                   # on élargit l'invitant : l'invité suit, en direct
+        self.assertEqual(self.ex("comptes.lister", "itare", au_nom_de="agent:deitare")["statut"], "faite")
+        self.ex("droits.regler", sujet="itare", droit="comptes.gerer", valeur="herite")  # et on le reprend
+        self.assertEqual(self.ex("comptes.lister", "itare", au_nom_de="agent:deitare")["statut"], "refuse")
+
+    def test_un_refus_propre_a_l_invite_l_emporte_sur_son_invitant(self):
+        self.ex("comptes.inviter_agent", nom="prudent")
+        self.ex("droits.regler", sujet="agent:prudent", droit="comptes.gerer", valeur="refuse")
+        self.assertEqual(self.ex("comptes.lister", "itare", au_nom_de="agent:prudent")["statut"], "refuse")
+
+    def test_reinviter_desactive_l_ancien_jeton_et_revoquer_coupe(self):
+        j1 = self.ex("comptes.inviter_agent", nom="claude")["resultat"]["jeton"]
+        r2 = self.ex("comptes.inviter_agent", nom="claude")["resultat"]
+        self.assertFalse(r2["nouveau"])
+        self.assertFalse(self.ex("comptes.valider_jeton_agent", jeton=j1)["resultat"]["ok"])
+        self.assertTrue(self.ex("comptes.valider_jeton_agent", jeton=r2["jeton"])["resultat"]["ok"])
+        self.assertEqual(self.ex("comptes.revoquer_agent", nom="claude")["resultat"]["revoques"], 1)
+        self.assertFalse(self.ex("comptes.valider_jeton_agent", jeton=r2["jeton"])["resultat"]["ok"])
+
+    def test_un_compte_ordinaire_ne_voit_et_ne_revoque_que_les_siens(self):
+        self.ex("comptes.creer", compte="chef@x.fr", mot_de_passe=MDP)                     # le premier compte est le superadministrateur
+        self.ex("comptes.creer", compte="a@x.fr", mot_de_passe=MDP)
+        self.ex("comptes.creer", compte="b@x.fr", mot_de_passe=MDP)
+        self.ex("comptes.inviter_agent", au_nom_de="a@x.fr", nom="de_a")
+        self.ex("comptes.inviter_agent", au_nom_de="b@x.fr", nom="de_b")
+        mes = lambda c: sorted(x["compte"] for x in self.ex("comptes.mes_agents", au_nom_de=c)["resultat"]["agents"])
+        self.assertEqual(mes("a@x.fr"), ["agent:de_a"])
+        self.assertEqual(mes("operateur"), ["agent:de_a", "agent:de_b"])                 # l'administrateur voit tous les invités
+        self.assertEqual(self.ex("comptes.revoquer_agent", au_nom_de="a@x.fr", nom="de_b")["statut"], "echec")
+        self.assertEqual(self.ex("comptes.revoquer_agent", au_nom_de="operateur", nom="de_b")["statut"], "faite")
+        self.assertEqual(self.ex("comptes.inviter_agent", au_nom_de="a@x.fr", nom="de_b")["statut"], "echec")     # le nom d'un autre n'est pas à prendre
+
+    def test_le_jeton_d_un_invite_ne_va_pas_au_journal(self):
+        j = self.ex("comptes.inviter_agent", nom="claude")["resultat"]["jeton"]
+        self.ex("comptes.valider_jeton_agent", jeton=j)
+        tout = " ".join(r["donnees"] for r in self.n.base.lire("SELECT donnees FROM evenements"))
+        self.assertNotIn(j, tout)
+        self.assertNotIn(__import__("hashlib").sha256(j.encode()).hexdigest(), tout)
 
     def test_un_compte_systeme_ne_se_supprime_pas(self):
         self.assertEqual(self.ex("comptes.supprimer", compte="noyau")["statut"], "echec")

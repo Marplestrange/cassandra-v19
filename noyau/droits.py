@@ -24,6 +24,7 @@ class Droits:
     def __init__(self, base):
         self.base = base
         self.connus = {}              # « module.droit » -> Droit déclaré par un module branché
+        self.delegant = lambda compte: ""   # compte -> le compte qui l'a invité (un agent invité n'a que ce que son invitant a)
         self.verrou = lambda compte: ""   # compte -> pourquoi on ne peut pas lui retirer l'administration ("" : rien ne s'y oppose)
         self._verrou = threading.Lock()
 
@@ -54,7 +55,7 @@ class Droits:
     def a(self, compte: str, droit: str) -> bool:
         return self.raison(compte, droit)["accord"]
 
-    def raison(self, compte: str, droit: str) -> dict:
+    def raison(self, compte: str, droit: str, _profondeur: int = 0) -> dict:
         """La décision ET son pourquoi : une réponse « non » doit pouvoir s'expliquer à celui qui la reçoit."""
         if not compte:
             return {"accord": True, "parce": "infrastructure (aucun compte)"}
@@ -63,6 +64,14 @@ class Droits:
         propre = self.base.lire("SELECT accord FROM droit_accords WHERE sujet_type='compte' AND sujet=? AND droit=?", (compte, droit))
         if propre:
             return {"accord": bool(propre[0]["accord"]), "parce": "accordé au compte" if propre[0]["accord"] else "refusé au compte"}
+        if compte.startswith("agent:") and _profondeur < 5:
+            # Un agent INVITÉ n'a jamais plus que celui qui l'a invité (V18 : « la seule borne d'un invité est le statut du compte qui l'invite »).
+            # En direct : baisser les droits de l'invitant baisse ceux de ses invités, et l'invité d'un administrateur a tout.
+            par = self.delegant(compte)
+            if par and par != compte:
+                r = self.raison(par, droit, _profondeur + 1)
+                return {"accord": r["accord"], "parce": "agent invité par %s : %s" % (par, r["parce"])}
+            return {"accord": False, "parce": "agent invité sans invitant connu"}
         groupes = self.groupes_de(compte)
         if groupes:
             marques = ",".join("?" * len(groupes))

@@ -187,6 +187,7 @@ class Identite:
         self.sudo = lambda utilisateur: deposer_sudo(self.courtier, utilisateur)
         self.fastpanel = fastpanel_present            # appelable : FastPanel est-il là ? (verrou du superadministrateur)
         droits.verrou = self.verrou_superadmin
+        droits.delegant = self.invite_par
         self.ttl = int(ttl_heures) * 3600
         self._faux = hacher("sel-de-leurre")      # un compte inconnu coûte le même temps qu'un mauvais mot de passe
         self.amorcer_systeme()
@@ -224,16 +225,63 @@ class Identite:
     def existe(self, compte: str) -> bool:
         return bool(self.base.lire("SELECT 1 FROM comptes WHERE compte=?", (compte,)))
 
-    def creer_agent(self, nom: str, libelle: str = "") -> dict:
-        """Un agent INVITÉ (le compte s'ajoute à son jeton, il ne le remplace pas) : « agent:<nom> », sans mot de passe, sans droit tant qu'on ne lui en donne pas."""
-        cid = "agent:" + (nom or "").strip().lower()
-        if not RE_AGENT.match(cid):
-            return {"ok": False, "error": "Nom d'agent : minuscules, chiffres, - et _ (2 à 31 caractères)"}
-        if self.existe(cid):
-            return {"ok": False, "error": "Cet agent existe déjà"}
+    def invite_par(self, compte: str) -> str:
+        r = self.base.lire("SELECT invite_par FROM comptes WHERE compte=? AND type='agent'", (compte,))
+        return r[0]["invite_par"] if r else ""
+
+    def inviter_agent(self, nom: str, par: str, libelle: str = "") -> dict:
+        """Invite un agent : son COMPTE (« agent:<nom> ») ET son jeton, qui s'ajoutent l'un à l'autre. Le jeton n'est rendu qu'une fois, seule son
+        empreinte reste. Une nouvelle invitation du même nom désactive les jetons précédents. Ses droits sont ceux de l'invitant (voir noyau/droits.py)."""
+        n = (nom or "").strip().lower()
+        cid = "agent:" + n
+        if not RE_AGENT.match(cid) or n in ("tous",) or n in COMPTES_SYSTEME:
+            return {"ok": False, "error": "Nom d'agent invalide ou réservé (minuscules, chiffres, - et _, 2 à 31 caractères)"}
+        if not par or not self.existe(par):
+            return {"ok": False, "error": "Un agent est invité par un compte"}
+        existant = self.base.lire("SELECT invite_par FROM comptes WHERE compte=?", (cid,))
+        if existant and existant[0]["invite_par"] != par and not self.droits.est_admin(par):
+            return {"ok": False, "error": "Cet agent a été invité par un autre compte"}
         now = time.time()
-        self.base.ecrire("INSERT INTO comptes(compte, hash, display_name, cree, maj, type) VALUES(?,?,?,?,?,'agent')", (cid, "", (libelle or nom).strip(), now, now))
-        return {"ok": True, "compte": cid}
+        jeton = secrets.token_urlsafe(32)
+        with self.base.transaction() as c:
+            if not existant:
+                c.execute("INSERT INTO comptes(compte, hash, display_name, cree, maj, type, invite_par) VALUES(?,?,?,?,?,'agent',?)",
+                          (cid, "", (libelle or n).strip(), now, now, par))
+            c.execute("UPDATE agents_jetons SET actif=0 WHERE compte=?", (cid,))
+            c.execute("INSERT INTO agents_jetons(id, compte, cree, actif) VALUES(?,?,?,1)", (_empreinte(jeton), cid, now))
+        return {"ok": True, "compte": cid, "jeton": jeton, "nouveau": not existant}
+
+    def revoquer_agent(self, nom: str, par: str) -> dict:
+        """Désactive le jeton d'un agent invité. Un compte ordinaire ne révoque que les siens ; l'administrateur, tous."""
+        cid = "agent:" + (nom or "").strip().lower()
+        r = self.base.lire("SELECT invite_par FROM comptes WHERE compte=? AND type='agent'", (cid,))
+        if not r:
+            return {"ok": False, "error": "Agent inconnu"}
+        if r[0]["invite_par"] != par and not self.droits.est_admin(par):
+            return {"ok": False, "error": "Cet agent n'est pas le vôtre"}
+        n = self.base.lire("SELECT COUNT(*) AS n FROM agents_jetons WHERE compte=? AND actif=1", (cid,))[0]["n"]
+        self.base.ecrire("UPDATE agents_jetons SET actif=0 WHERE compte=?", (cid,))
+        return {"ok": True, "compte": cid, "revoques": n}
+
+    def valider_agent(self, jeton: str) -> dict:
+        """Le compte lié à ce jeton, ou rien : l'invité ne se déclare pas, on le reconnaît."""
+        if not jeton or len(jeton) < 20:
+            return {"ok": False}
+        e = _empreinte(jeton)
+        r = self.base.lire("SELECT compte FROM agents_jetons WHERE id=? AND actif=1", (e,))
+        if not r:
+            return {"ok": False}
+        self.base.ecrire("UPDATE agents_jetons SET dernier_vu=? WHERE id=?", (time.time(), e))
+        return {"ok": True, "compte": r[0]["compte"], "invite_par": self.invite_par(r[0]["compte"])}
+
+    def agents(self, par: str = "", tous: bool = False) -> list:
+        """Les agents invités : ceux d'un compte, ou tous (administrateur)."""
+        sql = "SELECT compte, display_name, invite_par, cree FROM comptes WHERE type='agent'" + ("" if tous else " AND invite_par=?")
+        out = []
+        for r in self.base.lire(sql + " ORDER BY compte", () if tous else (par,)):
+            j = self.base.lire("SELECT MAX(dernier_vu) AS vu, MAX(actif) AS actif FROM agents_jetons WHERE compte=?", (r["compte"],))[0]
+            out.append(dict(r, actif=bool(j["actif"]), dernier_vu=j["vu"]))
+        return out
 
     def lire(self, compte: str):
         r = self.base.lire("SELECT * FROM comptes WHERE compte=?", ((compte or "").strip().lower(),))

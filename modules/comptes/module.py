@@ -62,13 +62,32 @@ def brancher(ctx):
         idt.base.ecrire("DELETE FROM sessions WHERE compte=?", (res["compte"],))
         idt.droits.regler_admin(res["compte"], False)
 
-    def creer_agent(ctx, nom="", libelle=""):
-        r = ok_ou_erreur(idt.creer_agent(nom, libelle))
-        ctx.emettre("compte.cree", objet=("compte", r["compte"]), donnees={"type": "agent"})
-        return {"compte": r["compte"]}
+    def inviter_agent(ctx, nom="", libelle=""):
+        r = ok_ou_erreur(idt.inviter_agent(nom, moi_ou_erreur(ctx), libelle))
+        ctx.emettre("compte.cree" if r["nouveau"] else "compte.modifie", objet=("compte", r["compte"]), donnees={"type": "agent", "par": ctx.compte})
+        return {"compte": r["compte"], "jeton": r["jeton"], "nouveau": r["nouveau"]}
 
-    def defaire_agent(ctx, res):
-        idt.base.ecrire("DELETE FROM comptes WHERE compte=? AND type='agent'", (res["compte"],))
+    def prouver_invitation(ctx, res):
+        return idt.valider_agent(res["jeton"]).get("compte") == res["compte"] or res["jeton"] == "***"
+
+    def defaire_invitation(ctx, res):
+        if res["jeton"] != "***":
+            idt.base.ecrire("UPDATE agents_jetons SET actif=0 WHERE compte=?", (res["compte"],))
+
+    def revoquer_agent(ctx, nom=""):
+        r = ok_ou_erreur(idt.revoquer_agent(nom, moi_ou_erreur(ctx)))
+        ctx.emettre("compte.modifie", objet=("compte", r["compte"]), donnees={"type": "agent", "revoque": True, "par": ctx.compte})
+        return {"compte": r["compte"], "revoques": r["revoques"]}
+
+    def prouver_revocation(ctx, res):
+        return not idt.base.lire("SELECT 1 FROM agents_jetons WHERE compte=? AND actif=1", (res["compte"],))
+
+    def mes_agents(ctx):
+        c = moi_ou_erreur(ctx)
+        return {"agents": idt.agents(c, tous=idt.droits.raison(c, "comptes.gerer")["accord"])}
+
+    def valider_jeton_agent(ctx, jeton=""):
+        return idt.valider_agent(jeton)
 
     # ---- modifier ----
     def modifier(ctx, compte="", sites=None, **profil):
@@ -198,7 +217,10 @@ def brancher(ctx):
                    ("valider_session", valider_session), ("mes_sessions", mes_sessions)):
         ctx.implementer(nom, f)
     ctx.implementer("creer", creer, prouver_creer, defaire_creer)
-    ctx.implementer("creer_agent", creer_agent, prouver_creer, defaire_agent)
+    ctx.implementer("inviter_agent", inviter_agent, prouver_invitation, defaire_invitation)
+    ctx.implementer("revoquer_agent", revoquer_agent, prouver_revocation, lambda ctx, res: None)
+    ctx.implementer("mes_agents", mes_agents)
+    ctx.implementer("valider_jeton_agent", valider_jeton_agent)
     ctx.implementer("modifier", modifier, prouver_modifier, defaire_modifier)
     ctx.implementer("modifier_moi", modifier_moi, prouver_modifier, defaire_modifier)
     ctx.implementer("changer_mon_mot_de_passe", changer_mon_mot_de_passe, prouver_mdp, defaire_mdp)

@@ -1,7 +1,7 @@
 [module]
 id = "comptes"
 nom = "Comptes"
-version = "0.3.3"
+version = "0.4.0"
 noyau_min = "0.1.0"
 description = "Les comptes et la preuve qu'on en est : identifiant (une adresse e-mail), mot de passe (règles de la V18, scrypt salé), sessions, jetons de mise en place du mot de passe. Le rôle d'administrateur, lui, vit dans les droits."
 confiance = "interne"
@@ -80,15 +80,36 @@ qui = ["humain", "compte"]
 masque = ["mot_de_passe"]
 
 [[capacites]]
-id = "creer_agent"
-libelle = "Créer le compte d'un agent invité (« agent:nom ») : son jeton ne suffit pas, il lui faut aussi un compte"
+id = "inviter_agent"
+libelle = "Inviter un agent : son compte (« agent:nom ») ET son jeton, rendu une seule fois. Ses droits sont ceux du compte qui l'invite"
 risque = "moyen"
-droit = "gerer"
-perimetre = ["la table comptes : une ligne de type agent, sans mot de passe ni droit"]
-preuve = "relire le compte créé"
-retour = "supprimer la ligne créée"
+perimetre = ["la table comptes (une ligne de type agent) et la table agents_jetons (un jeton actif, les précédents désactivés)"]
+preuve = "le jeton rendu reconnaît le compte de l'agent"
+retour = "désactiver le jeton ; le compte de l'agent reste, sans plus pouvoir s'authentifier"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte", "cassandra", "itare"]
+masque = ["jeton"]
+
+[[capacites]]
+id = "revoquer_agent"
+libelle = "Révoquer un agent invité (son jeton cesse d'ouvrir). Un compte ordinaire ne révoque que les siens"
+risque = "faible"
+perimetre = ["les jetons de l'agent désigné"]
+preuve = "plus aucun jeton actif pour cet agent"
+retour = "réinviter l'agent (nouveau jeton)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "mes_agents"
+libelle = "Les agents invités par le compte au nom duquel on agit (tous, pour un compte qui gère les comptes)"
+risque = "lecture"
+
+[[capacites]]
+id = "valider_jeton_agent"
+libelle = "À quel compte d'agent invité appartient ce jeton ? (l'invité ne se déclare pas, on le reconnaît)"
+risque = "lecture"
+masque = ["jeton"]
 
 [[capacites]]
 id = "modifier"
