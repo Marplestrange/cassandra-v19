@@ -43,6 +43,7 @@ from noyau.executeur import Executeur
 from noyau.identite import Identite
 from noyau.modules import Modules
 from noyau.registre import Registre
+from noyau.reglages import Reglages
 
 RACINE = Path(__file__).resolve().parent
 log = logging.getLogger("noyau")
@@ -66,6 +67,7 @@ class Noyau:
         self.etat_modules = Modules(self.base)
         self.catalogue = Catalogue(self.base)
         self.droits = Droits(self.base)
+        self.reglages = Reglages(self.base)
         self.identite = Identite(self.base, self.droits, (self.config.get("comptes") or {}).get("session_heures", 24),
                                  str((self.config.get("comptes") or {}).get("superadmin_unix", "fastuser")),
                                  courtier=str(Path(donnees) / "courtier"))
@@ -95,8 +97,9 @@ class Noyau:
 
     def _fabriquer(self, m):
         self.droits.declarer(m)
+        self.reglages.declarer(m)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
-                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "droits": self.droits, "identite": self.identite})
+                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "droits": self.droits, "identite": self.identite, "reglages": self.reglages})
         self.executeur.contextes[m.id] = ctx
         return ctx
 
@@ -240,6 +243,7 @@ class Noyau:
         """Retire un module du noyau en marche. Ses données (objets, événements, savoir-faire) ne sont pas touchées."""
         abonnements = self.bus.desabonner(mid)
         self.droits.oublier(mid)
+        self.reglages.oublier(mid)
         self.moteurs[:] = [x for x in self.moteurs if x[0] != mid]
         self.detecteurs[:] = [x for x in self.detecteurs if x[0] != mid]
         self._cables = {k for k in self._cables if k[0] != mid}

@@ -85,6 +85,20 @@ class Droit:
 
 
 @dataclass(frozen=True)
+class Reglage:
+    """Un réglage qu'un module déclare (la V18 les gardait dans un config.json réécrit en entier). Qualifié « module.reglage »."""
+    id: str
+    libelle: str
+    type: str = "texte"        # texte | entier | booleen | choix | secret
+    defaut: object = ""
+    choix: tuple = ()          # pour le type « choix »
+    portee: str = "global"     # global | compte (une valeur propre à chaque compte)
+    minimum: object = None
+    maximum: object = None
+    aide: str = ""
+
+
+@dataclass(frozen=True)
 class Detecteur:
     id: str
     libelle: str
@@ -169,6 +183,7 @@ class Permissions:
     lectures: bool = False             # peut appeler les capacités de LECTURE des autres modules (module d'affichage)
     droits: bool = False               # peut administrer les droits des comptes (le module des droits)
     identite: bool = False             # peut administrer l'identité des comptes : mots de passe, sessions (le module des comptes)
+    reglages: bool = False             # peut écrire les réglages des autres modules (le module des réglages)
 
 
 @dataclass(frozen=True)
@@ -189,6 +204,7 @@ class Manifeste:
     famille: str = ""          # regroupement dans le menu des modules (« securite », « reseau »...)
     objets: tuple = ()
     droits: tuple = ()         # les droits que ce module déclare ([[droits]])
+    reglages: tuple = ()       # les réglages que ce module déclare ([[reglages]])
     emet: tuple = ()
     ecoute: tuple = ()
     capacites: tuple = ()
@@ -312,6 +328,39 @@ def valider(brut: dict) -> list:
         for champ in ("defaut", "sensible"):
             if champ in d and not isinstance(d[champ], bool):
                 e.append("droit « %s ».%s : vrai ou faux" % (d["id"], champ))
+
+    # réglages : déclarés par le module, qualifiés « module.reglage » ailleurs
+    reglages_ids = []
+    for i, r in enumerate(brut.get("reglages", []) or []):
+        nom = "reglages[%d]" % i
+        if not isinstance(r, dict) or not _ID.match(str(r.get("id", ""))):
+            e.append("%s.id : identifiant invalide" % nom)
+            continue
+        if r["id"] in reglages_ids:
+            e.append("%s.id : « %s » est déclaré deux fois" % (nom, r["id"]))
+        reglages_ids.append(r["id"])
+        nom = "réglage « %s »" % r["id"]
+        if not str(r.get("libelle", "")).strip():
+            e.append("%s : libellé obligatoire" % nom)
+        t = r.get("type", "texte")
+        if t not in ("texte", "entier", "booleen", "choix", "secret"):
+            e.append("%s.type : texte | entier | booleen | choix | secret" % nom)
+        if r.get("portee", "global") not in ("global", "compte"):
+            e.append("%s.portee : global | compte" % nom)
+        if t == "choix":
+            ch = r.get("choix")
+            if not isinstance(ch, list) or not ch:
+                e.append("%s.choix : une liste non vide est attendue pour le type « choix »" % nom)
+            elif "defaut" in r and r["defaut"] not in ch:
+                e.append("%s.defaut : doit figurer dans choix" % nom)
+        if t == "secret" and r.get("defaut"):
+            e.append("%s : un secret n'a pas de défaut écrit dans un manifeste" % nom)
+        if t == "entier":
+            for b in ("minimum", "maximum", "defaut"):
+                if b in r and (isinstance(r[b], bool) or not isinstance(r[b], int)):
+                    e.append("%s.%s : un entier est attendu" % (nom, b))
+        if t == "booleen" and "defaut" in r and not isinstance(r["defaut"], bool):
+            e.append("%s.defaut : vrai ou faux" % nom)
 
     def _droit_ok(valeur, nom):
         """Un droit cité : un droit de ce module (« lire »), ou celui d'un autre (« module.lire »)."""
@@ -532,8 +581,13 @@ def construire(brut: dict, source="") -> Manifeste:
                                 bool((brut.get("permissions") or {}).get("introspection", False)),
                                 bool((brut.get("permissions") or {}).get("lectures", False)),
                                 bool((brut.get("permissions") or {}).get("droits", False)),
-                                bool((brut.get("permissions") or {}).get("identite", False))),
+                                bool((brut.get("permissions") or {}).get("identite", False)),
+                                bool((brut.get("permissions") or {}).get("reglages", False))),
         droits=tuple(Droit(d["id"], d["libelle"], bool(d.get("defaut", False)), bool(d.get("sensible", False))) for d in brut.get("droits", []) or []),
+        reglages=tuple(Reglage(r["id"], r["libelle"], r.get("type", "texte"),
+                               r.get("defaut", False if r.get("type") == "booleen" else (0 if r.get("type") == "entier" else "")),
+                               tuple(r.get("choix", ())), r.get("portee", "global"), r.get("minimum"), r.get("maximum"), str(r.get("aide", "")))
+                       for r in brut.get("reglages", []) or []),
         objets=tuple(Objet(o["type"], o["libelle"]) for o in brut.get("objets", []) or []),
         emet=tuple(ev.get("emet", ())), ecoute=tuple(ev.get("ecoute", ())), capacites=caps,
         detecteurs=tuple(Detecteur(d["id"], d.get("libelle", d["id"]), d["frequence_s"], d.get("capacite", "")) for d in brut.get("detecteurs", []) or []),

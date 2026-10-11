@@ -1,0 +1,72 @@
+[module]
+id = "reglages"
+nom = "Réglages"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Les réglages des modules : chacun déclare les siens (type, défaut, portée), ils s'écrivent un par un avec leur historique, les secrets ne sortent jamais en clair. Remplace le config.json réécrit en entier de la V18."
+confiance = "interne"
+famille = "socle"
+essentiel = true
+requiert = ["droits"]
+
+[[droits]]
+id = "gerer"
+libelle = "Changer les réglages globaux et lire leurs valeurs"
+sensible = true
+
+[[objets]]
+type = "reglage"
+libelle = "Un réglage déclaré par un module et la valeur qu'on lui a donnée"
+
+[evenements]
+emet = ["reglage.change"]
+
+# ---------- lectures ----------
+[[capacites]]
+id = "lire"
+libelle = "Les réglages déclarés et leurs valeurs effectives (secrets masqués). Sans le droit « gerer » : seulement ceux de portée compte, pour son propre compte"
+risque = "lecture"
+
+[[capacites]]
+id = "historique"
+libelle = "L'historique d'un réglage : qui l'a changé, quand, de quoi à quoi (secrets masqués)"
+risque = "lecture"
+droit = "gerer"
+
+# ---------- écritures ----------
+[[capacites]]
+id = "regler"
+libelle = "Donner une valeur à un réglage (global avec le droit « gerer », ou propre au compte qui agit)"
+risque = "faible"
+perimetre = ["une ligne de la table reglages : celle du réglage et du compte désignés"]
+preuve = "relire la valeur écrite"
+retour = "remettre la valeur d'avant, ou rendre le défaut s'il n'y en avait pas"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "regler_secret"
+libelle = "Donner une valeur à un réglage de type secret (clé d'API, mot de passe) : la valeur ne va jamais au journal"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["une ligne de la table reglages : celle du secret désigné"]
+preuve = "relire la valeur écrite"
+retour = "remettre la valeur d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["valeur", "avant"]
+
+[[capacites]]
+id = "reinitialiser"
+libelle = "Rendre un réglage à son défaut (la valeur posée disparaît)"
+risque = "faible"
+perimetre = ["une ligne de la table reglages"]
+preuve = "plus de valeur posée pour ce réglage et ce compte"
+retour = "remettre la valeur d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+masque = ["avant"]
+
+[permissions]
+reglages = true
+droits = true

@@ -3080,6 +3080,187 @@ class SuperadminSupplementaire(unittest.TestCase):
         self.assertEqual(self.ex("comptes.supprimer", compte="b@x.fr")["statut"], "faite")
 
 
+BOUTIQUE_TOML = """
+[module]
+id = "boutique"
+nom = "Boutique"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Module d'essai : des réglages de chaque type."
+
+[[reglages]]
+id = "nom"
+libelle = "Nom affiché"
+defaut = "Ma boutique"
+
+[[reglages]]
+id = "remise"
+libelle = "Remise en pour cent"
+type = "entier"
+defaut = 5
+minimum = 0
+maximum = 50
+
+[[reglages]]
+id = "ouverte"
+libelle = "Ouverte au public"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "devise"
+libelle = "Devise"
+type = "choix"
+choix = ["EUR", "USD"]
+defaut = "EUR"
+
+[[reglages]]
+id = "cle_api"
+libelle = "Clé d'API du fournisseur"
+type = "secret"
+
+[[reglages]]
+id = "theme"
+libelle = "Thème préféré"
+type = "choix"
+choix = ["clair", "sombre"]
+defaut = "clair"
+portee = "compte"
+
+[[capacites]]
+id = "voir_config"
+libelle = "Ce que le module lit de ses réglages"
+risque = "lecture"
+"""
+
+BOUTIQUE_PY = """
+def brancher(ctx):
+    ctx.implementer("voir_config", lambda ctx: {k: ctx.reglage(k) for k in ("nom", "remise", "ouverte", "devise", "cle_api", "theme")})
+"""
+
+
+def monde_reglages():
+    import shutil
+    tmp = tempfile.TemporaryDirectory()
+    base = Path(tmp.name)
+    mods = base / "modules"
+    for m in ("droits", "comptes", "reglages"):
+        shutil.copytree(RACINE / "modules" / m, mods / m)
+    ecrire_module(mods, "boutique", BOUTIQUE_TOML, BOUTIQUE_PY)
+    n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True, exiger_compte=True)
+    n.brancher()
+    n.activer("comptes")
+    n.activer("reglages")
+    n.activer("boutique")
+    n.identite.unix = lambda nom: "/bin/bash"
+    n.identite.fastpanel = lambda: False
+    return tmp, n
+
+
+class ReglagesDesModules(unittest.TestCase):
+    def setUp(self):
+        self.tmp, self.n = monde_reglages()
+        self.addCleanup(self.tmp.cleanup)
+        self.n.executeur.executer("comptes.creer", "humain", {"compte": "chef@x.fr", "mot_de_passe": MDP}, compte="operateur")
+        self.n.executeur.executer("comptes.creer", "humain", {"compte": "bea@x.fr", "mot_de_passe": MDP}, compte="operateur")
+        self.n.executeur.executer("comptes.creer", "humain", {"compte": "leo@x.fr", "mot_de_passe": MDP}, compte="operateur")
+
+    def ex(self, capacite, acteur="humain", au_nom_de="operateur", **args):
+        return self.n.executeur.executer(capacite, acteur, args, compte=au_nom_de)
+
+    def conf(self, au_nom_de="operateur"):
+        return self.ex("boutique.voir_config", au_nom_de=au_nom_de)["resultat"]
+
+    def test_sans_valeur_posee_le_module_lit_le_defaut(self):
+        self.assertEqual(self.conf(), {"nom": "Ma boutique", "remise": 5, "ouverte": True, "devise": "EUR", "cle_api": "", "theme": "clair"})
+
+    def test_chaque_reglage_est_ecrit_seul_et_se_lit_aussitot(self):
+        self.assertEqual(self.ex("reglages.regler", cle="boutique.nom", valeur="Chez Bea")["statut"], "faite")
+        self.assertEqual(self.ex("reglages.regler", cle="boutique.remise", valeur=12)["statut"], "faite")
+        c = self.conf()
+        self.assertEqual((c["nom"], c["remise"], c["devise"]), ("Chez Bea", 12, "EUR"))          # les autres n'ont pas bougé
+
+    def test_une_valeur_qui_ne_passe_pas_son_type_est_refusee(self):
+        for cle, v in (("boutique.remise", 99), ("boutique.remise", "12"), ("boutique.remise", True), ("boutique.ouverte", "oui"),
+                       ("boutique.devise", "GBP"), ("boutique.nom", 5), ("boutique.nom", "x" * 5000), ("boutique.inconnu", "x")):
+            self.assertEqual(self.ex("reglages.regler", cle=cle, valeur=v)["statut"], "echec", (cle, v))
+        self.assertEqual(self.conf()["remise"], 5)
+
+    def test_le_retour_arriere_remet_l_avant_ou_le_defaut(self):
+        r = self.ex("reglages.regler", cle="boutique.nom", valeur="Un")["resultat"]
+        r2 = self.ex("reglages.regler", cle="boutique.nom", valeur="Deux")["resultat"]
+        self.n.catalogue.get("reglages.regler").defaire(self.n.executeur.contextes["reglages"], r2)
+        self.assertEqual(self.conf()["nom"], "Un")
+        self.n.catalogue.get("reglages.regler").defaire(self.n.executeur.contextes["reglages"], r)
+        self.assertEqual(self.conf()["nom"], "Ma boutique")
+
+    def test_reinitialiser_rend_le_defaut(self):
+        self.ex("reglages.regler", cle="boutique.remise", valeur=30)
+        r = self.ex("reglages.reinitialiser", cle="boutique.remise")
+        self.assertEqual(self.conf()["remise"], 5)
+        self.n.catalogue.get("reglages.reinitialiser").defaire(self.n.executeur.contextes["reglages"], r["resultat"])
+        self.assertEqual(self.conf()["remise"], 30)
+
+    def test_un_secret_ne_s_ecrit_que_par_regler_secret_et_n_est_jamais_rendu_ni_journalise(self):
+        self.assertEqual(self.ex("reglages.regler", cle="boutique.cle_api", valeur="sk-123")["statut"], "echec")
+        self.assertEqual(self.ex("reglages.regler_secret", cle="boutique.cle_api", valeur="sk-SECRET-456")["statut"], "faite")
+        self.assertEqual(self.conf()["cle_api"], "sk-SECRET-456")                                  # le module qui l'a déclaré le lit en clair
+        lu = {x["cle"]: x for x in self.ex("reglages.lire")["resultat"]["reglages"]}
+        self.assertEqual(lu["boutique.cle_api"]["valeur"], "***")                                  # l'administration, jamais
+        self.assertNotIn("sk-SECRET-456", str(self.ex("reglages.historique", cle="boutique.cle_api")["resultat"]))
+        tout = " ".join(r["donnees"] for r in self.n.base.lire("SELECT donnees FROM evenements"))
+        self.assertNotIn("sk-SECRET-456", tout)
+        self.ex("reglages.regler_secret", cle="boutique.cle_api", valeur="sk-AUTRE-789")
+        tout = " ".join(r["donnees"] for r in self.n.base.lire("SELECT donnees FROM evenements"))
+        self.assertNotIn("sk-SECRET-456", tout)
+        self.assertEqual(self.ex("reglages.regler_secret", cle="boutique.nom", valeur="x")["statut"], "echec")
+
+    def test_un_reglage_global_demande_le_droit_de_gerer(self):
+        self.assertEqual(self.ex("reglages.regler", au_nom_de="bea@x.fr", cle="boutique.nom", valeur="Pirate")["statut"], "echec")
+        self.assertEqual(self.conf()["nom"], "Ma boutique")
+        self.ex("droits.regler", sujet="bea@x.fr", droit="reglages.gerer")
+        self.assertEqual(self.ex("reglages.regler", au_nom_de="bea@x.fr", cle="boutique.nom", valeur="Chez Bea")["statut"], "faite")
+
+    def test_un_reglage_par_compte_est_propre_a_chacun(self):
+        self.assertEqual(self.ex("reglages.regler", au_nom_de="bea@x.fr", cle="boutique.theme", valeur="sombre")["statut"], "faite")      # sans droit particulier
+        self.assertEqual(self.conf("bea@x.fr")["theme"], "sombre")
+        self.assertEqual(self.conf("leo@x.fr")["theme"], "clair")                                  # les autres gardent le défaut
+        self.assertEqual(self.ex("reglages.regler", au_nom_de="leo@x.fr", cle="boutique.theme", valeur="sombre", pour_compte="bea@x.fr")["statut"], "echec")
+        self.assertEqual(self.ex("reglages.regler", au_nom_de="chef@x.fr", cle="boutique.theme", valeur="clair", pour_compte="bea@x.fr")["statut"], "faite")   # l'administrateur, oui
+        self.assertEqual(self.conf("bea@x.fr")["theme"], "clair")
+
+    def test_un_reglage_global_n_a_pas_de_valeur_par_compte(self):
+        self.assertEqual(self.ex("reglages.regler", cle="boutique.nom", valeur="x", pour_compte="bea@x.fr")["statut"], "echec")
+
+    def test_chacun_ne_lit_que_ce_qu_il_peut(self):
+        noms = lambda c: {x["cle"] for x in self.ex("reglages.lire", au_nom_de=c)["resultat"]["reglages"] if x["module"] == "boutique"}
+        self.assertEqual(noms("bea@x.fr"), {"boutique.theme"})                                     # sans le droit : ses réglages à elle
+        self.assertEqual(len(noms("chef@x.fr")), 6)                                                # l'administrateur voit tout
+        self.assertEqual(self.ex("reglages.lire", au_nom_de="bea@x.fr", pour_compte="leo@x.fr")["statut"], "echec")
+
+    def test_l_historique_dit_qui_et_de_quoi_a_quoi(self):
+        self.ex("reglages.regler", cle="boutique.remise", valeur=10)
+        self.ex("reglages.regler", cle="boutique.remise", valeur=20)
+        h = self.ex("reglages.historique", cle="boutique.remise")["resultat"]["historique"]
+        self.assertEqual([(x["avant"], x["apres"], x["par"]) for x in h], [(10, 20, "operateur"), (None, 10, "operateur")])
+
+    def test_un_module_debranche_n_offre_plus_ses_reglages_mais_ils_restent(self):
+        self.ex("reglages.regler", cle="boutique.nom", valeur="Gardé")
+        self.n.desactiver("boutique")
+        self.assertNotIn("boutique.nom", [x["cle"] for x in self.ex("reglages.lire")["resultat"]["reglages"]])
+        self.n.activer("boutique")
+        self.assertEqual(self.conf()["nom"], "Gardé")
+
+    def test_le_manifeste_valide_les_reglages(self):
+        base = {"module": {"id": "xx", "nom": "X", "version": "0.1.0", "noyau_min": "0.1.0", "description": "d"}}
+        mauvais = [{"id": "a", "libelle": "A", "type": "inconnu"}, {"id": "a", "libelle": "A", "type": "choix"},
+                   {"id": "a", "libelle": "A", "type": "choix", "choix": ["x"], "defaut": "y"}, {"id": "a", "libelle": "A", "type": "secret", "defaut": "mdp"},
+                   {"id": "a", "libelle": "A", "type": "entier", "defaut": "5"}, {"id": "a", "libelle": "A", "portee": "partout"}, {"id": "a"}]
+        for r in mauvais:
+            self.assertTrue(mf.valider(dict(base, reglages=[r])), r)
+        self.assertEqual(mf.valider(dict(base, reglages=[{"id": "ok", "libelle": "Ok", "type": "entier", "defaut": 3, "minimum": 0}])), [])
+
+
 def charger_courtier():
     import importlib.util
     spec = importlib.util.spec_from_file_location("courtier", RACINE / "exploitation" / "courtier.py")

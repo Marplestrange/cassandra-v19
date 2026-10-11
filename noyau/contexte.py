@@ -72,6 +72,17 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé l'identité des comptes ([permissions] identite)" % self.module)
         return self._intro["identite"]
 
+    def reglage(self, nom: str, compte=None):
+        """La valeur EFFECTIVE d'un réglage que CE module a déclaré (« nom » sans le préfixe du module). Pour un réglage de portée compte,
+        celle du compte au nom duquel on agit (ou `compte`). Le module qui déclare un secret est le seul à le lire en clair."""
+        return self._intro["reglages"].valeur("%s.%s" % (self.module, nom), self.compte if compte is None else compte)
+
+    def service_reglages(self):
+        """Le service des réglages, pour le module qui les administre ([permissions] reglages)."""
+        if not self.manifeste.permissions.reglages:
+            raise PermissionError("le module « %s » n'a pas demandé l'administration des réglages ([permissions] reglages)" % self.module)
+        return self._intro["reglages"]
+
     def evenements(self, type_prefixe: str = "", limite: int = 200) -> list:
         """Les événements récents (tous comptes), pour un module de surveillance ([permissions] introspection)."""
         self._exiger_introspection()
