@@ -1,0 +1,8 @@
+# Réglage du pont Dolibarr. À copier en config/dolibarr.conf (jamais la clé ici : elle va dans config/dolibarr.key, droits 0640, groupe du noyau).
+#
+# En production (Orion), Dolibarr est joint par le réseau privé, sans passer par Cloudflare :
+url = http://100.64.0.9:8081/api/index.php
+hote = www.cassandra.center
+#
+# fichier_cle = dolibarr.key
+# delai = 15

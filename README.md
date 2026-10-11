@@ -61,6 +61,31 @@ Pour chaque moteur le noyau mesure la durée, empêche qu'il s'empile s'il dépa
 compte les échecs, dit chaque échec au bus et le suspend après cinq échecs de suite (`lancer` le réarme : voie humaine).
 `python main.py moteurs` les liste avec leur état.
 
+## Le pont Dolibarr : Cassandra pilote une instance, elle ne la remplace pas
+
+Dolibarr garde son PHP et sa base ; `modules/dolibarr/` le pilote par son API REST. Il **lit** (santé, version, modules actifs, comptes, factures impayées,
+objets aux champs bornés) et il **agit**, par des capacités qui ont toutes leur périmètre, leur preuve (relire ce qui a été écrit) et leur retour arrière :
+
+| Capacité | Risque | Retour arrière |
+|---|---|---|
+| `creer`, `modifier` (tiers, contacts, produits, projets) | moyen | supprimer ce que l'acte vient de créer / remettre les valeurs d'avant |
+| `creer_brouillon` (facture, devis, commande) | moyen | supprimer le brouillon, tant qu'il en est un |
+| `supprimer` | élevé | une **corbeille** : copie entière de l'objet avant suppression ; on le recrée (seul l'identifiant change) |
+| `restaurer` | moyen | supprimer l'objet recréé, la copie restant en corbeille |
+| `valider_facture` | élevé | repasser en brouillon (impossible si payée ou comptabilisée) |
+
+**Le plafond d'autonomie est un choix de l'administrateur**, jamais un interdit codé : le manifeste fixe le maximum permis, par défaut Cassandra *raconte*
+ce qu'elle ferait (un humain agit en voie parallèle), et l'administrateur monte le palier quand il le décide :
+
+```
+python main.py palier                              les capacités qui écrivent, leur palier, les paliers permis
+python main.py palier dolibarr.supprimer auto      Cassandra supprime seule (avec corbeille) ; l'événement savoir.regle le journalise
+```
+
+Réglage : `config/dolibarr.conf` (`url`, `hote`, `fichier_cle`, `delai` ; voir `dolibarr.conf.exemple`) et la clé dans `config/dolibarr.key` (0640, groupe du noyau).
+La clé ne figure dans aucun événement, aucun objet, aucun message d'erreur. En production, Dolibarr se joint par le réseau privé, sans passer par Cloudflare (qui
+bloque les machines de datacenter). **La clé donne les droits de son utilisateur Dolibarr : en créer un dédié, aux droits limités.**
+
 ## Le Sensorium : le collecteur de la V18, gardé entier
 
 `cassandra_knowledge_collector.py` (6 560 lignes) devient `modules/sensorium/sensorium.py` : **renommé, jamais découpé**. Il reste un service à part,

@@ -1927,5 +1927,456 @@ class SensoriumGardeEntier(unittest.TestCase):
                     os.environ[k] = v
 
 
+class FauxDolibarr:
+    """Un Dolibarr de poche : l'API REST, avec un état. Il compresse toujours ses réponses (comme le vrai) et peut se tromper exprès."""
+
+    CLE = "cle-de-test-123"
+    COLLECTIONS = ("thirdparties", "contacts", "products", "projects", "invoices", "proposals", "orders")
+
+    def __init__(self):
+        import gzip
+        import json
+        import threading
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+        from urllib.parse import parse_qs, urlparse
+        self.hotes, self.journal = [], []
+        self.refuse = self.panne = False
+        self.ignorer = set()                 # des champs que « le serveur oublie » à la création
+        self.corrompre_put = False           # le premier PUT d'un nom l'altère (pour forcer le retour arrière)
+        self.valider_apres_creation = False  # une facture créée est aussitôt validée par quelqu'un d'autre
+        self.payees = set()
+        self.bloques = set()                 # des (collection, id) que Dolibarr refuse de supprimer (référencés ailleurs)
+        self.delete_sans_effet = False       # un DELETE qui répond 200 sans rien supprimer
+        self.donnees = {c: {} for c in self.COLLECTIONS}
+        self.suivant = {c: 1 for c in self.COLLECTIONS}
+        faux = self
+
+        class H(BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def _rep(self, code, corps):
+                brut = gzip.compress(json.dumps(corps).encode())
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(brut)))
+                self.end_headers()
+                self.wfile.write(brut)
+
+            def _traiter(self, methode):
+                u = urlparse(self.path)
+                chemin = u.path[len("/api/index.php"):]
+                q = {k: v[0] for k, v in parse_qs(u.query).items()}
+                faux.journal.append((methode, chemin))
+                faux.hotes.append(self.headers.get("Host", ""))
+                longueur = int(self.headers.get("Content-Length") or 0)
+                corps = json.loads(self.rfile.read(longueur) or b"null") if longueur else None
+                if faux.panne:
+                    return self._rep(500, {"error": {"code": 500}})
+                if faux.refuse or self.headers.get("DOLAPIKEY") != faux.CLE:
+                    return self._rep(401, {"error": {"code": 401, "message": "Unauthorized"}})
+                if chemin == "/status":
+                    return self._rep(200, {"success": {"code": 200, "dolibarr_version": "23.0.2", "access_locked": "0"}})
+                if chemin == "/setup/modules":
+                    return self._rep(200, ["api", "facture", "societe"])
+                parts = chemin.strip("/").split("/")
+                coll = parts[0]
+                if coll not in faux.donnees:
+                    return self._rep(404, {"error": {"code": 404}})
+                table = faux.donnees[coll]
+                docs = coll in ("invoices", "proposals", "orders")
+                if len(parts) == 1 and methode == "GET":
+                    lignes = [dict(v) for _, v in sorted(table.items())]
+                    if q.get("status") == "unpaid":
+                        lignes = [l for l in lignes if str(l.get("statut")) == "1" and str(l.get("paye")) == "0"]
+                    lignes = lignes[int(q.get("page", 0)) * int(q.get("limit", 100)):][:int(q.get("limit", 100))]
+                    if "properties" in q:
+                        champs = q["properties"].split(",")
+                        lignes = [{k: l.get(k) for k in champs if k in l} for l in lignes]
+                    return self._rep(200, lignes) if lignes else self._rep(404, {"error": {"code": 404}})
+                if len(parts) == 1 and methode == "POST":
+                    i = faux.suivant[coll]
+                    faux.suivant[coll] += 1
+                    obj = {k: v for k, v in (corps or {}).items() if k not in faux.ignorer}
+                    obj["id"] = i
+                    if docs:
+                        obj.setdefault("statut", "0")
+                        obj.setdefault("lines", [])
+                        obj["fk_soc"] = obj.get("socid")
+                        if faux.valider_apres_creation and coll == "invoices":
+                            obj["statut"] = "1"
+                    table[i] = obj
+                    return self._rep(200, i)
+                i = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else None
+                if i is None or i not in table:
+                    return self._rep(404, {"error": {"code": 404, "message": "Not found"}})
+                if len(parts) == 3 and coll == "invoices" and methode == "POST" and parts[2] in ("validate", "settodraft"):
+                    if parts[2] == "settodraft" and i in faux.payees:
+                        return self._rep(400, {"error": {"code": 400, "message": "paid"}})
+                    table[i]["statut"] = "1" if parts[2] == "validate" else "0"
+                    return self._rep(200, dict(table[i]))
+                if methode == "GET":
+                    return self._rep(200, dict(table[i]))
+                if methode == "PUT":
+                    for k, v in (corps or {}).items():
+                        if k == "name" and faux.corrompre_put:
+                            v, faux.corrompre_put = str(v) + "!", False
+                        table[i][k] = v
+                    return self._rep(200, dict(table[i]))
+                if methode == "DELETE":
+                    if docs and str(table[i].get("statut")) != "0":
+                        return self._rep(400, {"error": {"code": 400, "message": "not a draft"}})
+                    if (coll, i) in faux.bloques:
+                        return self._rep(400, {"error": {"code": 400, "message": "referenced elsewhere"}})
+                    if not faux.delete_sans_effet:
+                        del table[i]
+                    return self._rep(200, {"success": {"code": 200}})
+                return self._rep(405, {})
+
+            def do_GET(self):
+                self._traiter("GET")
+
+            def do_POST(self):
+                self._traiter("POST")
+
+            def do_PUT(self):
+                self._traiter("PUT")
+
+            def do_DELETE(self):
+                self._traiter("DELETE")
+
+        self.srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
+        self.port = self.srv.server_address[1]
+        self.fil = threading.Thread(target=self.srv.serve_forever, daemon=True)
+        self.fil.start()
+
+    @property
+    def url(self):
+        return "http://127.0.0.1:%d/api/index.php" % self.port
+
+    def methodes(self):
+        return {m for m, _ in self.journal}
+
+    def arreter(self):
+        self.srv.shutdown()
+        self.srv.server_close()
+
+
+class DolibarrPont(unittest.TestCase):
+    def setUp(self):
+        import shutil
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        base = Path(self.tmp.name)
+        self.faux = FauxDolibarr()
+        self.addCleanup(lambda: self.faux.arreter())
+        self.conf = base / "config"
+        self.conf.mkdir()
+        (self.conf / "dolibarr.conf").write_text("url = %s\nhote = dolibarr.exemple\n" % self.faux.url, encoding="utf-8")
+        (self.conf / "dolibarr.key").write_text(FauxDolibarr.CLE, encoding="utf-8")
+        self.ancien = os.environ.get("CASSANDRA_CONFIG")
+        os.environ["CASSANDRA_CONFIG"] = str(self.conf)
+        self.addCleanup(lambda: os.environ.__setitem__("CASSANDRA_CONFIG", self.ancien) if self.ancien else os.environ.pop("CASSANDRA_CONFIG", None))
+        mods = base / "modules"
+        shutil.copytree(RACINE / "modules" / "dolibarr", mods / "dolibarr")
+        self.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
+        self.n.brancher()
+        self.assertTrue(self.n.activer("dolibarr")["ok"])
+        self.e = self.n.executeur.executer
+
+    def evts(self, t):
+        return [x for x in self.n.bus.recents(portee=TOUT, limite=900) if x["type"] == t]
+
+    def releve(self):
+        self.n.lancer("dolibarr.releve")
+
+    def instance(self):
+        return self.n.registre.lire("dolibarr", "principal", portee=TOUT)
+
+    def semer(self):
+        for i in range(3):
+            self.faux.donnees["thirdparties"][i + 1] = {"id": i + 1, "name": "Tiers %d" % (i + 1), "client": 1}
+        self.faux.suivant["thirdparties"] = 4
+        self.faux.donnees["invoices"][1] = {"id": 1, "statut": "1", "paye": "0", "total_ttc": "120.5", "date_lim_reglement": "2026-09-01"}
+        self.faux.donnees["invoices"][2] = {"id": 2, "statut": "2", "paye": "1", "total_ttc": "80", "date_lim_reglement": "2026-08-01"}
+        self.faux.donnees["invoices"][3] = {"id": 3, "statut": "1", "paye": "0", "total_ttc": "10", "date_lim_reglement": "1656712800"}     # un horodatage Unix, comme le vrai
+        self.faux.suivant["invoices"] = 4
+
+    # --- la relève ---
+    def test_une_releve_fait_de_dolibarr_un_objet_du_registre(self):
+        self.semer()
+        self.releve()
+        i = self.instance()
+        self.assertEqual(i["etat"], "ok")
+        d = i["donnees"]
+        self.assertEqual((d["version"], d["modules"], d["comptes"]["tiers"], d["comptes"]["factures"]), ("23.0.2", 3, 3, 3))
+        self.assertEqual((d["impayees"]["n"], d["impayees"]["total_ttc"], d["impayees"]["plus_ancienne"]), (2, 130.5, "2022-07-02"))     # l'horodatage devient un jour
+
+    def test_sans_configuration_le_pont_attend_sans_rien_signaler(self):
+        (self.conf / "dolibarr.conf").unlink()
+        self.releve()
+        self.assertEqual(self.instance()["etat"], "non_configure")
+        self.n.tick(1000)
+        self.assertEqual(self.n.etat()["constats_ouverts"], 0)
+
+    def test_une_cle_refusee_se_dit_puis_reprend(self):
+        self.faux.refuse = True
+        self.releve()
+        self.releve()
+        self.assertEqual(self.instance()["etat"], "refuse")
+        self.assertEqual(len(self.evts("dolibarr.acces_refuse")), 1)
+        self.n.tick(1000)
+        self.assertEqual([r["titre"] for r in self.n.base.lire("SELECT titre FROM constats WHERE etat='ouvert'")], ["Dolibarr refuse la clé d'API"])
+        self.faux.refuse = False
+        self.releve()
+        self.assertEqual(len(self.evts("dolibarr.reprise")), 1)
+
+    def test_un_dolibarr_injoignable_est_un_constat(self):
+        self.faux.arreter()
+        self.releve()
+        self.assertEqual(self.instance()["etat"], "injoignable")
+        self.assertEqual(len(self.evts("dolibarr.injoignable")), 1)
+        self.n.tick(1000)
+        self.assertEqual(self.n.etat()["constats_ouverts"], 1)
+
+    def test_la_cle_ne_fuit_nulle_part(self):
+        import json
+        self.semer()
+        self.releve()
+        self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": {"name": "Zéro fuite"}})
+        self.faux.refuse = True
+        self.releve()
+        tout = json.dumps([self.n.bus.recents(portee=TOUT, limite=5000), self.n.registre.lister(portee=TOUT)], default=str)
+        self.assertNotIn(FauxDolibarr.CLE, tout)
+
+    def test_l_en_tete_host_est_celui_de_la_config(self):
+        self.releve()
+        self.assertEqual(set(self.faux.hotes), {"dolibarr.exemple"})
+
+    def test_les_lectures_n_envoient_que_des_get(self):
+        self.semer()
+        self.releve()
+        self.e("dolibarr.compter", "humain", {"objet": "tiers"})
+        self.e("dolibarr.lister", "humain", {"objet": "factures", "etat": "impayees"})
+        self.e("dolibarr.impayees", "humain")
+        self.assertEqual(self.faux.methodes(), {"GET"})
+
+    # --- lectures bornées ---
+    def test_compter_pagine_sans_tout_telecharger(self):
+        for i in range(2500):
+            self.faux.donnees["thirdparties"][i + 1] = {"id": i + 1, "name": "T%d" % i}
+        r = self.e("dolibarr.compter", "humain", {"objet": "tiers"})
+        self.assertEqual(r["resultat"]["nombre"], 2500)
+        pages = [c for m, c in self.faux.journal if c == "/thirdparties"]
+        self.assertEqual(len(pages), 3)
+
+    def test_les_lectures_refusent_ce_qui_sort_du_cadre(self):
+        for cap, args in (("lister", {"objet": "../etc"}), ("lister", {"objet": "tiers", "limite": 500}), ("lister", {"objet": "tiers", "champs": "email"}),
+                          ("lister", {"objet": "tiers", "champs": "id; DROP"}), ("lister", {"objet": "tiers", "etat": "impayees"}),
+                          ("lire", {"objet": "tiers", "id": "1/../x"}), ("lire", {"objet": "inconnu", "id": 1})):
+            self.assertEqual(self.e("dolibarr." + cap, "humain", args)["statut"], "echec", msg=str((cap, args)))
+        self.assertEqual(self.faux.journal, [])                                 # rien n'est parti vers Dolibarr
+
+    def test_lister_et_lire_rendent_les_champs_bornes(self):
+        self.semer()
+        r = self.e("dolibarr.lister", "humain", {"objet": "tiers", "limite": 2})["resultat"]["lignes"]
+        self.assertEqual(len(r), 2)
+        self.assertEqual(self.e("dolibarr.lire", "humain", {"objet": "tiers", "id": 2})["statut"], "faite")
+
+    # --- écrire : réversible ---
+    def test_creer_un_tiers_avec_preuve(self):
+        r = self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": {"name": "Nouveau tiers", "client": 1, "town": "Lyon"}})
+        self.assertEqual(r["statut"], "faite")
+        o = self.faux.donnees["thirdparties"][r["resultat"]["id"]]
+        self.assertEqual((o["name"], o["town"]), ("Nouveau tiers", "Lyon"))
+        self.assertEqual(len(self.evts("capacite.prouvee")), 1)
+
+    def test_cassandra_au_palier_raconter_dit_ce_qu_elle_ferait(self):
+        r = self.e("dolibarr.creer", "cassandra", {"objet": "tiers", "champs": {"name": "Rêve"}})
+        self.assertEqual(r["statut"], "racontee")
+        self.assertEqual(self.faux.donnees["thirdparties"], {})
+
+    def test_cassandra_agit_seule_une_fois_le_palier_auto(self):
+        self.n.catalogue.regler_palier("dolibarr.creer", "auto")
+        self.assertEqual(self.e("dolibarr.creer", "cassandra", {"objet": "tiers", "champs": {"name": "Seule"}})["statut"], "faite")
+        self.assertEqual(len(self.faux.donnees["thirdparties"]), 1)
+
+    def test_une_ecriture_hors_liste_ne_part_pas(self):
+        for args in ({"objet": "tiers", "champs": {"rowid": 5}}, {"objet": "tiers", "champs": {"name": "x" * 5000}}, {"objet": "factures", "champs": {"name": "x"}},
+                     {"objet": "tiers", "champs": {}}, {"objet": "tiers", "champs": {"name": ["liste"]}}):
+            self.assertEqual(self.e("dolibarr.creer", "humain", args)["statut"], "echec", msg=str(args))
+        self.assertEqual(self.faux.journal, [])
+
+    def test_une_preuve_manquante_defait_ce_qui_vient_d_etre_cree(self):
+        self.faux.ignorer = {"name"}                                       # Dolibarr « oublie » le nom
+        r = self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": {"name": "Fantôme"}})
+        self.assertEqual(r["statut"], "annulee")
+        self.assertEqual(self.faux.donnees["thirdparties"], {})            # supprimé : ce que cet acte avait créé, et rien d'autre
+
+    def test_modifier_garde_l_etat_d_avant_pour_le_retour_arriere(self):
+        self.semer()
+        self.faux.corrompre_put = True                                      # le serveur altère le nom à l'écriture : la preuve échoue
+        r = self.e("dolibarr.modifier", "humain", {"objet": "tiers", "id": 2, "champs": {"name": "Renommé"}})
+        self.assertEqual(r["statut"], "annulee")
+        self.assertEqual(self.faux.donnees["thirdparties"][2]["name"], "Tiers 2")          # revenu à la valeur d'avant
+
+    def test_modifier_applique_et_prouve(self):
+        self.semer()
+        r = self.e("dolibarr.modifier", "humain", {"objet": "tiers", "id": 3, "champs": {"name": "Troisième", "email": "a@b.fr"}})
+        self.assertEqual(r["statut"], "faite")
+        self.assertEqual(self.faux.donnees["thirdparties"][3]["email"], "a@b.fr")
+        self.assertEqual(self.e("dolibarr.modifier", "humain", {"objet": "tiers", "id": 99, "champs": {"name": "x"}})["statut"], "echec")
+
+    def test_creer_un_brouillon_de_facture(self):
+        r = self.e("dolibarr.creer_brouillon", "humain", {"objet": "factures", "socid": 1, "lignes": [{"desc": "Prestation", "qty": 2, "subprice": 50, "tva_tx": 20}]})
+        self.assertEqual(r["statut"], "faite")
+        f = self.faux.donnees["invoices"][r["resultat"]["id"]]
+        self.assertEqual((f["statut"], len(f["lines"])), ("0", 1))
+
+    def test_un_brouillon_non_conforme_est_supprime_tant_qu_il_est_brouillon(self):
+        self.faux.ignorer = {"lines"}
+        r = self.e("dolibarr.creer_brouillon", "humain", {"objet": "devis", "socid": 1, "lignes": [{"desc": "x", "qty": 1, "subprice": 1}]})
+        self.assertEqual(r["statut"], "annulee")
+        self.assertEqual(self.faux.donnees["proposals"], {})
+
+    def test_un_document_valide_entre_temps_ne_se_supprime_jamais(self):
+        self.faux.ignorer = {"lines"}
+        self.faux.valider_apres_creation = True                             # quelqu'un le valide pendant ce temps
+        r = self.e("dolibarr.creer_brouillon", "factures", {"socid": 1, "lignes": [{"desc": "x", "qty": 1, "subprice": 1}]}) if False else \
+            self.e("dolibarr.creer_brouillon", "humain", {"objet": "factures", "socid": 1, "lignes": [{"desc": "x", "qty": 1, "subprice": 1}]})
+        self.assertEqual(r["statut"], "annulation_impossible")
+        self.assertEqual(len(self.faux.donnees["invoices"]), 1)             # la facture validée est intacte
+
+    # --- écrire : légal ---
+    def test_valider_une_facture_commence_a_raconter_et_l_admin_decide_ensuite(self):
+        self.faux.donnees["invoices"][1] = {"id": 1, "statut": "0", "lines": [], "socid": 1}
+        r = self.e("dolibarr.valider_facture", "cassandra", {"id": 1})
+        self.assertEqual(r["statut"], "racontee")                                   # le défaut est prudent
+        self.assertEqual(self.faux.donnees["invoices"][1]["statut"], "0")
+        self.assertTrue(self.n.regler_palier("dolibarr.valider_facture", "auto")["ok"])      # c'est un choix d'administrateur, pas un interdit
+        self.assertEqual(self.e("dolibarr.valider_facture", "cassandra", {"id": 1})["statut"], "faite")
+        self.assertEqual(self.faux.donnees["invoices"][1]["statut"], "1")
+        self.assertFalse(self.n.regler_palier("dolibarr.valider_facture", "maitre")["ok"])   # le maximum permis reste celui du manifeste
+
+    def test_un_humain_peut_valider_en_voie_parallele_avec_preuve(self):
+        self.faux.donnees["invoices"][1] = {"id": 1, "statut": "0", "lines": [], "socid": 1}
+        r = self.e("dolibarr.valider_facture", "humain", {"id": 1})
+        self.assertEqual(r["statut"], "faite")
+        self.assertEqual(self.faux.donnees["invoices"][1]["statut"], "1")
+        self.assertEqual(self.e("dolibarr.valider_facture", "humain", {"id": 1})["statut"], "echec")      # plus un brouillon
+
+    def test_itare_ne_valide_pas_de_facture(self):
+        self.faux.donnees["invoices"][1] = {"id": 1, "statut": "0", "lines": [], "socid": 1}
+        self.assertEqual(self.e("dolibarr.valider_facture", "itare", {"id": 1})["statut"], "refuse")
+
+    def test_en_crise_seules_les_lectures_passent(self):
+        self.n.crise(True, "essai")
+        self.assertEqual(self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": {"name": "x"}})["statut"], "refuse")
+        r = self.e("dolibarr.compter", "humain", {"objet": "tiers"})
+        self.assertEqual((r["statut"], r["resultat"]["nombre"]), ("faite", 0))                               # une lecture passe (aucun tiers : 0)
+        self.n.crise(False)
+
+    # --- supprimer : une corbeille, un choix d'administrateur ---
+    def test_supprimer_garde_une_copie_entiere_et_se_prouve(self):
+        self.semer()
+        self.faux.donnees["thirdparties"][2]["email"] = "deux@exemple.fr"
+        r = self.e("dolibarr.supprimer", "humain", {"objet": "tiers", "id": 2})
+        self.assertEqual(r["statut"], "faite")
+        self.assertNotIn(2, self.faux.donnees["thirdparties"])
+        c = self.e("dolibarr.corbeille", "humain")["resultat"]
+        self.assertEqual([(x["objet"], x["id"], x["etat"]) for x in c], [("tiers", 2, "supprime")])
+        copie = self.n.registre.lire("dolibarr_corbeille", c[0]["corbeille"], portee=TOUT)["donnees"]["copie"]
+        self.assertEqual((copie["name"], copie["email"]), ("Tiers 2", "deux@exemple.fr"))        # la copie est entière
+
+    def test_restaurer_recree_l_objet_depuis_la_corbeille(self):
+        self.semer()
+        self.e("dolibarr.supprimer", "humain", {"objet": "tiers", "id": 2})
+        cid = self.e("dolibarr.corbeille", "humain")["resultat"][0]["corbeille"]
+        r = self.e("dolibarr.restaurer", "humain", {"corbeille": cid})
+        self.assertEqual(r["statut"], "faite")
+        nouveau = self.faux.donnees["thirdparties"][r["resultat"]["id"]]
+        self.assertEqual(nouveau["name"], "Tiers 2")
+        self.assertNotEqual(r["resultat"]["id"], 2)                               # l'identifiant change, le reste revient
+        self.assertEqual(self.e("dolibarr.corbeille", "humain")["resultat"][0]["etat"], "restaure")
+        self.assertEqual(self.e("dolibarr.restaurer", "humain", {"corbeille": cid})["statut"], "echec")     # une seule fois
+
+    def test_dolibarr_refuse_ce_qui_est_reference_et_rien_ne_reste_dans_la_corbeille(self):
+        self.semer()
+        self.faux.bloques.add(("thirdparties", 1))                                # un tiers qui a des factures
+        r = self.e("dolibarr.supprimer", "humain", {"objet": "tiers", "id": 1})
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn(1, self.faux.donnees["thirdparties"])
+        self.assertEqual(self.e("dolibarr.corbeille", "humain")["resultat"], [])
+
+    def test_une_suppression_sans_effet_est_defaite_et_l_objet_reste(self):
+        self.semer()
+        self.faux.delete_sans_effet = True                                         # Dolibarr répond oui mais ne supprime pas
+        r = self.e("dolibarr.supprimer", "humain", {"objet": "tiers", "id": 3})
+        self.assertEqual(r["statut"], "annulee")
+        self.assertIn(3, self.faux.donnees["thirdparties"])
+        self.assertEqual(self.e("dolibarr.corbeille", "humain")["resultat"], [])
+
+    def test_cassandra_supprime_seule_quand_l_admin_le_decide(self):
+        self.semer()
+        self.assertEqual(self.e("dolibarr.supprimer", "cassandra", {"objet": "tiers", "id": 1})["statut"], "racontee")      # défaut prudent
+        self.assertIn(1, self.faux.donnees["thirdparties"])
+        self.assertTrue(self.n.regler_palier("dolibarr.supprimer", "auto")["ok"])
+        self.assertEqual(self.e("dolibarr.supprimer", "cassandra", {"objet": "tiers", "id": 1})["statut"], "faite")
+        self.assertNotIn(1, self.faux.donnees["thirdparties"])
+
+    def test_on_supprime_un_brouillon_pas_un_document_valide(self):
+        self.faux.donnees["invoices"][1] = {"id": 1, "statut": "0", "lines": [], "socid": 1}
+        self.faux.donnees["invoices"][2] = {"id": 2, "statut": "1", "lines": [], "socid": 1}
+        self.assertEqual(self.e("dolibarr.supprimer", "humain", {"objet": "factures", "id": 1})["statut"], "faite")
+        self.assertEqual(self.e("dolibarr.supprimer", "humain", {"objet": "factures", "id": 2})["statut"], "echec")     # la règle est celle de Dolibarr
+        self.assertIn(2, self.faux.donnees["invoices"])
+
+    def test_une_suppression_hors_cadre_ne_part_pas(self):
+        for args in ({"objet": "../x", "id": 1}, {"objet": "tiers", "id": "1/../2"}, {"objet": "utilisateurs", "id": 1}):
+            self.assertEqual(self.e("dolibarr.supprimer", "humain", args)["statut"], "echec", msg=str(args))
+        self.assertEqual(self.faux.journal, [])
+
+    # --- le plafond : un réglage d'administrateur, journalisé ---
+    def test_regler_un_palier_est_un_acte_journalise(self):
+        r = self.n.regler_palier("dolibarr.creer", "auto", acteur="humain")
+        self.assertEqual(r, {"ok": True, "de": "raconter", "a": "auto"})
+        ev = self.evts("savoir.regle")
+        self.assertEqual((ev[0]["acteur"], ev[0]["donnees"]["a"]), ("humain", "auto"))
+        self.assertFalse(self.n.regler_palier("dolibarr.creer", "maitre")["ok"])          # hors du maximum du manifeste
+        self.assertFalse(self.n.regler_palier("dolibarr.inconnue", "auto")["ok"])
+
+    def test_la_ligne_de_commande_des_paliers(self):
+        import contextlib
+        import io as _io
+        ancien = {k: os.environ.get(k) for k in ("CASSANDRA_DONNEES", "CASSANDRA_EXTENSIONS")}
+        os.environ["CASSANDRA_DONNEES"] = str(Path(self.tmp.name) / "d")
+        os.environ.pop("CASSANDRA_EXTENSIONS", None)
+        try:
+            sortie = _io.StringIO()
+            with contextlib.redirect_stdout(sortie):
+                self.assertEqual(moteur.commande_palier(["main.py", "palier"]), 0)
+            self.assertIn("dolibarr.supprimer", sortie.getvalue())
+            with contextlib.redirect_stdout(_io.StringIO()):
+                self.assertEqual(moteur.commande_palier(["main.py", "palier", "dolibarr.supprimer", "auto"]), 0)
+            self.assertEqual(self.n.catalogue.savoir("dolibarr.supprimer")["palier"], "auto")                     # le service en marche le voit aussitôt
+            with contextlib.redirect_stderr(_io.StringIO()):
+                self.assertEqual(moteur.commande_palier(["main.py", "palier", "dolibarr.supprimer", "maitre"]), 1)
+        finally:
+            for k, v in ancien.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+
+    def test_la_porte_d_ecriture_ne_connait_que_post_put_delete(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("dol_test", RACINE / "modules" / "dolibarr" / "module.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        with self.assertRaises(m.PontErreur):
+            m.ecrire({"url": self.faux.url, "fichier_cle": str(self.conf / "dolibarr.key")}, "PATCH", "/thirdparties/1", {})
+        self.assertEqual(self.faux.journal, [])
+
+
 if __name__ == "__main__":
     unittest.main()

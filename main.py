@@ -10,6 +10,7 @@ le cycle : percevoir (les détecteurs), décider (le palier de la capacité), ag
     python main.py versions          « id version » de chaque module (pour deploy.sh)
     python main.py etat              résume le noyau sans rien écrire (modules, objets, constats, paliers)
     python main.py agir CAPACITE ...  lance une capacité à la main (voie humaine) et imprime le résultat
+    python main.py palier [CLE PALIER]  le plafond d'autonomie de chaque capacité qui écrit : un choix d'administrateur
     python main.py paquet <cmd>      construire / vérifier / extraire un paquet de module (.cmod, signé)
     python main.py module <cmd>      l'état des modules : liste | activer ID | desactiver ID | installe ID | oublier ID | actif ID
     python main.py moteurs           les moteurs déclarés par les modules actifs, avec leur état
@@ -459,6 +460,21 @@ class Noyau:
         self.base.ecrire("INSERT INTO etat_noyau(cle, valeur) VALUES ('crise', ?) ON CONFLICT(cle) DO UPDATE SET valeur=excluded.valeur", ("1" if active else "0",))
         self.bus.emettre("noyau.crise" if active else "noyau.crise_levee", source="noyau", acteur=acteur, donnees={"raison": raison})
 
+    # ---------- le plafond d'autonomie : un choix d'administrateur ----------
+    def regler_palier(self, cle: str, palier: str, acteur: str = "humain") -> dict:
+        """L'administrateur règle jusqu'où Cassandra agit seule sur une capacité. Le manifeste fixe le maximum permis ; ici on choisit,
+        dans ce maximum. Jamais une validation que Cassandra attendrait : un réglage, journalisé, qu'elle connaît."""
+        e = self.catalogue.get(cle)
+        if e is None:
+            return {"ok": False, "raison": "capacité inconnue : %s" % cle}
+        avant = self.catalogue.savoir(cle)["palier"]
+        try:
+            self.catalogue.regler_palier(cle, palier)
+        except ValueError as ex:
+            return {"ok": False, "raison": str(ex)}
+        self.bus.emettre("savoir.regle", source="noyau", acteur=acteur, objet=("capacite", cle), donnees={"de": avant, "a": palier})
+        return {"ok": True, "de": avant, "a": palier}
+
     # ---------- voie humaine, parallèle ----------
     def agir_humain(self, cle: str, args=None, essai: bool = False, compte: str = "") -> dict:
         """Un humain lance une capacité. Aucun palier ne l'arrête ; Cassandra l'apprend par le bus."""
@@ -701,6 +717,26 @@ def commande_agir(argv) -> int:
     return 0 if r["statut"] in ("faite", "simulee", "racontee") else 1
 
 
+def commande_palier(argv) -> int:
+    """python main.py palier                  les capacités qui écrivent, avec leur palier et ceux permis
+    python main.py palier CLE PALIER          règle jusqu'où Cassandra agit seule sur cette capacité (raconter | auto | maitre)"""
+    gerer = bool(os.environ.get("CASSANDRA_CONFIG"))
+    try:
+        n = Noyau(_donnees(), actifs=None, extensions=_extensions(), gerer_modules=gerer, amorce=_actifs)
+        n.brancher(annoncer=False)
+    except manifeste.ManifesteInvalide as ex:
+        print(ex, file=sys.stderr)
+        return 1
+    if len(argv) >= 4:
+        r = n.regler_palier(argv[2], argv[3])
+        print(("%s : %s -> %s" % (argv[2], r["de"], r["a"])) if r["ok"] else "refusé : %s" % r["raison"], file=sys.stdout if r["ok"] else sys.stderr)
+        return 0 if r["ok"] else 1
+    for e in n.catalogue.lister():
+        if e.actif and e.capacite.ecrit:
+            print("%-40s %-9s palier %-8s permis : %s" % (e.cle, e.capacite.risque, n.catalogue.savoir(e.cle)["palier"], ", ".join(e.capacite.paliers)))
+    return 0
+
+
 def _cles() -> Path:
     """Les clés de confiance des éditeurs : $CASSANDRA_CONFIG/cles/<editeur>.pub."""
     c = os.environ.get("CASSANDRA_CONFIG")
@@ -756,6 +792,8 @@ def main(argv) -> int:
         return commande_paquet(argv)
     if commande == "agir":
         return commande_agir(argv)
+    if commande == "palier":
+        return commande_palier(argv)
     if commande in ("etat", "tick", "demarrer", "moteurs"):
         try:
             gerer = bool(os.environ.get("CASSANDRA_CONFIG"))     # en exploitation : l'état des modules vit dans la base
@@ -777,7 +815,7 @@ def main(argv) -> int:
         else:
             n.boucle()
         return 0
-    print("commande inconnue : %s (verifier | ordre | versions | module | paquet | agir | etat | moteurs | tick | demarrer)" % commande, file=sys.stderr)
+    print("commande inconnue : %s (verifier | ordre | versions | module | paquet | agir | palier | etat | moteurs | tick | demarrer)" % commande, file=sys.stderr)
     return 2
 
 

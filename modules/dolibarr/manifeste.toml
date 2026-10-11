@@ -1,0 +1,180 @@
+[module]
+id = "dolibarr"
+nom = "Dolibarr"
+version = "0.2.0"
+noyau_min = "0.1.0"
+description = "Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur."
+confiance = "interne"
+famille = "gestion"
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[objets]]
+type = "dolibarr"
+libelle = "Une instance Dolibarr pilotée par Cassandra"
+
+[[objets]]
+type = "dolibarr_corbeille"
+libelle = "La copie entière d'un objet supprimé de Dolibarr, de quoi le recréer"
+
+[evenements]
+emet = ["dolibarr.injoignable", "dolibarr.acces_refuse", "dolibarr.reprise"]
+
+[[moteurs]]
+id = "releve"
+libelle = "Sonde Dolibarr (santé chaque minute, comptes et impayés tous les quarts d'heure)"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 90
+
+[[detecteurs]]
+id = "injoignable"
+libelle = "Dolibarr ne répond plus"
+frequence_s = 60
+
+[[detecteurs]]
+id = "acces_refuse"
+libelle = "Dolibarr refuse la clé d'API"
+frequence_s = 60
+
+[[capacites]]
+id = "resume"
+libelle = "La dernière relève : version, comptes, factures impayées"
+risque = "lecture"
+
+[[capacites]]
+id = "statut"
+libelle = "L'état de Dolibarr à l'instant (version, latence)"
+risque = "lecture"
+
+[[capacites]]
+id = "modules"
+libelle = "Les modules actifs de Dolibarr"
+risque = "lecture"
+
+[[capacites]]
+id = "compter"
+libelle = "Compter les objets d'un type (tiers, factures, devis, commandes, projets, produits, contacts)"
+risque = "lecture"
+
+[[capacites]]
+id = "lister"
+libelle = "Lister des objets, par page, avec des champs bornés (pas de coordonnées personnelles)"
+risque = "lecture"
+
+[[capacites]]
+id = "lire"
+libelle = "Lire un objet par son identifiant, avec des champs bornés"
+risque = "lecture"
+
+[[capacites]]
+id = "impayees"
+libelle = "Les factures impayées : nombre, total TTC, la plus ancienne échéance"
+risque = "lecture"
+
+[[capacites]]
+id = "creer"
+libelle = "Créer un tiers, un contact, un produit ou un projet dans Dolibarr"
+risque = "moyen"
+perimetre = ["tiers, contacts, produits, projets", "champs de la liste permise seulement"]
+preuve = "relire l'objet créé et comparer chaque champ écrit"
+retour = "supprimer l'objet que cet acte vient de créer, et lui seul"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "modifier"
+libelle = "Modifier des champs d'un tiers, d'un contact, d'un produit ou d'un projet"
+risque = "moyen"
+perimetre = ["tiers, contacts, produits, projets", "champs de la liste permise seulement"]
+preuve = "relire l'objet et comparer les champs modifiés"
+retour = "remettre les valeurs d'avant, relevées juste avant l'écriture"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "creer_brouillon"
+libelle = "Créer un brouillon de facture, de devis ou de commande (jamais validé par cet acte)"
+risque = "moyen"
+perimetre = ["factures, devis, commandes à l'état de brouillon"]
+preuve = "relire le document : statut brouillon, nombre de lignes et tiers conformes"
+retour = "supprimer ce brouillon, seulement s'il est encore un brouillon"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "supprimer"
+libelle = "Supprimer un tiers, un contact, un produit, un projet ou un brouillon de document, après en avoir gardé une copie entière dans la corbeille"
+risque = "eleve"
+perimetre = ["tiers, contacts, produits, projets, brouillons de documents", "Dolibarr refuse ce qui est référencé ailleurs"]
+preuve = "relire l'objet : Dolibarr répond qu'il n'existe plus"
+retour = "recréer l'objet depuis la copie de la corbeille (l'identifiant change)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "restaurer"
+libelle = "Recréer un objet supprimé, depuis la corbeille"
+risque = "moyen"
+perimetre = ["les objets de la corbeille à l'état supprimé"]
+preuve = "relire l'objet recréé"
+retour = "supprimer l'objet recréé, la copie restant dans la corbeille"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "corbeille"
+libelle = "Lister la corbeille : ce qui a été supprimé et peut être recréé"
+risque = "lecture"
+
+[[capacites]]
+id = "valider_facture"
+libelle = "Valider une facture brouillon : elle prend un numéro légal"
+risque = "eleve"
+perimetre = ["une facture à l'état de brouillon"]
+preuve = "relire la facture : statut validé"
+retour = "repasser la facture en brouillon (impossible si elle est payée ou comptabilisée)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[ecrans]]
+id = "vue_dolibarr"
+libelle = "Dolibarr"
+domaine = "gestion"
+gabarit = "tableau"
+
+[[menus]]
+id = "dolibarr"
+libelle = "Dolibarr"
+ecran = "vue_dolibarr"
+ordre = 10
+role = "admin"
+icone = "briefcase"
+badge = "constats"
+
+[[widgets]]
+id = "etat"
+libelle = "Dolibarr"
+ecran = "accueil"
+zone = "principal"
+taille = "s"
+ordre = 20
+role = "admin"
+composant = "etat"
+source = "resume"
+rafraichir_s = 60
+
+[[widgets]]
+id = "chiffres"
+libelle = "Chiffres de Dolibarr"
+ecran = "vue_dolibarr"
+composant = "liste"
+source = "resume"
+rafraichir_s = 60
+
+[theme]
+accent = "#6a3fa0"
+
+[permissions]
+reseau = ["l'hôte de l'instance, fixé dans config/dolibarr.conf"]
+privileges = ["la clé d'API de Dolibarr donne les droits de son utilisateur : en faire un utilisateur dédié aux droits limités"]

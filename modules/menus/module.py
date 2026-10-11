@@ -11,9 +11,9 @@ import copy
 import hashlib
 import json
 
-FAMILLES = ["socle", "moteurs", "reseau", "securite", "sites", "communication", "travail", "supervision"]
+FAMILLES = ["socle", "moteurs", "reseau", "securite", "sites", "communication", "travail", "gestion", "supervision"]
 LIBELLES = {"socle": "Socle", "moteurs": "Moteurs", "reseau": "Réseau", "securite": "Sécurité", "sites": "Sites",
-            "communication": "Communication", "travail": "Travail", "supervision": "Supervision", "autres": "Autres"}
+            "communication": "Communication", "travail": "Travail", "gestion": "Gestion", "supervision": "Supervision", "autres": "Autres"}
 ARBRE = ("menu_arbre", "global")
 BADGES = ("menu_arbre", "badges")
 
