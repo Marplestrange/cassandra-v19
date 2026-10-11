@@ -5,10 +5,15 @@ Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>
 vivent dans noyau/ (bus, registre, catalogue, exécuteur, chargeur). Ici on les relie et on fait battre
 le cycle : percevoir (les détecteurs), décider (le palier de la capacité), agir, prouver, apprendre.
 
-    python main.py verifier     lit les manifestes, vérifie l'isolation, donne l'ordre d'installation
-    python main.py etat         résume le noyau (modules, objets, constats, paliers)
-    python main.py tick         une passe de détection
-    python main.py demarrer     le cycle en continu
+    python main.py verifier          lit les manifestes, vérifie l'isolation, donne l'ordre d'installation
+    python main.py ordre [id ...]    ordre d'installation des modules demandés et de leurs dépendances (un id par ligne)
+    python main.py versions          « id version » de chaque module (pour deploy.sh)
+    python main.py etat              résume le noyau sans rien écrire (modules, objets, constats, paliers)
+    python main.py tick              une passe de détection
+    python main.py demarrer          le cycle en continu (sous systemd : type notify, chien de garde)
+
+Modules actifs : `$CASSANDRA_CONFIG/modules.actifs` (un id par ligne). Sans ce fichier, tous les modules du
+dossier modules/ sont chargés (développement).
 
 Principe de souveraineté : rien ici n'attend un humain. Un humain agit par `agir_humain`, en parallèle,
 et Cassandra le sait (événement `capacite.*` avec acteur « humain »).
@@ -22,7 +27,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from noyau import chargeur, manifeste
+from noyau import chargeur, manifeste, systemd
 from noyau.base import Base
 from noyau.bus import TOUT, Bus
 from noyau.catalogue import Catalogue
@@ -36,8 +41,10 @@ SEUIL_PANNES = 5   # pannes de suite d'un détecteur avant qu'il soit suspendu (
 
 
 class Noyau:
-    def __init__(self, donnees, modules=None, config=None):
+    def __init__(self, donnees, modules=None, config=None, actifs=None):
         self.modules = Path(modules or RACINE / "modules")
+        self.actifs = actifs         # None : tous les modules du dossier ; sinon la liste des modules actifs
+        self.battement = lambda: None   # appelé entre deux détecteurs : le chien de garde de systemd
         self.config = dict(config or {})
         self.base = Base(Path(donnees) / "noyau.db")
         self.bus = Bus(self.base)
@@ -51,14 +58,16 @@ class Noyau:
         self.rapport = {}
 
     # ---------- démarrage ----------
-    def brancher(self) -> dict:
+    def brancher(self, annoncer: bool = True) -> dict:
+        """Branche les modules. `annoncer=False` pour une lecture (état, vérification) : rien n'est écrit au bus."""
         def fabriquer(m):
             ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id))
             self.executeur.contextes[m.id] = ctx
             return ctx
-        self.rapport = chargeur.brancher(self.modules, fabriquer, self.catalogue, self.registre)
-        self.bus.emettre("noyau.demarre", source="noyau", donnees={"modules": self.rapport["ordre"], "a_porter": len(self.rapport["a_porter"])})
-        self.rapport["reprises"] = self.reprendre()
+        self.rapport = chargeur.brancher(self.modules, fabriquer, self.catalogue, self.registre, self.actifs)
+        if annoncer:
+            self.bus.emettre("noyau.demarre", source="noyau", donnees={"modules": self.rapport["ordre"], "a_porter": len(self.rapport["a_porter"])})
+            self.rapport["reprises"] = self.reprendre()
         return self.rapport
 
     # ---------- résilience ----------
@@ -131,6 +140,7 @@ class Noyau:
         maintenant = time.time() if maintenant is None else maintenant
         rapport = {"detecteurs": 0, "ouverts": 0, "resolus": 0, "pannes": 0, "actions": []}
         for module, d, fonction in list(self.detecteurs):
+            self.battement()
             k = (module, d.id)
             if k in self._suspendus or maintenant - self._derniere.get(k, 0) < d.frequence_s:
                 continue
@@ -179,13 +189,21 @@ class Noyau:
         return rapport
 
     def boucle(self, pause: float = 5.0) -> None:
+        """Le cycle en continu. Sous systemd, chaque passe (et chaque détecteur) donne signe de vie : une boucle
+        figée est tuée puis relancée de l'extérieur, et `reprendre()` referme ce qu'elle laissait ouvert."""
+        self.battement = lambda: systemd.battement()
+        systemd.pret("%d module(s), %d détecteur(s)" % (len(self.rapport.get("ordre", [])), len(self.detecteurs)))
         log.info("cycle démarré (pause %.0f s)", pause)
-        while True:
-            try:
-                self.tick()
-            except Exception:
-                log.exception("passe en échec")
-            time.sleep(pause)
+        try:
+            while True:
+                try:
+                    r = self.tick()
+                    systemd.battement("passe : %d ouvert(s), %d résolu(s), %d panne(s)" % (r["ouverts"], r["resolus"], r["pannes"]))
+                except Exception:
+                    log.exception("passe en échec")
+                time.sleep(pause)
+        except KeyboardInterrupt:
+            systemd.arret()
 
     # ---------- état ----------
     def etat(self) -> dict:
@@ -195,7 +213,7 @@ class Noyau:
             p = self.catalogue.savoir(e.cle)["palier"]
             paliers[p] = paliers.get(p, 0) + 1
         return {
-            "modules": self.rapport.get("ordre", []),
+            "version": manifeste.VERSION_NOYAU, "modules": self.rapport.get("ordre", []),
             "capacites": len(caps), "implementees": sum(1 for e in caps if e.implementee), "paliers": paliers,
             "objets": self.registre.compter(portee=TOUT), "detecteurs": len(self.detecteurs), "suspendus": sorted("%s.%s" % k for k in self._suspendus),
             "constats_ouverts": self.base.lire("SELECT COUNT(*) AS n FROM constats WHERE etat='ouvert'")[0]["n"],
@@ -207,6 +225,15 @@ class Noyau:
 # ---------- ligne de commande ----------
 def _donnees() -> Path:
     return Path(os.environ.get("CASSANDRA_DONNEES") or RACINE / "donnees")
+
+
+def _actifs():
+    """Les modules actifs, lus dans $CASSANDRA_CONFIG/modules.actifs ; None (tous) si le fichier n'existe pas."""
+    dossier = os.environ.get("CASSANDRA_CONFIG")
+    f = Path(dossier) / "modules.actifs" if dossier else None
+    if not f or not f.exists():
+        return None
+    return [l.strip() for l in f.read_text(encoding="utf-8").splitlines() if l.strip() and not l.lstrip().startswith("#")]
 
 
 def verifier() -> int:
@@ -233,9 +260,24 @@ def main(argv) -> int:
     commande = argv[1] if len(argv) > 1 else "verifier"
     if commande == "verifier":
         return verifier()
+    if commande in ("ordre", "versions"):
+        try:
+            ms = manifeste.decouvrir(RACINE / "modules")
+            if commande == "versions":
+                print(chr(10).join("%s %s" % (m.id, m.version) for m in ms))
+            else:
+                print(chr(10).join(manifeste.avec_dependances(ms, argv[2:]) if argv[2:] else manifeste.ordre_installation(ms)))
+        except manifeste.ManifesteInvalide as ex:
+            print(ex, file=sys.stderr)
+            return 1
+        return 0
     if commande in ("etat", "tick", "demarrer"):
-        n = Noyau(_donnees())
-        n.brancher()
+        try:
+            n = Noyau(_donnees(), actifs=_actifs())
+            n.brancher(annoncer=commande != "etat")
+        except manifeste.ManifesteInvalide as ex:
+            print(ex, file=sys.stderr)
+            return 1
         if commande == "etat":
             for k, v in n.etat().items():
                 print("%-16s %s" % (k, v))
@@ -244,7 +286,7 @@ def main(argv) -> int:
         else:
             n.boucle()
         return 0
-    print("commande inconnue : %s (verifier | etat | tick | demarrer)" % commande, file=sys.stderr)
+    print("commande inconnue : %s (verifier | ordre | versions | etat | tick | demarrer)" % commande, file=sys.stderr)
     return 2
 
 

@@ -44,11 +44,16 @@ def charger_module_py(dossier: Path, mid: str):
     return mod
 
 
-def brancher(racine_modules, fabriquer_contexte, catalogue, registre) -> dict:
-    """Branche tous les modules. `fabriquer_contexte(manifeste)` rend le Contexte du module.
-    Rend un rapport : ordre, capacités non portées, modules sans code."""
+def brancher(racine_modules, fabriquer_contexte, catalogue, registre, actifs=None) -> dict:
+    """Branche les modules ACTIFS (`actifs=None` : tous, pour le développement). `fabriquer_contexte(manifeste)`
+    rend le Contexte du module. Rend un rapport : ordre, capacités non portées, modules sans code."""
     racine = Path(racine_modules)
     ms = mf.decouvrir(racine)
+    if actifs is not None:
+        inconnus = sorted(set(actifs) - {m.id for m in ms})
+        if inconnus:
+            raise mf.ManifesteInvalide(["module actif introuvable dans modules/ : " + ", ".join(inconnus)], racine)
+        ms = [m for m in ms if m.id in set(actifs)]
     defauts = mf.verifier_ensemble(ms)
     ids = [m.id for m in ms]
     for m in ms:

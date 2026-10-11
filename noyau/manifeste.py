@@ -317,6 +317,22 @@ def verifier_ensemble(manifestes) -> list:
     return e
 
 
+def avec_dependances(manifestes, ids) -> list:
+    """Les modules demandés ET tout ce dont ils dépendent, dans l'ordre d'installation."""
+    par_id = {m.id: m for m in manifestes}
+    inconnus = sorted(i for i in ids if i not in par_id)
+    if inconnus:
+        raise ManifesteInvalide(["module inconnu : " + ", ".join(inconnus)])
+    voulus, pile = set(), list(ids)
+    while pile:
+        i = pile.pop()
+        if i in voulus:
+            continue
+        voulus.add(i)
+        pile.extend(par_id[i].requiert)
+    return ordre_installation([m for m in manifestes if m.id in voulus])
+
+
 def ordre_installation(manifestes) -> list:
     """Ordre d'installation par dépendances (les requis d'abord), déterministe. Refuse un cycle."""
     par_id = {m.id: m for m in manifestes}

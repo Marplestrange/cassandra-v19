@@ -395,5 +395,75 @@ class Enjeux(unittest.TestCase):
         self.assertEqual(self.n.recurrences(jours=14, seuil=4), [])
 
 
+class Exploitation(unittest.TestCase):
+    """Modules actifs, dépendances, chien de garde systemd."""
+
+    def test_avec_dependances_rend_les_requis_d_abord(self):
+        ms = mf.decouvrir(RACINE / "modules")
+        self.assertEqual(mf.avec_dependances(ms, ["certificats"]), ["dns", "certificats"])
+        self.assertEqual(mf.avec_dependances(ms, ["dns"]), ["dns"])
+        with self.assertRaises(mf.ManifesteInvalide):
+            mf.avec_dependances(ms, ["inconnu"])
+
+    def test_seuls_les_modules_actifs_sont_branches(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            n = moteur.Noyau(tmp, actifs=["dns"])
+            r = n.brancher(annoncer=False)
+            self.assertEqual(r["ordre"], ["dns"])
+            self.assertEqual({e.module for e in n.catalogue.lister()}, {"dns"})
+
+    def test_un_module_actif_sans_son_requis_est_refuse(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(mf.ManifesteInvalide) as c:
+                moteur.Noyau(tmp, actifs=["certificats"]).brancher(annoncer=False)
+            self.assertIn("requiert", str(c.exception))
+
+    def test_un_module_actif_introuvable_est_refuse(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(mf.ManifesteInvalide):
+                moteur.Noyau(tmp, actifs=["fantome"]).brancher(annoncer=False)
+
+    def test_aucun_module_actif_est_permis(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(moteur.Noyau(tmp, actifs=[]).brancher(annoncer=False)["ordre"], [])
+
+    def test_l_etat_n_ecrit_rien_au_bus(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            n = moteur.Noyau(tmp, actifs=["dns"])
+            n.brancher(annoncer=False)
+            self.assertEqual(n.etat()["evenements"], 0)
+
+    def test_hors_systemd_notifier_est_inerte(self):
+        import os
+        from noyau import systemd
+        avant = os.environ.pop("NOTIFY_SOCKET", None)
+        try:
+            self.assertFalse(systemd.pret("x"))
+            self.assertFalse(systemd.battement())
+        finally:
+            if avant is not None:
+                os.environ["NOTIFY_SOCKET"] = avant
+
+    @unittest.skipUnless(hasattr(__import__("socket"), "AF_UNIX") and sys.platform != "win32", "sockets Unix absents")
+    def test_le_noyau_parle_a_systemd(self):
+        import os
+        import socket
+        from noyau import systemd
+        with tempfile.TemporaryDirectory() as tmp:
+            chemin = os.path.join(tmp, "notify.sock")
+            srv = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+            srv.bind(chemin)
+            srv.settimeout(2)
+            os.environ["NOTIFY_SOCKET"] = chemin
+            try:
+                self.assertTrue(systemd.pret("2 modules"))
+                self.assertEqual(srv.recv(200).decode(), "READY=1\nSTATUS=2 modules")
+                self.assertTrue(systemd.battement())
+                self.assertEqual(srv.recv(200).decode(), "WATCHDOG=1")
+            finally:
+                os.environ.pop("NOTIFY_SOCKET", None)
+                srv.close()
+
+
 if __name__ == "__main__":
     unittest.main()

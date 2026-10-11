@@ -46,6 +46,25 @@ python -m unittest discover -s tests -v
 
 Les données vont dans `donnees/` (ou `$CASSANDRA_DONNEES`).
 
+## Exploitation
+
+```
+./install.sh                          le noyau seul : utilisateur, dossiers, version, service systemd
+./install.sh --module certificats     + ce module et ses dépendances ; chacun s'installe par SON script,
+                                      se prouve par SA vérification, se retire seul si la preuve manque
+./install.sh --retirer certificats
+./deploy.sh [--a-blanc]               mise à jour : nouvelle version à côté de l'ancienne, manifestes, bancs,
+                                      sauvegarde de la base, bascule atomique, preuve de chaque module actif
+                                      qui a changé, retour arrière seul à la moindre preuve manquante
+outils/pousser.sh <hote> install|deploy [options]    envoie l'arbre par SSH et lance le script là-bas
+```
+
+Le noyau tourne en service `Type=notify` : il annonce qu'il est prêt, puis donne signe de vie ; systemd tue et relance
+une boucle figée (`WatchdogSec=120`). L'unité est durcie au plus étroit (utilisateur dédié, système en lecture seule,
+aucune capacité, appels système filtrés ; exposition mesurée par `systemd-analyze security` : 1,4 OK). Un module qui
+a besoin de plus ouvre exactement ce qu'il lui faut dans un drop-in nommé, posé par son `installer.sh` et retiré par
+son `retirer.sh`. Modules actifs : `/etc/cassandra/modules.actifs`.
+
 ## Couches
 
 C0 noyau · C1 services communs (authentification, coffre, notifications, mémoire, modèles) · C2 moteurs
