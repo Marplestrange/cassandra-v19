@@ -897,5 +897,51 @@ class LigneDeCommandeModules(unittest.TestCase):
                     os.environ[k] = v
 
 
+class Chemins(unittest.TestCase):
+    """Les dossiers des utilisateurs suivent la convention de FastPanel : /var/www/<utilisateur>/data/."""
+
+    def setUp(self):
+        import os
+        from noyau import chemins
+        self.chemins = chemins
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.ancien = os.environ.get("CASSANDRA_UTILISATEURS")
+        os.environ["CASSANDRA_UTILISATEURS"] = self.tmp.name
+        self.addCleanup(lambda: os.environ.__setitem__("CASSANDRA_UTILISATEURS", self.ancien) if self.ancien else os.environ.pop("CASSANDRA_UTILISATEURS", None))
+
+    def test_l_espace_d_un_module_chez_un_utilisateur(self):
+        p = self.chemins.espace_utilisateur("fastuser", "ged")
+        self.assertEqual(p, Path(self.tmp.name) / "fastuser" / "data" / "cassandra" / "ged")
+        self.assertFalse(p.exists())                                    # rien n'est créé sans le demander
+        self.assertTrue(self.chemins.espace_utilisateur("fastuser", "ged", creer=True).is_dir())
+
+    def test_rien_ne_sort_de_l_espace(self):
+        for mauvais in ("../etc", "fast user", "", "FASTUSER", "a/b", "..", "x" * 40):
+            with self.assertRaises(ValueError, msg=mauvais):
+                self.chemins.espace_utilisateur(mauvais, "ged")
+        for mauvais in ("../x", "Ged", "", "g/e"):
+            with self.assertRaises(ValueError, msg=mauvais):
+                self.chemins.espace_utilisateur("fastuser", mauvais)
+
+    @unittest.skipUnless(sys.platform != "win32", "liens symboliques : droits particuliers sous Windows")
+    def test_un_lien_symbolique_ne_fait_pas_sortir(self):
+        import os
+        autre = tempfile.TemporaryDirectory()
+        self.addCleanup(autre.cleanup)
+        os.makedirs(Path(self.tmp.name) / "fastuser" / "data")
+        os.symlink(autre.name, Path(self.tmp.name) / "fastuser" / "data" / "cassandra")
+        with self.assertRaises(ValueError):
+            self.chemins.espace_utilisateur("fastuser", "ged")
+
+    def test_un_module_demande_son_espace_par_le_contexte(self):
+        m = Monde()
+        self.addCleanup(m.fermer)
+        ctx = m.noyau.executeur.contextes["labo"]
+        self.assertEqual(ctx.espace("sandrinedeshayes"), Path(self.tmp.name) / "sandrinedeshayes" / "data" / "cassandra" / "labo")
+        with self.assertRaises(ValueError):
+            ctx.espace("../root")
+
+
 if __name__ == "__main__":
     unittest.main()

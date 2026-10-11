@@ -102,6 +102,31 @@ importe un autre module ou dont une dépendance manque est **écartée et dite u
 empêcher le noyau de démarrer ni ce qui tourne déjà. Le code d'une extension tourne dans le processus du noyau, sous l'utilisateur
 dédié et l'unité durcie : c'est un niveau de confiance « local ». Un module de tiers non fiable exigera une cage par processus.
 
+## Où vit Cassandra : un dossier, comme Dolibarr
+
+```
+/var/cassandra/                 UN seul dossier : on le sauvegarde, on le déplace d'un bloc (CASSANDRA_RACINE)
+    releases/<horodatage>/      les versions du noyau ; l'ancienne reste à côté pour le retour arrière
+    current -> releases/...     lien RELATIF : la racine peut changer de place sans rien casser
+    extensions/                 les modules greffés après coup (un déploiement n'y touche jamais)
+    donnees/                    la base du noyau et ses sauvegardes
+    config/                     la configuration et l'unité systemd (/etc/systemd/system n'en garde qu'un lien)
+    journal/
+
+/var/www/<utilisateur>/data/    le dossier d'un utilisateur, à la manière de FastPanel
+    cassandra/                  son espace Cassandra, accessible au noyau par groupe (setgid), nulle part ailleurs
+```
+
+Les dossiers des utilisateurs suivent la convention de FastPanel (`/var/www/<utilisateur>/`, le « home » dans `data/`) et le premier
+administrateur est, comme chez lui, `fastuser`. Ainsi un FastPanel installé **après** Cassandra retrouve les utilisateurs et leurs
+dossiers déjà là. Le dossier de Cassandra reste hors de `/var/www` : un utilisateur FastPanel nommé « cassandra » prendrait
+`/var/www/cassandra`. Un module demande l'espace d'un utilisateur par `ctx.espace(utilisateur)` et ne sort jamais de
+`/var/www/<utilisateur>/data/cassandra/<module>`.
+
+`install.sh` migre seul une ancienne disposition (`/opt/cassandra`, `/var/lib/cassandra`, `/etc/cassandra`, `/var/log/cassandra`) et
+crée `fastuser` s'il n'existe pas (`--admin NOM` pour un autre nom, `--racine DIR` pour un autre dossier). La disposition est décrite
+une seule fois, dans `exploitation/commun.sh`, que `install.sh` et `deploy.sh` partagent.
+
 ## Exploitation
 
 ```

@@ -13,38 +13,33 @@
 set -euo pipefail
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PREFIXE="${CASSANDRA_PREFIXE:-/opt/cassandra}"
-DONNEES="${CASSANDRA_DONNEES:-/var/lib/cassandra}"
-CONFIG="${CASSANDRA_CONFIG:-/etc/cassandra}"
-JOURNAL="${CASSANDRA_JOURNAL:-/var/log/cassandra}"
-UTILISATEUR="${CASSANDRA_UTILISATEUR:-cassandra}"
-UNITE="cassandra-noyau.service"
+# shellcheck source=exploitation/commun.sh
+. "$SRC/exploitation/commun.sh"
 GARDER=5
 A_BLANC=0
 TESTS=1
 
-dire()    { printf '\033[1m==>\033[0m %s\n' "$*"; }
-avertir() { printf '\033[33m!!\033[0m %s\n' "$*" >&2; }
-echouer() { printf '\033[31mxx\033[0m %s\n' "$*" >&2; exit 1; }
 aide() { sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --a-blanc)      A_BLANC=1; shift ;;
     --sauter-tests) TESTS=0; shift ;;
+    # shellcheck disable=SC2034  # lu par calculer_chemins (exploitation/commun.sh)
+    --racine)       [ $# -ge 2 ] || echouer "--racine attend un dossier"; CASSANDRA_RACINE="$2"; shift 2 ;;
     -h|--aide)      aide ;;
     *)              echouer "option inconnue : $1 (voir --aide)" ;;
   esac
 done
 
+calculer_chemins
 [ "$(id -u)" -eq 0 ] || echouer "à lancer en root"
-[ -L "$PREFIXE/current" ] || echouer "aucune installation dans $PREFIXE : lancer install.sh d'abord"
-[ -f "/etc/systemd/system/$UNITE" ] || echouer "le service $UNITE est absent : lancer install.sh d'abord"
+[ -L "$RACINE/current" ] || echouer "aucune installation dans $RACINE : lancer install.sh d'abord (il migre l'ancienne disposition si besoin)"
+[ -e "/etc/systemd/system/$UNITE" ] || echouer "le service $UNITE est absent : lancer install.sh d'abord"
 
-as_service() { runuser -u "$UTILISATEUR" -- env CASSANDRA_DONNEES="$DONNEES" CASSANDRA_CONFIG="$CONFIG" CASSANDRA_EXTENSIONS="$PREFIXE/extensions" "$@"; }
-ANCIENNE="$(readlink -f "$PREFIXE/current")"
+ANCIENNE="$(readlink -f "$RACINE/current")"
 STAMP="$(date +%Y%m%d-%H%M%S)"
-DEST="$PREFIXE/releases/$STAMP"
+DEST="$RACINE/releases/$STAMP"
 
 # ---------------------------------------------------------------- préparer
 dire "nouvelle version $STAMP (actuelle : $(basename "$ANCIENNE"))"
@@ -54,8 +49,7 @@ chown -R root:root "$DEST"; chmod -R go-w "$DEST"
 abandonner() { rm -rf "$DEST"; echouer "$1"; }
 
 dire "vérification des manifestes"
-if ! SORTIE="$(cd "$DEST" && python3 main.py verifier 2>&1)"; then printf '%s
-' "$SORTIE" >&2; abandonner "manifestes invalides : rien n'est déployé"; fi
+if ! SORTIE="$(cd "$DEST" && python3 main.py verifier 2>&1)"; then printf '%s\n' "$SORTIE" >&2; abandonner "manifestes invalides : rien n'est déployé"; fi
 
 if [ "$TESTS" -eq 1 ] && [ -d "$DEST/tests" ]; then
   dire "bancs"
@@ -101,7 +95,6 @@ PY
   ls -1t "$DONNEES"/sauvegardes/noyau-*.db 2>/dev/null | tail -n +11 | xargs -r rm -f
 fi
 
-basculer() { ln -sfn "$1" "$PREFIXE/current.new"; mv -T "$PREFIXE/current.new" "$PREFIXE/current"; }
 revenir() {
   avertir "$1 : retour à $(basename "$ANCIENNE")"
   basculer "$ANCIENNE"
@@ -111,11 +104,8 @@ revenir() {
 }
 
 dire "bascule"
-install -d -o root -g root -m 0755 "$PREFIXE/extensions"   # les greffes vivent ici, hors des versions : un déploiement n'y touche jamais
-sed -e "s|@PREFIXE@|$PREFIXE|g" -e "s|@DONNEES@|$DONNEES|g" -e "s|@CONFIG@|$CONFIG|g" -e "s|@JOURNAL@|$JOURNAL|g" \
-    -e "s|@UTILISATEUR@|$UTILISATEUR|g" -e "s|@UNITE@|$UNITE|g" "$DEST/exploitation/$UNITE" > "/etc/systemd/system/$UNITE.new"
-mv "/etc/systemd/system/$UNITE.new" "/etc/systemd/system/$UNITE"
-systemctl daemon-reload
+install -d -o root -g root -m 0755 "$EXTENSIONS_DIR"   # les greffes vivent ici, hors des versions : un déploiement n'y touche jamais
+poser_unite "$DEST"
 basculer "$DEST"
 systemctl restart "$UNITE" || { journalctl -u "$UNITE" -n 25 --no-pager >&2; revenir "le noyau ne démarre pas"; }
 as_service python3 "$DEST/main.py" etat >/dev/null || revenir "l'état du noyau est illisible"
@@ -125,8 +115,8 @@ for id in "${CHANGES[@]}"; do
   v="$DEST/modules/$id/verifier.sh"
   [ -f "$v" ] || continue
   dire "preuve du module $id"
-  export CASSANDRA_PREFIXE="$PREFIXE" CASSANDRA_DONNEES="$DONNEES" CASSANDRA_CONFIG="$CONFIG" CASSANDRA_JOURNAL="$JOURNAL"
-  export CASSANDRA_UTILISATEUR="$UTILISATEUR" CASSANDRA_UNITE="$UNITE" CASSANDRA_MODULE="$id" CASSANDRA_MODULE_DIR="$PREFIXE/current/modules/$id"
+  exporter_pour_modules
+  export CASSANDRA_MODULE="$id" CASSANDRA_MODULE_DIR="$PREFIXE/current/modules/$id"
   (cd "$DEST/modules/$id" && bash ./verifier.sh) || revenir "le module $id n'est pas prouvé"
 done
 

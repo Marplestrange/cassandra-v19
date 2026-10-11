@@ -12,6 +12,8 @@ from __future__ import annotations
 import logging
 import threading
 
+from . import chemins
+
 
 class _Fil(threading.local):
     valeur = None
@@ -38,6 +40,11 @@ class Contexte:
     def compte(self) -> str:
         """Le compte au nom duquel la capacité en cours s'exécute ('' = commun / infrastructure)."""
         return self._compte.valeur
+
+    # ---- disque ----
+    def espace(self, utilisateur: str, creer: bool = True):
+        """L'espace de ce module chez un utilisateur : /var/www/<utilisateur>/data/cassandra/<module>. Rien ne sort de là."""
+        return chemins.espace_utilisateur(utilisateur, self.module, creer=creer)
 
     # ---- événements ----
     def emettre(self, type: str, objet=None, donnees=None, cause=None, acteur: str = "module", compte=None) -> int:
