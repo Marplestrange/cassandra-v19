@@ -61,6 +61,30 @@ Pour chaque moteur le noyau mesure la durée, empêche qu'il s'empile s'il dépa
 compte les échecs, dit chaque échec au bus et le suspend après cinq échecs de suite (`lancer` le réarme : voie humaine).
 `python main.py moteurs` les liste avec leur état.
 
+## Les menus : un module déclare, le noyau assemble
+
+Un module ne touche jamais à l'interface pour s'y inscrire. Il déclare ses entrées dans son manifeste :
+
+```toml
+[[menus]]
+id = "domaines"          libelle = "Domaines"      ecran = "vue_domaine"      # un écran du même module
+ordre = 10               role = "admin"            icone = "globe"
+parent = ""              badge = "constats"        # un menu du module, ou « autre:menu » ; compteur affiché
+```
+
+Le module `menus` (essentiel, avec ses trois moteurs) assemble l'arbre : familles dans l'ordre du noyau, puis entrées du module, puis leurs enfants,
+filtré par rôle ; une entrée sans page ni enfant visible disparaît ; un parent dont le module est inactif fait remonter l'enfant au premier niveau. Il
+se rebâtit dès qu'un module est branché ou débranché (et toutes les cinq minutes par filet), et tient les compteurs à jour. Activer ou désactiver un
+module change le menu **à chaud**, sans redémarrer ni retoucher l'interface.
+
+Personnalisation : masquer, renommer, réordonner, déplacer une entrée, pour tous ou pour un compte (celui du compte l'emporte, et ne touche
+personne d'autre), par la capacité `menus.personnaliser_entree` (preuve et retour arrière comme toute écriture).
+
+```
+python main.py agir menus.lire_menu role=admin                                  l'arbre, en JSON
+python main.py agir menus.personnaliser_entree entree=dns:domaines masque=true  masquer une entrée
+```
+
 ## Activer et désactiver un module (le menu des modules)
 
 Chaque module a un état, qui vit dans la base du noyau : **disponible** (le manifeste est là), **installé** (ses scripts ont posé et prouvé ce

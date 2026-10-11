@@ -1,0 +1,87 @@
+[module]
+id = "menus"
+nom = "Menus"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Assemble, à chaud, l'arbre de navigation que les modules actifs déclarent : familles, ordre, rôles, compteurs, personnalisation par compte."
+confiance = "interne"
+famille = "socle"
+essentiel = true
+
+[[objets]]
+type = "menu_arbre"
+libelle = "L'arbre des menus assemblé, et ses compteurs"
+
+[[objets]]
+type = "menu_perso"
+libelle = "Une personnalisation d'une entrée de menu (masquée, renommée, déplacée), globale ou propre à un compte"
+
+[evenements]
+emet = ["menu_arbre.change"]
+ecoute = ["noyau.greffe", "noyau.module_debranche"]
+
+# Le menu se rebâtit dès qu'un module est branché ou débranché, et par filet toutes les cinq minutes.
+[[moteurs]]
+id = "reconstruire"
+libelle = "Rebâtit l'arbre quand un module est branché ou débranché"
+mode = "evenement"
+sur = ["noyau.greffe", "noyau.module_debranche"]
+duree_max_s = 20
+
+[[moteurs]]
+id = "reconstruire_regulierement"
+libelle = "Rebâtit l'arbre régulièrement (filet : un événement manqué ne laisse pas un menu périmé)"
+mode = "periodique"
+toutes_les_s = 300
+duree_max_s = 20
+
+[[moteurs]]
+id = "badges"
+libelle = "Tient à jour les compteurs affichés dans le menu"
+mode = "periodique"
+toutes_les_s = 30
+duree_max_s = 20
+
+[[capacites]]
+id = "lire_menu"
+libelle = "Lire le menu pour un rôle et un compte"
+risque = "lecture"
+
+[[capacites]]
+id = "personnaliser_entree"
+libelle = "Masquer, renommer, réordonner ou déplacer une entrée de menu, pour tous ou pour un compte"
+risque = "faible"
+perimetre = ["objets menu_perso du compte demandé"]
+preuve = "relire la personnalisation écrite"
+retour = "restaurer la personnalisation précédente, ou la retirer s'il n'y en avait pas"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[menus]]
+id = "modules"
+libelle = "Modules"
+ecran = "vue_modules"
+ordre = 10
+role = "admin"
+icone = "puzzle"
+
+[[menus]]
+id = "menus"
+libelle = "Menus"
+ecran = "vue_menus"
+ordre = 20
+role = "admin"
+icone = "menu"
+
+[[ecrans]]
+id = "vue_modules"
+libelle = "Modules"
+domaine = "socle"
+
+[[ecrans]]
+id = "vue_menus"
+libelle = "Menus"
+domaine = "socle"
+
+[permissions]
+introspection = true

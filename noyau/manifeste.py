@@ -22,6 +22,11 @@ RISQUES = ("lecture", "faible", "moyen", "eleve")
 PALIERS = ("raconter", "auto", "maitre")
 ACTEURS = ("cassandra", "itare", "humain", "compte")
 MODES_MOTEUR = ("periodique", "evenement", "demande")
+ROLES_MENU = ("utilisateur", "admin")
+BADGES_MENU = ("", "constats", "moteurs")
+# Les événements du noyau lui-même : un module peut les écouter sans qu'aucun module ne les « émette ».
+EVENEMENTS_DU_NOYAU = ("noyau.", "module.", "capacite.", "constat.", "objet.", "moteur.", "savoir.", "humain.")
+TYPES_RESERVES = ("noyau", "module", "capacite", "constat", "objet", "moteur", "savoir", "humain")
 CONFIANCES = ("interne", "signe", "tiers", "local")
 
 _ID = re.compile(r"^[a-z][a-z0-9_]{1,40}$")
@@ -76,8 +81,21 @@ class Moteur:
     libelle: str
     mode: str                  # periodique | evenement | demande
     toutes_les_s: int = 0      # mode periodique
-    sur: str = ""              # mode evenement : le type d'événement qui le réveille (doit être dans evenements.ecoute)
+    sur: tuple = ()            # mode evenement : le ou les types d'événement qui le réveillent (dans evenements.ecoute)
     duree_max_s: int = 60      # au-delà, le moteur est tenu pour figé et ne s'empile pas
+
+
+@dataclass(frozen=True)
+class Menu:
+    """Une entrée de menu déclarée par un module. Le module de menus du noyau assemble tout, à chaud."""
+    id: str
+    libelle: str
+    ecran: str = ""            # un écran du MÊME module (la page ouverte) ; vide : simple regroupement
+    parent: str = ""           # vide : au premier niveau de la famille ; sinon un menu du module, ou « module:menu »
+    ordre: int = 100
+    role: str = "utilisateur"  # qui le voit : utilisateur | admin
+    icone: str = ""
+    badge: str = ""            # compteur affiché : constats (ouverts du module) | moteurs (à surveiller)
 
 
 @dataclass(frozen=True)
@@ -103,6 +121,7 @@ class Permissions:
     reseau: tuple = ()                 # hôtes joints (« api.exemple.org »)
     ecritures: tuple = ()              # chemins système écrits (hors son espace)
     privileges: tuple = ()             # ce que ses scripts font en root (« installer »...)
+    introspection: bool = False        # peut lire les manifestes des modules actifs et leurs compteurs (module de menus, de supervision)
 
 
 @dataclass(frozen=True)
@@ -127,6 +146,7 @@ class Manifeste:
     capacites: tuple = ()
     detecteurs: tuple = ()
     moteurs: tuple = ()
+    menus: tuple = ()
     ecrans: tuple = ()
     installation: Installation = field(default_factory=Installation)
     source: str = ""
@@ -191,8 +211,9 @@ def valider(brut: dict) -> list:
         perm = {}
     for champ in ("reseau", "ecritures", "privileges"):
         _liste_de_textes(perm.get(champ), "permissions.%s" % champ, e)
-    if "espace_utilisateur" in perm and not isinstance(perm["espace_utilisateur"], bool):
-        e.append("permissions.espace_utilisateur : vrai ou faux")
+    for champ in ("espace_utilisateur", "introspection"):
+        if champ in perm and not isinstance(perm[champ], bool):
+            e.append("permissions.%s : vrai ou faux" % champ)
     for chemin in perm.get("ecritures", []) if isinstance(perm.get("ecritures"), list) else []:
         if not str(chemin).startswith("/") or ".." in str(chemin).split("/"):
             e.append("permissions.ecritures : « %s » doit être un chemin absolu sans « .. »" % chemin)
@@ -212,6 +233,8 @@ def valider(brut: dict) -> list:
             continue
         if o["type"] in types:
             e.append("objets[%d] : le type « %s » est déclaré deux fois" % (i, o["type"]))
+        if o["type"] in TYPES_RESERVES:
+            e.append("objets[%d] : « %s » est réservé au noyau (ses événements s'appellent ainsi)" % (i, o["type"]))
         types.append(o["type"])
 
     ev = brut.get("evenements", {}) or {}
@@ -289,15 +312,62 @@ def valider(brut: dict) -> list:
             e.append("%s.mode : %s" % (nom, " | ".join(MODES_MOTEUR)))
         elif mode == "periodique" and (not isinstance(mo.get("toutes_les_s"), int) or mo["toutes_les_s"] < 10):
             e.append("%s.toutes_les_s : entier d'au moins 10 secondes" % nom)
-        elif mode == "evenement" and mo.get("sur") not in ecoute:
-            e.append("%s.sur : « %s » doit figurer dans evenements.ecoute (un moteur n'écoute que ce que son module a déclaré)" % (nom, mo.get("sur")))
+        elif mode == "evenement":
+            sur = mo.get("sur")
+            liste = [sur] if isinstance(sur, str) else (sur if isinstance(sur, list) else [])
+            if not liste:
+                e.append("%s.sur : un type d'événement, ou une liste, est attendu" % nom)
+            for x in liste:
+                if x not in ecoute:
+                    e.append("%s.sur : « %s » doit figurer dans evenements.ecoute (un moteur n'écoute que ce que son module a déclaré)" % (nom, x))
         d = mo.get("duree_max_s", 60)
         if not isinstance(d, int) or not 1 <= d <= 3600:
             e.append("%s.duree_max_s : entier entre 1 et 3600" % nom)
 
+    ecrans_ids = []
     for i, s in enumerate(brut.get("ecrans", []) or []):
         if not isinstance(s, dict) or not _ID.match(str(s.get("id", ""))) or not str(s.get("libelle", "")).strip():
             e.append("ecrans[%d] : « id » et « libelle » obligatoires" % i)
+        else:
+            ecrans_ids.append(s["id"])
+
+    menus = [x for x in (brut.get("menus", []) or []) if isinstance(x, dict)]
+    menu_ids, parents = [], {}
+    for i, mn in enumerate(brut.get("menus", []) or []):
+        nom = "menus[%d]" % i
+        if not isinstance(mn, dict) or not _ID.match(str(mn.get("id", ""))):
+            e.append("%s.id : identifiant invalide" % nom)
+            continue
+        if mn["id"] in menu_ids:
+            e.append("%s.id : « %s » est déclaré deux fois" % (nom, mn["id"]))
+        menu_ids.append(mn["id"])
+        nom = "menu « %s »" % mn["id"]
+        if not str(mn.get("libelle", "")).strip():
+            e.append("%s : libellé obligatoire" % nom)
+        if mn.get("ecran") and mn["ecran"] not in ecrans_ids:
+            e.append("%s.ecran : « %s » n'est pas un écran de ce module ([[ecrans]])" % (nom, mn["ecran"]))
+        if mn.get("role", "utilisateur") not in ROLES_MENU:
+            e.append("%s.role : %s" % (nom, " | ".join(ROLES_MENU)))
+        if mn.get("badge", "") not in BADGES_MENU:
+            e.append("%s.badge : %s" % (nom, " | ".join(x or "(aucun)" for x in BADGES_MENU)))
+        o = mn.get("ordre", 100)
+        if not isinstance(o, int) or isinstance(o, bool) or not 0 <= o <= 9999:
+            e.append("%s.ordre : entier entre 0 et 9999" % nom)
+        p = mn.get("parent", "")
+        if p and not re.match(r"^[a-z][a-z0-9_]*(:[a-z][a-z0-9_]*)?$", str(p)):
+            e.append("%s.parent : un menu de ce module, ou « module:menu »" % nom)
+        parents[mn["id"]] = p
+    for mid_, p in parents.items():
+        if p and ":" not in p and p not in menu_ids:
+            e.append("menu « %s ».parent : « %s » n'est pas un menu de ce module" % (mid_, p))
+    for depart in menu_ids:                          # un menu ne peut pas être son propre ancêtre
+        vu, cur = set(), depart
+        while cur and ":" not in str(cur) and cur in parents:
+            if cur in vu:
+                e.append("menu « %s » : boucle de parents" % depart)
+                break
+            vu.add(cur)
+            cur = parents[cur]
 
     ins = brut.get("installation", {}) or {}
     for champ in ("script", "verification", "retrait", "migrations"):
@@ -331,12 +401,16 @@ def construire(brut: dict, source="") -> Manifeste:
         permissions=Permissions(bool((brut.get("permissions") or {}).get("espace_utilisateur", False)),
                                 tuple((brut.get("permissions") or {}).get("reseau", ())),
                                 tuple((brut.get("permissions") or {}).get("ecritures", ())),
-                                tuple((brut.get("permissions") or {}).get("privileges", ()))),
+                                tuple((brut.get("permissions") or {}).get("privileges", ())),
+                                bool((brut.get("permissions") or {}).get("introspection", False))),
         objets=tuple(Objet(o["type"], o["libelle"]) for o in brut.get("objets", []) or []),
         emet=tuple(ev.get("emet", ())), ecoute=tuple(ev.get("ecoute", ())), capacites=caps,
         detecteurs=tuple(Detecteur(d["id"], d.get("libelle", d["id"]), d["frequence_s"], d.get("capacite", "")) for d in brut.get("detecteurs", []) or []),
-        moteurs=tuple(Moteur(m["id"], m["libelle"], m["mode"], m.get("toutes_les_s", 0), m.get("sur", ""), m.get("duree_max_s", 60))
+        moteurs=tuple(Moteur(m["id"], m["libelle"], m["mode"], m.get("toutes_les_s", 0),
+                             tuple([m["sur"]] if isinstance(m.get("sur"), str) else (m.get("sur") or ())), m.get("duree_max_s", 60))
                       for m in brut.get("moteurs", []) or []),
+        menus=tuple(Menu(x["id"], x["libelle"], x.get("ecran", ""), x.get("parent", ""), x.get("ordre", 100), x.get("role", "utilisateur"),
+                         x.get("icone", ""), x.get("badge", "")) for x in brut.get("menus", []) or []),
         ecrans=tuple(Ecran(s["id"], s["libelle"], s.get("domaine", "")) for s in brut.get("ecrans", []) or []),
         installation=Installation(ins.get("script", ""), ins.get("verification", ""), ins.get("retrait", ""), ins.get("migrations", "")),
         source=str(source),
@@ -397,7 +471,7 @@ def verifier_ensemble(manifestes) -> list:
             if r not in par_id:
                 e.append("« %s » requiert « %s », qui n'est pas installé" % (m.id, r))
         for x in m.ecoute:
-            if x not in emis:
+            if x not in emis and not x.startswith(EVENEMENTS_DU_NOYAU):
                 e.append("« %s » écoute « %s », qu'aucun module n'émet" % (m.id, x))
     return e
 

@@ -1,7 +1,7 @@
 [module]
 id = "sentinelle"
 nom = "Sentinelle du disque"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "Mesure l'occupation du disque racine et ouvre un constat au-delà du seuil. Exemple de greffe à chaud : un moteur, un détecteur, un type d'objet, des événements."
 confiance = "local"
@@ -24,6 +24,20 @@ toutes_les_s = 20
 id = "disque_plein"
 libelle = "Disque occupé à plus de 90 %"
 frequence_s = 30
+
+[[ecrans]]
+id = "vue_disque"
+libelle = "Disque"
+domaine = "supervision"
+
+[[menus]]
+id = "disque"
+libelle = "Disque"
+ecran = "vue_disque"
+ordre = 10
+role = "admin"
+icone = "hard-drive"
+badge = "constats"
 
 [installation]
 script = "installer.sh"

@@ -9,6 +9,7 @@ le cycle : percevoir (les détecteurs), décider (le palier de la capacité), ag
     python main.py ordre [id ...]    ordre d'installation des modules demandés et de leurs dépendances (un id par ligne)
     python main.py versions          « id version » de chaque module (pour deploy.sh)
     python main.py etat              résume le noyau sans rien écrire (modules, objets, constats, paliers)
+    python main.py agir CAPACITE ...  lance une capacité à la main (voie humaine) et imprime le résultat
     python main.py paquet <cmd>      construire / vérifier / extraire un paquet de module (.cmod, signé)
     python main.py module <cmd>      l'état des modules : liste | activer ID | desactiver ID | installe ID | oublier ID | actif ID
     python main.py moteurs           les moteurs déclarés par les modules actifs, avec leur état
@@ -85,7 +86,8 @@ class Noyau:
         return r
 
     def _fabriquer(self, m):
-        ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs)
+        ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
+                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs})
         self.executeur.contextes[m.id] = ctx
         return ctx
 
@@ -116,6 +118,14 @@ class Noyau:
         if self.gerer and self._amorce and not self.etat_modules.tous():
             for mid in self._amorce() or []:
                 self.etat_modules.poser(mid, installe=True, actif=True, par="amorce")
+
+    def _manifestes_actifs(self) -> list:
+        connus, _ = self._connus()
+        return [connus[i][0] for i in sorted(self._branches) if i in connus]
+
+    def _compteurs(self, mid: str) -> dict:
+        n = self.base.lire("SELECT COUNT(*) AS n FROM constats WHERE module=? AND etat='ouvert'", (mid,))[0]["n"]
+        return {"constats": n, "moteurs": sum(1 for m in self.etat_moteurs() if m["cle"].startswith(mid + ".") and m["etat"] != "actif")}
 
     def _connus(self):
         ms, refus = chargeur.decouvrir_tout(self._racines())
@@ -306,7 +316,8 @@ class Noyau:
             if (module, mo.id) in self._cables or mo.mode != "evenement":
                 continue
             self._cables.add((module, mo.id))
-            self.bus.ecouter(mo.sur, lambda ev, m=module, mo=mo, fn=fn: self._lancer_moteur(m, mo, fn, ev), module)
+            for type_evenement in mo.sur:
+                self.bus.ecouter(type_evenement, lambda ev, m=module, mo=mo, fn=fn: self._lancer_moteur(m, mo, fn, ev), module)
 
     def _lancer_moteur(self, module: str, mo, fn, ev=None) -> dict:
         """Exécute un moteur dans un fil surveillé : durée mesurée, jamais deux fois en même temps, figé s'il dépasse
@@ -369,7 +380,7 @@ class Noyau:
         for module, mo, fn in self.moteurs:
             if "%s.%s" % (module, mo.id) == cle:
                 if mo.mode == "evenement":
-                    return {"statut": "refuse", "raison": "ce moteur se réveille sur « %s »" % mo.sur}
+                    return {"statut": "refuse", "raison": "ce moteur se réveille sur « %s »" % " », « ".join(mo.sur)}
                 self.bus.emettre("moteur.demande", source=module, acteur=acteur, objet=("moteur", cle), donnees={"moteur": mo.id})
                 self._moteurs_suspendus.discard((module, mo.id))
                 return self._lancer_moteur(module, mo, fn)
@@ -381,7 +392,7 @@ class Noyau:
         for module, mo, _ in self.moteurs:
             cle = "%s.%s" % (module, mo.id)
             e = etat.get(cle, {})
-            sortie.append({"cle": cle, "mode": mo.mode, "toutes_les_s": mo.toutes_les_s, "sur": mo.sur, "executions": e.get("executions", 0),
+            sortie.append({"cle": cle, "mode": mo.mode, "toutes_les_s": mo.toutes_les_s, "sur": ", ".join(mo.sur), "executions": e.get("executions", 0),
                            "echecs": e.get("echecs", 0), "derniere": e.get("derniere"), "duree": e.get("duree"), "erreur": e.get("erreur", ""),
                            "etat": "suspendu" if (module, mo.id) in self._moteurs_suspendus else ("fige" if (module, mo.id) in self._figes else "actif")})
         return sortie
@@ -642,6 +653,46 @@ def commande_module(argv) -> int:
     return 2
 
 
+def commande_agir(argv) -> int:
+    """python main.py agir CAPACITE [cle=valeur ...] [--acteur humain|compte|cassandra|itare] [--essai]
+    Lance une capacité à la main et imprime le résultat en JSON. Les valeurs sont lues comme du JSON (5, true, "x") sinon comme du texte."""
+    import json
+    if len(argv) < 3:
+        print("agir CAPACITE [cle=valeur ...] [--acteur A] [--essai]", file=sys.stderr)
+        return 2
+    cle, args, acteur, essai = argv[2], {}, "humain", False
+    reste = argv[3:]
+    i = 0
+    while i < len(reste):
+        a = reste[i]
+        if a == "--acteur" and i + 1 < len(reste):
+            acteur = reste[i + 1]
+            i += 2
+            continue
+        if a == "--essai":
+            essai = True
+        elif "=" in a and not a.startswith("--"):
+            k, v = a.split("=", 1)
+            try:
+                args[k] = json.loads(v)
+            except ValueError:
+                args[k] = v
+        else:
+            print("argument illisible : %s" % a, file=sys.stderr)
+            return 2
+        i += 1
+    gerer = bool(os.environ.get("CASSANDRA_CONFIG"))
+    try:
+        n = Noyau(_donnees(), actifs=None, extensions=_extensions(), gerer_modules=gerer, amorce=_actifs)
+        n.brancher(annoncer=False)
+    except manifeste.ManifesteInvalide as ex:
+        print(ex, file=sys.stderr)
+        return 1
+    r = n.executeur.executer(cle, acteur, args, essai=essai)
+    print(json.dumps(r, ensure_ascii=False, indent=2, default=str))
+    return 0 if r["statut"] in ("faite", "simulee", "racontee") else 1
+
+
 def _cles() -> Path:
     """Les clés de confiance des éditeurs : $CASSANDRA_CONFIG/cles/<editeur>.pub."""
     c = os.environ.get("CASSANDRA_CONFIG")
@@ -695,6 +746,8 @@ def main(argv) -> int:
         return commande_module(argv)
     if commande == "paquet":
         return commande_paquet(argv)
+    if commande == "agir":
+        return commande_agir(argv)
     if commande in ("etat", "tick", "demarrer", "moteurs"):
         try:
             gerer = bool(os.environ.get("CASSANDRA_CONFIG"))     # en exploitation : l'état des modules vit dans la base
@@ -716,7 +769,7 @@ def main(argv) -> int:
         else:
             n.boucle()
         return 0
-    print("commande inconnue : %s (verifier | ordre | versions | module | paquet | etat | moteurs | tick | demarrer)" % commande, file=sys.stderr)
+    print("commande inconnue : %s (verifier | ordre | versions | module | paquet | agir | etat | moteurs | tick | demarrer)" % commande, file=sys.stderr)
     return 2
 
 

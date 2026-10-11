@@ -1,7 +1,7 @@
 [module]
 id = "dns"
 nom = "Domaines et DNS"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "Relève les zones suivies, garde une référence versionnée et corrige les enregistrements dérivés de l'adresse publique."
 confiance = "interne"
@@ -43,3 +43,11 @@ capacite = "corriger_enregistrement"
 id = "vue_domaine"
 libelle = "Domaines"
 domaine = "reseau"
+
+[[menus]]
+id = "domaines"
+libelle = "Domaines"
+ecran = "vue_domaine"
+ordre = 10
+role = "admin"
+icone = "globe"

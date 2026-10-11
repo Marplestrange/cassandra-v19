@@ -24,13 +24,14 @@ class _Compte(threading.local):
 
 
 class Contexte:
-    def __init__(self, manifeste, bus, registre, catalogue, detecteurs, config=None, moteurs=None):
+    def __init__(self, manifeste, bus, registre, catalogue, detecteurs, config=None, moteurs=None, introspection=None):
         self.manifeste = manifeste
         self.module = manifeste.id
         self.config = dict(config or {})
         self.log = logging.getLogger("module.%s" % manifeste.id)
         self._bus, self._registre, self._catalogue, self._detecteurs = bus, registre, catalogue, detecteurs
         self._moteurs = moteurs if moteurs is not None else []
+        self._intro = introspection or {}
         self._cause = _Fil()
         self._compte = _Compte()
 
@@ -40,6 +41,21 @@ class Contexte:
     def compte(self) -> str:
         """Le compte au nom duquel la capacité en cours s'exécute ('' = commun / infrastructure)."""
         return self._compte.valeur
+
+    # ---- ce que le noyau sait de lui-même (module de menus, de supervision) ----
+    def _exiger_introspection(self) -> None:
+        if not self.manifeste.permissions.introspection:
+            raise PermissionError("le module « %s » n'a pas demandé l'introspection ([permissions] introspection)" % self.module)
+
+    def manifestes_actifs(self) -> list:
+        """Les manifestes des modules branchés, en lecture seule. C'est ainsi que le module de menus assemble l'arbre."""
+        self._exiger_introspection()
+        return self._intro["manifestes"]()
+
+    def compteurs(self, module: str) -> dict:
+        """{'constats': ouverts du module, 'moteurs': ceux à surveiller} : de quoi afficher un badge."""
+        self._exiger_introspection()
+        return self._intro["compteurs"](module)
 
     # ---- disque ----
     def espace(self, utilisateur: str, creer: bool = True):

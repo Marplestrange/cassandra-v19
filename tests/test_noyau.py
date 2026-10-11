@@ -981,7 +981,7 @@ class Paquets(unittest.TestCase):
     def test_un_paquet_signe_se_verifie(self):
         a = self.paquets.construire(self.src, self.priv, self.base / "s.cmod")
         v = self.paquets.verifier(a, self.cles)
-        self.assertEqual((v["id"], v["version"], v["signe"], v["editeur"]), ("sentinelle", "0.1.0", True, "atek"))
+        self.assertEqual((v["id"], v["version"], v["signe"], v["editeur"]), ("sentinelle", "0.1.1", True, "atek"))
 
     def test_la_construction_est_reproductible(self):
         a = self.paquets.construire(self.src, self.priv, self.base / "a.cmod").read_bytes()
@@ -1104,6 +1104,301 @@ class ContratDeStore(unittest.TestCase):
         labo = {m["id"]: m for m in n.catalogue_modules()}["labo"]
         self.assertTrue(labo["permissions"]["espace_utilisateur"])
         self.assertEqual(labo["api"], "1")
+
+
+ALPHA_TOML = """
+[module]
+id = "alpha"
+nom = "Alpha"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Module d'essai pour les menus."
+famille = "reseau"
+
+[[objets]]
+type = "alpha_o"
+libelle = "Un objet"
+
+[[detecteurs]]
+id = "d1"
+libelle = "Un constat à la demande"
+frequence_s = 10
+
+[[ecrans]]
+id = "e1"
+libelle = "Premier"
+
+[[ecrans]]
+id = "e2"
+libelle = "Second"
+
+[[menus]]
+id = "a1"
+libelle = "Premier"
+ecran = "e1"
+ordre = 20
+badge = "constats"
+
+[[menus]]
+id = "a2"
+libelle = "Réservé"
+ecran = "e2"
+ordre = 10
+role = "admin"
+
+[[menus]]
+id = "sous"
+libelle = "Sous-page"
+ecran = "e2"
+parent = "a1"
+ordre = 1
+
+[[menus]]
+id = "groupe"
+libelle = "Groupe vide"
+"""
+
+ALPHA_PY = """
+def brancher(ctx):
+    def d1(ctx):
+        return [{"objet": ("alpha_o", "x"), "titre": "un constat"}] if ctx.config["etat"]["constat"] else []
+    ctx.detecteur("d1", d1)
+"""
+
+BETA_TOML = """
+[module]
+id = "beta"
+nom = "Beta"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Module d'essai : un enfant d'une entrée d'un autre module."
+famille = "travail"
+requiert = ["alpha"]
+
+[[objets]]
+type = "beta_o"
+libelle = "Un objet"
+
+[[ecrans]]
+id = "e1"
+libelle = "Page"
+
+[[menus]]
+id = "b1"
+libelle = "Enfant d'Alpha"
+ecran = "e1"
+parent = "alpha:a1"
+ordre = 5
+
+[[menus]]
+id = "b2"
+libelle = "Autonome"
+ecran = "e1"
+ordre = 1
+"""
+
+
+def monde_menus():
+    import shutil
+    tmp = tempfile.TemporaryDirectory()
+    base = Path(tmp.name)
+    mods = base / "modules"
+    shutil.copytree(RACINE / "modules" / "menus", mods / "menus")
+    ecrire_module(mods, "alpha", ALPHA_TOML, ALPHA_PY)
+    ecrire_module(mods, "beta", BETA_TOML, "def brancher(ctx):\n    pass\n")
+    etat = {"constat": False}
+    n = moteur.Noyau(base / "d", mods, {"alpha": {"etat": etat}}, gerer_modules=True)
+    n.brancher()
+    return tmp, n, etat
+
+
+def noms(arbre):
+    """L'arbre en texte lisible : « famille > entrée (enfant, ...) »."""
+    def un(x):
+        return x["libelle"] + ("(" + ",".join(un(e) for e in x["enfants"]) + ")" if x.get("enfants") else "")
+    return [un(f) for f in arbre]
+
+
+class MenusAssembles(unittest.TestCase):
+    def setUp(self):
+        self.tmp, self.n, self.etat = monde_menus()
+        self.addCleanup(self.tmp.cleanup)
+        self.n.activer("menus")
+        self.n.activer("beta")                       # active aussi alpha
+
+    def menu(self, role="utilisateur", compte=""):
+        r = self.n.executeur.executer("menus.lire_menu", "humain", {"role": role, "compte": compte})
+        self.assertEqual(r["statut"], "faite")
+        return r["resultat"]
+
+    def perso(self, entree, compte="", **kw):
+        return self.n.executeur.executer("menus.personnaliser_entree", "humain", dict(entree=entree, compte=compte, **kw))
+
+    def evts(self, t):
+        return [e for e in self.n.bus.recents(portee=TOUT, limite=800) if e["type"] == t]
+
+    def test_les_modules_actifs_composent_l_arbre_par_famille(self):
+        a = self.menu("admin")["arbre"]
+        self.assertEqual([f["famille"] for f in a], ["socle", "reseau", "travail"])      # l'ordre des familles est celui du noyau
+        self.assertEqual(noms(a), ["Socle(Modules,Menus)", "Réseau(Réservé,Premier(Sous-page,Enfant d'Alpha))", "Travail(Autonome)"])
+
+    def test_le_menu_se_filtre_par_role(self):
+        self.assertEqual(noms(self.menu("utilisateur")["arbre"]), ["Réseau(Premier(Sous-page,Enfant d'Alpha))", "Travail(Autonome)"])
+
+    def test_une_entree_sans_page_ni_enfant_disparait(self):
+        self.assertNotIn("Groupe vide", " ".join(noms(self.menu("admin")["arbre"])))
+
+    def test_desactiver_un_module_retire_ses_entrees_a_chaud(self):
+        etag = self.menu()["etag"]
+        self.n.desactiver("beta")
+        m = self.menu("admin")
+        self.assertNotEqual(m["etag"], etag)
+        self.assertEqual(noms(m["arbre"]), ["Socle(Modules,Menus)", "Réseau(Réservé,Premier(Sous-page))"])
+        self.assertGreaterEqual(len(self.evts("menu_arbre.change")), 2)
+
+    def test_un_enfant_dont_le_parent_disparait_remonte_au_premier_niveau(self):
+        self.n.desactiver("alpha", cascade=True)                    # beta part avec alpha
+        self.n.activer("beta", avec_dependances=True)               # revient avec alpha
+        self.n.desactiver("alpha", cascade=True)
+        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Modules,Menus)"])
+
+    def test_activer_un_module_ajoute_ses_entrees_sans_redemarrer(self):
+        self.n.desactiver("alpha", cascade=True)
+        avant = noms(self.menu("admin")["arbre"])
+        self.n.activer("alpha")
+        apres = noms(self.menu("admin")["arbre"])
+        self.assertNotEqual(avant, apres)
+        self.assertIn("Réseau(Réservé,Premier(Sous-page))", apres)
+
+    def test_masquer_une_entree_masque_aussi_ses_enfants(self):
+        self.assertEqual(self.perso("alpha:a1", masque=True)["statut"], "faite")
+        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Modules,Menus)", "Réseau(Réservé)", "Travail(Autonome)"])
+
+    def test_la_personnalisation_d_un_compte_ne_touche_pas_les_autres(self):
+        self.perso("alpha:a1", compte="sandrine@x.fr", libelle="Mon réseau", ordre=0)
+        sandrine = noms(self.menu("utilisateur", "sandrine@x.fr")["arbre"])
+        drisse = noms(self.menu("utilisateur", "drisse@x.fr")["arbre"])
+        self.assertEqual(sandrine[0], "Réseau(Mon réseau(Sous-page,Enfant d'Alpha))")
+        self.assertEqual(drisse[0], "Réseau(Premier(Sous-page,Enfant d'Alpha))")
+
+    def test_la_personnalisation_globale_vaut_pour_tous_et_le_compte_l_emporte(self):
+        self.perso("alpha:a1", libelle="Global")
+        self.perso("alpha:a1", compte="sandrine@x.fr", libelle="Perso")
+        self.assertIn("Réseau(Global(", noms(self.menu("utilisateur", "drisse@x.fr")["arbre"])[0])
+        self.assertIn("Réseau(Perso(", noms(self.menu("utilisateur", "sandrine@x.fr")["arbre"])[0])
+
+    def test_deplacer_une_entree(self):
+        self.perso("beta:b2", parent="alpha:a1", ordre=0)
+        self.assertEqual(noms(self.menu("utilisateur")["arbre"]), ["Réseau(Premier(Autonome,Sous-page,Enfant d'Alpha))"])
+
+    def test_reinitialiser_rend_l_entree_d_origine(self):
+        self.perso("alpha:a1", masque=True)
+        self.perso("alpha:a1", reinitialiser=True)
+        self.assertIn("Premier(", " ".join(noms(self.menu("utilisateur")["arbre"])))
+
+    def test_une_personnalisation_refusee_n_ecrit_rien(self):
+        for mauvais in (dict(entree="inconnue:x", masque=True), dict(entree="alpha:a1", ordre=99999), dict(entree="alpha:a1", parent="alpha:a1"),
+                        dict(entree="alpha:a1", libelle=""), dict(entree="alpha:a1", parent="rien:ici")):
+            r = self.n.executeur.executer("menus.personnaliser_entree", "humain", mauvais)
+            self.assertEqual(r["statut"], "echec", msg=str(mauvais))
+        self.assertEqual(self.n.registre.lister(portee=TOUT, type="menu_perso"), [])
+
+    def test_le_retour_arriere_restaure_la_personnalisation_precedente(self):
+        self.perso("alpha:a1", libelle="Un")
+        self.n.catalogue.regler_palier("menus.personnaliser_entree", "auto")
+        e = self.n.catalogue.get("menus.personnaliser_entree")
+        res = {"id": "global|alpha:a1", "compte": "", "avant": {"entree": "alpha:a1", "libelle": "Un"}, "attendu": {"entree": "alpha:a1", "libelle": "Deux"}}
+        self.n.registre.poser("menus", "menu_perso", "global|alpha:a1", "x", "visible", {"entree": "alpha:a1", "libelle": "Deux"})
+        e.defaire(self.n.executeur.contextes["menus"], res)
+        self.assertEqual(self.n.registre.lire("menu_perso", "global|alpha:a1", portee=TOUT)["donnees"]["libelle"], "Un")
+
+    def test_les_compteurs_suivent_les_constats_ouverts(self):
+        self.etat["constat"] = True
+        self.n.tick(5000)                                           # le détecteur d'Alpha ouvre un constat ; le moteur des badges tourne
+        self.assertEqual(self.menu()["badges"], {"alpha:a1": 1})
+        self.etat["constat"] = False
+        self.n.tick(5100)
+        self.assertEqual(self.menu()["badges"], {})
+
+    def test_le_module_de_menus_ne_se_desactive_pas(self):
+        r = self.n.desactiver("menus")
+        self.assertFalse(r["ok"])
+        self.assertTrue(r["essentiel"])
+
+    def test_l_introspection_se_demande(self):
+        ctx = self.n.executeur.contextes["alpha"]                   # Alpha n'a pas demandé l'introspection
+        with self.assertRaises(PermissionError):
+            ctx.manifestes_actifs()
+        with self.assertRaises(PermissionError):
+            ctx.compteurs("alpha")
+
+    def test_le_noyau_en_marche_voit_un_module_active_ailleurs(self):
+        cli = moteur.Noyau(Path(self.tmp.name) / "d", Path(self.tmp.name) / "modules", {}, gerer_modules=True)
+        cli.desactiver("beta", appliquer=False)                     # comme `main.py module desactiver`
+        self.n._surveiller()                                        # une passe de la boucle du service
+        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Modules,Menus)", "Réseau(Réservé,Premier(Sous-page))"])
+
+
+class ContratDesMenus(unittest.TestCase):
+    def brut(self):
+        import tomllib
+        return tomllib.loads(ALPHA_TOML)
+
+    def test_le_manifeste_d_exemple_est_valide(self):
+        self.assertEqual(mf.valider(self.brut()), [])
+
+    def test_les_defauts_d_un_menu_sont_dits(self):
+        cas = [({"ecran": "inexistant"}, "ecran"), ({"role": "dieu"}, "role"), ({"badge": "x"}, "badge"), ({"ordre": -1}, "ordre"),
+               ({"parent": "rien"}, "parent"), ({"parent": "Mauvais Nom"}, "parent")]
+        for modif, mot in cas:
+            b = self.brut()
+            b["menus"][0].update(modif)
+            self.assertTrue(any(mot in x for x in mf.valider(b)), msg=str(modif))
+
+    def test_une_boucle_de_parents_est_refusee(self):
+        b = self.brut()
+        b["menus"][0]["parent"] = "sous"                           # a1 -> sous -> a1
+        self.assertTrue(any("boucle" in x for x in mf.valider(b)))
+
+    def test_un_type_d_objet_ne_peut_pas_porter_un_nom_du_noyau(self):
+        b = self.brut()
+        b["objets"][0]["type"] = "noyau"
+        self.assertTrue(any("réservé" in x for x in mf.valider(b)))
+
+    def test_un_module_peut_ecouter_les_evenements_du_noyau(self):
+        import tomllib
+        b = tomllib.loads(VEILLE_TOML % {"confiance": ""})
+        b["evenements"]["ecoute"] = ["jouet.casse", "noyau.greffe"]
+        b["moteurs"][1]["sur"] = ["jouet.casse", "noyau.greffe"]
+        m = mf.construire(b)
+        self.assertEqual(m.moteurs[1].sur, ("jouet.casse", "noyau.greffe"))
+        self.assertEqual(mf.verifier_ensemble([m]), ["« veille » requiert « labo », qui n'est pas installé", "« veille » écoute « jouet.casse », qu'aucun module n'émet"])
+
+
+class LigneDeCommandeAgir(unittest.TestCase):
+    def test_agir_lance_une_capacite_et_rend_du_json(self):
+        import contextlib, io as _io, json, os
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        ancien = {k: os.environ.get(k) for k in ("CASSANDRA_DONNEES", "CASSANDRA_CONFIG", "CASSANDRA_EXTENSIONS")}
+        os.environ["CASSANDRA_DONNEES"] = tmp.name
+        os.environ.pop("CASSANDRA_CONFIG", None)
+        os.environ.pop("CASSANDRA_EXTENSIONS", None)
+        try:
+            sortie = _io.StringIO()
+            with contextlib.redirect_stdout(sortie):
+                rc = moteur.commande_agir(["main.py", "agir", "menus.lire_menu", "role=admin"])
+            self.assertEqual(rc, 0)
+            r = json.loads(sortie.getvalue())
+            self.assertEqual((r["statut"], r["resultat"]["arbre"]), ("faite", []))     # rien d'assemblé tant que le service n'a pas tourné
+            with contextlib.redirect_stdout(_io.StringIO()):
+                self.assertEqual(moteur.commande_agir(["main.py", "agir", "menus.inconnue"]), 1)
+        finally:
+            for k, v in ancien.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
 
 
 if __name__ == "__main__":

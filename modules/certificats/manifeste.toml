@@ -1,7 +1,7 @@
 [module]
 id = "certificats"
 nom = "Certificats"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "Surveille l'expiration des certificats TLS, les renouvelle et prouve le renouvellement. Module pilote de la V19."
 confiance = "interne"
@@ -41,6 +41,15 @@ capacite = "renouveler_certificat"
 id = "vue_certificats"
 libelle = "Certificats"
 domaine = "securite"
+
+[[menus]]
+id = "certificats"
+libelle = "Certificats"
+ecran = "vue_certificats"
+ordre = 20
+role = "admin"
+icone = "lock"
+badge = "constats"
 
 [installation]
 script = "installer.sh"
