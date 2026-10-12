@@ -1,0 +1,107 @@
+[module]
+id = "sites"
+nom = "Sites"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "État des sites, WordPress, accords, rapports, et suivi de la veille des domaines."
+confiance = "interne"
+famille = "gestion"
+requiert = ["droits", "comptes"]
+
+[[droits]]
+id = "gerer"
+libelle = "Gérer et voir les sites de tous les comptes"
+sensible = true
+
+[[objets]]
+type = "site"
+libelle = "Un site hébergé ou déclaré"
+
+[evenements]
+emet = ["site.declare", "site.retire", "site.attribue", "site.demande", "site.accord"]
+ecoute = []
+
+[[reglages]]
+id = "site_watch_enabled"
+libelle = "Activer la sonde d'état des sites"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "site_retention_days"
+libelle = "Rétention de l'historique de statut (jours)"
+type = "entier"
+defaut = 90
+minimum = 7
+
+[[moteurs]]
+id = "sonde"
+libelle = "Sonde l'état HTTP et SSL des sites"
+mode = "periodique"
+toutes_les_s = 300
+duree_max_s = 180
+
+[[detecteurs]]
+id = "panne"
+libelle = "Détecte les sites qui ne répondent plus ou renvoient une erreur"
+frequence_s = 300
+
+[[capacites]]
+id = "vue"
+libelle = "Vue d'ensemble des sites de la portée du compte"
+risque = "lecture"
+
+[[capacites]]
+id = "fiche"
+libelle = "Fiche détaillée d'un site (statut, historique, liens)"
+risque = "lecture"
+
+[[capacites]]
+id = "declarer"
+libelle = "Déclarer un site externe (hors panneau) pour lancer sa veille"
+risque = "faible"
+perimetre = ["sites_declares : ajout d'une ligne"]
+preuve = "site présent dans sites_declares sous ce compte"
+retour = "supprimer le site de sites_declares"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "retirer"
+libelle = "Retirer un site déclaré (cesse la veille)"
+risque = "faible"
+perimetre = ["sites_declares : retrait d'une ligne"]
+preuve = "site absent de sites_declares"
+retour = "restaurer le site dans sites_declares"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "attribuer"
+libelle = "Attribuer un site déclaré à un autre compte"
+risque = "faible"
+droit = "gerer"
+perimetre = ["sites_declares : modification du compte propriétaire"]
+preuve = "le site appartient au nouveau compte dans sites_declares"
+retour = "rétablir l'ancien compte"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "demander"
+libelle = "Demander l'adossement (migration vers le panneau) d'un site déclaré"
+risque = "faible"
+perimetre = ["site_demandes : création d'une ligne"]
+preuve = "la demande existe avec le statut 'ouverte'"
+retour = "supprimer la demande"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "databases"
+libelle = "Lister les bases de données d'un site"
+risque = "lecture"
+
+[permissions]
+stockage = true
+droits = true

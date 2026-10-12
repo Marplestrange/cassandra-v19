@@ -1,0 +1,87 @@
+[module]
+id = "coffre"
+nom = "Coffre et Sécurité"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Coffre-fort, secrets, clés, audit des accès et contrôles de sécurité globaux (pare-feu, serveurs, etc.)."
+confiance = "interne"
+famille = "securite"
+essentiel = true
+requiert = ["droits"]
+
+[[droits]]
+id = "gerer"
+libelle = "Gérer les secrets, les clés et l'infrastructure de sécurité"
+sensible = true
+
+[[reglages]]
+id = "vault_url"
+libelle = "URL du serveur de coffre-fort"
+type = "texte"
+defaut = ""
+portee = "global"
+
+[[objets]]
+type = "secret"
+libelle = "Un secret du coffre-fort"
+
+[[objets]]
+type = "serveur"
+libelle = "Un serveur rattaché (multiserver)"
+
+[evenements]
+emet = ["secret.cree", "secret.supprime", "serveur.ajoute", "serveur.supprime"]
+ecoute = []
+
+[[moteurs]]
+id = "reconcile"
+libelle = "Boucle de réconciliation des accès au coffre"
+mode = "periodique"
+toutes_les_s = 3600
+duree_max_s = 60
+
+[[detecteurs]]
+id = "securite"
+libelle = "Audit continu de la sécurité (pare-feu, Nginx, SSH, fail2ban)"
+frequence_s = 300
+
+[[capacites]]
+id = "lister_secrets"
+libelle = "Lister les secrets du coffre (sans les valeurs sensibles)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "creer_secret"
+libelle = "Créer un secret complet"
+risque = "eleve"
+droit = "gerer"
+masque = ["valeurs"]
+perimetre = ["le coffre-fort distant"]
+preuve = "vérifier l'existence du secret créé"
+retour = "supprimer le secret"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "ms_ajouter"
+libelle = "Ajouter un serveur à la grappe (multiserver)"
+risque = "moyen"
+droit = "gerer"
+masque = ["token"]
+perimetre = ["la table multiserver_tokens"]
+preuve = "relire l'enregistrement"
+retour = "remettre l'état d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "coffre_lire"
+libelle = "Lire un fichier via SFTP avec gestion des volumes et verrous"
+risque = "lecture"
+droit = "gerer"
+
+[permissions]
+stockage = true
+droits = true
+introspection = true

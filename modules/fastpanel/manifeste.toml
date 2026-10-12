@@ -1,0 +1,144 @@
+[module]
+id = "fastpanel"
+nom = "FastPanel"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Le pont FastPanel : lecture de l'état du serveur d'hébergement (sites, bases, sauvegardes, services) et pilotage de base."
+confiance = "interne"
+famille = "hebergement"
+requiert = ["droits", "comptes"]
+
+[[droits]]
+id = "voir_tout"
+libelle = "Voir tous les sites et bases du serveur (sans ce droit, un compte ne voit que ce qui se rattache à ses sites)"
+sensible = true
+
+[[droits]]
+id = "piloter"
+libelle = "Modifier l'hébergement (créer/supprimer des bases, des sites, lancer des sauvegardes)"
+sensible = true
+
+[[reglages]]
+id = "fp_api_url"
+libelle = "URL de l'API FastPanel"
+type = "texte"
+defaut = "http://127.0.0.1:5501"
+portee = "global"
+
+[[reglages]]
+id = "fp_db_path"
+libelle = "Chemin de la base SQLite de FastPanel"
+type = "texte"
+defaut = "/usr/local/fastpanel2/app/db/fastpanel2.db"
+portee = "global"
+
+[[reglages]]
+id = "services_vitaux"
+libelle = "Services vitaux protégés d'un arrêt distrait"
+type = "texte"
+defaut = "nginx, ssh, sshd, cassandra, fastpanel2, systemd-journald"
+portee = "global"
+
+[[objets]]
+type = "fp_site"
+libelle = "Site web hébergé"
+
+[[objets]]
+type = "base"
+libelle = "Base de données"
+
+[evenements]
+emet = [
+  "fp_site.infecte",
+  "fp_site.sain",
+  "fastpanel_service.arrete",
+  "fastpanel_service.demarre",
+  "fastpanel_sauvegarde.absente",
+  "fastpanel_sauvegarde.perimee",
+  "fastpanel_php.obsolete",
+  "fastpanel_certificat.echec_renouvellement"
+]
+
+[[detecteurs]]
+id = "analyses"
+libelle = "Surveille les analyses antivirus des sites pour signaler les infections"
+frequence_s = 3600
+
+[[detecteurs]]
+id = "services"
+libelle = "Surveille l'état des services vitaux"
+frequence_s = 600
+
+[[detecteurs]]
+id = "sauvegardes"
+libelle = "Surveille la fraîcheur des sauvegardes des sites"
+frequence_s = 3600
+
+[[detecteurs]]
+id = "php"
+libelle = "Surveille la fin de support des versions PHP actives"
+frequence_s = 86400
+
+[[moteurs]]
+id = "liens_watch"
+libelle = "Signale les changements de sites associés aux comptes FastPanel"
+mode = "periodique"
+toutes_les_s = 3600
+duree_max_s = 60
+
+[[capacites]]
+id = "lister_sites"
+libelle = "Liste les sites d'hébergement"
+risque = "lecture"
+
+[[capacites]]
+id = "lister_bases"
+libelle = "Liste les bases de données"
+risque = "lecture"
+
+[[capacites]]
+id = "lister_comptes"
+libelle = "Liste les utilisateurs FastPanel"
+risque = "lecture"
+
+[[capacites]]
+id = "creer_base"
+libelle = "Créer une base de données"
+risque = "moyen"
+droit = "piloter"
+perimetre = ["La base de données et l'utilisateur MySQL associés"]
+preuve = "Relire la liste des bases pour y trouver la nouvelle"
+retour = "Supprimer la base de données créée"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "supprimer_base"
+libelle = "Supprimer une base de données"
+risque = "eleve"
+droit = "piloter"
+perimetre = ["La base de données supprimée"]
+preuve = "Constater l'absence de la base dans la liste"
+retour = "Restaurer depuis une sauvegarde (impossible à la volée)"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[permissions]
+stockage = true
+droits = true
+
+[[objets]]
+type = "fastpanel_service"
+libelle = "fastpanel service (événements du module)"
+
+[[objets]]
+type = "fastpanel_sauvegarde"
+libelle = "fastpanel sauvegarde (événements du module)"
+
+[[objets]]
+type = "fastpanel_php"
+libelle = "fastpanel php (événements du module)"
+
+[[objets]]
+type = "fastpanel_certificat"
+libelle = "fastpanel certificat (événements du module)"

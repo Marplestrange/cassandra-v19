@@ -21,6 +21,47 @@ def lf(p):
     p.write_bytes(b)
 
 
+def corriger_manifeste(mid, texte, code):
+    """Les défauts MÉCANIQUES et sans ambiguïté d'un brouillon : on les corrige et on les dit.
+      - un risque élevé n'atteint pas « maitre » ;
+      - un détecteur ne propose que la capacité de son propre module ;
+      - un événement émis doit commencer par un type d'objet possédé : le préfixe manquant devient « <module>_<préfixe> », déclaré comme objet."""
+    blocs = re.split(r"(?=\n\[\[)", texte)
+    caps = {m.group(1) for m in re.finditer(r'\[\[capacites\]\]\s*\nid = "([a-z0-9_]+)"', texte)}
+    out = []
+    for b in blocs:
+        if b.lstrip().startswith("[[capacites]]") and 'risque = "eleve"' in b and '"maitre"' in b:
+            b = re.sub(r',\s*"maitre"|"maitre"\s*,?\s*', "", b)
+            print("palier maitre retiré d'un risque élevé")
+        if b.lstrip().startswith("[[detecteurs]]"):
+            m = re.search(r'\ncapacite = "([^"]*)"', b)
+            if m and m.group(1) not in caps:
+                b = b.replace(m.group(0), "")
+                print("détecteur : capacité « %s » retirée (pas de ce module)" % m.group(1))
+        out.append(b)
+    texte = "".join(out)
+    possedes = set(re.findall(r'\[\[objets\]\]\s*\ntype = "([a-z0-9_]+)"', texte))
+    m = re.search(r"emet = \[([^\]]*)\]", texte)
+    if m:
+        for ev in re.findall(r'"([a-z0-9_]+\.[a-z0-9_]+)"', m.group(1)):
+            pre = ev.split(".")[0]
+            if pre not in possedes:
+                nouveau = pre if pre.startswith(mid + "_") else "%s_%s" % (mid, pre)
+                texte = texte.replace('"%s.' % pre, '"%s.' % nouveau)
+                code = code.replace('"%s.' % pre, '"%s.' % nouveau)
+                if nouveau not in possedes:
+                    texte += '\n[[objets]]\ntype = "%s"\nlibelle = "%s (événements du module)"\n' % (nouveau, nouveau.replace("_", " "))
+                    possedes.add(nouveau)
+                print("événement « %s » -> « %s.… »" % (pre, nouveau))
+    m = re.search(r"ecoute = \[([^\]]*)\]", texte)
+    if m:
+        for ev in re.findall(r'"([a-z0-9_]+\.[a-z0-9_]+)"', m.group(1)):
+            if ev.split(".")[0] in possedes:
+                texte = texte.replace('"%s", ' % ev, "").replace(', "%s"' % ev, "").replace('"%s"' % ev, "")
+                print("écoute de ses propres événements retirée : %s" % ev)
+    return texte, code
+
+
 def main(mid):
     d = RACINE / ".porte" / mid
     man = d / "modules" / mid / "manifeste.toml"
@@ -31,7 +72,10 @@ def main(mid):
     for r in sorted(lus - declares):
         texte += '\n[[reglages]]\nid = "%s"\nlibelle = "%s"\n' % (r, r.replace("_", " "))
         print("réglage déclaré : %s" % r)
+    texte, codes = corriger_manifeste(mid, texte, code)
     man.write_text(texte, encoding="utf-8")
+    if codes != code:
+        (d / "modules" / mid / "module.py").write_text(codes, encoding="utf-8")
     mf.charger(man)                                            # lève si le manifeste est invalide
     echecs = []
     test = d / "tests" / ("test_%s.py" % mid)
