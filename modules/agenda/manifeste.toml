@@ -1,0 +1,167 @@
+[module]
+id = "agenda"
+nom = "Agenda"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "L'agenda d'un compte : événements (récurrences, alarme, liens vers ce qu'ils concernent, journal, préparation), rappels, import et export iCalendar, lecture de son serveur CalDAV, et la vue temporelle unique qui rassemble événements, tâches datées, rappels et jalons des projets. Il est à la personne : l'administrateur ne le voit pas."
+confiance = "interne"
+famille = "gestion"
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[objets]]
+type = "evenement"
+libelle = "Un événement"
+
+[[objets]]
+type = "rappel"
+libelle = "Un rappel"
+
+[evenements]
+emet = ["evenement.cree", "rappel.cree"]
+
+[[reglages]]
+id = "caldav_url"
+libelle = "Adresse de ma collection CalDAV (http:// ou https://)"
+portee = "compte"
+
+[[reglages]]
+id = "caldav_identifiant"
+libelle = "Identifiant CalDAV"
+portee = "compte"
+
+[[reglages]]
+id = "caldav_mot_de_passe"
+libelle = "Mot de passe CalDAV"
+type = "secret"
+portee = "compte"
+
+[[detecteurs]]
+id = "rappel_echu"
+libelle = "Un rappel est arrivé à échéance"
+frequence_s = 60
+
+[[detecteurs]]
+id = "evenement_proche"
+libelle = "Un événement avec alarme commence bientôt"
+frequence_s = 60
+
+[[capacites]]
+id = "evenements"
+libelle = "Mes événements sur une plage (récurrences développées ; sans bornes : aujourd'hui et 90 jours)"
+risque = "lecture"
+
+[[capacites]]
+id = "evenement"
+libelle = "Un événement entier : liens avec leur état vivant, préparation, projet, journal"
+risque = "lecture"
+
+[[capacites]]
+id = "calendrier"
+libelle = "La vue temporelle unique : événements, tâches datées (celles en retard collées à aujourd'hui), rappels, jalons des projets"
+risque = "lecture"
+
+[[capacites]]
+id = "agenda"
+libelle = "Les prochains jours : mes événements, et ceux de mon serveur CalDAV s'il est réglé (une panne CalDAV ne fait pas disparaître l'agenda local)"
+risque = "lecture"
+
+[[capacites]]
+id = "caldav_etat"
+libelle = "Mon serveur CalDAV est-il réglé (jamais le mot de passe)"
+risque = "lecture"
+
+[[capacites]]
+id = "rappels"
+libelle = "Mes rappels"
+risque = "lecture"
+
+[[capacites]]
+id = "exporter_ics"
+libelle = "Mes événements en iCalendar (.ics), récurrences gardées"
+risque = "lecture"
+
+[[capacites]]
+id = "evenement_enregistrer"
+libelle = "Créer un événement, ou le modifier en patch (déplacé, renommé : le journal le dit)"
+risque = "faible"
+perimetre = ["le compte qui agit en est le propriétaire", "un titre et un début obligatoires", "la fin ne précède pas le début", "une récurrence que le moteur sait développer, sinon refusée"]
+preuve = "relire l'événement : titre et dates conformes"
+retour = "supprimer l'événement que cet acte vient de créer, ou remettre ses champs d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "evenement_supprimer"
+libelle = "Supprimer un événement avec ses liens et son journal"
+risque = "moyen"
+perimetre = ["un événement de mon compte"]
+preuve = "l'événement n'existe plus"
+retour = "recréer l'événement, ses liens et son journal depuis la copie gardée dans le résultat de l'acte"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "lien_ajouter"
+libelle = "Rattacher un événement à une note, un message, une URL, un projet, un contact, une tâche, un domaine, un serveur, un certificat, un constat"
+risque = "faible"
+perimetre = ["un événement de mon compte"]
+preuve = "relire le lien"
+retour = "retirer le lien"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "lien_retirer"
+libelle = "Retirer le rattachement d'un événement"
+risque = "faible"
+perimetre = ["un événement de mon compte"]
+preuve = "le lien n'existe plus"
+retour = "remettre le lien"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "rappel_enregistrer"
+libelle = "Créer un rappel, ou le modifier en patch"
+risque = "faible"
+perimetre = ["le compte qui agit en est le propriétaire", "un texte obligatoire", "une échéance lisible (+30m, +2h, +3d, AAAA-MM-JJ[ HH:MM])"]
+preuve = "relire le rappel"
+retour = "supprimer le rappel créé, ou remettre ses champs d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "rappel_statut"
+libelle = "Marquer un rappel fait ou le remettre en attente"
+risque = "faible"
+perimetre = ["un rappel de mon compte"]
+preuve = "relire le rappel"
+retour = "remettre l'ancien statut"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "rappel_supprimer"
+libelle = "Supprimer un rappel"
+risque = "faible"
+perimetre = ["un rappel de mon compte"]
+preuve = "le rappel n'existe plus"
+retour = "recréer le rappel sous le même numéro"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "ical_importer"
+libelle = "Importer un fichier .ics : un réimport met à jour au lieu de dupliquer (par UID), une récurrence non gérée est dite, jamais perdue en silence"
+risque = "moyen"
+perimetre = ["des événements de mon compte seulement", "un UID déjà connu est mis à jour, jamais dupliqué"]
+preuve = "les événements importés existent"
+retour = "supprimer les événements créés et remettre ceux qui ont été mis à jour"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[permissions]
+stockage = true
+lectures = true
+reseau = ["le serveur CalDAV réglé par chaque compte"]
