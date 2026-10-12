@@ -206,10 +206,17 @@ class Passerelle:
         if e is None or "anonyme" not in e.capacite.qui:
             return self._repondre(h, 404, {"erreur": "capacité inconnue ou non publique"})
         corps = self._corps(h)
-        args = corps.get("args") or {}
-        if not isinstance(args, dict):
-            raise ValueError("« args » doit être un objet")
-        args = dict(args, ip=self._ip(h)) if "ip" in self._noms_args(e) else args
+        noms = self._noms_args(e)
+        if "corps_brut" in noms:                                   # un service extérieur (le webhook de Telegram) poste son propre JSON, sans enveloppe « args »
+            args = {"corps_brut": corps}
+        else:
+            args = corps.get("args") or {}
+            if not isinstance(args, dict):
+                raise ValueError("« args » doit être un objet")
+        if "ip" in noms:
+            args["ip"] = self._ip(h)
+        if "en_tetes" in noms:                                     # les en-têtes (le secret d'un webhook), jamais le cookie ni l'autorisation
+            args["en_tetes"] = {k.lower(): v for k, v in h.headers.items() if k.lower() not in ("cookie", "authorization")}
         r = self.noyau.executeur.executer(cle, "anonyme", args, compte="")
         res = r.get("resultat") if r.get("statut") == "faite" else None
         if isinstance(res, dict) and res.get("ouvre_session") and res.get("jeton"):        # une capacité publique qui PROUVE un compte (clé d'accès) ouvre la session
