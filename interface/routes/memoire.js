@@ -5,7 +5,7 @@
   const G = (chemin, cap, opt) => CASS.route("GET", chemin, cap, opt);
   const lecture = (chemin, cap, opt) => { P(chemin, cap, opt); G(chemin, cap, opt); };
 
-  lecture("/api/memoire/etat", "memoire.etat", { args: () => ({}), sortie: (r) => Object.assign(r, { destinataires: ["partage"] }) });
+  lecture("/api/memoire/etat", "memoire.etat", { args: () => ({}), sortie: (r) => ok(Object.assign(r, { destinataires: ["partage"] })) });
   lecture("/api/memoire/liste", "memoire.lister", { args: (r) => ({ statut: r.body.statut || r.query.statut || "actif", categorie: r.body.categorie || r.query.categorie || null, limite: +(r.body.limite || r.query.limite || 200) }), sortie: ok });
   lecture("/api/memoire/chercher", "memoire.chercher", { args: (r) => ({ question: r.body.q || r.query.q || "", statut: r.body.statut || "actif", limite: +(r.body.limite || 40) }), sortie: ok });
   lecture("/api/memoire/fiche", "memoire.lire", { args: (r) => ({ id: +(r.body.id || r.query.id || 0) }), sortie: ok });
