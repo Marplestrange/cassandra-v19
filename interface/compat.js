@@ -107,16 +107,39 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
       return reponse(501, { error: "pas encore porté : " + methode + " " + chemin, success: false, ok: false });
     }
     const req = { params: t.params, query, body: corps, methode, url: chemin, jeton: ((init && init.headers && init.headers["X-Session-Token"]) || jeton()) };
-    const args = t.r.opt.args ? t.r.opt.args(req) : Object.assign({}, query, corps, t.params);
+    const opt = t.r.opt;
+    // Un appel de capacité : rend {http, res}. Une lecture passe par GET (arguments en URL), une écriture par POST.
+    const appeler = async (cap, args, ecrit) => {
+      let r;
+      if (ecrit) r = await v19("POST", "/api/agir/" + cap, { args }, init);
+      else r = await v19("GET", "/api/agir/" + cap + "?" + new URLSearchParams(Object.entries(args).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => [k, typeof v === "object" ? JSON.stringify(v) : String(v)])).toString(), null, init);
+      let res = null;
+      try { res = await r.json(); } catch (e) { res = { statut: "echec", erreur: "réponse illisible du noyau" }; }
+      return { http: r.status, res };
+    };
+    // Pour les routes qui enchaînent plusieurs capacités : agir() rend le résultat, ou lève {statut, message}.
+    const agir = async (cap, args, ecrit) => {
+      const { http, res } = await appeler(cap, args || {}, true);
+      if (http === 401) { const e = new Error("401"); e.statut = 401; throw e; }
+      if (http >= 400 && http < 500 && !(res && res.statut)) { const e = new Error(res.erreur || "refusé"); e.statut = http; throw e; }
+      if (res.statut === "refuse") { const e = new Error(res.raison || res.erreur || "refusé"); e.statut = 403; throw e; }
+      if (res.statut === "echec" || res.statut === "annulee") { const e = new Error(res.erreur || res.raison || "échec"); e.statut = 500; throw e; }
+      return res.resultat;
+    };
+    if (opt.faire) {
+      try { const out = await opt.faire(req, agir); if (out instanceof Response) return out; return reponse(200, out); }
+      catch (e) { if (e.statut === 401) return reponse(401, { error: "401" }); return reponse(e.statut || 400, { ok: false, success: false, error: e.message, reason: e.message }); }
+    }
+    const args = opt.args ? opt.args(req) : Object.assign({}, query, corps, t.params);
     const cap = typeof t.r.capacite === "function" ? t.r.capacite(req) : t.r.capacite;
-    const ecrit = methode !== "GET";
-    let r;
-    if (ecrit) r = await v19("POST", "/api/agir/" + cap, { args }, init);
-    else r = await v19("GET", "/api/agir/" + cap + "?" + new URLSearchParams(Object.entries(args).map(([k, v]) => [k, typeof v === "object" ? JSON.stringify(v) : String(v)])).toString(), null, init);
-    if (r.status === 401) return reponse(401, { error: "401" });
-    let res;
-    try { res = await r.json(); } catch (e) { return reponse(502, { error: "réponse illisible du noyau" }); }
-    if (r.status === 404 || r.status === 405 || r.status === 400) return reponse(r.status, { error: res.erreur || "refusé", success: false });
-    return traduire(res, r.status, t.r.opt);
+    const { http, res } = await appeler(cap, args, true);
+    if (http === 401) return reponse(401, { error: "401" });
+    if ((http === 404 || http === 405 || http === 400) && !(res && res.statut)) return reponse(http, { error: res.erreur || "refusé", success: false });
+    if (opt.binaire && res.statut === "faite") {
+      const b = opt.binaire(res.resultat);
+      const oct = Uint8Array.from(atob(b.b64), (c) => c.charCodeAt(0));
+      return new Response(oct, { status: 200, headers: { "Content-Type": b.type || "application/octet-stream", "Content-Disposition": 'attachment; filename="' + encodeURIComponent(b.nom || "fichier") + '"' } });
+    }
+    return traduire(res, http, opt);
   };
 })();
