@@ -106,7 +106,7 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
       CASS.journal.push(methode + " " + chemin);
       return reponse(501, { error: "pas encore porté : " + methode + " " + chemin, success: false, ok: false });
     }
-    const req = { params: t.params, query, body: corps, methode, url: chemin };
+    const req = { params: t.params, query, body: corps, methode, url: chemin, jeton: ((init && init.headers && init.headers["X-Session-Token"]) || jeton()) };
     const args = t.r.opt.args ? t.r.opt.args(req) : Object.assign({}, query, corps, t.params);
     const cap = typeof t.r.capacite === "function" ? t.r.capacite(req) : t.r.capacite;
     const ecrit = methode !== "GET";
