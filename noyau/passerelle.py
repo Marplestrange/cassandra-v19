@@ -186,11 +186,13 @@ class Passerelle:
         corps = self._corps(h)
         compte, mdp = str(corps.get("compte") or ""), str(corps.get("mot_de_passe") or "")
         r = self.noyau.executeur.executer("comptes.ouvrir_session", "humain",
-                                          {"compte": compte, "mot_de_passe": mdp, "ip": self._ip(h), "agent": h.headers.get("User-Agent", "")},
+                                          {"compte": compte, "mot_de_passe": mdp, "ip": self._ip(h), "agent": h.headers.get("User-Agent", ""), "preuve": corps.get("preuve") if isinstance(corps.get("preuve"), dict) else None},
                                           compte="", interne=True)
         if r["statut"] != "faite":
             return self._repondre(h, 503, {"erreur": "la connexion est indisponible (module des comptes)"})
         res = r["resultat"]
+        if res.get("second_facteur"):
+            return self._repondre(h, 401, {"erreur": res["erreur"], "second_facteur": True, "methodes": res["methodes"], "invite": res["invite"]})
         if not res.get("ok"):
             return self._repondre(h, 429 if res.get("limite") else 401, {"erreur": res.get("erreur", "refusé"), "attente_s": res.get("attente_s", 0)})
         cookie = "%s=%s; Path=/; Max-Age=%d; HttpOnly; SameSite=Strict%s" % (COOKIE, res["jeton"], self.noyau.identite.ttl, "; Secure" if self.cookie_secure else "")
@@ -209,6 +211,12 @@ class Passerelle:
             raise ValueError("« args » doit être un objet")
         args = dict(args, ip=self._ip(h)) if "ip" in self._noms_args(e) else args
         r = self.noyau.executeur.executer(cle, "anonyme", args, compte="")
+        res = r.get("resultat") if r.get("statut") == "faite" else None
+        if isinstance(res, dict) and res.get("ouvre_session") and res.get("jeton"):        # une capacité publique qui PROUVE un compte (clé d'accès) ouvre la session
+            cookie = "%s=%s; Path=/; Max-Age=%d; HttpOnly; SameSite=Strict%s" % (COOKIE, res["jeton"], self.noyau.identite.ttl, "; Secure" if self.cookie_secure else "")
+            return self._repondre(h, 200, {"ok": True, "compte": res["compte"], "jeton": res["jeton"]}, cookie=cookie)
+        if isinstance(res, dict) and res.get("ok") is False:                               # un refus rendu comme résultat (jamais une exception : voir webauthn)
+            return self._repondre(h, 429 if res.get("limite") else 401, {"erreur": res.get("erreur", "refusé")})
         return self._repondre(h, STATUTS_HTTP.get(r["statut"], 200), r)
 
     @staticmethod

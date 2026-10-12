@@ -1,0 +1,105 @@
+[module]
+id = "webauthn"
+nom = "Clé de sécurité"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Les clés de sécurité WebAuthn des comptes : enregistrer et retirer une clé, l'exiger pour entrer (second facteur, avec huit codes de secours), ou entrer sans mot de passe avec une clé d'accès (passkey, code PIN ou empreinte exigés). La signature est vérifiée ici (ES256 et RS256), le défi vit en mémoire et ne sert qu'une fois, l'origine doit être celle du domaine réglé."
+confiance = "interne"
+famille = "securite"
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[objets]]
+type = "cle_de_securite"
+libelle = "Une clé de sécurité enregistrée par un compte"
+
+[[reglages]]
+id = "rp_id"
+libelle = "Domaine de la page de connexion (ex. cassandra.exemple.fr)"
+aide = "Obligatoire : une clé est liée à ce domaine. Le changer rend les clés déjà enregistrées inutilisables."
+
+[[reglages]]
+id = "ttl_defi_s"
+libelle = "Durée de vie d'un défi, en secondes"
+type = "entier"
+defaut = 300
+minimum = 30
+maximum = 900
+
+[evenements]
+emet = ["cle_de_securite.enregistree", "cle_de_securite.retiree", "cle_de_securite.exigee", "cle_de_securite.refusee", "cle_de_securite.passkey", "cle_de_securite.secours_utilise"]
+
+[[capacites]]
+id = "etat"
+libelle = "Mes clés de sécurité : liste (sans clé publique), exigence, codes de secours restants, et si la vérification est possible ici"
+risque = "lecture"
+
+[[capacites]]
+id = "defi_creer"
+libelle = "Un défi à usage unique pour enregistrer une clé (garde en mémoire, cinq minutes)"
+risque = "lecture"
+
+[[capacites]]
+id = "enregistrer"
+libelle = "Enregistrer une clé de sécurité après vérification de son attestation"
+risque = "moyen"
+perimetre = ["le compte qui agit", "une clé créée pour le domaine réglé, présentée, en ES256 ou RS256"]
+preuve = "la clé figure dans la liste du compte"
+retour = "retirer la clé que cet acte vient d'enregistrer"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["client_data", "attestation"]
+
+[[capacites]]
+id = "supprimer"
+libelle = "Retirer une de mes clés (désignée par les huit derniers caractères de son identifiant)"
+risque = "moyen"
+perimetre = ["une clé du compte qui agit", "jamais la dernière tant que la clé est exigée"]
+preuve = "la clé n'est plus dans la liste"
+retour = "remettre la clé retirée, relevée juste avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "exiger"
+libelle = "Exiger la clé pour entrer (ou cesser de l'exiger). À l'activation, huit codes de secours sont rendus, une seule fois"
+risque = "moyen"
+perimetre = ["le compte qui agit", "il faut déjà une clé enregistrée"]
+preuve = "relire l'exigence du compte"
+retour = "remettre l'exigence et les codes de secours d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["secours", "avant_codes"]
+
+[[capacites]]
+id = "secours_regenerer"
+libelle = "Remplacer mes codes de secours par huit nouveaux (rendus une seule fois)"
+risque = "moyen"
+perimetre = ["le compte qui agit", "les anciens codes cessent de valoir"]
+preuve = "huit codes sont disponibles"
+retour = "remettre les anciens codes"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["secours", "avant_codes"]
+
+[[capacites]]
+id = "passkey_defi"
+libelle = "Un défi pour entrer sans mot de passe avec une clé d'accès (public : avant la connexion)"
+risque = "lecture"
+qui = ["anonyme"]
+
+[[capacites]]
+id = "passkey_ouvrir"
+libelle = "Entrer avec une clé d'accès : le compte se déduit de la clé, la vérification de l'utilisateur (PIN ou empreinte) est obligatoire (public)"
+risque = "moyen"
+perimetre = ["une session pour le compte propriétaire de la clé", "jamais sans signature valide, défi frais et vérification de l'utilisateur"]
+preuve = "la session existe"
+retour = "fermer la session ouverte par cet acte"
+paliers = ["auto", "raconter"]   # commence à « auto » : une entrée qui ne marcherait pas d'emblée ne servirait à rien ; l'administrateur la coupe en la mettant à « raconter »
+qui = ["anonyme"]
+masque = ["jeton", "client_data", "auth_data", "signature"]
+
+[permissions]
+stockage = true
+identite = true
+reseau = []

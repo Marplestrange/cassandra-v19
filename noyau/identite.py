@@ -190,6 +190,7 @@ class Identite:
         droits.delegant = self.invite_par
         self._ttl_depart = int(ttl_heures) * 3600
         self.reglages = reglages                      # le service des réglages : la durée des sessions y est réglable (comptes.session_heures)
+        self.seconds_facteurs = {}                    # module -> objet (exige, invite, verifier) : un second facteur branché par un module
         self._faux = hacher("sel-de-leurre")      # un compte inconnu coûte le même temps qu'un mauvais mot de passe
         self.amorcer_systeme()
 
@@ -465,7 +466,30 @@ class Identite:
                 c.execute("INSERT INTO tentatives(cle, ts) VALUES(?,?)", (k, now))
 
     # ---- les sessions ----
-    def ouvrir(self, compte: str, mdp: str, ip: str = "", agent: str = "") -> dict:
+    def enregistrer_facteur(self, module: str, facteur) -> None:
+        """Un module branche un second facteur : `exige(compte)`, `invite(compte)` (ce que le navigateur doit signer), `verifier(compte, preuve, ip)`."""
+        self.seconds_facteurs[module] = facteur
+
+    def oublier_facteur(self, module: str) -> None:
+        self.seconds_facteurs.pop(module, None)
+
+    def hacher(self, secret: str) -> str:
+        return hacher(secret)
+
+    def secret_ok(self, secret: str, enregistre: str) -> bool:
+        return hash_ok(secret, enregistre)
+
+    def _session(self, compte: str, ip: str, agent: str) -> dict:
+        jeton = secrets.token_hex(32)
+        now = time.time()
+        self.base.ecrire("INSERT INTO sessions(id, compte, court, cree, derniere, ip, agent) VALUES(?,?,?,?,?,?,?)",
+                         (_empreinte(jeton), compte, jeton[-6:], now, now, (ip or "")[:45], (agent or "")[:60]))
+        self.base.ecrire("DELETE FROM sessions WHERE cree<?", (now - self.ttl,))
+        return {"ok": True, "jeton": jeton, "id": jeton[-6:], "compte": compte}
+
+    def ouvrir(self, compte: str, mdp: str, ip: str = "", agent: str = "", preuve=None) -> dict:
+        """Mot de passe, puis second facteur si un module en exige un POUR CE COMPTE. Sans preuve, on rend l'invitation (ce qu'il faut signer),
+        pas de session. Un second facteur qui plante REFUSE l'entrée (fermé, pas ouvert) : l'administrateur le retire en débranchant le module."""
         compte = (compte or "").strip().lower()
         attente = self.bloque(compte, ip)
         if attente:
@@ -475,12 +499,26 @@ class Identite:
         if not bon:
             self._echec(compte, ip)
             return {"ok": False, "error": "Identifiant ou mot de passe incorrect"}
-        jeton = secrets.token_hex(32)
-        now = time.time()
-        self.base.ecrire("INSERT INTO sessions(id, compte, court, cree, derniere, ip, agent) VALUES(?,?,?,?,?,?,?)",
-                         (_empreinte(jeton), compte, jeton[-6:], now, now, (ip or "")[:45], (agent or "")[:60]))
-        self.base.ecrire("DELETE FROM sessions WHERE cree<?", (now - self.ttl,))
-        return {"ok": True, "jeton": jeton, "id": jeton[-6:], "compte": compte}
+        for module, f in list(self.seconds_facteurs.items()):
+            try:
+                if not f.exige(compte):
+                    continue
+                if not preuve:
+                    return {"ok": False, "second_facteur": True, "methodes": [module], "invite": f.invite(compte), "error": "Second facteur requis"}
+                v = f.verifier(compte, preuve, ip)
+            except Exception:
+                return {"ok": False, "error": "Le second facteur (%s) est indisponible : l'entrée est refusée" % module}
+            if not v.get("ok"):
+                self._echec(compte, ip)
+                return {"ok": False, "error": v.get("error") or "Second facteur refusé"}
+        return self._session(compte, ip, agent)
+
+    def ouvrir_sans_mdp(self, compte: str, ip: str = "", agent: str = "") -> dict:
+        """Ouvre une session pour un compte DÉJÀ PROUVÉ par un module de confiance (une clé d'accès). Le compte doit exister."""
+        compte = (compte or "").strip().lower()
+        if self.hash_de(compte) is None:
+            return {"ok": False, "error": "compte inconnu"}
+        return self._session(compte, ip, agent)
 
     def valider(self, jeton: str) -> dict:
         """L'expiration se vérifie à CHAQUE requête ; last_used n'est réécrit qu'au plus une fois par minute (leçon de la V18 : 502 en rafale)."""

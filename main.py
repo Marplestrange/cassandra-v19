@@ -258,6 +258,7 @@ class Noyau:
         abonnements = self.bus.desabonner(mid)
         self.droits.oublier(mid)
         self.reglages.oublier(mid)
+        self.identite.oublier_facteur(mid)
         self.moteurs[:] = [x for x in self.moteurs if x[0] != mid]
         self.detecteurs[:] = [x for x in self.detecteurs if x[0] != mid]
         self._cables = {k for k in self._cables if k[0] != mid}

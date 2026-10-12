@@ -72,6 +72,10 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé l'identité des comptes ([permissions] identite)" % self.module)
         return self._intro["identite"]
 
+    def second_facteur(self, facteur) -> None:
+        """Branche un second facteur de connexion ([permissions] identite) : `exige(compte)`, `invite(compte)`, `verifier(compte, preuve, ip)`."""
+        self.identite().enregistrer_facteur(self.module, facteur)
+
     @property
     def stockage(self):
         """La base de CE module (donnees/modules/<id>.db), migrations appliquées. Personne d'autre n'y touche ([permissions] stockage = true)."""

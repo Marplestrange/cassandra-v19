@@ -168,12 +168,14 @@ def brancher(ctx):
         idt.supprimer(res["compte"])
 
     # ---- sessions ----
-    def ouvrir_session(ctx, compte="", mot_de_passe="", ip="", agent=""):
-        r = idt.ouvrir(compte, mot_de_passe, ip, agent)
+    def ouvrir_session(ctx, compte="", mot_de_passe="", ip="", agent="", preuve=None):
+        r = idt.ouvrir(compte, mot_de_passe, ip, agent, preuve)
         c = (compte or "").strip().lower()
         if r["ok"]:
             ctx.emettre("session.ouverte", objet=("session", r["id"]), donnees={"compte": c, "ip": ip, "nature": __import__("noyau.identite", fromlist=["x"]).ip_nature(ip)})
             return {"ok": True, "jeton": r["jeton"], "id": r["id"], "compte": c}
+        if r.get("second_facteur"):
+            return {"ok": False, "erreur": r["error"], "second_facteur": True, "methodes": r["methodes"], "invite": r["invite"]}
         ctx.emettre("session.refusee", objet=("compte", c), donnees={"ip": ip, "limite": bool(r.get("limite"))})
         return {"ok": False, "erreur": r["error"], "limite": bool(r.get("limite")), "attente_s": r.get("attente_s", 0)}
 

@@ -206,7 +206,7 @@ preuve = "le jeton rendu est valable"
 retour = "fermer la session ouverte"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
-masque = ["mot_de_passe", "jeton"]
+masque = ["mot_de_passe", "jeton", "preuve"]
 
 [[capacites]]
 id = "fermer_session"
