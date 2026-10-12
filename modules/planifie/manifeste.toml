@@ -1,0 +1,229 @@
+[module]
+id = "planifie"
+nom = "Tâches planifiées"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Tout ce qui tourne tout seul sur la machine, et est-ce que ça va : les tâches de Cassandra et celles du système (crontabs, cron.d) fusionnées, l'état de chacune (cassée, en échec, muette), les exécutions réelles consignées par un enrobage, le verrou et la fenêtre, l'enchaînement, la maintenance, les collisions. Réservé à l'administrateur ; privilégié par nature, il passe par le courtier."
+confiance = "interne"
+famille = "systeme"
+
+[[droits]]
+id = "gerer"
+libelle = "Créer, modifier, supprimer, lancer une tâche planifiée (elle s'exécute en root)"
+sensible = true
+
+[[objets]]
+type = "tache_planifiee"
+libelle = "Une tâche planifiée en panne, en dérive ou qui se chevauche"
+
+[[moteurs]]
+id = "passe"
+libelle = "Range les comptes rendus de l'enrobage dans le journal, lance les tâches enchaînées dont l'amont a réussi, lève la maintenance échue"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 600
+
+[[detecteurs]]
+id = "taches_en_panne"
+libelle = "Une tâche cassée, en échec ou muette ; une durée qui dérive ; un chevauchement"
+frequence_s = 600
+
+[[racine]]
+id = "lire_crontabs"
+libelle = "Lire les tâches planifiées de tous les utilisateurs (crontabs et /etc/cron.d), cibles manquantes constatées par root"
+lecture = true
+
+[[racine]]
+id = "lire_table"
+libelle = "Lire le texte brut de la crontab d'un utilisateur, pour la réécrire sans rien perdre"
+lecture = true
+
+[[racine]]
+id = "ecrire_crontab"
+libelle = "Remplacer la crontab d'un utilisateur permis par un texte qui ne contient que commentaires, environnement et lignes de planning"
+
+[[racine]]
+id = "lancer"
+libelle = "Lancer une fois une commande déjà présente dans une table de planification, avec un délai"
+
+[[capacites]]
+id = "unifiee"
+libelle = "Toutes les tâches planifiées, quelle que soit leur origine, avec leur état (cassé, échec, muet, inconnu, ok, désactivé), leur prochaine exécution et leur criticité"
+risque = "lecture"
+
+[[capacites]]
+id = "fiche"
+libelle = "Tout ce qu'une tâche peut dire d'elle-même : exécutions, réglages, prochaines dates, cibles présentes, dérive de durée, modifications"
+risque = "lecture"
+
+[[capacites]]
+id = "historique"
+libelle = "Les dernières exécutions d'une tâche, avec code de sortie et sortie"
+risque = "lecture"
+
+[[capacites]]
+id = "reglages"
+libelle = "Verrou, fenêtre, réessais, motif d'échec et enchaînement d'une tâche (ou de toutes)"
+risque = "lecture"
+
+[[capacites]]
+id = "chevauchements"
+libelle = "Les tâches dont la durée moyenne dépasse leur propre intervalle"
+risque = "lecture"
+
+[[capacites]]
+id = "audit"
+libelle = "Les créneaux saturés de tâches lourdes (avec une répartition proposée) et les projets d'infrastructure sans sauvegarde planifiée"
+risque = "lecture"
+
+[[capacites]]
+id = "apercu"
+libelle = "Les prochaines exécutions d'une expression cron, avant de l'enregistrer"
+risque = "lecture"
+
+[[capacites]]
+id = "maintenance_etat"
+libelle = "Le mode maintenance : actif ou non, et sa date de fin"
+risque = "lecture"
+
+[[capacites]]
+id = "resume"
+libelle = "Le recensement : combien de tâches, combien en panne, la maintenance"
+risque = "lecture"
+
+[[capacites]]
+id = "sauver"
+libelle = "Créer ou modifier une tâche planifiée : la base d'abord, puis la crontab ; si la crontab refuse, la base revient comme avant. Une commande destructrice exige un accord explicite"
+risque = "eleve"
+droit = "gerer"
+perimetre = ["une ligne de la crontab d'un utilisateur permis, et sa définition en base"]
+preuve = "la ligne est (ou n'est plus) dans la crontab et la définition est celle posée"
+retour = "remettre la définition d'avant et la ligne d'avant, ou retirer la tâche si elle était nouvelle"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "basculer"
+libelle = "Désactiver ou réactiver une tâche (sa définition reste en base)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["une ligne de crontab"]
+preuve = "la ligne est présente ou absente comme demandé"
+retour = "remettre l'état d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "supprimer"
+libelle = "Retirer une tâche de la crontab et de la base (la crontab d'abord)"
+risque = "eleve"
+droit = "gerer"
+perimetre = ["une ligne de crontab et sa définition"]
+preuve = "la ligne n'est plus dans la crontab et la définition n'est plus en base"
+retour = "remettre la définition, ses rattachements et la ligne"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "critique"
+libelle = "Marquer une tâche critique (exemptée du mode maintenance)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["la criticité d'une tâche"]
+preuve = "la marque relue est celle posée"
+retour = "remettre la marque d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "lier"
+libelle = "Rattacher une tâche à un projet"
+risque = "faible"
+droit = "gerer"
+perimetre = ["un rattachement"]
+preuve = "le rattachement existe"
+retour = "retirer le rattachement"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "delier"
+libelle = "Détacher une tâche d'un projet"
+risque = "faible"
+droit = "gerer"
+perimetre = ["un rattachement"]
+preuve = "le rattachement n'existe plus"
+retour = "remettre le rattachement"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "reglages_poser"
+libelle = "Régler verrou, fenêtre, réessais, motif d'échec et enchaînement d'une tâche (une boucle d'enchaînement est refusée)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["les réglages d'une tâche et les options lues par l'enrobage"]
+preuve = "les réglages relus sont ceux posés"
+retour = "remettre les réglages d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "maintenance"
+libelle = "Suspendre toutes les tâches journalisées sauf les critiques, jusqu'à une date de fin (retour automatique), ou lever la maintenance"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la sentinelle lue par l'enrobage"]
+preuve = "la date de fin relue est celle posée"
+retour = "remettre la date d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "executer"
+libelle = "Lancer UNE fois, tout de suite, une tâche déjà planifiée, et garder sa sortie (un essai n'écrit pas au journal). Ce que la commande a fait n'est pas défait par le retour"
+risque = "eleve"
+droit = "gerer"
+perimetre = ["l'exécution d'une commande déjà présente dans une table de planification"]
+preuve = "la ligne du journal d'exécution existe (ou l'essai a rendu sa sortie)"
+retour = "retirer la ligne du journal (l'effet de la commande, lui, ne se défait pas)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[ecrans]]
+id = "vue_taches"
+libelle = "Automatismes"
+domaine = "systeme"
+gabarit = "tableau"
+
+[[menus]]
+id = "taches"
+libelle = "Automatismes"
+ecran = "vue_taches"
+ordre = 50
+role = "admin"
+icone = "clock"
+badge = "constats"
+
+[[widgets]]
+id = "etat_taches"
+libelle = "Les tâches planifiées"
+ecran = "accueil"
+zone = "principal"
+taille = "s"
+role = "admin"
+composant = "etat"
+source = "resume"
+rafraichir_s = 120
+
+[permissions]
+stockage = true
+lectures = true
+racine = true
+privileges = ["installer : trois commandes et un enrobage posés en root", "retirer : les défaire"]
+
+[installation]
+script = "installer.sh"
+verification = "verifier.sh"
+retrait = "retirer.sh"
+migrations = "migrations"

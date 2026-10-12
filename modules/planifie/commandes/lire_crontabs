@@ -1,0 +1,106 @@
+#!/usr/bin/python3
+# Lit les tâches planifiées de TOUS les utilisateurs (crontabs et /etc/cron.d), à root. Ne modifie rien. Sortie : un tableau JSON
+# [{"user", "horaire", "commande", "source", "etiquette"}]. Posé par installer.sh du module, root:root 0755.
+import json
+import os
+import pwd
+import re
+import shlex
+import shutil
+import subprocess
+
+ETIQUETTE = re.compile(r"\s+# cassandra-id:(\d+)\s*$")
+PLANNING = re.compile(r"^(@\w+|\S+\s+\S+\s+\S+\s+\S+\s+\S+)\s+(.*\S)\s*$")
+
+
+ENVELOPPES = {"sudo", "nohup", "command", "builtin", "exec", "stdbuf", "nice", "ionice", "time", "env", "setsid"}
+SEPARATEURS = {";", "|", "||", "&&", "&", "\n"}
+
+
+def manquantes(commande):
+    """Les exécutables invoqués qui n'existent pas ou ne sont pas exécutables, VUS PAR ROOT (le noyau ne voit pas /root ni les scripts privés). Aveugle à ce qui est ambigu : accuser à tort un cron qui marche ferait perdre sa crédibilité à la liste."""
+    lexer = shlex.shlex(commande, posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
+    try:
+        jetons = list(lexer)
+    except ValueError:
+        return []
+    segs, cur = [], []
+    for t in jetons:
+        if t in SEPARATEURS:
+            segs.append(cur)
+            cur = []
+        else:
+            cur.append(t)
+    segs.append(cur)
+    out = []
+    for toks in segs:
+        i = 0
+        while i < len(toks):
+            if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", toks[i]) or toks[i] in ENVELOPPES:
+                i += 1
+            elif toks[i] == "timeout":
+                i += 2
+            else:
+                break
+        if i >= len(toks):
+            continue
+        t = toks[i]
+        if "$" in t or "*" in t or t.startswith("~"):
+            continue
+        if os.path.isabs(t):
+            if not (os.path.isfile(t) and os.access(t, os.X_OK)):
+                out.append(t)
+        elif "/" not in t and shutil.which(t) is None:
+            out.append(t)
+    return out
+
+
+def lire(texte, user, source, avec_user=False):
+    out = []
+    for brut in texte.splitlines():
+        l = brut.strip()
+        if not l or l.startswith("#") or re.match(r"^[A-Za-z_][A-Za-z0-9_]*\s*=", l):
+            continue
+        m = PLANNING.match(l)
+        if not m:
+            continue
+        horaire, reste = m.group(1), m.group(2)
+        u = user
+        if avec_user:                      # /etc/cron.d : le premier mot de la commande est l'utilisateur
+            p = reste.split(None, 1)
+            if len(p) < 2:
+                continue
+            u, reste = p[0], p[1]
+        e = ETIQUETTE.search(reste)
+        etiquette = e.group(1) if e else ""
+        if e:
+            reste = reste[:e.start()].rstrip()
+        interne = reste
+        if "/cron-wrap.sh" in reste.split(None, 1)[0]:             # l'enrobage : la vraie commande est son troisième mot
+            try:
+                p = shlex.split(reste)
+                interne = " ".join(p[2:]) if len(p) >= 3 else reste
+            except ValueError:
+                pass
+        out.append({"user": u, "horaire": horaire, "commande": reste, "source": source, "etiquette": etiquette, "manquantes": manquantes(interne)})
+    return out
+
+
+res = []
+for p in pwd.getpwall():
+    r = subprocess.run(["crontab", "-l", "-u", p.pw_name], capture_output=True, text=True, timeout=10)
+    if r.returncode == 0 and r.stdout:
+        res += lire(r.stdout, p.pw_name, "crontab")
+d = "/etc/cron.d"
+if os.path.isdir(d):
+    for nom in sorted(os.listdir(d)):
+        chemin = os.path.join(d, nom)
+        if nom.startswith(".") or not os.path.isfile(chemin) or os.path.islink(chemin):
+            continue
+        try:
+            with open(chemin, encoding="utf-8", errors="replace") as f:
+                res += lire(f.read(), "", "cron.d:" + nom, avec_user=True)
+        except OSError:
+            continue
+print(json.dumps(res))

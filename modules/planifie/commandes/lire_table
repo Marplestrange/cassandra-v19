@@ -1,0 +1,13 @@
+#!/usr/bin/python3
+# Rend le TEXTE BRUT de la crontab d'un utilisateur (commentaires et environnement compris), pour que Cassandra la réécrive sans rien perdre. À root, lecture seule.
+#   lire_table <utilisateur>
+import re
+import subprocess
+import sys
+
+if len(sys.argv) != 2 or not re.match(r"^[a-z_][a-z0-9_-]{0,31}$", sys.argv[1]):
+    sys.exit("utilisateur illisible")
+r = subprocess.run(["crontab", "-l", "-u", sys.argv[1]], capture_output=True, text=True, timeout=10)
+if r.returncode != 0 and "no crontab" not in (r.stderr or "").lower():
+    sys.exit((r.stderr or "lecture impossible")[:300])
+sys.stdout.write(r.stdout if r.returncode == 0 else "")

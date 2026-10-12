@@ -1,0 +1,34 @@
+#!/usr/bin/python3
+# Remplace la crontab d'UN utilisateur par le texte reçu sur l'entrée standard. À root. Posé par installer.sh du module, root:root 0755.
+#   ecrire_crontab <utilisateur>
+# L'utilisateur doit figurer dans /etc/cassandra/planifie.utilisateurs (root par défaut) : c'est l'administrateur système qui décide quelles crontabs Cassandra peut réécrire.
+# Le texte ne contient que des commentaires, des affectations d'environnement et des lignes de planning : le reste est refusé en bloc (rien n'est écrit à moitié).
+import os
+import re
+import subprocess
+import sys
+
+if len(sys.argv) != 2 or not re.match(r"^[a-z_][a-z0-9_-]{0,31}$", sys.argv[1]):
+    sys.exit("utilisateur illisible")
+user = sys.argv[1]
+permis = ["root"]
+try:
+    with open("/etc/cassandra/planifie.utilisateurs", encoding="utf-8") as f:
+        permis = [l.strip() for l in f if l.strip() and not l.startswith("#")] or permis
+except OSError:
+    pass
+if user not in permis:
+    sys.exit("la crontab de « %s » n'est pas réécrivable par Cassandra (/etc/cassandra/planifie.utilisateurs)" % user)
+texte = sys.stdin.read()
+if len(texte) > 200000 or "\x00" in texte:
+    sys.exit("table trop grande ou illisible")
+for i, l in enumerate(texte.splitlines(), 1):
+    s = l.strip()
+    if not s or s.startswith("#") or re.match(r"^[A-Za-z_][A-Za-z0-9_]*\s*=", s):
+        continue
+    if not re.match(r"^(@\w+|\S+\s+\S+\s+\S+\s+\S+\s+\S+)\s+\S", s):
+        sys.exit("ligne %d illisible : ni commentaire, ni affectation, ni planning" % i)
+r = subprocess.run(["crontab", "-u", user, "-"], input=texte if texte.endswith("\n") else texte + "\n", capture_output=True, text=True, timeout=15)
+if r.returncode != 0:
+    sys.exit((r.stderr or "crontab a refusé la table")[:300])
+print("ok")
