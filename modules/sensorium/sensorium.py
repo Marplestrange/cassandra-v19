@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
-CASSANDRA — Knowledge Collector v6.1
+CASSANDRA — Sensorium v6.1
 =====================================================================
 Optimisations appliquées (6 majeures) :
   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés
