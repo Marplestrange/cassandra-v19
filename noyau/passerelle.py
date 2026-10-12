@@ -8,7 +8,7 @@ Un module n'écrit aucune route. Il déclare des capacités, et la passerelle le
 Qui est-ce ? Un jeton de session (cookie HttpOnly SameSite=Strict, ou en-tête « Authorization: Bearer ») ou le jeton d'un agent invité. Le compte vient
 TOUJOURS du jeton, jamais du corps de la requête, et l'exécuteur (droits, paliers, preuve, journal) fait le reste : la passerelle n'a pas de règle à elle.
 
-    POST /api/connexion {"compte", "mot_de_passe"}     GET /api/moi      POST /api/deconnexion      GET /api/menu      GET /api/sante
+    POST /api/connexion {"compte", "mot_de_passe"}     GET /api/moi      POST /api/deconnexion      GET /api/menu      GET /api/modules      GET /api/sante
 
 Sécurité de base : écoute locale par défaut, corps limité à 1 Mo, JSON seulement, un en-tête « X-Cassandra » exigé pour toute écriture au cookie
 (un site tiers ne peut pas le poser sans accord préalable du navigateur : c'est le garde-fou CSRF), aucune ouverture CORS, pas de cache.
@@ -184,6 +184,9 @@ class Passerelle:
             if methode == "GET" and chemin == "/api/menu":
                 r = self.noyau.executeur.executer("menus.lire_menu", acteur, {"role": "admin" if admin else "utilisateur", "compte": compte}, compte=compte)
                 return self._repondre(h, STATUTS_HTTP.get(r["statut"], 200), r)
+            if methode == "GET" and chemin == "/api/modules":
+                branches = set(self.noyau._branches)               # ce qui est réellement branché (en exploitation : les modules actifs ; sans gestion des modules : tous)
+                return self._repondre(h, 200, {"modules": [dict({k: m[k] for k in ("id", "nom", "famille", "etat", "version", "essentiel") if k in m}, actif=m["id"] in branches) for m in self.noyau.catalogue_modules()]})
             if chemin.startswith("/api/agir/"):
                 return self._agir(h, methode, chemin[len("/api/agir/"):], url.query, compte, acteur)
             return self._repondre(h, 404, {"erreur": "route inconnue"})

@@ -1,0 +1,16 @@
+/* Le squelette : scène générique des modules. Rien que les jetons de la V18 (--surface, --line, --txt…), pour que tout thème la reprenne. */
+.sh-scene { padding: 20px 24px 40px; max-width: 1180px; }
+.sh-titre { margin: 0 0 16px; font-size: 22px; font-weight: 600; color: var(--txt-strong); letter-spacing: -.01em; }
+.sh-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; align-items: stretch; }
+.sh-tuile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow-glass); min-width: 0; }
+.sh-t-l { grid-column: span 2; }
+.sh-lib { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--txt-muted); margin-bottom: 8px; }
+.sh-grand { font-size: 30px; font-weight: 600; color: var(--txt-strong); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.sh-grand small { font-size: 14px; color: var(--txt-soft); margin-left: 2px; }
+.sh-muet { color: var(--txt-muted); font-size: 13px; }
+.sh-jauge { height: 6px; border-radius: 3px; background: var(--ov-08); margin-top: 10px; overflow: hidden; }
+.sh-jauge i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.sh-etat { display: inline-block; padding: 3px 10px; border-radius: 999px; background: var(--acc-15); color: var(--accent-deep); font-size: 13px; font-weight: 600; }
+.sh-liste { margin: 0; padding-left: 18px; color: var(--txt); font-size: 13px; line-height: 1.6; }
+.sh-spark { width: 100%; height: 40px; }
+@media (max-width: 600px) { .sh-scene { padding: 14px 16px 32px; } .sh-t-l { grid-column: auto; } }

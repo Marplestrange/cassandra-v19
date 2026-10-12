@@ -16,6 +16,7 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
   const natif = window.fetch.bind(window);
   const routes = [];
   const CASS = (window.CASS = { routes, journal: [] });
+  try { CASS.themeDemande = localStorage.getItem("cass_theme") || ""; } catch (e) { CASS.themeDemande = ""; }   // app.js remet « clair » à la place d'un thème de module qu'il ne connaît pas encore : on le garde ici
 
   // "/api/taches/:id/fait" -> expression régulière + noms des paramètres
   function motif(chemin) {
@@ -82,6 +83,7 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
     if (r.status === 200 && d.ok) {
       let admin = false;
       try { const mo = await (await v19("GET", "/api/moi", null, { headers: { "X-Session-Token": d.jeton } })).json(); admin = !!mo.admin; } catch (e) {}
+      setTimeout(() => { if (CASS.surConnexion) CASS.surConnexion(); }, 400);
       return reponse(200, { success: true, session: d.jeton, username: d.compte, is_admin: admin, role: admin ? "admin" : "utilisateur" });
     }
     if (r.status === 429) return reponse(429, { success: false, error: d.erreur || "trop d'essais", attente: d.attente_s || 0, attente_s: d.attente_s || 0 });
@@ -100,6 +102,8 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
     const query = {};
     u.searchParams.forEach((v, k) => { if (k !== "_") query[k] = v; });
 
+    // Les portes natives du noyau passent telles quelles (avec le jeton) : le shell de l'interface les utilise directement.
+    if (chemin.indexOf("/api/agir/") === 0 || chemin === "/api/menu" || chemin === "/api/modules" || chemin === "/api/moi") return v19(methode, u.pathname + u.search, corps, init);
     if (chemin === "/api/login" && methode === "POST") return login(corps);
     if (chemin === "/api/verify") {
       const r = await v19("GET", "/api/moi", null, init);
