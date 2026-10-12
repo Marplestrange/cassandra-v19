@@ -116,9 +116,9 @@ def brancher(ctx):
             
             # V18 : alerter via notification au lieu du fil proactif
             if en_ligne:
-                ctx.emettre("machine.revenue", objet=("machine", nom), donnees={"duree_min": duree})
+                ctx.emettre("parc_machine.revenue", objet=("parc_machine", nom), donnees={"duree_min": duree})
             else:
-                ctx.emettre("machine.perdue", objet=("machine", nom), donnees={})
+                ctx.emettre("parc_machine.perdue", objet=("parc_machine", nom), donnees={})
 
     def moteur_sensorium(ctx):
         # TODO(ssh): boucle de relevés SSH sur les machines ("flotte_sensorium_passe")

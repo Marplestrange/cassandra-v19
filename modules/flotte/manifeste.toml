@@ -14,7 +14,7 @@ libelle = "Gérer la flotte, lire l'état du parc et lancer des actions distante
 defaut = true
 
 [[objets]]
-type = "machine"
+type = "parc_machine"
 libelle = "Une machine de la flotte"
 
 [[objets]]
@@ -22,7 +22,7 @@ type = "entite"
 libelle = "Une entité sensorium"
 
 [evenements]
-emet = ["machine.perdue", "machine.revenue", "machine.decouverte", "machine.oubli", "machine.action"]
+emet = ["parc_machine.perdue", "parc_machine.revenue", "parc_machine.decouverte", "parc_machine.oubli", "parc_machine.action"]
 ecoute = ["constat.ouvert", "constat.resolu"]
 
 [[reglages]]
