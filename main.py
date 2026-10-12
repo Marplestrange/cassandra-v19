@@ -44,6 +44,7 @@ from noyau.identite import Identite
 from noyau.passerelle import Passerelle
 from noyau.modules import Modules
 from noyau.registre import Registre
+from noyau.racine import Racine
 from noyau.reglages import Reglages
 from noyau.stockage import Stockage
 
@@ -75,6 +76,7 @@ class Noyau:
         self.identite = Identite(self.base, self.droits, (self.config.get("comptes") or {}).get("session_heures", 24),
                                  str((self.config.get("comptes") or {}).get("superadmin_unix", "fastuser")),
                                  courtier=str(Path(donnees) / "courtier"), reglages=self.reglages)
+        self.racine = Racine(str(Path(donnees) / "courtier"))      # les commandes que les modules demandent au courtier (root)
         self.passerelle = None     # l'API HTTP, posée par `demarrer`
         self.executeur = Executeur(self.catalogue, self.bus, self.en_crise, self.droits, self.identite, exiger_compte)
         self.detecteurs = []       # (module, Detecteur, fonction)
@@ -113,7 +115,7 @@ class Noyau:
         self.reglages.declarer(m)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
                        {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
-                        "stockage": self._stockage_de})
+                        "stockage": self._stockage_de, "racine": self.racine})
         self.executeur.contextes[m.id] = ctx
         return ctx
 

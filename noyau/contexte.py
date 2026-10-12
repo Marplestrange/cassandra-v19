@@ -76,6 +76,15 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé l'administration des droits ([permissions] droits)" % self.module)
         return self._intro["droits"]
 
+    def racine(self, commande: str, args=(), stdin=None, delai: int = 30) -> dict:
+        """Demande au courtier (root) une commande que CE module a déclarée ([[racine]]) : -> {ok, code, sortie, erreur}. Le courtier ne lance que le programme
+        /usr/libexec/cassandra/<module>/<commande> posé en root par l'installation du module ; sans lui, « commande absente »."""
+        if not self.manifeste.permissions.racine:
+            raise PermissionError("le module « %s » n'a pas demandé la racine ([permissions] racine)" % self.module)
+        if not any(c.id == commande for c in self.manifeste.racine):
+            raise PermissionError("le module « %s » n'a pas déclaré la commande racine « %s » ([[racine]])" % (self.module, commande))
+        return self._intro["racine"].demander(self.module, commande, args, stdin, delai)
+
     def est_admin(self, compte: str) -> bool:
         """Ce compte est-il administrateur ? Une question d'étendue (qui voit le partagé), jamais un droit : aucune permission à demander."""
         d = self._intro["droits"]

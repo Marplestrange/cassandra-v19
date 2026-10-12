@@ -188,6 +188,15 @@ class Signal:
 
 
 @dataclass(frozen=True)
+class CommandeRacine:
+    """Une commande que ce module demande au courtier (root), nommée : le programme /usr/libexec/cassandra/<module>/<id>, posé en root par l'installation du module.
+    Le noyau ne dit jamais quoi exécuter, seulement laquelle de ces commandes et avec quels arguments ; chaque programme valide ses propres arguments."""
+    id: str
+    libelle: str
+    lecture: bool = False      # vrai : la commande ne modifie rien (un état à lire que le noyau ne peut pas lire sans privilège)
+
+
+@dataclass(frozen=True)
 class Habillage:
     """Un thème complet : un jeu de variables CSS qui remplace celui d'une base (clair, creme ou sombre). Un module peut en livrer plusieurs, l'interface
     les propose dans le sélecteur d'apparence. Le fichier ne contient QUE des variables (--nom: valeur;) : aucun sélecteur, aucune adresse, aucun script."""
@@ -229,6 +238,7 @@ class Permissions:
     reglages: bool = False             # peut écrire les réglages des autres modules (le module des réglages)
     stockage: bool = False             # a SA base SQLite (donnees/modules/<id>.db) et ses migrations (migrations/NNN_nom.sql)
     secrets: bool = False              # peut chiffrer/déchiffrer des secrets pour SA base (ctx.chiffrer / ctx.dechiffrer) : clés d'API de modèles, jetons...
+    racine: bool = False               # peut demander au courtier (root) les commandes qu'il déclare ([[racine]]) : ctx.racine(...)
     agir: bool = False                 # peut agir comme un agent (ctx.agir) et lister les outils d'un agent (ctx.outils) : le module des agents. Les droits et les paliers s'appliquent comme à tout acte
 
 
@@ -260,6 +270,7 @@ class Manifeste:
     onglets: tuple = ()
     habillages: tuple = ()
     signaux: tuple = ()
+    racine: tuple = ()
     widgets: tuple = ()
     theme: Theme = field(default_factory=Theme)
     ecrans: tuple = ()
@@ -646,6 +657,24 @@ def valider(brut: dict) -> list:
         if not isinstance(c, int) or isinstance(c, bool) or not 0 <= c <= 86400:
             e.append("%s.cadence_s : entier entre 0 et 86400" % nom)
 
+    racine_ids = []
+    for i, rc in enumerate(brut.get("racine", []) or []):
+        nom = "racine[%d]" % i
+        if not isinstance(rc, dict) or not _ID.match(str(rc.get("id", ""))):
+            e.append("%s.id : identifiant invalide" % nom)
+            continue
+        if rc["id"] in racine_ids:
+            e.append("%s.id : « %s » est déclaré deux fois" % (nom, rc["id"]))
+        racine_ids.append(rc["id"])
+        if not str(rc.get("libelle", "")).strip():
+            e.append("racine « %s » : libellé obligatoire" % rc["id"])
+        if not isinstance(rc.get("lecture", False), bool):
+            e.append("racine « %s ».lecture : vrai ou faux" % rc["id"])
+    if racine_ids and not (brut.get("permissions") or {}).get("racine"):
+        e.append("racine : des commandes sont déclarées, mais [permissions] racine = true manque (un module dit qu'il demande du root)")
+    if (brut.get("permissions") or {}).get("racine") and not racine_ids:
+        e.append("permissions.racine : aucune commande n'est déclarée ([[racine]])")
+
     ins = brut.get("installation", {}) or {}
     for champ in ("script", "verification", "retrait", "migrations"):
         v = ins.get(champ, "")
@@ -694,6 +723,7 @@ def construire(brut: dict, source="") -> Manifeste:
                                 bool((brut.get("permissions") or {}).get("reglages", False)),
                                 bool((brut.get("permissions") or {}).get("stockage", False)),
                                 bool((brut.get("permissions") or {}).get("secrets", False)),
+                                bool((brut.get("permissions") or {}).get("racine", False)),
                                 bool((brut.get("permissions") or {}).get("agir", False))),
         droits=tuple(Droit(d["id"], d["libelle"], bool(d.get("defaut", False)), bool(d.get("sensible", False))) for d in brut.get("droits", []) or []),
         reglages=tuple(Reglage(r["id"], r["libelle"], r.get("type", "texte"),
@@ -711,6 +741,7 @@ def construire(brut: dict, source="") -> Manifeste:
         onglets=tuple(Onglet(x["id"], x["libelle"], x["objet"], x.get("ecran", ""), x.get("ordre", 100), x.get("role", "utilisateur"), x.get("icone", ""), _qualifier(m["id"], x.get("droit")))
                       for x in brut.get("onglets", []) or []),
         signaux=tuple(Signal(x["id"], x["libelle"], x["capacite"], bool(x.get("admin", False)), x.get("cadence_s", 0)) for x in brut.get("signaux", []) or []),
+        racine=tuple(CommandeRacine(x["id"], x["libelle"], bool(x.get("lecture", False))) for x in brut.get("racine", []) or []),
         habillages=tuple(Habillage(x["id"], x["libelle"], x.get("base", "clair"), x.get("fichier", "")) for x in brut.get("habillages", []) or []),
         widgets=tuple(Widget(w["id"], w["libelle"], w.get("ecran", "accueil"), w.get("zone", "principal"), w.get("taille", "m"), w.get("ordre", 100),
                              w.get("role", "utilisateur"), w.get("composant", "nombre"), w.get("source", ""), w.get("rafraichir_s", 0), _qualifier(m["id"], w.get("droit")))
