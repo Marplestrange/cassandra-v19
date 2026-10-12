@@ -1,0 +1,93 @@
+[module]
+id = "taches"
+nom = "Tâches"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Les tâches d'un compte : statut, échéance, priorité, sous-tâches, récurrence (l'occurrence suivante repart de l'échéance précédente), avancement, responsable (soi-même, un membre du projet, ou Itare), liens vers ce qu'elles concernent, journal de chaque mouvement, provenance (une tâche née d'une détection ne ressemble pas à une tâche saisie). Elles sont à la personne : un projet supprimé ne les emporte pas. Une détection ne crée pas de tâche d'elle-même : la tâche naît du geste « en faire une tâche » (ou du palier que l'administrateur a choisi)."
+confiance = "interne"
+famille = "gestion"
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[objets]]
+type = "tache"
+libelle = "Une tâche"
+
+[evenements]
+emet = ["tache.creee", "tache.terminee", "tache.confiee"]
+
+[[detecteurs]]
+id = "en_retard"
+libelle = "Une tâche ouverte a dépassé son échéance"
+frequence_s = 1800
+
+# ------------------------------------------------------------------ lectures
+[[capacites]]
+id = "lister"
+libelle = "Mes tâches (ou celles d'un projet où je suis membre), par échéance, avec le compte de leurs sous-tâches"
+risque = "lecture"
+
+[[capacites]]
+id = "fiche"
+libelle = "Une tâche entière : sous-tâches, liens, journal, provenance"
+risque = "lecture"
+
+[[capacites]]
+id = "avancement"
+libelle = "L'avancement d'un projet d'après ses tâches, pondéré par leur charge"
+risque = "lecture"
+
+# ------------------------------------------------------------------ gestes
+[[capacites]]
+id = "creer"
+libelle = "Créer une tâche (dans un projet : il faut pouvoir y écrire)"
+risque = "faible"
+perimetre = ["le compte qui agit en est l'auteur", "un texte obligatoire", "un responsable : moi, Itare ou un membre du projet", "une tâche née d'une détection ne se crée qu'une fois"]
+preuve = "relire la tâche : texte, projet et échéance conformes"
+retour = "supprimer la tâche que cet acte vient de créer, et elle seule"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "modifier"
+libelle = "Modifier une tâche en patch : statut, échéance, priorité, avancement, responsable... (terminer une tâche récurrente crée la suivante)"
+risque = "faible"
+perimetre = ["une tâche dont je suis l'auteur, ou d'un projet où je peux écrire", "abandonner exige une raison"]
+preuve = "relire la tâche et comparer chaque champ écrit"
+retour = "remettre la tâche telle qu'elle était, et retirer l'occurrence suivante créée par cet acte"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "supprimer"
+libelle = "Supprimer une tâche avec ses sous-tâches, ses liens et son journal"
+risque = "moyen"
+perimetre = ["une tâche dont je suis l'auteur, ou d'un projet où je peux écrire"]
+preuve = "la tâche n'existe plus"
+retour = "recréer la tâche, ses sous-tâches, ses liens et son journal depuis la copie gardée dans le résultat de l'acte"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "lier"
+libelle = "Rattacher une tâche à une note, un message, une URL, un projet, un contact, un événement, un domaine, un serveur, un certificat, un constat"
+risque = "faible"
+perimetre = ["une tâche accessible"]
+preuve = "relire le lien"
+retour = "retirer le lien"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "delier"
+libelle = "Retirer un lien"
+risque = "faible"
+perimetre = ["une tâche accessible"]
+preuve = "le lien n'existe plus"
+retour = "remettre le lien retiré"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[permissions]
+stockage = true
+lectures = true

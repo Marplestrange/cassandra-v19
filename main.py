@@ -156,12 +156,12 @@ class Noyau:
         connus, _ = self._connus()
         return [connus[i][0] for i in sorted(self._branches) if i in connus]
 
-    def _lecture(self, cle: str, args: dict):
+    def _lecture(self, cle: str, args: dict, compte: str = ""):
         """Une lecture pour le compte d'un module : jamais une écriture, et un échec rend None au lieu de casser l'appelant."""
         e = self.catalogue.get(cle)
         if e is None or e.capacite.ecrit:
             raise PermissionError("« %s » n'est pas une capacité de lecture" % cle)
-        r = self.executeur.executer(cle, "cassandra", args, interne=True)
+        r = self.executeur.executer(cle, "cassandra", args, compte=compte, interne=True)
         return r.get("resultat") if r["statut"] == "faite" else None
 
     def _compteurs(self, mid: str) -> dict:

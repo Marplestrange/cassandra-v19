@@ -67,7 +67,7 @@ class Contexte:
         Réservé aux modules qui l'ont demandé ([permissions] lectures) ; jamais une écriture."""
         if not self.manifeste.permissions.lectures:
             raise PermissionError("le module « %s » n'a pas demandé d'appeler les lectures des autres ([permissions] lectures)" % self.module)
-        return self._intro["lecture"](capacite, args)
+        return self._intro["lecture"](capacite, args, self.compte)       # pour le compte au nom duquel on travaille : un module ne lit jamais plus que lui
 
     def droits(self):
         """Le service des droits des comptes, pour le module qui les administre ([permissions] droits). Les autres n'en ont pas besoin :
