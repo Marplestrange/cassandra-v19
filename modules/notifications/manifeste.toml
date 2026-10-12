@@ -115,6 +115,16 @@ retour = "restaurer la notification"
 paliers = ["raconter", "auto", "maitre"]
 qui = ["humain", "compte", "cassandra", "itare"]
 
+[[capacites]]
+id = "signal_jour"
+libelle = "Les décisions qui m'attendent, pour le bureau du jour"
+risque = "lecture"
+
+[[signaux]]
+id = "decisions"
+libelle = "Décisions"
+capacite = "signal_jour"
+
 [permissions]
 stockage = true
 droits = true

@@ -88,6 +88,16 @@ retour = "remettre le lien retiré"
 paliers = ["raconter", "auto", "maitre"]
 qui = ["humain", "compte", "cassandra", "itare"]
 
+[[capacites]]
+id = "signal_jour"
+libelle = "Mes tâches en retard ou à faire aujourd'hui, pour le bureau du jour"
+risque = "lecture"
+
+[[signaux]]
+id = "echeances"
+libelle = "Tâches"
+capacite = "signal_jour"
+
 [permissions]
 stockage = true
 lectures = true

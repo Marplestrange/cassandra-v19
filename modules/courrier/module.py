@@ -908,7 +908,33 @@ def brancher(ctx):
     c = ctx
     c.moteur("passe", passe)
     c.detecteur("boite_en_panne", det_boite)
-    for cid, f in (("etat", etat), ("tester_boite", tester_boite), ("dossiers", dossiers), ("lister", lister), ("lire", lire), ("piece", piece), ("envoyes", envoyes)):
+    def jours_de(quand):
+        """Le nombre de jours entre aujourd'hui et une date « AAAA-MM-JJ… » (négatif : dépassée) ; None si elle est illisible."""
+        s = str(quand or "")[:10]
+        try:
+            t = time.mktime(time.strptime(s, "%Y-%m-%d"))
+        except Exception:
+            return None
+        return int(round((t - time.mktime(time.strptime(time.strftime("%Y-%m-%d"), "%Y-%m-%d"))) / 86400))
+
+    def item_jour(bande, quoi, titre, detail="", nat="", ref="", poids=0, ou="", geste=("Ouvrir", "ouvrir")):
+        return {"bande": bande, "quoi": quoi, "titre": str(titre or "")[:160], "detail": str(detail or "")[:200], "nat": nat, "ref": str(ref or ""), "poids": int(poids), "ou": ou,
+                "geste": list(geste) if geste else None}
+
+    def signal_jour(c):
+        """Le courrier non lu, depuis ce que la passe a gardé : jamais l'IMAP ici."""
+        e = etat(c)
+        if not e.get("configuree"):
+            return {"items": [], "meta": {"configuree": False}}
+        out = []
+        for m in (e.get("recents") or [])[:3]:
+            out.append(item_jour("jour", "mail", "%s — %s" % (m.get("de_nom") or m.get("de_addr") or "?", m.get("objet") or "(sans objet)"), "Non lu.", "mail", m.get("uid"), 25, "mail", geste=("Lire", "ouvrir")))
+        n = int(e.get("non_lus") or 0)
+        if n > 3:
+            out.append(item_jour("regarder", "mail", "%d courriels non lus" % n, "Dans l'INBOX.", "mail", "", 20, "mail", geste=("Lire", "ouvrir")))
+        return {"items": out, "meta": {"configuree": True, "non_lus": n, "gardes": (e.get("gardes") or {}).get("total", 0)}}
+
+    for cid, f in (("etat", etat), ("signal_jour", signal_jour), ("tester_boite", tester_boite), ("dossiers", dossiers), ("lister", lister), ("lire", lire), ("piece", piece), ("envoyes", envoyes)):
         c.implementer(cid, f)
     c.implementer("drapeau", drapeau, prouver_drapeau, defaire_drapeau, simuler=lambda x, champ="seen", valeur=True, **_: "poserait/retirerait le drapeau %s" % champ)
     c.implementer("deplacer", deplacer, prouver_deplace, defaire_deplace, simuler=lambda x, destination="", **_: "déplacerait les messages vers %s" % destination)

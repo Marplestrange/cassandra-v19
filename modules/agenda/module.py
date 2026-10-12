@@ -809,7 +809,41 @@ def brancher(ctx):
     c = ctx
     c.detecteur("rappel_echu", det_rappels)
     c.detecteur("evenement_proche", det_proches)
-    for cid, f in (("evenements", evenements), ("evenement", evenement), ("calendrier", calendrier), ("agenda", agenda), ("caldav_etat", caldav_etat), ("rappels", rappels), ("exporter_ics", exporter_ics)):
+    def jours_de(quand):
+        """Le nombre de jours entre aujourd'hui et une date « AAAA-MM-JJ… » (négatif : dépassée) ; None si elle est illisible."""
+        s = str(quand or "")[:10]
+        try:
+            t = time.mktime(time.strptime(s, "%Y-%m-%d"))
+        except Exception:
+            return None
+        return int(round((t - time.mktime(time.strptime(time.strftime("%Y-%m-%d"), "%Y-%m-%d"))) / 86400))
+
+    def item_jour(bande, quoi, titre, detail="", nat="", ref="", poids=0, ou="", geste=("Ouvrir", "ouvrir")):
+        return {"bande": bande, "quoi": quoi, "titre": str(titre or "")[:160], "detail": str(detail or "")[:200], "nat": nat, "ref": str(ref or ""), "poids": int(poids), "ou": ou,
+                "geste": list(geste) if geste else None}
+
+    def signal_rappels(c):
+        out = []
+        for r in rappels(c, inclure_faits=False)["rappels"]:
+            if r.get("statut") == "fait":
+                continue
+            j = jours_de(r.get("echeance"))
+            if j is None:
+                continue
+            if j < 0:
+                out.append(item_jour("brule", "rappel", r["texte"], "En retard de %d jour(s)." % -j, "rappel", r["id"], 100 - j, "rem"))
+            elif j == 0:
+                out.append(item_jour("jour", "rappel", r["texte"], str(r.get("echeance") or "")[11:16] or "dans la journée", "rappel", r["id"], 40, "rem", geste=("Reporter", "reporter")))
+        return {"items": out}
+
+    def signal_agenda(c):
+        auj = time.strftime("%Y-%m-%d")
+        out = []
+        for e in evenements(c, du=auj, au=auj, limite=60)["evenements"]:
+            out.append(item_jour("jour", "event", e.get("titre") or "(sans titre)", "journée entière" if e.get("journee") else str(e.get("debut") or "")[11:16], "event", e["id"], 30, "cal", geste=("Voir", "ouvrir")))
+        return {"items": out}
+
+    for cid, f in (("evenements", evenements), ("signal_rappels", signal_rappels), ("signal_agenda", signal_agenda), ("evenement", evenement), ("calendrier", calendrier), ("agenda", agenda), ("caldav_etat", caldav_etat), ("rappels", rappels), ("exporter_ics", exporter_ics)):
         c.implementer(cid, f)
     c.implementer("evenement_enregistrer", evenement_enregistrer, prouver_enregistre, defaire_enregistre, simuler=lambda x, titre="", id=0, **_: "enregistrerait l'événement « %s »" % titre)
     c.implementer("evenement_supprimer", evenement_supprimer, prouver_supprime, defaire_supprime, simuler=lambda x, id="", **_: "supprimerait l'événement %s avec ses liens" % id)

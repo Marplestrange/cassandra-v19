@@ -393,7 +393,34 @@ def brancher(ctx):
     # ------------------------------------------------------------------ inscription
     c = ctx
     c.detecteur("en_retard", det_retard)
-    for cid, f in (("lister", lister), ("fiche", fiche), ("avancement", avancement)):
+    def jours_de(quand):
+        """Le nombre de jours entre aujourd'hui et une date « AAAA-MM-JJ… » (négatif : dépassée) ; None si elle est illisible."""
+        s = str(quand or "")[:10]
+        try:
+            t = time.mktime(time.strptime(s, "%Y-%m-%d"))
+        except Exception:
+            return None
+        return int(round((t - time.mktime(time.strptime(time.strftime("%Y-%m-%d"), "%Y-%m-%d"))) / 86400))
+
+    def item_jour(bande, quoi, titre, detail="", nat="", ref="", poids=0, ou="", geste=("Ouvrir", "ouvrir")):
+        return {"bande": bande, "quoi": quoi, "titre": str(titre or "")[:160], "detail": str(detail or "")[:200], "nat": nat, "ref": str(ref or ""), "poids": int(poids), "ou": ou,
+                "geste": list(geste) if geste else None}
+
+    def signal_jour(c):
+        """Les tâches ouvertes qui brûlent (échéance dépassée) ou tombent aujourd'hui."""
+        out = []
+        for t in lister(c, limite=400)["taches"]:
+            j = jours_de(t.get("echeance"))
+            if j is None:
+                continue
+            pj = t.get("projet") or ""
+            if j < 0:
+                out.append(item_jour("brule", "tache", t["texte"], "En retard de %d jour(s).%s" % (-j, (" — " + pj) if pj else ""), "tache", t["id"], 90 - j, "proj"))
+            elif j == 0:
+                out.append(item_jour("jour", "tache", t["texte"], pj or "échéance du jour", "tache", t["id"], 35, "proj"))
+        return {"items": out}
+
+    for cid, f in (("lister", lister), ("fiche", fiche), ("avancement", avancement), ("signal_jour", signal_jour)):
         c.implementer(cid, f)
     c.implementer("creer", creer, prouver_creee, defaire_creee, simuler=lambda x, texte="", **_: "créerait la tâche « %s »" % texte)
     c.implementer("modifier", modifier, prouver_modifiee, defaire_modifiee, simuler=lambda x, id="", **_: "modifierait la tâche %s" % id)

@@ -235,7 +235,32 @@ def brancher(ctx):
     ctx.moteur("constats_ouverts", constats_ouverts)
     ctx.moteur("constats_resolus", constats_resolus)
     ctx.moteur("expirer", expirer)
+    def jours_de(quand):
+        """Le nombre de jours entre aujourd'hui et une date « AAAA-MM-JJ… » (négatif : dépassée) ; None si elle est illisible."""
+        s = str(quand or "")[:10]
+        try:
+            t = time.mktime(time.strptime(s, "%Y-%m-%d"))
+        except Exception:
+            return None
+        return int(round((t - time.mktime(time.strptime(time.strftime("%Y-%m-%d"), "%Y-%m-%d"))) / 86400))
+
+    def item_jour(bande, quoi, titre, detail="", nat="", ref="", poids=0, ou="", geste=("Ouvrir", "ouvrir")):
+        return {"bande": bande, "quoi": quoi, "titre": str(titre or "")[:160], "detail": str(detail or "")[:200], "nat": nat, "ref": str(ref or ""), "poids": int(poids), "ou": ou,
+                "geste": list(geste) if geste else None}
+
+    def signal_jour(ctx):
+        """Les lignes de la cloche qui attendent MA décision : elles brûlent tant qu'elles sont ouvertes. Ce que les agents font seuls ne brûle pas sur le bureau d'un humain : seul un critique remonte."""
+        out = []
+        for n in lister(ctx, limite=100)["notifications"]:
+            if n["nature"] != "decision" or n["resolue"]:
+                continue
+            if n["source"] in ("proactivite", "autotache") and n["niveau"] != "critique":
+                continue
+            out.append(item_jour("brule", "decision", n["titre"], "%s — attend votre décision." % n["source"], "decision", n["id"], 85, "cloche", geste=("Décider", "ouvrir")))
+        return {"items": out}
+
     ctx.implementer("lister", lister)
+    ctx.implementer("signal_jour", signal_jour)
     ctx.implementer("compteurs", compteurs)
     ctx.implementer("emettre", emettre, prouver_emettre, defaire_emettre)
     ctx.implementer("vu", lambda ctx, id=0: marquer(ctx, id, False), prouver_marque, defaire_marque)

@@ -161,6 +161,26 @@ retour = "supprimer les événements créés et remettre ceux qui ont été mis 
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
 
+[[capacites]]
+id = "signal_rappels"
+libelle = "Mes rappels en retard ou du jour, pour le bureau du jour"
+risque = "lecture"
+
+[[capacites]]
+id = "signal_agenda"
+libelle = "Mes rendez-vous du jour, pour le bureau du jour"
+risque = "lecture"
+
+[[signaux]]
+id = "rappels"
+libelle = "Rappels"
+capacite = "signal_rappels"
+
+[[signaux]]
+id = "agenda"
+libelle = "Agenda"
+capacite = "signal_agenda"
+
 [permissions]
 stockage = true
 lectures = true

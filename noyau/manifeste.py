@@ -177,6 +177,17 @@ class Onglet:
 
 
 @dataclass(frozen=True)
+class Signal:
+    """Ce qu'un module signale au bureau du jour : une capacité de LECTURE du module qui rend {"items": [...]} (ce qui brûle, ce qui est à regarder, ce qui tombe aujourd'hui).
+    Le module « jour » les assemble pour un compte ; une source qui échoue devient une ligne de panne, jamais un silence."""
+    id: str
+    libelle: str
+    capacite: str              # une capacité de lecture de CE module
+    admin: bool = False        # vrai : lue seulement pour un administrateur (une source de la machine)
+    cadence_s: int = 0         # une source lente n'est relue qu'après ce délai ; 0 : à chaque calcul
+
+
+@dataclass(frozen=True)
 class Habillage:
     """Un thème complet : un jeu de variables CSS qui remplace celui d'une base (clair, creme ou sombre). Un module peut en livrer plusieurs, l'interface
     les propose dans le sélecteur d'apparence. Le fichier ne contient QUE des variables (--nom: valeur;) : aucun sélecteur, aucune adresse, aucun script."""
@@ -248,6 +259,7 @@ class Manifeste:
     menus: tuple = ()
     onglets: tuple = ()
     habillages: tuple = ()
+    signaux: tuple = ()
     widgets: tuple = ()
     theme: Theme = field(default_factory=Theme)
     ecrans: tuple = ()
@@ -614,6 +626,26 @@ def valider(brut: dict) -> list:
         if not f or not isinstance(f, str) or f.startswith("/") or ".." in f.split("/") or not f.endswith(".css"):
             e.append("%s.fichier : un chemin relatif au dossier du module, en .css, sans « .. »" % nom)
 
+    sig_ids = []
+    for i, sg in enumerate(brut.get("signaux", []) or []):
+        nom = "signaux[%d]" % i
+        if not isinstance(sg, dict) or not _ID.match(str(sg.get("id", ""))):
+            e.append("%s.id : identifiant invalide" % nom)
+            continue
+        if sg["id"] in sig_ids:
+            e.append("%s.id : « %s » est déclaré deux fois" % (nom, sg["id"]))
+        sig_ids.append(sg["id"])
+        nom = "signal « %s »" % sg["id"]
+        if not str(sg.get("libelle", "")).strip():
+            e.append("%s : libellé obligatoire" % nom)
+        if sg.get("capacite") not in lectures:
+            e.append("%s.capacite : « %s » doit être une capacité de LECTURE de ce module" % (nom, sg.get("capacite")))
+        if not isinstance(sg.get("admin", False), bool):
+            e.append("%s.admin : vrai ou faux" % nom)
+        c = sg.get("cadence_s", 0)
+        if not isinstance(c, int) or isinstance(c, bool) or not 0 <= c <= 86400:
+            e.append("%s.cadence_s : entier entre 0 et 86400" % nom)
+
     ins = brut.get("installation", {}) or {}
     for champ in ("script", "verification", "retrait", "migrations"):
         v = ins.get(champ, "")
@@ -678,6 +710,7 @@ def construire(brut: dict, source="") -> Manifeste:
                          x.get("icone", ""), x.get("badge", ""), _qualifier(m["id"], x.get("droit"))) for x in brut.get("menus", []) or []),
         onglets=tuple(Onglet(x["id"], x["libelle"], x["objet"], x.get("ecran", ""), x.get("ordre", 100), x.get("role", "utilisateur"), x.get("icone", ""), _qualifier(m["id"], x.get("droit")))
                       for x in brut.get("onglets", []) or []),
+        signaux=tuple(Signal(x["id"], x["libelle"], x["capacite"], bool(x.get("admin", False)), x.get("cadence_s", 0)) for x in brut.get("signaux", []) or []),
         habillages=tuple(Habillage(x["id"], x["libelle"], x.get("base", "clair"), x.get("fichier", "")) for x in brut.get("habillages", []) or []),
         widgets=tuple(Widget(w["id"], w["libelle"], w.get("ecran", "accueil"), w.get("zone", "principal"), w.get("taille", "m"), w.get("ordre", 100),
                              w.get("role", "utilisateur"), w.get("composant", "nombre"), w.get("source", ""), w.get("rafraichir_s", 0), _qualifier(m["id"], w.get("droit")))

@@ -140,6 +140,29 @@ def brancher(ctx):
             raise ValueError("domaine requis")
         return quota_de(domaine)
 
+    def jours_de(quand):
+        """Le nombre de jours entre aujourd'hui et une date « AAAA-MM-JJ… » (négatif : dépassée) ; None si elle est illisible."""
+        s = str(quand or "")[:10]
+        try:
+            t = time.mktime(time.strptime(s, "%Y-%m-%d"))
+        except Exception:
+            return None
+        return int(round((t - time.mktime(time.strptime(time.strftime("%Y-%m-%d"), "%Y-%m-%d"))) / 86400))
+
+    def item_jour(bande, quoi, titre, detail="", nat="", ref="", poids=0, ou="", geste=("Ouvrir", "ouvrir")):
+        return {"bande": bande, "quoi": quoi, "titre": str(titre or "")[:160], "detail": str(detail or "")[:200], "nat": nat, "ref": str(ref or ""), "poids": int(poids), "ou": ou,
+                "geste": list(geste) if geste else None}
+
+    def signal_jour(c):
+        """Les certificats qui expirent dans les 21 jours (la machine : administrateur seulement)."""
+        out = []
+        for o in c.lister(portee=c.TOUT, type="certificat"):
+            d = o["donnees"].get("jours")
+            if not isinstance(d, int) or d < 0 or d > 21:
+                continue
+            out.append(item_jour("brule" if d <= 7 else "regarder", "ssl", o["id"], "Certificat : %d jour(s)." % d, "site", o["id"], 200 - d, "sites", geste=("Voir le site", "ouvrir")))
+        return {"items": out}
+
     # ------------------------------------------------------------------ inscription
     c = ctx
     c.moteur("sonde", sonde)
@@ -147,4 +170,5 @@ def brancher(ctx):
     c.detecteur("expiration_proche", det_expiration)
     c.implementer("relire_expiration", relire)
     c.implementer("etat", etat)
+    c.implementer("signal_jour", signal_jour)
     c.implementer("quota", quota)

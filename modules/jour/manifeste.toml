@@ -1,0 +1,17 @@
+[module]
+id = "jour"
+nom = "Aujourd'hui"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Le bureau du jour : ce qui brûle, ce qui est à regarder, ce qui tombe aujourd'hui. Chaque module déclare ses signaux ([[signaux]]) ; ce module les assemble pour le compte qui regarde, sans jamais cacher une source en panne."
+confiance = "interne"
+famille = "socle"
+
+[[capacites]]
+id = "aujourdhui"
+libelle = "Les trois bandes et les cinq tuiles du jour, pour le compte qui agit : chaque source déclarée par un module, une ligne de panne pour celle qui échoue"
+risque = "lecture"
+
+[permissions]
+introspection = true
+lectures = true

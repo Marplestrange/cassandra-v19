@@ -89,6 +89,18 @@ role = "admin"
 icone = "lock"
 badge = "constats"
 
+[[capacites]]
+id = "signal_jour"
+libelle = "Les certificats qui expirent bientôt, pour le bureau du jour"
+risque = "lecture"
+
+[[signaux]]
+id = "expirations"
+libelle = "Certificats"
+capacite = "signal_jour"
+admin = true
+cadence_s = 3600
+
 [permissions]
 stockage = true
 lectures = true

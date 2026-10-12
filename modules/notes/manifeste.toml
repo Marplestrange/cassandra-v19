@@ -298,6 +298,17 @@ libelle = "Servir une note partagée (route publique : le jeton fait foi, jamais
 risque = "lecture"
 qui = ["anonyme"]
 
+[[capacites]]
+id = "signal_jour"
+libelle = "Mes notes à relire, pour le bureau du jour"
+risque = "lecture"
+
+[[signaux]]
+id = "relectures"
+libelle = "Relectures"
+capacite = "signal_jour"
+cadence_s = 3600
+
 [permissions]
 stockage = true
 lectures = true

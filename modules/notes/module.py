@@ -1453,6 +1453,30 @@ def brancher(ctx):
         out.sort(key=lambda x: (0 if x["kind"] == "note" else 1, x["titre"].lower()))
         return {"cibles": out[:int(limite)], "total": len(out), "soucis": soucis}
 
+    def jours_de(quand):
+        """Le nombre de jours entre aujourd'hui et une date « AAAA-MM-JJ… » (négatif : dépassée) ; None si elle est illisible."""
+        s = str(quand or "")[:10]
+        try:
+            t = time.mktime(time.strptime(s, "%Y-%m-%d"))
+        except Exception:
+            return None
+        return int(round((t - time.mktime(time.strptime(time.strftime("%Y-%m-%d"), "%Y-%m-%d"))) / 86400))
+
+    def item_jour(bande, quoi, titre, detail="", nat="", ref="", poids=0, ou="", geste=("Ouvrir", "ouvrir")):
+        return {"bande": bande, "quoi": quoi, "titre": str(titre or "")[:160], "detail": str(detail or "")[:200], "nat": nat, "ref": str(ref or ""), "poids": int(poids), "ou": ou,
+                "geste": list(geste) if geste else None}
+
+    def signal_jour(c):
+        """Les notes dont la relecture est due : `relire` est une DATE posée par la personne, la laisser passer sans rien dire vide le champ de son sens."""
+        out = []
+        for n in lister(c, groupe="*").get("notes", []):
+            j = jours_de(n.get("relire"))
+            if j is None or j > 0:
+                continue
+            out.append(item_jour("brule" if j < -7 else "jour", "note", n.get("titre") or n.get("id") or "(sans titre)",
+                                 ("Relecture prévue le %s." % str(n.get("relire"))[:10]) if j < 0 else "À relire aujourd'hui.", "note", n.get("id"), 60 - j, "notes", geste=("Lire", "ouvrir")))
+        return {"items": out}
+
     # ------------------------------------------------------------------ détecteur
     def det_relecture(c):
         auj = time.strftime("%Y-%m-%d")
@@ -1463,7 +1487,7 @@ def brancher(ctx):
     c = ctx
     c.detecteur("relecture_due", det_relecture)
     for cid, f in (("lister", lister), ("fiche", fiche), ("versions", versions), ("version_lire", version_lire), ("corbeille", corbeille), ("dossiers", dossiers), ("liens", liens), ("de", de),
-                   ("mentions", mentions), ("cases", cases), ("cases_etat", cases_etat), ("menage", menage), ("jour", jour), ("exporter", exporter), ("archive", archive), ("partages", partages), ("resoudre", resoudre_textes), ("cibles", cibles)):
+                   ("mentions", mentions), ("cases", cases), ("cases_etat", cases_etat), ("menage", menage), ("jour", jour), ("exporter", exporter), ("archive", archive), ("partages", partages), ("resoudre", resoudre_textes), ("cibles", cibles), ("signal_jour", signal_jour)):
         c.implementer(cid, f)
     c.implementer("creer", creer, prouver_creee, defaire_creee, simuler=lambda x, titre="", **_: "créerait la note « %s »" % titre)
     c.implementer("ecrire", ecrire, prouver_ecrite, defaire_ecrite, simuler=lambda x, ref="", **_: "modifierait la note %s" % ref)

@@ -245,6 +245,16 @@ paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
 sortant = true
 
+[[capacites]]
+id = "signal_jour"
+libelle = "Mon courrier non lu, pour le bureau du jour"
+risque = "lecture"
+
+[[signaux]]
+id = "courrier"
+libelle = "Courrier"
+capacite = "signal_jour"
+
 [permissions]
 stockage = true
 lectures = true
