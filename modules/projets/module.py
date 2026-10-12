@@ -218,6 +218,133 @@ def brancher(ctx):
         return {"projet": fiche, "phases": phases, "jalons": jalons, "decisions": [dict(r) for r in db.lire("SELECT * FROM decisions WHERE projet_id=? ORDER BY id", (p["id"],))],
                 "avancement": avancement(phases), "glissement": glissement(p, phases, jalons), "equipe": equipe_de(p)}
 
+    # ------------------------------------------------------------------ le contexte d'une fiche, et le portefeuille
+    def lignes_de(texte):
+        return [re.sub(r"^\s*[-*•]\s*", "", l).strip() for l in str(texte or "").splitlines() if l.strip()]
+
+    def jours_depuis(quand):
+        try:
+            return (datetime.now() - datetime.strptime(str(quand)[:10], "%Y-%m-%d")).days
+        except Exception:
+            return None
+
+    def sig_retard(x):
+        tk = [t for t in x["taches"] if t["statut"] not in ("fait", "abandonnee") and t.get("echeance")]
+        if not tk:
+            return None, "aucune tâche datée", 0
+        tard = [t for t in tk if str(t["echeance"]) < datetime.now().strftime("%Y-%m-%d %H:%M")]
+        if not tard:
+            return "ok", "%d tâche(s) datée(s), aucune en retard" % len(tk), 0
+        return "dgr", "%d en retard sur %d, la plus ancienne du %s" % (len(tard), len(tk), min(str(t["echeance"])[:10] for t in tard)), -min(30, 7 * len(tard))
+
+    def sig_attente(x):
+        att = [t for t in x["taches"] if t["statut"] == "en attente"]
+        if not att:
+            return "ok", "aucune attente de tiers", 0
+        return "warn", "%d tâche(s) suspendue(s) à quelqu'un d'autre" % len(att), -min(20, 5 * len(att))
+
+    def sig_fraicheur(x):
+        """Le dernier mouvement : la dernière ligne datée du journal, ou la mise à jour de l'en-tête — la plus récente des deux."""
+        ts = [j["quand"] for j in x["journal"] if j.get("quand")]
+        if x["projet"].get("maj"):
+            ts.append(datetime.fromtimestamp(x["projet"]["maj"]).strftime("%Y-%m-%d %H:%M"))
+        if not ts:
+            return None, "aucun mouvement daté", 0
+        d = jours_depuis(max(ts))
+        if d is None:
+            return None, "date du dernier mouvement illisible", 0
+        if d <= 7:
+            return "ok", "dernier mouvement il y a %d jour(s)" % d, 5
+        if d <= 21:
+            return "warn", "rien depuis %d jours" % d, -8
+        return "dgr", "endormi depuis %d jours" % d, -18
+
+    def sig_jalons(x):
+        if not x["jalons"]:
+            return None, "aucune étape posée, rien à tenir", 0
+        passes = [j for j in x["jalons"] if j["etat"] in ("tenu", "manque")]
+        if not passes:
+            return None, "aucune étape encore échue", 0
+        tenus = len([j for j in passes if j["etat"] == "tenu"])
+        return ("ok" if tenus == len(passes) else "warn"), "%d sur %d livrés à la date prévue" % (tenus, len(passes)), 6 if tenus == len(passes) else -6
+
+    def sig_derive(x):
+        ec = []
+        for ph in x["phases"]:
+            if ph.get("fin") and ph.get("ref_fin"):
+                try:
+                    ec.append((datetime.strptime(ph["fin"][:10], "%Y-%m-%d") - datetime.strptime(ph["ref_fin"][:10], "%Y-%m-%d")).days)
+                except ValueError:
+                    pass
+        if not ec:
+            return None, "aucun plan de référence figé — rien à comparer", 0
+        m = max(ec)
+        if m <= 0:
+            return "ok", "conforme au plan de référence", 4
+        return ("warn" if m <= 14 else "dgr"), "la fin de phase la plus décalée glisse de %d jour(s)" % m, -min(20, m)
+
+    SANTE = (("Tâches en retard", sig_retard), ("Attente de tiers", sig_attente), ("Fraîcheur", sig_fraicheur), ("Étapes tenues", sig_jalons), ("Dérive au plan de référence", sig_derive))
+
+    def sante_de(x):
+        """Le score ET sa composition. Un signal qui n'avait rien à regarder est rendu tel quel (« muet ») : c'est l'information la plus honnête de la liste, et celle qu'un score seul efface."""
+        score, sig, evalues = 100, [], 0
+        for nom, fn in SANTE:
+            try:
+                niveau, detail, poids = fn(x)
+            except Exception as ex:
+                niveau, detail, poids = None, "signal indisponible : %s" % str(ex)[:60], 0
+            if niveau is None:
+                sig.append({"nom": nom, "niveau": "muet", "detail": detail, "poids": None})
+                continue
+            evalues += 1
+            score += poids
+            sig.append({"nom": nom, "niveau": niveau, "detail": detail, "poids": poids})
+        score = max(0, min(100, score))
+        return {"score": score, "signaux": sig, "evalues": evalues, "muets": len(SANTE) - evalues,
+                "verdict": "En bonne santé" if score >= 80 else "À surveiller" if score >= 60 else "Fragile"}
+
+    def contexte(c, id=0):
+        """L'appel unique dont la fiche a besoin : en-tête, plan, étapes, décisions, tâches, rendez-vous, journal, santé, équipe. Chaque source est isolée : une qui échoue ne vide pas la fiche."""
+        v = voir(c, id)
+        p = v["projet"]
+        try:
+            taches = (ctx.executer_lecture("taches.lister", projet_id=p["id"], inclure_faites=True, limite=400) or {}).get("taches", [])
+        except Exception:
+            taches = []
+        try:
+            evs = [e for e in (ctx.executer_lecture("agenda.evenements") or {}).get("evenements", []) if e.get("projet_id") == p["id"]]
+        except Exception:
+            evs = []
+        mod = MODELES.get(p["modele"] or "vide", MODELES["vide"])
+        x = {"projet": p, "phases": v["phases"], "jalons": v["jalons"], "decisions": v["decisions"], "taches": taches, "journal": p["journal"]}
+        ouvertes = [t for t in taches if t["statut"] not in ("fait", "abandonnee")]
+        maintenant = datetime.now().strftime("%Y-%m-%d %H:%M")
+        proches = [j for j in v["jalons"] if j["etat"] in ("", "prevu", None)]
+        membres = [m for m in v["equipe"]["membres"] if m.get("etat") == "actif"]
+        return {"projet": p, "modele": dict(mod, cle=p["modele"] or "vide"), "role": p["mon_role"], "equipe": membres, "n_membres": len(membres),
+                "phases": v["phases"], "jalons": v["jalons"], "decisions": v["decisions"], "taches": taches, "avancement": v["avancement"], "glissement": v["glissement"],
+                "evenements": evs, "perimetre_in": lignes_de(p["perimetre_in"]), "perimetre_out": lignes_de(p["perimetre_out"]), "reussite": lignes_de(p["reussite"]),
+                "journal": p["journal"], "sante": sante_de(x),
+                "comptes": {"taches_ouvertes": len(ouvertes), "taches_total": len(taches), "attente": len([t for t in ouvertes if t["statut"] == "en attente"]),
+                            "retard": len([t for t in ouvertes if t.get("echeance") and str(t["echeance"]) < maintenant]), "jalons": len(v["jalons"]),
+                            "jalons_proches": len(proches), "decisions_ouvertes": len([d for d in v["decisions"] if d.get("etat") == "ouverte"])}}
+
+    def portefeuille(c, archives=False):
+        """Le portefeuille du compte, avec la santé de chacun : de quoi trier par ce qui réclame un geste plutôt que par ordre alphabétique."""
+        out = []
+        for ligne in lister(c, archives=archives)["projets"]:
+            try:
+                x = contexte(c, ligne["id"])
+            except Exception:
+                continue
+            p = x["projet"]
+            out.append({"id": p["id"], "nom": p["nom"], "modele": p["modele"], "ic": x["modele"]["ic"], "modele_nom": x["modele"]["nom"], "statut": p["statut"], "priorite": p["priorite"],
+                        "debut": p["debut"], "fin": p["fin"], "resume": p["resume"], "domaine": p["domaine"], "serveur": p["serveur"],
+                        "avance": x["avancement"]["global"], "avance_mesure": x["avancement"].get("mesure") or "", "avance_detail": x["avancement"].get("detail") or "",
+                        "sante": x["sante"]["score"], "verdict": x["sante"]["verdict"], "muets": x["sante"]["muets"], "proprietaire": p["compte"], "role": x["role"],
+                        "membres": x["n_membres"], "objectif": (p["objectif"] or "")[:200], "archive": bool(p["archive"])})
+        return {"projets": out}
+
     def equipe_de(p):
         return {"proprietaire": p["compte"], "membres": [dict(r) for r in db.lire("SELECT compte, role, etat, invite_par, ts FROM membres WHERE projet_id=? ORDER BY etat, ts", (p["id"],))]}
 
@@ -608,7 +735,7 @@ def brancher(ctx):
     # ------------------------------------------------------------------ inscription
     c = ctx
     c.detecteur("jalon_depasse", det_jalons)
-    for cid, f in (("modeles", modeles), ("lister", lister), ("voir", voir), ("trouver", trouver), ("equipe", equipe), ("invitations", invitations), ("corbeille", corbeille)):
+    for cid, f in (("modeles", modeles), ("lister", lister), ("voir", voir), ("trouver", trouver), ("equipe", equipe), ("invitations", invitations), ("corbeille", corbeille), ("contexte", contexte), ("portefeuille", portefeuille)):
         c.implementer(cid, f)
     c.implementer("creer", creer, prouver_cree, defaire_cree, simuler=lambda x, nom="", **_: "créerait le projet « %s »" % nom)
     c.implementer("modifier", modifier, prouver_modifie, defaire_modifie, simuler=lambda x, id="", **_: "modifierait la fiche du projet %s" % id)

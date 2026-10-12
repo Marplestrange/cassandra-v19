@@ -387,5 +387,53 @@ class Equipe(Monde):
         self.assertEqual(self.ok("lister", compte=LEO)["projets"], [])
 
 
+class Contexte(Monde):
+    def poser(self, taches, evenements=()):
+        def lecture(cap, **a):
+            if cap == "taches.lister":
+                return {"taches": taches}
+            if cap == "agenda.evenements":
+                return {"evenements": list(evenements)}
+            return {"comptes": []}
+        self.ctx.executer_lecture = lecture
+
+    def test_la_fiche_se_compose_et_la_sante_rend_ses_signaux(self):
+        pid = self.projet("Livre 1", modele="livre", perimetre_in="- le manuscrit\n- les notes", reussite="publié")
+        hier = time.strftime("%Y-%m-%d 09:00", time.localtime(time.time() - 86400 * 3))
+        self.poser([{"id": 1, "texte": "Relire", "statut": "todo", "echeance": hier, "projet_id": pid},
+                    {"id": 2, "texte": "Attendre l'éditeur", "statut": "en attente", "echeance": "", "projet_id": pid},
+                    {"id": 3, "texte": "Fini", "statut": "fait", "echeance": hier, "projet_id": pid}],
+                   [{"id": 9, "titre": "Salon du livre", "projet_id": pid}, {"id": 10, "titre": "Autre", "projet_id": 999}])
+        x = self.ok("contexte", id=pid)
+        self.assertEqual(x["modele"]["cle"], "livre")
+        self.assertEqual(x["perimetre_in"], ["le manuscrit", "les notes"])
+        self.assertEqual([e["titre"] for e in x["evenements"]], ["Salon du livre"])           # seuls ceux du projet
+        sig = {s["nom"]: s for s in x["sante"]["signaux"]}
+        self.assertEqual(sig["Tâches en retard"]["niveau"], "dgr")
+        self.assertEqual(sig["Attente de tiers"]["niveau"], "warn")
+        self.assertEqual(sig["Étapes tenues"]["niveau"], "muet")                              # aucune étape posée : rendu muet, pas « ok »
+        self.assertEqual(x["sante"]["muets"], 2)                                              # les étapes, et le plan de référence jamais figé
+        self.assertEqual(x["sante"]["score"], 100 - 7 - 5 + 5)
+        self.assertEqual(x["comptes"], dict(x["comptes"], taches_ouvertes=2, taches_total=3, attente=1, retard=1))
+
+    def test_le_portefeuille_porte_la_sante_de_chaque_projet(self):
+        a = self.projet("Un")
+        self.projet("Deux", compte=LEO)
+        self.poser([])
+        l = self.ok("portefeuille")["projets"]
+        self.assertEqual([x["id"] for x in l], [a])                                           # le sien seulement
+        self.assertIn(l[0]["verdict"], ("En bonne santé", "À surveiller", "Fragile"))
+        self.assertEqual(l[0]["role"], "proprietaire")
+
+    def test_une_source_qui_casse_ne_vide_pas_la_fiche(self):
+        pid = self.projet("Robuste")
+        def lecture(cap, **a):
+            raise RuntimeError("module absent")
+        self.ctx.executer_lecture = lecture
+        x = self.ok("contexte", id=pid)
+        self.assertEqual((x["taches"], x["evenements"]), ([], []))
+        self.assertEqual(x["projet"]["nom"], "Robuste")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -230,6 +230,16 @@ retour = "remettre le membre avec son rôle d'avant"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
 
+[[capacites]]
+id = "contexte"
+libelle = "L'appel unique d'une fiche : en-tête, plan, étapes, décisions, tâches, rendez-vous, journal, santé (cinq signaux, les muets rendus tels quels), équipe"
+risque = "lecture"
+
+[[capacites]]
+id = "portefeuille"
+libelle = "Mes projets avec la santé et l'avancement de chacun, pour trier par ce qui réclame un geste"
+risque = "lecture"
+
 [permissions]
 stockage = true
 lectures = true
