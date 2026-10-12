@@ -28,6 +28,14 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
     routes.push({ methode: methode.toUpperCase(), chemin, re: m.re, noms: m.noms, capacite, opt: opt || {} });
   };
 
+  // Le noyau parle français, l'écran V18 anglais : un tableau de clés se lit dans les deux sens.
+  CASS.cles = function (x, t) {
+    if (Array.isArray(x)) return x.map((v) => CASS.cles(v, t));
+    if (x && typeof x === "object") { const o = {}; for (const k of Object.keys(x)) o[t[k] || k] = CASS.cles(x[k], t); return o; }
+    return x;
+  };
+  CASS.inverse = (t) => Object.fromEntries(Object.entries(t).map(([a, b]) => [b, a]));
+
   function reponse(statut, corps, entetes) {
     return new Response(JSON.stringify(corps), { status: statut, headers: Object.assign({ "Content-Type": "application/json; charset=utf-8" }, entetes || {}) });
   }
