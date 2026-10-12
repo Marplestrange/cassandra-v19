@@ -270,6 +270,7 @@ preuve = "le lien existe et sert la note"
 retour = "retirer le lien (immédiatement)"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
+sortant = true
 
 [[capacites]]
 id = "partage_retirer"

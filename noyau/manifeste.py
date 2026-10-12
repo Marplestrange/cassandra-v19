@@ -68,6 +68,8 @@ class Capacite:
     qui: tuple = ("cassandra", "itare", "humain", "agent")      # « agent » : un agent invité (jeton) ; ses droits restent ceux de son invitant
     droit: str = ""            # le droit qu'un COMPTE doit détenir pour l'utiliser (voir [[droits]]) ; vide : aucun droit particulier
     masque: tuple = ()         # noms d'arguments et de résultats qui ne vont JAMAIS au journal (mot de passe, jeton de session...)
+    externe: bool = False      # ce qu'elle lit vient de l'EXTÉRIEUR (un message reçu, une page web) : du texte étranger entre dans le tour, et l'agent ne le tient pas pour des instructions
+    sortant: bool = False      # ce qu'elle fait SORT de la maison (un message envoyé, un lien public) : après une lecture externe dans le même tour, elle ne part pas toute seule
 
     @property
     def ecrit(self) -> bool:
@@ -191,6 +193,7 @@ class Permissions:
     reglages: bool = False             # peut écrire les réglages des autres modules (le module des réglages)
     stockage: bool = False             # a SA base SQLite (donnees/modules/<id>.db) et ses migrations (migrations/NNN_nom.sql)
     secrets: bool = False              # peut chiffrer/déchiffrer des secrets pour SA base (ctx.chiffrer / ctx.dechiffrer) : clés d'API de modèles, jetons...
+    agir: bool = False                 # peut agir comme un agent (ctx.agir) et lister les outils d'un agent (ctx.outils) : le module des agents. Les droits et les paliers s'appliquent comme à tout acte
 
 
 @dataclass(frozen=True)
@@ -574,7 +577,7 @@ def construire(brut: dict, source="") -> Manifeste:
         id=c["id"], libelle=c["libelle"], risque=c["risque"],
         perimetre=tuple(c.get("perimetre", ())), preuve=str(c.get("preuve", "")).strip(), retour=str(c.get("retour", "")).strip(),
         paliers=tuple(c.get("paliers", ("raconter",))), qui=tuple(c.get("qui", ("cassandra", "itare", "humain", "agent"))),
-        droit=_qualifier(m["id"], c.get("droit")), masque=tuple(c.get("masque", ())),
+        droit=_qualifier(m["id"], c.get("droit")), masque=tuple(c.get("masque", ())), externe=bool(c.get("externe", False)), sortant=bool(c.get("sortant", False)),
     ) for c in brut.get("capacites", []) or [])
     return Manifeste(
         id=m["id"], nom=m["nom"], version=m["version"], noyau_min=m["noyau_min"], description=m["description"].strip(),
@@ -591,7 +594,8 @@ def construire(brut: dict, source="") -> Manifeste:
                                 bool((brut.get("permissions") or {}).get("identite", False)),
                                 bool((brut.get("permissions") or {}).get("reglages", False)),
                                 bool((brut.get("permissions") or {}).get("stockage", False)),
-                                bool((brut.get("permissions") or {}).get("secrets", False))),
+                                bool((brut.get("permissions") or {}).get("secrets", False)),
+                                bool((brut.get("permissions") or {}).get("agir", False))),
         droits=tuple(Droit(d["id"], d["libelle"], bool(d.get("defaut", False)), bool(d.get("sensible", False))) for d in brut.get("droits", []) or []),
         reglages=tuple(Reglage(r["id"], r["libelle"], r.get("type", "texte"),
                                r.get("defaut", False if r.get("type") == "booleen" else (0 if r.get("type") == "entier" else "")),

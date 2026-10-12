@@ -216,7 +216,7 @@ risque = "faible"
 perimetre = ["des doutes de ma portée"]
 preuve = "chaque doute cité est résolu ou refusé avec sa raison"
 retour = "défaire chaque résolution, dans l'ordre inverse"
-paliers = ["raconter", "auto", "maitre"]
+paliers = ["auto", "raconter"]
 qui = ["humain", "compte", "cassandra", "itare", "agent"]
 
 [[capacites]]
@@ -256,7 +256,7 @@ risque = "faible"
 perimetre = ["le tour du compte qui agit"]
 preuve = "le tour est ouvert"
 retour = "remettre le tour d'avant"
-paliers = ["raconter", "auto", "maitre"]
+paliers = ["auto", "raconter"]
 qui = ["humain", "compte", "cassandra", "itare", "agent"]
 
 [[capacites]]
@@ -266,7 +266,7 @@ risque = "faible"
 perimetre = ["l'épisode du compte qui agit"]
 preuve = "l'épisode et la file portent l'échange"
 retour = "retirer le message gardé et la demande de distillation"
-paliers = ["raconter", "auto", "maitre"]
+paliers = ["auto", "raconter"]
 qui = ["humain", "compte", "cassandra", "itare", "agent"]
 masque = ["question", "reponse"]
 

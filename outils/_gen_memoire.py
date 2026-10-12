@@ -17,6 +17,7 @@ def W(id, lib, risque, per, preuve, retour, paliers, qui, extra=""):
 
 P3 = ["raconter", "auto", "maitre"]
 P2 = ["raconter", "auto"]
+P2A = ["auto", "raconter"]            # la plomberie d'un tour de chat s'exécute d'emblée
 Q5 = ["humain", "compte", "cassandra", "itare", "agent"]
 Q2 = ["humain", "compte"]
 L("rappeler", "Le rappel : le noyau (épinglés, personne) d'abord, puis le plein texte sur l'actif seul, dans ma portée, avec le seuil de pertinence ; rend un bloc de prompt, les souvenirs cités et les doutes à poser", 'masque = ["bloc", "question"]\n')
@@ -45,12 +46,12 @@ W("purger_secret", "Un secret entré par erreur : expiré tout de suite ET sa va
   ["un souvenir de ma portée"], "la valeur n'est plus lisible nulle part, le geste reste au journal", "aucun, voulu : la valeur d'un secret ne revient pas", ["raconter"], Q2)
 W("douter_resoudre", "Répondre à un doute : garder l'ancienne, prendre la nouvelle, c'est faux, plus d'actualité, toujours vrai, écrire (un report est admis une fois)", "faible",
   ["un doute de ma portée", "un choix parmi ceux que le doute propose"], "le doute est résolu et son effet appliqué", "remettre les souvenirs et le doute dans leur état d'avant", P3, Q5)
-W("doutes_depuis_reponse", "Résoudre les « doute N : choix » écrits dans la réponse d'un humain", "faible", ["des doutes de ma portée"], "chaque doute cité est résolu ou refusé avec sa raison", "défaire chaque résolution, dans l'ordre inverse", P3, Q5)
+W("doutes_depuis_reponse", "Résoudre les « doute N : choix » écrits dans la réponse d'un humain", "faible", ["des doutes de ma portée"], "chaque doute cité est résolu ou refusé avec sa raison", "défaire chaque résolution, dans l'ordre inverse", P2A, Q5)
 W("veto_lever", "Lever la quarantaine ou le contesté d'un souvenir : il devient la version active, l'ancienne expire", "faible", ["un souvenir en quarantaine ou contesté de ma portée"], "le souvenir est actif", "remettre le souvenir et l'ancienne version dans leur état d'avant", P3, Q5)
 W("rappel_poser", "Poser un rappel conditionné à une mesure (métrique, opérateur, seuil) : il rappelle, il n'exécute rien", "faible", ["une métrique connue", "un opérateur connu", "un message sans secret ni consigne"], "le rappel est actif", "retirer le rappel posé, ou remettre l'ancien", P3, Q5)
 W("rappel_oter", "Ôter un rappel (désactivé, la ligne reste lisible)", "faible", ["un rappel de ma portée"], "le rappel est inactif", "le réactiver", P3, Q5)
-W("tour_commencer", "À l'entrée d'un tour de chat : ce qu'un tour précédent a cité ne signe jamais la réponse d'un autre ; la question se range par compte", "faible", ["le tour du compte qui agit"], "le tour est ouvert", "remettre le tour d'avant", P3, Q5)
-W("apres_echange", "À la fin d'un échange : l'épisode s'allonge, les messages sont gardés, et une distillation est mise en file SEULEMENT si un déclencheur a eu lieu", "faible", ["l'épisode du compte qui agit"], "l'épisode et la file portent l'échange", "retirer le message gardé et la demande de distillation", P3, Q5, 'masque = ["question", "reponse"]\n')
+W("tour_commencer", "À l'entrée d'un tour de chat : ce qu'un tour précédent a cité ne signe jamais la réponse d'un autre ; la question se range par compte", "faible", ["le tour du compte qui agit"], "le tour est ouvert", "remettre le tour d'avant", P2A, Q5)
+W("apres_echange", "À la fin d'un échange : l'épisode s'allonge, les messages sont gardés, et une distillation est mise en file SEULEMENT si un déclencheur a eu lieu", "faible", ["l'épisode du compte qui agit"], "l'épisode et la file portent l'échange", "retirer le message gardé et la demande de distillation", P2A, Q5, 'masque = ["question", "reponse"]\n')
 
 head = '''[module]
 id = "memoire"

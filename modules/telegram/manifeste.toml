@@ -86,6 +86,7 @@ preuve = "Telegram a rendu l'identifiant du message envoyé"
 retour = "supprimer le message envoyé chez Telegram (possible pendant 48 heures)"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte", "cassandra", "itare"]
+sortant = true
 
 [[capacites]]
 id = "recevoir"

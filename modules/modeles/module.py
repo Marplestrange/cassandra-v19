@@ -201,7 +201,47 @@ def brancher(ctx):
                   "ON CONFLICT(jour, role, modele_id) DO UPDATE SET appels=appels+1, echecs=echecs+excluded.echecs, entrees=entrees+excluded.entrees, sorties=sorties+excluded.sorties, secondes=secondes+excluded.secondes",
                   (time.strftime("%Y-%m-%d"), role or "", mid, 0 if ok else 1, e, s, secondes))
 
-    def appel_ollama(cle_, modele, base, msgs, max_tokens, temperature, allow_reasoning, timeout, reflexion):
+    def appels_de(brut_calls):
+        """Les appels d'outils d'un message, normalisés : [{id, nom, arguments (dict)}]. Des arguments illisibles sont rendus tels quels sous `_brut` : le modèle se corrige au tour suivant."""
+        out = []
+        for i, tc in enumerate(brut_calls or []):
+            f = (tc or {}).get("function") or {}
+            a = f.get("arguments")
+            if isinstance(a, str):
+                try:
+                    a = json.loads(a) if a.strip() else {}
+                except ValueError:
+                    a = {"_brut": a[:2000]}
+            out.append({"id": str((tc or {}).get("id") or "call_%d" % i), "nom": str(f.get("name") or ""), "arguments": a if isinstance(a, dict) else {"_brut": str(a)[:2000]}})
+        return out
+
+    def outils_openai(outils):
+        return [{"type": "function", "function": {"name": t["nom"], "description": str(t.get("description") or "")[:1000], "parameters": t.get("parametres") or {"type": "object", "properties": {}}}} for t in outils]
+
+    def messages_ollama(msgs):
+        """Le format OpenAI vers le natif d'Ollama : arguments en objet, résultat d'outil avec le nom de l'outil."""
+        noms, out = {}, []
+        for m in msgs:
+            m = dict(m)
+            m["content"] = m.get("content") or ""
+            if m.get("tool_calls"):
+                tcs = []
+                for tc in m["tool_calls"]:
+                    f = dict(tc.get("function") or {})
+                    noms[str(tc.get("id"))] = f.get("name", "")
+                    if isinstance(f.get("arguments"), str):
+                        try:
+                            f["arguments"] = json.loads(f["arguments"] or "{}")
+                        except ValueError:
+                            f["arguments"] = {}
+                    tcs.append({"function": f})
+                m["tool_calls"] = tcs
+            if m.get("role") == "tool":
+                m["tool_name"] = noms.get(str(m.pop("tool_call_id", "")), m.get("name", ""))
+            out.append(m)
+        return out
+
+    def appel_ollama(cle_, modele, base, msgs, max_tokens, temperature, allow_reasoning, timeout, reflexion, outils=None):
         """L'API NATIVE : la seule qui accepte `think` (couper la réflexion) et `num_ctx` (la fenêtre)."""
         base = str(base or "").rstrip("/")
         if base.endswith("/v1"):
@@ -209,7 +249,9 @@ def brancher(ctx):
         opts = {"num_predict": int(max_tokens), "num_ctx": int(ctx.reglage("ollama_num_ctx") or 8192)}
         if temperature is not None:
             opts["temperature"] = float(temperature)
-        corps = {"model": modele, "messages": msgs, "stream": False, "options": opts, "keep_alive": "10m", "think": bool(reflexion)}
+        corps = {"model": modele, "messages": messages_ollama(msgs), "stream": False, "options": opts, "keep_alive": "10m", "think": bool(reflexion)}
+        if outils:
+            corps["tools"] = outils_openai(outils)
         try:
             j = lire_json(base + "/api/chat", corps, timeout=timeout)
         except urllib.error.HTTPError as e:
@@ -221,22 +263,26 @@ def brancher(ctx):
         txt = (m.get("content") or "").strip()
         fin = str(j.get("done_reason") or "")
         avert = ""
+        appels = appels_de(m.get("tool_calls"))
         if fin == "length":
             avert = "réponse TRONQUÉE par num_predict=%s (done_reason=length) — augmenter le budget" % max_tokens
-        if not txt:
+        if not txt and not appels:
             rc = (m.get("thinking") or "").strip()
             if rc and allow_reasoning:
                 txt = rc
             else:
                 avert = "contenu VIDE renvoyé par %s en local (done_reason=%s, réflexion %s)" % (modele, fin, "demandée" if reflexion else "coupée")
-        return txt, avert, {"prompt_tokens": j.get("prompt_eval_count"), "completion_tokens": j.get("eval_count")}
+        message = {"role": "assistant", "content": txt or None, "tool_calls": [{"id": a["id"], "type": "function", "function": {"name": a["nom"], "arguments": json.dumps(a["arguments"], ensure_ascii=False)}} for a in appels]} if appels else None
+        return txt, avert, {"prompt_tokens": j.get("prompt_eval_count"), "completion_tokens": j.get("eval_count")}, appels, message
 
-    def appel_openai(cle, modele, base, msgs, max_tokens, temperature, allow_reasoning, timeout):
+    def appel_openai(cle, modele, base, msgs, max_tokens, temperature, allow_reasoning, timeout, outils=None):
         entetes = {} if cle in ("none", "ollama", "") else {"Authorization": "Bearer " + cle}
         url = str(base).rstrip("/") + "/chat/completions"
         kw = {"model": modele, "messages": msgs, "max_tokens": int(max_tokens)}
         if temperature is not None:
             kw["temperature"] = float(temperature)
+        if outils:
+            kw["tools"] = outils_openai(outils)
         rejoue, usage = False, {}
         while True:
             try:
@@ -253,7 +299,8 @@ def brancher(ctx):
             rc = str(msg.get("reasoning_content") or msg.get("reasoning") or "").strip()
             for k, v in (j.get("usage") or {}).items():
                 usage[k] = usage.get(k, 0) + (v if isinstance(v, int) else 0)
-            if not txt and rc and not rejoue:
+            appels = appels_de(msg.get("tool_calls"))
+            if not txt and not appels and rc and not rejoue:
                 # MODÈLE RAISONNEUR : la réflexion a mangé le budget — un SEUL rejeu, budget élargi, consigne de réponse directe.
                 rejoue = True
                 kw = dict(kw, max_tokens=max(int(max_tokens) * 3, 3000), messages=list(kw["messages"]) + [{"role": "user", "content":
@@ -262,14 +309,15 @@ def brancher(ctx):
             avert = ""
             if fin == "length":
                 avert = "réponse TRONQUÉE par max_tokens=%s (finish_reason=length) — augmenter le budget" % max_tokens
-            if not txt:
+            if not txt and not appels:
                 if rc and allow_reasoning:
                     txt = rc
                 else:
                     avert = "contenu VIDE renvoyé par %s (finish_reason=%s) — modèle raisonneur qui a tout dépensé en réflexion ?" % (modele, fin)
-            return txt, avert, usage
+            message = {"role": "assistant", "content": txt or None, "tool_calls": msg.get("tool_calls")} if appels else None
+            return txt, avert, usage, appels, message
 
-    def appeler(m, messages, systeme, max_tokens, temperature, allow_reasoning, timeout, reflexion, role=""):
+    def appeler(m, messages, systeme, max_tokens, temperature, allow_reasoning, timeout, reflexion, role="", outils=None):
         """Rend toujours un dict, jamais une exception : {ok, texte, avertissement, erreur, secondes, modele}."""
         t0 = time.time()
         try:
@@ -277,22 +325,23 @@ def brancher(ctx):
         except Exception as e:                               # une clé altérée ou recopiée ailleurs ne se lit plus : c'est une panne, pas une exception
             ajouter_usage(role, m["id"], False, 0.0, None)
             return {"ok": False, "texte": "", "erreur": "clé illisible (%s)" % str(e)[:120], "secondes": 0.0, "modele": m["id"]}
-        msgs = ([{"role": "system", "content": str(systeme)}] if systeme else []) + [{"role": str(x.get("role") or "user"), "content": x.get("content")} for x in messages if isinstance(x, dict)]
+        msgs = ([{"role": "system", "content": str(systeme)}] if systeme else []) + [dict(x, role=str(x.get("role") or "user")) for x in messages if isinstance(x, dict)]          # les appels d'outils et leurs réponses (tool_calls, tool_call_id) voyagent tels quels
         usage = {}
         try:
-            if prov == "ollama" and all(isinstance(x.get("content"), str) for x in msgs):
-                txt, avert, usage = appel_ollama(cle, nom, base, msgs, max_tokens, temperature, allow_reasoning, timeout, reflexion)
+            if prov == "ollama" and all(isinstance(x.get("content") or "", str) for x in msgs):
+                txt, avert, usage, appels, message = appel_ollama(cle, nom, base, msgs, max_tokens, temperature, allow_reasoning, timeout, reflexion, outils)
             else:
-                txt, avert, usage = appel_openai(cle, nom, base, msgs, max_tokens, temperature, allow_reasoning, timeout)
+                txt, avert, usage, appels, message = appel_openai(cle, nom, base, msgs, max_tokens, temperature, allow_reasoning, timeout, outils)
         except Exception as e:
             dt = round(time.time() - t0, 1)
             ajouter_usage(role, m["id"], False, dt, None)
             return {"ok": False, "texte": "", "erreur": panne_texte(nom, base, e).replace(cle, "***") if cle not in ("none", "ollama", "") else panne_texte(nom, base, e), "secondes": dt, "modele": m["id"]}
         dt = round(time.time() - t0, 1)
-        ajouter_usage(role, m["id"], bool(txt), dt, usage)
-        return {"ok": bool(txt), "texte": txt, "avertissement": avert, "erreur": "" if txt else (avert or "aucune réponse"), "secondes": dt, "modele": m["id"], "usage": {k: v for k, v in usage.items() if isinstance(v, int)}}
+        ajouter_usage(role, m["id"], bool(txt or appels), dt, usage)
+        return {"ok": bool(txt or appels), "texte": txt, "appels": appels, "message": message, "avertissement": avert, "erreur": "" if (txt or appels) else (avert or "aucune réponse"), "secondes": dt, "modele": m["id"],
+                "usage": {k: v for k, v in usage.items() if isinstance(v, int)}}
 
-    def completer(c, messages=None, systeme="", max_tokens=1400, temperature=None, role="", modele_id="", reflexion=False, timeout=75.0, allow_reasoning=True):
+    def completer(c, messages=None, systeme="", max_tokens=1400, temperature=None, role="", modele_id="", reflexion=False, timeout=75.0, allow_reasoning=True, outils=None):
         compte = ctx.compte or ""
         if not isinstance(messages, list) or not messages:
             return {"ok": False, "erreur": "aucun message"}
@@ -319,7 +368,9 @@ def brancher(ctx):
             to = max(5.0, min(float(timeout or 75.0), 600.0))
         except (TypeError, ValueError):
             return {"ok": False, "erreur": "paramètres invalides"}
-        return appeler(m, messages, systeme, mx, tp, bool(allow_reasoning), to, bool(reflexion), role)
+        if outils is not None and (not isinstance(outils, list) or len(outils) > 200 or not all(isinstance(t, dict) and re.fullmatch(r"[A-Za-z0-9_-]{1,64}", str(t.get("nom") or "")) for t in outils)):
+            return {"ok": False, "erreur": "outils invalides (200 au plus, nom de 1 à 64 caractères [A-Za-z0-9_-])"}
+        return appeler(m, messages, systeme, mx, tp, bool(allow_reasoning), to, bool(reflexion), role, outils or None)
 
     # ------------------------------------------------------------------ essayer
     def essai(mid, compte, instance):

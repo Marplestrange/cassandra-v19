@@ -134,16 +134,19 @@ risque = "lecture"
 id = "lister"
 libelle = "Les messages d'un dossier, par page, avec recherche par le serveur et classement (à traiter, en attente, technique)"
 risque = "lecture"
+externe = true
 
 [[capacites]]
 id = "lire"
 libelle = "Lire un message (texte, HTML nettoyé, pièces jointes) sans le marquer lu"
 risque = "lecture"
+externe = true
 
 [[capacites]]
 id = "piece"
 libelle = "Le contenu d'une pièce jointe (25 Mo au plus)"
 risque = "lecture"
+externe = true
 
 [[capacites]]
 id = "envoyes"
@@ -240,6 +243,7 @@ preuve = "l'envoi est consigné au journal des envois"
 retour = "aucun : un courriel parti ne se rappelle pas ; d'où le brouillon à relire avant"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
+sortant = true
 
 [permissions]
 stockage = true

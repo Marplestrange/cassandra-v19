@@ -112,7 +112,7 @@ class Noyau:
         self.droits.declarer(m)
         self.reglages.declarer(m)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
-                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
+                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
                         "stockage": self._stockage_de})
         self.executeur.contextes[m.id] = ctx
         return ctx
@@ -163,6 +163,38 @@ class Noyau:
             raise PermissionError("« %s » n'est pas une capacité de lecture" % cle)
         r = self.executeur.executer(cle, "cassandra", args, compte=compte, interne=True)
         return r.get("resultat") if r["statut"] == "faite" else None
+
+    def _agir(self, cle: str, args: dict, compte: str, acteur: str, cause=None, essai: bool = False) -> dict:
+        """Un acte d'agent pour le compte d'un module : par l'exécuteur ordinaire, jamais `interne`."""
+        return self.executeur.executer(cle, acteur, args, cause=cause, essai=essai, compte=compte)
+
+    def _outils(self, compte: str, acteur: str) -> list:
+        """Les outils d'un agent, dérivés du catalogue : rien à écrire à la main, un outil de plus = une capacité de plus."""
+        import inspect
+        sorties = []
+        for e in self.catalogue.lister():
+            c = e.capacite
+            if not e.actif or not e.implementee or acteur not in c.qui or c.qui == ("anonyme",) or e.module == "agents":
+                continue
+            if compte and c.droit and self.droits is not None and not self.droits.raison(compte, c.droit)["accord"]:
+                continue
+            try:
+                params = list(inspect.signature(e.faire).parameters.values())[1:]
+            except (TypeError, ValueError):
+                continue
+            props, requis = {}, []
+            for p in params:
+                if p.kind in (p.VAR_POSITIONAL, p.VAR_KEYWORD):
+                    continue
+                d = p.default
+                typ = {bool: "boolean", int: "integer", float: "number", list: "array", dict: "object", str: "string"}.get(type(d))
+                props[p.name] = {"type": typ} if typ else {}
+                if p.default is p.empty:
+                    requis.append(p.name)
+            palier = self.catalogue.savoir(e.cle).get("palier", "raconter") if c.ecrit else ""
+            sorties.append({"nom": e.cle.replace(".", "__"), "cle": e.cle, "description": c.libelle, "risque": c.risque, "palier": palier, "externe": c.externe, "sortant": c.sortant,
+                            "parametres": {"type": "object", "properties": props, "required": requis}})
+        return sorties
 
     def _compteurs(self, mid: str) -> dict:
         n = self.base.lire("SELECT COUNT(*) AS n FROM constats WHERE module=? AND etat='ouvert'", (mid,))[0]["n"]

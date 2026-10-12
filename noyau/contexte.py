@@ -98,6 +98,23 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé de stockage ([permissions] stockage)" % self.module)
         return self._intro["stockage"](self.module)
 
+    ACTEURS_AGENTS = ("itare", "cassandra", "agent")
+
+    def agir(self, capacite: str, args=None, acteur: str = "itare", cause=None, essai: bool = False) -> dict:
+        """Agit comme un agent, AU NOM du compte en cours : la capacité passe par l'exécuteur comme n'importe quel acte (droits du compte, acteurs permis, palier, preuve, retour, journal).
+        Le module ne peut se faire passer que pour un agent — jamais pour un humain ni pour le noyau ([permissions] agir)."""
+        if not self.manifeste.permissions.agir:
+            raise PermissionError("le module « %s » n'a pas demandé d'agir comme un agent ([permissions] agir)" % self.module)
+        if acteur not in self.ACTEURS_AGENTS:
+            raise PermissionError("un module n'agit que comme un agent (%s), jamais comme « %s »" % (", ".join(self.ACTEURS_AGENTS), acteur))
+        return self._intro["agir"](capacite, dict(args or {}), self.compte, acteur, cause, essai)
+
+    def outils(self, acteur: str = "itare") -> list:
+        """Les outils d'un agent pour le compte en cours : chaque capacité que cet acteur peut utiliser et que ce compte a le droit d'utiliser, avec ses arguments, son risque et son palier."""
+        if not self.manifeste.permissions.agir:
+            raise PermissionError("le module « %s » n'a pas demandé d'agir comme un agent ([permissions] agir)" % self.module)
+        return self._intro["outils"](self.compte, acteur)
+
     def chiffrer(self, valeur, etiquette: str, compte: str = "") -> str:
         """Chiffre un secret pour la base de CE module (AES-256-GCM, clé du serveur). L'étiquette et le module sont liés au chiffré : copié ailleurs, il ne se lit plus."""
         if not self.manifeste.permissions.secrets:

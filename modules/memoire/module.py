@@ -1146,7 +1146,7 @@ def brancher(ctx):
                 except Exception:
                     rows = []
                 for r in rows:
-                    s = o.score(r["rang"])
+                    s = max(o.score(r["rang"]), o.couverture(ts, r["cle"] + " " + r["valeur"]))
                     if r["id"] in vus or s < sl:
                         continue
                     vus.add(r["id"])

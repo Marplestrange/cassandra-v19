@@ -77,7 +77,7 @@ id = "completer"
 libelle = "Une réponse d'un modèle (OpenAI-compatible, ou Ollama natif) : la clé reste ici, le rôle ne sert que les acteurs de la maison, un compte n'utilise que SES modèles"
 risque = "lecture"
 droit = "completer"
-masque = ["messages", "systeme", "texte"]
+masque = ["messages", "systeme", "texte", "appels", "message"]
 
 [[capacites]]
 id = "ajouter"

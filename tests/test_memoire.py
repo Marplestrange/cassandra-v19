@@ -604,6 +604,12 @@ class Rappel(Monde):
         self.assertEqual(self.ligne(nginx["id"])["nb_rappels"], 1)
         self.assertEqual(len(self.journal("rappel_cite")), 1)
 
+    def test_une_memoire_neuve_rappelle_malgre_un_seul_document(self):
+        a = self.w(cle="nginx", valeur="nginx écoute sur le port 8080 pour le site principal")
+        r = self.ok("rappeler", question="Sur quel port nginx écoute-t-il ?")        # bm25 s'effondre sur un corpus d'un document : la couverture des termes sauve le rappel
+        self.assertEqual([c["id"] for c in r["cites"]], [a["id"]])
+        self.assertEqual(self.ok("rappeler", question="quelle est la couleur du ciel ?")["n"], 0)
+
     def test_je_ne_sais_pas_est_une_reponse_de_succes_et_le_cadran_la_compte(self):
         self.w(cle="nginx", valeur="nginx écoute sur le port 8080 pour le site principal")
         r = self.ok("rappeler", question="quelle est la couleur du ciel sur mars ?")

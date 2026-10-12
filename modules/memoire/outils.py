@@ -283,6 +283,13 @@ def score(rang_bm25):
     return r / (r + 2.0) if r > 0 else 0.0
 
 
+def couverture(ts, texte):
+    """La part des termes de la question que le souvenir contient. Le rang bm25 s'effondre quand le corpus est petit (un terme présent dans tous les documents ne pèse plus rien) : une mémoire neuve
+    ne rappellerait alors RIEN. La couverture ne dépend pas de la taille du corpus."""
+    t = str(texte or "").lower()
+    return sum(1 for x in ts if x in t) / float(len(ts)) if ts else 0.0
+
+
 def seuil(route, question, base=0.4):
     if route == "personne":
         return max(base, 0.7)
