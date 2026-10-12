@@ -1,0 +1,165 @@
+[module]
+id = "planifie"
+nom = "Planifié"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Tâches planifiées et automatismes : l'étape Agir du noyau."
+confiance = "interne"
+famille = "travail"
+requiert = ["droits"]
+
+[[droits]]
+id = "gerer"
+libelle = "Gérer, créer et modifier les tâches planifiées"
+sensible = true
+
+[[reglages]]
+id = "cron_maintenance_fin"
+libelle = "Fin de maintenance"
+type = "texte"
+defaut = ""
+portee = "global"
+
+[[objets]]
+type = "tache"
+libelle = "Une tâche planifiée"
+
+[evenements]
+emet = ["tache.creee", "tache.modifiee", "tache.supprimee", "tache.executee"]
+
+[[moteurs]]
+id = "ingest_runs"
+libelle = "Ingère les comptes rendus de l'enrobage"
+mode = "periodique"
+toutes_les_s = 30
+duree_max_s = 10
+
+[[moteurs]]
+id = "tick_apres"
+libelle = "Déclenche les tâches en attente de leur amont"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 10
+
+[[detecteurs]]
+id = "pannes"
+libelle = "Détecte les tâches en panne (cassées, échec, muettes)"
+frequence_s = 60
+
+[[capacites]]
+id = "lister"
+libelle = "Liste unifiée des tâches planifiées"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "fiche"
+libelle = "Informations détaillées d'une tâche"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "resume"
+libelle = "Résumé des automatismes en place"
+risque = "lecture"
+
+[[capacites]]
+id = "chevauchements"
+libelle = "Tâches qui se chevauchent"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "collisions"
+libelle = "Créneaux où trop de tâches lourdes démarrent"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "missing_backups"
+libelle = "Projets sans sauvegarde"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "suggerer"
+libelle = "Suggérer une planification depuis du texte naturel"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "historique"
+libelle = "Historique d'exécution d'une tâche"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "sauver"
+libelle = "Créer ou modifier une tâche planifiée"
+risque = "eleve"
+droit = "gerer"
+perimetre = ["la table cron_natural et la crontab système (via le courtier)"]
+preuve = "relire la tâche dans la base"
+retour = "restaurer la tâche d'avant dans la base"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra"]
+
+[[capacites]]
+id = "basculer"
+libelle = "Activer ou désactiver une tâche"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la ligne cron_natural de la tâche et la crontab système (via le courtier)"]
+preuve = "relire l'état d'activation"
+retour = "inverser l'activation"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra"]
+
+[[capacites]]
+id = "supprimer"
+libelle = "Supprimer une tâche planifiée"
+risque = "eleve"
+droit = "gerer"
+perimetre = ["la table cron_natural et la crontab système (via le courtier)"]
+preuve = "vérifier l'absence de la tâche"
+retour = "réinsérer la tâche supprimée dans la base"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "executer"
+libelle = "Exécuter la tâche maintenant (via le courtier)"
+risque = "eleve"
+droit = "gerer"
+perimetre = ["le système, via la commande lancée"]
+preuve = "le compte rendu d'exécution"
+retour = "impossible à défaire"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra"]
+
+[[capacites]]
+id = "regler"
+libelle = "Modifier les réglages (fenêtre, verrou, essais...)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["la table cron_reglages"]
+preuve = "relire les réglages"
+retour = "remettre les anciens réglages"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra"]
+
+[[capacites]]
+id = "maintenance"
+libelle = "Activer ou lever le mode maintenance"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["le réglage de mode maintenance et le fichier système de sentinelle"]
+preuve = "relire l'état du mode"
+retour = "remettre l'état précédent"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra"]
+
+[permissions]
+stockage = true
+droits = true
+introspection = true

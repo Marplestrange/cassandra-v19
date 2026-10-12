@@ -1,0 +1,137 @@
+[module]
+id = "flotte"
+nom = "Flotte"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Machines, SSH, sondes, collecteur, Sensorium."
+confiance = "interne"
+famille = "gestion"
+requiert = ["droits", "notifications"]
+
+[[droits]]
+id = "gerer"
+libelle = "Gérer la flotte, lire l'état du parc et lancer des actions distantes"
+defaut = true
+
+[[objets]]
+type = "machine"
+libelle = "Une machine de la flotte"
+
+[[objets]]
+type = "entite"
+libelle = "Une entité sensorium"
+
+[evenements]
+emet = ["machine.perdue", "machine.revenue", "machine.decouverte", "machine.oubli", "machine.action"]
+ecoute = ["constat.ouvert", "constat.resolu"]
+
+[[reglages]]
+id = "fleet_watch_enabled"
+libelle = "Surveillance de la flotte activée"
+type = "booleen"
+defaut = true
+portee = "global"
+
+[[reglages]]
+id = "fleet_presence_s"
+libelle = "Période de surveillance de présence (secondes)"
+type = "entier"
+defaut = 300
+portee = "global"
+
+[[reglages]]
+id = "fleet_etats"
+libelle = "États d'engagement des machines (JSON)"
+type = "texte"
+defaut = "{}"
+portee = "global"
+
+[[reglages]]
+id = "fleet_niveaux"
+libelle = "Niveaux de contrôle des machines (JSON)"
+type = "texte"
+defaut = "{}"
+portee = "global"
+
+[[moteurs]]
+id = "presence"
+libelle = "Passe de flotte : mesure la présence et alerte sur les transitions"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 120
+
+[[moteurs]]
+id = "sensorium_sondes"
+libelle = "Passe sensorium : mesure les machines par SSH"
+mode = "periodique"
+toutes_les_s = 900
+duree_max_s = 300
+
+[[detecteurs]]
+id = "alertes"
+libelle = "Détecteur Sensorium (génère les constats d'alerte)"
+frequence_s = 60
+
+[[capacites]]
+id = "parc"
+libelle = "Vue complète du parc"
+risque = "lecture"
+
+[[capacites]]
+id = "verdict"
+libelle = "Diagnostic global et santé du parc"
+risque = "lecture"
+
+[[capacites]]
+id = "ping"
+libelle = "Latence d'une machine"
+risque = "lecture"
+
+[[capacites]]
+id = "historique"
+libelle = "Historique d'une machine"
+risque = "lecture"
+
+[[capacites]]
+id = "engagement"
+libelle = "Changer l'engagement (statut/niveau) d'une machine"
+risque = "moyen"
+perimetre = ["les réglages d'engagement"]
+preuve = "relire l'engagement de la machine"
+retour = "remettre l'état d'avant"
+
+[[capacites]]
+id = "oublier"
+libelle = "Oublier une machine disparue"
+risque = "eleve"
+perimetre = ["les traces historiques"]
+preuve = "vérifier la suppression en base"
+retour = "impossible"
+
+[[capacites]]
+id = "action_run"
+libelle = "Lancer une action sur une machine de la flotte"
+risque = "eleve"
+perimetre = ["la machine distante"]
+preuve = "résultat de l'exécution"
+retour = "impossible"
+
+[[capacites]]
+id = "sensorium_accepter"
+libelle = "Acquitter une alerte du sensorium"
+risque = "faible"
+perimetre = ["la table des acquits sensorium"]
+preuve = "relire l'acquit"
+retour = "retirer l'acquit"
+
+[[capacites]]
+id = "sensorium_retirer_acquit"
+libelle = "Retirer un acquit du sensorium"
+risque = "faible"
+perimetre = ["la table des acquits"]
+preuve = "absence de l'acquit"
+retour = "remettre l'acquit"
+
+[permissions]
+stockage = true
+droits = true
