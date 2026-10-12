@@ -100,6 +100,20 @@ class Monde(unittest.TestCase):
 
 
 class Porte(Monde):
+    def test_la_page_des_moteurs_lit_les_constantes_en_service(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("memoire_outils_test", Path(__file__).resolve().parent.parent / "modules" / "memoire" / "outils.py")
+        o = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(o)
+        r = self.ok("moteurs")
+        self.assertEqual(len(r["flux"]), 7)
+        noms = [m["n"] for m in r["moteurs"]]
+        for n in ("porte", "rappel", "doute", "journal", "don", "oubli"):
+            self.assertIn(n, noms)
+        texte = repr(r)
+        self.assertIn(str(o.QUOTA_COMPTE_JOUR), texte)           # un quota se lit dans le code, pas dans la page
+        self.assertIn(o.GENESE[:16], texte)
+
     def test_une_ecriture_est_prouvee_journalisee_et_se_defait(self):
         r = self.ex("ecrire", categorie="config", cle="Nginx Port", valeur="nginx écoute sur le port 8080", nature="constat", provenance="observe", confiance=0.99)
         self.assertEqual(r["statut"], "faite", r)

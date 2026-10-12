@@ -16,4 +16,12 @@
   P("/api/modeles/role", "modeles.role_lier", { args: (r) => ({ role: r.body.role || "", modele_id: String(r.body.id || "") }), sortie: ok });
   P("/api/modeles/ollama/installer", "modeles.ollama_telecharger", { args: (r) => ({ nom: r.body.nom || "" }), sortie: ok });
   P("/api/modeles/ollama/supprimer", "modeles.ollama_supprimer", { args: (r) => ({ nom: r.body.nom || "" }), sortie: ok });
+  // Le ton d'un compte : le réglage « ton » du module des modèles, par compte.
+  P("/api/itare/persona", null, {
+    faire: async (req, agir) => {
+      if ("persona" in req.body) { await agir("reglages.regler", { cle: "modeles.ton", valeur: String(req.body.persona || "") }); return ok({}); }
+      const l = await agir("modeles.lister", {});
+      return ok({ persona: l.ton || "", maison: false });
+    },
+  });
 })();

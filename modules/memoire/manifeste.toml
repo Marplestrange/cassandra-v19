@@ -118,6 +118,11 @@ libelle = "Recalcule toute la chaîne du journal : une altération se voit, elle
 risque = "lecture"
 
 [[capacites]]
+id = "moteurs"
+libelle = "La page « Les moteurs » : le chemin d'un fait et chaque moteur, avec les nombres LUS dans le code en service"
+risque = "lecture"
+
+[[capacites]]
 id = "ecrire"
 libelle = "LA porte d'écriture : catégorie, clé en mots-clés, nature (état courant avec sonde, ou constat), gardes (secret, consigne, données sensibles, sujet, quotas, plafond de confiance) ; un refus est un résultat, journalisé avec sa raison"
 risque = "faible"

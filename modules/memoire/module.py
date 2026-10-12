@@ -26,6 +26,7 @@ import time
 from datetime import datetime, timedelta, timezone
 
 from . import outils as o
+from . import moteurs as page_moteurs
 
 SYSTEME = ("cassandra", "itare", "noyau", "operateur")
 RESTAURE = ("statut", "valide_a", "maj_le", "force", "confiance", "remplace", "version")
@@ -1342,7 +1343,7 @@ def brancher(ctx):
     c.moteur("distiller", moteur_distiller)
     c.detecteur("chaine_rompue", det_chaine)
     for cid, f in (("rappeler", rappeler), ("lister", lister), ("chercher", chercher), ("lire", lire), ("etat", etat), ("journal", journal_lire), ("exporter", exporter), ("doutes", doutes),
-                   ("episodes", episodes), ("rappels", rappels), ("perception", perception), ("chaine_verifier", chaine_verifier)):
+                   ("episodes", episodes), ("rappels", rappels), ("perception", perception), ("chaine_verifier", chaine_verifier), ("moteurs", lambda c: page_moteurs.page(o))):
         c.implementer(cid, f)
     c.implementer("ecrire", ecrire, prouver_ecrit, defaire_ecrit, simuler=lambda x, cle="", **_: "écrirait le souvenir « %s »" % cle)
     c.implementer("corriger", corriger, prouver_ecrit, defaire_ecrit, simuler=lambda x, id="", **_: "corrigerait le souvenir %s par une version nouvelle" % id)

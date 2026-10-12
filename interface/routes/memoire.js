@@ -15,6 +15,7 @@
   lecture("/api/memoire/journal", "memoire.journal", { args: (r) => ({ limite: +(r.body.limite || 100), verbe: r.body.verbe || null }), sortie: (x) => ok({ lignes: x.journal || [] }) });
   lecture("/api/memoire/episodes", "memoire.episodes", { args: (r) => ({ limite: +(r.body.limite || 20) }), sortie: ok });
   lecture("/api/memoire/rappels", "memoire.rappels", { args: () => ({}), sortie: (x) => ok({ rappels: x.rappels || [], metriques: ["disk_pct", "ram_pct", "cpu_pct", "load1", "swap_pct"] }) });
+  lecture("/api/memoire/moteurs", "memoire.moteurs", { args: () => ({}), sortie: ok });
   lecture("/api/memoire/chaine", "memoire.chaine_verifier", { args: () => ({}) });
   lecture("/api/memoire/export", "memoire.exporter", { args: () => ({}) });
 
