@@ -1,0 +1,235 @@
+[module]
+id = "projets"
+nom = "Projets"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Les projets d'un compte : fiche (objectif, périmètre, critères de réussite), phases, jalons, décisions, journal daté, plan de référence qui rend visible le glissement, équipe avec rôles (lecteur, auteur, co-propriétaire) et invitations, archive, corbeille. Un projet appartient à son propriétaire ; l'administrateur n'y a pas accès (administrer n'est pas voir). Les tâches, elles, restent à la personne (module des tâches) : un projet supprimé ne les emporte pas."
+confiance = "interne"
+famille = "gestion"
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[objets]]
+type = "projet"
+libelle = "Un projet"
+
+[evenements]
+emet = ["projet.cree", "projet.modifie", "projet.supprime", "projet.restaure", "projet.invitation", "projet.reponse"]
+
+[[detecteurs]]
+id = "jalon_depasse"
+libelle = "Un jalon prévu est dépassé sans avoir été tenu"
+frequence_s = 3600
+
+# ------------------------------------------------------------------ lectures
+[[capacites]]
+id = "modeles"
+libelle = "Les modèles de projet (phases posées à la création)"
+risque = "lecture"
+
+[[capacites]]
+id = "lister"
+libelle = "Mes projets (les miens et ceux où je suis membre actif), avec leurs comptes de phases et de jalons"
+risque = "lecture"
+
+[[capacites]]
+id = "voir"
+libelle = "Un projet entier : fiche, phases, jalons, décisions, équipe, journal, avancement, glissement"
+risque = "lecture"
+
+[[capacites]]
+id = "trouver"
+libelle = "Retrouver un de mes projets par son nom (insensible à la casse, partiel toléré)"
+risque = "lecture"
+
+[[capacites]]
+id = "equipe"
+libelle = "Le propriétaire et les membres d'un projet, avec mon rôle"
+risque = "lecture"
+
+[[capacites]]
+id = "invitations"
+libelle = "Les invitations en attente pour mon compte"
+risque = "lecture"
+
+[[capacites]]
+id = "corbeille"
+libelle = "Mes projets à la corbeille"
+risque = "lecture"
+
+# ------------------------------------------------------------------ fiche
+[[capacites]]
+id = "creer"
+libelle = "Créer un projet (les phases du modèle sont posées, modifiables ensuite)"
+risque = "faible"
+perimetre = ["le compte qui agit en est propriétaire", "un nom obligatoire"]
+preuve = "relire le projet : nom et phases du modèle conformes"
+retour = "supprimer le projet que cet acte vient de créer, et lui seul"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "modifier"
+libelle = "Modifier la fiche d'un projet en patch (un champ non fourni n'est pas touché)"
+risque = "faible"
+perimetre = ["un projet où mon rôle permet de modifier la fiche (co-propriétaire au moins)"]
+preuve = "relire la fiche et comparer chaque champ écrit"
+retour = "remettre la fiche telle qu'elle était, relevée juste avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "noter"
+libelle = "Ajouter une ligne datée au journal du projet"
+risque = "faible"
+perimetre = ["un projet où mon rôle permet d'écrire (auteur au moins), non archivé"]
+preuve = "la ligne figure en dernier au journal"
+retour = "remettre le journal tel qu'il était"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "archiver"
+libelle = "Archiver un projet, ou le rouvrir (un projet archivé n'accepte plus d'écriture)"
+risque = "faible"
+perimetre = ["un projet où mon rôle permet de modifier la fiche"]
+preuve = "l'état d'archive est celui demandé"
+retour = "remettre l'état d'archive d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "supprimer"
+libelle = "Mettre un projet à la corbeille (phases, jalons, décisions et équipe restent ; les tâches ne sont pas touchées)"
+risque = "moyen"
+perimetre = ["un projet dont je suis propriétaire"]
+preuve = "le projet est à la corbeille"
+retour = "sortir le projet de la corbeille"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "restaurer"
+libelle = "Sortir un projet de la corbeille, sous son numéro, avec tout ce qu'il portait"
+risque = "faible"
+perimetre = ["un projet de ma corbeille"]
+preuve = "le projet n'est plus à la corbeille"
+retour = "le remettre à la corbeille"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "purger"
+libelle = "Effacer pour de bon un projet de ma corbeille"
+risque = "moyen"
+perimetre = ["un projet de ma corbeille, propriétaire"]
+preuve = "le projet et ses lignes n'existent plus"
+retour = "recréer le projet et ses lignes depuis la copie gardée dans le résultat de l'acte"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+# ------------------------------------------------------------------ plan
+[[capacites]]
+id = "phase_enregistrer"
+libelle = "Créer ou modifier une phase"
+risque = "faible"
+perimetre = ["un projet où je peux écrire", "un état parmi À venir, En cours, Terminée, Suspendue"]
+preuve = "relire la phase"
+retour = "supprimer la phase créée, ou remettre l'ancienne"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "phase_supprimer"
+libelle = "Supprimer une phase"
+risque = "faible"
+perimetre = ["un projet où je peux écrire"]
+preuve = "la phase n'existe plus"
+retour = "recréer la phase supprimée"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "jalon_enregistrer"
+libelle = "Créer ou modifier un jalon (une date qui ne bouge pas)"
+risque = "faible"
+perimetre = ["un projet où je peux écrire", "une date AAAA-MM-JJ ou vide"]
+preuve = "relire le jalon"
+retour = "supprimer le jalon créé, ou remettre l'ancien"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "jalon_supprimer"
+libelle = "Supprimer un jalon"
+risque = "faible"
+perimetre = ["un projet où je peux écrire"]
+preuve = "le jalon n'existe plus"
+retour = "recréer le jalon supprimé"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "decision_enregistrer"
+libelle = "Poser une question à trancher, ou la modifier, ou la trancher"
+risque = "faible"
+perimetre = ["un projet où je peux écrire"]
+preuve = "relire la décision"
+retour = "supprimer la décision créée, ou remettre l'ancienne"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "decision_supprimer"
+libelle = "Supprimer une décision"
+risque = "faible"
+perimetre = ["un projet où je peux écrire"]
+preuve = "la décision n'existe plus"
+retour = "recréer la décision supprimée"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "refiger"
+libelle = "Figer le plan de référence (l'ancien part au journal : sans cette trace, un projet qui glisse par petits décalages paraît toujours à l'heure)"
+risque = "faible"
+perimetre = ["un projet où mon rôle permet de modifier la fiche"]
+preuve = "les dates de référence égalent les dates courantes"
+retour = "remettre les anciennes dates de référence et l'ancien journal"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+# ------------------------------------------------------------------ équipe
+[[capacites]]
+id = "inviter"
+libelle = "Inviter un compte dans le projet avec un rôle (lecteur, auteur, co-propriétaire), ou changer son rôle"
+risque = "faible"
+perimetre = ["un projet où je gère l'équipe (co-propriétaire au moins)", "un compte existant"]
+preuve = "relire le membre : compte et rôle conformes"
+retour = "retirer l'invitation, ou remettre l'ancien rôle"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "repondre_invitation"
+libelle = "Accepter ou décliner une invitation"
+risque = "faible"
+perimetre = ["une invitation faite à mon compte"]
+preuve = "l'état du membre est celui demandé"
+retour = "remettre l'invitation en attente"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "retirer_membre"
+libelle = "Retirer un membre (ou me retirer moi-même)"
+risque = "faible"
+perimetre = ["un projet où je gère l'équipe, ou moi-même"]
+preuve = "le compte n'est plus membre"
+retour = "remettre le membre avec son rôle d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[permissions]
+stockage = true
+lectures = true

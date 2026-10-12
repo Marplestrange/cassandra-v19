@@ -44,12 +44,21 @@ class ServeurDns:
 
     def __init__(self, table, tronque_udp=False):
         self.table, self.tronque_udp, self.rcode = table, tronque_udp, 0
-        self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udp.bind(("127.0.0.1", 0))
-        self.port = self.udp.getsockname()[1]
-        self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.tcp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.tcp.bind(("127.0.0.1", self.port))
+        # le même numéro de port en UDP et en TCP : on essaie jusqu'à en trouver un libre des deux côtés (sous Linux, le port UDP choisi peut être pris en TCP)
+        for _ in range(50):
+            self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.udp.bind(("127.0.0.1", 0))
+            self.port = self.udp.getsockname()[1]
+            self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.tcp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                self.tcp.bind(("127.0.0.1", self.port))
+                break
+            except OSError:
+                self.udp.close()
+                self.tcp.close()
+        else:
+            raise OSError("aucun port libre en UDP et en TCP")
         self.tcp.listen(5)
         self.actif = True
         threading.Thread(target=self.boucle_udp, daemon=True).start()
