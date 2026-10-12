@@ -78,6 +78,19 @@ class Monde(unittest.TestCase):
 
 
 class Cycle(Monde):
+    def test_resoudre_et_cibles_pour_les_ecrans_qui_renvoient(self):
+        a = self.ok("creer", titre="Alpha", corps="rien")
+        self.ok("creer", titre="Beta", corps="voir [[Alpha]] et [[N-0099]]")
+        r = self.ok("resoudre", texte="a [[Alpha]] b [[Inconnue]]")["liens"]
+        self.assertEqual([(x["ref"], x["existe"]) for x in r], [("Alpha", True), ("Inconnue", False)])
+        lots = self.ok("resoudre", textes=["[[Alpha]]", "rien", "[[N-0099]]"])["lots"]
+        self.assertEqual([len(x) for x in lots], [1, 0, 1])
+        c = self.ok("cibles", q="alp")
+        self.assertEqual([x["ecriture"] for x in c["cibles"]], ["[[note:%s]]" % a["ref"]])
+        tout = self.ok("cibles")
+        self.assertEqual(tout["total"], 2)                     # sans module des projets ni des tâches : une nature absente ne vide pas les autres
+        self.assertEqual(self.ok("cibles", q="beta", compte=BEA)["total"], 1)
+
     def test_creer_numerote_prouve_et_se_defait_sans_reutiliser_le_numero(self):
         r = self.ex("creer", titre="Première", corps="# Titre\ntexte", etiquettes=["a", "b", "a"], projet="Refonte")
         self.assertEqual(r["statut"], "faite", r)

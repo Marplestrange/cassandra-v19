@@ -1422,6 +1422,37 @@ def brancher(ctx):
             db.ecrire("UPDATE partages SET n_vues=n_vues+1, dernier=? WHERE jeton=?", (time.time(), j))
         return {"ok": True, "code": 200, "nom": e["nom"], "mime": e["mime"], "contenu": e["contenu"], "titre": p["titre"], "format": p["format"]}
 
+    def resoudre_textes(c, texte="", textes=None):
+        """Les renvois [[…]] d'un texte nu (une tâche, un rappel, un message n'ont pas de fiche) : leurs cibles, sans rien garder du texte."""
+        compte = compte_agit()
+        vivantes = toutes(compte)
+        memo = {}
+        if isinstance(textes, list):
+            return {"lots": [liens_resolus(str(x or "")[:20000], vivantes, memo) for x in textes[:400]]}
+        return {"liens": liens_resolus(str(texte or "")[:20000], vivantes, memo)}
+
+    def cibles(c, q="", limite=300):
+        """Tout ce vers quoi un renvoi peut pointer : mes notes, puis ce que les autres modules listent pour moi. Une nature qui échoue ne vide pas les autres."""
+        compte = compte_agit()
+        q = str(q or "").strip().lower()
+        out, soucis = [], []
+
+        def ajouter(kind, ref, titre, detail=""):
+            ref, titre = str(ref or ""), str(titre or ref)
+            if not ref or (q and q not in titre.lower() and q not in ref.lower() and q not in kind):
+                return
+            out.append({"kind": kind, "ref": ref, "titre": titre, "detail": str(detail or ""), "n": kind, "ecriture": "[[%s:%s]]" % (kind, ref)})
+        for n in toutes(compte):
+            ajouter("note", n["ref"], n["titre"], n["dossier"])
+        for kind, cap, cle, champ in (("projet", "projets.lister", "projets", "nom"), ("tache", "taches.lister", "taches", "texte")):
+            try:
+                for x in (ctx.executer_lecture(cap) or {}).get(cle) or []:
+                    ajouter(kind, x.get("id"), x.get(champ) or x.get("titre") or x.get("nom") or x.get("texte"), x.get("statut") or x.get("etat") or "")
+            except Exception as ex:
+                soucis.append("%s : %s" % (kind, str(ex)[:70]))
+        out.sort(key=lambda x: (0 if x["kind"] == "note" else 1, x["titre"].lower()))
+        return {"cibles": out[:int(limite)], "total": len(out), "soucis": soucis}
+
     # ------------------------------------------------------------------ détecteur
     def det_relecture(c):
         auj = time.strftime("%Y-%m-%d")
@@ -1432,7 +1463,7 @@ def brancher(ctx):
     c = ctx
     c.detecteur("relecture_due", det_relecture)
     for cid, f in (("lister", lister), ("fiche", fiche), ("versions", versions), ("version_lire", version_lire), ("corbeille", corbeille), ("dossiers", dossiers), ("liens", liens), ("de", de),
-                   ("mentions", mentions), ("cases", cases), ("cases_etat", cases_etat), ("menage", menage), ("jour", jour), ("exporter", exporter), ("archive", archive), ("partages", partages)):
+                   ("mentions", mentions), ("cases", cases), ("cases_etat", cases_etat), ("menage", menage), ("jour", jour), ("exporter", exporter), ("archive", archive), ("partages", partages), ("resoudre", resoudre_textes), ("cibles", cibles)):
         c.implementer(cid, f)
     c.implementer("creer", creer, prouver_creee, defaire_creee, simuler=lambda x, titre="", **_: "créerait la note « %s »" % titre)
     c.implementer("ecrire", ecrire, prouver_ecrite, defaire_ecrite, simuler=lambda x, ref="", **_: "modifierait la note %s" % ref)

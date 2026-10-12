@@ -57,6 +57,16 @@ libelle = "Tous les renvois de mes notes, avec leurs cibles mortes"
 risque = "lecture"
 
 [[capacites]]
+id = "resoudre"
+libelle = "Les cibles des renvois [[…]] d'un texte nu (sans le garder)"
+risque = "lecture"
+
+[[capacites]]
+id = "cibles"
+libelle = "Tout ce vers quoi un renvoi peut pointer : mes notes, mes projets, mes tâches"
+risque = "lecture"
+
+[[capacites]]
 id = "de"
 libelle = "Quelles notes citent cette cible (le sens inverse du renvoi)"
 risque = "lecture"
