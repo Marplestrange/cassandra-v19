@@ -1,0 +1,223 @@
+[module]
+id = "sites"
+nom = "Sites"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Les sites web que Cassandra suit : ceux d'un compte (déclarés, attribués, ou inscrits dans sa fiche de compte), ceux du panneau qui appartiennent au compte du panneau lié à ce compte. Une sonde chronomètre chaque site (code, durée, certificat) et en garde l'historique ; une panne, un retour, une lenteur, un certificat court font des constats. Chaque compte ne voit que ses sites ; l'administrateur voit l'état de tous, jamais le contenu. Demande d'adossement au panneau, accord limité dans le temps donné par le propriétaire, liens vers projets et contacts, journal des gestes."
+confiance = "interne"
+famille = "hebergement"
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer les sites de tous : attribuer, transférer, rattacher un compte du panneau, répondre aux demandes d'adossement"
+sensible = true
+
+[[objets]]
+type = "site"
+libelle = "Un site web suivi par Cassandra"
+
+[[reglages]]
+id = "lent_ms"
+libelle = "Temps de réponse au-delà duquel un site est dit lent, en millisecondes"
+type = "entier"
+defaut = 3000
+minimum = 500
+maximum = 60000
+
+[[reglages]]
+id = "delai_sonde_s"
+libelle = "Délai d'attente d'une requête de la sonde, en secondes"
+type = "entier"
+defaut = 8
+minimum = 2
+maximum = 60
+
+[[reglages]]
+id = "retention_j"
+libelle = "Durée de garde des mesures, en jours"
+type = "entier"
+defaut = 90
+minimum = 7
+maximum = 730
+
+[[reglages]]
+id = "ssl_court_j"
+libelle = "Jours restants sous lesquels le certificat d'un site est signalé"
+type = "entier"
+defaut = 21
+minimum = 3
+maximum = 90
+
+[evenements]
+emet = ["site.panne", "site.retour", "site.declare", "site.retire", "site.attribue", "site.transfere", "site.demande", "site.adossement", "site.accord"]
+
+[[moteurs]]
+id = "sonde"
+libelle = "Sonde chaque site (code, durée, certificat), consigne les pannes et les retours, purge les vieilles mesures"
+mode = "periodique"
+toutes_les_s = 300
+duree_max_s = 280
+
+[[detecteurs]]
+id = "panne"
+libelle = "Un site ne répond plus"
+frequence_s = 60
+
+[[detecteurs]]
+id = "lenteur"
+libelle = "Un site répond, mais trop lentement"
+frequence_s = 300
+
+[[detecteurs]]
+id = "certificat_court"
+libelle = "Le certificat d'un site arrive à échéance"
+frequence_s = 900
+
+[[detecteurs]]
+id = "adossement_demande"
+libelle = "Un compte demande qu'un de ses sites passe au panneau"
+frequence_s = 300
+
+# ------------------------------------------------------------------ lectures (chaque compte voit les siens ; l'administrateur, l'état de tous)
+[[capacites]]
+id = "vue"
+libelle = "Les sites de la portée de ce compte, avec leur état, leur certificat, leur disponibilité, et ce qui demande un geste"
+risque = "lecture"
+
+[[capacites]]
+id = "fiche"
+libelle = "La fiche d'un site : sa ligne, son historique, ses liens, son journal, ce que ce compte peut faire dessus"
+risque = "lecture"
+
+[[capacites]]
+id = "historique"
+libelle = "Disponibilité, temps de réponse et événements d'un site sur une durée"
+risque = "lecture"
+
+[[capacites]]
+id = "disponibilite"
+libelle = "Disponibilité et temps de réponse de chaque site sur une durée"
+risque = "lecture"
+
+[[capacites]]
+id = "journal"
+libelle = "Les gestes faits sur un site, ou sur tous ceux de la portée"
+risque = "lecture"
+
+[[capacites]]
+id = "liens"
+libelle = "Les projets, contacts, machines et notes rattachés à un site"
+risque = "lecture"
+
+[[capacites]]
+id = "demandes"
+libelle = "Les demandes d'adossement au panneau (les siennes, ou toutes pour l'administrateur)"
+risque = "lecture"
+
+[[capacites]]
+id = "accord"
+libelle = "Le propriétaire a-t-il autorisé un geste lourd sur ce site, et jusqu'à quand"
+risque = "lecture"
+
+
+[[capacites]]
+id = "declarer"
+libelle = "Déclarer un site qu'on possède hors du panneau : la sonde le suivra"
+risque = "faible"
+perimetre = ["un nom de domaine valide, pas déjà à un autre compte, pas géré par le panneau"]
+preuve = "relire la ligne du site : domaine et compte conformes"
+retour = "retirer ce site de la liste de ce compte"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "retirer"
+libelle = "Retirer un site déclaré de la liste d'un compte (jamais un site du panneau)"
+risque = "faible"
+perimetre = ["un site déclaré par ce compte", "son historique est gardé"]
+preuve = "le site n'est plus dans la liste du compte"
+retour = "redéclarer le site au même compte"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "attribuer"
+libelle = "Attribuer un site (déclaré ou du panneau) à un compte"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["un site sans propriétaire", "le compte reçoit la vue et le journal de ce site"]
+preuve = "relire la ligne du site : compte et origine conformes"
+retour = "retirer l'attribution"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "transferer"
+libelle = "Faire passer un site d'un compte à un autre"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["un site déjà attribué ou déclaré", "un compte destinataire connu"]
+preuve = "le site est au compte destinataire et plus à l'ancien"
+retour = "remettre le site à l'ancien compte"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+
+[[capacites]]
+id = "demander"
+libelle = "Demander que son site déclaré passe au panneau (une demande ouverte par site)"
+risque = "faible"
+perimetre = ["un site déclaré par ce compte", "un message de 500 caractères au plus"]
+preuve = "la demande est ouverte pour ce site"
+retour = "annuler la demande"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "repondre_demande"
+libelle = "Fermer une demande d'adossement : fait, ou refusée"
+risque = "faible"
+droit = "administrer"
+perimetre = ["une demande ouverte"]
+preuve = "la demande est fermée avec cette décision"
+retour = "rouvrir la demande"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "accorder"
+libelle = "Le propriétaire autorise l'administrateur à faire un geste lourd sur son site, pour un temps limité"
+risque = "faible"
+perimetre = ["un site à ce compte", "de 1 heure à 7 jours"]
+preuve = "l'accord est valable pour ce site et ce geste"
+retour = "révoquer cet accord"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "lier"
+libelle = "Rattacher un projet, un contact, une machine ou une note à un site"
+risque = "faible"
+perimetre = ["un site de la portée de ce compte"]
+preuve = "relire le lien"
+retour = "retirer le lien"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "delier"
+libelle = "Retirer un lien d'un site"
+risque = "faible"
+perimetre = ["un lien existant d'un site de la portée de ce compte"]
+preuve = "le lien n'existe plus"
+retour = "remettre le lien retiré"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[permissions]
+stockage = true
+droits = true
+lectures = true
+reseau = ["les sites suivis, en HTTPS sur le port 443 (une requête GET, 2 Ko lus)"]

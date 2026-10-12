@@ -467,10 +467,9 @@ class Actions(Base):
     def setUp(self):
         super().setUp()
         self.noyau()
-        # le module branché par le noyau est une autre instance du fichier : on règle ses constantes là où il vit
-        for m in list(sys.modules.values()):
-            if str(getattr(m, "__file__", "") or "").replace("\\", "/").endswith("fastpanel/module.py") and hasattr(m, "ATTENTE_SERVICE_S"):
-                m.ATTENTE_SERVICE_S, m.ATTENTE_SSL_S, m.PAS_ATTENTE_S = 1, 1, 0.1
+        # le module branché par le noyau est une autre instance du fichier : on règle ses constantes dans ses globales
+        g = self.n.catalogue.get("fastpanel.sante").faire.__globals__
+        g["ATTENTE_SERVICE_S"], g["ATTENTE_SSL_S"], g["PAS_ATTENTE_S"] = 1, 1, 0.1
 
     def etat(self, nom):
         return next(s["state"] for s in self.faux.services if s["name"] == nom)
