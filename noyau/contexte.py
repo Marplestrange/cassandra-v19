@@ -76,6 +76,11 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé l'administration des droits ([permissions] droits)" % self.module)
         return self._intro["droits"]
 
+    def est_admin(self, compte: str) -> bool:
+        """Ce compte est-il administrateur ? Une question d'étendue (qui voit le partagé), jamais un droit : aucune permission à demander."""
+        d = self._intro["droits"]
+        return bool(compte) and compte not in ("cassandra", "itare", "noyau", "operateur") and bool(d.est_admin(compte))
+
     def identite(self):
         """Le service d'identité des comptes (mots de passe, sessions), pour le module qui les administre ([permissions] identite)."""
         if not self.manifeste.permissions.identite:

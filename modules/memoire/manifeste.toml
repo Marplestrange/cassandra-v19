@@ -1,0 +1,276 @@
+[module]
+id = "memoire"
+nom = "Mémoire"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "La mémoire de Cassandra : un souvenir est un fait daté, prouvé, propriétaire, corrigeable d'une phrase. Une seule porte d'écriture avec ses gardes (secret, consigne, données sensibles, sujet, quotas), des versions liées plutôt que des éditions, un veto pour les écritures critiques, des doutes posés à l'humain, des épisodes, des rappels conditionnés aux capteurs, un journal chaîné par empreintes. Un état se mesure, il ne se rappelle pas : « je ne sais pas » est une réponse de succès. Cloisonnée : on ne voit que sa portée."
+confiance = "interne"
+famille = "agents"
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[objets]]
+type = "souvenir"
+libelle = "Un souvenir"
+
+[evenements]
+emet = ["souvenir.ecrit", "souvenir.rappel"]
+
+[[reglages]]
+id = "veto_actif"
+libelle = "Les écritures critiques d'un agent attendent le veto (quarantaine) avant d'entrer"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "seuil_rappel_pct"
+libelle = "Seuil de pertinence du rappel, en centièmes (40 = 0,40)"
+type = "entier"
+defaut = 40
+minimum = 5
+maximum = 95
+
+[[moteurs]]
+id = "entretien"
+libelle = "Doutes échus, prêts échus, relecture de la péremption, rappels conditionnés, épisodes à fermer"
+mode = "periodique"
+toutes_les_s = 300
+duree_max_s = 280
+
+[[moteurs]]
+id = "veto"
+libelle = "Examine les souvenirs en quarantaine : gardes mécaniques puis relecteur"
+mode = "periodique"
+toutes_les_s = 20
+duree_max_s = 120
+
+[[moteurs]]
+id = "distiller"
+libelle = "Distille les échanges mis en file (un déclencheur a eu lieu)"
+mode = "periodique"
+toutes_les_s = 30
+duree_max_s = 120
+
+[[detecteurs]]
+id = "chaine_rompue"
+libelle = "Le journal chaîné de la mémoire a été altéré"
+frequence_s = 86400
+
+[[capacites]]
+id = "rappeler"
+libelle = "Le rappel : le noyau (épinglés, personne) d'abord, puis le plein texte sur l'actif seul, dans ma portée, avec le seuil de pertinence ; rend un bloc de prompt, les souvenirs cités et les doutes à poser"
+risque = "lecture"
+masque = ["bloc", "question"]
+
+[[capacites]]
+id = "lister"
+libelle = "Les souvenirs de ma portée, par statut et catégorie"
+risque = "lecture"
+
+[[capacites]]
+id = "chercher"
+libelle = "La recherche plein texte de l'écran, dans ma portée"
+risque = "lecture"
+
+[[capacites]]
+id = "lire"
+libelle = "La fiche d'un souvenir : versions, pièce, copies, journal (hors de ma portée : introuvable, jamais interdit)"
+risque = "lecture"
+
+[[capacites]]
+id = "etat"
+libelle = "Les chiffres de l'écran : statuts, catégories, refus de la semaine, doutes ouverts, dernière vérification de la chaîne"
+risque = "lecture"
+
+[[capacites]]
+id = "journal"
+libelle = "Le journal borné à ma portée"
+risque = "lecture"
+
+[[capacites]]
+id = "exporter"
+libelle = "L'export JSON de ma portée avec l'empreinte de l'ensemble"
+risque = "lecture"
+
+[[capacites]]
+id = "doutes"
+libelle = "Les questions que la mémoire se pose, à moi"
+risque = "lecture"
+
+[[capacites]]
+id = "episodes"
+libelle = "Les épisodes de mes sessions, et la recherche « la dernière fois qu'on a parlé de… »"
+risque = "lecture"
+
+[[capacites]]
+id = "rappels"
+libelle = "Les rappels conditionnés aux capteurs"
+risque = "lecture"
+
+[[capacites]]
+id = "perception"
+libelle = "Ce que les capteurs disent MAINTENANT, avec l'âge de chaque relevé : un état se mesure, il ne se rappelle pas"
+risque = "lecture"
+
+[[capacites]]
+id = "chaine_verifier"
+libelle = "Recalcule toute la chaîne du journal : une altération se voit, elle ne s'empêche pas"
+risque = "lecture"
+
+[[capacites]]
+id = "ecrire"
+libelle = "LA porte d'écriture : catégorie, clé en mots-clés, nature (état courant avec sonde, ou constat), gardes (secret, consigne, données sensibles, sujet, quotas, plafond de confiance) ; un refus est un résultat, journalisé avec sa raison"
+risque = "faible"
+perimetre = ["dans ma portée seulement", "une catégorie du vocabulaire fermé", "la nature est exigée : un souvenir muet sur sa nature est refusé", "aucun secret, aucune consigne, aucune donnée sensible", "quotas par heure, par compte et par déclencheur", "la confiance est plafonnée par la provenance"]
+preuve = "relire le souvenir : valeur, statut et propriétaire conformes"
+retour = "faire expirer la version écrite et rendre la précédente à l'état actif"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+masque = ["valeur", "piece"]
+
+[[capacites]]
+id = "corriger"
+libelle = "Corriger : une version nouvelle liée à l'ancienne, jamais une édition en place"
+risque = "faible"
+perimetre = ["un souvenir de ma portée"]
+preuve = "la nouvelle version est active (ou en quarantaine) et liée"
+retour = "faire expirer la correction et rendre la version d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+masque = ["valeur"]
+
+[[capacites]]
+id = "oublier"
+libelle = "Oublier : expirer avec la raison, jamais de suppression ; j'ai le dernier mot"
+risque = "faible"
+perimetre = ["un souvenir de ma portée"]
+preuve = "le souvenir est expiré"
+retour = "le restaurer s'il ne s'est pas fait remplacer"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "restaurer"
+libelle = "Restaurer un souvenir expiré (sauf si une version plus neuve occupe la clé)"
+risque = "faible"
+perimetre = ["un souvenir de ma portée"]
+preuve = "le souvenir est actif"
+retour = "l'expirer de nouveau"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "forcer"
+libelle = "Épingler (force 1) ou relâcher : un réglage de rappel, la seule colonne qui se touche en place, et elle se journalise"
+risque = "faible"
+perimetre = ["un souvenir de ma portée", "force entre 0 et 1"]
+preuve = "la force est celle demandée"
+retour = "remettre la force d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "donner"
+libelle = "Donner ou prêter un souvenir : une copie liée par la porte, jamais un transfert ; un compte ne donne qu'au partagé"
+risque = "moyen"
+perimetre = ["un souvenir actif de ma portée", "un compte ne donne qu'au partagé", "un prêt dure 7 jours par défaut, 30 au plus"]
+preuve = "la copie existe chez le destinataire et porte « donné par »"
+retour = "expirer la copie"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "don_retirer"
+libelle = "Retirer un don : la copie expire, tracé chez les deux"
+risque = "faible"
+perimetre = ["une copie dont je vois l'original"]
+preuve = "la copie est expirée"
+retour = "réactiver la copie"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "purger_secret"
+libelle = "Un secret entré par erreur : expiré tout de suite ET sa valeur retirée de la ligne, de la pièce et de l'index ; la seule réécriture en place que la mémoire admet"
+risque = "moyen"
+perimetre = ["un souvenir de ma portée"]
+preuve = "la valeur n'est plus lisible nulle part, le geste reste au journal"
+retour = "aucun, voulu : la valeur d'un secret ne revient pas"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "douter_resoudre"
+libelle = "Répondre à un doute : garder l'ancienne, prendre la nouvelle, c'est faux, plus d'actualité, toujours vrai, écrire (un report est admis une fois)"
+risque = "faible"
+perimetre = ["un doute de ma portée", "un choix parmi ceux que le doute propose"]
+preuve = "le doute est résolu et son effet appliqué"
+retour = "remettre les souvenirs et le doute dans leur état d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "doutes_depuis_reponse"
+libelle = "Résoudre les « doute N : choix » écrits dans la réponse d'un humain"
+risque = "faible"
+perimetre = ["des doutes de ma portée"]
+preuve = "chaque doute cité est résolu ou refusé avec sa raison"
+retour = "défaire chaque résolution, dans l'ordre inverse"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "veto_lever"
+libelle = "Lever la quarantaine ou le contesté d'un souvenir : il devient la version active, l'ancienne expire"
+risque = "faible"
+perimetre = ["un souvenir en quarantaine ou contesté de ma portée"]
+preuve = "le souvenir est actif"
+retour = "remettre le souvenir et l'ancienne version dans leur état d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "rappel_poser"
+libelle = "Poser un rappel conditionné à une mesure (métrique, opérateur, seuil) : il rappelle, il n'exécute rien"
+risque = "faible"
+perimetre = ["une métrique connue", "un opérateur connu", "un message sans secret ni consigne"]
+preuve = "le rappel est actif"
+retour = "retirer le rappel posé, ou remettre l'ancien"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "rappel_oter"
+libelle = "Ôter un rappel (désactivé, la ligne reste lisible)"
+risque = "faible"
+perimetre = ["un rappel de ma portée"]
+preuve = "le rappel est inactif"
+retour = "le réactiver"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "tour_commencer"
+libelle = "À l'entrée d'un tour de chat : ce qu'un tour précédent a cité ne signe jamais la réponse d'un autre ; la question se range par compte"
+risque = "faible"
+perimetre = ["le tour du compte qui agit"]
+preuve = "le tour est ouvert"
+retour = "remettre le tour d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "apres_echange"
+libelle = "À la fin d'un échange : l'épisode s'allonge, les messages sont gardés, et une distillation est mise en file SEULEMENT si un déclencheur a eu lieu"
+risque = "faible"
+perimetre = ["l'épisode du compte qui agit"]
+preuve = "l'épisode et la file portent l'échange"
+retour = "retirer le message gardé et la demande de distillation"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+masque = ["question", "reponse"]
+
+[permissions]
+stockage = true
+lectures = true
+introspection = true
