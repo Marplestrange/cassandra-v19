@@ -53,20 +53,22 @@ def brancher(ctx):
         cible = autorise(cle, pour_compte, ctx)
         r = rg.poser(cle, valeur, cible, ctx.compte)
         ctx.emettre("reglage.change", objet=("reglage", cle), donnees={"cle": cle, "compte": cible, "secret": True})
-        return {"cle": cle, "compte": cible, "avant": r["avant"], "avait": r["avait"], "apres": "***"}
+        return {"cle": cle, "compte": cible, "avant": r["avant"], "avait": r["avait"], "apres": "***", "avant_chiffre": r.get("avant_chiffre")}
 
     def reinitialiser(ctx, cle="", pour_compte=""):
         cible = autorise(cle, pour_compte, ctx)
         r = rg.retirer(cle, cible, ctx.compte)
         ctx.emettre("reglage.change", objet=("reglage", cle), donnees={"cle": cle, "compte": cible, "reinitialise": True, "secret": rg._def(cle).type == "secret"})
-        return {"cle": cle, "compte": cible, "avant": r.get("avant"), "avait": r["avait"]}
+        return {"cle": cle, "compte": cible, "avant": r.get("avant"), "avait": r["avait"], "avant_chiffre": r.get("avant_chiffre")}
 
     def prouver_regler(ctx, res):
         ok, v = rg._brut(res["cle"], res["compte"])
         return ok and (res["apres"] == "***" or v == res["apres"])
 
     def defaire_regler(ctx, res):
-        if res["avait"]:
+        if res["avait"] and res.get("avant_chiffre") is not None:               # un secret : on remet la valeur chiffrée d'avant, sans jamais la déchiffrer
+            rg.poser_chiffre(res["cle"], res["compte"], res["avant_chiffre"], ctx.compte or "retour arrière")
+        elif res["avait"]:
             rg.poser(res["cle"], res["avant"], res["compte"], ctx.compte or "retour arrière")
         else:
             rg.retirer(res["cle"], res["compte"], ctx.compte or "retour arrière")
@@ -75,7 +77,9 @@ def brancher(ctx):
         return not rg._brut(res["cle"], res["compte"])[0]
 
     def defaire_reinit(ctx, res):
-        if res["avait"]:
+        if res["avait"] and res.get("avant_chiffre") is not None:
+            rg.poser_chiffre(res["cle"], res["compte"], res["avant_chiffre"], ctx.compte or "retour arrière")
+        elif res["avait"]:
             rg.poser(res["cle"], res["avant"], res["compte"], ctx.compte or "retour arrière")
 
     ctx.implementer("lire", lire)

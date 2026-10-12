@@ -48,13 +48,12 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "regler_secret"
 libelle = "Donner une valeur à un réglage de type secret (clé d'API, mot de passe) : la valeur ne va jamais au journal"
 risque = "moyen"
-droit = "gerer"
 perimetre = ["une ligne de la table reglages : celle du secret désigné"]
 preuve = "relire la valeur écrite"
 retour = "remettre la valeur d'avant"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
-masque = ["valeur", "avant"]
+masque = ["valeur", "avant", "avant_chiffre"]
 
 [[capacites]]
 id = "reinitialiser"
@@ -65,7 +64,7 @@ preuve = "plus de valeur posée pour ce réglage et ce compte"
 retour = "remettre la valeur d'avant"
 paliers = ["raconter", "auto", "maitre"]
 qui = ["humain", "compte", "cassandra", "itare"]
-masque = ["avant"]
+masque = ["avant", "avant_chiffre"]
 
 [permissions]
 reglages = true

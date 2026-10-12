@@ -9,9 +9,21 @@ sans quoi un réglage disparaissait). Ici chaque réglage est une LIGNE, écrite
 """
 from __future__ import annotations
 
+import base64
 import json
+import logging
+import os
+import secrets as _secrets
 import threading
 import time
+
+try:
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+except Exception:                      # sans la bibliothèque, un secret ne s'écrit pas : on ne le garde jamais en clair
+    AESGCM = None
+
+log = logging.getLogger("noyau.reglages")
+PREFIXE = "enc1:"
 
 TYPES = ("texte", "entier", "booleen", "choix", "secret")
 PORTEES = ("global", "compte")
@@ -45,9 +57,19 @@ def valider(r, valeur):
     return None, "type inconnu"
 
 
+class SecretIllisible(RuntimeError):
+    pass
+
+
 class Reglages:
-    def __init__(self, base):
+    """Les secrets sont CHIFFRÉS au repos (AES-256-GCM) avec une clé gardée à part, dans un fichier lisible de son seul propriétaire. Cela protège les
+    sauvegardes et les copies de la base ; cela ne protège pas d'un accès au serveur lui-même (qui lit aussi la clé). Chaque valeur est liée à son
+    réglage et à son compte (données associées) : recopier un secret chiffré d'une ligne à l'autre ne donne rien."""
+
+    def __init__(self, base, fichier_cle=None):
         self.base = base
+        self._fichier_cle = fichier_cle
+        self._cle = None
         self.connus = {}                 # « module.reglage » -> (module, Reglage)
         self._verrou = threading.Lock()
 
@@ -68,9 +90,79 @@ class Reglages:
             raise KeyError("réglage inconnu (aucun module actif ne le déclare) : %s" % cle)
         return c[1]
 
+    # ---- le chiffrement des secrets ----
+    def _cle_secrets(self):
+        if AESGCM is None:
+            raise SecretIllisible("la bibliothèque « cryptography » manque : un secret ne s'écrit pas en clair, il n'est donc pas écrit")
+        if self._cle is None:
+            if self._fichier_cle is None:
+                self._cle = _secrets.token_bytes(32)                      # sans fichier (essais) : une clé de la durée du processus
+                log.warning("réglages : pas de fichier de clé, les secrets ne survivront pas au redémarrage")
+            else:
+                chemin = str(self._fichier_cle)
+                if os.path.exists(chemin):
+                    with open(chemin, "rb") as f:
+                        self._cle = f.read()
+                    if len(self._cle) != 32:
+                        raise SecretIllisible("le fichier de clé des secrets est invalide : %s" % chemin)
+                else:
+                    os.makedirs(os.path.dirname(chemin) or ".", exist_ok=True)
+                    cle = _secrets.token_bytes(32)
+                    fd = os.open(chemin, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)       # lisible de son seul propriétaire
+                    with os.fdopen(fd, "wb") as f:
+                        f.write(cle)
+                    self._cle = cle
+        return self._cle
+
+    def chiffrer(self, valeur, cle, compte):
+        nonce = _secrets.token_bytes(12)
+        ct = AESGCM(self._cle_secrets()).encrypt(nonce, str(valeur).encode("utf-8"), ("%s|%s" % (cle, compte)).encode("utf-8")) if AESGCM else None
+        if ct is None:
+            raise SecretIllisible("chiffrement indisponible")
+        return PREFIXE + base64.b64encode(nonce + ct).decode("ascii")
+
+    def dechiffrer(self, chiffre, cle, compte):
+        try:
+            brut = base64.b64decode(chiffre[len(PREFIXE):])
+            return AESGCM(self._cle_secrets()).decrypt(brut[:12], brut[12:], ("%s|%s" % (cle, compte)).encode("utf-8")).decode("utf-8")
+        except SecretIllisible:
+            raise
+        except Exception:
+            raise SecretIllisible("le secret de « %s » est illisible (clé changée ou valeur altérée)" % cle)
+
     def _brut(self, cle, compte):
+        """(posé ?, valeur). Un secret est rendu EN CLAIR, déchiffré ; un secret resté en clair d'avant le chiffrement est chiffré au passage."""
         r = self.base.lire("SELECT valeur FROM reglages WHERE cle=? AND compte=?", (cle, compte))
-        return (True, json.loads(r[0]["valeur"])) if r else (False, None)
+        if not r:
+            return False, None
+        v = json.loads(r[0]["valeur"])
+        c = self.connus.get(cle)
+        if c is not None and c[1].type == "secret" and isinstance(v, str):
+            if v.startswith(PREFIXE):
+                return True, self.dechiffrer(v, cle, compte)
+            if v:
+                try:
+                    self.base.ecrire("UPDATE reglages SET valeur=? WHERE cle=? AND compte=?", (json.dumps(self.chiffrer(v, cle, compte)), cle, compte))
+                except SecretIllisible:
+                    pass
+        return True, v
+
+    def brut_chiffre(self, cle, compte):
+        """La valeur CHIFFRÉE telle qu'elle est rangée (pour un retour arrière : on la remet sans jamais la déchiffrer), ou None."""
+        r = self.base.lire("SELECT valeur FROM reglages WHERE cle=? AND compte=?", (cle, compte))
+        v = json.loads(r[0]["valeur"]) if r else None
+        if isinstance(v, str) and v and not v.startswith(PREFIXE):
+            v = self.chiffrer(v, cle, compte)
+        return v
+
+    def poser_chiffre(self, cle, compte, chiffre, par=""):
+        """Remet une valeur chiffrée d'avant (retour arrière)."""
+        self._def(cle)
+        now = time.time()
+        with self.base.transaction() as c:
+            c.execute("INSERT INTO reglages(cle, compte, valeur, maj, par) VALUES(?,?,?,?,?) ON CONFLICT(cle, compte) DO UPDATE SET valeur=excluded.valeur, maj=excluded.maj, par=excluded.par",
+                      (cle, compte, json.dumps(chiffre), now, par))
+            c.execute("INSERT INTO reglages_historique(cle, compte, avant, apres, ts, par) VALUES(?,?,?,?,?,?)", (cle, compte, None, json.dumps("***"), now, par))
 
     def valeur(self, cle: str, compte: str = ""):
         """La valeur EFFECTIVE : celle du compte si le réglage est de portée compte et qu'il l'a posée, sinon la globale, sinon le défaut."""
@@ -90,14 +182,19 @@ class Reglages:
         v, err = valider(d, valeur)
         if err:
             raise ValueError("%s : %s" % (cle, err))
+        secret = d.type == "secret"
         ok, avant = self._brut(cle, compte)
+        avant_chiffre = self.brut_chiffre(cle, compte) if (secret and ok) else None
+        stocke = self.chiffrer(v, cle, compte) if (secret and v != "") else v
         now = time.time()
         with self.base.transaction() as c:
             c.execute("INSERT INTO reglages(cle, compte, valeur, maj, par) VALUES(?,?,?,?,?) "
                       "ON CONFLICT(cle, compte) DO UPDATE SET valeur=excluded.valeur, maj=excluded.maj, par=excluded.par",
-                      (cle, compte, json.dumps(v), now, par))
+                      (cle, compte, json.dumps(stocke), now, par))
             c.execute("INSERT INTO reglages_historique(cle, compte, avant, apres, ts, par) VALUES(?,?,?,?,?,?)",
-                      (cle, compte, json.dumps(avant) if ok else None, json.dumps(v), now, par))
+                      (cle, compte, (json.dumps("***") if (secret and ok) else (json.dumps(avant) if ok else None)), json.dumps("***" if secret else v), now, par))
+        if secret:
+            return {"cle": cle, "compte": compte, "avant": "***" if ok else None, "avait": ok, "apres": "***", "avant_chiffre": avant_chiffre}
         return {"cle": cle, "compte": compte, "avant": avant, "avait": ok, "apres": v}
 
     def retirer(self, cle: str, compte: str = "", par: str = "") -> dict:
@@ -106,12 +203,14 @@ class Reglages:
         ok, avant = self._brut(cle, compte)
         if not ok:
             return {"cle": cle, "compte": compte, "avait": False}
+        secret = self._def(cle).type == "secret"
+        avant_chiffre = self.brut_chiffre(cle, compte) if secret else None
         now = time.time()
         with self.base.transaction() as c:
             c.execute("DELETE FROM reglages WHERE cle=? AND compte=?", (cle, compte))
             c.execute("INSERT INTO reglages_historique(cle, compte, avant, apres, ts, par) VALUES(?,?,?,NULL,?,?)",
-                      (cle, compte, json.dumps(avant), now, par))
-        return {"cle": cle, "compte": compte, "avant": avant, "avait": True}
+                      (cle, compte, json.dumps("***" if secret else avant), now, par))
+        return {"cle": cle, "compte": compte, "avant": "***" if secret else avant, "avait": True, "avant_chiffre": avant_chiffre}
 
     def historique(self, cle: str, compte: str = "", limite: int = 20) -> list:
         d = self._def(cle)

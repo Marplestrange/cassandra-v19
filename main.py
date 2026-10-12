@@ -71,7 +71,7 @@ class Noyau:
         self._donnees = Path(donnees)
         self._stockages = {}       # module -> son Stockage, ouvert une fois
         self.droits = Droits(self.base)
-        self.reglages = Reglages(self.base)
+        self.reglages = Reglages(self.base, Path(donnees) / "secrets.cle")      # la clé qui chiffre les secrets, à part de la base
         self.identite = Identite(self.base, self.droits, (self.config.get("comptes") or {}).get("session_heures", 24),
                                  str((self.config.get("comptes") or {}).get("superadmin_unix", "fastuser")),
                                  courtier=str(Path(donnees) / "courtier"), reglages=self.reglages)
