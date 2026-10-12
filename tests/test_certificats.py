@@ -21,9 +21,11 @@ class Monde(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         base = Path(self.tmp.name)
         mods = base / "modules"
-        shutil.copytree(RACINE / "modules" / "certificats", mods / "certificats")
+        for m in ("dns", "certificats"):
+            shutil.copytree(RACINE / "modules" / m, mods / m)
         self.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
         self.n.brancher()
+        self.n.etat_modules.poser("certificats", installe=True, actif=False, par="test")        # son installation (installer.sh) est l'affaire de l'administrateur système
         self.assertTrue(self.n.activer("certificats")["ok"])
         self.ctx = self.n.executeur.contextes["certificats"]
         self.panneau = [{"domaine": "a.exemple.fr"}, {"domaine": "www.b.exemple.org"}, {"domaine": "c.exemple.fr"}]

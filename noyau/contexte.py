@@ -23,6 +23,10 @@ class _Compte(threading.local):
     valeur = ""
 
 
+class _Acteur(threading.local):
+    valeur = ""
+
+
 class Contexte:
     def __init__(self, manifeste, bus, registre, catalogue, detecteurs, config=None, moteurs=None, introspection=None):
         self.manifeste = manifeste
@@ -34,6 +38,7 @@ class Contexte:
         self._intro = introspection or {}
         self._cause = _Fil()
         self._compte = _Compte()
+        self._acteur = _Acteur()
 
     TOUT = "*"   # la portée des agents (voir bus.py) : un module la passe explicitement, jamais par défaut
 
@@ -41,6 +46,11 @@ class Contexte:
     def compte(self) -> str:
         """Le compte au nom duquel la capacité en cours s'exécute ('' = commun / infrastructure)."""
         return self._compte.valeur
+
+    @property
+    def acteur(self) -> str:
+        """Qui agit (humain, compte, agent, itare, cassandra, anonyme) le temps de la capacité en cours : un module s'en sert pour ce qu'il montre à un modèle."""
+        return self._acteur.valeur
 
     # ---- ce que le noyau sait de lui-même (module de menus, de supervision) ----
     def _exiger_introspection(self) -> None:

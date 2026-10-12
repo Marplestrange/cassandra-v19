@@ -1,0 +1,237 @@
+[module]
+id = "contacts"
+nom = "Carnet d'adresses"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi."
+confiance = "interne"
+famille = "gestion"
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[objets]]
+type = "contact"
+libelle = "Une fiche du carnet"
+
+[[reglages]]
+id = "vue_modele"
+libelle = "Ce qu'un modèle (Itare, Cassandra, un agent) voit d'une fiche"
+type = "choix"
+choix = ["expurgee", "complete"]
+defaut = "expurgee"
+aide = "Expurgée : la présence des coordonnées est dite (« a une adresse »), jamais la valeur. Complète : à choisir quand le modèle tourne sur ce serveur."
+
+[[reglages]]
+id = "notes_au_modele"
+libelle = "Les notes de la fiche accompagnent-elles la fiche vers un modèle, même en vue expurgée ?"
+type = "booleen"
+defaut = true
+aide = "Les coordonnées sont des données de contact ; les notes sont du contexte (« rappeler avant 10 h »), utile et parfois sensible : le choix est le vôtre."
+
+[evenements]
+emet = ["contact.cree", "contact.modifie", "contact.supprime", "contact.restaure", "contact.fusionne", "contact.importe"]
+
+# ------------------------------------------------------------------ lectures
+[[capacites]]
+id = "lister"
+libelle = "Les fiches du carnet (vivantes, archive ou corbeille), triées favoris d'abord, avec recherche"
+risque = "lecture"
+
+[[capacites]]
+id = "voir"
+libelle = "Une fiche entière avec ses adresses et ses rattachements"
+risque = "lecture"
+
+[[capacites]]
+id = "pour_adresse"
+libelle = "La fiche qui porte une adresse électronique, s'il y en a une"
+risque = "lecture"
+
+[[capacites]]
+id = "dossiers"
+libelle = "Les dossiers, avec le nombre de fiches vivantes dans chacun (et ce que contiennent l'archive et la corbeille)"
+risque = "lecture"
+
+[[capacites]]
+id = "pour_cible"
+libelle = "Les contacts rattachés à un domaine, un projet, un serveur... avec leur rôle"
+risque = "lecture"
+
+[[capacites]]
+id = "doublons"
+libelle = "Les fiches qui se ressemblent, rangées par degré de certitude (rien n'est fusionné)"
+risque = "lecture"
+
+[[capacites]]
+id = "vcard_exporter"
+libelle = "Exporter des fiches (ou tout le carnet) en vCard 3.0"
+risque = "lecture"
+
+[[capacites]]
+id = "csv_apercu"
+libelle = "Ce qu'on a compris d'un fichier CSV, avant d'écrire quoi que ce soit"
+risque = "lecture"
+
+# ------------------------------------------------------------------ gestes
+[[capacites]]
+id = "creer"
+libelle = "Créer une fiche"
+risque = "faible"
+perimetre = ["le carnet du compte qui agit", "un nom ou une adresse au minimum", "une adresse n'appartient qu'à une fiche"]
+preuve = "relire la fiche : champs et adresses conformes"
+retour = "retirer la fiche que cet acte vient de créer"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "modifier"
+libelle = "Modifier une fiche en patch : un champ non fourni n'est pas touché, une chaîne vide l'efface"
+risque = "faible"
+perimetre = ["une fiche du compte qui agit", "les adresses ne sont resynchronisées que si elles sont fournies"]
+preuve = "relire la fiche et comparer chaque champ écrit"
+retour = "remettre la fiche telle qu'elle était, relevée juste avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "supprimer"
+libelle = "Mettre des fiches à la corbeille (rien n'est effacé : adresses et rattachements restent)"
+risque = "faible"
+perimetre = ["des fiches du compte qui agit, 500 au plus"]
+preuve = "les fiches sont à la corbeille"
+retour = "sortir ces fiches de la corbeille"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "restaurer"
+libelle = "Sortir des fiches de la corbeille, à leur dossier d'origine"
+risque = "faible"
+perimetre = ["des fiches du compte qui agit"]
+preuve = "les fiches ne sont plus à la corbeille"
+retour = "les remettre à la corbeille"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "archiver"
+libelle = "Ranger des fiches à l'archive, ou les en sortir (la fiche reste entière, avec ses liens)"
+risque = "faible"
+perimetre = ["des fiches du compte qui agit"]
+preuve = "l'état d'archive est celui demandé"
+retour = "remettre l'état d'archive d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "deplacer"
+libelle = "Déplacer des fiches vers un dossier (0 : sans dossier)"
+risque = "faible"
+perimetre = ["des fiches et un dossier du compte qui agit"]
+preuve = "les fiches sont dans le dossier"
+retour = "remettre chaque fiche dans son dossier d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "dossier_enregistrer"
+libelle = "Créer ou renommer un dossier (un seul niveau d'imbrication)"
+risque = "faible"
+perimetre = ["le carnet du compte qui agit"]
+preuve = "relire le dossier"
+retour = "supprimer le dossier créé, ou remettre l'ancien nom"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "dossier_supprimer"
+libelle = "Supprimer un dossier SANS toucher à ses fiches (elles retournent « sans dossier »)"
+risque = "faible"
+perimetre = ["un dossier du compte qui agit"]
+preuve = "le dossier n'existe plus et ses fiches sont intactes"
+retour = "recréer le dossier et y remettre ses fiches et sous-dossiers"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "lier"
+libelle = "Rattacher une fiche à un projet, un domaine, un serveur, une tâche... avec un rôle"
+risque = "faible"
+perimetre = ["une fiche du compte qui agit", "un type et un rôle connus"]
+preuve = "relire le lien"
+retour = "retirer le lien, ou remettre l'ancien"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "delier"
+libelle = "Retirer un rattachement"
+risque = "faible"
+perimetre = ["une fiche du compte qui agit"]
+preuve = "le lien n'existe plus"
+retour = "remettre le lien retiré"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "fusionner"
+libelle = "Fusionner deux fiches : la source est absorbée par la destination (adresses, rattachements et champs vides repris), puis mise à la corbeille"
+risque = "moyen"
+perimetre = ["deux fiches du compte qui agit", "rien n'est perdu : la source reste à la corbeille"]
+preuve = "la destination porte les adresses de la source, qui est à la corbeille"
+retour = "remettre les deux fiches telles qu'elles étaient"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "fusionner_certaines"
+libelle = "Fusionner en lot les paires CERTAINES (même adresse des deux côtés, ou jumelles d'import) ; jamais le probable"
+risque = "moyen"
+perimetre = ["les paires dont une adresse est partagée, ou nées ensemble du même import", "200 paires au plus par passe"]
+preuve = "chaque source est à la corbeille, chaque destination porte ses adresses"
+retour = "remettre toutes les fiches fusionnées telles qu'elles étaient"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "pas_doublon"
+libelle = "Retenir que deux fiches ne sont PAS la même personne (ou revenir sur ce choix)"
+risque = "faible"
+perimetre = ["deux fiches du compte qui agit"]
+preuve = "la paire figure (ou non) parmi les paires écartées"
+retour = "remettre l'état d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "vcard_importer"
+libelle = "Importer un fichier vCard : les fiches dont une adresse existe déjà sont complétées, pas dupliquées"
+risque = "moyen"
+perimetre = ["le carnet du compte qui agit", "5000 fiches au plus"]
+preuve = "le nombre de fiches créées existe dans le carnet"
+retour = "retirer les fiches créées et remettre les fiches complétées telles qu'elles étaient"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "csv_importer"
+libelle = "Importer un fichier CSV avec l'appariement des colonnes confirmé"
+risque = "moyen"
+perimetre = ["le carnet du compte qui agit", "5000 lignes au plus"]
+preuve = "le nombre de fiches créées existe dans le carnet"
+retour = "retirer les fiches créées et remettre les fiches complétées telles qu'elles étaient"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "purger_corbeille"
+libelle = "Effacer pour de bon ce qui est à la corbeille depuis plus de trente jours"
+risque = "moyen"
+perimetre = ["des fiches du compte qui agit, à la corbeille depuis plus de trente jours", "500 au plus par passe"]
+preuve = "les fiches purgées n'existent plus"
+retour = "recréer les fiches purgées depuis la copie gardée dans le résultat de l'acte"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[permissions]
+stockage = true

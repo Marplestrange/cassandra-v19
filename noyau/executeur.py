@@ -80,7 +80,7 @@ class Executeur:
         demande = self._evt("capacite.demandee", e, acteur, cause, {"args": self._masquer(args, c.masque), "essai": essai}, compte)
         ctx = self.contextes.get(e.module)
         if ctx is not None:
-            ctx._cause.valeur, ctx._compte.valeur = demande, compte
+            ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur = demande, compte, acteur
         try:
             if not c.ecrit:
                 try:
@@ -105,7 +105,7 @@ class Executeur:
             return self._ecrire(e, acteur, args, demande, ctx, compte)
         finally:
             if ctx is not None:
-                ctx._cause.valeur, ctx._compte.valeur = None, ""
+                ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur = None, "", ""
 
     def _ecrire(self, e, acteur, args, demande, ctx, compte) -> dict:
         humain = acteur == "humain"

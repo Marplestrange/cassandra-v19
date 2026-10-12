@@ -6,6 +6,7 @@ noyau_min = "0.1.0"
 description = "Surveille l'expiration des certificats TLS réellement servis (port 443), garde le registre des émissions Let's Encrypt (cinq par semaine et par domaine) et signale les certificats échus ou proches de l'échéance, avec le quota restant. Le renouvellement lui-même se fait par le panneau (module fastpanel, ssl_renouveler) ; ce module en tient le compte."
 confiance = "interne"
 famille = "securite"
+requiert = ["dns"]
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
 
@@ -93,3 +94,8 @@ stockage = true
 lectures = true
 introspection = true
 reseau = ["le port 443 des hôtes suivis (lecture du certificat présenté)"]
+
+[installation]
+script = "installer.sh"
+verification = "verifier.sh"
+retrait = "retirer.sh"
