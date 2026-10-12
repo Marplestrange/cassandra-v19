@@ -22,3 +22,6 @@ Porté de la V18 (`hebergement` : `get_fp_*`, `fp_api_*`, `fp_*_watch`/`_audit`)
 - **Cloisonnement par compte** (un compte ordinaire ne voit que ses sites : `fp_comptes_sites`, `set_user_fp_account`) : arrive avec le module `sites`, qui sait rattacher un compte à ses sites.
 - **Rattachement d'un domaine à un projet** (`fp_domain_attach`) : relève du module des projets.
 - **Retour du plan de sauvegarde** (`DELETE /api/v2/backup/plans/{id}`) : le point d'entrée n'a pas été éprouvé sur un panneau réel ; le banc ne le prouve que contre un faux panneau. À vérifier sur Amizo avant de s'y fier.
+
+## État de la preuve
+Bancs contre un faux panneau (API et base SQLite au schéma relevé en V18) : verts. **Jamais éprouvé sur un vrai FastPanel V19** : Amizo n'en a pas (pas de `/usr/local/fastpanel*`). À vérifier sur Orion ou un serveur de test avec FastPanel avant d'activer.
