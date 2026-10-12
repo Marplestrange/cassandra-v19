@@ -527,10 +527,12 @@ class Actions(Base):
         r = self.faire("ssl_renouveler", domaine="www.a.exemple.fr")
         self.assertEqual(r["statut"], "faite", r)
         self.assertEqual(len(self.evts("capacite.prouvee")), 1)
+        self.assertEqual([e["donnees"]["domaine"] for e in self.evts("fastpanel.certificat_renouvele")], ["a.exemple.fr"])
 
     def test_un_renouvellement_sans_effet_n_est_pas_un_succes(self):
         self.faux.renouvelle = False
         self.assertIn(self.faire("ssl_renouveler", domaine="a.exemple.fr")["statut"], ("annulee", "annulation_impossible"))
+        self.assertEqual(self.evts("fastpanel.certificat_renouvele"), [])
 
     def test_un_domaine_sans_certificat_au_panneau_est_refuse(self):
         self.assertEqual(self.faire("ssl_renouveler", domaine="autre.exemple.fr")["statut"], "echec")

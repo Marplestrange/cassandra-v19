@@ -925,6 +925,7 @@ def brancher(ctx):
         while True:
             x = next((y for y in _certificats_panneau() if y.get("id") == res["certificat"]), {})
             if str(x.get("issued_at") or "") != res["emission_avant"]:
+                c.emettre("fastpanel.certificat_renouvele", objet=("fastpanel", res["domaine"]), donnees={"domaine": res["domaine"], "certificat": res["certificat"]})
                 return True
             if time.time() >= fin:
                 return False

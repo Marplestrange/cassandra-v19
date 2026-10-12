@@ -1,41 +1,74 @@
 [module]
 id = "certificats"
 nom = "Certificats"
-version = "0.1.2"
+version = "0.2.0"
 noyau_min = "0.1.0"
-description = "Surveille l'expiration des certificats TLS, les renouvelle et prouve le renouvellement. Module pilote de la V19."
+description = "Surveille l'expiration des certificats TLS réellement servis (port 443), garde le registre des émissions Let's Encrypt (cinq par semaine et par domaine) et signale les certificats échus ou proches de l'échéance, avec le quota restant. Le renouvellement lui-même se fait par le panneau (module fastpanel, ssl_renouveler) ; ce module en tient le compte."
 confiance = "interne"
 famille = "securite"
-requiert = ["dns"]
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
 
 [[objets]]
 type = "certificat"
 libelle = "Certificat TLS d'un hôte"
 
+[[reglages]]
+id = "hotes"
+libelle = "Hôtes surveillés en plus de ceux du panneau (séparés par des virgules)"
+
+[[reglages]]
+id = "seuil_jours"
+libelle = "Jours restants sous lesquels un certificat est signalé"
+type = "entier"
+defaut = 21
+minimum = 3
+maximum = 90
+
+[[reglages]]
+id = "delai_s"
+libelle = "Délai d'attente de la connexion au port 443, en secondes"
+type = "entier"
+defaut = 5
+minimum = 1
+maximum = 30
+
 [evenements]
 emet = ["certificat.proche_expiration", "certificat.renouvele"]
-ecoute = ["dns.derive"]
 
-[[capacites]]
-id = "relire_expiration"
-libelle = "Relire la date d'expiration d'un certificat servi"
-risque = "lecture"
+[[moteurs]]
+id = "sonde"
+libelle = "Lit le certificat servi par chaque hôte suivi (toutes les heures)"
+mode = "periodique"
+toutes_les_s = 3600
+duree_max_s = 600
 
-[[capacites]]
-id = "renouveler_certificat"
-libelle = "Renouveler le certificat d'un hôte et le poser"
-risque = "faible"
-perimetre = ["certificats des hôtes déclarés", "fichier certs_map du courrier"]
-preuve = "relire l'expiration sur le port servi après le renouvellement"
-retour = "restaurer le certificat et le fichier de correspondance sauvegardés avant l'écriture"
-paliers = ["raconter", "auto", "maitre"]
-qui = ["cassandra", "itare", "humain"]
+[[moteurs]]
+id = "emission"
+libelle = "Inscrit au registre les émissions faites par le panneau (événements fastpanel.certificat_renouvele, lus dans le journal du bus)"
+mode = "periodique"
+toutes_les_s = 300
+duree_max_s = 60
 
 [[detecteurs]]
 id = "expiration_proche"
-libelle = "Certificat à moins de 21 jours de l'expiration"
+libelle = "Certificat échu ou à moins de 21 jours de l'expiration"
 frequence_s = 3600
-capacite = "renouveler_certificat"
+
+[[capacites]]
+id = "relire_expiration"
+libelle = "Lire l'expiration du certificat réellement servi par un hôte, à l'instant"
+risque = "lecture"
+
+[[capacites]]
+id = "etat"
+libelle = "Les certificats suivis : jours restants, échéance, quota d'émission"
+risque = "lecture"
+
+[[capacites]]
+id = "quota"
+libelle = "Combien d'émissions Let's Encrypt restent à un domaine cette semaine, et quand le quota se libère"
+risque = "lecture"
 
 [[ecrans]]
 id = "vue_certificats"
@@ -55,7 +88,8 @@ role = "admin"
 icone = "lock"
 badge = "constats"
 
-[installation]
-script = "installer.sh"
-verification = "verifier.sh"
-retrait = "retirer.sh"
+[permissions]
+stockage = true
+lectures = true
+introspection = true
+reseau = ["le port 443 des hôtes suivis (lecture du certificat présenté)"]

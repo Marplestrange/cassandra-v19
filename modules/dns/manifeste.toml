@@ -1,11 +1,18 @@
 [module]
 id = "dns"
 nom = "Domaines et DNS"
-version = "0.1.2"
+version = "0.2.0"
 noyau_min = "0.1.0"
-description = "Relève les zones suivies, garde une référence versionnée et corrige les enregistrements dérivés de l'adresse publique."
+description = "Relève les zones suivies auprès de leur serveur de noms faisant foi, garde une référence versionnée (rien n'est écrasé), signale la dérive, l'adresse publique qui a changé et les domaines proches de leur expiration (RDAP). Corrige un enregistrement A dérivé de l'adresse publique chez Cloudflare, et le prouve sur le serveur de noms. Le plafond d'autonomie est le choix de l'administrateur."
 confiance = "interne"
 famille = "reseau"
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "gerer"
+libelle = "Accepter un changement comme nouvelle référence, corriger un enregistrement"
+sensible = true
 
 [[objets]]
 type = "domaine"
@@ -15,29 +22,103 @@ libelle = "Domaine suivi"
 type = "dns"
 libelle = "Enregistrement DNS d'une zone suivie"
 
+[[reglages]]
+id = "domaines"
+libelle = "Domaines suivis en plus de ceux du panneau (séparés par des virgules)"
+
+[[reglages]]
+id = "ne_pas_toucher"
+libelle = "Noms que Cassandra ne corrige jamais (séparés par des virgules)"
+aide = "Un nom qui ne pointe pas sur ce serveur (autre hébergeur) ne doit pas suivre son adresse."
+
+[[reglages]]
+id = "courrier_libre"
+libelle = "Domaines dont les noms de courrier (mail, smtp, _dmarc, DKIM) peuvent être corrigés"
+aide = "Par défaut les noms de courrier ne sont jamais touchés : ils relèvent du fournisseur de courrier."
+
+[[reglages]]
+id = "jeton_cloudflare"
+libelle = "Jeton d'API Cloudflare (droit d'éditer les enregistrements DNS)"
+type = "secret"
+
+[[reglages]]
+id = "api_cloudflare"
+libelle = "Adresse de l'API Cloudflare"
+defaut = "https://api.cloudflare.com/client/v4"
+
+[[reglages]]
+id = "serveur_noms"
+libelle = "Résolveur utilisé pour trouver les serveurs de noms (vide : celui du système)"
+
+[[reglages]]
+id = "expire_jours"
+libelle = "Jours avant l'expiration d'un domaine sous lesquels on le signale"
+type = "entier"
+defaut = 45
+minimum = 7
+maximum = 365
+
 [evenements]
 emet = ["dns.derive", "dns.corrige", "domaine.proche_expiration"]
 
-[[capacites]]
-id = "relever_zone"
-libelle = "Relever les enregistrements d'une zone"
-risque = "lecture"
-
-[[capacites]]
-id = "corriger_enregistrement"
-libelle = "Corriger un enregistrement A dérivé de l'adresse publique"
-risque = "moyen"
-perimetre = ["zones suivies", "enregistrements A non proxifiés", "hors noms réservés"]
-preuve = "relire la valeur sur le serveur de noms après l'écriture"
-retour = "restaurer la version précédente de la référence"
-paliers = ["raconter", "auto"]
-qui = ["cassandra"]
+[[moteurs]]
+id = "releve"
+libelle = "Relève les zones suivies (toutes les heures), compare à la référence, mesure l'adresse publique, lit l'expiration des domaines (une fois par jour)"
+mode = "periodique"
+toutes_les_s = 3600
+duree_max_s = 600
 
 [[detecteurs]]
 id = "derive_dns"
-libelle = "Dérive entre la zone et la référence"
+libelle = "Un enregistrement a changé par rapport à la référence, ou pointe encore sur l'ancienne adresse publique"
 frequence_s = 1800
-capacite = "corriger_enregistrement"
+
+[[detecteurs]]
+id = "domaine_expire"
+libelle = "Un domaine arrive à expiration"
+frequence_s = 3600
+
+[[capacites]]
+id = "relever_zone"
+libelle = "Relever les enregistrements d'une zone suivie auprès de son serveur de noms faisant foi"
+risque = "lecture"
+
+[[capacites]]
+id = "reference"
+libelle = "La référence d'une zone (version courante, ou l'historique des versions)"
+risque = "lecture"
+
+[[capacites]]
+id = "etat"
+libelle = "Les zones suivies : dernière relève, dérive, adresse publique, expiration"
+risque = "lecture"
+
+[[capacites]]
+id = "accepter_reference"
+libelle = "Accepter l'état observé d'une zone comme nouvelle référence (les anciennes versions restent)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["une zone suivie", "une nouvelle version, jamais un écrasement"]
+preuve = "la version courante de la référence est celle qui vient d'être posée"
+retour = "remettre la version précédente comme version courante"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "corriger_enregistrement"
+libelle = "Corriger un enregistrement A dérivé de l'adresse publique, chez Cloudflare"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["zones suivies", "enregistrements A non proxifiés, existants", "hors noms réservés et noms de courrier", "vers l'adresse publique actuelle seulement"]
+preuve = "relire la valeur sur le serveur de noms faisant foi après l'écriture"
+retour = "remettre l'ancienne valeur chez Cloudflare et la version précédente de la référence"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[permissions]
+stockage = true
+lectures = true
+reseau = ["le résolveur du système et les serveurs de noms des zones suivies (port 53)", "deux services d'adresse publique", "rdap.org", "l'API Cloudflare"]
 
 [[ecrans]]
 id = "vue_domaine"
