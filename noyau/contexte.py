@@ -93,6 +93,17 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé de stockage ([permissions] stockage)" % self.module)
         return self._intro["stockage"](self.module)
 
+    def chiffrer(self, valeur, etiquette: str, compte: str = "") -> str:
+        """Chiffre un secret pour la base de CE module (AES-256-GCM, clé du serveur). L'étiquette et le module sont liés au chiffré : copié ailleurs, il ne se lit plus."""
+        if not self.manifeste.permissions.secrets:
+            raise PermissionError("le module « %s » n'a pas demandé les secrets ([permissions] secrets)" % self.module)
+        return self._intro["reglages"].chiffrer(valeur, "%s:%s" % (self.module, etiquette), compte)
+
+    def dechiffrer(self, chiffre: str, etiquette: str, compte: str = "") -> str:
+        if not self.manifeste.permissions.secrets:
+            raise PermissionError("le module « %s » n'a pas demandé les secrets ([permissions] secrets)" % self.module)
+        return self._intro["reglages"].dechiffrer(chiffre, "%s:%s" % (self.module, etiquette), compte)
+
     def reglage(self, nom: str, compte=None):
         """La valeur EFFECTIVE d'un réglage que CE module a déclaré (« nom » sans le préfixe du module). Pour un réglage de portée compte,
         celle du compte au nom duquel on agit (ou `compte`). Le module qui déclare un secret est le seul à le lire en clair."""

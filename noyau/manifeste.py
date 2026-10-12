@@ -190,6 +190,7 @@ class Permissions:
     identite: bool = False             # peut administrer l'identité des comptes : mots de passe, sessions (le module des comptes)
     reglages: bool = False             # peut écrire les réglages des autres modules (le module des réglages)
     stockage: bool = False             # a SA base SQLite (donnees/modules/<id>.db) et ses migrations (migrations/NNN_nom.sql)
+    secrets: bool = False              # peut chiffrer/déchiffrer des secrets pour SA base (ctx.chiffrer / ctx.dechiffrer) : clés d'API de modèles, jetons...
 
 
 @dataclass(frozen=True)
@@ -589,7 +590,8 @@ def construire(brut: dict, source="") -> Manifeste:
                                 bool((brut.get("permissions") or {}).get("droits", False)),
                                 bool((brut.get("permissions") or {}).get("identite", False)),
                                 bool((brut.get("permissions") or {}).get("reglages", False)),
-                                bool((brut.get("permissions") or {}).get("stockage", False))),
+                                bool((brut.get("permissions") or {}).get("stockage", False)),
+                                bool((brut.get("permissions") or {}).get("secrets", False))),
         droits=tuple(Droit(d["id"], d["libelle"], bool(d.get("defaut", False)), bool(d.get("sensible", False))) for d in brut.get("droits", []) or []),
         reglages=tuple(Reglage(r["id"], r["libelle"], r.get("type", "texte"),
                                r.get("defaut", False if r.get("type") == "booleen" else (0 if r.get("type") == "entier" else "")),

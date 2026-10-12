@@ -1,0 +1,195 @@
+[module]
+id = "modeles"
+nom = "Modèles"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Le registre des modèles de langage : un modèle se déclare une fois (fournisseur, nom, adresse, clé chiffrée), les rôles de la maison et les comptes y puisent. La clé ne sort jamais du module : tout passe par `completer` (OpenAI-compatible ou Ollama natif, réflexion des modèles raisonneurs bornée, jetons comptés). Un compte n'utilise que SES modèles, jamais la clé du serveur."
+confiance = "interne"
+famille = "agents"
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "completer"
+libelle = "Faire répondre un modèle (le sien)"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Déclarer les modèles de l'instance, lier les rôles, gérer les modèles locaux, voir l'usage"
+sensible = true
+
+[[objets]]
+type = "modele"
+libelle = "Un modèle de langage"
+
+[evenements]
+emet = ["modele.ajoute", "modele.retire"]
+
+[[reglages]]
+id = "ollama_hote"
+libelle = "Adresse de l'Ollama local"
+defaut = "http://127.0.0.1:11434"
+
+[[reglages]]
+id = "ollama_num_ctx"
+libelle = "Fenêtre (jetons) donnée à un modèle local : elle se paie en mémoire vive"
+type = "entier"
+defaut = 8192
+minimum = 2048
+maximum = 131072
+
+[[reglages]]
+id = "ton"
+libelle = "Le ton d'Itare pour moi (vide : le ton de l'instance)"
+portee = "compte"
+
+[[moteurs]]
+id = "pulls"
+libelle = "Tire les modèles locaux demandés"
+mode = "periodique"
+toutes_les_s = 15
+duree_max_s = 900
+
+[[capacites]]
+id = "fournisseurs"
+libelle = "Les fournisseurs connus : adresse de leur API, modèle par défaut, s'ils raisonnent, si leur clé est requise"
+risque = "lecture"
+
+[[capacites]]
+id = "lister"
+libelle = "Les modèles que je peux voir : les miens et ceux de l'instance (jamais une clé), les rôles liés, le choix de mon compte, les modèles locaux installés"
+risque = "lecture"
+
+[[capacites]]
+id = "locaux"
+libelle = "Les modèles installés dans l'Ollama local, et les téléchargements en cours"
+risque = "lecture"
+
+[[capacites]]
+id = "usage"
+libelle = "Les appels, échecs et jetons par jour, rôle et modèle"
+risque = "lecture"
+droit = "administrer"
+
+[[capacites]]
+id = "completer"
+libelle = "Une réponse d'un modèle (OpenAI-compatible, ou Ollama natif) : la clé reste ici, le rôle ne sert que les acteurs de la maison, un compte n'utilise que SES modèles"
+risque = "lecture"
+droit = "completer"
+masque = ["messages", "systeme", "texte"]
+
+[[capacites]]
+id = "ajouter"
+libelle = "Déclarer un modèle : le mien (avec ma propre clé) ou, pour un administrateur, un modèle de l'instance"
+risque = "faible"
+perimetre = ["le nom est un nom, pas une adresse", "une clé requise l'est vraiment", "l'adresse d'un serveur personnalisé est http(s)", "un modèle d'instance exige le droit d'administrer"]
+preuve = "relire le modèle : fournisseur, nom, présence de la clé"
+retour = "retirer le modèle que cet acte vient de déclarer"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+masque = ["cle"]
+
+[[capacites]]
+id = "instance_ajouter"
+libelle = "[Instance] Déclarer un modèle : le mien (avec ma propre clé) ou, pour un administrateur, un modèle de l'instance"
+risque = "faible"
+perimetre = ["le nom est un nom, pas une adresse", "une clé requise l'est vraiment", "l'adresse d'un serveur personnalisé est http(s)", "un modèle d'instance exige le droit d'administrer"]
+preuve = "relire le modèle : fournisseur, nom, présence de la clé"
+retour = "retirer le modèle que cet acte vient de déclarer"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+masque = ["cle"]
+droit = "administrer"
+
+[[capacites]]
+id = "essayer"
+libelle = "Un appel d'un mot au modèle, pour savoir s'il répond (mesure le temps, garde le dernier essai)"
+risque = "faible"
+perimetre = ["un modèle visible de ce compte"]
+preuve = "le résultat de l'essai est enregistré"
+retour = "remettre le dernier essai d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "instance_essayer"
+libelle = "[Instance] Un appel d'un mot au modèle, pour savoir s'il répond (mesure le temps, garde le dernier essai)"
+risque = "faible"
+perimetre = ["un modèle visible de ce compte"]
+preuve = "le résultat de l'essai est enregistré"
+retour = "remettre le dernier essai d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+droit = "administrer"
+
+[[capacites]]
+id = "retirer"
+libelle = "Retirer un modèle (sa clé chiffrée part avec lui) ; refusé s'il sert un rôle ou un choix"
+risque = "moyen"
+perimetre = ["un modèle de mon compte, ou de l'instance pour un administrateur", "pas un modèle qui sert un rôle ou le choix d'un compte"]
+preuve = "le modèle n'existe plus"
+retour = "redéclarer le modèle avec sa clé chiffrée, depuis la copie gardée dans le résultat de l'acte"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["copie"]
+
+[[capacites]]
+id = "instance_retirer"
+libelle = "[Instance] Retirer un modèle (sa clé chiffrée part avec lui) ; refusé s'il sert un rôle ou un choix"
+risque = "moyen"
+perimetre = ["un modèle de mon compte, ou de l'instance pour un administrateur", "pas un modèle qui sert un rôle ou le choix d'un compte"]
+preuve = "le modèle n'existe plus"
+retour = "redéclarer le modèle avec sa clé chiffrée, depuis la copie gardée dans le résultat de l'acte"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["copie"]
+droit = "administrer"
+
+[[capacites]]
+id = "role_lier"
+libelle = "Lier un rôle (itare_citadelle, vision, relecteur, principal, second_avis…) à un modèle de l'instance, ou le délier"
+risque = "moyen"
+perimetre = ["un modèle de l'instance", "un rôle de 2 à 40 minuscules, chiffres ou _"]
+preuve = "le rôle pointe sur ce modèle"
+retour = "remettre le lien d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+droit = "administrer"
+
+[[capacites]]
+id = "choisir"
+libelle = "Choisir MON modèle parmi les miens (vide : revenir au modèle local de l'instance)"
+risque = "faible"
+perimetre = ["un modèle déclaré par ce compte"]
+preuve = "le choix est enregistré"
+retour = "remettre le choix d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "ollama_telecharger"
+libelle = "Demander le téléchargement d'un modèle local (un moteur le tire en arrière-plan)"
+risque = "moyen"
+perimetre = ["un nom de modèle valide", "un seul téléchargement à la fois par nom"]
+preuve = "la demande est dans la file"
+retour = "retirer la demande si elle n'est pas commencée"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+droit = "administrer"
+
+[[capacites]]
+id = "ollama_supprimer"
+libelle = "Supprimer un modèle local installé (refusé s'il sert un rôle ou un choix)"
+risque = "eleve"
+perimetre = ["un modèle installé dans l'Ollama local", "pas un modèle qui sert un rôle ou un choix"]
+preuve = "le modèle n'est plus installé"
+retour = "remettre le téléchargement du modèle en file (un modèle supprimé se retélécharge, il ne se restaure pas)"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+droit = "administrer"
+
+[permissions]
+stockage = true
+secrets = true
+reseau = ["le fournisseur de chaque modèle déclaré", "l'Ollama local"]
