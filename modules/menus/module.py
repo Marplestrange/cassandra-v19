@@ -155,6 +155,8 @@ def brancher(ctx):
         ctx.poser(BADGES[0], BADGES[1], "Compteurs des menus", etat=str(sum(valeurs.values())), donnees=valeurs)
 
     def lire_menu(ctx, role="utilisateur", compte=""):
+        if ctx.compte:                                     # qui regarde : le compte qui AGIT, jamais celui qu'on déclare (un compte ne se dit pas administrateur)
+            role, compte = ("admin" if ctx.est_admin(ctx.compte) else "utilisateur"), ctx.compte
         actuel = ctx.lire(*ARBRE, portee=ctx.TOUT)
         if not actuel:
             return {"etag": "", "arbre": [], "badges": {}}

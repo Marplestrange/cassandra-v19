@@ -1648,6 +1648,13 @@ class OngletsEtHabillages(unittest.TestCase):
         self.assertEqual([x["id"] for x in self.lire("lire_onglets", objet="src:src_o", role="utilisateur")["onglets"]], ["deco:historique"])          # l'audit est réservé
         self.assertEqual(self.lire("lire_onglets", objet="notes:note", role="admin")["onglets"], [])
 
+    def test_un_compte_ne_se_declare_pas_administrateur_pour_voir_plus(self):
+        r = self.n.executeur.executer("affichage.lire_onglets", "humain", {"objet": "src:src_o", "role": "admin"}, compte="bob@x.fr")
+        self.assertEqual(r["statut"], "faite")
+        self.assertEqual([x["id"] for x in r["resultat"]["onglets"]], ["deco:historique"])      # « role: admin » est ignoré : bob n'est pas administrateur
+        r = self.n.executeur.executer("affichage.lire_onglets", "cassandra", {"objet": "src:src_o", "role": "admin"})
+        self.assertEqual(len(r["resultat"]["onglets"]), 2)                                        # un acteur sans compte choisit le rôle qu'il demande
+
     def test_un_onglet_disparait_avec_son_module(self):
         self.n.desactiver("deco")
         self.assertEqual(self.lire("lire_onglets", objet="src:src_o", role="admin")["onglets"], [])

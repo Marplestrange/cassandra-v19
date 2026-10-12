@@ -136,6 +136,14 @@ def _fusion(objets, compte, cle):
     return sortie
 
 
+def _moi(ctx, role, compte):
+    """Qui regarde : le compte qui AGIT, jamais celui qu'on déclare. Un compte ne peut pas se dire administrateur pour voir les tuiles d'un administrateur ;
+    seul un acteur sans compte (un agent, le noyau) choisit le rôle et le compte qu'il demande."""
+    if ctx.compte:
+        return ("admin" if ctx.est_admin(ctx.compte) else "utilisateur"), ctx.compte
+    return role, compte
+
+
 def brancher(ctx):
     dernier = {}
 
@@ -193,6 +201,7 @@ def brancher(ctx):
         return {"etag": _empreinte([mode, css]), "mode": mode, "densite": p.get("densite", "normale"), "variables": css}
 
     def lire_ecran(ctx, ecran="accueil", role="utilisateur", compte=""):
+        role, compte = _moi(ctx, role, compte)
         cat = catalogue_actuel(ctx)
         if ecran == "accueil":
             titre, gabarit = "Accueil", "tableau"
@@ -219,6 +228,7 @@ def brancher(ctx):
 
     def lire_onglets(ctx, objet="", role="utilisateur", compte=""):
         """Les onglets que les modules ajoutent à la fiche d'un objet (« note » : tous ceux dont le type se termine ainsi ; « notes:note » : exactement celui-là)."""
+        role, compte = _moi(ctx, role, compte)
         cat = catalogue_actuel(ctx)
         detenus = None
         if compte:
