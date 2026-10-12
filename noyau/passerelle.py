@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import json
 import logging
+import mimetypes
+import os
 import re
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -25,6 +27,12 @@ from urllib.parse import parse_qs, unquote, urlparse
 log = logging.getLogger("noyau.passerelle")
 
 TAILLE_MAX = 1024 * 1024
+# L'interface (V18 extraite) pose des gestionnaires en ligne et charge ses bibliothèques sur deux CDN ; tout le reste est fermé.
+CSP_PAGE = ("default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src https://fonts.gstatic.com data:; "
+            "img-src 'self' data: blob:; connect-src 'self'; frame-src 'self' blob: data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'")
+TYPES_STATIQUES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml",
+                   ".json": "application/json; charset=utf-8", ".png": "image/png", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json", ".woff2": "font/woff2"}
 RE_CAPACITE = re.compile(r"^[a-z][a-z0-9_]{1,40}\.[a-z][a-z0-9_]{1,40}$")
 COOKIE = "cassandra_session"
 STATUTS_HTTP = {"faite": 200, "simulee": 200, "racontee": 202, "refuse": 403, "echec": 500, "annulee": 500, "annulation_impossible": 500}
@@ -38,8 +46,9 @@ def _valeur(v: str):
 
 
 class Passerelle:
-    def __init__(self, noyau, hote="127.0.0.1", port=9000, cookie_secure=False, proxy_de_confiance=False):
+    def __init__(self, noyau, hote="127.0.0.1", port=9000, cookie_secure=False, proxy_de_confiance=False, interface=None):
         self.noyau = noyau
+        self.interface = os.path.realpath(interface) if interface else None      # le dossier de l'interface servie à GET / (None : API seule)
         self.hote, self.port = hote, int(port)
         self.cookie_secure = cookie_secure
         self.proxy = proxy_de_confiance          # croire X-Forwarded-For : seulement derrière notre propre reverse proxy
@@ -158,6 +167,8 @@ class Passerelle:
                 return self._connexion(h)
             if chemin.startswith("/api/public/"):
                 return self._public(h, methode, chemin[len("/api/public/"):])
+            if methode == "GET" and not chemin.startswith("/api/"):
+                return self._statique(h, chemin)
             qui = self._qui(h)
             if qui is None:
                 return self._repondre(h, 401, {"erreur": "authentification requise"})
@@ -181,6 +192,30 @@ class Passerelle:
         except Exception:
             log.exception("passerelle : erreur interne")
             return self._repondre(h, 500, {"erreur": "erreur interne"})
+
+    def _statique(self, h, chemin):
+        """Un fichier du dossier de l'interface, jamais autre chose : pas de remontée (..), pas de lien qui sorte du dossier, extensions connues."""
+        if not self.interface:
+            return self._repondre(h, 404, {"erreur": "route inconnue"})
+        rel = "index.html" if chemin in ("/", "") else chemin.lstrip("/")
+        if "\\" in rel or "\x00" in rel:
+            return self._repondre(h, 404, {"erreur": "introuvable"})
+        reel = os.path.realpath(os.path.join(self.interface, *rel.split("/")))
+        ext = os.path.splitext(reel)[1].lower()
+        if os.path.commonpath([reel, self.interface]) != self.interface or ext not in TYPES_STATIQUES or not os.path.isfile(reel):
+            return self._repondre(h, 404, {"erreur": "introuvable"})
+        with open(reel, "rb") as f:
+            donnees = f.read()
+        h.send_response(200)
+        h.send_header("Content-Type", TYPES_STATIQUES[ext])
+        h.send_header("Content-Length", str(len(donnees)))
+        h.send_header("Cache-Control", "no-cache")
+        h.send_header("X-Content-Type-Options", "nosniff")
+        h.send_header("Referrer-Policy", "no-referrer")
+        if ext == ".html":
+            h.send_header("Content-Security-Policy", CSP_PAGE)
+        h.end_headers()
+        h.wfile.write(donnees)
 
     def _connexion(self, h):
         corps = self._corps(h)

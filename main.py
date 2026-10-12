@@ -895,7 +895,8 @@ def main(argv) -> int:
             if commande == "demarrer":
                 hote, _, port = (os.environ.get("CASSANDRA_ECOUTE") or "127.0.0.1:9000").rpartition(":")
                 n.passerelle = Passerelle(n, hote or "127.0.0.1", int(port or 9000), cookie_secure=bool(os.environ.get("CASSANDRA_COOKIE_SECURE")),
-                                          proxy_de_confiance=bool(os.environ.get("CASSANDRA_PROXY")))
+                                          proxy_de_confiance=bool(os.environ.get("CASSANDRA_PROXY")),
+                                          interface=os.environ.get("CASSANDRA_INTERFACE") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "interface"))
                 n.passerelle.demarrer()
         except manifeste.ManifesteInvalide as ex:
             print(ex, file=sys.stderr)

@@ -6,3 +6,4 @@ donnees/
 *.db-shm
 .venv/
 .porte/
+.donnees-test/

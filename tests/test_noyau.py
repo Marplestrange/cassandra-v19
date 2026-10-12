@@ -3620,6 +3620,24 @@ class PasserelleHttp(unittest.TestCase):
         st, corps, cookie, _ = self.req("POST", "/api/connexion", {"compte": compte, "mot_de_passe": mdp})
         return st, corps, cookie
 
+    def test_interface_servie_sans_sortir_du_dossier(self):
+        d = Path(self.tmp.name) / "interface"
+        (d / "routes").mkdir(parents=True)
+        (d / "index.html").write_text("<p>accueil</p>", encoding="utf-8")
+        (d / "app.js").write_text("1", encoding="utf-8")
+        (d / "secret.py").write_text("x", encoding="utf-8")
+        (Path(self.tmp.name) / "hors.js").write_text("dehors", encoding="utf-8")
+        import os
+        self.g.interface = os.path.realpath(d)
+        st, t, _, h = self.req("GET", "/")
+        self.assertEqual((st, t), (200, "<p>accueil</p>"))
+        self.assertIn("script-src", h["content-security-policy"])
+        self.assertEqual(self.req("GET", "/app.js")[0], 200)
+        for chemin in ("/secret.py", "/../hors.js", "/%2e%2e/hors.js", "/routes", "/..%5chors.js", "/inconnu.js"):
+            self.assertEqual(self.req("GET", chemin)[0], 404, chemin)
+        self.g.interface = None
+        self.assertEqual(self.req("GET", "/")[0], 404)
+
     def test_sante_sans_authentification(self):
         st, c, _, h = self.req("GET", "/api/sante")
         self.assertEqual((st, c["ok"]), (200, True))
