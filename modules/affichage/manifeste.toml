@@ -55,6 +55,16 @@ libelle = "Lire le thème résolu (jetons CSS) pour un compte et une préférenc
 risque = "lecture"
 
 [[capacites]]
+id = "lire_onglets"
+libelle = "Lire les onglets que les modules ajoutent à la fiche d'un objet"
+risque = "lecture"
+
+[[capacites]]
+id = "lire_habillages"
+libelle = "Lire les thèmes complets (variables CSS) que les modules livrent"
+risque = "lecture"
+
+[[capacites]]
 id = "lire_ecran"
 libelle = "Lire la mise en page d'un écran : zones, tuiles, données"
 risque = "lecture"

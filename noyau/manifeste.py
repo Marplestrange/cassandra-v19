@@ -23,6 +23,7 @@ PALIERS = ("raconter", "auto", "maitre")
 ACTEURS = ("cassandra", "itare", "humain", "compte", "agent", "anonyme")
 MODES_MOTEUR = ("periodique", "evenement", "demande")
 ROLES_MENU = ("utilisateur", "admin")
+BASES_HABILLAGE = ("clair", "creme", "sombre")
 GABARITS = ("tableau", "liste_detail", "libre")                  # comment l'interface compose un écran
 ZONES = ("entete", "principal", "lateral")
 TAILLES = ("s", "m", "l")
@@ -162,6 +163,30 @@ class Theme:
 
 
 @dataclass(frozen=True)
+class Onglet:
+    """Un onglet qu'un module ajoute à la fiche d'un OBJET, que cet objet soit le sien ou celui d'un autre module (à la façon des onglets de fiche de Dolibarr).
+    Le module de l'objet ne sait rien de l'onglet : l'interface demande « quels onglets pour cet objet ? » et ouvre l'écran du module qui l'a déclaré, avec la référence."""
+    id: str
+    libelle: str
+    objet: str                 # le type d'objet visé : « note », ou « module:type » (un type déclaré par un autre module)
+    ecran: str = ""            # un écran de CE module, qui reçoit la référence de l'objet
+    ordre: int = 100
+    role: str = "utilisateur"
+    icone: str = ""
+    droit: str = ""
+
+
+@dataclass(frozen=True)
+class Habillage:
+    """Un thème complet : un jeu de variables CSS qui remplace celui d'une base (clair, creme ou sombre). Un module peut en livrer plusieurs, l'interface
+    les propose dans le sélecteur d'apparence. Le fichier ne contient QUE des variables (--nom: valeur;) : aucun sélecteur, aucune adresse, aucun script."""
+    id: str
+    libelle: str
+    base: str = "clair"        # clair | creme | sombre : ce qu'il habille quand une variable manque
+    fichier: str = ""          # relatif au dossier du module, ex. « themes/ardoise.css »
+
+
+@dataclass(frozen=True)
 class Ecran:
     id: str
     libelle: str
@@ -221,6 +246,8 @@ class Manifeste:
     detecteurs: tuple = ()
     moteurs: tuple = ()
     menus: tuple = ()
+    onglets: tuple = ()
+    habillages: tuple = ()
     widgets: tuple = ()
     theme: Theme = field(default_factory=Theme)
     ecrans: tuple = ()
@@ -547,6 +574,46 @@ def valider(brut: dict) -> list:
             vu.add(cur)
             cur = parents[cur]
 
+    onglet_ids = []
+    for i, og in enumerate(brut.get("onglets", []) or []):
+        nom = "onglets[%d]" % i
+        if not isinstance(og, dict) or not _ID.match(str(og.get("id", ""))):
+            e.append("%s.id : identifiant invalide" % nom)
+            continue
+        if og["id"] in onglet_ids:
+            e.append("%s.id : « %s » est déclaré deux fois" % (nom, og["id"]))
+        onglet_ids.append(og["id"])
+        nom = "onglet « %s »" % og["id"]
+        _droit_ok(og.get("droit"), nom)
+        if not str(og.get("libelle", "")).strip():
+            e.append("%s : libellé obligatoire" % nom)
+        if not re.match(r"^[a-z][a-z0-9_]*(:[a-z][a-z0-9_]*)?$", str(og.get("objet", ""))):
+            e.append("%s.objet : un type d'objet (« note »), ou « module:type »" % nom)
+        if og.get("ecran") and og["ecran"] not in ecrans_ids:
+            e.append("%s.ecran : « %s » n'est pas un écran de ce module ([[ecrans]])" % (nom, og["ecran"]))
+        if og.get("role", "utilisateur") not in ROLES_MENU:
+            e.append("%s.role : %s" % (nom, " | ".join(ROLES_MENU)))
+        o = og.get("ordre", 100)
+        if not isinstance(o, int) or isinstance(o, bool) or not 0 <= o <= 9999:
+            e.append("%s.ordre : entier entre 0 et 9999" % nom)
+    hab_ids = []
+    for i, hb in enumerate(brut.get("habillages", []) or []):
+        nom = "habillages[%d]" % i
+        if not isinstance(hb, dict) or not _ID.match(str(hb.get("id", ""))):
+            e.append("%s.id : identifiant invalide" % nom)
+            continue
+        if hb["id"] in hab_ids or hb["id"] in BASES_HABILLAGE:
+            e.append("%s.id : « %s » est déjà pris (déclaré deux fois, ou thème de base)" % (nom, hb["id"]))
+        hab_ids.append(hb["id"])
+        nom = "habillage « %s »" % hb["id"]
+        if not str(hb.get("libelle", "")).strip():
+            e.append("%s : libellé obligatoire" % nom)
+        if hb.get("base", "clair") not in BASES_HABILLAGE:
+            e.append("%s.base : %s" % (nom, " | ".join(BASES_HABILLAGE)))
+        f = hb.get("fichier", "")
+        if not f or not isinstance(f, str) or f.startswith("/") or ".." in f.split("/") or not f.endswith(".css"):
+            e.append("%s.fichier : un chemin relatif au dossier du module, en .css, sans « .. »" % nom)
+
     ins = brut.get("installation", {}) or {}
     for champ in ("script", "verification", "retrait", "migrations"):
         v = ins.get(champ, "")
@@ -609,6 +676,9 @@ def construire(brut: dict, source="") -> Manifeste:
                       for m in brut.get("moteurs", []) or []),
         menus=tuple(Menu(x["id"], x["libelle"], x.get("ecran", ""), x.get("parent", ""), x.get("ordre", 100), x.get("role", "utilisateur"),
                          x.get("icone", ""), x.get("badge", ""), _qualifier(m["id"], x.get("droit"))) for x in brut.get("menus", []) or []),
+        onglets=tuple(Onglet(x["id"], x["libelle"], x["objet"], x.get("ecran", ""), x.get("ordre", 100), x.get("role", "utilisateur"), x.get("icone", ""), _qualifier(m["id"], x.get("droit")))
+                      for x in brut.get("onglets", []) or []),
+        habillages=tuple(Habillage(x["id"], x["libelle"], x.get("base", "clair"), x.get("fichier", "")) for x in brut.get("habillages", []) or []),
         widgets=tuple(Widget(w["id"], w["libelle"], w.get("ecran", "accueil"), w.get("zone", "principal"), w.get("taille", "m"), w.get("ordre", 100),
                              w.get("role", "utilisateur"), w.get("composant", "nombre"), w.get("source", ""), w.get("rafraichir_s", 0), _qualifier(m["id"], w.get("droit")))
                       for w in brut.get("widgets", []) or []),

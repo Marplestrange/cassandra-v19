@@ -1566,6 +1566,114 @@ def charger_affichage():
     return m
 
 
+DECO_TOML = """
+[module]
+id = "deco"
+nom = "Décor"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Module d'essai : un onglet sur l'objet d'un autre module et deux thèmes."
+famille = "reseau"
+
+[[ecrans]]
+id = "vue_historique"
+libelle = "Historique"
+gabarit = "libre"
+
+[[onglets]]
+id = "historique"
+libelle = "Historique"
+objet = "src:src_o"
+ecran = "vue_historique"
+ordre = 20
+
+[[onglets]]
+id = "audit"
+libelle = "Audit"
+objet = "src:src_o"
+ecran = "vue_historique"
+ordre = 10
+role = "admin"
+
+[[habillages]]
+id = "sobre"
+libelle = "Sobre"
+base = "sombre"
+fichier = "themes/sobre.css"
+
+[[habillages]]
+id = "piege"
+libelle = "Piège"
+base = "clair"
+fichier = "themes/piege.css"
+"""
+
+SOBRE_CSS = "/* un commentaire */\n--bg: #101418;\n--accent: #34c3b6;\n--shadow-glass: 0 6px 24px rgba(0,0,0,.3);\n"
+PIEGE_CSS = """--ok: #00ff00;
+--fond: url(http://exemple.test/x.png);
+--mal: red; } body { display:none
+--arobase: @import evil;
+--bon: 12px;
+"""
+
+
+class OngletsEtHabillages(unittest.TestCase):
+    def setUp(self):
+        import shutil
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        base = Path(self.tmp.name)
+        mods = base / "modules"
+        shutil.copytree(RACINE / "modules" / "affichage", mods / "affichage")
+        ecrire_module(mods, "src", SRC_TOML, SRC_PY)
+        ecrire_module(mods, "deco", DECO_TOML, "def brancher(ctx):\n    pass\n")
+        (mods / "deco" / "themes").mkdir()
+        (mods / "deco" / "themes" / "sobre.css").write_text(SOBRE_CSS, encoding="utf-8")
+        (mods / "deco" / "themes" / "piege.css").write_text(PIEGE_CSS, encoding="utf-8")
+        self.n = moteur.Noyau(base / "d", mods, {"src": {"etat": {"n": 1}}}, gerer_modules=True)
+        self.n.brancher()
+        for m in ("affichage", "src", "deco"):
+            self.n.activer(m)
+
+    def lire(self, cap, **args):
+        r = self.n.executeur.executer("affichage." + cap, "humain", args)
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        return r["resultat"]
+
+    def test_un_onglet_se_pose_sur_l_objet_d_un_autre_module(self):
+        o = self.lire("lire_onglets", objet="src:src_o", role="admin")["onglets"]
+        self.assertEqual([x["id"] for x in o], ["deco:audit", "deco:historique"])               # par ordre (10 puis 20)
+        self.assertEqual(o[1]["ecran"], "deco:vue_historique")
+        self.assertEqual([x["id"] for x in self.lire("lire_onglets", objet="src_o", role="admin")["onglets"]], ["deco:audit", "deco:historique"])   # le type seul suffit
+        self.assertEqual([x["id"] for x in self.lire("lire_onglets", objet="src:src_o", role="utilisateur")["onglets"]], ["deco:historique"])          # l'audit est réservé
+        self.assertEqual(self.lire("lire_onglets", objet="notes:note", role="admin")["onglets"], [])
+
+    def test_un_onglet_disparait_avec_son_module(self):
+        self.n.desactiver("deco")
+        self.assertEqual(self.lire("lire_onglets", objet="src:src_o", role="admin")["onglets"], [])
+
+    def test_un_habillage_ne_porte_que_des_variables_sures(self):
+        h = {x["id"]: x for x in self.lire("lire_habillages")["habillages"]}
+        self.assertEqual(h["deco:sobre"]["variables"], {"--bg": "#101418", "--accent": "#34c3b6", "--shadow-glass": "0 6px 24px rgba(0,0,0,.3)"})
+        self.assertEqual(h["deco:sobre"]["base"], "sombre")
+        sur = h["deco:piege"]["variables"]
+        self.assertEqual(sorted(sur), ["--bon", "--mal", "--ok"])                                # seules des variables ressortent : le sélecteur glissé après « } » n'existe pas ; ni adresse, ni arobase
+        self.assertIn("--fond", h["deco:piege"]["refus"])
+
+    def test_le_manifeste_refuse_un_onglet_ou_un_habillage_mal_forme(self):
+        import tomllib
+        b = tomllib.loads(DECO_TOML)
+        b["onglets"][0].update(objet="Pas Bon", ecran="inconnu", role="roi")
+        b["habillages"][0].update(fichier="../evasion.css", base="fluo")
+        b["habillages"][1].update(id="clair")
+        e = " | ".join(mf.valider(b))
+        for attendu in ("objet", "ecran", "role", "fichier", "base", "déjà pris"):
+            self.assertIn(attendu, e)
+        b = tomllib.loads(DECO_TOML)
+        b["onglets"][1]["id"] = "historique"
+        self.assertTrue(any("deux fois" in x for x in mf.valider(b)))
+
+
 class AffichageAssemble(unittest.TestCase):
     def setUp(self):
         self.tmp, self.n, self.etat = monde_affichage()

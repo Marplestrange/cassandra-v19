@@ -13,6 +13,7 @@ import hashlib
 import json
 import re
 import time
+from pathlib import Path
 
 BASES = {
     "clair": {"bg": "#eef1f5", "halo": "#e3e9f1", "surf": "rgba(255,255,255,.72)", "surf2": "rgba(255,255,255,.5)", "ink": "#101828",
@@ -70,8 +71,36 @@ def _empreinte(x):
 
 
 # ------------------------------------------------------------------ le catalogue
+_VAR = re.compile(r"(--[a-z][a-z0-9-]{0,40})\s*:\s*([^;{}]*);")
+_VALEUR_VAR = re.compile(r"^[A-Za-z0-9#%.,()/ _+*-]{1,200}$")
+TAILLE_HABILLAGE = 40000
+
+
+def lire_habillage(chemin):
+    """Les variables d'un fichier de thème, et ce qui a été refusé. Un thème ne porte QUE des variables : une valeur avec adresse, accolade, point-virgule,
+    barre inverse ou chevron est écartée (rien ne s'exécute, rien n'est chargé du réseau), un fichier trop gros est refusé en entier."""
+    try:
+        texte = Path(chemin).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as ex:
+        return {}, ["fichier illisible : %s" % ex]
+    if len(texte) > TAILLE_HABILLAGE:
+        return {}, ["fichier trop gros (%d signes, %d au plus)" % (len(texte), TAILLE_HABILLAGE)]
+    texte = re.sub(r"/\*.*?\*/", "", texte, flags=re.S)
+    variables, refus = {}, []
+    for nom, valeur in _VAR.findall(texte):
+        v = valeur.strip()
+        if not _VALEUR_VAR.match(v) or "url(" in v.lower() or "expression" in v.lower() or "@" in v:
+            refus.append(nom)
+            continue
+        variables[nom] = v
+        if len(variables) >= 400:
+            refus.append("(au-delà de 400 variables)")
+            break
+    return variables, refus
+
+
 def construire_catalogue(manifestes):
-    ecrans, widgets, themes = [], [], []
+    ecrans, widgets, themes, onglets, habillages = [], [], [], [], []
     for m in manifestes:
         for e in m.ecrans:
             ecrans.append({"id": "%s:%s" % (m.id, e.id), "module": m.id, "libelle": e.libelle, "titre": e.titre or e.libelle,
@@ -81,13 +110,21 @@ def construire_catalogue(manifestes):
                             "ecran": "accueil" if w.ecran == "accueil" else "%s:%s" % (m.id, w.ecran), "zone": w.zone, "taille": w.taille,
                             "ordre": w.ordre, "role": w.role, "composant": w.composant,
                             "source": ("%s.%s" % (m.id, w.source)) if w.source else "", "rafraichir_s": w.rafraichir_s})
+        for o in m.onglets:
+            onglets.append({"id": "%s:%s" % (m.id, o.id), "module": m.id, "libelle": o.libelle, "objet": o.objet if ":" in o.objet else "%s:%s" % (m.id, o.objet),
+                            "ecran": ("%s:%s" % (m.id, o.ecran)) if o.ecran else "", "ordre": o.ordre, "role": o.role, "icone": o.icone, "droit": o.droit})
+        for h in m.habillages:
+            variables, refus = lire_habillage(Path(m.source).parent / h.fichier) if m.source else ({}, ["module sans dossier"])
+            habillages.append({"id": "%s:%s" % (m.id, h.id), "module": m.id, "libelle": h.libelle, "base": h.base, "variables": variables, "refus": refus})
         if m.theme.accent or m.theme.tokens:
             themes.append({"module": m.id, "accent": m.theme.accent,
                            "tokens": {"mod-%s-%s" % (m.id, k): v for k, v in m.theme.tokens}})
     ecrans.sort(key=lambda x: x["id"])
     widgets.sort(key=lambda x: x["id"])
     themes.sort(key=lambda x: x["module"])
-    return {"ecrans": ecrans, "widgets": widgets, "themes": themes}
+    onglets.sort(key=lambda x: (x["ordre"], x["libelle"].lower(), x["id"]))
+    habillages.sort(key=lambda x: x["id"])
+    return {"ecrans": ecrans, "widgets": widgets, "themes": themes, "onglets": onglets, "habillages": habillages}
 
 
 def _fusion(objets, compte, cle):
@@ -180,6 +217,31 @@ def brancher(ctx):
             xs.sort(key=lambda w: (w["ordre"], w["libelle"].lower(), w["id"]))
         return {"id": ecran, "existe": True, "titre": titre, "gabarit": gabarit, "etag": cat.get("etag", ""), "zones": zones}
 
+    def lire_onglets(ctx, objet="", role="utilisateur", compte=""):
+        """Les onglets que les modules ajoutent à la fiche d'un objet (« note » : tous ceux dont le type se termine ainsi ; « notes:note » : exactement celui-là)."""
+        cat = catalogue_actuel(ctx)
+        detenus = None
+        if compte:
+            try:
+                d = ctx.executer_lecture("droits.mes_droits", compte=compte)
+            except (PermissionError, KeyError):
+                d = None
+            detenus = set(d["droits"]) if d else set()
+        out = []
+        for o in cat.get("onglets", []):
+            if objet and o["objet"] != objet and o["objet"].split(":", 1)[1] != objet:
+                continue
+            if role != "admin" and o["role"] != "utilisateur":
+                continue
+            if o["droit"] and detenus is not None and o["droit"] not in detenus:
+                continue
+            out.append(o)
+        return {"objet": objet, "onglets": out}
+
+    def lire_habillages(ctx):
+        """Les thèmes complets que les modules livrent : variables CSS prêtes, avec ce qui a été refusé dans leur fichier."""
+        return {"habillages": copy.deepcopy(catalogue_actuel(ctx).get("habillages", []))}
+
     # ---------------------------------------------------------------- écritures : toujours avec preuve et retour arrière
     def _ecrire(ctx, type_, oid, libelle, nouveau, compte, reinitialiser):
         existant = ctx.lire(type_, oid, portee=ctx.TOUT)
@@ -242,6 +304,8 @@ def brancher(ctx):
     ctx.moteur("donnees_widgets", donnees_widgets)
     ctx.implementer("lire_theme", lire_theme)
     ctx.implementer("lire_ecran", lire_ecran)
+    ctx.implementer("lire_onglets", lire_onglets)
+    ctx.implementer("lire_habillages", lire_habillages)
     ctx.implementer("personnaliser_theme", personnaliser_theme, prouver, defaire,
                     simuler=lambda ctx, **_: "personnaliserait le thème")
     ctx.implementer("personnaliser_widget", personnaliser_widget, prouver, defaire,
