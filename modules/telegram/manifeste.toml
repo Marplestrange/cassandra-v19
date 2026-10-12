@@ -19,6 +19,12 @@ libelle = "Adresse publique de Cassandra en https (où Telegram poste les messag
 aide = "Obligatoire pour brancher un robot : Telegram exige https. Le webhook est <adresse>/api/public/telegram.recevoir."
 
 [[reglages]]
+id = "jeton"
+libelle = "Jeton de mon robot (123456:ABC…, donné par @BotFather)"
+type = "secret"
+portee = "compte"
+
+[[reglages]]
 id = "api"
 libelle = "Adresse de l'API Telegram"
 defaut = "https://api.telegram.org"
@@ -43,14 +49,13 @@ risque = "lecture"
 
 [[capacites]]
 id = "brancher"
-libelle = "Brancher mon robot : vérifie le jeton auprès de Telegram, tire un secret, pose le webhook"
+libelle = "Brancher mon robot (jeton déjà collé dans mes réglages) : vérifie le jeton auprès de Telegram, tire un secret, pose le webhook"
 risque = "moyen"
-perimetre = ["le compte qui agit", "un robot créé chez Telegram (jeton 123456:ABC…)", "une adresse publique en https réglée"]
+perimetre = ["le compte qui agit", "un robot créé chez Telegram, dont le jeton est dans mes réglages", "une adresse publique en https réglée"]
 preuve = "le lien existe et Telegram annonce le webhook posé à notre adresse"
-retour = "retirer le webhook et le lien que cet acte vient de poser (et remettre le lien d'avant s'il y en avait un)"
+retour = "retirer le webhook et le lien que cet acte vient de poser ; pour un rebranchement, le lien reprend ses conversations d'avant (le jeton est un réglage, le retour n'y touche pas)"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
-masque = ["jeton", "jeton_avant"]
 
 [[capacites]]
 id = "detacher"
@@ -58,10 +63,9 @@ libelle = "Débrancher mon robot : retire le webhook, oublie le secret et le jet
 risque = "moyen"
 perimetre = ["le compte qui agit"]
 preuve = "plus aucun lien pour ce compte"
-retour = "rebrancher le robot avec le même jeton (nouveau secret)"
+retour = "rebrancher le robot avec le jeton des réglages (nouveau secret)"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
-masque = ["jeton"]
 
 [[capacites]]
 id = "cible_poser"

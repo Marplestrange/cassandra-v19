@@ -12,7 +12,7 @@ Porté de la V18 (`tg_*`, robot de notifications), lu en entier. La passerelle a
 - Un refus d'envoi ou un appel mal formé est un RÉSULTAT, pas une exception (l'apprentissage des paliers ne doit pas couper l'envoi de tous pour le robot bloqué d'un seul).
 
 ## À savoir
-- Le **jeton du robot est gardé tel quel** dans le fichier du module : le coffre chiffré n'est pas encore porté. À migrer vers lui.
+- Le **jeton du robot** est un réglage secret par compte (`telegram.jeton`), chiffré au repos ; il n’est jamais copié dans la base du module.
 - `envoyer` démarre au palier « raconter » : l'administrateur le met à « auto » pour que Cassandra livre les notifications d'elle-même.
 
 ## Non porté

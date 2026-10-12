@@ -76,6 +76,10 @@ def brancher(ctx):
         r = db.lire("SELECT * FROM liens WHERE compte=?", (compte,))
         return r[0] if r else None
 
+    def jeton_de(compte):
+        """Le jeton du robot de CE compte : un réglage secret par compte, chiffré au repos. Il n'est jamais copié dans la base de ce module."""
+        return str(ctx.reglage("jeton", compte) or "").strip()
+
     def webhook_url():
         base = str(ctx.reglage("url_publique", "") or "").strip().rstrip("/")
         if not base.startswith("https://"):
@@ -96,9 +100,9 @@ def brancher(ctx):
         if not r.get("ok"):
             raise ValueError("webhook refusé : %s" % raison(r))
         conserver = conserver or {}
-        db.ecrire("INSERT INTO liens(compte, jeton, nom_robot, secret_empreinte, chat_id, cible, actif, cree) VALUES (?,?,?,?,?,?,1,?) "
-                  "ON CONFLICT(compte) DO UPDATE SET jeton=excluded.jeton, nom_robot=excluded.nom_robot, secret_empreinte=excluded.secret_empreinte, actif=1",
-                  (compte, jeton, nom, empreinte(secret), conserver.get("chat_id", ""), conserver.get("cible", ""), conserver.get("cree") or time.time()))
+        db.ecrire("INSERT INTO liens(compte, jeton, nom_robot, secret_empreinte, chat_id, cible, actif, cree) VALUES (?,'',?,?,?,?,1,?) "
+                  "ON CONFLICT(compte) DO UPDATE SET nom_robot=excluded.nom_robot, secret_empreinte=excluded.secret_empreinte, actif=1",
+                  (compte, nom, empreinte(secret), conserver.get("chat_id", ""), conserver.get("cible", ""), conserver.get("cree") or time.time()))
         return nom
 
     def destinataire(l):
@@ -121,49 +125,54 @@ def brancher(ctx):
         return {"messages": list(reversed(rows))}
 
     # ------------------------------------------------------------------ brancher / débrancher
-    def brancher_robot(c, jeton=""):
+    def brancher_robot(c):
         compte = compte_qui_agit()
-        jeton = str(jeton or "").strip()
+        jeton = jeton_de(compte)
+        if not jeton:
+            raise ValueError("collez d'abord le jeton de votre robot dans vos réglages (telegram.jeton)")
         avant = lien(compte)
         nom = poser_lien(compte, jeton, conserver=avant)
         c.poser("telegram", compte, "Robot Telegram de %s" % compte, etat="branche", donnees={"robot": nom})
         c.emettre("telegram.branche", objet=("telegram", compte), donnees={"compte": compte, "robot": nom})
-        return {"compte": compte, "robot": nom, "existait": bool(avant), "jeton_avant": avant["jeton"] if avant else "", "robot_avant": avant["nom_robot"] if avant else "",
-                "chat_id_avant": avant["chat_id"] if avant else "", "cible_avant": avant["cible"] if avant else "", "cree_avant": avant["cree"] if avant else None}
+        return {"compte": compte, "robot": nom, "existait": bool(avant), "chat_id_avant": avant["chat_id"] if avant else "", "cible_avant": avant["cible"] if avant else "",
+                "cree_avant": avant["cree"] if avant else None}
 
     def prouver_brancher(c, res):
         l = lien(res["compte"])
         if not l:
             return False
-        info = appel(l["jeton"], "getWebhookInfo")
+        info = appel(jeton_de(res["compte"]), "getWebhookInfo")
         return bool(info.get("ok")) and str((info.get("result") or {}).get("url") or "") == webhook_url()
 
     def defaire_brancher(c, res):
-        l = lien(res["compte"])
-        if l:
-            appel(l["jeton"], "deleteWebhook", {"drop_pending_updates": True})
-        if res.get("existait") and res.get("jeton_avant"):
-            poser_lien(res["compte"], res["jeton_avant"], conserver={"chat_id": res["chat_id_avant"], "cible": res["cible_avant"], "cree": res["cree_avant"]})
+        """Un premier branchement : webhook retiré, lien supprimé. Un rebranchement : le lien reprend ses conversations d'avant (le jeton, lui, est un réglage : le retour n'y touche pas)."""
+        jeton = jeton_de(res["compte"])
+        if jeton:
+            appel(jeton, "deleteWebhook", {"drop_pending_updates": True})
+        if res.get("existait") and jeton:
+            poser_lien(res["compte"], jeton, conserver={"chat_id": res["chat_id_avant"], "cible": res["cible_avant"], "cree": res["cree_avant"]})
         else:
             db.ecrire("DELETE FROM liens WHERE compte=?", (res["compte"],))
-        c.retirer("telegram", res["compte"])
+            c.retirer("telegram", res["compte"])
 
     def detacher(c):
         compte = compte_qui_agit()
         l = lien(compte)
         if not l:
             raise ValueError("aucun robot lié à ce compte")
-        appel(l["jeton"], "deleteWebhook", {"drop_pending_updates": True})
+        jeton = jeton_de(compte)
+        if jeton:
+            appel(jeton, "deleteWebhook", {"drop_pending_updates": True})
         db.ecrire("DELETE FROM liens WHERE compte=?", (compte,))
         c.retirer("telegram", compte)
         c.emettre("telegram.detache", objet=("telegram", compte), donnees={"compte": compte})
-        return {"compte": compte, "jeton": l["jeton"], "chat_id": l["chat_id"], "cible": l["cible"], "cree": l["cree"]}
+        return {"compte": compte, "chat_id": l["chat_id"], "cible": l["cible"], "cree": l["cree"]}
 
     def prouver_detache(c, res):
         return lien(res["compte"]) is None
 
     def defaire_detache(c, res):
-        poser_lien(res["compte"], res["jeton"], conserver={"chat_id": res["chat_id"], "cible": res["cible"], "cree": res["cree"]})
+        poser_lien(res["compte"], jeton_de(res["compte"]), conserver={"chat_id": res["chat_id"], "cible": res["cible"], "cree": res["cree"]})
 
     # ------------------------------------------------------------------ le destinataire
     def cible_poser(c, valeur=""):
@@ -176,7 +185,7 @@ def brancher(ctx):
         if not l:
             raise ValueError("Aucun robot branché sur ce compte : branchez-le d'abord, sinon rien ne peut être essayé.")
         if v:
-            r = appel(l["jeton"], "getChat", {"chat_id": v})
+            r = appel(jeton_de(l["compte"]), "getChat", {"chat_id": v})
             if not r.get("ok"):
                 raise ValueError("Telegram refuse cette destination (%s). Un robot ne peut pas ouvrir une conversation : écrivez-lui « /start » une fois "
                                  "depuis ce compte Telegram, puis réessayez." % raison(r)[:90])
@@ -208,7 +217,7 @@ def brancher(ctx):
         if not dest:
             return {"ok": False, "cause": "sans-destinataire", "compte": cible_compte,
                     "erreur": "Le robot est branché, mais aucun destinataire : déclarez votre identifiant Telegram, ou écrivez « /start » au robot depuis Telegram."}
-        r = appel(l["jeton"], "sendMessage", {"chat_id": dest, "text": t[:TAILLE_MAX]})
+        r = appel(jeton_de(l["compte"]), "sendMessage", {"chat_id": dest, "text": t[:TAILLE_MAX]})
         if not r.get("ok"):
             c.emettre("telegram.echec_envoi", objet=("telegram", cible_compte), donnees={"raison": raison(r)})
             return {"ok": False, "cause": "refus", "erreur": raison(r), "compte": cible_compte}
@@ -225,7 +234,7 @@ def brancher(ctx):
             return
         l = lien(res["compte"])
         if l and res.get("message_id"):
-            appel(l["jeton"], "deleteMessage", {"chat_id": res["chat_id"], "message_id": int(res["message_id"]) if str(res["message_id"]).isdigit() else res["message_id"]})
+            appel(jeton_de(l["compte"]), "deleteMessage", {"chat_id": res["chat_id"], "message_id": int(res["message_id"]) if str(res["message_id"]).isdigit() else res["message_id"]})
         db.ecrire("DELETE FROM messages WHERE compte=? AND message_id=? AND sens='envoye'", (res["compte"], res["message_id"]))
 
     # ------------------------------------------------------------------ recevoir (public)
@@ -262,7 +271,7 @@ def brancher(ctx):
         c.emettre("telegram.message_recu", objet=("telegram", compte), donnees={"compte": compte, "de": qui, "texte": texte[:400]}, compte=compte)
         if texte and not dit_deja(compte):
             l = lien(compte)
-            appel(l["jeton"], "sendMessage", {"chat_id": chat, "text": str(ctx.reglage("mot_du_role", "") or "")[:TAILLE_MAX]}, timeout=5)
+            appel(jeton_de(l["compte"]), "sendMessage", {"chat_id": chat, "text": str(ctx.reglage("mot_du_role", "") or "")[:TAILLE_MAX]}, timeout=5)
         return {"ok": True, "compte": compte, "message": mid}
 
     def prouver_recu(c, res):

@@ -115,7 +115,8 @@ class Monde(unittest.TestCase):
         return self.n.executeur.executer("telegram." + cap, acteur, args, compte=compte)
 
     def brancher(self, compte="bea@x.fr", jeton=JETON):
-        return self.ex("brancher", compte=compte, jeton=jeton)
+        self.n.reglages.poser("telegram.jeton", jeton, compte)
+        return self.ex("brancher", compte=compte)
 
     def hook(self, secret, maj, brut=None):
         c = http.client.HTTPConnection("127.0.0.1", self.g.port, timeout=10)
@@ -149,10 +150,18 @@ class Brancher(Monde):
         pose = [a for a in self.tg.appels if a[1] == "setWebhook"][0][2]
         self.assertEqual((pose["allowed_updates"], pose["drop_pending_updates"]), (["message"], True))
 
-    def test_le_jeton_ne_sort_ni_de_l_etat_ni_du_journal(self):
+    def test_le_jeton_ne_sort_ni_de_l_etat_ni_du_journal_ni_de_la_base_du_module(self):
         self.brancher()
         self.assertNotIn(JETON, json.dumps(self.ex("etat")))
         self.assertNotIn(JETON, json.dumps(self.n.bus.recents(portee=TOUT, limite=900), default=str))
+        self.assertEqual(self.lignes("liens")[0]["jeton"], "")
+        for f in (Path(self.tmp.name) / "d").rglob("*.db"):
+            self.assertNotIn(JETON.encode(), f.read_bytes(), f.name)
+
+    def test_sans_jeton_dans_les_reglages_on_le_dit(self):
+        r = self.ex("brancher")
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("telegram.jeton", json.dumps(r, ensure_ascii=False))
 
     def test_les_refus(self):
         self.assertEqual(self.brancher(jeton="pas-un-jeton")["statut"], "echec")
@@ -170,7 +179,7 @@ class Brancher(Monde):
         self.n.catalogue.get("telegram.brancher").defaire(self.ctx, r["resultat"])
         self.assertEqual((self.lignes("liens"), self.tg.webhooks), ([], {}))
 
-    def test_rebrancher_garde_la_conversation_et_le_retour_remet_l_ancien_robot(self):
+    def test_rebrancher_garde_la_conversation_et_le_retour_la_retrouve(self):
         self.brancher()
         self.ecrit()
         r = self.brancher(jeton=JETON2)
@@ -178,9 +187,8 @@ class Brancher(Monde):
         self.assertEqual((l["nom_robot"], l["chat_id"]), ("robot_deux", "4242"))
         self.n.catalogue.get("telegram.brancher").defaire(self.ctx, r["resultat"])
         l = self.lignes("liens")[0]
-        self.assertEqual((l["nom_robot"], l["chat_id"]), ("robot_un", "4242"))
-        self.assertIn(JETON, self.tg.webhooks)
-        self.assertNotIn(JETON2, self.tg.webhooks)
+        self.assertEqual(l["chat_id"], "4242")                                     # la conversation apprise est gardée
+        self.assertIn(JETON2, self.tg.webhooks)                                    # le jeton est un réglage : le retour n'y touche pas
 
     def test_detacher_puis_defaire(self):
         self.brancher()
