@@ -1,0 +1,311 @@
+<title>Cassandra V19</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* Coquille de l'interface V19 : un rail de modules déclarés, une scène, un tiroir d'agent. Chaque acte d'agent montre sa preuve et son retour. */
+:root{
+  --sol:#eef1f5; --halo:#e9edf3; --verre:rgba(255,255,255,.66); --verre-fort:rgba(255,255,255,.86);
+  --encre:#101828; --encre-2:#475467; --encre-3:#8b95a3; --filet:rgba(16,24,40,.09);
+  --accent:#0b7c74; --accent-doux:rgba(11,124,116,.10); --accent-encre:#ffffff;
+  --ok:#047857; --ok-doux:rgba(4,120,87,.10); --alerte:#b45309; --alerte-doux:rgba(180,83,9,.11); --danger:#be123c; --danger-doux:rgba(190,18,60,.09);
+  --ombre:0 1px 2px rgba(16,24,40,.05),0 8px 24px rgba(16,24,40,.06);
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace; --sans:"Public Sans",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --sol:#0d1117; --halo:#111a24; --verre:rgba(26,33,44,.66); --verre-fort:rgba(30,38,50,.9);
+  --encre:#e6ebf2; --encre-2:#aab4c3; --encre-3:#707c8d; --filet:rgba(230,235,242,.10);
+  --accent:#34b3a8; --accent-doux:rgba(52,179,168,.14); --accent-encre:#06201d;
+  --ok:#3ecf9a; --ok-doux:rgba(62,207,154,.12); --alerte:#e7a14c; --alerte-doux:rgba(231,161,76,.13); --danger:#ff6b8b; --danger-doux:rgba(255,107,139,.12);
+  --ombre:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --sol:#0d1117; --halo:#111a24; --verre:rgba(26,33,44,.66); --verre-fort:rgba(30,38,50,.9);
+  --encre:#e6ebf2; --encre-2:#aab4c3; --encre-3:#707c8d; --filet:rgba(230,235,242,.10);
+  --accent:#34b3a8; --accent-doux:rgba(52,179,168,.14); --accent-encre:#06201d;
+  --ok:#3ecf9a; --ok-doux:rgba(62,207,154,.12); --alerte:#e7a14c; --alerte-doux:rgba(231,161,76,.13); --danger:#ff6b8b; --danger-doux:rgba(255,107,139,.12);
+  --ombre:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:radial-gradient(900px 420px at 50% -25%,var(--halo),transparent),var(--sol);color:var(--encre);font:14px/1.5 var(--sans);min-height:100vh}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr) 372px;gap:14px;padding:14px max(16px,env(safe-area-inset-left));min-height:100vh}
+.verre{background:var(--verre);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border-radius:16px;box-shadow:var(--ombre)}
+.mono{font-family:var(--mono)}
+.etiq{font:500 11px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--encre-3)}
+
+/* rail */
+.rail{padding:14px 10px;display:flex;flex-direction:column;gap:14px;position:sticky;top:14px;height:calc(100vh - 28px);overflow:auto}
+.marque{display:flex;align-items:center;gap:10px;padding:2px 8px 6px}
+.marque svg{flex:none}
+.marque b{font:600 15px var(--mono);letter-spacing:.02em}
+.marque span{display:block;font:400 11px var(--mono);color:var(--encre-3)}
+.groupe{display:flex;flex-direction:column;gap:2px}
+.groupe .etiq{padding:0 8px 4px}
+.lien{display:flex;align-items:center;justify-content:space-between;gap:8px;border:0;background:transparent;text-align:left;padding:7px 8px;border-radius:10px;color:var(--encre-2)}
+.lien:hover{background:var(--accent-doux)}
+.lien[aria-current="page"]{background:var(--accent-doux);color:var(--accent);font-weight:600}
+.pastille{font:500 11px var(--mono);min-width:20px;text-align:center;padding:1px 6px;border-radius:99px;background:var(--filet);color:var(--encre-2)}
+.pastille.alerte{background:var(--alerte-doux);color:var(--alerte)} .pastille.danger{background:var(--danger-doux);color:var(--danger)}
+.pied-rail{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding:8px}
+.compte{display:flex;align-items:center;gap:10px}
+.rond{width:30px;height:30px;border-radius:50%;background:var(--accent-doux);color:var(--accent);display:grid;place-items:center;font:600 12px var(--mono)}
+
+/* scène */
+.scene{display:flex;flex-direction:column;gap:14px;min-width:0}
+.barre{display:flex;align-items:center;gap:12px;padding:10px 14px}
+.barre h1{font:600 16px var(--mono);margin:0;letter-spacing:.01em}
+.barre .cherche{margin-left:auto;display:flex;align-items:center;gap:8px;border:1px solid var(--filet);background:var(--verre-fort);border-radius:10px;padding:6px 10px;min-width:220px;color:var(--encre-3)}
+kbd{font:500 11px var(--mono);border:1px solid var(--filet);border-radius:6px;padding:0 5px;color:var(--encre-3)}
+.vue[hidden]{display:none}
+.vue{display:flex;flex-direction:column;gap:14px}
+.grille{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.carte{padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.carte h2{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--encre-2);margin:0}
+.chiffre{font:500 28px/1 var(--mono);font-variant-numeric:tabular-nums}
+.sous{color:var(--encre-3);font-size:12px}
+.barre-etat{height:6px;border-radius:99px;background:var(--filet);overflow:hidden}
+.barre-etat i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.pill{display:inline-flex;align-items:center;gap:6px;font:500 11px var(--mono);padding:2px 8px;border-radius:99px;background:var(--filet);color:var(--encre-2)}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ok{background:var(--ok-doux);color:var(--ok)} .pill.alerte{background:var(--alerte-doux);color:var(--alerte)} .pill.danger{background:var(--danger-doux);color:var(--danger)} .pill.accent{background:var(--accent-doux);color:var(--accent)}
+
+/* constats */
+.constat{display:grid;grid-template-columns:4px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px 12px 0;border-top:1px solid var(--filet)}
+.constat:first-of-type{border-top:0}
+.constat .bande{align-self:stretch;border-radius:4px;background:var(--alerte)} .constat.danger .bande{background:var(--danger)} .constat.info .bande{background:var(--accent)}
+.constat b{display:block;font-weight:600}
+.constat .acte{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.bouton{border:1px solid var(--filet);background:var(--verre-fort);border-radius:10px;padding:6px 12px;font:500 12px var(--mono)}
+.bouton:hover{border-color:var(--accent);color:var(--accent)}
+.bouton.plein{background:var(--accent);color:var(--accent-encre);border-color:var(--accent)} .bouton.plein:hover{color:var(--accent-encre);filter:brightness(1.08)}
+.bouton.leger{background:transparent}
+
+/* journal des actes */
+.acte-ligne{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:12px;padding:10px 0;border-top:1px solid var(--filet);align-items:start}
+.acte-ligne:first-child{border-top:0}
+.heure{font:400 12px var(--mono);color:var(--encre-3);padding-top:2px}
+.cle{font:500 12px var(--mono);color:var(--encre)}
+.preuve{font-size:12px;color:var(--encre-2);margin-top:2px}
+
+/* paliers */
+table{border-collapse:collapse;width:100%} th{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--encre-3);text-align:left;padding:8px 10px}
+td{padding:10px;border-top:1px solid var(--filet);vertical-align:middle}
+.seg{display:inline-flex;border:1px solid var(--filet);border-radius:10px;overflow:hidden;background:var(--verre-fort)}
+.seg button{border:0;background:transparent;padding:5px 10px;font:500 12px var(--mono);color:var(--encre-3)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-encre)}
+.seg button[disabled]{opacity:.35;cursor:not-allowed}
+.defil{overflow-x:auto}
+
+/* notes */
+.notes{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:14px}
+.liste-notes{padding:8px;display:flex;flex-direction:column;gap:2px}
+.note-ligne{border:0;background:transparent;text-align:left;padding:10px;border-radius:10px;display:flex;flex-direction:column;gap:2px}
+.note-ligne[aria-current="true"]{background:var(--accent-doux)}
+.note-ligne b{font-weight:600;font-size:13px} .note-ligne small{color:var(--encre-3)}
+.editeur{padding:20px 24px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.editeur h2{font:600 20px/1.25 var(--sans);margin:0;text-transform:none;letter-spacing:0;color:var(--encre)}
+.editeur p{max-width:62ch;margin:0}
+.lien-note{color:var(--accent);font-family:var(--mono);font-size:13px;border-bottom:1px dashed var(--accent)}
+.case{display:flex;gap:8px;align-items:center}
+.case input{accent-color:var(--accent)}
+.versions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* tiroir agent */
+.tiroir{padding:0;display:flex;flex-direction:column;position:sticky;top:14px;height:calc(100vh - 28px);min-width:0}
+.tiroir header{padding:12px 14px;border-bottom:1px solid var(--filet);display:flex;align-items:center;gap:10px}
+.tiroir header .seg button{padding:4px 9px}
+.fil{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.bulle{max-width:92%;padding:9px 12px;border-radius:14px;background:var(--verre-fort);border:1px solid var(--filet)}
+.bulle.moi{align-self:flex-end;background:var(--accent);color:var(--accent-encre);border-color:var(--accent)}
+.outil{border:1px solid var(--filet);border-radius:12px;padding:10px 12px;background:var(--verre-fort);display:flex;flex-direction:column;gap:6px}
+.outil .tete{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.outil .detail{font-size:12px;color:var(--encre-2)}
+.outil.retenu{border-color:var(--alerte)} .outil.raconte{border-style:dashed}
+.saisie{padding:12px;border-top:1px solid var(--filet);display:flex;gap:8px}
+.saisie input{flex:1;min-width:0;border:1px solid var(--filet);background:var(--verre-fort);border-radius:10px;padding:9px 12px;font:inherit;color:var(--encre)}
+.vide-ligne{display:flex;align-items:center;gap:8px;color:var(--encre-3);font:400 12px var(--mono)}
+.points{display:inline-flex;gap:3px}.points i{width:5px;height:5px;border-radius:50%;background:var(--encre-3);animation:p 1.2s infinite}.points i:nth-child(2){animation-delay:.15s}.points i:nth-child(3){animation-delay:.3s}
+@keyframes p{0%,100%{opacity:.25}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.points i{animation:none}}
+@media (max-width:1180px){.app{grid-template-columns:200px minmax(0,1fr)}.tiroir{grid-column:1 / -1;position:static;height:520px}}
+@media (max-width:760px){.app{grid-template-columns:minmax(0,1fr)}.rail{position:static;height:auto}.notes{grid-template-columns:minmax(0,1fr)}.barre .cherche{display:none}.constat{grid-template-columns:4px minmax(0,1fr)}.constat .acte{grid-column:2;justify-content:flex-start}}
+</style>
+
+<div class="app">
+  <nav class="rail verre" aria-label="Modules">
+    <div class="marque">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="9" fill="var(--accent)"/><path d="M9 21V9l6 8 6-8v12" fill="none" stroke="var(--accent-encre)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><b>Cassandra</b><span>V19 · Orion</span></div>
+    </div>
+    <div class="groupe"><span class="etiq">Maison</span>
+      <button class="lien" data-vue="accueil" aria-current="page">Vue d'ensemble <span class="pastille alerte">3</span></button>
+      <button class="lien" data-vue="paliers">Autonomie</button>
+    </div>
+    <div class="groupe"><span class="etiq">Bureau</span>
+      <button class="lien" data-vue="notes">Notes <span class="pastille">42</span></button>
+      <button class="lien" data-vue="vide">Tâches <span class="pastille alerte">2</span></button>
+      <button class="lien" data-vue="vide">Projets</button>
+      <button class="lien" data-vue="vide">Agenda</button>
+      <button class="lien" data-vue="vide">Contacts</button>
+      <button class="lien" data-vue="vide">Courrier <span class="pastille">5</span></button>
+    </div>
+    <div class="groupe"><span class="etiq">Machine</span>
+      <button class="lien" data-vue="vide">Sites <span class="pastille danger">1</span></button>
+      <button class="lien" data-vue="vide">Certificats</button>
+      <button class="lien" data-vue="vide">DNS</button>
+      <button class="lien" data-vue="vide">Sensorium</button>
+    </div>
+    <div class="groupe"><span class="etiq">Agents</span>
+      <button class="lien" data-vue="vide">Mémoire</button>
+      <button class="lien" data-vue="vide">Modèles</button>
+    </div>
+    <div class="pied-rail">
+      <div class="compte"><span class="rond">DA</span><div><div>Drisse ATEK</div><span class="sous mono">administrateur</span></div></div>
+      <button class="bouton leger" id="theme" type="button">Thème : clair</button>
+    </div>
+  </nav>
+
+  <main class="scene">
+    <header class="barre verre">
+      <h1 id="titre">Vue d'ensemble</h1>
+      <span class="pill ok">noyau 0.1 · 20 modules</span>
+      <label class="cherche"><span class="mono" style="font-size:12px">Chercher ou agir</span><kbd>Ctrl K</kbd></label>
+    </header>
+
+    <section class="vue" id="v-accueil">
+      <div class="grille">
+        <article class="verre carte"><h2>Certificats</h2><div class="chiffre">9 j</div><div class="sous">proche.fr expire le 21 oct. · 14 autres valides</div><div class="barre-etat"><i style="width:18%"></i></div></article>
+        <article class="verre carte"><h2>Sauvegardes</h2><div class="chiffre">2 j</div><div class="sous">base « clients » muette depuis 2 jours · Athena à jour</div><div class="barre-etat"><i style="width:60%;background:var(--alerte)"></i></div></article>
+        <article class="verre carte"><h2>Sites</h2><div class="chiffre">23 / 24</div><div class="sous">blog.proche.fr répond en 4,2 s depuis 40 min</div><div class="barre-etat"><i style="width:96%"></i></div></article>
+        <article class="verre carte"><h2>Autonomie</h2><div class="chiffre">11 auto</div><div class="sous">sur 34 capacités qui écrivent · 7 au palier maître</div><div class="barre-etat"><i style="width:32%"></i></div></article>
+      </div>
+      <article class="verre carte">
+        <h2>Ce qui demande un regard</h2>
+        <div>
+          <div class="constat danger"><i class="bande"></i><div><b>Certificat de proche.fr : 9 jours</b><span class="sous">Let's Encrypt, 3 renouvellements sur 5 cette semaine : la limite approche.</span></div><div class="acte"><button class="bouton plein" type="button" data-agir="renouveler">Laisser Cassandra renouveler</button><button class="bouton leger" type="button">Ignorer 24 h</button></div></div>
+          <div class="constat"><i class="bande"></i><div><b>Sauvegarde de la base « clients » muette</b><span class="sous">Dernière copie le 10 oct. 02:00. Le plan est actif, le cron n'a rien écrit.</span></div><div class="acte"><button class="bouton" type="button">Voir le plan</button><button class="bouton" type="button">Lancer maintenant</button></div></div>
+          <div class="constat"><i class="bande"></i><div><b>Tâche en retard : Facturer octobre</b><span class="sous">Échue le 9 oct., repoussée 2 fois.</span></div><div class="acte"><button class="bouton" type="button">Ouvrir</button><button class="bouton" type="button">Confier à Itare</button></div></div>
+          <div class="constat info"><i class="bande"></i><div><b>Relecture due : N-0012 Procédure de bascule</b><span class="sous">Prévue le 12 oct.</span></div><div class="acte"><button class="bouton" type="button">Ouvrir la note</button></div></div>
+        </div>
+      </article>
+      <article class="verre carte">
+        <h2>Ce que les agents ont fait aujourd'hui</h2>
+        <div>
+          <div class="acte-ligne"><span class="heure">09:14</span><div><span class="cle">notes.creer</span> <span class="pill ok">fait</span><div class="preuve">Note « Courses » créée · preuve : relue, titre et propriétaire conformes</div></div><button class="bouton leger" type="button">Annuler</button></div>
+          <div class="acte-ligne"><span class="heure">08:02</span><div><span class="cle">fastpanel.ssl_renouveler</span> <span class="pill ok">fait</span><div class="preuve">kokoro.example · preuve : certificat valide jusqu'au 11 janv. · retour : réémettre l'ancien</div></div><button class="bouton leger" type="button">Annuler</button></div>
+          <div class="acte-ligne"><span class="heure">07:40</span><div><span class="cle">dns.corriger</span> <span class="pill accent">raconté</span><div class="preuve">Palier « raconter » : rien n'a été changé. Aurait remplacé l'enregistrement A de proche.fr.</div></div><button class="bouton" type="button">Autoriser une fois</button></div>
+          <div class="acte-ligne"><span class="heure">03:00</span><div><span class="cle">courrier.envoyer</span> <span class="pill alerte">retenu</span><div class="preuve">Un message reçu a été lu dans ce tour : l'envoi attend ta confirmation.</div></div><button class="bouton" type="button">Voir le brouillon</button></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="vue" id="v-paliers" hidden>
+      <article class="verre carte">
+        <h2>Jusqu'où Cassandra agit seule</h2>
+        <p class="sous" style="margin:0;max-width:70ch">Chaque capacité qui écrit a un palier. Il monte avec les réussites prouvées et redescend après deux échecs de suite. Tu peux le fixer à la main. Un risque élevé n'atteint jamais « maître ».</p>
+        <div class="defil"><table>
+          <thead><tr><th>Capacité</th><th>Risque</th><th>Réussites</th><th>Palier</th></tr></thead>
+          <tbody id="paliers"></tbody>
+        </table></div>
+      </article>
+    </section>
+
+    <section class="vue" id="v-notes" hidden>
+      <div class="notes">
+        <div class="verre liste-notes" role="list">
+          <button class="note-ligne" aria-current="true"><b>Procédure de bascule</b><small class="mono">N-0012 · stabilisée · relire le 12 oct.</small></button>
+          <button class="note-ligne"><b>Décision : hébergement des archives</b><small class="mono">N-0011 · en cours</small></button>
+          <button class="note-ligne"><b>Idées pour Salvation</b><small class="mono">N-0009 · brouillon · 3 cases ouvertes</small></button>
+          <button class="note-ligne"><b>2026-10-12</b><small class="mono">N-0042 · journal</small></button>
+          <button class="note-ligne"><b>Contrat Proche — points à relire</b><small class="mono">N-0007 · projet Refonte</small></button>
+        </div>
+        <article class="verre editeur">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="pill accent">stabilisée</span><span class="pill">dossier Chantiers/2026</span><span class="pill">projet Refonte</span><span class="sous mono">modifiée il y a 2 h · 3 versions</span></div>
+          <h2>Procédure de bascule</h2>
+          <p>Avant la bascule, vérifier que le plan de référence est figé (voir <a class="lien-note" href="#n12">[[N-0011]]</a>) et que la sauvegarde de la veille est lisible.</p>
+          <label class="case"><input type="checkbox" checked> Geler le plan de référence <span class="pill ok">tâche liée · faite</span></label>
+          <label class="case"><input type="checkbox"> Prévenir les comptes concernés <span class="pill alerte">tâche liée · en retard</span></label>
+          <label class="case"><input type="checkbox"> Couper l'ancien DNS</label>
+          <div><div class="etiq" style="margin-bottom:6px">Cité par</div><span class="lien-note">[[N-0007]]</span> &nbsp; <span class="lien-note">[[projet:7]]</span></div>
+          <div><div class="etiq" style="margin-bottom:6px">Versions</div><div class="versions"><button class="bouton leger" type="button">aujourd'hui 09:20 · coché</button><button class="bouton leger" type="button">hier 18:02 · modification</button><button class="bouton leger" type="button">9 oct. · créée</button></div></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="vue" id="v-vide" hidden>
+      <article class="verre carte"><h2>Écran du module</h2><p class="sous" style="margin:0;max-width:60ch">Chaque module déclare ses écrans ; le rail et la scène se reconstruisent quand un module est branché ou débranché. Les capacités sans écran dédié restent joignables par l'explorateur : une liste, un formulaire par capacité.</p></article>
+    </section>
+  </main>
+
+  <aside class="tiroir verre" aria-label="Agent">
+    <header>
+      <div class="seg" role="group" aria-label="Agent"><button type="button" aria-pressed="true" data-agent="cassandra">Cassandra</button><button type="button" aria-pressed="false" data-agent="itare">Itare</button></div>
+      <span class="sous mono" id="qui">la machine</span>
+    </header>
+    <div class="fil" id="fil">
+      <div class="bulle moi">Le certificat de proche.fr expire bientôt, renouvelle-le et préviens Claire.</div>
+      <div class="outil">
+        <div class="tete"><span class="cle">fastpanel.ssl_renouveler</span><span class="pill ok">fait</span><span class="pill">risque moyen · palier auto</span></div>
+        <div class="detail">Preuve : certificat valide jusqu'au 11 janvier. Retour disponible.</div>
+        <div><button class="bouton leger" type="button">Annuler</button></div>
+      </div>
+      <div class="outil retenu">
+        <div class="tete"><span class="cle">telegram.envoyer</span><span class="pill alerte">retenu</span><span class="pill">fait sortir quelque chose</span></div>
+        <div class="detail">Un message reçu a été lu dans ce tour. L'envoi à Claire attend ta confirmation.</div>
+        <div style="display:flex;gap:8px"><button class="bouton plein" type="button">Envoyer</button><button class="bouton leger" type="button">Modifier</button></div>
+      </div>
+      <div class="bulle">Le certificat est renouvelé (valide jusqu'au 11 janvier). Je n'ai pas prévenu Claire : un message lu dans ce tour m'en empêche, confirme l'envoi ci-dessus. <span class="mono" style="color:var(--encre-3)">[M:31]</span></div>
+      <div class="vide-ligne"><span class="points"><i></i><i></i><i></i></span>Cassandra relit la mémoire</div>
+    </div>
+    <form class="saisie" id="envoi">
+      <input id="msg" placeholder="Parle à Cassandra" autocomplete="off" aria-label="Message">
+      <button class="bouton plein" type="submit">Envoyer</button>
+    </form>
+  </aside>
+</div>
+
+<script>
+(function(){
+  var titres={accueil:"Vue d'ensemble",paliers:"Autonomie",notes:"Notes",vide:"Écran du module"};
+  document.querySelectorAll(".rail .lien").forEach(function(b){
+    b.addEventListener("click",function(){
+      document.querySelectorAll(".rail .lien").forEach(function(x){x.removeAttribute("aria-current")});
+      b.setAttribute("aria-current","page");
+      document.querySelectorAll(".vue").forEach(function(v){v.hidden=true});
+      var v=b.getAttribute("data-vue");document.getElementById("v-"+v).hidden=false;
+      document.getElementById("titre").textContent=v==="vide"?b.firstChild.textContent.trim():titres[v];
+    });
+  });
+  var lignes=[["notes.creer","faible","auto",24,"faible"],["notes.supprimer","moyen","auto",12,"moyen"],["agenda.evenement_enregistrer","faible","maitre",41,"faible"],["fastpanel.ssl_renouveler","moyen","auto",14,"moyen"],["dns.corriger","moyen","raconter",6,"moyen"],["courrier.envoyer","eleve","raconter",3,"eleve"],["sites.retirer","moyen","raconter",0,"moyen"]];
+  var corps=document.getElementById("paliers");
+  lignes.forEach(function(l){
+    var tr=document.createElement("tr");
+    var cible=l[2]==="raconter"?10:30;
+    var pill={faible:"ok",moyen:"alerte",eleve:"danger"}[l[1]];
+    tr.innerHTML='<td><span class="cle">'+l[0]+'</span></td><td><span class="pill '+pill+'">'+l[1]+'</span></td><td class="mono">'+l[3]+' / '+cible+'</td><td><div class="seg" role="group"></div></td>';
+    var seg=tr.querySelector(".seg");
+    ["raconter","auto","maitre"].forEach(function(p){
+      var b=document.createElement("button");b.type="button";b.textContent=p;b.setAttribute("aria-pressed",String(p===l[2]));
+      if(p==="maitre"&&l[1]==="eleve"){b.disabled=true;b.title="Un risque élevé n'atteint jamais « maître »"}
+      b.addEventListener("click",function(){if(b.disabled)return;seg.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed","false")});b.setAttribute("aria-pressed","true")});
+      seg.appendChild(b);
+    });
+    corps.appendChild(tr);
+  });
+  document.querySelectorAll("[data-agent]").forEach(function(b){
+    b.addEventListener("click",function(){
+      document.querySelectorAll("[data-agent]").forEach(function(x){x.setAttribute("aria-pressed","false")});
+      b.setAttribute("aria-pressed","true");
+      var it=b.getAttribute("data-agent")==="itare";
+      document.getElementById("qui").textContent=it?"le bureau":"la machine";
+      document.getElementById("msg").placeholder=it?"Parle à Itare":"Parle à Cassandra";
+    });
+  });
+  document.getElementById("envoi").addEventListener("submit",function(e){
+    e.preventDefault();var i=document.getElementById("msg");if(!i.value.trim())return;
+    var d=document.createElement("div");d.className="bulle moi";d.textContent=i.value;document.getElementById("fil").appendChild(d);i.value="";
+    document.getElementById("fil").scrollTop=1e6;
+  });
+  var racine=document.documentElement,bt=document.getElementById("theme");
+  bt.addEventListener("click",function(){var sombre=racine.getAttribute("data-theme")==="dark";racine.setAttribute("data-theme",sombre?"light":"dark");bt.textContent="Thème : "+(sombre?"clair":"sombre")});
+})();
+</script>
