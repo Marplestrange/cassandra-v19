@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import sys
 from pathlib import Path
 
 from . import manifeste as mf
@@ -48,9 +49,18 @@ def charger_module_py(dossier: Path, mid: str):
     chemin = dossier / "module.py"
     if not chemin.exists():
         return None
-    spec = importlib.util.spec_from_file_location("cassandra_module_%s" % mid, chemin)
+    nom = "cassandra_module_%s" % mid
+    for k in [k for k in sys.modules if k == nom or k.startswith(nom + ".")]:
+        del sys.modules[k]                                          # un rechargement ne doit pas retrouver les fichiers d'avant
+    # Le module est un PAQUET de son dossier : `from . import outils` y trouve ses fichiers d'aide, et rien d'autre (pas de collision entre modules).
+    spec = importlib.util.spec_from_file_location(nom, chemin, submodule_search_locations=[str(dossier)])
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    sys.modules[nom] = mod
+    try:
+        spec.loader.exec_module(mod)
+    except BaseException:
+        sys.modules.pop(nom, None)
+        raise
     return mod
 
 

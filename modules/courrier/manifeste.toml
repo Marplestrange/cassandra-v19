@@ -1,0 +1,247 @@
+[module]
+id = "courrier"
+nom = "Courrier"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "La boîte mail de chaque compte, par IMAP : dossiers, messages (cache des en-têtes et du texte des trois derniers mois), lecture avec un HTML nettoyé par liste blanche (rien ne s'exécute, aucune image distante n'est chargée sans accord), gestes réversibles (lu, suivi, déplacer, archiver, corbeille, copier, dossiers), brouillons, et envoi par SMTP réservé à un humain. Les identifiants sont des réglages secrets PAR COMPTE, chiffrés : une boîte appartient à une personne, jamais au serveur."
+confiance = "interne"
+famille = "communication"
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[objets]]
+type = "courrier"
+libelle = "La boîte mail d'un compte"
+
+[[reglages]]
+id = "imap_hote"
+libelle = "Serveur IMAP de ma boîte"
+portee = "compte"
+
+[[reglages]]
+id = "imap_port"
+libelle = "Port IMAP"
+type = "entier"
+defaut = 993
+minimum = 1
+maximum = 65535
+portee = "compte"
+
+[[reglages]]
+id = "imap_chiffre"
+libelle = "Connexion IMAP chiffrée (SSL)"
+type = "booleen"
+defaut = true
+portee = "compte"
+
+[[reglages]]
+id = "imap_identifiant"
+libelle = "Identifiant de ma boîte (souvent mon adresse)"
+portee = "compte"
+
+[[reglages]]
+id = "imap_mot_de_passe"
+libelle = "Mot de passe de ma boîte"
+type = "secret"
+portee = "compte"
+
+[[reglages]]
+id = "smtp_hote"
+libelle = "Serveur d'envoi (SMTP)"
+portee = "compte"
+
+[[reglages]]
+id = "smtp_port"
+libelle = "Port SMTP (465 : SSL dès la connexion ; sinon STARTTLS)"
+type = "entier"
+defaut = 587
+minimum = 1
+maximum = 65535
+portee = "compte"
+
+[[reglages]]
+id = "smtp_identifiant"
+libelle = "Identifiant SMTP (vide : celui de la boîte)"
+portee = "compte"
+
+[[reglages]]
+id = "smtp_mot_de_passe"
+libelle = "Mot de passe SMTP (vide : celui de la boîte)"
+type = "secret"
+portee = "compte"
+
+[[reglages]]
+id = "smtp_expediteur"
+libelle = "Adresse d'expédition (vide : l'identifiant de la boîte ; le fournisseur exige souvent que ce soit le compte authentifié)"
+portee = "compte"
+
+[[reglages]]
+id = "jours_gardes"
+libelle = "Jours de courrier dont le texte est gardé dans le cache"
+type = "entier"
+defaut = 90
+minimum = 7
+maximum = 730
+
+[[reglages]]
+id = "lot_corps"
+libelle = "Messages dont le texte est relu par passe et par dossier"
+type = "entier"
+defaut = 25
+minimum = 5
+maximum = 200
+
+[[reglages]]
+id = "delai_s"
+libelle = "Délai d'attente d'une connexion IMAP ou SMTP, en secondes"
+type = "entier"
+defaut = 20
+minimum = 3
+maximum = 120
+
+[evenements]
+emet = ["courrier.nouveau"]
+
+[[moteurs]]
+id = "passe"
+libelle = "Relève chaque boîte configurée : dossiers et compteurs, en-têtes neufs, texte des derniers messages, messages disparus du serveur"
+mode = "periodique"
+toutes_les_s = 300
+duree_max_s = 280
+
+[[detecteurs]]
+id = "boite_en_panne"
+libelle = "Une boîte ne se lit plus (visible de son seul compte)"
+frequence_s = 300
+
+# ------------------------------------------------------------------ lectures
+[[capacites]]
+id = "etat"
+libelle = "Ma boîte sans toucher au serveur : compteurs par dossier, derniers non lus, dernière passe"
+risque = "lecture"
+
+[[capacites]]
+id = "tester_boite"
+libelle = "Éprouver la connexion à ma boîte"
+risque = "lecture"
+
+[[capacites]]
+id = "dossiers"
+libelle = "Mes dossiers, avec leur rôle (réception, envoyés, corbeille, brouillons, archive) et leurs compteurs"
+risque = "lecture"
+
+[[capacites]]
+id = "lister"
+libelle = "Les messages d'un dossier, par page, avec recherche par le serveur et classement (à traiter, en attente, technique)"
+risque = "lecture"
+
+[[capacites]]
+id = "lire"
+libelle = "Lire un message (texte, HTML nettoyé, pièces jointes) sans le marquer lu"
+risque = "lecture"
+
+[[capacites]]
+id = "piece"
+libelle = "Le contenu d'une pièce jointe (25 Mo au plus)"
+risque = "lecture"
+
+[[capacites]]
+id = "envoyes"
+libelle = "Le journal de mes envois"
+risque = "lecture"
+
+# ------------------------------------------------------------------ gestes
+[[capacites]]
+id = "drapeau"
+libelle = "Poser ou retirer un drapeau (lu, suivi, répondu) sur des messages"
+risque = "faible"
+perimetre = ["des messages de ma boîte, désignés par des UID numériques"]
+preuve = "relire les drapeaux sur le serveur"
+retour = "remettre chaque message dans l'état où il était"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "deplacer"
+libelle = "Déplacer des messages vers un autre dossier"
+risque = "moyen"
+perimetre = ["des messages de ma boîte", "un dossier existant"]
+preuve = "les messages (retrouvés par leur Message-ID) sont dans le dossier de destination"
+retour = "ramener les messages dans leur dossier d'origine, retrouvés par leur Message-ID"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "supprimer"
+libelle = "Mettre des messages à la corbeille du serveur (jamais d'effacement définitif)"
+risque = "moyen"
+perimetre = ["des messages de ma boîte", "la corbeille du serveur, qui doit exister"]
+preuve = "les messages sont dans la corbeille"
+retour = "ramener les messages dans leur dossier d'origine"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "archiver"
+libelle = "Ranger des messages dans l'archive du serveur (le dossier « Archive » est créé au besoin)"
+risque = "moyen"
+perimetre = ["des messages de ma boîte"]
+preuve = "les messages sont dans l'archive"
+retour = "ramener les messages dans leur dossier d'origine"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "copier"
+libelle = "Copier des messages vers un dossier, sans les retirer de leur source"
+risque = "faible"
+perimetre = ["des messages de ma boîte", "un dossier existant"]
+preuve = "les copies sont dans le dossier de destination"
+retour = "retirer les copies de la destination, la source n'est pas touchée"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "dossier_creer"
+libelle = "Créer un dossier"
+risque = "faible"
+perimetre = ["ma boîte", "un nom de 120 caractères au plus"]
+preuve = "le dossier figure dans la liste du serveur"
+retour = "supprimer le dossier créé, qui est vide"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "dossier_renommer"
+libelle = "Renommer un dossier (sa sous-arborescence suit)"
+risque = "moyen"
+perimetre = ["un dossier de ma boîte, hors réception"]
+preuve = "le nouveau nom figure dans la liste du serveur et l'ancien n'y est plus"
+retour = "remettre l'ancien nom"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "brouillon_creer"
+libelle = "Préparer un brouillon dans le dossier des brouillons (rien ne part)"
+risque = "faible"
+perimetre = ["ma boîte", "20 destinataires au plus"]
+preuve = "le brouillon (retrouvé par son Message-ID) est dans le dossier des brouillons"
+retour = "retirer ce brouillon"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "envoyer"
+libelle = "Envoyer un courriel par mon serveur d'envoi (réservé à un humain : un agent prépare un brouillon)"
+risque = "eleve"
+perimetre = ["mon propre serveur d'envoi", "20 destinataires au plus", "des adresses valides"]
+preuve = "l'envoi est consigné au journal des envois"
+retour = "aucun : un courriel parti ne se rappelle pas ; d'où le brouillon à relire avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[permissions]
+stockage = true
+lectures = true
+reseau = ["le serveur IMAP et le serveur SMTP réglés par chaque compte"]
