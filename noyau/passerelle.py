@@ -223,7 +223,9 @@ class Passerelle:
             cookie = "%s=%s; Path=/; Max-Age=%d; HttpOnly; SameSite=Strict%s" % (COOKIE, res["jeton"], self.noyau.identite.ttl, "; Secure" if self.cookie_secure else "")
             return self._repondre(h, 200, {"ok": True, "compte": res["compte"], "jeton": res["jeton"]}, cookie=cookie)
         if isinstance(res, dict) and res.get("ok") is False:                               # un refus rendu comme résultat (jamais une exception : voir webauthn)
-            return self._repondre(h, 429 if res.get("limite") else 401, {"erreur": res.get("erreur", "refusé")})
+            code = res.get("code") if res.get("code") in (401, 404, 410, 429) else (429 if res.get("limite") else 401)
+            corps = {k: v for k, v in res.items() if k in ("erreur", "titre", "mdp", "attente_s")}
+            return self._repondre(h, code, dict(corps, erreur=res.get("erreur", "refusé")))
         return self._repondre(h, STATUTS_HTTP.get(r["statut"], 200), r)
 
     @staticmethod
