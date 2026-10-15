@@ -1,0 +1,128 @@
+[module]
+id = "proactif"
+nom = "Proactivité"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "La Proactivité : l'autonomie par palier (observer, proposer, maîtrise, raconter), le savoir-faire mesuré (un geste devient éprouvé à dix réussites, retombe à deux échecs d'affilée), l'ombre (ce qu'elle aurait fait, sans agir), les incidents (des anomalies corrélées en une histoire) et le fil (le récit). Le cycle — détecteurs, constats, paliers des capacités — vit déjà dans le noyau. Différé : la porte de décision par domaine/geste, les projections, et le moteur d'évolution (auto-modification)."
+confiance = "interne"
+famille = "supervision"
+
+[[objets]]
+type = "savoir_faire"
+libelle = "Un savoir-faire de la proactivité"
+
+[permissions]
+stockage = true
+reglages = true
+
+[[reglages]]
+id = "palier"
+libelle = "Le palier d'autonomie global : observer, proposer, maitrise, raconter"
+type = "texte"
+defaut = "proposer"
+
+[[reglages]]
+id = "budget_jour"
+libelle = "Le nombre de gestes autonomes par jour (affichage)"
+type = "entier"
+defaut = 9
+
+[[reglages]]
+id = "pause"
+libelle = "Pendant vos heures de présence, elle propose au lieu d'agir"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "pause_debut"
+libelle = "Début de la pause (HH:MM)"
+type = "texte"
+defaut = "09:00"
+
+[[reglages]]
+id = "pause_fin"
+libelle = "Fin de la pause (HH:MM)"
+type = "texte"
+defaut = "18:00"
+
+[[reglages]]
+id = "reversible"
+libelle = "N'agir seule que sur des gestes réversibles"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "retrograde"
+libelle = "Rétrograder tout seul un savoir-faire après deux échecs d'affilée"
+type = "booleen"
+defaut = true
+
+[[capacites]]
+id = "autonomie"
+libelle = "Le réglage d'autonomie : le palier, le budget, les heures de pause, la réversibilité"
+risque = "lecture"
+
+[[capacites]]
+id = "savoirs"
+libelle = "Les savoir-faire mesurés : réussites, échecs, état, propositions à relire"
+risque = "lecture"
+
+[[capacites]]
+id = "ombre"
+libelle = "Ce qu'elle aurait fait et pourquoi elle ne l'a pas fait (jamais exécuté)"
+risque = "lecture"
+
+[[capacites]]
+id = "incidents"
+libelle = "Les incidents : une cause, sa chaîne de conséquences, sa fin prouvée"
+risque = "lecture"
+
+[[capacites]]
+id = "fil"
+libelle = "Le récit : les découvertes, les gestes, les incidents et les veilles, en une seule ligne de temps"
+risque = "lecture"
+
+[[capacites]]
+id = "autonomie_set"
+libelle = "Régler l'autonomie : palier, budget, pause, réversibilité, rétrogradation"
+risque = "faible"
+perimetre = ["le réglage d'autonomie de ce module"]
+preuve = "le réglage relu"
+retour = "remettre le réglage d'avant"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "savoir_etat"
+libelle = "Confier ou retirer un savoir-faire (auto, proposition, manuel) ; confier exige dix réussites"
+risque = "faible"
+perimetre = ["l'état d'un savoir-faire"]
+preuve = "l'état relu"
+retour = "remettre l'état d'avant"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "savoir_accepter"
+libelle = "Accepter une proposition de savoir-faire (il entre en proposition, jamais exécuté d'office)"
+risque = "faible"
+perimetre = ["une proposition de savoir-faire"]
+preuve = "le savoir-faire existe"
+retour = "retirer le savoir-faire et rouvrir la proposition"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "savoir_ecarter"
+libelle = "Écarter une proposition de savoir-faire"
+risque = "faible"
+perimetre = ["une proposition de savoir-faire"]
+preuve = "la proposition est écartée"
+retour = "rouvrir la proposition"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "ombre_avis"
+libelle = "Juger un geste de l'ombre : juste, discutable, ou sans avis"
+risque = "faible"
+perimetre = ["l'avis sur un geste de l'ombre"]
+preuve = "l'avis relu"
+retour = "remettre l'avis d'avant"
+paliers = ["raconter", "auto", "maitre"]
