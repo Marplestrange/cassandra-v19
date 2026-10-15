@@ -229,6 +229,10 @@ class Presence(Monde):
         envoye = json.dumps(self.faux.requetes[-1]["corps"], ensure_ascii=False)
         self.assertIn("comprendre le disque plein", envoye)                                     # elle connaît le but du fil
         self.assertIn("où en est le disque", envoye)
+        # la présence revient à « veille » une fois le tour TERMINÉ : le message apparaît avant le `fin` du tour (le fil asynchrone n'a pas encore posé `fin`)
+        fin = time.time() + 5
+        while time.time() < fin and not self.db.lire("SELECT 1 FROM tours WHERE agent='cassandra' AND fin IS NOT NULL"):
+            time.sleep(0.05)
         self.assertEqual(self.s("etat")["residents"][0]["etat"], "veille")
 
     def test_un_message_sans_destinataire_ne_reveille_personne(self):
