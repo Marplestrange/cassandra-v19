@@ -238,6 +238,7 @@ class Permissions:
     identite: bool = False             # peut administrer l'identité des comptes : mots de passe, sessions (le module des comptes)
     reglages: bool = False             # peut écrire les réglages des autres modules (le module des réglages)
     stockage: bool = False             # a SA base SQLite (donnees/modules/<id>.db) et ses migrations (migrations/NNN_nom.sql)
+    stockage_lecture: bool = False     # peut lire, en lecture seule, la base d'un AUTRE module (le module du journal, pour son flux unifié) : ctx.stockage_lecture(mid)
     secrets: bool = False              # peut chiffrer/déchiffrer des secrets pour SA base (ctx.chiffrer / ctx.dechiffrer) : clés d'API de modèles, jetons...
     racine: bool = False               # peut demander au courtier (root) les commandes qu'il déclare ([[racine]]) : ctx.racine(...)
     agir: bool = False                 # peut agir comme un agent (ctx.agir) et lister les outils d'un agent (ctx.outils) : le module des agents. Les droits et les paliers s'appliquent comme à tout acte
@@ -338,7 +339,7 @@ def valider(brut: dict) -> list:
         perm = {}
     for champ in ("reseau", "ecritures", "privileges"):
         _liste_de_textes(perm.get(champ), "permissions.%s" % champ, e)
-    for champ in ("espace_utilisateur", "introspection", "lectures"):
+    for champ in ("espace_utilisateur", "introspection", "lectures", "stockage_lecture"):
         if champ in perm and not isinstance(perm[champ], bool):
             e.append("permissions.%s : vrai ou faux" % champ)
     for chemin in perm.get("ecritures", []) if isinstance(perm.get("ecritures"), list) else []:
@@ -725,6 +726,7 @@ def construire(brut: dict, source="") -> Manifeste:
                                 bool((brut.get("permissions") or {}).get("identite", False)),
                                 bool((brut.get("permissions") or {}).get("reglages", False)),
                                 bool((brut.get("permissions") or {}).get("stockage", False)),
+                                bool((brut.get("permissions") or {}).get("stockage_lecture", False)),
                                 bool((brut.get("permissions") or {}).get("secrets", False)),
                                 bool((brut.get("permissions") or {}).get("racine", False)),
                                 bool((brut.get("permissions") or {}).get("agir", False))),

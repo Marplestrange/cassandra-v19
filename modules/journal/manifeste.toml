@@ -1,0 +1,125 @@
+[module]
+id = "journal"
+nom = "Le Journal"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Le journal des agents (les consultations entre les trois rôles — claude, itare, cassandra — inscrites avec la question et la réponse) et le lecteur unifié des journaux : les tables des modules, les fichiers du système, un flux fusionné, une ligne du temps, les anomalies jamais vues et les veilles sur motif. Cloisonné en lecture : on ne lit que ce qui existe."
+confiance = "interne"
+famille = "supervision"
+
+[[objets]]
+type = "consultation"
+libelle = "Une consultation du journal des agents"
+
+[permissions]
+stockage = true
+stockage_lecture = true
+
+[[reglages]]
+id = "journal_watch_enabled"
+libelle = "Chercher les anomalies jamais vues dans les journaux (empreintes d'erreurs)"
+type = "booleen"
+defaut = true
+
+[[capacites]]
+id = "sources"
+libelle = "Les journaux disponibles, avec leur volume et leur disponibilité (un journal absent est rendu comme tel : le silence d'une source est une information)"
+risque = "lecture"
+
+[[capacites]]
+id = "lire"
+libelle = "Le contenu d'un journal, paginé et filtrable (par terme, depuis une date)"
+risque = "lecture"
+
+[[capacites]]
+id = "chercher"
+libelle = "Chercher le même terme dans tous les journaux à la fois"
+risque = "lecture"
+
+[[capacites]]
+id = "flux"
+libelle = "Le flux unifié : les sources choisies, fusionnées et triées par date, filtrées par niveau, acteur ou terme, équilibrées par source"
+risque = "lecture"
+
+[[capacites]]
+id = "resume"
+libelle = "Ce qui s'est passé : une phrase et des comptes par niveau, sans ouvrir le flux brut"
+risque = "lecture"
+
+[[capacites]]
+id = "silences"
+libelle = "Les journaux qui se taisent : le rythme habituel est l'écart médian, un silence de plus de trois fois cet écart est signalé"
+risque = "lecture"
+
+[[capacites]]
+id = "timeline"
+libelle = "Tout ce qui s'est écrit autour d'un instant, tous journaux confondus"
+risque = "lecture"
+
+[[capacites]]
+id = "stats"
+libelle = "Le poids de chaque journal (lignes et octets) : un journal qui enfle finit par gêner le disque"
+risque = "lecture"
+
+[[capacites]]
+id = "veilles"
+libelle = "Les veilles sur motif posées sur les journaux"
+risque = "lecture"
+
+[[capacites]]
+id = "agents_lire"
+libelle = "Les dernières consultations du journal des agents, réponse rognée par défaut (entier pour une ligne précise)"
+risque = "lecture"
+
+[[capacites]]
+id = "fil"
+libelle = "Le fil des agents, dans l'ordre où il s'est dit (du plus ancien au plus récent)"
+risque = "lecture"
+
+[[capacites]]
+id = "prompt"
+libelle = "Le fil des agents en quelques lignes, pour un prompt système (court : de quoi reconnaître un sujet déjà traité)"
+risque = "lecture"
+
+[[capacites]]
+id = "agents_ecrire"
+libelle = "Inscrire une consultation au journal des agents : la question AVEC la réponse, le dossier et le modèle qui a répondu"
+risque = "faible"
+perimetre = ["une ligne du journal des agents de ce module"]
+preuve = "la ligne existe"
+retour = "supprimer la ligne"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "agents_dire"
+libelle = "Parler au fil commun : l'auteur n'est jamais un paramètre libre (chacun parle sous le sien, sinon « inconnu »)"
+risque = "faible"
+perimetre = ["une ligne du journal des agents de ce module"]
+preuve = "la ligne existe"
+retour = "supprimer la ligne"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "veille_poser"
+libelle = "Poser ou modifier une veille sur motif (une expression régulière cherchée dans les journaux)"
+risque = "faible"
+perimetre = ["la table des veilles de ce module"]
+preuve = "la veille existe"
+retour = "retirer la veille"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "veille_retirer"
+libelle = "Retirer une veille sur motif"
+risque = "faible"
+perimetre = ["la table des veilles de ce module"]
+preuve = "la veille n'existe plus"
+retour = "remettre la veille"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "exporter"
+libelle = "Exporter un journal filtré (texte, CSV ou JSON)"
+risque = "lecture"

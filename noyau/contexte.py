@@ -107,6 +107,13 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé de stockage ([permissions] stockage)" % self.module)
         return self._intro["stockage"](self.module)
 
+    def stockage_lecture(self, module: str):
+        """La base d'un AUTRE module, en lecture seule — pour le module du journal, qui lit les journaux des autres
+        ([permissions] stockage_lecture = true). Un module ne s'en sert jamais pour écrire chez un autre."""
+        if not self.manifeste.permissions.stockage_lecture:
+            raise PermissionError("le module « %s » n'a pas demandé de lire la base des autres ([permissions] stockage_lecture)" % self.module)
+        return self._intro["stockage_lecture"](module)
+
     ACTEURS_AGENTS = ("itare", "cassandra", "agent")
 
     def agir(self, capacite: str, args=None, acteur: str = "itare", cause=None, essai: bool = False) -> dict:

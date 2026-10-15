@@ -118,7 +118,7 @@ class Noyau:
         self.reglages.declarer(m)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
                        {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
-                        "stockage": self._stockage_de, "racine": self.racine})
+                        "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine})
         self.executeur.contextes[m.id] = ctx
         return ctx
 
