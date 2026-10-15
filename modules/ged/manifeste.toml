@@ -1,0 +1,217 @@
+[module]
+id = "ged"
+nom = "Documents"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "La GED : les documents d'un compte, classés par sources (locales, avec cloisonnement par propriétaire), un index, des règles de classement, le dépôt, la fiche, l'aperçu en ligne (liste blanche stricte), la corbeille par racine. Différé : distants rclone/OAuth, montages, OCR/vignettes, extraction des pièces jointes (dépend du courrier)."
+confiance = "interne"
+famille = "gestion"
+
+[[objets]]
+type = "document"
+libelle = "Un document de la GED"
+
+[permissions]
+stockage = true
+lectures = true
+
+[[reglages]]
+id = "docs_base"
+libelle = "Le dossier racine des documents (vide : le dossier de données du noyau)"
+type = "texte"
+defaut = ""
+
+[[capacites]]
+id = "config"
+libelle = "La configuration : racines (avec propriétaire, forme, sentinelle), formes, nom du dossier de pièces jointes, plafonds"
+risque = "lecture"
+
+[[capacites]]
+id = "racines_etat"
+libelle = "Chaque racine avec sa forme et son souci (montage absent, chemin vide), recalculé à chaque lecture"
+risque = "lecture"
+
+[[capacites]]
+id = "sources"
+libelle = "L'arbre des sources : mes espaces, le courrier, les distants, les vues (récents, doublons, corbeille)"
+risque = "lecture"
+
+[[capacites]]
+id = "lister"
+libelle = "Le contenu d'un dossier, paginé : dossiers d'abord, fichiers avec taille, type et date"
+risque = "lecture"
+
+[[capacites]]
+id = "fiche"
+libelle = "La fiche d'un document : ses champs, ses liens, ses versions, ses jumeaux (même empreinte)"
+risque = "lecture"
+
+[[capacites]]
+id = "telecharger"
+libelle = "Où lire un document (une consigne au serveur HTTP, jamais les octets ici), avec le confinement des racines"
+risque = "lecture"
+
+[[capacites]]
+id = "voir"
+libelle = "Comme télécharger, mais seulement si le type figure dans la liste blanche d'affichage en ligne"
+risque = "lecture"
+
+[[capacites]]
+id = "corbeille_lister"
+libelle = "Le contenu des corbeilles de mes racines, avec le jour et la racine d'origine"
+risque = "lecture"
+
+[[capacites]]
+id = "regles"
+libelle = "Les règles de classement, dans l'ordre"
+risque = "lecture"
+
+[[capacites]]
+id = "regles_test"
+libelle = "Ce que les règles FERAIENT, sans rien écrire (le test à blanc avant d'appliquer)"
+risque = "lecture"
+
+[[capacites]]
+id = "occupation"
+libelle = "Le poids de chaque source et de chaque compte (administrer un dossier, sans voir son contenu)"
+risque = "lecture"
+
+[[capacites]]
+id = "comptes"
+libelle = "Les comptes auxquels une source peut appartenir (réservé aux administrateurs)"
+risque = "lecture"
+
+[[capacites]]
+id = "config_set"
+libelle = "Enregistrer la configuration : les propriétaires existants ne changent que par un administrateur, la forme et la sentinelle survivent"
+risque = "faible"
+perimetre = ["la configuration de la GED de ce module"]
+preuve = "la configuration relue"
+retour = "remettre la configuration d'avant"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "dossier_creer"
+libelle = "Créer (et déclarer) le dossier de documents d'un compte"
+risque = "faible"
+perimetre = ["un dossier de documents et sa déclaration"]
+preuve = "le dossier existe et la source est déclarée"
+retour = "retirer la source (le dossier reste, inoffensif)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "public_creer"
+libelle = "Créer l'espace commun des documents, déclaré sans propriétaire"
+risque = "faible"
+perimetre = ["le dossier public et sa déclaration"]
+preuve = "le dossier existe"
+retour = "retirer la source"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "source_forme"
+libelle = "Changer la forme d'une racine (documents, coffre) et sa sentinelle — administrateur, refus explicite"
+risque = "faible"
+perimetre = ["la forme d'une racine déclarée"]
+preuve = "la forme relue"
+retour = "remettre la forme d'avant"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "source_proprietaire"
+libelle = "Changer le propriétaire d'une source — administrateur, refus explicite"
+risque = "faible"
+perimetre = ["le propriétaire d'une racine déclarée"]
+preuve = "le propriétaire relu"
+retour = "remettre le propriétaire d'avant"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "source_renommer"
+libelle = "Changer le nom affiché d'une source (le répertoire sur le disque n'est pas touché)"
+risque = "faible"
+perimetre = ["le libellé d'une racine déclarée"]
+preuve = "le libellé relu"
+retour = "remettre le libellé d'avant"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "source_deplacer"
+libelle = "Renommer un répertoire sur le disque et faire suivre l'index (confirmé ; un point de montage ou une source en lecture seule est refusé)"
+risque = "moyen"
+perimetre = ["un répertoire déclaré et son index"]
+preuve = "le répertoire a bougé et l'index suit"
+retour = "renommer dans l'autre sens"
+paliers = ["raconter"]
+
+[[capacites]]
+id = "deposer"
+libelle = "Écrire un fichier envoyé en base64 dans le dossier affiché (types de documents, images, sons, vidéos, archives, données — jamais un document actif ni un exécutable)"
+risque = "faible"
+perimetre = ["un fichier d'une racine locale déclarée"]
+preuve = "le fichier existe et l'index le connaît"
+retour = "supprimer le fichier déposé (et sa ligne, si elle est neuve)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "ecrire"
+libelle = "Réécrire un fichier texte en gardant l'ancienne version (confirmé ; format éditable, racine jamais en lecture seule)"
+risque = "faible"
+perimetre = ["un fichier texte d'une racine locale déclarée"]
+preuve = "le contenu relu est le nouveau"
+retour = "remettre l'ancienne version"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "corbeille"
+libelle = "Déplacer un document vers la corbeille de sa racine, jamais supprimer (confirmé)"
+risque = "faible"
+perimetre = ["un fichier indexé et son déplacement vers .corbeille"]
+preuve = "le fichier est dans la corbeille"
+retour = "restaurer le fichier"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "corbeille_restaurer"
+libelle = "Remettre un élément de corbeille à la racine de sa source (confirmé ; jamais deviné, on remet à la racine)"
+risque = "faible"
+perimetre = ["un fichier de la corbeille d'une racine"]
+preuve = "le fichier n'est plus dans la corbeille"
+retour = "remettre à la corbeille"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "lien"
+libelle = "Rattacher un document à un objet (projet, contact, tâche, note…)"
+risque = "faible"
+perimetre = ["un lien de document"]
+preuve = "le lien existe"
+retour = "retirer le lien"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "delien"
+libelle = "Détacher un document d'un objet"
+risque = "faible"
+perimetre = ["un lien de document"]
+preuve = "le lien n'existe plus"
+retour = "remettre le lien"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "regle_save"
+libelle = "Créer ou modifier une règle de classement"
+risque = "faible"
+perimetre = ["une règle de classement"]
+preuve = "la règle relue"
+retour = "remettre la règle d'avant (ou la retirer si neuve)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "regle_delete"
+libelle = "Retirer une règle de classement"
+risque = "faible"
+perimetre = ["une règle de classement"]
+preuve = "la règle n'existe plus"
+retour = "remettre la règle"
+paliers = ["raconter", "auto", "maitre"]
