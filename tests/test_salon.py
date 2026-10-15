@@ -256,6 +256,10 @@ class Presence(Monde):
         self.s("dire", fil=f, corps="tu m'entends ?", destinataires=["cassandra"])
         m = self.attendre(f, "cassandra")[0]
         self.assertTrue(m["corps"].startswith("⚠️ Cassandra n'a pas pu répondre"))
+        # la panne est écrite au tour APRÈS le message : attendre la fin du tour (le fil asynchrone n'a pas encore posé `erreur`)
+        fin = time.time() + 5
+        while time.time() < fin and not self.db.lire("SELECT 1 FROM tours WHERE fin IS NOT NULL"):
+            time.sleep(0.05)
         self.assertEqual(self.db.lire("SELECT erreur FROM tours")[0]["erreur"] != "", True)
 
     def test_chaque_agent_adresse_repond_a_son_tour_et_une_seule_fois(self):
