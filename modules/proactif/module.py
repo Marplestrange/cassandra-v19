@@ -13,6 +13,7 @@ tableau (métriques), et le moteur d'évolution (auto-modification) — voir le 
 """
 from __future__ import annotations
 
+import json
 import re
 import time
 from datetime import datetime, timedelta, timezone
@@ -26,6 +27,118 @@ PALIER_NOM = {
 }
 SEUIL_PROMO = 10
 SEUIL_RETRO = 2
+
+# ── Le catalogue des gestes autonomes (domaine › gestes), 10-10 ─────────────
+# Chaque geste : (id, libellé, statut, réversibilité, garde). statut : ok | brancher | ecrire | dur.
+# « dur » et « ecrire » ne dépassent pas le palier « proposer » : ils ne SAVENT pas encore agir seuls.
+AUT_CATALOGUE = [
+    ("machine", "Machine", "Services, paquets, correctifs, disque, redémarrages.", [
+        ("relancer-un-service", "Relancer un service", "ok", "oui", "santé vérifiée après coup"),
+        ("relancer-le-collecteur", "Relancer le collecteur", "ok", "oui", "même garde que les services"),
+        ("purger-journaux-et-caches", "Purger journaux et caches", "ok", "part", "liste de caches inoffensifs"),
+        ("appliquer-les-correctifs-de-securite", "Appliquer les correctifs de sécurité", "brancher", "part", "aucune"),
+        ("redemarrer-la-machine", "Redémarrer la machine", "brancher", "non", "après mise à jour du noyau, hors heures ouvrées"),
+    ]),
+    ("reseau-et-acces", "Réseau et accès", "Adresses, robots, chemins, pare-feu, interfaces.", [
+        ("bannir-ou-debannir-une-adresse-ou-un-pays", "Bannir ou débannir une adresse ou un pays", "ok", "oui", "exclut maison, tailnet, confiance"),
+        ("poser-ou-retirer-une-regle-de-pare-feu", "Poser ou retirer une règle de pare-feu", "brancher", "oui", "à l'essai, retour automatique"),
+    ]),
+    ("hebergement", "Hébergement", "Sites, bases, sauvegardes, certificats, domaines (FastPanel).", [
+        ("relancer-un-site", "Relancer un site", "ok", "oui", "réponse HTTP vérifiée"),
+        ("relancer-une-sauvegarde-en-echec", "Relancer une sauvegarde en échec", "ok", "oui", "une relance par échec, en arrière-plan"),
+        ("renouveler-un-certificat", "Renouveler un certificat", "ok", "oui", "seuil de 30 jours"),
+        ("creer-ou-modifier-un-plan-de-sauvegarde", "Créer ou modifier un plan de sauvegarde", "ok", "oui", "cloisonnement par compte"),
+        ("supprimer-une-base-ou-un-site", "Supprimer une base ou un site", "dur", "non", "confirmation humaine"),
+    ]),
+    ("conteneurs", "Conteneurs", "Docker et Compose.", [
+        ("relancer-un-conteneur", "Relancer un conteneur", "ok", "oui", "dossiers connus"),
+    ]),
+    ("comptes", "Comptes", "Utilisateurs, droits, clés de sécurité.", [
+        ("creer-un-compte", "Créer un compte", "ecrire", "oui", "cloisonnement : l'admin ne voit pas les autres"),
+        ("modifier-les-droits-d-un-compte", "Modifier les droits d'un compte", "ecrire", "oui", "journal « qui a fait quoi »"),
+        ("revoquer-une-cle-ou-une-session-inutilisee", "Révoquer une clé ou une session inutilisée", "ecrire", "oui", "inactive depuis 90 jours"),
+    ]),
+    ("courrier-et-messages", "Courrier et messages", "Rangement, mandats d'envoi, Telegram.", [
+        ("ranger-classer-archiver-le-courrier", "Ranger, classer, archiver le courrier", "ok", "oui", "corbeille"),
+        ("envoyer-un-message-sous-mandat", "Envoyer un message sous mandat", "ok", "non", "mandat + contexte non teinté"),
+    ]),
+    ("flotte", "Flotte", "Machines du parc, agents, transferts.", [
+        ("relancer-l-agent-d-une-machine", "Relancer l'agent d'une machine", "brancher", "oui", "SSH, clé dédiée"),
+        ("ajouter-ou-retirer-une-machine", "Ajouter ou retirer une machine", "ecrire", "oui", "clé neuve à chaque ajout"),
+    ]),
+    ("coffre", "Coffre", "Secrets et clés.", [
+        ("se-servir-d-un-secret-pour-une-tache", "Se servir d'un secret pour une tâche", "ok", "oui", "jamais affiché, remplacé à l'exécution"),
+        ("creer-ou-versionner-un-secret", "Créer ou versionner un secret", "ok", "oui", "ancienne version gardée"),
+        ("supprimer-un-secret", "Supprimer un secret", "dur", "non", "confirmation humaine"),
+    ]),
+    ("travail-d-itare", "Travail d'Itare", "Notes, projets, agenda, GED, pièces jointes.", [
+        ("creer-et-modifier-notes-taches-rappels-agenda", "Créer et modifier notes, tâches, rappels, agenda", "ok", "oui", "dans l'espace du compte"),
+        ("classer-dans-la-ged-et-indexer-les-pieces-jointe", "Classer dans la GED et indexer les pièces jointes", "ok", "oui", "corbeille"),
+        ("supprimer-un-projet-ou-une-tache", "Supprimer un projet ou une tâche", "dur", "non", "suppression définitive"),
+    ]),
+    ("son-propre-code", "Son propre code", "Évolution quotidienne, catalogue.", [
+        ("evoluer-chaque-nuit", "Évoluer chaque nuit", "ok", "oui", "copie avant, retour arrière, raison au journal"),
+        ("etendre-son-catalogue-de-gestes", "Étendre son catalogue de gestes", "ok", "oui", "tour sans lecture extérieure"),
+    ]),
+    ("domaines-et-dns", "Domaines et DNS", "Enregistrements, SPF, DKIM, DMARC, tunnels, expirations.", [
+        ("corriger-un-enregistrement-derive-de-la-referenc", "Corriger un enregistrement dérivé de la référence (A, MX)", "ok", "oui", "référence versionnée"),
+        ("modifier-les-serveurs-de-noms", "Modifier les serveurs de noms", "dur", "non", "peut couper un site entier"),
+        ("renouveler-ou-acheter-un-domaine", "Renouveler ou acheter un domaine", "dur", "non", "dépense : accord humain"),
+    ]),
+    ("crise", "Crise", "Procédure préparée à l'avance, déclenchée d'un geste.", [
+        ("couper-l-acces-public-garder-le-tailnet", "Couper l'accès public, garder le tailnet", "ecrire", "oui", "retour en un geste"),
+        ("passer-en-lecture-seule", "Passer en lecture seule", "ok", "oui", "retour en un geste"),
+    ]),
+    ("sauvegardes-preuve-et-hors-site", "Sauvegardes : preuve et hors site", "Restaurer, envoyer ailleurs, purger.", [
+        ("tester-une-restauration-en-bac-a-sable", "Tester une restauration en bac à sable", "ok", "oui", "bac isolé, rien en production"),
+        ("envoyer-une-sauvegarde-hors-site", "Envoyer une sauvegarde hors site", "ok", "oui", "destination à décider"),
+        ("purger-les-sauvegardes-hors-retention", "Purger les sauvegardes hors rétention", "dur", "non", "suppression irréversible"),
+    ]),
+    ("rotation-des-secrets", "Rotation des secrets", "Clés SSH, jetons, mots de passe de service.", [
+        ("signaler-un-secret-trop-ancien", "Signaler un secret trop ancien", "ok", "oui", "lecture seule"),
+        ("faire-tourner-une-cle-ssh", "Faire tourner une clé SSH", "ok", "part", "ancienne clé valide 24 h"),
+        ("remplacer-un-mot-de-passe-de-service", "Remplacer un mot de passe de service", "ok", "part", "écrit dans le coffre avant usage"),
+    ]),
+    ("defense-vue-de-l-exterieur", "Défense vue de l'extérieur", "Ce qui est exposé, comparé à ce qui devrait l'être.", [
+        ("scanner-sa-surface-depuis-l-exterieur", "Scanner sa surface depuis l'extérieur", "ok", "oui", "ses propres adresses seulement"),
+        ("lancer-clamav-lynis-trivy", "Lancer ClamAV, Lynis, Trivy", "brancher", "oui", "outils en liste blanche"),
+    ]),
+    ("modeles-et-quotas", "Modèles et quotas", "Fournisseurs, bascules, coûts.", [
+        ("basculer-sur-un-autre-fournisseur-quand-un-quota", "Basculer sur un autre fournisseur quand un quota tombe", "brancher", "oui", "secours déclarés seulement"),
+        ("depasser-un-plafond-de-depense", "Dépasser un plafond de dépense", "dur", "non", "dépense : accord humain"),
+    ]),
+    ("automatismes", "Automatismes", "Ses propres tâches planifiées.", [
+        ("creer-ou-modifier-une-tache-planifiee", "Créer ou modifier une tâche planifiée", "ok", "oui", "journal « qui a fait quoi »"),
+        ("suspendre-une-tache-qui-boucle", "Suspendre une tâche qui boucle", "ecrire", "oui", "reprise en un geste"),
+        ("corriger-un-cron-silencieux", "Corriger un cron silencieux", "ecrire", "oui", "ancienne ligne gardée"),
+    ]),
+    ("coordination-des-agents", "Coordination des agents", "Salon, journal des agents, délégation.", [
+        ("ouvrir-un-fil-et-inviter-des-agents", "Ouvrir un fil et inviter des agents", "ok", "oui", "dans le salon"),
+        ("ecrire-au-journal-des-agents", "Écrire au journal des agents", "ok", "oui", "aucune"),
+        ("deleguer-une-lecture-lourde-a-l-agent-d-orion", "Déléguer une lecture lourde à l'agent d'Orion", "brancher", "oui", "lecture seule, sans données personnelles"),
+    ]),
+    ("sites-wordpress", "Sites WordPress", "Cœur, plugins, cache, restauration.", [
+        ("vider-le-cache", "Vider le cache", "ok", "oui", "aucune"),
+        ("desactiver-un-plugin-fautif", "Désactiver un plugin fautif", "ok", "oui", "réactivable"),
+        ("mettre-a-jour-le-cur-et-les-plugins", "Mettre à jour le cœur et les plugins", "ok", "part", "point de restauration obligatoire"),
+        ("restaurer-le-site-depuis-une-sauvegarde", "Restaurer le site depuis une sauvegarde", "ok", "part", "état actuel gardé avant écrasement"),
+    ]),
+]
+AUT_STATUTS = {"ok": "en service", "brancher": "à brancher", "ecrire": "à écrire", "dur": "garde dure"}
+AUT_DEFAUT = {"lv": None, "ombre": False, "decl": "Sur alerte", "per": "Hérite du domaine", "persel": "", "excl": "",
+              "fen": "Toujours", "fd": "02:00", "ff": "06:00", "ech": 2, "boucle": 3, "boucleh": "1 h",
+              "avis": None, "aviq": "Hérite de la gouvernance", "snap": None,
+              "ou": "Hérite (selon le geste)", "nuit": "Hérite de la gouvernance"}
+AUT_CHOIX = {"decl": ("Sur alerte", "Planifié", "Sur demande seulement", "Sur alerte et planifié"),
+             "per": ("Hérite du domaine", "Orion seulement", "Les sites de la maison seulement", "Une sélection à choisir"),
+             "fen": ("Toujours", "Plage horaire", "Hors heures ouvrées"),
+             "boucleh": ("1 h", "6 h", "24 h"),
+             "aviq": ("Hérite de la gouvernance",),
+             "ou": ("Hérite (selon le geste)", "Info : la cloche", "À voir : cloche et e-mail à l'administrateur", "Critique : cloche, e-mail et Telegram"),
+             "nuit": ("Hérite de la gouvernance", "Oui, pour ce geste", "Non, jamais pour ce geste")}
+AUT_GOV_DEFAUT = {"avis_defaut": "", "avis_secours": "Elle propose seulement",
+                  "snap_mode": "Fichiers et base, avant chaque geste en plusieurs étapes",
+                  "intouchables": ["ragnar", "iphone-sandrine"]}
 
 
 def _utcnow():
@@ -244,9 +357,183 @@ def brancher(ctx):
         out.sort(key=lambda x: x["ts"], reverse=True)
         return {"fil": out[:int(limit)], "par_elle": len([x for x in out if x["par_elle"]])}
 
+    # ── l'autonomie par domaine et par geste (l'« automatisme ») ────────────
+    def _aut_index():
+        out = {}
+        for did, dnom, ddesc, gestes in AUT_CATALOGUE:
+            out["d:" + did] = {"domaine": did, "nom": dnom, "desc": ddesc}
+            for gid, gnom, st, rev, garde in gestes:
+                out["g:%s/%s" % (did, gid)] = {"domaine": did, "geste": gid, "nom": gnom,
+                                               "st": st, "rev": rev, "garde": garde, "dnom": dnom}
+        return out
+
+    def _aut_libelle(cle):
+        e = _aut_index().get("g:" + str(cle or ""))
+        return ("%s › %s" % (e["dnom"], e["nom"])) if e else str(cle or "")
+
+    def _aut_norm(cle):
+        c = str(cle or "").strip()
+        return c if c.startswith(("d:", "g:")) else "g:" + c
+
+    def catalogue(c):
+        familles = []
+        for did, dnom, ddesc, gestes in AUT_CATALOGUE:
+            familles.append({"id": did, "nom": dnom, "desc": ddesc,
+                             "gestes": [{"id": gid, "nom": gnom, "st": st, "statut": AUT_STATUTS.get(st, st),
+                                         "rev": rev, "garde": garde, "cle": "%s/%s" % (did, gid)}
+                                        for gid, gnom, st, rev, garde in gestes]})
+        return {"familles": familles, "statuts": AUT_STATUTS, "choix": AUT_CHOIX, "defauts": AUT_DEFAUT}
+
+    def aut_reglages_lire():
+        out = {}
+        for r in db.lire("SELECT cle, reglages FROM autonomie_reglages"):
+            try:
+                out[r["cle"]] = json.loads(r["reglages"] or "{}")
+            except Exception:
+                out[r["cle"]] = {}
+        return out
+
+    def reglages(c):
+        return {"reglages": aut_reglages_lire(), "defauts": AUT_DEFAUT, "choix": AUT_CHOIX}
+
+    def regler(c, cle="", reglages=None):
+        cle = _aut_norm(cle)
+        ent = _aut_index().get(cle)
+        if not ent:
+            raise ValueError("domaine ou geste inconnu")
+        est_geste = "geste" in ent
+        propres = {}
+        for k, v in (reglages or {}).items():
+            if k not in AUT_DEFAUT:
+                raise ValueError("réglage inconnu : %s" % str(k)[:40])
+            if not est_geste and k not in ("lv", "per", "persel"):
+                raise ValueError("un domaine ne porte que le palier et le périmètre")
+            if k == "lv":
+                if v in (None, ""):
+                    propres[k] = None
+                elif v not in PALIERS:
+                    raise ValueError("palier inconnu")
+                elif est_geste and ent["st"] in ("dur", "ecrire") and PALIERS.index(v) > PALIERS.index("proposer"):
+                    raise ValueError("ce geste %s : il ne peut pas dépasser « proposer »" % ("est en garde dure" if ent["st"] == "dur" else "n'existe pas encore"))
+                else:
+                    propres[k] = v
+            elif k in ("ombre", "avis", "snap"):
+                propres[k] = None if v is None else bool(v)
+            elif k in ("ech", "boucle"):
+                try:
+                    n = int(v)
+                except Exception:
+                    raise ValueError("%s : un nombre est attendu" % k)
+                borne = (1, 5) if k == "ech" else (1, 10)
+                if not borne[0] <= n <= borne[1]:
+                    raise ValueError("%s : entre %d et %d" % (k, borne[0], borne[1]))
+                propres[k] = n
+            elif k in ("fd", "ff"):
+                if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", str(v or "")):
+                    raise ValueError("%s : une heure HH:MM est attendue" % k)
+                propres[k] = str(v)
+            elif k in ("excl", "persel"):
+                propres[k] = str(v or "")[:300]
+            elif k == "aviq":
+                propres[k] = str(v or AUT_DEFAUT["aviq"])[:120]
+            else:
+                if str(v) not in AUT_CHOIX[k]:
+                    raise ValueError("%s : valeur inconnue" % k)
+                propres[k] = str(v)
+        avant = aut_reglages_lire().get(cle)
+        actuel = dict(avant or {})
+        actuel.update(propres)
+        db.ecrire("INSERT INTO autonomie_reglages (cle, reglages, par) VALUES (?,?,?) "
+                  "ON CONFLICT(cle) DO UPDATE SET reglages=excluded.reglages, par=excluded.par, ts=datetime('now','localtime')",
+                  (cle, json.dumps(actuel, ensure_ascii=False), ctx.compte or ""))
+        return {"cle": cle, "avant": avant, "apres": propres}
+
+    def prouver_regler(c, res):
+        return aut_reglages_lire().get(res["cle"]) == (dict(res.get("avant") or {}) | res.get("apres", {}))
+
+    def defaire_regler(c, res):
+        if res.get("avant") is None:
+            db.ecrire("DELETE FROM autonomie_reglages WHERE cle=?", (res["cle"],))
+        else:
+            db.ecrire("INSERT INTO autonomie_reglages (cle, reglages, par) VALUES (?,?,?) "
+                      "ON CONFLICT(cle) DO UPDATE SET reglages=excluded.reglages, ts=datetime('now','localtime')",
+                      (res["cle"], json.dumps(res["avant"], ensure_ascii=False), ctx.compte or ""))
+
+    def remettre(c, cle=""):
+        cle = _aut_norm(cle)
+        if cle not in _aut_index():
+            raise ValueError("domaine ou geste inconnu")
+        avant = aut_reglages_lire().get(cle)
+        db.ecrire("DELETE FROM autonomie_reglages WHERE cle=?", (cle,))
+        return {"cle": cle, "avant": avant}
+
+    def prouver_remettre(c, res):
+        return res["cle"] not in aut_reglages_lire()
+
+    def defaire_remettre(c, res):
+        if res.get("avant") is not None:
+            db.ecrire("INSERT INTO autonomie_reglages (cle, reglages) VALUES (?,?)", (res["cle"], json.dumps(res["avant"], ensure_ascii=False)))
+
+    def disjoncteurs(c):
+        return {"disjoncteurs": db.lire("SELECT * FROM autonomie_disj WHERE etat='declenche' ORDER BY depuis DESC")}
+
+    def debloquer(c, cle=""):
+        cle = _aut_norm(cle)
+        if cle not in _aut_index():
+            raise ValueError("geste inconnu")
+        avant = db.lire("SELECT * FROM autonomie_disj WHERE cle=?", (cle,))
+        db.ecrire("UPDATE autonomie_disj SET etat='arme', raison='', echecs_suite=0 WHERE cle=?", (cle,))
+        db.ecrire("DELETE FROM autonomie_actions WHERE cle=?", (cle,))
+        return {"cle": cle, "avant": avant[0] if avant else None}
+
+    def prouver_debloquer(c, res):
+        r = db.lire("SELECT etat FROM autonomie_disj WHERE cle=?", (res["cle"],))
+        return (not r) or r[0]["etat"] == "arme"
+
+    def defaire_debloquer(c, res):
+        if res.get("avant"):
+            a = res["avant"]
+            db.ecrire("INSERT INTO autonomie_disj (cle, etat, raison, depuis, echecs_suite) VALUES (?,?,?,?,?) "
+                      "ON CONFLICT(cle) DO UPDATE SET etat=excluded.etat, raison=excluded.raison, echecs_suite=excluded.echecs_suite",
+                      (a["cle"], a["etat"], a["raison"], a["depuis"], a["echecs_suite"]))
+
+    def gouvernance(c):
+        g = dict(AUT_GOV_DEFAUT)
+        g["intouchables"] = list(AUT_GOV_DEFAUT["intouchables"])
+        g.update({k: v for k, v in (aut_reglages_lire().get("gov") or {}).items() if k in AUT_GOV_DEFAUT})
+        return g
+
+    def gouverner(c, **champs):
+        avant = aut_reglages_lire().get("gov") or {}
+        propres = {}
+        for k, v in (champs or {}).items():
+            if k not in AUT_GOV_DEFAUT:
+                raise ValueError("réglage inconnu : %s" % str(k)[:40])
+            if k in ("avis_secours", "snap_mode", "avis_defaut"):
+                propres[k] = str(v or "")[:160]
+            elif k == "intouchables":
+                if not isinstance(v, list):
+                    raise ValueError("une liste est attendue")
+                propres[k] = [str(x).strip()[:120] for x in v if str(x).strip()][:200]
+        actuel = dict(avant)
+        actuel.update(propres)
+        db.ecrire("INSERT INTO autonomie_reglages (cle, reglages, par) VALUES ('gov', ?, ?) "
+                  "ON CONFLICT(cle) DO UPDATE SET reglages=excluded.reglages, ts=datetime('now','localtime')",
+                  (json.dumps(actuel, ensure_ascii=False), ctx.compte or ""))
+        return {"avant": avant, "apres": propres}
+
+    def prouver_gouverner(c, res):
+        return aut_reglages_lire().get("gov") == (dict(res.get("avant") or {}) | res.get("apres", {}))
+
+    def defaire_gouverner(c, res):
+        db.ecrire("INSERT INTO autonomie_reglages (cle, reglages) VALUES ('gov', ?) "
+                  "ON CONFLICT(cle) DO UPDATE SET reglages=excluded.reglages, ts=datetime('now','localtime')",
+                  (json.dumps(res.get("avant") or {}, ensure_ascii=False),))
+
     # ── enregistrement ──────────────────────────────────────────────────────
     for cid, f in (("autonomie", autonomie), ("savoirs", savoirs), ("ombre", ombre),
-                   ("incidents", incidents), ("fil", fil)):
+                   ("incidents", incidents), ("fil", fil), ("catalogue", catalogue),
+                   ("reglages", reglages), ("disjoncteurs", disjoncteurs), ("gouvernance", gouvernance)):
         ctx.implementer(cid, f)
     ctx.implementer("autonomie_set", autonomie_set, prouver_autonomie, defaire_autonomie,
                     simuler=lambda x, **_: "réglerait l'autonomie")
@@ -258,3 +545,11 @@ def brancher(ctx):
                     simuler=lambda x, signature="", **_: "écarterait la proposition « %s »" % signature)
     ctx.implementer("ombre_avis", ombre_avis, prouver_ombre_avis, defaire_ombre_avis,
                     simuler=lambda x, oid=0, avis="", **_: "jugerait le geste %s : %s" % (oid, avis))
+    ctx.implementer("regler", regler, prouver_regler, defaire_regler,
+                    simuler=lambda x, cle="", **_: "réglerait le geste « %s »" % cle)
+    ctx.implementer("remettre", remettre, prouver_remettre, defaire_remettre,
+                    simuler=lambda x, cle="", **_: "remettrait « %s » aux valeurs par défaut" % cle)
+    ctx.implementer("debloquer", debloquer, prouver_debloquer, defaire_debloquer,
+                    simuler=lambda x, cle="", **_: "débloquerait le geste « %s »" % cle)
+    ctx.implementer("gouverner", gouverner, prouver_gouverner, defaire_gouverner,
+                    simuler=lambda x, **_: "réglerait la gouvernance")

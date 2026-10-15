@@ -126,3 +126,59 @@ perimetre = ["l'avis sur un geste de l'ombre"]
 preuve = "l'avis relu"
 retour = "remettre l'avis d'avant"
 paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "catalogue"
+libelle = "Le catalogue des gestes autonomes : les domaines et leurs gestes, avec leur statut, leur réversibilité et leur garde"
+risque = "lecture"
+
+[[capacites]]
+id = "reglages"
+libelle = "Les réglages par domaine et par geste, et les choix possibles"
+risque = "lecture"
+
+[[capacites]]
+id = "disjoncteurs"
+libelle = "Les disjoncteurs déclenchés (un geste qui ne fait plus rien seul)"
+risque = "lecture"
+
+[[capacites]]
+id = "gouvernance"
+libelle = "La gouvernance transverse : les intouchables, le repli du second avis, le point de restauration"
+risque = "lecture"
+
+[[capacites]]
+id = "regler"
+libelle = "Régler un domaine ou un geste (palier, fenêtre, périmètre, disjoncteur…) ; un geste en garde dure ne dépasse pas « proposer »"
+risque = "faible"
+perimetre = ["le réglage d'un domaine ou d'un geste"]
+preuve = "le réglage relu"
+retour = "remettre le réglage d'avant"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "remettre"
+libelle = "Remettre un domaine ou un geste à ses valeurs par défaut"
+risque = "faible"
+perimetre = ["le réglage d'un domaine ou d'un geste"]
+preuve = "le réglage n'existe plus"
+retour = "remettre le réglage"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "debloquer"
+libelle = "Débloquer un geste dont le disjoncteur s'est déclenché"
+risque = "faible"
+perimetre = ["le disjoncteur d'un geste"]
+preuve = "le disjoncteur est réarmé"
+retour = "redéclencher le disjoncteur"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "gouverner"
+libelle = "Régler la gouvernance transverse : intouchables, repli du second avis, point de restauration"
+risque = "faible"
+perimetre = ["la gouvernance de l'autonomie"]
+preuve = "la gouvernance relue"
+retour = "remettre la gouvernance d'avant"
+paliers = ["raconter", "auto", "maitre"]

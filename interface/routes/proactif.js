@@ -14,4 +14,19 @@
   P("/api/pf/ombre/avis", "proactif.ombre_avis", { args: (r) => ({ oid: +r.body.id, avis: r.body.avis || "" }), sortie: (x) => ok(x) });
   P("/api/pf/incidents", "proactif.incidents", { args: (r) => ({ limit: +(r.body.limit || 20), tout: !!r.body.tout }), sortie: (x) => ok(x) });
   P("/api/pf/fil", "proactif.fil", { args: (r) => ({ heures: +(r.body.heures || 24), limit: +(r.body.limit || 80) }), sortie: (x) => ok(x) });
+
+  // L'autonomie par domaine et par geste (l'« automatisme ») : /api/autonomie/*
+  P("/api/autonomie", null, {
+    faire: async (req, agir) => {
+      const [cat, reg, disj, gov] = await Promise.all([
+        agir("proactif.catalogue", {}), agir("proactif.reglages", {}), agir("proactif.disjoncteurs", {}), agir("proactif.gouvernance", {}),
+      ]);
+      return ok({ familles: cat.familles, statuts: cat.statuts, choix: cat.choix, defauts: cat.defauts,
+                  reglages: reg.reglages, disjoncteurs: disj.disjoncteurs, gouvernance: gov });
+    },
+  });
+  P("/api/autonomie/regler", "proactif.regler", { args: (r) => ({ cle: r.body.cle || "", reglages: r.body.reglages || {} }), sortie: (x) => ok(x) });
+  P("/api/autonomie/remettre", "proactif.remettre", { args: (r) => ({ cle: r.body.cle || "" }), sortie: (x) => ok(x) });
+  P("/api/autonomie/debloquer", "proactif.debloquer", { args: (r) => ({ cle: r.body.cle || "" }), sortie: (x) => ok(x) });
+  P("/api/autonomie/gouverner", "proactif.gouverner", { args: (r) => r.body.champs || r.body || {}, sortie: (x) => ok(x) });
 })();
