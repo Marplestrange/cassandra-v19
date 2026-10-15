@@ -42,6 +42,11 @@ libelle = "Le flux unifié : les sources choisies, fusionnées et triées par da
 risque = "lecture"
 
 [[capacites]]
+id = "flux_recent"
+libelle = "Les derniers événements notables du flux, sans le bruit (pour la tuile du Journal)"
+risque = "lecture"
+
+[[capacites]]
 id = "resume"
 libelle = "Ce qui s'est passé : une phrase et des comptes par niveau, sans ouvrir le flux brut"
 risque = "lecture"
@@ -123,3 +128,36 @@ paliers = ["raconter", "auto", "maitre"]
 id = "exporter"
 libelle = "Exporter un journal filtré (texte, CSV ou JSON)"
 risque = "lecture"
+
+[[ecrans]]
+id = "vue_journal"
+libelle = "Le Journal"
+titre = "Le Journal"
+domaine = "supervision"
+gabarit = "liste_detail"
+
+[[menus]]
+id = "journal"
+libelle = "Le Journal"
+ecran = "vue_journal"
+ordre = 6
+icone = "journal"
+
+[[widgets]]
+id = "resume"
+libelle = "État des journaux"
+ecran = "vue_journal"
+zone = "entete"
+taille = "l"
+composant = "etat"
+source = "resume"
+
+[[widgets]]
+id = "recent"
+libelle = "Derniers événements"
+ecran = "vue_journal"
+zone = "principal"
+taille = "l"
+composant = "liste"
+source = "flux_recent"
+

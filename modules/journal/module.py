@@ -385,6 +385,14 @@ def brancher(ctx):
         return {"sources": voulues, "total": len(entrees), "entrees": entrees[:limit], "en_defaut": en_defaut,
                 "equilibre": bool(equilibre), "par_source": par_source, "bruit_retire": bruit_retire}
 
+    def flux_recent(c, n=8):
+        """Les derniers événements notables, sans le bruit, pour la tuile du Journal : une liste lisible."""
+        d = flux(c, sources=[], limit=300, bruit=False)
+        lignes = []
+        for e in d.get("entrees", [])[:int(n or 8)]:
+            lignes.append({"libelle": "[%s] %s" % (e.get("niveau", "info"), str(e.get("action") or "")[:90])})
+        return {"lignes": lignes}
+
     def resume(c, heures=24):
         heures = max(1, min(int(heures or 24), 24 * 30))
         since = (_utcnow() - timedelta(hours=heures)).strftime("%Y-%m-%d %H:%M:%S")
@@ -422,7 +430,7 @@ def brancher(ctx):
         if sans_nouvelles:
             sous += " · %s sans nouvelles depuis plus d'une semaine" % plj(len(sans_nouvelles))
         niveau = "panne" if compte["critique"] else ("regarder" if compte["erreur"] else "stable")
-        return {"heures": heures, "niveau": niveau, "titre": titre, "sous_titre": sous, "compte": compte,
+        return {"heures": heures, "niveau": niveau, "etat": niveau, "titre": titre, "detail": titre, "sous_titre": sous, "compte": compte,
                 "lignes_lues": len(entrees), "sources_lues": sources_lues, "marquants": marquants,
                 "sans_nouvelles": sans_nouvelles, "en_defaut": d.get("en_defaut") or [],
                 "lu_le": _utcnow().strftime("%Y-%m-%d %H:%M:%S")}
@@ -663,7 +671,7 @@ def brancher(ctx):
 
     # ── enregistrement ──────────────────────────────────────────────────────
     for cid, f in (("sources", sources), ("lire", lire), ("chercher", chercher), ("flux", flux),
-                   ("resume", resume), ("silences", silences), ("timeline", timeline), ("stats", stats),
+                   ("flux_recent", flux_recent), ("resume", resume), ("silences", silences), ("timeline", timeline), ("stats", stats),
                    ("veilles", veilles), ("agents_lire", agents_lire),
                    ("fil", fil), ("prompt", prompt), ("exporter", exporter)):
         ctx.implementer(cid, f)
