@@ -1,0 +1,57 @@
+[module]
+id = "mandats"
+nom = "Mandats"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Les mandats d'envoi : l'autorisation d'envoyer, avec ses bornes (à qui, quand, combien, sous quel contrôle). La règle d'or : l'adresse ne vient JAMAIS de la demande. Différé : la résolution du destinataire et l'envoi réel (dépendent du courrier et des contacts)."
+confiance = "interne"
+famille = "echanges"
+
+[[objets]]
+type = "mandat"
+libelle = "Un mandat d'envoi"
+
+[permissions]
+stockage = true
+
+[[capacites]]
+id = "mandats"
+libelle = "Les mandats d'envoi"
+risque = "lecture"
+
+[[capacites]]
+id = "plan"
+libelle = "Un mandat tel qu'il se lit à voix haute : quand, à qui, quoi, sous quel contrôle, dans quelles limites"
+risque = "lecture"
+
+[[capacites]]
+id = "envois"
+libelle = "Le journal des envois : ce qui est parti (ou pas), et pourquoi"
+risque = "lecture"
+
+[[capacites]]
+id = "save"
+libelle = "Créer ou modifier un mandat (au moins un déclencheur, une source de destinataire connue, des variables déclarées — une adresse libre impose l'accord requis)"
+risque = "faible"
+perimetre = ["un mandat d'envoi"]
+preuve = "le mandat relu"
+retour = "remettre le mandat d'avant (ou le retirer si neuf)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "delete"
+libelle = "Supprimer un mandat (le journal des envois survit)"
+risque = "faible"
+perimetre = ["un mandat d'envoi"]
+preuve = "le mandat n'existe plus"
+retour = "remettre le mandat"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "suspendre"
+libelle = "Suspendre ou reprendre un mandat"
+risque = "faible"
+perimetre = ["la suspension d'un mandat"]
+preuve = "la suspension relue"
+retour = "remettre la suspension d'avant"
+paliers = ["raconter", "auto", "maitre"]
