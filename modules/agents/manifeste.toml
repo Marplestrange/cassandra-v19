@@ -90,7 +90,7 @@ perimetre = ["le compte qui agit en est le propriétaire", "un agent connu"]
 preuve = "relire la conversation"
 retour = "supprimer la conversation que cet acte vient de créer"
 paliers = ["auto", "raconter"]
-qui = ["humain", "compte"]
+qui = ["humain", "compte", "cassandra", "itare"]
 
 [[capacites]]
 id = "conversation_renommer"
@@ -131,7 +131,7 @@ perimetre = ["le compte qui parle en est le propriétaire", "l'agent n'a que les
 preuve = "le message de l'agent est gardé dans la conversation"
 retour = "retirer les messages que ce tour a gardés (les actions de l'agent ont chacune leur retour)"
 paliers = ["auto", "raconter"]
-qui = ["humain", "compte"]
+qui = ["humain", "compte", "cassandra", "itare"]
 masque = ["message", "texte", "actions"]
 
 [permissions]

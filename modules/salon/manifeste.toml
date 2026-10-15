@@ -1,0 +1,207 @@
+[module]
+id = "salon"
+nom = "Le Salon"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Des fils de travail où les personnes et les agents se parlent : un message a un auteur, des destinataires et un corps ; adresser un agent résident (Cassandra, Itare) le fait répondre dans le fil, un tour à la fois, avec un budget qui borne la conversation d'agents entre eux. Cloisonné : un compte ne voit que ses fils."
+confiance = "interne"
+famille = "echanges"
+
+[[objets]]
+type = "fil"
+libelle = "Un fil de travail du salon"
+
+[evenements]
+emet = ["fil.message"]
+
+[[reglages]]
+id = "budget_tours"
+libelle = "Messages d'agents de suite, sans humain, au-delà desquels plus aucun agent ne répond (deux agents qui se répondent ne s'arrêteraient jamais)"
+type = "entier"
+defaut = 8
+
+[[moteurs]]
+id = "reveil"
+libelle = "Un message est posté : chaque agent résident adressé répond dans le fil, à tour de rôle, au nom du compte qui a parlé"
+mode = "evenement"
+sur = ["fil.message"]
+duree_max_s = 900
+asynchrone = true
+
+[[capacites]]
+id = "fils"
+libelle = "Mes fils de travail (ceux dont je suis membre) : non-lus, voix, membres, rangement"
+risque = "lecture"
+
+[[capacites]]
+id = "lire"
+libelle = "Les messages d'un fil : les derniers, ceux qui suivent un id, ou la page qui précède"
+risque = "lecture"
+
+[[capacites]]
+id = "chercher"
+libelle = "Chercher dans les messages de mes fils, par l'index plein texte"
+risque = "lecture"
+
+[[capacites]]
+id = "etat"
+libelle = "Le panneau de présence : chaque résident (en tour ou en veille, son dernier mot), le budget de tours, les terrains"
+risque = "lecture"
+
+[[capacites]]
+id = "journal"
+libelle = "Les gestes que j'ai faits sur les fils (suppressions, statuts, terrains), avec ce qui disparaissait"
+risque = "lecture"
+
+[[capacites]]
+id = "resume"
+libelle = "Le résumé roulant du passé d'un fil long"
+risque = "lecture"
+
+[[capacites]]
+id = "membres"
+libelle = "Le propriétaire d'un fil et les comptes invités"
+risque = "lecture"
+
+[[capacites]]
+id = "attendre"
+libelle = "Attendre un nouveau message dans un fil (bloque, borné à 55 s) : pour un agent invité qui veille"
+risque = "lecture"
+
+[[capacites]]
+id = "fil_creer"
+libelle = "Ouvrir un fil de travail : titre, but, terrain"
+risque = "faible"
+perimetre = ["un fil du compte"]
+preuve = "le fil existe"
+retour = "supprimer le fil et ses messages"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "fil_supprimer"
+libelle = "Supprimer un fil et ses messages (le propriétaire) : la trace est écrite avant le geste"
+risque = "moyen"
+perimetre = ["un fil du compte, ses messages et ses membres"]
+preuve = "le fil n'existe plus"
+retour = "remettre le fil, ses membres et ses messages"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "fil_statut"
+libelle = "Passer un fil à ouvert, en attente, terminé ou archivé"
+risque = "faible"
+perimetre = ["le statut d'un fil"]
+preuve = "le statut relu est celui posé"
+retour = "remettre le statut d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "fil_mode"
+libelle = "Passer un fil en mode « plan d'abord » (les agents proposent, n'exécutent rien) ou « agir »"
+risque = "faible"
+perimetre = ["le mode d'un fil"]
+preuve = "le mode relu est celui posé"
+retour = "remettre le mode d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "fil_terrain"
+libelle = "Poser le terrain d'un fil (créatif, desk, citadelle, cherche) : un nom, jamais une permission"
+risque = "faible"
+perimetre = ["le terrain d'un fil"]
+preuve = "le terrain relu est celui posé"
+retour = "remettre le terrain d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "dire"
+libelle = "Poster un message dans un fil, avec ses destinataires (un champ : le corps n'est jamais lu pour router) ; adresser un résident le réveille"
+risque = "faible"
+perimetre = ["un message d'un fil du compte"]
+preuve = "le message existe"
+retour = "supprimer le message"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "message_supprimer"
+libelle = "Supprimer un message (son auteur, ou le propriétaire du fil) : la trace est écrite avant le geste"
+risque = "moyen"
+perimetre = ["un message d'un fil du compte"]
+preuve = "le message n'existe plus"
+retour = "remettre le message"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "membre_inviter"
+libelle = "Inviter un autre compte dans un fil (le propriétaire)"
+risque = "faible"
+perimetre = ["un fil du compte"]
+preuve = "le compte est membre"
+retour = "retirer le membre"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "membre_retirer"
+libelle = "Retirer un membre d'un fil (le propriétaire), ou quitter le fil"
+risque = "faible"
+perimetre = ["un fil du compte"]
+preuve = "le compte n'est plus membre"
+retour = "remettre le membre"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "ranger"
+libelle = "Ranger un fil dans les archives de ce compte (ou l'en sortir) : le fil vit pour tous"
+risque = "faible"
+perimetre = ["le rangement d'un compte"]
+preuve = "le rangement relu est celui posé"
+retour = "remettre le rangement d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "vu"
+libelle = "Marquer un fil comme lu jusqu'ici"
+risque = "faible"
+perimetre = ["ce que ce compte a lu"]
+preuve = "le point de lecture relu est celui posé"
+retour = "remettre le point de lecture d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "relancer"
+libelle = "Demander à un résident de répondre maintenant dans un fil (le budget de tours entre agents s'applique)"
+risque = "faible"
+perimetre = ["un tour d'un agent résident"]
+preuve = "un tour s'est terminé"
+retour = "retirer le message que ce tour a posé"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[ecrans]]
+id = "vue_salon"
+libelle = "Le Salon"
+domaine = "echanges"
+gabarit = "liste_detail"
+
+[[menus]]
+id = "salon"
+libelle = "Le Salon"
+ecran = "vue_salon"
+ordre = 5
+icone = "chat"
+
+[permissions]
+stockage = true
+lectures = true
+agir = true

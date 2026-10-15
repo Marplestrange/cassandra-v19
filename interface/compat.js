@@ -83,6 +83,7 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
     if (r.status === 200 && d.ok) {
       let admin = false;
       try { const mo = await (await v19("GET", "/api/moi", null, { headers: { "X-Session-Token": d.jeton } })).json(); admin = !!mo.admin; } catch (e) {}
+      CASS.moi = { compte: d.compte, admin };
       setTimeout(() => { if (CASS.surConnexion) CASS.surConnexion(); }, 400);
       return reponse(200, { success: true, session: d.jeton, username: d.compte, is_admin: admin, role: admin ? "admin" : "utilisateur" });
     }
@@ -109,6 +110,7 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
       const r = await v19("GET", "/api/moi", null, init);
       if (r.status !== 200) return reponse(200, { valid: false });
       const d = await r.json();
+      CASS.moi = { compte: d.compte, admin: !!d.admin };
       return reponse(200, { valid: true, username: d.compte, is_admin: !!d.admin, role: d.admin ? "admin" : "utilisateur" });
     }
     if (chemin === "/api/logout") { await v19("POST", "/api/deconnexion", {}, init); return reponse(200, { success: true }); }

@@ -123,6 +123,7 @@ class Moteur:
     toutes_les_s: int = 0      # mode periodique
     sur: tuple = ()            # mode evenement : le ou les types d'événement qui le réveillent (dans evenements.ecoute)
     duree_max_s: int = 60      # au-delà, le moteur est tenu pour figé et ne s'empile pas
+    asynchrone: bool = False   # mode evenement : l'événement est mis en FILE et traité à part, un à la fois, sans retenir celui qui l'a émis (un tour d'agent dure des secondes : le message qui le réveille ne doit pas l'attendre)
 
 
 @dataclass(frozen=True)
@@ -487,6 +488,8 @@ def valider(brut: dict) -> list:
         if not isinstance(mo, dict) or not _ID.match(str(mo.get("id", ""))):
             e.append("%s.id : identifiant invalide" % nom)
             continue
+        if "asynchrone" in mo and (not isinstance(mo["asynchrone"], bool) or mo.get("mode") != "evenement"):
+            e.append("%s.asynchrone : vrai ou faux, et seulement pour un moteur sur événement" % nom)
         if mo["id"] in mids:
             e.append("%s.id : « %s » est déclaré deux fois" % (nom, mo["id"]))
         mids.append(mo["id"])
@@ -504,8 +507,8 @@ def valider(brut: dict) -> list:
             if not liste:
                 e.append("%s.sur : un type d'événement, ou une liste, est attendu" % nom)
             for x in liste:
-                if x not in ecoute:
-                    e.append("%s.sur : « %s » doit figurer dans evenements.ecoute (un moteur n'écoute que ce que son module a déclaré)" % (nom, x))
+                if x not in ecoute and x not in emet:
+                    e.append("%s.sur : « %s » doit figurer dans evenements.ecoute, ou être émis par ce module (un moteur n'écoute que ce que son module a déclaré)" % (nom, x))
         d = mo.get("duree_max_s", 60)
         if not isinstance(d, int) or not 1 <= d <= 3600:
             e.append("%s.duree_max_s : entier entre 1 et 3600" % nom)
@@ -734,7 +737,7 @@ def construire(brut: dict, source="") -> Manifeste:
         emet=tuple(ev.get("emet", ())), ecoute=tuple(ev.get("ecoute", ())), capacites=caps,
         detecteurs=tuple(Detecteur(d["id"], d.get("libelle", d["id"]), d["frequence_s"], d.get("capacite", "")) for d in brut.get("detecteurs", []) or []),
         moteurs=tuple(Moteur(m["id"], m["libelle"], m["mode"], m.get("toutes_les_s", 0),
-                             tuple([m["sur"]] if isinstance(m.get("sur"), str) else (m.get("sur") or ())), m.get("duree_max_s", 60))
+                             tuple([m["sur"]] if isinstance(m.get("sur"), str) else (m.get("sur") or ())), m.get("duree_max_s", 60), bool(m.get("asynchrone", False)))
                       for m in brut.get("moteurs", []) or []),
         menus=tuple(Menu(x["id"], x["libelle"], x.get("ecran", ""), x.get("parent", ""), x.get("ordre", 100), x.get("role", "utilisateur"),
                          x.get("icone", ""), x.get("badge", ""), _qualifier(m["id"], x.get("droit"))) for x in brut.get("menus", []) or []),

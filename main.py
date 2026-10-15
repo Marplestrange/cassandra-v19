@@ -25,6 +25,7 @@ et Cassandra le sait (événement `capacite.*` avec acteur « humain »).
 """
 from __future__ import annotations
 
+import collections
 import logging
 import os
 import sys
@@ -77,6 +78,8 @@ class Noyau:
                                  str((self.config.get("comptes") or {}).get("superadmin_unix", "fastuser")),
                                  courtier=str(Path(donnees) / "courtier"), reglages=self.reglages)
         self.racine = Racine(str(Path(donnees) / "courtier"))      # les commandes que les modules demandent au courtier (root)
+        self._files_async, self._fils_async, self._verrou_async = {}, {}, threading.Lock()      # les moteurs asynchrones sur événement : leur file, leur fil
+        self._stop_async = False   # posé par `arreter` : les moteurs asynchrones s'arrêtent proprement
         self.passerelle = None     # l'API HTTP, posée par `demarrer`
         self.executeur = Executeur(self.catalogue, self.bus, self.en_crise, self.droits, self.identite, exiger_compte)
         self.detecteurs = []       # (module, Detecteur, fonction)
@@ -416,7 +419,60 @@ class Noyau:
                 continue
             self._cables.add((module, mo.id))
             for type_evenement in mo.sur:
-                self.bus.ecouter(type_evenement, lambda ev, m=module, mo=mo, fn=fn: self._lancer_moteur(m, mo, fn, ev), module)
+                lancer = self._lancer_moteur_async if mo.asynchrone else self._lancer_moteur
+                self.bus.ecouter(type_evenement, lambda ev, m=module, mo=mo, fn=fn, lancer=lancer: lancer(m, mo, fn, ev), module)
+
+    def _lancer_moteur_async(self, module: str, mo, fn, ev) -> dict:
+        """Un moteur sur événement qui ne retient pas celui qui l'émet : l'événement entre dans une FILE, un fil à part les traite UN à la fois, dans l'ordre, chacun avec la cause et le compte de SON événement.
+        Rien n'est perdu parce qu'un traitement long est en cours ; la file est bornée (500) et le dépassement se dit."""
+        if self._stop_async:
+            return {"statut": "arrete"}
+        k = (module, mo.id)
+        with self._verrou_async:
+            q = self._files_async.setdefault(k, collections.deque())
+            if len(q) >= 500:
+                log.warning("moteur %s.%s : file pleine, événement %s abandonné", module, mo.id, ev.get("id"))
+                return {"statut": "file_pleine"}
+            q.append(ev)
+            t = self._fils_async.get(k)
+            if t is None or not t.is_alive():
+                t = threading.Thread(target=self._boucle_async, args=(module, mo, fn, k), daemon=True, name="moteur-async-%s.%s" % k)
+                self._fils_async[k] = t
+                t.start()
+        return {"statut": "en_file"}
+
+    def _boucle_async(self, module: str, mo, fn, k) -> None:
+        while True:
+            with self._verrou_async:
+                q = self._files_async.get(k)
+                if not q or self._stop_async:
+                    self._fils_async.pop(k, None)
+                    return
+                ev = q.popleft()
+            ctx = self.executeur.contextes.get(module)
+            if ctx is None:                                              # le module a été débranché pendant ce temps
+                continue
+            ctx._cause.valeur = ev["id"]
+            ctx._compte.valeur = ev["compte"]
+            d0, erreur = time.time(), ""
+            try:
+                fn(ctx, ev)
+            except Exception as ex:
+                log.exception("moteur en échec : %s.%s", module, mo.id)
+                erreur = str(ex)[:300]
+            de_suite = self._noter_moteur(k, time.time() - d0, erreur)
+            if erreur:
+                self.bus.emettre("moteur.echoue", source=module, objet=("moteur", "%s.%s" % k), cause=ev["id"], donnees={"moteur": mo.id, "erreur": erreur, "de_suite": de_suite})
+
+    def arreter(self) -> None:
+        """Fermeture propre : arrête les moteurs asynchrones (et tout moteur encore en train de tourner) et attend qu'ils
+        finissent. Sans cela, un fil laisse sa base ouverte et le dossier des données ne se supprime pas net (tests, retrait)."""
+        self._stop_async = True
+        with self._verrou_async:
+            asyncs = [t for t in self._fils_async.values() if t.is_alive()]
+        fils = asyncs + [t for t in self._fils_moteurs.values() if t.is_alive()]
+        for t in fils:
+            t.join(timeout=30)
 
     def _lancer_moteur(self, module: str, mo, fn, ev=None) -> dict:
         """Exécute un moteur dans un fil surveillé : durée mesurée, jamais deux fois en même temps, figé s'il dépasse
