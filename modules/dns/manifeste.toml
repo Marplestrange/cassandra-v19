@@ -1,6 +1,6 @@
 [module]
 id = "dns"
-nom = "Domaines et DNS"
+nom = "Zones DNS"
 version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Relève les zones suivies auprès de leur serveur de noms faisant foi, garde une référence versionnée (rien n'est écrasé), signale la dérive, l'adresse publique qui a changé et les domaines proches de leur expiration (RDAP). Corrige un enregistrement A dérivé de l'adresse publique chez Cloudflare, et le prouve sur le serveur de noms. Le plafond d'autonomie est le choix de l'administrateur."
@@ -122,7 +122,7 @@ reseau = ["le résolveur du système et les serveurs de noms des zones suivies (
 
 [[ecrans]]
 id = "vue_domaine"
-libelle = "Domaines"
+libelle = "Zones DNS"
 domaine = "reseau"
 gabarit = "tableau"
 
@@ -131,7 +131,7 @@ accent = "#1d6fa5"
 
 [[menus]]
 id = "domaines"
-libelle = "Domaines"
+libelle = "Zones DNS"
 ecran = "vue_domaine"
 ordre = 10
 role = "admin"
