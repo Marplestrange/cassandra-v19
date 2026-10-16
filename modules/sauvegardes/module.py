@@ -161,9 +161,44 @@ def brancher(ctx):
                   (a["id"], a["nom"], a["portee"], a["source"], a["destination"], a["moteur"], a["rythme"],
                    a["heure"], a["garder"], a["date_dossier"], a["verifier"], a["actif"], a["dernier"], a["dernier_res"]))
 
+    def _dest_datee(p):
+        d = str(p.get("destination") or "").rstrip("/")
+        if p.get("date_dossier"):
+            return d + "/" + datetime.now().strftime("%Y-%m-%d")
+        return d
+
+    def plan_run(c, pid=0, blanc=True):
+        p = _plan(int(pid))
+        if not p:
+            raise ValueError("plan introuvable")
+        if p.get("moteur") == "fastpanel":
+            raise ValueError("ce plan est exécuté par FastPanel — lancez-le depuis le panneau")
+        cible = _dest_datee(p)
+        r = ctx.racine("copier", [p["source"], cible, "1" if blanc else "0"], delai=1800)
+        sortie = (r.get("sortie") or "") + (r.get("erreur") or "")
+        copies = len(re.findall(r"(?mi)\bCopied\b", sortie))
+        res = ("test à blanc : %d à copier" % copies) if blanc else ("%d copié(s)" % copies)
+        if not r.get("ok"):
+            res = "échec — " + ((sortie.strip().splitlines() or ["?"])[-1][:160])
+        cid = db.ecrire("INSERT INTO sauv_copies (plan_id, resultat, fichiers, octets, duree, destination, blanc, sortie) VALUES (?,?,?,?,?,?,?,?)",
+                        (int(pid), res, copies, 0, 0, cible, 1 if blanc else 0, sortie[-4000:]))
+        if not blanc:
+            db.ecrire("UPDATE sauv_plans SET dernier=datetime('now'), dernier_res=? WHERE id=?", (res, int(pid)))
+        return {"ok": r.get("ok"), "blanc": bool(blanc), "resultat": res, "copies": copies, "copie_id": cid,
+                "sortie": sortie[-2000:]}
+
+    def prouver_run(c, res):
+        return bool(db.lire("SELECT 1 FROM sauv_copies WHERE id=?", (res["copie_id"],)))
+
+    def defaire_run(c, res):
+        db.ecrire("DELETE FROM sauv_copies WHERE id=?", (res["copie_id"],))
+
+    # ── enregistrement ──────────────────────────────────────────────────────
     for cid, f in (("plans", plans), ("copies", copies), ("destinations", destinations), ("couverture", couverture)):
         ctx.implementer(cid, f)
     ctx.implementer("plan_save", plan_save, prouver_plan, defaire_plan,
                     simuler=lambda x, nom="", **_: "enregistrerait le plan « %s »" % nom)
     ctx.implementer("plan_delete", plan_delete, prouver_plan_delete, defaire_plan_delete,
                     simuler=lambda x, pid=0, **_: "supprimerait le plan %s" % pid)
+    ctx.implementer("plan_run", plan_run, prouver_run, defaire_run,
+                    simuler=lambda x, pid=0, **_: "exécuterait le plan %s" % pid)

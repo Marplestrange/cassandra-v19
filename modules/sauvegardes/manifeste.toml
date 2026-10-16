@@ -13,6 +13,24 @@ libelle = "Un plan de sauvegarde"
 
 [permissions]
 stockage = true
+racine = true
+
+[[racine]]
+id = "copier"
+libelle = "Exécuter rclone copy d'une source vers une destination datée (avec ou sans test à blanc)"
+
+[[racine]]
+id = "lister"
+libelle = "Lister les dossiers d'une destination rclone (lecture seule)"
+
+[[racine]]
+id = "purger"
+libelle = "Ne garder que les N dossiers datés les plus récents d'une destination rclone"
+
+[installation]
+script = "installer.sh"
+verification = "verifier.sh"
+retrait = "retirer.sh"
 
 [[capacites]]
 id = "plans"
@@ -50,4 +68,13 @@ risque = "faible"
 perimetre = ["un plan de sauvegarde et ses copies"]
 preuve = "le plan n'existe plus"
 retour = "remettre le plan"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "plan_run"
+libelle = "Exécuter un plan (test à blanc par défaut) via rclone par le courtier, et inscrire la copie au journal"
+risque = "faible"
+perimetre = ["une copie d'un plan de sauvegarde"]
+preuve = "la copie est inscrite"
+retour = "supprimer la ligne de copie"
 paliers = ["raconter", "auto", "maitre"]
