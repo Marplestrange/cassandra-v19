@@ -10,6 +10,11 @@ par le courtier racine) et le pare-feu (par l'API FastPanel) — voir les notes 
 """
 from __future__ import annotations
 
+import json
+import time
+
+from . import analyse
+
 GESTES = [
     {"id": "bannir-ou-debannir-une-adresse", "nom": "Bannir ou débannir une adresse", "rev": "oui",
      "garde": "exclut maison, tailnet, confiance"},
@@ -32,16 +37,114 @@ GESTES = [
 def brancher(ctx):
     db = ctx.stockage
 
-    def mesurer(c):
-        r = ctx.racine("mesurer", [], delai=60)
+    def releves(delai=120):
+        r = ctx.racine("mesurer", [], delai=delai)
         if not r.get("ok"):
             raise ValueError(r.get("erreur") or "mesures indisponibles")
         try:
-            import json as _json
-            mesures = _json.loads(r.get("sortie") or "{}")
+            return json.loads(r.get("sortie") or "{}")
         except Exception:
             raise ValueError("réponse du courtier illisible")
-        return {"mesures": mesures}
+
+    def mesurer(c):
+        return {"mesures": releves(60)}
+
+    cache = {"t": 0.0, "m": None}
+
+    def etat(c):
+        """L'état mesuré, en cache 45 s : une dizaine de lectures locales (ss, sshd -T, fail2ban-client, iptables) ne se refont pas à chaque ouverture d'écran."""
+        if cache["m"] is None or time.time() - cache["t"] > 45:
+            cache.update({"m": releves(), "t": time.time()})
+        ailleurs = {"mes_cles": 0, "mes_sessions": 0, "certs": 0, "certs_7j": 0, "certs_30j": 0, "cloche": 0}
+        try:                                                           # ce qui dépend du compte qui regarde ne va jamais dans le cache commun
+            ailleurs["mes_cles"] = len((ctx.executer_lecture("webauthn.etat") or {}).get("cles") or [])
+            ailleurs["cloche"] = (ctx.executer_lecture("notifications.compteurs") or {}).get("ouvertes", 0)
+            certs = (ctx.executer_lecture("certificats.etat") or {}).get("certificats") or []
+            jours = [x.get("jours") if x.get("jours") is not None else 999 for x in certs]
+            ailleurs.update({"certs": len(certs), "certs_7j": sum(1 for j in jours if j <= 7), "certs_30j": sum(1 for j in jours if j <= 30)})
+        except Exception:
+            pass
+        return analyse.etat(cache["m"], time.strftime("%Y-%m-%d %H:%M:%S"), ailleurs=ailleurs)
+
+    # ── les gestes exécutés à root : la commande « agir » du courtier, table fermée, chaque geste vérifié avant de répondre ──
+    def agir(verbe, geste, args=None, delai=180):
+        r = ctx.racine("agir", [verbe, geste, json.dumps(args or {}, ensure_ascii=False)], delai=delai)
+        try:
+            sortie = json.loads((r.get("sortie") or "").strip().splitlines()[-1])
+        except Exception:
+            sortie = {}
+        if not r.get("ok") or not sortie.get("ok"):
+            raise ValueError(sortie.get("erreur") or r.get("erreur") or "le geste a échoué")
+        cache["m"] = None                                               # l'état de la machine a changé : la prochaine lecture est fraîche
+        return sortie
+
+    def frais():
+        cache.update({"m": releves(60), "t": time.time()})
+        return cache["m"]
+
+    def prouve_ssh(cle, valeur):
+        def prouver(c, res):
+            return (frais().get("sshd") or {}).get(cle) == valeur
+        return prouver
+
+    def faire_ssh(geste):
+        def f(c):
+            return dict(agir("faire", geste), geste=geste)
+        return f
+
+    def defaire_ssh(c, res):
+        agir("defaire", res["geste"], {"avant": res.get("avant")})
+
+    def arret(c, service=""):
+        return dict(agir("faire", "arret", {"service": str(service)}), geste="arret", service=str(service))
+
+    def prouver_arret(c, res):
+        noms = {"rpcbind": ("rpcbind",), "avahi-daemon": ("avahi-daemon",), "cups": ("cupsd", "cups-browsed")}
+        return not any(e.get("processus") in noms.get(res["service"], ()) for e in (frais().get("ecoutes") or []))
+
+    def defaire_arret(c, res):
+        agir("defaire", "arret", {"service": res["service"], "etaient_actives": res.get("etaient_actives") or []})
+
+    def mysql_local(c):
+        return dict(agir("faire", "mysql_local", delai=300), geste="mysql_local")
+
+    def prouver_mysql(c, res):
+        return not any(e.get("port") == 3306 and not str(e.get("adresse", "")).strip("[]").startswith(("127.", "::1")) for e in (frais().get("ecoutes") or []))
+
+    def defaire_mysql(c, res):
+        agir("defaire", "mysql_local", delai=300)
+
+    def maj(geste):
+        def f(c):
+            return dict(agir("faire", geste), geste=geste)
+        return f
+
+    def prouver_lancee(c, res):
+        return bool(res.get("unite"))
+
+    def sans_retour(c, res):
+        raise ValueError("aucun retour automatique : les paquets restent mis à jour (l'historique apt dit lesquels)")
+
+    def debannir(c, jail="", ip=""):
+        return dict(agir("faire", "debannir", {"jail": str(jail), "ip": str(ip)}), geste="debannir")
+
+    def prouver_debannie(c, res):
+        f = analyse.fail2ban(frais())
+        return not any(res["ip"] in j["ips"] for j in f["jails"] if j["jail"] == res["jail"])
+
+    def defaire_debannie(c, res):
+        agir("defaire", "debannir", {"jail": res["jail"], "ip": res["ip"]})
+
+    def annuler(c, geste="", avec=None):
+        if not isinstance(avec, dict):
+            raise ValueError("« avec » : ce que le geste avait rendu (avant, service, jail…)")
+        return dict(agir("defaire", geste, avec, delai=300), geste=geste)
+
+    def prouver_annule(c, res):
+        return True                                                        # le courtier a vérifié ; le prochain relevé le montrera
+
+    def defaire_annule(c, res):
+        raise ValueError("refaire le geste (c'est le geste lui-même qui se relance)")
 
     def gestes(c):
         return {"gestes": GESTES}
@@ -83,8 +186,16 @@ def brancher(ctx):
     def defaire_audit(c, res):
         db.ecrire("DELETE FROM securite_audits WHERE id=?", (res["id"],))
 
-    for cid, f in (("gestes", gestes), ("journal", journal), ("audits", audits), ("mesurer", mesurer)):
+    for cid, f in (("gestes", gestes), ("journal", journal), ("audits", audits), ("mesurer", mesurer), ("etat", etat)):
         ctx.implementer(cid, f)
+    ctx.implementer("ssh_mdp", faire_ssh("ssh_mdp"), prouve_ssh("passwordauthentication", "no"), defaire_ssh)
+    ctx.implementer("ssh_x11", faire_ssh("ssh_x11"), prouve_ssh("x11forwarding", "no"), defaire_ssh)
+    ctx.implementer("arret", arret, prouver_arret, defaire_arret)
+    ctx.implementer("mysql_local", mysql_local, prouver_mysql, defaire_mysql)
+    ctx.implementer("maj_securite", maj("maj_securite"), prouver_lancee, sans_retour)
+    ctx.implementer("maj_auto", maj("maj_auto"), prouver_lancee, sans_retour)
+    ctx.implementer("debannir", debannir, prouver_debannie, defaire_debannie)
+    ctx.implementer("annuler", annuler, prouver_annule, defaire_annule)
     ctx.implementer("noter", noter, prouver_noter, defaire_noter,
                     simuler=lambda x, geste="", **_: "inscrirait le geste « %s » au journal de sécurité" % geste)
     ctx.implementer("audit_poser", audit_poser, prouver_audit, defaire_audit,

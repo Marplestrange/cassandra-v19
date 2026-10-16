@@ -1,0 +1,287 @@
+#!/usr/bin/env python3
+"""Les gestes de sécurité exécutés À ROOT, par le courtier, un par un, en TABLE FERMÉE.
+Usage : agir <faire|defaire> <geste> [<json des arguments>]   ->  une ligne de JSON : {"ok": true|false, ...}
+
+Ce programme ne fait confiance à rien de ce qu'on lui passe : le geste doit être dans la table, chaque argument est validé ici (adresse IP, jail, service),
+rien ne passe par un shell. Chaque geste dit ce qu'il a changé ET de quoi défaire (« avant »), et se VÉRIFIE avant de répondre ok :
+  - SSH : le fichier posé est testé (sshd -t), sshd est rechargé, la valeur EFFECTIVE est relue ; si elle n'a pas changé, tout est remis comme avant ;
+  - MySQL : redémarré avec le réglage, relu sur les ports d'écoute ; sinon le fichier est retiré et le service redémarré comme avant ;
+  - arrêt d'un service : désactivé ET arrêté, relu ;
+  - couper les mots de passe SSH est REFUSÉ si ni root ni un administrateur (sudo) n'a de clé autorisée : on ne s'enferme pas dehors.
+"""
+import ipaddress
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+DROPIN_SSH = "/etc/ssh/sshd_config.d/00-cassandra-securite.conf"
+MYSQL_CNF = "99-cassandra-securite.cnf"
+ARRETS = {"rpcbind": ("rpcbind.service", "rpcbind.socket"), "avahi-daemon": ("avahi-daemon.service", "avahi-daemon.socket"),
+          "cups": ("cups.service", "cups.socket", "cups-browsed.service")}
+SSH_GESTES = {"ssh_mdp": {"PasswordAuthentication": "no", "KbdInteractiveAuthentication": "no"}, "ssh_x11": {"X11Forwarding": "no"}}
+SSH_EFFECTIF = {"PasswordAuthentication": "passwordauthentication", "X11Forwarding": "x11forwarding"}
+RE_JAIL = re.compile(r"^[A-Za-z0-9_.-]{1,40}$")
+
+
+def run(args, timeout=30):
+    try:
+        r = subprocess.run(args, capture_output=True, text=True, timeout=timeout, errors="replace")
+        return r.returncode == 0, ((r.stdout or "") + (r.stderr or "")).strip()
+    except Exception as e:
+        return False, "%s : %s" % (type(e).__name__, e)
+
+
+def echo(d):
+    print(json.dumps(d, ensure_ascii=False))
+    sys.exit(0 if d.get("ok") else 1)
+
+
+def refus(raison):
+    echo({"ok": False, "erreur": raison})
+
+
+# ── SSH ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+def sshd_effectif():
+    ok, t = run(["sshd", "-T"], 10)
+    cfg = {}
+    for l in (t if ok else "").splitlines():
+        k, _, v = l.partition(" ")
+        cfg[k.strip().lower()] = v.strip()
+    return cfg
+
+
+def cles_autorisees():
+    """Des clés autorisées pour root ou pour un administrateur (sudo) : la garde de « couper les mots de passe »."""
+    utilisateurs = {"root"}
+    try:
+        for l in open("/etc/group", encoding="utf-8", errors="replace"):
+            c = l.strip().split(":")
+            if len(c) >= 4 and c[0] in ("sudo", "wheel") and c[3]:
+                utilisateurs |= {x for x in c[3].split(",") if x}
+    except Exception:
+        pass
+    n = 0
+    for u in utilisateurs:
+        if not re.match(r"^[a-z_][a-z0-9_.-]{0,31}$", u):
+            continue
+        base = "/root" if u == "root" else "/home/" + u
+        try:
+            n += sum(1 for l in open(base + "/.ssh/authorized_keys", encoding="utf-8", errors="replace") if l.strip() and not l.strip().startswith("#"))
+        except Exception:
+            pass
+    return n
+
+
+def lire_dropin():
+    try:
+        return open(DROPIN_SSH, encoding="utf-8").read()
+    except Exception:
+        return None
+
+
+def ecrire_dropin(texte):
+    """Pose (ou retire, si texte est None) le fichier SSH, le teste, recharge sshd. Rend (ok, raison)."""
+    try:
+        if texte is None:
+            if os.path.exists(DROPIN_SSH):
+                os.unlink(DROPIN_SSH)
+        else:
+            os.makedirs(os.path.dirname(DROPIN_SSH), exist_ok=True)
+            with open(DROPIN_SSH, "w", encoding="utf-8") as f:
+                f.write(texte)
+    except Exception as e:
+        return False, "écriture impossible : %s" % e
+    ok, t = run(["sshd", "-t"], 10)
+    if not ok:
+        return False, "sshd refuse la configuration : %s" % t[-200:]
+    ok, _ = run(["systemctl", "reload", "ssh"], 20)
+    if not ok:
+        run(["systemctl", "reload", "sshd"], 20)
+    return True, ""
+
+
+def texte_dropin(avant, reglages):
+    lignes = {}
+    for l in (avant or "").splitlines():
+        if l.strip() and not l.strip().startswith("#"):
+            k, _, v = l.strip().partition(" ")
+            lignes[k] = v.strip()
+    lignes.update(reglages)
+    return "# Posé par Cassandra (onglet Sécurité). Premier fichier lu : ses valeurs l'emportent.\n" + "".join("%s %s\n" % (k, v) for k, v in lignes.items())
+
+
+def ssh_faire(geste):
+    if geste == "ssh_mdp" and not cles_autorisees():
+        refus("aucune clé autorisée pour root ni pour un administrateur (sudo) : couper les mots de passe vous laisserait dehors")
+    reglages = SSH_GESTES[geste]
+    avant = lire_dropin()
+    ok, raison = ecrire_dropin(texte_dropin(avant, reglages))
+    if not ok:
+        ecrire_dropin(avant)
+        refus(raison + " — rien n'a changé")
+    eff = sshd_effectif()
+    faux = [k for k, v in reglages.items() if k in SSH_EFFECTIF and eff.get(SSH_EFFECTIF[k]) != v.lower()]
+    if faux:
+        ecrire_dropin(avant)
+        refus("sshd ne lit pas ce fichier (Include absent de sshd_config ?) : %s — rien n'a changé" % ", ".join(faux))
+    echo({"ok": True, "fichier": DROPIN_SSH, "avant": avant})
+
+
+def ssh_defaire(geste, args):
+    avant = args.get("avant")
+    ok, raison = ecrire_dropin(avant if isinstance(avant, str) else None)
+    echo({"ok": ok, "erreur": "" if ok else raison})
+
+
+# ── services ────────────────────────────────────────────────────────────────────────────────────────────────────
+def actif(unite):
+    return run(["systemctl", "is-active", unite], 8)[1].strip() == "active"
+
+
+def arret_faire(args):
+    unites = ARRETS.get(str(args.get("service") or ""))
+    if not unites:
+        refus("service hors de la table des arrêts")
+    etaient = [u for u in unites if actif(u)]
+    _, sortie = run(["systemctl", "disable", "--now"] + list(unites), 60)
+    encore = [u for u in unites if actif(u)]
+    if encore:
+        echo({"ok": False, "erreur": "toujours actif : %s" % ", ".join(encore), "sortie": sortie[-300:]})
+    echo({"ok": True, "unites": list(unites), "etaient_actives": etaient})
+
+
+def arret_defaire(args):
+    unites = ARRETS.get(str(args.get("service") or ""))
+    if not unites:
+        refus("service hors de la table des arrêts")
+    etaient = [u for u in (args.get("etaient_actives") or []) if u in unites]
+    ok, sortie = run(["systemctl", "enable", "--now"] + etaient, 60) if etaient else (True, "")
+    echo({"ok": ok, "erreur": "" if ok else sortie[-300:]})
+
+
+def dossier_mysql():
+    """Un dossier que MySQL LIT : celui d'un `!includedir` de my.cnf (le dernier l'emporte), jamais un dossier seulement présent."""
+    try:
+        base = os.path.realpath("/etc/mysql/my.cnf")
+        inclus = [x.rstrip("/") for x in re.findall(r"^!includedir\s+(\S+)", open(base, encoding="utf-8", errors="replace").read(), re.M) if os.path.isdir(x)]
+        return inclus[-1] if inclus else ""
+    except Exception:
+        return ""
+
+
+def unite_mysql():
+    return next((u for u in ("mariadb", "mysql") if run(["systemctl", "cat", u + ".service"], 8)[0]), "")
+
+
+def hors_machine_3306():
+    ok, t = run(["ss", "-Hlnt"], 10)
+    for l in (t if ok else "").splitlines():
+        c = l.split()
+        if len(c) >= 4 and c[3].rpartition(":")[2] == "3306" and not c[3].rpartition(":")[0].strip("[]").startswith(("127.", "::1")):
+            return True
+    return False
+
+
+def mysql_faire():
+    dossier, unite = dossier_mysql(), unite_mysql()
+    if not dossier or not unite:
+        refus("MySQL ou MariaDB introuvable (ou my.cnf sans dossier inclus)")
+    chemin = dossier + "/" + MYSQL_CNF
+    with open(chemin, "w", encoding="utf-8") as f:
+        f.write("# Posé par Cassandra (onglet Sécurité) : MySQL n'écoute que la machine.\n[mysqld]\nbind-address = 127.0.0.1\n")
+    ok, _ = run(["systemctl", "restart", unite], 120)
+    time.sleep(1)
+    marche = actif(unite)
+    dehors = hors_machine_3306()
+    if not ok or not marche or dehors:
+        try:
+            os.unlink(chemin)
+        except Exception:
+            pass
+        run(["systemctl", "restart", unite], 120)
+        refus(("%s écoute encore au-delà de la machine : un autre fichier l'emporte ; retiré, redémarré comme avant" % unite) if (marche and ok)
+              else ("%s n'a pas redémarré avec ce réglage : retiré, redémarré comme avant" % unite))
+    echo({"ok": True, "fichier": chemin, "unite": unite})
+
+
+def mysql_defaire(args):
+    dossier, unite = dossier_mysql(), unite_mysql()
+    chemin = (dossier + "/" + MYSQL_CNF) if dossier else ""
+    if chemin and os.path.exists(chemin):
+        os.unlink(chemin)
+    ok, _ = run(["systemctl", "restart", unite], 120) if unite else (False, "")
+    echo({"ok": ok, "erreur": "" if ok else "le service n'a pas redémarré"})
+
+
+# ── mises à jour : lancées EN ARRIÈRE-PLAN par systemd, relues au prochain état ────────────────────────────────
+def detache(nom, script):
+    ok, t = run(["systemd-run", "--unit=cassandra-%s-%d" % (nom, int(time.time())), "--collect", "/bin/sh", "-c", script], 20)
+    if not ok:
+        refus("lancement impossible : %s" % t[-200:])
+    echo({"ok": True, "unite": "cassandra-%s" % nom, "detail": "lancé en arrière-plan"})
+
+
+def maj_securite():
+    detache("maj-systeme", "export DEBIAN_FRONTEND=noninteractive\napt-get update\napt-get -y -o Dpkg::Options::=--force-confold upgrade\n")
+
+
+def maj_auto():
+    detache("maj-auto", "export DEBIAN_FRONTEND=noninteractive\napt-get update\napt-get install -y unattended-upgrades\n"
+                        "printf 'APT::Periodic::Update-Package-Lists \"1\";\\nAPT::Periodic::Unattended-Upgrade \"1\";\\n' > /etc/apt/apt.conf.d/20auto-upgrades\n")
+
+
+# ── fail2ban ────────────────────────────────────────────────────────────────────────────────────────────────────
+def jails():
+    ok, t = run(["fail2ban-client", "status"], 10)
+    m = re.search(r"Jail list:\s*(.*)", t if ok else "")
+    return [j.strip() for j in (m.group(1) if m else "").split(",") if j.strip()]
+
+
+def adresse_valide(ip):
+    try:
+        ipaddress.ip_address(str(ip))
+        return True
+    except ValueError:
+        return False
+
+
+def debannir(verbe, args):
+    jail, ip = str(args.get("jail") or ""), str(args.get("ip") or "")
+    if not RE_JAIL.match(jail) or not adresse_valide(ip) or jail not in jails():
+        refus("jail ou adresse inconnue")
+    ok, t = run(["fail2ban-client", "set", jail, "unbanip" if verbe == "faire" else "banip", ip], 10)
+    echo({"ok": ok, "jail": jail, "ip": ip, "erreur": "" if ok else t[-200:]})
+
+
+def main(argv):
+    if len(argv) < 3 or argv[1] not in ("faire", "defaire"):
+        refus("usage : agir <faire|defaire> <geste> [<json>]")
+    verbe, geste = argv[1], argv[2]
+    try:
+        args = json.loads(argv[3]) if len(argv) > 3 and argv[3] else {}
+        if not isinstance(args, dict):
+            raise ValueError
+    except ValueError:
+        refus("arguments illisibles")
+    if os.geteuid() != 0:
+        refus("ce programme s'exécute en root")
+    if geste in SSH_GESTES:
+        return ssh_faire(geste) if verbe == "faire" else ssh_defaire(geste, args)
+    if geste == "arret":
+        return arret_faire(args) if verbe == "faire" else arret_defaire(args)
+    if geste == "mysql_local":
+        return mysql_faire() if verbe == "faire" else mysql_defaire(args)
+    if geste == "debannir":
+        return debannir(verbe, args)
+    if verbe == "faire" and geste == "maj_securite":
+        return maj_securite()
+    if verbe == "faire" and geste == "maj_auto":
+        return maj_auto()
+    refus("geste inconnu (ou sans retour)")
+
+
+if __name__ == "__main__":
+    main(sys.argv)

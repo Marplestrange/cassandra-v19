@@ -1,73 +1,158 @@
 #!/usr/bin/env python3
-"""Les mesures de sécurité de la machine, en JSON. Usage : mesurer [--outils].
-Rend ce qui est mesurable SANS privilège réseau extérieur : ports en écoute, SSH, fail2ban, mises à jour,
-la cage, et les outils présents (Lynis, Trivy, ClamAV, CrowdSec). Rien n'est interprété ici : le verdict
-est calculé plus haut, dans le module."""
+"""Les relevés de sécurité de la machine, en JSON, EN LECTURE SEULE. Usage : mesurer.
+Rend ce que la machine dit, BRUT : aucune interprétation ici. Le verdict (exposition, pare-feu, accès, mises à jour) se calcule plus haut,
+dans le module, sur ces relevés — ce qui permet de le tester sans machine, et de ne rien faire confiance à ce programme tournant en root
+que de lire.
+
+Chaque relevé est indépendant : un qui échoue vaut « null » (la mesure manque, elle n'est jamais inventée) et n'empêche pas les autres."""
 import json
+import os
+import re
 import shutil
 import subprocess
-import sys
 
 
-def _run(args, timeout=30):
+def _run(args, timeout=20):
+    """(code, sortie) ; (None, '') si la commande est absente ou échoue à se lancer."""
     try:
-        r = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
-        return (r.stdout or "") + (r.stderr or "")
+        r = subprocess.run(args, capture_output=True, text=True, timeout=timeout, errors="replace")
+        return r.returncode, (r.stdout or "") + (r.stderr or "")
+    except Exception:
+        return None, ""
+
+
+def _texte(args, timeout=20, limite=400000):
+    code, t = _run(args, timeout)
+    return t[-limite:] if code == 0 else None
+
+
+def _unite_du_pid(pid):
+    try:
+        t = open("/proc/%d/cgroup" % int(pid), encoding="utf-8").read()
     except Exception:
         return ""
+    m = re.findall(r"/([A-Za-z0-9@._-]+\.service)", t)
+    return m[-1] if m else ""
 
 
-def _ports():
-    return _run(["ss", "-tlnp"])[:8000]
+def _ecoutes():
+    t = _texte(["ss", "-Hlntup"], 10)
+    if t is None:
+        return None
+    sortie = []
+    for ligne in t.splitlines():
+        c = ligne.split()
+        if len(c) < 5 or ":" not in c[4]:
+            continue
+        adr, _, port = c[4].rpartition(":")
+        m = re.search(r'users:\(\("([^"]+)"', ligne)
+        pid = re.search(r"pid=(\d+)", ligne)
+        try:
+            port = int(port)
+        except ValueError:
+            continue
+        p = int(pid.group(1)) if pid else 0
+        sortie.append({"proto": c[0], "adresse": adr, "port": port, "processus": m.group(1) if m else "?", "pid": p, "unite": _unite_du_pid(p) if p else ""})
+    return sortie
 
 
-def _ssh():
-    out = {}
-    t = _run(["sshd", "-T"]) if shutil.which("sshd") else ""
-    for ligne in (t or "").splitlines():
-        if ligne.startswith(("passwordauthentication", "permitrootlogin", "x11forwarding")):
-            k, _, v = ligne.partition(" ")
-            out[k] = v.strip()
-    return out
+def _echecs_ssh():
+    t = _texte(["journalctl", "-u", "ssh", "-u", "sshd", "--since", "7 days ago", "--no-pager", "-o", "cat"], 20, 4000000)
+    if t is None:
+        return None
+    return len(re.findall(r"Failed password|Invalid user|authentication failure", t))
+
+
+def _comptes():
+    shells, sudo = [], []
+    try:
+        for l in open("/etc/passwd", encoding="utf-8", errors="replace"):
+            c = l.strip().split(":")
+            if len(c) >= 7 and c[6] and not re.search(r"(nologin|false|sync|halt|shutdown)$", c[6]):
+                shells.append(c[0])
+        for l in open("/etc/group", encoding="utf-8", errors="replace"):
+            c = l.strip().split(":")
+            if len(c) >= 4 and c[0] in ("sudo", "wheel") and c[3]:
+                sudo += [x for x in c[3].split(",") if x]
+    except Exception:
+        return None
+    return {"shells": shells, "sudo": sorted(set(sudo))}
+
+
+def _cles(utilisateurs):
+    sortie = {}
+    for u in utilisateurs:
+        if not re.match(r"^[a-z_][a-z0-9_.-]{0,31}$", str(u)):
+            continue
+        base = "/root" if u == "root" else "/home/" + u
+        try:
+            sortie[u] = sum(1 for l in open(base + "/.ssh/authorized_keys", encoding="utf-8", errors="replace") if l.strip() and not l.strip().startswith("#"))
+        except Exception:
+            sortie[u] = 0
+    return sortie
 
 
 def _fail2ban():
     if not shutil.which("fail2ban-client"):
         return {"present": False}
-    t = _run(["fail2ban-client", "status"], timeout=20)
-    return {"present": True, "sortie": t[:2000]}
+    t = _texte(["fail2ban-client", "status"], 10)
+    if t is None:
+        return {"present": True, "actif": False}
+    m = re.search(r"Jail list:\s*(.*)", t)
+    jails = [j.strip() for j in (m.group(1) if m else "").split(",") if j.strip()][:12]
+    return {"present": True, "actif": True, "sortie": t[:2000], "jails": {j: (_texte(["fail2ban-client", "status", j], 10) or "") for j in jails}}
 
 
 def _maj():
     if not shutil.which("apt"):
         return {"apt": False}
-    t = _run(["apt", "list", "--upgradable"], timeout=60)
-    lignes = [l for l in (t or "").splitlines() if "/" in l and " Listing" not in l]
-    return {"apt": True, "a_mettre_a_jour": len(lignes), "detail": t[:2000]}
+    t = _texte(["apt", "list", "--upgradable"], 60) or ""
+    lignes = [l for l in t.splitlines() if "/" in l and " Listing" not in l]
+    _, st = _run(["dpkg-query", "-W", "-f=${Status}", "unattended-upgrades"], 10)
+    try:
+        auto = open("/etc/apt/apt.conf.d/20auto-upgrades", encoding="utf-8", errors="replace").read()
+    except Exception:
+        auto = ""
+    _, defaillantes = _run(["systemctl", "--failed", "--no-legend", "--plain"], 10)
+    return {"apt": True, "a_mettre_a_jour": len(lignes), "securite": sum(1 for l in lignes if "-security" in l), "detail": t[:2000],
+            "auto_installe": "install ok installed" in st, "auto_conf": auto[:400],
+            "unites_en_echec": [l.split()[0] for l in defaillantes.splitlines() if l.strip()][:30],
+            "reboot_requis": os.path.exists("/var/run/reboot-required")}
 
 
 def _outils():
-    return {
-        "lynis": bool(shutil.which("lynis")),
-        "trivy": bool(shutil.which("trivy")),
-        "clamav": bool(shutil.which("clamscan")),
-        "crowdsec": bool(shutil.which("cscli")),
-    }
-
-
-def _cage():
-    t = _run(["systemctl", "is-active", "cassandra-cage"], timeout=20)
-    return t.strip()
+    return {"lynis": bool(shutil.which("lynis")), "trivy": bool(shutil.which("trivy")), "clamav": bool(shutil.which("clamscan")), "crowdsec": bool(shutil.which("cscli"))}
 
 
 def main():
+    ssh = {}
+    t = _texte(["sshd", "-T"], 10) if shutil.which("sshd") else None
+    for ligne in (t or "").splitlines():
+        k, _, v = ligne.partition(" ")
+        ssh[k.strip().lower()] = v.strip()
+    comptes = _comptes()
+    iptables = _texte(["iptables", "-S"], 10)
     mesures = {
-        "ports": _ports(),
-        "ssh": _ssh(),
+        # ce que lit le module (analyse.py)
+        "ecoutes": _ecoutes(),
+        "ip_addr": _texte(["ip", "-o", "addr", "show"], 8),
+        "iptables": iptables,
+        "ip6tables": _texte(["ip6tables", "-S"], 10),
+        "iptables_docker": _texte(["iptables", "-t", "nat", "-S", "DOCKER"], 10),
+        "nft": _texte(["nft", "list", "ruleset"], 10) if iptables is None else None,
+        "sshd": ssh or None,
+        "echecs_ssh_7j": _echecs_ssh(),
+        "comptes": comptes,
+        "cles_ssh": _cles(sorted(set(["root"] + (comptes["sudo"] if comptes else [])))),
         "fail2ban": _fail2ban(),
         "maj": _maj(),
         "outils": _outils(),
-        "cage": _cage(),
+        "cage": (_texte(["systemctl", "is-active", "cassandra-cage"], 10) or "").strip() or None,
+        "hote": (_texte(["hostname"], 5) or "").strip(),
+        "tailscale": (_texte(["tailscale", "ip", "-4"], 5) or "").strip() or None,
+        # les anciens noms, gardés pour qui les lisait déjà
+        "ports": _texte(["ss", "-tlnp"], 10),
+        "ssh": {k: v for k, v in ssh.items() if k in ("passwordauthentication", "permitrootlogin", "x11forwarding")},
     }
     print(json.dumps(mesures, ensure_ascii=False))
 

@@ -4,10 +4,24 @@
   const P = (c, cap, o) => CASS.route("POST", c, cap, o);
   const ok = (x) => Object.assign({ ok: true }, x);
 
+  // L'état de la machine : composé par le module sur les relevés bruts du courtier (services à l'écoute, pare-feu du noyau, SSH, fail2ban, mises à jour).
+  P("/api/securite", "securite.etat", { args: () => ({}), sortie: (x) => x });
   P("/api/securite/gestes", "securite.gestes", { args: () => ({}), sortie: (x) => ok(x) });
   P("/api/securite/journal", "securite.journal", { args: (r) => ({ limite: +(r.body.limite || 120) }), sortie: (x) => ok(x) });
   P("/api/securite/audits", "securite.audits", { args: (r) => ({ id: +(r.body.id || 0) }), sortie: (x) => ok(x) });
-  P("/api/securite/geste", "securite.noter", {
+  // Les gestes de l'onglet : la table fermée de la V18, chacun vers SA capacité (droit, preuve, retour, journal). Le courtier les exécute à root et les vérifie.
+  const GESTES = { ssh_mdp: "securite.ssh_mdp", ssh_x11: "securite.ssh_x11", mysql_local: "securite.mysql_local", maj_securite: "securite.maj_securite", maj_auto: "securite.maj_auto", debannir: "securite.debannir" };
+  P("/api/securite/geste", null, {
+    faire: async (req, agir) => {
+      const b = req.body, g = String(b.geste || "");
+      try {
+        if (g.indexOf("arret:") === 0) return ok(await agir("securite.arret", { service: g.slice(6) }));
+        if (GESTES[g]) return ok(await agir(GESTES[g], g === "debannir" ? { jail: String(b.jail || ""), ip: String(b.ip || "") } : {}));
+      } catch (e) { return { ok: false, error: e.message }; }
+      return { ok: false, error: "ce geste n'est pas encore porté (pare-feu, outils de sécurité)" };
+    },
+  });
+  P("/api/securite/noter", "securite.noter", {
     args: (r) => ({ geste: r.body.geste || "", cible: r.body.cible || "", detail: r.body.detail || "", ok: r.body.ok !== false, resultat: r.body.resultat || "", defaire: r.body.defaire || "" }),
     sortie: (x) => ok(x),
   });

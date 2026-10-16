@@ -1,5 +1,6 @@
 #!/bin/sh
-# Sécurité retire, À ROOT : la commande de mesures posée par l'installation.
+# Sécurité retire, À ROOT : les commandes posées par l'installation (les réglages déjà appliqués à la machine restent : ils tournent sans Cassandra).
 set -eu
-rm -f "/usr/libexec/cassandra/securite/mesurer"
-echo "securite : commande de mesures retirée"
+rm -f "/usr/libexec/cassandra/securite/mesurer" "/usr/libexec/cassandra/securite/agir"
+rmdir /usr/libexec/cassandra/securite 2>/dev/null || true
+echo "securite : commandes retirées"
