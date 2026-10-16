@@ -77,19 +77,44 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
     return null;
   }
 
-  async function login(corps) {
-    const r = await v19("POST", "/api/connexion", { compte: corps.username, mot_de_passe: corps.password });
+  // La connexion, avec son second facteur. Le noyau répond 401 « second_facteur » quand le mot de passe est bon et qu'une clé est exigée ;
+  // l'écran V18 attend alors {success, cle_requise, defi, ids}. La preuve repart avec le mot de passe (gardé en mémoire le temps de la clé, jamais écrit).
+  let pendant = null;
+  async function finir(d) {
+    let admin = false;
+    try { const mo = await (await v19("GET", "/api/moi", null, { headers: { "X-Session-Token": d.jeton } })).json(); admin = !!mo.admin; } catch (e) {}
+    CASS.moi = { compte: d.compte, admin };
+    setTimeout(() => { if (CASS.surConnexion) CASS.surConnexion(); }, 400);
+    return reponse(200, { success: true, session: d.jeton, username: d.compte, is_admin: admin, role: admin ? "admin" : "utilisateur" });
+  }
+  async function connecter(compte, mdp, preuve) {
+    const r = await v19("POST", "/api/connexion", preuve ? { compte, mot_de_passe: mdp, preuve } : { compte, mot_de_passe: mdp });
     const d = await r.json().catch(() => ({}));
-    if (r.status === 200 && d.ok) {
-      let admin = false;
-      try { const mo = await (await v19("GET", "/api/moi", null, { headers: { "X-Session-Token": d.jeton } })).json(); admin = !!mo.admin; } catch (e) {}
-      CASS.moi = { compte: d.compte, admin };
-      setTimeout(() => { if (CASS.surConnexion) CASS.surConnexion(); }, 400);
-      return reponse(200, { success: true, session: d.jeton, username: d.compte, is_admin: admin, role: admin ? "admin" : "utilisateur" });
-    }
+    if (r.status === 200 && d.ok) { pendant = null; return finir(d); }
     if (r.status === 429) return reponse(429, { success: false, error: d.erreur || "trop d'essais", attente: d.attente_s || 0, attente_s: d.attente_s || 0 });
-    if (d.second_facteur) return reponse(401, { success: false, error: "Second facteur requis : pas encore branché dans cette interface", second_facteur: true });
+    if (d.second_facteur && !preuve) {
+      pendant = { compte, mdp };
+      const inv = d.invite || {};
+      return reponse(200, { success: true, cle_requise: true, username: compte, defi: inv.defi, ids: inv.ids || [], rp_id: inv.rp_id, secours: !!inv.secours });
+    }
     return reponse(401, { success: false, error: d.erreur || "Identifiants invalides" });
+  }
+  const login = (corps) => connecter(corps.username, corps.password);
+  const loginCle = (c) => {
+    if (!pendant || pendant.compte !== c.username) return reponse(401, { success: false, error: "Reprenez la connexion : saisissez de nouveau votre mot de passe." });
+    return connecter(c.username, pendant.mdp, { defi: c.defi, cred_id: c.id, client_data: c.client, auth_data: c.auth, signature: c.signature });
+  };
+  const loginSecours = (c) => connecter(c.username, c.password, { secours: c.code });
+  async function passkeyDefi() {
+    const r = await v19("POST", "/api/public/webauthn.passkey_defi", { args: {} });
+    const d = await r.json().catch(() => ({}));
+    return reponse(200, { ok: true, defi: d.resultat && d.resultat.defi, rp_id: d.resultat && d.resultat.rp_id });
+  }
+  async function passkey(c) {
+    const r = await v19("POST", "/api/public/webauthn.passkey_ouvrir", { args: { defi: c.defi, cred_id: c.id, client_data: c.client, auth_data: c.auth, signature: c.signature } });
+    const d = await r.json().catch(() => ({}));
+    if (r.status === 200 && d.ok && d.jeton) return finir(d);
+    return reponse(401, { success: false, error: (d.resultat && d.resultat.error) || d.erreur || "Clé refusée" });
   }
 
   window.fetch = async function (entree, init) {
@@ -105,7 +130,11 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
 
     // Les portes natives du noyau passent telles quelles (avec le jeton) : le shell de l'interface les utilise directement.
     if (chemin.indexOf("/api/agir/") === 0 || chemin === "/api/menu" || chemin === "/api/modules" || chemin === "/api/moi") return v19(methode, u.pathname + u.search, corps, init);
-    if (chemin === "/api/login" && methode === "POST") return login(corps);
+    if (methode === "POST" && chemin === "/api/login") return login(corps);
+    if (methode === "POST" && chemin === "/api/login/cle") return loginCle(corps);
+    if (methode === "POST" && chemin === "/api/login/secours") return loginSecours(corps);
+    if (methode === "POST" && chemin === "/api/login/passkey/defi") return passkeyDefi();
+    if (methode === "POST" && chemin === "/api/login/passkey") return passkey(corps);
     if (chemin === "/api/verify") {
       const r = await v19("GET", "/api/moi", null, init);
       if (r.status !== 200) return reponse(200, { valid: false });

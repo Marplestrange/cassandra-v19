@@ -116,6 +116,21 @@
   P("/api/me/cles", null, {
     faire: async (req, agir) => { const e = (await agir("webauthn.etat", {})) || {}; return ok({ cles: e.cles || [], exigee: !!e.exigee, disponible: e.disponible !== false, erreur: e.erreur || "", secours: e.secours_restants || 0, secours_restants: e.secours_restants || 0 }); },
   });
+  // L'enregistrement d'une clé de sécurité : défi -> navigateur -> enregistrer ; les codes de secours viennent avec la première clé exigée.
+  P("/api/me/cle/defi", "webauthn.defi_creer", { args: () => ({}), sortie: (x) => ok({ defi: x.defi, rp: x.rp_id, compte: x.compte, exclure: x.exclure || [] }) });
+  P("/api/me/cle/enregistrer", null, {
+    faire: async (req, agir) => {
+      const b = req.body;
+      const r = await agir("webauthn.enregistrer", { defi: b.defi || "", client_data: b.client || "", attestation: b.attestation || "", libelle: b.libelle || "" });
+      const e = (await agir("webauthn.etat", {})) || {};
+      const sortie = ok({ id: r.id, libelle: r.libelle, cles: r.cles });
+      if (!e.secours_restants && (r.cles || 1) === 1) { try { sortie.secours = (await agir("webauthn.secours_regenerer", {})).secours; } catch (x) {} }     // la première clé : les codes de secours, vus une fois
+      return sortie;
+    },
+  });
+  P("/api/me/cle/supprimer", "webauthn.supprimer", { args: (r) => ({ court: String(r.body.id || "") }), sortie: (x) => ok({ id: x.court }) });
+  P("/api/me/cle/exiger", "webauthn.exiger", { args: (r) => ({ exiger: !!r.body.exiger }), sortie: (x) => ok({ exigee: x.exigee, secours: x.secours }) });
+  P("/api/me/cle/secours", "webauthn.secours_regenerer", { args: () => ({}), sortie: (x) => ok({ codes: x.secours }) });
   P("/api/me/bitwarden", null, {
     faire: async (req, agir) => {
       try { const s = (await agir("coffre.status", {})) || {}; return ok({ server_url: s.url || s.server_url || "", email: s.email || "" }); }
