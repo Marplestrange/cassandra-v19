@@ -1,0 +1,39 @@
+[module]
+id = "canvas"
+nom = "Canvas"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Le canvas de notes : les départs (des gabarits de note), les gestes de rédaction, et le plan (les cartes et les flèches d'une note). La règle : il propose, l'écran montre, la personne décide — rien n'écrit sans elle. Différé : les appels au modèle (amorcer, retoucher, cartes tirées des sources) et la section vivante."
+confiance = "interne"
+famille = "gestion"
+
+[[objets]]
+type = "plan_canvas"
+libelle = "Un plan de canvas"
+
+[permissions]
+stockage = true
+
+[[capacites]]
+id = "departs"
+libelle = "Les départs : les gabarits de note, avec leur plan, leurs sources et ce qu'ils demandent"
+risque = "lecture"
+
+[[capacites]]
+id = "gestes"
+libelle = "Les gestes de rédaction : reformuler, resserrer, développer, continuer, résumer"
+risque = "lecture"
+
+[[capacites]]
+id = "plan_lire"
+libelle = "Le plan d'une note (cartes et flèches), ou un plan vide — l'absence n'est pas une erreur"
+risque = "lecture"
+
+[[capacites]]
+id = "plan_ecrire"
+libelle = "Ranger le plan d'une note : on garde ce qu'on ne comprend pas, ce qu'on jette est dit ; un plan vide efface"
+risque = "faible"
+perimetre = ["le plan d'une note"]
+preuve = "le plan relu"
+retour = "remettre le plan d'avant"
+paliers = ["raconter", "auto", "maitre"]
