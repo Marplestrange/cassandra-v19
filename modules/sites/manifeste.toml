@@ -221,3 +221,48 @@ stockage = true
 droits = true
 lectures = true
 reseau = ["les sites suivis, en HTTPS sur le port 443 (une requête GET, 2 Ko lus)"]
+
+[[capacites]]
+id = "serie"
+libelle = "Les points de la sonde (disponibilité, temps de réponse, jours avant expiration du certificat, pannes) pour l'historique : une courbe par site de la portée du compte"
+risque = "lecture"
+
+[[mesures]]
+id = "site_up"
+libelle = "Sites — disponibilité"
+capacite = "serie"
+unite = "%"
+famille = "Sites"
+groupee = true
+pire = "bas"
+description = "Part du temps où chaque site a répondu."
+
+[[mesures]]
+id = "site_ms"
+libelle = "Sites — temps de réponse"
+capacite = "serie"
+unite = "ms"
+famille = "Sites"
+groupee = true
+description = "Durée de réponse mesurée, site par site. Au-delà de 3 s, le visiteur considère le site en panne."
+
+[[mesures]]
+id = "site_ssl"
+libelle = "Sites — jours avant expiration SSL"
+capacite = "serie"
+unite = "j"
+famille = "Sites"
+groupee = true
+agregat = "min"
+pire = "bas"
+description = "Le certificat le plus proche de l'expiration en premier."
+
+[[mesures]]
+id = "site_down"
+libelle = "Sites — pannes"
+capacite = "serie"
+genre = "compteur"
+unite = "/j"
+famille = "Sites"
+vide = "rien_a_signaler"
+description = "Sites tombés. Le compte que personne ne tenait."

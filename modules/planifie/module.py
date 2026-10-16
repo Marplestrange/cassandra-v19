@@ -215,6 +215,16 @@ def brancher(ctx):
         reservee()
         return {"executions": [dict(r) for r in db.lire("SELECT debut, duree_ms, code, sortie, declencheur FROM executions WHERE ref=? ORDER BY id DESC LIMIT ?", (ref, max(1, min(int(limite or 20), 100))))]}
 
+    def serie(c, mesure="", depuis="", jusqu_a=""):
+        """Les exécutions (ou les échecs) datées : un point par exécution, pour l'historique."""
+        reservee()
+        if mesure not in ("cron_runs", "cron_fail"):
+            raise ValueError("mesure inconnue : « %s »" % mesure)
+        a, b = str(depuis)[:19].replace("T", " "), str(jusqu_a)[:19].replace("T", " ")
+        cond = " AND code IS NOT NULL AND code <> 0" if mesure == "cron_fail" else ""
+        rows = db.lire("SELECT debut FROM executions WHERE replace(substr(debut,1,19),'T',' ') BETWEEN ? AND ?%s ORDER BY debut" % cond, (a, b))
+        return {"series": [{"nom": "exécutions" if mesure == "cron_runs" else "échecs", "points": [[str(r["debut"])[:19].replace("T", " "), 1] for r in rows]}]}
+
     def duree_moyenne(ref):
         r = db.lire("SELECT AVG(duree_ms) AS m FROM executions WHERE ref=? AND duree_ms>0", (ref,))
         return int(r[0]["m"]) if r and r[0]["m"] else 0
@@ -660,7 +670,7 @@ def brancher(ctx):
     c = ctx
     c.moteur("passe", passe)
     c.detecteur("taches_en_panne", det_pannes)
-    for cid, f in (("unifiee", unifiee), ("fiche", fiche), ("historique", historique), ("reglages", reglages), ("chevauchements", chevauchements), ("audit", audit), ("apercu", apercu),
+    for cid, f in (("unifiee", unifiee), ("fiche", fiche), ("historique", historique), ("reglages", reglages), ("chevauchements", chevauchements), ("audit", audit), ("serie", serie), ("apercu", apercu),
                    ("maintenance_etat", maintenance_etat), ("resume", resume)):
         c.implementer(cid, f)
     c.implementer("sauver", sauver, prouver_sauvee, defaire_sauvee, simuler=lambda x, description="", horaire="", **_: "poserait la tâche « %s » (%s)" % (description, horaire))

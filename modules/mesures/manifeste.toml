@@ -1,0 +1,52 @@
+[module]
+id = "mesures"
+nom = "Mesures"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "L'historique : chaque module déclare ses mesures ([[mesures]]) ; ce module en tire les courbes par période, l'habitude (ce qui est normal ce jour-là à cette heure), les écarts, la tendance (date de saturation) et un verdict. Une source muette est DITE muette : « tout est stable » n'est jamais un défaut."
+confiance = "interne"
+famille = "supervision"
+
+[[droits]]
+id = "voir"
+libelle = "Lire l'historique des mesures de la machine"
+
+[[capacites]]
+id = "sources"
+libelle = "Les mesures déclarées par les modules, chacune avec son état dit en mots (à jour, muette, rien à signaler…)"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "serie"
+libelle = "La courbe d'une mesure sur une période (1 h, 6 h, 24 h, 7 j, 30 j), regroupée par tranche"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "profil"
+libelle = "La valeur habituelle de ce jour de semaine à cette heure, et l'écart de la dernière heure"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "ecarts"
+libelle = "Les mesures qui sortent de leur habitude, au-delà d'un seuil"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "prevision"
+libelle = "La date de saturation d'une mesure, par tendance linéaire sur quatorze jours"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "verdict"
+libelle = "Ce que l'historique dit à l'ouverture : pannes, échéances, écarts, sources sans nouvelles"
+risque = "lecture"
+droit = "voir"
+
+[permissions]
+introspection = true
+lectures = true

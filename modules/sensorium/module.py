@@ -123,6 +123,17 @@ def brancher(ctx):
             raise ValueError("clé illisible")
         return json_de("GET_HISTORY:" + cle, 10)
 
+    def serie(ctx, mesure="", depuis="", jusqu_a=""):
+        """Les points d'une mesure, lus dans l'historique du collecteur (la liste des courbes est fermée côté collecteur)."""
+        if not isinstance(mesure, str) or not _CLE.match(mesure):
+            raise ValueError("mesure illisible")
+        from datetime import datetime as _dt
+        try:
+            jours = max(1, min(40, int((_dt.utcnow() - _dt.strptime(str(depuis)[:19].replace("T", " "), "%Y-%m-%d %H:%M:%S")).total_seconds() // 86400) + 1))
+        except ValueError:
+            jours = 1
+        return json_de("GET_SERIES:%s:%d" % (mesure, jours), 20)
+
     def changements(ctx, depuis=""):
         if depuis and not re.match(r"^[0-9T:\-. ]{1,40}$", str(depuis)):
             raise ValueError("date illisible")
@@ -137,3 +148,4 @@ def brancher(ctx):
     ctx.implementer("entite", entite)
     ctx.implementer("historique", historique)
     ctx.implementer("changements", changements)
+    ctx.implementer("serie", serie)

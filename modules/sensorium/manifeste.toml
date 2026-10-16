@@ -109,3 +109,95 @@ ecritures = ["/run/sensorium"]
 script = "installer.sh"
 verification = "verifier.sh"
 retrait = "retirer.sh"
+
+[[capacites]]
+id = "serie"
+libelle = "Les points d'une mesure de la machine (processeur, mémoire, disque…) sur une période, lus dans l'historique du collecteur"
+risque = "lecture"
+
+[[mesures]]
+id = "cpu"
+libelle = "Processeur"
+capacite = "serie"
+unite = "%"
+famille = "Système hôte"
+plafond = 100
+fraicheur_s = 180
+description = "Charge processeur."
+
+[[mesures]]
+id = "ram"
+libelle = "Mémoire vive"
+capacite = "serie"
+unite = "%"
+famille = "Système hôte"
+plafond = 100
+fraicheur_s = 180
+description = "Mémoire occupée."
+
+[[mesures]]
+id = "swap"
+libelle = "Swap"
+capacite = "serie"
+unite = "%"
+famille = "Système hôte"
+plafond = 100
+fraicheur_s = 180
+description = "Recours au disque comme mémoire : un swap qui monte annonce l'étouffement."
+
+[[mesures]]
+id = "disk"
+libelle = "Disque"
+capacite = "serie"
+unite = "%"
+famille = "Système hôte"
+plafond = 100
+fraicheur_s = 180
+description = "Remplissage du disque. C'est la tendance qui compte, pas l'instant."
+
+[[mesures]]
+id = "load1"
+libelle = "Charge moyenne (1 min)"
+capacite = "serie"
+famille = "Système hôte"
+fraicheur_s = 180
+description = "File d'attente du processeur."
+
+[[mesures]]
+id = "disk_free"
+libelle = "Espace libre"
+capacite = "serie"
+unite = "Go"
+famille = "Système hôte"
+pire = "bas"
+fraicheur_s = 180
+description = "Ce qu'il reste réellement."
+
+[[mesures]]
+id = "ram_used"
+libelle = "Mémoire utilisée"
+capacite = "serie"
+unite = "Go"
+famille = "Système hôte"
+fraicheur_s = 180
+description = "En valeur absolue."
+
+[[mesures]]
+id = "sante"
+libelle = "Score de santé"
+capacite = "serie"
+unite = "/100"
+famille = "Système hôte"
+pire = "bas"
+fraicheur_s = 1200
+description = "Note globale calculée par le collecteur."
+
+[[mesures]]
+id = "oom"
+libelle = "Tueur de processus (OOM)"
+capacite = "serie"
+genre = "compteur"
+unite = "/h"
+famille = "Système hôte"
+vide = "rien_a_signaler"
+description = "Processus tués faute de mémoire. Une seule occurrence est déjà une alerte."

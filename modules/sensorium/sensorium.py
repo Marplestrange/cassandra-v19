@@ -49,6 +49,12 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 # ============================================================
 # CONFIGURATION
 # ============================================================
+# Les courbes que le collecteur sait rendre (GET_SERIES) : clé -> (table, colonne, genre). Une liste fermée : aucune colonne ne vient de la requête.
+_SERIES_AUTORISEES = {
+    "cpu": ("metrics_realtime", "cpu_pct", "jauge"), "ram": ("metrics_realtime", "ram_pct", "jauge"), "swap": ("metrics_realtime", "swap_pct", "jauge"),
+    "disk": ("metrics_realtime", "disk_pct", "jauge"), "load1": ("metrics_realtime", "load_1m", "jauge"), "disk_free": ("metrics_realtime", "disk_free_gb", "jauge"),
+    "ram_used": ("metrics_realtime", "ram_used_gb", "jauge"), "sante": ("health_scores", "score", "jauge"), "oom": ("oom_events", "ts", "compteur"),
+}
 DB_PATH = os.environ.get("SENSORIUM_DB") or "/var/lib/cassandra/cassandra.db"
 # Socket dans /run (tmpfs, non nettoyé, hors /tmp world-traversable) + perms root-only.
 SOCKET_PATH = os.environ.get("SENSORIUM_SOCKET") or "/run/cassandra/knowledge.sock"
@@ -6040,6 +6046,29 @@ class SharedMemorySocket:
                     client.sendall(json.dumps([dict(r) for r in rows]).encode())
                 except Exception:
                     client.sendall(b"[]")
+            elif data.startswith("GET_SERIES:"):
+                # Une COURBE (16-10) : « GET_SERIES:<clé>:<jours> ». La clé est dans une liste fermée (jamais un nom de colonne venu de la requête) ;
+                # au-delà de deux jours, une moyenne par dizaine de minutes : trente jours de brut ne tiennent pas dans une courbe de mille pixels.
+                try:
+                    _, cle, jours = (data.split(":") + ["", ""])[:3]
+                    j = max(1, min(int(jours or 1), 40))
+                    spec = _SERIES_AUTORISEES.get(cle)
+                    if not spec:
+                        client.sendall(b"ERROR")
+                    else:
+                        table, col, genre = spec
+                        depuis = (datetime.now() - timedelta(days=j)).strftime("%Y-%m-%d")
+                        conn = get_conn()
+                        t = "replace(substr(ts,1,19),'T',' ')"
+                        pas = "substr(%s,1,15)||'0:00'" % t if j > 2 else t
+                        if genre == "compteur":
+                            rows = conn.execute("SELECT %s, 1 FROM %s WHERE ts >= ? ORDER BY ts" % (t, table), (depuis,)).fetchall()
+                        else:
+                            rows = conn.execute("SELECT %s AS t, avg(%s) FROM %s WHERE ts >= ? GROUP BY t ORDER BY t" % (pas, col, table), (depuis,)).fetchall()
+                        conn.close()
+                        client.sendall(json.dumps({"series": [{"nom": cle, "points": [[r[0], r[1]] for r in rows if r[1] is not None]}]}).encode())
+                except Exception:
+                    client.sendall(b"ERROR")
             elif data.startswith("QUERY_WORLD:"):
                 term = data.split(":", 1)[1].strip()
                 try:

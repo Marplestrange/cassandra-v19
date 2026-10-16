@@ -28,6 +28,10 @@
   });
   P("/api/sensorium/flotte", null, { faire: async (req, agir) => { await agir("flotte.parc", {}).catch(() => {}); return ok({ lance: true }); } });
 
+  // Le confinement d'urgence et l'avatar du panneau : sans équivalent V19 pour l'instant, l'écran montre « inconnue » / « aucune ».
+  P("/api/urgence/etat", null, { faire: async () => ok({ ip: "", niveau: 0, faites: [] }) });
+  P("/api/fp/user/avatar", null, { faire: async () => ({ ok: false }) });
+
   // ── Le fil du compte Telegram d'Itare et ses cartes : rien à lire tant que le client Telegram n'est pas branché ──
   P("/api/tgc/fils", null, { faire: async () => ok({ turns: [], fils: [] }) });
   P("/api/ita/carte", null, { faire: async () => ok({ turns: [], carte: null }) });

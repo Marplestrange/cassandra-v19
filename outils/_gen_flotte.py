@@ -118,6 +118,58 @@ composant = "etat"
 source = "verdict"
 rafraichir_s = 60
 
+[[capacites]]
+id = "serie"
+libelle = "Les points de présence et de ressources de chaque machine (une courbe par machine) et les pertes, pour l'historique"
+risque = "lecture"
+
+[[mesures]]
+id = "fleet_up"
+libelle = "Flotte — disponibilité"
+capacite = "serie"
+unite = "%"
+famille = "Flotte"
+groupee = true
+pire = "bas"
+description = "Part du temps où chaque machine a répondu."
+
+[[mesures]]
+id = "fleet_cpu"
+libelle = "Flotte — processeur"
+capacite = "serie"
+unite = "%"
+famille = "Flotte"
+groupee = true
+description = "Charge processeur, une courbe par machine."
+
+[[mesures]]
+id = "fleet_ram"
+libelle = "Flotte — mémoire"
+capacite = "serie"
+unite = "%"
+famille = "Flotte"
+groupee = true
+description = "Mémoire occupée, une courbe par machine."
+
+[[mesures]]
+id = "fleet_disk"
+libelle = "Flotte — disque"
+capacite = "serie"
+unite = "%"
+famille = "Flotte"
+groupee = true
+description = "Remplissage disque par machine."
+
+[[mesures]]
+id = "fleet_down"
+libelle = "Flotte — pertes"
+capacite = "serie"
+genre = "compteur"
+unite = "/j"
+famille = "Flotte"
+vide = "rien_a_signaler"
+description = "Machines tombées. Une seule occurrence mérite qu'on regarde."
+
 [permissions]
 stockage = true
 secrets = true

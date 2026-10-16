@@ -340,6 +340,32 @@ def brancher(ctx):
         return {"jours": j, "sites": sites, "plus_suivis": plus,
                 "raison": "" if sites else "Aucune mesure enregistrée — la sonde n'a pas encore tourné."}
 
+    def serie(c, mesure="", depuis="", jusqu_a=""):
+        """Les points de la sonde pour l'historique : une courbe PAR SITE de la portée du compte (l'administrateur voit l'état de tous, jamais leur contenu)."""
+        import datetime as _dt
+        def epoque(t, defaut):
+            try:
+                return _dt.datetime.strptime(str(t)[:19].replace("T", " "), "%Y-%m-%d %H:%M:%S").replace(tzinfo=_dt.timezone.utc).timestamp()
+            except ValueError:
+                return defaut
+        a, b = epoque(depuis, time.time() - 86400), epoque(jusqu_a, time.time())
+        carte, _ = portee(c.compte)
+        doms = set(carte)
+        def heure(ts):
+            return _dt.datetime.fromtimestamp(ts, _dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        if mesure == "site_down":
+            ev = [r for r in db.lire("SELECT ts, domaine FROM evenements_site WHERE genre='panne' AND ts BETWEEN ? AND ? ORDER BY ts", (a, b)) if r["domaine"] in doms]
+            return {"series": [{"nom": "pannes", "points": [[heure(r["ts"]), 1] for r in ev]}]}
+        colonne = {"site_up": "up * 100.0", "site_ms": "ms", "site_ssl": "ssl_jours"}.get(mesure)
+        if not colonne:
+            raise ValueError("mesure inconnue : « %s »" % mesure)
+        cond = " AND up = 1" if mesure == "site_ms" else (" AND ssl_jours IS NOT NULL" if mesure == "site_ssl" else "")
+        par = {}
+        for r in db.lire("SELECT ts, domaine, %s AS v FROM mesures WHERE ts BETWEEN ? AND ?%s ORDER BY ts" % (colonne, cond), (a, b)):
+            if r["domaine"] in doms and r["v"] is not None:
+                par.setdefault(r["domaine"], []).append([heure(r["ts"]), r["v"]])
+        return {"series": [{"nom": d, "points": p} for d, p in sorted(par.items())]}
+
     def journal(c, domaine="", limite=60):
         compte = c.compte
         lim = max(10, min(int(limite or 60), 600))
@@ -612,7 +638,7 @@ def brancher(ctx):
     c.detecteur("lenteur", det_lenteur)
     c.detecteur("certificat_court", det_certificat)
     c.detecteur("adossement_demande", det_demandes)
-    for cid, f in (("vue", vue), ("fiche", fiche), ("historique", historique), ("disponibilite", disponibilite), ("journal", journal), ("liens", liens), ("demandes", demandes), ("accord", accord)):
+    for cid, f in (("vue", vue), ("fiche", fiche), ("historique", historique), ("disponibilite", disponibilite), ("serie", serie), ("journal", journal), ("liens", liens), ("demandes", demandes), ("accord", accord)):
         c.implementer(cid, f)
     c.implementer("declarer", declarer, prouver_ligne("compte"), defaire_declarer, simuler=lambda x, domaine="", **_: "déclarerait %s au compte" % domaine)
     c.implementer("retirer", retirer, prouver_retire, defaire_retire, simuler=lambda x, domaine="", **_: "retirerait %s de la liste" % domaine)

@@ -108,7 +108,9 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
   async function passkeyDefi() {
     const r = await v19("POST", "/api/public/webauthn.passkey_defi", { args: {} });
     const d = await r.json().catch(() => ({}));
-    return reponse(200, { ok: true, defi: d.resultat && d.resultat.defi, rp_id: d.resultat && d.resultat.rp_id });
+    const defi = d.resultat && d.resultat.defi;
+    if (!defi) return reponse(200, { ok: false, error: d.erreur || "clés d'accès indisponibles" });          // ex. le domaine des clés (webauthn.rp_id) n'est pas réglé
+    return reponse(200, { ok: true, defi, rp_id: d.resultat.rp_id });
   }
   async function passkey(c) {
     const r = await v19("POST", "/api/public/webauthn.passkey_ouvrir", { args: { defi: c.defi, cred_id: c.id, client_data: c.client, auth_data: c.auth, signature: c.signature } });

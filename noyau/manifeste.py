@@ -189,6 +189,27 @@ class Signal:
 
 
 @dataclass(frozen=True)
+class Mesure:
+    """Une mesure que ce module expose à l'historique : une courbe (jauge) ou un décompte d'événements (compteur), rendue par une capacité de LECTURE du module
+    qui répond {"series": [{"nom": ..., "points": [["AAAA-MM-JJ HH:MM:SS", valeur], ...]}]} (heure UTC). Le module « mesures » en tire sources, courbes,
+    habitudes, écarts, tendance et verdict ; chaque module ne dit que ce qu'il sait : ses mesures, pas la façon de les lire."""
+    id: str
+    libelle: str
+    capacite: str              # une capacité de lecture de CE module, appelée avec {mesure, depuis, jusqu_a}
+    genre: str = "jauge"       # « jauge » (une valeur dans le temps) | « compteur » (des événements : chaque point en compte un, ou sa valeur)
+    unite: str = ""
+    famille: str = ""
+    agregat: str = "moy"       # pour une jauge : moy | min | max | somme
+    groupee: bool = False      # une courbe par élément (un site, une machine) : on ne garde que les pires
+    pire: str = "haut"         # « haut » : plus c'est haut, pire c'est ; « bas » l'inverse (disponibilité, jours avant expiration)
+    plafond: float = 0         # pour la tendance : la valeur de saturation (100 %) ; 0 : pas de prévision
+    nature: str = "serie"      # « etat » : une photo (unités en échec), jamais comparée à une habitude
+    fraicheur_s: int = 0       # au-delà de ce silence, une mesure qui écrivait est dite « muette » ; 0 : pas de seuil (relevés non périodiques)
+    vide: str = ""             # ce que dit une source sans données : « rien_a_signaler » | « non_configuree » | « jamais_utilisee »
+    description: str = ""
+
+
+@dataclass(frozen=True)
 class CommandeRacine:
     """Une commande que ce module demande au courtier (root), nommée : le programme /usr/libexec/cassandra/<module>/<id>, posé en root par l'installation du module.
     Le noyau ne dit jamais quoi exécuter, seulement laquelle de ces commandes et avec quels arguments ; chaque programme valide ses propres arguments."""
@@ -273,6 +294,7 @@ class Manifeste:
     onglets: tuple = ()
     habillages: tuple = ()
     signaux: tuple = ()
+    mesures: tuple = ()
     racine: tuple = ()
     widgets: tuple = ()
     theme: Theme = field(default_factory=Theme)
@@ -662,6 +684,33 @@ def valider(brut: dict) -> list:
         if not isinstance(c, int) or isinstance(c, bool) or not 0 <= c <= 86400:
             e.append("%s.cadence_s : entier entre 0 et 86400" % nom)
 
+    mes_ids = []
+    for i, ms in enumerate(brut.get("mesures", []) or []):
+        nom = "mesures[%d]" % i
+        if not isinstance(ms, dict) or not _ID.match(str(ms.get("id", ""))):
+            e.append("%s.id : identifiant invalide" % nom)
+            continue
+        if ms["id"] in mes_ids:
+            e.append("%s.id : « %s » est déclaré deux fois" % (nom, ms["id"]))
+        mes_ids.append(ms["id"])
+        nom = "mesure « %s »" % ms["id"]
+        if not str(ms.get("libelle", "")).strip():
+            e.append("%s : libellé obligatoire" % nom)
+        if ms.get("capacite") not in lectures:
+            e.append("%s.capacite : « %s » doit être une capacité de LECTURE de ce module" % (nom, ms.get("capacite")))
+        for champ, permis in (("genre", ("jauge", "compteur")), ("agregat", ("moy", "min", "max", "somme")), ("pire", ("haut", "bas")), ("nature", ("serie", "etat")),
+                              ("vide", ("", "rien_a_signaler", "non_configuree", "jamais_utilisee"))):
+            if ms.get(champ, permis[0]) not in permis:
+                e.append("%s.%s : parmi %s" % (nom, champ, ", ".join(permis)))
+        if not isinstance(ms.get("groupee", False), bool):
+            e.append("%s.groupee : vrai ou faux" % nom)
+        fr = ms.get("fraicheur_s", 0)
+        if not isinstance(fr, int) or isinstance(fr, bool) or not 0 <= fr <= 604800:
+            e.append("%s.fraicheur_s : entier entre 0 et 604800" % nom)
+        pl = ms.get("plafond", 0)
+        if not isinstance(pl, (int, float)) or isinstance(pl, bool) or pl < 0:
+            e.append("%s.plafond : un nombre positif ou nul" % nom)
+
     racine_ids = []
     for i, rc in enumerate(brut.get("racine", []) or []):
         nom = "racine[%d]" % i
@@ -747,6 +796,9 @@ def construire(brut: dict, source="") -> Manifeste:
                          x.get("icone", ""), x.get("badge", ""), _qualifier(m["id"], x.get("droit"))) for x in brut.get("menus", []) or []),
         onglets=tuple(Onglet(x["id"], x["libelle"], x["objet"], x.get("ecran", ""), x.get("ordre", 100), x.get("role", "utilisateur"), x.get("icone", ""), _qualifier(m["id"], x.get("droit")))
                       for x in brut.get("onglets", []) or []),
+        mesures=tuple(Mesure(x["id"], x["libelle"], x["capacite"], x.get("genre", "jauge"), x.get("unite", ""), x.get("famille", ""), x.get("agregat", "moy"), bool(x.get("groupee", False)),
+                             x.get("pire", "haut"), float(x.get("plafond", 0) or 0), x.get("nature", "serie"), int(x.get("fraicheur_s", 0) or 0), x.get("vide", ""), x.get("description", ""))
+                      for x in brut.get("mesures", []) or []),
         signaux=tuple(Signal(x["id"], x["libelle"], x["capacite"], bool(x.get("admin", False)), x.get("cadence_s", 0)) for x in brut.get("signaux", []) or []),
         racine=tuple(CommandeRacine(x["id"], x["libelle"], bool(x.get("lecture", False))) for x in brut.get("racine", []) or []),
         habillages=tuple(Habillage(x["id"], x["libelle"], x.get("base", "clair"), x.get("fichier", "")) for x in brut.get("habillages", []) or []),

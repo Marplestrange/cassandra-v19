@@ -198,6 +198,21 @@ def brancher(ctx):
         pertes = [(r["nom"], r["n"], r["t0"], r["t1"]) for r in db.lire("SELECT nom, COUNT(*) AS n, MIN(ts) AS t0, MAX(ts) AS t1 FROM evenements WHERE genre='perte' AND ts>=? GROUP BY nom HAVING COUNT(*)>=2 ORDER BY COUNT(*) DESC", (depuis,))]
         return o.verdict(p, pertes)
 
+    def serie(c, mesure="", depuis="", jusqu_a=""):
+        """Les points de présence et de ressources des machines (une courbe par machine) ; les pertes en compteur."""
+        a, b = str(depuis)[:19].replace("T", " "), str(jusqu_a)[:19].replace("T", " ")
+        if mesure == "fleet_down":
+            ev = db.lire("SELECT ts FROM evenements WHERE genre='perte' AND ts BETWEEN ? AND ? ORDER BY ts", (a, b))
+            return {"series": [{"nom": "pertes", "points": [[r["ts"], 1] for r in ev]}]}
+        col = {"fleet_up": "en_ligne * 100.0", "fleet_cpu": "cpu", "fleet_ram": "ram", "fleet_disk": "disque"}.get(mesure)
+        if not col:
+            raise ValueError("mesure inconnue : « %s »" % mesure)
+        cond = "" if mesure == "fleet_up" else " AND %s IS NOT NULL" % col
+        par = {}
+        for r in db.lire("SELECT ts, nom, %s AS v FROM mesures WHERE ts BETWEEN ? AND ?%s ORDER BY ts" % (col, cond), (a, b)):
+            par.setdefault(r["nom"], []).append([r["ts"], r["v"]])
+        return {"series": [{"nom": n, "points": p} for n, p in sorted(par.items())]}
+
     def machines(c):
         reservee()
         return {"machines": [{k: v for k, v in r.items() if k != "secrets"} | {"secrets_poses": sorted(secrets_de(r))} for r in registre()]}
@@ -669,7 +684,7 @@ def brancher(ctx):
     c.moteur("presence", presence)
     c.moteur("releve", releve)
     c.detecteur("machine_muette", det_muettes)
-    for cid, f in (("parc", parc), ("verdict", verdict), ("machines", machines), ("historique", historique), ("disponibilite", disponibilite), ("evenements", evenements), ("liens", liens),
+    for cid, f in (("parc", parc), ("verdict", verdict), ("machines", machines), ("historique", historique), ("disponibilite", disponibilite), ("serie", serie), ("evenements", evenements), ("liens", liens),
                    ("actions", actions), ("ping", ping), ("diagnostic", diagnostic)):
         c.implementer(cid, f)
     c.implementer("machine_ajouter", machine_ajouter, prouver_machine, defaire_machine_ajoutee, simuler=lambda x, nom="", **_: "déclarerait la machine « %s » au registre" % nom)

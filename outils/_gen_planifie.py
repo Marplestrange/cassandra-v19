@@ -101,6 +101,30 @@ composant = "etat"
 source = "resume"
 rafraichir_s = 120
 
+[[capacites]]
+id = "serie"
+libelle = "Les exécutions planifiées et leurs échecs, pour l'historique"
+risque = "lecture"
+
+[[mesures]]
+id = "cron_runs"
+libelle = "Exécutions planifiées"
+capacite = "serie"
+genre = "compteur"
+unite = "/h"
+famille = "Infrastructure"
+description = "Tâches planifiées réellement exécutées."
+
+[[mesures]]
+id = "cron_fail"
+libelle = "Échecs planifiés"
+capacite = "serie"
+genre = "compteur"
+unite = "/h"
+famille = "Infrastructure"
+vide = "rien_a_signaler"
+description = "Tâches planifiées terminées en erreur."
+
 [permissions]
 stockage = true
 lectures = true
