@@ -13,6 +13,47 @@ libelle = "Une préférence de voix"
 
 [permissions]
 stockage = true
+racine = true
+
+[[racine]]
+id = "ecouter"
+libelle = "Transcrire un fichier audio en texte (faster-whisper)"
+
+[[racine]]
+id = "parler"
+libelle = "Synthétiser un texte en audio (piper), écrit dans un fichier"
+
+[[racine]]
+id = "telecharger"
+libelle = "Télécharger une voix piper depuis HuggingFace"
+
+[installation]
+script = "installer.sh"
+verification = "verifier.sh"
+retrait = "retirer.sh"
+
+[[capacites]]
+id = "ecouter"
+libelle = "Transcrire un enregistrement audio en texte (par le courtier), l'audio ne quitte pas la machine et est effacé"
+risque = "lecture"
+
+[[capacites]]
+id = "parler"
+libelle = "Synthétiser un texte en audio (par le courtier)"
+risque = "faible"
+perimetre = ["un fichier audio temporaire"]
+preuve = "le fichier existe"
+retour = "effacer le fichier"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "telecharger"
+libelle = "Télécharger une voix (par le courtier)"
+risque = "faible"
+perimetre = ["les fichiers d'une voix"]
+preuve = "la voix est posée"
+retour = "effacer la voix"
+paliers = ["raconter", "auto", "maitre"]
 
 [[capacites]]
 id = "dispo"

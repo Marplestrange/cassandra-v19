@@ -23,6 +23,7 @@ class Monde(unittest.TestCase):
             shutil.copytree(RACINE / "modules" / m, mods / m, ignore=shutil.ignore_patterns("__pycache__"))
         self.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
         self.n.brancher()
+        self.n.etat_modules.poser("voix", installe=True, par="test")   # le module a un script d'installation
         for m in ("droits", "comptes", "voix"):
             self.assertTrue(self.n.activer(m)["ok"], m)
         self.n.droits.regler_admin(BEA, True)

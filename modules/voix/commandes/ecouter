@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+"""Transcrit un fichier audio (webm/ogg/wav). Usage : ecouter CHEMIN [langue=fr].
+Le fichier est lu puis il revient au noyau de l'effacer : une voix est une donnée personnelle."""
+import sys
+
+
+def main():
+    if len(sys.argv) < 2:
+        sys.exit(2)
+    chemin = sys.argv[1]
+    langue = sys.argv[2] if len(sys.argv) > 2 else "fr"
+    try:
+        from faster_whisper import WhisperModel
+    except Exception:
+        print("erreur : faster-whisper n'est pas installé (pip install faster-whisper)")
+        sys.exit(3)
+    try:
+        m = WhisperModel("small", device="cpu", compute_type="int8")
+        segments, _ = m.transcribe(chemin, language=langue, vad_filter=True, condition_on_previous_text=False)
+        texte = " ".join((s.text or "").strip() for s in segments).strip()
+    except Exception as e:
+        print("erreur : %s" % e)
+        sys.exit(4)
+    print(texte)
+
+
+if __name__ == "__main__":
+    main()

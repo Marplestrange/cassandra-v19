@@ -28,6 +28,78 @@ def brancher(ctx):
         r = db.lire("SELECT * FROM voix_prefs WHERE compte=?", (compte,))
         return dict(r[0]) if r else None
 
+    def ecouter(c, audio_b64="", langue="fr"):
+        if not audio_b64:
+            raise ValueError("aucun son reçu")
+        import base64
+        import os
+        import tempfile
+        try:
+            octets = base64.b64decode(audio_b64, validate=False)
+        except Exception:
+            raise ValueError("audio illisible")
+        if not octets:
+            raise ValueError("audio vide")
+        fd, chemin = tempfile.mkstemp(suffix=".webm", prefix="vx_")
+        with os.fdopen(fd, "wb") as f:
+            f.write(octets)
+        try:
+            r = ctx.racine("ecouter", [chemin, langue or "fr"], delai=300)
+            if not r.get("ok"):
+                raise ValueError(r.get("erreur") or "écoute impossible")
+            return {"texte": (r.get("sortie") or "").strip()}
+        finally:
+            try:
+                os.unlink(chemin)
+            except Exception:
+                pass
+
+    def parler(c, texte="", voix="", locuteur="", debit=""):
+        if not texte or not voix:
+            raise ValueError("texte et voix requis")
+        import os
+        import tempfile
+        fd, sortie = tempfile.mkstemp(suffix=".wav", prefix="vx_")
+        os.close(fd)
+        try:
+            r = ctx.racine("parler", [texte, voix, sortie, locuteur or "", debit or ""], delai=300)
+            if not r.get("ok"):
+                raise ValueError(r.get("erreur") or "parole impossible")
+            return {"chemin": sortie}
+        except Exception:
+            try:
+                os.unlink(sortie)
+            except Exception:
+                pass
+            raise
+
+    def telecharger(c, voix_id=""):
+        if not voix_id:
+            raise ValueError("voix requise")
+        r = ctx.racine("telecharger", [voix_id], delai=600)
+        if not r.get("ok"):
+            raise ValueError(r.get("erreur") or "téléchargement impossible")
+        return {"voix_id": voix_id}
+
+    def prouver_parler(c, res):
+        import os
+        return os.path.isfile(res["chemin"])
+
+    def defaire_parler(c, res):
+        import os
+        try:
+            os.unlink(res["chemin"])
+        except Exception:
+            pass
+
+    def prouver_telecharger(c, res):
+        import os
+        return os.path.isdir("/usr/libexec/cassandra/voix/voix/%s" % res["voix_id"])
+
+    def defaire_telecharger(c, res):
+        import shutil
+        shutil.rmtree("/usr/libexec/cassandra/voix/voix/%s" % res["voix_id"], ignore_errors=True)
+
     def dispo(c):
         import shutil
         ecoute, parle, quoi = False, False, []
@@ -89,7 +161,11 @@ def brancher(ctx):
                       "voix_auto=excluded.voix_auto, voix_debit=excluded.voix_debit, voix_mode=excluded.voix_mode",
                       (res["compte"], a["voix_nom"], a["voix_locuteur"], a["voix_auto"], a["voix_debit"], a["voix_mode"]))
 
-    for cid, f in (("dispo", dispo), ("catalogue", catalogue), ("reglages", reglages)):
+    for cid, f in (("dispo", dispo), ("catalogue", catalogue), ("reglages", reglages), ("ecouter", ecouter)):
         ctx.implementer(cid, f)
+    ctx.implementer("parler", parler, prouver_parler, defaire_parler,
+                    simuler=lambda x, texte="", **_: "synthétiserait « %s »" % str(texte)[:60])
+    ctx.implementer("telecharger", telecharger, prouver_telecharger, defaire_telecharger,
+                    simuler=lambda x, voix_id="", **_: "téléchargerait la voix « %s »" % voix_id)
     ctx.implementer("choisir", choisir, prouver_choisir, defaire_choisir,
                     simuler=lambda x, voix_nom="", **_: "choisirait la voix « %s »" % voix_nom)
