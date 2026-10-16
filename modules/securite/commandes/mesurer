@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""Les mesures de sécurité de la machine, en JSON. Usage : mesurer [--outils].
+Rend ce qui est mesurable SANS privilège réseau extérieur : ports en écoute, SSH, fail2ban, mises à jour,
+la cage, et les outils présents (Lynis, Trivy, ClamAV, CrowdSec). Rien n'est interprété ici : le verdict
+est calculé plus haut, dans le module."""
+import json
+import shutil
+import subprocess
+import sys
+
+
+def _run(args, timeout=30):
+    try:
+        r = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+        return (r.stdout or "") + (r.stderr or "")
+    except Exception:
+        return ""
+
+
+def _ports():
+    return _run(["ss", "-tlnp"])[:8000]
+
+
+def _ssh():
+    out = {}
+    t = _run(["sshd", "-T"]) if shutil.which("sshd") else ""
+    for ligne in (t or "").splitlines():
+        if ligne.startswith(("passwordauthentication", "permitrootlogin", "x11forwarding")):
+            k, _, v = ligne.partition(" ")
+            out[k] = v.strip()
+    return out
+
+
+def _fail2ban():
+    if not shutil.which("fail2ban-client"):
+        return {"present": False}
+    t = _run(["fail2ban-client", "status"], timeout=20)
+    return {"present": True, "sortie": t[:2000]}
+
+
+def _maj():
+    if not shutil.which("apt"):
+        return {"apt": False}
+    t = _run(["apt", "list", "--upgradable"], timeout=60)
+    lignes = [l for l in (t or "").splitlines() if "/" in l and " Listing" not in l]
+    return {"apt": True, "a_mettre_a_jour": len(lignes), "detail": t[:2000]}
+
+
+def _outils():
+    return {
+        "lynis": bool(shutil.which("lynis")),
+        "trivy": bool(shutil.which("trivy")),
+        "clamav": bool(shutil.which("clamscan")),
+        "crowdsec": bool(shutil.which("cscli")),
+    }
+
+
+def _cage():
+    t = _run(["systemctl", "is-active", "cassandra-cage"], timeout=20)
+    return t.strip()
+
+
+def main():
+    mesures = {
+        "ports": _ports(),
+        "ssh": _ssh(),
+        "fail2ban": _fail2ban(),
+        "maj": _maj(),
+        "outils": _outils(),
+        "cage": _cage(),
+    }
+    print(json.dumps(mesures, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()

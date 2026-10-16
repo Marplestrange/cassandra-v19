@@ -32,6 +32,17 @@ GESTES = [
 def brancher(ctx):
     db = ctx.stockage
 
+    def mesurer(c):
+        r = ctx.racine("mesurer", [], delai=60)
+        if not r.get("ok"):
+            raise ValueError(r.get("erreur") or "mesures indisponibles")
+        try:
+            import json as _json
+            mesures = _json.loads(r.get("sortie") or "{}")
+        except Exception:
+            raise ValueError("réponse du courtier illisible")
+        return {"mesures": mesures}
+
     def gestes(c):
         return {"gestes": GESTES}
 
@@ -72,7 +83,7 @@ def brancher(ctx):
     def defaire_audit(c, res):
         db.ecrire("DELETE FROM securite_audits WHERE id=?", (res["id"],))
 
-    for cid, f in (("gestes", gestes), ("journal", journal), ("audits", audits)):
+    for cid, f in (("gestes", gestes), ("journal", journal), ("audits", audits), ("mesurer", mesurer)):
         ctx.implementer(cid, f)
     ctx.implementer("noter", noter, prouver_noter, defaire_noter,
                     simuler=lambda x, geste="", **_: "inscrirait le geste « %s » au journal de sécurité" % geste)

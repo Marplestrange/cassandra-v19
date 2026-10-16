@@ -24,6 +24,7 @@ class Monde(unittest.TestCase):
         self.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
         self.n.brancher()
         self.n.etat_modules.poser("sauvegardes", installe=True, par="test")   # le module a un script d'installation
+        self.n.etat_modules.poser("securite", installe=True, par="test")
         for m in ("droits", "comptes", "sauvegardes", "securite"):
             self.assertTrue(self.n.activer(m)["ok"], m)
         self.n.droits.regler_admin(BEA, True)

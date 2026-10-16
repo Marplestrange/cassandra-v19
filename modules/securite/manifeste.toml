@@ -13,6 +13,22 @@ libelle = "Un geste de sécurité"
 
 [permissions]
 stockage = true
+racine = true
+
+[[racine]]
+id = "mesurer"
+libelle = "Relever les mesures de sécurité de la machine (ports, SSH, fail2ban, mises à jour, cage, outils Lynis/Trivy/ClamAV/CrowdSec), en lecture seule"
+lecture = true
+
+[installation]
+script = "installer.sh"
+verification = "verifier.sh"
+retrait = "retirer.sh"
+
+[[capacites]]
+id = "mesurer"
+libelle = "Relever les mesures de sécurité de la machine (par le courtier racine), en JSON"
+risque = "lecture"
 
 [[capacites]]
 id = "gestes"
