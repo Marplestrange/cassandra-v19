@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+"""Connecte le compte Telegram (Telethon). Usage : connecter API_ID API_HASH (la session arrive en stdin).
+La session ne sort JAMAIS d'ici : écrite dans un fichier temporaire, lue par le client, effacée aussitôt."""
+import os
+import sys
+import tempfile
+
+
+def main():
+    if len(sys.argv) < 3:
+        sys.exit(2)
+    try:
+        api_id = int(sys.argv[1])
+    except ValueError:
+        sys.exit(2)
+    api_hash = sys.argv[2]
+    session = sys.stdin.read().strip()
+    if not session:
+        print("erreur : session absente")
+        sys.exit(3)
+    try:
+        from telethon import TelegramClient
+    except Exception:
+        print("erreur : telethon n'est pas installé (pip install telethon)")
+        sys.exit(4)
+    fd, chemin = tempfile.mkstemp(prefix="tg_")
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(session)
+    try:
+        client = TelegramClient(chemin, api_id, api_hash)
+        client.connect()
+        if not client.is_user_authorized():
+            print("erreur : session invalide ou non autorisée")
+            sys.exit(5)
+        me = client.get_me()
+        print(me.username or me.first_name or "connecté")
+    except Exception as e:
+        print("erreur : %s" % e)
+        sys.exit(6)
+    finally:
+        try:
+            client.disconnect()
+        except Exception:
+            pass
+        try:
+            os.unlink(chemin)
+        except Exception:
+            pass
+
+
+if __name__ == "__main__":
+    main()

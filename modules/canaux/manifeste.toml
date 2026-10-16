@@ -13,6 +13,21 @@ libelle = "Une préférence de canal"
 
 [permissions]
 stockage = true
+racine = true
+
+[[racine]]
+id = "connecter"
+libelle = "Connecter le compte Telegram (Telethon) ; la session arrive en stdin, jamais en argument, et ne sort pas"
+
+[installation]
+script = "installer.sh"
+verification = "verifier.sh"
+retrait = "retirer.sh"
+
+[[capacites]]
+id = "connecter"
+libelle = "Connecter le compte Telegram et rendre l'identifiant (la session ne vit que le temps de la connexion)"
+risque = "lecture"
 
 [[capacites]]
 id = "etat"

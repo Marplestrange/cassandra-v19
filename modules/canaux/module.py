@@ -18,6 +18,16 @@ def brancher(ctx):
         r = db.lire("SELECT miroir FROM canal_prefs WHERE compte=?", (compte,))
         return bool(r[0]["miroir"]) if r else False
 
+    def connecter(c, session="", api_id="", api_hash=""):
+        if not session:
+            raise ValueError("session requise (elle vit dans le coffre)")
+        if not api_id or not api_hash:
+            raise ValueError("api_id et api_hash requis")
+        r = ctx.racine("connecter", [str(api_id), str(api_hash)], stdin=session, delai=120)
+        if not r.get("ok"):
+            raise ValueError(r.get("erreur") or "connexion impossible")
+        return {"identifiant": (r.get("sortie") or "").strip()}
+
     def etat(c):
         compte = (ctx.compte or "").strip().lower()
         return {"client": False, "connecte": False, "miroir": _miroir(compte),
@@ -46,7 +56,7 @@ def brancher(ctx):
                   "ON CONFLICT(compte) DO UPDATE SET miroir=excluded.miroir",
                   (res["compte"], 1 if res["avant"] else 0))
 
-    for cid, f in (("etat", etat), ("miroir", miroir)):
+    for cid, f in (("etat", etat), ("miroir", miroir), ("connecter", connecter)):
         ctx.implementer(cid, f)
     ctx.implementer("miroir_ecrire", miroir_ecrire, prouver_miroir, defaire_miroir,
                     simuler=lambda x, actif=False, **_: "allumerait le miroir Telegram" if actif else "éteindrait le miroir Telegram")
