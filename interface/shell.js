@@ -58,9 +58,9 @@
 
   // ── 2. le rail ─────────────────────────────────────────────────────────────
   // Quel module fait vivre quel écran V18. Un écran dont le module n'est pas actif n'est pas proposé ; les écrans sans module connu restent.
-  CASS.dependances = { memory: ["memoire"], sensorium: ["sensorium"], overview: ["sensorium"], mysites: ["sites"], fastpanel: ["fastpanel"] };
+  CASS.dependances = { memory: ["memoire"], sensorium: ["sensorium"], overview: ["vue"], mysites: ["sites"], fastpanel: ["fastpanel"] };
   // Les modules qu'un écran V18 couvre déjà : leur entrée de menu ne s'ajoute pas une seconde fois.
-  CASS.couvre = { memoire: "memory", sensorium: "sensorium", sites: "mysites", fastpanel: "fastpanel", courrier: "bureau", notes: "bureau", taches: "bureau", agenda: "bureau", contacts: "bureau", projets: "bureau", comptes: "settings", modeles: "settings", agents: "salon", salon: "salon", journal: "journal", notifications: "bureau", planifie: "crons", flotte: "fleet" };
+  CASS.couvre = { memoire: "memory", sensorium: "sensorium", sites: "mysites", fastpanel: "fastpanel", courrier: "bureau", notes: "bureau", taches: "bureau", agenda: "bureau", contacts: "bureau", projets: "bureau", comptes: "settings", modeles: "settings", agents: "salon", salon: "salon", journal: "journal", notifications: "bureau", planifie: "crons", flotte: "fleet", vue: "overview" };
   function actifs(modules) { return new Set((modules || []).filter((m) => m.etat === "actif" || m.actif).map((m) => m.id)); }
 
   function rail(modules, arbre) {

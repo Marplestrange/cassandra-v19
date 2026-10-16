@@ -1,0 +1,16 @@
+[module]
+id = "vue"
+nom = "Vue d'ensemble"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "La vue d'ensemble : un verdict (rien ne demande un geste / à regarder / en panne), des compteurs, et ce qui demande un geste — composés à partir des modules de supervision (sites, flotte, sensorium, proactivité, notifications). Une source muette est DITE muette, jamais comptée comme « tout va bien »."
+confiance = "interne"
+famille = "supervision"
+
+[[capacites]]
+id = "ensemble"
+libelle = "Le verdict, les compteurs et les gestes à faire, pour le compte qui regarde : l'administrateur voit toute la machine, un compte ses sites et ses notifications"
+risque = "lecture"
+
+[permissions]
+lectures = true
