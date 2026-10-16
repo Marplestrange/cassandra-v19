@@ -1,7 +1,7 @@
 [module]
 id = "securite"
 nom = "Sécurité"
-version = "0.2.0"
+version = "0.3.0"
 noyau_min = "0.1.0"
 description = "La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel)."
 confiance = "interne"
@@ -34,6 +34,10 @@ lecture = true
 [[racine]]
 id = "agir"
 libelle = "Exécuter UN geste de sécurité de la table fermée (couper les mots de passe SSH, arrêter un service, garder MySQL sur la machine, lancer les mises à jour, débannir), le vérifier, et dire de quoi le défaire"
+
+[[racine]]
+id = "outils"
+libelle = "Installer, lancer ou arrêter UN des quatre outils de sécurité (Lynis, Trivy, ClamAV, CrowdSec) en arrière-plan, et lire leur état et leurs résultats"
 
 [installation]
 script = "installer.sh"
@@ -170,5 +174,27 @@ droit = "agir"
 perimetre = ["ce que le geste avait changé, et rien d'autre"]
 preuve = "le geste n'est plus en vigueur (relevé de nouveau)"
 retour = "refaire le geste"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "outil_installer"
+libelle = "Installer un outil de sécurité (Lynis, Trivy, ClamAV, CrowdSec) : paquet apt, réglage, passage régulier par une minuterie systemd, premier passage. Lancé en arrière-plan, il peut durer des minutes"
+risque = "eleve"
+droit = "agir"
+perimetre = ["les paquets de l'outil et son dépôt apt signé", "une minuterie systemd et ses réglages (CrowdSec : liste blanche des réseaux de confiance, jamais le panneau)"]
+preuve = "l'unité d'installation est lancée ; l'état de l'outil dira « installé » à la fin"
+retour = "AUCUN retour automatique : les paquets restent (apt remove, à la main)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "outil_lancer"
+libelle = "Lancer un passage d'un outil de sécurité tout de suite (audit Lynis, analyse Trivy des images, balayage ClamAV, résumé CrowdSec) ; rien n'est jamais supprimé ni mis en quarantaine"
+risque = "faible"
+droit = "agir"
+perimetre = ["un passage de l'outil, en basse priorité ; son résultat est écrit pour la lecture"]
+preuve = "l'unité du passage est lancée"
+retour = "arrêter le passage en cours"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]

@@ -150,6 +150,40 @@ def brancher(ctx):
     def defaire_annule(c, res):
         raise ValueError("refaire le geste (c'est le geste lui-même qui se relance)")
 
+    # ── les outils : lancés EN ARRIÈRE-PLAN par le courtier (une installation dure des minutes, un balayage des heures) ──
+    def demander_outil(verbe, nom):
+        r = ctx.racine("outils", ["en_arriere", verbe, nom], delai=60)
+        try:
+            sortie = json.loads((r.get("sortie") or "").strip().splitlines()[-1])
+        except Exception:
+            sortie = {}
+        if not r.get("ok") or not sortie.get("ok"):
+            raise ValueError(sortie.get("erreur") or r.get("erreur") or "le lancement a échoué")
+        cache["m"] = None
+        return sortie
+
+    def verifier_outil(nom):
+        if nom not in analyse.OUTILS:
+            raise ValueError("outil inconnu : « %s » (parmi %s)" % (nom, ", ".join(analyse.OUTILS)))
+        return nom
+
+    def installer_outil(c, nom=""):
+        return dict(demander_outil("installer", verifier_outil(nom)), outil=nom)
+
+    def lancer_outil(c, nom=""):
+        return dict(demander_outil("lancer", verifier_outil(nom)), outil=nom)
+
+    def prouver_lance(c, res):
+        return bool(res.get("unite"))
+
+    def arreter_outil(c, res):
+        r = ctx.racine("outils", ["arreter", res["outil"]], delai=60)
+        if not r.get("ok"):
+            raise ValueError(r.get("erreur") or "arrêt impossible")
+
+    def installation_sans_retour(c, res):
+        raise ValueError("aucun retour automatique : les paquets installés restent (apt remove, à la main)")
+
     def gestes(c):
         return {"gestes": GESTES}
 
@@ -200,6 +234,8 @@ def brancher(ctx):
     ctx.implementer("maj_auto", maj("maj_auto"), prouver_lancee, sans_retour)
     ctx.implementer("debannir", debannir, prouver_debannie, defaire_debannie)
     ctx.implementer("annuler", annuler, prouver_annule, defaire_annule)
+    ctx.implementer("outil_installer", installer_outil, prouver_lance, installation_sans_retour)
+    ctx.implementer("outil_lancer", lancer_outil, prouver_lance, arreter_outil)
     ctx.implementer("noter", noter, prouver_noter, defaire_noter,
                     simuler=lambda x, geste="", **_: "inscrirait le geste « %s » au journal de sécurité" % geste)
     ctx.implementer("audit_poser", audit_poser, prouver_audit, defaire_audit,

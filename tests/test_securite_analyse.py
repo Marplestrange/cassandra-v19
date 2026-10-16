@@ -112,6 +112,68 @@ FW_PANNEAU = """-P INPUT DROP
 """
 
 
+LYNIS = {"installe": True, "convient": True, "resultat": {"score": 62, "avertissements": [{"id": "X"}], "suggestions_n": 31}}
+TRIVY = {"installe": True, "convient": True, "resultat": {"images": [{"image": "a", "critiques": 2, "corrigeables": 1}, {"image": "b", "critiques": 0, "corrigeables": 0}]}}
+
+
+class Outils(unittest.TestCase):
+    def sortie(self, **etat):
+        return an.outils(releves(outils_etat=etat))
+
+    def test_un_outil_absent_est_dit_non_installe(self):
+        o = an.outils(releves())["lynis"]
+        self.assertEqual((o["niveau"], o["dit"]), ("", "non installé"))
+
+    def test_une_machine_qui_ne_s_y_prete_pas_dit_pourquoi(self):
+        o = self.sortie(clamav={"installe": False, "convient": False, "pourquoi": "1024 Mo de mémoire : le démon l'écraserait"})["clamav"]
+        self.assertIn("1024 Mo", o["dit"])
+
+    def test_installe_sans_resultat_est_premier_passage_a_venir_pas_ok(self):
+        o = self.sortie(lynis={"installe": True, "convient": True, "resultat": None})["lynis"]
+        self.assertEqual(o["niveau"], "pas_encore")
+
+    def test_lynis_avertissements_a_regarder(self):
+        o = self.sortie(lynis=LYNIS)["lynis"]
+        self.assertEqual(o["niveau"], "regarder")
+        self.assertIn("score 62/100", o["dit"])
+        self.assertIn("31 conseils", o["dit"])
+
+    def test_trivy_compte_les_critiques_de_toutes_les_images(self):
+        o = self.sortie(trivy=TRIVY)["trivy"]
+        self.assertEqual(o["niveau"], "regarder")
+        self.assertIn("2 images · 2 failles critiques · 1 déjà corrigée", o["dit"])
+
+    def test_un_fichier_infecte_est_une_panne_et_le_dit_en_majuscules(self):
+        o = self.sortie(clamav={"installe": True, "convient": True, "resultat": {"infectes": [{"fichier": "/tmp/x", "menace": "Eicar"}]}})["clamav"]
+        self.assertEqual((o["niveau"], o["dit"]), ("panne", "1 FICHIER INFECTÉ"))
+
+    def test_clamav_propre(self):
+        o = self.sortie(clamav={"installe": True, "convient": True, "resultat": {"infectes": [], "analyses": 1200, "signatures": "2026-10-16 09:00"}})["clamav"]
+        self.assertEqual(o["niveau"], "ok")
+        self.assertIn("1200 fichiers analysés · aucune menace", o["dit"])
+
+    def test_crowdsec_arrete_est_une_panne(self):
+        o = self.sortie(crowdsec={"installe": True, "convient": True, "resultat": {"moteur": True, "videur": False}})["crowdsec"]
+        self.assertEqual(o["niveau"], "panne")
+        self.assertIn("videur ARRÊTÉ", o["dit"])
+
+    def test_crowdsec_en_marche(self):
+        o = self.sortie(crowdsec={"installe": True, "convient": True, "resultat": {"moteur": True, "videur": True, "decisions_locales": 3, "liste_communautaire": 9000, "alertes_24h": 1}})["crowdsec"]
+        self.assertEqual(o["niveau"], "ok")
+        self.assertIn("3 adresses bannies ici", o["dit"])
+
+    def test_un_outil_en_panne_fait_le_verdict_de_la_machine(self):
+        d = an.etat(releves(ecoutes=[ecoute("tcp", "0.0.0.0", 22, "sshd")], outils_etat={"clamav": {"installe": True, "convient": True, "resultat": {"infectes": [{"fichier": "f", "menace": "m"}]}}}), "t")
+        self.assertEqual(d["verdict"]["niveau"], "panne")
+        self.assertEqual(d["verdict"]["titre"], "Un outil de sécurité a trouvé un problème.")
+        self.assertIn("ClamAV : 1 FICHIER INFECTÉ", d["verdict"]["sous"])
+
+    def test_sans_programme_des_outils_seule_la_presence_se_lit(self):
+        o = an.outils(releves(outils={"lynis": True, "trivy": False, "clamav": False, "crowdsec": False}))
+        self.assertTrue(o["lynis"]["installe"])
+        self.assertEqual(o["lynis"]["niveau"], "pas_encore")
+
+
 class AccordPanneau(unittest.TestCase):
     def test_sans_panneau_la_source_est_le_systeme(self):
         self.assertEqual(an.parefeu({"iptables": FW_PANNEAU})["source"], "systeme")

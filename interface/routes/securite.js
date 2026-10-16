@@ -15,6 +15,10 @@
     faire: async (req, agir) => {
       const b = req.body, g = String(b.geste || "");
       try {
+        if (g.indexOf("outil:") === 0) {                                            // « outil:installer:clamav », « outil:lancer:lynis » : en arrière-plan, par le courtier
+          const [, quoi, nom] = g.split(":");
+          if (quoi === "installer" || quoi === "lancer") return ok(await agir("securite.outil_" + quoi, { nom: nom || "" }));
+        }
         if (g.indexOf("arret:") === 0) return ok(await agir("securite.arret", { service: g.slice(6) }));
         // Le pare-feu du panneau : validé avant tout envoi, posé à l'essai quand il peut fermer (deux minutes pour le garder), jamais SSH fermé à tous sans Tailscale.
         if (g === "regle_poser") return ok(await agir("fastpanel.parefeu_regle_poser", { id: +(b.id || 0), nom: b.nom || "", ports: b.ports || "", proto: b.proto || "TCP", sens: b.sens || "INPUT", politique: b.politique || "", sources: b.sources || "" }));

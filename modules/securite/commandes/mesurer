@@ -124,6 +124,18 @@ def _outils():
     return {"lynis": bool(shutil.which("lynis")), "trivy": bool(shutil.which("trivy")), "clamav": bool(shutil.which("clamscan")), "crowdsec": bool(shutil.which("cscli"))}
 
 
+def _outils_etat():
+    """L'état détaillé des quatre outils (installé, version, minuterie, résultat du dernier passage), par leur propre programme posé à root ; None s'il n'est pas posé."""
+    chemin = "/usr/libexec/cassandra/securite/outils"
+    if not os.path.exists(chemin):
+        return None
+    t = _texte(["python3", chemin, "etat"], 90)
+    try:
+        return json.loads(t) if t else None
+    except ValueError:
+        return None
+
+
 def main():
     ssh = {}
     t = _texte(["sshd", "-T"], 10) if shutil.which("sshd") else None
@@ -147,6 +159,7 @@ def main():
         "fail2ban": _fail2ban(),
         "maj": _maj(),
         "outils": _outils(),
+        "outils_etat": _outils_etat(),
         "cage": (_texte(["systemctl", "is-active", "cassandra-cage"], 10) or "").strip() or None,
         "hote": (_texte(["hostname"], 5) or "").strip(),
         "tailscale": (_texte(["tailscale", "ip", "-4"], 5) or "").strip() or None,
