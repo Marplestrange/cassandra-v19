@@ -25,6 +25,7 @@ et Cassandra le sait (événement `capacite.*` avec acteur « humain »).
 """
 from __future__ import annotations
 
+import types
 import collections
 import logging
 import os
@@ -118,7 +119,8 @@ class Noyau:
         self.reglages.declarer(m)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
                        {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
-                        "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine})
+                        "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine,
+                        "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, capacites=self.capacites_de, catalogue=self.catalogue_modules, activer=self.activer, desactiver=self.desactiver)})
         self.executeur.contextes[m.id] = ctx
         return ctx
 
@@ -201,11 +203,40 @@ class Noyau:
                             "parametres": {"type": "object", "properties": props, "required": requis}})
         return sorties
 
+    def capacites_de(self, mid: str, compte: str = "") -> list:
+        """Ce qu'un module sait faire, tel que le montre sa console : chaque capacité avec ses paramètres (lus sur la fonction), son risque et sa garantie.
+        Un compte ne voit que les capacités dont il détient le droit ; un secret n'apparaît jamais (ce sont des noms, pas des valeurs)."""
+        import inspect
+        sortie = []
+        for e in self.catalogue.lister():
+            if e.module != mid or not e.implementee:
+                continue
+            c = e.capacite
+            if c.qui == ("anonyme",) or (compte and c.droit and self.droits is not None and not self.droits.raison(compte, c.droit)["accord"]):
+                continue
+            try:
+                params = list(inspect.signature(e.faire).parameters.values())[1:]
+            except (TypeError, ValueError):
+                params = []
+            ps = []
+            for p in params:
+                if p.kind in (p.VAR_POSITIONAL, p.VAR_KEYWORD):
+                    continue
+                d = p.default
+                typ = {bool: "booleen", int: "entier", float: "nombre", list: "liste", dict: "objet", str: "texte"}.get(type(d), "texte")
+                ps.append({"nom": p.name, "type": typ, "requis": d is p.empty, "defaut": None if d is p.empty else d})
+            sortie.append({"cle": e.cle, "id": c.id, "libelle": c.libelle, "risque": c.risque, "ecrit": c.ecrit, "droit": c.droit, "parametres": ps,
+                           "preuve": c.preuve, "retour": c.retour, "perimetre": list(c.perimetre), "reversible": bool(e.defaire), "masque": list(c.masque)})
+        return sorted(sortie, key=lambda x: (x["ecrit"], x["id"]))
+
     def _compteurs(self, mid: str) -> dict:
         n = self.base.lire("SELECT COUNT(*) AS n FROM constats WHERE module=? AND etat='ouvert'", (mid,))[0]["n"]
         return {"constats": n, "moteurs": sum(1 for m in self.etat_moteurs() if m["cle"].startswith(mid + ".") and m["etat"] != "actif")}
 
     def _connus(self):
+        fige = getattr(self, "_connus_fige", None)
+        if fige is not None:                       # le catalogue relit les manifestes UNE fois, pas une fois par module (39 lectures = 7 s)
+            return fige
         self._remplaces = {}
         ms, refus = chargeur.decouvrir_tout(self._racines(), self._surcharges(), self._remplaces)
         return {m.id: (m, ext) for m, ext in ms}, refus
@@ -313,6 +344,13 @@ class Noyau:
     def catalogue_modules(self) -> list:
         """Ce que montre le menu des modules : un module par ligne, son état, ses liens, ce qu'on peut en faire."""
         connus, refus = self._connus()
+        self._connus_fige = (connus, refus)
+        try:
+            return self._catalogue_depuis(connus, refus)
+        finally:
+            self._connus_fige = None
+
+    def _catalogue_depuis(self, connus, refus) -> list:
         etats = self.etat_modules.tous()
         requis_par = {}
         for m, _ in connus.values():

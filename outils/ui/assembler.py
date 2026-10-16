@@ -70,7 +70,7 @@ def assembler(src, sortie):
     rdir = os.path.join(sortie, "routes")
     if os.path.isdir(rdir):
         html += ['<script src="/routes/%s"></script>' % f for f in sorted(os.listdir(rdir)) if f.endswith(".js")]
-    html += ['<script src="/app.js"></script>', '<script src="/shell.js"></script>', "</body>", "</html>"]
+    html += ['<script src="/app.js"></script>', '<script src="/shell.js"></script>', '<script src="/modules-ui.js"></script>', '<script src="/console-module.js"></script>', "</body>", "</html>"]
     open(os.path.join(sortie, "index.html"), "w", encoding="utf-8", newline="\n").write("\n".join(html))
     return {k: len(v) for k, v in d.items() if isinstance(v, str)}
 

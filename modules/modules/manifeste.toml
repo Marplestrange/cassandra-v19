@@ -1,0 +1,55 @@
+[module]
+id = "modules"
+nom = "Modules"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "La gestion des modules : ce qui est installé, actif ou à installer, ce qui dépend de quoi, et le geste d'activer ou de désactiver. Le noyau fait le travail (dépendances, essentiels, branchement à chaud) ; ce module en fait des capacités, donc des droits, une preuve, un retour et une trace."
+confiance = "interne"
+famille = "socle"
+essentiel = true
+requiert = ["droits"]
+
+[[droits]]
+id = "gerer"
+libelle = "Activer ou désactiver un module"
+sensible = true
+
+[evenements]
+emet = []
+
+[[capacites]]
+id = "lister"
+libelle = "Le catalogue des modules : état, version, famille, dépendances (requiert / requis par), ce qu'on peut en faire et pourquoi pas"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "fiche"
+libelle = "La fiche d'un module : son état et ce qu'il sait faire, capacité par capacité (paramètres, risque, garantie), limité à ce que le compte a le droit d'utiliser"
+risque = "lecture"
+
+[[capacites]]
+id = "activer"
+libelle = "Activer un module (et ses dépendances) : ses capacités, moteurs et menus se branchent à chaud, rien d'autre ne bouge"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["l'état d'un module et de ses dépendances (actif / inactif) ; aucune donnée n'est touchée"]
+preuve = "le catalogue dit « actif » pour chacun des modules visés"
+retour = "désactiver ceux que ce geste vient d'activer"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "desactiver"
+libelle = "Désactiver un module : ses capacités, moteurs et menus s'arrêtent, ses données restent (un module essentiel, ou dont un autre dépend, est refusé sans cascade)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["l'état d'un module (et, en cascade, de ceux qui en dépendent) ; aucune donnée n'est effacée"]
+preuve = "le catalogue dit « inactif » pour chacun des modules visés"
+retour = "réactiver ceux que ce geste vient de désactiver"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[permissions]
+modules = true
+droits = true

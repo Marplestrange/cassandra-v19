@@ -62,6 +62,13 @@ class Contexte:
         self._exiger_introspection()
         return self._intro["manifestes"]()
 
+    def gestion_modules(self):
+        """Le catalogue des modules et l'état qu'on peut leur donner (.catalogue(), .activer(id, ...), .desactiver(id, ...)), pour le module « modules »
+        ([permissions] modules). Aucun autre module n'en a besoin : activer ou désactiver passe par ses capacités, donc par les droits, la preuve et le journal."""
+        if not self.manifeste.permissions.modules:
+            raise PermissionError("le module « %s » n'a pas demandé la gestion des modules ([permissions] modules)" % self.module)
+        return self._intro["gestion_modules"]
+
     def executer_lecture(self, capacite: str, **args):
         """Appelle une capacité de LECTURE d'un autre module (« module.capacite ») et rend son résultat (None si elle échoue).
         Réservé aux modules qui l'ont demandé ([permissions] lectures) ; jamais une écriture."""

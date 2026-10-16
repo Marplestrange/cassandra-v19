@@ -242,6 +242,7 @@ class Permissions:
     secrets: bool = False              # peut chiffrer/déchiffrer des secrets pour SA base (ctx.chiffrer / ctx.dechiffrer) : clés d'API de modèles, jetons...
     racine: bool = False               # peut demander au courtier (root) les commandes qu'il déclare ([[racine]]) : ctx.racine(...)
     agir: bool = False                 # peut agir comme un agent (ctx.agir) et lister les outils d'un agent (ctx.outils) : le module des agents. Les droits et les paliers s'appliquent comme à tout acte
+    modules: bool = False              # peut lire le catalogue des modules et en changer l'état (activer, désactiver) : le module « modules ». Les droits et les paliers s'appliquent comme à tout acte
 
 
 @dataclass(frozen=True)
@@ -339,7 +340,7 @@ def valider(brut: dict) -> list:
         perm = {}
     for champ in ("reseau", "ecritures", "privileges"):
         _liste_de_textes(perm.get(champ), "permissions.%s" % champ, e)
-    for champ in ("espace_utilisateur", "introspection", "lectures", "stockage_lecture"):
+    for champ in ("espace_utilisateur", "introspection", "lectures", "stockage_lecture", "modules"):
         if champ in perm and not isinstance(perm[champ], bool):
             e.append("permissions.%s : vrai ou faux" % champ)
     for chemin in perm.get("ecritures", []) if isinstance(perm.get("ecritures"), list) else []:
@@ -729,7 +730,8 @@ def construire(brut: dict, source="") -> Manifeste:
                                 bool((brut.get("permissions") or {}).get("stockage_lecture", False)),
                                 bool((brut.get("permissions") or {}).get("secrets", False)),
                                 bool((brut.get("permissions") or {}).get("racine", False)),
-                                bool((brut.get("permissions") or {}).get("agir", False))),
+                                bool((brut.get("permissions") or {}).get("agir", False)),
+                                bool((brut.get("permissions") or {}).get("modules", False))),
         droits=tuple(Droit(d["id"], d["libelle"], bool(d.get("defaut", False)), bool(d.get("sensible", False))) for d in brut.get("droits", []) or []),
         reglages=tuple(Reglage(r["id"], r["libelle"], r.get("type", "texte"),
                                r.get("defaut", False if r.get("type") == "booleen" else (0 if r.get("type") == "entier" else "")),

@@ -139,12 +139,21 @@
     const corps = racine.querySelector(".sh-corps");
     try {
       const moi = CASS.moi || (CASS.moi = await (await fetch("/api/moi", { headers: { "X-Session-Token": token() } })).json());
-      const e = await CASS.agir("affichage.lire_ecran", { ecran: racine.getAttribute("data-scene"), role: moi.admin ? "admin" : "utilisateur", compte: moi.compte });
-      const zones = e.zones || {};
+      const ecran = racine.getAttribute("data-scene");
+      let zones = {};
+      try { zones = (await CASS.agir("affichage.lire_ecran", { ecran, role: moi.admin ? "admin" : "utilisateur", compte: moi.compte })).zones || {}; } catch (e) { zones = {}; }
       const html = ["entete", "principal", "lateral"].map((z) => (zones[z] || []).map(tuile).join("")).join("");
-      corps.innerHTML = html ? '<div class="sh-grille">' + html + "</div>" : '<div class="empty-state">Ce module n’a pas encore déclaré de tuile pour cet écran.</div>';
+      // les tuiles que le module déclare, puis SA CONSOLE (lectures, gestes, réglages) : un module neuf a un écran utilisable sans qu'on l'écrive
+      corps.innerHTML = (html ? '<div class="sh-grille">' + html + "</div>" : "") + '<div class="sh-console"></div>';
+      if (CASS.console) CASS.console(String(ecran).split(":")[0], corps.querySelector(".sh-console"));
     } catch (err) { corps.innerHTML = '<div class="empty-state">' + esc(err.message) + "</div>"; }
   }
+  // Ouvrir la console d'un module, de n'importe où (Réglages › Modules, par exemple).
+  CASS.ouvrirConsole = function (mid, nom) {
+    const ecran = mid + ":console";
+    preparerScene(ecran, nom || mid);
+    window.switchTab(nomOnglet(ecran));
+  };
   const switchTabOrigine = window.switchTab;
   window.switchTab = function (name, sansHistorique) {
     const r = switchTabOrigine.apply(this, arguments);
