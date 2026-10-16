@@ -1,7 +1,7 @@
 [module]
 id = "securite"
 nom = "Sécurité"
-version = "0.1.0"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel)."
 confiance = "interne"

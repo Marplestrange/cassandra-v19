@@ -44,6 +44,8 @@ class FauxPanneau:
         self.suite = 11
         self.certs = [{"id": 5, "common_name": "a.exemple.fr", "alternative_name": "www.a.exemple.fr", "issued_at": "2026-08-01T00:00:00Z"}]
         self.stockages, self.plans = [], []
+        self.regles = [{"id": 1, "name": "SSH", "port_range": "22", "proto": "TCP", "type": "INPUT", "policy": "ACCEPT", "rules": []}]
+        self.politique, self.suite_regle = "ACCEPT", 2
         self.renouvelle = True
         faux = self
 
@@ -93,6 +95,25 @@ class FauxPanneau:
                     s = next(x for x in faux.services if str(x["id"]) == ident)
                     s["state"] = {"start": "active", "restart": "active", "stop": "inactive"}[action]
                     return self._rep(200, {})
+                if m == "GET" and p == "/firewall/ports":
+                    return self._rep(200, {"data": faux.regles})
+                if m == "GET" and p == "/firewall/policy":
+                    return self._rep(200, {"data": {"policy": faux.politique}})
+                if m == "PUT" and p == "/firewall/policy":
+                    faux.politique = corps["policy"]
+                    return self._rep(200, {})
+                if m == "PUT" and p == "/firewall/ports":
+                    r = dict(corps["port"], id=faux.suite_regle)
+                    faux.suite_regle += 1
+                    faux.regles.append(r)
+                    return self._rep(200, {"data": {"id": r["id"]}})
+                if m == "PUT" and p.startswith("/firewall/ports/"):
+                    rid = int(p.split("/")[3])
+                    faux.regles = [dict(corps["port"], id=rid) if x["id"] == rid else x for x in faux.regles]
+                    return self._rep(200, {"data": {"id": rid}})
+                if m == "DELETE" and p.startswith("/firewall/ports/"):
+                    faux.regles = [x for x in faux.regles if x["id"] != int(p.split("/")[3])]
+                    return self._rep(204)
                 if m == "GET" and p == "/databases":
                     return self._rep(200, {"data": faux.bases})
                 if m == "GET" and p == "/databases/servers":

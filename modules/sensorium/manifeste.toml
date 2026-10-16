@@ -1,7 +1,7 @@
 [module]
 id = "sensorium"
 nom = "Sensorium"
-version = "0.1.1"
+version = "0.1.2"
 noyau_min = "0.1.0"
 description = "Les sens de Cassandra. Le collecteur (sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles."
 confiance = "interne"

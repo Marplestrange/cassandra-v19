@@ -16,11 +16,16 @@
       const b = req.body, g = String(b.geste || "");
       try {
         if (g.indexOf("arret:") === 0) return ok(await agir("securite.arret", { service: g.slice(6) }));
+        // Le pare-feu du panneau : validé avant tout envoi, posé à l'essai quand il peut fermer (deux minutes pour le garder), jamais SSH fermé à tous sans Tailscale.
+        if (g === "regle_poser") return ok(await agir("fastpanel.parefeu_regle_poser", { id: +(b.id || 0), nom: b.nom || "", ports: b.ports || "", proto: b.proto || "TCP", sens: b.sens || "INPUT", politique: b.politique || "", sources: b.sources || "" }));
+        if (g === "regle_retirer") return ok(await agir("fastpanel.parefeu_regle_retirer", { id: +(b.id || 0) }));
+        if (g === "politique") return ok(await agir("fastpanel.parefeu_politique", { politique: b.politique || "" }));
         if (GESTES[g]) return ok(await agir(GESTES[g], g === "debannir" ? { jail: String(b.jail || ""), ip: String(b.ip || "") } : {}));
       } catch (e) { return { ok: false, error: e.message }; }
-      return { ok: false, error: "ce geste n'est pas encore porté (pare-feu, outils de sécurité)" };
+      return { ok: false, error: "ce geste n'est pas encore porté (outils de sécurité)" };
     },
   });
+  P("/api/securite/parefeu/trancher", "fastpanel.parefeu_trancher", { args: (r) => ({ jeton: String(r.body.jeton || ""), garder: !!r.body.garder }), sortie: ok });
   P("/api/securite/noter", "securite.noter", {
     args: (r) => ({ geste: r.body.geste || "", cible: r.body.cible || "", detail: r.body.detail || "", ok: r.body.ok !== false, resultat: r.body.resultat || "", defaire: r.body.defaire || "" }),
     sortie: (x) => ok(x),

@@ -243,8 +243,29 @@ def docker_publies(texte):
     return out
 
 
-def parefeu(m):
-    """Le pare-feu tel que le NOYAU l'applique. `m` : les relevés bruts. La source est « système » : celle d'un panneau d'hébergement (FastPanel) viendra de son module."""
+def pf_accord(regles_panneau, ch, politique_panneau, politique_noyau, refuse_tout):
+    """Le panneau et le noyau, règle à règle : ce que le panneau déclare est-il appliqué, et le noyau porte-t-il dans la chaîne du panneau des règles qu'il ignore ?"""
+    noyau = [pf_lisible(j) for j in ch.get("fastpanel_rules", [])]
+    manquantes = []
+    for r in regles_panneau or []:
+        a, _, b = str(r.get("ports") or "").partition("-")
+        if not a.isdigit():
+            continue
+        a, b = int(a), int(b) if b.isdigit() else int(a)
+        proto = str(r.get("proto") or "").lower()
+        trouve = any(any(x <= a and b <= y for x, y in n["ports"]) and (proto in ("all", "") or n["proto"] in (proto, "")) for n in noyau)
+        if not trouve:
+            manquantes.append(str(r.get("nom") or "%s/%s" % (a, proto)))
+    connues = len(regles_panneau or [])
+    inconnues = max(0, len([n for n in noyau if n["ports"]]) - (connues - len(manquantes)))
+    p = str(politique_panneau or "").upper()
+    pol_ok = (not p) or (p == "DROP") == (politique_noyau in ("DROP", "REJECT") or refuse_tout)
+    return {"accord": not manquantes and not inconnues and pol_ok, "manquantes": manquantes, "inconnues": inconnues, "politique_fp": p, "politique_ok": pol_ok, "chaine_noyau": len(noyau)}
+
+
+def parefeu(m, panneau=None):
+    """Le pare-feu tel que le NOYAU l'applique (la seule vérité). `panneau` : ce que rend le module d'hébergement (règles, politique, essais) quand il existe ;
+    le noyau est alors confronté à ce que le panneau déclare."""
     lu4, pol4, ch4 = pf_chaines(m.get("iptables"))
     lu6, pol6, ch6 = pf_chaines(m.get("ip6tables"))
     noyau = {"lu": lu4, "outil": "iptables", "v4": pf_parcours(pol4, ch4) if lu4 else None, "v6": pf_parcours(pol6, ch6) if lu6 else None,
@@ -258,8 +279,15 @@ def parefeu(m):
     noyau["filtre"] = bool(v4.get("filtre"))
     noyau["v6_ouvert"] = bool(noyau["v6"]) and not noyau["v6"]["filtre"] and noyau["filtre"]
     regles = [r for r in v4.get("regles", []) if not r.get("saut")]
-    return {"source": "systeme", "outil": noyau["outil"], "politique": v4.get("politique", "?"), "filtre": noyau["filtre"], "regles_systeme": len(regles), "panneau": None,
-            "panneau_url": "", "noyau": noyau}
+    fw = {"source": "systeme", "outil": noyau["outil"], "politique": v4.get("politique", "?"), "filtre": noyau["filtre"], "regles_systeme": len(regles), "panneau": None,
+          "panneau_url": "", "noyau": noyau}
+    if panneau and panneau.get("ok"):
+        fw.update({"source": "fastpanel", "panneau": panneau.get("regles") or [], "politique_panneau": panneau.get("politique") or "", "api_ok": True, "api_erreur": ""})
+        if lu4:
+            noyau["accord"] = pf_accord(fw["panneau"], ch4, fw["politique_panneau"], v4.get("politique", "?"), v4.get("filtre", False))
+    elif panneau:                                           # le panneau existe mais ne répond pas : on le dit, le noyau reste la vérité
+        fw.update({"api_ok": False, "api_erreur": panneau.get("erreur") or "panneau injoignable"})
+    return fw
 
 
 # ── l'exposition : un service par ligne, sur quatre anneaux ─────────────────────────────────────────────────────
@@ -364,8 +392,8 @@ def verdict(d):
         titre = "%s %s joignable%s depuis Internet." % (", ".join(s["nom"] for s in publics_sensibles[:3]), "est" if len(publics_sensibles) == 1 else "sont", "" if len(publics_sensibles) == 1 else "s")
     elif reseau and not fw["filtre"]:
         niveau = "regarder"
-        titre = ("Rien n'est exposé à Internet d'ici, mais %d services s'ouvrent à tout le réseau local, sans pare-feu." % len(reseau)) if not publics else \
-                ("%d %s, et %d ouverts au réseau local sans pare-feu." % (len(publics), pl(len(publics), "service public"), len(reseau)))
+        titre = ("Rien n'est exposé à Internet d'ici, mais %d %s à tout le réseau local, sans pare-feu." % (len(reseau), "services s'ouvrent" if len(reseau) > 1 else "service s'ouvre")) if not publics else \
+                ("%d %s, et %d %s au réseau local sans pare-feu." % (len(publics), pl(len(publics), "service public"), len(reseau), "ouverts" if len(reseau) > 1 else "ouvert"))
     elif sensibles:
         niveau = "regarder"
         titre = "%d %s %s au réseau local." % (len(sensibles), pl(len(sensibles), "service sensible"), "s'ouvrent" if len(sensibles) > 1 else "s'ouvre")
@@ -398,8 +426,8 @@ def verdict(d):
     familles = [
         {"page": "exposition", "niveau": "panne" if publics_sensibles else ("regarder" if (reseau and not fw["filtre"]) or sensibles else "ok"), "lib": "Exposition", "n": len(reseau),
          "dit": "%d ouvert%s au réseau local%s · %d public%s" % (len(reseau), "s" if len(reseau) > 1 else "", (" dont %d sensible%s" % (len(sensibles), "s" if len(sensibles) > 1 else "")) if sensibles else "", len(publics), "s" if len(publics) > 1 else "")},
-        {"page": "parefeu", "niveau": ("ok" if fw["filtre"] else "panne") if (fw.get("noyau") or {}).get("lu") else "regarder", "lib": "Pare-feu", "n": fw.get("regles_systeme", 0),
-         "dit": ("Système · " + ("filtre ce qui n'est pas permis" if fw["filtre"] else "tout accepter (politique %s)" % fw["politique"])) if (fw.get("noyau") or {}).get("lu")
+        {"page": "parefeu", "niveau": ("ok" if fw["filtre"] else "panne") if (fw.get("noyau") or {}).get("lu") else "regarder", "lib": "Pare-feu", "n": len(fw.get("panneau") or []) if fw.get("source") == "fastpanel" else fw.get("regles_systeme", 0),
+         "dit": (("FastPanel · " if fw.get("source") == "fastpanel" else "Système · ") + ("filtre ce qui n'est pas permis" if fw["filtre"] else "tout accepter (politique %s)" % fw["politique"])) if (fw.get("noyau") or {}).get("lu")
                 else "lecture du noyau impossible : aucune affirmation sur ce qui est filtré"},
         {"page": "acces", "niveau": ssh_niv, "lib": "Accès", "n": sum(1 for k in ("mots_de_passe", "x11") if sh.get(k) == "yes"),
          "dit": "SSH %s · %d échec%s en 7 jours" % ("par mot de passe et par clé" if sh.get("mots_de_passe") == "yes" else "par clé seulement", sh.get("echecs_7j", 0), "s" if sh.get("echecs_7j", 0) > 1 else "")},
@@ -421,10 +449,10 @@ def verdict(d):
     return {"niveau": niveau, "titre": titre, "sous": " ".join(sous), "chiffres": chiffres, "familles": familles}
 
 
-def etat(m, heure="", port_cassandra=9000, ailleurs=None):
+def etat(m, heure="", port_cassandra=9000, ailleurs=None, panneau=None):
     """L'état de sécurité de la machine, dans la forme que lit l'écran, depuis les relevés bruts de `mesurer`. Une mesure qui manque est dite manquante."""
     machine = adresses_machine(m.get("ip_addr"))
-    fw = parefeu(m)
+    fw = parefeu(m, panneau)
     comptes = m.get("comptes") or {"shells": [], "sudo": []}
     d = {"ok": True, "machine": machine, "parefeu": fw, "exposition": exposition(m.get("ecoutes"), machine, fw, port_cassandra), "box_redirections": None,
          "outils": outils(m), "ssh": ssh(m), "comptes": comptes, "cles_fichiers": m.get("cles_ssh") or {}, "cles": [], "fail2ban": fail2ban(m), "maj": maj(m),
@@ -437,6 +465,6 @@ def etat(m, heure="", port_cassandra=9000, ailleurs=None):
                              "sous": "Ces relevés manquent : %s. Ce qui suit en tient compte." % ", ".join(noms[k] for k in d["manques"])})
     d["ailleurs"] = ailleurs or {"mes_cles": 0, "mes_sessions": 0, "certs": 0, "certs_7j": 0, "certs_30j": 0, "cloche": 0}
     d["audit_en_cours"] = False
-    d["parefeu_essais"] = []
+    d["parefeu_essais"] = [{"jeton": e.get("jeton"), "quoi": e.get("quoi", ""), "reste": e.get("reste", 0)} for e in ((panneau or {}).get("essais") or [])]
     d["votre_ip"] = ""
     return d

@@ -1,7 +1,7 @@
 [module]
 id = "fastpanel"
 nom = "FastPanel"
-version = "0.1.0"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Le pont vers le panneau d'hébergement FastPanel. Lit le parc (comptes, sites, certificats, bases, FTP, courrier, DNS, sauvegardes, services) dans la base du panneau, ouverte en lecture seule, et agit par son API : services, certificats, bases, stockages et plans de sauvegarde, avec preuve et retour arrière. Surveille les services tombés, les certificats proches de l'échéance, les sauvegardes absentes ou périmées et les versions de PHP en fin de support. Le plafond d'autonomie est le choix de l'administrateur."
 confiance = "interne"
@@ -22,6 +22,10 @@ sensible = true
 [[objets]]
 type = "fastpanel"
 libelle = "Le panneau FastPanel piloté par Cassandra"
+
+[[objets]]
+type = "fastpanel_essai"
+libelle = "Un réglage du pare-feu posé à l'essai : il se défait seul à l'échéance, sauf si on le garde"
 
 [[objets]]
 type = "fastpanel_service"
@@ -77,7 +81,7 @@ minimum = 1
 maximum = 90
 
 [evenements]
-emet = ["fastpanel.injoignable", "fastpanel.acces_refuse", "fastpanel.reprise", "fastpanel.service_tombe", "fastpanel.service_revenu", "fastpanel.certificat_renouvele"]
+emet = ["fastpanel.injoignable", "fastpanel.acces_refuse", "fastpanel.reprise", "fastpanel.service_tombe", "fastpanel.service_revenu", "fastpanel.certificat_renouvele", "fastpanel.essai_defait"]
 
 [[moteurs]]
 id = "releve"
@@ -85,6 +89,13 @@ libelle = "Sonde le panneau (services chaque minute, parc et audits tous les qua
 mode = "periodique"
 toutes_les_s = 60
 duree_max_s = 120
+
+[[moteurs]]
+id = "filet"
+libelle = "Défait un réglage du pare-feu posé à l'essai quand son délai est échu sans qu'on l'ait gardé"
+mode = "periodique"
+toutes_les_s = 10
+duree_max_s = 60
 
 [[detecteurs]]
 id = "injoignable"
@@ -281,6 +292,57 @@ retour = "supprimer le plan que cet acte vient de créer, et lui seul"
 paliers = ["raconter", "auto"]
 qui = ["humain", "cassandra", "itare"]
 
+[[capacites]]
+id = "parefeu"
+libelle = "Le pare-feu du panneau : les règles, la politique globale, et les réglages posés à l'essai avec le temps qu'il leur reste"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "parefeu_regle_poser"
+libelle = "Poser ou modifier une règle du pare-feu du panneau (nom, ports, protocole, sens, politique, adresses). Ce qui peut fermer est posé à l'essai : deux minutes pour le garder, sinon il se défait seul. Refuse de fermer SSH à tous sans Tailscale"
+risque = "eleve"
+droit = "piloter"
+perimetre = ["une règle du pare-feu du panneau, validée avant tout envoi", "un essai de deux minutes quand le réglage peut fermer"]
+preuve = "la règle figure dans la liste du panneau avec le nom demandé"
+retour = "remettre la règle d'avant (ou supprimer la nouvelle) ; automatique à l'échéance de l'essai"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "parefeu_regle_retirer"
+libelle = "Retirer une règle du pare-feu du panneau. Une suppression qui ferme (la politique refuse par défaut et la règle ouvrait) est posée à l'essai"
+risque = "eleve"
+droit = "piloter"
+perimetre = ["une règle du pare-feu du panneau"]
+preuve = "la règle ne figure plus dans la liste du panneau"
+retour = "recréer la règle telle que le panneau l'avait rendue ; automatique à l'échéance de l'essai"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "parefeu_politique"
+libelle = "Changer la politique globale du pare-feu du panneau (tout accepter / refuser par défaut). Refuser par défaut est posé à l'essai, et exige d'abord une règle qui ouvre SSH sans Tailscale"
+risque = "eleve"
+droit = "piloter"
+perimetre = ["la politique globale du pare-feu du panneau"]
+preuve = "le panneau rend la politique demandée"
+retour = "remettre la politique d'avant ; automatique à l'échéance de l'essai"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "parefeu_trancher"
+libelle = "Garder un réglage posé à l'essai (le filet s'arrête) ou le défaire tout de suite (le filet joue maintenant)"
+risque = "moyen"
+droit = "piloter"
+perimetre = ["un essai du pare-feu en cours"]
+preuve = "l'essai n'existe plus"
+retour = "refaire le réglage (garder ou défaire ne se rejoue pas)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
 [permissions]
+lectures = true
 reseau = ["l'API du panneau, à l'adresse des réglages (le port 8888 local par défaut)", "le port 443 d'un domaine, pour en lire le certificat"]
 privileges = ["la base SQLite du panneau est ouverte en lecture seule", "le compte du panneau donne ses droits à Cassandra : en faire un compte dédié"]

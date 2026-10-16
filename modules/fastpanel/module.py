@@ -32,6 +32,14 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+try:
+    from . import parefeu as pf
+except ImportError:                                     # chargé à plat (banc d'un module seul) : le frère se lit par son chemin
+    import importlib.util as _iu
+    _sp = _iu.spec_from_file_location("fastpanel_parefeu", str(Path(__file__).with_name("parefeu.py")))
+    pf = _iu.module_from_spec(_sp)
+    _sp.loader.exec_module(pf)
+
 # ------------------------------------------------------------------ constantes
 BASES_PAR_DEFAUT = ("https://127.0.0.1:8888", "http://127.0.0.1:8888")
 CHEMINS_LOGIN = ("/api/authorization", "/api/login", "/api/v1/login", "/api/auth", "/authorization", "/login", "/v1/login", "/auth")
@@ -1005,6 +1013,155 @@ def brancher(ctx):
             return
         appeler("DELETE", "/api/databases/%s" % int(identifiant))      # cette base-là, que cet acte a créée : son utilisateur part avec elle
 
+    # ---- le pare-feu du panneau : règles, politique, et l'ESSAI (un réglage qui peut fermer se défait seul, sauf si on le garde)
+    def regles_parefeu():
+        regles = _liste(appeler("GET", "/api/firewall/ports"))
+        politique = ""
+        try:
+            p = appeler("GET", "/api/firewall/policy")
+            if isinstance(p, dict):
+                politique = str((p.get("data") if isinstance(p.get("data"), dict) else p).get("policy") or "")
+        except PontErreur:
+            pass
+        return regles, politique
+
+    def contexte_ssh(c):
+        """Le port SSH (lu par la sécurité, 22 à défaut) et la présence de Tailscale : ce qui décide si refuser SSH laisserait dehors."""
+        port = 22
+        try:
+            e = c.executer_lecture("securite.etat")
+            port = int(((e or {}).get("ssh") or {}).get("port") or 22)
+        except Exception:
+            pass
+        return port, os.path.exists("/sys/class/net/tailscale0")
+
+    def essais(c):
+        sortie = []
+        for o in c.lister(portee=c.TOUT, type="fastpanel_essai"):
+            d = o.get("donnees") or {}
+            sortie.append({"jeton": o["id"], "quoi": d.get("quoi", ""), "fin": d.get("fin", 0), "reste": max(0, int(d.get("fin", 0) - time.time()))})
+        return sortie
+
+    def poser_essai(c, quoi, defaire):
+        """Le filet : les appels qui remettent tout comme avant, rejoués à la fin du délai sauf si on garde le réglage."""
+        jeton = secrets.token_hex(6)
+        fin = time.time() + pf.DELAI_ESSAI_S
+        c.poser("fastpanel_essai", jeton, quoi, etat="en_cours", donnees={"quoi": quoi, "fin": fin, "defaire": defaire})
+        return {"jeton": jeton, "fin": fin}
+
+    def jouer_defaire(defaire):
+        erreurs = []
+        for methode, chemin, corps in defaire:
+            try:
+                appeler(methode, chemin, corps)
+            except PontErreur as ex:
+                erreurs.append(str(ex))
+        return erreurs
+
+    def filet(c):
+        """Toutes les dix secondes : un essai échu qu'on n'a pas gardé se défait. Survit à un redémarrage (les essais sont des objets du registre)."""
+        for o in c.lister(portee=c.TOUT, type="fastpanel_essai"):
+            d = o.get("donnees") or {}
+            if o["etat"] == "en_cours" and d.get("fin", 0) <= time.time():
+                erreurs = jouer_defaire(d.get("defaire") or [])
+                c.retirer("fastpanel_essai", o["id"])
+                c.emettre("fastpanel.essai_defait", objet=("fastpanel_essai", o["id"]), donnees={"quoi": d.get("quoi", ""), "erreurs": erreurs})
+
+    def parefeu(c):
+        try:
+            regles, politique = regles_parefeu()
+        except PontErreur as ex:
+            return {"ok": False, "erreur": str(ex), "regles": [], "politique": "", "essais": essais(c)}
+        return {"ok": True, "erreur": "", "regles": [pf.vers_panneau(r) for r in regles], "politique": politique, "essais": essais(c)}
+
+    def avec_filet(c, quoi, defaire, ferme):
+        """Si le réglage peut fermer, le filet est posé (ou le réglage est défait aussitôt) : ce qui peut fermer ne reste jamais sans retour."""
+        if not ferme:
+            return {}
+        try:
+            return {"essai": poser_essai(c, quoi, defaire)}
+        except Exception as ex:
+            jouer_defaire(defaire)
+            raise ValueError("filet de deux minutes impossible (%s) : le réglage a été défait aussitôt" % ex)
+
+    def regle_poser(c, nom="", ports="", proto="TCP", sens="INPUT", politique="", sources="", id=0):
+        corps, err = pf.valider({"nom": nom, "ports": ports, "proto": proto, "sens": sens, "politique": politique, "sources": sources})
+        if err:
+            raise ValueError(err)
+        regles, pol_globale = regles_parefeu()
+        rid = int(id or 0)
+        avant = next((x for x in regles if int(x.get("id") or 0) == rid), None) if rid else None
+        if rid and not avant:
+            raise ValueError("règle introuvable (déjà retirée ?)")
+        ssh, tailscale = contexte_ssh(c)
+        refus, ferme = pf.risque(corps, regles, pol_globale, ssh, tailscale)
+        if refus:
+            raise ValueError(refus)
+        if rid:
+            r = appeler("PUT", "/api/firewall/ports/%d" % rid, {"port": dict(corps, id=rid)})
+        else:
+            r = appeler("PUT", "/api/firewall/ports", {"port": corps})
+        corps_rendu = r.get("data") if isinstance(r, dict) and isinstance(r.get("data"), dict) else (r if isinstance(r, dict) else {})
+        nid = int(corps_rendu.get("id") or rid or 0)
+        defaire = [["PUT", "/api/firewall/ports/%d" % rid, {"port": dict(pf.corps_de(avant), id=rid)}]] if avant else [["DELETE", "/api/firewall/ports/%d" % nid, None]]
+        sortie = {"id": nid, "nom": corps["name"], "defaire": defaire, "avait": bool(avant)}
+        sortie.update(avec_filet(c, "%s : %s" % ("règle modifiée" if rid else "règle posée", corps["name"]), defaire, ferme or bool(avant and avant.get("policy") != "ACCEPT")))
+        return sortie
+
+    def prouver_regle(c, res):
+        return any(int(x.get("id") or 0) == int(res["id"]) and x.get("name") == res["nom"] for x in regles_parefeu()[0])
+
+    def defaire_regle(c, res):
+        jouer_defaire(res["defaire"])
+        if res.get("essai"):
+            c.retirer("fastpanel_essai", res["essai"]["jeton"])
+
+    def regle_retirer(c, id=0):
+        rid = int(id or 0)
+        regles, pol_globale = regles_parefeu()
+        avant = next((x for x in regles if int(x.get("id") or 0) == rid), None)
+        if not avant:
+            raise ValueError("règle introuvable")
+        _, ferme = pf.risque(None, regles, pol_globale, retire=rid)
+        appeler("DELETE", "/api/firewall/ports/%d" % rid)
+        defaire = [["PUT", "/api/firewall/ports", {"port": pf.corps_de(avant)}]]
+        sortie = {"id": rid, "nom": avant.get("name"), "defaire": defaire}
+        sortie.update(avec_filet(c, "règle retirée : %s" % avant.get("name"), defaire, ferme))
+        return sortie
+
+    def prouver_retiree(c, res):
+        return not any(int(x.get("id") or 0) == int(res["id"]) for x in regles_parefeu()[0])
+
+    def parefeu_politique(c, politique=""):
+        pol = str(politique or "").upper()
+        regles, avant = regles_parefeu()
+        ssh, tailscale = contexte_ssh(c)
+        refus = pf.politique_refus(pol, regles, ssh, tailscale)
+        if refus:
+            raise ValueError(refus)
+        appeler("PUT", "/api/firewall/policy", {"policy": pol})
+        defaire = [["PUT", "/api/firewall/policy", {"policy": avant or "ACCEPT"}]]
+        sortie = {"politique": pol, "avant": avant, "defaire": defaire}
+        sortie.update(avec_filet(c, "politique : refuser par défaut", defaire, pol == "DROP" and avant != "DROP"))
+        return sortie
+
+    def prouver_politique(c, res):
+        return regles_parefeu()[1] == res["politique"]
+
+    def trancher(c, jeton="", garder=True):
+        o = c.lire("fastpanel_essai", str(jeton), portee=c.TOUT)
+        if not o:
+            raise ValueError("cet essai est déjà tranché (ou s'est défait tout seul)")
+        erreurs = [] if garder else jouer_defaire((o.get("donnees") or {}).get("defaire") or [])
+        c.retirer("fastpanel_essai", str(jeton))
+        return {"jeton": str(jeton), "garde": bool(garder), "erreurs": erreurs}
+
+    def prouver_tranche(c, res):
+        return c.lire("fastpanel_essai", res["jeton"], portee=c.TOUT) is None
+
+    def defaire_tranche(c, res):
+        raise ValueError("garder ou défaire un essai ne se rejoue pas : refaire le réglage")
+
     # ---- sauvegardes
     def stockage_local_creer(c, nom, chemin):
         n, ch = str(nom or "").strip() or "local", str(chemin or "").strip()
@@ -1062,6 +1219,7 @@ def brancher(ctx):
     # ---- inscription
     c = ctx
     c.moteur("releve", releve)
+    c.moteur("filet", filet)
     c.detecteur("injoignable", lambda x: constat_etat(x, "injoignable", "Le panneau FastPanel ne répond plus"))
     c.detecteur("acces_refuse", lambda x: constat_etat(x, "refuse", "Le panneau FastPanel refuse les identifiants de Cassandra"))
     c.detecteur("service_tombe", det_services)
@@ -1070,11 +1228,15 @@ def brancher(ctx):
     c.detecteur("php_fin_support", det_php)
     for cid, f in (("sante", sante), ("resume", resume), ("utilisateurs", utilisateurs), ("sites", sites), ("bases", bases), ("ftp", ftp), ("mail", mail), ("dns", dns),
                    ("sauvegardes", sauvegardes), ("plans", plans), ("stockages", stockages), ("services", services), ("certificats", certificats),
-                   ("ssl_sonder", ssl_sonder), ("php", php), ("audit", audit)):
+                   ("ssl_sonder", ssl_sonder), ("php", php), ("audit", audit), ("parefeu", parefeu)):
         c.implementer(cid, f)
     c.implementer("service_relancer", relancer, prouver_service, defaire_service, simuler=lambda x, service="", action="restart", **_: "ferait « %s » sur le service %s" % (action, service))
     c.implementer("service_arreter", arreter, prouver_service, defaire_service, simuler=lambda x, service="", **_: "arrêterait le service %s (il serait relancé au retour arrière)" % service)
     c.implementer("ssl_renouveler", ssl_renouveler, prouver_ssl, defaire_ssl, simuler=lambda x, domaine="", **_: "demanderait un nouveau certificat pour %s à l'autorité (quota limité)" % domaine)
+    c.implementer("parefeu_regle_poser", regle_poser, prouver_regle, defaire_regle, simuler=lambda x, nom="", ports="", **_: "poserait la règle « %s » (ports %s) au pare-feu du panneau" % (nom, ports))
+    c.implementer("parefeu_regle_retirer", regle_retirer, prouver_retiree, defaire_regle, simuler=lambda x, id=0, **_: "retirerait la règle %s du pare-feu du panneau" % id)
+    c.implementer("parefeu_politique", parefeu_politique, prouver_politique, defaire_regle, simuler=lambda x, politique="", **_: "passerait la politique du pare-feu à %s" % politique)
+    c.implementer("parefeu_trancher", trancher, prouver_tranche, defaire_tranche)
     c.implementer("base_creer", base_creer, prouver_base, defaire_base, simuler=lambda x, nom="", **_: "créerait la base %s avec son utilisateur" % nom)
     c.implementer("stockage_local_creer", stockage_local_creer, prouver_stockage, defaire_stockage, simuler=lambda x, nom="", chemin="", **_: "déclarerait le dossier %s comme stockage « %s »" % (chemin, nom))
     c.implementer("plan_creer", plan_creer, prouver_plan, defaire_plan, simuler=lambda x, nom="", **_: "créerait le plan de sauvegarde « %s »" % nom)

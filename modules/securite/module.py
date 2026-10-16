@@ -64,7 +64,11 @@ def brancher(ctx):
             ailleurs.update({"certs": len(certs), "certs_7j": sum(1 for j in jours if j <= 7), "certs_30j": sum(1 for j in jours if j <= 30)})
         except Exception:
             pass
-        return analyse.etat(cache["m"], time.strftime("%Y-%m-%d %H:%M:%S"), ailleurs=ailleurs)
+        try:                                                           # le pare-feu du panneau d'hébergement, s'il y en a un d'actif : confronté à ce que le noyau applique
+            panneau = ctx.executer_lecture("fastpanel.parefeu")
+        except Exception:
+            panneau = None
+        return analyse.etat(cache["m"], time.strftime("%Y-%m-%d %H:%M:%S"), ailleurs=ailleurs, panneau=panneau)
 
     # ── les gestes exécutés à root : la commande « agir » du courtier, table fermée, chaque geste vérifié avant de répondre ──
     def agir(verbe, geste, args=None, delai=180):

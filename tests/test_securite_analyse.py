@@ -104,6 +104,45 @@ class PareFeu(unittest.TestCase):
         self.assertEqual([(x["port"], x["portee"]) for x in d], [(8080, "tout"), (5432, "machine")])
 
 
+FW_PANNEAU = """-P INPUT DROP
+-N fastpanel_rules
+-A INPUT -i lo -j ACCEPT
+-A INPUT -j fastpanel_rules
+-A fastpanel_rules -p tcp -m tcp --dport 443 -j ACCEPT
+"""
+
+
+class AccordPanneau(unittest.TestCase):
+    def test_sans_panneau_la_source_est_le_systeme(self):
+        self.assertEqual(an.parefeu({"iptables": FW_PANNEAU})["source"], "systeme")
+
+    def test_ce_que_le_panneau_declare_est_applique(self):
+        fw = an.parefeu({"iptables": FW_PANNEAU}, {"ok": True, "regles": [{"nom": "Web", "ports": "443", "proto": "TCP"}], "politique": "DROP", "essais": []})
+        self.assertEqual(fw["source"], "fastpanel")
+        self.assertTrue(fw["noyau"]["accord"]["accord"])
+
+    def test_une_regle_du_panneau_que_le_noyau_n_applique_pas_est_nommee(self):
+        fw = an.parefeu({"iptables": FW_PANNEAU}, {"ok": True, "regles": [{"nom": "Web", "ports": "443", "proto": "TCP"}, {"nom": "Appli", "ports": "8080", "proto": "TCP"}], "politique": "DROP"})
+        a = fw["noyau"]["accord"]
+        self.assertFalse(a["accord"])
+        self.assertEqual(a["manquantes"], ["Appli"])
+
+    def test_une_politique_du_panneau_que_le_noyau_ne_porte_pas(self):
+        a = an.parefeu({"iptables": PARE_FEU_OUVERT}, {"ok": True, "regles": [], "politique": "DROP"})["noyau"]["accord"]
+        self.assertFalse(a["politique_ok"])
+
+    def test_un_panneau_injoignable_est_dit_et_le_noyau_reste_la_verite(self):
+        fw = an.parefeu({"iptables": PARE_FEU_FERME}, {"ok": False, "erreur": "panneau injoignable"})
+        self.assertEqual(fw["source"], "systeme")
+        self.assertFalse(fw["api_ok"])
+        self.assertTrue(fw["filtre"])
+
+    def test_les_essais_en_cours_remontent_a_l_ecran(self):
+        d = an.etat(releves(), "t", panneau={"ok": True, "regles": [], "politique": "ACCEPT", "essais": [{"jeton": "ab12", "quoi": "règle posée : X", "fin": 1, "reste": 90}]})
+        self.assertEqual(d["parefeu_essais"], [{"jeton": "ab12", "quoi": "règle posée : X", "reste": 90}])
+        self.assertEqual([f for f in d["verdict"]["familles"] if f["page"] == "parefeu"][0]["dit"].split(" · ")[0], "FastPanel")
+
+
 class Exposition(unittest.TestCase):
     def expo(self, ecoutes, iptables=PARE_FEU_FERME, ip_addr=None):
         m = releves(ecoutes=ecoutes, iptables=iptables)
