@@ -69,19 +69,26 @@
       const dep = CASS.dependances[it.getAttribute("data-tab")];
       if (dep && !dep.every((m) => ok.has(m))) { it.style.display = "none"; it.setAttribute("data-absent", "1"); } else if (it.getAttribute("data-absent")) { it.style.display = ""; it.removeAttribute("data-absent"); }
     });
-    // le groupe des modules : les entrées de menu dont le module n'a pas d'écran V18
-    const feuilles = [];
-    (function marcher(ns) { for (const n of ns || []) { if (n.ecran) feuilles.push(n); marcher(n.enfants); } })(arbre);
-    const propres = feuilles.filter((f) => !CASS.couvre[f.module]);
+    // le groupe des modules : les entrées de menu dont le module n'a pas d'écran V18, GROUPÉES PAR FAMILLE
+    const groupes = [];
+    for (const famille of arbre || []) {
+      const feuilles = [];
+      (function marcher(ns) { for (const n of ns || []) { if (n.ecran) feuilles.push(n); marcher(n.enfants); } })(famille.enfants || []);
+      const propres = feuilles.filter((f) => !CASS.couvre[f.module]);
+      if (propres.length) groupes.push({ libelle: famille.libelle || famille.famille, entrees: propres });
+    }
     let g = document.getElementById("sb-modules");
     if (g) g.remove();
-    if (!propres.length) return;
+    if (!groupes.length) return;
     g = document.createElement("div");
     g.className = "sb-group open"; g.id = "sb-modules"; g.setAttribute("data-grp", "modules");
-    g.innerHTML = '<div class="sb-head" onclick="sbToggle(this)">Modules <span class="sb-caret">▸</span></div><div class="sb-sub">' +
-      propres.map((f) => '<div class="sb-item" data-tab="' + esc(nomOnglet(f.ecran)) + '" onclick="switchTab(\'' + esc(nomOnglet(f.ecran)) + '\')"><span class="sb-dot"></span>' + esc(f.libelle) + "</div>").join("") + "</div>";
+    const sous = groupes.map((gr) =>
+      '<div class="sb-fam" style="padding:5px 14px 2px;font-size:10px;text-transform:uppercase;letter-spacing:.04em;opacity:.55">' + esc(gr.libelle) + "</div>" +
+      gr.entrees.map((f) => '<div class="sb-item" data-tab="' + esc(nomOnglet(f.ecran)) + '" onclick="switchTab(\'' + esc(nomOnglet(f.ecran)) + '\')"><span class="sb-dot"></span>' + esc(f.libelle) + "</div>").join("")
+    ).join("");
+    g.innerHTML = '<div class="sb-head" onclick="sbToggle(this)">Modules <span class="sb-caret">▸</span></div><div class="sb-sub">' + sous + "</div>";
     document.getElementById("sidebar").appendChild(g);
-    for (const f of propres) preparerScene(f.ecran, f.libelle);
+    for (const gr of groupes) for (const f of gr.entrees) preparerScene(f.ecran, f.libelle);
   }
   const nomOnglet = (ecran) => "mod-" + String(ecran).replace(/[^a-z0-9]+/gi, "-");
 
