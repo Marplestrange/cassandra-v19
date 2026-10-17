@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le module des comptes
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : comptes
+# ZONE       : CN
+# VERSION CN : 0.5.0  #49b542
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=49b542 ▼▼▼
 """Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
 
 Règle de la V18 gardée : le compte d'une action de session n'est JAMAIS un paramètre libre. C'est `ctx.compte`, le compte au nom duquel
@@ -234,3 +249,9 @@ def brancher(ctx):
     ctx.implementer("fermer_session", fermer_session, prouver_fermer, lambda ctx, res: None)
     ctx.implementer("revoquer_session", revoquer_session, prouver_revoquer, lambda ctx, res: None)
     ctx.implementer("revoquer_autres_sessions", revoquer_autres, prouver_autres, lambda ctx, res: None)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

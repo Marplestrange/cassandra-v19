@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les réglages
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #827c06
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les réglages : ce que la V18 gardait dans UN fichier config.json réécrit en entier à chaque sauvegarde (d'où la leçon : « relire avant d'écrire », sans quoi un réglage disparaissait). Ici chaque réglage est une LIGNE, écrite seule, avec son
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=827c06 ▼▼▼
 """Les réglages : ce que la V18 gardait dans UN fichier config.json réécrit en entier à chaque sauvegarde (d'où la leçon : « relire avant d'écrire »,
 sans quoi un réglage disparaissait). Ici chaque réglage est une LIGNE, écrite seule, avec son historique.
 
@@ -238,3 +253,9 @@ class Reglages:
             out.append({"cle": cle, "module": mod, "libelle": d.libelle, "type": d.type, "portee": d.portee, "valeur": v,
                         "defaut": ("***" if d.type == "secret" and d.defaut else d.defaut), "pose": pose, "choix": list(d.choix), "aide": d.aide})
         return out
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : valider, SecretIllisible, Reglages
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

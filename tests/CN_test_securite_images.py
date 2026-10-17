@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs de Sécurité › En images
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #6691f4
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs de Sécurité › En images : la composition (pure) à partir de l'état de la machine et des totaux du collecteur, et la capacité du module.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6691f4 ▼▼▼
 """Bancs de Sécurité › En images : la composition (pure) à partir de l'état de la machine et des totaux du collecteur, et la capacité du module."""
 import shutil
 import sys
@@ -186,3 +201,9 @@ risque = "lecture"
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : secu, etat, Composition, Module
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

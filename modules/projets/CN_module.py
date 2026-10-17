@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les projets
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : projets
+# ZONE       : CN
+# VERSION CN : 0.1.0  #95279f
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les projets.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=95279f ▼▼▼
 """Les projets.
 
 Porté de la V18 (`pj_*`, `projet_*`), avec ses leçons :
@@ -754,3 +769,9 @@ def brancher(ctx):
     c.implementer("inviter", inviter, prouver_membre, defaire_membre, simuler=lambda x, compte="", **_: "inviterait %s dans le projet" % compte)
     c.implementer("repondre_invitation", repondre_invitation, prouver_reponse, defaire_reponse, simuler=lambda x, id="", **_: "répondrait à l'invitation du projet %s" % id)
     c.implementer("retirer_membre", retirer_membre, prouver_retire, defaire_retire, simuler=lambda x, compte="", **_: "retirerait %s du projet" % compte)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : date_ok, journal, jours_entre, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

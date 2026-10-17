@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Mémoire : /api/memoire/* (V18, tout en POST) -> capacités memoire
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #ae7d9e
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Mémoire : /api/memoire/* (V18, tout en POST) -> capacités memoire.* du noyau.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=ae7d9e ▼▼▼
 /* Mémoire : /api/memoire/* (V18, tout en POST) -> capacités memoire.* du noyau. */
 (function () {
   const ok = (o) => Object.assign({ ok: true }, o);
@@ -38,3 +53,9 @@
     args: (r) => { const g = gestes[r.body.geste]; return g ? g[1](r.body) : { id: -1 }; },
   });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

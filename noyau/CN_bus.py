@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le bus d'événements
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #008613
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le bus d'événements : la mémoire commune de tout ce qui se passe.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=008613 ▼▼▼
 """Le bus d'événements : la mémoire commune de tout ce qui se passe.
 
 Un seul format pour tout (quand, quoi, qui l'a fait, sur quel objet, pour quel compte, à cause de quoi).
@@ -127,3 +142,9 @@ class Bus:
             suites += [self._ligne(r) for r in rows]
             vu.update(front)
         return {"causes": [c for c in causes if visible(c, portee)], "suites": [s for s in suites if visible(s, portee)]}
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : filtre_portee, visible, Bus
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

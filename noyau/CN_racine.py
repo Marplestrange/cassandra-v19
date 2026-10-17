@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : La racine
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #bd4d3a
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La racine : ce qu'un module demande au courtier (root) quand le noyau, sans privilège, ne peut pas le faire lui-même.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=bd4d3a ▼▼▼
 """La racine : ce qu'un module demande au courtier (root) quand le noyau, sans privilège, ne peut pas le faire lui-même.
 
 La règle qui rend cela sûr : le noyau ne dit jamais QUOI exécuter, seulement quelle commande NOMMÉE d'un module, avec quels arguments.
@@ -79,3 +94,9 @@ class Racine:
                 return {"ok": bool(r.get("ok")), "code": r.get("code"), "sortie": str(r.get("sortie") or ""), "erreur": str(r.get("erreur") or "")}
             time.sleep(self.pause)
         return {"ok": False, "code": None, "sortie": "", "erreur": "le courtier n'a pas répondu (est-il actif ? systemctl status cassandra-courtier.path)"}
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : valider, Racine
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

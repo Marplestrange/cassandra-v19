@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Le Journal
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : journal
+# ZONE       : CN
+# VERSION CN : 0.1.0  #41880b
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le journal des agents (les consultations entre les trois rôles — claude, itare, cassandra — inscrites avec la question et la réponse) et le lecteur unifié des journaux : les tables des modules, les fichiers du système, un flux fusionné, une ligne du temps, les anomalies jamais vues et les veilles sur motif. Cloisonné en lecture : on ne lit que ce qui existe.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=41880b ▼▼▼
 [module]
 id = "journal"
 nom = "Le Journal"
@@ -160,4 +175,9 @@ zone = "principal"
 taille = "l"
 composant = "liste"
 source = "flux_recent"
+# ▲▲▲ FIN BORNE CN ▲▲▲
 
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

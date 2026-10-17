@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les notes
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : notes
+# ZONE       : CN
+# VERSION CN : 0.1.0  #57a5c0
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les notes.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=57a5c0 ▼▼▼
 """Les notes.
 
 Porté de la V18 (`note_*`, `notes_*`, `ca_*`, `_nt_*`), avec ses leçons :
@@ -1508,3 +1523,9 @@ def brancher(ctx):
     c.implementer("partage_creer", partage_creer, prouver_partage, defaire_partage, simuler=lambda x, ref="", **_: "ouvrirait un lien public vers la note %s" % ref)
     c.implementer("partage_retirer", partage_retirer, prouver_partage_retire, defaire_partage_retire, simuler=lambda x, jeton="", **_: "retirerait le lien de partage")
     c.implementer("partage_servir", partage_servir)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : num_dit, segment_ok, dossier_ok, dossier_propre, dossier_projet, liens_de, cases_de, ancres_de …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le pare-feu du panneau
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : fastpanel
+# ZONE       : CN
+# VERSION CN : 0.2.0  #53c89f
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le pare-feu du panneau : la validation d'une règle, le calcul du risque de s'enfermer dehors, et la mise en forme. Fonctions pures, testées sans panneau.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=53c89f ▼▼▼
 """Le pare-feu du panneau : la validation d'une règle, le calcul du risque de s'enfermer dehors, et la mise en forme. Fonctions pures, testées sans panneau.
 
 Leçons de la V18 gardées :
@@ -88,3 +103,9 @@ def vers_panneau(r):
     """Une règle de l'API, dans les mots de l'écran."""
     return {"id": r.get("id"), "nom": r.get("name") or "", "ports": r.get("port_range") or "", "proto": r.get("proto") or "", "sens": r.get("type") or "",
             "politique": r.get("policy") or "", "action": r.get("action") or "", "sources": ",".join(x.get("source") or "" for x in (r.get("rules") or []))}
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : valider, ports_de, couvre, risque, politique_refus, corps_de, vers_panneau
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

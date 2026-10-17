@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Le Nexus : ce qu'il fait, et ce qui est intouchable -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Le Nexus : ce qu'il fait, et ce qui est intouchable -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7ef9a2 ▼▼▼ -->
 # Le Nexus : ce qu'il fait, et ce qui est intouchable
 
 Statut : définition à valider (17-10-2026). **À lire avant `docs/CN_BORNES.md`** : on ne borne pas le code avant d'avoir dit ce qu'est le nexus.
@@ -125,3 +140,9 @@ La classe de chaque module est un champ de son **manifeste** (`classe = "regalie
 
 **Ouvertes**
 - Quels modules de la liste régalienne sont à revoir ? Candidats à discuter : `sauvegardes` (le calcul de rétention est pur), `modules` (la résolution des dépendances est pure et décisive), `reglages`, `journal`.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

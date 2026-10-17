@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Le module store de Cassandra -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Le module store de Cassandra -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=0e5237 ▼▼▼ -->
 # Le module store de Cassandra
 
 Un jour, des modules viendront d'ailleurs : un éditeur les publie, un administrateur les installe, Cassandra elle-même peut les choisir.
@@ -57,3 +72,9 @@ Ce document dit ce que le noyau garantit déjà pour que ce jour arrive sans rie
 - Une clé n'est de confiance que si l'administrateur l'a posée dans `config/cles/`.
 - Un module du store ne s'élève jamais seul : ni « interne », ni plus de permissions qu'il n'en a déclaré.
 - Rien n'est supprimé sans retour : désactiver garde les données, désinstaller les purge seulement sur demande explicite.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

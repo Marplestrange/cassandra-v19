@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le carnet d'adresses
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : contacts
+# ZONE       : CN
+# VERSION CN : 0.1.0  #e4fecf
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le carnet d'adresses.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e4fecf ▼▼▼
 """Le carnet d'adresses.
 
 Porté de la V18 (`contact_*`, `contacts_*`, vCard, CSV), avec ses leçons :
@@ -1063,3 +1078,9 @@ def brancher(ctx):
     c.implementer("vcard_importer", vcard_importer, prouver_import, defaire_import, simuler=lambda x, **_: "importerait un fichier vCard")
     c.implementer("csv_importer", csv_importer, prouver_import, defaire_import, simuler=lambda x, **_: "importerait un fichier CSV")
     c.implementer("purger_corbeille", purger_corbeille, prouver_purge, defaire_purge, simuler=lambda x, **_: "effacerait ce qui est à la corbeille depuis plus de trente jours")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : aplatir, norm_nom, initiales, norm_tel, norm_site, norm_domaine, remplissage, meilleure …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

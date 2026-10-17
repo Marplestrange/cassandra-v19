@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs du coffre
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #d155e0
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs du coffre : le magasin de secrets, réversible, contre un faux serveur Vaultwarden.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d155e0 ▼▼▼
 """Bancs du coffre : le magasin de secrets, réversible, contre un faux serveur Vaultwarden."""
 import json
 import shutil
@@ -138,3 +153,9 @@ class Monde(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : FauxVault, Monde
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

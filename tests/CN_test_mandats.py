@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs des mandats d'envoi
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #4509f1
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs des mandats d'envoi : l'écriture bornée, la règle « l'adresse ne vient pas de la demande », la lecture à voix haute.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4509f1 ▼▼▼
 """Bancs des mandats d'envoi : l'écriture bornée, la règle « l'adresse ne vient pas de la demande », la lecture à voix haute."""
 import shutil
 import sys
@@ -67,3 +82,9 @@ class Monde(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Monde
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

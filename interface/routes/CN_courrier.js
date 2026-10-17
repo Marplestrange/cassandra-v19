@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Courrier : /api/courrier/etat, /api/itare/mail/*, /api/me/mailbox* (V18) -> capacités cour
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #4c9e83
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Courrier : /api/courrier/etat, /api/itare/mail/*, /api/me/mailbox* (V18) -> capacités courrier.* et reglages.* du noyau.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=4c9e83 ▼▼▼
 /* Courrier : /api/courrier/etat, /api/itare/mail/*, /api/me/mailbox* (V18) -> capacités courrier.* et reglages.* du noyau.
    Le noyau parle français (dossier, objet, lu…), l'écran V18 anglais (folder, subject, seen…) : les adaptateurs ci-dessous font la traduction. */
 (function () {
@@ -74,3 +89,9 @@
     },
   });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

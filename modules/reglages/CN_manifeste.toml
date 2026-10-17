@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Réglages
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : reglages
+# ZONE       : CN
+# VERSION CN : 0.1.0  #ca74af
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les réglages des modules : chacun déclare les siens (type, défaut, portée), ils s'écrivent un par un avec leur historique, les secrets ne sortent jamais en clair. Remplace le config.json réécrit en entier de la V18.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ca74af ▼▼▼
 [module]
 id = "reglages"
 nom = "Réglages"
@@ -69,3 +84,9 @@ masque = ["avant", "avant_chiffre"]
 [permissions]
 reglages = true
 droits = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

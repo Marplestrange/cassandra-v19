@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : L'onglet Hébergement (V18 : /api/fp/*) -> capacités fastpanel
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #26bb8b
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : L'onglet Hébergement (V18 : /api/fp/*) -> capacités fastpanel.* du noyau.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=26bb8b ▼▼▼
 /* L'onglet Hébergement (V18 : /api/fp/*) -> capacités fastpanel.* du noyau.
    Le module parle français (domaine, proprietaire, quota_go…), l'écran V18 anglais (domain, user, disk_quota_gb…) : ce fichier traduit, il n'invente rien.
    Une source qui ne répond pas rend {ok:false, reason} — l'écran en fait « Source injoignable », pas une liste vide.
@@ -143,3 +158,9 @@
     },
   });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

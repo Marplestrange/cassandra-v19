@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Carnet d'adresses
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : contacts
+# ZONE       : CN
+# VERSION CN : 0.1.0  #839438
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=839438 ▼▼▼
 [module]
 id = "contacts"
 nom = "Carnet d'adresses"
@@ -235,3 +250,9 @@ qui = ["humain", "compte"]
 
 [permissions]
 stockage = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs du générateur d'en-têtes
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #ea2df9
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs du générateur d'en-têtes : il ajoute des commentaires, jamais du code ; il est idempotent ; ce qu'il écrit est conforme à l'outil de bornes.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ea2df9 ▼▼▼
 """Bancs du générateur d'en-têtes : il ajoute des commentaires, jamais du code ; il est idempotent ; ce qu'il écrit est conforme à l'outil de bornes."""
 import ast
 import shutil
@@ -84,3 +99,9 @@ class Generateur(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Generateur
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

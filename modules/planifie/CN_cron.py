@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les tâches planifiées
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : planifie
+# ZONE       : CN
+# VERSION CN : 0.1.1  #d27c05
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les tâches planifiées : la logique pure (expressions cron, occurrences, description en français, verdict d'une tâche, collisions, dérive).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=d27c05 ▼▼▼
 """Les tâches planifiées : la logique pure (expressions cron, occurrences, description en français, verdict d'une tâche, collisions, dérive).
 
 Portée de la V18. Rien ici ne touche le système : le module lit et écrit les crontabs par le courtier, et passe les temps et les durées à ces fonctions.
@@ -405,3 +420,9 @@ def boucle(ref, apres, suivants, profondeur=0):
     if not s:
         return False
     return True if s == ref else boucle(ref, s, suivants, profondeur + 1)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : champ, normaliser, analyser, occurrences, decrire, precedente, suivante, apercu …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

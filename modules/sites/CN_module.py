@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le module Sites
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : sites
+# ZONE       : CN
+# VERSION CN : 0.1.1  #027b54
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le module Sites.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=027b54 ▼▼▼
 """Le module Sites.
 
 Ce qu'il tient de la V18 (sites, site_pass, site_fiche, site_history/availability, demandes, accords, liens) et les leçons qu'il garde :
@@ -649,3 +664,9 @@ def brancher(ctx):
     c.implementer("accorder", accorder, prouver_accord, defaire_accord, simuler=lambda x, domaine="", geste="restaurer", **_: "accorderait « %s » sur %s" % (geste, domaine))
     c.implementer("lier", lier, prouver_lien, defaire_lien, simuler=lambda x, domaine="", genre="", ref="", **_: "lierait %s %s à %s" % (genre, ref, domaine))
     c.implementer("delier", delier, prouver_delie, defaire_delie, simuler=lambda x, domaine="", genre="", ref="", **_: "délierait %s %s de %s" % (genre, ref, domaine))
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : nom_hote, _sonder_http, _cert_jours, duree_texte, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

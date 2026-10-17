@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les canaux Telegram
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : canaux
+# ZONE       : CN
+# VERSION CN : 0.1.0  #48d683
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les canaux Telegram : l'état et le miroir.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=48d683 ▼▼▼
 """Les canaux Telegram : l'état et le miroir.
 
 Porté de la V18 (`tg_miroir_*`), avec sa leçon :
@@ -60,3 +75,9 @@ def brancher(ctx):
         ctx.implementer(cid, f)
     ctx.implementer("miroir_ecrire", miroir_ecrire, prouver_miroir, defaire_miroir,
                     simuler=lambda x, actif=False, **_: "allumerait le miroir Telegram" if actif else "éteindrait le miroir Telegram")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les outils PURS du courrier
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : courrier
+# ZONE       : CN
+# VERSION CN : 0.1.0  #b02d00
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b02d00 ▼▼▼
 """Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
 
 Le nettoyage du HTML est une LISTE BLANCHE bâtie sur un vrai analyseur (html.parser), pas une série d'expressions régulières qui retirent ce qu'on
@@ -448,3 +463,9 @@ def assainir_html(page, images=False):
     except Exception:
         return html.escape(html_en_texte(page or "")), False
     return n.resultat(), n.images_distantes
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : utf7_decoder, utf7_encoder, citer, decoder_entete, date_iso, adresse_parts, cle_de_fil, role_drapeau …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

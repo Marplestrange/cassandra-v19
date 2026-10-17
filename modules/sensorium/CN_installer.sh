@@ -1,4 +1,19 @@
 #!/usr/bin/env bash
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Installe le Sensorium
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : sensorium
+# ZONE       : CN
+# VERSION CN : 0.1.3  #def9e2
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Installe le Sensorium : son dossier, son unité (dans le dossier de Cassandra, liée dans systemd), puis le démarre.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=def9e2 ▼▼▼
 # Installe le Sensorium : son dossier, son unité (dans le dossier de Cassandra, liée dans systemd), puis le démarre.
 # Idempotent : relancé (par CN_deploy.sh quand le module change), il remet l'unité à jour et redémarre le collecteur.
 set -euo pipefail
@@ -17,3 +32,9 @@ systemctl daemon-reload
 systemctl enable "$unite" >/dev/null 2>&1
 systemctl restart "$unite"
 echo "sensorium : unité installée et démarrée (données : $CASSANDRA_DONNEES/sensorium)"
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

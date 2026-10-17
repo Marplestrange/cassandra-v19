@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Sites : /api/sites/* (V18) -> capacités sites
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #42a470
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Sites : /api/sites/* (V18) -> capacités sites.* du noyau. Le module garde les formes de la V18 (sites, vigilances, portée) :
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=42a470 ▼▼▼
 /* Sites : /api/sites/* (V18) -> capacités sites.* du noyau. Le module garde les formes de la V18 (sites, vigilances, portée) :
    la lecture passe telle quelle ; les gestes rendent {ok, reason} comme l'écran les lit.
    /api/sites/act (redémarrer, vider le cache… un site, par FastPanel) attend le module fastpanel : il répond « pas encore porté ». */
@@ -34,3 +49,9 @@
   P("/api/sites/demander", "sites.demander", { args: (r) => ({ domaine: dom(r.body), message: String(r.body.message || "") }), sortie: ok });
   P("/api/sites/demande/repondre", "sites.repondre_demande", { args: (r) => ({ id: +r.body.id, decision: String(r.body.decision || ""), reponse: String(r.body.reponse || "") }), sortie: ok });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

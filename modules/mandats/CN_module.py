@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les mandats d'envoi
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : mandats
+# ZONE       : CN
+# VERSION CN : 0.1.0  #ddb86d
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les mandats d'envoi : l'autorisation d'envoyer, avec ses bornes.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ddb86d ▼▼▼
 """Les mandats d'envoi : l'autorisation d'envoyer, avec ses bornes.
 
 Porté de la V18 (`mandat_*`), avec ses leçons :
@@ -176,3 +191,9 @@ def brancher(ctx):
                     simuler=lambda x, mid=0, **_: "supprimerait le mandat %s" % mid)
     ctx.implementer("suspendre", suspendre, prouver_suspendre, defaire_suspendre,
                     simuler=lambda x, mid=0, **_: "suspendrait le mandat %s" % mid)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : _lignes, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

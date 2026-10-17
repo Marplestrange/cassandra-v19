@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs de la vue d'ensemble
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #7def45
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille ».
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7def45 ▼▼▼
 """Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille »."""
 import sys
 import unittest
@@ -125,3 +140,9 @@ class PointDEvolution(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : composer, site, sources, Vue, PointDEvolution
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

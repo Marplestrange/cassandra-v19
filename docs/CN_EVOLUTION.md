@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Évolution V19 — note de conception -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Évolution V19 — note de conception -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7a8bc5 ▼▼▼ -->
 # Évolution V19 — note de conception
 
 Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le moteur V18 (diff d'un fichier unique `cassandra.py`), qui n'a plus d'objet.
@@ -168,3 +183,9 @@ Faits relevés : CodeEvolve (Inter&Co + WPI, 152 étoiles, v0.3.1) annonce dépa
 4. Écritures simulées en ombre, vérificateur indépendant pour l'irréversible.
 5. Créer / élaguer / recomposer ; observations vers le noyau.
 6. Écran ; export git et store.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

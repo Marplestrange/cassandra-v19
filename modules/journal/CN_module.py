@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le journal
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : journal
+# ZONE       : CN
+# VERSION CN : 0.1.0  #e35553
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le journal : le fil des agents et le lecteur unifié des journaux.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e35553 ▼▼▼
 """Le journal : le fil des agents et le lecteur unifié des journaux.
 
 Porté de la V18 (`journal_*`), avec ses leçons :
@@ -683,3 +698,9 @@ def brancher(ctx):
                     simuler=lambda x, pattern="", **_: "poserait une veille sur « %s »" % pattern)
     ctx.implementer("veille_retirer", veille_retirer, prouver_veille_retiree, defaire_veille_retiree,
                     simuler=lambda x, wid=0, **_: "retirerait la veille %s" % wid)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : _utcnow, _ts_norm, _niveau, _age_s, _signature, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

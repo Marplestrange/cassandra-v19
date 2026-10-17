@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : La GED
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : ged
+# ZONE       : CN
+# VERSION CN : 0.1.0  #f09c4f
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La GED : les documents d'un compte, par sources, avec un index et des règles de classement.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f09c4f ▼▼▼
 """La GED : les documents d'un compte, par sources, avec un index et des règles de classement.
 
 Porté de la V18 (`ged_*`), avec ses leçons :
@@ -1212,3 +1227,9 @@ def brancher(ctx):
     ctx.implementer("delien", delien, prouver_delien, defaire_delien, simuler=lambda x, **_: "détacherait ce document")
     ctx.implementer("regle_save", regle_save, prouver_regle, defaire_regle, simuler=lambda x, libelle="", **_: "enregistrerait la règle « %s »" % libelle)
     ctx.implementer("regle_delete", regle_delete, prouver_regle_delete, defaire_regle_delete, simuler=lambda x, rid=0, **_: "retirerait la règle %s" % rid)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : _nt_dossier_compte, _media_kind, _octets, _mime, _depot_refuse, _inline_type, _editable, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

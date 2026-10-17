@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module FastPanel
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : fastpanel
+# ZONE       : CN
+# VERSION CN : 0.2.0  #f4f0ea
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le pont vers le panneau d'hébergement FastPanel. Lit le parc (comptes, sites, certificats, bases, FTP, courrier, DNS, sauvegardes, services) dans la base du panneau, ouverte en lecture seule, et agit par son API : services, certificats, bases, stockages et plans de sauvegarde, avec preuve et retour arrière. Surveille les services tombés, les certificats proches de l'échéance, les sauvegardes absentes ou périmées et les versions de PHP en fin de support. Le plafond d'autonomie est le choix de l'administrateur.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=f4f0ea ▼▼▼
 [module]
 id = "fastpanel"
 nom = "FastPanel"
@@ -346,3 +361,9 @@ qui = ["humain", "compte"]
 lectures = true
 reseau = ["l'API du panneau, à l'adresse des réglages (le port 8888 local par défaut)", "le port 443 d'un domaine, pour en lire le certificat"]
 privileges = ["la base SQLite du panneau est ouverte en lecture seule", "le compte du panneau donne ses droits à Cassandra : en faire un compte dédié"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

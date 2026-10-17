@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : La sécurité : /api/securite/* (V18) -> capacités securite
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #2f4f51
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : La sécurité : /api/securite/* (V18) -> capacités securite.* du noyau.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=2f4f51 ▼▼▼
 /* La sécurité : /api/securite/* (V18) -> capacités securite.* du noyau.
    Différé : l'état de la machine, direct/geste, le pare-feu FastPanel, les audits rédigés par le modèle. */
 (function () {
@@ -37,3 +52,9 @@
   });
   P("/api/securite/audit/poser", "securite.audit_poser", { args: (r) => ({ modele: r.body.modele || "", titre: r.body.titre || "", corps: r.body.corps || "" }), sortie: (x) => ok(x) });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Cassandra V19
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : (racine)
+# ZONE       : CN
+# VERSION CN : 0.1.0  #ae5495
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Cassandra V19 : le moteur central.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ae5495 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -1034,3 +1049,9 @@ def main(argv) -> int:
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Noyau, _donnees, _extensions, _actifs, _manifestes, verifier, commande_module, commande_agir …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

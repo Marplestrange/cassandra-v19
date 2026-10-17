@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Jetable
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : outils
+# ZONE       : CN
+# VERSION CN : 0.1.0  #74a0ea
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Jetable : signatures des capacités d'un module. usage: python outils/CN__sig.py module
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=74a0ea ▼▼▼
 """Jetable : signatures des capacités d'un module. usage: python outils/CN__sig.py module"""
 import ast, sys, tomllib
 mod = sys.argv[1]
@@ -20,3 +35,9 @@ for k in [c["id"] for c in m["capacites"]]:
     a = f.args; names = [x.arg for x in a.args][1:]; d = [ast.unparse(x) for x in a.defaults]
     off = len(names) - len(d)
     print(k, "(", ", ".join(n + ("=" + d[i - off] if i >= off else "") for i, n in enumerate(names)), ")")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : constantes et configuration
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

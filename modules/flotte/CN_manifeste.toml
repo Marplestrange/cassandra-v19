@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Flotte
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : flotte
+# ZONE       : CN
+# VERSION CN : 0.1.1  #1639be
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le parc de machines : le registre déclaré, Tailscale et les relevés SSH côte à côte, la présence mesurée, la disponibilité, le verdict d'ouverture, les commandes nommées sur une machine. Réservé à l'administrateur.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=1639be ▼▼▼
 [module]
 id = "flotte"
 nom = "Flotte"
@@ -283,3 +298,9 @@ description = "Machines tombées. Une seule occurrence mérite qu'on regarde."
 stockage = true
 secrets = true
 reseau = ["Tailscale (binaire local), les machines déclarées par SSH, TCP ou HTTP"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

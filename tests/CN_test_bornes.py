@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs de l'outil de bornes
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #ad3ed9
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs de l'outil de bornes : détection des marqueurs, pureté d'une EC, conformité d'un fichier, scellement des empreintes.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ad3ed9 ▼▼▼
 """Bancs de l'outil de bornes : détection des marqueurs, pureté d'une EC, conformité d'un fichier, scellement des empreintes."""
 import shutil
 import sys
@@ -185,3 +200,9 @@ class Scellement(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : fichier_cn, fichier_ec, Marqueurs, Purete, Conformite, Scellement
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

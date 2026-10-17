@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs du module modeles, contre de faux serveurs OpenAI-compatible et Ollama
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #c826c1
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs du module modeles, contre de faux serveurs OpenAI-compatible et Ollama.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c826c1 ▼▼▼
 """Bancs du module modeles, contre de faux serveurs OpenAI-compatible et Ollama."""
 import json
 import shutil
@@ -432,3 +447,9 @@ class Ollama(Monde):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Faux, ouvert, Monde, Registre, Roles, Appels, Ollama
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

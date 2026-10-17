@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Droits
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : droits
+# ZONE       : CN
+# VERSION CN : 0.2.0  #4093f6
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Qui, parmi les comptes, peut utiliser quoi : les modules déclarent leurs droits, on les attribue à des comptes et à des groupes, l'exécuteur les vérifie. Modèle de Dolibarr.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=4093f6 ▼▼▼
 [module]
 id = "droits"
 nom = "Droits"
@@ -108,3 +123,9 @@ qui = ["humain", "compte", "cassandra", "itare"]
 [permissions]
 droits = true
 introspection = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

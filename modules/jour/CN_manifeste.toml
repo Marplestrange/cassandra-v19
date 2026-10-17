@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Aujourd'hui
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : jour
+# ZONE       : CN
+# VERSION CN : 0.1.0  #29c1da
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le bureau du jour : ce qui brûle, ce qui est à regarder, ce qui tombe aujourd'hui. Chaque module déclare ses signaux ([[signaux]]) ; ce module les assemble pour le compte qui regarde, sans jamais cacher une source en panne.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=29c1da ▼▼▼
 [module]
 id = "jour"
 nom = "Aujourd'hui"
@@ -15,3 +30,9 @@ risque = "lecture"
 [permissions]
 introspection = true
 lectures = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

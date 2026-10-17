@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs des gestes de sécurité
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #7c2933
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs des gestes de sécurité : l'état par les relevés du courtier (simulé), chaque geste prouvé ou défait, et la table fermée de la commande root.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7c2933 ▼▼▼
 """Bancs des gestes de sécurité : l'état par les relevés du courtier (simulé), chaque geste prouvé ou défait, et la table fermée de la commande root."""
 import importlib.machinery
 import importlib.util
@@ -381,3 +396,9 @@ class CommandeRoot(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : FauxCourtier, Monde, Etat, Gestes, Outils, charger_programme_outils, ProgrammeOutils, charger_commande …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

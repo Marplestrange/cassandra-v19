@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : L'agenda
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : agenda
+# ZONE       : CN
+# VERSION CN : 0.1.0  #377646
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : L'agenda.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=377646 ▼▼▼
 """L'agenda.
 
 Porté de la V18 (`itare_event_*`, `itare_reminder_*`, `itare_calendar_items`, `itare_agenda_list`, `ical_parse`, `rrule_expand`, `_caldav_*`), avec ses leçons :
@@ -853,3 +868,9 @@ def brancher(ctx):
     c.implementer("rappel_statut", rappel_statut, prouver_rappel, defaire_rappel, simuler=lambda x, id="", statut="", **_: "passerait le rappel %s à « %s »" % (id, statut))
     c.implementer("rappel_supprimer", rappel_supprimer, prouver_rappel_supprime, defaire_rappel_supprime, simuler=lambda x, id="", **_: "supprimerait le rappel %s" % id)
     c.implementer("ical_importer", ical_importer, prouver_importe, defaire_importe, simuler=lambda x, **_: "importerait les événements du fichier .ics")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : lire_instant, en_datetime, minutes_alarme, regle_de, analyser_regle, ajouter_mois, occurrences, ical_unescape …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

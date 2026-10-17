@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Modèles -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : modeles -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Modèles -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=729253 ▼▼▼ -->
 # Modèles
 
 Le registre des modèles de langage et la porte unique pour les faire parler (`completer`).
@@ -10,3 +25,9 @@ Le registre des modèles de langage et la porte unique pour les faire parler (`c
 
 ## Non porté
 Migration des anciennes clés de config.json (la V19 repart d'une base vide), appel en flux (streaming) pour le chat, appels avec outils (ils viendront avec le module des agents).
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Certificats TLS
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : certificats
+# ZONE       : CN
+# VERSION CN : 0.2.0  #57bcf4
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Certificats TLS : ce que les visiteurs voient, et combien d'émissions il reste.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=57bcf4 ▼▼▼
 """Certificats TLS : ce que les visiteurs voient, et combien d'émissions il reste.
 
 Porté de la V18 (`_ssl_probe`, `ssl_quota_state`, `_ssl_quota_note`, `_cert_sonde_jours`), avec ses leçons :
@@ -172,3 +187,9 @@ def brancher(ctx):
     c.implementer("etat", etat)
     c.implementer("signal_jour", signal_jour)
     c.implementer("quota", quota)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : nom_hote, domaine_enregistre, lire_certificat, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

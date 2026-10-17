@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs des gestes d'urgence
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #a0ff23
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs des gestes d'urgence : les freins du noyau, le confinement (le courtier est simulé), l'échéance, et la commande root (ses règles et ses garde-fous).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a0ff23 ▼▼▼
 """Bancs des gestes d'urgence : les freins du noyau, le confinement (le courtier est simulé), l'échéance, et la commande root (ses règles et ses garde-fous)."""
 import http.client
 import importlib.machinery
@@ -473,3 +488,9 @@ class CommandeRoot(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : FauxConfiner, Monde, Freins, Confinement, Echeance, AdresseDeLaConnexion, charger_commande, CommandeRoot
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

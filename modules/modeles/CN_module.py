@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les modèles
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : modeles
+# ZONE       : CN
+# VERSION CN : 0.1.0  #815f44
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les modèles.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=815f44 ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -561,3 +576,9 @@ def brancher(ctx):
     c.implementer("choisir", choisir, prouver_choix, defaire_choix, simuler=lambda x, modele_id="", **_: "choisirait le modèle %s" % modele_id)
     c.implementer("ollama_telecharger", ollama_telecharger, prouver_pull, defaire_pull, simuler=lambda x, nom="", **_: "téléchargerait le modèle local %s" % nom)
     c.implementer("ollama_supprimer", ollama_supprimer, prouver_local_supprime, defaire_local_supprime, simuler=lambda x, nom="", **_: "supprimerait le modèle local %s" % nom)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : lire_json, panne_texte, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

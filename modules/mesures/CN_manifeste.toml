@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Mesures
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : mesures
+# ZONE       : CN
+# VERSION CN : 0.1.0  #f2f5d3
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : L'historique : chaque module déclare ses mesures ([[mesures]]) ; ce module en tire les courbes par période, l'habitude (ce qui est normal ce jour-là à cette heure), les écarts, la tendance (date de saturation) et un verdict. Une source muette est DITE muette : « tout est stable » n'est jamais un défaut.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f2f5d3 ▼▼▼
 [module]
 id = "mesures"
 nom = "Mesures"
@@ -50,3 +65,9 @@ droit = "voir"
 [permissions]
 introspection = true
 lectures = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

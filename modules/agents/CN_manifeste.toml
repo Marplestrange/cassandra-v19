@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Agents
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : agents
+# ZONE       : CN
+# VERSION CN : 0.1.0  #bf32e5
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=bf32e5 ▼▼▼
 [module]
 id = "agents"
 nom = "Agents"
@@ -138,3 +153,9 @@ masque = ["message", "texte", "actions"]
 stockage = true
 lectures = true
 agir = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

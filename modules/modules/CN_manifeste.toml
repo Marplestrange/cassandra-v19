@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Modules
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : modules
+# ZONE       : CN
+# VERSION CN : 0.1.0  #7e40fa
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La gestion des modules : ce qui est installé, actif ou à installer, ce qui dépend de quoi, et le geste d'activer ou de désactiver. Le noyau fait le travail (dépendances, essentiels, branchement à chaud) ; ce module en fait des capacités, donc des droits, une preuve, un retour et une trace.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7e40fa ▼▼▼
 [module]
 id = "modules"
 nom = "Modules"
@@ -53,3 +68,9 @@ qui = ["humain", "compte"]
 [permissions]
 modules = true
 droits = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

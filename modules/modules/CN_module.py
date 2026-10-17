@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le module des modules
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : modules
+# ZONE       : CN
+# VERSION CN : 0.1.0  #c2a6a0
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c2a6a0 ▼▼▼
 """Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 
 Le travail (plan d'activation avec dépendances, refus d'un essentiel, branchement à chaud) est celui du noyau ; ce module en fait des
@@ -60,3 +75,9 @@ def brancher(ctx):
     ctx.implementer("fiche", fiche)
     ctx.implementer("activer", activer, prouver_activer, defaire_activer)
     ctx.implementer("desactiver", desactiver, prouver_desactiver, defaire_desactiver)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

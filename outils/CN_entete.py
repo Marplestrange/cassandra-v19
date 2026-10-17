@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6e1f68
+# VERSION CN : 0.1.0  #17237a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : ajoute à chaque fichier existant l'en-tête, la borne CN et l'explicatif du format docs/CN_FORMAT.md, sans toucher au code.
 # MÉTHODE    : le titre et le rôle sont repris de l'ancien commentaire ; la méthode reste « à compléter » pour que l'auteur la relise ; simulation par défaut.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6e1f68 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=17237a ▼▼▼
 """Générateur d'en-têtes. Usage :
     python outils/CN_entete.py                       simulation : liste ce qui serait fait, n'écrit rien
     python outils/CN_entete.py --ecrire              écrit (un fichier à la fois, puis scelle les empreintes)
@@ -34,8 +34,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import CN_bornes as B  # noqa: E402
 
 RACINE = B.RACINE
-GENERES = {"interface/index.html", "interface/app.js", "interface/style.css"}      # produits par l'assembleur : c'est lui qui posera leur en-tête
-HORS_V1 = {".html", ".css"}                                                         # doctype, @charset : à traiter à part
+GENERES = {"interface/CN_index.html", "interface/CN_app.js", "interface/CN_style.css"}      # produits par l'assembleur : c'est lui qui posera leur en-tête
+HORS_V1: set = set()
 VERSION_NOYAU = re.compile(r'VERSION_NOYAU\s*=\s*"([^"]+)"')
 
 
@@ -112,16 +112,18 @@ def noms_definis(texte: str, ext: str) -> str:
     return "à compléter"
 
 
-def entete_pour(chemin: str, texte: str, jeton: str) -> dict:
+def entete_pour(chemin: str, texte: str, jeton: str, surcharge: dict | None = None) -> dict:
     module = B.module_de(chemin)
     titre, role = titre_et_role(chemin, texte)
+    surcharge = surcharge or {}
+    titre, role = surcharge.get("titre", titre), surcharge.get("role", role)
     ext = Path(chemin).suffix
     ferme = {"<!--": " -->", "/*": " */"}.get(jeton, "")
     def l(txt): return f"{jeton} {txt}{ferme}" if txt else f"{jeton}{ferme}"
     barre = jeton + " " + "═" * 78 + ferme
     champs = [("TITRE", titre), ("LICENCE", "AGPL-3.0"), ("AUTEUR", "Atek Drisse"), ("GIT", "github.com/Marplestrange"), ("MAIL", "marplestrange@cassandra.center"),
               ("MODULE", module), ("ZONE", "CN"), ("VERSION CN", version_de(chemin) + "  #000000"), ("VERSION EC", "néant"), ("EC LIÉES", "néant"),
-              ("RÔLE", role), ("MÉTHODE", "à compléter par l'auteur (comment le fichier s'y prend)")]
+              ("RÔLE", role), ("MÉTHODE", surcharge.get("methode", "à compléter par l'auteur (comment le fichier s'y prend)"))]
     tete = [barre] + [l(f"{k:<10} : {v}") for k, v in champs] + [barre]
     ouvre = l("▼▼▼ BORNE CN version=" + version_de(chemin) + " empreinte=000000 ▼▼▼")
     ferme_b = l("▲▲▲ FIN BORNE CN ▲▲▲")
@@ -132,26 +134,26 @@ def entete_pour(chemin: str, texte: str, jeton: str) -> dict:
     return {"tete": tete, "ouvre": ouvre, "ferme": ferme_b, "expl": expl, "module": module}
 
 
-def est_en_format(texte: str) -> bool:
+def est_en_format(texte: str, ext: str = "") -> bool:
     """Déjà au format : un en-tête (TITRE) dans les soixante premières lignes ET une vraie ligne de marqueur de borne."""
     lignes = texte.splitlines()
     a_titre = any(re.match(r"^\s*(#|//|;;|--|/\*|<!--)\s*TITRE\s*:", l) for l in lignes[:60])
-    a_borne = any((m := B.marqueur(l)) and m.startswith(("BORNE CN", "BORNE EC")) for l in lignes)
+    a_borne = any((m := B.marqueur(l, ext)) and m.startswith(("BORNE CN", "BORNE EC")) for l in lignes)
     return a_titre and a_borne
 
 
-def transformer(chemin: str, texte: str) -> str | None:
+def transformer(chemin: str, texte: str, surcharge: dict | None = None) -> str | None:
     ext = Path(chemin).suffix
     jeton = B.COMMENTAIRE.get(ext)
-    if jeton is None or est_en_format(texte):
+    if jeton is None or est_en_format(texte, ext):
         return None
     lignes = texte.replace("\r\n", "\n").split("\n")
     prefixe = []
-    while lignes and (lignes[0].startswith("#!") or re.match(r"^#.*coding[:=]", lignes[0])):
+    while lignes and (lignes[0].startswith("#!") or re.match(r"^#.*coding[:=]", lignes[0]) or lignes[0].lower().startswith(("<!doctype", "@charset"))):      # doivent rester en première ligne
         prefixe.append(lignes.pop(0))
     while lignes and lignes[-1] == "":
         lignes.pop()
-    e = entete_pour(chemin, texte, jeton)
+    e = entete_pour(chemin, texte, jeton, surcharge)
     sortie = prefixe + e["tete"] + [e["ouvre"]] + lignes + [e["ferme"], ""] + e["expl"]
     return "\n".join(sortie) + "\n"
 

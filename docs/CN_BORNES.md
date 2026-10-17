@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Bornes du code : nexus et points d'évolution -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Bornes du code : nexus et points d'évolution -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9c504a ▼▼▼ -->
 # Bornes du code : nexus et points d'évolution
 
 Statut : conception (17-10-2026) + audit chiffré de l'existant. Rien n'est encore refactoré.
@@ -72,3 +87,9 @@ Conséquence assumée : au départ, la zone d'évolution est une **minorité** d
 - Refactorer 42 modules est un chantier réel ; chaque extraction doit rester **équivalente à la ligne près** (les bancs de chaque module sont le filet).
 - Une fonction « presque pure » (qui lit l'heure, tire un nombre au hasard) doit recevoir ses entrées en paramètres pour devenir un point : sinon le rejeu n'est pas reproductible.
 - Un nexus trop mince fait perdre de la lisibilité ; un nexus trop gros stérilise l'évolution. Le critère est **mesurable** : une fonction est un point si elle est pure, chaude (appelée souvent) et lente ou coûteuse.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

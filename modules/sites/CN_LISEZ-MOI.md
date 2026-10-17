@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : sites — les sites web suivis par Cassandra -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : sites -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.1  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : sites — les sites web suivis par Cassandra -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.1 empreinte=228665 ▼▼▼ -->
 # sites — les sites web suivis par Cassandra
 
 Porté de la V18 (`sites_vue`, `site_fiche`, `site_pass`, `site_history`, `site_availability`, demandes/accords, liens, journal), lu en entier.
@@ -19,3 +34,9 @@ Porté de la V18 (`sites_vue`, `site_fiche`, `site_pass`, `site_history`, `site_
 - **Gestes sur le panneau depuis la fiche** (renouveler, redémarrer, restaurer) : ils passent par `fastpanel` ; la restauration exigera l'accord (`sites.accord`) quand elle sera portée.
 - **Avis par courriel au propriétaire** (panne, attribution, transfert) : attend le module courrier ; les événements `site.*` sont émis.
 - **Alertes ciblées aux propriétaires** : les constats vont aux administrateurs ; l'envoi au propriétaire se fera par le module notifications (destinataires par compte).
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

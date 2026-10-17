@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs des points d'évolution
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #8ae30f
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ae30f ▼▼▼
 """Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats."""
 import json
 import shutil
@@ -219,3 +234,9 @@ class Contrat(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : ec, Banc, Reference, EcServie, Disjoncteur, AutresFormats, Contrat
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

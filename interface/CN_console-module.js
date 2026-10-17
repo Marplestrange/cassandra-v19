@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : La console d'un module : l'écran que reçoit d'office tout module qui n'a pas d'écran sur m
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #ad013b
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : La console d'un module : l'écran que reçoit d'office tout module qui n'a pas d'écran sur mesure.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=ad013b ▼▼▼
 /* La console d'un module : l'écran que reçoit d'office tout module qui n'a pas d'écran sur mesure.
 
    Elle est TIRÉE de ce que le module déclare, jamais écrite à la main :
@@ -131,3 +146,9 @@
     montrer(onglets[0] ? onglets[0][0] : "reglages");
   };
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

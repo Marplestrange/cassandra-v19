@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Les tableaux d'ouverture des onglets V18 : chacun COMPOSE ce que l'écran lit à partir des 
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #ccec1a
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Les tableaux d'ouverture des onglets V18 : chacun COMPOSE ce que l'écran lit à partir des capacités du module concerné.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=ccec1a ▼▼▼
 /* Les tableaux d'ouverture des onglets V18 : chacun COMPOSE ce que l'écran lit à partir des capacités du module concerné.
    Ce qui n'a pas d'équivalent dans la V19 (acquittements du Sensorium, réparations, relevé de flotte à la demande) n'est pas inventé : il manque, et l'écran le montre vide. */
 (function () {
@@ -35,3 +50,9 @@
   P("/api/tgc/fils", null, { faire: async () => ok({ turns: [], fils: [] }) });
   P("/api/ita/carte", null, { faire: async () => ok({ turns: [], carte: null }) });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

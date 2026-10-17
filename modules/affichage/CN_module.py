@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le module d'affichage
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : affichage
+# ZONE       : CN
+# VERSION CN : 0.1.1  #2efd78
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=2efd78 ▼▼▼
 """Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 
 Un module ne dit jamais comment il s'affiche. Il déclare des écrans (avec un gabarit), des tuiles (avec un composant et une source de données) et
@@ -320,3 +335,9 @@ def brancher(ctx):
                     simuler=lambda ctx, **_: "personnaliserait le thème")
     ctx.implementer("personnaliser_widget", personnaliser_widget, prouver, defaire,
                     simuler=lambda ctx, widget="", **_: "personnaliserait la tuile %s" % widget)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : _rgb, _luminance, contraste, meilleur_texte, accent_ok, _rgba, _empreinte, lire_habillage …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

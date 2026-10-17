@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Jetable
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : outils
+# ZONE       : CN
+# VERSION CN : 0.1.0  #d53a83
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Jetable : écrit modules/flotte/CN_manifeste.toml.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d53a83 ▼▼▼
 """Jetable : écrit modules/flotte/CN_manifeste.toml."""
 LECT = [
     ("parc", "Le parc fusionné : une machine par nom, les sources côte à côte (registre, Tailscale, SSH, relevés) avec leur âge, l'engagement, la disponibilité mesurée", False),
@@ -177,3 +192,9 @@ reseau = ["Tailscale (binaire local), les machines déclarées par SSH, TCP ou H
 '''
 open("modules/flotte/CN_manifeste.toml", "w", encoding="utf-8", newline="\n").write(t)
 print("ok")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : constantes et configuration
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

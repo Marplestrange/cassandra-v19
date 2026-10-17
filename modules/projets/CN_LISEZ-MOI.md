@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : projets — les projets d'un compte -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : projets -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : projets — les projets d'un compte -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=301557 ▼▼▼ -->
 # projets — les projets d'un compte
 
 Porté de la V18 (`pj_*`, `projet_*` : en-tête, rôles, phases, jalons, décisions, journal, plan de référence, corbeille, avancement), lu en entier pour ce cœur.
@@ -16,3 +31,9 @@ Porté de la V18 (`pj_*`, `projet_*` : en-tête, rôles, phases, jalons, décisi
 - **Itare dans le projet** : droits d'Itare par projet, propositions quotidiennes, cadrage assisté, fil, commentaires d'Itare, atelier (`pj_proposer`, `pj_cadrage_*`, `pj_fil*`, `pj_atelier_*`, `pj_com_itare`) : modules Itare.
 - **Dossier du projet** (coffre/vault, `pj_dossier_*`, nature « livre » et ses mesures de texte), **courrier du projet** (`pj_courrier*`) : avec le coffre et le courrier.
 - **Liens contacts/sites vers un projet** : ils pointent déjà ici par l'identifiant (`contacts.lier kind=project`).
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

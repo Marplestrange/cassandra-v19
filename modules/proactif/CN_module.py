@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : La Proactivité
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : proactif
+# ZONE       : CN
+# VERSION CN : 0.1.0  #ca0bbb
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La Proactivité : l'autonomie qui se gagne, le savoir-faire mesuré, l'ombre et les incidents.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ca0bbb ▼▼▼
 """La Proactivité : l'autonomie qui se gagne, le savoir-faire mesuré, l'ombre et les incidents.
 
 Porté de la V18 (`pf_*`), avec ses leçons :
@@ -553,3 +568,9 @@ def brancher(ctx):
                     simuler=lambda x, cle="", **_: "débloquerait le geste « %s »" % cle)
     ctx.implementer("gouverner", gouverner, prouver_gouverner, defaire_gouverner,
                     simuler=lambda x, **_: "réglerait la gouvernance")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : _utcnow, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

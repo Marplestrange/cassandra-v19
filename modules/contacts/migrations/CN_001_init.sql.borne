@@ -1,0 +1,15 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Migration 001_init.sql
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : contacts
+# ZONE       : CN
+# VERSION CN : 0.1.0  #da7489
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Migration 001_init.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)
+# MÉTHODE    : à compléter par l'auteur
+# ══════════════════════════════════════════════════════════════════════════════
+# FICHIER    : CN_001_init.sql  (empreinte du contenu #da7489)

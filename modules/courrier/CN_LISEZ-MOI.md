@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : courrier — la boîte IMAP de chaque compte -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : courrier -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : courrier — la boîte IMAP de chaque compte -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=86cc78 ▼▼▼ -->
 # courrier — la boîte IMAP de chaque compte
 
 Porté de la V18 (`_imap_*`, `itare_mail_*`, `mail_*`, `_courrier_*`, ~2 000 lignes lues). Le noyau apprend que **un module est un paquet de son dossier** (`from . import outils`).
@@ -19,3 +34,9 @@ Porté de la V18 (`_imap_*`, `itare_mail_*`, `mail_*`, `_courrier_*`, ~2 000 lig
 - **Suppression définitive** (`mail_delete(permanent=True)`) et **suppression d'un dossier avec son contenu** : irréversibles.
 - **Envoi avec pièces jointes** (`_mail_joindre`) ; **réponses/relances** (`mail_relance_proposer`), **fil → projet**, **avatars/BIMI/favicons**, **index des médias**, **règles de tri** (`_MAIL_RULE_*`), **mandats d'envoi** : modules suivants.
 - **Boîte « du serveur »** (alertes SMTP du serveur lui-même, `cassandra_send_mail`) : relève du canal d'alerte, pas d'une boîte personnelle.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

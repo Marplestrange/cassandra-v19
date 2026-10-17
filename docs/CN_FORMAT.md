@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Format universel d'un fichier de code -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Format universel d'un fichier de code -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9e3396 ▼▼▼ -->
 # Format universel d'un fichier de code
 
 Statut : spécification à valider (17-10-2026). Vient après `docs/CN_NEXUS.md` (ce qu'est le nexus) et sert à `docs/CN_BORNES.md` (l'outil qui le vérifie).
@@ -190,3 +205,9 @@ Une EC rangée dans `/var/cassandra/ec/<module>/<point>/EC_<point>__EC<n>.py` su
 - **L'interface** (`app.js`, plus de 35 000 lignes) : le squelette devient des fichiers CN, les vues déclaratives des fichiers EC (descriptions, jamais de script).
 - **Les migrations SQL** suivent §3 quater (immuables, en-tête en compagnon, migrateur à adapter avant le renommage).
 - **Fichiers assemblés** (`index.html`, `app.js` générés) : en-tête posé par l'assembleur, pas à la main.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

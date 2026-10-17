@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Dialogue avec systemd (sd_notify), bibliothèque standard seule
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #be7335
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Dialogue avec systemd (sd_notify), bibliothèque standard seule.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=be7335 ▼▼▼
 """Dialogue avec systemd (sd_notify), bibliothèque standard seule.
 
 Le service est de type `notify` : systemd n'estime le noyau démarré que lorsqu'il l'annonce (READY=1),
@@ -36,3 +51,9 @@ def battement(statut: str = "") -> bool:
 
 def arret() -> bool:
     return notifier("STOPPING=1")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : notifier, pret, battement, arret
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

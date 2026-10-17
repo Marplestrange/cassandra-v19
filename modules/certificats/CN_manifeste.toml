@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Certificats
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : certificats
+# ZONE       : CN
+# VERSION CN : 0.2.0  #1819aa
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Surveille l'expiration des certificats TLS réellement servis (port 443), garde le registre des émissions Let's Encrypt (cinq par semaine et par domaine) et signale les certificats échus ou proches de l'échéance, avec le quota restant. Le renouvellement lui-même se fait par le panneau (module fastpanel, ssl_renouveler) ; ce module en tient le compte.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=1819aa ▼▼▼
 [module]
 id = "certificats"
 nom = "Certificats"
@@ -111,3 +126,9 @@ reseau = ["le port 443 des hôtes suivis (lecture du certificat présenté)"]
 script = "CN_installer.sh"
 verification = "CN_verifier.sh"
 retrait = "CN_retirer.sh"
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

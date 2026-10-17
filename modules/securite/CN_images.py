@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Sécurité › En images
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : securite
+# ZONE       : CN
+# VERSION CN : 0.3.2  #f093c1
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Sécurité › En images : la page de diagrammes. Fonction PURE : l'état de sécurité (analyse.etat) + les totaux du collecteur -> tout ce que dessine l'écran.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=f093c1 ▼▼▼
 """Sécurité › En images : la page de diagrammes. Fonction PURE : l'état de sécurité (analyse.etat) + les totaux du collecteur -> tout ce que dessine l'écran.
 
 Décision de Drisse (V18, 10-10, « garde tout ») : une page de diagrammes validée sur maquette. Tout vient de mesures déjà prises : l'état de l'onglet, les totaux d'attaques que tient le collecteur,
@@ -146,3 +161,9 @@ def composer(d, secu=None, certs=None, gestes=None, docker_ps=None, maintenant=N
                      "fail2ban": {"prisons": len(jails), "total": sum(j.get("total", 0) for j in jails), "bannies": sum(j.get("bannies", 0) for j in jails), "actif": bool(f2b.get("actif"))}},
         "manques": [] if secu_ok else ["collecteur"],
     }
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : de_confiance, courriel_etats, composer
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

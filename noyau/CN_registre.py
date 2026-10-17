@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le registre des objets
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #d8061b
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le registre des objets : tout ce que Cassandra connaît, avec UN propriétaire par type.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d8061b ▼▼▼
 """Le registre des objets : tout ce que Cassandra connaît, avec UN propriétaire par type.
 
 Un site, un certificat, un conteneur, un domaine : même table, même fiche. Seul le module qui déclare
@@ -76,3 +91,9 @@ class Registre:
     def compter(self, *, portee) -> dict:
         frag, p = filtre_portee(portee)
         return {r["type"]: r["n"] for r in self.base.lire("SELECT type, COUNT(*) AS n FROM objets WHERE 1=1" + frag + " GROUP BY type", p)}
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Registre
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

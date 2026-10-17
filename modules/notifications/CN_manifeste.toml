@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Notifications
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : notifications
+# ZONE       : CN
+# VERSION CN : 0.2.0  #71801d
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le Centre de notifications : ce qui mérite l'attention de quelqu'un. Une notification ouverte par clé (elle se répète, elle ne s'empile pas), lue et prise en compte PAR PERSONNE, cloisonnée par compte, qui se referme seule quand la cause disparaît.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=71801d ▼▼▼
 [module]
 id = "notifications"
 nom = "Notifications"
@@ -129,3 +144,9 @@ capacite = "signal_jour"
 stockage = true
 droits = true
 introspection = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

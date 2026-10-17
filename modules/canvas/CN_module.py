@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le canvas de notes
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : canvas
+# ZONE       : CN
+# VERSION CN : 0.1.0  #5f3537
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le canvas de notes : les départs, les gestes, le plan.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5f3537 ▼▼▼
 """Le canvas de notes : les départs, les gestes, le plan.
 
 Porté de la V18 (`cv_*`), avec ses leçons :
@@ -190,3 +205,9 @@ def brancher(ctx):
         ctx.implementer(cid, f)
     ctx.implementer("plan_ecrire", plan_ecrire, prouver_plan, defaire_plan,
                     simuler=lambda x, ref="", **_: "rangerait le plan de %s" % ref)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : _nombre, _plan_valider, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

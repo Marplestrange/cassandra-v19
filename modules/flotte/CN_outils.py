@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : La flotte
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : flotte
+# ZONE       : CN
+# VERSION CN : 0.1.1  #b6c2d2
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La flotte : les fonctions pures (noms, durées, lecture des sondes, fusion du parc, verdict) et l'accès au monde (Tailscale, SSH, TCP, HTTP).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=b6c2d2 ▼▼▼
 """La flotte : les fonctions pures (noms, durées, lecture des sondes, fusion du parc, verdict) et l'accès au monde (Tailscale, SSH, TCP, HTTP).
 
 Tout ce qui touche le réseau ou un binaire passe par la classe `Acces` : un banc la remplace, rien d'autre ne sort du module.
@@ -344,3 +359,9 @@ def verdict(parc, pertes24):
         niveau, titre = "stable", "Tout le parc répond."
         sous = "%d en ligne sur %d connues · contrôle SSH sur %d · présence relevée toutes les %d min." % (c["en_ligne"], c["declarees"], c["ssh"], max(1, presence["periode_s"] // 60))
     return {"niveau": niveau, "titre": titre, "sous_titre": sous.strip(), "lignes": lignes, "compte": c, "presence": presence, "hote": parc.get("hote"), "lu_le": horodate()}
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : utc, horodate, nom, minutes_entre, duree, commande_sonde, lire_sortie, lire_metriques …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

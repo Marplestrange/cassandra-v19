@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Canaux
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : canaux
+# ZONE       : CN
+# VERSION CN : 0.1.0  #845200
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les canaux Telegram : l'état du client et le miroir (porter ses conversations sur Telegram, par compte). Le miroir est ÉTEINT PAR DÉFAUT, délibérément : relier Telegram pour recevoir des alertes n'est pas consentir à y voir surgir ses conversations. Différé : la connexion MTProto/Telethon et la session (qui ne vit QUE dans le coffre), l'envoi et la réception.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=845200 ▼▼▼
 [module]
 id = "canaux"
 nom = "Canaux"
@@ -47,3 +62,9 @@ perimetre = ["le miroir du compte"]
 preuve = "le miroir relu"
 retour = "remettre le miroir d'avant"
 paliers = ["raconter", "auto", "maitre"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

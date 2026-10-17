@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : L'état des modules
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #1419e4
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : L'état des modules : disponible, installé, actif. Le menu des modules s'appuie là-dessus.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1419e4 ▼▼▼
 """L'état des modules : disponible, installé, actif. Le menu des modules s'appuie là-dessus.
 
   disponible  le manifeste est là, rien n'a été posé
@@ -41,3 +56,9 @@ class Modules:
     def signature(self) -> tuple:
         """Change dès qu'un état change : le noyau en marche s'en aperçoit sans redémarrer."""
         return tuple((r["id"], r["installe"], r["actif"], r["maj"]) for r in self.base.lire("SELECT * FROM modules_etat ORDER BY id"))
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Modules
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

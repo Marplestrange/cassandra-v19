@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les agents
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : agents
+# ZONE       : CN
+# VERSION CN : 0.1.0  #0dfa55
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0dfa55 ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -329,3 +344,9 @@ def brancher(ctx):
     c.implementer("conversation_supprimer", conversation_supprimer, prouver_supprimee, defaire_supprimee, simuler=lambda x, id="", **_: "supprimerait la conversation %s et ses messages" % id)
     c.implementer("arreter", arreter, prouver_arret, defaire_arret, simuler=lambda x, id="", **_: "demanderait l'arrêt du tour de la conversation %s" % id)
     c.implementer("converser", converser, prouver_tour, defaire_tour, simuler=lambda x, **_: "ferait répondre l'agent")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

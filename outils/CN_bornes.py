@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #aa3c7f
+# VERSION CN : 0.1.0  #fb9c5d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : lit tous les fichiers suivis par git et dit s'ils respectent docs/CN_FORMAT.md (nom, en-tête, bornes, pureté des EC).
 # MÉTHODE    : analyse textuelle et arbre syntaxique Python ; mode audit par défaut (rien ne bloque), --strict pour l'intégration continue.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=aa3c7f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fb9c5d ▼▼▼
 """Outil de bornes. Usage :
     python outils/CN_bornes.py                 audit de tout le dépôt (résumé par module)
     python outils/CN_bornes.py --module vue    un seul module
@@ -37,7 +37,7 @@ from pathlib import Path
 RACINE = Path(__file__).resolve().parent.parent
 
 # Seule liste fermée : les noms imposés par un outil extérieur (docs/CN_FORMAT.md §3 bis).
-NOMS_IMPOSES = {"__init__.py", "LICENSE", "README.md", ".gitignore", "__pycache__"}
+NOMS_IMPOSES = {"__init__.py", "LICENSE", "README.md", ".gitignore", ".gitattributes", "__pycache__"}
 PREFIXES = ("CN_", "EC_")
 CHAMPS = ("TITRE", "LICENCE", "AUTEUR", "GIT", "MAIL", "MODULE", "ZONE", "VERSION CN", "VERSION EC", "RÔLE", "MÉTHODE")
 CHAMPS_EC = ("RUNTIME", "HÔTE CN")                  # en plus, pour un fichier de ZONE EC : l'environnement d'exécution (python, wasm, node, php…) et l'hôte
@@ -71,11 +71,12 @@ def fichiers_suivis() -> list[str]:
         return out
 
 
-def marqueur(l: str) -> str | None:
-    """Rend le texte d'un marqueur si la ligne est une vraie ligne de commentaire de marqueur, sinon None.
-    (Une chaîne de caractères qui cite les mots d'un marqueur n'en est pas un.)"""
+def marqueur(l: str, ext: str = "") -> str | None:
+    """Rend le texte d'un marqueur si la ligne est une vraie ligne de commentaire de marqueur DU LANGAGE DU FICHIER, sinon None.
+    (Une chaîne de caractères, ou un exemple cité dans une documentation Markdown, qui reprend les mots d'un marqueur n'en est pas un.)"""
     s = l.strip()
-    for jeton in ("<!--", "/*", "//", ";;", "--", "#"):
+    jetons = (COMMENTAIRE[ext],) if ext in COMMENTAIRE else ("<!--", "/*", "//", ";;", "--", "#")
+    for jeton in jetons:
         if s.startswith(jeton):
             s = s[len(jeton):].strip(" ▼▲═─*	")
             if s.startswith(("BORNE CN", "FIN BORNE", "BORNE EC", "EXPLICATIF CN / EC")):
@@ -143,7 +144,7 @@ def analyser(chemin: str) -> dict:
     for l in lignes[:60]:
         m = RE_CHAMP.match(l)
         if m:
-            champs[m.group(1)] = m.group(2)
+            champs.setdefault(m.group(1), m.group(2))              # le PREMIER gagne : un exemple d'en-tête cité plus bas (dans une chaîne) ne l'écrase pas
     manquants = [c for c in CHAMPS if c not in champs]
     if manquants:
         r["erreurs"].append("en-tête incomplet : manque " + ", ".join(manquants))
@@ -161,7 +162,7 @@ def analyser(chemin: str) -> dict:
     ouvertes, bornes, expl = None, [], False
     hors_borne = 0
     for i, l in enumerate(lignes, 1):
-        mk = marqueur(l)
+        mk = marqueur(l, ext)
         mcn, mec = (RE_BORNE_CN.search(mk), RE_BORNE_EC.search(mk)) if mk else (None, None)
         if mk and mk.startswith("FIN BORNE"):
             if ouvertes is None:
@@ -179,7 +180,7 @@ def analyser(chemin: str) -> dict:
             expl = True
         elif ouvertes is None and not expl:
             s = l.strip()
-            if s and not s.startswith(("#", "//", ";;", "--", "/*", "*", "<!--", "-->")) and not (i == 1 and s.startswith("#!")):
+            if s and not s.startswith(("#", "//", ";;", "--", "/*", "*", "<!--", "-->")) and not (i <= 2 and (s.startswith("#!") or s.lower().startswith(("<!doctype", "@charset")) or "coding" in s)):      # lignes qui doivent rester en tête (shebang, encodage, doctype, @charset)
                 hors_borne += 1
     if ouvertes is not None:
         r["erreurs"].append("borne ouverte jamais fermée")
@@ -328,7 +329,7 @@ def sceller(chemin: str) -> bool:
     lignes = texte.split("\n")
     debut = fin = None
     for i, l in enumerate(lignes):
-        mk = marqueur(l)
+        mk = marqueur(l, Path(chemin).suffix)
         if mk and mk.startswith(("BORNE CN", "BORNE EC")) and debut is None:
             debut = i
         elif mk and mk.startswith("FIN BORNE") and debut is not None and fin is None:

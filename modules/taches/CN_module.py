@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les tâches
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : taches
+# ZONE       : CN
+# VERSION CN : 0.1.0  #5d174c
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les tâches.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5d174c ▼▼▼
 """Les tâches.
 
 Porté de la V18 (`itare_task_*`, `itare_task_from_source`), avec ses leçons :
@@ -427,3 +442,9 @@ def brancher(ctx):
     c.implementer("supprimer", supprimer, prouver_supprimee, defaire_supprimee, simuler=lambda x, id="", **_: "supprimerait la tâche %s avec ses sous-tâches" % id)
     c.implementer("lier", lier, prouver_lie, defaire_lie, simuler=lambda x, id="", kind="", ref="", **_: "rattacherait la tâche %s à %s %s" % (id, kind, ref))
     c.implementer("delier", delier, prouver_delie, defaire_delie, simuler=lambda x, id="", kind="", ref="", **_: "détacherait la tâche %s de %s %s" % (id, kind, ref))
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : lire_echeance, provenance, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

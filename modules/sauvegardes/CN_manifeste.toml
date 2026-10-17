@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Sauvegardes
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : sauvegardes
+# ZONE       : CN
+# VERSION CN : 0.1.0  #2814ab
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les plans de sauvegarde : une portée décide du moteur (un site ou une base passe par FastPanel, le reste par rclone), la rotation par dossiers datés, la vérification par échantillon. Ici : les plans, l'historique des copies, les destinations et la couverture. Différé : l'exécution rclone, la restauration, la vérification (par le courtier racine), et la planification.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2814ab ▼▼▼
 [module]
 id = "sauvegardes"
 nom = "Sauvegardes"
@@ -78,3 +93,9 @@ perimetre = ["une copie d'un plan de sauvegarde"]
 preuve = "la copie est inscrite"
 retour = "supprimer la ligne de copie"
 paliers = ["raconter", "auto", "maitre"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

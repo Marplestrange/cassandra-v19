@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Coffre fort
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : coffre
+# ZONE       : CN
+# VERSION CN : 0.1.0  #a1df6d
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le coffre Vaultwarden : le magasin de secrets de Cassandra (statut, liste des noms sans jamais les valeurs, lecture, écriture réversible, retrait). Un compte Cassandra = un compte Vault natif (même identifiant). Différé : la fiche complète d'un secret (chiffrement fin), le provisionnement des comptes, les clés d'API personnelles, le TOTP.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a1df6d ▼▼▼
 [module]
 id = "coffre"
 nom = "Coffre fort"
@@ -70,3 +85,9 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "journal"
 libelle = "Les accès aux secrets : qui, quand, sur quoi"
 risque = "lecture"
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

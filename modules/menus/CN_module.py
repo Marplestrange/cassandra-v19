@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le module de menus
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : menus
+# ZONE       : CN
+# VERSION CN : 0.2.0  #9e1b6e
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le module de menus : assemble l'arbre de navigation à partir de ce que les modules actifs DÉCLARENT.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=9e1b6e ▼▼▼
 """Le module de menus : assemble l'arbre de navigation à partir de ce que les modules actifs DÉCLARENT.
 
 Un module ne touche jamais à l'interface pour s'y inscrire : il déclare ses entrées dans son manifeste ([[menus]]), et ce module les
@@ -222,3 +237,9 @@ def brancher(ctx):
     ctx.implementer("lire_menu", lire_menu)
     ctx.implementer("personnaliser_entree", personnaliser, prouver, defaire,
                     simuler=lambda ctx, entree, **_: "personnaliserait l'entrée %s" % entree)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : _cle_famille, construire_plat, _corriger, assembler, _empreinte, _appliquer_perso, _aplatir, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

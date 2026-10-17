@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Un serveur IMAP et un serveur SMTP de poche, assez vrais pour que imaplib et smtplib leur 
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #59d4ba
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Un serveur IMAP et un serveur SMTP de poche, assez vrais pour que imaplib et smtplib leur parlent : de vrais sockets, de vraies commandes.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=59d4ba ▼▼▼
 """Un serveur IMAP et un serveur SMTP de poche, assez vrais pour que imaplib et smtplib leur parlent : de vrais sockets, de vraies commandes."""
 import re
 import socketserver
@@ -345,3 +360,9 @@ class ServeurSmtp(socketserver.ThreadingTCPServer):
     def arreter(self):
         self.shutdown()
         self.server_close()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : message, Boite, nom_imap, ManipulateurImap, ServeurImap, ManipulateurSmtp, ServeurSmtp
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

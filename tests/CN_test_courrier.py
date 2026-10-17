@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs du module courrier
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #9eff43
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs du module courrier : un vrai noyau, de vrais imaplib et smtplib, un serveur IMAP et un serveur SMTP de poche.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9eff43 ▼▼▼
 """Bancs du module courrier : un vrai noyau, de vrais imaplib et smtplib, un serveur IMAP et un serveur SMTP de poche."""
 import base64
 import json
@@ -485,3 +500,9 @@ class Secrets(Monde):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Monde, Connexion, Dossiers, Messages, Gestes, Ecrire, Passe, Secrets
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

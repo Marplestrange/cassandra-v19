@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Le Salon et les conversations entre comptes : /api/salon/*, /api/conv/* (V18) -> capacités
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #90bc45
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Le Salon et les conversations entre comptes : /api/salon/*, /api/conv/* (V18) -> capacités salon.* (et comptes.* pour les agents invités) du noyau.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=90bc45 ▼▼▼
 /* Le Salon et les conversations entre comptes : /api/salon/*, /api/conv/* (V18) -> capacités salon.* (et comptes.* pour les agents invités) du noyau.
    Le salon V19 est cloisonné par fil (membres) : il n'y a plus de « tête-à-tête solo » ni de salon des agents réservé à l'administrateur. */
 (function () {
@@ -93,3 +108,9 @@
     faire: async (req, agir) => { const l = await agir("comptes.lister", {}); const moi = (CASS.moi && CASS.moi.compte) || ""; return ok({ comptes: (l.comptes || []).filter((c) => c.type !== "systeme" && c.type !== "agent" && c.compte !== moi).map((c) => c.compte).sort() }); },
   });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

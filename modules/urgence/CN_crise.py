@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : La crise AUTOMATIQUE
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : urgence
+# ZONE       : CN
+# VERSION CN : 0.2.0  #63bb10
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La crise AUTOMATIQUE : quand la machine est paralysée ou attaquée, Cassandra coupe les envois et retient ses gestes autonomes. Fonctions pures, testées sans machine.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=63bb10 ▼▼▼
 """La crise AUTOMATIQUE : quand la machine est paralysée ou attaquée, Cassandra coupe les envois et retient ses gestes autonomes. Fonctions pures, testées sans machine.
 
 Deux cas, décidés par Drisse (V18, 10-10) :
@@ -101,3 +116,9 @@ def decider(mesure, etat, maintenant, cfg=None):
         return {"etat": e, "action": ("retenir", raison, types)}
     e["paralysie_depuis"] = None
     return {"etat": e, "action": ("declencher", raison, types)}
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : de_confiance, evaluer, decider
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

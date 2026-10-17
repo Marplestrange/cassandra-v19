@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le moteur des mesures
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : mesures
+# ZONE       : CN
+# VERSION CN : 0.1.0  #5199b0
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le moteur des mesures : des POINTS (heure UTC, valeur) -> courbes par tranche, habitude, écarts, tendance, verdict. Aucune entrée/sortie : tout se teste.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5199b0 ▼▼▼
 """Le moteur des mesures : des POINTS (heure UTC, valeur) -> courbes par tranche, habitude, écarts, tendance, verdict. Aucune entrée/sortie : tout se teste.
 
 Les règles viennent de la V18, payées en service :
@@ -304,3 +319,9 @@ def verdict(mesures, lectures, maintenant=None, seuil_ecart=SEUIL_ECART):
                         "pas_encore": [f["label"] for f in pas_encore]},
             "seuils": {"ssl_jours": SEUIL_SSL_JOURS, "disque_jours": SEUIL_SATURATION_JOURS, "ecart_pct": seuil_ecart, "habitude_jours": HABITUDE_JOURS},
             "lu_le": ecrire_ts(maintenant)}
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : lire_ts, ecrire_ts, tranche, agreger, _pts, par_tranche, serie, etat_source …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

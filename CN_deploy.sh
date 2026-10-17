@@ -1,4 +1,19 @@
 #!/usr/bin/env bash
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : CN_deploy.sh
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : (racine)
+# ZONE       : CN
+# VERSION CN : 0.1.0  #2e38f9
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : CN_deploy.sh : pousse une mise à jour du noyau et de ses modules, sur une machine où CN_install.sh est déjà passé.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2e38f9 ▼▼▼
 # CN_deploy.sh : pousse une mise à jour du noyau et de ses modules, sur une machine où CN_install.sh est déjà passé.
 #
 #   ./CN_deploy.sh              déploie ce dossier (celui où se trouve ce script)
@@ -143,3 +158,9 @@ done
 # (un grep -v qui ne retient rien rend 1 : sous pipefail ce ménage ferait sortir le script en silence)
 { ls -1dt "$PREFIXE"/releases/*/ 2>/dev/null | sed 's|/$||' | grep -vxF "$DEST" | grep -vxF "$ANCIENNE" | tail -n +"$GARDER" | xargs -r rm -rf; } || true
 dire "déployé : $(basename "$DEST") (précédente gardée : $(basename "$ANCIENNE"))"
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

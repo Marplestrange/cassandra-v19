@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le Centre de notifications, portée de la V18 (notif, notif_resoudre, notif_vu, notif_acqui
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : notifications
+# ZONE       : CN
+# VERSION CN : 0.2.0  #9f84b2
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le Centre de notifications, portée de la V18 (notif, notif_resoudre, notif_vu, notif_acquitter, _nt_filtre_dest, _nt_expiration).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=9f84b2 ▼▼▼
 """Le Centre de notifications, portée de la V18 (notif, notif_resoudre, notif_vu, notif_acquitter, _nt_filtre_dest, _nt_expiration).
 
 Ce qui change, et pourquoi :
@@ -267,3 +282,9 @@ def brancher(ctx):
     ctx.implementer("acquitter", lambda ctx, id=0: marquer(ctx, id, True), prouver_marque, defaire_marque)
     ctx.implementer("resoudre", resoudre, prouver_resolue, defaire_resolue)
     ctx.implementer("supprimer", supprimer, prouver_supprimee, defaire_supprimee)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

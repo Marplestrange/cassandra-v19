@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le pont FastPanel
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : fastpanel
+# ZONE       : CN
+# VERSION CN : 0.2.0  #555647
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le pont FastPanel.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=555647 ▼▼▼
 """Le pont FastPanel.
 
 Deux voies, chacune pour ce qu'elle fait de mieux :
@@ -1240,3 +1255,9 @@ def brancher(ctx):
     c.implementer("base_creer", base_creer, prouver_base, defaire_base, simuler=lambda x, nom="", **_: "créerait la base %s avec son utilisateur" % nom)
     c.implementer("stockage_local_creer", stockage_local_creer, prouver_stockage, defaire_stockage, simuler=lambda x, nom="", chemin="", **_: "déclarerait le dossier %s comme stockage « %s »" % (chemin, nom))
     c.implementer("plan_creer", plan_creer, prouver_plan, defaire_plan, simuler=lambda x, nom="", **_: "créerait le plan de sauvegarde « %s »" % nom)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : PontErreur, _reglage, _delai, _adresses, configure, _ouvrir, _trouver_jeton, _login_sur …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

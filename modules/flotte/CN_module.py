@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : La flotte
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : flotte
+# ZONE       : CN
+# VERSION CN : 0.1.1  #ad0517
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=ad0517 ▼▼▼
 """La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
 
 Porté de la V18 (`flotte_*`, `fleet_*`, `ms_*`), avec ses leçons :
@@ -695,3 +710,9 @@ def brancher(ctx):
     c.implementer("lien_retirer", lien_retirer, prouver_lien_retire, defaire_lien_retire, simuler=lambda x, nom="", **_: "retirerait un lien de « %s »" % nom)
     c.implementer("oublier", oublier, prouver_oubli, defaire_oubli, simuler=lambda x, nom="", **_: "effacerait les traces de « %s » (l'historique reste)" % nom)
     c.implementer("service_agir", service_agir, prouver_service, defaire_service, simuler=lambda x, nom="", action="", service="", **_: "lancerait %s %s sur « %s »" % (action, service, nom))
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

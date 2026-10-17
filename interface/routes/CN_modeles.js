@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Modèles : /api/modeles* (V18, administrateur) -> capacités modeles
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #a287c7
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Modèles : /api/modeles* (V18, administrateur) -> capacités modeles.* du noyau.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=a287c7 ▼▼▼
 /* Modèles : /api/modeles* (V18, administrateur) -> capacités modeles.* du noyau. */
 (function () {
   const P = (c, cap, o) => CASS.route("POST", c, cap, o);
@@ -25,3 +40,9 @@
     },
   });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

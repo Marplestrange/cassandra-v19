@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Jetable
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : outils
+# ZONE       : CN
+# VERSION CN : 0.1.0  #825d4a
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Jetable : écrit modules/salon/CN_manifeste.toml, et ouvre agents.converser aux résidents (ils répondent dans un fil).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=825d4a ▼▼▼
 """Jetable : écrit modules/salon/CN_manifeste.toml, et ouvre agents.converser aux résidents (ils répondent dans un fil)."""
 LECT = [
     ("fils", "Mes fils de travail (ceux dont je suis membre) : non-lus, voix, membres, rangement"),
@@ -89,3 +104,9 @@ b = s.index('qui = ["humain", "compte"]', a)
 s = s[:b] + 'qui = ["humain", "compte", "cassandra", "itare"]' + s[b + len('qui = ["humain", "compte"]'):]
 open(p, "w", encoding="utf-8", newline="\n").write(s)
 print("ok")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : constantes et configuration
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

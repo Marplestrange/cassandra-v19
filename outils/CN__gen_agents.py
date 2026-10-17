@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Génère CN_manifeste
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : outils
+# ZONE       : CN
+# VERSION CN : 0.1.0  #bd648f
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Génère CN_manifeste.toml du module des agents (script d'appoint, jetable).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=bd648f ▼▼▼
 """Génère CN_manifeste.toml du module des agents (script d'appoint, jetable)."""
 import json
 from pathlib import Path
@@ -104,3 +119,9 @@ lectures = true
 agir = true
 '''
 (RACINE / "modules" / "agents" / "CN_manifeste.toml").write_text(head + "\n".join(cap) + "\n" + tail, encoding="utf-8")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : L, W
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

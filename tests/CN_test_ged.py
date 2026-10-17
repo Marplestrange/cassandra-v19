@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs de la GED
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #be6c0c
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs de la GED : cloisonnement des racines, dépôt, listage, fiche, corbeille réversible, règles de classement.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=be6c0c ▼▼▼
 """Bancs de la GED : cloisonnement des racines, dépôt, listage, fiche, corbeille réversible, règles de classement."""
 import importlib.util
 import os
@@ -149,3 +164,9 @@ class Monde(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Pures, Monde
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

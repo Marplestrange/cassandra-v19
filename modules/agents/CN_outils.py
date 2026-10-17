@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les fonctions pures des agents
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : agents
+# ZONE       : CN
+# VERSION CN : 0.1.0  #27a070
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=27a070 ▼▼▼
 """Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils."""
 from __future__ import annotations
 
@@ -129,3 +144,9 @@ def resume_resultat(r):
     if st in ("annulee", "annulation_impossible"):
         return "L'acte a été fait puis ANNULÉ parce que sa preuve a échoué (%s) : rien n'est resté." % r.get("motif", "") if st == "annulee" else "L'acte a échoué à sa preuve et n'a pas pu être annulé : à vérifier à la main (%s)." % r.get("motif", "")
     return court(r)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : prompt_systeme, mots, score, choisir_outils, descriptif, schema_outil, meta_outils, coherents …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Pont V18 -> noyau V19
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #1cda69
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Pont V18 -> noyau V19.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=1cda69 ▼▼▼
 /* Pont V18 -> noyau V19.
 
 L'interface V18 parle à ~615 routes (/api/...). Le noyau V19 n'en a qu'une porte : POST /api/agir/<module>.<capacité>.
@@ -197,3 +212,9 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
     return traduire(res, http, opt);
   };
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

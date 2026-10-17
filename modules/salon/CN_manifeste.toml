@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Le Salon
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : salon
+# ZONE       : CN
+# VERSION CN : 0.1.0  #5cf865
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Des fils de travail où les personnes et les agents se parlent : un message a un auteur, des destinataires et un corps ; adresser un agent résident (Cassandra, Itare) le fait répondre dans le fil, un tour à la fois, avec un budget qui borne la conversation d'agents entre eux. Cloisonné : un compte ne voit que ses fils.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5cf865 ▼▼▼
 [module]
 id = "salon"
 nom = "Le Salon"
@@ -205,3 +220,9 @@ icone = "chat"
 stockage = true
 lectures = true
 agir = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

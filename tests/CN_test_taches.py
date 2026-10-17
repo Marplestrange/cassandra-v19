@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs du module taches, avec le vrai module des projets pour les rôles
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #58a9eb
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs du module taches, avec le vrai module des projets pour les rôles.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=58a9eb ▼▼▼
 """Bancs du module taches, avec le vrai module des projets pour les rôles."""
 import shutil
 import sys
@@ -369,3 +384,9 @@ class SansProjets(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Monde, Cycle, Recurrence, SousTachesEtLiens, Provenance, Responsable, Projets, Retard …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

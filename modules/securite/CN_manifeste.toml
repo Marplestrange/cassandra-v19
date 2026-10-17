@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Sécurité
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : securite
+# ZONE       : CN
+# VERSION CN : 0.3.2  #c8aefa
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=c8aefa ▼▼▼
 [module]
 id = "securite"
 nom = "Sécurité"
@@ -204,4 +219,9 @@ id = "images"
 libelle = "Sécurité › En images : l'indice de sécurité, les familles, les attaques sur dix jours (chemins, adresses, robots, pays), les anneaux d'exposition, les certificats, le courriel, la box et les gardiens — composés de l'état de la machine et des totaux du collecteur ; une source muette est dite muette"
 risque = "lecture"
 droit = "voir"
+# ▲▲▲ FIN BORNE CN ▲▲▲
 
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

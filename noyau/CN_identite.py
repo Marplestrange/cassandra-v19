@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : L'identité des comptes
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #cd1122
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions, jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt 
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cd1122 ▼▼▼
 """L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions,
 jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt salé.
 
@@ -589,3 +604,9 @@ class Identite:
         self.base.ecrire("UPDATE jetons_mdp SET utilise=1 WHERE id=?", (_empreinte(jeton.strip()),))
         self.base.ecrire("DELETE FROM sessions WHERE compte=?", (compte,))        # un mot de passe changé ferme les sessions ouvertes
         return {"ok": True, "compte": compte, "ancien_hash": r["ancien_hash"]}
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : norm_domain, mdp_regles, mdp_valider, mdp_legende, hacher, hash_ok, ip_nature, fastpanel_present …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

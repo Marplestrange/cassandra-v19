@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Documents
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : ged
+# ZONE       : CN
+# VERSION CN : 0.1.0  #dd4535
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La GED : les documents d'un compte, classés par sources (locales, avec cloisonnement par propriétaire), un index, des règles de classement, le dépôt, la fiche, l'aperçu en ligne (liste blanche stricte), la corbeille par racine. Différé : distants rclone/OAuth, montages, OCR/vignettes, extraction des pièces jointes (dépend du courrier).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=dd4535 ▼▼▼
 [module]
 id = "ged"
 nom = "Documents"
@@ -215,3 +230,9 @@ perimetre = ["une règle de classement"]
 preuve = "la règle n'existe plus"
 retour = "remettre la règle"
 paliers = ["raconter", "auto", "maitre"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

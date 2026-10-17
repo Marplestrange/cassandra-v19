@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Tâches : /api/itare/task* (V18) -> capacités taches
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #1ce833
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Tâches : /api/itare/task* (V18) -> capacités taches.* du noyau.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=1ce833 ▼▼▼
 /* Tâches : /api/itare/task* (V18) -> capacités taches.* du noyau. */
 (function () {
   const P = (c, cap, o) => CASS.route("POST", c, cap, o);
@@ -30,3 +45,9 @@
   P("/api/itare/task/unlink", "taches.delier", { args: (r) => ({ id: +r.body.id, kind: r.body.kind || "", ref: String(r.body.ref || "") }), sortie: ok });
   P("/api/itare/task/delete", "taches.supprimer", { args: (r) => ({ id: +r.body.id }), sortie: ok });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs des tâches planifiées
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #cd9a95
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs des tâches planifiées : la logique pure des expressions cron, puis le module avec un courtier simulé (une machine dont on tient les crontabs).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cd9a95 ▼▼▼
 """Bancs des tâches planifiées : la logique pure des expressions cron, puis le module avec un courtier simulé (une machine dont on tient les crontabs)."""
 import json
 import os
@@ -452,3 +467,9 @@ class Droits(Monde):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Expressions, Racine, Monde, Ecriture, Vue, Execution, Reglages, Maintenance …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les fonctions pures de la mémoire
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : memoire
+# ZONE       : CN
+# VERSION CN : 0.1.0  #8ee74d
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les fonctions pures de la mémoire : gardes, clés, proximité, routage, perception. Rien ici ne touche la base.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ee74d ▼▼▼
 """Les fonctions pures de la mémoire : gardes, clés, proximité, routage, perception. Rien ici ne touche la base."""
 from __future__ import annotations
 
@@ -497,3 +512,9 @@ def perception_monde(rows, q, deja, limite=12, stricte=False):
             if mot(*mots):
                 ajouter(libelle, val, ts, PERCEPTION_TTL["systeme"])
     return out
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : maintenant, age, duree_txt, empreinte, jeton_classes, a_un_secret, cle_de, langue …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

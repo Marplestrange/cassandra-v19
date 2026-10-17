@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Assemble l'interface V19 à partir de l'extraction brute de l'interface V18
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : outils
+# ZONE       : CN
+# VERSION CN : 0.1.0  #f86b3d
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Assemble l'interface V19 à partir de l'extraction brute de l'interface V18.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f86b3d ▼▼▼
 """Assemble l'interface V19 à partir de l'extraction brute de l'interface V18.
 
 usage : python outils/ui/CN_assembler.py [docs/v18/CN_interface_v18.html] [interface/]
@@ -53,6 +68,26 @@ def versionner(t, build):
     return t.replace("__CASSANDRA_VERSION__", VERSION).replace("__BUILD__", build)
 
 
+def poser_entetes(sortie):
+    """Les trois fichiers produits portent le format universel (docs/CN_FORMAT.md) : l'assembleur le pose à chaque génération, puis scelle les empreintes."""
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import CN_bornes as B
+    import CN_entete as E
+    surcharges = {"CN_index.html": ("Interface : page d'accueil (générée)", "la page unique de l'interface : le corps de la V18 et la liste des scripts."),
+                  "CN_app.js": ("Interface : application (générée)", "tout le code de l'interface extrait de la V18, versionné."),
+                  "CN_style.css": ("Interface : styles (générés)", "tous les styles de l'interface extraits de la V18, versionnés.")}
+    for nom, (titre, role) in surcharges.items():
+        chemin = os.path.join(sortie, nom)
+        rel = os.path.relpath(chemin, str(B.RACINE)).replace(os.sep, "/")
+        with open(chemin, encoding="utf-8", newline="") as f:
+            texte = f.read().replace("\r\n", "\n")
+        neuf = E.transformer(rel, texte, {"titre": titre, "role": role, "methode": "GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur."})
+        if neuf:
+            with open(chemin, "w", encoding="utf-8", newline="\n") as f:
+                f.write(neuf)
+            B.sceller(rel)
+
+
 def assembler(src, sortie):
     h = open(src, encoding="utf-8").read()
     d = decouper(h)
@@ -72,6 +107,7 @@ def assembler(src, sortie):
         html += ['<script src="/routes/%s"></script>' % (f[3:] if f.startswith("CN_") else f) for f in sorted(os.listdir(rdir)) if f.endswith(".js")]      # l'URL perd le préfixe : le serveur le retrouve
     html += ['<script src="/app.js"></script>', '<script src="/shell.js"></script>', '<script src="/modules-ui.js"></script>', '<script src="/console-module.js"></script>', "</body>", "</html>"]
     open(os.path.join(sortie, "CN_index.html"), "w", encoding="utf-8", newline="\n").write("\n".join(html))
+    poser_entetes(sortie)
     return {k: len(v) for k, v in d.items() if isinstance(v, str)}
 
 
@@ -79,3 +115,9 @@ if __name__ == "__main__":
     src = sys.argv[1] if len(sys.argv) > 1 else "docs/v18/CN_interface_v18.html"
     sortie = sys.argv[2] if len(sys.argv) > 2 else "interface"
     print(assembler(src, sortie))
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : decouper, versionner, assembler
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Voix
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : voix
+# ZONE       : CN
+# VERSION CN : 0.1.0  #5796d8
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La voix : ce qui est installé (l'écoute par faster-whisper, la parole par piper), le catalogue des voix, et le choix par compte. Différé : l'écoute (transcription), la parole (synthèse) et le téléchargement des voix — des modèles de plusieurs centaines de mégaoctets, par le courtier.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5796d8 ▼▼▼
 [module]
 id = "voix"
 nom = "Voix"
@@ -78,3 +93,9 @@ perimetre = ["les préférences de voix du compte"]
 preuve = "les préférences relues"
 retour = "remettre les préférences d'avant"
 paliers = ["raconter", "auto", "maitre"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

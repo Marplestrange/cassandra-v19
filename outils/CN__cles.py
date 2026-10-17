@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Jetable
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : outils
+# ZONE       : CN
+# VERSION CN : 0.1.0  #2f76f6
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Jetable : forme (clés) du résultat d'une capacité du serveur local. usage: python outils/CN__cles.py cap '{"args"}' [profondeur]
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2f76f6 ▼▼▼
 """Jetable : forme (clés) du résultat d'une capacité du serveur local. usage: python outils/CN__cles.py cap '{"args"}' [profondeur]"""
 import json, os, sys, urllib.request
 T = open(os.path.join(os.environ["TEMP"], "tok")).read().strip()
@@ -11,3 +26,9 @@ def forme(x, p):
         return "[" + (forme(x[0], p - 1) if x and p > 0 else "%d" % len(x)) + "]"
     return type(x).__name__
 print(forme(d, prof))
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : forme
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

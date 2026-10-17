@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Mandats
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : mandats
+# ZONE       : CN
+# VERSION CN : 0.1.0  #ce9b23
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les mandats d'envoi : l'autorisation d'envoyer, avec ses bornes (à qui, quand, combien, sous quel contrôle). La règle d'or : l'adresse ne vient JAMAIS de la demande. Différé : la résolution du destinataire et l'envoi réel (dépendent du courrier et des contacts).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ce9b23 ▼▼▼
 [module]
 id = "mandats"
 nom = "Mandats"
@@ -55,3 +70,9 @@ perimetre = ["la suspension d'un mandat"]
 preuve = "la suspension relue"
 retour = "remettre la suspension d'avant"
 paliers = ["raconter", "auto", "maitre"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

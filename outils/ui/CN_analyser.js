@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Analyse du JS de l'interface V18 : les instructions de premier niveau, leurs noms, leur ta
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : outils
+// ZONE       : CN
+// VERSION CN : 0.1.0  #586e28
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Analyse du JS de l'interface V18 : les instructions de premier niveau, leurs noms, leur taille, ce qu'elles lisent au chargement.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=586e28 ▼▼▼
 // Analyse du JS de l'interface V18 : les instructions de premier niveau, leurs noms, leur taille, ce qu'elles lisent au chargement.
 // usage : node CN_analyser.js ../../docs/v18/CN_interface_v18.js > CN_rapport.json
 const fs = require("fs");
@@ -54,3 +69,9 @@ const types = {};
 rapport.forEach((r) => (types[r.type] = (types[r.type] || 0) + 1));
 console.log(JSON.stringify(types));
 console.log("instructions", rapport.length);
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

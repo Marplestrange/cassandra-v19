@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le coffre Vaultwarden
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : coffre
+# ZONE       : CN
+# VERSION CN : 0.1.0  #58b7c7
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le coffre Vaultwarden : le magasin de secrets de Cassandra.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=58b7c7 ▼▼▼
 """Le coffre Vaultwarden : le magasin de secrets de Cassandra.
 
 Porté de la V18 (`vault_*`, `_vault_req`), avec ses leçons :
@@ -157,3 +172,9 @@ def brancher(ctx):
                     simuler=lambda x, name="", valeur="", **_: "poserait le secret « %s »" % name)
     ctx.implementer("delete", delete, prouver_delete, defaire_delete,
                     simuler=lambda x, name="", **_: "retirerait le secret « %s »" % name)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

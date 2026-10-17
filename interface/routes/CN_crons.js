@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Automatismes : /api/crons/* et /api/automatismes (V18) -> capacités planifie
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #500749
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Automatismes : /api/crons/* et /api/automatismes (V18) -> capacités planifie.* du noyau. Le noyau parle français (horaire, commande, actif…), l'écran V18 anglais.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=500749 ▼▼▼
 /* Automatismes : /api/crons/* et /api/automatismes (V18) -> capacités planifie.* du noyau. Le noyau parle français (horaire, commande, actif…), l'écran V18 anglais. */
 (function () {
   const P = (c, cap, o) => CASS.route("POST", c, cap, o);
@@ -86,3 +101,9 @@
     },
   });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

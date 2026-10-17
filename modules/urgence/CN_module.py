@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les gestes d'urgence
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : urgence
+# ZONE       : CN
+# VERSION CN : 0.2.0  #b3ad5f
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les gestes d'urgence : geler, couper les envois, fermer les sessions des autres, lever la crise, confiner.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=b3ad5f ▼▼▼
 """Les gestes d'urgence : geler, couper les envois, fermer les sessions des autres, lever la crise, confiner.
 
 Porté de la V18 (`notif_geler`, `notif_envois`, `confiner`, `confinement_lever`, `confinement_confirmer`), avec ses leçons :
@@ -369,3 +384,9 @@ def brancher(ctx):
     ctx.implementer("confiner", confiner, prouver_confinement, defaire_confinement)
     ctx.implementer("lever", lever, prouver_levee, refaire)
     ctx.implementer("confirmer", confirmer, prouver_confirme, defaire_confirme)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : minutes_ts, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Clé de sécurité
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : webauthn
+# ZONE       : CN
+# VERSION CN : 0.1.0  #f1c09e
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les clés de sécurité WebAuthn des comptes : enregistrer et retirer une clé, l'exiger pour entrer (second facteur, avec huit codes de secours), ou entrer sans mot de passe avec une clé d'accès (passkey, code PIN ou empreinte exigés). La signature est vérifiée ici (ES256 et RS256), le défi vit en mémoire et ne sert qu'une fois, l'origine doit être celle du domaine réglé.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f1c09e ▼▼▼
 [module]
 id = "webauthn"
 nom = "Clé de sécurité"
@@ -103,3 +118,9 @@ masque = ["jeton", "client_data", "auth_data", "signature"]
 stockage = true
 identite = true
 reseau = []
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

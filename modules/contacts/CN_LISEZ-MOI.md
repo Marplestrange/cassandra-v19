@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : contacts — le carnet d'adresses -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : contacts -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : contacts — le carnet d'adresses -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d27a4d ▼▼▼ -->
 # contacts — le carnet d'adresses
 
 Porté de la V18 (`contact_*`, `contacts_*`, vCard, CSV, doublons, fusion), lu en entier. Une nouveauté du noyau : `ctx.acteur` (qui agit), pour ne montrer à un modèle que ce que l'administrateur a choisi.
@@ -21,3 +36,9 @@ Porté de la V18 (`contact_*`, `contacts_*`, vCard, CSV, doublons, fusion), lu e
 - **Propositions d'Itare** (`contact_propositions`, signaux tirés du courrier, `contact_stale_pass`, `contacts_verser` depuis le courrier, autoliaison par domaine) : attendent les modules courrier et projets.
 - **Portraits reçus par le courrier**, **messages d'un correspondant**, **documents liés** (GED) : idem.
 - **Prévenir un contact pour un domaine** (`contact_for_domain`, `_contact_alert_line`) : la lecture `pour_cible` existe ; le repli sur le projet du domaine attend le module projets.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

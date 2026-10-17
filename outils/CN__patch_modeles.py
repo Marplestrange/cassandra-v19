@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Patch d'appoint (jetable)
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : outils
+# ZONE       : CN
+# VERSION CN : 0.1.0  #294589
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Patch d'appoint (jetable) : outils d'agent dans modeles.completer.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=294589 ▼▼▼
 """Patch d'appoint (jetable) : outils d'agent dans modeles.completer."""
 from pathlib import Path
 
@@ -120,3 +135,9 @@ sub(P, '''        return appeler(m, messages, systeme, mx, tp, bool(allow_reason
         return appeler(m, messages, systeme, mx, tp, bool(allow_reasoning), to, bool(reflexion), role, outils or None)''')
 sub("modules/modeles/CN_manifeste.toml", 'masque = ["messages", "systeme", "texte"]', 'masque = ["messages", "systeme", "texte", "appels", "message"]')
 print("ok")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : sub
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

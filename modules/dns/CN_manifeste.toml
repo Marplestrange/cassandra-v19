@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Zones DNS
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : dns
+# ZONE       : CN
+# VERSION CN : 0.2.0  #2d533a
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Relève les zones suivies auprès de leur serveur de noms faisant foi, garde une référence versionnée (rien n'est écrasé), signale la dérive, l'adresse publique qui a changé et les domaines proches de leur expiration (RDAP). Corrige un enregistrement A dérivé de l'adresse publique chez Cloudflare, et le prouve sur le serveur de noms. Le plafond d'autonomie est le choix de l'administrateur.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=2d533a ▼▼▼
 [module]
 id = "dns"
 nom = "Zones DNS"
@@ -136,3 +151,9 @@ ecran = "vue_domaine"
 ordre = 10
 role = "admin"
 icone = "globe"
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

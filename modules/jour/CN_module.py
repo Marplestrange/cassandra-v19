@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le bureau du jour
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : jour
+# ZONE       : CN
+# VERSION CN : 0.1.0  #aa0dc8
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le bureau du jour : assemble les signaux que les modules déclarent.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=aa0dc8 ▼▼▼
 """Le bureau du jour : assemble les signaux que les modules déclarent.
 
 Une source qui échoue ne disparaît pas : elle rend une ligne qui dit qu'elle est en panne. C'est le point le plus important de l'écran — une bande
@@ -109,3 +124,9 @@ def brancher(ctx):
                 "calcule": time.strftime("%H:%M"), "duree_ms": int((time.time() - t0) * 1000), "sources": chrono}
 
     ctx.implementer("aujourdhui", aujourdhui)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : propre, compo, tuiles, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

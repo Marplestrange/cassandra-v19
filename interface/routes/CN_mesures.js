@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : L'historique (onglet « Historique ») : /api/mesures/* (V18) -> capacités mesures
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #5f78c4
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : L'historique (onglet « Historique ») : /api/mesures/* (V18) -> capacités mesures.* du noyau. Le module rend déjà les mots de l'écran (key, label, points, baseline…).
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=5f78c4 ▼▼▼
 /* L'historique (onglet « Historique ») : /api/mesures/* (V18) -> capacités mesures.* du noyau. Le module rend déjà les mots de l'écran (key, label, points, baseline…).
    Les marqueurs d'événements posés sur les courbes et l'impact des évolutions ne sont pas portés : l'écran les montre vides. */
 (function () {
@@ -14,3 +29,9 @@
   P("/api/mesures/evolution", null, { faire: async () => ({ ok: false, reason: "l'impact des évolutions n'est pas porté dans cette version" }) });
   P("/api/mesures/tache", null, { faire: async () => ({ ok: false, reason: "la tâche de mesure du disque n'est pas portée dans cette version" }) });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Proactivité
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : proactif
+# ZONE       : CN
+# VERSION CN : 0.1.0  #e8524d
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La Proactivité : l'autonomie par palier (observer, proposer, maîtrise, raconter), le savoir-faire mesuré (un geste devient éprouvé à dix réussites, retombe à deux échecs d'affilée), l'ombre (ce qu'elle aurait fait, sans agir), les incidents (des anomalies corrélées en une histoire) et le fil (le récit). Le cycle — détecteurs, constats, paliers des capacités — vit déjà dans le noyau. Différé : la porte de décision par domaine/geste, les projections, et le moteur d'évolution (auto-modification).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e8524d ▼▼▼
 [module]
 id = "proactif"
 nom = "Proactivité"
@@ -182,3 +197,9 @@ perimetre = ["la gouvernance de l'autonomie"]
 preuve = "la gouvernance relue"
 retour = "remettre la gouvernance d'avant"
 paliers = ["raconter", "auto", "maitre"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

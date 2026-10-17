@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs de la proactivité
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #5c35be
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs de la proactivité : autonomie, savoir-faire mesuré (promotion à dix réussites, rétrogradation), l'ombre (jamais exécutée), les incidents et le fil.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5c35be ▼▼▼
 """Bancs de la proactivité : autonomie, savoir-faire mesuré (promotion à dix réussites, rétrogradation),
 l'ombre (jamais exécutée), les incidents et le fil."""
 import shutil
@@ -120,3 +135,9 @@ class Monde(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Monde
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

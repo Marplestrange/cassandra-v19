@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : CN_finir_brouillon
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : outils
+# ZONE       : CN
+# VERSION CN : 0.1.0  #78ca18
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : CN_finir_brouillon.py <id> : range un brouillon validé dans modules/ et tests/ (LF), après avoir comblé ce qui se comble mécaniquement :   - les réglages lus par le code (ctx.reglage("x")) mais non déclarés au manifeste sont déclarés (texte
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=78ca18 ▼▼▼
 """CN_finir_brouillon.py <id> : range un brouillon validé dans modules/ et tests/ (LF), après avoir comblé ce qui se comble mécaniquement :
   - les réglages lus par le code (ctx.reglage("x")) mais non déclarés au manifeste sont déclarés (texte, libellé = son nom) ;
   - les bancs qui échouent encore sont marqués @unittest.skip("brouillon : à corriger") ET listés dans CN_NOTES.md : on ne les cache pas, on les date.
@@ -110,3 +125,9 @@ def main(mid):
 
 if __name__ == "__main__":
     main(sys.argv[1])
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : lf, corriger_manifeste, main
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Projets
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : projets
+# ZONE       : CN
+# VERSION CN : 0.1.0  #ad1a9e
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les projets d'un compte : fiche (objectif, périmètre, critères de réussite), phases, jalons, décisions, journal daté, plan de référence qui rend visible le glissement, équipe avec rôles (lecteur, auteur, co-propriétaire) et invitations, archive, corbeille. Un projet appartient à son propriétaire ; l'administrateur n'y a pas accès (administrer n'est pas voir). Les tâches, elles, restent à la personne (module des tâches) : un projet supprimé ne les emporte pas.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ad1a9e ▼▼▼
 [module]
 id = "projets"
 nom = "Projets"
@@ -243,3 +258,9 @@ risque = "lecture"
 [permissions]
 stockage = true
 lectures = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

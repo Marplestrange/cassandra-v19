@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #d230c4
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=d230c4 ▼▼▼
 /* Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 
    1. Les THÈMES : un module livre un thème complet ([[habillages]] : des variables CSS). Il apparaît dans le sélecteur d'apparence,
@@ -182,3 +197,9 @@
   CASS.surConnexion = CASS.demarrer;
   CASS.demarrer();
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

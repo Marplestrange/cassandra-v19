@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Tâches planifiées
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : planifie
+# ZONE       : CN
+# VERSION CN : 0.1.1  #5e8bfa
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Tout ce qui tourne tout seul sur la machine, et est-ce que ça va : les tâches de Cassandra et celles du système (crontabs, cron.d) fusionnées, l'état de chacune (cassée, en échec, muette), les exécutions réelles consignées par un enrobage, le verrou et la fenêtre, l'enchaînement, la maintenance, les collisions. Réservé à l'administrateur ; privilégié par nature, il passe par le courtier.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=5e8bfa ▼▼▼
 [module]
 id = "planifie"
 nom = "Tâches planifiées"
@@ -251,3 +266,9 @@ script = "CN_installer.sh"
 verification = "CN_verifier.sh"
 retrait = "CN_retirer.sh"
 migrations = "migrations"
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

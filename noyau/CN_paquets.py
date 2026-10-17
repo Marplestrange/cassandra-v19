@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le paquet d'un module
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #c57b47
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le paquet d'un module : l'unité qu'un module store distribue.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c57b47 ▼▼▼
 """Le paquet d'un module : l'unité qu'un module store distribue.
 
 Un paquet (`.cmod`) est une archive tar.gz qui contient :
@@ -172,3 +187,9 @@ def extraire(archive, dest, dossier_cles=None, exiger_signature=True) -> dict:
         Path(dest).mkdir(parents=True, exist_ok=True)
         shutil.copytree(mod, cible)
     return v
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : PaquetInvalide, _sommes, _openssl, construire, _extraire_surement, verifier, extraire
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

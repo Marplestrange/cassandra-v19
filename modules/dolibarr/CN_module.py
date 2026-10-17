@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le pont Dolibarr
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : dolibarr
+# ZONE       : CN
+# VERSION CN : 0.3.0  #1182c7
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=1182c7 ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -588,3 +603,9 @@ def brancher(ctx):
     ctx.implementer("lister", lister)
     ctx.implementer("lire", lire)
     ctx.implementer("impayees", impayees)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : PontErreur, _dossier_config, _reglages, lire_conf, _cle, appeler, ecrire, _liste_complete …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

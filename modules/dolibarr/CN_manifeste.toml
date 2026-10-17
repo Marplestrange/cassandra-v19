@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Dolibarr
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : dolibarr
+# ZONE       : CN
+# VERSION CN : 0.3.0  #a089cd
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=a089cd ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -196,3 +211,9 @@ accent = "#6a3fa0"
 [permissions]
 reseau = ["l'hôte de l'instance, fixé dans config/dolibarr.conf"]
 privileges = ["la clé d'API de Dolibarr donne les droits de son utilisateur : en faire un utilisateur dédié aux droits limités"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

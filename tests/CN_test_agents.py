@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs du module agents, avec les vrais modules notes, modeles et memoire et un faux modèle
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #2a1f1a
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs du module agents, avec les vrais modules notes, modeles et memoire et un faux modèle qui appelle des outils.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2a1f1a ▼▼▼
 """Bancs du module agents, avec les vrais modules notes, modeles et memoire et un faux modèle qui appelle des outils."""
 import json
 import shutil
@@ -391,3 +406,9 @@ class Memoire(Monde):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : texte, appel, FauxModele, Monde, Conversation, Outils, Teinte, Pannes …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

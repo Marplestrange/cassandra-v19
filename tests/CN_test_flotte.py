@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs de la flotte
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #df169a
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs de la flotte : le parc fusionné, la présence, la disponibilité, le contrôle SSH, les commandes nommées. Aucun réseau : l'accès au monde est simulé.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=df169a ▼▼▼
 """Bancs de la flotte : le parc fusionné, la présence, la disponibilité, le contrôle SSH, les commandes nommées. Aucun réseau : l'accès au monde est simulé."""
 import shutil
 import sys
@@ -333,3 +348,9 @@ class Droits(Monde):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : pair, Monde, Parc, Registre, Engagement, Disparues, Verdict, Distance …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

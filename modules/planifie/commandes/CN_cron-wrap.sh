@@ -1,4 +1,19 @@
 #!/bin/sh
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Enrobage des tâches planifiées Cassandra — version 3
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : planifie
+# ZONE       : CN
+# VERSION CN : 0.1.1  #ed9322
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Enrobage des tâches planifiées Cassandra — version 3
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=ed9322 ▼▼▼
 # Enrobage des tâches planifiées Cassandra — version 3
 # Exécute la commande, puis dépose un compte rendu dans le spool. Écrit dans un fichier temporaire renommé ensuite : l'ingestion ne lit jamais un compte rendu à moitié écrit.
 # Appelé par cron, À ROOT : il ne SOURCE rien que le noyau (sans privilège) puisse écrire. Les options (verrou, fenêtre) sont lues ligne à ligne et seul un chiffre est retenu ;
@@ -67,3 +82,9 @@ T1=$(date '+%s')
 $OUT"
 report "$START" "$(( (T1 - T0) * 1000 ))" "$CODE" "$OUT"
 exit $CODE
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

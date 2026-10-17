@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Bilan de session — portage V18 → V19 (16 octobre 2026) -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : (racine) -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Bilan de session — portage V18 → V19 (16 octobre 2026) -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=8db368 ▼▼▼ -->
 # Bilan de session — portage V18 → V19 (16 octobre 2026)
 
 À lire en premier pour reprendre le chantier. Ce document est le point d'entrée ; la mémoire de l'agent
@@ -99,3 +114,9 @@ nouveau arrive « non activé » — le déploiement n'active jamais un module n
 - **Lire la source avant de coder** : chaque supposition coûte un aller-retour.
 - **Sobriété** : les jetons de Drisse sont comptés — sorties courtes, ne lire en entier que ce qu'on modifie.
 - **Tutoiement** partout.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

@@ -1,4 +1,19 @@
 #!/usr/bin/env bash
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : CN_install.sh
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : (racine)
+# ZONE       : CN
+# VERSION CN : 0.1.0  #73cb70
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=73cb70 ▼▼▼
 # CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 #
 #   ./CN_install.sh                         le noyau seul, dans UN dossier : /var/cassandra
@@ -210,3 +225,9 @@ if [ "$SANS_SERVICE" -eq 0 ]; then
   as_service python3 "$PREFIXE/current/CN_main.py" etat
 fi
 dire "terminé : noyau $STAMP${MODULES[*]:+, modules : ${MODULES[*]}}"
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

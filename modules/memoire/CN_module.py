@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : La mémoire
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : memoire
+# ZONE       : CN
+# VERSION CN : 0.1.0  #6823a6
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La mémoire.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6823a6 ▼▼▼
 """La mémoire.
 
 Portée de la V18 (l'« îlot mémoire » : `memoire_*`, `perception_*`, `chaine_*`), avec ses leçons — elles sont payées :
@@ -1360,3 +1375,9 @@ def brancher(ctx):
     c.implementer("rappel_oter", rappel_oter, prouver_rappel_ote, defaire_rappel_ote, simuler=lambda x, id="", **_: "ôterait le rappel %s" % id)
     c.implementer("tour_commencer", tour_commencer, prouver_tour, defaire_tour, simuler=lambda x, **_: "ouvrirait un tour")
     c.implementer("apres_echange", apres_echange, prouver_apres, defaire_apres, simuler=lambda x, **_: "garderait l'échange et mettrait sa distillation en file")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Refus, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le module des réglages
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : reglages
+# ZONE       : CN
+# VERSION CN : 0.1.0  #9f6045
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le module des réglages : l'administration des réglages que les modules déclarent. La logique vit dans noyau/CN_reglages.py.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9f6045 ▼▼▼
 """Le module des réglages : l'administration des réglages que les modules déclarent. La logique vit dans noyau/CN_reglages.py.
 
 Qui peut quoi : un réglage de portée COMPTE se pose pour son propre compte sans autre droit ; un réglage GLOBAL, ou celui d'un autre compte,
@@ -87,3 +102,9 @@ def brancher(ctx):
     ctx.implementer("regler", regler, prouver_regler, defaire_regler)
     ctx.implementer("regler_secret", regler_secret, prouver_regler, defaire_regler)
     ctx.implementer("reinitialiser", reinitialiser, prouver_reinit, defaire_reinit)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

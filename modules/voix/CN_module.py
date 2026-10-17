@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : La voix
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : voix
+# ZONE       : CN
+# VERSION CN : 0.1.0  #3ff96c
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La voix : ce qui est installé, le catalogue, et le choix par compte.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3ff96c ▼▼▼
 """La voix : ce qui est installé, le catalogue, et le choix par compte.
 
 Porté de la V18 (`vx_*`), avec ses leçons :
@@ -169,3 +184,9 @@ def brancher(ctx):
                     simuler=lambda x, voix_id="", **_: "téléchargerait la voix « %s »" % voix_id)
     ctx.implementer("choisir", choisir, prouver_choisir, defaire_choisir,
                     simuler=lambda x, voix_nom="", **_: "choisirait la voix « %s »" % voix_nom)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

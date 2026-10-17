@@ -1,4 +1,19 @@
 #!/bin/sh
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Planifie pose, À ROOT
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : planifie
+# ZONE       : CN
+# VERSION CN : 0.1.1  #facec8
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Planifie pose, À ROOT : trois petites commandes que le courtier peut lancer (et rien d'autre), l'enrobage des tâches, et les dossiers que l'enrobage écrit.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=facec8 ▼▼▼
 # Planifie pose, À ROOT : trois petites commandes que le courtier peut lancer (et rien d'autre), l'enrobage des tâches, et les dossiers que l'enrobage écrit.
 set -eu
 D="${CASSANDRA_MODULE_DIR:?le dossier du module}"
@@ -19,3 +34,9 @@ chown root:root /usr/local/lib/cassandra/cron-wrap.sh.neuf
 chmod 0755 /usr/local/lib/cassandra/cron-wrap.sh.neuf
 mv /usr/local/lib/cassandra/cron-wrap.sh.neuf /usr/local/lib/cassandra/cron-wrap.sh
 echo "planifie : commandes et enrobage posés (crontabs réécrivables : $(grep -v '^#' /etc/cassandra/planifie.utilisateurs | tr '\n' ' '))"
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

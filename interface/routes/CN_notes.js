@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Notes : /api/notes/* (V18, tout en POST) -> capacités notes
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #9f6dec
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Notes : /api/notes/* (V18, tout en POST) -> capacités notes.* du noyau.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=9f6dec ▼▼▼
 /* Notes : /api/notes/* (V18, tout en POST) -> capacités notes.* du noyau.
    Le noyau a gardé les formes de la V18 (titre, corps, refs…) ; il manque surtout `ok` et quelques noms d'arguments. */
 (function () {
@@ -41,3 +56,9 @@
   P("/api/notes/dossier/supprimer", "notes.dossier_supprimer", { args: (r) => ({ chemin: r.body.chemin || "" }), sortie: ok });
   P("/api/notes/menage", "notes.menage", { args: () => ({}), sortie: ok });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : La clé de sécurité (WebAuthn), second facteur de connexion et entrée sans mot de passe
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : webauthn
+# ZONE       : CN
+# VERSION CN : 0.1.0  #3894b8
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La clé de sécurité (WebAuthn), second facteur de connexion et entrée sans mot de passe.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3894b8 ▼▼▼
 """La clé de sécurité (WebAuthn), second facteur de connexion et entrée sans mot de passe.
 
 Porté de la V18 (`wa_*`), avec ses leçons :
@@ -465,3 +480,9 @@ def brancher(ctx):
     c.implementer("exiger", exiger, prouver_exigee, defaire_exigee, simuler=lambda x, exiger=True, **_: ("exigerait" if exiger else "n'exigerait plus") + " la clé pour entrer")
     c.implementer("secours_regenerer", secours_regenerer, prouver_regeneres, defaire_regeneres, simuler=lambda x, **_: "remplacerait les codes de secours par huit nouveaux")
     c.implementer("passkey_ouvrir", passkey_ouvrir, prouver_passkey, defaire_passkey, simuler=lambda x, **_: "ouvrirait une session avec la clé d'accès")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : b64u, b64u_lire, cbor, disponible, cle_publique, verifier_signature, authdata, cose_en_json …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

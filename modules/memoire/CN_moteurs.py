@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : La page « Les moteurs » de la mémoire
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : memoire
+# ZONE       : CN
+# VERSION CN : 0.1.0  #bfe0da
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La page « Les moteurs » de la mémoire : jamais une page écrite à la main, chaque nombre est LU dans les constantes en service (quotas, plafonds, seuils, durées). Portée de la V18 (memoire_moteurs) : le texte est le même, les valeurs viennen
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=bfe0da ▼▼▼
 """La page « Les moteurs » de la mémoire : jamais une page écrite à la main, chaque nombre est LU dans les constantes en service (quotas, plafonds, seuils, durées).
 Portée de la V18 (memoire_moteurs) : le texte est le même, les valeurs viennent du module."""
 
@@ -61,5 +76,9 @@ def page(o) -> dict:
             {"n": "oubli", "t": "L'oubli et la correction", "p": "Tu as le dernier mot. Oublier expire la ligne avec sa raison, réversible. Corriger écrit une version nouvelle liée à l'ancienne. Un secret entré par erreur est la seule exception : sa valeur est effacée, le geste reste.",
              "valeurs": [["jamais", "de DELETE automatique"], ["compte supprimé", "ses souvenirs expirent, tracés"], ["export", "JSON par portée avec l'empreinte de l'ensemble"]],
              "non": "un sermon : l'agent le dit en une phrase, puis obéit."}]}
+# ▲▲▲ FIN BORNE CN ▲▲▲
 
-
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : page
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

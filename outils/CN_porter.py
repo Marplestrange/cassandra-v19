@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : CN_porter
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : outils
+# ZONE       : CN
+# VERSION CN : 0.1.0  #a84092
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : CN_porter.py : fait écrire un BROUILLON de module V19 par le Claude d'Orion (quotas gratuits), à partir du code de la V18 et du guide docs/CN_PORTER.md.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a84092 ▼▼▼
 """CN_porter.py : fait écrire un BROUILLON de module V19 par le Claude d'Orion (quotas gratuits), à partir du code de la V18 et du guide docs/CN_PORTER.md.
 
     python outils/CN_porter.py <id> --domaine "ce que fait le module en une phrase" --fonctions "f1, f2, C3" [--lignes 59000-59500] [--famille securite]
@@ -117,3 +132,9 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : lire, exemple_de_bancs, prompt, main
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

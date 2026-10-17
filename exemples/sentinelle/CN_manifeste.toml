@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Sentinelle du disque
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : exemples
+# ZONE       : CN
+# VERSION CN : 0.1.0  #216787
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Mesure l'occupation du disque racine et ouvre un constat au-delà du seuil. Exemple de greffe à chaud : un moteur, un détecteur, un type d'objet, des événements.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=216787 ▼▼▼
 [module]
 id = "sentinelle"
 nom = "Sentinelle du disque"
@@ -71,3 +86,9 @@ badge = "constats"
 script = "CN_installer.sh"
 verification = "CN_verifier.sh"
 retrait = "CN_retirer.sh"
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

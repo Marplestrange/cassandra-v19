@@ -1,3 +1,18 @@
+/* ══════════════════════════════════════════════════════════════════════════════ */
+/* TITRE      : Interface : styles (générés) */
+/* LICENCE    : AGPL-3.0 */
+/* AUTEUR     : Atek Drisse */
+/* GIT        : github.com/Marplestrange */
+/* MAIL       : marplestrange@cassandra.center */
+/* MODULE     : interface */
+/* ZONE       : CN */
+/* VERSION CN : 0.1.0  #000000 */
+/* VERSION EC : néant */
+/* EC LIÉES   : néant */
+/* RÔLE       : tous les styles de l'interface extraits de la V18, versionnés. */
+/* MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. */
+/* ══════════════════════════════════════════════════════════════════════════════ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=96912a ▼▼▼ */
 
 /* ═══════════════════════════════════════════════════════════════════════
    CASSANDRA — SYSTÈME DE COULEURS
@@ -7694,3 +7709,9 @@ select,select.bu-inp,select.s-select,.s-select,select.mx-select{padding:6px 28px
 .sc-i-g4 .lib{font-size:12.5px;color:var(--txt-soft)}
 .sc-i-tip{position:fixed;pointer-events:none;background:var(--surface-solid);color:var(--txt);border:1px solid var(--line);box-shadow:0 8px 24px rgba(16,24,40,.12);
   border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.45;opacity:0;transition:opacity .08s;z-index:3000;max-width:260px}
+/* ▲▲▲ FIN BORNE CN ▲▲▲ */
+
+/* ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ */
+/* CN : tout ce fichier est du nexus : à compléter */
+/* EC : néant (aucun point d'évolution déclaré pour l'instant) */
+/* LIEN : à compléter (contrat, fichiers voisins) */

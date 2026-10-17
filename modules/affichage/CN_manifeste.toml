@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Affichage
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : affichage
+# ZONE       : CN
+# VERSION CN : 0.1.1  #79cc21
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=79cc21 ▼▼▼
 [module]
 id = "affichage"
 nom = "Affichage"
@@ -106,3 +121,9 @@ icone = "palette"
 [permissions]
 introspection = true
 lectures = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

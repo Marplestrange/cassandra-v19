@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Canvas
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : canvas
+# ZONE       : CN
+# VERSION CN : 0.1.0  #e1e4a1
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le canvas de notes : les départs (des gabarits de note), les gestes de rédaction, et le plan (les cartes et les flèches d'une note). La règle : il propose, l'écran montre, la personne décide — rien n'écrit sans elle. Différé : les appels au modèle (amorcer, retoucher, cartes tirées des sources) et la section vivante.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e1e4a1 ▼▼▼
 [module]
 id = "canvas"
 nom = "Canvas"
@@ -37,3 +52,9 @@ perimetre = ["le plan d'une note"]
 preuve = "le plan relu"
 retour = "remettre le plan d'avant"
 paliers = ["raconter", "auto", "maitre"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

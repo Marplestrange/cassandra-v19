@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le contexte
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #0630e8
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0630e8 ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire
@@ -235,3 +250,9 @@ class Contexte:
         if d is None:
             raise KeyError("le module « %s » n'a pas déclaré le détecteur « %s »" % (self.module, did))
         self._detecteurs.append((self.module, d, fonction))
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : _Fil, _Compte, _Acteur, Contexte
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

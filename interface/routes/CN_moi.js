@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Mon compte : /api/me/* (V18) -> capacités comptes
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #320354
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Mon compte : /api/me/* (V18) -> capacités comptes.* du noyau.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=320354 ▼▼▼
 /* Mon compte : /api/me/* (V18) -> capacités comptes.* du noyau. */
 (function () {
   const P = (c, cap, o) => CASS.route("POST", c, cap, o);
@@ -12,3 +27,9 @@
   P("/api/me/sessions/revoke", "comptes.revoquer_session", { args: (r) => ({ court: r.body.id }), sortie: (x) => Object.assign({ ok: true }, x) });
   P("/api/me/sessions/revoke_others", "comptes.revoquer_autres_sessions", { args: (r) => ({ courant: r.jeton }), sortie: (x) => Object.assign({ ok: true }, x) });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

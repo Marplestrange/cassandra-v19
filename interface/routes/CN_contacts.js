@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Contacts : /api/itare/contact/* et /api/itare/mail/contacts (V18) -> capacités contacts
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #17a969
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Contacts : /api/itare/contact/* et /api/itare/mail/contacts (V18) -> capacités contacts.* du noyau.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=17a969 ▼▼▼
 /* Contacts : /api/itare/contact/* et /api/itare/mail/contacts (V18) -> capacités contacts.* du noyau.
    Le noyau a gardé les noms de champs de la V18 ; il rend les dates en secondes, l'écran les lit en texte. */
 (function () {
@@ -43,3 +58,9 @@
   P("/api/itare/contact/csv/apercu", "contacts.csv_apercu", { args: (r) => ({ contenu_b64: btoa(unescape(encodeURIComponent(r.body.contenu || ""))) }), sortie: ok });
   P("/api/itare/contact/csv/importer", "contacts.csv_importer", { args: (r) => ({ contenu_b64: btoa(unescape(encodeURIComponent(r.body.contenu || ""))), appariement: r.body.appariement, dossier_id: 0 }), sortie: ok });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

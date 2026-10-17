@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : certificats — veille des certificats TLS -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : certificats -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.2.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : certificats — veille des certificats TLS -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.2.0 empreinte=ea5adc ▼▼▼ -->
 # certificats — veille des certificats TLS
 
 Porté de la V18 (`_ssl_probe`, `ssl_quota_state`, `_cert_days`). Le module pilote d'origine n'était qu'un manifeste ; il est maintenant réel.
@@ -9,3 +24,9 @@ Porté de la V18 (`_ssl_probe`, `ssl_quota_state`, `_cert_days`). Le module pilo
 
 ## Non porté
 - Calendrier des échéances (`_ssl_calendar_items`) : avec le module agenda. Renouvellement par certbot (sous-processus) : le panneau suffit ; un module certbot viendra si un serveur n'en a pas.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

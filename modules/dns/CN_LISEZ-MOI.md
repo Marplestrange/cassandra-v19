@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : dns — domaines et DNS -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : dns -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.2.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : dns — domaines et DNS -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.2.0 empreinte=bf8cf0 ▼▼▼ -->
 # dns — domaines et DNS
 
 Porté de la V18 (`_dns_*`, `_detect_dns`, `_aut_dns_corriger`, `_dom_expiration`). Plus de `dig` : un client DNS en Python pur (UDP, puis TCP si tronqué).
@@ -16,3 +31,9 @@ Porté de la V18 (`_dns_*`, `_detect_dns`, `_aut_dns_corriger`, `_dom_expiration
 
 ## Non porté
 - `_dns_txt` / `_cf_*` (résolution TXT et noms Cloudflare de la V18 utilisés par le courrier) : avec le module courrier.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

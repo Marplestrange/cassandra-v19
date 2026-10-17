@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs du module certificats
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #0cd405
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs du module certificats : la lecture du certificat servi est simulée, le reste (états, quota, événements, constats) tourne dans un vrai noyau.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0cd405 ▼▼▼
 """Bancs du module certificats : la lecture du certificat servi est simulée, le reste (états, quota, événements, constats) tourne dans un vrai noyau."""
 import importlib.util
 import shutil
@@ -167,3 +182,9 @@ class Lecture(Monde):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Monde, Sonde, Quota, Lecture
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : L'analyse de sécurité
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : securite
+# ZONE       : CN
+# VERSION CN : 0.3.2  #2c0d30
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : L'analyse de sécurité : des relevés BRUTS de la machine (commandes/CN_mesurer) -> exposition, pare-feu, accès, défenses, mises à jour, verdict. Fonctions pures, testées sans machine.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=2c0d30 ▼▼▼
 """L'analyse de sécurité : des relevés BRUTS de la machine (commandes/CN_mesurer) -> exposition, pare-feu, accès, défenses, mises à jour, verdict. Fonctions pures, testées sans machine.
 
 Porté de la V18 (`_sec_*`, `_pf_*`), avec les leçons payées en service :
@@ -506,3 +521,9 @@ def etat(m, heure="", port_cassandra=9000, ailleurs=None, panneau=None, confinem
     d["parefeu_essais"] = [{"jeton": e.get("jeton"), "quoi": e.get("quoi", ""), "reste": e.get("reste", 0)} for e in ((panneau or {}).get("essais") or [])]
     d["votre_ip"] = ""
     return d
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : portee, adresses_machine, pf_chaines, _val, _ports, _sans_options_cible, pf_lisible, pf_parcours …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le module des mesures
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : mesures
+# ZONE       : CN
+# VERSION CN : 0.1.0  #f01fc4
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le module des mesures : lit ce que les modules déclarent ([[mesures]]) et le met en courbes, habitudes, écarts, tendance et verdict (CN_moteur.py).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f01fc4 ▼▼▼
 """Le module des mesures : lit ce que les modules déclarent ([[mesures]]) et le met en courbes, habitudes, écarts, tendance et verdict (CN_moteur.py).
 
 Chaque module répond à sa propre capacité de lecture, {mesure, depuis, jusqu_a} -> {"series": [...]}. Ici on ne sait rien de la source : un module qui se tait
@@ -80,3 +95,9 @@ def brancher(ctx):
     ctx.implementer("ecarts", ecarts)
     ctx.implementer("prevision", prevision)
     ctx.implementer("verdict", verdict)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

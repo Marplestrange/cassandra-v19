@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le robot Telegram d'un compte
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : telegram
+# ZONE       : CN
+# VERSION CN : 0.1.0  #ad5513
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le robot Telegram d'un compte.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ad5513 ▼▼▼
 """Le robot Telegram d'un compte.
 
 Porté de la V18 (`tg_*`), avec ses leçons :
@@ -290,3 +305,9 @@ def brancher(ctx):
     c.implementer("cible_poser", cible_poser, prouver_cible, defaire_cible, simuler=lambda x, valeur="", **_: "déclarerait %s comme destinataire (après essai auprès de Telegram)" % (valeur or "aucun"))
     c.implementer("envoyer", envoyer, prouver_envoye, defaire_envoye, simuler=lambda x, compte="", **_: "enverrait un message Telegram à %s" % (compte or "ce compte"))
     c.implementer("recevoir", recevoir, prouver_recu, defaire_recu, simuler=lambda x, **_: "rangerait un message reçu")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : empreinte, requete, raison, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

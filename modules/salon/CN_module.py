@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le salon
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : salon
+# ZONE       : CN
+# VERSION CN : 0.1.0  #1169d7
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le salon : des fils de travail où les personnes et les agents se parlent.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1169d7 ▼▼▼
 """Le salon : des fils de travail où les personnes et les agents se parlent.
 
 Porté de la V18 (`salon_*`), avec ses leçons :
@@ -562,3 +577,9 @@ def brancher(ctx):
     c.implementer("ranger", ranger, prouver_range, defaire_range, simuler=lambda x, fil=0, **_: "rangerait le fil %s dans les archives du compte" % fil)
     c.implementer("vu", vu, prouver_vu, defaire_vu, simuler=lambda x, fil=0, **_: "marquerait le fil %s comme lu" % fil)
     c.implementer("relancer", relancer, prouver_relance, defaire_relance, simuler=lambda x, fil=0, agent="", **_: "demanderait à %s de répondre dans le fil %s" % (agent, fil))
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : nom_propre, destinataires_de, requete_fts, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

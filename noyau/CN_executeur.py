@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : L'exécuteur
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #388868
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : L'exécuteur : la seule porte par laquelle une capacité s'exécute.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=388868 ▼▼▼
 """L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 
 Le contrat de souveraineté tient ici, en un seul endroit :
@@ -161,3 +176,9 @@ class Executeur:
         if bouge:
             monte = ORDRE.index(bouge[1]) > ORDRE.index(bouge[0])
             self._evt("savoir.promu" if monte else "savoir.retrograde", e, "noyau", cause, {"de": bouge[0], "a": bouge[1]}, compte)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Executeur
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

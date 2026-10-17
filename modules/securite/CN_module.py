@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : La sécurité
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : securite
+# ZONE       : CN
+# VERSION CN : 0.3.2  #74dfe8
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La sécurité : les gestes, le journal, les audits.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=74dfe8 ▼▼▼
 """La sécurité : les gestes, le journal, les audits.
 
 Porté de la V18 (`securite_*`, `_sec_gestes`), avec ses leçons :
@@ -267,3 +282,9 @@ def brancher(ctx):
                     simuler=lambda x, geste="", **_: "inscrirait le geste « %s » au journal de sécurité" % geste)
     ctx.implementer("audit_poser", audit_poser, prouver_audit, defaire_audit,
                     simuler=lambda x, titre="", **_: "poserait l'audit « %s »" % titre)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

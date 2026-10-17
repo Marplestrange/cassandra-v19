@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Sites
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : sites
+# ZONE       : CN
+# VERSION CN : 0.1.1  #255338
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les sites web que Cassandra suit : ceux d'un compte (déclarés, attribués, ou inscrits dans sa fiche de compte), ceux du panneau qui appartiennent au compte du panneau lié à ce compte. Une sonde chronomètre chaque site (code, durée, certificat) et en garde l'historique ; une panne, un retour, une lenteur, un certificat court font des constats. Chaque compte ne voit que ses sites ; l'administrateur voit l'état de tous, jamais le contenu. Demande d'adossement au panneau, accord limité dans le temps donné par le propriétaire, liens vers projets et contacts, journal des gestes.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=255338 ▼▼▼
 [module]
 id = "sites"
 nom = "Sites"
@@ -266,3 +281,9 @@ unite = "/j"
 famille = "Sites"
 vide = "rien_a_signaler"
 description = "Sites tombés. Le compte que personne ne tenait."
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

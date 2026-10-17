@@ -1,3 +1,18 @@
+/* ══════════════════════════════════════════════════════════════════════════════ */
+/* TITRE      : ardoise.css */
+/* LICENCE    : AGPL-3.0 */
+/* AUTEUR     : Atek Drisse */
+/* GIT        : github.com/Marplestrange */
+/* MAIL       : marplestrange@cassandra.center */
+/* MODULE     : themes */
+/* ZONE       : CN */
+/* VERSION CN : 0.1.0  #000000 */
+/* VERSION EC : néant */
+/* EC LIÉES   : néant */
+/* RÔLE       : ardoise.css */
+/* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
+/* ══════════════════════════════════════════════════════════════════════════════ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=8e2e97 ▼▼▼ */
 /* Ardoise : un sombre bleuté, l'accent est un cuivre chaud. Variables seulement. */
 --bg: #151a24;
 --bg-grad-1: #151a24;
@@ -46,3 +61,9 @@
 --voile: rgba(8,10,16,.58);
 --shadow-glass: 0 6px 24px rgba(0,0,0,.30);
 --shadow-lift: 0 10px 32px rgba(0,0,0,.38);
+/* ▲▲▲ FIN BORNE CN ▲▲▲ */
+
+/* ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ */
+/* CN : tout ce fichier est du nexus : à compléter */
+/* EC : néant (aucun point d'évolution déclaré pour l'instant) */
+/* LIEN : à compléter (contrat, fichiers voisins) */

@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : L'écran Réglages de la V18 : ses lectures et ses écritures sur les modules V19 (comptes, m
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #d25c47
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : L'écran Réglages de la V18 : ses lectures et ses écritures sur les modules V19 (comptes, modèles, courrier, webauthn, coffre, mémoire, proactif).
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=d25c47 ▼▼▼
 /* L'écran Réglages de la V18 : ses lectures et ses écritures sur les modules V19 (comptes, modèles, courrier, webauthn, coffre, mémoire, proactif).
    Ce que la V18 rangeait dans UN config.json, la V19 le range par module (reglages.*) : cette table traduit, et dit « non porté » quand un réglage n'a
    pas (ou plus) d'équivalent, au lieu d'écrire dans le vide. Les réglages de chaque module sont aussi dans Réglages › Modules (modules-ui.js). */
@@ -213,3 +228,9 @@
     },
   });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

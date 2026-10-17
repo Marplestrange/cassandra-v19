@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun éc
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #4a21a4
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=4a21a4 ▼▼▼
 /* Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 
    Réglages a maintenant trois visions :
@@ -246,3 +261,9 @@
   CASS.surConnexion = function () { if (demarrage) demarrage(); setTimeout(brancher, 500); };
   window.addEventListener("load", () => setTimeout(brancher, 900));
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

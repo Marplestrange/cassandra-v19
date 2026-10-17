@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Tâches
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : taches
+# ZONE       : CN
+# VERSION CN : 0.1.0  #23af58
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les tâches d'un compte : statut, échéance, priorité, sous-tâches, récurrence (l'occurrence suivante repart de l'échéance précédente), avancement, responsable (soi-même, un membre du projet, ou Itare), liens vers ce qu'elles concernent, journal de chaque mouvement, provenance (une tâche née d'une détection ne ressemble pas à une tâche saisie). Elles sont à la personne : un projet supprimé ne les emporte pas. Une détection ne crée pas de tâche d'elle-même : la tâche naît du geste « en faire une tâche » (ou du palier que l'administrateur a choisi).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=23af58 ▼▼▼
 [module]
 id = "taches"
 nom = "Tâches"
@@ -101,3 +116,9 @@ capacite = "signal_jour"
 [permissions]
 stockage = true
 lectures = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

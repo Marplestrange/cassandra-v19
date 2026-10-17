@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le stockage d'un module
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #7e982e
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le stockage d'un module : SA base SQLite, à lui, avec ses migrations. C'est la réponse à « 169 tables et 88 lues par plusieurs modules » de la V18 : une table appartient à UN module, dans UN fichier (donnees/modules/<module>.db), et personn
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7e982e ▼▼▼
 """Le stockage d'un module : SA base SQLite, à lui, avec ses migrations. C'est la réponse à « 169 tables et 88 lues par plusieurs modules » de la V18 :
 une table appartient à UN module, dans UN fichier (donnees/modules/<module>.db), et personne d'autre n'y touche. Pour partager, on passe par une
 capacité ou par un événement.
@@ -93,3 +108,9 @@ def _instructions(texte: str) -> list:
     if courant.strip():
         sortie.append(courant.strip())
     return sortie
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : identite, MigrationRefusee, Stockage, _instructions
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

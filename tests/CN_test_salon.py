@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs du salon
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #a15ef2
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs du salon : fils, messages, cloisonnement, présence des agents résidents (avec un faux modèle réel : la chaîne agents -> modèles est celle du service).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a15ef2 ▼▼▼
 """Bancs du salon : fils, messages, cloisonnement, présence des agents résidents (avec un faux modèle réel : la chaîne agents -> modèles est celle du service)."""
 import importlib.util
 import json
@@ -362,3 +377,9 @@ class Agents(Monde):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Pures, Monde, Fils, Presence, Agents
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

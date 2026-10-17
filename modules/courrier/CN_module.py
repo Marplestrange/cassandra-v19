@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le courrier
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : courrier
+# ZONE       : CN
+# VERSION CN : 0.1.0  #d9b9ff
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d9b9ff ▼▼▼
 """Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 
 Porté de la V18 (`_imap_*`, `itare_mail_*`, `mail_*`, `_courrier_*`), avec ses leçons :
@@ -945,3 +960,9 @@ def brancher(ctx):
     c.implementer("dossier_renommer", dossier_renommer, prouver_renomme, defaire_renomme, simuler=lambda x, ancien="", nouveau="", **_: "renommerait %s en %s" % (ancien, nouveau))
     c.implementer("brouillon_creer", brouillon_creer, prouver_brouillon, defaire_brouillon, simuler=lambda x, objet="", **_: "préparerait le brouillon « %s »" % objet)
     c.implementer("envoyer", envoyer, prouver_envoye, defaire_envoye, simuler=lambda x, a="", objet="", **_: "enverrait « %s » à %s" % (objet, a))
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : CourrierErreur, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

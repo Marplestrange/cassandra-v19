@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs du module projets
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #1b7a47
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs du module projets : un vrai noyau, des comptes simulés, des rôles, un plan qui glisse.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1b7a47 ▼▼▼
 """Bancs du module projets : un vrai noyau, des comptes simulés, des rôles, un plan qui glisse."""
 import shutil
 import sys
@@ -437,3 +452,9 @@ class Contexte(Monde):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Monde, Fiche, Corbeille, Plan, Equipe, Contexte
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

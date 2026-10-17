@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : La base du noyau
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #25be0a
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=25be0a ▼▼▼
 """La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
 
 Leçon de la V18 : un verrou SQLite vient presque toujours d'une connexion laissée ouverte.
@@ -118,3 +133,9 @@ class Base:
     def ecrire(self, sql: str, params=()) -> int:
         with self.transaction() as c:
             return c.execute(sql, params).lastrowid
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Base
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

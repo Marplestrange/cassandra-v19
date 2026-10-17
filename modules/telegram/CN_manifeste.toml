@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Robot Telegram
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : telegram
+# ZONE       : CN
+# VERSION CN : 0.1.0  #868b2a
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le robot Telegram de chaque compte : il porte les notifications de CE compte vers SON téléphone, et ne lit rien de ce qu'on lui écrit (le premier message sert seulement à apprendre la conversation). Le destinataire est celui que la personne a déclaré et qu'on a essayé pour de bon, à défaut celui appris du « /start ». Le webhook est public par nécessité (c'est Telegram qui appelle) : il ne se protège que par le secret qu'il renvoie, qui seul désigne le compte.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=868b2a ▼▼▼
 [module]
 id = "telegram"
 nom = "Robot Telegram"
@@ -101,3 +116,9 @@ qui = ["anonyme"]
 [permissions]
 stockage = true
 reseau = ["l'API Telegram, à l'adresse des réglages (api.telegram.org par défaut)"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

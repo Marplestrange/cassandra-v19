@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Domaines et DNS
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : dns
+# ZONE       : CN
+# VERSION CN : 0.2.0  #acbb57
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Domaines et DNS.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=acbb57 ▼▼▼
 """Domaines et DNS.
 
 Porté de la V18 (`_dns_*`, `_detect_dns`, `_aut_dns_corriger`, `_dom_expiration`), avec ses leçons :
@@ -497,3 +512,9 @@ def brancher(ctx):
     c.implementer("etat", etat)
     c.implementer("accepter_reference", accepter_reference, prouver_acceptee, defaire_acceptee, simuler=lambda x, domaine="", **_: "poserait l'état observé de %s comme nouvelle référence" % domaine)
     c.implementer("corriger_enregistrement", corriger, prouver_corrige, defaire_corrige, simuler=lambda x, nom="", valeur="", **_: "corrigerait %s (A) vers %s chez Cloudflare" % (nom, valeur))
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : construire, lire_nom, analyser, interroger, resolveurs_systeme, dom_enregistre, normaliser, ip_publique …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs du noyau
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #4db450
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4db450 ▼▼▼
 """Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v"""
 import os
 import sys
@@ -4217,3 +4232,9 @@ class ParitéComptesV18(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : ecrire_module, Monde, Manifestes, Cycle, Frontieres, Enjeux, Exploitation, monde_moteurs …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

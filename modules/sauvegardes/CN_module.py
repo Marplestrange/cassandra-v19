@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les sauvegardes
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : sauvegardes
+# ZONE       : CN
+# VERSION CN : 0.1.0  #bf6d26
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les sauvegardes : les plans, l'historique des copies, les destinations, la couverture.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=bf6d26 ▼▼▼
 """Les sauvegardes : les plans, l'historique des copies, les destinations, la couverture.
 
 Porté de la V18 (`sauv_*`), avec ses leçons :
@@ -202,3 +217,9 @@ def brancher(ctx):
                     simuler=lambda x, pid=0, **_: "supprimerait le plan %s" % pid)
     ctx.implementer("plan_run", plan_run, prouver_run, defaire_run,
                     simuler=lambda x, pid=0, **_: "exécuterait le plan %s" % pid)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : _age_h, _age_mot, _etat, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

@@ -1,3 +1,18 @@
+/* ══════════════════════════════════════════════════════════════════════════════ */
+/* TITRE      : shell.css */
+/* LICENCE    : AGPL-3.0 */
+/* AUTEUR     : Atek Drisse */
+/* GIT        : github.com/Marplestrange */
+/* MAIL       : marplestrange@cassandra.center */
+/* MODULE     : interface */
+/* ZONE       : CN */
+/* VERSION CN : 0.1.0  #000000 */
+/* VERSION EC : néant */
+/* EC LIÉES   : néant */
+/* RÔLE       : shell.css */
+/* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
+/* ══════════════════════════════════════════════════════════════════════════════ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=96c6cc ▼▼▼ */
 /* Le squelette : scène générique des modules. Rien que les jetons de la V18 (--surface, --line, --txt…), pour que tout thème la reprenne. */
 .sh-scene { padding: 20px 24px 40px; max-width: 1180px; }
 .sh-titre { margin: 0 0 16px; font-size: 22px; font-weight: 600; color: var(--txt-strong); letter-spacing: -.01em; }
@@ -14,3 +29,9 @@
 .sh-liste { margin: 0; padding-left: 18px; color: var(--txt); font-size: 13px; line-height: 1.6; }
 .sh-spark { width: 100%; height: 40px; }
 @media (max-width: 600px) { .sh-scene { padding: 14px 16px 32px; } .sh-t-l { grid-column: auto; } }
+/* ▲▲▲ FIN BORNE CN ▲▲▲ */
+
+/* ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ */
+/* CN : tout ce fichier est du nexus : à compléter */
+/* EC : néant (aucun point d'évolution déclaré pour l'instant) */
+/* LIEN : à compléter (contrat, fichiers voisins) */

@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le chargeur
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #4bed93
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le chargeur : découvre les modules, vérifie leur isolation, les branche dans l'ordre de leurs dépendances.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4bed93 ▼▼▼
 """Le chargeur : découvre les modules, vérifie leur isolation, les branche dans l'ordre de leurs dépendances.
 
 Règle d'or : un module n'importe JAMAIS un autre module. Il parle par événements et par capacités,
@@ -199,3 +214,9 @@ def brancher(racines, fabriquer_contexte, catalogue, registre, actifs=None, deja
             refus.append({"module": mid, "raisons": ["le branchement a échoué : %s" % str(ex)[:300]]})
     rapport["a_porter"] = [e.cle for e in catalogue.lister() if not e.implementee and e.actif]
     return rapport
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : verifier_isolation, charger_module_py, decouvrir_tout, _ecarter, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

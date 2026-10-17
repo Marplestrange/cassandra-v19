@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Où vivent les choses sur le disque, vu des modules
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #fb691a
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Où vivent les choses sur le disque, vu des modules.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fb691a ▼▼▼
 """Où vivent les choses sur le disque, vu des modules.
 
 Cassandra tient dans UN dossier (/var/cassandra). Les dossiers des utilisateurs suivent la convention de FastPanel :
@@ -33,3 +48,9 @@ def espace_utilisateur(unix: str, module: str, creer: bool = False) -> Path:
     if creer:
         p.mkdir(parents=True, exist_ok=True)
     return p
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : utilisateurs, espace_utilisateur
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

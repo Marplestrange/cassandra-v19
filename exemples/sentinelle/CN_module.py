@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Sentinelle du disque
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : exemples
+# ZONE       : CN
+# VERSION CN : 0.1.0  #f9a348
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Sentinelle du disque : l'exemple le plus court d'une greffe.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f9a348 ▼▼▼
 """Sentinelle du disque : l'exemple le plus court d'une greffe.
 
 Un moteur périodique mesure, un détecteur ouvre un constat, un type d'objet donne une fiche au registre.
@@ -29,3 +44,9 @@ def brancher(ctx):
     ctx.implementer("lire_mesure", lire_mesure)
     ctx.moteur("mesurer", mesurer)
     ctx.detecteur("disque_plein", plein)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

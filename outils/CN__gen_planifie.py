@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Jetable
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : outils
+# ZONE       : CN
+# VERSION CN : 0.1.0  #e8a890
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Jetable : écrit modules/planifie/CN_manifeste.toml.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e8a890 ▼▼▼
 """Jetable : écrit modules/planifie/CN_manifeste.toml."""
 LECT = [
     ("unifiee", "Toutes les tâches planifiées, quelle que soit leur origine, avec leur état (cassé, échec, muet, inconnu, ok, désactivé), leur prochaine exécution et leur criticité"),
@@ -139,3 +154,9 @@ migrations = "migrations"
 '''
 open("modules/planifie/CN_manifeste.toml", "w", encoding="utf-8", newline="\n").write(t)
 print("ok")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : constantes et configuration
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

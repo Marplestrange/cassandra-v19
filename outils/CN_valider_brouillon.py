@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : CN_valider_brouillon
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : outils
+# ZONE       : CN
+# VERSION CN : 0.1.0  #06a060
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : CN_valider_brouillon.py <id> : la validation MÉCANIQUE d'un brouillon de portage (.porte/<id>/), sans le copier ni le lire en entier.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=06a060 ▼▼▼
 """CN_valider_brouillon.py <id> : la validation MÉCANIQUE d'un brouillon de portage (.porte/<id>/), sans le copier ni le lire en entier.
 
 Rend : manifeste chargé ?, syntaxe, garde-fous (grep), bancs (copiés dans un dossier temporaire avec le module, pour ne rien déposer dans modules/).
@@ -83,3 +98,9 @@ def main(mid):
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1]) or 0)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : main
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

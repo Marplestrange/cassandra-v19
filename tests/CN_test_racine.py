@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs de la racine
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #ab0fe0
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs de la racine : ce que le noyau demande au courtier (root), et la politique du courtier. Le contrôle est pur ; l'exécution réelle n'a lieu que sous POSIX.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ab0fe0 ▼▼▼
 """Bancs de la racine : ce que le noyau demande au courtier (root), et la politique du courtier. Le contrôle est pur ; l'exécution réelle n'a lieu que sous POSIX."""
 import importlib.util
 import json
@@ -254,3 +269,9 @@ racine = true
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : charger_courtier, Validation, PolitiqueDuCourtier, ExecutionDuCourtier, DeBoutEnBout, ContratDuManifeste
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

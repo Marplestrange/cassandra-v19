@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les droits
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #31ef7e
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les droits : qui, parmi les COMPTES, peut utiliser quoi. Le modèle est celui de Dolibarr, resserré.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=31ef7e ▼▼▼
 """Les droits : qui, parmi les COMPTES, peut utiliser quoi. Le modèle est celui de Dolibarr, resserré.
 
   - un module DÉCLARE ses droits dans son manifeste ([[droits]]) ; ils s'appellent « module.droit » ;
@@ -176,3 +191,9 @@ class Droits:
             c.execute("INSERT OR IGNORE INTO droit_admins(compte) VALUES(?)", (compte,))
             c.execute("INSERT OR REPLACE INTO etat_noyau(cle, valeur) VALUES('droits_amorces', ?)", (compte,))
         return True
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Droits
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

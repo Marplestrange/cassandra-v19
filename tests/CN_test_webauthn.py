@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs du module webauthn
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #5e3a60
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs du module webauthn : un authentificateur logiciel (ES256) signe de vraies assertions, dans un vrai noyau avec sa passerelle.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5e3a60 ▼▼▼
 """Bancs du module webauthn : un authentificateur logiciel (ES256) signe de vraies assertions, dans un vrai noyau avec sa passerelle."""
 import hashlib
 import http.client
@@ -382,3 +397,9 @@ class Passkey(Monde):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : b64u, cbor_enc, Authentificateur, Monde, Enregistrement, SecondFacteur, Passkey
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

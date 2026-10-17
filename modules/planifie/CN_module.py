@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Les tâches planifiées
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : planifie
+# ZONE       : CN
+# VERSION CN : 0.1.1  #99fc67
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les tâches planifiées : tout ce qui tourne tout seul sur la machine, et est-ce que ça va.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=99fc67 ▼▼▼
 """Les tâches planifiées : tout ce qui tourne tout seul sur la machine, et est-ce que ça va.
 
 Porté de la V18 (`cron_*`, `_crontab_*`), avec ses leçons :
@@ -682,3 +697,9 @@ def brancher(ctx):
     c.implementer("reglages_poser", reglages_poser, prouver_reglages, defaire_reglages, simuler=lambda x, ref="", **_: "réglerait verrou, fenêtre et enchaînement de %s" % ref)
     c.implementer("maintenance", maintenance, prouver_maintenance, defaire_maintenance, simuler=lambda x, actif=True, heures=4, **_: ("suspendrait les tâches %d h" % heures) if actif else "lèverait la maintenance")
     c.implementer("executer", executer, prouver_executee, defaire_executee, simuler=lambda x, ref="", **_: "lancerait une fois la tâche %s, tout de suite" % ref)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : utc, maintenant, guillemets, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

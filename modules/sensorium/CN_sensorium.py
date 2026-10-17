@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : CASSANDRA — Sensorium v6
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : sensorium
+# ZONE       : CN
+# VERSION CN : 0.1.3  #86f839
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=86f839 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -6620,3 +6635,9 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"[COLLECTOR] Erreur fatale: {e}")
         sys.exit(1)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : get_conn, init_all_tables, run_cmd, _read_meminfo, get_cpu, get_ram, get_swap, get_disk …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

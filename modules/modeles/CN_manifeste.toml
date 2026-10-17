@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Modèles
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : modeles
+# ZONE       : CN
+# VERSION CN : 0.1.0  #f42136
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le registre des modèles de langage : un modèle se déclare une fois (fournisseur, nom, adresse, clé chiffrée), les rôles de la maison et les comptes y puisent. La clé ne sort jamais du module : tout passe par `completer` (OpenAI-compatible ou Ollama natif, réflexion des modèles raisonneurs bornée, jetons comptés). Un compte n'utilise que SES modèles, jamais la clé du serveur.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f42136 ▼▼▼
 [module]
 id = "modeles"
 nom = "Modèles"
@@ -193,3 +208,9 @@ droit = "administrer"
 stockage = true
 secrets = true
 reseau = ["le fournisseur de chaque modèle déclaré", "l'Ollama local"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

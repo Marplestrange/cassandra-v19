@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs du module dns
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #5be8d1
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs du module dns : le client DNS (vrai UDP et TCP local), puis le module dans un vrai noyau avec un DNS, un panneau et un Cloudflare simulés.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5be8d1 ▼▼▼
 """Bancs du module dns : le client DNS (vrai UDP et TCP local), puis le module dans un vrai noyau avec un DNS, un panneau et un Cloudflare simulés."""
 import json
 import shutil
@@ -446,3 +461,9 @@ class Module(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : charger, nom_dns, reponse, ServeurDns, ClientDns, FauxCloudflare, Module
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

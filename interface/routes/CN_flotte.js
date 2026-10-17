@@ -1,3 +1,18 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TITRE      : Flotte : /api/flotte/* et /api/multiserver/* (V18) -> capacités flotte
+// LICENCE    : AGPL-3.0
+// AUTEUR     : Atek Drisse
+// GIT        : github.com/Marplestrange
+// MAIL       : marplestrange@cassandra.center
+// MODULE     : interface
+// ZONE       : CN
+// VERSION CN : 0.1.0  #aba7ea
+// VERSION EC : néant
+// EC LIÉES   : néant
+// RÔLE       : Flotte : /api/flotte/* et /api/multiserver/* (V18) -> capacités flotte.* du noyau. Le parc, le verdict et les engagements parlent déjà la même langue ;
+// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+// ══════════════════════════════════════════════════════════════════════════════
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=aba7ea ▼▼▼
 /* Flotte : /api/flotte/* et /api/multiserver/* (V18) -> capacités flotte.* du noyau. Le parc, le verdict et les engagements parlent déjà la même langue ;
    l'historique, la disponibilité et les actions changent de clés. Les types Synology et Proxmox du registre ne sont pas encore portés. */
 (function () {
@@ -57,3 +72,9 @@
   P("/api/multiserver/remove", "flotte.machine_retirer", { args: (r) => ({ nom: nom(r.body) }), sortie: (x) => ok({ name: x.nom }) });
   P("/api/multiserver/toggle", "flotte.machine_basculer", { args: (r) => ({ nom: nom(r.body), actif: r.body.enabled !== false }), sortie: (x) => ok({ name: x.nom, enabled: !!x.actif }) });
 })();
+// ▲▲▲ FIN BORNE CN ▲▲▲
+
+// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+// CN : tout ce fichier est du nexus : à compléter
+// EC : néant (aucun point d'évolution déclaré pour l'instant)
+// LIEN : à compléter (contrat, fichiers voisins)

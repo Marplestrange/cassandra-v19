@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : La passerelle
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #117d0f
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=117d0f ▼▼▼
 """La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 
 Un module n'écrit aucune route. Il déclare des capacités, et la passerelle les rend toutes joignables par la même URL :
@@ -299,3 +314,9 @@ class Passerelle:
             args.pop("ip_session", None)
         r = self.noyau.executeur.executer(cle, acteur, args, essai=essai, compte=compte)
         return self._repondre(h, STATUTS_HTTP.get(r["statut"], 200), r)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : _valeur, Passerelle
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

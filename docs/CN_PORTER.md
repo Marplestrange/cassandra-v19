@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Porter un module de la V18 vers la V19 -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Porter un module de la V18 vers la V19 -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d5d3a8 ▼▼▼ -->
 # Porter un module de la V18 vers la V19
 
 Ce guide est donné tel quel à qui porte (une personne, ou un Claude). Il dit CE QUE LE NOYAU FAIT DÉJÀ, pour ne pas le réécrire.
@@ -110,3 +125,9 @@ dans `tests/CN_test_noyau.py`. Tester : le cas nominal, chaque refus de validati
 
 Le code d'interface (HTML/JS/CSS de `HTML_TEMPLATE`), les routes (`CassandraHandler`), les caches en attribut de fonction, les `ALTER TABLE` d'anciennes migrations
 (la V19 repart d'une base vide : `001_init.sql` crée l'état final), les fonctions qui n'appartiennent pas au module (les appeler par une capacité d'un autre module, ou les laisser).
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

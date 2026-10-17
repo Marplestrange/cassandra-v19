@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs de l'outil de renommage
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #ec4208
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs de l'outil de renommage : une règle unique, des références réécrites sans toucher à la prose, les noms installés qui ne changent pas.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ec4208 ▼▼▼
 """Bancs de l'outil de renommage : une règle unique, des références réécrites sans toucher à la prose, les noms installés qui ne changent pas."""
 import shutil
 import sys
@@ -140,3 +155,9 @@ class Application(Depot):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Depot, Plan, Imports, Chaines, Application
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

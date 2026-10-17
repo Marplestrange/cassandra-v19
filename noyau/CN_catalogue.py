@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le catalogue unifié des capacités, et le savoir-faire qui grandit avec elles
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #3dc8df
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le catalogue unifié des capacités, et le savoir-faire qui grandit avec elles.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3dc8df ▼▼▼
 """Le catalogue unifié des capacités, et le savoir-faire qui grandit avec elles.
 
 Une capacité est décrite UNE fois (dans un manifeste). Ses « portes » (outil d'agent, geste, tâche,
@@ -97,3 +112,9 @@ class Catalogue:
         self.base.ecrire("UPDATE savoir SET palier=?, reussites=?, echecs_de_suite=?, maj=? WHERE capacite=?",
                          (palier, reussites, echecs, time.time(), cle))
         return (s["palier"], palier) if palier != s["palier"] else None
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Entree, Catalogue
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

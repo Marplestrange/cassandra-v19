@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Patch d'appoint (jetable)
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : outils
+# ZONE       : CN
+# VERSION CN : 0.1.0  #f941ed
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Patch d'appoint (jetable) : drapeaux `externe` / `sortant` des capacités ; paliers de la plomberie de la mémoire.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f941ed ▼▼▼
 """Patch d'appoint (jetable) : drapeaux `externe` / `sortant` des capacités ; paliers de la plomberie de la mémoire."""
 from pathlib import Path
 
@@ -32,3 +47,9 @@ for cid in ("tour_commencer", "apres_echange", "doutes_depuis_reponse"):
 s = s.replace('P2 = ["raconter", "auto"]\n', 'P2 = ["raconter", "auto"]\nP2A = ["auto", "raconter"]            # la plomberie d\'un tour de chat s\'exécute d\'emblée\n', 1)
 g.write_bytes(s.encode("utf-8"))
 print("ok")
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : sub
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

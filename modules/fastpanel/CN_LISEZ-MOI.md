@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : fastpanel — le pont vers FastPanel -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : fastpanel -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.2.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : fastpanel — le pont vers FastPanel -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.2.0 empreinte=a8d50e ▼▼▼ -->
 # fastpanel — le pont vers FastPanel
 
 Porté de la V18 (`hebergement` : `get_fp_*`, `fp_api_*`, `fp_*_watch`/`_audit`), lu en entier, avec ses leçons.
@@ -25,3 +40,9 @@ Porté de la V18 (`hebergement` : `get_fp_*`, `fp_api_*`, `fp_*_watch`/`_audit`)
 
 ## État de la preuve
 Bancs contre un faux panneau (API et base SQLite au schéma relevé en V18) : verts. **Jamais éprouvé sur un vrai FastPanel V19** : Amizo n'en a pas (pas de `/usr/local/fastpanel*`). À vérifier sur Orion ou un serveur de test avec FastPanel avant d'activer.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

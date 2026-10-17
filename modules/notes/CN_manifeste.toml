@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Notes
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : notes
+# ZONE       : CN
+# VERSION CN : 0.1.0  #3485ba
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le carnet de notes d'un compte : numéros stables (N-0007, jamais réattribués), renvois [[N-0007]] et [[nature:ref]] avec rétro-liens, dossiers à deux niveaux, étiquettes, projet, état (brouillon, en cours, stabilisée, archivée), relecture, cases à cocher liées aux tâches, versions à chaque écriture, corbeille, fusion avec redirection, note du jour, liens de partage qui expirent, export et archive. Elles sont à la personne : l'administrateur ne les voit pas.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3485ba ▼▼▼
 [module]
 id = "notes"
 nom = "Notes"
@@ -312,3 +327,9 @@ cadence_s = 3600
 [permissions]
 stockage = true
 lectures = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)
