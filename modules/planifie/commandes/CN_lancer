@@ -1,0 +1,67 @@
+#!/usr/bin/python3
+# Lance UNE FOIS une commande qui est déjà planifiée (« exécuter maintenant »), à root, avec un délai. Posé par CN_installer.sh du module, root:root 0755.
+#   lancer <délai en secondes>      la commande sur l'entrée standard
+# Refus si la commande n'est dans AUCUNE crontab ni /etc/cron.d : ce n'est pas un terminal root, c'est « fais maintenant ce que tu fais déjà la nuit ».
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+
+if len(sys.argv) != 2 or not sys.argv[1].isdigit() or not 1 <= int(sys.argv[1]) <= 3600:
+    sys.exit("délai illisible (1 à 3600 secondes)")
+delai = int(sys.argv[1])
+cmd = sys.stdin.read().strip()
+if not cmd or "\x00" in cmd:
+    sys.exit("commande vide ou illisible")
+connues = set()
+
+
+def noter(c):
+    c = re.sub(r"\s+# cassandra-id:\d+\s*$", "", c.strip())
+    connues.add(c)
+    if "/cron-wrap.sh" in c.split(None, 1)[0]:                 # l'enrobage : la vraie commande est son troisième mot
+        try:
+            p = shlex.split(c)
+            if len(p) >= 3:
+                connues.add(" ".join(p[2:]))
+        except ValueError:
+            pass
+
+
+def lire(texte, avec_user):
+    for brut in texte.splitlines():
+        l = brut.strip()
+        if not l or l.startswith("#") or re.match(r"^[A-Za-z_][A-Za-z0-9_]*\s*=", l):
+            continue
+        m = re.match(r"^(@\w+|\S+\s+\S+\s+\S+\s+\S+\s+\S+)\s+(.*\S)\s*$", l)
+        if not m:
+            continue
+        reste = m.group(2)
+        if avec_user:
+            p = reste.split(None, 1)
+            if len(p) < 2:
+                continue
+            reste = p[1]
+        noter(reste)
+
+
+import pwd
+for p in pwd.getpwall():
+    r = subprocess.run(["crontab", "-l", "-u", p.pw_name], capture_output=True, text=True, timeout=10)
+    if r.returncode == 0:
+        lire(r.stdout, False)
+if os.path.isdir("/etc/cron.d"):
+    for nom in os.listdir("/etc/cron.d"):
+        ch = os.path.join("/etc/cron.d", nom)
+        if os.path.isfile(ch) and not os.path.islink(ch) and not nom.startswith("."):
+            with open(ch, encoding="utf-8", errors="replace") as f:
+                lire(f.read(), True)
+if cmd not in connues:
+    sys.exit("cette commande n'est dans aucune table de planification : elle ne se lance pas d'ici")
+try:
+    r = subprocess.run(["/bin/sh", "-c", cmd], capture_output=True, text=True, timeout=delai, cwd="/")
+    print(json.dumps({"code": r.returncode, "sortie": ((r.stdout or "") + (r.stderr or ""))[:20000]}))
+except subprocess.TimeoutExpired:
+    print(json.dumps({"code": -1, "sortie": "délai dépassé (%d s) — la commande tournait encore" % delai}))

@@ -33,4 +33,4 @@ def composer(admin, compte, s, maintenant="", appeler=None):
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
 # CN : `composer` est la seule entrée publique ; elle ne calcule rien, elle transmet au noyau et rend ce qu'il garantit conforme au contrat.
 # EC : le calcul est le point `verdict.composer` (points/EC_verdict_composer.py, référence EC0) ; remplaçable par une EC sans toucher à ce fichier.
-# LIEN : manifeste.toml ([[points_evolution]]) ; contrats/CN_verdict_composer.json (schémas) ; noyau/CN_points.py (résolution, garde de contrat, disjoncteur).
+# LIEN : CN_manifeste.toml ([[points_evolution]]) ; contrats/CN_verdict_composer.json (schémas) ; noyau/CN_points.py (résolution, garde de contrat, disjoncteur).

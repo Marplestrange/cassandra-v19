@@ -6,14 +6,14 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #000000
+# VERSION CN : 0.1.0  #7b80c0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
-"""Les points d'évolution (docs/NEXUS.md, docs/FORMAT.md, docs/EVOLUTION.md §2 sexies).
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7b80c0 ▼▼▼
+"""Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
 le dossier du module) peut la remplacer. Ici vit tout ce qui garantit que, quoi que fasse l'EC, l'utilisateur ne voit jamais une réponse non conforme :
@@ -106,7 +106,7 @@ def compatible(prouve: str, courant: str) -> bool:
 
 
 def analyser_purete(source: str) -> list:
-    """Les règles d'une EC Python : aucune entrée/sortie, aucun état, ni ctx ni heure ni hasard (docs/NEXUS.md §3, conditions 1 et 2)."""
+    """Les règles d'une EC Python : aucune entrée/sortie, aucun état, ni ctx ni heure ni hasard (docs/CN_NEXUS.md §3, conditions 1 et 2)."""
     try:
         arbre = ast.parse(source)
     except SyntaxError as e:
@@ -130,7 +130,7 @@ def analyser_purete(source: str) -> list:
 
 
 def _champs(texte: str) -> dict:
-    """L'en-tête d'un fichier (docs/FORMAT.md §2), lu dans ses soixante premières lignes."""
+    """L'en-tête d'un fichier (docs/CN_FORMAT.md §2), lu dans ses soixante premières lignes."""
     out = {}
     for l in texte.splitlines()[:60]:
         m = re.match(r"^\s*(?:#|//|;;|--)\s*([A-ZÉÔÈ][A-ZÉÔÈ ]{1,14}?)\s*:\s*(.*?)\s*$", l)
@@ -392,5 +392,5 @@ class ServicePoints:
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
 # CN : ce fichier est tout le nexus des points d'évolution : validation du contrat, résolveur de compatibilité, hôtes d'exécution, disjoncteur, suspension.
 #      Il ne contient aucune logique métier : celle-ci vit dans les références (points/EC_*) des modules.
-# EC : néant. Il charge des EC mais n'en est pas une ; jamais évolutif (docs/NEXUS.md §4 : mécanismes de l'évolution).
-# LIEN : noyau/CN_manifeste.py (PointEvolution), noyau/CN_contexte.py (ctx.point), docs/EVOLUTION.md §2 quater à sexies.
+# EC : néant. Il charge des EC mais n'en est pas une ; jamais évolutif (docs/CN_NEXUS.md §4 : mécanismes de l'évolution).
+# LIEN : noyau/CN_manifeste.py (PointEvolution), noyau/CN_contexte.py (ctx.point), docs/CN_EVOLUTION.md §2 quater à sexies.

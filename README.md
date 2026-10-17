@@ -19,16 +19,16 @@ module, on ne la réécrit pas.
 ## Les pièces
 
 ```
-main.py                  le moteur central : assemble le noyau et fait battre le cycle (percevoir, décider, agir, prouver, apprendre)
-noyau/manifeste.py       le contrat d'un module (lecture, validation, ordre d'installation)
-noyau/base.py            SQLite : connexions courtes, BEGIN IMMEDIATE avec reprises
-noyau/bus.py             le bus d'événements, la lignée, le cloisonnement par portée
-noyau/registre.py        le registre des objets, un propriétaire par type
-noyau/catalogue.py       le catalogue des capacités et le savoir-faire (paliers raconter / auto / maitre)
-noyau/executeur.py       la seule porte d'exécution : palier, preuve, retour arrière, apprentissage
-noyau/contexte.py        ce qu'un module voit du noyau, et rien d'autre
-noyau/chargeur.py        découverte, isolation, branchement dans l'ordre des dépendances
-modules/<id>/            manifeste.toml, module.py (def brancher(ctx)), scripts d'installation
+CN_main.py                  le moteur central : assemble le noyau et fait battre le cycle (percevoir, décider, agir, prouver, apprendre)
+noyau/CN_manifeste.py       le contrat d'un module (lecture, validation, ordre d'installation)
+noyau/CN_base.py            SQLite : connexions courtes, BEGIN IMMEDIATE avec reprises
+noyau/CN_bus.py             le bus d'événements, la lignée, le cloisonnement par portée
+noyau/CN_registre.py        le registre des objets, un propriétaire par type
+noyau/CN_catalogue.py       le catalogue des capacités et le savoir-faire (paliers raconter / auto / maitre)
+noyau/CN_executeur.py       la seule porte d'exécution : palier, preuve, retour arrière, apprentissage
+noyau/CN_contexte.py        ce qu'un module voit du noyau, et rien d'autre
+noyau/CN_chargeur.py        découverte, isolation, branchement dans l'ordre des dépendances
+modules/<id>/            CN_manifeste.toml, CN_module.py (def brancher(ctx)), scripts d'installation
 tests/                   bancs, stdlib seule
 ```
 
@@ -37,11 +37,11 @@ tests/                   bancs, stdlib seule
 Python 3.11 ou plus, bibliothèque standard seule.
 
 ```
-python main.py verifier       manifestes, isolation, ordre d'installation, capacités à porter
-python main.py etat           résumé du noyau
-python main.py tick           une passe de détection
-python main.py demarrer       le cycle en continu
-python -m unittest discover -s tests -v
+python CN_main.py verifier       manifestes, isolation, ordre d'installation, capacités à porter
+python CN_main.py etat           résumé du noyau
+python CN_main.py tick           une passe de détection
+python CN_main.py demarrer       le cycle en continu
+python -m unittest discover -s tests -p "CN_test*.py" -v
 ```
 
 Les données vont dans `donnees/` (ou `$CASSANDRA_DONNEES`).
@@ -59,7 +59,7 @@ Le module n'ouvre jamais de thread : le noyau l'exécute dans un fil surveillé.
 
 Pour chaque moteur le noyau mesure la durée, empêche qu'il s'empile s'il dépasse `duree_max_s` (il est alors dit « figé »),
 compte les échecs, dit chaque échec au bus et le suspend après cinq échecs de suite (`lancer` le réarme : voie humaine).
-`python main.py moteurs` les liste avec leur état.
+`python CN_main.py moteurs` les liste avec leur état.
 
 ## Le pont Dolibarr : Cassandra pilote une instance, elle ne la remplace pas
 
@@ -78,17 +78,17 @@ objets aux champs bornés) et il **agit**, par des capacités qui ont toutes leu
 ce qu'elle ferait (un humain agit en voie parallèle), et l'administrateur monte le palier quand il le décide :
 
 ```
-python main.py palier                              les capacités qui écrivent, leur palier, les paliers permis
-python main.py palier dolibarr.supprimer auto      Cassandra supprime seule (avec corbeille) ; l'événement savoir.regle le journalise
+python CN_main.py palier                              les capacités qui écrivent, leur palier, les paliers permis
+python CN_main.py palier dolibarr.supprimer auto      Cassandra supprime seule (avec corbeille) ; l'événement savoir.regle le journalise
 ```
 
-Réglage : `config/dolibarr.conf` (`url`, `hote`, `fichier_cle`, `delai` ; voir `dolibarr.conf.exemple`) et la clé dans `config/dolibarr.key` (0640, groupe du noyau).
+Réglage : `config/dolibarr.conf` (`url`, `hote`, `fichier_cle`, `delai` ; voir `CN_dolibarr.conf.exemple`) et la clé dans `config/dolibarr.key` (0640, groupe du noyau).
 La clé ne figure dans aucun événement, aucun objet, aucun message d'erreur. En production, Dolibarr se joint par le réseau privé, sans passer par Cloudflare (qui
 bloque les machines de datacenter). **La clé donne les droits de son utilisateur Dolibarr : en créer un dédié, aux droits limités.**
 
 ## Le Sensorium : le collecteur de la V18, gardé entier
 
-`cassandra_knowledge_collector.py` (6 560 lignes) devient `modules/sensorium/sensorium.py` : **renommé, jamais découpé**. Il reste un service à part,
+`cassandra_knowledge_collector.py` (6 560 lignes) devient `modules/sensorium/CN_sensorium.py` : **renommé, jamais découpé**. Il reste un service à part,
 qui tourne en root pour tout voir et ne peut écrire que dans son dossier (`donnees/sensorium/`, 0700) et son socket (`/run/sensorium/`). Seules
 **six lignes** diffèrent de la V18 : des chemins devenus réglables par variable d'environnement (`SENSORIUM_DB`, `SENSORIUM_SOCKET`...), avec les mêmes
 valeurs par défaut, pour qu'il tienne dans le dossier unique de Cassandra.
@@ -100,8 +100,8 @@ Le module qui l'entoure le relie au noyau, sans rien mesurer lui-même :
 - des lectures (`sante`, `metriques`, `monde`, `entite`, `historique`, `changements`) aux arguments validés avant de toucher le socket ;
 - un menu, un écran, et deux tuiles (santé sur l'accueil, ressources).
 
-`install.sh --module sensorium` installe le service (son unité vit dans `config/`, liée dans systemd), l'ouvre au groupe du noyau pour ce seul socket, et ne
-valide l'installation que si le collecteur répond **à root et au noyau**. `deploy.sh` rejoue l'installation d'un module à scripts quand il change.
+`CN_install.sh --module sensorium` installe le service (son unité vit dans `config/`, liée dans systemd), l'ouvre au groupe du noyau pour ce seul socket, et ne
+valide l'installation que si le collecteur répond **à root et au noyau**. `CN_deploy.sh` rejoue l'installation d'un module à scripts quand il change.
 
 ## Les menus : un module déclare, le noyau assemble
 
@@ -123,8 +123,8 @@ Personnalisation : masquer, renommer, réordonner, déplacer une entrée, pour t
 personne d'autre), par la capacité `menus.personnaliser_entree` (preuve et retour arrière comme toute écriture).
 
 ```
-python main.py agir menus.lire_menu role=admin                                  l'arbre, en JSON
-python main.py agir menus.personnaliser_entree entree=dns:domaines masque=true  masquer une entrée
+python CN_main.py agir menus.lire_menu role=admin                                  l'arbre, en JSON
+python CN_main.py agir menus.personnaliser_entree entree=dns:domaines masque=true  masquer une entrée
 ```
 
 ## Les droits : le modèle de Dolibarr, appliqué en un seul endroit
@@ -152,11 +152,11 @@ aucun droit n'est demandé : les agents sont souverains, et c'est le **palier** 
 Un refus est un événement (`capacite.refusee`, avec le droit et la raison). Le menu se filtre par droits : un compte ne voit pas ce qu'il ne peut pas ouvrir.
 
 ```
-python main.py agir droits.regler sujet=sandrine droit=compta.ecrire             accorder (valeur=refuse | herite)
-python main.py agir droits.groupe groupe=compta libelle=Comptables               créer un groupe (supprimer=true)
-python main.py agir droits.membre compte=jules groupe=compta                     l'y mettre (present=false : l'en retirer)
-python main.py agir droits.mes_droits compte=sandrine                            ce qu'elle détient
-python main.py agir compta.passer_ecriture --compte sandrine                     essayer comme elle : refusé, avec le droit manquant
+python CN_main.py agir droits.regler sujet=sandrine droit=compta.ecrire             accorder (valeur=refuse | herite)
+python CN_main.py agir droits.groupe groupe=compta libelle=Comptables               créer un groupe (supprimer=true)
+python CN_main.py agir droits.membre compte=jules groupe=compta                     l'y mettre (present=false : l'en retirer)
+python CN_main.py agir droits.mes_droits compte=sandrine                            ce qu'elle détient
+python CN_main.py agir compta.passer_ecriture --compte sandrine                     essayer comme elle : refusé, avec le droit manquant
 ```
 
 Tout est réversible (l'état d'avant est gardé), et nommer un administrateur est un droit à part (`droits.nommer_admin`).
@@ -169,9 +169,9 @@ qu'il faut sur la machine), **actif** (le noyau l'a branché). Désactiver n'eff
 restent, comme dans Dolibarr ; réactiver retrouve tout.
 
 ```
-python main.py module liste                     un module par ligne : famille, état, version
-python main.py module activer ID [--sans-dependances]
-python main.py module desactiver ID [--en-cascade] [--forcer]
+python CN_main.py module liste                     un module par ligne : famille, état, version
+python CN_main.py module activer ID [--sans-dependances]
+python CN_main.py module desactiver ID [--en-cascade] [--forcer]
 ```
 
 Le noyau en marche voit le changement et **branche ou débranche à chaud**, sans redémarrer : moteurs arrêtés, détecteurs et capacités qui ne
@@ -180,7 +180,7 @@ répondent plus, abonnements retirés, constats ouverts suspendus. Les règles :
 - activer un module active d'abord ses dépendances (`requiert`) ; désactiver un module requis par un module actif est refusé, sauf `--en-cascade`
   (les dépendants d'abord) ;
 - un module `essentiel = true` ne se désactive pas (sauf `--forcer`) ;
-- un module qui a des scripts d'installation ne s'active que s'il est installé : cela demande l'administrateur système (`install.sh --module ID`) ;
+- un module qui a des scripts d'installation ne s'active que s'il est installé : cela demande l'administrateur système (`CN_install.sh --module ID`) ;
   le noyau tourne sans privilège et ne s'installe jamais lui-même ;
 - chaque changement est un événement (`module.active`, `module.desactive`) avec son auteur : un humain, un agent, Cassandra elle-même. Elle sait.
 
@@ -189,27 +189,27 @@ moteurs, détecteurs et capacités, et pour chaque action si elle est possible e
 
 ## Un module store à terme : le contrat est prêt
 
-Le noyau est pensé pour qu'un jour des modules viennent d'ailleurs (voir `docs/STORE.md`). Déjà en place :
+Le noyau est pensé pour qu'un jour des modules viennent d'ailleurs (voir `docs/CN_STORE.md`). Déjà en place :
 
 - le manifeste dit tout ce qu'une vitrine affiche (`auteur`, `licence`, `site`, `famille`, `version`) et ce que le module **demande**
   (`[permissions]`) avant qu'il soit installé ; `api` fixe la version majeure du contrat visée (`API_NOYAU`) ;
 - un module est livré en **paquet** (`.cmod`) : empreinte de chaque fichier, signature Ed25519 de l'éditeur, extraction sûre ;
 - l'administrateur déclare les éditeurs de confiance par leur clé publique dans `config/cles/` ; un paquet falsifié, d'un éditeur inconnu ou
-  dangereux est refusé (`install.sh --extension mod.cmod`, `--non-signe` pour le choisir en connaissance de cause).
+  dangereux est refusé (`CN_install.sh --extension mod.cmod`, `--non-signe` pour le choisir en connaissance de cause).
 
 ```
-python main.py paquet construire DOSSIER --cle PRIVEE.pem        un paquet signé, reproductible
-python main.py paquet verifier ARCHIVE                           intégrité et signature (code de sortie 3 : intègre mais non signé)
-python main.py paquet extraire ARCHIVE DEST [--non-signe]
+python CN_main.py paquet construire DOSSIER --cle PRIVEE.pem        un paquet signé, reproductible
+python CN_main.py paquet verifier ARCHIVE                           intégrité et signature (code de sortie 3 : intègre mais non signé)
+python CN_main.py paquet extraire ARCHIVE DEST [--non-signe]
 ```
 
 ## Greffer un module après coup
 
 Trois voies, un seul contrat (le manifeste) :
 
-1. **Un module livré avec le noyau** : on ajoute `modules/<id>/` au dépôt, `deploy.sh` le pousse (inactif), `install.sh --module <id>` l'installe et l'active.
-2. **Une extension, à chaud** : `install.sh --extension ./mon_module`. Elle est copiée dans `extensions/` (hors des versions : `deploy.sh`
-   n'y touche jamais), vérifiée, prouvée par son `verifier.sh`, ajoutée aux modules actifs, et **le noyau la branche sans redémarrer**.
+1. **Un module livré avec le noyau** : on ajoute `modules/<id>/` au dépôt, `CN_deploy.sh` le pousse (inactif), `CN_install.sh --module <id>` l'installe et l'active.
+2. **Une extension, à chaud** : `CN_install.sh --extension ./mon_module`. Elle est copiée dans `extensions/` (hors des versions : `CN_deploy.sh`
+   n'y touche jamais), vérifiée, prouvée par son `CN_verifier.sh`, ajoutée aux modules actifs, et **le noyau la branche sans redémarrer**.
    Exemple complet : `exemples/sentinelle/` (un moteur, un détecteur, un type d'objet, des événements).
 3. **Un moteur de plus sur un module existant, sans le modifier** : une extension qui écoute ses événements (`evenements.ecoute`) et
    déclare son moteur `sur` l'un d'eux. Le module d'origine n'est jamais retouché.
@@ -251,28 +251,28 @@ dossiers déjà là. Le dossier de Cassandra reste hors de `/var/www` : un utili
 `/var/www/cassandra`. Un module demande l'espace d'un utilisateur par `ctx.espace(utilisateur)` et ne sort jamais de
 `/var/www/<utilisateur>/data/cassandra/<module>`.
 
-`install.sh` migre seul une ancienne disposition (`/opt/cassandra`, `/var/lib/cassandra`, `/etc/cassandra`, `/var/log/cassandra`) et
+`CN_install.sh` migre seul une ancienne disposition (`/opt/cassandra`, `/var/lib/cassandra`, `/etc/cassandra`, `/var/log/cassandra`) et
 crée `fastuser` s'il n'existe pas (`--admin NOM` pour un autre nom, `--racine DIR` pour un autre dossier). La disposition est décrite
-une seule fois, dans `exploitation/commun.sh`, que `install.sh` et `deploy.sh` partagent.
+une seule fois, dans `exploitation/CN_commun.sh`, que `CN_install.sh` et `CN_deploy.sh` partagent.
 
 ## Exploitation
 
 ```
-./install.sh                          le noyau seul : utilisateur, dossiers, version, service systemd
-./install.sh --module certificats     + ce module et ses dépendances ; chacun s'installe par SON script,
+./CN_install.sh                          le noyau seul : utilisateur, dossiers, version, service systemd
+./CN_install.sh --module certificats     + ce module et ses dépendances ; chacun s'installe par SON script,
                                       se prouve par SA vérification, se retire seul si la preuve manque
-./install.sh --retirer certificats
-./deploy.sh [--a-blanc]               mise à jour : nouvelle version à côté de l'ancienne, manifestes, bancs,
+./CN_install.sh --retirer certificats
+./CN_deploy.sh [--a-blanc]               mise à jour : nouvelle version à côté de l'ancienne, manifestes, bancs,
                                       sauvegarde de la base, bascule atomique, preuve de chaque module actif
                                       qui a changé, retour arrière seul à la moindre preuve manquante
-outils/pousser.sh <hote> install|deploy [options]    envoie l'arbre par SSH et lance le script là-bas
+outils/CN_pousser.sh <hote> install|deploy [options]    envoie l'arbre par SSH et lance le script là-bas
 ```
 
 Le noyau tourne en service `Type=notify` : il annonce qu'il est prêt, puis donne signe de vie ; systemd tue et relance
 une boucle figée (`WatchdogSec=120`). L'unité est durcie au plus étroit (utilisateur dédié, système en lecture seule,
 aucune capacité, appels système filtrés ; exposition mesurée par `systemd-analyze security` : 1,4 OK). Un module qui
-a besoin de plus ouvre exactement ce qu'il lui faut dans un drop-in nommé, posé par son `installer.sh` et retiré par
-son `retirer.sh`. Modules actifs : `/etc/cassandra/modules.actifs`.
+a besoin de plus ouvre exactement ce qu'il lui faut dans un drop-in nommé, posé par son `CN_installer.sh` et retiré par
+son `CN_retirer.sh`. Modules actifs : `/etc/cassandra/modules.actifs`.
 
 ## Couches
 

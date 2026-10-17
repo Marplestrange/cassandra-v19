@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #009463
+# VERSION CN : 0.1.0  #aa3c7f
 # VERSION EC : néant
 # EC LIÉES   : néant
-# RÔLE       : lit tous les fichiers suivis par git et dit s'ils respectent docs/FORMAT.md (nom, en-tête, bornes, pureté des EC).
+# RÔLE       : lit tous les fichiers suivis par git et dit s'ils respectent docs/CN_FORMAT.md (nom, en-tête, bornes, pureté des EC).
 # MÉTHODE    : analyse textuelle et arbre syntaxique Python ; mode audit par défaut (rien ne bloque), --strict pour l'intégration continue.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=009463 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=aa3c7f ▼▼▼
 """Outil de bornes. Usage :
     python outils/CN_bornes.py                 audit de tout le dépôt (résumé par module)
     python outils/CN_bornes.py --module vue    un seul module
@@ -36,7 +36,7 @@ from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
 
-# Seule liste fermée : les noms imposés par un outil extérieur (docs/FORMAT.md §3 bis).
+# Seule liste fermée : les noms imposés par un outil extérieur (docs/CN_FORMAT.md §3 bis).
 NOMS_IMPOSES = {"__init__.py", "LICENSE", "README.md", ".gitignore", "__pycache__"}
 PREFIXES = ("CN_", "EC_")
 CHAMPS = ("TITRE", "LICENCE", "AUTEUR", "GIT", "MAIL", "MODULE", "ZONE", "VERSION CN", "VERSION EC", "RÔLE", "MÉTHODE")
@@ -220,7 +220,7 @@ def analyser(chemin: str) -> dict:
 
 
 def pureté(source: str) -> list[str]:
-    """Règles d'une borne EC (docs/NEXUS.md §3, condition 1 et 2)."""
+    """Règles d'une borne EC (docs/CN_NEXUS.md §3, condition 1 et 2)."""
     try:
         arbre = ast.parse(source)
     except SyntaxError as e:
@@ -374,4 +374,4 @@ if __name__ == "__main__":
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
 # CN : tout ce fichier est du nexus (outil du dépôt, jamais évolutif).
 # EC : néant. Il lit les autres fichiers ; il n'en modifie aucun.
-# LIEN : docs/FORMAT.md (la spécification qu'il vérifie), docs/NEXUS.md (les six conditions d'un point d'évolution).
+# LIEN : docs/CN_FORMAT.md (la spécification qu'il vérifie), docs/CN_NEXUS.md (les six conditions d'un point d'évolution).

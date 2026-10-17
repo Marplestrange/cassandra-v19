@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8d1c4b
+# VERSION CN : 0.1.0  #6e1f68
 # VERSION EC : néant
 # EC LIÉES   : néant
-# RÔLE       : ajoute à chaque fichier existant l'en-tête, la borne CN et l'explicatif du format docs/FORMAT.md, sans toucher au code.
+# RÔLE       : ajoute à chaque fichier existant l'en-tête, la borne CN et l'explicatif du format docs/CN_FORMAT.md, sans toucher au code.
 # MÉTHODE    : le titre et le rôle sont repris de l'ancien commentaire ; la méthode reste « à compléter » pour que l'auteur la relise ; simulation par défaut.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8d1c4b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6e1f68 ▼▼▼
 """Générateur d'en-têtes. Usage :
     python outils/CN_entete.py                       simulation : liste ce qui serait fait, n'écrit rien
     python outils/CN_entete.py --ecrire              écrit (un fichier à la fois, puis scelle les empreintes)
@@ -42,14 +42,14 @@ VERSION_NOYAU = re.compile(r'VERSION_NOYAU\s*=\s*"([^"]+)"')
 def version_de(chemin: str) -> str:
     p = chemin.split("/")
     if p[0] == "modules" and len(p) > 2:
-        m = (RACINE / "modules" / p[1] / "manifeste.toml")
+        m = (RACINE / "modules" / p[1] / "CN_manifeste.toml")
         if not m.exists():
             m = RACINE / "modules" / p[1] / "CN_manifeste.toml"
         if m.exists():
             v = re.search(r'^version\s*=\s*"([^"]+)"', m.read_text(encoding="utf-8"), re.M)
             if v:
                 return v.group(1)
-    f = RACINE / "noyau" / "manifeste.py"
+    f = RACINE / "noyau" / "CN_manifeste.py"
     if f.exists():
         v = VERSION_NOYAU.search(f.read_text(encoding="utf-8"))
         if v:
@@ -242,4 +242,4 @@ if __name__ == "__main__":
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
 # CN : tout ce fichier est du nexus (outil du dépôt, jamais évolutif).
 # EC : néant. Il ne modifie jamais une ligne de code, il ajoute des commentaires avant et après.
-# LIEN : docs/FORMAT.md ; outils/CN_bornes.py (qui vérifie ce qu'il génère et scelle les empreintes).
+# LIEN : docs/CN_FORMAT.md ; outils/CN_bornes.py (qui vérifie ce qu'il génère et scelle les empreintes).

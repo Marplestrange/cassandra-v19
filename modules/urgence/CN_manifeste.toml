@@ -1,0 +1,226 @@
+[module]
+id = "urgence"
+nom = "Urgence"
+version = "0.2.0"
+noyau_min = "0.1.0"
+description = "Les gestes d'urgence : geler l'autonomie des agents (ils observent, n'agissent plus), couper les envois (rien ne sort plus de la maison), fermer les sessions des autres, lever la crise du noyau, et CONFINER la machine (mots de passe SSH coupés, réseau fermé sauf à votre session, avec une échéance qui rouvre seule). Aucun n'est un outil d'agent : une session humaine, un mot tapé, une justification. Le danger du confinement est de se couper soi-même : l'adresse de la session vient de la connexion, jamais de la demande, et la porte se rouvre toute seule."
+confiance = "interne"
+famille = "securite"
+requiert = ["droits", "comptes"]
+
+[[droits]]
+id = "voir"
+libelle = "Voir l'état des gestes d'urgence (gel, envois, confinement, crise)"
+sensible = true
+
+[[droits]]
+id = "agir"
+libelle = "Déclencher ou lever un geste d'urgence (geler, couper les envois, fermer les sessions, confiner, lever la crise)"
+sensible = true
+
+[[objets]]
+type = "confinement"
+libelle = "Le confinement en cours : niveau, échéance, adresse protégée, qui l'a demandé et pourquoi"
+
+[[objets]]
+type = "crise"
+libelle = "La crise automatique en cours : ce qui l'a déclenchée, quand, et ce que Cassandra a coupé"
+
+[evenements]
+emet = ["crise.declenchee", "crise.retenue", "crise.calme", "crise.levee", "confinement.gel", "confinement.envois", "confinement.sessions", "confinement.pose", "confinement.leve", "confinement.confirme", "confinement.crise_levee"]
+
+[[moteurs]]
+id = "echeance"
+libelle = "Relit le confinement : à l'échéance (ou si le réseau a été rouvert), rend aussi ce que Cassandra avait gelé ou coupé"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 120
+
+[[reglages]]
+id = "crise_auto_palier"
+libelle = "Jusqu'où Cassandra agit seule face à une crise (paralysie ou attaque)"
+type = "choix"
+choix = ["raconter", "auto"]
+defaut = "raconter"
+aide = "Raconter : elle détecte, le dit (notification critique) et ne coupe rien — il faut déclencher soi-même. Auto : elle coupe les envois et retient les gestes des agents dès que la crise tient. Un choix d'administrateur, jamais un interdit codé."
+
+[[reglages]]
+id = "crise_auto_actif"
+libelle = "Surveiller les crises (paralysie, attaque)"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "crise_part_paralysie"
+libelle = "Part des services critiques (ou des sites) à l'arrêt qui fait une paralysie, en %"
+type = "entier"
+defaut = 50
+minimum = 10
+maximum = 100
+
+[[reglages]]
+id = "crise_duree_s"
+libelle = "Temps que la paralysie doit tenir avant d'être une crise, en secondes"
+type = "entier"
+defaut = 300
+minimum = 60
+maximum = 3600
+
+[[reglages]]
+id = "crise_fenetre_attaque_min"
+libelle = "Fenêtre de mesure d'une attaque, en minutes"
+type = "entier"
+defaut = 10
+minimum = 2
+maximum = 120
+
+[[reglages]]
+id = "crise_seuil_adresses"
+libelle = "Nombre d'adresses différentes repoussées dans la fenêtre qui fait une attaque majeure"
+type = "entier"
+defaut = 40
+minimum = 5
+maximum = 1000
+aide = "Sur une machine ordinaire, quelques dizaines d'adresses par 6 heures : un afflux d'un coup est un autre régime."
+
+[[reglages]]
+id = "crise_services_critiques"
+libelle = "Les services dont l'arrêt compte pour une paralysie (séparés par des virgules ; seuls ceux qui existent sur la machine comptent)"
+type = "texte"
+defaut = "nginx,mysql,mariadb,php8.2-fpm,php-fpm,fastpanel2,ssh,sshd,tailscaled"
+
+[[reglages]]
+id = "crise_confiance"
+libelle = "Adresses ou réseaux de confiance en plus (jamais comptés comme des attaquants), séparés par des espaces"
+type = "texte"
+defaut = ""
+aide = "Déjà de confiance : les réseaux locaux, la machine, Tailscale."
+
+[[moteurs]]
+id = "veille"
+libelle = "Chaque minute : mesure la paralysie et l'attaque, et — selon le palier choisi — le dit ou coupe les envois et retient les gestes des agents"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 120
+
+[[detecteurs]]
+id = "crise"
+libelle = "Une crise automatique est en cours, ou a été détectée sans être déclenchée"
+frequence_s = 30
+
+[[capacites]]
+id = "crise_auto_lever"
+libelle = "Lever la crise AUTOMATIQUE : rendre les envois et l'autonomie que la crise avait coupés (la crise ne se lève jamais seule : c'est à vous de dire que c'est fini)"
+risque = "moyen"
+droit = "agir"
+perimetre = ["les freins que la crise automatique avait posés, et la crise elle-même"]
+preuve = "plus de crise automatique"
+retour = "remettre la crise et ses freins"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "etat"
+libelle = "L'état des gestes d'urgence : autonomie gelée, envois coupés, confinement (niveau, échéance, adresse protégée), crise du noyau, et l'adresse de la session qui regarde"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "geler"
+libelle = "Geler l'autonomie : les agents continuent d'observer (veille, mesures, notifications), ils n'agissent plus — le geste à faire quand on soupçonne un agent d'être manipulé"
+risque = "moyen"
+droit = "agir"
+perimetre = ["le frein « gel » du noyau : toute écriture demandée par un agent est refusée"]
+preuve = "le frein du noyau a la valeur demandée"
+retour = "remettre le frein comme il était"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "couper_envois"
+libelle = "Couper tous les envois : plus rien ne sort de la maison (courriers, messages), y compris vos propres alertes, qui s'accumulent dans la cloche"
+risque = "moyen"
+droit = "agir"
+perimetre = ["le frein « envois » du noyau : toute capacité qui se déclare sortante est refusée, pour tous"]
+preuve = "le frein du noyau a la valeur demandée"
+retour = "remettre le frein comme il était"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "sessions_revoquer"
+libelle = "Fermer les sessions de tous les comptes sauf la vôtre : chacun devra se reconnecter"
+risque = "moyen"
+droit = "agir"
+masque = ["courant"]
+perimetre = ["les sessions de tous les comptes, sauf la session courante"]
+preuve = "il ne reste que la session courante"
+retour = "aucun : des sessions fermées se rouvrent par une connexion"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "crise_lever"
+libelle = "Lever la crise du noyau (seule la lecture passait) : les écritures reprennent"
+risque = "moyen"
+droit = "agir"
+perimetre = ["l'état de crise du noyau"]
+preuve = "le noyau n'est plus en crise"
+retour = "remettre le noyau en crise"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "confiner"
+libelle = "Confiner la machine : niveau 1 (mots de passe SSH coupés), 2 (+ SSH fermé à tous sauf à votre session, envois coupés), 3 (+ tout fermé sauf votre session, la machine et Tailscale, Docker arrêté). Il faut taper CONFINER et dire pourquoi. Sans confirmation, tout se rouvre seul à l'échéance"
+risque = "eleve"
+droit = "agir"
+masque = ["courant"]
+perimetre = ["les règles du réseau dans une chaîne à nous, accrochée en tête d'INPUT, qui laisse toujours passer votre session", "le fichier SSH de Cassandra", "les freins du noyau (gel, envois)", "les sessions des autres"]
+preuve = "la chaîne réseau est en place (niveau 2 et plus), votre adresse y est autorisée avant toute fermeture, et l'échéance est posée"
+retour = "lever le confinement : rouvrir le réseau, remettre le fichier SSH d'avant, relancer Docker, rendre les freins ; automatique à l'échéance"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "lever"
+libelle = "Lever le confinement tout de suite : rouvrir le réseau, remettre le fichier SSH d'avant, relancer Docker, rendre ce que Cassandra avait gelé ou coupé"
+risque = "moyen"
+droit = "agir"
+perimetre = ["ce que le confinement avait changé, et rien d'autre"]
+preuve = "plus de confinement"
+retour = "confiner de nouveau (les sessions fermées ne se rendent pas)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "confirmer"
+libelle = "Confirmer le confinement : repousser l'échéance (jusqu'à 24 h) parce que vous êtes toujours là et que la situation dure"
+risque = "faible"
+droit = "agir"
+perimetre = ["l'échéance du confinement en cours"]
+preuve = "l'échéance relue"
+retour = "remettre l'ancienne échéance"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[permissions]
+racine = true
+stockage_lecture = true
+identite = true
+urgence = true
+privileges = ["installer : la commande du confinement posée en root", "retirer : la défaire"]
+
+[[racine]]
+id = "confiner"
+libelle = "Confiner la machine, la déconfiner, repousser l'échéance, lire l'état (règles réseau dans une chaîne à nous, fichier SSH, minuterie systemd)"
+
+[[racine]]
+id = "crise"
+libelle = "Mesurer la crise en lecture seule : l'état des services critiques, les adresses repoussées par CrowdSec dans la fenêtre"
+lecture = true
+
+[installation]
+script = "CN_installer.sh"
+verification = "CN_verifier.sh"
+retrait = "CN_retirer.sh"
