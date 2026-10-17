@@ -9,6 +9,8 @@ RACINE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RACINE / "outils"))
 import CN_bornes as B  # noqa: E402
 
+NL = chr(10)
+
 EN_TETE = """# ══════════════════════════════════════════════════════════════════════════════
 # TITRE      : Essai
 # LICENCE    : AGPL-3.0
@@ -32,7 +34,7 @@ def fichier_cn(corps="x = 1\n"):
 
 
 def fichier_ec(corps="def f(x):\n    return x + 1\n"):
-    return (EN_TETE.format(zone="EC", vcn="néant", vec="EC0 (référence 0.1.0)  #000000") + "# HÔTE CN    : CN_essai.py · essai.f @1.0\n" +
+    return (EN_TETE.format(zone="EC", vcn="néant", vec="EC0 (référence 0.1.0)  #000000") + "# RUNTIME    : python\n# HÔTE CN    : CN_essai.py · essai.f @1.0\n" +
             "# ▼▼▼ BORNE EC point=essai.f contrat=@1.0 version=EC0 empreinte=000000 ▼▼▼\n" + corps +
             "# ▲▲▲ FIN BORNE EC ▲▲▲\n\n# ═══ EXPLICATIF CN / EC ═══\n# EC : essai.\n")
 
@@ -116,6 +118,34 @@ class Conformite(unittest.TestCase):
     def test_une_ec_sans_hote_est_refusee(self):
         c = self.poser("EC_essai.py", fichier_ec().replace("# HÔTE CN    : CN_essai.py · essai.f @1.0\n", ""))
         self.assertTrue(any("HÔTE" in e for e in B.analyser(c)["erreurs"]))
+
+    def test_une_ec_doit_declarer_son_runtime(self):
+        c = self.poser("EC_essai.py", fichier_ec().replace("# RUNTIME    : python\n", ""))
+        self.assertTrue(any("RUNTIME" in e for e in B.analyser(c)["erreurs"]))
+
+    def test_une_ec_dans_un_autre_langage_est_acceptee_sans_analyse_de_purete(self):
+        php = fichier_ec("function f($x) { return $x + 1; }\n").replace("# ", "// ").replace("python", "php")
+        c = self.poser("EC_essai.php", php)
+        r = B.analyser(c)
+        self.assertFalse([e for e in r["erreurs"] if "pureté" in e])
+        self.assertTrue(any("runtime php" in i for i in r["infos"]))
+
+    def test_un_binaire_ou_un_sql_porte_son_en_tete_dans_un_compagnon(self):
+        c = self.poser("EC_essai.wasm", "bin")
+        self.assertTrue(any("compagnon" in e for e in B.analyser(c)["erreurs"]))
+        self.poser("EC_essai.wasm.borne", EN_TETE.format(zone="EC", vcn="néant", vec="EC0  #000000"))
+        self.assertEqual(B.analyser(c)["erreurs"], [])
+        m = self.poser("CN_001_init.sql", "CREATE TABLE t(x);\n")
+        self.assertTrue(any("compagnon" in e for e in B.analyser(m)["erreurs"]))
+
+    def test_les_ec_liees_acceptent_n_importe_quelle_extension(self):
+        (self.tmp / "modules" / "essai" / "points").mkdir()
+        self.poser("points/EC_essai.wasm", "bin")
+        cn = fichier_cn().replace("# VERSION EC : néant\n", "# VERSION EC : néant\n# EC LIÉES   : essai.f @1.0 -> points/EC_essai.*\n")
+        c = self.poser("CN_essai.py", cn)
+        self.assertFalse([e for e in B.analyser(c)["erreurs"] if "EC LIÉES" in e])
+        c2 = self.poser("CN_essai2.py", cn.replace("points/EC_essai.*", "points/EC_absent.*"))
+        self.assertTrue(any("EC LIÉES" in e for e in B.analyser(c2)["erreurs"]))
 
     def test_la_constante_du_projet_est_gardee(self):
         c = self.poser("CN_essai.py", fichier_cn().replace("marplestrange@cassandra.center", "autre@exemple.test"))

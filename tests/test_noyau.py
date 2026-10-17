@@ -3438,6 +3438,26 @@ class StockageDesModules(unittest.TestCase):
         self.assertNotIn("u", noms)                                                      # la cassée n'a rien laissé, pas même sa première instruction
         self.assertEqual([r["version"] for r in st.lire("SELECT version FROM _migrations")], ["001_init.sql"])
 
+    def test_le_prefixe_cn_ne_change_pas_l_identite_d_une_migration(self):
+        self.sql("001_init.sql", "CREATE TABLE t(a INTEGER);")
+        self.Stockage(self.base / "m.db", self.mig)
+        (self.mig / "001_init.sql").rename(self.mig / "CN_001_init.sql")                # le renommage de docs/FORMAT.md §3 bis
+        st = self.Stockage(self.base / "m.db", self.mig)
+        self.assertEqual(st.appliquees, [])                                              # rien n'est rejoué
+        self.assertEqual([r["version"] for r in st.lire("SELECT version FROM _migrations")], ["001_init.sql"])
+
+    def test_une_migration_neuve_sous_le_prefixe_cn_s_applique(self):
+        self.sql("CN_001_init.sql", "CREATE TABLE t(a INTEGER);")
+        st = self.Stockage(self.base / "m.db", self.mig)
+        self.assertEqual(st.appliquees, ["001_init.sql"])
+
+    def test_la_meme_migration_sous_deux_noms_est_refusee(self):
+        self.sql("001_init.sql", "CREATE TABLE t(a INTEGER);")
+        self.sql("CN_001_init.sql", "CREATE TABLE t(a INTEGER);")
+        with self.assertRaises(self.Refusee) as c:
+            self.Stockage(self.base / "m.db", self.mig)
+        self.assertIn("même migration deux fois", str(c.exception))
+
     def test_un_nom_de_migration_invalide_est_refuse(self):
         self.sql("init.sql", "CREATE TABLE t(a INTEGER);")
         with self.assertRaises(self.Refusee):

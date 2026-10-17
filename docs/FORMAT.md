@@ -25,6 +25,7 @@ Un fichier est **soit CN, soit EC**, jamais les deux. Sa structure, toujours dan
 | `MODULE` | module d'appartenance |
 | `ZONE` | `CN` ou `EC` |
 | `VERSION CN` | fichier CN : version dépôt + empreinte (ex. `0.1.0 #3d90e1`). Fichier EC : `néant` |
+| `RUNTIME` | (fichier EC) l'environnement d'exécution du point : `python` (v1), `wasm`, `node`, `php`… |
 | `VERSION EC` | fichier EC : numéro d'EC + empreinte (ex. `EC8 #7be104`) ; pour la référence du dépôt : `EC0 (référence 0.1.0)`. Fichier CN : `néant` |
 | `EC LIÉES` | (fichier CN) la liste des points qu'il appelle et le fichier de leur référence |
 | `HÔTE CN` | (fichier EC) le fichier CN qui l'appelle, le point et le contrat (ex. `composer.py · verdict.composer @1.0`) |
@@ -60,6 +61,25 @@ Décision de Drisse : le nom d'un fichier dit sa zone. **Préfixe `CN_` ou `EC_`
 - **EC évoluées** dans le stock : `EC_<point>__<EC>.py`, ex. `EC_verdict_composer__EC8.py` (le double soulignement sépare le point du numéro d'EC).
 - Vérification : le préfixe égale le champ `ZONE` de l'en-tête et le dossier ; un fichier sans préfixe, hors de la liste fermée, est une erreur.
 
+## 3 ter. L'EC peut être de n'importe quel format (décision de Drisse, 17-10)
+
+Le code de chaque CN doit être écrit **sans supposer que son EC est du Python**. Règles :
+
+1. **Un CN n'importe jamais une EC et n'en appelle jamais le code directement.** Il passe par `appeler_point(point, entrée)` du noyau : **données en entrée, données en sortie** (JSON), jamais un objet ou une fonction du langage hôte.
+2. **Le noyau résout le point, pas le fichier** : il cherche l'EC par son identifiant, **quelle que soit l'extension** (`.py`, `.wasm`, `.js`, `.php`, `.rs`…). L'`EC LIÉES` d'un CN désigne donc `points/EC_verdict_composer.*`.
+3. **L'environnement d'exécution est déclaré** par l'EC (`RUNTIME` de l'en-tête, ou du fichier compagnon pour un binaire). Le noyau tient un registre d'hôtes d'exécution : `python` en v1 ; les autres se branchent derrière la même interface sans changer un seul CN.
+4. **Un fichier sans commentaires possibles** (`.wasm`, `.bin`, `.json`) porte son en-tête dans un **fichier compagnon** `EC_x.wasm.borne`, au même format.
+5. **La pureté se vérifie selon l'environnement** : par analyse de l'arbre syntaxique pour `python` ; pour les autres, par **construction du bac isolé** (aucun accès disque ni réseau, aucun import hôte hors `ec_api`), puisque l'analyse du code ne suffit pas. Tant qu'un bac n'existe pas pour un environnement, il est **refusé** par le chargeur.
+6. **Le contrat est un schéma JSON neutre** (voir `docs/EVOLUTION.md` §2 septies) : c'est lui, pas le langage, qui fait la compatibilité.
+
+## 3 quater. Migrations SQL : immuables, l'en-tête va dans un fichier compagnon
+
+Le migrateur (`noyau/stockage.py`) identifie une migration par son **nom** et la protège par la **somme de contrôle de son contenu** : une migration déjà appliquée puis modifiée est refusée. Un en-tête ne peut donc pas être inséré dans une migration existante, et la renommer la ferait rejouer. Décision :
+
+- **le contenu d'une migration n'est jamais retouché** ; son en-tête vit dans `CN_NNN_nom.sql.borne` ;
+- le migrateur reconnaît `CN_NNN_nom.sql` **et** `NNN_nom.sql`, et garde la même **identité** (le nom sans le préfixe `CN_`) : une instance qui a déjà appliqué `001_init.sql` ne la rejoue pas après le renommage ;
+- l'empreinte reste celle du contenu : renommer ne la change pas.
+
 ## 4. Où vivent les fichiers
 
 ```
@@ -87,7 +107,7 @@ Au chargement, le nexus résout un point : **EC en service** (stock) si elle est
 # ZONE       : CN
 # VERSION CN : 0.1.0  #3d90e1
 # VERSION EC : néant
-# EC LIÉES   : verdict.composer @1.0 -> points/EC_verdict_composer.py
+# EC LIÉES   : verdict.composer @1.0 -> points/EC_verdict_composer.*
 # RÔLE       : reçoit les relevés des sources, garantit le contrat, rend le verdict.
 # MÉTHODE    : valide l'entrée, appelle le point d'évolution, valide la sortie, sert la référence si l'EC faillit.
 # ══════════════════════════════════════════════════════════════════════════════
@@ -116,6 +136,7 @@ def composer_vue(releves):
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : EC
+# RUNTIME    : python
 # VERSION CN : néant
 # VERSION EC : EC0 (référence 0.1.0)  #b81c07
 # HÔTE CN    : CN_composer.py · verdict.composer @1.0
@@ -144,6 +165,7 @@ def composer(releves):
    **Nommage** : le préfixe `CN_` / `EC_` du fichier égale `ZONE` et le dossier (sauf la liste fermée des noms imposés de l'extérieur).
 3. **Renvois** : chaque point listé dans `EC LIÉES` d'un CN existe comme fichier EC qui le désigne comme `HÔTE CN`, et inversement.
 4. Un fichier **EC** n'importe que la bibliothèque standard pure et `ec_api`, sans `ctx`, `self`, E/S, horloge ni hasard (`docs/NEXUS.md` §3).
+4 bis. Un fichier EC porte `RUNTIME` et `HÔTE CN` ; `EC LIÉES` accepte `.*` (n'importe quelle extension) ; la pureté est analysée pour `python` seulement.
 5. Chaque `point=` est déclaré dans le manifeste du module, avec son contrat et son corpus ; chaque point déclaré a sa référence.
 6. Aucun fichier **intouchable** (`docs/NEXUS.md` §4) n'est de zone EC, et aucun fichier EC ne contient de nexus.
 7. L'**explicatif** existe et nomme le vis-à-vis (façade ou point) et le contrat.
@@ -166,4 +188,5 @@ Une EC rangée dans `/var/cassandra/ec/<module>/<point>/EC_<point>__EC<n>.py` su
 
 - **Courriel** : tranché (Drisse, 17-10) : `marplestrange@cassandra.center`, boîte dédiée au projet, que Cassandra gérera. L'adresse personnelle n'apparaît dans aucun fichier.
 - **L'interface** (`app.js`, plus de 35 000 lignes) : le squelette devient des fichiers CN, les vues déclaratives des fichiers EC (descriptions, jamais de script).
+- **Les migrations SQL** suivent §3 quater (immuables, en-tête en compagnon, migrateur à adapter avant le renommage).
 - **Fichiers assemblés** (`index.html`, `app.js` générés) : en-tête posé par l'assembleur, pas à la main.

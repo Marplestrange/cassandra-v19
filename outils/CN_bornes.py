@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ac6e0b
+# VERSION CN : 0.1.0  #009463
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : lit tous les fichiers suivis par git et dit s'ils respectent docs/FORMAT.md (nom, en-tête, bornes, pureté des EC).
 # MÉTHODE    : analyse textuelle et arbre syntaxique Python ; mode audit par défaut (rien ne bloque), --strict pour l'intégration continue.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ac6e0b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=009463 ▼▼▼
 """Outil de bornes. Usage :
     python outils/CN_bornes.py                 audit de tout le dépôt (résumé par module)
     python outils/CN_bornes.py --module vue    un seul module
@@ -40,9 +40,13 @@ RACINE = Path(__file__).resolve().parent.parent
 NOMS_IMPOSES = {"__init__.py", "LICENSE", "README.md", ".gitignore", "__pycache__"}
 PREFIXES = ("CN_", "EC_")
 CHAMPS = ("TITRE", "LICENCE", "AUTEUR", "GIT", "MAIL", "MODULE", "ZONE", "VERSION CN", "VERSION EC", "RÔLE", "MÉTHODE")
+CHAMPS_EC = ("RUNTIME", "HÔTE CN")                  # en plus, pour un fichier de ZONE EC : l'environnement d'exécution (python, wasm, node, php…) et l'hôte
 CONSTANTES = {"LICENCE": "AGPL-3.0", "AUTEUR": "Atek Drisse", "GIT": "github.com/Marplestrange", "MAIL": "marplestrange@cassandra.center"}
-COMMENTAIRE = {".py": "#", ".sh": "#", ".toml": "#", ".yml": "#", ".yaml": "#", ".js": "//", ".sql": "--", ".css": "/*", ".html": "<!--", ".md": "<!--", ".service": "#", ".path": "#", ".in": "#"}
-SANS_COMMENTAIRE = {".json"}
+COMMENTAIRE = {".py": "#", ".sh": "#", ".toml": "#", ".yml": "#", ".yaml": "#", ".js": "//", ".mjs": "//", ".ts": "//", ".php": "//", ".rs": "//", ".go": "//",
+               ".c": "//", ".css": "/*", ".html": "<!--", ".md": "<!--", ".service": "#", ".path": "#", ".in": "#", ".wat": ";;"}
+# Fichiers qui ne portent pas leur en-tête : le JSON n'a pas de commentaires ; le SQL des migrations est IMMUABLE (somme de contrôle du contenu) ;
+# le binaire (.wasm) n'est pas du texte. Un fichier compagnon « nom.ext.borne » porte alors l'en-tête.
+SANS_COMMENTAIRE = {".json", ".sql", ".wasm", ".bin"}
 STDLIB_PURE = {"__future__", "math", "re", "json", "itertools", "functools", "collections", "dataclasses", "typing", "enum", "fractions",
                "decimal", "string", "textwrap", "unicodedata", "operator", "copy", "heapq", "bisect", "statistics", "hashlib", "base64",
                "struct", "ec_api", "abc", "numbers"}
@@ -50,7 +54,7 @@ NOMS_INTERDITS = {"ctx", "self", "cls", "open", "print", "input", "exec", "eval"
 INDICES_DECISIFS = ("verif", "signature", "droit", "secret", "mdp", "password", "token", "jeton", "auth", "permission", "autoris", "chiffr", "empreinte", "hash")
 IGNORER_DOSSIERS = {".git", "__pycache__", "brouillons", "donnees"}
 
-RE_CHAMP = re.compile(r"^\s*(?:#|//|--|/\*|<!--|\*)?\s*(" + "|".join(re.escape(c) for c in CHAMPS + ("EC LIÉES", "HÔTE CN", "NEXUS VISÉ", "CONTRAT PROUVÉ")) + r")\s*:\s*(.*?)\s*(?:-->|\*/)?\s*$")
+RE_CHAMP = re.compile(r"^\s*(?:#|//|--|/\*|<!--|\*)?\s*(" + "|".join(re.escape(c) for c in CHAMPS + ("EC LIÉES", "HÔTE CN", "NEXUS VISÉ", "CONTRAT PROUVÉ", "RUNTIME")) + r")\s*:\s*(.*?)\s*(?:-->|\*/)?\s*$")
 RE_BORNE_CN = re.compile(r"BORNE CN version=(\S+) empreinte=([0-9a-f]+)")
 RE_BORNE_EC = re.compile(r"BORNE EC point=(\S+) contrat=@(\S+) version=(\S+) empreinte=([0-9a-f]+)")
 
@@ -71,11 +75,11 @@ def marqueur(l: str) -> str | None:
     """Rend le texte d'un marqueur si la ligne est une vraie ligne de commentaire de marqueur, sinon None.
     (Une chaîne de caractères qui cite les mots d'un marqueur n'en est pas un.)"""
     s = l.strip()
-    for jeton in ("<!--", "/*", "//", "--", "#"):
+    for jeton in ("<!--", "/*", "//", ";;", "--", "#"):
         if s.startswith(jeton):
             s = s[len(jeton):].strip(" ▼▲═─*	")
             if s.startswith(("BORNE CN", "FIN BORNE", "BORNE EC", "EXPLICATIF CN / EC")):
-                return s.rstrip(" ▼▲═─*>-")
+                return s.rstrip(" ▼▲═─*>-/")
             return None
     return None
 
@@ -114,10 +118,20 @@ def analyser(chemin: str) -> dict:
         r["exempt"] = True
         return r
     if ext in SANS_COMMENTAIRE:
-        r["infos"].append("sans commentaires possibles : fichier compagnon .borne requis")
-        compagnon = (RACINE / (chemin + ".borne")).exists()
-        if not compagnon:
-            r["erreurs"].append("fichier compagnon .borne absent")
+        compagnon = RACINE / (chemin + ".borne")
+        if not compagnon.exists():
+            r["erreurs"].append("fichier compagnon .borne absent (en-tête porté à part)")
+            return r
+        champs_c: dict[str, str] = {}
+        for l in compagnon.read_text(encoding="utf-8").splitlines():
+            m = RE_CHAMP.match(l)
+            if m:
+                champs_c[m.group(1)] = m.group(2)
+        manque = [c for c in CHAMPS if c not in champs_c]
+        if manque:
+            r["erreurs"].append("compagnon .borne incomplet : manque " + ", ".join(manque))
+        r["zone"] = champs_c.get("ZONE")
+        r["infos"].append("en-tête porté par le fichier compagnon .borne")
         return r
     if ext not in COMMENTAIRE:
         r["infos"].append("extension non gérée par le format")
@@ -165,7 +179,7 @@ def analyser(chemin: str) -> dict:
             expl = True
         elif ouvertes is None and not expl:
             s = l.strip()
-            if s and not s.startswith(("#", "//", "--", "/*", "*", "<!--", "-->")) and not (i == 1 and s.startswith("#!")):
+            if s and not s.startswith(("#", "//", ";;", "--", "/*", "*", "<!--", "-->")) and not (i == 1 and s.startswith("#!")):
                 hors_borne += 1
     if ouvertes is not None:
         r["erreurs"].append("borne ouverte jamais fermée")
@@ -186,15 +200,22 @@ def analyser(chemin: str) -> dict:
             r["infos"].append(f"empreinte à recalculer (déclarée {declaree}, calculée {calc})")
         if b["type"] == "EC":
             r["points"].append(b["m"][0])
-            if ext == ".py":
+            if ext == ".py" and champs.get("RUNTIME", "python") == "python":
                 r["erreurs"] += [f"pureté : {e}" for e in pureté("\n".join(b["corps"]))]
+            else:
+                r["infos"].append(f"pureté non vérifiable par analyse : runtime {champs.get('RUNTIME', ext)} (bac isolé exigé à l'exécution)")
     # ── renvois ──────────────────────────────────────────────────────
     if zone == "CN" and "EC LIÉES" in champs and champs["EC LIÉES"] not in ("néant", ""):
         for lien in re.findall(r"->\s*(\S+)", champs["EC LIÉES"]):
-            if not (RACINE / Path(chemin).parent / lien).exists():
-                r["erreurs"].append(f"EC LIÉES : fichier introuvable {lien}")
-    if zone == "EC" and "HÔTE CN" not in champs:
-        r["erreurs"].append("fichier EC sans HÔTE CN")
+            base = RACINE / Path(chemin).parent
+            existe = any(True for _ in base.glob(lien)) if "*" in lien else (base / lien).exists()
+            if not existe:
+                r["erreurs"].append(f"EC LIÉES : fichier introuvable {lien} (une EC peut avoir n'importe quelle extension : écrire « points/EC_x.* »)")
+    if zone == "EC":
+        for c in CHAMPS_EC:
+            if c not in champs:
+                r["erreurs"].append(f"fichier EC sans {c}")
+        r["runtime"] = champs.get("RUNTIME")
     return r
 
 
@@ -317,7 +338,7 @@ def sceller(chemin: str) -> bool:
     h = empreinte(lignes[debut + 1:fin])
     lignes[debut] = re.sub(r"empreinte=[0-9a-f]+", "empreinte=" + h, lignes[debut])
     for i, l in enumerate(lignes[:60]):
-        if re.match(r"^\s*(#|//|--)\s*VERSION (CN|EC)\s*:", l) and "#" in l.split(":", 1)[1] and "néant" not in l:
+        if re.match(r"^\s*(#|//|;;|--)\s*VERSION (CN|EC)\s*:", l) and "#" in l.split(":", 1)[1] and "néant" not in l:
             lignes[i] = re.sub(r"#[0-9a-f]{6}", "#" + h, l, count=1)
     neuf = "\n".join(lignes)
     if neuf != texte:
