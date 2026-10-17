@@ -203,7 +203,10 @@ class Passerelle:
         rel = "index.html" if chemin in ("/", "") else chemin.lstrip("/")
         if "\\" in rel or "\x00" in rel:
             return self._repondre(h, 404, {"erreur": "introuvable"})
-        reel = os.path.realpath(os.path.join(self.interface, *rel.split("/")))
+        parts = rel.split("/")
+        reel = os.path.realpath(os.path.join(self.interface, *parts))
+        if not os.path.isfile(reel) and not parts[-1].startswith(("CN_", "EC_")):      # docs/FORMAT.md §3 bis : le dépôt préfixe ses fichiers, les URL gardent leur nom
+            reel = os.path.realpath(os.path.join(self.interface, *(parts[:-1] + ["CN_" + parts[-1]])))
         ext = os.path.splitext(reel)[1].lower()
         if os.path.commonpath([reel, self.interface]) != self.interface or ext not in TYPES_STATIQUES or not os.path.isfile(reel):
             return self._repondre(h, 404, {"erreur": "introuvable"})

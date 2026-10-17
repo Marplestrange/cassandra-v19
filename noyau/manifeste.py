@@ -37,6 +37,8 @@ TYPES_RESERVES = ("noyau", "module", "capacite", "constat", "objet", "moteur", "
 CONFIANCES = ("interne", "signe", "tiers", "local")
 
 _ID = re.compile(r"^[a-z][a-z0-9_]{1,40}$")
+_ID_POINT = re.compile(r"^[a-z][a-z0-9_]{1,40}(\.[a-z][a-z0-9_]{1,40})?$")      # un point d'évolution : « verdict.composer »
+_CONTRAT = re.compile(r"^\d+\.\d+$")                                           # la version d'un contrat : majeure.mineure
 _EVT = re.compile(r"^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$")
 _VER = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 
@@ -210,6 +212,20 @@ class Mesure:
 
 
 @dataclass(frozen=True)
+class PointEvolution:
+    """Un point d'évolution (docs/NEXUS.md §3, docs/FORMAT.md) : une fonction PURE que ce module déclare. Le dépôt en écrit la RÉFÉRENCE ; une EC peut la remplacer à l'exécution.
+    Le module l'appelle par ctx.point(id, entrée) : des données en entrée, des données en sortie, quel que soit le langage de l'EC qui la sert."""
+    id: str
+    libelle: str
+    contrat: str               # la version du contrat « majeure.mineure » : une EC prouvée sur 1.3 sert un nexus en 1.3 ou plus, jamais en 2.x
+    reference: str             # chemin SANS extension, relatif au dossier du module : « points/EC_verdict_composer » (le noyau trouve le fichier, de n'importe quel format)
+    fonction: str = ""         # le nom de la fonction ; par défaut le dernier segment de l'identifiant
+    runtime: str = "python"    # l'environnement d'exécution de la référence
+    mesure: str = ""           # une mesure déclarée de ce module (la fitness), facultative
+    delai_ms: int = 2000       # au-delà, une EC qui répond est comptée en faute (le délai ne se coupe pas dans le processus)
+
+
+@dataclass(frozen=True)
 class CommandeRacine:
     """Une commande que ce module demande au courtier (root), nommée : le programme /usr/libexec/cassandra/<module>/<id>, posé en root par l'installation du module.
     Le noyau ne dit jamais quoi exécuter, seulement laquelle de ces commandes et avec quels arguments ; chaque programme valide ses propres arguments."""
@@ -296,6 +312,7 @@ class Manifeste:
     habillages: tuple = ()
     signaux: tuple = ()
     mesures: tuple = ()
+    points_evolution: tuple = ()
     racine: tuple = ()
     widgets: tuple = ()
     theme: Theme = field(default_factory=Theme)
@@ -712,6 +729,33 @@ def valider(brut: dict) -> list:
         if not isinstance(pl, (int, float)) or isinstance(pl, bool) or pl < 0:
             e.append("%s.plafond : un nombre positif ou nul" % nom)
 
+    pt_ids = []
+    for i, pt in enumerate(brut.get("points_evolution", []) or []):
+        nom = "points_evolution[%d]" % i
+        if not isinstance(pt, dict) or not _ID_POINT.match(str(pt.get("id", ""))):
+            e.append("%s.id : identifiant invalide (minuscules, éventuellement « module.point »)" % nom)
+            continue
+        if pt["id"] in pt_ids:
+            e.append("%s.id : « %s » est déclaré deux fois" % (nom, pt["id"]))
+        pt_ids.append(pt["id"])
+        nom = "point d'évolution « %s »" % pt["id"]
+        if not str(pt.get("libelle", "")).strip():
+            e.append("%s : libellé obligatoire" % nom)
+        if not _CONTRAT.match(str(pt.get("contrat", ""))):
+            e.append("%s.contrat : « majeure.mineure », ex. 1.0" % nom)
+        ref = pt.get("reference", "")
+        if not isinstance(ref, str) or not ref or ref.startswith("/") or ".." in ref.split("/"):
+            e.append("%s.reference : chemin relatif au dossier du module, sans « .. », sans extension" % nom)
+        if pt.get("fonction", "") and not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", str(pt.get("fonction"))):
+            e.append("%s.fonction : un nom de fonction" % nom)
+        if not re.match(r"^[a-z][a-z0-9_]*$", str(pt.get("runtime", "python"))):
+            e.append("%s.runtime : un nom d'environnement d'exécution (python, wasm, node, php…)" % nom)
+        dl = pt.get("delai_ms", 2000)
+        if not isinstance(dl, int) or isinstance(dl, bool) or not 1 <= dl <= 600000:
+            e.append("%s.delai_ms : entier entre 1 et 600000" % nom)
+        if pt.get("mesure") and pt["mesure"] not in mes_ids:
+            e.append("%s.mesure : « %s » doit être une mesure déclarée par ce module ([[mesures]])" % (nom, pt["mesure"]))
+
     racine_ids = []
     for i, rc in enumerate(brut.get("racine", []) or []):
         nom = "racine[%d]" % i
@@ -801,6 +845,8 @@ def construire(brut: dict, source="") -> Manifeste:
         mesures=tuple(Mesure(x["id"], x["libelle"], x["capacite"], x.get("genre", "jauge"), x.get("unite", ""), x.get("famille", ""), x.get("agregat", "moy"), bool(x.get("groupee", False)),
                              x.get("pire", "haut"), float(x.get("plafond", 0) or 0), x.get("nature", "serie"), int(x.get("fraicheur_s", 0) or 0), x.get("vide", ""), x.get("description", ""))
                       for x in brut.get("mesures", []) or []),
+        points_evolution=tuple(PointEvolution(x["id"], x["libelle"], str(x["contrat"]), x["reference"], x.get("fonction", "") or x["id"].split(".")[-1], x.get("runtime", "python"),
+                                              x.get("mesure", ""), int(x.get("delai_ms", 2000))) for x in brut.get("points_evolution", []) or []),
         signaux=tuple(Signal(x["id"], x["libelle"], x["capacite"], bool(x.get("admin", False)), x.get("cadence_s", 0)) for x in brut.get("signaux", []) or []),
         racine=tuple(CommandeRacine(x["id"], x["libelle"], bool(x.get("lecture", False))) for x in brut.get("racine", []) or []),
         habillages=tuple(Habillage(x["id"], x["libelle"], x.get("base", "clair"), x.get("fichier", "")) for x in brut.get("habillages", []) or []),

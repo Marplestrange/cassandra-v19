@@ -40,6 +40,7 @@ from noyau.base import Base
 from noyau.bus import TOUT, Bus
 from noyau.catalogue import Catalogue
 from noyau.contexte import Contexte
+from noyau.CN_points import ServicePoints
 from noyau.droits import Droits
 from noyau.executeur import Executeur
 from noyau.identite import Identite
@@ -72,6 +73,7 @@ class Noyau:
         self.etat_modules = Modules(self.base)
         self.catalogue = Catalogue(self.base)
         self._donnees = Path(donnees)
+        self.points = ServicePoints(self._donnees / "ec", alerte=lambda gid, texte: self.bus.emettre("noyau.point_suspendu", source="noyau", donnees={"point": gid, "texte": texte}))
         self._stockages = {}       # module -> son Stockage, ouvert une fois
         self.droits = Droits(self.base)
         self.reglages = Reglages(self.base, Path(donnees) / "secrets.cle")      # la clé qui chiffre les secrets, à part de la base
@@ -117,9 +119,12 @@ class Noyau:
     def _fabriquer(self, m):
         self.droits.declarer(m)
         self.reglages.declarer(m)
+        if m.points_evolution:
+            for defaut in self.points.declarer(m, Path(m.source).parent):
+                log.warning("point d'évolution écarté : %s", defaut)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
                        {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
-                        "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine,
+                        "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine, "point": self.points.appeler,
                         "urgence": types.SimpleNamespace(freins=self.freins, freiner=self.freiner, en_crise=self.en_crise, crise=self.crise),
                         "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, capacites=self.capacites_de, catalogue=self.catalogue_modules, activer=self.activer, desactiver=self.desactiver)})
         self.executeur.contextes[m.id] = ctx

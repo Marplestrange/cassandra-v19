@@ -1,3 +1,19 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Vue d'ensemble : composition du verdict (référence)
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : vue
+# ZONE       : EC
+# RUNTIME    : python
+# VERSION CN : néant
+# VERSION EC : EC0 (référence 0.1.0)  #a9d7c7
+# HÔTE CN    : CN_composer.py · verdict.composer @1.0
+# RÔLE       : transforme les relevés de toutes les sources en un verdict, des compteurs et les gestes à faire.
+# MÉTHODE    : fonction pure ; une source muette n'est jamais « stable » ; la première panne est citée ; une machine attendue hors ligne est une panne.
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE EC point=verdict.composer contrat=@1.0 version=EC0 empreinte=a9d7c7 ▼▼▼
 """La composition de la vue d'ensemble : une fonction PURE, des relevés (ou rien, quand une source se tait) -> le verdict et les compteurs.
 
 Règles gardées de la V18 :
@@ -33,7 +49,7 @@ def _pluriel(n, mot):
     return "%d %s" % (n, mot if n == 1 else mot + "s")
 
 
-def composer(admin, compte, s, maintenant=""):
+def _composer(admin, compte, s, maintenant=""):
     """`s` : {'sites','flotte','metriques','sante','incidents','fil','notifs','autonomie'} — chaque valeur est le résultat d'une capacité, ou None si elle a échoué."""
     s = s or {}
     muettes = [k for k in ("sites", "flotte", "metriques", "incidents") if s.get(k) is None and (admin or k == "sites")]
@@ -130,3 +146,15 @@ def composer(admin, compte, s, maintenant=""):
         sortie["machine"] = {"cpu": m.get("cpu"), "ram": m.get("ram"), "disk": m.get("disk"), "load_1m": m.get("load_1m"), "vivant": vivant, "source": "collecteur"}
         sortie["ages"] = {"sonde": None, "sites": None, "flotte": (s.get("flotte") or {}).get("releve"), "mesures": None, "machine": maintenant if vivant else None}
     return sortie
+
+
+def composer(entree):
+    """Le point d'évolution `verdict.composer` (contrat 1.0) : des DONNÉES en entrée (admin, compte, sources, quand), des DONNÉES en sortie (le verdict)."""
+    return _composer(bool(entree["admin"]), entree.get("compte", ""), entree.get("sources") or {}, entree.get("quand", ""))
+# ▲▲▲ FIN BORNE EC ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# EC : `composer(entree)` est le point d'évolution. L'évolution peut en remplacer le corps ; elle ne peut changer ni sa signature, ni les invariants du contrat
+#      (une source muette n'est jamais « stable » ; une panne l'emporte sur le silence), ni importer autre chose que la bibliothèque standard pure.
+# CN : appelée uniquement par la façade `composer` de CN_composer.py, par ctx.point("verdict.composer", ...) du noyau, qui valide le contrat à l'entrée et à la sortie.
+# LIEN : contrat dans ../contrats/CN_verdict_composer.json ; corpus doré dans ../contrats/CN_verdict_composer.corpus.json (sorties de l'ancien composer, 17-10-2026).

@@ -5,7 +5,19 @@ from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RACINE))
-from modules.vue.composer import composer   # noqa: E402
+import json   # noqa: E402
+from modules.vue import CN_composer as _facade   # noqa: E402
+from noyau import manifeste as _manifeste   # noqa: E402
+from noyau.CN_points import ServicePoints   # noqa: E402
+
+DOSSIER = RACINE / "modules" / "vue"
+_SVC = ServicePoints(None)                                       # sans stock d'EC : c'est la référence du dépôt qui sert
+_DEFAUTS = _SVC.declarer(_manifeste.charger(DOSSIER / "manifeste.toml"), DOSSIER)
+
+
+def composer(admin, compte, s, quand):
+    """Comme le module : par le noyau (ctx.point), donc contrat validé à l'entrée et à la sortie."""
+    return _facade.composer(admin, compte, s, quand, appeler=lambda point, entree: _SVC.appeler("vue", point, entree))
 
 
 def site(d, up=True, ssl=60, code=200):
@@ -72,6 +84,43 @@ class Vue(unittest.TestCase):
         r = composer(False, "bea", {"sites": {"sites": [site("a.fr")]}}, "t")
         self.assertEqual(r["muettes"], [])
         self.assertEqual(r["niveau"], "stable")
+
+
+class PointDEvolution(unittest.TestCase):
+    def test_le_point_est_declare_sans_defaut(self):
+        self.assertEqual(_DEFAUTS, [])
+        self.assertEqual(_SVC.points("vue"), ["vue.verdict.composer"])
+        self.assertEqual(_SVC.etat("vue", "verdict.composer")["sert"], "reference")
+
+    def test_la_reference_rejoue_son_corpus_dore_a_l_identique(self):
+        """Le corpus a été produit par l'ANCIEN composer, avant sa conversion en point d'évolution : l'égalité prouve que rien n'a changé."""
+        corpus = json.loads((DOSSIER / "contrats" / "CN_verdict_composer.corpus.json").read_text(encoding="utf-8"))
+        self.assertGreaterEqual(len(corpus["cas"]), 15)
+        for c in corpus["cas"]:
+            e = c["entree"]
+            self.assertEqual(composer(e["admin"], e["compte"], e["sources"], e["quand"]), c["sortie"], c["cas"])
+
+    def test_la_facade_refuse_de_court_circuiter_le_noyau(self):
+        with self.assertRaises(TypeError):
+            _facade.composer(True, "root", sources(), "t")
+
+    def test_une_ec_defaillante_ne_change_rien_pour_l_utilisateur(self):
+        """Le disjoncteur sur un vrai point : une EC qui rend n'importe quoi est remplacée par la référence, dans le même appel."""
+        import shutil
+        import tempfile
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp, True)
+        d = tmp / "vue" / "verdict.composer"
+        d.mkdir(parents=True)
+        corps = "def composer(entree):" + chr(10) + "    return {'niveau': 'stable'}" + chr(10)
+        tete = chr(10).join(["# ZONE       : EC", "# RUNTIME    : python", "# VERSION EC : EC1  #aaaaaa", "# CONTRAT PROUVÉ : @1.0"]) + chr(10)
+        (d / "EC_verdict_composer__EC1.py").write_text(tete + corps, encoding="utf-8")
+        (d / "ACTIVE").write_text("EC_verdict_composer__EC1.py", encoding="utf-8")
+        svc = ServicePoints(tmp)
+        svc.declarer(_manifeste.charger(DOSSIER / "manifeste.toml"), DOSSIER)
+        sortie = _facade.composer(True, "root", sources(metriques=None), "t", appeler=lambda p, e: svc.appeler("vue", p, e))
+        self.assertEqual(sortie["niveau"], "inconnu")                      # la vérité de la référence, pas le « stable » mensonger de l'EC
+        self.assertEqual(svc.etat("vue", "verdict.composer")["fautes_recentes"], 1)
 
 
 if __name__ == "__main__":

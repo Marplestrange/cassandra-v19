@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Vue d'ensemble
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : vue
+# ZONE       : CN
+# VERSION CN : 0.1.0  #2127d7
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La vue d'ensemble : un verdict (rien ne demande un geste / à regarder / en panne), des compteurs, et ce qui demande un geste — composés à partir des modules de supervision (sites, flotte, sensorium, proactivité, notifications). Une source muette est DITE muette, jamais comptée comme « tout va bien ».
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2127d7 ▼▼▼
 [module]
 id = "vue"
 nom = "Vue d'ensemble"
@@ -14,3 +29,18 @@ risque = "lecture"
 
 [permissions]
 lectures = true
+
+[[points_evolution]]
+id = "verdict.composer"
+libelle = "La composition du verdict de la vue d'ensemble : les relevés des sources en entrée, le verdict, les compteurs et les gestes en sortie (une fonction pure)"
+contrat = "1.0"
+reference = "points/EC_verdict_composer"
+fonction = "composer"
+runtime = "python"
+delai_ms = 500
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

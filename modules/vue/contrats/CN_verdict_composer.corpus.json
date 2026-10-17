@@ -1,0 +1,3044 @@
+{
+ "cas": [
+  {
+   "cas": "admin stable",
+   "entree": {
+    "admin": true,
+    "compte": "root",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "autonomie": {
+      "palier": "proposer"
+     },
+     "fil": {
+      "fil": []
+     },
+     "flotte": {
+      "machines": []
+     },
+     "incidents": {
+      "incidents": []
+     },
+     "metriques": {
+      "cpu": 10,
+      "disk": 40,
+      "load_1m": 0.4,
+      "ram": 30
+     },
+     "notifs": {
+      "notifications": []
+     },
+     "sante": {
+      "score": 95
+     },
+     "sites": {
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "a.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 60,
+        "up": true
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": true,
+    "ages": {
+     "flotte": null,
+     "machine": "2026-10-17 12:00:00",
+     "mesures": null,
+     "sites": null,
+     "sonde": null
+    },
+    "cassandra": {
+     "collecteur": true,
+     "palier": "proposer"
+    },
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "root",
+    "compteurs": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "fleet_up"
+      ],
+      "cle": "sante",
+      "detail": "score du collecteur",
+      "niveau": "ok",
+      "nom": "Santé",
+      "source": "collecteur",
+      "unite": "",
+      "valeur": 95
+     },
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "tous répondent",
+      "niveau": "ok",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "1 / 1"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "cle": "tls",
+      "detail": "a.fr · 0 autre",
+      "niveau": "ok",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "60 j"
+     },
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "cle": "disque",
+      "detail": "occupé",
+      "niveau": "ok",
+      "nom": "Disque",
+      "source": "collecteur",
+      "valeur": "40 %"
+     },
+     {
+      "aller": [
+       "fleet",
+       "flVue",
+       "signaux"
+      ],
+      "cle": "flotte",
+      "detail": "aucune machine attendue",
+      "niveau": "inconnu",
+      "nom": "Flotte attendue",
+      "source": "présence",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "cle": "incidents",
+      "detail": "aucun",
+      "niveau": "ok",
+      "nom": "Incidents ouverts",
+      "source": "proactivité",
+      "valeur": 0
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "fil": [],
+    "flotte": {
+     "compte": {},
+     "hors_ligne": [],
+     "machines": []
+    },
+    "gestes": [
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "machine": {
+     "cpu": 10,
+     "disk": 40,
+     "load_1m": 0.4,
+     "ram": 30,
+     "source": "collecteur",
+     "vivant": true
+    },
+    "muettes": [],
+    "n_sites": 1,
+    "niveau": "stable",
+    "ok": true,
+    "pannes": [],
+    "regarder": [],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "a.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 60,
+      "up": true
+     }
+    ],
+    "sous_titre": "1 site répondent, certificats à jour.",
+    "titre": "Rien ne demande un geste"
+   }
+  },
+  {
+   "cas": "compte ordinaire stable",
+   "entree": {
+    "admin": false,
+    "compte": "marie",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "notifs": {
+      "notifications": []
+     },
+     "sites": {
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "m.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 60,
+        "up": true
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": false,
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "marie",
+    "compteurs": [
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "tous répondent",
+      "niveau": "ok",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "1 / 1"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "m.fr"
+      ],
+      "cle": "tls",
+      "detail": "m.fr · 0 autre",
+      "niveau": "ok",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "60 j"
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "gestes": [
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "muettes": [],
+    "n_sites": 1,
+    "niveau": "stable",
+    "ok": true,
+    "pannes": [],
+    "regarder": [],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "m.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 60,
+      "up": true
+     }
+    ],
+    "sous_titre": "1 site répondent, certificats à jour.",
+    "titre": "Rien ne demande un geste"
+   }
+  },
+  {
+   "cas": "un site tombé",
+   "entree": {
+    "admin": true,
+    "compte": "root",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "autonomie": {
+      "palier": "proposer"
+     },
+     "fil": {
+      "fil": []
+     },
+     "flotte": {
+      "machines": []
+     },
+     "incidents": {
+      "incidents": []
+     },
+     "metriques": {
+      "cpu": 10,
+      "disk": 40,
+      "load_1m": 0.4,
+      "ram": 30
+     },
+     "notifs": {
+      "notifications": []
+     },
+     "sante": {
+      "score": 95
+     },
+     "sites": {
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "a.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 60,
+        "up": true
+       },
+       {
+        "code": 502,
+        "domaine": "b.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 60,
+        "up": false
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": true,
+    "ages": {
+     "flotte": null,
+     "machine": "2026-10-17 12:00:00",
+     "mesures": null,
+     "sites": null,
+     "sonde": null
+    },
+    "cassandra": {
+     "collecteur": true,
+     "palier": "proposer"
+    },
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "root",
+    "compteurs": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "fleet_up"
+      ],
+      "cle": "sante",
+      "detail": "score du collecteur",
+      "niveau": "ok",
+      "nom": "Santé",
+      "source": "collecteur",
+      "unite": "",
+      "valeur": 95
+     },
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "b.fr · ne répond pas",
+      "niveau": "panne",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "1 / 2"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "cle": "tls",
+      "detail": "a.fr · 1 autre",
+      "niveau": "ok",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "60 j"
+     },
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "cle": "disque",
+      "detail": "occupé",
+      "niveau": "ok",
+      "nom": "Disque",
+      "source": "collecteur",
+      "valeur": "40 %"
+     },
+     {
+      "aller": [
+       "fleet",
+       "flVue",
+       "signaux"
+      ],
+      "cle": "flotte",
+      "detail": "aucune machine attendue",
+      "niveau": "inconnu",
+      "nom": "Flotte attendue",
+      "source": "présence",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "cle": "incidents",
+      "detail": "aucun",
+      "niveau": "ok",
+      "nom": "Incidents ouverts",
+      "source": "proactivité",
+      "valeur": 0
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "fil": [],
+    "flotte": {
+     "compte": {},
+     "hors_ligne": [],
+     "machines": []
+    },
+    "gestes": [
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "b.fr"
+      ],
+      "label": "Voir b.fr",
+      "type": "aller"
+     },
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "machine": {
+     "cpu": 10,
+     "disk": 40,
+     "load_1m": 0.4,
+     "ram": 30,
+     "source": "collecteur",
+     "vivant": true
+    },
+    "muettes": [],
+    "n_sites": 2,
+    "niveau": "panne",
+    "ok": true,
+    "pannes": [
+     {
+      "geste": {
+       "aller": [
+        "mysites",
+        "stOpen",
+        "b.fr"
+       ],
+       "label": "Voir b.fr",
+       "type": "aller"
+      },
+      "titre": "b.fr ne répond pas (code 502)"
+     }
+    ],
+    "regarder": [],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "b.fr",
+      "fp_compte": "",
+      "http_code": 502,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 60,
+      "up": false
+     },
+     {
+      "comptes": [],
+      "domain": "a.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 60,
+      "up": true
+     }
+    ],
+    "sous_titre": "1 site sur 2 répond.",
+    "titre": "b.fr ne répond pas (code 502)"
+   }
+  },
+  {
+   "cas": "collecteur muet",
+   "entree": {
+    "admin": true,
+    "compte": "root",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "autonomie": {
+      "palier": "proposer"
+     },
+     "fil": {
+      "fil": []
+     },
+     "flotte": {
+      "machines": []
+     },
+     "incidents": {
+      "incidents": []
+     },
+     "metriques": null,
+     "notifs": {
+      "notifications": []
+     },
+     "sante": {
+      "score": 95
+     },
+     "sites": {
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "a.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 60,
+        "up": true
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": true,
+    "ages": {
+     "flotte": null,
+     "machine": null,
+     "mesures": null,
+     "sites": null,
+     "sonde": null
+    },
+    "cassandra": {
+     "collecteur": false,
+     "palier": "proposer"
+    },
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "root",
+    "compteurs": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "fleet_up"
+      ],
+      "cle": "sante",
+      "detail": "score du collecteur",
+      "niveau": "ok",
+      "nom": "Santé",
+      "source": "collecteur muet",
+      "unite": "",
+      "valeur": 95
+     },
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "tous répondent",
+      "niveau": "ok",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "1 / 1"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "cle": "tls",
+      "detail": "a.fr · 0 autre",
+      "niveau": "ok",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "60 j"
+     },
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "cle": "disque",
+      "detail": "occupé",
+      "niveau": "inconnu",
+      "nom": "Disque",
+      "source": "collecteur",
+      "valeur": "—"
+     },
+     {
+      "aller": [
+       "fleet",
+       "flVue",
+       "signaux"
+      ],
+      "cle": "flotte",
+      "detail": "aucune machine attendue",
+      "niveau": "inconnu",
+      "nom": "Flotte attendue",
+      "source": "présence",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "cle": "incidents",
+      "detail": "aucun",
+      "niveau": "ok",
+      "nom": "Incidents ouverts",
+      "source": "proactivité",
+      "valeur": 0
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "fil": [],
+    "flotte": {
+     "compte": {},
+     "hors_ligne": [],
+     "machines": []
+    },
+    "gestes": [
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "machine": {
+     "cpu": null,
+     "disk": null,
+     "load_1m": null,
+     "ram": null,
+     "source": "collecteur",
+     "vivant": false
+    },
+    "muettes": [
+     "collecteur"
+    ],
+    "n_sites": 1,
+    "niveau": "inconnu",
+    "ok": true,
+    "pannes": [],
+    "regarder": [],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "a.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 60,
+      "up": true
+     }
+    ],
+    "sous_titre": "Une source ne répond pas : le verdict ne dit pas « stable » tant qu'elle se tait. Les autres relevés restent lisibles plus bas.",
+    "titre": "Inconnu : collecteur se tait"
+   }
+  },
+  {
+   "cas": "panne et silence",
+   "entree": {
+    "admin": true,
+    "compte": "root",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "autonomie": {
+      "palier": "proposer"
+     },
+     "fil": {
+      "fil": []
+     },
+     "flotte": {
+      "machines": []
+     },
+     "incidents": {
+      "incidents": []
+     },
+     "metriques": null,
+     "notifs": {
+      "notifications": []
+     },
+     "sante": {
+      "score": 95
+     },
+     "sites": {
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "a.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 60,
+        "up": false
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": true,
+    "ages": {
+     "flotte": null,
+     "machine": null,
+     "mesures": null,
+     "sites": null,
+     "sonde": null
+    },
+    "cassandra": {
+     "collecteur": false,
+     "palier": "proposer"
+    },
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "root",
+    "compteurs": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "fleet_up"
+      ],
+      "cle": "sante",
+      "detail": "score du collecteur",
+      "niveau": "ok",
+      "nom": "Santé",
+      "source": "collecteur muet",
+      "unite": "",
+      "valeur": 95
+     },
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "a.fr · ne répond pas",
+      "niveau": "panne",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "0 / 1"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "cle": "tls",
+      "detail": "a.fr · 0 autre",
+      "niveau": "ok",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "60 j"
+     },
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "cle": "disque",
+      "detail": "occupé",
+      "niveau": "inconnu",
+      "nom": "Disque",
+      "source": "collecteur",
+      "valeur": "—"
+     },
+     {
+      "aller": [
+       "fleet",
+       "flVue",
+       "signaux"
+      ],
+      "cle": "flotte",
+      "detail": "aucune machine attendue",
+      "niveau": "inconnu",
+      "nom": "Flotte attendue",
+      "source": "présence",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "cle": "incidents",
+      "detail": "aucun",
+      "niveau": "ok",
+      "nom": "Incidents ouverts",
+      "source": "proactivité",
+      "valeur": 0
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "fil": [],
+    "flotte": {
+     "compte": {},
+     "hors_ligne": [],
+     "machines": []
+    },
+    "gestes": [
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "label": "Voir a.fr",
+      "type": "aller"
+     },
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "machine": {
+     "cpu": null,
+     "disk": null,
+     "load_1m": null,
+     "ram": null,
+     "source": "collecteur",
+     "vivant": false
+    },
+    "muettes": [
+     "collecteur"
+    ],
+    "n_sites": 1,
+    "niveau": "panne",
+    "ok": true,
+    "pannes": [
+     {
+      "geste": {
+       "aller": [
+        "mysites",
+        "stOpen",
+        "a.fr"
+       ],
+       "label": "Voir a.fr",
+       "type": "aller"
+      },
+      "titre": "a.fr ne répond pas (code 200)"
+     }
+    ],
+    "regarder": [],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "a.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 60,
+      "up": false
+     }
+    ],
+    "sous_titre": "0 sites sur 1 répond.",
+    "titre": "a.fr ne répond pas (code 200)"
+   }
+  },
+  {
+   "cas": "certificat 5 jours",
+   "entree": {
+    "admin": true,
+    "compte": "r",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "autonomie": {
+      "palier": "proposer"
+     },
+     "fil": {
+      "fil": []
+     },
+     "flotte": {
+      "machines": []
+     },
+     "incidents": {
+      "incidents": []
+     },
+     "metriques": {
+      "cpu": 10,
+      "disk": 40,
+      "load_1m": 0.4,
+      "ram": 30
+     },
+     "notifs": {
+      "notifications": []
+     },
+     "sante": {
+      "score": 95
+     },
+     "sites": {
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "a.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 5,
+        "up": true
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": true,
+    "ages": {
+     "flotte": null,
+     "machine": "2026-10-17 12:00:00",
+     "mesures": null,
+     "sites": null,
+     "sonde": null
+    },
+    "cassandra": {
+     "collecteur": true,
+     "palier": "proposer"
+    },
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "r",
+    "compteurs": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "fleet_up"
+      ],
+      "cle": "sante",
+      "detail": "score du collecteur",
+      "niveau": "ok",
+      "nom": "Santé",
+      "source": "collecteur",
+      "unite": "",
+      "valeur": 95
+     },
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "tous répondent",
+      "niveau": "ok",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "1 / 1"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "cle": "tls",
+      "detail": "a.fr · 0 autre",
+      "niveau": "panne",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "5 j"
+     },
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "cle": "disque",
+      "detail": "occupé",
+      "niveau": "ok",
+      "nom": "Disque",
+      "source": "collecteur",
+      "valeur": "40 %"
+     },
+     {
+      "aller": [
+       "fleet",
+       "flVue",
+       "signaux"
+      ],
+      "cle": "flotte",
+      "detail": "aucune machine attendue",
+      "niveau": "inconnu",
+      "nom": "Flotte attendue",
+      "source": "présence",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "cle": "incidents",
+      "detail": "aucun",
+      "niveau": "ok",
+      "nom": "Incidents ouverts",
+      "source": "proactivité",
+      "valeur": 0
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "fil": [],
+    "flotte": {
+     "compte": {},
+     "hors_ligne": [],
+     "machines": []
+    },
+    "gestes": [
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "label": "Voir le site",
+      "type": "aller"
+     },
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "machine": {
+     "cpu": 10,
+     "disk": 40,
+     "load_1m": 0.4,
+     "ram": 30,
+     "source": "collecteur",
+     "vivant": true
+    },
+    "muettes": [],
+    "n_sites": 1,
+    "niveau": "panne",
+    "ok": true,
+    "pannes": [
+     {
+      "geste": {
+       "aller": [
+        "mysites",
+        "stOpen",
+        "a.fr"
+       ],
+       "label": "Voir le site",
+       "type": "aller"
+      },
+      "titre": "certificat de a.fr : 5 jour(s)"
+     }
+    ],
+    "regarder": [],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "a.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 5,
+      "up": true
+     }
+    ],
+    "sous_titre": "1 site sur 1 répond.",
+    "titre": "Certificat de a.fr : 5 jour(s)"
+   }
+  },
+  {
+   "cas": "certificat 15 jours",
+   "entree": {
+    "admin": true,
+    "compte": "r",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "autonomie": {
+      "palier": "proposer"
+     },
+     "fil": {
+      "fil": []
+     },
+     "flotte": {
+      "machines": []
+     },
+     "incidents": {
+      "incidents": []
+     },
+     "metriques": {
+      "cpu": 10,
+      "disk": 40,
+      "load_1m": 0.4,
+      "ram": 30
+     },
+     "notifs": {
+      "notifications": []
+     },
+     "sante": {
+      "score": 95
+     },
+     "sites": {
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "a.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 15,
+        "up": true
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": true,
+    "ages": {
+     "flotte": null,
+     "machine": "2026-10-17 12:00:00",
+     "mesures": null,
+     "sites": null,
+     "sonde": null
+    },
+    "cassandra": {
+     "collecteur": true,
+     "palier": "proposer"
+    },
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "r",
+    "compteurs": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "fleet_up"
+      ],
+      "cle": "sante",
+      "detail": "score du collecteur",
+      "niveau": "ok",
+      "nom": "Santé",
+      "source": "collecteur",
+      "unite": "",
+      "valeur": 95
+     },
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "tous répondent",
+      "niveau": "ok",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "1 / 1"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "cle": "tls",
+      "detail": "a.fr · 0 autre",
+      "niveau": "regarder",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "15 j"
+     },
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "cle": "disque",
+      "detail": "occupé",
+      "niveau": "ok",
+      "nom": "Disque",
+      "source": "collecteur",
+      "valeur": "40 %"
+     },
+     {
+      "aller": [
+       "fleet",
+       "flVue",
+       "signaux"
+      ],
+      "cle": "flotte",
+      "detail": "aucune machine attendue",
+      "niveau": "inconnu",
+      "nom": "Flotte attendue",
+      "source": "présence",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "cle": "incidents",
+      "detail": "aucun",
+      "niveau": "ok",
+      "nom": "Incidents ouverts",
+      "source": "proactivité",
+      "valeur": 0
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "fil": [],
+    "flotte": {
+     "compte": {},
+     "hors_ligne": [],
+     "machines": []
+    },
+    "gestes": [
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "label": "Voir le site",
+      "type": "aller"
+     },
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "machine": {
+     "cpu": 10,
+     "disk": 40,
+     "load_1m": 0.4,
+     "ram": 30,
+     "source": "collecteur",
+     "vivant": true
+    },
+    "muettes": [],
+    "n_sites": 1,
+    "niveau": "regarder",
+    "ok": true,
+    "pannes": [],
+    "regarder": [
+     {
+      "geste": {
+       "aller": [
+        "mysites",
+        "stOpen",
+        "a.fr"
+       ],
+       "label": "Voir le site",
+       "type": "aller"
+      },
+      "titre": "certificat de a.fr dans 15 jours"
+     }
+    ],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "a.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 15,
+      "up": true
+     }
+    ],
+    "sous_titre": "1 site répondent. À regarder : certificat de a.fr dans 15 jours.",
+    "titre": "Rien de cassé, 1 point à regarder"
+   }
+  },
+  {
+   "cas": "certificat 25 jours",
+   "entree": {
+    "admin": true,
+    "compte": "r",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "autonomie": {
+      "palier": "proposer"
+     },
+     "fil": {
+      "fil": []
+     },
+     "flotte": {
+      "machines": []
+     },
+     "incidents": {
+      "incidents": []
+     },
+     "metriques": {
+      "cpu": 10,
+      "disk": 40,
+      "load_1m": 0.4,
+      "ram": 30
+     },
+     "notifs": {
+      "notifications": []
+     },
+     "sante": {
+      "score": 95
+     },
+     "sites": {
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "a.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 25,
+        "up": true
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": true,
+    "ages": {
+     "flotte": null,
+     "machine": "2026-10-17 12:00:00",
+     "mesures": null,
+     "sites": null,
+     "sonde": null
+    },
+    "cassandra": {
+     "collecteur": true,
+     "palier": "proposer"
+    },
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "r",
+    "compteurs": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "fleet_up"
+      ],
+      "cle": "sante",
+      "detail": "score du collecteur",
+      "niveau": "ok",
+      "nom": "Santé",
+      "source": "collecteur",
+      "unite": "",
+      "valeur": 95
+     },
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "tous répondent",
+      "niveau": "ok",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "1 / 1"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "cle": "tls",
+      "detail": "a.fr · 0 autre",
+      "niveau": "ok",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "25 j"
+     },
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "cle": "disque",
+      "detail": "occupé",
+      "niveau": "ok",
+      "nom": "Disque",
+      "source": "collecteur",
+      "valeur": "40 %"
+     },
+     {
+      "aller": [
+       "fleet",
+       "flVue",
+       "signaux"
+      ],
+      "cle": "flotte",
+      "detail": "aucune machine attendue",
+      "niveau": "inconnu",
+      "nom": "Flotte attendue",
+      "source": "présence",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "cle": "incidents",
+      "detail": "aucun",
+      "niveau": "ok",
+      "nom": "Incidents ouverts",
+      "source": "proactivité",
+      "valeur": 0
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "fil": [],
+    "flotte": {
+     "compte": {},
+     "hors_ligne": [],
+     "machines": []
+    },
+    "gestes": [
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "machine": {
+     "cpu": 10,
+     "disk": 40,
+     "load_1m": 0.4,
+     "ram": 30,
+     "source": "collecteur",
+     "vivant": true
+    },
+    "muettes": [],
+    "n_sites": 1,
+    "niveau": "stable",
+    "ok": true,
+    "pannes": [],
+    "regarder": [],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "a.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 25,
+      "up": true
+     }
+    ],
+    "sous_titre": "1 site répondent, certificats à jour.",
+    "titre": "Rien ne demande un geste"
+   }
+  },
+  {
+   "cas": "machine attendue hors ligne",
+   "entree": {
+    "admin": true,
+    "compte": "root",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "autonomie": {
+      "palier": "proposer"
+     },
+     "fil": {
+      "fil": []
+     },
+     "flotte": {
+      "machines": [
+       {
+        "dernier_contact": "2026-10-08 05:21:36",
+        "en_ligne": false,
+        "etat": "erreur",
+        "nom": "hades",
+        "os": "linux",
+        "statut": "attendue"
+       },
+       {
+        "dernier_contact": "maintenant",
+        "en_ligne": true,
+        "etat": "ok",
+        "nom": "orion",
+        "os": "linux",
+        "statut": "attendue"
+       }
+      ]
+     },
+     "incidents": {
+      "incidents": []
+     },
+     "metriques": {
+      "cpu": 10,
+      "disk": 40,
+      "load_1m": 0.4,
+      "ram": 30
+     },
+     "notifs": {
+      "notifications": []
+     },
+     "sante": {
+      "score": 95
+     },
+     "sites": {
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "a.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 60,
+        "up": true
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": true,
+    "ages": {
+     "flotte": null,
+     "machine": "2026-10-17 12:00:00",
+     "mesures": null,
+     "sites": null,
+     "sonde": null
+    },
+    "cassandra": {
+     "collecteur": true,
+     "palier": "proposer"
+    },
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "root",
+    "compteurs": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "fleet_up"
+      ],
+      "cle": "sante",
+      "detail": "score du collecteur",
+      "niveau": "ok",
+      "nom": "Santé",
+      "source": "collecteur",
+      "unite": "",
+      "valeur": 95
+     },
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "tous répondent",
+      "niveau": "ok",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "1 / 1"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "cle": "tls",
+      "detail": "a.fr · 0 autre",
+      "niveau": "ok",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "60 j"
+     },
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "cle": "disque",
+      "detail": "occupé",
+      "niveau": "ok",
+      "nom": "Disque",
+      "source": "collecteur",
+      "valeur": "40 %"
+     },
+     {
+      "aller": [
+       "fleet",
+       "flVue",
+       "signaux"
+      ],
+      "cle": "flotte",
+      "detail": "hades",
+      "niveau": "panne",
+      "nom": "Flotte attendue",
+      "source": "présence",
+      "valeur": "1 / 2"
+     },
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "cle": "incidents",
+      "detail": "aucun",
+      "niveau": "ok",
+      "nom": "Incidents ouverts",
+      "source": "proactivité",
+      "valeur": 0
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "fil": [],
+    "flotte": {
+     "compte": {},
+     "hors_ligne": [
+      "hades"
+     ],
+     "machines": [
+      {
+       "dernier_contact": "2026-10-08 05:21:36",
+       "en_ligne": false,
+       "etat": "erreur",
+       "nom": "hades",
+       "os": "linux"
+      },
+      {
+       "dernier_contact": "maintenant",
+       "en_ligne": true,
+       "etat": "ok",
+       "nom": "orion",
+       "os": "linux"
+      }
+     ]
+    },
+    "gestes": [
+     {
+      "aller": [
+       "fleet",
+       "flOpen",
+       "hades"
+      ],
+      "label": "Voir hades",
+      "type": "aller"
+     },
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "machine": {
+     "cpu": 10,
+     "disk": 40,
+     "load_1m": 0.4,
+     "ram": 30,
+     "source": "collecteur",
+     "vivant": true
+    },
+    "muettes": [],
+    "n_sites": 1,
+    "niveau": "panne",
+    "ok": true,
+    "pannes": [
+     {
+      "geste": {
+       "aller": [
+        "fleet",
+        "flOpen",
+        "hades"
+       ],
+       "label": "Voir hades",
+       "type": "aller"
+      },
+      "titre": "hades est attendue et ne répond plus depuis le 08/10 à 05:21"
+     }
+    ],
+    "regarder": [],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "a.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 60,
+      "up": true
+     }
+    ],
+    "sous_titre": "1 site sur 1 répond.",
+    "titre": "Hades est attendue et ne répond plus depuis le 08/10 à 05:21"
+   }
+  },
+  {
+   "cas": "incidents ouverts",
+   "entree": {
+    "admin": true,
+    "compte": "root",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "autonomie": {
+      "palier": "proposer"
+     },
+     "fil": {
+      "fil": []
+     },
+     "flotte": {
+      "machines": []
+     },
+     "incidents": {
+      "incidents": [
+       {
+        "statut": "ouvert",
+        "titre": "disque lent"
+       },
+       {
+        "cle": "x",
+        "statut": "ferme"
+       }
+      ]
+     },
+     "metriques": {
+      "cpu": 10,
+      "disk": 40,
+      "load_1m": 0.4,
+      "ram": 30
+     },
+     "notifs": {
+      "notifications": []
+     },
+     "sante": {
+      "score": 95
+     },
+     "sites": {
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "a.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 60,
+        "up": true
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": true,
+    "ages": {
+     "flotte": null,
+     "machine": "2026-10-17 12:00:00",
+     "mesures": null,
+     "sites": null,
+     "sonde": null
+    },
+    "cassandra": {
+     "collecteur": true,
+     "palier": "proposer"
+    },
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "root",
+    "compteurs": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "fleet_up"
+      ],
+      "cle": "sante",
+      "detail": "score du collecteur",
+      "niveau": "ok",
+      "nom": "Santé",
+      "source": "collecteur",
+      "unite": "",
+      "valeur": 95
+     },
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "tous répondent",
+      "niveau": "ok",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "1 / 1"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "cle": "tls",
+      "detail": "a.fr · 0 autre",
+      "niveau": "ok",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "60 j"
+     },
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "cle": "disque",
+      "detail": "occupé",
+      "niveau": "ok",
+      "nom": "Disque",
+      "source": "collecteur",
+      "valeur": "40 %"
+     },
+     {
+      "aller": [
+       "fleet",
+       "flVue",
+       "signaux"
+      ],
+      "cle": "flotte",
+      "detail": "aucune machine attendue",
+      "niveau": "inconnu",
+      "nom": "Flotte attendue",
+      "source": "présence",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "cle": "incidents",
+      "detail": "disque lent",
+      "niveau": "regarder",
+      "nom": "Incidents ouverts",
+      "source": "proactivité",
+      "valeur": 1
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "fil": [],
+    "flotte": {
+     "compte": {},
+     "hors_ligne": [],
+     "machines": []
+    },
+    "gestes": [
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "label": "Voir les incidents",
+      "type": "aller"
+     },
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "machine": {
+     "cpu": 10,
+     "disk": 40,
+     "load_1m": 0.4,
+     "ram": 30,
+     "source": "collecteur",
+     "vivant": true
+    },
+    "muettes": [],
+    "n_sites": 1,
+    "niveau": "regarder",
+    "ok": true,
+    "pannes": [],
+    "regarder": [
+     {
+      "geste": {
+       "aller": [
+        "proactive",
+        "pfVue",
+        "inc"
+       ],
+       "label": "Voir les incidents",
+       "type": "aller"
+      },
+      "titre": "incident ouvert : disque lent"
+     }
+    ],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "a.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 60,
+      "up": true
+     }
+    ],
+    "sous_titre": "1 site répondent. À regarder : incident ouvert : disque lent.",
+    "titre": "Rien de cassé, 1 point à regarder"
+   }
+  },
+  {
+   "cas": "disque 96 %",
+   "entree": {
+    "admin": true,
+    "compte": "root",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "autonomie": {
+      "palier": "proposer"
+     },
+     "fil": {
+      "fil": []
+     },
+     "flotte": {
+      "machines": []
+     },
+     "incidents": {
+      "incidents": []
+     },
+     "metriques": {
+      "cpu": 10,
+      "disk": 96
+     },
+     "notifs": {
+      "notifications": []
+     },
+     "sante": {
+      "score": 95
+     },
+     "sites": {
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "a.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 60,
+        "up": true
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": true,
+    "ages": {
+     "flotte": null,
+     "machine": "2026-10-17 12:00:00",
+     "mesures": null,
+     "sites": null,
+     "sonde": null
+    },
+    "cassandra": {
+     "collecteur": true,
+     "palier": "proposer"
+    },
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "root",
+    "compteurs": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "fleet_up"
+      ],
+      "cle": "sante",
+      "detail": "score du collecteur",
+      "niveau": "ok",
+      "nom": "Santé",
+      "source": "collecteur",
+      "unite": "",
+      "valeur": 95
+     },
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "tous répondent",
+      "niveau": "ok",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "1 / 1"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "cle": "tls",
+      "detail": "a.fr · 0 autre",
+      "niveau": "ok",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "60 j"
+     },
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "cle": "disque",
+      "detail": "occupé",
+      "niveau": "panne",
+      "nom": "Disque",
+      "source": "collecteur",
+      "valeur": "96 %"
+     },
+     {
+      "aller": [
+       "fleet",
+       "flVue",
+       "signaux"
+      ],
+      "cle": "flotte",
+      "detail": "aucune machine attendue",
+      "niveau": "inconnu",
+      "nom": "Flotte attendue",
+      "source": "présence",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "cle": "incidents",
+      "detail": "aucun",
+      "niveau": "ok",
+      "nom": "Incidents ouverts",
+      "source": "proactivité",
+      "valeur": 0
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "fil": [],
+    "flotte": {
+     "compte": {},
+     "hors_ligne": [],
+     "machines": []
+    },
+    "gestes": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "label": "Voir le disque",
+      "type": "aller"
+     },
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "machine": {
+     "cpu": 10,
+     "disk": 96,
+     "load_1m": null,
+     "ram": null,
+     "source": "collecteur",
+     "vivant": true
+    },
+    "muettes": [],
+    "n_sites": 1,
+    "niveau": "panne",
+    "ok": true,
+    "pannes": [
+     {
+      "geste": {
+       "aller": [
+        "history",
+        "mxOpen",
+        "disk"
+       ],
+       "label": "Voir le disque",
+       "type": "aller"
+      },
+      "titre": "disque plein à 96 %"
+     }
+    ],
+    "regarder": [],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "a.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 60,
+      "up": true
+     }
+    ],
+    "sous_titre": "1 site sur 1 répond.",
+    "titre": "Disque plein à 96 %"
+   }
+  },
+  {
+   "cas": "disque 88 %",
+   "entree": {
+    "admin": true,
+    "compte": "root",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "autonomie": {
+      "palier": "proposer"
+     },
+     "fil": {
+      "fil": []
+     },
+     "flotte": {
+      "machines": []
+     },
+     "incidents": {
+      "incidents": []
+     },
+     "metriques": {
+      "cpu": 10,
+      "disk": 88
+     },
+     "notifs": {
+      "notifications": []
+     },
+     "sante": {
+      "score": 95
+     },
+     "sites": {
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "a.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 60,
+        "up": true
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": true,
+    "ages": {
+     "flotte": null,
+     "machine": "2026-10-17 12:00:00",
+     "mesures": null,
+     "sites": null,
+     "sonde": null
+    },
+    "cassandra": {
+     "collecteur": true,
+     "palier": "proposer"
+    },
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "root",
+    "compteurs": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "fleet_up"
+      ],
+      "cle": "sante",
+      "detail": "score du collecteur",
+      "niveau": "ok",
+      "nom": "Santé",
+      "source": "collecteur",
+      "unite": "",
+      "valeur": 95
+     },
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "tous répondent",
+      "niveau": "ok",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "1 / 1"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "a.fr"
+      ],
+      "cle": "tls",
+      "detail": "a.fr · 0 autre",
+      "niveau": "ok",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "60 j"
+     },
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "cle": "disque",
+      "detail": "occupé",
+      "niveau": "regarder",
+      "nom": "Disque",
+      "source": "collecteur",
+      "valeur": "88 %"
+     },
+     {
+      "aller": [
+       "fleet",
+       "flVue",
+       "signaux"
+      ],
+      "cle": "flotte",
+      "detail": "aucune machine attendue",
+      "niveau": "inconnu",
+      "nom": "Flotte attendue",
+      "source": "présence",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "cle": "incidents",
+      "detail": "aucun",
+      "niveau": "ok",
+      "nom": "Incidents ouverts",
+      "source": "proactivité",
+      "valeur": 0
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "fil": [],
+    "flotte": {
+     "compte": {},
+     "hors_ligne": [],
+     "machines": []
+    },
+    "gestes": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "label": "Voir le disque",
+      "type": "aller"
+     },
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "machine": {
+     "cpu": 10,
+     "disk": 88,
+     "load_1m": null,
+     "ram": null,
+     "source": "collecteur",
+     "vivant": true
+    },
+    "muettes": [],
+    "n_sites": 1,
+    "niveau": "regarder",
+    "ok": true,
+    "pannes": [],
+    "regarder": [
+     {
+      "geste": {
+       "aller": [
+        "history",
+        "mxOpen",
+        "disk"
+       ],
+       "label": "Voir le disque",
+       "type": "aller"
+      },
+      "titre": "disque plein à 88 %"
+     }
+    ],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "a.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 60,
+      "up": true
+     }
+    ],
+    "sous_titre": "1 site répondent. À regarder : disque plein à 88 %.",
+    "titre": "Rien de cassé, 1 point à regarder"
+   }
+  },
+  {
+   "cas": "notifications critiques",
+   "entree": {
+    "admin": false,
+    "compte": "marie",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "notifs": {
+      "notifications": [
+       {
+        "id": 7,
+        "niveau": "critique",
+        "titre": "Sauvegarde ratée"
+       },
+       {
+        "id": 8,
+        "niveau": "info",
+        "titre": "ok"
+       }
+      ]
+     },
+     "sites": {
+      "sites": [
+       {
+        "code": 200,
+        "domaine": "m.fr",
+        "ms": 120,
+        "source": "declare",
+        "ssl_jours": 60,
+        "up": true
+       }
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "admin": false,
+    "cloche": {
+     "compteurs": {
+      "critiques": 1
+     },
+     "lignes": [
+      {
+       "id": 7,
+       "niveau": "critique",
+       "titre": "Sauvegarde ratée"
+      },
+      {
+       "id": 8,
+       "niveau": "info",
+       "titre": "ok"
+      }
+     ],
+     "total": 2
+    },
+    "compte": "marie",
+    "compteurs": [
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "tous répondent",
+      "niveau": "ok",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "1 / 1"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       "m.fr"
+      ],
+      "cle": "tls",
+      "detail": "m.fr · 0 autre",
+      "niveau": "ok",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "60 j"
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "panne",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 2
+     }
+    ],
+    "gestes": [
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "muettes": [],
+    "n_sites": 1,
+    "niveau": "stable",
+    "ok": true,
+    "pannes": [],
+    "regarder": [],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [
+     {
+      "comptes": [],
+      "domain": "m.fr",
+      "fp_compte": "",
+      "http_code": 200,
+      "response_ms": 120,
+      "sauvegarde": null,
+      "scan": null,
+      "source": "declare",
+      "ssl_days": 60,
+      "up": true
+     }
+    ],
+    "sous_titre": "1 site répondent, certificats à jour.",
+    "titre": "Rien ne demande un geste"
+   }
+  },
+  {
+   "cas": "aucune source",
+   "entree": {
+    "admin": true,
+    "compte": "root",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {}
+   },
+   "sortie": {
+    "admin": true,
+    "ages": {
+     "flotte": null,
+     "machine": null,
+     "mesures": null,
+     "sites": null,
+     "sonde": null
+    },
+    "cassandra": {
+     "collecteur": false,
+     "palier": null
+    },
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "root",
+    "compteurs": [
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "fleet_up"
+      ],
+      "cle": "sante",
+      "detail": "pas de score",
+      "niveau": "inconnu",
+      "nom": "Santé",
+      "source": "collecteur muet",
+      "unite": "",
+      "valeur": null
+     },
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "aucun site suivi",
+      "niveau": "inconnu",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       null
+      ],
+      "cle": "tls",
+      "detail": "aucun certificat connu",
+      "niveau": "inconnu",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "—"
+     },
+     {
+      "aller": [
+       "history",
+       "mxOpen",
+       "disk"
+      ],
+      "cle": "disque",
+      "detail": "occupé",
+      "niveau": "inconnu",
+      "nom": "Disque",
+      "source": "collecteur",
+      "valeur": "—"
+     },
+     {
+      "aller": [
+       "fleet",
+       "flVue",
+       "signaux"
+      ],
+      "cle": "flotte",
+      "detail": "aucune machine attendue",
+      "niveau": "inconnu",
+      "nom": "Flotte attendue",
+      "source": "présence",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "proactive",
+       "pfVue",
+       "inc"
+      ],
+      "cle": "incidents",
+      "detail": "aucun",
+      "niveau": "ok",
+      "nom": "Incidents ouverts",
+      "source": "proactivité",
+      "valeur": 0
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "fil": [],
+    "flotte": {
+     "compte": {},
+     "hors_ligne": [],
+     "machines": []
+    },
+    "gestes": [
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "machine": {
+     "cpu": null,
+     "disk": null,
+     "load_1m": null,
+     "ram": null,
+     "source": "collecteur",
+     "vivant": false
+    },
+    "muettes": [
+     "sites",
+     "flotte",
+     "collecteur",
+     "incidents"
+    ],
+    "n_sites": 0,
+    "niveau": "inconnu",
+    "ok": true,
+    "pannes": [],
+    "regarder": [],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [],
+    "sous_titre": "Une source ne répond pas : le verdict ne dit pas « stable » tant qu'elle se tait. Les autres relevés restent lisibles plus bas.",
+    "titre": "Inconnu : sites, flotte, collecteur se taisent"
+   }
+  },
+  {
+   "cas": "ordinaire sans site",
+   "entree": {
+    "admin": false,
+    "compte": "marie",
+    "quand": "2026-10-17 12:00:00",
+    "sources": {
+     "notifs": {
+      "notifications": []
+     },
+     "sites": {
+      "sites": []
+     }
+    }
+   },
+   "sortie": {
+    "admin": false,
+    "cloche": {
+     "compteurs": {
+      "critiques": 0
+     },
+     "lignes": [],
+     "total": 0
+    },
+    "compte": "marie",
+    "compteurs": [
+     {
+      "aller": [
+       "mysites",
+       "stFiltre",
+       "tombes"
+      ],
+      "cle": "sites",
+      "detail": "aucun site suivi",
+      "niveau": "inconnu",
+      "nom": "Sites en ligne",
+      "source": "sonde",
+      "valeur": "0 / 0"
+     },
+     {
+      "aller": [
+       "mysites",
+       "stOpen",
+       null
+      ],
+      "cle": "tls",
+      "detail": "aucun certificat connu",
+      "niveau": "inconnu",
+      "nom": "TLS",
+      "source": "sonde · 1 h",
+      "valeur": "—"
+     },
+     {
+      "aller": [
+       "bureau",
+       null,
+       null
+      ],
+      "cle": "notifs",
+      "detail": "ouvertes",
+      "niveau": "ok",
+      "nom": "Notifications",
+      "source": "notifications",
+      "valeur": 0
+     }
+    ],
+    "gestes": [
+     {
+      "aller": [
+       "overview",
+       "vuAller",
+       "gestes"
+      ],
+      "label": "Tout ce qui demande un geste",
+      "type": "aller"
+     }
+    ],
+    "muettes": [],
+    "n_sites": 0,
+    "niveau": "stable",
+    "ok": true,
+    "pannes": [],
+    "regarder": [],
+    "releve": "2026-10-17 12:00:00",
+    "sites": [],
+    "sous_titre": "0 sites répondent, certificats à jour.",
+    "titre": "Rien ne demande un geste"
+   }
+  }
+ ],
+ "contrat": "1.0",
+ "origine": "sortie de composer() avant sa conversion en point d'évolution (17-10-2026)",
+ "point": "vue.verdict.composer"
+}

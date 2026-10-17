@@ -83,6 +83,11 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé d'appeler les lectures des autres ([permissions] lectures)" % self.module)
         return self._intro["lecture"](capacite, args, self.compte)       # pour le compte au nom duquel on travaille : un module ne lit jamais plus que lui
 
+    def point(self, point: str, entree):
+        """Appelle un point d'évolution de CE module ([[points_evolution]]) : des DONNÉES en entrée, des DONNÉES en sortie, quel que soit le langage de l'EC qui le sert
+        (docs/NEXUS.md). Rend la sortie, conforme au contrat : si une EC faillit, la référence du dépôt répond dans le même appel."""
+        return self._intro["point"](self.module, point, entree)
+
     def droits(self):
         """Le service des droits des comptes, pour le module qui les administre ([permissions] droits). Les autres n'en ont pas besoin :
         l'exécuteur vérifie le droit d'une capacité avant même de l'appeler."""

@@ -3773,6 +3773,25 @@ class PasserelleHttp(unittest.TestCase):
         self.g.interface = None
         self.assertEqual(self.req("GET", "/")[0], 404)
 
+    def test_les_fichiers_servis_portent_le_prefixe_cn_mais_gardent_leur_url(self):
+        """docs/FORMAT.md §3 bis : le dépôt préfixe ses fichiers ; le serveur retire le préfixe, les URL ne changent pas."""
+        import os
+        d = Path(self.tmp.name) / "interface"
+        (d / "routes").mkdir(parents=True)
+        (d / "CN_index.html").write_text("<p>accueil</p>", encoding="utf-8")
+        (d / "CN_app.js").write_text("2", encoding="utf-8")
+        (d / "routes" / "CN_sites.js").write_text("3", encoding="utf-8")
+        (d / "CN_secret.py").write_text("x", encoding="utf-8")
+        (Path(self.tmp.name) / "CN_hors.js").write_text("dehors", encoding="utf-8")
+        self.g.interface = os.path.realpath(d)
+        self.assertEqual(self.req("GET", "/")[1], "<p>accueil</p>")
+        self.assertEqual(str(self.req("GET", "/app.js")[1]), "2")
+        self.assertEqual(str(self.req("GET", "/routes/sites.js")[1]), "3")
+        self.assertEqual(self.req("GET", "/CN_app.js")[0], 200)                     # l'URL préfixée sert aussi : même fichier
+        for chemin in ("/secret.py", "/../hors.js", "/%2e%2e/hors.js", "/..%5chors.js", "/routes"):
+            self.assertEqual(self.req("GET", chemin)[0], 404, chemin)                  # jamais hors du dossier, jamais une extension inconnue
+        self.g.interface = None
+
     def test_sante_sans_authentification(self):
         st, c, _, h = self.req("GET", "/api/sante")
         self.assertEqual((st, c["ok"]), (200, True))

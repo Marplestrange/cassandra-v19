@@ -1,0 +1,109 @@
+{
+ "point": "verdict.composer",
+ "contrat": "1.0",
+ "delai_ms": 500,
+ "entree": {
+  "type": "object",
+  "required": [
+   "admin",
+   "compte",
+   "sources",
+   "quand"
+  ],
+  "properties": {
+   "admin": {
+    "type": "boolean"
+   },
+   "compte": {
+    "type": "string"
+   },
+   "sources": {
+    "type": "object"
+   },
+   "quand": {
+    "type": "string"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "ok",
+   "admin",
+   "compte",
+   "niveau",
+   "titre",
+   "sous_titre",
+   "gestes",
+   "pannes",
+   "regarder",
+   "muettes",
+   "compteurs",
+   "cloche",
+   "sites",
+   "n_sites",
+   "releve"
+  ],
+  "properties": {
+   "ok": {
+    "type": "boolean"
+   },
+   "admin": {
+    "type": "boolean"
+   },
+   "compte": {
+    "type": "string"
+   },
+   "niveau": {
+    "type": "string",
+    "enum": [
+     "stable",
+     "regarder",
+     "panne",
+     "inconnu"
+    ]
+   },
+   "titre": {
+    "type": "string"
+   },
+   "sous_titre": {
+    "type": "string"
+   },
+   "gestes": {
+    "type": "array"
+   },
+   "pannes": {
+    "type": "array"
+   },
+   "regarder": {
+    "type": "array"
+   },
+   "muettes": {
+    "type": "array"
+   },
+   "compteurs": {
+    "type": "array"
+   },
+   "cloche": {
+    "type": "object"
+   },
+   "sites": {
+    "type": "array"
+   },
+   "n_sites": {
+    "type": "integer"
+   },
+   "releve": {
+    "type": "string"
+   }
+  }
+ },
+ "invariants": [
+  "une source muette n'est jamais comptée « stable » : le niveau « stable » exige que chaque source attendue ait répondu",
+  "une panne l'emporte sur le silence",
+  "une machine ATTENDUE hors ligne est une panne ; une intermittente ou une retirée n'en est pas une",
+  "un certificat à moins de 7 jours est une panne, à moins de 21 un point à regarder",
+  "un compte ordinaire ne voit ni la flotte, ni la machine, ni les incidents",
+  "le verdict cite le premier problème et compte les autres"
+ ]
+}
