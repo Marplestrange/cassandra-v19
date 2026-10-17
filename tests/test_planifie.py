@@ -395,7 +395,7 @@ class Reglages(Monde):
         self.deposer_run(ra, hier, 10, 1)                                                         # l'amont a échoué : la suite ne part pas
         self.n.lancer("planifie.passe")
         self.assertEqual(self.ok("historique", ref=rb)["executions"], [])
-        self.deposer_run(ra, datetime.utcnow().strftime("%Y-%m-%d 01:00"), 10, 0)                  # l'amont a réussi
+        self.deposer_run(ra, (datetime.utcnow() - timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M"), 10, 0)      # l'amont a réussi (il y a une demi-heure : « aujourd'hui 01:00 » est dans le futur entre minuit et 1 h UTC)
         self.n.lancer("planifie.passe")
         self.assertEqual(self.ok("historique", ref=rb)["executions"][0]["declencheur"], "suite")
         self.n.lancer("planifie.passe")
