@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8d506b
+# VERSION CN : 0.1.0  #0eb062
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : garde, par point d'évolution, les ENTRÉES réellement reçues (distinctes, comptées), avec une partition réservée que le générateur ne voit jamais.
 # MÉTHODE    : une table SQLite ; l'entrée est identifiée par son empreinte ; la partition réservée se décide par l'empreinte (déterministe) ; borne par point, les cas dorés jamais évincés.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8d506b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0eb062 ▼▼▼
 """Le corpus de rejeu (docs/CN_EVOLUTION.md §2) : la matière du banc d'essai de toute évolution.
 
 On ne garde que les ENTRÉES : la sortie de référence est recalculée par la référence du dépôt à chaque évaluation, car c'est elle la spécification
@@ -125,7 +125,7 @@ class Rejeu:
 
     def stats(self, gid: str) -> dict:
         with self._con() as c:
-            r = c.execute("SELECT COUNT(*) d, COALESCE(SUM(n),0) a, COALESCE(SUM(reserve),0) r, COALESCE(SUM(origine='dore'),0) o, "
+            r = c.execute("SELECT COUNT(*) d, COALESCE(SUM(ms_n),0) a, COALESCE(SUM(reserve),0) r, COALESCE(SUM(origine='dore'),0) o, "
                           "COALESCE(SUM(ms_somme),0) ms, COALESCE(SUM(ms_n),0) mn FROM appels WHERE gid=?", (gid,)).fetchone()
         return {"distincts": r["d"], "appels": r["a"], "reserve": r["r"], "visible": r["d"] - r["r"], "dores": r["o"], "duree_moyenne_ms": round(r["ms"] / r["mn"], 3) if r["mn"] else None}
 

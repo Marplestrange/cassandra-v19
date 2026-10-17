@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d6a960
+# VERSION CN : 0.2.0  #17887b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d6a960 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=17887b ▼▼▼
 [module]
 id = "evolution"
 nom = "Évolution"
-version = "0.1.0"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau."
 confiance = "interne"
@@ -80,6 +80,20 @@ preuve = "chaque pièce visitée porte son verdict"
 retour = "aucun : une pièce retirée à la visite se propose de nouveau"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte", "cassandra"]
+
+[[ecrans]]
+id = "cockpit"
+libelle = "Évolution"
+domaine = "evolution"
+gabarit = "libre"
+
+[[menus]]
+id = "evolution"
+libelle = "Évolution"
+ecran = "cockpit"
+ordre = 20
+role = "admin"
+icone = "dna"
 
 [[moteurs]]
 id = "tick"

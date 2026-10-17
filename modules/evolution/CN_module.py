@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fb8716
+# VERSION CN : 0.2.0  #a59144
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fb8716 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=a59144 ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -63,8 +63,8 @@ def brancher(ctx):
         points = []
         for gid in evo.points.points():
             m, p = gid.split(".", 1)
-            points.append(evo.points.etat(m, p))
-        return {"cibles": evo.cibles(), "pieces": evo.pieces(), "points": points, "chaine": evo.verifier_chaine(), "seuils": {k: (list(v) if isinstance(v, tuple) else v) for k, v in evo.seuils.items()},
+            points.append(dict(evo.points.etat(m, p), corpus=evo.rejeu.stats(gid)))
+        return {"cibles": evo.cibles(), "pieces": evo.pieces(), "points": points, "chaine": evo.verifier_chaine(), "journal": evo.chaine(None, 40), "seuils": {k: (list(v) if isinstance(v, tuple) else v) for k, v in evo.seuils.items()},
                 "tombes": {gid: len(evo.tombes(gid)) for gid in evo.points.points()}}
 
     # ── les gestes ───────────────────────────────────────────────────────
