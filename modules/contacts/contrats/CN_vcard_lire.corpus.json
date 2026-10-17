@@ -1,0 +1,554 @@
+{
+ "point": "contacts.vcard_lire",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de contacts, données synthétiques",
+ "cas": [
+  {
+   "cas": "texte vide",
+   "entree": {
+    "texte": ""
+   },
+   "sortie": {
+    "fiches": []
+   }
+  },
+  {
+   "cas": "aucune carte",
+   "entree": {
+    "texte": "bonjour\nceci n'est pas une carte"
+   },
+   "sortie": {
+    "fiches": []
+   }
+  },
+  {
+   "cas": "carte minimale",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Alice Martin\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Alice Martin"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "nom N seul",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nN:Martin;Alice;;;\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Alice Martin"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "N sans prénom",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nN:Dupont;;;;\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Dupont"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "FN prime sur N",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nN:Martin;Alice;;;\r\nFN:A. Martin\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "A. Martin"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "deux emails",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Bob Durand\r\nEMAIL;TYPE=INTERNET:Bob@Exemple.TEST\r\nEMAIL:bob.pro@exemple.test\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "bob@exemple.test",
+       "bob.pro@exemple.test"
+      ],
+      "tel": [],
+      "cell": [],
+      "display_name": "Bob Durand"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "email vide ignoré",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Bob\r\nEMAIL:\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Bob"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "tel fixe et mobile",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Carla\r\nTEL;TYPE=WORK,VOICE:+33 1 23 45 67 89\r\nTEL;TYPE=CELL:+33 6 12 34 56 78\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [
+       "+33 1 23 45 67 89"
+      ],
+      "cell": [
+       "+33 6 12 34 56 78"
+      ],
+      "display_name": "Carla"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mobile par MOBILE",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Carla\r\nTEL;TYPE=MOBILE:0612345678\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [
+       "0612345678"
+      ],
+      "display_name": "Carla"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "société et titre",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Dan\r\nORG:Acme\\; Cie;Service Achats\r\nTITLE:Directeur\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Dan",
+      "company": "Acme; Cie",
+      "job_title": "Directeur"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "adresse composée",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Eve\r\nADR;TYPE=WORK:;;12 rue des Fleurs;Lyon;;69000;France\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Eve",
+      "address": "12 rue des Fleurs, Lyon, 69000, France"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "site et catégories et note",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Fred\r\nURL:https://exemple.test/fred\r\nCATEGORIES:amis,travail\r\nNOTE:Rencontré en 2021\\nà Lyon\\, très sympa\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Fred",
+      "website": "https://exemple.test/fred",
+      "tags": "amis,travail",
+      "notes": "Rencontré en 2021\nà Lyon, très sympa"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "lignes repliées",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nFN:Gaëlle Très\r\n Longue\r\nNOTE:une note qui\r\n\tcontinue\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Gaëlle TrèsLongue",
+      "notes": "une note quicontinue"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "fins de ligne LF",
+   "entree": {
+    "texte": "BEGIN:VCARD\nVERSION:3.0\nFN:Hugo\nEND:VCARD\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Hugo"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "fins de ligne CR",
+   "entree": {
+    "texte": "BEGIN:VCARD\rVERSION:3.0\rFN:Hugo\rEND:VCARD\r"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Hugo"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "casse des marqueurs",
+   "entree": {
+    "texte": "begin:vcard\r\nfn:Irène\r\nend:vcard\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Irène"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "deux cartes",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Jules\r\nEND:VCARD\r\nBEGIN:VCARD\r\nVERSION:3.0\r\nFN:Kim\r\nEMAIL:kim@exemple.test\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Jules"
+     },
+     {
+      "emails": [
+       "kim@exemple.test"
+      ],
+      "tel": [],
+      "cell": [],
+      "display_name": "Kim"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "carte non fermée",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nFN:Léo\r\n"
+   },
+   "sortie": {
+    "fiches": []
+   }
+  },
+  {
+   "cas": "champ hors carte",
+   "entree": {
+    "texte": "FN:Perdu\r\nBEGIN:VCARD\r\nFN:Mia\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Mia"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "champ inconnu",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Noé\r\nX-CUSTOM:valeur\r\nPHOTO;ENCODING=b:AAAA\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Noé"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ligne sans deux-points",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Océane\r\nceci n'a pas de séparateur\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Océane"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "échappements",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Paul \\; Fils\r\nNOTE:a\\\\b\\,c\\;d\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Paul ; Fils",
+      "notes": "a\\b,c;d"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "antislash final",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Quentin\\\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Quentin\\"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "espaces autour",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\n  FN:Rose  \r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": []
+   }
+  },
+  {
+   "cas": "tel sans type",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Sam\r\nTEL:0102030405\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [
+       "0102030405"
+      ],
+      "cell": [],
+      "display_name": "Sam"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "N avec seulement famille",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nN:Tessier\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Tessier"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ORG vide",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Ugo\r\nORG:\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Ugo",
+      "company": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "adresse tout vide",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Vic\r\nADR:;;;;;;\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Vic",
+      "address": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "unicode",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Zoé Œuf\r\nORG:Café du Marché\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Zoé Œuf",
+      "company": "Café du Marché"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "trois cartes dont une vide",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nEND:VCARD\r\nBEGIN:VCARD\r\nVERSION:3.0\r\nFN:Yann\r\nEND:VCARD\r\nBEGIN:VCARD\r\nVERSION:3.0\r\nEMAIL:seul@exemple.test\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": []
+     },
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [],
+      "display_name": "Yann"
+     },
+     {
+      "emails": [
+       "seul@exemple.test"
+      ],
+      "tel": [],
+      "cell": []
+     }
+    ]
+   }
+  },
+  {
+   "cas": "version 4",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:4.0\r\nFN:Wendy\r\nTEL;VALUE=uri;TYPE=cell:tel:+33612345678\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "tel": [],
+      "cell": [
+       "tel:+33612345678"
+      ],
+      "display_name": "Wendy"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "emails dupliqués casse",
+   "entree": {
+    "texte": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Xavier\r\nEMAIL:X@exemple.test\r\nEMAIL:x@exemple.test\r\nEND:VCARD\r\n"
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "x@exemple.test",
+       "x@exemple.test"
+      ],
+      "tel": [],
+      "cell": [],
+      "display_name": "Xavier"
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,37 @@
+{
+ "point": "contacts.vcard_ecrire",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "fiches"
+  ],
+  "properties": {
+   "fiches": {
+    "type": "array",
+    "items": {
+     "type": "object"
+    }
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "vcard"
+  ],
+  "properties": {
+   "vcard": {
+    "type": "string"
+   }
+  }
+ },
+ "invariants": [
+  "chaque fiche est encadrée par BEGIN:VCARD et END:VCARD, en version 3.0",
+  "aucune ligne ne dépasse 75 octets : le surplus est replié, la continuation commençant par une espace",
+  "virgule, point-virgule, antislash et saut de ligne sont échappés",
+  "un champ vide n'est pas écrit",
+  "les lignes sont séparées par CRLF, y compris la dernière"
+ ]
+}

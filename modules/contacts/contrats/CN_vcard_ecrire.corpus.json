@@ -1,0 +1,434 @@
+{
+ "point": "contacts.vcard_ecrire",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de contacts, données synthétiques",
+ "cas": [
+  {
+   "cas": "aucune fiche",
+   "entree": {
+    "fiches": []
+   },
+   "sortie": {
+    "vcard": "\r\n"
+   }
+  },
+  {
+   "cas": "fiche vide",
+   "entree": {
+    "fiches": [
+     {}
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:\r\nN:;;;;\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "nom seul",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Alice Martin"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Alice Martin\r\nN:Martin;Alice;;;\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "nom en un mot",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Madonna"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Madonna\r\nN:;Madonna;;;\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "nom à trois mots",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Jean Pierre Durand"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Jean Pierre Durand\r\nN:Pierre Durand;Jean;;;\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "sans nom, un email",
+   "entree": {
+    "fiches": [
+     {
+      "emails": [
+       "x@exemple.test"
+      ]
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:x@exemple.test\r\nN:;x@exemple.test;;;\r\nEMAIL;TYPE=INTERNET:x@exemple.test\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "deux emails",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Bob",
+      "emails": [
+       "b@exemple.test",
+       "b2@exemple.test"
+      ]
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Bob\r\nN:;Bob;;;\r\nEMAIL;TYPE=INTERNET:b@exemple.test\r\nEMAIL;TYPE=INTERNET:b2@exemple.test\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "tel et mobile",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Carla",
+      "phone": "01 23 45 67 89",
+      "mobile": "06 12 34 56 78"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Carla\r\nN:;Carla;;;\r\nTEL;TYPE=WORK,VOICE:01 23 45 67 89\r\nTEL;TYPE=CELL:06 12 34 56 78\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "société seule",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Dan",
+      "company": "Acme"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Dan\r\nN:;Dan;;;\r\nORG:Acme\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "titre sans société",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Dan",
+      "job_title": "Directeur"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Dan\r\nN:;Dan;;;\r\nORG:\r\nTITLE:Directeur\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "société et titre",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Dan",
+      "company": "Acme; Cie",
+      "job_title": "Directeur"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Dan\r\nN:;Dan;;;\r\nORG:Acme\\; Cie\r\nTITLE:Directeur\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "adresse",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Eve",
+      "address": "12 rue des Fleurs, 69000 Lyon"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Eve\r\nN:;Eve;;;\r\nADR;TYPE=WORK:;;12 rue des Fleurs\\, 69000 Lyon;;;;\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "site",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Fred",
+      "website": "https://exemple.test/f"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Fred\r\nN:;Fred;;;\r\nURL:https://exemple.test/f\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "catégories",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Fred",
+      "tags": "amis,travail"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Fred\r\nN:;Fred;;;\r\nCATEGORIES:amis\\,travail\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "note multiligne",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Gus",
+      "notes": "ligne un\nligne deux, avec virgule; et point-virgule"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Gus\r\nN:;Gus;;;\r\nNOTE:ligne un\\nligne deux\\, avec virgule\\; et point-virgule\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "antislash",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Hal",
+      "notes": "a\\b"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Hal\r\nN:;Hal;;;\r\nNOTE:a\\\\b\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "repli d'une longue note",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Ida",
+      "notes": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Ida\r\nN:;Ida;;;\r\nNOTE:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\r\n xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\r\n xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "repli en multi-octets",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Joé",
+      "notes": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Joé\r\nN:;Joé;;;\r\nNOTE:ééééééééééééééééééééééééééééééééééé\r\n ééééééééééééééééééééééééééééééééééééé\r\n éééééééééééééééééé\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "repli pile à 75",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Kai",
+      "notes": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Kai\r\nN:;Kai;;;\r\nNOTE:nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "deux fiches",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Lou"
+     },
+     {
+      "display_name": "Max",
+      "emails": [
+       "m@exemple.test"
+      ]
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Lou\r\nN:;Lou;;;\r\nEND:VCARD\r\nBEGIN:VCARD\r\nVERSION:3.0\r\nFN:Max\r\nN:;Max;;;\r\nEMAIL;TYPE=INTERNET:m@exemple.test\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "champs vides ignorés",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Nina",
+      "phone": "",
+      "mobile": "",
+      "company": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Nina\r\nN:;Nina;;;\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "emails None",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Omar",
+      "emails": null
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Omar\r\nN:;Omar;;;\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "tout",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Paul Émile Durand",
+      "emails": [
+       "p@exemple.test"
+      ],
+      "phone": "0102",
+      "mobile": "0607",
+      "company": "Acme",
+      "job_title": "CEO",
+      "address": "1 rue X",
+      "website": "https://e.test",
+      "tags": "a,b",
+      "notes": "ok"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Paul Émile Durand\r\nN:Émile Durand;Paul;;;\r\nEMAIL;TYPE=INTERNET:p@exemple.test\r\nTEL;TYPE=WORK,VOICE:0102\r\nTEL;TYPE=CELL:0607\r\nORG:Acme\r\nTITLE:CEO\r\nADR;TYPE=WORK:;;1 rue X;;;;\r\nURL:https://e.test\r\nCATEGORIES:a\\,b\r\nNOTE:ok\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "nom avec virgule et point-virgule",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Durand, Paul; fils"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Durand\\, Paul\\; fils\r\nN:Paul\\; fils;Durand\\,;;;\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "nom avec espace final",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Quinn "
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Quinn \r\nN:;Quinn;;;\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "unicode",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Zoé Œuf",
+      "company": "Café du Marché"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Zoé Œuf\r\nN:Œuf;Zoé;;;\r\nORG:Café du Marché\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "FN pile 75 octets",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\r\nN:;nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\r\n ;;;\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "FN 76 octets",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\r\n n\r\nN:;nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\r\n n;;;\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "FN 74 octets",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\r\nN:;nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn;\r\n ;;\r\nEND:VCARD\r\n"
+   }
+  },
+  {
+   "cas": "nom très long",
+   "entree": {
+    "fiches": [
+     {
+      "display_name": "Prénom NomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNom"
+     }
+    ]
+   },
+   "sortie": {
+    "vcard": "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Prénom NomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomN\r\n omNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNom\r\nN:NomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomNomN\r\n omNomNomNomNomNomNomNomNomNomNomNomNomNomNomNom;Prénom;;;\r\nEND:VCARD\r\n"
+   }
+  }
+ ]
+}

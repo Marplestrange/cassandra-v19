@@ -6,14 +6,14 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2c98cc
+# VERSION CN : 0.1.0  #470bde
 # VERSION EC : néant
 # EC LIÉES   : néant
-# RÔLE       : Les points d'évolution RÉELS du dépôt (vue.verdict.composer, contacts.signaux) : déclarés sans défaut, équivalents à leur corpus doré (produit par l'ancien code), et protégés par un corpus assez fort pour juger une variante. Tout nouveau po
+# RÔLE       : Les points d'évolution RÉELS du dépôt (les points déclarés ci-dessous) : déclarés sans défaut, équivalents à leur corpus doré (produit par l'ancien code), et protégés par un corpus assez fort pour juger une variante. Tout nouveau po
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2c98cc ▼▼▼
-"""Les points d'évolution RÉELS du dépôt (vue.verdict.composer, contacts.signaux) : déclarés sans défaut, équivalents à leur corpus doré (produit par l'ancien code),
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=470bde ▼▼▼
+"""Les points d'évolution RÉELS du dépôt (les points déclarés ci-dessous) : déclarés sans défaut, équivalents à leur corpus doré (produit par l'ancien code),
 et protégés par un corpus assez fort pour juger une variante. Tout nouveau point réel s'ajoute à la liste : ce banc est sa porte d'entrée."""
 import json
 import shutil
@@ -31,7 +31,9 @@ from noyau import CN_rejeu as R  # noqa: E402
 
 # (module, point, nom de la référence, plancher du score de détection des variantes fausses)
 POINTS = [("vue", "verdict.composer", "EC_verdict_composer", 0.85),
-          ("contacts", "signaux", "EC_signaux", 0.88)]
+          ("contacts", "signaux", "EC_signaux", 0.88),
+          ("contacts", "vcard_lire", "EC_vcard_lire", 0.9),
+          ("contacts", "vcard_ecrire", "EC_vcard_ecrire", 0.92)]
 
 
 def manifeste_de(dossier: Path):

@@ -264,3 +264,19 @@ contrat = "1.0"
 reference = "points/EC_signaux"
 fonction = "signaux"
 runtime = "python"
+
+[[points_evolution]]
+id = "vcard_lire"
+libelle = "La lecture d'un fichier vCard : le texte en entrée, les fiches lues en sortie (tolérante : un champ inconnu est ignoré, une carte illisible n'interrompt pas les autres)"
+contrat = "1.0"
+reference = "points/EC_vcard_lire"
+fonction = "point_vcard_lire"
+runtime = "python"
+
+[[points_evolution]]
+id = "vcard_ecrire"
+libelle = "L'écriture d'un fichier vCard : les fiches en entrée, le texte du fichier en sortie (échappements et repli à 75 octets de la RFC 6350)"
+contrat = "1.0"
+reference = "points/EC_vcard_ecrire"
+fonction = "point_vcard_ecrire"
+runtime = "python"

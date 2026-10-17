@@ -1,0 +1,43 @@
+{
+ "point": "contacts.vcard_lire",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "texte"
+  ],
+  "properties": {
+   "texte": {
+    "type": "string"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "fiches"
+  ],
+  "properties": {
+   "fiches": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "required": [
+      "emails",
+      "tel",
+      "cell"
+     ]
+    }
+   }
+  }
+ },
+ "invariants": [
+  "une carte est ouverte par BEGIN:VCARD et fermée par END:VCARD ; une carte non fermée est perdue",
+  "les lignes repliées (espace ou tabulation en tête) sont dépliées avant lecture",
+  "un champ inconnu est ignoré, jamais une erreur",
+  "les adresses sont rendues en minuscules, dans l'ordre du fichier",
+  "FN prime sur N pour le nom affiché",
+  "un « ; » ou une virgule échappés font partie du texte"
+ ]
+}

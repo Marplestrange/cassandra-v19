@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.0  #d57be2
+# VERSION CN : 0.3.0  #cd63e0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet d'adresses.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=d57be2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=cd63e0 ▼▼▼
 """Le carnet d'adresses.
 
 Porté de la V18 (`contact_*`, `contacts_*`, vCard, CSV), avec ses leçons :
@@ -167,115 +167,14 @@ def jumelles(a, b, sig):
 
 
 # ------------------------------------------------------------------ vCard et CSV
-def vc_echapper(s):
-    return str(s or "").replace("\\", "\\\\").replace("\n", "\\n").replace(",", "\\,").replace(";", "\\;")
+def vcard_ecrire(fiches, appeler):
+    """Le fichier vCard des fiches. L'écriture (échappements, repli à 75 octets) est un POINT D'ÉVOLUTION : points/EC_vcard_ecrire.py."""
+    return appeler("vcard_ecrire", {"fiches": fiches})["vcard"]
 
 
-def vc_lire(s):
-    sortie, i = "", 0
-    s = s or ""
-    while i < len(s):
-        if s[i] == "\\" and i + 1 < len(s):
-            sortie += {"n": "\n", "N": "\n", ",": ",", ";": ";", "\\": "\\"}.get(s[i + 1], s[i + 1])
-            i += 2
-        else:
-            sortie += s[i]
-            i += 1
-    return sortie
-
-
-def vc_replier(ligne):
-    """Repli à 75 octets, la continuation commençant par une espace (RFC 6350)."""
-    if len(ligne.encode("utf-8")) <= 75:
-        return ligne
-    morceaux, cur = [], b""
-    for ch in ligne:
-        e = ch.encode("utf-8")
-        if len(cur) + len(e) > (75 if not morceaux else 74):
-            morceaux.append(cur.decode("utf-8"))
-            cur = b""
-        cur += e
-    if cur:
-        morceaux.append(cur.decode("utf-8"))
-    return morceaux[0] + "".join("\r\n " + m for m in morceaux[1:])
-
-
-def vcard_ecrire(fiches):
-    lignes = []
-    for c in fiches:
-        nom = c.get("display_name") or (c.get("emails") or [""])[0]
-        bouts = nom.split(" ", 1)
-        lignes += ["BEGIN:VCARD", "VERSION:3.0", vc_replier("FN:" + vc_echapper(nom)), vc_replier("N:%s;%s;;;" % (vc_echapper(bouts[1] if len(bouts) > 1 else ""), vc_echapper(bouts[0])))]
-        for a in c.get("emails") or []:
-            lignes.append(vc_replier("EMAIL;TYPE=INTERNET:" + vc_echapper(a)))
-        if c.get("phone"):
-            lignes.append(vc_replier("TEL;TYPE=WORK,VOICE:" + vc_echapper(c["phone"])))
-        if c.get("mobile"):
-            lignes.append(vc_replier("TEL;TYPE=CELL:" + vc_echapper(c["mobile"])))
-        if c.get("company") or c.get("job_title"):
-            lignes.append(vc_replier("ORG:" + vc_echapper(c.get("company", ""))))
-            if c.get("job_title"):
-                lignes.append(vc_replier("TITLE:" + vc_echapper(c["job_title"])))
-        if c.get("address"):
-            lignes.append(vc_replier("ADR;TYPE=WORK:;;%s;;;;" % vc_echapper(c["address"])))
-        if c.get("website"):
-            lignes.append(vc_replier("URL:" + vc_echapper(c["website"])))
-        if c.get("tags"):
-            lignes.append(vc_replier("CATEGORIES:" + vc_echapper(c["tags"])))
-        if c.get("notes"):
-            lignes.append(vc_replier("NOTE:" + vc_echapper(c["notes"])))
-        lignes.append("END:VCARD")
-    return "\r\n".join(lignes) + "\r\n"
-
-
-def vcard_lire(texte):
-    """Tolérant : un champ inconnu est ignoré, une fiche illisible n'interrompt pas le reste."""
-    brut = (texte or "").replace("\r\n", "\n").replace("\r", "\n")
-    lignes = []
-    for l in brut.split("\n"):
-        if l[:1] in (" ", "\t") and lignes:
-            lignes[-1] += l[1:]
-        else:
-            lignes.append(l)
-    fiches, cur = [], None
-    for l in lignes:
-        h = l.lstrip()                                      # pas de strip à droite : un texte qui finit par une espace la garde
-        if h.strip().upper() == "BEGIN:VCARD":
-            cur = {"emails": [], "tel": [], "cell": []}
-            continue
-        if h.strip().upper() == "END:VCARD":
-            if cur:
-                fiches.append(cur)
-            cur = None
-            continue
-        if cur is None or ":" not in h:
-            continue
-        gauche, _, val = h.partition(":")
-        brut_val = val
-        nom, params, val = gauche.split(";")[0].upper(), gauche.upper(), vc_lire(val)
-        composants = [vc_lire(x).strip() for x in re.split(r"(?<!\\);", brut_val)]          # un « ; » échappé fait partie du texte (« Acme\\; Cie »)
-        if nom == "FN":
-            cur["display_name"] = val
-        elif nom == "N" and not cur.get("display_name"):
-            p = composants
-            cur["display_name"] = " ".join(x for x in [p[1] if len(p) > 1 else "", p[0]] if x)
-        elif nom == "EMAIL" and val:
-            cur["emails"].append(val.strip().lower())
-        elif nom == "TEL":
-            (cur["cell"] if "CELL" in params or "MOBILE" in params else cur["tel"]).append(val)
-        elif nom == "ORG":
-            cur["company"] = composants[0]
-        elif nom == "TITLE":
-            cur["job_title"] = val
-        elif nom == "ADR":
-            cur["address"] = ", ".join(x for x in composants if x)
-        elif nom == "URL":
-            cur["website"] = val
-        elif nom == "CATEGORIES":
-            cur["tags"] = val
-        elif nom == "NOTE":
-            cur["notes"] = val
-    return fiches
+def vcard_lire(texte, appeler):
+    """Les fiches d'un fichier vCard. La lecture, tolérante, est un POINT D'ÉVOLUTION : points/EC_vcard_lire.py."""
+    return appeler("vcard_lire", {"texte": texte or ""})["fiches"]
 
 
 def csv_decoder(octets):
@@ -518,7 +417,7 @@ def brancher(ctx):
         if ids:
             garder = {int(x) for x in ids}
             fiches = [f for f in fiches if f["id"] in garder]
-        return {"vcard": vcard_ecrire(fiches), "fiches": len(fiches)}
+        return {"vcard": vcard_ecrire(fiches, ctx.point), "fiches": len(fiches)}
 
     def csv_apercu(c, contenu_b64=""):
         compte_agit()
@@ -986,7 +885,7 @@ def brancher(ctx):
         compte = compte_agit()
         if dossier_id and not db.lire("SELECT 1 FROM dossiers WHERE id=? AND compte=?", (int(dossier_id), compte)):
             raise ValueError("dossier introuvable")
-        fiches = vcard_lire(texte)
+        fiches = vcard_lire(texte, ctx.point)
         if not fiches:
             raise ValueError("aucune fiche reconnue dans ce fichier")
         r = verser(compte, fiches, "vcard", int(dossier_id or 0))
