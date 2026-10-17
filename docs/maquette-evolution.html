@@ -583,8 +583,18 @@ input[type=range]{width:100%;accent-color:var(--accent)}
         '<div class="verre" style="padding:12px;background:var(--accent-doux);display:flex;flex-direction:column;gap:5px"><b class="mono">Couche EC · EC'+m.ec+'</b><span class="note">écrite seulement par l\'évolution, rangée <b>à part</b> des fichiers du module : une mise à jour du dépôt ne l\'écrit jamais. Ne parle qu\'à l\'API publique stable.</span></div>'+
       '</div>'+
       '<div class="lib" style="margin-top:6px">Points d\'évolution déclarés par le nexus</div>'+
-      '<table><tr><th>Point</th><th>Contrat</th><th>EC</th><th>Sert actuellement</th><th>Compatibilité</th></tr>'+
-      (SEAMS[cap.mod]||[]).map(x=>'<tr><td class="mono">'+x[0]+'</td><td class="mono">@'+x[1]+'</td><td class="mono '+(x[2]==='—'?'non':'cons')+'">'+x[2]+'</td><td>'+(x[3]==='active'?'<span class="oui">l\'EC</span>':'<span class="non">la référence du dépôt</span>')+'</td><td class="note">'+x[4]+'</td></tr>').join('')+'</table>'+
+      '<table><tr><th>Point</th><th>Contrat</th><th>EC</th><th>Sert actuellement</th><th>Résolveur statique</th><th>Compatibilité</th></tr>'+
+      (SEAMS[cap.mod]||[]).map(x=>'<tr><td class="mono">'+x[0]+'</td><td class="mono">@'+x[1]+'</td><td class="mono '+(x[2]==='—'?'non':'cons')+'">'+x[2]+'</td><td>'+(x[3]==='active'?'<span class="oui">l\'EC</span>':'<span class="non">la référence du dépôt</span>')+'</td><td>'+(x[2]==='—'?'<span class="non">—</span>':'<span class="oui" title="contrat ⊒, API ⊒, invariants identiques">compatible ✓</span>')+'</td><td class="note">'+x[4]+'</td></tr>').join('')+'</table>'+
+      '<div class="verre" style="padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--accent-doux)"><b class="mono">Système de compatibilité EC ↔ nexus : six couches, chacune rattrape la précédente</b>'+
+      '<table><tr><th>Couche</th><th>Mécanisme</th><th>Ce que ça garantit</th></tr>'+
+      '<tr><td class="mono">1 · Par construction</td><td>L\'EC est une <b>fonction pure sur des données du contrat</b>. Le nexus fait toutes les entrées et sorties. Aucun import du nexus.</td><td>l\'EC ne peut dépendre de rien d\'interne</td></tr>'+
+      '<tr><td class="mono">2 · Registre de contrats</td><td>Compatibilité <b>complète et transitive</b> : ajout seulement, renommage par alias, rupture = nouveau contrat + <b>lentille</b> testée. L\'intégration continue refuse sans lentille.</td><td>toute EC d\'un contrat ancien tourne sur tout nexus plus récent</td></tr>'+
+      '<tr><td class="mono">3 · Diff de comportement</td><td>À chaque version, la <b>référence</b> est rejouée sur le corpus doré de chaque point. Toute différence de sortie = changement de sens, à classer « rupture ».</td><td>un changement de sens sans changement de type ne passe pas inaperçu</td></tr>'+
+      '<tr><td class="mono">4 · Résolveur statique</td><td><span class="mono">compatible(EC, nexus)</span> calculé en quelques ms depuis le manifeste de l\'EC (contrat, API, empreinte des invariants).</td><td>« cette EC va-t-elle marcher ? » avant tout rejeu</td></tr>'+
+      '<tr><td class="mono">5 · Disjoncteur</td><td>Une <b>garde de contrat</b> autour de chaque appel d\'EC : sortie hors schéma, invariant violé, délai dépassé → la référence répond <b>dans le même appel</b>. 3 violations en 10 min : EC suspendue. Un échantillon est comparé à la référence pour déceler une dérive de sens.</td><td>l\'utilisateur ne voit jamais une sortie non conforme</td></tr>'+
+      '<tr><td class="mono">6 · Réparation</td><td>La lentille d\'abord, puis re-évolution depuis l\'EC suspendue (rattrapage).</td><td>une EC suspendue revient, elle ne disparaît pas</td></tr></table>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" id="v-viol">Injecter une violation de contrat dans l\'EC</button><button class="btn" id="v-rst">Réinitialiser</button><span class="note">couche 5 en direct</span></div>'+
+      '<div id="v-log" class="mono" style="font-size:11.5px;display:flex;flex-direction:column;gap:3px"></div></div>'+
       '<table>'+ligne('Garde-fous','<span class="oui">signatures des capacités intactes</span> · <span class="oui">manifeste identique</span> · <span class="oui">permissions inchangées</span> · <span class="oui">chaîne d\'empreintes vérifiée</span>')+
         ligne('Version suivie','<select id="canal">'+CANAUX.map((c,i)=>'<option'+(i===m.canal?' selected':'')+'>'+c+'</option>').join('')+'</select>')+'</table>'+
       '<div class="lib" style="margin-top:6px">Versions EC — les plus récentes</div>'+
@@ -605,6 +615,13 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     z.querySelector('#v-off').onclick=()=>toast('Retour à la version dépôt '+m.off+' : l\'EC est mise de côté, pas détruite');
     z.querySelector('#v-amont').onclick=()=>toast('Patch exporté : EC'+m.ec+' devient une demande de fusion sur le dépôt ; une fois fusionnée, elle est intégrée à la version dépôt');
     branche2(z,m);
+    (function(){let n=0;const log=z.querySelector('#v-log'),vb=z.querySelector('#v-viol'),rb=z.querySelector('#v-rst');if(!vb)return;
+      const T=['champ « domaine » absent de la sortie de l\'EC','sortie hors schéma : « ssl.jours » est du texte','délai dépassé : 480 ms pour un plafond de 120 ms'];
+      vb.onclick=()=>{if(n>=3)return;n++;const l=document.createElement('div');
+        if(n<3){l.innerHTML='<span style="color:var(--alerte)">'+new Date().toTimeString().slice(0,8)+'</span> sites.lecture · '+T[n-1]+' → <b>réponse de la référence servie dans le même appel</b>, utilisateur non affecté ('+n+'/3)'}
+        else{l.innerHTML='<span style="color:var(--danger)">'+new Date().toTimeString().slice(0,8)+'</span> sites.lecture · '+T[2]+' → <b>EC'+m.ec+' suspendue</b> sur ce point, la référence sert, re-évolution en file, notification envoyée · l\'EC est conservée';vb.disabled=true}
+        log.appendChild(l);toast(n<3?'Violation interceptée : la référence a répondu':'EC suspendue : service intact')};
+      rb.onclick=()=>{n=0;log.innerHTML='';vb.disabled=false}})();
     const sim=z.querySelector('#v-sim');if(sim)sim.onclick=()=>{z.querySelector('#v-res').innerHTML=
       '<div class="verre" style="padding:12px;background:var(--accent-doux);margin-top:6px;display:flex;flex-direction:column;gap:8px"><b class="mono">Mise à jour du dépôt vers la '+m.suiv+' : deux temps</b>'+
       '<div class="note"><b>1 · Installée à côté.</b> Le nouveau nexus ne sert encore personne. <b>2 · L\'EC y est rejouée en ombre</b> sur 1 240 appels réels, point par point. On ne bascule que si rien ne casse.</div>'+

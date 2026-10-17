@@ -90,6 +90,19 @@ Cas d'école de Drisse : un client fait tourner depuis des mois une V20 avec des
 
 Limite assumée : refuser une mise à jour retarde aussi ses correctifs. La porte porte donc sur la performance ; un **correctif de sécurité** est signalé à part, avec sa propre voie (le client voit ce qu'il coûterait de ne pas l'appliquer).
 
+## 2 sexies. Le système de compatibilité EC ↔ nexus (17-10)
+
+Exigence de Drisse : un **système** qui garantisse qu'une EC reste compatible avec le code du nexus, pas seulement des règles. Six couches empilées ; chacune rattrape les trous de la précédente.
+
+1. **Par construction : noyau fonctionnel / coquille impérative.** L'EC est une **fonction pure sur des données du contrat** ; le nexus (la coquille) fait toutes les entrées et sorties. L'EC n'importe rien du nexus (stdlib + `ec_api`, additive). La surface de compatibilité se réduit aux schémas de données.
+2. **Registre de contrats en compatibilité complète et transitive** (au sens des registres de schémas d'Avro/Protobuf) : ajout seulement, avec valeurs par défaut ; lecteur tolérant (l'EC ignore les champs inconnus, le nexus accepte les champs de sortie manquants) ; renommage par alias ; rupture = **nouveau contrat** + **lentille** (traduction ancienne forme ↔ nouvelle) fournie et testée. L'intégration continue du dépôt **refuse** toute modification de contrat non classée (`AJOUT`, `ALIAS`, `DÉPRÉCIATION`, `RUPTURE` + lentille). Les lentilles se composent : une EC du contrat v1 tourne sur un nexus en v3.
+3. **Diff de comportement de la référence.** À chaque version, l'implémentation de référence de chaque point est rejouée sur son **corpus doré** ; toute différence de sortie par rapport à la version précédente est un changement de sens : la publication exige de le classer « rupture » (avec lentille) ou de le justifier. Cela attrape ce que les schémas ne voient pas.
+4. **Résolveur statique.** Chaque EC porte un manifeste (`contrat@`, `api_ec@`, empreinte des invariants et du corpus). `compatible(EC, nexus)` se calcule en quelques millisecondes, sans rien exécuter ; l'écran l'affiche par point d'évolution, et la mise à jour l'utilise comme première porte.
+5. **Disjoncteur à l'exécution.** Une **garde de contrat** enveloppe chaque appel d'EC : sortie hors schéma, invariant violé, délai dépassé, exception → **la référence répond dans le même appel** ; trois violations en dix minutes suspendent l'EC (conservée) et notifient. Un échantillon d'appels est comparé à la référence pour déceler une dérive de sens. C'est ce qui rend l'incompatibilité **invisible** même si toutes les couches précédentes ont raté.
+6. **Réparation.** Lentille d'abord ; puis re-évolution depuis l'EC suspendue (rattrapage de la §2 quinquies) ; l'EC revient, elle ne disparaît pas.
+
+**Ce que le système garantit, honnêtement.** Les couches 1 à 4 rendent l'incompatibilité **impossible** pour toute évolution par ajout, et détectable **avant** publication pour les autres. La couche 5 rend toute incompatibilité résiduelle **invisible à l'utilisateur** (la réponse est toujours conforme) au prix d'une perte temporaire d'optimisation sur ce point. Limite : un changement de sens que ni les invariants ni le corpus doré ne détectent passerait la couche 3 ; la qualité des invariants et du corpus de chaque point d'évolution est donc la dépendance réelle du système, et fait partie de ce que le dépôt doit entretenir.
+
 ## 3. Rôles (pas de nouvel agent)
 
 Déclarés dans le registre de modèles et le module Agents IA, chacun avec profil, modèle et budget :
