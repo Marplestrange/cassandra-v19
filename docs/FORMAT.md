@@ -54,11 +54,11 @@ Décision de Drisse : le nom d'un fichier dit sa zone. **Préfixe `CN_` ou `EC_`
 
 - Le soulignement garde un nom Python valide et lisible. La zone se lit d'un coup d'œil dans l'éditeur, dans les listes de fichiers et dans les messages d'erreur (`File EC_composer.py, line 12`).
 - `CN_` : code nexus. `EC_` : point d'évolution (la référence du dépôt, ou une EC évoluée).
-- **Exceptions** (noms que le chargeur, l'installateur ou les utilisateurs retrouvent par nom) : `manifeste.toml`, `module.py`, `installer.sh`, `verifier.sh`, `retirer.sh`, les programmes de `commandes/`, `main.py`, `install.sh`, `deploy.sh`, `pousser.sh`, `LICENSE`, `README.md`. Ils sont **CN par déclaration** dans le fichier `INTOUCHABLES` ; l'outil de bornes le vérifie.
-- **Fichiers de test** : `test_*.py` (découverte automatique) ; CN par leur dossier `tests/`.
-- **Documents de projet** (`NEXUS.md`, `FORMAT.md`…) : pas de préfixe. Un `.md` qui fait partie d'une zone (fiche d'un point d'évolution, journal d'une évolution) prend `EC_`, une fiche du nexus `CN_`.
+- **Aucune exception pour les fichiers que nous écrivons** (décision de Drisse : une architecture sans cas particulier, même si le gain est nul, pour qu'aucune erreur ne soit possible). Y compris `manifeste.toml` → `CN_manifeste.toml`, `module.py` → `CN_module.py`, `installer.sh`, `verifier.sh`, `retirer.sh`, les programmes de `commandes/`, `main.py`, `install.sh`, `deploy.sh`, `pousser.sh`, les migrations `.sql`, les tests (`CN_test_*.py`), l'interface (`CN_shell.js`…), `exploitation/*`, les maquettes, et les **documents de projet** (`CN_NEXUS.md`, `CN_FORMAT.md`…). Écrits par le dépôt, ils sont CN ; seuls les fichiers de zone évolutive prennent `EC_`.
+- **Seule liste fermée : les noms imposés par un outil extérieur** : `__init__.py` (convention de l'interpréteur Python), `LICENSE`, `README.md`, `.gitignore` (hébergement git, détection de licence), `__pycache__`. La liste est codée dans l'outil de bornes ; la modifier est un changement signé du dépôt.
+- **Noms imposés sur la machine cible** (unités systemd, configuration nginx, sudoers, programmes racine de `/usr/libexec/cassandra/`) : le préfixe vaut **pour le dépôt, jamais pour la machine**. Le fichier du dépôt s'appelle `CN_cassandra-noyau.service` ; l'installateur le copie sous son nom réel `cassandra-noyau.service`. La table de correspondance est déclarée (`CN_installation.toml`). Les listes blanches du courtier racine désignent les noms installés : **elles ne changent pas**.
 - **EC évoluées** dans le stock : `EC_<point>__<EC>.py`, ex. `EC_verdict_composer__EC8.py` (le double soulignement sépare le point du numéro d'EC).
-- Vérification : le préfixe égale le champ `ZONE` de l'en-tête et le dossier ; sinon l'outil signale l'écart.
+- Vérification : le préfixe égale le champ `ZONE` de l'en-tête et le dossier ; un fichier sans préfixe, hors de la liste fermée, est une erreur.
 
 ## 4. Où vivent les fichiers
 
@@ -141,7 +141,7 @@ def composer(releves):
 
 1. L'en-tête est complet ; licence, auteur, dépôt et courriel sont ceux du projet.
 2. **Un fichier = une zone** : `ZONE` correspond à la borne présente ; aucune ligne de code hors borne ; borne ouverte puis fermée.
-   **Nommage** : le préfixe `CN_` / `EC_` du fichier égale `ZONE` et le dossier (sauf les exceptions déclarées dans `INTOUCHABLES`).
+   **Nommage** : le préfixe `CN_` / `EC_` du fichier égale `ZONE` et le dossier (sauf la liste fermée des noms imposés de l'extérieur).
 3. **Renvois** : chaque point listé dans `EC LIÉES` d'un CN existe comme fichier EC qui le désigne comme `HÔTE CN`, et inversement.
 4. Un fichier **EC** n'importe que la bibliothèque standard pure et `ec_api`, sans `ctx`, `self`, E/S, horloge ni hasard (`docs/NEXUS.md` §3).
 5. Chaque `point=` est déclaré dans le manifeste du module, avec son contrat et son corpus ; chaque point déclaré a sa référence.
@@ -155,6 +155,7 @@ Une EC rangée dans `/var/cassandra/ec/<module>/<point>/EC_<point>__EC<n>.py` su
 
 ## 8. Mise en place
 
+0. **Renommage atomique** (avant tout le reste) : l'outil `outils/renommer.py` (a) simule d'abord (liste des `git mv` et des références à réécrire), (b) renomme avec `git mv` et réécrit chaque référence (imports, chemins, manifestes, scripts, documents, motifs de découverte des tests et des migrations), (c) en **un seul commit dédié**, (d) suite verte en local puis rejeu complet sur Amizo (déploiement avec retour automatique) avant de poursuivre. Mesure de l'ampleur au 17-10 : 395 fichiers suivis (157 Python, 54 TOML, 41 SQL, 40 JS, 34 MD, 33 shell) ; les noms les plus référencés (`manifeste.toml`, `module.py`, `installer.sh`) apparaissent dans 27 à 31 fichiers chacun. Réversible par git.
 1. `outils/bornes.py` en **mode audit** : lit les fichiers, signale les écarts au format, ne bloque rien.
 2. `outils/entete.py` : génère ou complète l'en-tête et l'explicatif de chaque fichier à partir de l'existant ; les textes sont relus par l'auteur.
 3. **Extraction** des fonctions pures vers `points/`, module par module, suite de tests verte à chaque pas, en commençant par `vue`.
