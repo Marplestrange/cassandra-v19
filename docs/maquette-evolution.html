@@ -338,25 +338,46 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 </div>
 </div>
 
-<div class="tiroir" id="tiroir"><div class="verre">
+<div class="tiroir" id="tiroir"><div class="verre" style="max-width:900px">
   <div style="display:flex;justify-content:space-between;align-items:center"><h3 class="mono">Moteur de recherche et rôles</h3><button class="btn" id="fermer">Fermer</button></div>
-  <div class="choix">
-    <button class="opt on" data-moteur="OpenEvolve"><b class="mono">OpenEvolve</b><span class="note">Apache-2.0 · bibliothèque Python · îlots, MAP-Elites, multi-objectifs, évaluation parallèle. Défaut.</span><span class="puce ok">actif, 7,5 k étoiles</span></button>
-    <button class="opt" data-moteur="ShinkaEvolve"><b class="mono">ShinkaEvolve</b><span class="note">Apache-2.0 · sobre en essais · modèles locaux · mutation par agent en ligne de commande. Pour un budget serré.</span><span class="puce ok">actif, 1,4 k étoiles</span></button>
+  <div class="choix" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
+    <button class="opt on" data-moteur="OpenEvolve"><b class="mono">OpenEvolve</b><span class="note">Le plus répandu et le plus complet : îlots, MAP-Elites, multi-objectifs, évaluation parallèle.</span><span class="puce ok">défaut · 7,5 k étoiles</span></button>
+    <button class="opt" data-moteur="ShinkaEvolve"><b class="mono">ShinkaEvolve</b><span class="note">Sobre en essais, modèles locaux, mutation par agent en ligne de commande.</span><span class="puce ok">actif · 1,4 k étoiles</span></button>
+    <button class="opt" data-moteur="CodeEvolve"><b class="mono">CodeEvolve</b><span class="note">Meilleurs résultats publiés ; prompts qui évoluent ; économe avec des modèles ouverts.</span><span class="puce al">Python ≥ 3.13 · peu actif</span></button>
+    <button class="opt" data-moteur="Orfan"><b class="mono">Orfan</b><span class="note">Le moteur maison, taillé pour Cassandra : sans dépendance, rejeu natif, profil de l'appel.</span><span class="puce">à construire</span></button>
   </div>
-  <div class="choix">
-    <button class="opt" data-moteur="CodeEvolve"><b class="mono">CodeEvolve</b><span class="note">algorithme génétique en îlots · essayé avec des modèles ouverts. À vérifier avant inscription.</span><span class="puce al">à valider</span></button>
-    <button class="opt" data-moteur="Natif Cassandra"><b class="mono">Natif Cassandra</b><span class="note">boucle minimale écrite par nous : muter, évaluer, garder. Aucune dépendance, tourne partout.</span><span class="puce ok">sans installation</span></button>
+  <div class="zone"><table>
+    <tr><th></th><th>OpenEvolve</th><th>ShinkaEvolve</th><th>CodeEvolve</th><th>Orfan</th></tr>
+    <tr><td>Licence</td><td>Apache-2.0</td><td>Apache-2.0</td><td>Apache-2.0</td><td>celle de Cassandra</td></tr>
+    <tr><td>Python</td><td>≥ 3.10</td><td>≥ 3.10</td><td class="non">≥ 3.13.5 (Amizo : 3.11)</td><td class="oui">celui du noyau</td></tr>
+    <tr><td>Dernière activité</td><td>13-10-2026</td><td>05-10-2026</td><td class="non">08-04-2026</td><td>—</td></tr>
+    <tr><td>Archive</td><td>îlots + MAP-Elites</td><td>îlots + archive</td><td>îlots + CVT-MAP-Elites</td><td>cases qualité-diversité sur le contexte réel</td></tr>
+    <tr><td>Prompts qui évoluent</td><td class="non">non</td><td class="non">non</td><td class="oui">oui (méta-prompts)</td><td class="oui">oui, + leçons et tombes</td></tr>
+    <tr><td>Banc d'essai</td><td>fichier + évaluateur à écrire</td><td>fichier + vérificateur</td><td>fichier + évaluateur</td><td class="oui">rejeu natif, sans fichier</td></tr>
+    <tr><td>Dépendances</td><td>moyennes</td><td>moyennes</td><td class="non">lourdes (torch, scikit)</td><td class="oui">aucune</td></tr>
+  </table></div>
+  <div class="verre" style="padding:14px;display:flex;flex-direction:column;gap:8px;background:var(--accent-doux)">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3 class="mono" style="font-size:14px">Orfan — ce qui le rend adapté à Cassandra</h3><span class="puce">pour tenir la route : prouvé par la course, pas annoncé</span></div>
+    <div class="genomes" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+      <div><b class="mono">Mutations gratuites d'abord</b><span class="note">avant tout appel de modèle : mémoïser une fonction pure, sortir un invariant d'une boucle, liste → ensemble, regroupement d'appels. Zéro jeton.</span></div>
+      <div><b class="mono">Profil de l'appel dans le prompt</b><span class="note">le rejeu mesure où va le temps : « ligne 42 = 61 % ». Le modèle reçoit le point chaud, pas tout le fichier.</span></div>
+      <div><b class="mono">Filtre avant évaluation</b><span class="note">syntaxe, signature intacte, imports interdits, appels réseau : le rebut est écarté sans rejouer un seul appel.</span></div>
+      <div><b class="mono">Évaluation par paliers</b><span class="note">5 % du rejeu, puis 25 %, puis tout : un mauvais candidat meurt au premier palier. Arrêt à la première divergence.</span></div>
+      <div><b class="mono">Doublons écartés</b><span class="note">empreinte de l'arbre syntaxique : une variante équivalente à une déjà vue, ou à une tombe, n'est jamais rejouée.</span></div>
+      <div><b class="mono">Modèles choisis au rendement</b><span class="note">plusieurs modèles du registre, tirés selon le gain par jeton réellement observé, plus selon la réputation.</span></div>
+      <div><b class="mono">Reprise sur incident</b><span class="note">état dans la base, chaîne d'empreintes : un arrêt en pleine nuit reprend où il en était.</span></div>
+      <div><b class="mono">Taillé pour le contexte</b><span class="note">les cases de l'archive sont les contextes réels (petit/gros compte, pointe, panneau lent), pas des axes abstraits.</span></div>
+    </div>
+    <div class="note">Les idées empruntées : diffs entre marqueurs, archive qualité-diversité, méta-prompts, historique de lignée (CodeEvolve) ; îlots et migration (OpenEvolve) ; sobriété en essais (Shinka). Les idées propres à Cassandra : tout ce qui précède dans la colonne Orfan.</div>
   </div>
-  <div class="champ"><span class="lib">Moteur par module</span><select><option>fastpanel : OpenEvolve</option><option>vue : ShinkaEvolve</option><option>securite : Natif Cassandra</option></select></div>
-  <div class="champ"><span class="lib">Course des moteurs</span><label class="note"><input type="checkbox" checked> confier la même capacité à deux moteurs sur le même rejeu ; garder le meilleur gain par jeton</label></div>
-  <div class="champ"><span class="lib">Moteur maison</span><input type="text" value="tout moteur qui passe le banc de conformité peut être branché" disabled></div>
   <div class="note">Le moteur tourne dans son propre processus, en cage, sans réseau. Il ne rend que des candidats : l'évaluation, la mise en ombre et la promotion restent à l'étage Cassandra.</div>
-  <div class="champ"><span class="lib">Mutateur</span><select><option>cc-sonnet (registre de modèles)</option><option>cc-haiku</option><option>modèle local qwen3:4b-instruct</option></select></div>
+  <div class="champ"><span class="lib">Mutateur</span><select><option>cc-sonnet (registre de modèles)</option><option>cc-haiku</option><option>modèle local qwen3:4b-instruct</option><option>plusieurs, tirés au rendement</option></select></div>
+  <div class="champ"><span class="lib">Moteur par module</span><select><option>fastpanel : OpenEvolve</option><option>vue : ShinkaEvolve</option><option>securite : Orfan</option><option>mesures : CodeEvolve</option></select></div>
+  <div class="champ"><span class="lib">Course des moteurs</span><label class="note"><input type="checkbox" checked> même capacité, même rejeu, deux moteurs ; on garde le meilleur gain par jeton</label></div>
   <div class="champ"><span class="lib">Évaluateur</span><input type="text" value="code déterministe : rejeu + mesures déclarées" disabled></div>
   <div class="champ"><span class="lib">Vérificateur indépendant</span><select><option>Itare (autre famille de modèle)</option><option>DeepSeek</option></select></div>
   <div class="champ"><span class="lib">Budget par module</span><input type="text" value="100 k jetons / mois · plafond dur"></div>
-  <div class="champ"><span class="lib">Ce que l'humain fixe</span><input type="text" value="objectif (fitness) · budget · arrêt d'urgence" disabled></div>
+  <div class="champ"><span class="lib">Moteur maison</span><input type="text" value="tout moteur qui passe le banc de conformité peut être branché" disabled></div>
 </div></div>
 <div class="toast" id="toast"></div>
 

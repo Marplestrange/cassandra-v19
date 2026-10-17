@@ -55,6 +55,29 @@ Déclarés dans le registre de modèles et le module Agents IA, chacun avec prof
 
 Module `[[moteurs]]` enfichable, interface étroite : « une capacité, un contrat de rejeu, un budget → des variantes classées ». Le produit tiers est optionnel, tourne dans son propre processus avec ses dépendances, et ne rend que des candidats ; le déploiement et la promotion restent à notre étage. Changer de moteur de recherche ne coûte rien.
 
+### Les quatre moteurs (17-10)
+
+| | OpenEvolve | ShinkaEvolve | CodeEvolve | Orfan (maison) |
+|---|---|---|---|---|
+| Licence | Apache-2.0 | Apache-2.0 | Apache-2.0 | celle de Cassandra |
+| Python | ≥ 3.10 | ≥ 3.10 | **≥ 3.13.5** (Amizo : 3.11) | celui du noyau |
+| Dernier push (relevé 17-10) | 13-10-2026 | 05-10-2026 | 08-04-2026 | — |
+| Archive | îlots + MAP-Elites | îlots + archive | îlots + CVT-MAP-Elites | cases = contextes réels |
+
+**CodeEvolve** (Inter&Co + WPI, [inter-co/science-codeevolve](https://github.com/inter-co/science-codeevolve), 152 étoiles, v0.3.1) : îlots, crossover par inspiration, **méta-prompts qui évoluent**, exploitation en profondeur avec l'historique de lignée, CVT-MAP-Elites, ensemble de modèles pondéré, diffs SEARCH/REPLACE entre marqueurs, évaluation en bac isolé avec limites. L'article annonce qu'il égale ou dépasse AlphaEvolve sur 5 problèmes sur 9, et OpenEvolve et ShinkaEvolve sur 6 sur 9 à conditions égales ; avec Qwen3-Coder-30B, un ordre de grandeur moins cher. Ce sont ses propres chiffres, non revérifiés. Réserves : Python ≥ 3.13.5 (interpréteur séparé nécessaire sur Amizo), dépendances lourdes en option (torch, scikit-learn), dernier push il y a six mois.
+
+**Orfan** — le moteur maison, à construire pour tenir la route et être le plus adapté au contexte de l'app. Principes :
+1. Mutations déterministes gratuites avant tout appel de modèle (mémoïsation d'une fonction pure, invariant sorti d'une boucle, liste → ensemble…).
+2. Profil de l'appel mesuré par le rejeu et donné au mutateur (le point chaud, pas le fichier).
+3. Filtre avant évaluation : syntaxe, signature intacte, imports et appels interdits.
+4. Évaluation par paliers (5 %, 25 %, 100 % du rejeu), arrêt à la première divergence.
+5. Doublons écartés par empreinte d'arbre syntaxique, tombes comprises.
+6. Plusieurs modèles du registre tirés au gain par jeton observé.
+7. Reprise sur incident (état en base, chaîne d'empreintes).
+8. Archive dont les cases sont les contextes réels de l'app.
+Emprunts : diffs entre marqueurs, méta-prompts et historique de lignée (CodeEvolve), îlots et migration (OpenEvolve), sobriété en essais (Shinka). Aucune dépendance, tourne dans le Python du noyau, dans la cage.
+Sa valeur ne s'annonce pas : elle se mesure par la **course des moteurs** (même capacité, même rejeu, gain par jeton), contre les trois autres. S'il ne gagne pas, il reste un secours sans dépendance.
+
 ## 5. Risques et limites
 
 - Non vérifié : tenue des outils sur un petit serveur avec modèles gratuits ou locaux. Le pilote le mesure.
