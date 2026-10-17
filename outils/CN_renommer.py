@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0d19bf
+# VERSION CN : 0.1.0  #92dd07
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : donne le préfixe CN_ à chaque fichier suivi (hors noms imposés de l'extérieur) et réécrit toutes les références.
 # MÉTHODE    : plan complet d'abord ; imports Python réécrits par l'arbre syntaxique (alias gardé : le corps du code ne change pas) ; chaînes réécrites par règles ; contrôle des résidus.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0d19bf ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=92dd07 ▼▼▼
 """Renommage atomique (docs/FORMAT.md §3 bis et §8). Usage :
     python outils/CN_renommer.py                         SIMULATION : plan, nombre de références réécrites par règle, résidus ; n'écrit rien
     python outils/CN_renommer.py --racine DOSSIER        travaille sur une copie du dépôt (à essayer d'abord)
@@ -213,6 +213,8 @@ class Reecriture:
         self._n("chemins de commandes bâtis par morceaux (Python)", k)
         s, k = re.subn(r"(\./)(\$\{?[A-Za-z_]\w*\}?\.sh)", r"\1CN_\2", s)                    # bash ./$ACTION.sh : un script dont le nom est bâti par une variable
         self._n("scripts dont le nom est bâti par une variable (shell)", k)
+        s, k = re.subn(r"(exploitation/)(\$\{?[A-Za-z_]\w*\}?)", r"\1CN_\2", s)             # exploitation/$UNITE : la SOURCE de l'unité (le nom installé, lui, ne change pas)
+        self._n("sources d'unités choisies par une variable (shell)", k)
         if self.re_dotted:
             s, k = self.re_dotted.subn(lambda m: self.dotted[m.group(1)], s)
             self._n("noms pointés de modules", k)
