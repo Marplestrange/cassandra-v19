@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution V19 — note de conception -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d778db ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=aa1382 ▼▼▼ -->
 # Évolution V19 — note de conception
 
 Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le moteur V18 (diff d'un fichier unique `cassandra.py`), qui n'a plus d'objet.
@@ -215,6 +215,22 @@ Faits relevés : CodeEvolve (Inter&Co + WPI, 152 étoiles, v0.3.1) annonce dépa
 3. L'écran Cockpit/Atelier (la maquette) branché sur les capacités du module.
 4. Orfan R&D : génome prompts et politiques, co-évolution, archive par contextes.
 5. EC dans un autre langage (WebAssembly d'abord).
+
+### 7 bis. Premier gain réel mesuré (17-10-2026) : `contacts.signaux`
+
+Une variante proposée à la main (comme un modèle l'aurait fait) pour le rapprochement des doublons, jugée par l'évaluateur sur 88 entrées (28 cas dorés + 60 carnets de 80 à 400 fiches) :
+
+| Variante | Verdict | Gain | Bruit de mesure | Tient sur le jeu réservé |
+|---|---|---|---|---|
+| motifs précompilés **seulement** (sans cache, sans état) | équivalente sur 88/88 | **49 %** | 0,2 % | oui (49 % sur le réservé) |
+| motifs précompilés **et** mémoïsation (`lru_cache`) | équivalente sur 88/88 | 93 % | 3 % | oui |
+
+Ce que cette expérience a appris :
+- **Un défaut de mon évaluateur trouvé en relisant ma méthode.** Il chronométrait chaque entrée trois fois de suite et gardait la meilleure : une variante qui mémorise serait « chaude » dès le deuxième essai et son gain serait gonflé. Le chronométrage se fait maintenant **en passes à froid** (la référence et le candidat sont rechargés à neuf à chaque passe, chaque entrée n'est jouée qu'une fois par instance). Le gain de 93 % a survécu à la correction, mais le chiffre honnête à retenir est le premier.
+- **Le gain structurel (49 %) est devenu la référence du dépôt** (contacts 0.3.0) : il ne dépend d'aucun état ni d'aucun trafic, donc profite à toutes les installations. Son équivalence est prouvée par le corpus doré de 28 cas.
+- **La mémoïsation reste une EC d'instance** : son gain dépend de la répétition des valeurs dans le trafic réel de chacun, et c'est la visite à 30 jours qui dira s'il est resté.
+- Orfan déterministe n'a rien trouvé sur `vue.verdict.composer` ni sur `contacts.signaux` : le code était déjà propre pour ses cinq règles. C'est la réponse honnête, et la raison d'être du moteur à modèle.
+
 
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 

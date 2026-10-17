@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c05941
+# VERSION CN : 0.1.0  #456f9b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : dit si une variante d'un point d'évolution est équivalente à la référence, plus rapide, et si son gain tient hors de ce que le générateur a vu.
 # MÉTHODE    : code déterministe (jamais un modèle) ; évaluation par paliers avec arrêt à la première divergence ; partition réservée ; contrôle de sa propre solidité par des variantes fausses.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c05941 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=456f9b ▼▼▼
 """L'évaluateur (docs/CN_EVOLUTION.md §2, docs/CN_NEXUS.md §4 : un juge ne s'évolue pas).
 
   - DÉTERMINISTE : aucune note donnée par un modèle ; une comparaison de données et des mesures de durée ;
@@ -68,6 +68,7 @@ class Evaluateur:
         self.points, self.rejeu, self.minimum = points, rejeu, int(minimum)
 
     def evaluer(self, module: str, point: str, candidat: str, paliers=(0.05, 0.25, 1.0), repetitions: int = 3, minimum: int | None = None) -> dict:
+        """`repetitions` : le nombre de PASSES à froid du chronométrage (voir _chronometrer)."""
         ref = self.points.reference(module, point)
         gid = ref["gid"]
         res = {"point": gid, "verdict": "", "corpus": {}, "palier_atteint": 0.0, "evalues": 0, "divergence": None, "erreur": "", "latence_ms": {}, "gain_pct": None,
@@ -87,6 +88,7 @@ class Evaluateur:
         t_ref = {"visible": [], "reserve": []}
         t_cand = {"visible": [], "reserve": []}
         t_ref2 = []                                          # la référence chronométrée une seconde fois : l'écart avec elle-même est le BRUIT de la machine
+        cas_ok = []                                          # les cas où le candidat a répondu comme la référence : ce sont eux qu'on chronomètre
         sortie_contrat = ref["contrat"].get("sortie")
         fait = 0
         arret = False
@@ -111,14 +113,14 @@ class Evaluateur:
                     res.update(verdict="divergente", divergence={"h": cas["h"], "partition": part, "contrat": ecarts[:2]})
                     arret = True
                     break
-                t_ref[part].append(self._duree(ref["appelable"], cas["entree"], repetitions))
-                t_cand[part].append(self._duree(cand, cas["entree"], repetitions))
-                t_ref2.append(self._duree(ref["appelable"], cas["entree"], repetitions))
+                cas_ok.append(cas)
                 res["evalues"] += 1
                 fait += 1
             res["palier_atteint"] = round(fait / n, 3) if n else 0.0
             if arret:
                 break
+        if cas_ok and not arret:                              # le temps ne se mesure que d'un candidat équivalent : un faux plus rapide n'est pas un gain
+            t_ref, t_cand, t_ref2 = self._chronometrer(ref, candidat, cas_ok, repetitions)
         rv, cv, rr, cr = _mediane(t_ref["visible"]), _mediane(t_cand["visible"]), _mediane(t_ref["reserve"]), _mediane(t_cand["reserve"])
         res["latence_ms"] = {"reference_visible": rv, "candidat_visible": cv, "reference_reserve": rr, "candidat_reserve": cr}
         res["gain_visible_pct"], res["gain_reserve_pct"] = _gain(rv, cv), _gain(rr, cr)
@@ -134,16 +136,40 @@ class Evaluateur:
         return res
 
     @staticmethod
-    def _duree(fonction, entree, repetitions: int) -> float:
-        """Le meilleur de quelques essais, en millisecondes (le moins perturbé par le reste de la machine). La copie des données est hors du chronomètre."""
-        meilleur = None
-        for _ in range(max(1, repetitions)):
-            e = P._copie(entree)
-            t0 = time.perf_counter_ns()
-            fonction(e)
-            d = (time.perf_counter_ns() - t0) / 1e6
-            meilleur = d if meilleur is None or d < meilleur else meilleur
-        return meilleur
+    def _chronometrer(ref: dict, candidat: str, cas_ok: list, passes: int):
+        """Mesure le temps en PASSES À FROID : à chaque passe, la référence (deux fois, pour le bruit) et le candidat sont rechargés à neuf, puis chaque entrée est jouée UNE fois.
+        Pourquoi pas « trois essais de la même entrée, le meilleur gagne » : une variante qui mémorise ses résultats (lru_cache) serait chaude dès le deuxième essai, et son gain
+        serait gonflé. Ici une entrée n'est jamais rejouée dans une même instance ; seul demeure l'effet d'un cache d'une entrée à la suivante, qui est celui du trafic réel.
+        Le temps retenu pour chaque entrée est le plus bas des passes (le moins perturbé par le reste de la machine). L'ordre des trois appels tourne d'une passe à l'autre."""
+        source_ref = ref["fichier"].read_text(encoding="utf-8")
+        passes = max(1, int(passes))
+        meilleur: dict = {}
+        for p in range(passes):
+            if ref["runtime"] == "python":
+                ref_a, ref_b = charger_texte(source_ref, ref["fonction"]), charger_texte(source_ref, ref["fonction"])
+            else:
+                ref_a = ref_b = ref["appelable"]
+            cand = charger_texte(candidat, ref["fonction"])
+            appelants = [("ref", ref_a), ("cand", cand), ("ref2", ref_b)]
+            for i, cas in enumerate(cas_ok):
+                k = (p + i) % 3
+                for nom, f in appelants[k:] + appelants[:k]:
+                    e = P._copie(cas["entree"])
+                    t0 = time.perf_counter_ns()
+                    f(e)
+                    d = (time.perf_counter_ns() - t0) / 1e6
+                    cle = (cas["h"], nom)
+                    if cle not in meilleur or d < meilleur[cle]:
+                        meilleur[cle] = d
+        t_ref = {"visible": [], "reserve": []}
+        t_cand = {"visible": [], "reserve": []}
+        t_ref2 = []
+        for cas in cas_ok:
+            part = "reserve" if cas["reserve"] else "visible"
+            t_ref[part].append(meilleur[(cas["h"], "ref")])
+            t_cand[part].append(meilleur[(cas["h"], "cand")])
+            t_ref2.append(meilleur[(cas["h"], "ref2")])
+        return t_ref, t_cand, t_ref2
 
     # ── l'évaluateur évalué ──────────────────────────────────────────────
     def pieges(self, module: str, point: str, maximum: int = 40, minimum: int | None = None) -> dict:
