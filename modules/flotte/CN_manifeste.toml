@@ -304,3 +304,19 @@ reseau = ["Tailscale (binaire local), les machines déclarées par SSH, TCP ou H
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "lire_sortie"
+libelle = "La lecture de la sortie d'une sonde (disque, mémoire, charge, redémarrage, services, système, raid, température, mises à jour) : le texte en entrée, les mesures et leur gravité en sortie"
+contrat = "1.0"
+reference = "points/EC_lire_sortie"
+fonction = "point_lire_sortie"
+runtime = "python"
+
+[[points_evolution]]
+id = "lire_metriques"
+libelle = "La lecture des métriques des machines du registre (processeur, mémoire, disque, hôte, noyau, uptime) : le texte en entrée, un dictionnaire en sortie"
+contrat = "1.0"
+reference = "points/EC_lire_metriques"
+fonction = "point_lire_metriques"
+runtime = "python"

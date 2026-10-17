@@ -280,3 +280,11 @@ reseau = ["le serveur IMAP et le serveur SMTP réglés par chaque compte"]
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "roles_uniques"
+libelle = "Un rôle (corbeille, envoyés, brouillons…) n'appartient qu'à un dossier : les dossiers d'une boîte en entrée, les mêmes dossiers avec les perdants rendus ordinaires en sortie"
+contrat = "1.0"
+reference = "points/EC_roles_uniques"
+fonction = "point_roles_uniques"
+runtime = "python"

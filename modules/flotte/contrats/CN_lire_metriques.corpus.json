@@ -1,0 +1,297 @@
+{
+ "point": "flotte.lire_metriques",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de flotte, données synthétiques",
+ "cas": [
+  {
+   "cas": "vide",
+   "entree": {
+    "sortie": ""
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "sortie": null
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "complet",
+   "entree": {
+    "sortie": "CPU:12.5\nRAM:48.2\nDISK:61\nHOST:srv1\nKERN:6.1.0-18-amd64\nUP:up 3 weeks, 2 days"
+   },
+   "sortie": {
+    "valeur": {
+     "cpu": 12.5,
+     "ram": 48.2,
+     "disque": 61.0,
+     "hote": "srv1",
+     "noyau": "6.1.0-18-amd64",
+     "uptime": "up 3 weeks. 2 days"
+    }
+   }
+  },
+  {
+   "cas": "virgule décimale",
+   "entree": {
+    "sortie": "CPU:12,5\nRAM:48,25"
+   },
+   "sortie": {
+    "valeur": {
+     "cpu": 12.5,
+     "ram": 48.2
+    }
+   }
+  },
+  {
+   "cas": "pourcentage",
+   "entree": {
+    "sortie": "DISK:61%\nCPU:5%"
+   },
+   "sortie": {
+    "valeur": {
+     "disque": 61.0,
+     "cpu": 5.0
+    }
+   }
+  },
+  {
+   "cas": "une seule mesure",
+   "entree": {
+    "sortie": "CPU:7"
+   },
+   "sortie": {
+    "valeur": {
+     "cpu": 7.0
+    }
+   }
+  },
+  {
+   "cas": "hôte seul",
+   "entree": {
+    "sortie": "HOST:machine-1"
+   },
+   "sortie": {
+    "valeur": {
+     "hote": "machine-1"
+    }
+   }
+  },
+  {
+   "cas": "noyau seul",
+   "entree": {
+    "sortie": "KERN:5.15"
+   },
+   "sortie": {
+    "valeur": {
+     "noyau": "5.15"
+    }
+   }
+  },
+  {
+   "cas": "uptime long",
+   "entree": {
+    "sortie": "UP:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   },
+   "sortie": {
+    "valeur": {
+     "uptime": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+   }
+  },
+  {
+   "cas": "uptime avec deux-points",
+   "entree": {
+    "sortie": "UP:up 1 day, 02:30"
+   },
+   "sortie": {
+    "valeur": {
+     "uptime": "up 1 day. 02:30"
+    }
+   }
+  },
+  {
+   "cas": "valeur illisible",
+   "entree": {
+    "sortie": "CPU:beaucoup\nRAM:12"
+   },
+   "sortie": {
+    "valeur": {
+     "ram": 12.0
+    }
+   }
+  },
+  {
+   "cas": "ligne sans deux-points",
+   "entree": {
+    "sortie": "bonjour\nCPU:3"
+   },
+   "sortie": {
+    "valeur": {
+     "cpu": 3.0
+    }
+   }
+  },
+  {
+   "cas": "clé inconnue",
+   "entree": {
+    "sortie": "FOO:bar\nCPU:1"
+   },
+   "sortie": {
+    "valeur": {
+     "cpu": 1.0
+    }
+   }
+  },
+  {
+   "cas": "clé en minuscules",
+   "entree": {
+    "sortie": "cpu:50"
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "espaces autour",
+   "entree": {
+    "sortie": "CPU:  33.3  \nHOST:  h  "
+   },
+   "sortie": {
+    "valeur": {
+     "cpu": 33.3,
+     "hote": "h"
+    }
+   }
+  },
+  {
+   "cas": "retours chariot",
+   "entree": {
+    "sortie": "CPU:10\r\nRAM:20\r\n"
+   },
+   "sortie": {
+    "valeur": {
+     "cpu": 10.0,
+     "ram": 20.0
+    }
+   }
+  },
+  {
+   "cas": "hôte avec deux-points",
+   "entree": {
+    "sortie": "HOST:a:b"
+   },
+   "sortie": {
+    "valeur": {
+     "hote": "a:b"
+    }
+   }
+  },
+  {
+   "cas": "zéro est une mesure ici",
+   "entree": {
+    "sortie": "CPU:0\nRAM:0.0"
+   },
+   "sortie": {
+    "valeur": {
+     "cpu": 0.0,
+     "ram": 0.0
+    }
+   }
+  },
+  {
+   "cas": "arrondi",
+   "entree": {
+    "sortie": "CPU:12.345\nRAM:99.95\nDISK:0.04"
+   },
+   "sortie": {
+    "valeur": {
+     "cpu": 12.3,
+     "ram": 100.0,
+     "disque": 0.0
+    }
+   }
+  },
+  {
+   "cas": "nombres négatifs",
+   "entree": {
+    "sortie": "CPU:-3"
+   },
+   "sortie": {
+    "valeur": {
+     "cpu": -3.0
+    }
+   }
+  },
+  {
+   "cas": "doublon, le dernier gagne",
+   "entree": {
+    "sortie": "CPU:10\nCPU:20"
+   },
+   "sortie": {
+    "valeur": {
+     "cpu": 20.0
+    }
+   }
+  },
+  {
+   "cas": "valeur vide",
+   "entree": {
+    "sortie": "CPU:\nHOST:"
+   },
+   "sortie": {
+    "valeur": {
+     "hote": ""
+    }
+   }
+  },
+  {
+   "cas": "pourcent seul",
+   "entree": {
+    "sortie": "RAM:%"
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "exposant",
+   "entree": {
+    "sortie": "CPU:1e2"
+   },
+   "sortie": {
+    "valeur": {
+     "cpu": 100.0
+    }
+   }
+  },
+  {
+   "cas": "très grande",
+   "entree": {
+    "sortie": "DISK:1000000"
+   },
+   "sortie": {
+    "valeur": {
+     "disque": 1000000.0
+    }
+   }
+  },
+  {
+   "cas": "unicode",
+   "entree": {
+    "sortie": "HOST:serveur-é"
+   },
+   "sortie": {
+    "valeur": {
+     "hote": "serveur-é"
+    }
+   }
+  }
+ ]
+}

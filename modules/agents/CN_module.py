@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0dfa55
+# VERSION CN : 0.1.0  #61bd51
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0dfa55 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=61bd51 ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -229,7 +229,7 @@ def brancher(ctx):
             etat["teinte"].append(t["cle"])                    # du texte étranger est maintenant dans le tour
         if t["risque"] != "lecture" and r.get("statut") == "faite":
             etat["ecritures"] += 1
-        return o.resume_resultat(r), {"cle": t["cle"], "statut": r.get("statut"), "risque": t["risque"], "evenement": r.get("evenement")}
+        return o.resume_resultat(r, ctx.point), {"cle": t["cle"], "statut": r.get("statut"), "risque": t["risque"], "evenement": r.get("evenement")}
 
     def converser(c, conversation_id=0, message="", agent="cassandra"):
         compte = compte_agit()

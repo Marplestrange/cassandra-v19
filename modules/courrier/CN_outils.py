@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b02d00
+# VERSION CN : 0.1.0  #d2f1fc
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b02d00 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d2f1fc ▼▼▼
 """Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
 
 Le nettoyage du HTML est une LISTE BLANCHE bâtie sur un vrai analyseur (html.parser), pas une série d'expressions régulières qui retirent ce qu'on
@@ -151,24 +151,9 @@ def role_du_dossier(nom, flags):
     return "inbox" if bas == "inbox" else ""
 
 
-def roles_uniques(dossiers):
-    """UN RÔLE N'APPARTIENT QU'À UN DOSSIER. Sur une boîte OVH, `Trash` porte le drapeau et `Deleted Messages` contient « deleted » : les deux décrochaient
-    « corbeille ». Le drapeau du serveur tranche ; à défaut, le nom le plus court. Les perdants redeviennent des dossiers ordinaires, sous leur nom réel."""
-    par_role = {}
-    for f in dossiers:
-        r = f.get("role") or ""
-        if r and r != "inbox":
-            par_role.setdefault(r, []).append(f)
-    for role, lot in par_role.items():
-        if len(lot) < 2:
-            continue
-        drapeaux = [f for f in lot if f.get("role_flag")]
-        garde = (drapeaux or sorted(lot, key=lambda f: (len(f["nom"]), f["nom"].lower())))[0]
-        for f in lot:
-            if f is not garde:
-                f["role_ecarte"] = role
-                f["role"] = ""
-    return dossiers
+def roles_uniques(dossiers, appeler):
+    """UN RÔLE N'APPARTIENT QU'À UN DOSSIER. Sur une boîte OVH, `Trash` porte le drapeau et `Deleted Messages` contient « deleted » : les deux décrochaient. Le calcul est un POINT D'ÉVOLUTION : points/EC_roles_uniques.py."""
+    return appeler("roles_uniques", {"dossiers": dossiers})["valeur"]
 
 
 def ensemble_uid(uids):

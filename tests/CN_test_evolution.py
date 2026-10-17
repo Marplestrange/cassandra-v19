@@ -6,19 +6,20 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #38b6e6
+# VERSION CN : 0.1.0  #b2b81b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'évolution : du texte proposé par un moteur jusqu'à l'EC en service, sans jamais servir ce qui n'est pas prouvé ; le retour, la visite à 30 jours, la chaîne.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=38b6e6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b2b81b ▼▼▼
 """Bancs de l'évolution : du texte proposé par un moteur jusqu'à l'EC en service, sans jamais servir ce qui n'est pas prouvé ; le retour, la visite à 30 jours, la chaîne."""
 import json
 import shutil
 import sqlite3
 import sys
 import tempfile
+import time
 import types
 import unittest
 from pathlib import Path
@@ -129,6 +130,15 @@ class Proposer(Banc):
         self.assertIn(h, self.evo.tombes("essai.doubler"))
         r = self.proposer(FAUSSE)
         self.assertEqual(r["essais"][0]["verdict"], "deja_vue")
+
+    def test_un_candidat_qui_boucle_sans_fin_est_interrompu_pas_attendu(self):
+        """Une mutation de condition d'arrêt, ou un modèle étourdi, ne doit jamais figer l'évaluation : le candidat est interrompu au délai du contrat."""
+        BOUCLE = "def doubler(entree):\n    i = 0\n    while True:\n        i += 1\n    return {'y': i}\n"
+        t0 = time.perf_counter()
+        r = self.evo.evaluateur.evaluer("essai", "doubler", BOUCLE)
+        self.assertLess(time.perf_counter() - t0, 8.0)
+        self.assertEqual(r["verdict"], "erreur")
+        self.assertIn("Delai", r["erreur"])
 
     def test_la_reference_elle_meme_n_est_pas_une_variante(self):
         r = self.proposer(LENTE)

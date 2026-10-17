@@ -1,0 +1,24 @@
+{
+ "point": "ged.media_kind",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "nom",
+   "mime"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un type MIME image, vidéo ou audio l'emporte sur l'extension",
+  "la casse de l'extension est sans effet",
+  "un genre inconnu est « autre », jamais une erreur",
+  "le même nom donne toujours le même genre"
+ ]
+}

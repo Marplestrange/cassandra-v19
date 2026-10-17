@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d9b9ff
+# VERSION CN : 0.1.0  #0af438
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d9b9ff ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0af438 ▼▼▼
 """Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 
 Porté de la V18 (`_imap_*`, `itare_mail_*`, `mail_*`, `_courrier_*`), avec ses leçons :
@@ -192,7 +192,7 @@ def brancher(ctx):
             sortie.append({"nom": nom, "brut": brut, "sep": mm.group("sep") or "/", "role": o.role_du_dossier(nom, flags), "role_flag": bool(o.role_drapeau(flags)),
                            "profondeur": nom.count(mm.group("sep") or "/")})
         sortie.sort(key=lambda x: (0 if x["nom"].upper() == "INBOX" else 1, x["nom"].lower()))
-        return o.roles_uniques(sortie)
+        return o.roles_uniques(sortie, ctx.point)
 
     def statut(m, brut):
         try:

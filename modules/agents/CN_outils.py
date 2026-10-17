@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.0  #27a070
+# VERSION CN : 0.1.0  #afef40
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=27a070 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=afef40 ▼▼▼
 """Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils."""
 from __future__ import annotations
 
@@ -128,22 +128,9 @@ def court(x, maxi=RESULTAT_MAX):
     return t if len(t) <= maxi else t[:maxi - 40] + "… [tronqué, %d caractères]" % len(t)
 
 
-def resume_resultat(r):
-    """Ce que le modèle lit d'un acte : le résultat, ou pourquoi il n'y en a pas — jamais un silence."""
-    st = r.get("statut")
-    if st == "faite":
-        return court(r.get("resultat"))
-    if st == "racontee":
-        return "Non exécuté : cet outil est au palier « raconter » — l'acte n'a pas eu lieu, il a été seulement raconté au journal. %s" % (r.get("simulation") or "")
-    if st == "simulee":
-        return "Simulé, non exécuté : %s" % (r.get("simulation") or "")
-    if st == "refuse":
-        return "Refusé : %s" % r.get("raison", "")
-    if st == "echec":
-        return "Échec : %s" % r.get("erreur", "")
-    if st in ("annulee", "annulation_impossible"):
-        return "L'acte a été fait puis ANNULÉ parce que sa preuve a échoué (%s) : rien n'est resté." % r.get("motif", "") if st == "annulee" else "L'acte a échoué à sa preuve et n'a pas pu être annulé : à vérifier à la main (%s)." % r.get("motif", "")
-    return court(r)
+def resume_resultat(r, appeler):
+    """Ce que le modèle lit d'un acte : le résultat, ou pourquoi il n'y en a pas — jamais un silence. Le calcul est un POINT D'ÉVOLUTION : points/EC_resume_resultat.py."""
+    return appeler("resume_resultat", {"r": r})["texte"]
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

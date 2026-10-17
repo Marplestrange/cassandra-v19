@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : ged
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f09c4f
+# VERSION CN : 0.1.0  #ec0b5b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La GED : les documents d'un compte, par sources, avec un index et des règles de classement.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f09c4f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ec0b5b ▼▼▼
 """La GED : les documents d'un compte, par sources, avec un index et des règles de classement.
 
 Porté de la V18 (`ged_*`), avec ses leçons :
@@ -85,22 +85,9 @@ def _nt_dossier_compte(compte: str) -> str:
     return "%s-%s" % (c, h)
 
 
-def _media_kind(nom: str, mime: str = "") -> str:
-    n = (nom or "").lower()
-    if mime and mime.startswith(("image/", "video/", "audio/")):
-        return mime.split("/")[0]
-    ext = n.rsplit(".", 1)[-1] if "." in n else ""
-    if ext in ("png", "jpg", "jpeg", "gif", "webp", "avif", "bmp", "heic", "heif", "tif", "tiff"):
-        return "image"
-    if ext in ("mp4", "m4v", "webm", "mov", "mkv", "avi"):
-        return "video"
-    if ext in ("mp3", "ogg", "oga", "wav", "flac", "aac", "m4a", "opus"):
-        return "audio"
-    if ext == "pdf":
-        return "pdf"
-    if ext in ("txt", "md", "csv", "tsv", "json", "yaml", "yml", "log"):
-        return "texte"
-    return "autre"
+def _media_kind(nom, appeler, mime=""):
+    """_media_kind. Le calcul est un POINT D'ÉVOLUTION : points/EC_media_kind.py."""
+    return appeler("media_kind", {"nom": nom, "mime": mime})["valeur"]
 
 
 def _octets(n) -> str:
@@ -410,7 +397,7 @@ def brancher(ctx):
                     items.append({"dossier": 1, "nom": e.name, "n": n, "chemin": os.path.join(chemin, e.name).lstrip("/")})
                 else:
                     items.append({"nom": e.name, "taille": st.st_size, "taille_h": _octets(st.st_size),
-                                  "kind": _media_kind(e.name, ""),
+                                  "kind": _media_kind(e.name, ctx.point, ""),
                                   "modifie": datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M"),
                                   "chemin": os.path.join(chemin, e.name).lstrip("/"), "abs": e.path})
                 if len(items) >= _GED_LISTE_MAX:
@@ -478,7 +465,7 @@ def brancher(ctx):
         emp = _empreinte(p)
         nom = os.path.basename(p)
         fid = db.ecrire("INSERT INTO ged_fichiers (source, chemin, nom, taille, kind, empreinte, modifie, compte) VALUES (?,?,?,?,?,?,?,?)",
-                        (source, rel, nom, st.st_size, _media_kind(nom, ""), emp,
+                        (source, rel, nom, st.st_size, _media_kind(nom, ctx.point, ""), emp,
                          datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M"), _compte_du_chemin(p)))
         return fid
 
@@ -547,7 +534,7 @@ def brancher(ctx):
                     except Exception:
                         continue
                     items.append({"nom": f, "taille": st.st_size, "taille_h": _octets(st.st_size),
-                                  "kind": _media_kind(f, ""),
+                                  "kind": _media_kind(f, ctx.point, ""),
                                   "modifie": datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M"),
                                   "abs": p, "chemin": p, "jour": os.path.basename(dossier),
                                   "racine": racine.get("label") or racine.get("path", "")})
@@ -933,7 +920,7 @@ def brancher(ctx):
             fid = int(ligne[0]["id"])
         else:
             fid = db.ecrire("INSERT INTO ged_fichiers (source, chemin, nom, taille, kind, empreinte, modifie, compte) VALUES (?,?,?,?,?,?,?,?)",
-                            (source, rel, nom, len(octets), _media_kind(nom, ""), emp, mod, _compte_du_chemin(cible)))
+                            (source, rel, nom, len(octets), _media_kind(nom, ctx.point, ""), emp, mod, _compte_du_chemin(cible)))
         return {"id": fid, "nom": nom, "chemin": rel, "taille": len(octets), "remplace": 1 if remplace else 0,
                 "nouvelle": 0 if remplace else 1, "ancienne_empreinte": ancienne, "cible": cible, "source": source}
 

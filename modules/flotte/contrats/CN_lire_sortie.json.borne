@@ -1,0 +1,15 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : lire_sortie.json
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : flotte
+# ZONE       : CN
+# VERSION CN : 0.1.1  #845e8b
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : lire_sortie.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)
+# MÉTHODE    : à compléter par l'auteur
+# ══════════════════════════════════════════════════════════════════════════════
+# FICHIER    : CN_lire_sortie.json  (empreinte du contenu #845e8b)

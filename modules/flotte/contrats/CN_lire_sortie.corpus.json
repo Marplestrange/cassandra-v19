@@ -1,0 +1,800 @@
+{
+ "point": "flotte.lire_sortie",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de flotte, données synthétiques",
+ "cas": [
+  {
+   "cas": "vide",
+   "entree": {
+    "sortie": ""
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "sortie": null
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "disque sain",
+   "entree": {
+    "sortie": "DISK / 42% 120"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "disque./",
+      "42% utilisé, 120 Go libres",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "disque à 90",
+   "entree": {
+    "sortie": "DISK /data 90% 5"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "disque./data",
+      "90% utilisé, 5 Go libres",
+      "warning"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "disque à 89",
+   "entree": {
+    "sortie": "DISK /data 89% 8"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "disque./data",
+      "89% utilisé, 8 Go libres",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "disque sans pourcent",
+   "entree": {
+    "sortie": "DISK /var 55 40"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "disque./var",
+      "55% utilisé, 40 Go libres",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "disque incomplet",
+   "entree": {
+    "sortie": "DISK /"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "disque illisible",
+   "entree": {
+    "sortie": "DISK / abc 10"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ram saine",
+   "entree": {
+    "sortie": "RAM 40"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "ram",
+      "40% utilisée",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "ram à 95",
+   "entree": {
+    "sortie": "RAM 95"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "ram",
+      "95% utilisée",
+      "warning"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "ram à 94,9",
+   "entree": {
+    "sortie": "RAM 94.9"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "ram",
+      "94% utilisée",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "ram décimale",
+   "entree": {
+    "sortie": "RAM 72.6"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "ram",
+      "72% utilisée",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "ram vide",
+   "entree": {
+    "sortie": "RAM"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ram illisible",
+   "entree": {
+    "sortie": "RAM beaucoup"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "uptime en jours",
+   "entree": {
+    "sortie": "UP 200000"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "uptime",
+      "2 j 7 h",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "uptime en heures",
+   "entree": {
+    "sortie": "UP 7300"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "uptime",
+      "2 h 1 min",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "uptime en minutes",
+   "entree": {
+    "sortie": "UP 300"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "uptime",
+      "0 h 5 min",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "uptime pile un jour",
+   "entree": {
+    "sortie": "UP 86400"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "uptime",
+      "1 j 0 h",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "uptime illisible",
+   "entree": {
+    "sortie": "UP deux"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "charge simple",
+   "entree": {
+    "sortie": "LOAD 0.5"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "charge",
+      "0.50 sur 1 cœur",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "charge avec coeurs",
+   "entree": {
+    "sortie": "LOAD 3.5 4"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "charge",
+      "3.50 sur 4 cœurs",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "charge élevée",
+   "entree": {
+    "sortie": "LOAD 9 4"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "charge",
+      "9.00 sur 4 cœurs",
+      "warning"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "charge pile le seuil",
+   "entree": {
+    "sortie": "LOAD 8 4"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "charge",
+      "8.00 sur 4 cœurs",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "charge un coeur",
+   "entree": {
+    "sortie": "LOAD 2.5 1"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "charge",
+      "2.50 sur 1 cœur",
+      "warning"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "charge coeurs illisibles",
+   "entree": {
+    "sortie": "LOAD 1.2 x"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "charge",
+      "1.20 sur 1 cœur",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "redémarrage oui",
+   "entree": {
+    "sortie": "REBOOT oui"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "redemarrage_requis",
+      "oui",
+      "warning"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "redémarrage non",
+   "entree": {
+    "sortie": "REBOOT non"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "redemarrage_requis",
+      "non",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "redémarrage vide",
+   "entree": {
+    "sortie": "REBOOT"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "services en échec séparés par barre",
+   "entree": {
+    "sortie": "FAILED nginx | php-fpm"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "services_en_echec",
+      "2 : nginx, php-fpm",
+      "warning"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "services en échec séparés par espace",
+   "entree": {
+    "sortie": "FAILED nginx php-fpm cron"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "services_en_echec",
+      "3 : nginx, php-fpm, cron",
+      "warning"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "aucun service en échec",
+   "entree": {
+    "sortie": "FAILED"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "services_en_echec",
+      "0",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "échec avec espaces",
+   "entree": {
+    "sortie": "FAILED   "
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "services_en_echec",
+      "0",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "système",
+   "entree": {
+    "sortie": "OS Debian GNU/Linux 12 (bookworm)"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "os",
+      "Debian GNU/Linux 12 (bookworm)",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "système très long",
+   "entree": {
+    "sortie": "OS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "os",
+      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "raid sain",
+   "entree": {
+    "sortie": "RAID UU"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "raid",
+      "UU",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "raid dégradé",
+   "entree": {
+    "sortie": "RAID U_"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "raid",
+      "U_",
+      "warning"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "température",
+   "entree": {
+    "sortie": "TEMP 55000"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "temperature",
+      "55 °C",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "température élevée",
+   "entree": {
+    "sortie": "TEMP 85000"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "temperature",
+      "85 °C",
+      "warning"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "température limite basse",
+   "entree": {
+    "sortie": "TEMP 84999"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "temperature",
+      "85 °C",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "température illisible",
+   "entree": {
+    "sortie": "TEMP chaud"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "mises à jour récentes",
+   "entree": {
+    "sortie": "WU 3"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "mises_a_jour",
+      "dernière mise à jour il y a 3 j",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "mises à jour anciennes",
+   "entree": {
+    "sortie": "WU 40"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "mises_a_jour",
+      "dernière mise à jour il y a 40 j",
+      "warning"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "mises à jour au seuil",
+   "entree": {
+    "sortie": "WU 35"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "mises_a_jour",
+      "dernière mise à jour il y a 35 j",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "mises à jour négatives",
+   "entree": {
+    "sortie": "WU -2"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "mises_a_jour",
+      "dernière mise à jour il y a -2 j",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "mises à jour illisibles",
+   "entree": {
+    "sortie": "WU x"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "clé inconnue",
+   "entree": {
+    "sortie": "FOO bar baz"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "retours chariot",
+   "entree": {
+    "sortie": "DISK / 10% 50\r\nRAM 20\r\n"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "disque./",
+      "10% utilisé, 50 Go libres",
+      "info"
+     ],
+     [
+      "ram",
+      "20% utilisée",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "lignes vides au milieu",
+   "entree": {
+    "sortie": "DISK / 10% 50\n\n\nRAM 20\n"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "disque./",
+      "10% utilisé, 50 Go libres",
+      "info"
+     ],
+     [
+      "ram",
+      "20% utilisée",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "sortie complète",
+   "entree": {
+    "sortie": "DISK / 71% 33\nDISK /data 93% 2\nRAM 61\nUP 400000\nLOAD 1.2 2\nREBOOT oui\nFAILED a|b\nOS Ubuntu 24.04\nRAID UU\nTEMP 60000\nWU 12"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "disque./",
+      "71% utilisé, 33 Go libres",
+      "info"
+     ],
+     [
+      "disque./data",
+      "93% utilisé, 2 Go libres",
+      "warning"
+     ],
+     [
+      "ram",
+      "61% utilisée",
+      "info"
+     ],
+     [
+      "uptime",
+      "4 j 15 h",
+      "info"
+     ],
+     [
+      "charge",
+      "1.20 sur 2 cœurs",
+      "info"
+     ],
+     [
+      "redemarrage_requis",
+      "oui",
+      "warning"
+     ],
+     [
+      "services_en_echec",
+      "2 : a, b",
+      "warning"
+     ],
+     [
+      "os",
+      "Ubuntu 24.04",
+      "info"
+     ],
+     [
+      "raid",
+      "UU",
+      "info"
+     ],
+     [
+      "temperature",
+      "60 °C",
+      "info"
+     ],
+     [
+      "mises_a_jour",
+      "dernière mise à jour il y a 12 j",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "espaces en tête",
+   "entree": {
+    "sortie": "   RAM 50"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "ram",
+      "50% utilisée",
+      "info"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "clé en minuscules ignorée",
+   "entree": {
+    "sortie": "ram 50"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "deux disques",
+   "entree": {
+    "sortie": "DISK /a 10% 100\nDISK /b 95% 1"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "disque./a",
+      "10% utilisé, 100 Go libres",
+      "info"
+     ],
+     [
+      "disque./b",
+      "95% utilisé, 1 Go libres",
+      "warning"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "ligne malformée au milieu",
+   "entree": {
+    "sortie": "RAM 30\nDISK\nLOAD 1"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "ram",
+      "30% utilisée",
+      "info"
+     ],
+     [
+      "charge",
+      "1.00 sur 1 cœur",
+      "info"
+     ]
+    ]
+   }
+  }
+ ]
+}

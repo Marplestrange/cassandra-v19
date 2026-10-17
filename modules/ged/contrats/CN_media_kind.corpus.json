@@ -1,0 +1,527 @@
+{
+ "point": "ged.media_kind",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de ged, données synthétiques",
+ "cas": [
+  {
+   "cas": "extension png",
+   "entree": {
+    "nom": "fichier.png",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "extension jpg",
+   "entree": {
+    "nom": "fichier.jpg",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "extension jpeg",
+   "entree": {
+    "nom": "fichier.jpeg",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "extension gif",
+   "entree": {
+    "nom": "fichier.gif",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "extension webp",
+   "entree": {
+    "nom": "fichier.webp",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "extension avif",
+   "entree": {
+    "nom": "fichier.avif",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "extension bmp",
+   "entree": {
+    "nom": "fichier.bmp",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "extension heic",
+   "entree": {
+    "nom": "fichier.heic",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "extension heif",
+   "entree": {
+    "nom": "fichier.heif",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "extension tif",
+   "entree": {
+    "nom": "fichier.tif",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "extension tiff",
+   "entree": {
+    "nom": "fichier.tiff",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "extension mp4",
+   "entree": {
+    "nom": "fichier.mp4",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "video"
+   }
+  },
+  {
+   "cas": "extension m4v",
+   "entree": {
+    "nom": "fichier.m4v",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "video"
+   }
+  },
+  {
+   "cas": "extension webm",
+   "entree": {
+    "nom": "fichier.webm",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "video"
+   }
+  },
+  {
+   "cas": "extension mov",
+   "entree": {
+    "nom": "fichier.mov",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "video"
+   }
+  },
+  {
+   "cas": "extension mkv",
+   "entree": {
+    "nom": "fichier.mkv",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "video"
+   }
+  },
+  {
+   "cas": "extension avi",
+   "entree": {
+    "nom": "fichier.avi",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "video"
+   }
+  },
+  {
+   "cas": "extension mp3",
+   "entree": {
+    "nom": "fichier.mp3",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "audio"
+   }
+  },
+  {
+   "cas": "extension ogg",
+   "entree": {
+    "nom": "fichier.ogg",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "audio"
+   }
+  },
+  {
+   "cas": "extension oga",
+   "entree": {
+    "nom": "fichier.oga",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "audio"
+   }
+  },
+  {
+   "cas": "extension wav",
+   "entree": {
+    "nom": "fichier.wav",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "audio"
+   }
+  },
+  {
+   "cas": "extension flac",
+   "entree": {
+    "nom": "fichier.flac",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "audio"
+   }
+  },
+  {
+   "cas": "extension aac",
+   "entree": {
+    "nom": "fichier.aac",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "audio"
+   }
+  },
+  {
+   "cas": "extension m4a",
+   "entree": {
+    "nom": "fichier.m4a",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "audio"
+   }
+  },
+  {
+   "cas": "extension opus",
+   "entree": {
+    "nom": "fichier.opus",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "audio"
+   }
+  },
+  {
+   "cas": "extension pdf",
+   "entree": {
+    "nom": "fichier.pdf",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "pdf"
+   }
+  },
+  {
+   "cas": "extension txt",
+   "entree": {
+    "nom": "fichier.txt",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "texte"
+   }
+  },
+  {
+   "cas": "extension md",
+   "entree": {
+    "nom": "fichier.md",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "texte"
+   }
+  },
+  {
+   "cas": "extension csv",
+   "entree": {
+    "nom": "fichier.csv",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "texte"
+   }
+  },
+  {
+   "cas": "extension tsv",
+   "entree": {
+    "nom": "fichier.tsv",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "texte"
+   }
+  },
+  {
+   "cas": "extension json",
+   "entree": {
+    "nom": "fichier.json",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "texte"
+   }
+  },
+  {
+   "cas": "extension yaml",
+   "entree": {
+    "nom": "fichier.yaml",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "texte"
+   }
+  },
+  {
+   "cas": "extension yml",
+   "entree": {
+    "nom": "fichier.yml",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "texte"
+   }
+  },
+  {
+   "cas": "extension log",
+   "entree": {
+    "nom": "fichier.log",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "texte"
+   }
+  },
+  {
+   "cas": "extension exe",
+   "entree": {
+    "nom": "fichier.exe",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "autre"
+   }
+  },
+  {
+   "cas": "extension zip",
+   "entree": {
+    "nom": "fichier.zip",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "autre"
+   }
+  },
+  {
+   "cas": "extension docx",
+   "entree": {
+    "nom": "fichier.docx",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "autre"
+   }
+  },
+  {
+   "cas": "majuscules",
+   "entree": {
+    "nom": "PHOTO.JPG",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "sans extension",
+   "entree": {
+    "nom": "LISEZMOI",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "autre"
+   }
+  },
+  {
+   "cas": "nom vide",
+   "entree": {
+    "nom": "",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "autre"
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "nom": null,
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "autre"
+   }
+  },
+  {
+   "cas": "point final",
+   "entree": {
+    "nom": "archive.",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "autre"
+   }
+  },
+  {
+   "cas": "plusieurs points",
+   "entree": {
+    "nom": "a.b.c.png",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "mime image",
+   "entree": {
+    "nom": "x.bin",
+    "mime": "image/png"
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "mime vidéo",
+   "entree": {
+    "nom": "x.bin",
+    "mime": "video/mp4"
+   },
+   "sortie": {
+    "valeur": "video"
+   }
+  },
+  {
+   "cas": "mime audio",
+   "entree": {
+    "nom": "x.bin",
+    "mime": "audio/mpeg"
+   },
+   "sortie": {
+    "valeur": "audio"
+   }
+  },
+  {
+   "cas": "mime texte ignoré",
+   "entree": {
+    "nom": "x.bin",
+    "mime": "text/plain"
+   },
+   "sortie": {
+    "valeur": "autre"
+   }
+  },
+  {
+   "cas": "mime prime sur l'extension",
+   "entree": {
+    "nom": "photo.png",
+    "mime": "video/mp4"
+   },
+   "sortie": {
+    "valeur": "video"
+   }
+  },
+  {
+   "cas": "mime vide, extension",
+   "entree": {
+    "nom": "photo.png",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  },
+  {
+   "cas": "mime pdf ignoré",
+   "entree": {
+    "nom": "x.bin",
+    "mime": "application/pdf"
+   },
+   "sortie": {
+    "valeur": "autre"
+   }
+  },
+  {
+   "cas": "mime image mal formé",
+   "entree": {
+    "nom": "x.bin",
+    "mime": "imagefoo"
+   },
+   "sortie": {
+    "valeur": "autre"
+   }
+  },
+  {
+   "cas": "fichier caché",
+   "entree": {
+    "nom": ".png",
+    "mime": ""
+   },
+   "sortie": {
+    "valeur": "image"
+   }
+  }
+ ]
+}

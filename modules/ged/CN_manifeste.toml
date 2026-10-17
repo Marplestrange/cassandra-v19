@@ -236,3 +236,11 @@ paliers = ["raconter", "auto", "maitre"]
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "media_kind"
+libelle = "Le genre d'un document (image, vidéo, audio, pdf, texte, autre) : le nom et le type MIME en entrée, le genre en sortie"
+contrat = "1.0"
+reference = "points/EC_media_kind"
+fonction = "point_media_kind"
+runtime = "python"

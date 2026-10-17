@@ -159,3 +159,11 @@ agir = true
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "resume_resultat"
+libelle = "Ce que le modèle lit d'un acte : le résultat de l'acte en entrée, la phrase qui le dit en sortie (le résultat, ou pourquoi il n'y en a pas : jamais un silence)"
+contrat = "1.0"
+reference = "points/EC_resume_resultat"
+fonction = "point_resume_resultat"
+runtime = "python"

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : flotte
 # ZONE       : CN
-# VERSION CN : 0.1.1  #b6c2d2
+# VERSION CN : 0.1.1  #21acfb
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La flotte : les fonctions pures (noms, durées, lecture des sondes, fusion du parc, verdict) et l'accès au monde (Tailscale, SSH, TCP, HTTP).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=b6c2d2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=21acfb ▼▼▼
 """La flotte : les fonctions pures (noms, durées, lecture des sondes, fusion du parc, verdict) et l'accès au monde (Tailscale, SSH, TCP, HTTP).
 
 Tout ce qui touche le réseau ou un binaire passe par la classe `Acces` : un banc la remplace, rien d'autre ne sort du module.
@@ -117,70 +117,14 @@ def commande_sonde(windows):
     return "sh -c " + shlex.quote(SONDE_LINUX)
 
 
-def lire_sortie(sortie):
-    """La sortie d'une sonde -> [(clé, valeur, gravité)] : disque.<point>, ram, uptime, charge, redemarrage_requis, services_en_echec, os, raid, temperature, mises_a_jour."""
-    out = []
-    for l in (sortie or "").replace("\r", "").splitlines():
-        p = l.strip().split()
-        if not p:
-            continue
-        k = p[0]
-        try:
-            if k == "DISK" and len(p) >= 4:
-                pct = int(p[2].rstrip("%"))
-                out.append(("disque.%s" % p[1], "%d%% utilisé, %s Go libres" % (pct, p[3]), "warning" if pct >= 90 else "info"))
-            elif k == "RAM" and len(p) >= 2:
-                v = int(float(p[1]))
-                out.append(("ram", "%d%% utilisée" % v, "warning" if v >= 95 else "info"))
-            elif k == "UP" and len(p) >= 2 and p[1].isdigit():
-                sec = int(p[1])
-                out.append(("uptime", ("%d j %d h" % (sec // 86400, sec % 86400 // 3600)) if sec >= 86400 else ("%d h %d min" % (sec // 3600, sec % 3600 // 60)), "info"))
-            elif k == "LOAD" and len(p) >= 2:
-                c = float(p[1])
-                n = int(p[2]) if len(p) > 2 and p[2].isdigit() else 1
-                out.append(("charge", "%.2f sur %d cœur%s" % (c, n, "s" if n > 1 else ""), "warning" if c > 2 * n else "info"))
-            elif k == "REBOOT" and len(p) >= 2:
-                out.append(("redemarrage_requis", p[1], "warning" if p[1] == "oui" else "info"))
-            elif k == "FAILED":
-                reste = l.strip()[6:].strip()
-                noms = [x.strip() for x in (reste.split("|") if "|" in reste else reste.split()) if x.strip()]
-                out.append(("services_en_echec", ("%d : %s" % (len(noms), ", ".join(noms))) if noms else "0", "warning" if noms else "info"))
-            elif k == "OS" and len(p) >= 2:
-                out.append(("os", " ".join(p[1:])[:80], "info"))
-            elif k == "RAID" and len(p) >= 2:
-                motif = " ".join(p[1:])
-                out.append(("raid", motif, "warning" if "_" in motif else "info"))
-            elif k == "TEMP" and len(p) >= 2:
-                t = int(p[1]) / 1000.0
-                out.append(("temperature", "%.0f °C" % t, "warning" if t >= 85 else "info"))
-            elif k == "WU" and len(p) >= 2 and p[1].lstrip("-").isdigit():
-                j = int(p[1])
-                out.append(("mises_a_jour", "dernière mise à jour il y a %d j" % j, "warning" if j > 35 else "info"))
-        except Exception:
-            continue
-    return out
+def lire_sortie(sortie, appeler):
+    """La sortie d'une sonde -> [(clé, valeur, gravité)] : disque.<point>, ram, uptime, charge, redemarrage_requis, services_en_echec, os, raid, temperature, mises_a_jour. Le calcul est un POINT D'ÉVOLUTION : points/EC_lire_sortie.py."""
+    return appeler("lire_sortie", {"sortie": sortie})["valeur"]
 
 
-def lire_metriques(sortie):
-    """La sortie CPU:/RAM:/DISK:/HOST:/KERN:/UP: des machines du registre -> dict."""
-    r = {}
-    for l in (sortie or "").splitlines():
-        if ":" not in l:
-            continue
-        k, _, v = l.partition(":")
-        v = v.strip().replace(",", ".")
-        try:
-            if k in ("CPU", "RAM", "DISK"):
-                r[{"CPU": "cpu", "RAM": "ram", "DISK": "disque"}[k]] = round(float(v.rstrip("%")), 1)
-            elif k == "HOST":
-                r["hote"] = v
-            elif k == "KERN":
-                r["noyau"] = v
-            elif k == "UP":
-                r["uptime"] = v[:60]
-        except ValueError:
-            pass
-    return r
+def lire_metriques(sortie, appeler):
+    """La sortie CPU:/RAM:/DISK:/HOST:/KERN:/UP: des machines du registre -> dict. Le calcul est un POINT D'ÉVOLUTION : points/EC_lire_metriques.py."""
+    return appeler("lire_metriques", {"sortie": sortie})["valeur"]
 
 
 COMMANDE_METRIQUES = (

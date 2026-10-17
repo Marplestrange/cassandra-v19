@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #be6c0c
+# VERSION CN : 0.1.0  #329060
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la GED : cloisonnement des racines, dépôt, listage, fiche, corbeille réversible, règles de classement.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=be6c0c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=329060 ▼▼▼
 """Bancs de la GED : cloisonnement des racines, dépôt, listage, fiche, corbeille réversible, règles de classement."""
 import importlib.util
 import os
@@ -30,6 +30,14 @@ import CN_main as moteur                      # noqa: E402
 spec = importlib.util.spec_from_file_location("ged_module_test", RACINE / "modules" / "ged" / "CN_module.py")
 gm = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gm)
+
+# le module sans noyau : ses points d'évolution sont branchés sur leurs références, comme le ferait brancher()
+import tempfile                              # noqa: E402
+from noyau import CN_manifeste as _M, CN_points as _P          # noqa: E402
+_dossier = RACINE / "modules" / "ged"
+_svc = _P.ServicePoints(Path(tempfile.mkdtemp()) / "ec")
+_svc.declarer(_M.charger(_dossier / "CN_manifeste.toml"), _dossier)
+POINT = lambda nom, entree: _svc.appeler("ged", nom, entree)
 
 BEA, LEO = "bea@x.fr", "leo@x.fr"
 
@@ -55,10 +63,10 @@ class Pures(unittest.TestCase):
         self.assertEqual(gm._inline_type("archive.zip"), "")       # reste en téléchargement
 
     def test_le_type_media(self):
-        self.assertEqual(gm._media_kind("a.PDF"), "pdf")
-        self.assertEqual(gm._media_kind("a.png"), "image")
-        self.assertEqual(gm._media_kind("a.mp3"), "audio")
-        self.assertEqual(gm._media_kind("a.mp4"), "video")
+        self.assertEqual(gm._media_kind("a.PDF", POINT), "pdf")
+        self.assertEqual(gm._media_kind("a.png", POINT), "image")
+        self.assertEqual(gm._media_kind("a.mp3", POINT), "audio")
+        self.assertEqual(gm._media_kind("a.mp4", POINT), "video")
 
 
 class Monde(unittest.TestCase):

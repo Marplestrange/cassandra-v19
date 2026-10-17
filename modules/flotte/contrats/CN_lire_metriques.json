@@ -1,0 +1,24 @@
+{
+ "point": "flotte.lire_metriques",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "sortie"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "une valeur illisible est ignorée, jamais une erreur",
+  "les pourcentages sont arrondis à une décimale",
+  "l'uptime est tronqué à soixante caractères",
+  "une clé inconnue est ignorée",
+  "le dernier exemplaire d'une clé l'emporte"
+ ]
+}

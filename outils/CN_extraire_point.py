@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b0f52c
+# VERSION CN : 0.1.0  #eac4f7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : sort d'un fichier de module les fonctions pures d'un point d'évolution : écrit la référence EC (avec ses dépendances copiées), le contrat, le corpus doré et la déclaration au manifeste.
 # MÉTHODE    : fermeture transitive des noms de premier niveau par l'arbre syntaxique ; le corpus doré est la sortie de la référence extraite, copiée mot pour mot de l'ancien code ; rien n'est écrasé sans --forcer.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b0f52c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=eac4f7 ▼▼▼
 """Usage : un script `spec` appelle extraire(spec). Le spec décrit le point ; l'outil écrit quatre choses :
    modules/<m>/points/EC_<point>.py · contrats/CN_<point>.json · contrats/CN_<point>.corpus.json · l'entrée [[points_evolution]] du manifeste.
    La façade du module (CN_module.py) et la liste des tests restent à la main : c'est là que se décide ce qui voyage dans l'entrée."""
@@ -125,7 +125,7 @@ def ecrire_contrat_et_corpus(spec, texte):
         if brut in vus:
             raise SystemExit("cas en double : " + c["cas"])
         vus.add(brut)
-        entree = json.loads(brut)
+        entree = json.loads(json.dumps(c["entree"], ensure_ascii=False))          # le tour JSON GARDE l'ordre des clés : un résultat peut en dépendre
         cas.append({"cas": c["cas"], "entree": c["entree"], "sortie": json.loads(json.dumps(f(entree), ensure_ascii=False))})
     d = RACINE / "modules" / spec["module"] / "contrats"
     d.mkdir(parents=True, exist_ok=True)

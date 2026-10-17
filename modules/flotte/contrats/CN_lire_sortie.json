@@ -1,0 +1,24 @@
+{
+ "point": "flotte.lire_sortie",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "sortie"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "une ligne illisible ou inconnue est ignorée et ne gêne pas les autres",
+  "l'ordre des mesures est celui des lignes",
+  "une mesure rapportée n'est jamais inventée : sans valeur lisible, pas de ligne",
+  "la gravité ne vaut « warning » qu'au seuil ou au-delà",
+  "les retours chariot sont sans effet"
+ ]
+}

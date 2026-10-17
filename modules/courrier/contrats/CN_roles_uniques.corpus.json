@@ -1,0 +1,634 @@
+{
+ "point": "courrier.roles_uniques",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de courrier, données synthétiques",
+ "cas": [
+  {
+   "cas": "aucun dossier",
+   "entree": {
+    "dossiers": []
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "un dossier",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "INBOX",
+      "role": "inbox",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "INBOX",
+      "role": "inbox",
+      "role_flag": 0
+     }
+    ]
+   }
+  },
+  {
+   "cas": "boîte simple",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "INBOX",
+      "role": "inbox",
+      "role_flag": 0
+     },
+     {
+      "nom": "Sent",
+      "role": "sent",
+      "role_flag": 0
+     },
+     {
+      "nom": "Trash",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "Drafts",
+      "role": "drafts",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "INBOX",
+      "role": "inbox",
+      "role_flag": 0
+     },
+     {
+      "nom": "Sent",
+      "role": "sent",
+      "role_flag": 0
+     },
+     {
+      "nom": "Trash",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "Drafts",
+      "role": "drafts",
+      "role_flag": 0
+     }
+    ]
+   }
+  },
+  {
+   "cas": "doublon de corbeille, le drapeau tranche",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "Trash",
+      "role": "trash",
+      "role_flag": 1
+     },
+     {
+      "nom": "Deleted Messages",
+      "role": "trash",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "Trash",
+      "role": "trash",
+      "role_flag": 1
+     },
+     {
+      "nom": "Deleted Messages",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "trash"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "doublon, le drapeau est sur le plus long",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "Trash",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "Deleted Messages",
+      "role": "trash",
+      "role_flag": 1
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "Trash",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "trash"
+     },
+     {
+      "nom": "Deleted Messages",
+      "role": "trash",
+      "role_flag": 1
+     }
+    ]
+   }
+  },
+  {
+   "cas": "doublon sans drapeau, le plus court",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "Deleted Messages",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "Trash",
+      "role": "trash",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "Deleted Messages",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "trash"
+     },
+     {
+      "nom": "Trash",
+      "role": "trash",
+      "role_flag": 0
+     }
+    ]
+   }
+  },
+  {
+   "cas": "doublon sans drapeau, même longueur, ordre alphabétique",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "bb",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "AA",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "cc",
+      "role": "trash",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "bb",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "trash"
+     },
+     {
+      "nom": "AA",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "cc",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "trash"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "trois dossiers, deux drapeaux",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "A1",
+      "role": "sent",
+      "role_flag": 1
+     },
+     {
+      "nom": "A2",
+      "role": "sent",
+      "role_flag": 1
+     },
+     {
+      "nom": "Z",
+      "role": "sent",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "A1",
+      "role": "sent",
+      "role_flag": 1
+     },
+     {
+      "nom": "A2",
+      "role": "",
+      "role_flag": 1,
+      "role_ecarte": "sent"
+     },
+     {
+      "nom": "Z",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "sent"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "inbox en double est ignorée",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "INBOX",
+      "role": "inbox",
+      "role_flag": 0
+     },
+     {
+      "nom": "Boîte",
+      "role": "inbox",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "INBOX",
+      "role": "inbox",
+      "role_flag": 0
+     },
+     {
+      "nom": "Boîte",
+      "role": "inbox",
+      "role_flag": 0
+     }
+    ]
+   }
+  },
+  {
+   "cas": "rôles vides ignorés",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "x",
+      "role": "",
+      "role_flag": 0
+     },
+     {
+      "nom": "y",
+      "role": "",
+      "role_flag": 0
+     },
+     {
+      "nom": "z",
+      "role": "",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "x",
+      "role": "",
+      "role_flag": 0
+     },
+     {
+      "nom": "y",
+      "role": "",
+      "role_flag": 0
+     },
+     {
+      "nom": "z",
+      "role": "",
+      "role_flag": 0
+     }
+    ]
+   }
+  },
+  {
+   "cas": "rôle absent",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "x"
+     },
+     {
+      "nom": "y"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "x"
+     },
+     {
+      "nom": "y"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plusieurs rôles en double",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "Trash",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "Corbeille",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "Sent",
+      "role": "sent",
+      "role_flag": 0
+     },
+     {
+      "nom": "Envoyés",
+      "role": "sent",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "Trash",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "Corbeille",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "trash"
+     },
+     {
+      "nom": "Sent",
+      "role": "sent",
+      "role_flag": 0
+     },
+     {
+      "nom": "Envoyés",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "sent"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "casse du nom",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "trash",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "Trash",
+      "role": "trash",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "trash",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "Trash",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "trash"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "rôle sans drapeau et drapeau à zéro",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "Aa",
+      "role": "junk",
+      "role_flag": 0
+     },
+     {
+      "nom": "B",
+      "role": "junk",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "Aa",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "junk"
+     },
+     {
+      "nom": "B",
+      "role": "junk",
+      "role_flag": 0
+     }
+    ]
+   }
+  },
+  {
+   "cas": "champs supplémentaires conservés",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "Trash",
+      "role": "trash",
+      "role_flag": 1,
+      "total": 12
+     },
+     {
+      "nom": "Deleted",
+      "role": "trash",
+      "total": 3
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "Trash",
+      "role": "trash",
+      "role_flag": 1,
+      "total": 12
+     },
+     {
+      "nom": "Deleted",
+      "role": "",
+      "total": 3,
+      "role_ecarte": "trash"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "accents",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "Corbeille",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "Éléments supprimés",
+      "role": "trash",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "Corbeille",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "Éléments supprimés",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "trash"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "nom vide",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "x",
+      "role": "trash",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "",
+      "role": "trash",
+      "role_flag": 0
+     },
+     {
+      "nom": "x",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "trash"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "quatre doublons",
+   "entree": {
+    "dossiers": [
+     {
+      "nom": "long nom",
+      "role": "archive",
+      "role_flag": 0
+     },
+     {
+      "nom": "mid",
+      "role": "archive",
+      "role_flag": 0
+     },
+     {
+      "nom": "a",
+      "role": "archive",
+      "role_flag": 0
+     },
+     {
+      "nom": "bb",
+      "role": "archive",
+      "role_flag": 0
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "long nom",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "archive"
+     },
+     {
+      "nom": "mid",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "archive"
+     },
+     {
+      "nom": "a",
+      "role": "archive",
+      "role_flag": 0
+     },
+     {
+      "nom": "bb",
+      "role": "",
+      "role_flag": 0,
+      "role_ecarte": "archive"
+     }
+    ]
+   }
+  }
+ ]
+}

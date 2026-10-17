@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : flotte
 # ZONE       : CN
-# VERSION CN : 0.1.1  #ad0517
+# VERSION CN : 0.1.1  #9b2b9d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=ad0517 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=9b2b9d ▼▼▼
 """La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
 
 Porté de la V18 (`flotte_*`, `fleet_*`, `ms_*`), avec ses leçons :
@@ -535,7 +535,7 @@ def brancher(ctx):
                 out, err, rc = acces.ssh_exec(m, cmd, 15)
                 if rc != 0 and not out:
                     return {"nom": r["nom"], "type": "ssh", "en_ligne": False, "erreur": (err or "SSH sans réponse").strip()[:120]}
-                return dict({"nom": r["nom"], "type": "ssh", "en_ligne": True, "erreur": ""}, **o.lire_metriques(out))
+                return dict({"nom": r["nom"], "type": "ssh", "en_ligne": True, "erreur": ""}, **o.lire_metriques(out, ctx.point))
             if r["type"] == "ping":
                 return {"nom": r["nom"], "type": "ping", "en_ligne": acces.tcp(r["hote"], r["port"] or 22), "erreur": ""}
             d = acces.http_json(r["url"] + "/api/dashboard", m.get("jeton", ""))
@@ -675,7 +675,7 @@ def brancher(ctx):
             if rc != 0 and not out:
                 db.ecrire("INSERT OR REPLACE INTO releves(nom, cle, valeur, gravite, ts) VALUES (?,?,?,?,?)", (n, "joignable", "injoignable : %s" % (err or "sans réponse").strip()[:100], "warning", maintenant))
                 continue
-            lignes = o.lire_sortie(out)
+            lignes = o.lire_sortie(out, ctx.point)
             lignes.append(("joignable", "oui", "info"))
             db.ecrire("DELETE FROM releves WHERE nom=? AND cle LIKE 'disque.%'", (n,))
             for k, v, g in lignes:

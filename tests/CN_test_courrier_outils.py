@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f48469
+# VERSION CN : 0.1.0  #ac95ce
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des outils purs du courrier : noms de dossiers, en-têtes, classement, et surtout le nettoyage du HTML face aux vecteurs d'attaque connus.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f48469 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ac95ce ▼▼▼
 """Bancs des outils purs du courrier : noms de dossiers, en-têtes, classement, et surtout le nettoyage du HTML face aux vecteurs d'attaque connus."""
 import email
 import importlib.util
@@ -25,6 +25,14 @@ spec = importlib.util.spec_from_file_location("courrier_outils", RACINE / "modul
 o = importlib.util.module_from_spec(spec)
 sys.modules["courrier_outils"] = o
 spec.loader.exec_module(o)
+
+# le module sans noyau : ses points d'évolution sont branchés sur leurs références, comme le ferait brancher()
+import tempfile                              # noqa: E402
+from noyau import CN_manifeste as _M, CN_points as _P          # noqa: E402
+_dossier = RACINE / "modules" / "courrier"
+_svc = _P.ServicePoints(Path(tempfile.mkdtemp()) / "ec")
+_svc.declarer(_M.charger(_dossier / "CN_manifeste.toml"), _dossier)
+POINT = lambda nom, entree: _svc.appeler("courrier", nom, entree)
 
 
 class Dossiers(unittest.TestCase):
@@ -50,7 +58,7 @@ class Dossiers(unittest.TestCase):
     def test_un_role_n_appartient_qu_a_un_dossier(self):
         ds = [{"nom": "Trash", "role": "trash", "role_flag": True}, {"nom": "Deleted Messages", "role": "trash", "role_flag": False},
               {"nom": "Sent", "role": "sent", "role_flag": False}, {"nom": "Sent Messages", "role": "sent", "role_flag": False}]
-        o.roles_uniques(ds)
+        ds = o.roles_uniques(ds, POINT)
         self.assertEqual([(d["nom"], d["role"]) for d in ds], [("Trash", "trash"), ("Deleted Messages", ""), ("Sent", "sent"), ("Sent Messages", "")])
         self.assertEqual(ds[1]["role_ecarte"], "trash")
 

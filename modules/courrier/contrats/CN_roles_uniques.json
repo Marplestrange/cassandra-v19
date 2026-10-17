@@ -1,0 +1,24 @@
+{
+ "point": "courrier.roles_uniques",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "dossiers"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un rôle n'appartient qu'à un dossier",
+  "le drapeau du serveur tranche ; à défaut, le nom le plus court, puis l'ordre alphabétique",
+  "le rôle « inbox » n'est jamais départagé",
+  "un perdant devient un dossier ordinaire et garde la trace du rôle écarté",
+  "l'ordre et les autres champs des dossiers sont conservés"
+ ]
+}

@@ -1,0 +1,24 @@
+{
+ "point": "agents.resume_resultat",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "r"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "texte"
+  ]
+ },
+ "invariants": [
+  "un acte simplement raconté ou simulé est dit « non exécuté » : l'agent ne croit jamais qu'il a eu lieu",
+  "un refus et un échec disent leur raison",
+  "un résultat trop long est tronqué en disant combien",
+  "un statut inconnu rend le résultat entier, jamais un silence",
+  "le même résultat donne toujours la même phrase"
+ ]
+}
