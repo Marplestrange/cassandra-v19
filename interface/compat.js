@@ -131,7 +131,16 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
     u.searchParams.forEach((v, k) => { if (k !== "_") query[k] = v; });
 
     // Les portes natives du noyau passent telles quelles (avec le jeton) : le shell de l'interface les utilise directement.
-    if (chemin.indexOf("/api/agir/") === 0 || chemin === "/api/menu" || chemin === "/api/modules" || chemin === "/api/moi") return v19(methode, u.pathname + u.search, corps, init);
+    if (chemin === "/api/modules") {                         // + le panneau d'hébergement que l'écran Hébergement lit (d.panneau) : fastpanel actif = reconnu, sinon « nu »
+      const r = await v19(methode, u.pathname + u.search, corps, init);
+      if (r.status !== 200) return r;
+      const d = await r.clone().json().catch(() => null);
+      if (!d || !Array.isArray(d.modules)) return r;
+      const fp = d.modules.find((m) => m.id === "fastpanel" || m.nom === "fastpanel");
+      d.panneau = fp && fp.actif ? { nom: "fastpanel", libelle: "FastPanel", pris_en_charge: true, capacites: ["sites", "comptes", "bases", "mail", "ftp", "dns", "sauvegardes", "services", "ssl"] } : { nom: "nu", libelle: "aucun panneau", pris_en_charge: false, capacites: [] };
+      return reponse(200, d);
+    }
+    if (chemin.indexOf("/api/agir/") === 0 || chemin === "/api/menu" || chemin === "/api/moi") return v19(methode, u.pathname + u.search, corps, init);
     if (methode === "POST" && chemin === "/api/login") return login(corps);
     if (methode === "POST" && chemin === "/api/login/cle") return loginCle(corps);
     if (methode === "POST" && chemin === "/api/login/secours") return loginSecours(corps);
