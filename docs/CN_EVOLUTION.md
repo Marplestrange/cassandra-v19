@@ -238,3 +238,32 @@ Ce que cette expérience a appris :
 <!-- CN : tout ce fichier est du nexus : à compléter -->
 <!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
 <!-- LIEN : à compléter (contrat, fichiers voisins) -->
+
+### 7 ter. Les points d'évolution réels (17-10-2026)
+
+Quinze points sont déclarés, chacun avec sa référence EC, son contrat, son corpus doré (sorties de l'ancien code, données synthétiques) et un plancher de score mesuré (`tests/CN_test_points_reels.py`) :
+
+| Module | Points |
+|---|---|
+| contacts | `signaux`, `vcard_lire`, `vcard_ecrire`, `csv_apparier`, `csv_fiches` |
+| vue | `verdict.composer` |
+| notes | `lire_entete`, `md_vers_html` |
+| dns | `analyser` (réponse DNS en base64 ; une réponse illisible est rendue en `erreur`) |
+| agenda | `ical_lire` |
+| memoire | `perception_monde`, `json_extraire` |
+| planifie | `decrire`, `collisions` |
+| flotte | `lire_sortie`, `lire_metriques` |
+| ged | `media_kind` |
+| courrier | `roles_uniques` |
+| agents | `resume_resultat` |
+
+**Règles apprises à l'extraction**
+
+- Une EC ne lit jamais l'horloge : l'instant (ou le décalage horaire) est une entrée que la façade du nexus lit (`agenda.ical_lire`, `memoire.perception_monde`). Les attributs `now`, `today`, `random`… sont refusés par l'analyse de pureté, même sur un module admis (`datetime`, `ipaddress`, `shlex` le sont).
+- Une fonction pure qui **décide ou filtre l'accès** reste nexus : verdicts de sécurité, filtrage des menus par droits, destinataires d'un message, validation d'un plan, détection d'un secret, et `planifie.cibles` (servie à la détection des commandes destructrices).
+- Le collecteur du Sensorium est un démon séparé, sans service de points : il reste hors EC tant qu'il n'en a pas.
+- Les fonctions qui mêlent entrées-sorties et calcul (`fastpanel.lire_*`, `courrier.corps`, `courrier.pieces_jointes`) se scindent d'abord (lire, puis calculer) ; l'extraction vient ensuite.
+- Un point dont le corpus ne peut pas atteindre une partie du code (un prédicat renvoyé mais jamais lu) a un plancher de score bas, dit tel quel (`planifie.collisions`, 0,60) : le plancher n'est pas un souhait, c'est une mesure.
+- L'évaluateur interrompt un candidat qui boucle sans fin (`appel_borne`, délai du contrat) : une mutation de condition d'arrêt figeait l'évaluation.
+
+**Outil** : `outils/CN_extraire_point.py` (voir son en-tête) écrit la référence, le contrat, le corpus, la déclaration au manifeste, la façade et la ligne de test.
