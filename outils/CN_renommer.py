@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #64fdfe
+# VERSION CN : 0.1.0  #804750
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : donne le préfixe CN_ à chaque fichier suivi (hors noms imposés de l'extérieur) et réécrit toutes les références.
 # MÉTHODE    : plan complet d'abord ; imports Python réécrits par l'arbre syntaxique (alias gardé : le corps du code ne change pas) ; chaînes réécrites par règles ; contrôle des résidus.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=64fdfe ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=804750 ▼▼▼
 """Renommage atomique (docs/FORMAT.md §3 bis et §8). Usage :
     python outils/CN_renommer.py                         SIMULATION : plan, nombre de références réécrites par règle, résidus ; n'écrit rien
     python outils/CN_renommer.py --racine DOSSIER        travaille sur une copie du dépôt (à essayer d'abord)
@@ -47,6 +47,7 @@ TEXTE = {".py", ".sh", ".md", ".toml", ".js", ".html", ".css", ".json", ".sql", 
 NON_REECRITS = {"docs/NEXUS.md", "docs/FORMAT.md", "docs/BORNES.md", "docs/EVOLUTION.md", "outils/CN_renommer.py", "tests/test_renommer.py"}
 SERVIS = "interface/"                                    # fichiers servis : le serveur retire le préfixe, les références par URL ne changent pas
 MOTIF_TESTS = 'unittest discover -s tests'
+RE_URL = re.compile(r"https?://[^\s\"')>]+")
 
 
 def fichiers(racine: Path) -> list[str]:
@@ -115,7 +116,7 @@ class Reecriture:
             b, nb = Path(c).name, Path(n).name
             if est_qualifie(c):
                 qualifies[c.rsplit("/", 2)[-2] + "/" + b if c.count("/") >= 1 else b] = c.rsplit("/", 2)[-2] + "/" + nb
-            elif "." in b and not c.startswith(SERVIS):
+            elif "." in b and not c.startswith(SERVIS) and not b.endswith(".sql"):      # une migration garde son identité sans préfixe : ses noms dans les chaînes ne changent pas
                 libres[b] = nb
         self.libres, self.qualifies = libres, qualifies
         self.re_libres = re.compile(r"(?<![\w])(" + "|".join(re.escape(k) for k in sorted(libres, key=len, reverse=True)) + r")(?![\w])") if libres else None
@@ -199,11 +200,7 @@ class Reecriture:
             self._n("imports Python")
         return "\n".join(lignes)
 
-    # ── 2 à 5. les chaînes ───────────────────────────────────────────────
-    def textes(self, chemin: str, source: str) -> str:
-        if chemin.startswith(SERVIS) and chemin.endswith((".js", ".css", ".html")):
-            return source                                  # servis : les URL gardent leur nom, le serveur retire le préfixe
-        s = source
+    def _regles(self, s: str) -> str:
         if self.re_libres:                                 # le contenu d'une unité ou d'un programme racine référence bien des fichiers du dépôt (main.py) : ses propres noms, eux, ne sont pas dans cette liste
             s, k = self.re_libres.subn(lambda m: self.libres[m.group(1)], s)
             self._n("noms avec extension", k)
@@ -215,6 +212,19 @@ class Reecriture:
         if self.re_dotted:
             s, k = self.re_dotted.subn(lambda m: self.dotted[m.group(1)], s)
             self._n("noms pointés de modules", k)
+        return s
+
+    # ── 2 à 5. les chaînes ───────────────────────────────────────────────
+    def textes(self, chemin: str, source: str) -> str:
+        if chemin.startswith(SERVIS) and chemin.endswith((".js", ".css", ".html")):
+            return source                                  # servis : les URL gardent leur nom, le serveur retire le préfixe
+        morceaux, urls = RE_URL.split(source), RE_URL.findall(source)     # une adresse web (ollama.com/install.sh) n'est pas un fichier du dépôt : on n'y touche pas
+        sortie = []
+        for i, m in enumerate(morceaux):
+            sortie.append(self._regles(m))
+            if i < len(urls):
+                sortie.append(urls[i])
+        s = "".join(sortie)
         if MOTIF_TESTS in s and "-p " not in s.split(MOTIF_TESTS, 1)[1][:30]:
             s = s.replace(MOTIF_TESTS, MOTIF_TESTS + ' -p "CN_test*.py"')
             self._n("motif de découverte des tests")

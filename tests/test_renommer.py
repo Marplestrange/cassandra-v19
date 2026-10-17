@@ -102,6 +102,22 @@ class Chaines(Depot):
         _, _, c = self.monter()
         self.assertNotIn("interface/index.html", c)                              # l'URL /app.js reste : le serveur retire le préfixe
 
+    def test_une_adresse_web_n_est_pas_un_fichier_du_depot(self):
+        self.poser("install.sh", "#!/bin/sh\n")
+        self.poser("modules/ollama/installer.sh", "curl -fsSL https://ollama.com/install.sh | sh\nbash install.sh\n")
+        carte = R.plan(self.tmp)
+        c = R.Reecriture(self.tmp, carte).tout()
+        self.assertIn("https://ollama.com/install.sh | sh", c["modules/ollama/installer.sh"])      # l'adresse extérieure ne bouge pas
+        self.assertIn("bash CN_install.sh", c["modules/ollama/installer.sh"])                    # le fichier du dépôt, si
+
+    def test_une_migration_garde_son_nom_dans_les_chaines(self):
+        self.poser("modules/vue/migrations/001_init.sql", "CREATE TABLE t(a);\n")
+        self.poser("tests/test_m.py", "assert appliquees == ['001_init.sql']\n")
+        carte = R.plan(self.tmp)
+        c = R.Reecriture(self.tmp, carte).tout()
+        self.assertEqual(carte["modules/vue/migrations/001_init.sql"], "modules/vue/migrations/CN_001_init.sql")      # le fichier est renommé
+        self.assertNotIn("tests/test_m.py", c)                                                                          # son identité, dans les chaînes, non
+
     def test_le_motif_de_decouverte_des_tests(self):
         _, _, c = self.monter()
         self.assertIn('unittest discover -s tests -p "CN_test*.py"', c["deploy.sh"])
