@@ -241,7 +241,7 @@ Ce que cette expérience a appris :
 
 ### 7 ter. Les points d'évolution réels (17-10-2026)
 
-Quinze points sont déclarés, chacun avec sa référence EC, son contrat, son corpus doré (sorties de l'ancien code, données synthétiques) et un plancher de score mesuré (`tests/CN_test_points_reels.py`) :
+Dix-neuf points sont déclarés, chacun avec sa référence EC, son contrat, son corpus doré (sorties de l'ancien code, données synthétiques) et un plancher de score mesuré (`tests/CN_test_points_reels.py`) :
 
 | Module | Points |
 |---|---|
