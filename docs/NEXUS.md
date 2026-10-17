@@ -36,7 +36,17 @@ Une fonction n'est un **point d'évolution** que si **les six** conditions sont 
 5. **Non décisive** : elle ne décide d'aucun droit, secret, suppression, envoi, confinement, écriture de pare-feu, ni d'aucune vérification de preuve.
 6. **Contractuelle** : son entrée et sa sortie sont décrites par un contrat neutre (schéma JSON) avec invariants et corpus doré.
 
-Sinon : **nexus**. En particulier, une fonction **pure mais décisive** reste nexus (vérification de signature, calcul d'empreinte, contrôle de droit, validation d'entrée de sécurité). Elle ne peut être déclassée en point que par décision signée du dépôt, avec invariants et corpus renforcés.
+Sinon : **nexus**. En particulier, une fonction **pure mais décisive** est nexus **par défaut** (vérification de signature, calcul d'empreinte, contrôle de droit, validation d'entrée de sécurité).
+
+**Trois niveaux par fonction, réglables par l'admin** (décision de Drisse : le défaut est prudent, le choix reste à l'admin) :
+
+| Niveau | Quoi | Condition |
+|---|---|---|
+| **Nexus** | jamais d'EC | défaut pour tout ce qui est décisif |
+| **Point sous garde** | l'admin ouvre la fonction décisive à l'EC | invariants et corpus renforcés ; ombre plus longue ; vérificateur indépendant obligatoire ; **combinaison prudente (échec fermé)** : la référence et l'EC tournent toutes deux, et si l'une refuse ou signale un risque, le résultat est le refus |
+| **Point** | ordinaire | les six conditions ci-dessus |
+
+Seuls restent fixes les mécanismes qui sont des **juges** de l'évolution (garde de contrat, évaluateur, résolveur, vérification d'intégrité des EC) : on ne les fait pas évoluer par ce qu'ils jugent.
 
 ## 4. Les intouchables absolus (jamais d'EC, jamais de point)
 
@@ -51,10 +61,10 @@ Sinon : **nexus**. En particulier, une fonction **pure mais décisive** reste ne
 **Les mécanismes de l'évolution elle-même** (ils ne s'évoluent pas, sinon le juge se réécrit)
 - **Orfan** (le moteur) et tout adaptateur de moteur, l'**évaluateur**, le **routage** et la **garde de contrat**, le **résolveur**, le **superviseur de déploiement**, le stock d'empreintes et la chaîne.
 
-**Les modules régaliens** (100 % nexus, aucun point d'évolution possible) :
+**Les modules régaliens (liste provisoire)** (100 % nexus par défaut) :
 `droits`, `comptes`, `identite`/`webauthn`, `coffre`, `mandats`, `urgence`, `modules`, `reglages`, `journal`, `sauvegardes`.
 
-**L'interface** (`interface/`) est nexus en v1.
+**Le squelette de l'interface** : rendu, menus, routes, garde de sécurité de la page (politique CSP), jetons de session. Les **vues** (disposition, ordre, libellés, densité) ne sont **pas** nexus : ce sont des points d'évolution **déclaratifs** (voir §5 bis).
 
 ## 5. Ce que peut faire une EC (et rien d'autre)
 
@@ -62,6 +72,28 @@ Sinon : **nexus**. En particulier, une fonction **pure mais décisive** reste ne
 - Importer la bibliothèque standard **pure** et `ec_api` : rien d'autre. Ni `os`, ni réseau, ni base, ni `ctx`, ni fichier, ni horloge, ni hasard.
 - Avoir un temps et une mémoire plafonnés, **aucun état** entre deux appels.
 - Être rangée **à part**, hors du dossier du module, dans `/var/cassandra/ec/<module>/`.
+
+## 5 ter. Prompts d'agents et politiques : de l'EC, bornés par le nexus
+
+Décision de Drisse (17-10) : **les prompts et les politiques sont de l'EC.** Ce sont des artefacts évolutifs de même rang que le code, avec leur version dépôt (le texte ou le réglage de référence) et leur version EC.
+
+**Condition de sécurité : la sécurité ne dépend jamais d'un prompt.** Tout ce qui protège (droits, mandats, cloisonnement, plafonds d'autonomie, freins, confirmation d'un geste irréversible) est appliqué **par le code du nexus**, quoi que dise le prompt. Un prompt évolué qui « oublie » une consigne ne peut donc rien ouvrir : le nexus refuse de toute façon.
+
+- **Prompt EC** : le nexus fixe le **contrat** du prompt : emplacements et variables obligatoires, longueur maximale, schéma de la réponse attendue (validée en code), liste de ce que le prompt ne peut pas déclarer (outils, droits). L'EC ne change que le texte à l'intérieur.
+- **Politique EC** (seuils du Sensorium, règles de la Proactivité, fréquences) : le nexus déclare pour chaque paramètre un **intervalle autorisé** et des **planchers de sécurité** (ex. : un seuil critique ne peut pas dépasser une valeur donnée). L'EC règle à l'intérieur de l'intervalle, jamais en dehors.
+- **Fitness** : signaux de vie réels : alertes acquittées sans action, réponses corrigées ou relancées, gestes annulés, coût par tâche.
+- **Évaluation** : rejeu des conversations et des décisions passées, **jeu réservé**, et **cas piégés de sécurité** (le prompt évolué doit encore refuser ce que le nexus interdit, vérifié à chaque promotion).
+- **Versions** : `itare.prompt 1.2 · EC14`, `sensorium.seuils 1.0 · EC6` ; mêmes règles de nexus, de façade, de référence et de retour qu'un module.
+
+## 5 bis. L'interface en EC : des descriptions, jamais du JavaScript
+
+Décision de Drisse : l'interface n'est pas nexus ; seuls le **squelette** et les **menus** le sont. Condition de sécurité : **l'EC d'interface est déclarative.** Le code d'une interface s'exécute dans le navigateur avec le jeton de session et sous la politique de sécurité de la page ; un script évolué que personne n'a relu y serait une porte ouverte.
+
+- Le squelette nexus **interprète et valide** une description : `état → description d'écran` (structure, ordre, regroupements, libellés, densité, paramètres d'affichage), jamais de script.
+- **Fitness** : l'usage mesuré (temps pour accomplir une tâche, clics, erreurs, recherches abouties), local à l'instance et respectueux du cloisonnement par compte.
+- **Invariants du contrat** vérifiables automatiquement : accessibilité (contrastes, étiquettes, ordre du focus), respect des jetons de design, aucune information d'un autre compte.
+- Les suggestions d'objectif du cockpit, l'ordre des onglets, la composition de la vue d'ensemble en sont les premières surfaces ; **`vue.composer`**, déjà pur, est le pilote.
+- Option à instruire : une évolution **par compte** (l'interface s'adapte à l'usage de chacun) en plus de l'évolution de l'instance.
 
 ## 6. Comment l'intouchabilité est vérifiée (pas promise)
 
@@ -72,7 +104,9 @@ Sinon : **nexus**. En particulier, une fonction **pure mais décisive** reste ne
 5. **Un banc « intouchables »** dans la suite : il essaie de passer une EC sur chaque intouchable et exige le refus.
 6. **Le noyau et Orfan** n'ont que la version dépôt ; leur empreinte est vérifiée au démarrage.
 
-## 6 bis. Classes de module
+## 6 bis. Classes de module (provisoire)
+
+La classe de chaque module est un champ de son **manifeste** (`classe = "regalien" | "operationnel" | "mixte"`), signé par le dépôt et lu par l'outil de bornes : changer une classification est une ligne, pas un remaniement. La liste ci-dessous est **provisoire** (Drisse, 17-10 : « pas encore définitivement fixé »).
 
 | Classe | Contenu | Points d'évolution |
 |---|---|---|
@@ -80,9 +114,14 @@ Sinon : **nexus**. En particulier, une fonction **pure mais décisive** reste ne
 | **Opérationnel** | `vue`, `mesures`, `fastpanel` (lecture), `sensorium` (agrégation), `contacts`, `courrier` (analyse), `planifie`, `notes`, `memoire`… | oui, sur leurs fonctions pures, chaudes et non décisives |
 | **Mixte** | `securite`, `sensorium` (verdicts) | seulement les calculs **descriptifs** ; tout ce qui déclenche une crise, une alerte critique ou une écriture reste nexus |
 
-## 7. Décisions à confirmer par Drisse
+## 7. Décisions
 
-1. **L'interface reste-t-elle nexus** pour toujours, ou ouvre-t-on plus tard une zone de présentation évolutive (disposition, textes) ?
-2. **« Pure mais décisive = nexus par défaut »** : d'accord ? (Cela retire des candidats comme `webauthn.verifier_signature` et certains verdicts de sécurité.)
-3. **La liste des régaliens** ci-dessus est-elle complète ?
-4. **Les prompts d'agents et les politiques** (seuils, règles) : ils sont des artefacts évolutifs d'un autre type. Ils suivent le même principe (un nexus qui garde le contrat, une couche EC par-dessus) mais leur frontière sera définie à part.
+**Tranchées (17-10)**
+1. L'interface n'est pas nexus : squelette et menus = nexus ; vues = EC **déclaratif** (§5 bis).
+2. « Pure mais décisive » = nexus par défaut, **réglable** par l'admin, avec garde renforcée et combinaison prudente (§3).
+3. La liste des régaliens **n'est pas figée** : la classe est un champ du manifeste.
+4. **Les prompts d'agents et les politiques sont de l'EC** (§5 ter) : le nexus en garde le contrat et les bornes.
+
+**Ouvertes**
+- Quels modules de la liste régalienne sont à revoir ? Candidats à discuter : `sauvegardes` (le calcul de rétention est pur), `modules` (la résolution des dépendances est pure et décisive), `reglages`, `journal`.
+- Évolution de l'interface **par compte** en plus de celle de l'instance ?
