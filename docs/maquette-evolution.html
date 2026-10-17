@@ -117,6 +117,18 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .mat .c.b{background:var(--ok-doux);color:var(--ok)}
 .genomes{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
 .genomes>div{border:1px solid var(--filet);border-radius:12px;padding:10px;background:var(--verre-fort);display:flex;flex-direction:column;gap:4px;font-size:12.5px}
+.sugg{display:flex;flex-direction:column;gap:7px}
+.sugg-t{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--encre-3)}
+.sugg-t i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:bat 2s infinite}
+@keyframes bat{70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.pastilles{display:flex;gap:8px;flex-wrap:wrap}
+.pas{position:relative;display:flex;flex-direction:column;gap:2px;text-align:left;border:1px solid var(--filet);background:var(--verre-fort);border-radius:14px;padding:8px 30px 8px 12px;max-width:340px;animation:ent .45s ease both}
+.pas:hover{border-color:var(--accent)}
+.pas b{font:600 12.5px var(--sans)}.pas small{font:11px var(--mono);color:var(--encre-3)}
+.pas .ty{font:600 9.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.pas .x{position:absolute;top:5px;right:6px;width:20px;height:20px;border:0;border-radius:50%;background:transparent;color:var(--encre-3);font-size:14px;line-height:1;padding:0}
+.pas .x:hover{background:var(--danger-doux);color:var(--danger)}
+@keyframes ent{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -146,7 +158,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <span class="idee">1 · L'intention</span>
   <h2>Dis ce que tu veux, en français. Elle en fait un objectif mesurable.</h2>
   <div class="intention"><input id="intent" type="text" placeholder="ex. : rends la page Sécurité plus rapide sans rien casser"><button class="btn prim" id="intent-go">Compiler l'objectif</button></div>
-  <div class="chips" id="chips"><button>Rends la page Sécurité plus rapide</button><button>Moins d'alertes inutiles du Sensorium</button><button>Réduis ce que me coûtent les modèles</button></div>
+  <div class="sugg"><div class="sugg-t"><i></i><span><b>Cassandra te propose</b> d'après ce qu'elle observe en ce moment</span><span class="mono" id="sugg-n"></span></div><div class="pastilles" id="chips"></div></div>
   <div class="compile" id="compile" hidden></div>
 </div>
 
@@ -540,18 +552,37 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   document.querySelectorAll('.hero .big').forEach(e=>{const n=+e.dataset.n,f=e.dataset.f,t0=performance.now();(function tick(t){const k=Math.min(1,(t-t0)/1100),v=n*(1-Math.pow(1-k,3));
     e.textContent=f==='x'?v.toFixed(1).replace('.',',')+'×':f==='-%'?'−'+Math.round(v)+' %':String(Math.round(v));if(k<1)requestAnimationFrame(tick)})(t0)});
   // intention
-  const CAS={
-    'sécurité':{m:'durée de securite.images et securite.etat (p50, p95)',c:'1 240 appels rejoués · jeu réservé de 248',b:'≈ 70 k jetons',cib:'securite.images · securite.etat · 2 moteurs purs',r:'Objectif dérivé : réduire la durée sans changer la moindre sortie.'},
-    'alertes':{m:'alertes acquittées sans action ÷ alertes émises',c:'3 120 alertes des 60 jours, avec ce que tu as fait de chacune',b:'≈ 40 k jetons',cib:'seuils et regroupements du Sensorium',r:'Objectif dérivé : couper le bruit sans manquer une alerte que tu as traitée.'},
-    'coûtent':{m:'appels de modèle par jour × prix, à qualité égale',c:'4 200 décisions de modèle des 30 jours',b:'≈ 90 k jetons',cib:'décisions répétitives d\'Itare et du Sensorium (fossilisation)',r:'Objectif dérivé : remplacer par du code ce qui ne varie jamais.'}
-  };
-  function compile(txt){
-    const k=/alerte/i.test(txt)?'alertes':/co[uû]t|mod[eè]le/i.test(txt)?'coûtent':'sécurité';const d=CAS[k],c=$('#compile');c.hidden=false;
-    c.innerHTML='<div><span class="lib">Mesure dérivée</span>'+d.m+'</div><div><span class="lib">Banc d\'essai trouvé</span>'+d.c+'</div><div><span class="lib">Cibles</span>'+d.cib+'</div><div><span class="lib">Budget estimé</span>'+d.b+'</div><div style="grid-column:1/-1"><span class="lib">Ce que tu valides</span>'+d.r+' <button class="btn prim" style="margin-left:8px" id="lancer">Lancer ce soir</button></div>';
+  const SUG=[
+    {ty:'lenteur',t:'Rends la page Sécurité plus rapide',w:'securite.images : 210 ms au médian, 1 100 appels/j, la lecture la plus lente',m:'durée de securite.images et securite.etat (p50, p95)',c:'1 240 appels rejoués · jeu réservé de 248',cib:'securite.images · securite.etat · 2 moteurs purs',b:'≈ 70 k jetons',r:'Réduire la durée sans changer la moindre sortie. Gain visé : −40 %.'},
+    {ty:'bruit',t:'Moins d\'alertes inutiles du Sensorium',w:'71 % des 3 120 alertes des 60 jours ont été acquittées sans action',m:'alertes acquittées sans action ÷ alertes émises',c:'3 120 alertes, avec ce que tu as fait de chacune',cib:'seuils et regroupements du Sensorium',b:'≈ 40 k jetons',r:'Couper le bruit sans manquer une alerte que tu as traitée.'},
+    {ty:'coût',t:'Réduis ce que me coûtent les modèles',w:'4 200 décisions par jour, dont 83 % identiques à une décision déjà prise',m:'appels de modèle par jour × prix, à qualité égale',c:'4 200 décisions des 30 jours',cib:'décisions répétitives d\'Itare et du Sensorium (fossilisation)',b:'≈ 90 k jetons',r:'Remplacer par du code ce qui ne varie jamais.'},
+    {ty:'dérive',t:'Rattraper la dérive de la Vue d\'ensemble',w:'vue.composer : p95 passé de 61 à 88 ms en 7 jours, sans déploiement',m:'p95 de vue.composer',c:'860 appels rejoués',cib:'vue.composer · cache par compte',b:'≈ 35 k jetons',r:'Retrouver la latence d\'il y a une semaine, puis la dépasser.'},
+    {ty:'manque',t:'Servir ce que 4 comptes demandent dans le vide',w:'GET /api/fp/php : 37 appels en 7 jours, aucune capacité pour y répondre',m:'taux de réponse de la route (aujourd\'hui 0 %)',c:'37 appels réels conservés',cib:'nouveau module brouillon « fastpanel_php » (en ombre)',b:'≈ 55 k jetons',r:'Créer un brouillon de module, jamais mis en service sans preuve.'},
+    {ty:'gain perdu',t:'Refaire le gain de securite.analyse',w:'annoncé −25 %, mesuré −4 % à J+30 : le jeu de test était trop étroit',m:'durée de securite.analyse sur le jeu élargi',c:'corpus porté de 190 à 600 appels',cib:'securite.analyse · tombe v6 comme garde-fou',b:'≈ 60 k jetons',r:'Reprendre depuis la tombe, sur un banc qui ne se laisse plus tromper.'}
+  ];
+  let vues=0,fermees={};
+  function compile(o){
+    const c=$('#compile');c.hidden=false;
+    c.innerHTML='<div><span class="lib">Mesure dérivée</span>'+o.m+'</div><div><span class="lib">Banc d\'essai trouvé</span>'+o.c+'</div><div><span class="lib">Cibles</span>'+o.cib+'</div><div><span class="lib">Budget estimé</span>'+o.b+'</div><div style="grid-column:1/-1"><span class="lib">Ce que tu valides</span>'+o.r+' <button class="btn prim" style="margin-left:8px" id="lancer">Lancer ce soir</button></div>';
     $('#lancer').onclick=()=>toast('Objectif enregistré · première nuit : demain 23:00 · arrêt d\'urgence disponible');
   }
-  $('#intent-go').onclick=()=>compile($('#intent').value||'sécurité');
-  document.querySelectorAll('#chips button').forEach(b=>b.onclick=()=>{$('#intent').value=b.textContent;compile(b.textContent)});
+  function libre(txt){const k=/alerte/i.test(txt)?1:/co[uû]t|mod[eè]le/i.test(txt)?2:0;compile(SUG[k])}
+  function ajouter(o,vite){
+    const e=document.createElement('div');e.className='pas';e.style.cursor='pointer';e.setAttribute('role','button');e.tabIndex=0;
+    e.innerHTML='<span class="ty">'+o.ty+' · '+(vite?'à l\'instant':'il y a '+(2+Math.floor(Math.random()*20))+' min')+'</span><b>'+o.t+'</b><small>'+o.w+'</small><button class="x" title="Pas pour l\'instant">×</button>';
+    e.onclick=(ev)=>{if(ev.target.classList.contains('x'))return;$('#intent').value=o.t;compile(o)};
+    e.querySelector('.x').onclick=()=>{fermees[o.ty]=1;e.remove();maj();toast('Noté : plus de proposition « '+o.ty+' » ce mois-ci, sauf aggravation')};
+    $('#chips').appendChild(e);vues++;maj();
+  }
+  function maj(){const n=$('#chips').children.length;$('#sugg-n').textContent=n+' proposition'+(n>1?'s':'')+' · mise à jour continue'}
+  [0,1,2].forEach(i=>ajouter(SUG[i],false));
+  let nxt=3;const poussoir=setInterval(()=>{
+    if(nxt>=SUG.length||document.hidden){if(nxt>=SUG.length)clearInterval(poussoir);return}
+    const o=SUG[nxt++];if(fermees[o.ty])return;
+    if($('#chips').children.length>=5)$('#chips').firstChild.remove();
+    ajouter(o,true);
+  },7000);
+  $('#intent-go').onclick=()=>libre($('#intent').value||'sécurité');
   // la nuit : trafic du jour + course
   (function(){
     let s='';const h=[3,2,2,1,1,2,4,8,13,16,18,17,14,15,17,18,16,14,11,9,7,5,4,3];
