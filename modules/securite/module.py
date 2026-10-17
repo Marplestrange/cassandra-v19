@@ -14,6 +14,7 @@ import json
 import time
 
 from . import analyse
+from . import images as im
 
 GESTES = [
     {"id": "bannir-ou-debannir-une-adresse", "nom": "Bannir ou débannir une adresse", "rev": "oui",
@@ -73,6 +74,28 @@ def brancher(ctx):
         except Exception:
             confinement = None
         return analyse.etat(cache["m"], time.strftime("%Y-%m-%d %H:%M:%S"), ailleurs=ailleurs, panneau=panneau, confinement=confinement)
+
+    cache_images = {"t": 0.0, "d": None}
+
+    def images_page(c):
+        """Sécurité › En images : l'état de la machine + les totaux d'attaques du collecteur, composés (images.py). Gardée 60 s ; une source muette est dite muette."""
+        if cache_images["d"] is not None and time.time() - cache_images["t"] < 60:
+            return cache_images["d"]
+        d = etat(c)
+        try:
+            secu = ctx.executer_lecture("sensorium.secu")
+        except Exception:
+            secu = None
+        certs = []
+        try:
+            certs = sorted(({"domaine": x["domaine"], "jours": x["ssl_jours"]} for x in (ctx.executer_lecture("sites.vue") or {}).get("sites", []) if isinstance(x.get("ssl_jours"), int)),
+                           key=lambda x: x["jours"])
+        except Exception:
+            pass
+        gestes = [dict(r) for r in db.lire("SELECT * FROM securite_journal ORDER BY id DESC LIMIT 15")]
+        sortie = im.composer(d, secu, certs, gestes, (cache["m"] or {}).get("docker_ps"))
+        cache_images.update({"t": time.time(), "d": sortie})
+        return sortie
 
     # ── les gestes exécutés à root : la commande « agir » du courtier, table fermée, chaque geste vérifié avant de répondre ──
     def agir(verbe, geste, args=None, delai=180):
@@ -228,7 +251,7 @@ def brancher(ctx):
     def defaire_audit(c, res):
         db.ecrire("DELETE FROM securite_audits WHERE id=?", (res["id"],))
 
-    for cid, f in (("gestes", gestes), ("journal", journal), ("audits", audits), ("mesurer", mesurer), ("etat", etat)):
+    for cid, f in (("gestes", gestes), ("journal", journal), ("audits", audits), ("mesurer", mesurer), ("etat", etat), ("images", images_page)):
         ctx.implementer(cid, f)
     ctx.implementer("ssh_mdp", faire_ssh("ssh_mdp"), prouve_ssh("passwordauthentication", "no"), defaire_ssh)
     ctx.implementer("ssh_x11", faire_ssh("ssh_x11"), prouve_ssh("x11forwarding", "no"), defaire_ssh)

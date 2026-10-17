@@ -6,6 +6,7 @@
 
   // L'état de la machine : composé par le module sur les relevés bruts du courtier (services à l'écoute, pare-feu du noyau, SSH, fail2ban, mises à jour).
   P("/api/securite", "securite.etat", { args: () => ({}), sortie: (x) => x });
+  P("/api/securite/images", "securite.images", { args: () => ({}), sortie: (x) => x });
   P("/api/securite/gestes", "securite.gestes", { args: () => ({}), sortie: (x) => ok(x) });
   P("/api/securite/journal", "securite.journal", { args: (r) => ({ limite: +(r.body.limite || 120) }), sortie: (x) => ok(x) });
   P("/api/securite/audits", "securite.audits", { args: (r) => ({ id: +(r.body.id || 0) }), sortie: (x) => ok(x) });

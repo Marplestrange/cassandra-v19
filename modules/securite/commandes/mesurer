@@ -161,6 +161,7 @@ def main():
         "outils": _outils(),
         "outils_etat": _outils_etat(),
         "cage": (_texte(["systemctl", "is-active", "cassandra-cage"], 10) or "").strip() or None,
+        "docker_ps": _texte(["docker", "ps", "--format", "{{.Image}}|{{.Names}}"], 10) if shutil.which("docker") else None,
         "hote": (_texte(["hostname"], 5) or "").strip(),
         "tailscale": (_texte(["tailscale", "ip", "-4"], 5) or "").strip() or None,
         # les anciens noms, gardés pour qui les lisait déjà

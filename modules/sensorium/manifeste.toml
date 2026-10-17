@@ -1,7 +1,7 @@
 [module]
 id = "sensorium"
 nom = "Sensorium"
-version = "0.1.2"
+version = "0.1.3"
 noyau_min = "0.1.0"
 description = "Les sens de Cassandra. Le collecteur (sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles."
 confiance = "interne"
@@ -201,3 +201,14 @@ unite = "/h"
 famille = "Système hôte"
 vide = "rien_a_signaler"
 description = "Processus tués faute de mémoire. Une seule occurrence est déjà une alerte."
+
+[[droits]]
+id = "voir_securite"
+libelle = "Lire les totaux d'attaques de la machine (adresses, chemins, robots) pour la page Sécurité › En images"
+sensible = true
+
+[[capacites]]
+id = "secu"
+libelle = "Les totaux d'attaques que le collecteur tient (jours, heures, chemins, adresses les plus actives, sites, robots), les mesures diverses (courriel, box, tailnet) et la sauvegarde hors machine — des agrégats, aucune ligne de journal"
+risque = "lecture"
+droit = "voir_securite"

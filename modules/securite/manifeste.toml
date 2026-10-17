@@ -1,7 +1,7 @@
 [module]
 id = "securite"
 nom = "Sécurité"
-version = "0.3.1"
+version = "0.3.2"
 noyau_min = "0.1.0"
 description = "La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel)."
 confiance = "interne"
@@ -198,3 +198,10 @@ preuve = "l'unité du passage est lancée"
 retour = "arrêter le passage en cours"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
+
+[[capacites]]
+id = "images"
+libelle = "Sécurité › En images : l'indice de sécurité, les familles, les attaques sur dix jours (chemins, adresses, robots, pays), les anneaux d'exposition, les certificats, le courriel, la box et les gardiens — composés de l'état de la machine et des totaux du collecteur ; une source muette est dite muette"
+risque = "lecture"
+droit = "voir"
+

@@ -6046,6 +6046,40 @@ class SharedMemorySocket:
                     client.sendall(json.dumps([dict(r) for r in rows]).encode())
                 except Exception:
                     client.sendall(b"[]")
+            elif data == "GET_SECU":
+                # Ce que lit « Sécurité › En images » (17-10) : les totaux d'attaques que le collecteur tient (journaux nginx), les mesures diverses (courriel, box, tailnet),
+                # la sauvegarde hors machine. Tout en agrégats : aucune ligne de journal ne sort d'ici.
+                try:
+                    conn = get_conn()
+
+                    def q(sql, args=()):
+                        try:
+                            return [dict(r) for r in conn.execute(sql, args).fetchall()]
+                        except Exception:
+                            return []
+                    neuf = "date('now','localtime','-9 days')"
+                    ips = q("SELECT ip, SUM(n) n FROM secu_ip WHERE jour >= %s GROUP BY ip ORDER BY n DESC" % neuf)
+                    robots = {}
+                    for r in q("SELECT site, robot, SUM(n) n FROM secu_robot WHERE jour >= %s GROUP BY site, robot ORDER BY n DESC" % neuf):
+                        robots.setdefault(r["site"], [])
+                        if len(robots[r["site"]]) < 3:
+                            robots[r["site"]].append({"robot": r["robot"], "n": r["n"]})
+                    sauvegarde = q("SELECT wkey, value, severity FROM world_model WHERE wkey = 'sauvegarde.hors_machine'")
+                    out = {
+                        "jours": q("SELECT jour, SUM(sondes) s, SUM(refus) r, SUM(requetes) n, SUM(robots) b FROM secu_jour WHERE jour >= date('now','localtime','-13 days') GROUP BY jour ORDER BY jour"),
+                        "heures": q("SELECT jour, heure, attaques FROM secu_heure WHERE jour >= date('now','localtime','-6 days')"),
+                        "chemins": q("SELECT chemin, SUM(n) n FROM secu_chemin WHERE jour >= %s GROUP BY chemin ORDER BY n DESC LIMIT 8" % neuf),
+                        "ips_n": len(ips), "ips_total": sum(r["n"] or 0 for r in ips), "ips_top10": sum(r["n"] or 0 for r in ips[:10]),
+                        "attaquants": q("SELECT ip, SUM(n) n, COUNT(DISTINCT jour) jours, MIN(jour) premier, MAX(jour) dernier FROM secu_ip WHERE jour >= %s GROUP BY ip ORDER BY n DESC LIMIT 8" % neuf),
+                        "sites": q("SELECT site, SUM(requetes) n, SUM(robots) b FROM secu_jour WHERE jour >= %s GROUP BY site HAVING n >= 100 ORDER BY n DESC LIMIT 8" % neuf),
+                        "robots": robots,
+                        "diverses": q("SELECT cle, valeur, severite FROM mesures_diverses WHERE cle LIKE 'domaine_courriel.%' OR cle LIKE 'box.%' OR cle LIKE 'tailnet.%' OR cle = 'dns_local'"),
+                        "sauvegarde": sauvegarde[0] if sauvegarde else None,
+                    }
+                    conn.close()
+                    client.sendall(json.dumps(out, default=str).encode())
+                except Exception:
+                    client.sendall(b"ERROR")
             elif data.startswith("GET_SERIES:"):
                 # Une COURBE (16-10) : « GET_SERIES:<clé>:<jours> ». La clé est dans une liste fermée (jamais un nom de colonne venu de la requête) ;
                 # au-delà de deux jours, une moyenne par dizaine de minutes : trente jours de brut ne tiennent pas dans une courbe de mille pixels.

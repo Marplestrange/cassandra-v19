@@ -123,6 +123,10 @@ def brancher(ctx):
             raise ValueError("clé illisible")
         return json_de("GET_HISTORY:" + cle, 10)
 
+    def secu(ctx):
+        """Les totaux d'attaques du collecteur (journaux nginx : jours, heures, chemins, adresses, sites, robots), les mesures diverses (courriel, box, tailnet), la sauvegarde hors machine."""
+        return json_de("GET_SECU", 20)
+
     def serie(ctx, mesure="", depuis="", jusqu_a=""):
         """Les points d'une mesure, lus dans l'historique du collecteur (la liste des courbes est fermée côté collecteur)."""
         if not isinstance(mesure, str) or not _CLE.match(mesure):
@@ -149,3 +153,4 @@ def brancher(ctx):
     ctx.implementer("historique", historique)
     ctx.implementer("changements", changements)
     ctx.implementer("serie", serie)
+    ctx.implementer("secu", secu)
