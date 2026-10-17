@@ -21,7 +21,7 @@ Un fichier est **soit CN, soit EC**, jamais les deux. Sa structure, toujours dan
 | `LICENCE` | `AGPL-3.0` (celle du dépôt) |
 | `AUTEUR` | `Atek Drisse` |
 | `GIT` | `github.com/Marplestrange` |
-| `MAIL` | `atek.drisse@gmail.com` |
+| `MAIL` | `marplestrange@cassandra.center` |
 | `MODULE` | module d'appartenance |
 | `ZONE` | `CN` ou `EC` |
 | `VERSION CN` | fichier CN : version dépôt + empreinte (ex. `0.1.0 #3d90e1`). Fichier EC : `néant` |
@@ -82,7 +82,7 @@ Au chargement, le nexus résout un point : **EC en service** (stock) si elle est
 # LICENCE    : AGPL-3.0
 # AUTEUR     : Atek Drisse
 # GIT        : github.com/Marplestrange
-# MAIL       : atek.drisse@gmail.com
+# MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : CN
 # VERSION CN : 0.1.0  #3d90e1
@@ -113,7 +113,7 @@ def composer_vue(releves):
 # LICENCE    : AGPL-3.0
 # AUTEUR     : Atek Drisse
 # GIT        : github.com/Marplestrange
-# MAIL       : atek.drisse@gmail.com
+# MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : EC
 # VERSION CN : néant
@@ -164,6 +164,6 @@ Une EC rangée dans `/var/cassandra/ec/<module>/<point>/EC_<point>__EC<n>.py` su
 
 ## 9. Points à trancher
 
-- **Courriel dans chaque fichier** : l'adresse personnelle sera lisible par quiconque verra le code (dépôt public prévu, AGPL-3.0). Garder `atek.drisse@gmail.com` ou une adresse dédiée au projet ?
+- **Courriel** : tranché (Drisse, 17-10) : `marplestrange@cassandra.center`, boîte dédiée au projet, que Cassandra gérera. L'adresse personnelle n'apparaît dans aucun fichier.
 - **L'interface** (`app.js`, plus de 35 000 lignes) : le squelette devient des fichiers CN, les vues déclaratives des fichiers EC (descriptions, jamais de script).
 - **Fichiers assemblés** (`index.html`, `app.js` générés) : en-tête posé par l'assembleur, pas à la main.
