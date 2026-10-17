@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #325d5a
+# VERSION CN : 0.1.0  #ac2991
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : lit tous les fichiers suivis par git et dit s'ils respectent docs/CN_FORMAT.md (nom, en-tête, bornes, pureté des EC).
 # MÉTHODE    : analyse textuelle et arbre syntaxique Python ; mode audit par défaut (rien ne bloque), --strict pour l'intégration continue.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=325d5a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ac2991 ▼▼▼
 """Outil de bornes. Usage :
     python outils/CN_bornes.py                 audit de tout le dépôt (résumé par module)
     python outils/CN_bornes.py --module vue    un seul module
@@ -66,7 +66,7 @@ def fichiers_suivis() -> list[str]:
     except Exception:
         out = []
         for r, ds, fs in os.walk(RACINE):
-            ds[:] = [d for d in ds if d not in IGNORER_DOSSIERS]
+            ds[:] = [d for d in ds if d not in IGNORER_DOSSIERS and not d.startswith(".")]      # un dossier caché (.porte, .claude) n'est pas du projet
             out += [str(Path(r, f).relative_to(RACINE)).replace(os.sep, "/") for f in fs]
         return out
 

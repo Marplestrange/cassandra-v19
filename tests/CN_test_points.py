@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8ae30f
+# VERSION CN : 0.1.0  #02cd13
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ae30f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=02cd13 ▼▼▼
 """Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats."""
 import json
 import shutil
@@ -196,6 +196,44 @@ class Disjoncteur(Banc):
         for _ in range(3):
             self.appeler(2)
         self.assertIn("dérive de sens", self.svc.etat("essai", "doubler")["suspendue"]["raison"])
+
+
+class Contenu(Banc):
+    """La vérification et le chargement portent sur le CONTENU, jamais sur une date ni une taille."""
+
+    def test_une_ec_reecrite_de_meme_taille_a_la_meme_date_sert_le_nouveau_code(self):
+        import os
+        bon = ec("def doubler(entree):\n    return {'y': entree['x'] * 2, 'par': 'EC'}\n")
+        mauvais = bon.replace("entree['x'] * 2", "'pas un entier'")
+        mauvais = mauvais.replace("'pas un entier'", "'pas un entier'".ljust(len("entree['x'] * 2")))[:len(bon)]
+        self.assertEqual(len(bon), len(mauvais))                                    # même taille : un .pyc périmé se laisserait tromper
+        self.poser_ec(mauvais)
+        f = self.stock / "essai" / "doubler" / "EC_doubler__EC21.py"
+        t = f.stat().st_mtime_ns
+        self.assertEqual(self.appeler(2)["par"], "reference")                       # la mauvaise est rattrapée
+        self.poser_ec(bon)
+        os.utime(f, ns=(t, t))                                                      # même date, à la nanoseconde
+        self.svc.reactiver("essai", "doubler")
+        self.assertEqual(self.appeler(2)["par"], "EC")
+
+    def test_une_ec_devenue_impure_sans_changer_de_date_est_revérifiée(self):
+        import os
+        sain = ec("def doubler(entree):\n    return {'y': entree['x'] * 2, 'par': 'EC'}\n")
+        self.poser_ec(sain)
+        self.assertEqual(self.appeler(2)["par"], "EC")
+        f = self.stock / "essai" / "doubler" / "EC_doubler__EC21.py"
+        t = f.stat().st_mtime_ns
+        impur = ec("import os\n\ndef doubler(entree):\n    return {'y': 1, 'par': os.getcwd()}\n")
+        f.write_text(impur, encoding="utf-8")
+        os.utime(f, ns=(t, t))
+        self.assertEqual(self.appeler(2)["par"], "reference")                       # la vérification est liée au contenu : l'impureté est vue
+
+    def test_un_fichier_change_entre_la_verification_et_le_chargement_est_refuse(self):
+        self.poser_ec(ec("def doubler(entree):\n    return {'y': 0, 'par': 'EC'}\n"))
+        f = self.stock / "essai" / "doubler" / "EC_doubler__EC21.py"
+        hote = P.HotePython()
+        with self.assertRaises(RuntimeError):
+            hote.appelable_verifie(f, "doubler", "0" * 64)
 
 
 class AutresFormats(Banc):

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5ef81c
+# VERSION CN : 0.1.0  #42712f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5ef81c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=42712f ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -30,10 +30,10 @@ from __future__ import annotations
 
 import ast
 import hashlib
-import importlib.util
 import json
 import re
 import threading
+import types
 import time
 from collections import deque
 from pathlib import Path
@@ -148,13 +148,27 @@ class HotePython:
         self._cache = {}
         self._verrou = threading.Lock()
 
+    def appelable_verifie(self, chemin: Path, fonction: str, empreinte: str):
+        """Comme appelable, mais le texte lu doit avoir l'empreinte de celui qui a été VÉRIFIÉ (pureté, contrat) : sinon le fichier a changé entre-temps."""
+        return self._charger(chemin, fonction, empreinte)
+
     def appelable(self, chemin: Path, fonction: str):
-        cle = (str(chemin), chemin.stat().st_mtime_ns)
+        return self._charger(chemin, fonction, "")
+
+    def _charger(self, chemin: Path, fonction: str, attendue: str):
+        """Compile le TEXTE lu, jamais le bytecode du disque : Python réutilise un .pyc si la date (à la seconde) et la taille du source n'ont pas changé, et une EC
+        réécrite de même taille servirait alors l'ancien code. Le cache est clé sur le contenu (empreinte du texte), pas sur une date."""
+        octets = chemin.read_bytes()
+        texte = octets.decode("utf-8")
+        emp = hashlib.sha256(octets).hexdigest()
+        if attendue and emp != attendue:
+            raise RuntimeError("le fichier d'EC a changé entre sa vérification et son chargement")
+        cle = (str(chemin), emp)
         with self._verrou:
             if cle not in self._cache:
-                spec = importlib.util.spec_from_file_location("cassandra_point_" + hashlib.sha1(str(chemin).encode()).hexdigest()[:10], chemin)
-                mod = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(mod)
+                mod = types.ModuleType("cassandra_point_" + hashlib.sha1(str(chemin).encode()).hexdigest()[:10])
+                mod.__file__ = str(chemin)
+                exec(compile(texte, str(chemin), "exec"), mod.__dict__)
                 self._cache[cle] = getattr(mod, fonction)
             return self._cache[cle]
 
@@ -233,20 +247,22 @@ class ServicePoints:
         if not f.is_file():
             d.refus = "le fichier d'EC désigné est introuvable"
             return None
-        cle = (str(f), f.stat().st_mtime_ns, d.p.contrat)
+        octets = f.read_bytes()
+        emp = hashlib.sha256(octets).hexdigest()
+        cle = (str(f), emp, d.p.contrat)                 # la vérification est liée au CONTENU, pas à une date : une EC réécrite est revérifiée
         if cle not in self._verifiees:
-            self._verifiees[cle] = self._verifier_ec(d, f)
+            self._verifiees[cle] = self._verifier_ec(d, f, octets)
         ok, raison, version, runtime = self._verifiees[cle]
         if not ok:
             d.refus = raison
             if raison.startswith("impure"):
                 self._suspendre(d, raison, version)
             return None
-        return f, version, runtime
+        return f, version, runtime, emp
 
-    def _verifier_ec(self, d: _Declare, f: Path):
+    def _verifier_ec(self, d: _Declare, f: Path, octets: bytes):
         try:
-            texte = f.read_text(encoding="utf-8")
+            texte = octets.decode("utf-8")
         except UnicodeDecodeError:
             return (False, "fichier binaire : en-tête requis dans un compagnon .borne", "", "")
         champs = _champs(texte)
@@ -266,8 +282,11 @@ class ServicePoints:
         return (True, "", version, runtime)
 
     # ── l'appel ──────────────────────────────────────────────────────────
-    def _executer(self, d: _Declare, fichier: Path, runtime: str):
+    def _executer(self, d: _Declare, fichier: Path, runtime: str, empreinte: str = ""):
+        """L'appelable d'un fichier. Avec `empreinte` (celle du contenu VÉRIFIÉ), l'hôte refuse un fichier qui a changé entre la vérification et le chargement."""
         hote = self._hotes.get(runtime) or self._hotes.setdefault(runtime, HOTES[runtime]())
+        if empreinte and hasattr(hote, "appelable_verifie"):
+            return hote.appelable_verifie(fichier, d.p.fonction, empreinte)
         return hote.appelable(fichier, d.p.fonction)
 
     def appeler(self, module: str, point: str, entree):
@@ -289,9 +308,9 @@ class ServicePoints:
         sortie, source = None, "reference"
         ec = self._ec_en_service(d)
         if ec:
-            fichier, version, runtime = ec
+            fichier, version, runtime, emp = ec
             try:
-                brute = self._executer(d, fichier, runtime)(_copie(entree))
+                brute = self._executer(d, fichier, runtime, emp)(_copie(entree))
                 candidate = _copie(brute)
                 ecarts = valider(d.contrat.get("sortie"), candidate)
                 if ecarts:
