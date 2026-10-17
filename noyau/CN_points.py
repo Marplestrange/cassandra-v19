@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5b2cd3
+# VERSION CN : 0.1.0  #3446b9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5b2cd3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3446b9 ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -32,6 +32,7 @@ import ast
 import hashlib
 import json
 import re
+import statistics
 import threading
 import types
 import time
@@ -176,6 +177,11 @@ class HotePython:
 HOTES = {"python": HotePython}
 
 
+def _tranche(entree) -> int:
+    """Une tranche de 0 à 99, STABLE pour une entrée donnée : le routage par part envoie toujours la même entrée du même côté."""
+    return int(hashlib.sha256(json.dumps(entree, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()[:8], 16) % 100
+
+
 def _copie(valeur):
     """Une frontière de données : ce qui passe est du JSON, copié. Un objet qui n'en est pas lève TypeError."""
     return json.loads(json.dumps(valeur))
@@ -315,7 +321,9 @@ class ServicePoints:
         t0 = time.perf_counter()
         sortie, source = None, "reference"
         ec = self._ec_en_service(d)
-        if ec:
+        route = self._routage(d) if ec else None
+        servir_ec = bool(ec) and route["mode"] == "service" and (route["part"] >= 100 or _tranche(entree) < route["part"])      # une tranche STABLE : la même entrée va toujours du même côté
+        if servir_ec:
             fichier, version, runtime, emp = ec
             try:
                 brute = self._executer(d, fichier, runtime, emp)(_copie(entree))
@@ -341,6 +349,9 @@ class ServicePoints:
             if ecarts:
                 raise PointDefaillant("%s : la référence viole son propre contrat : %s" % (gid, " ; ".join(ecarts[:3])))
             source = "reference"
+        ms_ref = (time.perf_counter() - t0) * 1000
+        if ec and route["mode"] == "ombre":                       # l'ombre : la RÉFÉRENCE a répondu ; l'EC calcule à côté sur le même appel et on compare
+            self._ombre(d, ec, entree, sortie, ms_ref)
         d.appels += 1
         if source != "reference" and self.echantillon and d.appels % self.echantillon == 0:
             self._comparer(d, entree, sortie, source)
@@ -351,6 +362,63 @@ class ServicePoints:
             except Exception:
                 pass
         return sortie
+
+    # ── le routage : ombre, puis une part croissante du trafic ──────────────
+    def _routage(self, d: _Declare) -> dict:
+        """Où en est la mise en service de l'EC : « ombre » (elle calcule, la référence répond), « service » avec une part de 0 à 100 % des appels, ou « arret ».
+        Sans fichier de routage : l'EC en service sert tout (le comportement des premiers bancs). Un fichier illisible n'ouvre rien : « arret »."""
+        s = self._dossier_stock(d)
+        f = s / "ROUTAGE.json" if s is not None else None
+        if f is None or not f.exists():
+            return {"mode": "service", "part": 100}
+        try:
+            r = json.loads(f.read_text(encoding="utf-8"))
+            if r.get("mode") not in ("ombre", "service", "arret"):
+                raise ValueError("mode")
+            return {"mode": r["mode"], "part": max(0, min(100, int(r.get("part", 0))))}
+        except (OSError, ValueError, TypeError):
+            return {"mode": "arret", "part": 0}
+
+    def router(self, module: str, point: str, mode: str, part: int = 0) -> dict:
+        """Pose le routage (écriture atomique) : la mise en service par paliers, et le RETOUR INSTANTANÉ (« arret » ou part 0) : un aiguillage, rien à restaurer."""
+        d = self._points.get("%s.%s" % (module, point))
+        if d is None:
+            raise PointInconnu("%s.%s" % (module, point))
+        if mode not in ("ombre", "service", "arret"):
+            raise ValueError("mode inconnu : %r (ombre, service, arret)" % (mode,))
+        s = self._dossier_stock(d)
+        if s is None:
+            raise ValueError("aucun stock d'EC : rien à router")
+        s.mkdir(parents=True, exist_ok=True)
+        r = {"mode": mode, "part": max(0, min(100, int(part))), "depuis": time.strftime("%Y-%m-%d %H:%M:%S")}
+        tmp = s / "ROUTAGE.json.tmp"
+        tmp.write_text(json.dumps(r), encoding="utf-8")
+        tmp.replace(s / "ROUTAGE.json")
+        if mode == "ombre":
+            with self._verrou:
+                d.ombre = {"appels": 0, "ecarts": 0, "erreurs": 0, "ms_ref": deque(maxlen=300), "ms_ec": deque(maxlen=300)}
+        return r
+
+    def _ombre(self, d: _Declare, ec, entree, sortie_ref, ms_ref: float):
+        fichier, version, runtime, emp = ec
+        if not hasattr(d, "ombre"):
+            d.ombre = {"appels": 0, "ecarts": 0, "erreurs": 0, "ms_ref": deque(maxlen=300), "ms_ec": deque(maxlen=300)}
+        o = d.ombre
+        t = time.perf_counter()
+        try:
+            candidate = _copie(self._executer(d, fichier, runtime, emp)(_copie(entree)))
+            ms_ec = (time.perf_counter() - t) * 1000
+            ecarts = valider(d.contrat.get("sortie"), candidate)
+            o["appels"] += 1
+            o["ms_ref"].append(ms_ref)
+            o["ms_ec"].append(ms_ec)
+            if ecarts or candidate != sortie_ref:
+                o["ecarts"] += 1
+                self._faute(d, "ombre : " + ("sortie hors contrat" if ecarts else "la sortie diffère de celle de la référence"), version)
+        except Exception as e:                                    # une EC qui plante en ombre ne touche personne, mais elle est comptée
+            o["appels"] += 1
+            o["erreurs"] += 1
+            self._faute(d, "ombre : %s : %s" % (type(e).__name__, e), version)
 
     def _comparer(self, d: _Declare, entree, sortie, source: str):
         """La couche 5 : un échantillon d'appels est confronté à la référence. Une différence est une dérive de SENS que le schéma ne voit pas."""
@@ -414,7 +482,18 @@ class ServicePoints:
         if suspendue is None and s is not None and (s / "SUSPENDUE.json").exists():
             suspendue = json.loads((s / "SUSPENDUE.json").read_text(encoding="utf-8"))
         return {"point": d.gid, "contrat": d.p.contrat, "runtime": d.p.runtime, "sert": ec[1] if ec else "reference", "ec_refusee": getattr(d, "refus", ""),
-                "suspendue": suspendue, "fautes_recentes": len(d.fautes), "appels": d.appels}
+                "suspendue": suspendue, "fautes_recentes": len(d.fautes), "appels": d.appels,
+                "routage": self._routage(d) if (s is not None and (s / "ACTIVE").exists()) else None, "ombre": self._resume_ombre(d)}
+
+    @staticmethod
+    def _resume_ombre(d: _Declare):
+        o = getattr(d, "ombre", None)
+        if not o:
+            return None
+        mr = statistics.median(o["ms_ref"]) if o["ms_ref"] else None
+        me = statistics.median(o["ms_ec"]) if o["ms_ec"] else None
+        return {"appels": o["appels"], "ecarts": o["ecarts"], "erreurs": o["erreurs"], "ref_ms": mr, "ec_ms": me,
+                "gain_pct": round((mr - me) / mr * 100, 1) if mr and me is not None else None}
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

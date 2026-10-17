@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b8e4fb
+# VERSION CN : 0.1.0  #c05941
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : dit si une variante d'un point d'évolution est équivalente à la référence, plus rapide, et si son gain tient hors de ce que le générateur a vu.
 # MÉTHODE    : code déterministe (jamais un modèle) ; évaluation par paliers avec arrêt à la première divergence ; partition réservée ; contrôle de sa propre solidité par des variantes fausses.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b8e4fb ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c05941 ▼▼▼
 """L'évaluateur (docs/CN_EVOLUTION.md §2, docs/CN_NEXUS.md §4 : un juge ne s'évolue pas).
 
   - DÉTERMINISTE : aucune note donnée par un modèle ; une comparaison de données et des mesures de durée ;
@@ -71,7 +71,7 @@ class Evaluateur:
         ref = self.points.reference(module, point)
         gid = ref["gid"]
         res = {"point": gid, "verdict": "", "corpus": {}, "palier_atteint": 0.0, "evalues": 0, "divergence": None, "erreur": "", "latence_ms": {}, "gain_pct": None,
-               "gain_visible_pct": None, "gain_reserve_pct": None, "gain_tient": None, "refs_en_echec": 0}
+               "gain_visible_pct": None, "gain_reserve_pct": None, "gain_tient": None, "refs_en_echec": 0, "bruit_pct": None}
         try:
             cand = charger_texte(candidat, ref["fonction"])
         except Impur as e:
@@ -86,6 +86,7 @@ class Evaluateur:
         res["corpus"] = {"distincts": n, "visibles": len(visibles), "reserves": len(reserves)}
         t_ref = {"visible": [], "reserve": []}
         t_cand = {"visible": [], "reserve": []}
+        t_ref2 = []                                          # la référence chronométrée une seconde fois : l'écart avec elle-même est le BRUIT de la machine
         sortie_contrat = ref["contrat"].get("sortie")
         fait = 0
         arret = False
@@ -112,6 +113,7 @@ class Evaluateur:
                     break
                 t_ref[part].append(self._duree(ref["appelable"], cas["entree"], repetitions))
                 t_cand[part].append(self._duree(cand, cas["entree"], repetitions))
+                t_ref2.append(self._duree(ref["appelable"], cas["entree"], repetitions))
                 res["evalues"] += 1
                 fait += 1
             res["palier_atteint"] = round(fait / n, 3) if n else 0.0
@@ -122,6 +124,8 @@ class Evaluateur:
         res["gain_visible_pct"], res["gain_reserve_pct"] = _gain(rv, cv), _gain(rr, cr)
         toutes_ref, tous_cand = t_ref["visible"] + t_ref["reserve"], t_cand["visible"] + t_cand["reserve"]
         res["gain_pct"] = _gain(_mediane(toutes_ref), _mediane(tous_cand))
+        bruit = _gain(_mediane(toutes_ref), _mediane(t_ref2))
+        res["bruit_pct"] = abs(bruit) if bruit is not None else None      # un gain qui ne dépasse pas ce que la référence « gagne » sur elle-même n'est pas un gain
         if res["gain_visible_pct"] is not None and res["gain_reserve_pct"] is not None:
             # le gain « tient » s'il subsiste, aux trois quarts au moins, sur ce que le générateur n'a jamais vu
             res["gain_tient"] = True if res["gain_visible_pct"] <= 0 else res["gain_reserve_pct"] >= 0.75 * res["gain_visible_pct"]

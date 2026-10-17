@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #02cd13
+# VERSION CN : 0.1.0  #3b0330
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=02cd13 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3b0330 ▼▼▼
 """Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats."""
 import json
 import shutil
@@ -234,6 +234,80 @@ class Contenu(Banc):
         hote = P.HotePython()
         with self.assertRaises(RuntimeError):
             hote.appelable_verifie(f, "doubler", "0" * 64)
+
+
+class Routage(Banc):
+    """La mise en service par paliers : l'ombre, puis une part du trafic, et le retour instantané."""
+
+    EC_BONNE = "def doubler(entree):\n    return {'y': entree['x'] * 2, 'par': 'EC'}\n"
+    EC_JUMELLE = "def doubler(entree):\n    return {'y': entree['x'] * 2, 'par': 'reference'}\n"        # équivalente à la référence, sortie pour sortie
+
+    def test_en_ombre_la_reference_repond_et_l_ec_calcule_a_cote(self):
+        self.poser_ec(ec(self.EC_JUMELLE))
+        self.svc.router("essai", "doubler", "ombre")
+        for x in range(20):
+            self.assertEqual(self.appeler(x)["par"], "reference")
+        o = self.svc.etat("essai", "doubler")["ombre"]
+        self.assertEqual((o["appels"], o["ecarts"], o["erreurs"]), (20, 0, 0))
+
+    def test_en_ombre_un_ecart_est_compte_sans_que_personne_ne_le_voie(self):
+        self.poser_ec(ec(self.EC_BONNE))                                              # sortie conforme au schéma mais « par » diffère
+        self.svc.router("essai", "doubler", "ombre")
+        r = self.appeler(3)
+        self.assertEqual(r["par"], "reference")                                       # l'utilisateur a la référence
+        self.assertEqual(self.svc.etat("essai", "doubler")["ombre"]["ecarts"], 1)
+
+    def test_trois_ecarts_en_ombre_suspendent_l_ec(self):
+        self.poser_ec(ec(self.EC_BONNE))
+        self.svc.router("essai", "doubler", "ombre")
+        for x in range(3):
+            self.appeler(x)
+        self.assertIsNotNone(self.svc.etat("essai", "doubler")["suspendue"])
+
+    def test_une_ec_qui_plante_en_ombre_est_comptee(self):
+        self.poser_ec(ec("def doubler(entree):\n    raise RuntimeError('boum')\n"))
+        self.svc.router("essai", "doubler", "ombre")
+        self.assertEqual(self.appeler(1)["par"], "reference")
+        self.assertEqual(self.svc.etat("essai", "doubler")["ombre"]["erreurs"], 1)
+
+    def test_une_part_du_trafic_va_a_l_ec_et_la_meme_entree_va_toujours_du_meme_cote(self):
+        self.poser_ec(ec(self.EC_BONNE))
+        self.svc.router("essai", "doubler", "service", 50)
+        cotes = {x: self.appeler(x)["par"] for x in range(200)}
+        n_ec = sum(1 for v in cotes.values() if v == "EC")
+        self.assertTrue(60 <= n_ec <= 140, n_ec)                                      # environ la moitié
+        for x in (3, 77, 150):
+            self.assertEqual(self.appeler(x)["par"], cotes[x])                       # stable
+        self.assertEqual(self.svc.etat("essai", "doubler")["routage"], {"mode": "service", "part": 50})
+
+    def test_part_zero_et_cent(self):
+        self.poser_ec(ec(self.EC_BONNE))
+        self.svc.router("essai", "doubler", "service", 0)
+        self.assertTrue(all(self.appeler(x)["par"] == "reference" for x in range(30)))
+        self.svc.router("essai", "doubler", "service", 100)
+        self.assertTrue(all(self.appeler(x)["par"] == "EC" for x in range(30)))
+
+    def test_le_retour_instantane_est_un_aiguillage(self):
+        self.poser_ec(ec(self.EC_BONNE))
+        self.svc.router("essai", "doubler", "service", 100)
+        self.assertEqual(self.appeler(2)["par"], "EC")
+        self.svc.router("essai", "doubler", "arret")                                  # un seul geste : rien à restaurer, l'EC reste dans le stock
+        self.assertEqual(self.appeler(2)["par"], "reference")
+        self.assertTrue((self.stock / "essai" / "doubler" / "EC_doubler__EC21.py").exists())
+        self.svc.router("essai", "doubler", "service", 100)
+        self.assertEqual(self.appeler(2)["par"], "EC")
+
+    def test_un_routage_illisible_n_ouvre_rien(self):
+        self.poser_ec(ec(self.EC_BONNE))
+        (self.stock / "essai" / "doubler" / "ROUTAGE.json").write_text("{pas du json", encoding="utf-8")
+        self.assertEqual(self.appeler(2)["par"], "reference")
+        self.assertEqual(self.svc.etat("essai", "doubler")["routage"], {"mode": "arret", "part": 0})
+
+    def test_le_routage_est_valide(self):
+        self.poser_ec(ec(self.EC_BONNE))
+        with self.assertRaises(ValueError):
+            self.svc.router("essai", "doubler", "n'importe quoi")
+        self.assertEqual(self.svc.router("essai", "doubler", "service", 250)["part"], 100)        # une part hors bornes est ramenée dans [0, 100]
 
 
 class AutresFormats(Banc):
