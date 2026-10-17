@@ -103,6 +103,17 @@ Exigence de Drisse : un **système** qui garantisse qu'une EC reste compatible a
 
 **Ce que le système garantit, honnêtement.** Les couches 1 à 4 rendent l'incompatibilité **impossible** pour toute évolution par ajout, et détectable **avant** publication pour les autres. La couche 5 rend toute incompatibilité résiduelle **invisible à l'utilisateur** (la réponse est toujours conforme) au prix d'une perte temporaire d'optimisation sur ce point. Limite : un changement de sens que ni les invariants ni le corpus doré ne détectent passerait la couche 3 ; la qualité des invariants et du corpus de chaque point d'évolution est donc la dépendance réelle du système, et fait partie de ce que le dépôt doit entretenir.
 
+## 2 septies. EC dans d'autres langages (piste, 17-10)
+
+Conséquence du contrat neutre : si l'EC est une fonction pure `entrée JSON → sortie JSON`, le langage est un détail d'implémentation, et le nexus verrouillé par la signature du dépôt laisse tout le reste en surcouche.
+
+- **Ordre** : Python (v1) → **WebAssembly** (bac isolé sans disque ni réseau, déterministe ; produit par Rust, Go, C…) → Node et PHP en processus isolés seulement si un besoin réel apparaît.
+- **Gain à mesurer** : l'évolution pourrait réécrire un point chaud en langage compilé (WASM) pour un gain de vitesse que le Python n'atteindra pas. Hypothèse, non mesurée.
+- **Précautions dès maintenant** (sans rien construire de plus) : contrat en schéma JSON neutre ; interface d'appel `appeler(point, entrée) → sortie` ; champ `runtime` dans le manifeste d'EC (Python au départ) ; le chargement d'une EC vérifie que l'empreinte du nexus est signée par le dépôt.
+- **Coûts** : surface de sécurité et d'évaluation par langage ; quelques ms de frontière de processus (ne vaut que pour les points assez lourds).
+- **Horizon distinct, hors V19** : la même mécanique appliquée aux sites hébergés (le code du client = nexus à son commit, l'EC = couche d'optimisation). C'est un autre produit, au périmètre à part.
+- Chantier d'**Orfan R&D**, après le Python.
+
 ## 3. Rôles (pas de nouvel agent)
 
 Déclarés dans le registre de modèles et le module Agents IA, chacun avec profil, modèle et budget :
