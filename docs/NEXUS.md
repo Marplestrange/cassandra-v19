@@ -93,7 +93,7 @@ Décision de Drisse : l'interface n'est pas nexus ; seuls le **squelette** et le
 - **Fitness** : l'usage mesuré (temps pour accomplir une tâche, clics, erreurs, recherches abouties), local à l'instance et respectueux du cloisonnement par compte.
 - **Invariants du contrat** vérifiables automatiquement : accessibilité (contrastes, étiquettes, ordre du focus), respect des jetons de design, aucune information d'un autre compte.
 - Les suggestions d'objectif du cockpit, l'ordre des onglets, la composition de la vue d'ensemble en sont les premières surfaces ; **`vue.composer`**, déjà pur, est le pilote.
-- Option à instruire : une évolution **par compte** (l'interface s'adapte à l'usage de chacun) en plus de l'évolution de l'instance.
+- **Évolution au niveau de l'instance seulement** (décision de Drisse, 17-10) : pas d'évolution par compte, qui multiplierait variantes, corpus et mesures par le nombre de comptes (usine à gaz) et soulèverait la question de ce qu'on mesure chez chacun. La personnalisation d'un compte reste une **préférence d'affichage** dans les réglages, pas de l'évolution.
 
 ## 6. Comment l'intouchabilité est vérifiée (pas promise)
 
@@ -121,7 +121,7 @@ La classe de chaque module est un champ de son **manifeste** (`classe = "regalie
 2. « Pure mais décisive » = nexus par défaut, **réglable** par l'admin, avec garde renforcée et combinaison prudente (§3).
 3. La liste des régaliens **n'est pas figée** : la classe est un champ du manifeste.
 4. **Les prompts d'agents et les politiques sont de l'EC** (§5 ter) : le nexus en garde le contrat et les bornes.
+5. **L'interface évolue au niveau de l'instance seulement**, pas par compte (§5 bis).
 
 **Ouvertes**
 - Quels modules de la liste régalienne sont à revoir ? Candidats à discuter : `sauvegardes` (le calcul de rétention est pur), `modules` (la résolution des dépendances est pure et décisive), `reglages`, `journal`.
-- Évolution de l'interface **par compte** en plus de celle de l'instance ?
