@@ -47,11 +47,30 @@ Limites à tenir : la fossilisation ne vaut que pour des décisions déterminist
 - **Version EC** (*Evolution Cassandra*) : l'état de la ligne évoluée posée par-dessus. Ex. `EC21`.
 - Écriture complète : `1.9.0+EC21.a3f9c2`, une version sémantique valide (métadonnée de build) : **l'EC ne passe jamais devant le dépôt**. Le suffixe est l'empreinte du contenu.
 - Le numéro EC ne repart jamais à zéro : il identifie un état de la ligne évoluée. « EC21 » d'une instance et « EC21 » d'une autre ne sont la même version que si l'empreinte est la même.
-- S'applique aux modules, aux prompts d'agents (`itare.prompt 1.2 · EC14`), aux politiques (`sensorium.seuils 1.0 · EC6`) et, plus tard, au moteur Orfan. **Le noyau** a une version dépôt et pas d'EC : il est hors évolution.
+- S'applique aux modules, aux prompts d'agents (`itare.prompt 1.2 · EC14`) et aux politiques (`sensorium.seuils 1.0 · EC6`). **Le noyau et Orfan** n'ont qu'une version dépôt, sans EC : ils sont hors évolution.
 - Une EC ne peut changer ni le manifeste, ni les signatures de capacités, ni les permissions (contrôle à chaque promotion).
 - **Version suivie**, par module : *Évolution* (la dernière EC prouvée), *Dépôt* (sans évolution) ou *Évolution éprouvée* (seulement une EC confirmée à J+30). Changer de version suivie, comme revenir à une EC ou au dépôt, est un aiguillage journalisé : rien n'est détruit.
 - **Proposer au dépôt** : une EC devient un patch git ; une fois fusionnée, elle est « intégrée » à la version dépôt.
 - **Sortie d'une nouvelle version dépôt** : les pièces EC sont rejouées sur la nouvelle base. Reportées (0 écart au rejeu), intégrées (déjà dans le dépôt), en conflit (renvoyées au moteur) ou retirées (le gain disparaît : tombe). Le résultat est une nouvelle EC sur la nouvelle base, qui passe par l'ombre.
+
+## 2 quater. Nexus et couche EC : une EC n'est jamais annulée par le dépôt (17-10)
+
+**Décision de Drisse : le dépôt améliore un module sans jamais qu'une EC d'un client cesse d'être compatible.** Chaque module est coupé en deux couches :
+
+- **Nexus (version dépôt)** : écrit seulement par le dépôt, jamais touché par l'évolution. Il contient le manifeste, les signatures publiques des capacités, les permissions, les schémas de données et leurs migrations, et, pour chaque point d'évolution, une **façade de contrat** et une **implémentation de référence**.
+- **Couche EC** : écrite seulement par l'évolution, rangée **à part** des fichiers du module (une mise à jour du dépôt ne l'écrit jamais). Elle ne remplace que des implémentations derrière un **point d'évolution déclaré** dans le manifeste (`[[points_evolution]]` : identifiant, contrat versionné, mesure, corpus de rejeu, invariants).
+
+**Règles de compatibilité**
+1. L'EC ne s'accroche qu'à des points déclarés et n'importe que l'**API publique stable** du nexus (versionnée, additive dans une version majeure). Le filtre avant évaluation d'Orfan le vérifie sur l'arbre syntaxique.
+2. La **façade** traduit le modèle interne du nexus vers la forme stable du contrat, et inversement : un remaniement interne du dépôt n'atteint pas l'EC.
+3. Un contrat n'évolue que **par ajout** (champs d'entrée optionnels, champs de sortie en plus) à l'intérieur d'une version majeure. Une rupture (version majeure) **livre une adaptation** de l'ancien contrat vers le nouveau ; l'EC continue de servir par elle pendant qu'une EC native est refaite en arrière-plan.
+4. **Filet** : si une EC ne passe réellement plus, l'implémentation de référence du dépôt sert la capacité (correcte, pas encore optimisée). L'EC est **suspendue, conservée, refaite puis réintégrée**, jamais détruite.
+5. **Mise à jour en deux temps** : le nouveau nexus est installé à côté, l'EC y est rejouée en ombre (point par point, sur le trafic réel) ; la bascule n'a lieu que si c'est compatible ; retour au nexus précédent en un clic.
+6. **Les EC éprouvées des clients deviennent la suite de tests du dépôt** (exportées, anonymisées, avec consentement) : le dépôt ne peut pas publier une version qui casse une EC connue. Un vérificateur de contrats compare chaque version à la précédente (ajout seulement, sauf version majeure).
+7. L'EC ne possède aucune donnée persistante : l'état reste au nexus (pas de migration côté EC) ; ses caches sont jetables.
+8. Les artefacts d'Orfan sont stockés dans un format neutre (patch + contrat + preuve) : monter la version d'Orfan n'invalide aucune EC.
+
+Ce qu'on promet, et ce qu'on ne promet pas : une EC reste **active** tant que le contrat n'évolue que par ajout. Si le dépôt change le sens d'un contrat, la garantie est qu'**aucune EC n'est perdue et qu'aucun service ne coupe** : l'EC est portée par l'adaptation, ou suspendue sous la référence, puis refaite.
 
 ## 3. Rôles (pas de nouvel agent)
 

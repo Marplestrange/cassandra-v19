@@ -552,6 +552,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     ['Politique','sensorium.seuils 1.0','EC6','seuils réglés sur tes acquittements (pilote)'],
     ['Moteur','orfan 0.1.0','—','le moteur lui-même n\'évolue pas encore : méta-niveau en R&D']
   ];
+  const SEAMS={
+    fastpanel:[['sites.lecture','1.3','EC21','active','additif depuis la 1.9.0'],['sites.tri','1.0','EC17','active','inchangé'],['audit.certificats','2.0','EC18','active','inchangé'],['services.etat','1.1','EC9','active','inchangé'],['bases.liste','1.0','—','reference','aucune EC : la référence du dépôt sert']],
+    vue:[['composer.assemblage','1.0','EC8','active','inchangé'],['composer.cache','1.2','—','reference','aucune EC']],
+    securite:[['images.compose','1.1','EC3','active','inchangé'],['analyse.familles','1.0','—','reference','aucune EC']]
+  };
   const CANAUX=['Évolution — toujours la dernière EC prouvée','Dépôt — la version officielle, sans évolution','Évolution éprouvée — seulement une EC confirmée à J+30'];
   const vdep=(m)=>MODS[m]?MODS[m].off:'—';
   const vec=(m)=>MODS[m]?MODS[m].ec:'0';
@@ -571,6 +576,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
         '<div><span class="lib">Version EC en service</span><span class="v">EC'+m.ec+'</span><span class="note">'+m.ec+' pièces promues depuis la '+m.off+' · empreinte <span class="mono">'+m.h+'</span></span></div>'+
         '<div><span class="lib">Écart avec le dépôt</span><span class="v" style="font-size:13px">'+m.fichiers+'</span><span class="note">'+m.gain+'</span></div>'+
       '</div>'+
+      '<div class="lib" style="margin-top:6px">Deux couches, deux propriétaires</div>'+
+      '<div class="cgrid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px">'+
+        '<div class="verre" style="padding:12px;background:var(--verre-fort);display:flex;flex-direction:column;gap:5px"><b class="mono">Nexus · version dépôt '+m.off+'</b><span class="note">écrit seulement par le dépôt, jamais touché par l\'évolution : manifeste, signatures publiques, permissions, schémas de données et migrations, <b>façades de contrat</b>, <b>implémentations de référence</b>.</span></div>'+
+        '<div class="verre" style="padding:12px;background:var(--accent-doux);display:flex;flex-direction:column;gap:5px"><b class="mono">Couche EC · EC'+m.ec+'</b><span class="note">écrite seulement par l\'évolution, rangée <b>à part</b> des fichiers du module : une mise à jour du dépôt ne l\'écrit jamais. Ne parle qu\'à l\'API publique stable.</span></div>'+
+      '</div>'+
+      '<div class="lib" style="margin-top:6px">Points d\'évolution déclarés par le nexus</div>'+
+      '<table><tr><th>Point</th><th>Contrat</th><th>EC</th><th>Sert actuellement</th><th>Compatibilité</th></tr>'+
+      (SEAMS[cap.mod]||[]).map(x=>'<tr><td class="mono">'+x[0]+'</td><td class="mono">@'+x[1]+'</td><td class="mono '+(x[2]==='—'?'non':'cons')+'">'+x[2]+'</td><td>'+(x[3]==='active'?'<span class="oui">l\'EC</span>':'<span class="non">la référence du dépôt</span>')+'</td><td class="note">'+x[4]+'</td></tr>').join('')+'</table>'+
       '<table>'+ligne('Garde-fous','<span class="oui">signatures des capacités intactes</span> · <span class="oui">manifeste identique</span> · <span class="oui">permissions inchangées</span> · <span class="oui">chaîne d\'empreintes vérifiée</span>')+
         ligne('Version suivie','<select id="canal">'+CANAUX.map((c,i)=>'<option'+(i===m.canal?' selected':'')+'>'+c+'</option>').join('')+'</select>')+'</table>'+
       '<div class="lib" style="margin-top:6px">Versions EC — les plus récentes</div>'+
@@ -579,20 +592,25 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
         '<button class="btn dng" id="v-off">Revenir à la version dépôt '+m.off+'</button>'+
         '<button class="btn" id="v-amont">Proposer au dépôt (patch git)</button>'+
-        (m.suiv?'<button class="btn prim" id="v-sim">Simuler la sortie dépôt '+m.suiv+'</button>':'<span class="puce mu">aucune nouvelle version dépôt annoncée</span>')+
+        (m.suiv?'<button class="btn prim" id="v-sim">Simuler la mise à jour vers la '+m.suiv+'</button>':'<span class="puce mu">aucune nouvelle version dépôt annoncée</span>')+
       '</div><div id="v-res"></div>'+
+      '<div class="verre" style="padding:12px;display:flex;flex-direction:column;gap:5px;background:var(--verre-fort)"><b class="mono">Ce qui garantit qu\'une mise à jour du dépôt ne casse pas une EC</b>'+
+      '<div class="note">1. L\'EC est rangée à part : une mise à jour n\'écrit jamais dedans. &nbsp; 2. L\'EC ne s\'accroche qu\'à des points déclarés et ne voit que l\'API publique stable. &nbsp; 3. La façade du nexus absorbe ses remaniements internes. &nbsp; 4. Un contrat n\'évolue que par ajout dans une version majeure ; une rupture livre une adaptation. &nbsp; 5. Si une EC ne passe plus : la référence du dépôt sert, l\'EC est suspendue puis refaite, jamais détruite. &nbsp; 6. Mise à jour en deux temps : installée à côté, EC rejouée en ombre, bascule seulement si compatible. &nbsp; 7. Les EC éprouvées des clients (exportées, anonymisées) deviennent la suite de tests du dépôt : il ne peut pas publier une version qui en casse une connue.</div></div>'+
       '<div class="note">Le numéro EC ne repart jamais à zéro : il identifie un état de la ligne évoluée. L\'empreinte l\'accroche au contenu : « EC21 » d\'Amizo et « EC21 » d\'une autre instance ne sont la même version que si l\'empreinte est la même.</div>'+gen;
     z.querySelector('#canal').onchange=(e)=>{m.canal=e.target.selectedIndex;toast('Version suivie par '+cap.mod+' : '+CANAUX[m.canal].split(' — ')[0]+' · appliqué sans redémarrage')};
     z.querySelectorAll('[data-rev]').forEach(b=>b.onclick=()=>toast('Retour à '+cap.mod+' '+m.off+'+'+b.dataset.rev+' : aiguillage seul, journalisé, chaîne intacte'));
     z.querySelector('#v-off').onclick=()=>toast('Retour à la version dépôt '+m.off+' : l\'EC est mise de côté, pas détruite');
     z.querySelector('#v-amont').onclick=()=>toast('Patch exporté : EC'+m.ec+' devient une demande de fusion sur le dépôt ; une fois fusionnée, elle est intégrée à la version dépôt');
     const sim=z.querySelector('#v-sim');if(sim)sim.onclick=()=>{z.querySelector('#v-res').innerHTML=
-      '<div class="verre" style="padding:12px;background:var(--accent-doux);margin-top:6px"><b class="mono">Sortie dépôt '+m.suiv+' simulée : les '+m.ec+' pièces EC rejouées sur la nouvelle base</b>'+
-      '<table><tr><td class="oui">14 reportées</td><td>rejouées sur 1 240 appels : 0 écart, prêtes à être appliquées</td></tr>'+
-      '<tr><td class="cons">4 intégrées</td><td>le dépôt les contient déjà : classées « intégrées », rien à faire</td></tr>'+
-      '<tr><td style="color:var(--alerte);font-weight:600">2 en conflit</td><td>le code a changé dessous : renvoyées au moteur pour être refaites sur la '+m.suiv+'</td></tr>'+
-      '<tr><td style="color:var(--danger);font-weight:600">1 retirée</td><td>son gain disparaît sur la nouvelle base : tombe, avec sa raison</td></tr></table>'+
-      '<div class="note">Résultat : <span class="mono">'+m.suiv+'+EC'+(m.ec+1)+'</span>. Rien n\'est appliqué sans passer par l\'ombre.</div></div>'};
+      '<div class="verre" style="padding:12px;background:var(--accent-doux);margin-top:6px;display:flex;flex-direction:column;gap:8px"><b class="mono">Mise à jour du dépôt vers la '+m.suiv+' : deux temps</b>'+
+      '<div class="note"><b>1 · Installée à côté.</b> Le nouveau nexus ne sert encore personne. <b>2 · L\'EC y est rejouée en ombre</b> sur 1 240 appels réels, point par point. On ne bascule que si rien ne casse.</div>'+
+      '<table><tr><th>Point</th><th>Contrat</th><th>Résultat</th><th>Ce qui sert ensuite</th></tr>'+
+      '<tr><td class="mono">sites.lecture</td><td class="mono">1.3 → 1.4 · additif</td><td class="oui">EC21 intacte · 0 écart</td><td>l\'EC, sans rien faire</td></tr>'+
+      '<tr><td class="mono">services.etat</td><td class="mono">1.1 → 1.1</td><td class="oui">EC9 intacte · 0 écart</td><td>l\'EC</td></tr>'+
+      '<tr><td class="mono">audit.certificats</td><td class="mono">2.0 → 3.0 · rupture</td><td class="cons">portée par l\'adaptation 2→3 du dépôt · 0 écart</td><td>l\'EC18 via l\'adaptation, pendant qu\'une EC native 3.0 est refaite</td></tr>'+
+      '<tr><td class="mono">sites.tri</td><td class="mono">1.0 → 2.0 · rupture</td><td style="color:var(--alerte);font-weight:600">3 écarts après adaptation</td><td>la référence du dépôt, le temps de refaire l\'EC17 ; l\'EC17 est conservée</td></tr></table>'+
+      '<div class="verdict">Verdict : bascule possible. Aucune EC détruite, aucune coupure. 3 points servis par l\'EC, 1 par la référence en attendant. Retour au nexus précédent disponible en un clic.</div>'+
+      '<div class="note">Résultat : <span class="mono">'+m.suiv+'+EC'+(m.ec+1)+'</span>.</div></div>'};
   }
   function tout(){rail();centre();analyse()}
   tout();
