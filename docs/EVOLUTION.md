@@ -40,6 +40,19 @@ Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le 
 
 Limites à tenir : la fossilisation ne vaut que pour des décisions déterministes en pratique ; le routage sur mesure exige assez de données par contexte ; le « 2,3× » et les autres chiffres de la maquette sont fictifs et doivent être mesurés par le pilote.
 
+## 2 ter. Versionnement : version dépôt + version EC (17-10)
+
+**Règle : tout artefact évolutif porte deux versions.**
+- **Version dépôt** : celle du dépôt (semver, signée, personne ne la modifie). Ex. `fastpanel 1.9.0`.
+- **Version EC** (*Evolution Cassandra*) : l'état de la ligne évoluée posée par-dessus. Ex. `EC21`.
+- Écriture complète : `1.9.0+EC21.a3f9c2`, une version sémantique valide (métadonnée de build) : **l'EC ne passe jamais devant le dépôt**. Le suffixe est l'empreinte du contenu.
+- Le numéro EC ne repart jamais à zéro : il identifie un état de la ligne évoluée. « EC21 » d'une instance et « EC21 » d'une autre ne sont la même version que si l'empreinte est la même.
+- S'applique aux modules, aux prompts d'agents (`itare.prompt 1.2 · EC14`), aux politiques (`sensorium.seuils 1.0 · EC6`) et, plus tard, au moteur Orfan. **Le noyau** a une version dépôt et pas d'EC : il est hors évolution.
+- Une EC ne peut changer ni le manifeste, ni les signatures de capacités, ni les permissions (contrôle à chaque promotion).
+- **Version suivie**, par module : *Évolution* (la dernière EC prouvée), *Dépôt* (sans évolution) ou *Évolution éprouvée* (seulement une EC confirmée à J+30). Changer de version suivie, comme revenir à une EC ou au dépôt, est un aiguillage journalisé : rien n'est détruit.
+- **Proposer au dépôt** : une EC devient un patch git ; une fois fusionnée, elle est « intégrée » à la version dépôt.
+- **Sortie d'une nouvelle version dépôt** : les pièces EC sont rejouées sur la nouvelle base. Reportées (0 écart au rejeu), intégrées (déjà dans le dépôt), en conflit (renvoyées au moteur) ou retirées (le gain disparaît : tombe). Le résultat est une nouvelle EC sur la nouvelle base, qui passe par l'ombre.
+
 ## 3. Rôles (pas de nouvel agent)
 
 Déclarés dans le registre de modèles et le module Agents IA, chacun avec profil, modèle et budget :

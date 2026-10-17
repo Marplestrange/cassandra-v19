@@ -445,10 +445,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   }
 
   // ── centre ─────────────────────────────────────────────────────────
-  const ONGLETS=[['carte','Carte qualité-diversité'],['lignee','Lignée'],['ombre','Ombre'],['contrat','Contrat de rejeu']];
+  const ONGLETS=[['carte','Carte qualité-diversité'],['lignee','Lignée'],['ombre','Ombre'],['contrat','Contrat de rejeu'],['versions','Versions']];
   function centre(){
     $('#c-nom').textContent=cap.id; $('#c-sous').textContent=cap.sous;
-    $('#c-puces').innerHTML=cap.etat==='muet'?'<span class="puce mu">non ciblée</span>':'<span class="puce ok">cible vivante</span><span class="puce">'+esc(cap.mod)+'</span>';
+    $('#c-puces').innerHTML=cap.etat==='muet'?'<span class="puce mu">non ciblée</span>':'<span class="puce ok">cible vivante</span><span class="puce mono">'+esc(cap.mod)+' · dépôt '+vdep(cap.mod)+' · EC'+vec(cap.mod)+'</span>';
     const act=cap.vars.find(v=>v.e==='ombre')||cap.vars.find(v=>v.e==='actif');
     $('#cadran').innerHTML=cap.etat==='muet'?'':
       '<div><span class="lib">Latence p50</span><span class="v">'+cap.p50+' ms</span><span class="note">actuelle</span></div>'+
@@ -459,7 +459,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     $('#onglets').querySelectorAll('button').forEach(b=>b.onclick=()=>{onglet=b.dataset.o;centre()});
     const z=$('#zone');
     if(cap.etat==='muet'){z.innerHTML='<div class="note" style="padding:20px 4px">Cette capacité ne déclare aucune mesure. Le moteur ne la touche pas et ne la compte pas parmi les stables : elle est dite muette.</div>';return}
-    ({carte,lignee,ombre,contrat})[onglet](z);
+    ({carte,lignee,ombre,contrat,versions})[onglet](z);
   }
   function carte(z){
     // x = latence (colonnes), y = écarts (lignes) ; la cellule garde la meilleure variante (MAP-Elites)
@@ -538,6 +538,62 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   $('#retour').onclick=()=>{cap.route=0;cap.vars.forEach(v=>{if(v.e==='ombre')v.e='archive'});toast('Retour instantané : 0 % — version actuelle seule, journalisé');tout()};
   $('#geler').onclick=()=>toast('Lignée gelée : plus de mutation sur cette branche (réversible)');
 
+
+  // ── versions : dépôt + EC (Evolution Cassandra) ────────────────────
+  const MODS={
+    fastpanel:{off:'1.9.0',date:'30-09-2026',noy:'0.4',ec:21,h:'a3f9c2',canal:0,suiv:'1.10.0',fichiers:'3 fichiers · +48 −31',gain:'−29 % sur fastpanel.sites (jeu réservé)'},
+    vue:{off:'0.1.0',date:'12-10-2026',noy:'0.4',ec:8,h:'7be104',canal:0,suiv:null,fichiers:'2 fichiers · +22 −19',gain:'−16 % sur vue.composer'},
+    securite:{off:'0.3.2',date:'16-10-2026',noy:'0.4',ec:3,h:'c015d9',canal:2,suiv:null,fichiers:'1 fichier · +9 −7',gain:'−11 % sur securite.analyse'}
+  };
+  const AUTRES=[
+    ['Noyau','0.4.1','—','hors évolution : sa version ne change que par ses mises à jour'],
+    ['Module','sensorium 0.4.0','—','muet : aucune mesure, aucune évolution'],
+    ['Prompt d\'agent','itare.prompt 1.2','EC14','évolué par Orfan R&D (pilote)'],
+    ['Politique','sensorium.seuils 1.0','EC6','seuils réglés sur tes acquittements (pilote)'],
+    ['Moteur','orfan 0.1.0','—','le moteur lui-même n\'évolue pas encore : méta-niveau en R&D']
+  ];
+  const CANAUX=['Évolution — toujours la dernière EC prouvée','Dépôt — la version officielle, sans évolution','Évolution éprouvée — seulement une EC confirmée à J+30'];
+  const vdep=(m)=>MODS[m]?MODS[m].off:'—';
+  const vec=(m)=>MODS[m]?MODS[m].ec:'0';
+  function versions(z){
+    const m=MODS[cap.mod];
+    const gen='<div class="lib" style="margin-top:4px">Tout est versionné de la même façon : une version dépôt et une version EC</div>'+
+      '<table><tr><th>Artefact</th><th>Version dépôt</th><th>Version EC</th><th>Note</th></tr>'+
+      Object.keys(MODS).map(k=>'<tr><td>Module</td><td class="mono">'+k+' '+MODS[k].off+'</td><td class="mono cons">EC'+MODS[k].ec+'</td><td class="note">'+MODS[k].gain+'</td></tr>').join('')+
+      AUTRES.map(a=>'<tr><td>'+a[0]+'</td><td class="mono">'+a[1]+'</td><td class="mono '+(a[2]==='—'?'non':'cons')+'">'+a[2]+'</td><td class="note">'+a[3]+'</td></tr>').join('')+'</table>';
+    if(!m){z.innerHTML='<div class="note" style="padding:12px 4px">Ce module n\'a pas d\'EC : seule la version dépôt est en service.</div>'+gen;return}
+    const ligne=(k,v)=>'<tr><td class="lib">'+k+'</td><td>'+v+'</td></tr>';
+    const pieces=[];for(let i=0;i<6;i++){const n=m.ec-i;if(n<1)break;pieces.push({n:n,h:(parseInt(m.h,16)-i*4097).toString(16).slice(-6).padStart(6,'0'),q:i===0?'en service':i===1?'précédente · retour en un clic':'ancienne',g:['−31 %','−27 %','−27 %','−22 %','−18 %','−18 %'][i],c:['sites','sites','services','sites','audit','sites'][i],d:'il y a '+(i*3+2)+' j'})}
+    z.innerHTML=
+      '<div class="note"><b>Version dépôt</b> : celle du dépôt, signée, que personne ne modifie. <b>Version EC</b> (Evolution Cassandra) : l\'état de la ligne évoluée posée par-dessus. Écriture : <span class="mono">'+m.off+'+EC'+m.ec+'.'+m.h+'</span>, une version sémantique valide, donc l\'EC ne passe jamais devant le dépôt.</div>'+
+      '<div class="cadran" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">'+
+        '<div><span class="lib">Version dépôt</span><span class="v">'+m.off+'</span><span class="note">publiée le '+m.date+' · signée · noyau ≥ '+m.noy+'</span></div>'+
+        '<div><span class="lib">Version EC en service</span><span class="v">EC'+m.ec+'</span><span class="note">'+m.ec+' pièces promues depuis la '+m.off+' · empreinte <span class="mono">'+m.h+'</span></span></div>'+
+        '<div><span class="lib">Écart avec le dépôt</span><span class="v" style="font-size:13px">'+m.fichiers+'</span><span class="note">'+m.gain+'</span></div>'+
+      '</div>'+
+      '<table>'+ligne('Garde-fous','<span class="oui">signatures des capacités intactes</span> · <span class="oui">manifeste identique</span> · <span class="oui">permissions inchangées</span> · <span class="oui">chaîne d\'empreintes vérifiée</span>')+
+        ligne('Version suivie','<select id="canal">'+CANAUX.map((c,i)=>'<option'+(i===m.canal?' selected':'')+'>'+c+'</option>').join('')+'</select>')+'</table>'+
+      '<div class="lib" style="margin-top:6px">Versions EC — les plus récentes</div>'+
+      '<table><tr><th>EC</th><th>Empreinte</th><th>Touche</th><th>Gain</th><th>État</th><th></th></tr>'+
+      pieces.map(p=>'<tr><td class="mono">EC'+p.n+'</td><td class="mono">'+p.h+'</td><td>fastpanel.'+p.c+'</td><td class="gain">'+p.g+'</td><td>'+p.q+' <span class="note">'+p.d+'</span></td><td>'+(p.n===m.ec?'':'<button class="btn" data-rev="EC'+p.n+'">Revenir ici</button>')+'</td></tr>').join('')+'</table>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        '<button class="btn dng" id="v-off">Revenir à la version dépôt '+m.off+'</button>'+
+        '<button class="btn" id="v-amont">Proposer au dépôt (patch git)</button>'+
+        (m.suiv?'<button class="btn prim" id="v-sim">Simuler la sortie dépôt '+m.suiv+'</button>':'<span class="puce mu">aucune nouvelle version dépôt annoncée</span>')+
+      '</div><div id="v-res"></div>'+
+      '<div class="note">Le numéro EC ne repart jamais à zéro : il identifie un état de la ligne évoluée. L\'empreinte l\'accroche au contenu : « EC21 » d\'Amizo et « EC21 » d\'une autre instance ne sont la même version que si l\'empreinte est la même.</div>'+gen;
+    z.querySelector('#canal').onchange=(e)=>{m.canal=e.target.selectedIndex;toast('Version suivie par '+cap.mod+' : '+CANAUX[m.canal].split(' — ')[0]+' · appliqué sans redémarrage')};
+    z.querySelectorAll('[data-rev]').forEach(b=>b.onclick=()=>toast('Retour à '+cap.mod+' '+m.off+'+'+b.dataset.rev+' : aiguillage seul, journalisé, chaîne intacte'));
+    z.querySelector('#v-off').onclick=()=>toast('Retour à la version dépôt '+m.off+' : l\'EC est mise de côté, pas détruite');
+    z.querySelector('#v-amont').onclick=()=>toast('Patch exporté : EC'+m.ec+' devient une demande de fusion sur le dépôt ; une fois fusionnée, elle est intégrée à la version dépôt');
+    const sim=z.querySelector('#v-sim');if(sim)sim.onclick=()=>{z.querySelector('#v-res').innerHTML=
+      '<div class="verre" style="padding:12px;background:var(--accent-doux);margin-top:6px"><b class="mono">Sortie dépôt '+m.suiv+' simulée : les '+m.ec+' pièces EC rejouées sur la nouvelle base</b>'+
+      '<table><tr><td class="oui">14 reportées</td><td>rejouées sur 1 240 appels : 0 écart, prêtes à être appliquées</td></tr>'+
+      '<tr><td class="cons">4 intégrées</td><td>le dépôt les contient déjà : classées « intégrées », rien à faire</td></tr>'+
+      '<tr><td style="color:var(--alerte);font-weight:600">2 en conflit</td><td>le code a changé dessous : renvoyées au moteur pour être refaites sur la '+m.suiv+'</td></tr>'+
+      '<tr><td style="color:var(--danger);font-weight:600">1 retirée</td><td>son gain disparaît sur la nouvelle base : tombe, avec sa raison</td></tr></table>'+
+      '<div class="note">Résultat : <span class="mono">'+m.suiv+'+EC'+(m.ec+1)+'</span>. Rien n\'est appliqué sans passer par l\'ombre.</div></div>'};
+  }
   function tout(){rail();centre();analyse()}
   tout();
 })();
