@@ -1,0 +1,125 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Évolution
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : evolution
+# ZONE       : CN
+# VERSION CN : 0.1.0  #d6a960
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d6a960 ▼▼▼
+[module]
+id = "evolution"
+nom = "Évolution"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau."
+confiance = "interne"
+famille = "evolution"
+requiert = ["droits", "comptes"]
+
+[permissions]
+evolution = true
+lectures = true
+
+[[droits]]
+id = "voir"
+libelle = "Voir l'évolution : les cibles, les pièces en ombre ou en service, la chaîne d'empreintes"
+
+[[droits]]
+id = "agir"
+libelle = "Proposer une variante, la retirer, lancer une visite : ce qui peut mettre en service un code que personne n'a relu"
+sensible = true
+
+[[capacites]]
+id = "cibles"
+libelle = "Les points d'évolution classés par ce que l'optimisation rapporterait (appels réels × durée moyenne) ; un point sans mesure est dit muet, jamais « zéro »"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "etat"
+libelle = "L'état de l'évolution : cibles, pièces (ombre, paliers, en service, retirées), routage et suspensions de chaque point, tombes, seuils, et la vérification de la chaîne d'empreintes (une rupture arrête tout)"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "proposer"
+libelle = "Proposer une variante d'un point : le moteur de recherche (Orfan, un modèle, ou les deux) rend du texte ; le noyau le juge sur le corpus de rejeu (équivalence par paliers, gain qui tient sur le jeu réservé, au-dessus du bruit de mesure, corpus assez fort) puis, seulement alors, l'écrit et le met en ombre"
+risque = "moyen"
+droit = "agir"
+perimetre = ["le stock d'EC du point visé : une variante prouvée y est écrite et mise en OMBRE ; rien n'est servi à personne"]
+preuve = "la pièce est dans le stock, en ombre, et la chaîne d'empreintes est intacte (ou rien n'a été écrit)"
+retour = "retirer la pièce : un aiguillage vers la référence ; l'EC reste dans le stock, jamais détruite"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "retour"
+libelle = "Le retour instantané : renvoyer toute la charge d'un point à la référence du dépôt (un aiguillage, rien à restaurer) ; la variante devient une tombe avec sa raison"
+risque = "moyen"
+droit = "agir"
+perimetre = ["le routage du point visé et ses pièces vivantes"]
+preuve = "le routage du point est à l'arrêt"
+retour = "proposer de nouveau une variante : une pièce retirée ne se remet pas en service seule"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "visiter"
+libelle = "La visite : rejouer chaque variante en service depuis assez longtemps contre la référence, sur le corpus d'aujourd'hui ; un gain qui n'est pas resté la retire"
+risque = "moyen"
+droit = "agir"
+perimetre = ["les pièces en service depuis plus de 30 jours, une fois chacune"]
+preuve = "chaque pièce visitée porte son verdict"
+retour = "aucun : une pièce retirée à la visite se propose de nouveau"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra"]
+
+[[moteurs]]
+id = "tick"
+libelle = "Fait avancer chaque pièce d'un cran seulement si ses preuves le permettent (ombre sans écart, puis 10, 50, 100 % du trafic ; retrait par le disjoncteur) et lance les visites échues"
+mode = "periodique"
+toutes_les_s = 300
+duree_max_s = 120
+
+[[reglages]]
+id = "moteur_defaut"
+libelle = "Le moteur de recherche par défaut"
+type = "choix"
+choix = ["deterministe", "modele", "les_deux"]
+defaut = "deterministe"
+aide = "Déterministe : les optimisations connues, zéro jeton. Modèle : un modèle de langage guidé par le profil de l'appel (coûte des jetons). Les deux : les gratuites d'abord."
+
+[[reglages]]
+id = "modele_role"
+libelle = "Le rôle de modèle utilisé pour proposer des variantes"
+type = "texte"
+defaut = "evolution"
+aide = "Un rôle du registre de modèles (module Modèles). Sans modèle lié à ce rôle, le moteur à modèle dit qu'il n'a pas de modèle : il n'invente rien."
+
+[[reglages]]
+id = "budget_essais"
+libelle = "Variantes évaluées par proposition"
+type = "entier"
+defaut = 3
+minimum = 1
+maximum = 10
+
+[[reglages]]
+id = "moteur_orfan"
+libelle = "Le moteur de recherche (chemin d'import)"
+type = "texte"
+defaut = "orfan.CN_orfan"
+aide = "Le contrat d'adaptateur : un module qui fournit MoteurDeterministe, MoteurModele et MoteurComposite. Orfan par défaut ; tout moteur qui respecte le contrat peut le remplacer."
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

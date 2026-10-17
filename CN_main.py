@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9bbed3
+# VERSION CN : 0.1.0  #649a22
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9bbed3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=649a22 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -59,6 +59,7 @@ from noyau.CN_contexte import Contexte
 from noyau.CN_points import ServicePoints
 from noyau.CN_rejeu import Rejeu
 from noyau.CN_evaluateur import Evaluateur
+from noyau.CN_evolution import Evolution
 from noyau.CN_droits import Droits
 from noyau.CN_executeur import Executeur
 from noyau.CN_identite import Identite
@@ -96,6 +97,7 @@ class Noyau:
         self.rejeu = Rejeu(self._donnees / "rejeu.db", max_par_point=int(rejeu_cfg.get("max_par_point", 2000)), actif=bool(rejeu_cfg.get("actif", True)))
         self.points.enregistreur = self.rejeu.enregistrer           # chaque appel d'un point nourrit le corpus de rejeu (les entrées seulement, sur cette instance)
         self.evaluateur = Evaluateur(self.points, self.rejeu, minimum=int(rejeu_cfg.get("minimum", 200)))
+        self.evolution = Evolution(self.points, self.rejeu, self.evaluateur, self._donnees / "evolution.db", seuils=(self.config.get("evolution") or {}).get("seuils"))
         self._stockages = {}       # module -> son Stockage, ouvert une fois
         self.droits = Droits(self.base)
         self.reglages = Reglages(self.base, Path(donnees) / "secrets.cle")      # la clé qui chiffre les secrets, à part de la base
@@ -153,7 +155,7 @@ class Noyau:
                         log.warning("corpus doré illisible (%s) : %s", corpus.name, ex)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
                        {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
-                        "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine, "point": self.points.appeler,
+                        "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine, "point": self.points.appeler, "evolution": self.evolution,
                         "urgence": types.SimpleNamespace(freins=self.freins, freiner=self.freiner, en_crise=self.en_crise, crise=self.crise),
                         "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, capacites=self.capacites_de, catalogue=self.catalogue_modules, activer=self.activer, desactiver=self.desactiver)})
         self.executeur.contextes[m.id] = ctx

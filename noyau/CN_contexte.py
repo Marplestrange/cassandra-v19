@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0630e8
+# VERSION CN : 0.1.0  #985a97
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0630e8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=985a97 ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire
@@ -83,6 +83,12 @@ class Contexte:
         if not self.manifeste.permissions.modules:
             raise PermissionError("le module « %s » n'a pas demandé la gestion des modules ([permissions] modules)" % self.module)
         return self._intro["gestion_modules"]
+
+    def evolution(self):
+        """Le service d'évolution du noyau (cibles, proposer, tick, visiter, retour, chaîne), pour le module « evolution » ([permissions] evolution)."""
+        if not self.manifeste.permissions.evolution:
+            raise PermissionError("le module « %s » n'a pas demandé l'évolution ([permissions] evolution)" % self.module)
+        return self._intro["evolution"]
 
     def urgence(self):
         """Les freins du noyau (.freins(), .freiner(nom, actif, raison, acteur)) et la crise, pour le module des gestes d'urgence ([permissions] urgence).
