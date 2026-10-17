@@ -1,0 +1,24 @@
+{
+ "point": "planifie.decrire",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "expr"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "texte"
+  ]
+ },
+ "invariants": [
+  "au moindre doute, l'expression d'origine est rendue, jamais une paraphrase fausse",
+  "@reboot se dit « à chaque démarrage »",
+  "une expression qui n'a pas cinq champs est rendue telle quelle",
+  "les jours de la semaine 0 et 7 sont tous deux le dimanche",
+  "le même texte donne toujours la même phrase"
+ ]
+}

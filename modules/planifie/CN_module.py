@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.1  #99fc67
+# VERSION CN : 0.1.1  #67bf04
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les tâches planifiées : tout ce qui tourne tout seul sur la machine, et est-ce que ça va.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=99fc67 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=67bf04 ▼▼▼
 """Les tâches planifiées : tout ce qui tourne tout seul sur la machine, et est-ce que ça va.
 
 Porté de la V18 (`cron_*`, `_crontab_*`), avec ses leçons :
@@ -188,7 +188,7 @@ def brancher(ctx):
                 j["dernier_code"] = None
             j["a_historique"] = ref in manuel
             j["cibles_manquantes"] = j.get("cibles_manquantes") or []        # constatées par root, qui voit ce que le noyau ne voit pas (/root, les scripts privés)
-            j["humain"] = k.decrire(expr)
+            j["humain"] = k.decrire(expr, ctx.point)
             j["prochaine"] = k.suivante(expr, now) if j["actif"] else ""
             j["attendue_avant"] = k.precedente(expr, now) if j["actif"] else ""
             j["projets"] = liens.get(ref, [])
@@ -301,14 +301,14 @@ def brancher(ctx):
     def audit(c):
         reservee()
         jobs = unifiee_interne()[0]
-        return {"collisions": [dict(x, repartition=k.repartir(x)) for x in k.collisions(jobs)], "sauvegardes_manquantes": manquantes_sauvegardes(jobs)}
+        return {"collisions": [dict(x, repartition=k.repartir(x)) for x in k.collisions(jobs, ctx.point)], "sauvegardes_manquantes": manquantes_sauvegardes(jobs)}
 
     def apercu(c, expression="", nombre=5):
         reservee()
         ok, e = k.valider(expression or "", "x")
         if not ok:
             raise ValueError(e)
-        return {"expression": e, "humain": k.decrire(e), "prochaines": k.apercu(e, maintenant(), nombre)}
+        return {"expression": e, "humain": k.decrire(e, ctx.point), "prochaines": k.apercu(e, maintenant(), nombre)}
 
     def maintenance_etat(c):
         reservee()

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agenda
 # ZONE       : CN
-# VERSION CN : 0.1.0  #377646
+# VERSION CN : 0.1.0  #87363d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'agenda.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=377646 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=87363d ▼▼▼
 """L'agenda.
 
 Porté de la V18 (`itare_event_*`, `itare_reminder_*`, `itare_calendar_items`, `itare_agenda_list`, `ical_parse`, `rrule_expand`, `_caldav_*`), avec ses leçons :
@@ -218,61 +218,15 @@ def occurrences(rule, debut, journee, du, au, limite=MAX_OCCURRENCES):
 
 
 # ---------------------------------------------------------------------- iCalendar
-def ical_unescape(v):
-    return (v or "").replace("\\n", "\n").replace("\\N", "\n").replace("\\,", ",").replace("\\;", ";").replace("\\\\", "\\")
-
-
 def ical_escape(v):
     return str(v or "").replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\r", "").replace("\n", "\\n")
 
 
-def ical_instant(brut, params):
-    """(valeur normalisée, journée entière). VALUE=DATE, UTC suffixé Z (ramené à l'heure locale), heures locales avec TZID : chaînes naïves comme partout ailleurs."""
-    brut = (brut or "").strip()
-    p = (params or "").upper()
-    journee = "VALUE=DATE" in p and "DATE-TIME" not in p
-    try:
-        if journee or (len(brut) == 8 and brut.isdigit()):
-            return datetime.strptime(brut[:8], "%Y%m%d").strftime("%Y-%m-%d"), 1
-        if brut.endswith("Z"):
-            d = datetime.strptime(brut[:15], "%Y%m%dT%H%M%S")
-            decalage = datetime.now() - datetime.now(timezone.utc).replace(tzinfo=None)
-            # ARRONDI À LA MINUTE : les deux horloges sont lues à quelques microsecondes d'écart, et sans arrondi 09:00Z devenait 10:59.
-            d = d + timedelta(minutes=round(decalage.total_seconds() / 60.0))
-            return d.strftime("%Y-%m-%d %H:%M"), 0
-        return datetime.strptime(brut[:15], "%Y%m%dT%H%M%S").strftime("%Y-%m-%d %H:%M"), 0
-    except ValueError:
-        return brut, 0
-
-
-def ical_lire(texte):
-    """Les VEVENT d'un flux iCalendar (RFC 5545). Une ligne longue est coupée et poursuivie par une espace : on déplie d'abord, sinon les titres longs sont tronqués."""
-    texte = re.sub(r"\r?\n[ \t]", "", texte or "")
-    out = []
-    for bloc in re.findall(r"BEGIN:VEVENT(.*?)END:VEVENT", texte, re.S):
-        ev = {"uid": "", "titre": "", "description": "", "lieu": "", "debut": "", "fin": "", "journee": 0, "rrule": "", "url": ""}
-        for m in re.finditer(r"(?im)^([A-Z-]+)((?:;[^:\r\n]*)?):(.*)$", bloc):
-            cle, params, brut = m.group(1).upper(), m.group(2) or "", m.group(3).rstrip(chr(13) + chr(10))
-            val = brut.strip()                                  # un texte garde ses espaces de fin ; un champ technique non
-            if cle == "UID" and not ev["uid"]:
-                ev["uid"] = val
-            elif cle == "SUMMARY" and not ev["titre"]:
-                ev["titre"] = ical_unescape(brut)
-            elif cle == "DESCRIPTION" and not ev["description"]:
-                ev["description"] = ical_unescape(brut)
-            elif cle == "LOCATION" and not ev["lieu"]:
-                ev["lieu"] = ical_unescape(brut)
-            elif cle == "URL" and not ev["url"]:
-                ev["url"] = val
-            elif cle == "DTSTART" and not ev["debut"]:
-                ev["debut"], ev["journee"] = ical_instant(val, params)
-            elif cle == "DTEND" and not ev["fin"]:
-                ev["fin"], _ = ical_instant(val, params)
-            elif cle == "RRULE" and not ev["rrule"]:
-                ev["rrule"] = val
-        if ev["debut"] and ev["titre"]:
-            out.append(ev)
-    return out
+def ical_lire(texte, appeler):
+    """Les VEVENT d'un flux iCalendar (RFC 5545). Le décodage est un POINT D'ÉVOLUTION : points/EC_ical_lire.py. L'horloge se lit ICI, dans le nexus : l'EC reçoit le décalage local en minutes
+    (ARRONDI À LA MINUTE : les deux horloges sont lues à quelques microsecondes d'écart, et sans arrondi 09:00Z devenait 10:59)."""
+    decalage = round((datetime.now() - datetime.now(timezone.utc).replace(tzinfo=None)).total_seconds() / 60.0)
+    return appeler("ical_lire", {"texte": texte or "", "decalage_min": decalage})["evenements"]
 
 
 def plier(ligne):
@@ -661,7 +615,7 @@ def brancher(ctx):
     def caldav_evenements(compte, d0, d1):
         brut = caldav_requete(compte, d0, d1)
         out = []
-        for ev in ical_lire(brut.replace("&#13;", "").replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")):
+        for ev in ical_lire(brut.replace("&#13;", "").replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&"), ctx.point):
             starts = [ev["debut"]]
             if ev["rrule"]:
                 s, motif = occurrences(ev["rrule"], ev["debut"], ev["journee"], d0, d1)
@@ -730,7 +684,7 @@ def brancher(ctx):
         texte = str(texte or "")
         if len(texte.encode("utf-8")) > MAX_ICS:
             raise ValueError("fichier trop gros (5 Mo au plus)")
-        evs = ical_lire(texte)
+        evs = ical_lire(texte, ctx.point)
         if not evs:
             raise ValueError("aucun événement trouvé dans ce fichier")
         if len(evs) > MAX_EVENEMENTS_ICS:

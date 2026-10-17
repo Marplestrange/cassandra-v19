@@ -1,0 +1,2173 @@
+{
+ "point": "memoire.perception_monde",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de memoire, données synthétiques",
+ "cas": [
+  {
+   "cas": "aucune ligne",
+   "entree": {
+    "lignes": [],
+    "question": "",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [],
+    "deja": []
+   }
+  },
+  {
+   "cas": "flotte sans question",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "fleet.nas",
+      "category": "fleet",
+      "value": "en ligne depuis 3 j",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· machine nas : en ligne depuis 3 j (relevé il y a 1 min, valable 4 h)"
+    ],
+    "deja": [
+     "machine nas"
+    ]
+   }
+  },
+  {
+   "cas": "flotte hors ligne",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "fleet.rosco",
+      "category": "fleet",
+      "value": "hors ligne",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "où est rosco",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· machine rosco : hors ligne (relevé il y a 1 min, valable 15 min)"
+    ],
+    "deja": [
+     "machine rosco"
+    ]
+   }
+  },
+  {
+   "cas": "flotte période périmée",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "fleet.nas",
+      "category": "fleet",
+      "value": "en ligne",
+      "observed_at": "2027-01-15 02:26:40"
+     }
+    ],
+    "question": "machine",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· machine nas : je ne sais plus (dernier relevé il y a 5 h, valable 4 h)"
+    ],
+    "deja": [
+     "machine nas"
+    ]
+   }
+  },
+  {
+   "cas": "flotte autre catégorie ignorée",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "fleet.nas",
+      "category": "autre",
+      "value": "x",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "machine",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [],
+    "deja": []
+   }
+  },
+  {
+   "cas": "site cité",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "200 en 80 ms",
+      "observed_at": "2027-01-15 07:50:00"
+     }
+    ],
+    "question": "le site exemple.fr va bien",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : 200 en 80 ms (relevé il y a 10 min, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "site par le mot",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.autre.fr",
+      "category": "web",
+      "value": "502",
+      "observed_at": "2027-01-15 07:50:00"
+     }
+    ],
+    "question": "mes sites",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site autre.fr : 502 (relevé il y a 10 min, valable 2 h)"
+    ],
+    "deja": [
+     "site autre.fr"
+    ]
+   }
+  },
+  {
+   "cas": "site non cité ignoré",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.autre.fr",
+      "category": "web",
+      "value": "502",
+      "observed_at": "2027-01-15 07:50:00"
+     }
+    ],
+    "question": "météo",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [],
+    "deja": []
+   }
+  },
+  {
+   "cas": "certificat",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "ssl.exemple.fr",
+      "category": "ssl",
+      "value": "12 jours",
+      "observed_at": "2027-01-15 07:00:00"
+     }
+    ],
+    "question": "le certificat expire quand",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· certificat exemple.fr : 12 jours restants (relevé il y a 1 h, valable 7 j)"
+    ],
+    "deja": [
+     "certificat exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "certificat par ssl",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "ssl.exemple.fr",
+      "category": "ssl",
+      "value": "40 jours",
+      "observed_at": "2027-01-15 07:00:00"
+     }
+    ],
+    "question": "ssl ok",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· certificat exemple.fr : 40 jours restants (relevé il y a 1 h, valable 7 j)"
+    ],
+    "deja": [
+     "certificat exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "certificat par tls",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "ssl.exemple.fr",
+      "category": "ssl",
+      "value": "40 jours",
+      "observed_at": "2027-01-15 07:00:00"
+     }
+    ],
+    "question": "tls",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· certificat exemple.fr : 40 jours restants (relevé il y a 1 h, valable 7 j)"
+    ],
+    "deja": [
+     "certificat exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "service par le mot",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "service.nginx",
+      "category": "svc",
+      "value": "actif",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "les services",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· service nginx : actif (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "service nginx"
+    ]
+   }
+  },
+  {
+   "cas": "service cité",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "service.nginx",
+      "category": "svc",
+      "value": "actif",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "nginx tourne",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· service nginx : actif (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "service nginx"
+    ]
+   }
+  },
+  {
+   "cas": "conteneur",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "docker.app",
+      "category": "docker",
+      "value": "up 2 h",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "mon conteneur",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· conteneur app : up 2 h (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "conteneur app"
+    ]
+   }
+  },
+  {
+   "cas": "docker par le mot",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "docker.db",
+      "category": "docker",
+      "value": "up",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "état de docker",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· conteneur db : up (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "conteneur db"
+    ]
+   }
+  },
+  {
+   "cas": "service ignoré sans mot",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "service.nginx",
+      "category": "svc",
+      "value": "actif",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "bonjour",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [],
+    "deja": []
+   }
+  },
+  {
+   "cas": "disque",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "disk./.usage",
+      "category": "disk",
+      "value": "71 %",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "il reste de la place sur le disque ?",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· disque : 71 % utilisé (relevé il y a 1 min, valable 1 j)"
+    ],
+    "deja": [
+     "disque"
+    ]
+   }
+  },
+  {
+   "cas": "disque sans question",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "disk./.usage",
+      "category": "disk",
+      "value": "71 %",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· disque : 71 % utilisé (relevé il y a 1 min, valable 1 j)"
+    ],
+    "deja": [
+     "disque"
+    ]
+   }
+  },
+  {
+   "cas": "disque période longue",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "disk./.usage",
+      "category": "disk",
+      "value": "71 %",
+      "observed_at": "2027-01-14 07:00:00"
+     }
+    ],
+    "question": "disque",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· disque : je ne sais plus (dernier relevé il y a 1 j, valable 1 j)"
+    ],
+    "deja": [
+     "disque"
+    ]
+   }
+  },
+  {
+   "cas": "ram",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "ram.usage",
+      "category": "ram",
+      "value": "40 %",
+      "observed_at": "2027-01-15 07:59:30"
+     }
+    ],
+    "question": "ram libre ?",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· RAM : 40 % utilisée (relevé il y a 30 s, valable 5 min)"
+    ],
+    "deja": [
+     "RAM"
+    ]
+   }
+  },
+  {
+   "cas": "mémoire vive",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "ram.usage",
+      "category": "ram",
+      "value": "40 %",
+      "observed_at": "2027-01-15 07:59:30"
+     }
+    ],
+    "question": "combien de mémoire vive",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· RAM : 40 % utilisée (relevé il y a 30 s, valable 5 min)"
+    ],
+    "deja": [
+     "RAM"
+    ]
+   }
+  },
+  {
+   "cas": "swap",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "swap.usage",
+      "category": "ram",
+      "value": "5 %",
+      "observed_at": "2027-01-15 07:59:30"
+     }
+    ],
+    "question": "swap",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· swap : 5 % utilisée (relevé il y a 30 s, valable 5 min)"
+    ],
+    "deja": [
+     "swap"
+    ]
+   }
+  },
+  {
+   "cas": "charge cpu",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "cpu.load",
+      "category": "cpu",
+      "value": "12 %",
+      "observed_at": "2027-01-15 07:59:30"
+     }
+    ],
+    "question": "cpu chargé ?",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· processeur : 12 % (relevé il y a 30 s, valable 5 min)"
+    ],
+    "deja": [
+     "processeur"
+    ]
+   }
+  },
+  {
+   "cas": "charge load",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "load.1m",
+      "category": "cpu",
+      "value": "0.40",
+      "observed_at": "2027-01-15 07:59:30"
+     }
+    ],
+    "question": "charge du serveur",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· charge : load1 0.40 (relevé il y a 30 s, valable 5 min)"
+    ],
+    "deja": [
+     "charge"
+    ]
+   }
+  },
+  {
+   "cas": "réglage cité",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "config.moteur",
+      "category": "config",
+      "value": "ollama",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "le réglage moteur vaut quoi",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· réglage moteur : ollama (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "réglage moteur"
+    ]
+   }
+  },
+  {
+   "cas": "fichier de config",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "config.fichier",
+      "category": "config",
+      "value": "modifié hier",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "où est config.json",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· fichier de config de Cassandra : modifié hier (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "fichier de config de Cassandra"
+    ]
+   }
+  },
+  {
+   "cas": "logiciel cité",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "logiciel.php",
+      "category": "soft",
+      "value": "8.2",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "version de php",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· logiciel php : 8.2 (relevé il y a 1 min, valable 3 h)"
+    ],
+    "deja": [
+     "logiciel php"
+    ]
+   }
+  },
+  {
+   "cas": "montage par le mot",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "montage./data",
+      "category": "mnt",
+      "value": "63 %",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "les montages",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· système de fichiers /data : 63 % (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "système de fichiers /data"
+    ]
+   }
+  },
+  {
+   "cas": "montage cité",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "montage./data",
+      "category": "mnt",
+      "value": "63 %",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "/data est plein ?",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· système de fichiers /data : 63 % (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "système de fichiers /data"
+    ]
+   }
+  },
+  {
+   "cas": "montage racine non cité",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "montage./",
+      "category": "mnt",
+      "value": "63 %",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "racine",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [],
+    "deja": []
+   }
+  },
+  {
+   "cas": "interface",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "interface.eth0",
+      "category": "net",
+      "value": "192.0.2.5",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "mon adresse ip",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· interface eth0 : 192.0.2.5 (relevé il y a 1 min, valable 10 min)"
+    ],
+    "deja": [
+     "interface eth0"
+    ]
+   }
+  },
+  {
+   "cas": "stockage",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "stockage.md0",
+      "category": "stk",
+      "value": "sain",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "le raid va bien",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· stockage md0 : sain (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "stockage md0"
+    ]
+   }
+  },
+  {
+   "cas": "port cité",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "port.443",
+      "category": "port",
+      "value": "nginx",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "le port 443 est ouvert",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· port 443 : à l'écoute (nginx) (relevé il y a 1 min, valable 10 min)"
+    ],
+    "deja": [
+     "port 443"
+    ]
+   }
+  },
+  {
+   "cas": "port par le mot",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "port.22",
+      "category": "port",
+      "value": "sshd",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "ports ouverts",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· port 22 : à l'écoute (sshd) (relevé il y a 1 min, valable 10 min)"
+    ],
+    "deja": [
+     "port 22"
+    ]
+   }
+  },
+  {
+   "cas": "machine de la flotte",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "machine.nas.temperature",
+      "category": "m",
+      "value": "41 °C",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "température de nas",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· nas · temperature : 41 °C (relevé il y a 1 min, valable 45 min)"
+    ],
+    "deja": [
+     "nas · temperature"
+    ]
+   }
+  },
+  {
+   "cas": "machine non citée",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "machine.nas.temperature",
+      "category": "m",
+      "value": "41 °C",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "autre",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [],
+    "deja": []
+   }
+  },
+  {
+   "cas": "famille courriel",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "courriel.file",
+      "category": "mail",
+      "value": "3 en attente",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "file d'attente du courriel",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· courriel file : 3 en attente (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "courriel file"
+    ]
+   }
+  },
+  {
+   "cas": "famille ssh",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "ssh.echecs",
+      "category": "ssh",
+      "value": "120",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "tentatives d'intrusion",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· ssh echecs : 120 (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "ssh echecs"
+    ]
+   }
+  },
+  {
+   "cas": "famille clé ssh",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "cle_ssh.root",
+      "category": "k",
+      "value": "2 clés",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "qui peut se connecter",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· clé ssh root : 2 clés (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "clé ssh root"
+    ]
+   }
+  },
+  {
+   "cas": "famille pare-feu",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "pare_feu.regles",
+      "category": "pf",
+      "value": "ouvert",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "firewall",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· pare-feu regles : ouvert (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "pare-feu regles"
+    ]
+   }
+  },
+  {
+   "cas": "famille fail2ban",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "fail2ban.bans",
+      "category": "f",
+      "value": "4",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "banni",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· fail2ban bans : 4 (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "fail2ban bans"
+    ]
+   }
+  },
+  {
+   "cas": "famille cron",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "cron.root",
+      "category": "c",
+      "value": "12 tâches",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "tâches planifiées",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· crons de root : 12 tâches (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "crons de root"
+    ]
+   }
+  },
+  {
+   "cas": "famille fastpanel",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "fastpanel.bases",
+      "category": "fp",
+      "value": "8",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "bases de données",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· fastpanel bases : 8 (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "fastpanel bases"
+    ]
+   }
+  },
+  {
+   "cas": "famille erreurs",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "erreurs.nginx",
+      "category": "e",
+      "value": "0",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "erreur récente",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· erreurs de nginx : 0 (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "erreurs de nginx"
+    ]
+   }
+  },
+  {
+   "cas": "famille ressources",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "conteneur_ressources.app",
+      "category": "r",
+      "value": "2 %",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "le conteneur consomme combien",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· ressources du conteneur app : 2 % (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "ressources du conteneur app"
+    ]
+   }
+  },
+  {
+   "cas": "famille certbot",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "certbot.renouvel",
+      "category": "cb",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "certbot",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· certbot renouvel : ok (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "certbot renouvel"
+    ]
+   }
+  },
+  {
+   "cas": "famille journaux",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "journaux.taille",
+      "category": "j",
+      "value": "2 Go",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "taille des logs",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· journaux taille : 2 Go (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "journaux taille"
+    ]
+   }
+  },
+  {
+   "cas": "système os",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "system.os",
+      "category": "sys",
+      "value": "Debian 12",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "quelle distribution",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· système : Debian 12 (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "système"
+    ]
+   }
+  },
+  {
+   "cas": "système uptime",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "system.uptime",
+      "category": "sys",
+      "value": "40 j",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "depuis quand allumé",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· uptime : 40 j (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "uptime"
+    ]
+   }
+  },
+  {
+   "cas": "système redémarrage",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "system.redemarrage_requis",
+      "category": "sys",
+      "value": "non",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "faut-il un reboot",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· redémarrage requis : non (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "redémarrage requis"
+    ]
+   }
+  },
+  {
+   "cas": "système heure",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "system.heure",
+      "category": "sys",
+      "value": "synchro",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "heure ntp",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· heure système : synchro (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "heure système"
+    ]
+   }
+  },
+  {
+   "cas": "système température",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "system.temperature",
+      "category": "sys",
+      "value": "50",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "ça chauffe ?",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· température : 50 (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "température"
+    ]
+   }
+  },
+  {
+   "cas": "mises à jour",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "maj.paquets",
+      "category": "maj",
+      "value": "4",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "mises à jour en attente",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· mises à jour : 4 (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "mises à jour"
+    ]
+   }
+  },
+  {
+   "cas": "services en échec",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "systemd.failed_units",
+      "category": "sys",
+      "value": "0",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "des services en échec",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· services en échec : 0 (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "services en échec"
+    ]
+   }
+  },
+  {
+   "cas": "tailscale",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "system.tailscale",
+      "category": "sys",
+      "value": "connecté",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "tailscale",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· tailscale de cette machine : connecté (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "tailscale de cette machine"
+    ]
+   }
+  },
+  {
+   "cas": "acquittement avec raison",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "502",
+      "observed_at": "2027-01-15 07:58:20",
+      "acquit": {
+       "raison": "maintenance"
+      }
+     }
+    ],
+    "question": "site exemple.fr",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : 502 (acceptée : maintenance) (relevé il y a 1 min, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "acquittement sans raison",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "502",
+      "observed_at": "2027-01-15 07:58:20"
+     }
+    ],
+    "question": "site exemple.fr",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : 502 (relevé il y a 1 min, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "date illisible",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "x",
+      "observed_at": "pas une date"
+     }
+    ],
+    "question": "site",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : je ne sais plus (dernier relevé jamais, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "date absente",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "x"
+     }
+    ],
+    "question": "site",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : je ne sais plus (dernier relevé jamais, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "date vide",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "x",
+      "observed_at": ""
+     }
+    ],
+    "question": "site",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : je ne sais plus (dernier relevé jamais, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "date en époque",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": 1799999500.0
+     }
+    ],
+    "question": "site",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : ok (relevé il y a 8 min, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "date au format T",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15T07:51:40"
+     }
+    ],
+    "question": "site",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : ok (relevé il y a 8 min, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "date numérique en texte",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "1799999500.0"
+     }
+    ],
+    "question": "site",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : ok (relevé il y a 8 min, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "date dans le futur",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 08:05:00"
+     }
+    ],
+    "question": "site",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : ok (relevé il y a 0 s, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "ligne qui n'est pas un dictionnaire",
+   "entree": {
+    "lignes": [
+     "texte",
+     3,
+     null,
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "site",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : ok (relevé il y a 1 min, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "clé inconnue",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "autre.chose",
+      "category": "x",
+      "value": "y",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "chose",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [],
+    "deja": []
+   }
+  },
+  {
+   "cas": "limite à deux",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.a0.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     },
+     {
+      "wkey": "web.a1.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     },
+     {
+      "wkey": "web.a2.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     },
+     {
+      "wkey": "web.a3.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     },
+     {
+      "wkey": "web.a4.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "sites",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 2,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site a0.fr : ok (relevé il y a 1 min, valable 2 h)",
+     "· site a1.fr : ok (relevé il y a 1 min, valable 2 h)"
+    ],
+    "deja": [
+     "site a0.fr",
+     "site a1.fr"
+    ]
+   }
+  },
+  {
+   "cas": "limite à zéro",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.a.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "sites",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 0,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [],
+    "deja": []
+   }
+  },
+  {
+   "cas": "déjà dit",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.a.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "sites",
+    "deja": [
+     "site a.fr"
+    ],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [],
+    "deja": [
+     "site a.fr"
+    ]
+   }
+  },
+  {
+   "cas": "doublon dans les lignes",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.a.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     },
+     {
+      "wkey": "web.a.fr",
+      "category": "web",
+      "value": "ko",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "sites",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site a.fr : ok (relevé il y a 1 min, valable 2 h)"
+    ],
+    "deja": [
+     "site a.fr"
+    ]
+   }
+  },
+  {
+   "cas": "stricte cite seulement",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     },
+     {
+      "wkey": "web.autre.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "le site exemple.fr",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": true
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : ok (relevé il y a 1 min, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "stricte ignore les mots",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "ram.usage",
+      "category": "ram",
+      "value": "40 %",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "ram",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": true
+   },
+   "sortie": {
+    "lignes": [],
+    "deja": []
+   }
+  },
+  {
+   "cas": "stricte machine",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "machine.nas.temperature",
+      "category": "m",
+      "value": "41",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "nas",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": true
+   },
+   "sortie": {
+    "lignes": [
+     "· nas · temperature : 41 (relevé il y a 1 min, valable 45 min)"
+    ],
+    "deja": [
+     "nas · temperature"
+    ]
+   }
+  },
+  {
+   "cas": "question en majuscules",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "SITE EXEMPLE.FR",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : ok (relevé il y a 1 min, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "variante avec tiret",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "service.mon-app",
+      "category": "svc",
+      "value": "actif",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "mon app tourne",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· service mon-app : actif (relevé il y a 1 min, valable 30 min)"
+    ],
+    "deja": [
+     "service mon-app"
+    ]
+   }
+  },
+  {
+   "cas": "nom trop court non cité",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "service.ab",
+      "category": "svc",
+      "value": "actif",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "ab",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [],
+    "deja": []
+   }
+  },
+  {
+   "cas": "sujet de machine sans clé",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "machine.nas",
+      "category": "m",
+      "value": "x",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "nas",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [],
+    "deja": []
+   }
+  },
+  {
+   "cas": "question vide plusieurs",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "fleet.a",
+      "category": "fleet",
+      "value": "en ligne",
+      "observed_at": "2027-01-15 07:59:00"
+     },
+     {
+      "wkey": "web.b",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     },
+     {
+      "wkey": "disk./.usage",
+      "category": "d",
+      "value": "50 %",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· machine a : en ligne (relevé il y a 1 min, valable 4 h)",
+     "· site b : ok (relevé il y a 1 min, valable 2 h)",
+     "· disque : 50 % utilisé (relevé il y a 1 min, valable 1 j)"
+    ],
+    "deja": [
+     "disque",
+     "machine a",
+     "site b"
+    ]
+   }
+  },
+  {
+   "cas": "maintenant à zéro",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": 1799999940.0
+     }
+    ],
+    "question": "site",
+    "deja": [],
+    "maintenant": 0.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : ok (relevé il y a 0 s, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "grandes durées",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": 1799600000.0
+     }
+    ],
+    "question": "site",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : je ne sais plus (dernier relevé il y a 4 j, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "durée d'un jour exact",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "disk./.usage",
+      "category": "d",
+      "value": "50 %",
+      "observed_at": "2027-01-14 08:00:00"
+     }
+    ],
+    "question": "disque",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· disque : 50 % utilisé (relevé il y a 1 j, valable 1 j)"
+    ],
+    "deja": [
+     "disque"
+    ]
+   }
+  },
+  {
+   "cas": "durée d'une heure",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:00:00"
+     }
+    ],
+    "question": "site",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : ok (relevé il y a 1 h, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  },
+  {
+   "cas": "durée d'une minute",
+   "entree": {
+    "lignes": [
+     {
+      "wkey": "web.exemple.fr",
+      "category": "web",
+      "value": "ok",
+      "observed_at": "2027-01-15 07:59:00"
+     }
+    ],
+    "question": "site",
+    "deja": [],
+    "maintenant": 1800000000.0,
+    "limite": 12,
+    "stricte": false
+   },
+   "sortie": {
+    "lignes": [
+     "· site exemple.fr : ok (relevé il y a 1 min, valable 2 h)"
+    ],
+    "deja": [
+     "site exemple.fr"
+    ]
+   }
+  }
+ ]
+}

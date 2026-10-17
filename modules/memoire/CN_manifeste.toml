@@ -300,3 +300,19 @@ introspection = true
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "perception_monde"
+libelle = "La perception du monde : les relevés du collecteur, la question et l'instant en entrée, les lignes que Cassandra dit savoir (chacune avec son âge et sa validité) en sortie ; l'horloge est lue par le nexus"
+contrat = "1.0"
+reference = "points/EC_perception_monde"
+fonction = "point_perception_monde"
+runtime = "python"
+
+[[points_evolution]]
+id = "json_extraire"
+libelle = "L'extraction du premier objet JSON d'une réponse de modèle (avec ou sans clôture markdown, noyé dans du texte)"
+contrat = "1.0"
+reference = "points/EC_json_extraire"
+fonction = "point_json_extraire"
+runtime = "python"

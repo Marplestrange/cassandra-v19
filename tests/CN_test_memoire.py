@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #097550
+# VERSION CN : 0.1.0  #9695a2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module memoire.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=097550 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9695a2 ▼▼▼
 """Bancs du module memoire."""
 import json
 import shutil
@@ -712,14 +712,14 @@ class Perception(Monde):
         self.releve("system.redemarrage_requis", "oui", 5)
         self.releve("ssh.tentatives", "12 en une heure", 5)
         self.releve("machine.orion.disque", "91%", 5)
-        b = self.o.perception_monde(self.monde, "faut-il redémarrer ? y a-t-il des intrusions ssh ? et orion ?", set(), 12)
+        b = self.o.perception_monde(self.monde, "faut-il redémarrer ? y a-t-il des intrusions ssh ? et orion ?", set(), self.ctx.point, 12)
         self.assertEqual(len(b), 3)
         self.assertIn("redémarrage requis", b[0])
-        self.assertEqual(self.o.perception_monde(self.monde, "faut-il redémarrer ?", set(), 12, True), [])        # le mode strict exige un nom cité
+        self.assertEqual(self.o.perception_monde(self.monde, "faut-il redémarrer ?", set(), self.ctx.point, 12, True), [])        # le mode strict exige un nom cité
 
     def test_une_acceptation_de_la_sentinelle_est_dite(self):
         self.monde.append({"wkey": "port.8080", "value": "nginx", "observed_at": time.time(), "acquit": {"raison": "voulu"}})
-        self.assertIn("(acceptée : voulu)", self.o.perception_monde(self.monde, "quels ports ouverts ?", set())[0])
+        self.assertIn("(acceptée : voulu)", self.o.perception_monde(self.monde, "quels ports ouverts ?", set(), self.ctx.point)[0])
 
     def test_sans_sensorium_la_perception_se_tait_sans_planter(self):
         self.monde = None

@@ -1,0 +1,556 @@
+{
+ "point": "planifie.decrire",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de planifie, données synthétiques",
+ "cas": [
+  {
+   "cas": "expr 0 : @reboot",
+   "entree": {
+    "expr": "@reboot"
+   },
+   "sortie": {
+    "texte": "à chaque démarrage"
+   }
+  },
+  {
+   "cas": "expr 1 : @REBOOT",
+   "entree": {
+    "expr": "@REBOOT"
+   },
+   "sortie": {
+    "texte": "à chaque démarrage"
+   }
+  },
+  {
+   "cas": "expr 2 : @daily",
+   "entree": {
+    "expr": "@daily"
+   },
+   "sortie": {
+    "texte": "à 00:00 chaque jour"
+   }
+  },
+  {
+   "cas": "expr 3 : @hourly",
+   "entree": {
+    "expr": "@hourly"
+   },
+   "sortie": {
+    "texte": "à la minute 0 de chaque heure"
+   }
+  },
+  {
+   "cas": "expr 4 : @weekly",
+   "entree": {
+    "expr": "@weekly"
+   },
+   "sortie": {
+    "texte": "à 00:00 le dimanche"
+   }
+  },
+  {
+   "cas": "expr 5 : @monthly",
+   "entree": {
+    "expr": "@monthly"
+   },
+   "sortie": {
+    "texte": "à 00:00 le 1 du mois"
+   }
+  },
+  {
+   "cas": "expr 6 : @yearly",
+   "entree": {
+    "expr": "@yearly"
+   },
+   "sortie": {
+    "texte": "à 00:00 le 1 du mois (mois 1)"
+   }
+  },
+  {
+   "cas": "expr 7 : @annually",
+   "entree": {
+    "expr": "@annually"
+   },
+   "sortie": {
+    "texte": "à 00:00 le 1 du mois (mois 1)"
+   }
+  },
+  {
+   "cas": "expr 8 : @midnight",
+   "entree": {
+    "expr": "@midnight"
+   },
+   "sortie": {
+    "texte": "à 00:00 chaque jour"
+   }
+  },
+  {
+   "cas": "expr 9 : * * * * *",
+   "entree": {
+    "expr": "* * * * *"
+   },
+   "sortie": {
+    "texte": "chaque minute"
+   }
+  },
+  {
+   "cas": "expr 10 : */5 * * * *",
+   "entree": {
+    "expr": "*/5 * * * *"
+   },
+   "sortie": {
+    "texte": "toutes les 5 minutes"
+   }
+  },
+  {
+   "cas": "expr 11 : */15 * * * *",
+   "entree": {
+    "expr": "*/15 * * * *"
+   },
+   "sortie": {
+    "texte": "toutes les 15 minutes"
+   }
+  },
+  {
+   "cas": "expr 12 : */1 * * * *",
+   "entree": {
+    "expr": "*/1 * * * *"
+   },
+   "sortie": {
+    "texte": "toutes les 1 minutes"
+   }
+  },
+  {
+   "cas": "expr 13 : */0 * * * *",
+   "entree": {
+    "expr": "*/0 * * * *"
+   },
+   "sortie": {
+    "texte": "*/0 * * * *"
+   }
+  },
+  {
+   "cas": "expr 14 : */x * * * *",
+   "entree": {
+    "expr": "*/x * * * *"
+   },
+   "sortie": {
+    "texte": "*/x * * * *"
+   }
+  },
+  {
+   "cas": "expr 15 : 0 3 * * *",
+   "entree": {
+    "expr": "0 3 * * *"
+   },
+   "sortie": {
+    "texte": "à 03:00 chaque jour"
+   }
+  },
+  {
+   "cas": "expr 16 : 30 3 * * *",
+   "entree": {
+    "expr": "30 3 * * *"
+   },
+   "sortie": {
+    "texte": "à 03:30 chaque jour"
+   }
+  },
+  {
+   "cas": "expr 17 : 5 4 * * 1",
+   "entree": {
+    "expr": "5 4 * * 1"
+   },
+   "sortie": {
+    "texte": "à 04:05 le lundi"
+   }
+  },
+  {
+   "cas": "expr 18 : 0 4 * * 1",
+   "entree": {
+    "expr": "0 4 * * 1"
+   },
+   "sortie": {
+    "texte": "à 04:00 le lundi"
+   }
+  },
+  {
+   "cas": "expr 19 : 0 0 1 * *",
+   "entree": {
+    "expr": "0 0 1 * *"
+   },
+   "sortie": {
+    "texte": "à 00:00 le 1 du mois"
+   }
+  },
+  {
+   "cas": "expr 20 : 15 14 1 * *",
+   "entree": {
+    "expr": "15 14 1 * *"
+   },
+   "sortie": {
+    "texte": "à 14:15 le 1 du mois"
+   }
+  },
+  {
+   "cas": "expr 21 : 0 22 * * 1-5",
+   "entree": {
+    "expr": "0 22 * * 1-5"
+   },
+   "sortie": {
+    "texte": "à 22:00 le jeudi, lundi, mardi, mercredi, vendredi"
+   }
+  },
+  {
+   "cas": "expr 22 : 0 9 * * 0,6",
+   "entree": {
+    "expr": "0 9 * * 0,6"
+   },
+   "sortie": {
+    "texte": "à 09:00 le dimanche, samedi"
+   }
+  },
+  {
+   "cas": "expr 23 : 0 9 * * 7",
+   "entree": {
+    "expr": "0 9 * * 7"
+   },
+   "sortie": {
+    "texte": "à 09:00 le dimanche"
+   }
+  },
+  {
+   "cas": "expr 24 : 0 9 * * 1,3,5",
+   "entree": {
+    "expr": "0 9 * * 1,3,5"
+   },
+   "sortie": {
+    "texte": "à 09:00 le lundi, mercredi, vendredi"
+   }
+  },
+  {
+   "cas": "expr 25 : 0 12 * * 1-7",
+   "entree": {
+    "expr": "0 12 * * 1-7"
+   },
+   "sortie": {
+    "texte": "à 12:00 chaque jour"
+   }
+  },
+  {
+   "cas": "expr 26 : */15 9-17 * * 1-5",
+   "entree": {
+    "expr": "*/15 9-17 * * 1-5"
+   },
+   "sortie": {
+    "texte": "*/15 9-17 * * 1-5"
+   }
+  },
+  {
+   "cas": "expr 27 : 0 0 1 1 *",
+   "entree": {
+    "expr": "0 0 1 1 *"
+   },
+   "sortie": {
+    "texte": "à 00:00 le 1 du mois (mois 1)"
+   }
+  },
+  {
+   "cas": "expr 28 : 0 */2 * * *",
+   "entree": {
+    "expr": "0 */2 * * *"
+   },
+   "sortie": {
+    "texte": "toutes les 2 heures (à H+0)"
+   }
+  },
+  {
+   "cas": "expr 29 : 0 0 */3 * *",
+   "entree": {
+    "expr": "0 0 */3 * *"
+   },
+   "sortie": {
+    "texte": "à 00:00 le */3 du mois"
+   }
+  },
+  {
+   "cas": "expr 30 : 0 0 * */2 *",
+   "entree": {
+    "expr": "0 0 * */2 *"
+   },
+   "sortie": {
+    "texte": "à 00:00 (mois */2)"
+   }
+  },
+  {
+   "cas": "expr 31 : 59 23 31 12 *",
+   "entree": {
+    "expr": "59 23 31 12 *"
+   },
+   "sortie": {
+    "texte": "à 23:59 le 31 du mois (mois 12)"
+   }
+  },
+  {
+   "cas": "expr 32 : 1,5 2-4 * * *",
+   "entree": {
+    "expr": "1,5 2-4 * * *"
+   },
+   "sortie": {
+    "texte": "1,5 2-4 * * *"
+   }
+  },
+  {
+   "cas": "expr 33 : invalide",
+   "entree": {
+    "expr": "invalide"
+   },
+   "sortie": {
+    "texte": "invalide"
+   }
+  },
+  {
+   "cas": "expr 34 : vide",
+   "entree": {
+    "expr": ""
+   },
+   "sortie": {
+    "texte": ""
+   }
+  },
+  {
+   "cas": "expr 35 : vide",
+   "entree": {
+    "expr": "   "
+   },
+   "sortie": {
+    "texte": ""
+   }
+  },
+  {
+   "cas": "expr 36 : 1 2 3 4",
+   "entree": {
+    "expr": "1 2 3 4"
+   },
+   "sortie": {
+    "texte": "1 2 3 4"
+   }
+  },
+  {
+   "cas": "expr 37 : 1 2 3 4 5 6",
+   "entree": {
+    "expr": "1 2 3 4 5 6"
+   },
+   "sortie": {
+    "texte": "1 2 3 4 5 6"
+   }
+  },
+  {
+   "cas": "expr 38 : 0 0 * * 8",
+   "entree": {
+    "expr": "0 0 * * 8"
+   },
+   "sortie": {
+    "texte": "à 00:00 chaque jour"
+   }
+  },
+  {
+   "cas": "expr 39 : 0 0 * * sun",
+   "entree": {
+    "expr": "0 0 * * sun"
+   },
+   "sortie": {
+    "texte": "à 00:00 chaque jour"
+   }
+  },
+  {
+   "cas": "expr 40 : 0 25 * * *",
+   "entree": {
+    "expr": "0 25 * * *"
+   },
+   "sortie": {
+    "texte": "à 25:00 chaque jour"
+   }
+  },
+  {
+   "cas": "expr 41 : 60 * * * *",
+   "entree": {
+    "expr": "60 * * * *"
+   },
+   "sortie": {
+    "texte": "à la minute 60 de chaque heure"
+   }
+  },
+  {
+   "cas": "expr 42 : 0 5 * * *",
+   "entree": {
+    "expr": "  0 5 * * *  "
+   },
+   "sortie": {
+    "texte": "à 05:00 chaque jour"
+   }
+  },
+  {
+   "cas": "expr 43 : 0 5 * * *",
+   "entree": {
+    "expr": "0 5 * * *\n"
+   },
+   "sortie": {
+    "texte": "à 05:00 chaque jour"
+   }
+  },
+  {
+   "cas": "expr 44 : 0 0 15 * 1",
+   "entree": {
+    "expr": "0 0 15 * 1"
+   },
+   "sortie": {
+    "texte": "à 00:00 le lundi le 15 du mois"
+   }
+  },
+  {
+   "cas": "expr 45 : 0 0 1,15 * *",
+   "entree": {
+    "expr": "0 0 1,15 * *"
+   },
+   "sortie": {
+    "texte": "à 00:00 le 1,15 du mois"
+   }
+  },
+  {
+   "cas": "expr 46 : 10 * * * *",
+   "entree": {
+    "expr": "10 * * * *"
+   },
+   "sortie": {
+    "texte": "à la minute 10 de chaque heure"
+   }
+  },
+  {
+   "cas": "expr 47 : 0 * * * 1",
+   "entree": {
+    "expr": "0 * * * 1"
+   },
+   "sortie": {
+    "texte": "à la minute 0 de chaque heure le lundi"
+   }
+  },
+  {
+   "cas": "expr 48 : */10 * * * 6",
+   "entree": {
+    "expr": "*/10 * * * 6"
+   },
+   "sortie": {
+    "texte": "toutes les 10 minutes le samedi"
+   }
+  },
+  {
+   "cas": "expr 49 : 0 6 * * 1-5",
+   "entree": {
+    "expr": "0 6 * * 1-5"
+   },
+   "sortie": {
+    "texte": "à 06:00 le jeudi, lundi, mardi, mercredi, vendredi"
+   }
+  },
+  {
+   "cas": "expr 50 : 0 8-18/2 * * *",
+   "entree": {
+    "expr": "0 8-18/2 * * *"
+   },
+   "sortie": {
+    "texte": "0 8-18/2 * * *"
+   }
+  },
+  {
+   "cas": "expr 51 : 30 */6 * * *",
+   "entree": {
+    "expr": "30 */6 * * *"
+   },
+   "sortie": {
+    "texte": "toutes les 6 heures (à H+30)"
+   }
+  },
+  {
+   "cas": "expr 52 : 0 0 * * 0",
+   "entree": {
+    "expr": "0 0 * * 0"
+   },
+   "sortie": {
+    "texte": "à 00:00 le dimanche"
+   }
+  },
+  {
+   "cas": "expr 53 : 0 0 * * 6",
+   "entree": {
+    "expr": "0 0 * * 6"
+   },
+   "sortie": {
+    "texte": "à 00:00 le samedi"
+   }
+  },
+  {
+   "cas": "expr 54 : 5 0 * 8 *",
+   "entree": {
+    "expr": "5 0 * 8 *"
+   },
+   "sortie": {
+    "texte": "à 00:05 (mois 8)"
+   }
+  },
+  {
+   "cas": "expr 55 : 0 0 31 * *",
+   "entree": {
+    "expr": "0 0 31 * *"
+   },
+   "sortie": {
+    "texte": "à 00:00 le 31 du mois"
+   }
+  },
+  {
+   "cas": "expr 56 : */5 * 1 * *",
+   "entree": {
+    "expr": "*/5 * 1 * *"
+   },
+   "sortie": {
+    "texte": "toutes les 5 minutes le 1 du mois"
+   }
+  },
+  {
+   "cas": "expr 57 : 0 0 L * *",
+   "entree": {
+    "expr": "0 0 L * *"
+   },
+   "sortie": {
+    "texte": "à 00:00 le L du mois"
+   }
+  },
+  {
+   "cas": "expr 58 : x y z w v",
+   "entree": {
+    "expr": "x y z w v"
+   },
+   "sortie": {
+    "texte": "x y z w v"
+   }
+  },
+  {
+   "cas": "expr 59 : 0 0 * * 1,2,3,4,5,6,7",
+   "entree": {
+    "expr": "0 0 * * 1,2,3,4,5,6,7"
+   },
+   "sortie": {
+    "texte": "à 00:00 chaque jour"
+   }
+  },
+  {
+   "cas": "expr 60 : 0 0 * * 0-6",
+   "entree": {
+    "expr": "0 0 * * 0-6"
+   },
+   "sortie": {
+    "texte": "à 00:00 chaque jour"
+   }
+  }
+ ]
+}

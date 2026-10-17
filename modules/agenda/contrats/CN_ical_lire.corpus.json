@@ -1,0 +1,915 @@
+{
+ "point": "agenda.ical_lire",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de agenda, données synthétiques",
+ "cas": [
+  {
+   "cas": "texte vide",
+   "entree": {
+    "texte": "",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": []
+   }
+  },
+  {
+   "cas": "aucun événement",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": []
+   }
+  },
+  {
+   "cas": "événement simple",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:u1\r\nSUMMARY:Réunion\r\nDTSTART:20261020T090000Z\r\nDTEND:20261020T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "u1",
+      "titre": "Réunion",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-20 10:00",
+      "fin": "2026-10-20 11:00",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sans titre ignoré",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:u1\r\nDTSTART:20261020T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": []
+   }
+  },
+  {
+   "cas": "sans début ignoré",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:u1\r\nSUMMARY:Sans date\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": []
+   }
+  },
+  {
+   "cas": "journée entière",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:j\r\nSUMMARY:Férié\r\nDTSTART;VALUE=DATE:20261101\r\nDTEND;VALUE=DATE:20261102\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "j",
+      "titre": "Férié",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-11-01",
+      "fin": "2026-11-02",
+      "journee": 1,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "fuseau nommé",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:t\r\nSUMMARY:Appel\r\nDTSTART;TZID=Europe/Paris:20261020T140000\r\nDTEND;TZID=Europe/Paris:20261020T143000\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "t",
+      "titre": "Appel",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-20 14:00",
+      "fin": "2026-10-20 14:30",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "heure flottante",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:f\r\nSUMMARY:Midi\r\nDTSTART:20261020T120000\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "f",
+      "titre": "Midi",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-20 12:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "description et lieu échappés",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:d\r\nSUMMARY:Dîner\\, chez Léa\r\nDESCRIPTION:Ligne un\\nLigne deux\\; fin\r\nLOCATION:12 rue A\\, Lyon\r\nDTSTART:20261021T190000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "d",
+      "titre": "Dîner, chez Léa",
+      "description": "Ligne un\nLigne deux; fin",
+      "lieu": "12 rue A, Lyon",
+      "debut": "2026-10-21 20:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ligne repliée",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:r\r\nSUMMARY:Un titre vraiment\r\n  très long qui continue\r\nDTSTART:20261022T080000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "r",
+      "titre": "Un titre vraiment très long qui continue",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-22 09:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "repli par tabulation",
+   "entree": {
+    "texte": "BEGIN:VEVENT\r\nSUMMARY:Titre\r\n\tsuite\r\nDTSTART:20261022T080000Z\r\nEND:VEVENT",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "",
+      "titre": "Titresuite",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-22 09:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "règle de récurrence",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:rr\r\nSUMMARY:Hebdo\r\nDTSTART:20261023T100000Z\r\nRRULE:FREQ=WEEKLY;BYDAY=FR;COUNT=10\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "rr",
+      "titre": "Hebdo",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-23 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "FREQ=WEEKLY;BYDAY=FR;COUNT=10",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "url",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:l\r\nSUMMARY:Visio\r\nDTSTART:20261024T100000Z\r\nURL:https://exemple.test/visio\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "l",
+      "titre": "Visio",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-24 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": "https://exemple.test/visio"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "deux événements",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nSUMMARY:A\r\nDTSTART:20261025T100000Z\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:2\r\nSUMMARY:B\r\nDTSTART:20261026T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "A",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     },
+     {
+      "uid": "2",
+      "titre": "B",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-26 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "premier champ gagne",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nUID:2\r\nSUMMARY:A\r\nSUMMARY:B\r\nDTSTART:20261025T100000Z\r\nDTSTART:20270101T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "A",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "fins de ligne LF",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nUID:1\nSUMMARY:LF\nDTSTART:20261025T100000Z\nEND:VEVENT\nEND:VCALENDAR\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "LF",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "casse des clés",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nuid:1\r\nsummary:Minuscules\r\ndtstart:20261025T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "Minuscules",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "événement non fermé",
+   "entree": {
+    "texte": "BEGIN:VEVENT\r\nSUMMARY:Perdu\r\nDTSTART:20261025T100000Z\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": []
+   }
+  },
+  {
+   "cas": "champs inconnus",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nSUMMARY:X\r\nDTSTART:20261025T100000Z\r\nX-FOO:bar\r\nATTENDEE;CN=Bob:mailto:b@exemple.test\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "X",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "titre avec espaces de fin",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nSUMMARY:Titre \r\nDTSTART:20261025T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "Titre ",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "début invalide",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nSUMMARY:X\r\nDTSTART:pas-une-date\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "X",
+      "description": "",
+      "lieu": "",
+      "debut": "pas-une-date",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "date seule sans paramètre",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nSUMMARY:X\r\nDTSTART:20261025\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "X",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25",
+      "fin": "",
+      "journee": 1,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "unicode",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nSUMMARY:Café ☕ du Marché\r\nDTSTART:20261025T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "Café ☕ du Marché",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "antislash échappé",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nSUMMARY:a\\\\b\r\nDTSTART:20261025T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "a\\b",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "description vide",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nSUMMARY:X\r\nDESCRIPTION:\r\nDTSTART:20261025T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "X",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "fin avant le début",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nSUMMARY:X\r\nDTSTART:20261025T100000Z\r\nDTEND:20261025T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "X",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 11:00",
+      "fin": "2026-10-25 10:00",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "fuseau UTC explicite",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nSUMMARY:X\r\nDTSTART;TZID=UTC:20261025T100000\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "X",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 10:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "paramètre inconnu",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nSUMMARY;LANGUAGE=fr:Bonjour\r\nDTSTART:20261025T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "Bonjour",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "deux calendriers",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:1\r\nSUMMARY:A\r\nDTSTART:20261025T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\nBEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:2\r\nSUMMARY:B\r\nDTSTART:20261026T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "1",
+      "titre": "A",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     },
+     {
+      "uid": "2",
+      "titre": "B",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-26 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "heure UTC décalée de 0 min",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:z\r\nSUMMARY:Utc\r\nDTSTART:20261020T090000Z\r\nDTEND:20261020T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 0
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "z",
+      "titre": "Utc",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-20 09:00",
+      "fin": "2026-10-20 10:00",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "heure UTC décalée de 120 min",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:z\r\nSUMMARY:Utc\r\nDTSTART:20261020T090000Z\r\nDTEND:20261020T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 120
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "z",
+      "titre": "Utc",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-20 11:00",
+      "fin": "2026-10-20 12:00",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "heure UTC décalée de -300 min",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:z\r\nSUMMARY:Utc\r\nDTSTART:20261020T090000Z\r\nDTEND:20261020T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": -300
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "z",
+      "titre": "Utc",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-20 04:00",
+      "fin": "2026-10-20 05:00",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "heure UTC décalée de 330 min",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:z\r\nSUMMARY:Utc\r\nDTSTART:20261020T090000Z\r\nDTEND:20261020T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 330
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "z",
+      "titre": "Utc",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-20 14:30",
+      "fin": "2026-10-20 15:30",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "heure UTC décalée de -90 min",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:z\r\nSUMMARY:Utc\r\nDTSTART:20261020T090000Z\r\nDTEND:20261020T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": -90
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "z",
+      "titre": "Utc",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-20 07:30",
+      "fin": "2026-10-20 08:30",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "minuit UTC +60",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:z\r\nSUMMARY:Minuit\r\nDTSTART:20261020T233000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "z",
+      "titre": "Minuit",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-21 00:30",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "minuit UTC -300",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:z\r\nSUMMARY:Minuit\r\nDTSTART:20261020T013000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": -300
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "z",
+      "titre": "Minuit",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-19 20:30",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "DATE-TIME explicite",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:q\r\nSUMMARY:Q\r\nDTSTART;VALUE=DATE-TIME:20261025T100000\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "q",
+      "titre": "Q",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 10:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "VALUE=DATE avec heure",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:q\r\nSUMMARY:Q\r\nDTSTART;VALUE=DATE:20261025T100000\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "q",
+      "titre": "Q",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25",
+      "fin": "",
+      "journee": 1,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "huit chiffres hors date",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:q\r\nSUMMARY:Q\r\nDTSTART:99999999\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "q",
+      "titre": "Q",
+      "description": "",
+      "lieu": "",
+      "debut": "99999999",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "fuseau en suffixe",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:q\r\nSUMMARY:Q\r\nDTSTART:20261025T100000+0100\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "q",
+      "titre": "Q",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 10:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "Z avec fraction",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:q\r\nSUMMARY:Q\r\nDTSTART:20261025T100000.000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "q",
+      "titre": "Q",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25 11:00",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "Z trop court",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:q\r\nSUMMARY:Q\r\nDTSTART:2026102Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "q",
+      "titre": "Q",
+      "description": "",
+      "lieu": "",
+      "debut": "2026102Z",
+      "fin": "",
+      "journee": 0,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "DATE avec Z",
+   "entree": {
+    "texte": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:q\r\nSUMMARY:Q\r\nDTSTART;VALUE=DATE:20261025Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "decalage_min": 60
+   },
+   "sortie": {
+    "evenements": [
+     {
+      "uid": "q",
+      "titre": "Q",
+      "description": "",
+      "lieu": "",
+      "debut": "2026-10-25",
+      "fin": "",
+      "journee": 1,
+      "rrule": "",
+      "url": ""
+     }
+    ]
+   }
+  }
+ ]
+}

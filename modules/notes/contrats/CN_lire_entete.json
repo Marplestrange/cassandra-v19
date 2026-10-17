@@ -1,0 +1,26 @@
+{
+ "point": "notes.lire_entete",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "texte"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un fichier sans en-tête reste une note valide : le texte est rendu tel quel",
+  "un en-tête non fermé n'en est pas un",
+  "une valeur entre crochets est une liste de textes sans vides",
+  "true et oui, false et non (sans égard à la casse) sont des booléens",
+  "une ligne sans deux-points, ou à clé vide, est ignorée",
+  "la dernière occurrence d'une clé l'emporte",
+  "le corps rendu ne commence pas par un saut de ligne"
+ ]
+}

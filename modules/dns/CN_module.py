@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dns
 # ZONE       : CN
-# VERSION CN : 0.2.0  #acbb57
+# VERSION CN : 0.2.0  #088454
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Domaines et DNS.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=acbb57 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=088454 ▼▼▼
 """Domaines et DNS.
 
 Porté de la V18 (`_dns_*`, `_detect_dns`, `_aut_dns_corriger`, `_dom_expiration`), avec ses leçons :
@@ -30,6 +30,7 @@ Changements V19 : plus de `dig` (un client DNS en Python pur, UDP puis TCP si tr
 """
 from __future__ import annotations
 
+import base64
 import ipaddress
 import json
 import os
@@ -43,7 +44,6 @@ import urllib.request
 from datetime import datetime, timezone
 
 TYPES = {"A": 1, "NS": 2, "CNAME": 5, "MX": 15, "TXT": 16, "AAAA": 28, "CAA": 257}
-CODES = {v: k for k, v in TYPES.items()}
 SELECTEURS_DKIM = ("dkim", "default", "mail", "selector1", "selector2", "s1", "s2", "google", "k1")
 CLOUDFLARE = ("173.245.48.0/20", "103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22", "141.101.64.0/18", "108.162.192.0/18", "190.93.240.0/20",
               "188.114.96.0/20", "197.234.240.0/22", "198.41.128.0/17", "162.158.0.0/15", "104.16.0.0/13", "104.24.0.0/14", "172.64.0.0/13", "131.0.72.0/22",
@@ -63,70 +63,17 @@ def construire(nom, typ):
     return ident, struct.pack(">HHHHHH", ident, 0x0100, 1, 0, 0, 0) + q + struct.pack(">HH", TYPES[typ], 1)
 
 
-def lire_nom(b, i):
-    """(nom, position suivante) en suivant la compression ; refuse les boucles."""
-    parts, saut, fin = [], 0, None
-    while True:
-        if i >= len(b):
-            raise ValueError("nom tronqué")
-        n = b[i]
-        if n == 0:
-            i += 1
-            break
-        if n & 0xC0 == 0xC0:
-            if i + 1 >= len(b):
-                raise ValueError("pointeur tronqué")
-            if fin is None:
-                fin = i + 2
-            i = ((n & 0x3F) << 8) | b[i + 1]
-            saut += 1
-            if saut > 20:
-                raise ValueError("boucle de compression")
-            continue
-        parts.append(b[i + 1:i + 1 + n].decode("ascii", "replace"))
-        i += 1 + n
-    return ".".join(parts), (fin if fin is not None else i)
+_point = None          # le point d'évolution `analyser`, posé par brancher() : interroger() n'a pas de ctx
 
 
 def analyser(b, ident):
-    """Rend (code de réponse, tronqué, [(type, valeur normalisée)])."""
-    if len(b) < 12:
-        raise ValueError("réponse trop courte")
-    rid, flags, qd, an, _, _ = struct.unpack(">HHHHHH", b[:12])
-    if rid != ident:
-        raise ValueError("identifiant inattendu")
-    i = 12
-    for _ in range(qd):
-        _, i = lire_nom(b, i)
-        i += 4
-    sortie = []
-    for _ in range(an):
-        _, i = lire_nom(b, i)
-        typ, _, _, ln = struct.unpack(">HHIH", b[i:i + 10])
-        i += 10
-        d = b[i:i + ln]
-        if len(d) < ln:
-            raise ValueError("donnée tronquée")
-        t = CODES.get(typ)
-        if t == "A" and ln == 4:
-            sortie.append((t, str(ipaddress.IPv4Address(d))))
-        elif t == "AAAA" and ln == 16:
-            sortie.append((t, str(ipaddress.IPv6Address(d))))
-        elif t in ("NS", "CNAME"):
-            sortie.append((t, lire_nom(b, i)[0].lower()))
-        elif t == "MX":
-            sortie.append((t, "%d %s" % (struct.unpack(">H", d[:2])[0], lire_nom(b, i + 2)[0].lower())))
-        elif t == "TXT":
-            morceaux, j = [], 0
-            while j < ln:
-                n = d[j]
-                morceaux.append(d[j + 1:j + 1 + n].decode("utf-8", "replace"))
-                j += 1 + n
-            sortie.append((t, "".join(morceaux)))
-        elif t == "CAA" and ln >= 2:
-            sortie.append((t, '%d %s "%s"' % (d[0], d[2:2 + d[1]].decode("ascii", "replace"), d[2 + d[1]:].decode("utf-8", "replace"))))
-        i += ln
-    return flags & 0x0F, bool(flags & 0x0200), sortie
+    """Rend (code de réponse, tronqué, [(type, valeur normalisée)]). Le décodage est un POINT D'ÉVOLUTION : points/EC_analyser.py."""
+    if _point is None:
+        raise RuntimeError("le module dns n'est pas branché : pas de point d'évolution")
+    sortie = _point("analyser", {"reponse": base64.b64encode(bytes(b)).decode("ascii"), "ident": ident})
+    if "erreur" in sortie:
+        raise ValueError(sortie["erreur"])
+    return sortie["rcode"], sortie["tronque"], [(x[0], x[1]) for x in sortie["enregistrements"]]
 
 
 def interroger(nom, typ, serveur, delai=4.0):
@@ -217,6 +164,8 @@ def expiration_rdap(domaine):
 
 
 def brancher(ctx):
+    global _point
+    _point = ctx.point
     db = ctx.stockage
     memoire = {"exp_t": {}}
 

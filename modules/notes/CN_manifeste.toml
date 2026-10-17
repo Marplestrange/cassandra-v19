@@ -333,3 +333,19 @@ lectures = true
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "lire_entete"
+libelle = "La lecture de l'en-tête d'une note : le texte en entrée, l'en-tête (clés, listes, booléens) et le corps en sortie"
+contrat = "1.0"
+reference = "points/EC_lire_entete"
+fonction = "point_lire_entete"
+runtime = "python"
+
+[[points_evolution]]
+id = "md_vers_html"
+libelle = "Le rendu d'une note : le Markdown en entrée, le HTML en sortie (titres, listes, citations, gras, code ; tout le reste échappé)"
+contrat = "1.0"
+reference = "points/EC_md_vers_html"
+fonction = "point_md_vers_html"
+runtime = "python"

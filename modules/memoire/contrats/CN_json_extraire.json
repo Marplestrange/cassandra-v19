@@ -1,0 +1,23 @@
+{
+ "point": "memoire.json_extraire",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "texte"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "le premier objet JSON valide l'emporte",
+  "une clôture markdown est retirée avant lecture",
+  "un texte sans objet valide rend None, jamais une erreur",
+  "un scalaire ou un tableau JSON entier est rendu tel quel"
+ ]
+}

@@ -1,0 +1,282 @@
+{
+ "point": "memoire.json_extraire",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de memoire, données synthétiques",
+ "cas": [
+  {
+   "cas": "vide",
+   "entree": {
+    "texte": ""
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "objet simple",
+   "entree": {
+    "texte": "{\"a\": 1}"
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1
+    }
+   }
+  },
+  {
+   "cas": "avec clôture json",
+   "entree": {
+    "texte": "```json\n{\"a\": 1}\n```"
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1
+    }
+   }
+  },
+  {
+   "cas": "avec clôture nue",
+   "entree": {
+    "texte": "```\n{\"a\": 1}\n```"
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1
+    }
+   }
+  },
+  {
+   "cas": "précédé de texte",
+   "entree": {
+    "texte": "Voici la réponse : {\"a\": 1, \"b\": [1, 2]} merci"
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1,
+     "b": [
+      1,
+      2
+     ]
+    }
+   }
+  },
+  {
+   "cas": "deux objets, le premier gagne",
+   "entree": {
+    "texte": "{\"a\": 1} puis {\"b\": 2}"
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1
+    }
+   }
+  },
+  {
+   "cas": "objet imbriqué",
+   "entree": {
+    "texte": "x {\"a\": {\"b\": {\"c\": 3}}} y"
+   },
+   "sortie": {
+    "valeur": {
+     "a": {
+      "b": {
+       "c": 3
+      }
+     }
+    }
+   }
+  },
+  {
+   "cas": "accolades déséquilibrées",
+   "entree": {
+    "texte": "début { pas fermé"
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "premier objet invalide, second valide",
+   "entree": {
+    "texte": "{pas json} puis {\"ok\": true}"
+   },
+   "sortie": {
+    "valeur": {
+     "ok": true
+    }
+   }
+  },
+  {
+   "cas": "tableau seul",
+   "entree": {
+    "texte": "[1, 2, 3]"
+   },
+   "sortie": {
+    "valeur": [
+     1,
+     2,
+     3
+    ]
+   }
+  },
+  {
+   "cas": "scalaire",
+   "entree": {
+    "texte": "42"
+   },
+   "sortie": {
+    "valeur": 42
+   }
+  },
+  {
+   "cas": "chaîne JSON",
+   "entree": {
+    "texte": "\"bonjour\""
+   },
+   "sortie": {
+    "valeur": "bonjour"
+   }
+  },
+  {
+   "cas": "null",
+   "entree": {
+    "texte": "null"
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "texte sans accolade",
+   "entree": {
+    "texte": "aucune structure ici"
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "espaces autour",
+   "entree": {
+    "texte": "   {\"a\": 1}   "
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1
+    }
+   }
+  },
+  {
+   "cas": "accolade dans une chaîne",
+   "entree": {
+    "texte": "avant {\"a\": \"}\"} après"
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "unicode",
+   "entree": {
+    "texte": "{\"nom\": \"Zoé ☕\"}"
+   },
+   "sortie": {
+    "valeur": {
+     "nom": "Zoé ☕"
+    }
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "texte": null
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "nombre en entrée",
+   "entree": {
+    "texte": 12
+   },
+   "sortie": {
+    "valeur": 12
+   }
+  },
+  {
+   "cas": "clôture sans retour",
+   "entree": {
+    "texte": "```json{\"a\": 1}```"
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1
+    }
+   }
+  },
+  {
+   "cas": "texte puis tableau d'objets",
+   "entree": {
+    "texte": "liste : [{\"a\": 1}, {\"b\": 2}]"
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1
+    }
+   }
+  },
+  {
+   "cas": "objet vide",
+   "entree": {
+    "texte": "{}"
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "accolades vides imbriquées",
+   "entree": {
+    "texte": "{\"a\": {}}"
+   },
+   "sortie": {
+    "valeur": {
+     "a": {}
+    }
+   }
+  },
+  {
+   "cas": "objet tronqué",
+   "entree": {
+    "texte": "{\"a\": 1, \"b\":"
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "deux clôtures",
+   "entree": {
+    "texte": "```json\n{\"a\": 1}\n```\n```json\n{\"b\": 2}\n```"
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1
+    }
+   }
+  },
+  {
+   "cas": "retours à la ligne dans l'objet",
+   "entree": {
+    "texte": "x {\n  \"a\": 1,\n  \"b\": 2\n} y"
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1,
+     "b": 2
+    }
+   }
+  }
+ ]
+}

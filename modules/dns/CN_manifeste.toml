@@ -157,3 +157,11 @@ icone = "globe"
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "analyser"
+libelle = "L'analyse d'une réponse DNS : le paquet (en base64) et l'identifiant attendu en entrée, le code de réponse, la troncature et les enregistrements lus en sortie"
+contrat = "1.0"
+reference = "points/EC_analyser"
+fonction = "point_analyser"
+runtime = "python"

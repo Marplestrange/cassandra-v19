@@ -1,0 +1,352 @@
+{
+ "point": "notes.lire_entete",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de notes, données synthétiques",
+ "cas": [
+  {
+   "cas": "vide",
+   "entree": {
+    "texte": ""
+   },
+   "sortie": {
+    "valeur": [
+     {},
+     ""
+    ]
+   }
+  },
+  {
+   "cas": "sans en-tête",
+   "entree": {
+    "texte": "Une note\nsans en-tête"
+   },
+   "sortie": {
+    "valeur": [
+     {},
+     "Une note\nsans en-tête"
+    ]
+   }
+  },
+  {
+   "cas": "en-tête simple",
+   "entree": {
+    "texte": "---\ntitre: Ma note\n---\nCorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "titre": "Ma note"
+     },
+     "Corps"
+    ]
+   }
+  },
+  {
+   "cas": "en-tête non fermé",
+   "entree": {
+    "texte": "---\ntitre: Ma note\nCorps"
+   },
+   "sortie": {
+    "valeur": [
+     {},
+     "---\ntitre: Ma note\nCorps"
+    ]
+   }
+  },
+  {
+   "cas": "liste",
+   "entree": {
+    "texte": "---\netiquettes: [a, b, c]\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "etiquettes": [
+       "a",
+       "b",
+       "c"
+      ]
+     },
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "liste vide",
+   "entree": {
+    "texte": "---\netiquettes: []\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "etiquettes": []
+     },
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "liste avec vides",
+   "entree": {
+    "texte": "---\netiquettes: [a, , b,]\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "etiquettes": [
+       "a",
+       "b"
+      ]
+     },
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "booléens",
+   "entree": {
+    "texte": "---\nepinglee: true\nprivee: oui\narchivee: false\nlue: non\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "epinglee": true,
+      "privee": true,
+      "archivee": false,
+      "lue": false
+     },
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "casse booléens",
+   "entree": {
+    "texte": "---\na: TRUE\nb: Non\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": true,
+      "b": false
+     },
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "ligne sans deux-points",
+   "entree": {
+    "texte": "---\ntitre: X\nceci est ignoré\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "titre": "X"
+     },
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "clé vide",
+   "entree": {
+    "texte": "---\n: valeur\ntitre: Y\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "titre": "Y"
+     },
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "valeur avec deux-points",
+   "entree": {
+    "texte": "---\nlien: https://exemple.test/a\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "lien": "https://exemple.test/a"
+     },
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "espaces autour",
+   "entree": {
+    "texte": "---\n  titre  :   Espacé  \n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "titre": "Espacé"
+     },
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "corps multiligne",
+   "entree": {
+    "texte": "---\ntitre: T\n---\n\n\nligne un\nligne deux\n"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "titre": "T"
+     },
+     "ligne un\nligne deux\n"
+    ]
+   }
+  },
+  {
+   "cas": "en-tête vide",
+   "entree": {
+    "texte": "---\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {},
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "tirets dans le corps",
+   "entree": {
+    "texte": "---\ntitre: T\n---\ncorps\n---\nsuite"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "titre": "T"
+     },
+     "corps\n---\nsuite"
+    ]
+   }
+  },
+  {
+   "cas": "commence par trois tirets sans saut",
+   "entree": {
+    "texte": "---titre: X\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "titre": "X"
+     },
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "unicode",
+   "entree": {
+    "texte": "---\ntitre: Café ☕\netiquettes: [é, ü]\n---\nÉté"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "titre": "Café ☕",
+      "etiquettes": [
+       "é",
+       "ü"
+      ]
+     },
+     "Été"
+    ]
+   }
+  },
+  {
+   "cas": "valeur vide",
+   "entree": {
+    "texte": "---\ntitre:\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "titre": ""
+     },
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "crochet seul",
+   "entree": {
+    "texte": "---\na: [x\nb: y]\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": "[x",
+      "b": "y]"
+     },
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "doublon de clé",
+   "entree": {
+    "texte": "---\ntitre: A\ntitre: B\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "titre": "B"
+     },
+     "corps"
+    ]
+   }
+  },
+  {
+   "cas": "fin immédiate",
+   "entree": {
+    "texte": "---\n---"
+   },
+   "sortie": {
+    "valeur": [
+     {},
+     ""
+    ]
+   }
+  },
+  {
+   "cas": "retours chariot",
+   "entree": {
+    "texte": "---\r\ntitre: T\r\n---\r\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "titre": "T"
+     },
+     "\r\ncorps"
+    ]
+   }
+  },
+  {
+   "cas": "valeur booléenne dans liste",
+   "entree": {
+    "texte": "---\nl: [true, false]\n---\ncorps"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "l": [
+       "true",
+       "false"
+      ]
+     },
+     "corps"
+    ]
+   }
+  }
+ ]
+}

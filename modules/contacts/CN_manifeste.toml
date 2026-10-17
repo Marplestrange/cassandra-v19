@@ -280,3 +280,19 @@ contrat = "1.0"
 reference = "points/EC_vcard_ecrire"
 fonction = "point_vcard_ecrire"
 runtime = "python"
+
+[[points_evolution]]
+id = "csv_apparier"
+libelle = "L'appariement des colonnes d'un CSV : les en-têtes en entrée, la colonne de chaque champ de la fiche en sortie (insensible à la casse, aux accents et à la ponctuation)"
+contrat = "1.0"
+reference = "points/EC_csv_apparier"
+fonction = "point_csv_apparier"
+runtime = "python"
+
+[[points_evolution]]
+id = "csv_fiches"
+libelle = "Les fiches d'un CSV : les lignes et l'appariement en entrée, les fiches lues en sortie (adresses dédoublonnées et en minuscules, nom recomposé du prénom et du nom)"
+contrat = "1.0"
+reference = "points/EC_csv_fiches"
+fonction = "point_csv_fiches"
+runtime = "python"

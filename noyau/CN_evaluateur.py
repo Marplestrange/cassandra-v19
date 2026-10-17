@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #456f9b
+# VERSION CN : 0.1.0  #fdac92
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : dit si une variante d'un point d'évolution est équivalente à la référence, plus rapide, et si son gain tient hors de ce que le générateur a vu.
 # MÉTHODE    : code déterministe (jamais un modèle) ; évaluation par paliers avec arrêt à la première divergence ; partition réservée ; contrôle de sa propre solidité par des variantes fausses.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=456f9b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fdac92 ▼▼▼
 """L'évaluateur (docs/CN_EVOLUTION.md §2, docs/CN_NEXUS.md §4 : un juge ne s'évolue pas).
 
   - DÉTERMINISTE : aucune note donnée par un modèle ; une comparaison de données et des mesures de durée ;
@@ -29,6 +29,7 @@ import ast
 import copy
 import math
 import statistics
+import sys
 import time
 import types
 
@@ -50,6 +51,30 @@ def charger_texte(texte: str, fonction: str):
     mod = types.ModuleType("candidat")
     exec(compile(texte, "<candidat>", "exec"), mod.__dict__)
     return getattr(mod, fonction)
+
+
+class Delai(Exception):
+    """Un candidat qui ne rend pas la main : interrompu, jamais attendu."""
+
+
+def appel_borne(f, entree, secondes: float = 2.0):
+    """Appelle f(entree) avec un délai. Une boucle sans fin (une mutation de condition d'arrêt, un modèle étourdi) arrêterait l'évaluation pour toujours : le traçage lève Delai
+    dès que le code du CANDIDAT (« <candidat> ») dépasse son temps. Une boucle dans une fonction native (une expression régulière catastrophique) ne peut pas être interrompue ainsi."""
+    limite = time.perf_counter() + secondes
+
+    def local(frame, event, arg):
+        if time.perf_counter() > limite:
+            raise Delai("délai de %.1f s dépassé" % secondes)
+        return local
+
+    def globale(frame, event, arg):
+        return local if frame.f_code.co_filename == "<candidat>" else None
+    ancien = sys.gettrace()
+    sys.settrace(globale)
+    try:
+        return f(entree)
+    finally:
+        sys.settrace(ancien)
 
 
 def _mediane(valeurs):
@@ -90,6 +115,7 @@ class Evaluateur:
         t_ref2 = []                                          # la référence chronométrée une seconde fois : l'écart avec elle-même est le BRUIT de la machine
         cas_ok = []                                          # les cas où le candidat a répondu comme la référence : ce sont eux qu'on chronomètre
         sortie_contrat = ref["contrat"].get("sortie")
+        delai_s = float(ref["contrat"].get("delai_ms") or 2000) / 1000.0
         fait = 0
         arret = False
         for frac in paliers:
@@ -103,7 +129,7 @@ class Evaluateur:
                     fait += 1
                     continue
                 try:
-                    obtenue = P._copie(cand(P._copie(cas["entree"])))
+                    obtenue = P._copie(appel_borne(cand, P._copie(cas["entree"]), delai_s))
                 except Exception as e:
                     res.update(verdict="erreur", erreur="%s : %s" % (type(e).__name__, e), divergence={"h": cas["h"], "partition": part})
                     arret = True

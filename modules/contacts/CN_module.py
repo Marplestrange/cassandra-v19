@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.0  #cd63e0
+# VERSION CN : 0.3.0  #91d7ee
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet d'adresses.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=cd63e0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=91d7ee ▼▼▼
 """Le carnet d'adresses.
 
 Porté de la V18 (`contact_*`, `contacts_*`, vCard, CSV), avec ses leçons :
@@ -60,23 +60,6 @@ SYSTEME = ("cassandra", "itare", "noyau", "operateur")
 PRIVES = ("emails", "addr", "phone", "mobile", "address")
 CSV_MAX = 6 * 1024 * 1024
 IMPORT_MAX = 5000
-CSV_CHAMPS = {
-    "display_name": ("name", "nom complet", "full name", "display name", "nom affiche", "contact"),
-    "_prenom": ("first name", "given name", "prenom"),
-    "_nom": ("last name", "family name", "surname", "nom de famille", "nom"),
-    "emails": ("e mail 1 value", "e mail address", "email address", "email", "e mail", "courriel", "adresse de messagerie", "adresse e mail", "e mail 2 value",
-               "e mail address 2", "adresse de messagerie 2"),
-    "phone": ("phone 1 value", "business phone", "home phone", "telephone", "telephone professionnel", "telephone domicile", "tel", "phone"),
-    "mobile": ("phone 2 value", "mobile phone", "mobile", "portable", "telephone mobile", "cell phone"),
-    "company": ("organization name", "organization 1 name", "company", "societe", "entreprise", "organisation"),
-    "job_title": ("organization title", "organization 1 title", "job title", "fonction", "titre", "poste"),
-    "address": ("address 1 formatted", "home address", "business street", "adresse", "rue", "adresse professionnelle", "address"),
-    "website": ("website 1 value", "web page", "site web", "site", "url"),
-    "anniversaire": ("birthday", "anniversaire", "date de naissance", "birth date"),
-    "notes": ("notes", "note", "remarques", "comments"),
-}
-
-
 # ------------------------------------------------------------------ comparaison de noms, numéros, sites
 def aplatir(s):
     t = unicodedata.normalize("NFD", str(s or ""))
@@ -203,38 +186,14 @@ def csv_lire(octets):
     return {"entetes": [(x or "").strip() for x in lignes[0]], "lignes": lignes[1:], "encodage": enc, "separateur": sep}
 
 
-def csv_apparier(entetes):
-    connus = {lib: champ for champ, libs in CSV_CHAMPS.items() for lib in libs}
-    return {str(i): connus[aplatir(e)] for i, e in enumerate(entetes) if aplatir(e) in connus}
+def csv_apparier(entetes, appeler):
+    """La colonne de chaque champ de la fiche. L'appariement est un POINT D'ÉVOLUTION : points/EC_csv_apparier.py."""
+    return appeler("csv_apparier", {"entetes": list(entetes)})["appariement"]
 
 
-def csv_fiches(d, appariement):
-    fiches = []
-    for ligne in d["lignes"]:
-        f, prenom, nom = {"emails": []}, "", ""
-        for i, champ in appariement.items():
-            try:
-                v = str(ligne[int(i)] or "").strip()
-            except (IndexError, ValueError):
-                v = ""
-            if not v:
-                continue
-            if champ == "_prenom":
-                prenom = v
-            elif champ == "_nom":
-                nom = v
-            elif champ == "emails":
-                for a in re.split(r"[;,\s]+", v):
-                    a = a.strip().lower()
-                    if "@" in a and a not in f["emails"]:
-                        f["emails"].append(a)
-            elif champ not in f:
-                f[champ] = v
-        if not f.get("display_name"):
-            f["display_name"] = " ".join(x for x in (prenom, nom) if x)
-        if f.get("display_name") or f["emails"]:
-            fiches.append(f)
-    return fiches
+def csv_fiches(d, appariement, appeler):
+    """Les fiches lues d'un CSV. La lecture des lignes est un POINT D'ÉVOLUTION : points/EC_csv_fiches.py."""
+    return appeler("csv_fiches", {"lignes": d["lignes"], "appariement": appariement})["fiches"]
 
 
 def brancher(ctx):
@@ -425,7 +384,7 @@ def brancher(ctx):
             d = csv_lire(base64.b64decode(contenu_b64 or "", validate=False))
         except ValueError as ex:
             raise ValueError(str(ex))
-        app = csv_apparier(d["entetes"])
+        app = csv_apparier(d["entetes"], ctx.point)
         reconnus = sorted(set(app.values()))
         return {"entetes": d["entetes"], "appariement": app, "exemples": [[(x or "")[:60] for x in l] for l in d["lignes"][:3]], "lignes": len(d["lignes"]), "encodage": d["encodage"],
                 "separateur": d["separateur"], "reconnus": reconnus, "utilisable": bool({"display_name", "_prenom", "_nom", "emails"} & set(reconnus))}
@@ -897,10 +856,10 @@ def brancher(ctx):
         if dossier_id and not db.lire("SELECT 1 FROM dossiers WHERE id=? AND compte=?", (int(dossier_id), compte)):
             raise ValueError("dossier introuvable")
         d = csv_lire(base64.b64decode(contenu_b64 or "", validate=False))
-        app = appariement if isinstance(appariement, dict) and appariement else csv_apparier(d["entetes"])
+        app = appariement if isinstance(appariement, dict) and appariement else csv_apparier(d["entetes"], ctx.point)
         if not app:
             raise ValueError("aucune colonne reconnue — appariez-les à la main avant d'importer")
-        fiches = csv_fiches(d, app)
+        fiches = csv_fiches(d, app, ctx.point)
         if not fiches:
             raise ValueError("aucune ligne exploitable")
         r = verser(compte, fiches, "csv", int(dossier_id or 0))

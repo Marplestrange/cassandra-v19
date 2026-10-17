@@ -1,0 +1,509 @@
+{
+ "point": "dns.analyser",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de dns, données synthétiques",
+ "cas": [
+  {
+   "cas": "A",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwAAQABAAABLAAEwAACCg==",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "A",
+      "192.0.2.10"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "deux A",
+   "entree": {
+    "reponse": "BNKBgAABAAIAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwAAQABAAABLAAEwAACCsAMAAEAAQAAASwABMAAAgs=",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "A",
+      "192.0.2.10"
+     ],
+     [
+      "A",
+      "192.0.2.11"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "AAAA",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwAHAABAAABLAAQIAENuAAAAAAAAAAAAAAAAQ==",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "AAAA",
+      "2001:db8::1"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "A de mauvaise longueur ignoré",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwAAQABAAABLAADAQID",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": []
+   }
+  },
+  {
+   "cas": "NS",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwAAgABAAABLAASA05TMQdFeGVtcGxlBFRlc3QA",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "NS",
+      "ns1.exemple.test"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "CNAME",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwABQABAAABLAAUBUNpYmxlB0V4ZW1wbGUEVGVzdAA=",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "CNAME",
+      "cible.exemple.test"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "MX",
+   "entree": {
+    "reponse": "BNKBgAABAAIAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwADwABAAABLAAVAAoETWFpbAdFeGVtcGxlBFRlc3QAwAwADwABAAABLAAWABQFTWFpbDIHRXhlbXBsZQRUZXN0AA==",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "MX",
+      "10 mail.exemple.test"
+     ],
+     [
+      "MX",
+      "20 mail2.exemple.test"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "TXT simple",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwAEAABAAABLAAMC3Y9c3BmMSAtYWxs",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "TXT",
+      "v=spf1 -all"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "TXT en morceaux",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwAEAABAAABLAAmEnY9REtJTTE7IGs9cnNhOyBwPQ1NSUlCSWpBTkJna3FoBEFRQUI=",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "TXT",
+      "v=DKIM1; k=rsa; p=MIIBIjANBgkqhAQAB"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "TXT utf-8",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwAEAABAAABLAAGBWNhZsOp",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "TXT",
+      "café"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "CAA",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwBAQABAAABLAAWAAVpc3N1ZWxldHNlbmNyeXB0Lm9yZw==",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "CAA",
+      "0 issue \"letsencrypt.org\""
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "CAA sans valeur",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwBAQABAAABLAAHAAVpc3N1ZQ==",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "CAA",
+      "0 issue \"\""
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "CAA trop court ignoré",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwBAQABAAABLAABAA==",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": []
+   }
+  },
+  {
+   "cas": "type inconnu ignoré",
+   "entree": {
+    "reponse": "BNKBgAABAAIAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwAYwABAAABLAADeHl6wAwAAQABAAABLAAEwAACAQ==",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "A",
+      "192.0.2.1"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "aucune réponse",
+   "entree": {
+    "reponse": "BNKBgAABAAAAAAAAB2V4ZW1wbGUEdGVzdAAAAQAB",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": []
+   }
+  },
+  {
+   "cas": "code NXDOMAIN",
+   "entree": {
+    "reponse": "BNKBgwABAAAAAAAAB2V4ZW1wbGUEdGVzdAAAAQAB",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 3,
+    "tronque": false,
+    "enregistrements": []
+   }
+  },
+  {
+   "cas": "code SERVFAIL",
+   "entree": {
+    "reponse": "BNKBggABAAAAAAAAB2V4ZW1wbGUEdGVzdAAAAQAB",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 2,
+    "tronque": false,
+    "enregistrements": []
+   }
+  },
+  {
+   "cas": "tronqué",
+   "entree": {
+    "reponse": "BNKDgAABAAAAAAAAB2V4ZW1wbGUEdGVzdAAAAQAB",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": true,
+    "enregistrements": []
+   }
+  },
+  {
+   "cas": "tronqué et refusé",
+   "entree": {
+    "reponse": "BNKDhQABAAAAAAAAB2V4ZW1wbGUEdGVzdAAAAQAB",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 5,
+    "tronque": true,
+    "enregistrements": []
+   }
+  },
+  {
+   "cas": "sans question",
+   "entree": {
+    "reponse": "BNKBgAAAAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABAAABLAAEwAACCQ==",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "A",
+      "192.0.2.9"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "propriétaire en clair",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABBWF1dHJlB2V4ZW1wbGUEdGVzdAAAAQABAAABLAAEwAACCQ==",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "A",
+      "192.0.2.9"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "trop court",
+   "entree": {
+    "reponse": "AAAAAAA=",
+    "ident": 1234
+   },
+   "sortie": {
+    "erreur": "réponse trop courte"
+   }
+  },
+  {
+   "cas": "vide",
+   "entree": {
+    "reponse": "",
+    "ident": 1234
+   },
+   "sortie": {
+    "erreur": "réponse trop courte"
+   }
+  },
+  {
+   "cas": "mauvais identifiant",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwAAQABAAABLAAEwAACAQ==",
+    "ident": 9999
+   },
+   "sortie": {
+    "erreur": "identifiant inattendu"
+   }
+  },
+  {
+   "cas": "identifiant à zéro",
+   "entree": {
+    "reponse": "AACBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwAAQABAAABLAAEwAACAQ==",
+    "ident": 0
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "A",
+      "192.0.2.1"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "donnée tronquée",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwAAQABAAABLAAEwAA=",
+    "ident": 1234
+   },
+   "sortie": {
+    "erreur": "donnée tronquée"
+   }
+  },
+  {
+   "cas": "en-tête seul avec réponses annoncées",
+   "entree": {
+    "reponse": "BNKBgAAAAAIAAAAA",
+    "ident": 1234
+   },
+   "sortie": {
+    "erreur": "nom tronqué"
+   }
+  },
+  {
+   "cas": "boucle de compression",
+   "entree": {
+    "reponse": "BNKBgAABAAAAAAAAwAwAAQAB",
+    "ident": 1234
+   },
+   "sortie": {
+    "erreur": "boucle de compression"
+   }
+  },
+  {
+   "cas": "pointeur tronqué",
+   "entree": {
+    "reponse": "BNKBgAABAAAAAAAAwA==",
+    "ident": 1234
+   },
+   "sortie": {
+    "erreur": "pointeur tronqué"
+   }
+  },
+  {
+   "cas": "nom tronqué",
+   "entree": {
+    "reponse": "BNKBgAABAAAAAAAABWFi",
+    "ident": 1234
+   },
+   "sortie": {
+    "erreur": "nom tronqué"
+   }
+  },
+  {
+   "cas": "MX avec compression",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwADwABAAABLAAJAAUEbWFpbMAM",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "MX",
+      "5 mail.exemple.test"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "CNAME avec compression",
+   "entree": {
+    "reponse": "BNKBgAABAAEAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwABQABAAABLAAGA3d3d8AM",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "CNAME",
+      "www.exemple.test"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "mélange de types",
+   "entree": {
+    "reponse": "BNKBgAABAAQAAAAAB2V4ZW1wbGUEdGVzdAAAAQABwAwAAQABAAABLAAEwAACAcAMABAAAQAAASwAAgFhwAwADwABAAABLAASAAEBbQdleGVtcGxlBHRlc3QAwAwAAgABAAABLAARAm5zB2V4ZW1wbGUEdGVzdAA=",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 0,
+    "tronque": false,
+    "enregistrements": [
+     [
+      "A",
+      "192.0.2.1"
+     ],
+     [
+      "TXT",
+      "a"
+     ],
+     [
+      "MX",
+      "1 m.exemple.test"
+     ],
+     [
+      "NS",
+      "ns.exemple.test"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "flags avec bits hauts",
+   "entree": {
+    "reponse": "BNL//wABAAAAAAAAB2V4ZW1wbGUEdGVzdAAAAQAB",
+    "ident": 1234
+   },
+   "sortie": {
+    "rcode": 15,
+    "tronque": true,
+    "enregistrements": []
+   }
+  }
+ ]
+}

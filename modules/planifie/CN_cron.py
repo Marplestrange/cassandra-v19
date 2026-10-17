@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.1  #d27c05
+# VERSION CN : 0.1.1  #3a4612
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les tâches planifiées : la logique pure (expressions cron, occurrences, description en français, verdict d'une tâche, collisions, dérive).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=d27c05 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=3a4612 ▼▼▼
 """Les tâches planifiées : la logique pure (expressions cron, occurrences, description en français, verdict d'une tâche, collisions, dérive).
 
 Portée de la V18. Rien ici ne touche le système : le module lit et écrit les crontabs par le courtier, et passe les temps et les durées à ces fonctions.
@@ -129,47 +129,9 @@ def occurrences(expr, du, au, max_par_jour=4):
     return out
 
 
-def decrire(expr):
-    """L'expression en français lisible. Au moindre doute, l'expression d'origine plutôt qu'une paraphrase fausse."""
-    e = normaliser(expr)
-    if e.lower() == "@reboot":
-        return "à chaque démarrage"
-    f = e.split()
-    if len(f) != 5:
-        return e
-    mi, ho, dom, mon, dow = f
-    tous = lambda s: s.strip() in ("*", "")
-
-    def pas(s):
-        if s.startswith("*/"):
-            try:
-                return int(s[2:])
-            except ValueError:
-                return 0
-        return 0
-    jours = ""
-    if not tous(dow):
-        d = champ(dow, 0, 7)
-        if d:
-            noms = sorted({JOURS_FR[0 if x == 7 else x] for x in d})
-            jours = " le " + ", ".join(noms) if len(noms) < 7 else ""
-    if not tous(dom):
-        jours += " le %s du mois" % dom
-    if not tous(mon):
-        jours += " (mois %s)" % mon
-    smi, sho = pas(mi), pas(ho)
-    if smi and tous(ho):
-        return ("toutes les %d minutes" % smi) + jours
-    if sho and mi.isdigit():
-        return ("toutes les %d heures (à H+%s)" % (sho, mi)) + jours
-    if tous(mi) and tous(ho):
-        return "chaque minute" + jours
-    if mi.isdigit() and tous(ho):
-        return ("à la minute %s de chaque heure" % mi) + jours
-    if mi.isdigit() and ho.isdigit():
-        base = "à %02d:%02d" % (int(ho), int(mi))
-        return (base + jours) if jours else base + " chaque jour"
-    return e
+def decrire(expr, appeler):
+    """L'expression en français lisible. Au moindre doute, l'expression d'origine plutôt qu'une paraphrase fausse. Le calcul est un POINT D'ÉVOLUTION : points/EC_decrire.py."""
+    return appeler("decrire", {"expr": expr})["texte"]
 
 
 def precedente(expr, ref, retour_jours=21):
@@ -371,25 +333,9 @@ def etat(job, maintenant):
     return "muet", "attendu le %s, dernière trace le %s (%dh de retard)" % (prev, last, retard)
 
 
-def collisions(jobs, seuil=3):
-    """Les créneaux où trop de tâches LOURDES démarrent ensemble : elles se disputent le disque et le processeur au même instant, chacune s'allonge, la fenêtre de nuit déborde. Trois `echo` à la même minute n'ont jamais posé de problème."""
-    par = {}
-    for j in jobs:
-        if not j.get("actif") or not LOURDES.search(j.get("commande") or ""):
-            continue
-        p = analyser(j.get("horaire") or "")
-        if not p:
-            continue
-        mins, hours, _ = p
-        if len(mins) * len(hours) > 4:                    # une tâche qui part plusieurs fois par heure est diffuse par nature
-            continue
-        for h in hours:
-            for m in mins:
-                par.setdefault("%02d:%02d" % (h, m), []).append(j)
-    out = [{"at": c, "nombre": len(lot), "taches": [{"ref": x["ref"], "libelle": (x.get("description") or x.get("commande") or "")[:80], "id": x.get("id")} for x in lot]}
-           for c, lot in sorted(par.items()) if len(lot) >= max(2, int(seuil))]
-    out.sort(key=lambda x: -x["nombre"])
-    return out
+def collisions(jobs, appeler, seuil=3):
+    """Les créneaux où trop de tâches LOURDES démarrent ensemble : elles se disputent le disque et le processeur au même instant, chacune s'allonge, la fenêtre de nuit déborde. Trois `echo` à la même minute n'ont jamais posé de problème. Le calcul est un POINT D'ÉVOLUTION : points/EC_collisions.py."""
+    return appeler("collisions", {"jobs": jobs, "seuil": seuil})["valeur"]
 
 
 def repartir(collision):

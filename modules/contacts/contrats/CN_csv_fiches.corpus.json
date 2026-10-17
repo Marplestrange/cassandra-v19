@@ -1,0 +1,877 @@
+{
+ "point": "contacts.csv_fiches",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de contacts, données synthétiques",
+ "cas": [
+  {
+   "cas": "aucune ligne",
+   "entree": {
+    "lignes": [],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": []
+   }
+  },
+  {
+   "cas": "une fiche complète",
+   "entree": {
+    "lignes": [
+     [
+      "Alice",
+      "Martin",
+      "alice@exemple.test",
+      "0102030405",
+      "0607080910",
+      "Acme"
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "alice@exemple.test"
+      ],
+      "phone": "0102030405",
+      "mobile": "0607080910",
+      "company": "Acme",
+      "display_name": "Alice Martin"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "deux fiches",
+   "entree": {
+    "lignes": [
+     [
+      "Alice",
+      "Martin",
+      "a@exemple.test",
+      "",
+      "",
+      ""
+     ],
+     [
+      "Bob",
+      "Durand",
+      "b@exemple.test",
+      "0102",
+      "",
+      "Beta"
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "a@exemple.test"
+      ],
+      "display_name": "Alice Martin"
+     },
+     {
+      "emails": [
+       "b@exemple.test"
+      ],
+      "phone": "0102",
+      "company": "Beta",
+      "display_name": "Bob Durand"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ligne trop courte",
+   "entree": {
+    "lignes": [
+     [
+      "Alice",
+      "Martin"
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "display_name": "Alice Martin"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ligne vide de sens",
+   "entree": {
+    "lignes": [
+     [
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": []
+   }
+  },
+  {
+   "cas": "email seul sans nom",
+   "entree": {
+    "lignes": [
+     [
+      "",
+      "",
+      "seul@exemple.test",
+      "",
+      "",
+      ""
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "seul@exemple.test"
+      ],
+      "display_name": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "nom seul sans email",
+   "entree": {
+    "lignes": [
+     [
+      "",
+      "Dupont",
+      "",
+      "",
+      "",
+      ""
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "display_name": "Dupont"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "prénom seul",
+   "entree": {
+    "lignes": [
+     [
+      "Yann",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "display_name": "Yann"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plusieurs emails séparés",
+   "entree": {
+    "lignes": [
+     [
+      "Eve",
+      "Roy",
+      "e1@exemple.test; E2@Exemple.TEST, e3@exemple.test",
+      "",
+      "",
+      ""
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "e1@exemple.test",
+       "e2@exemple.test",
+       "e3@exemple.test"
+      ],
+      "display_name": "Eve Roy"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "email invalide ignoré",
+   "entree": {
+    "lignes": [
+     [
+      "Eve",
+      "Roy",
+      "pas-un-email",
+      "",
+      "",
+      ""
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "display_name": "Eve Roy"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "email dupliqué",
+   "entree": {
+    "lignes": [
+     [
+      "Eve",
+      "Roy",
+      "e@exemple.test; E@exemple.test",
+      "",
+      "",
+      ""
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "e@exemple.test"
+      ],
+      "display_name": "Eve Roy"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "espaces autour",
+   "entree": {
+    "lignes": [
+     [
+      "  Léa ",
+      " Petit ",
+      " l@exemple.test ",
+      " 0102 ",
+      "",
+      ""
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "l@exemple.test"
+      ],
+      "phone": "0102",
+      "display_name": "Léa Petit"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "display_name explicite",
+   "entree": {
+    "lignes": [
+     [
+      "Prof. Alice Martin",
+      "",
+      "a@exemple.test"
+     ]
+    ],
+    "appariement": {
+     "0": "display_name",
+     "2": "emails"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "a@exemple.test"
+      ],
+      "display_name": "Prof. Alice Martin"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "display_name et prénom nom",
+   "entree": {
+    "lignes": [
+     [
+      "Dr A. M.",
+      "Alice",
+      "Martin"
+     ]
+    ],
+    "appariement": {
+     "0": "display_name",
+     "1": "_prenom",
+     "2": "_nom"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "display_name": "Dr A. M."
+     }
+    ]
+   }
+  },
+  {
+   "cas": "appariement vide",
+   "entree": {
+    "lignes": [
+     [
+      "Alice",
+      "Martin"
+     ]
+    ],
+    "appariement": {}
+   },
+   "sortie": {
+    "fiches": []
+   }
+  },
+  {
+   "cas": "index hors limites",
+   "entree": {
+    "lignes": [
+     [
+      "Alice"
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "7": "emails"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "display_name": "Alice"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "index illisible",
+   "entree": {
+    "lignes": [
+     [
+      "Alice"
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "x": "emails"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [],
+      "display_name": "Alice"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "champ répété garde le premier",
+   "entree": {
+    "lignes": [
+     [
+      "12 rue A",
+      "5 rue B"
+     ]
+    ],
+    "appariement": {
+     "0": "address",
+     "1": "address"
+    }
+   },
+   "sortie": {
+    "fiches": []
+   }
+  },
+  {
+   "cas": "tous les champs",
+   "entree": {
+    "lignes": [
+     [
+      "Zoé",
+      "Roux",
+      "z@exemple.test",
+      "0102",
+      "0607",
+      "Acme",
+      "CEO",
+      "1 rue X",
+      "https://e.test",
+      "1990-01-02",
+      "ok"
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company",
+     "6": "job_title",
+     "7": "address",
+     "8": "website",
+     "9": "anniversaire",
+     "10": "notes"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "z@exemple.test"
+      ],
+      "notes": "ok",
+      "phone": "0102",
+      "mobile": "0607",
+      "company": "Acme",
+      "job_title": "CEO",
+      "address": "1 rue X",
+      "website": "https://e.test",
+      "anniversaire": "1990-01-02",
+      "display_name": "Zoé Roux"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "valeurs non texte",
+   "entree": {
+    "lignes": [
+     [
+      null,
+      12,
+      "n@exemple.test"
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "n@exemple.test"
+      ],
+      "display_name": "12"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cinq fiches",
+   "entree": {
+    "lignes": [
+     [
+      "P0",
+      "N0",
+      "u0@exemple.test",
+      "0100000000",
+      "",
+      ""
+     ],
+     [
+      "P1",
+      "N1",
+      "u1@exemple.test",
+      "0100000001",
+      "",
+      ""
+     ],
+     [
+      "P2",
+      "N2",
+      "u2@exemple.test",
+      "0100000002",
+      "",
+      ""
+     ],
+     [
+      "P3",
+      "N3",
+      "u3@exemple.test",
+      "0100000003",
+      "",
+      ""
+     ],
+     [
+      "P4",
+      "N4",
+      "u4@exemple.test",
+      "0100000004",
+      "",
+      ""
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "u0@exemple.test"
+      ],
+      "phone": "0100000000",
+      "display_name": "P0 N0"
+     },
+     {
+      "emails": [
+       "u1@exemple.test"
+      ],
+      "phone": "0100000001",
+      "display_name": "P1 N1"
+     },
+     {
+      "emails": [
+       "u2@exemple.test"
+      ],
+      "phone": "0100000002",
+      "display_name": "P2 N2"
+     },
+     {
+      "emails": [
+       "u3@exemple.test"
+      ],
+      "phone": "0100000003",
+      "display_name": "P3 N3"
+     },
+     {
+      "emails": [
+       "u4@exemple.test"
+      ],
+      "phone": "0100000004",
+      "display_name": "P4 N4"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "lignes mélangées valides et vides",
+   "entree": {
+    "lignes": [
+     [
+      "A",
+      "B",
+      "ab@exemple.test",
+      "",
+      "",
+      ""
+     ],
+     [
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ],
+     [
+      "C",
+      "D",
+      "",
+      "",
+      "",
+      ""
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "ab@exemple.test"
+      ],
+      "display_name": "A B"
+     },
+     {
+      "emails": [],
+      "display_name": "C D"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "unicode",
+   "entree": {
+    "lignes": [
+     [
+      "Zoé",
+      "Œuf",
+      "zoe@exemple.test",
+      "",
+      "",
+      "Café du Marché"
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "zoe@exemple.test"
+      ],
+      "company": "Café du Marché",
+      "display_name": "Zoé Œuf"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "email majuscules",
+   "entree": {
+    "lignes": [
+     [
+      "Max",
+      "Roy",
+      "MAX@EXEMPLE.TEST",
+      "",
+      "",
+      ""
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "max@exemple.test"
+      ],
+      "display_name": "Max Roy"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "séparateur espace",
+   "entree": {
+    "lignes": [
+     [
+      "Max",
+      "Roy",
+      "a@exemple.test b@exemple.test",
+      "",
+      "",
+      ""
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "a@exemple.test",
+       "b@exemple.test"
+      ],
+      "display_name": "Max Roy"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "nom avec espaces seuls",
+   "entree": {
+    "lignes": [
+     [
+      " ",
+      "  ",
+      "x@exemple.test",
+      "",
+      "",
+      ""
+     ]
+    ],
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company"
+    }
+   },
+   "sortie": {
+    "fiches": [
+     {
+      "emails": [
+       "x@exemple.test"
+      ],
+      "display_name": ""
+     }
+    ]
+   }
+  }
+ ]
+}

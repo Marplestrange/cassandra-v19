@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5be8d1
+# VERSION CN : 0.1.0  #3e70ad
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module dns : le client DNS (vrai UDP et TCP local), puis le module dans un vrai noyau avec un DNS, un panneau et un Cloudflare simulés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5be8d1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3e70ad ▼▼▼
 """Bancs du module dns : le client DNS (vrai UDP et TCP local), puis le module dans un vrai noyau avec un DNS, un panneau et un Cloudflare simulés."""
 import json
 import shutil
@@ -38,6 +38,15 @@ def charger():
     spec = importlib.util.spec_from_file_location("dns_mod", RACINE / "modules" / "dns" / "CN_module.py")
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
+    # le client interroge sans noyau : on branche le point d'évolution `analyser` sur sa référence, comme le ferait brancher()
+    from noyau import CN_manifeste as M, CN_points as P
+    dossier = RACINE / "modules" / "dns"
+    svc = P.ServicePoints(Path(tempfile.mkdtemp()) / "ec")
+    svc.declarer(M.charger(dossier / "CN_manifeste.toml"), dossier)
+    m._point = lambda nom, entree: svc.appeler("dns", nom, entree)
+    espace = {}
+    exec(compile((dossier / "points" / "EC_analyser.py").read_text(encoding="utf-8"), "EC_analyser", "exec"), espace)
+    m.lire_nom = espace["lire_nom"]            # le lecteur de noms vit dans la référence ; les bancs s'en servent pour décoder les questions
     return m
 
 

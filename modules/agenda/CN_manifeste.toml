@@ -206,3 +206,11 @@ reseau = ["le serveur CalDAV réglé par chaque compte"]
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "ical_lire"
+libelle = "La lecture d'un flux iCalendar : le texte et le décalage horaire local en entrée, les événements (VEVENT) en sortie ; l'horloge est lue par le nexus, jamais par l'EC"
+contrat = "1.0"
+reference = "points/EC_ical_lire"
+fonction = "point_ical_lire"
+runtime = "python"

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #470bde
+# VERSION CN : 0.1.0  #1b0c43
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les points d'évolution RÉELS du dépôt (les points déclarés ci-dessous) : déclarés sans défaut, équivalents à leur corpus doré (produit par l'ancien code), et protégés par un corpus assez fort pour juger une variante. Tout nouveau po
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=470bde ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1b0c43 ▼▼▼
 """Les points d'évolution RÉELS du dépôt (les points déclarés ci-dessous) : déclarés sans défaut, équivalents à leur corpus doré (produit par l'ancien code),
 et protégés par un corpus assez fort pour juger une variante. Tout nouveau point réel s'ajoute à la liste : ce banc est sa porte d'entrée."""
 import json
@@ -33,7 +33,19 @@ from noyau import CN_rejeu as R  # noqa: E402
 POINTS = [("vue", "verdict.composer", "EC_verdict_composer", 0.85),
           ("contacts", "signaux", "EC_signaux", 0.88),
           ("contacts", "vcard_lire", "EC_vcard_lire", 0.9),
-          ("contacts", "vcard_ecrire", "EC_vcard_ecrire", 0.92)]
+          ("contacts", "vcard_ecrire", "EC_vcard_ecrire", 0.92),
+          ("contacts", "csv_apparier", "EC_csv_apparier", 1.0),
+          ("contacts", "csv_fiches", "EC_csv_fiches", 0.95),
+          ("memoire", "json_extraire", "EC_json_extraire", 0.90),
+          ("notes", "lire_entete", "EC_lire_entete", 0.90),
+          ("notes", "md_vers_html", "EC_md_vers_html", 0.90),
+          ("dns", "analyser", "EC_analyser", 0.90),
+          ("agenda", "ical_lire", "EC_ical_lire", 0.95),
+          ("memoire", "perception_monde", "EC_perception_monde", 0.80),
+          ("planifie", "decrire", "EC_decrire", 0.95),
+          ("planifie", "collisions", "EC_collisions", 0.60)]
+# (cas dorés, variantes fausses) minimaux ; une très petite fonction ne peut pas engendrer trente mutants : son plancher de score est alors de 1,0
+SEUILS = {("memoire", "json_extraire"): (20, 12), ("contacts", "csv_fiches"): (20, 15), ("notes", "md_vers_html"): (20, 24), ("notes", "lire_entete"): (20, 22), ("contacts", "csv_apparier"): (15, 3)}
 
 
 def manifeste_de(dossier: Path):
@@ -65,7 +77,7 @@ class PointsReels(unittest.TestCase):
     def test_chaque_point_est_declare_avec_son_contrat_et_son_corpus(self):
         self.assertEqual(sorted(self.svc.points()), sorted("%s.%s" % (m, p) for m, p, _, _ in POINTS))
         for module, point, _, _ in POINTS:
-            self.assertGreaterEqual(len(self.corpus[(module, point)]["cas"]), 20, "%s.%s : un corpus doré d'au moins vingt cas" % (module, point))
+            self.assertGreaterEqual(len(self.corpus[(module, point)]["cas"]), SEUILS.get((module, point), (20, 30))[0], "%s.%s : un corpus doré d'au moins vingt cas" % (module, point))
 
     def test_la_reference_rejoue_son_corpus_dore_a_l_identique(self):
         """Le corpus a été produit par l'ANCIEN code, avant la conversion : l'égalité prouve que rien n'a changé."""
@@ -82,7 +94,7 @@ class PointsReels(unittest.TestCase):
         """L'évaluateur se juge lui-même : la part des variantes fausses de la référence que le corpus attrape. Ce plancher empêche un corpus de s'affaiblir en silence."""
         for module, point, _, plancher in POINTS:
             r = self.ev.pieges(module, point, maximum=200)
-            self.assertGreaterEqual(r["mutants"], 30, "%s.%s" % (module, point))
+            self.assertGreaterEqual(r["mutants"], SEUILS.get((module, point), (20, 30))[1], "%s.%s" % (module, point))
             self.assertGreaterEqual(r["score"], plancher, "%s.%s : corpus trop faible, survivants : %s" % (module, point, r["survivants"][:6]))
 
     def test_aucune_fiche_privee_ne_voyage_dans_le_corpus_de_contacts(self):

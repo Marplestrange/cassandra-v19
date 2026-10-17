@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6823a6
+# VERSION CN : 0.1.0  #61c6ee
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La mémoire.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6823a6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=61c6ee ▼▼▼
 """La mémoire.
 
 Portée de la V18 (l'« îlot mémoire » : `memoire_*`, `perception_*`, `chaine_*`), avec ses leçons — elles sont payées :
@@ -757,7 +757,7 @@ def brancher(ctx):
             active=("« %s » (%s, conf %s)" % (str(actif[0]["valeur"])[:300], actif[0]["provenance"], actif[0]["confiance"])) if actif else "aucune")}],
             "Tu réponds en JSON strict, une ligne.", 300, allow_reasoning=False, timeout=60)
         if brut is not None:
-            obj = o.json_extraire(brut) or {}
+            obj = o.json_extraire(brut, ctx.point) or {}
             if isinstance(obj, dict) and "ok" in obj:
                 verdict = bool(obj.get("ok"))
                 if not verdict:
@@ -867,7 +867,7 @@ def brancher(ctx):
         brut = completer("principal", [{"role": "user", "content": prompt}], "", 1200, True, 40, 0.1)
         if brut is None:
             return {"ok": False, "raison": "modèle non prêt"}
-        obj = o.json_extraire(brut) or {}
+        obj = o.json_extraire(brut, ctx.point) or {}
         ecrits, refus, ids = 0, 0, []
         piece = {"type": "message" if decl != "geste_cage" else "geste_cage", "source": "echange", "contenu": f["piece"], "date": o.maintenant()}
         for s in (obj.get("souvenirs") or [])[:5]:
@@ -929,7 +929,7 @@ def brancher(ctx):
         if texte.strip():
             brut = completer("principal", [{"role": "user", "content": o.PROMPT_EPISODE.format(n=len(hist), texte=texte[:6000])}], "", 1200, True, 40, 0.1)
             if brut:
-                obj = o.json_extraire(brut) or {}
+                obj = o.json_extraire(brut, ctx.point) or {}
                 resume = " ".join(str(obj.get("resume") or "").split())[:1500]
                 ts = [str(t)[:40] for t in (obj.get("termes") or []) if str(t).strip()][:12]
         if not resume:
@@ -1120,7 +1120,7 @@ def brancher(ctx):
 
     def perception_bloc(question="", limite=12):
         q = (question or "").lower()
-        lignes = o.perception_monde(lignes_monde(), q, set(), limite)
+        lignes = o.perception_monde(lignes_monde(), q, set(), ctx.point, limite)
         if not lignes:
             return "— perception : aucun relevé disponible ; mesure avant de répondre —"
         return "— perception (mesurée à l'instant, jamais rappelée) —\n" + "\n".join(lignes[:limite * 2])
@@ -1148,7 +1148,7 @@ def brancher(ctx):
             out["perception"] = perception_bloc(question)
         else:
             # Une question qui NOMME une chose que le sensorium mesure reçoit la mesure à côté des souvenirs : sinon un vieux souvenir répondait seul, là où un relevé de la minute existait.
-            pm = o.perception_monde(lignes_monde(), (question or "").lower(), set(), 6, True) if question else []
+            pm = o.perception_monde(lignes_monde(), (question or "").lower(), set(), ctx.point, 6, True) if question else []
             if pm:
                 out["perception"] = "— perception (mesurée à l'instant, prime sur tout souvenir) —\n" + "\n".join(pm)
             ts = o.termes(question, 8)

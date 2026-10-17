@@ -1,0 +1,24 @@
+{
+ "point": "notes.md_vers_html",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "md"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "html"
+  ]
+ },
+ "invariants": [
+  "aucun HTML du texte d'origine n'est conservé : tout est échappé",
+  "un titre va de h2 à h3 (niveau + 1, plafonné à 3)",
+  "une liste est fermée dès qu'une ligne n'en est plus une",
+  "une ligne vide ne produit rien",
+  "un Markdown vide rend un HTML vide"
+ ]
+}

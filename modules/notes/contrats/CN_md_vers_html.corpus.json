@@ -1,0 +1,277 @@
+{
+ "point": "notes.md_vers_html",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de notes, données synthétiques",
+ "cas": [
+  {
+   "cas": "vide",
+   "entree": {
+    "md": ""
+   },
+   "sortie": {
+    "html": ""
+   }
+  },
+  {
+   "cas": "paragraphe",
+   "entree": {
+    "md": "Un paragraphe simple."
+   },
+   "sortie": {
+    "html": "<p>Un paragraphe simple.</p>"
+   }
+  },
+  {
+   "cas": "deux paragraphes",
+   "entree": {
+    "md": "Un\n\nDeux"
+   },
+   "sortie": {
+    "html": "<p>Un</p>\n<p>Deux</p>"
+   }
+  },
+  {
+   "cas": "titre 1",
+   "entree": {
+    "md": "# Titre"
+   },
+   "sortie": {
+    "html": "<h2>Titre</h2>"
+   }
+  },
+  {
+   "cas": "titre 2",
+   "entree": {
+    "md": "## Sous-titre"
+   },
+   "sortie": {
+    "html": "<h3>Sous-titre</h3>"
+   }
+  },
+  {
+   "cas": "titre 3",
+   "entree": {
+    "md": "### Niveau trois"
+   },
+   "sortie": {
+    "html": "<h3>Niveau trois</h3>"
+   }
+  },
+  {
+   "cas": "titre 6 plafonné",
+   "entree": {
+    "md": "###### Profond"
+   },
+   "sortie": {
+    "html": "<h3>Profond</h3>"
+   }
+  },
+  {
+   "cas": "titre sans espace",
+   "entree": {
+    "md": "#Collé"
+   },
+   "sortie": {
+    "html": "<p>#Collé</p>"
+   }
+  },
+  {
+   "cas": "liste à tirets",
+   "entree": {
+    "md": "- a\n- b\n- c"
+   },
+   "sortie": {
+    "html": "<ul>\n<li>a</li>\n<li>b</li>\n<li>c</li>\n</ul>"
+   }
+  },
+  {
+   "cas": "liste à étoiles",
+   "entree": {
+    "md": "* a\n* b"
+   },
+   "sortie": {
+    "html": "<ul>\n<li>a</li>\n<li>b</li>\n</ul>"
+   }
+  },
+  {
+   "cas": "liste indentée",
+   "entree": {
+    "md": "  - a\n  - b"
+   },
+   "sortie": {
+    "html": "<ul>\n<li>a</li>\n<li>b</li>\n</ul>"
+   }
+  },
+  {
+   "cas": "liste puis paragraphe",
+   "entree": {
+    "md": "- a\n- b\ntexte"
+   },
+   "sortie": {
+    "html": "<ul>\n<li>a</li>\n<li>b</li>\n</ul>\n<p>texte</p>"
+   }
+  },
+  {
+   "cas": "titre après liste",
+   "entree": {
+    "md": "- a\n# T"
+   },
+   "sortie": {
+    "html": "<ul>\n<li>a</li>\n</ul>\n<h2>T</h2>"
+   }
+  },
+  {
+   "cas": "deux listes",
+   "entree": {
+    "md": "- a\n\ntexte\n\n- b"
+   },
+   "sortie": {
+    "html": "<ul>\n<li>a</li>\n</ul>\n<p>texte</p>\n<ul>\n<li>b</li>\n</ul>"
+   }
+  },
+  {
+   "cas": "citation",
+   "entree": {
+    "md": "> citation"
+   },
+   "sortie": {
+    "html": "<blockquote>citation</blockquote>"
+   }
+  },
+  {
+   "cas": "citation sans espace",
+   "entree": {
+    "md": ">collée"
+   },
+   "sortie": {
+    "html": "<blockquote>collée</blockquote>"
+   }
+  },
+  {
+   "cas": "gras",
+   "entree": {
+    "md": "du **gras** ici"
+   },
+   "sortie": {
+    "html": "<p>du <strong>gras</strong> ici</p>"
+   }
+  },
+  {
+   "cas": "code en ligne",
+   "entree": {
+    "md": "du `code` ici"
+   },
+   "sortie": {
+    "html": "<p>du <code>code</code> ici</p>"
+   }
+  },
+  {
+   "cas": "lien",
+   "entree": {
+    "md": "voir [exemple](https://exemple.test)"
+   },
+   "sortie": {
+    "html": "<p>voir [exemple](https://exemple.test)</p>"
+   }
+  },
+  {
+   "cas": "html échappé",
+   "entree": {
+    "md": "<script>alert(1)</script> & co"
+   },
+   "sortie": {
+    "html": "<p>&lt;script&gt;alert(1)&lt;/script&gt; &amp; co</p>"
+   }
+  },
+  {
+   "cas": "caractères spéciaux",
+   "entree": {
+    "md": "a < b > c & d \" e"
+   },
+   "sortie": {
+    "html": "<p>a &lt; b &gt; c &amp; d &quot; e</p>"
+   }
+  },
+  {
+   "cas": "lignes vides multiples",
+   "entree": {
+    "md": "a\n\n\n\nb"
+   },
+   "sortie": {
+    "html": "<p>a</p>\n<p>b</p>"
+   }
+  },
+  {
+   "cas": "espaces de fin",
+   "entree": {
+    "md": "texte   \nsuite  "
+   },
+   "sortie": {
+    "html": "<p>texte</p>\n<p>suite</p>"
+   }
+  },
+  {
+   "cas": "retours chariot",
+   "entree": {
+    "md": "a\r\nb"
+   },
+   "sortie": {
+    "html": "<p>a</p>\n<p>b</p>"
+   }
+  },
+  {
+   "cas": "liste sans fin",
+   "entree": {
+    "md": "- a"
+   },
+   "sortie": {
+    "html": "<ul>\n<li>a</li>\n</ul>"
+   }
+  },
+  {
+   "cas": "unicode",
+   "entree": {
+    "md": "# Été ☕\n- café"
+   },
+   "sortie": {
+    "html": "<h2>Été ☕</h2>\n<ul>\n<li>café</li>\n</ul>"
+   }
+  },
+  {
+   "cas": "tout",
+   "entree": {
+    "md": "# T\ntexte **gras**\n- a\n- b\n> cite\n`code`\n"
+   },
+   "sortie": {
+    "html": "<h2>T</h2>\n<p>texte <strong>gras</strong></p>\n<ul>\n<li>a</li>\n<li>b</li>\n</ul>\n<blockquote>cite</blockquote>\n<p><code>code</code></p>"
+   }
+  },
+  {
+   "cas": "gras non fermé",
+   "entree": {
+    "md": "du **gras non fermé"
+   },
+   "sortie": {
+    "html": "<p>du **gras non fermé</p>"
+   }
+  },
+  {
+   "cas": "étoile seule",
+   "entree": {
+    "md": "* "
+   },
+   "sortie": {
+    "html": "<p>*</p>"
+   }
+  },
+  {
+   "cas": "tiret sans texte",
+   "entree": {
+    "md": "-"
+   },
+   "sortie": {
+    "html": "<p>-</p>"
+   }
+  }
+ ]
+}

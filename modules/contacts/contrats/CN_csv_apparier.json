@@ -1,0 +1,36 @@
+{
+ "point": "contacts.csv_apparier",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "entetes"
+  ],
+  "properties": {
+   "entetes": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "appariement"
+  ],
+  "properties": {
+   "appariement": {
+    "type": "object"
+   }
+  }
+ },
+ "invariants": [
+  "une colonne dont l'en-tête n'est pas reconnu n'apparaît pas dans l'appariement",
+  "la clé est l'indice de la colonne, en texte",
+  "la casse, les accents et la ponctuation de l'en-tête sont sans effet",
+  "un en-tête vide n'est apparié à rien"
+ ]
+}

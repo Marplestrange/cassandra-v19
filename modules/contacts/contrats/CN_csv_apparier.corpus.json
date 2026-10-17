@@ -1,0 +1,325 @@
+{
+ "point": "contacts.csv_apparier",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de contacts, données synthétiques",
+ "cas": [
+  {
+   "cas": "aucun en-tête",
+   "entree": {
+    "entetes": []
+   },
+   "sortie": {
+    "appariement": {}
+   }
+  },
+  {
+   "cas": "en-têtes français",
+   "entree": {
+    "entetes": [
+     "Prénom",
+     "Nom",
+     "Courriel",
+     "Téléphone",
+     "Mobile",
+     "Société",
+     "Fonction",
+     "Adresse",
+     "Site web",
+     "Anniversaire",
+     "Notes"
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company",
+     "6": "job_title",
+     "7": "address",
+     "8": "website",
+     "9": "anniversaire",
+     "10": "notes"
+    }
+   }
+  },
+  {
+   "cas": "export Google",
+   "entree": {
+    "entetes": [
+     "First Name",
+     "Last Name",
+     "E-mail 1 - Value",
+     "Phone 1 - Value",
+     "Phone 2 - Value",
+     "Organization 1 - Name",
+     "Organization 1 - Title",
+     "Address 1 - Formatted",
+     "Website 1 - Value",
+     "Birthday",
+     "Notes"
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company",
+     "6": "job_title",
+     "7": "address",
+     "8": "website",
+     "9": "anniversaire",
+     "10": "notes"
+    }
+   }
+  },
+  {
+   "cas": "export Outlook",
+   "entree": {
+    "entetes": [
+     "First Name",
+     "Last Name",
+     "E-mail Address",
+     "Business Phone",
+     "Mobile Phone",
+     "Company",
+     "Job Title",
+     "Business Street",
+     "Web Page",
+     "Birthday",
+     "Comments"
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "0": "_prenom",
+     "1": "_nom",
+     "2": "emails",
+     "3": "phone",
+     "4": "mobile",
+     "5": "company",
+     "6": "job_title",
+     "7": "address",
+     "8": "website",
+     "9": "anniversaire",
+     "10": "notes"
+    }
+   }
+  },
+  {
+   "cas": "nom complet seul",
+   "entree": {
+    "entetes": [
+     "Nom complet",
+     "Email"
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "0": "display_name",
+     "1": "emails"
+    }
+   }
+  },
+  {
+   "cas": "colonnes inconnues",
+   "entree": {
+    "entetes": [
+     "foo",
+     "bar",
+     "baz"
+    ]
+   },
+   "sortie": {
+    "appariement": {}
+   }
+  },
+  {
+   "cas": "mélange connu inconnu",
+   "entree": {
+    "entetes": [
+     "id",
+     "Nom",
+     "Prénom",
+     "couleur préférée",
+     "email"
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "1": "_nom",
+     "2": "_prenom",
+     "4": "emails"
+    }
+   }
+  },
+  {
+   "cas": "casse et accents",
+   "entree": {
+    "entetes": [
+     "NOM COMPLET",
+     "ADRESSE E-MAIL",
+     "TÉLÉPHONE"
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "0": "display_name",
+     "1": "emails",
+     "2": "phone"
+    }
+   }
+  },
+  {
+   "cas": "espaces et ponctuation",
+   "entree": {
+    "entetes": [
+     "  Full   Name ",
+     "E_mail",
+     "Tel."
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "0": "display_name",
+     "1": "emails",
+     "2": "phone"
+    }
+   }
+  },
+  {
+   "cas": "en-têtes vides",
+   "entree": {
+    "entetes": [
+     "",
+     "email",
+     ""
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "1": "emails"
+    }
+   }
+  },
+  {
+   "cas": "doublon de colonne",
+   "entree": {
+    "entetes": [
+     "email",
+     "email",
+     "nom"
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "0": "emails",
+     "1": "emails",
+     "2": "_nom"
+    }
+   }
+  },
+  {
+   "cas": "deux emails",
+   "entree": {
+    "entetes": [
+     "Email",
+     "E-mail 2 Value",
+     "Adresse e-mail 2"
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "0": "emails",
+     "1": "emails"
+    }
+   }
+  },
+  {
+   "cas": "nombres en en-tête",
+   "entree": {
+    "entetes": [
+     "1",
+     "2",
+     "3"
+    ]
+   },
+   "sortie": {
+    "appariement": {}
+   }
+  },
+  {
+   "cas": "tout en anglais",
+   "entree": {
+    "entetes": [
+     "Display Name",
+     "Given Name",
+     "Surname",
+     "Cell Phone",
+     "Organisation",
+     "URL"
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "0": "display_name",
+     "1": "_prenom",
+     "2": "_nom",
+     "3": "mobile",
+     "4": "company",
+     "5": "website"
+    }
+   }
+  },
+  {
+   "cas": "un seul champ",
+   "entree": {
+    "entetes": [
+     "contact"
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "0": "display_name"
+    }
+   }
+  },
+  {
+   "cas": "nom ambigu",
+   "entree": {
+    "entetes": [
+     "nom",
+     "nom de famille",
+     "prénom"
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "0": "_nom",
+     "1": "_nom",
+     "2": "_prenom"
+    }
+   }
+  },
+  {
+   "cas": "symboles",
+   "entree": {
+    "entetes": [
+     "☎",
+     "✉",
+     "email"
+    ]
+   },
+   "sortie": {
+    "appariement": {
+     "2": "emails"
+    }
+   }
+  }
+ ]
+}

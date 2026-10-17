@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #cd9a95
+# VERSION CN : 0.1.0  #b63cec
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des tâches planifiées : la logique pure des expressions cron, puis le module avec un courtier simulé (une machine dont on tient les crontabs).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=cd9a95 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b63cec ▼▼▼
 """Bancs des tâches planifiées : la logique pure des expressions cron, puis le module avec un courtier simulé (une machine dont on tient les crontabs)."""
 import json
 import os
@@ -34,6 +34,14 @@ spec = importlib.util.spec_from_file_location("planifie_cron_test", RACINE / "mo
 k = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(k)
 
+# le module sans noyau : on branche ses points d'évolution sur leurs références, comme le ferait brancher()
+import tempfile                              # noqa: E402
+from noyau import CN_manifeste as _M, CN_points as _P          # noqa: E402
+_dossier = RACINE / "modules" / "planifie"
+_svc = _P.ServicePoints(Path(tempfile.mkdtemp()) / "ec")
+_svc.declarer(_M.charger(_dossier / "CN_manifeste.toml"), _dossier)
+POINT = lambda nom, entree: _svc.appeler("planifie", nom, entree)
+
 ROOT, BEA = "root@x.fr", "bea@x.fr"
 
 
@@ -46,12 +54,12 @@ class Expressions(unittest.TestCase):
             self.assertEqual(k.champ(mauvais, 0, 59), set(), mauvais)
 
     def test_la_description_en_francais(self):
-        self.assertEqual(k.decrire("*/15 * * * *"), "toutes les 15 minutes")
-        self.assertEqual(k.decrire("30 3 * * *"), "à 03:30 chaque jour")
-        self.assertEqual(k.decrire("0 4 * * 1"), "à 04:00 le lundi")
-        self.assertEqual(k.decrire("@daily"), "à 00:00 chaque jour")
-        self.assertEqual(k.decrire("@reboot"), "à chaque démarrage")
-        self.assertEqual(k.decrire("1,5 2-4 * * *"), "1,5 2-4 * * *")             # au moindre doute, l'expression d'origine
+        self.assertEqual(k.decrire("*/15 * * * *", POINT), "toutes les 15 minutes")
+        self.assertEqual(k.decrire("30 3 * * *", POINT), "à 03:30 chaque jour")
+        self.assertEqual(k.decrire("0 4 * * 1", POINT), "à 04:00 le lundi")
+        self.assertEqual(k.decrire("@daily", POINT), "à 00:00 chaque jour")
+        self.assertEqual(k.decrire("@reboot", POINT), "à chaque démarrage")
+        self.assertEqual(k.decrire("1,5 2-4 * * *", POINT), "1,5 2-4 * * *")             # au moindre doute, l'expression d'origine
 
     def test_dimanche_vaut_zero_et_sept_et_la_regle_de_l_union(self):
         # 2026-10-11 est un dimanche
@@ -122,7 +130,7 @@ class Expressions(unittest.TestCase):
         jobs = [{"actif": 1, "commande": "mysqldump a", "horaire": "0 3 * * *", "ref": "a", "id": 1}, {"actif": 1, "commande": "rsync b", "horaire": "0 3 * * *", "ref": "b", "id": 2},
                 {"actif": 1, "commande": "tar c", "horaire": "0 3 * * *", "ref": "c", "id": 3}, {"actif": 1, "commande": "echo d", "horaire": "0 3 * * *", "ref": "d", "id": 4},
                 {"actif": 1, "commande": "rsync e", "horaire": "*/5 * * * *", "ref": "e", "id": 5}]
-        c = k.collisions(jobs)
+        c = k.collisions(jobs, POINT)
         self.assertEqual([(x["at"], x["nombre"]) for x in c], [("03:00", 3)])                    # le léger et le diffus ne comptent pas
         self.assertEqual([x["at"] for x in k.repartir(c[0])], ["03:00", "03:10", "03:20"])       # les minutes bougent, jamais l'heure
 

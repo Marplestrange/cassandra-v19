@@ -1,0 +1,31 @@
+{
+ "point": "dns.analyser",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "reponse",
+   "ident"
+  ],
+  "properties": {
+   "reponse": {
+    "type": "string"
+   },
+   "ident": {
+    "type": "integer"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object"
+ },
+ "invariants": [
+  "une réponse de moins de douze octets, d'un autre identifiant, tronquée ou en boucle de compression est une erreur, jamais un résultat partiel",
+  "un enregistrement d'un type inconnu est ignoré",
+  "les noms (NS, CNAME, MX) sont rendus en minuscules",
+  "un enregistrement dont la longueur ne correspond pas à son type (A hors 4 octets, AAAA hors 16) est ignoré",
+  "un TXT en plusieurs morceaux est rendu d'un seul tenant",
+  "l'ordre des enregistrements est celui du paquet"
+ ]
+}

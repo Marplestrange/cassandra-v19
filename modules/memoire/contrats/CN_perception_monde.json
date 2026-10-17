@@ -1,0 +1,63 @@
+{
+ "point": "memoire.perception_monde",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "lignes",
+   "question",
+   "deja",
+   "maintenant",
+   "limite",
+   "stricte"
+  ],
+  "properties": {
+   "lignes": {
+    "type": "array"
+   },
+   "question": {
+    "type": "string"
+   },
+   "deja": {
+    "type": "array"
+   },
+   "maintenant": {
+    "type": "number"
+   },
+   "limite": {
+    "type": "integer"
+   },
+   "stricte": {
+    "type": "boolean"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "lignes",
+   "deja"
+  ],
+  "properties": {
+   "lignes": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "deja": {
+    "type": "array"
+   }
+  }
+ },
+ "invariants": [
+  "un relevé périmé n'est jamais dit comme un fait : « je ne sais plus », avec la date de son dernier relevé",
+  "un libellé déjà dit n'est pas redit",
+  "jamais plus de `limite` lignes",
+  "en mode strict, seul un relevé dont le sujet est cité par la question est dit",
+  "un relevé acquitté dit sa raison, ou « sans raison »",
+  "une ligne qui n'est pas un relevé est ignorée",
+  "l'ordre des lignes est celui des relevés"
+ ]
+}

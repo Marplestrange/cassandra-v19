@@ -1,0 +1,48 @@
+{
+ "point": "contacts.csv_fiches",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "lignes",
+   "appariement"
+  ],
+  "properties": {
+   "lignes": {
+    "type": "array",
+    "items": {
+     "type": "array"
+    }
+   },
+   "appariement": {
+    "type": "object"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "fiches"
+  ],
+  "properties": {
+   "fiches": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "required": [
+      "emails"
+     ]
+    }
+   }
+  }
+ },
+ "invariants": [
+  "une ligne sans nom ni adresse n'est pas une fiche",
+  "les adresses sont en minuscules, sans doublon, et contiennent une arobase",
+  "le nom affiché est le nom complet s'il existe, sinon prénom puis nom",
+  "un champ répété garde sa première valeur non vide",
+  "une colonne absente de la ligne est sans effet",
+  "l'ordre des fiches est celui des lignes"
+ ]
+}

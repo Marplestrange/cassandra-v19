@@ -272,3 +272,19 @@ migrations = "migrations"
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "decrire"
+libelle = "La description en français d'une expression cron (« à 03:30 chaque jour », « toutes les 15 minutes ») ; au moindre doute, l'expression d'origine"
+contrat = "1.0"
+reference = "points/EC_decrire"
+fonction = "point_decrire"
+runtime = "python"
+
+[[points_evolution]]
+id = "collisions"
+libelle = "Les créneaux où trop de tâches lourdes démarrent ensemble : les tâches planifiées en entrée, les créneaux en collision (avec leurs tâches) en sortie"
+contrat = "1.0"
+reference = "points/EC_collisions"
+fonction = "point_collisions"
+runtime = "python"

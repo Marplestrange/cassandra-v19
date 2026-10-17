@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : notes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #57a5c0
+# VERSION CN : 0.1.0  #e5ffa8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les notes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=57a5c0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e5ffa8 ▼▼▼
 """Les notes.
 
 Porté de la V18 (`note_*`, `notes_*`, `ca_*`, `_nt_*`), avec ses leçons :
@@ -182,62 +182,14 @@ def inline(t):
     return re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
 
 
-def md_vers_html(md):
-    """Rendu suffisant pour lire et imprimer : titres, listes, citations, gras, code. Un moteur Markdown complet serait un second moteur à maintenir."""
-    out, liste = [], False
-    for ligne in str(md or "").split("\n"):
-        l = ligne.rstrip()
-        m = re.match(r"^(#{1,6})\s+(.+)$", l)
-        if m:
-            if liste:
-                out.append("</ul>")
-                liste = False
-            n = min(3, len(m.group(1)) + 1)
-            out.append("<h%d>%s</h%d>" % (n, inline(m.group(2)), n))
-            continue
-        if re.match(r"^\s*[-*]\s+", l):
-            if not liste:
-                out.append("<ul>")
-                liste = True
-            out.append("<li>%s</li>" % inline(re.sub(r"^\s*[-*]\s+", "", l)))
-            continue
-        if liste:
-            out.append("</ul>")
-            liste = False
-        if l.startswith(">"):
-            out.append("<blockquote>%s</blockquote>" % inline(l.lstrip("> ")))
-        elif l.strip():
-            out.append("<p>%s</p>" % inline(l))
-    if liste:
-        out.append("</ul>")
-    return "\n".join(out)
+def md_vers_html(md, appeler):
+    """Rendu suffisant pour lire et imprimer : titres, listes, citations, gras, code. Un moteur Markdown complet serait un second moteur à maintenir. Le calcul est un POINT D'ÉVOLUTION : points/EC_md_vers_html.py."""
+    return appeler("md_vers_html", {"md": md})["html"]
 
 
-def lire_entete(texte):
-    """Un fichier sans en-tête reste une note valide : on ne refuse pas une note écrite à la main dans un éditeur."""
-    t = str(texte or "")
-    if not t.startswith("---"):
-        return {}, t
-    fin = t.find("\n---", 3)
-    if fin < 0:
-        return {}, t
-    meta = {}
-    for ligne in t[3:fin].strip("\n").split("\n"):
-        if ":" not in ligne:
-            continue
-        cle, _, val = ligne.partition(":")
-        cle, val = cle.strip(), val.strip()
-        if not cle:
-            continue
-        if val.startswith("[") and val.endswith("]"):
-            meta[cle] = [x.strip() for x in val[1:-1].split(",") if x.strip()]
-        elif val.lower() in ("true", "oui"):
-            meta[cle] = True
-        elif val.lower() in ("false", "non"):
-            meta[cle] = False
-        else:
-            meta[cle] = val
-    return meta, t[fin + 4:].lstrip("\n")
+def lire_entete(texte, appeler):
+    """Un fichier sans en-tête reste une note valide : on ne refuse pas une note écrite à la main dans un éditeur. Le calcul est un POINT D'ÉVOLUTION : points/EC_lire_entete.py."""
+    return appeler("lire_entete", {"texte": texte})["valeur"]
 
 
 def hacher_mdp(mdp):
@@ -796,7 +748,7 @@ def brancher(ctx):
                 'code{background:#f2eee5;padding:1px 5px;border-radius:4px}blockquote{border-left:2px solid #0a6f66;margin:1em 0;padding-left:1em;color:#575045}'
                 '.meta{font:12px/1.6 system-ui,sans-serif;color:#7e7667;border-bottom:1px solid #e3ddd0;padding-bottom:1em;margin-bottom:2em}@media print{body{margin:0;max-width:none}}</style>'
                 '<h1>%s</h1><div class="meta">%s &middot; %s &middot; %d mots</div>%s'
-                % (echapper(n["titre"]), echapper(n["titre"]), echapper(n["ref"]), echapper(date_dit(n["modifie"])), st["mots"], md_vers_html(n["corps"])))
+                % (echapper(n["titre"]), echapper(n["titre"]), echapper(n["ref"]), echapper(date_dit(n["modifie"])), st["mots"], md_vers_html(n["corps"], ctx.point)))
         return {"nom": slug(n["titre"]) + ".html", "mime": "text/html", "contenu": html}
 
     def exporter(c, ref="", format="md"):
@@ -1116,7 +1068,7 @@ def brancher(ctx):
             try:
                 nom = str((f or {}).get("chemin") or (f or {}).get("nom") or "").replace("\\", "/").strip("/")
                 texte = str((f or {}).get("contenu") or "")
-                meta, corps = lire_entete(texte)
+                meta, corps = lire_entete(texte, ctx.point)
                 dos = nom.rsplit("/", 1)[0] if "/" in nom else ""
                 dos = "/".join(dos.split("/")[:PROFONDEUR]) if dossier_ok("/".join(dos.split("/")[:PROFONDEUR])) else ""
                 base = nom.rsplit("/", 1)[-1]

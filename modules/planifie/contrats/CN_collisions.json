@@ -1,0 +1,25 @@
+{
+ "point": "planifie.collisions",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "jobs",
+   "seuil"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "seules les tâches actives et lourdes comptent",
+  "une tâche qui part plus de quatre fois par heure et par jour est diffuse : elle ne collisionne pas",
+  "le seuil est d'au moins deux",
+  "les créneaux sont rendus du plus chargé au moins chargé, à égalité dans l'ordre de l'heure",
+  "le libellé est la description, sinon la commande, tronquée à 80 caractères"
+ ]
+}

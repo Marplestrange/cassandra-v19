@@ -1,0 +1,27 @@
+{
+ "point": "agenda.ical_lire",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "texte",
+   "decalage_min"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "evenements"
+  ]
+ },
+ "invariants": [
+  "un événement sans titre ou sans début n'est pas rendu",
+  "le premier exemplaire d'un champ gagne",
+  "une ligne repliée (espace ou tabulation en tête) est dépliée avant lecture",
+  "les échappements d'un texte sont défaits",
+  "un champ inconnu est ignoré",
+  "l'ordre des événements est celui du flux",
+  "seule une heure suffixée Z est décalée ; une heure locale ou à fuseau nommé est rendue telle quelle"
+ ]
+}
