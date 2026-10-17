@@ -26,6 +26,20 @@ Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le 
 - **Export** : une variante validée devient un patch git sur le dépôt (le déployé ne dérive pas de `main`) et, à terme, un module signé du store, reçu par les autres instances en ombre avec leurs propres preuves.
 - **Écran** : généalogie, variantes en ombre avec écart en direct, gains J+30, tombes, bulletin.
 
+## 2 bis. Ce qui rend le système redoutable (17-10, après la maquette du cockpit)
+
+1. **L'intention** : un objectif écrit en français est compilé en mesure + banc d'essai + budget ; l'humain valide l'objectif, rien d'autre.
+2. **La nuit** : chaque nuit, la journée vécue (trafic réel de la veille) est rejouée en parallèle contre toutes les variantes, en cage, sans réseau.
+3. **La guérison** : une erreur en service est reproduite depuis le journal en test rouge, une variante est cherchée contre tout le rejeu, passe en ombre puis en service ; le test reste pour toujours.
+4. **Le cliquet** : les tests permanents ne font que croître (échecs, pièges, tombes). L'évaluateur ne peut que se durcir.
+5. **La fossilisation** : une décision de modèle qui ne varie jamais devient une règle de code, rejouée contre toutes les décisions passées ; le modèle ne garde que l'exception. Le coût baisse avec l'usage.
+6. **Le routage sur mesure** : des variantes spécialisées par contexte (taille de compte, pointe, panneau lent) et un aiguilleur qui apprend.
+7. **Le comportement, pas seulement le code** : seuils du Sensorium (fitness = alertes acquittées sans action), prompts d'agents, règles de la Proactivité.
+8. **La machine à remonter le temps** : variantes immuables et chaînées, restauration de l'organisme entier à un jour donné.
+9. **Les autres instances** : variantes signées, rejouées chez le receveur sur son propre trafic.
+
+Limites à tenir : la fossilisation ne vaut que pour des décisions déterministes en pratique ; le routage sur mesure exige assez de données par contexte ; le « 2,3× » et les autres chiffres de la maquette sont fictifs et doivent être mesurés par le pilote.
+
 ## 3. Rôles (pas de nouvel agent)
 
 Déclarés dans le registre de modèles et le module Agents IA, chacun avec profil, modèle et budget :

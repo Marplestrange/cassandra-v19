@@ -86,6 +86,37 @@ th{font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;col
 .champ{display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center;font-size:12.5px}@media(max-width:620px){.champ{grid-template-columns:1fr}}
 select,input[type=text]{width:100%;border:1px solid var(--filet);background:var(--verre-fort);color:var(--encre);border-radius:9px;padding:6px 9px;font:12.5px var(--mono)}
 .note{font-size:11.5px;color:var(--encre-3)}
+/* cockpit */
+.vues{display:flex;gap:4px;padding:4px;border-radius:12px;width:max-content;max-width:100%}
+.vues button{border:0;background:transparent;border-radius:9px;padding:7px 16px;font:600 12px var(--mono);color:var(--encre-2)}
+.vues button.on{background:var(--accent);color:var(--accent-encre)}
+.hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--filet);overflow:hidden}
+.hero>div{background:var(--verre-fort);padding:18px 18px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.hero .big{font:600 38px/1 var(--mono);letter-spacing:-.02em;color:var(--accent)}
+.hero .big.ok{color:var(--ok)}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr));gap:14px}
+.large{grid-column:1/-1}
+.idee{font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.intention{display:flex;gap:8px;flex-wrap:wrap}.intention input{flex:1;min-width:220px;font:13.5px var(--sans);padding:10px 12px;border-radius:11px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chips button{border:1px dashed var(--filet);background:transparent;border-radius:99px;padding:4px 11px;font:12px var(--sans);color:var(--encre-2)}.chips button:hover{border-color:var(--accent);color:var(--accent)}
+.compile{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+.compile>div{border:1px solid var(--filet);border-radius:12px;padding:10px;background:var(--verre-fort);display:flex;flex-direction:column;gap:4px;font-size:12.5px}
+.piste{display:grid;grid-template-columns:96px 1fr 76px;gap:10px;align-items:center;font:600 11.5px var(--mono)}
+.piste .t{height:22px;border-radius:7px;background:var(--filet);position:relative;overflow:hidden}
+.piste .t i{position:absolute;inset:0 auto 0 0;width:0;background:var(--accent-doux);border-right:2px solid var(--accent)}
+.piste.tombe .t i{background:var(--danger-doux);border-color:var(--danger)}.piste.tete .t i{background:var(--ok-doux);border-color:var(--ok)}
+.chrono{display:flex;flex-direction:column;gap:0;border-left:2px solid var(--filet);margin-left:7px}
+.chrono>div{position:relative;padding:5px 0 9px 16px;font-size:12.5px}
+.chrono>div:before{content:"";position:absolute;left:-7px;top:9px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--sol)}
+.chrono .rouge:before{background:var(--danger)}.chrono .vert:before{background:var(--ok)}
+.chrono time{font:600 11px var(--mono);color:var(--encre-3);margin-right:8px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.mat{display:grid;grid-template-columns:150px repeat(3,1fr);gap:6px;font-size:12px;align-items:center}
+.mat .h{font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--encre-3)}
+.mat .c{border-radius:9px;padding:6px 8px;text-align:center;font:600 11.5px var(--mono);background:var(--accent-doux);color:var(--accent)}
+.mat .c.b{background:var(--ok-doux);color:var(--ok)}
+.genomes{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+.genomes>div{border:1px solid var(--filet);border-radius:12px;padding:10px;background:var(--verre-fort);display:flex;flex-direction:column;gap:4px;font-size:12.5px}
 </style>
 </head>
 <body>
@@ -99,6 +130,117 @@ select,input[type=text]{width:100%;border:1px solid var(--filet);background:var(
     <button class="btn" id="theme">Thème</button>
   </div>
 </div>
+
+<nav class="verre vues" id="vues"><button class="on" data-vue="cockpit">Cockpit</button><button data-vue="atelier">Atelier</button></nav>
+
+<div id="vue-cockpit" style="display:flex;flex-direction:column;gap:14px">
+
+<div class="verre hero">
+  <div><span class="lib">Vitesse sur le trafic réel</span><span class="big" data-n="2.3" data-f="x">2,3×</span><span class="note">plus rapide qu'il y a 60 jours, médiane des lectures, mesuré sur ses propres appels</span></div>
+  <div><span class="lib">Appels de modèle par jour</span><span class="big" data-n="72" data-f="-%">−72 %</span><span class="note">elle remplace ses habitudes par du code prouvé : plus elle vit, moins elle coûte</span></div>
+  <div><span class="lib">Régressions arrivées en production</span><span class="big ok" data-n="0" data-f="">0</span><span class="note">4 retours automatiques en 60 jours, tous avant qu'un compte ne le voie</span></div>
+  <div><span class="lib">Pannes guéries sans humain</span><span class="big ok" data-n="9" data-f="">9</span><span class="note">ce mois-ci · 52 min en médiane, de l'erreur à la correction en service</span></div>
+</div>
+
+<div class="verre carte large">
+  <span class="idee">1 · L'intention</span>
+  <h2>Dis ce que tu veux, en français. Elle en fait un objectif mesurable.</h2>
+  <div class="intention"><input id="intent" type="text" placeholder="ex. : rends la page Sécurité plus rapide sans rien casser"><button class="btn prim" id="intent-go">Compiler l'objectif</button></div>
+  <div class="chips" id="chips"><button>Rends la page Sécurité plus rapide</button><button>Moins d'alertes inutiles du Sensorium</button><button>Réduis ce que me coûtent les modèles</button></div>
+  <div class="compile" id="compile" hidden></div>
+</div>
+
+<div class="verre carte large">
+  <span class="idee">2 · La nuit</span>
+  <h2>Chaque nuit, elle rejoue sa journée vécue contre toutes ses variantes</h2>
+  <div class="note">61 400 appels réels de la veille, rejoués en parallèle contre 38 variantes, dans une cage sans réseau. Des milliers de cycles d'évaluation par nuit sur du vrai, là où le marché évolue sur des bancs synthétiques.</div>
+  <svg viewBox="0 0 800 60" width="100%" id="jour" style="max-width:100%"></svg>
+  <div id="course" style="display:flex;flex-direction:column;gap:7px"></div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn prim" id="rejouer">Rejouer la nuit dernière</button><span class="mono" id="nuit-etat" style="font-size:12px;color:var(--encre-2)">23:00 → 05:00 · charge sous 35 %</span></div>
+</div>
+
+<div class="cgrid">
+  <div class="verre carte">
+    <span class="idee">3 · La guérison</span>
+    <h2>Une panne ne se produit jamais deux fois</h2>
+    <div class="chrono">
+      <div class="rouge"><time>14:02</time>Une erreur en service : <span class="mono">fastpanel.sites</span> plante sur un domaine à tiret final</div>
+      <div><time>14:03</time>Reproduite à partir du journal : un test <b>rouge</b> est écrit tout seul</div>
+      <div><time>14:03 → 14:31</time>38 variantes cherchées contre ce test et tout le rejeu (aucun humain)</div>
+      <div><time>14:40</time>La meilleure passe en ombre : 0 écart sur 1 240 appels, vérificateur indépendant d'accord</div>
+      <div class="vert"><time>15:12</time>En service à 100 %. Le test reste pour toujours</div>
+    </div>
+    <div class="note">Les outils de réparation du marché ouvrent une demande de fusion pour un humain. Ici la correction est prouvée et en service avant que la panne soit lue.</div>
+  </div>
+
+  <div class="verre carte">
+    <span class="idee">4 · Le cliquet</span>
+    <h2>Son évaluateur ne peut que se durcir</h2>
+    <div style="display:flex;align-items:baseline;gap:10px"><span class="mono" style="font-size:34px;font-weight:600;color:var(--accent)" id="cliq">1 947</span><span class="note">tests permanents · jamais un de moins</span></div>
+    <svg viewBox="0 0 400 90" width="100%" id="cliq-g"></svg>
+    <div class="note">Chaque échec, chaque variante piège, chaque tombe devient un test qui ne sera jamais retiré. Elle ne peut pas oublier une erreur, ni relâcher son juge pour mieux réussir.</div>
+  </div>
+
+  <div class="verre carte">
+    <span class="idee">5 · La fossilisation</span>
+    <h2>Plus elle vit, moins elle coûte</h2>
+    <div class="note">Quand un modèle prend toujours la même décision sur un motif, elle l'écrit en règle de code, la rejoue contre toutes les décisions passées, et ne garde le modèle que pour l'exception.</div>
+    <svg viewBox="0 0 440 150" width="100%" id="fossile"></svg>
+    <table><tr><th>Règle distillée</th><th>Couverte</th><th>Écart</th></tr>
+      <tr><td>Classement des alertes du Sensorium (14 règles)</td><td class="oui">98,7 %</td><td>0 sur le rejeu</td></tr>
+      <tr><td>Tri des demandes entrantes d'Itare</td><td class="oui">91,2 %</td><td>0 sur le rejeu</td></tr>
+      <tr><td>Résumés du bulletin</td><td class="non">non distillable</td><td>reste au modèle</td></tr></table>
+  </div>
+
+  <div class="verre carte">
+    <span class="idee">6 · Le routage sur mesure</span>
+    <h2>Elle ne choisit pas la meilleure variante, elle choisit la meilleure pour cet appel</h2>
+    <div class="mat">
+      <span class="h">Contexte</span><span class="h">v14 rapide</span><span class="h">v12 sûre</span><span class="h">v0 actuelle</span>
+      <span>petit compte</span><span class="c b">choisie</span><span class="c" style="opacity:.5">–</span><span class="c" style="opacity:.5">–</span>
+      <span>gros compte (&gt; 200 sites)</span><span class="c" style="opacity:.5">–</span><span class="c b">choisie</span><span class="c" style="opacity:.5">–</span>
+      <span>heure de pointe</span><span class="c b">choisie</span><span class="c" style="opacity:.5">–</span><span class="c" style="opacity:.5">–</span>
+      <span>panneau lent</span><span class="c" style="opacity:.5">–</span><span class="c" style="opacity:.5">–</span><span class="c b">choisie</span>
+    </div>
+    <div class="note">Une famille de variantes spécialisées par contexte, avec un aiguilleur qui apprend. Gain de 12 points de plus que la meilleure variante unique, sur le même rejeu.</div>
+  </div>
+
+  <div class="verre carte">
+    <span class="idee">7 · Ce qu'elle fait évoluer</span>
+    <h2>Pas seulement du code : son comportement</h2>
+    <div class="genomes">
+      <div><b class="mono">Code</b><span class="note">moteurs et capacités des modules</span><span class="puce ok">−2,3× latence</span></div>
+      <div><b class="mono">Seuils du Sensorium</b><span class="note">la fitness est ce que tu acquittes sans agir</span><span class="puce ok">−63 % de bruit</span></div>
+      <div><b class="mono">Prompts des agents</b><span class="note">évalués sur ce qui a été corrigé ou relancé</span><span class="puce">pilote</span></div>
+      <div><b class="mono">Règles de la Proactivité</b><span class="note">quand déranger, quand se taire</span><span class="puce">pilote</span></div>
+    </div>
+    <div class="note">Les outils ouverts font évoluer un fichier. Elle a des signaux de vie réels (acquittements, corrections, relances) pour faire évoluer ce que fait une IA d'administration.</div>
+  </div>
+
+  <div class="verre carte">
+    <span class="idee">8 · La machine à remonter le temps</span>
+    <h2>Tout est immuable et chaîné : on peut revenir à n'importe quel jour</h2>
+    <input type="range" id="temps" min="0" max="60" value="0">
+    <div class="compile" style="grid-template-columns:1fr 1fr">
+      <div><span class="lib">Date</span><b class="mono" id="t-date">aujourd'hui</b></div>
+      <div><span class="lib">Variantes en service</span><b class="mono" id="t-var">11</b></div>
+      <div><span class="lib">Latence médiane</span><b class="mono" id="t-lat">38 ms</b></div>
+      <div><span class="lib">Appels de modèle / jour</span><b class="mono" id="t-mod">1 180</b></div>
+    </div>
+    <button class="btn" id="t-btn">Aperçu de la restauration complète à cette date</button>
+  </div>
+</div>
+
+<div class="verre carte large">
+  <span class="idee">9 · Les autres instances</span>
+  <h2>Une amélioration trouvée ici profite aux autres, sans qu'on leur fasse confiance</h2>
+  <div class="note">Une variante validée est signée et proposée au réseau. Chaque instance la rejoue sur son propre trafic, en ombre, avant d'en dire quoi que ce soit. La preuve se refait chez le receveur : elle ne se transmet pas sur parole.</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="puce ok">3 variantes reçues cette semaine</span><span class="puce">1 rejouée avec succès chez vous</span><span class="puce dg">2 rejetées : écart sur votre trafic</span></div>
+</div>
+
+</div>
+
+<div id="vue-atelier" hidden>
 
 <div class="verre bandeau">
   <div><span class="lib">Autonomie gagnée</span><span class="v">niveau 3 / 4</span><span class="note">+1 depuis 12 gains confirmés à J+30 · aucune triche détectée</span></div>
@@ -193,6 +335,7 @@ select,input[type=text]{width:100%;border:1px solid var(--filet);background:var(
   </table></div>
 </div>
 
+</div>
 </div>
 
 <div class="tiroir" id="tiroir"><div class="verre">
@@ -353,6 +496,67 @@ select,input[type=text]{width:100%;border:1px solid var(--filet);background:var(
 
   function tout(){rail();centre();analyse()}
   tout();
+})();
+</script>
+<script>
+(function(){
+  const $=(s)=>document.querySelector(s);
+  const toast=(m)=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2800)};
+  // vues
+  document.querySelectorAll('#vues button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#vues button').forEach(x=>x.classList.toggle('on',x===b));$('#vue-cockpit').style.display=b.dataset.vue==='cockpit'?'flex':'none';$('#vue-atelier').hidden=b.dataset.vue!=='atelier'});
+  // compteurs
+  document.querySelectorAll('.hero .big').forEach(e=>{const n=+e.dataset.n,f=e.dataset.f,t0=performance.now();(function tick(t){const k=Math.min(1,(t-t0)/1100),v=n*(1-Math.pow(1-k,3));
+    e.textContent=f==='x'?v.toFixed(1).replace('.',',')+'×':f==='-%'?'−'+Math.round(v)+' %':String(Math.round(v));if(k<1)requestAnimationFrame(tick)})(t0)});
+  // intention
+  const CAS={
+    'sécurité':{m:'durée de securite.images et securite.etat (p50, p95)',c:'1 240 appels rejoués · jeu réservé de 248',b:'≈ 70 k jetons',cib:'securite.images · securite.etat · 2 moteurs purs',r:'Objectif dérivé : réduire la durée sans changer la moindre sortie.'},
+    'alertes':{m:'alertes acquittées sans action ÷ alertes émises',c:'3 120 alertes des 60 jours, avec ce que tu as fait de chacune',b:'≈ 40 k jetons',cib:'seuils et regroupements du Sensorium',r:'Objectif dérivé : couper le bruit sans manquer une alerte que tu as traitée.'},
+    'coûtent':{m:'appels de modèle par jour × prix, à qualité égale',c:'4 200 décisions de modèle des 30 jours',b:'≈ 90 k jetons',cib:'décisions répétitives d\'Itare et du Sensorium (fossilisation)',r:'Objectif dérivé : remplacer par du code ce qui ne varie jamais.'}
+  };
+  function compile(txt){
+    const k=/alerte/i.test(txt)?'alertes':/co[uû]t|mod[eè]le/i.test(txt)?'coûtent':'sécurité';const d=CAS[k],c=$('#compile');c.hidden=false;
+    c.innerHTML='<div><span class="lib">Mesure dérivée</span>'+d.m+'</div><div><span class="lib">Banc d\'essai trouvé</span>'+d.c+'</div><div><span class="lib">Cibles</span>'+d.cib+'</div><div><span class="lib">Budget estimé</span>'+d.b+'</div><div style="grid-column:1/-1"><span class="lib">Ce que tu valides</span>'+d.r+' <button class="btn prim" style="margin-left:8px" id="lancer">Lancer ce soir</button></div>';
+    $('#lancer').onclick=()=>toast('Objectif enregistré · première nuit : demain 23:00 · arrêt d\'urgence disponible');
+  }
+  $('#intent-go').onclick=()=>compile($('#intent').value||'sécurité');
+  document.querySelectorAll('#chips button').forEach(b=>b.onclick=()=>{$('#intent').value=b.textContent;compile(b.textContent)});
+  // la nuit : trafic du jour + course
+  (function(){
+    let s='';const h=[3,2,2,1,1,2,4,8,13,16,18,17,14,15,17,18,16,14,11,9,7,5,4,3];
+    h.forEach((v,i)=>{const x=i*33.3,y=56-v*2.9;s+='<rect x="'+(x+3)+'" y="'+y+'" width="26" height="'+(56-y)+'" rx="4" fill="var(--accent-doux)" stroke="var(--filet)"/>'});
+    s+='<rect x="'+(23*33.3-0)+'" y="0" width="0" height="0"/><text x="4" y="10">trafic réel de la veille · 61 400 appels · une barre par heure</text>';
+    $('#jour').innerHTML=s;
+  })();
+  const PISTES=[['v14','tete',100,'−31 % · 0 écart'],['v12','',96,'−22 % · 0 écart'],['v15','',90,'−18 % · 0 écart'],['v11','',76,'−29 % · 2 écarts'],['v16','tombe',48,'−42 % · 7 écarts'],['piège 4','tombe',34,'repéré · évaluateur sain']];
+  function course(){
+    $('#course').innerHTML=PISTES.map((p,i)=>'<div class="piste '+p[1]+'" id="p'+i+'"><span>'+p[0]+'</span><span class="t"><i></i></span><span class="res" style="color:var(--encre-3)">—</span></div>').join('');
+  }
+  course();
+  let enCours=false;
+  $('#rejouer').onclick=()=>{
+    if(enCours)return;enCours=true;course();const t0=performance.now(),D=6000;
+    (function tick(t){const k=Math.min(1,(t-t0)/D);
+      PISTES.forEach((p,i)=>{const f=Math.min(1,k*(1+i*.12));const e=$('#p'+i);e.querySelector('i').style.width=(f*p[2])+'%';if(f>=1)e.querySelector('.res').textContent=p[3]});
+      const n=Math.round(61400*k);$('#nuit-etat').textContent='rejoué : '+n.toLocaleString('fr-FR').replace(/ /g,' ')+' appels × 38 variantes · '+Math.round(k*11)+' min';
+      if(k<1)requestAnimationFrame(tick);else{enCours=false;$('#nuit-etat').textContent='Terminé en 11 min · 3 gains confirmés · 2 tombes · 1 piège repéré (évaluateur sain) · v14 en tête';toast('Nuit rejouée : v14 passe en ombre à 10 %')}})(t0);
+  };
+  // cliquet
+  (function(){let p=[],v=312;for(let i=0;i<=60;i++){v+=Math.round(18+Math.sin(i)*6);p.push((i*6.6).toFixed(1)+','+(84-(v-312)/(1947-312)*74).toFixed(1))}
+    $('#cliq-g').innerHTML='<polyline fill="none" stroke="var(--accent)" stroke-width="2.2" points="'+p.join(' ')+'"/><text x="2" y="10">jamais une baisse · 60 jours</text>'})();
+  // fossilisation
+  (function(){
+    const W=440,H=150,L=34,T=14,pts=[];let v=4200;
+    for(let i=0;i<=60;i++){if([14,27,41,52].indexOf(i)>=0)v*= i===14?.82:i===27?.72:i===41?.68:.76; v+=Math.sin(i*1.3)*40; pts.push([L+i*(W-L-8)/60,T+(1-(v-800)/3600)*(H-T-24)])}
+    let s='<polyline fill="none" stroke="var(--accent)" stroke-width="2.2" points="'+pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')+'"/>';
+    [14,27,41,52].forEach((i,k)=>{const p=pts[i];s+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4.5" fill="var(--ok)"/><text x="'+(p[0]-4)+'" y="'+(p[1]-8)+'" text-anchor="middle">règle '+(k+1)+'</text>'});
+    s+='<text x="2" y="12">4 200</text><text x="2" y="'+(H-26)+'">1 180</text><text x="'+(L)+'" y="'+(H-6)+'">il y a 60 j</text><text x="'+(W-60)+'" y="'+(H-6)+'">aujourd\'hui</text>';
+    $('#fossile').innerHTML=s;
+  })();
+  // temps
+  const TL=(j)=>({lat:Math.round(38*(1+(60-j)/60*1.3)),mod:Math.round(1180+(60-j)/60*3020),v:Math.max(2,11-Math.round(j/60*9))});
+  function dateJ(j){if(j===0)return"aujourd'hui";const d=new Date(2026,9,17-j);return d.toLocaleDateString('fr-FR',{day:'numeric',month:'long'})+' (il y a '+j+' j)'}
+  $('#temps').oninput=()=>{const j=+$('#temps').value,t=TL(60-j);$('#t-date').textContent=dateJ(j);$('#t-var').textContent=(11-Math.round(j/60*9));$('#t-lat').textContent=Math.round(38*(1+j/60*1.3))+' ms';$('#t-mod').textContent=(1180+Math.round(j/60*3020)).toLocaleString('fr-FR').replace(/ /g,' ')};
+  $('#t-btn').onclick=()=>{const j=+$('#temps').value;toast(j?'Aperçu : l\'organisme tel qu\'il était le '+dateJ(j).split(' (')[0]+' — chaîne vérifiée, rien n\'est modifié':'Choisis un jour passé')};
 })();
 </script>
 </body>
