@@ -1,36 +1,40 @@
 # Format universel d'un fichier de code
 
 Statut : spécification à valider (17-10-2026). Vient après `docs/NEXUS.md` (ce qu'est le nexus) et sert à `docs/BORNES.md` (l'outil qui le vérifie).
-Décision de Drisse : **chaque fichier de code a la même anatomie**, pour que la nature du code (nexus ou évolutif) se lise d'un coup d'œil et se vérifie par programme.
+Décisions de Drisse : **chaque fichier a la même anatomie** ; **le code nexus (CN) et le code évolutif (EC) sont dans des fichiers séparés** ; chaque CN dépend d'un ou plusieurs fichiers EC.
 
-## 1. Les quatre parties, toujours dans cet ordre
+## 1. Un fichier = une zone
 
-1. **En-tête** : identité du fichier (titre, licence, auteur, dépôt, courriel, module, version, zones, rôle, méthode).
-2. **Borne CN** (Code Nexus) : le code intouchable, écrit par le dépôt seul. Fermée par **Fin borne CN**.
-3. **Borne EC** (Évolution Cassandra) : un **point d'évolution** : la référence du dépôt, remplaçable à l'exécution par une EC. Fermée par **Fin borne EC**. Il peut y en avoir plusieurs (une par point), ou aucune.
-4. **Explicatif CN / EC** : en fin de fichier, ce que font les deux zones, comment elles se parlent, ce que l'EC a le droit de changer.
+Un fichier est **soit CN, soit EC**, jamais les deux. Sa structure, toujours dans cet ordre :
 
-**Règle d'or : aucune ligne de code hors d'une borne.** Un fichier entièrement nexus a une seule borne CN. Un fichier sans point d'évolution n'a pas de borne EC, mais a quand même son explicatif.
+1. **En-tête** : identité du fichier (titre, licence, auteur, dépôt, courriel, module, versions, zone, renvois, rôle, méthode).
+2. **Borne** : **BORNE CN … FIN BORNE CN**, ou **BORNE EC … FIN BORNE EC**. Tout le code du fichier est dans cette borne.
+3. **Explicatif CN / EC** en fin de fichier : ce que fait le fichier, comment il parle à son vis-à-vis, ce que l'EC a le droit de changer.
+
+**Règle d'or : aucune ligne de code hors de la borne.** Un fichier **CN** peut dépendre de fichiers **EC** (ses points d'évolution) ; un fichier **EC** a toujours un hôte CN.
 
 ## 2. L'en-tête (champs obligatoires)
 
 | Champ | Contenu |
 |---|---|
-| `TITRE` | nom court et lisible du fichier |
+| `TITRE` | nom court et lisible |
 | `LICENCE` | `AGPL-3.0` (celle du dépôt) |
 | `AUTEUR` | `Atek Drisse` |
 | `GIT` | `github.com/Marplestrange` |
 | `MAIL` | `atek.drisse@gmail.com` |
 | `MODULE` | module d'appartenance |
-| `VERSION CN` | version dépôt du code nexus de ce fichier (ex. `1.9.0`) et son empreinte (ex. `#a3f9c2`) |
-| `VERSION EC` | version EC du ou des points (ex. `EC21 #7be104`). Dans un fichier du dépôt, la borne EC est la **référence** : `EC0 (référence 1.9.0)`. Dans un fichier d'EC rangé à part : `EC21` |
-| `ZONES` | `CN`, ou `CN + EC (n points : id @contrat, …)` |
+| `ZONE` | `CN` ou `EC` |
+| `VERSION CN` | fichier CN : version dépôt + empreinte (ex. `0.1.0 #3d90e1`). Fichier EC : `néant` |
+| `VERSION EC` | fichier EC : numéro d'EC + empreinte (ex. `EC8 #7be104`) ; pour la référence du dépôt : `EC0 (référence 0.1.0)`. Fichier CN : `néant` |
+| `EC LIÉES` | (fichier CN) la liste des points qu'il appelle et le fichier de leur référence |
+| `HÔTE CN` | (fichier EC) le fichier CN qui l'appelle, le point et le contrat (ex. `composer.py · verdict.composer @1.0`) |
+| `NEXUS VISÉ` / `CONTRAT PROUVÉ` | (fichier EC évolué) version et empreinte du nexus sur lequel il a été prouvé ; contrat |
 | `RÔLE` | **ce que fait** le fichier (1 à 3 lignes) |
 | `MÉTHODE` | **comment** il le fait (1 à 3 lignes) |
 
 ## 3. Les marqueurs (lisibles par l'outil)
 
-Chaque marqueur est une ligne de commentaire qui contient **exactement** ces mots, pour qu'un programme les retrouve sans ambiguïté :
+Chaque marqueur est une ligne de commentaire qui contient **exactement** ces mots :
 
 ```
 BORNE CN version=<dépôt> empreinte=<hash>
@@ -40,74 +44,111 @@ FIN BORNE EC
 EXPLICATIF CN / EC
 ```
 
-Les **versions sont dans les marqueurs** : on lit sur la borne elle-même quelle version du nexus (`CN`) et quelle EC (`EC`) elle porte. L'empreinte est calculée par l'outil sur le contenu de la borne ; si elle ne correspond plus, la borne a été modifiée sans que sa version ne soit mise à jour, et l'outil le signale.
+Les **versions sont dans les marqueurs** : on lit sur la borne quelle version du nexus (`CN`) ou quelle EC (`EC`) elle porte. L'empreinte est calculée par l'outil sur le contenu de la borne ; si elle ne correspond plus, la borne a été modifiée sans mise à jour de sa version : l'outil le signale.
 
-Le préfixe de commentaire dépend du langage : `#` (Python, shell, TOML), `//` (JavaScript), `/* … */` (CSS), `<!-- … -->` (HTML). Un fichier sans commentaires possibles (JSON) reçoit un fichier compagnon `.borne` qui porte la même information.
+Préfixe de commentaire selon le langage : `#` (Python, shell, TOML), `//` (JavaScript), `/* … */` (CSS), `<!-- … -->` (HTML). Un fichier sans commentaires possibles (JSON) reçoit un fichier compagnon `.borne`.
 
-## 4. Exemple complet (Python) : `modules/vue/composer.py`
+## 4. Où vivent les fichiers
+
+```
+modules/vue/
+  composer.py                          CN   la façade du contrat, appelle le point
+  points/verdict.composer.ec.py        EC   la RÉFÉRENCE du dépôt (EC0), écrite par le dépôt
+  contrats/verdict.composer.*          CN   schéma, invariants, corpus doré
+/var/cassandra/ec/vue/verdict.composer/EC8.ec.py     EC évoluée, écrite par l'évolution seule
+```
+
+Au chargement, le nexus résout un point : **EC en service** (stock) si elle est compatible et saine, sinon **référence** du dépôt. Le dépôt n'écrit jamais dans le stock ; l'évolution n'écrit jamais dans `modules/`.
+
+## 5. Exemple : deux fichiers pour le point `verdict.composer`
+
+**`modules/vue/composer.py`** (CN)
 
 ```python
 # ══════════════════════════════════════════════════════════════════════════════
-# TITRE    : Vue d'ensemble : composition du verdict
-# LICENCE  : AGPL-3.0
-# AUTEUR   : Atek Drisse
-# GIT      : github.com/Marplestrange
-# MAIL     : atek.drisse@gmail.com
-# MODULE   : vue
-# VERSION CN : 0.1.0  #3d90e1        (le nexus de ce fichier : version dépôt + empreinte)
-# VERSION EC : EC0 (référence 0.1.0)  (aucune EC en service ; sinon ex. EC8 #7be104)
-# ZONES    : CN + EC (1 point : verdict.composer @1.0)
-# RÔLE     : transforme les relevés de toutes les sources en un verdict et des compteurs.
-# MÉTHODE  : fonction pure ; une source muette n'est jamais « stable » ; la première panne est citée.
+# TITRE      : Vue d'ensemble : façade de la composition du verdict
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : atek.drisse@gmail.com
+# MODULE     : vue
+# ZONE       : CN
+# VERSION CN : 0.1.0  #3d90e1
+# VERSION EC : néant
+# EC LIÉES   : verdict.composer @1.0 -> points/verdict.composer.ec.py
+# RÔLE       : reçoit les relevés des sources, garantit le contrat, rend le verdict.
+# MÉTHODE    : valide l'entrée, appelle le point d'évolution, valide la sortie, sert la référence si l'EC faillit.
 # ══════════════════════════════════════════════════════════════════════════════
 from __future__ import annotations
 
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3d90e1 : code nexus, intouchable, écrit par le dépôt seul ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3d90e1 ▼▼▼
 def composer_vue(releves):
-    """Façade du contrat : valide l'entrée, appelle le point, valide la sortie."""
-    return appeler_point("verdict.composer", releves)
+    entree = valider_entree("verdict.composer", releves)
+    sortie = appeler_point("verdict.composer", entree)
+    return valider_sortie("verdict.composer", sortie)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
-# ▼▼▼ BORNE EC point=verdict.composer contrat=@1.0 version=EC0 empreinte=b81c07 : référence du dépôt, remplaçable ▼▼▼
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : `composer_vue` est la seule entrée publique ; elle porte le contrat et le filet (référence).
+# EC : le calcul vit dans le point `verdict.composer`, remplaçable sans toucher à ce fichier.
+```
+
+**`modules/vue/points/verdict.composer.ec.py`** (référence EC0)
+
+```python
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Vue d'ensemble : composition du verdict (référence)
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : atek.drisse@gmail.com
+# MODULE     : vue
+# ZONE       : EC
+# VERSION CN : néant
+# VERSION EC : EC0 (référence 0.1.0)  #b81c07
+# HÔTE CN    : composer.py · verdict.composer @1.0
+# RÔLE       : transforme les relevés de toutes les sources en un verdict et des compteurs.
+# MÉTHODE    : fonction pure ; une source muette n'est jamais « stable » ; la première panne est citée.
+# ══════════════════════════════════════════════════════════════════════════════
+from __future__ import annotations
+
+# ▼▼▼ BORNE EC point=verdict.composer contrat=@1.0 version=EC0 empreinte=b81c07 ▼▼▼
 SEUIL_TLS_PANNE, SEUIL_TLS_REGARDER = 7, 21
 
 def composer(releves):
-    ...                                   # fonction pure : aucune E/S, aucun ctx, aucun état
+    ...                      # pure : aucune E/S, aucun ctx, aucun état, ni heure ni hasard
 # ▲▲▲ FIN BORNE EC ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
-# CN  : la façade `composer_vue` est la seule entrée publique. Elle garantit le contrat
-#       (schéma d'entrée et de sortie, invariants) et sert la référence si l'EC faillit.
-# EC  : `composer` calcule le verdict. L'évolution peut en remplacer le corps ; elle ne peut
-#       changer ni la signature, ni les invariants (« source muette ≠ stable »), ni importer autre
-#       chose que la bibliothèque standard pure.
-# LIEN: contrat dans contrats/verdict.composer.json ; corpus doré dans contrats/verdict.composer.corpus.
+# EC : cette fonction est remplaçable par une EC ; elle ne peut changer ni sa signature ni les
+#      invariants du contrat (« source muette ≠ stable ») et n'importe que la bibliothèque standard pure.
+# CN : appelée uniquement par la façade `composer_vue` (composer.py).
 ```
 
-## 5. Ce que vérifie l'outil de bornes (`outils/bornes.py`)
+## 6. Ce que vérifie l'outil de bornes (`outils/bornes.py`)
 
-1. L'en-tête est présent et complet ; la licence, l'auteur, le dépôt et le courriel sont ceux du projet.
-2. Chaque borne est ouverte puis fermée, sans imbrication ni chevauchement ; aucune ligne de code hors borne.
-3. Le champ `ZONES` de l'en-tête correspond aux bornes réellement présentes.
-4. Une **borne EC** n'importe que la bibliothèque standard pure et `ec_api`, sans `ctx`, `self`, E/S, horloge ni hasard (voir `docs/NEXUS.md` §3).
-5. Chaque `point=` est déclaré dans le manifeste du module, avec son contrat et son corpus ; chaque point déclaré a sa borne.
-6. Aucun fichier **intouchable** (`docs/NEXUS.md` §4) ne contient de borne EC.
-7. L'**explicatif** existe et nomme la façade CN, chaque point EC et le contrat.
-8. **Versions et empreintes** : chaque borne porte sa version (`CN` : dépôt ; `EC` : numéro d'EC) et son empreinte, recalculée à chaque passage. Une borne **CN** dont l'empreinte change sans que la version dépôt ne monte est une erreur ; une borne **EC** de référence modifiée de même. Les versions de l'en-tête doivent égaler celles des marqueurs, et la `VERSION CN` doit égaler celle du manifeste du module. Ces empreintes alimentent `1.9.0+EC21.a3f9c2`.
+1. L'en-tête est complet ; licence, auteur, dépôt et courriel sont ceux du projet.
+2. **Un fichier = une zone** : `ZONE` correspond à la borne présente ; aucune ligne de code hors borne ; borne ouverte puis fermée.
+3. **Renvois** : chaque point listé dans `EC LIÉES` d'un CN existe comme fichier EC qui le désigne comme `HÔTE CN`, et inversement.
+4. Un fichier **EC** n'importe que la bibliothèque standard pure et `ec_api`, sans `ctx`, `self`, E/S, horloge ni hasard (`docs/NEXUS.md` §3).
+5. Chaque `point=` est déclaré dans le manifeste du module, avec son contrat et son corpus ; chaque point déclaré a sa référence.
+6. Aucun fichier **intouchable** (`docs/NEXUS.md` §4) n'est de zone EC, et aucun fichier EC ne contient de nexus.
+7. L'**explicatif** existe et nomme le vis-à-vis (façade ou point) et le contrat.
+8. **Versions et empreintes** : chaque borne porte sa version (`CN` : dépôt ; `EC` : numéro d'EC) et son empreinte, recalculée à chaque passage. Une borne dont l'empreinte change sans que la version ne monte est une erreur. Les versions de l'en-tête égalent celles des marqueurs, et la `VERSION CN` égale celle du manifeste. Ces empreintes alimentent `1.9.0+EC21.a3f9c2`.
 
-## 6. Les EC rangées à part ont le même format
+## 7. Les EC évoluées
 
-Une EC évoluée, stockée dans `/var/cassandra/ec/<module>/`, est un fichier au **même format universel** : en-tête (`VERSION CN : néant`, `VERSION EC : EC21 #7be104`, et en plus `NEXUS VISÉ : 1.9.0 #3d90e1`, `CONTRAT PROUVÉ : @1.3`), **une seule borne EC** (`version=EC21`), son explicatif. Aucune borne CN : une EC ne contient jamais de nexus. Le chargeur refuse tout fichier d'EC qui en contient une.
+Une EC rangée dans `/var/cassandra/ec/<module>/<point>/EC<n>.ec.py` suit **le même format** : `ZONE : EC`, `VERSION EC : EC21 #…`, `HÔTE CN`, `NEXUS VISÉ`, `CONTRAT PROUVÉ`, une seule borne EC, son explicatif. Le chargeur refuse tout fichier de ce dossier qui contient du nexus, ou dont l'hôte CN ne désigne pas le point.
 
-## 7. Mise en place
+## 8. Mise en place
 
 1. `outils/bornes.py` en **mode audit** : lit les fichiers, signale les écarts au format, ne bloque rien.
-2. `outils/entete.py` : génère ou complète l'en-tête et l'explicatif de chaque fichier à partir de l'existant (titre déduit du fichier, rôle repris de l'ancien commentaire) ; les textes sont relus par l'auteur.
-3. Application **module par module**, suite de tests verte à chaque pas, en commençant par `vue`.
-4. Passage à l'**échec** en intégration continue une fois tout le dépôt conforme.
+2. `outils/entete.py` : génère ou complète l'en-tête et l'explicatif de chaque fichier à partir de l'existant ; les textes sont relus par l'auteur.
+3. **Extraction** des fonctions pures vers `points/`, module par module, suite de tests verte à chaque pas, en commençant par `vue`.
+4. Passage à l'**échec** en intégration continue une fois le dépôt conforme.
 
-## 8. Points à trancher
+## 9. Points à trancher
 
-- **Courriel dans chaque fichier** : l'adresse personnelle sera lisible par n'importe qui qui verra le code (dépôt public prévu : AGPL-3.0). Garder `atek.drisse@gmail.com`, ou une adresse dédiée au projet ?
-- **Shell, JavaScript, TOML, HTML, CSS** : même anatomie avec leur commentaire ; le `app.js` de l'interface (plus de 35 000 lignes) sera borné par régions, avec le squelette en CN et les vues déclaratives en EC.
-- **Fichiers générés** (`index.html`, `app.js` assemblés) : en-tête posé par l'assembleur, pas à la main.
+- **Courriel dans chaque fichier** : l'adresse personnelle sera lisible par quiconque verra le code (dépôt public prévu, AGPL-3.0). Garder `atek.drisse@gmail.com` ou une adresse dédiée au projet ?
+- **L'interface** (`app.js`, plus de 35 000 lignes) : le squelette devient des fichiers CN, les vues déclaratives des fichiers EC (descriptions, jamais de script).
+- **Fichiers assemblés** (`index.html`, `app.js` générés) : en-tête posé par l'assembleur, pas à la main.
