@@ -72,6 +72,24 @@ Limites à tenir : la fossilisation ne vaut que pour des décisions déterminist
 
 Ce qu'on promet, et ce qu'on ne promet pas : une EC reste **active** tant que le contrat n'évolue que par ajout. Si le dépôt change le sens d'un contrat, la garantie est qu'**aucune EC n'est perdue et qu'aucun service ne coupe** : l'EC est portée par l'adaptation, ou suspendue sous la référence, puis refaite.
 
+## 2 quinquies. La règle « M. Martin » : une mise à jour ne fait jamais perdre ce que l'EC a gagné (17-10)
+
+Cas d'école de Drisse : un client fait tourner depuis des mois une V20 avec des EC payées en jetons ; le dépôt publie une V22 ; le client ne doit pas se retrouver avec une version moins performante que sa V20 + EC.
+
+**La discipline du dépôt ne suffit pas** (le dépôt ne connaît pas toutes les EC de tous les clients, et un humain se trompe). La garantie réelle est mécanique et se joue **chez le client**.
+
+*Côté dépôt (empêcher de publier une version cassante)* : vérificateur de contrats bloquant en intégration continue (ajout seulement dans une version majeure, toute rupture livre son adaptation) ; la **banque d'EC éprouvées** (exportées, anonymisées, avec consentement) est rejouée contre chaque version candidate, et une EC qui perd du terrain bloque la publication ; les versions majeures passent d'abord par un **canal bêta** d'instances volontaires.
+
+*Côté client (la garantie)* :
+1. **Une mise à jour majeure n'est jamais automatique** : le client voit « V22 disponible » avec le résultat de la simulation ; rien ne s'installe sans son accord ou sa règle.
+2. **Porte de non-régression de performance** : le nouveau nexus plus les EC portées est rejoué en ombre sur le trafic réel du client ; si la vitesse, les erreurs ou le coût sont moins bons que ce qui sert aujourd'hui, la bascule est **refusée** et la version actuelle continue de tourner, avec un message qui dit ce qu'on perdrait.
+3. **Rattrapage** : l'évolution retravaille alors sur la nouvelle version, en arrière-plan ; dès qu'elle égale ou dépasse la version actuelle, la bascule se fait seule.
+4. **L'ancienne version reste installée** pendant une durée réglable (retour en un clic, même après la bascule).
+5. **Le stock d'EC est sauvegardé et exportable** : ce qui a coûté des jetons ne dépend pas d'un seul disque.
+6. **Le capital d'EC est visible** : jetons dépensés, gain cumulé tenu à J+30, part protégée par la porte.
+
+Limite assumée : refuser une mise à jour retarde aussi ses correctifs. La porte porte donc sur la performance ; un **correctif de sécurité** est signalé à part, avec sa propre voie (le client voit ce qu'il coûterait de ne pas l'appliquer).
+
 ## 3. Rôles (pas de nouvel agent)
 
 Déclarés dans le registre de modèles et le module Agents IA, chacun avec profil, modèle et budget :
