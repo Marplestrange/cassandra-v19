@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cassandra — Évolution (maquette)</title>
+<style>
+:root{
+--sol:#eef1f5;--halo:#e9edf3;--verre:rgba(255,255,255,.66);--verre-fort:rgba(255,255,255,.86);
+--encre:#101828;--encre-2:#475467;--encre-3:#8b95a3;--filet:rgba(16,24,40,.09);
+--accent:#0b7c74;--accent-doux:rgba(11,124,116,.10);--accent-encre:#fff;
+--ok:#047857;--ok-doux:rgba(4,120,87,.10);--alerte:#b45309;--alerte-doux:rgba(180,83,9,.11);--danger:#be123c;--danger-doux:rgba(190,18,60,.09);
+--ombre:0 1px 2px rgba(16,24,40,.05),0 8px 24px rgba(16,24,40,.06);
+--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;--sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+:root[data-theme="dark"]{
+--sol:#0d1117;--halo:#111a24;--verre:rgba(26,33,44,.66);--verre-fort:rgba(30,38,50,.9);
+--encre:#e6ebf2;--encre-2:#aab4c3;--encre-3:#707c8d;--filet:rgba(230,235,242,.10);
+--accent:#34b3a8;--accent-doux:rgba(52,179,168,.14);--accent-encre:#06201d;
+--ok:#3ecf9a;--ok-doux:rgba(62,207,154,.12);--alerte:#e7a14c;--alerte-doux:rgba(231,161,76,.13);--danger:#ff6b8b;--danger-doux:rgba(255,107,139,.12);
+--ombre:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1100px 520px at 50% -25%,var(--halo),var(--sol));background-color:var(--sol);color:var(--encre);font:14px/1.5 var(--sans);min-height:100vh;padding:18px 16px 40px}
+.page{max-width:1500px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.verre{background:var(--verre);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--filet);border-radius:16px;box-shadow:var(--ombre)}
+.mono{font-family:var(--mono)}
+.lib{font:600 10.5px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--encre-3)}
+h1,h2,h3{margin:0;font-weight:600;text-wrap:balance}
+h1{font:600 19px/1.2 var(--mono)}
+h2{font:600 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--encre-2)}
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{border:1px solid var(--filet);background:var(--verre-fort);border-radius:10px;padding:7px 12px;font:600 12px var(--mono)}
+.btn:hover{border-color:var(--accent)}
+.btn.prim{background:var(--accent);color:var(--accent-encre);border-color:transparent}
+.btn.dng{color:var(--danger);border-color:var(--danger)}
+.puce{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 9px;font:600 10.5px var(--mono);background:var(--accent-doux);color:var(--accent)}
+.puce.ok{background:var(--ok-doux);color:var(--ok)}.puce.al{background:var(--alerte-doux);color:var(--alerte)}.puce.dg{background:var(--danger-doux);color:var(--danger)}.puce.mu{background:var(--filet);color:var(--encre-3)}
+/* bandeau */
+.bandeau{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--filet);overflow:hidden}
+.bandeau>div{background:var(--verre-fort);padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.bandeau .v{font:600 17px/1.1 var(--mono)}
+.barre{height:6px;border-radius:99px;background:var(--filet);overflow:hidden}.barre i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.entete{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:0 2px}
+.entete .d{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+/* trois colonnes */
+.trois{display:grid;grid-template-columns:270px minmax(0,1fr) 330px;gap:14px;align-items:start}
+@media(max-width:1100px){.trois{grid-template-columns:1fr}}
+.rail{padding:12px;display:flex;flex-direction:column;gap:6px}
+.cap{border:1px solid transparent;border-radius:12px;padding:9px 10px;text-align:left;background:transparent;display:flex;flex-direction:column;gap:4px;width:100%}
+.cap:hover{background:var(--accent-doux)}.cap.sel{background:var(--verre-fort);border-color:var(--accent)}
+.cap .n{font:600 12px var(--mono);word-break:break-all}.cap .s{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--encre-2)}
+.centre{padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.onglets{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--filet);padding-bottom:8px}
+.onglets button{border:0;background:transparent;border-radius:9px;padding:6px 11px;font:600 12px var(--mono);color:var(--encre-2)}
+.onglets button.on{background:var(--accent-doux);color:var(--accent)}
+.zone{overflow-x:auto}
+svg text{font-family:var(--mono);fill:var(--encre-2);font-size:10.5px}
+.analyse{padding:14px;display:flex;flex-direction:column;gap:11px}
+.preuve{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;font-size:12.5px}
+.preuve .k{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 11px var(--mono);background:var(--ok-doux);color:var(--ok)}
+.preuve.al .k{background:var(--alerte-doux);color:var(--alerte)}.preuve.mu .k{background:var(--filet);color:var(--encre-3)}
+.preuve small{display:block;color:var(--encre-3);font-size:11.5px}
+.verdict{border-radius:12px;padding:10px 12px;background:var(--ok-doux);color:var(--ok);font:600 12.5px/1.45 var(--mono)}
+.cadran{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.cadran>div{border:1px solid var(--filet);border-radius:12px;padding:9px;background:var(--verre-fort);display:flex;flex-direction:column;gap:3px}
+.cadran .v{font:600 16px var(--mono)}.gain{color:var(--ok)}
+.routage{display:flex;gap:4px;flex-wrap:wrap}
+.routage button{flex:1;min-width:46px;border:1px solid var(--filet);background:var(--verre-fort);border-radius:8px;padding:6px 4px;font:600 11.5px var(--mono)}
+.routage button.on{background:var(--accent);color:var(--accent-encre);border-color:transparent}
+.bas{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px}
+.carte{padding:14px;display:flex;flex-direction:column;gap:9px;min-width:0}
+.ligne{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--filet);font-size:12.5px}
+.ligne:first-of-type{border-top:0}
+.ligne .g{color:var(--encre-3);font-size:11.5px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--filet);vertical-align:top}
+th{font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--encre-3)}
+.oui{color:var(--ok);font-weight:600}.non{color:var(--encre-3)}.cons{color:var(--accent);font-weight:600}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--encre);color:var(--sol);padding:9px 14px;border-radius:10px;font:600 12px var(--mono);opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw}
+.toast.on{opacity:1}
+.tiroir{position:fixed;inset:0;background:rgba(16,24,40,.35);display:none;align-items:flex-start;justify-content:center;padding:60px 16px;overflow:auto;z-index:5}
+.tiroir.on{display:flex}.tiroir .verre{background:var(--verre-fort);max-width:760px;width:100%;padding:18px;display:flex;flex-direction:column;gap:12px}
+.choix{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:620px){.choix{grid-template-columns:1fr}}
+.opt{border:1.5px solid var(--filet);border-radius:12px;padding:11px;background:transparent;text-align:left;display:flex;flex-direction:column;gap:5px}.opt.on{border-color:var(--accent);background:var(--accent-doux)}
+.champ{display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center;font-size:12.5px}@media(max-width:620px){.champ{grid-template-columns:1fr}}
+select,input[type=text]{width:100%;border:1px solid var(--filet);background:var(--verre-fort);color:var(--encre);border-radius:9px;padding:6px 9px;font:12.5px var(--mono)}
+.note{font-size:11.5px;color:var(--encre-3)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="entete">
+  <div><h1>Évolution</h1><div class="note mono">maquette · données fictives · rien n'est branché</div></div>
+  <div class="d">
+    <span class="puce ok" title="chaîne d'empreintes vérifiée à chaque cycle">chaîne scellée · 1 482 maillons ✓</span>
+    <button class="btn" id="moteur-btn">Moteur : <span id="moteur-nom">OpenEvolve</span> ▾</button>
+    <button class="btn" id="theme">Thème</button>
+  </div>
+</div>
+
+<div class="verre bandeau">
+  <div><span class="lib">Autonomie gagnée</span><span class="v">niveau 3 / 4</span><span class="note">+1 depuis 12 gains confirmés à J+30 · aucune triche détectée</span></div>
+  <div><span class="lib">Budget du mois</span><span class="v">412 k / 1 000 k jetons</span><div class="barre"><i style="width:41%"></i></div><span class="note">coût moyen : 9,4 k jetons par point de gain</span></div>
+  <div><span class="lib">Évaluateur évalué</span><span class="v">7 / 7 pièges repérés</span><span class="note">variantes volontairement mauvaises glissées : aucune n'est passée</span></div>
+  <div><span class="lib">Fenêtre d'évolution</span><span class="v">23 h → 05 h</span><span class="note">seulement quand la charge est sous 35 % · en cage, sans réseau</span></div>
+  <div><span class="lib">Variantes en service</span><span class="v">3 en ombre · 11 promues</span><span class="note">retour instantané disponible partout</span></div>
+</div>
+
+<div class="trois">
+  <div class="verre rail" id="rail">
+    <div class="lib" style="padding:2px 4px 6px">Cibles vivantes — classées par valeur espérée</div>
+  </div>
+
+  <div class="verre centre">
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+      <div><h3 class="mono" id="c-nom" style="font-size:15px"></h3><div class="note" id="c-sous"></div></div>
+      <div class="d" id="c-puces" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div class="cadran" id="cadran"></div>
+    <div class="onglets" id="onglets"></div>
+    <div class="zone" id="zone"></div>
+  </div>
+
+  <div class="verre analyse">
+    <div style="display:flex;justify-content:space-between;align-items:center"><h2>Analyse</h2><span class="puce" id="a-var"></span></div>
+    <div id="a-preuves" style="display:flex;flex-direction:column;gap:9px"></div>
+    <div class="verdict" id="a-verdict"></div>
+    <div><span class="lib">Part du trafic réel</span>
+      <div class="routage" id="routage" style="margin-top:6px"></div>
+      <div class="note" style="margin-top:6px" id="route-note"></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn dng" id="retour">Retour instantané</button>
+      <button class="btn" id="geler">Geler cette lignée</button>
+    </div>
+    <div><span class="lib">Mémoire des échecs donnée au mutateur</span><div id="lecons" style="margin-top:6px;display:flex;flex-direction:column;gap:6px"></div></div>
+  </div>
+</div>
+
+<div class="bas">
+  <div class="verre carte">
+    <h2>Demandes restées sans réponse → module à créer</h2>
+    <div class="note">Le journal des 501 et des « pas porté » : ce que les gens demandent et que rien ne sert.</div>
+    <div class="ligne"><div><span class="mono">GET /api/fp/php</span><div class="g">37 appels en 7 jours · 4 comptes</div></div><button class="btn prim" data-toast="Brouillon « fastpanel_php » écrit en ombre : 0 appel détourné">Brouillon en ombre</button></div>
+    <div class="ligne"><div><span class="mono">POST /api/site/scan</span><div class="g">12 appels · 2 comptes</div></div><button class="btn" data-toast="Ajouté à la file des brouillons">Mettre en file</button></div>
+    <div class="ligne"><div><span class="mono">GET /api/fp/crons</span><div class="g">9 appels · 1 compte</div></div><span class="puce mu">sous le seuil</span></div>
+  </div>
+
+  <div class="verre carte">
+    <h2>Constats pour le noyau</h2>
+    <div class="note">Le moteur n'écrit jamais le noyau. Il observe ce qui frotte et le rend pour la prochaine version.</div>
+    <div class="ligne"><div>9 modules contournent la même limite : 40 appels de capacité par requête d'écran<div class="g">gain estimé : −22 % de latence sur 14 écrans</div></div><span class="puce">proposé</span></div>
+    <div class="ligne"><div>« vue.composer » est appelé 14 000 fois par jour sans cache partagé<div class="g">cache de capacité en lecture : à étudier côté noyau</div></div><span class="puce">proposé</span></div>
+    <div class="ligne"><div>2 variantes ont été refusées pour la même raison : un accès racine inutile<div class="g">suggestion : un message de refus plus parlant</div></div><span class="puce mu">noté</span></div>
+  </div>
+
+  <div class="verre carte">
+    <h2>Visites à J+30 — le gain est-il resté ?</h2>
+    <div class="ligne"><div><span class="mono">mesures.moteur</span> · v9<div class="g">annoncé −18 % · mesuré −16,4 % sur le réel</div></div><span class="puce ok">confirmé</span></div>
+    <div class="ligne"><div><span class="mono">securite.analyse</span> · v6<div class="g">annoncé −25 % · mesuré −4 % : le gain venait d'un jeu de test trop étroit</div></div><span class="puce dg">retiré · tombe</span></div>
+    <div class="ligne"><div><span class="mono">parefeu.panneau</span> · v3<div class="g">annoncé −9 % · échéance dans 6 jours</div></div><span class="puce al">à visiter</span></div>
+    <div class="note">Un gain annoncé qui ne tient pas fait baisser l'autonomie du module. Jamais un « neutre » : le verdict est calculé.</div>
+  </div>
+
+  <div class="verre carte">
+    <h2>Bulletin du lundi — en information, sans décision à prendre</h2>
+    <div class="note mono">généré par gabarit sur la base : le modèle ne rédige rien</div>
+    <div class="ligne"><div>Semaine du 12 au 18 octobre</div><span class="puce ok">+3 gains</span></div>
+    <div class="ligne"><div>Promues : 3 · refusées : 5 · tombées : 2 · retours instantanés : 0</div></div>
+    <div class="ligne"><div>Dépense : 61 k jetons · 20 jetons par seconde gagnée de latence cumulée</div></div>
+    <div class="ligne"><div>Muet cette semaine : <span class="mono">sensorium.collecteur</span> (pas de mesure : non ciblé, et ce n'est pas « stable »)</div></div>
+  </div>
+</div>
+
+<div class="verre carte">
+  <h2>Pourquoi ce n'est pas un OpenEvolve de plus</h2>
+  <div class="note">Les moteurs de recherche ouverts évoluent un programme face à un score. Cassandra les branche sur une production vivante. Colonne de droite : ce qui est construit autour d'eux.</div>
+  <div class="zone"><table>
+    <tr><th>Capacité</th><th>OpenEvolve / Shinka seuls</th><th>Dans Cassandra</th><th>Origine</th></tr>
+    <tr><td>Génération par modèle, îlots, grille qualité-diversité</td><td class="oui">oui</td><td class="oui">intégré, interchangeable</td><td>moteur tiers</td></tr>
+    <tr><td>Le banc d'essai vient du trafic réel</td><td class="non">non — il faut écrire un évaluateur à la main</td><td class="cons">corpus de rejeu tiré du journal, jeu réservé</td><td>à construire</td></tr>
+    <tr><td>L'évaluateur est lui-même évalué</td><td class="non">non</td><td class="cons">variantes piégées glissées en continu ; l'évolution s'arrête seule si une passe</td><td>à construire</td></tr>
+    <tr><td>Mise en service sans risque</td><td class="non">rend un fichier</td><td class="cons">mode ombre, part du trafic 1→100 %, retour instantané</td><td>à construire</td></tr>
+    <tr><td>Ne cible que du code vivant</td><td class="non">à vous de choisir</td><td class="cons">valeur espérée = appels réels × gain possible ÷ coût ; V18 avait 67 pièces sur 231 sur du code mort</td><td>leçon V18</td></tr>
+    <tr><td>Gain vérifié après coup</td><td class="non">non</td><td class="cons">visite à J+30 ; un faux gain baisse l'autonomie</td><td>V18 (visite J+30)</td></tr>
+    <tr><td>Mémoire des échecs</td><td>archive de bons programmes</td><td class="cons">tombes et leçons redonnées au mutateur, avec empreinte sémantique</td><td>V18 (tombes)</td></tr>
+    <tr><td>Chaîne d'empreintes unique</td><td class="non">non</td><td class="cons">une rupture arrête tout (« régime 0 ») · partagée avec la mémoire</td><td>V18 (chaîne)</td></tr>
+    <tr><td>Désaccord entre agents pour l'irréversible</td><td class="non">non</td><td class="cons">vérificateur d'une autre famille de modèle, sans le raisonnement du mutateur</td><td>à construire</td></tr>
+    <tr><td>Créer des modules à partir de ce qui manque</td><td class="non">non</td><td class="cons">les demandes sans réponse deviennent des brouillons en ombre</td><td>à construire</td></tr>
+    <tr><td>Un absent n'est jamais « stable »</td><td class="non">score absent = 0</td><td class="cons">mesure muette dite muette, capacité non ciblée</td><td>V18 (état honnête)</td></tr>
+    <tr><td>Échange entre instances</td><td class="non">non</td><td class="cons">variantes signées, <em>rejouées chez le receveur</em> sur son propre trafic</td><td>à construire</td></tr>
+  </table></div>
+</div>
+
+</div>
+
+<div class="tiroir" id="tiroir"><div class="verre">
+  <div style="display:flex;justify-content:space-between;align-items:center"><h3 class="mono">Moteur de recherche et rôles</h3><button class="btn" id="fermer">Fermer</button></div>
+  <div class="choix">
+    <button class="opt on" data-moteur="OpenEvolve"><b class="mono">OpenEvolve</b><span class="note">Apache-2.0 · bibliothèque Python · îlots, MAP-Elites, multi-objectifs, évaluation parallèle. Défaut.</span><span class="puce ok">actif, 7,5 k étoiles</span></button>
+    <button class="opt" data-moteur="ShinkaEvolve"><b class="mono">ShinkaEvolve</b><span class="note">Apache-2.0 · sobre en essais · modèles locaux · mutation par agent en ligne de commande. Pour un budget serré.</span><span class="puce ok">actif, 1,4 k étoiles</span></button>
+  </div>
+  <div class="note">Le moteur tourne dans son propre processus, en cage, sans réseau. Il ne rend que des candidats : l'évaluation, la mise en ombre et la promotion restent à l'étage Cassandra.</div>
+  <div class="champ"><span class="lib">Mutateur</span><select><option>cc-sonnet (registre de modèles)</option><option>cc-haiku</option><option>modèle local qwen3:4b-instruct</option></select></div>
+  <div class="champ"><span class="lib">Évaluateur</span><input type="text" value="code déterministe : rejeu + mesures déclarées" disabled></div>
+  <div class="champ"><span class="lib">Vérificateur indépendant</span><select><option>Itare (autre famille de modèle)</option><option>DeepSeek</option></select></div>
+  <div class="champ"><span class="lib">Budget par module</span><input type="text" value="100 k jetons / mois · plafond dur"></div>
+  <div class="champ"><span class="lib">Ce que l'humain fixe</span><input type="text" value="objectif (fitness) · budget · arrêt d'urgence" disabled></div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const $=(s,r)=> (r||document).querySelector(s), esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const toast=(m)=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2600)};
+  $('#theme').onclick=()=>{const d=document.documentElement;d.dataset.theme=d.dataset.theme==='dark'?'light':'dark'};
+  $('#moteur-btn').onclick=()=>$('#tiroir').classList.add('on');
+  $('#fermer').onclick=()=>$('#tiroir').classList.remove('on');
+  document.querySelectorAll('[data-moteur]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-moteur]').forEach(x=>x.classList.toggle('on',x===b));$('#moteur-nom').textContent=b.dataset.moteur;toast('Moteur de recherche : '+b.dataset.moteur+' (interface identique)')});
+  document.querySelectorAll('[data-toast]').forEach(b=>b.onclick=()=>toast(b.dataset.toast));
+
+  // ── données fictives ───────────────────────────────────────────────
+  // variante : id, parent, gen, lat (ms), fia (taux d'écarts, plus bas = mieux), cout (jetons), etat
+  const CAPS=[
+    {id:'fastpanel.sites',mod:'fastpanel',appels:'14 200 / j',p50:38,gain:31,vp:'96',etat:'ombre',route:10,
+     sous:'Liste des sites de l\'hébergeur · lecture · 1 240 appels rejoués dont 248 réservés',
+     vars:[{i:'v0',p:null,l:38,f:.9,c:0,e:'actif'},{i:'v3',p:'v0',l:34,f:.9,c:3,e:'archive'},{i:'v5',p:'v0',l:36,f:.4,c:4,e:'archive'},{i:'v7',p:'v3',l:29,f:.8,c:6,e:'archive'},{i:'v8',p:'v5',l:33,f:.2,c:7,e:'archive'},{i:'v9',p:'v3',l:31,f:1.6,c:8,e:'tombe'},{i:'v11',p:'v7',l:26,f:.5,c:11,e:'archive'},{i:'v12',p:'v8',l:30,f:.1,c:12,e:'archive'},{i:'v14',p:'v11',l:26,f:.1,c:15,e:'ombre'},{i:'v15',p:'v12',l:28,f:0,c:16,e:'archive'},{i:'v16',p:'v11',l:22,f:1.9,c:17,e:'tombe'}],
+     preuves:[['Test écrit d\'abord, rouge puis vert','3 cas ajoutés à tests/test_fastpanel.py avant la variante',1],['Équivalence sur le rejeu','1 240 appels sur 1 240 identiques (dont 248 réservés au générateur)',1],['Jeu réservé','le gain tient hors de ce que le mutateur a vu : −29 % (annoncé −31 %)',1],['Évaluateur sain','7 variantes piégées essayées, 0 passée',1],['Vérificateur indépendant','accord de la famille de modèle tierce, sans le raisonnement du mutateur',1],['Chaîne scellée','maillon 1 481 · empreinte sémantique distincte de 3 tombes',1]],
+     verdict:'Verdict calculé : promotion à 25 % dans 3 h si l\'écart reste nul sur 4 000 appels réels. Seuil de retour automatique : 1 écart.',
+     lecons:['v9 est tombée : elle supposait un tri stable que le panneau ne garantit pas','v16 est tombée : un gain de latence obtenu en sautant la lecture du SSL — équivalence perdue sur 7 appels']},
+    {id:'vue.composer',mod:'vue',appels:'9 800 / j',p50:44,gain:18,vp:'78',etat:'archive',route:0,
+     sous:'Composition de la vue d\'ensemble · lecture · 860 appels rejoués',
+     vars:[{i:'v0',p:null,l:44,f:.6,c:0,e:'actif'},{i:'v2',p:'v0',l:40,f:.5,c:3,e:'archive'},{i:'v4',p:'v2',l:36,f:.3,c:6,e:'archive'},{i:'v6',p:'v0',l:41,f:.2,c:7,e:'archive'},{i:'v7',p:'v4',l:34,f:.4,c:9,e:'archive'},{i:'v9',p:'v6',l:37,f:0,c:11,e:'archive'}],
+     preuves:[['Test écrit d\'abord','2 cas ajoutés',1],['Équivalence sur le rejeu','860 sur 860',1],['Jeu réservé','−16 % hors du vu',1],['Évaluateur sain','7 / 7',1],['Vérificateur indépendant','pas encore requis : lecture seule',0],['Chaîne scellée','maillon 1 470',1]],
+     verdict:'Verdict calculé : pas de promotion. Le gain (−16 %) est sous le seuil de 20 % déclaré par le module.',
+     lecons:['Les variantes qui mettent en cache sans clé de compte sont refusées d\'office : cloisonnement par compte']},
+    {id:'securite.images',mod:'securite',appels:'1 100 / j',p50:210,gain:41,vp:'44',etat:'archive',route:0,
+     sous:'Page « en images » de la Sécurité · lecture · 190 appels rejoués (corpus encore étroit)',
+     vars:[{i:'v0',p:null,l:210,f:.7,c:0,e:'actif'},{i:'v1',p:'v0',l:160,f:.9,c:4,e:'archive'},{i:'v3',p:'v1',l:124,f:1.4,c:8,e:'tombe'},{i:'v4',p:'v0',l:150,f:.4,c:9,e:'archive'}],
+     preuves:[['Test écrit d\'abord','1 cas',1],['Équivalence sur le rejeu','187 sur 190 : 3 écarts',0],['Jeu réservé','non évalué : corpus sous 200 appels',-1],['Évaluateur sain','7 / 7',1],['Vérificateur indépendant','non requis',-1],['Chaîne scellée','maillon 1 462',1]],
+     verdict:'Verdict calculé : en attente. Le corpus compte 190 appels, le seuil est de 200 : on ne promeut pas sur un jeu trop étroit.',
+     lecons:['v3 est tombée : elle regroupait deux sondes et masquait une panne partielle']},
+    {id:'sensorium.collecteur',mod:'sensorium',appels:'—',p50:0,gain:0,vp:'—',etat:'muet',route:0,
+     sous:'Aucune mesure déclarée à ce jour',vars:[],preuves:[],verdict:'Non ciblé : pas de mesure, donc pas de fitness. Ce n\'est ni « stable » ni « zéro ». Le module peut déclarer une mesure dans son manifeste pour entrer dans la boucle.',lecons:[]}
+  ];
+  let cap=CAPS[0], vsel=null, onglet='carte';
+
+  // ── rail ───────────────────────────────────────────────────────────
+  function rail(){
+    const r=$('#rail'); r.querySelectorAll('.cap').forEach(x=>x.remove());
+    CAPS.forEach(c=>{
+      const b=document.createElement('button'); b.className='cap'+(c===cap?' sel':'');
+      const etat=c.etat==='ombre'?'<span class="puce al">en ombre '+c.route+' %</span>':c.etat==='muet'?'<span class="puce mu">muette</span>':'<span class="puce">'+c.vars.length+' variantes</span>';
+      b.innerHTML='<span class="n">'+esc(c.id)+'</span><span class="s">'+etat+'<span>'+esc(c.appels)+'</span></span>'+(c.etat==='muet'?'':'<span class="s">valeur espérée <b class="mono">'+c.vp+'</b></span>');
+      b.onclick=()=>{cap=c;vsel=null;onglet='carte';tout()}; r.appendChild(b);
+    });
+  }
+
+  // ── centre ─────────────────────────────────────────────────────────
+  const ONGLETS=[['carte','Carte qualité-diversité'],['lignee','Lignée'],['ombre','Ombre'],['contrat','Contrat de rejeu']];
+  function centre(){
+    $('#c-nom').textContent=cap.id; $('#c-sous').textContent=cap.sous;
+    $('#c-puces').innerHTML=cap.etat==='muet'?'<span class="puce mu">non ciblée</span>':'<span class="puce ok">cible vivante</span><span class="puce">'+esc(cap.mod)+'</span>';
+    const act=cap.vars.find(v=>v.e==='ombre')||cap.vars.find(v=>v.e==='actif');
+    $('#cadran').innerHTML=cap.etat==='muet'?'':
+      '<div><span class="lib">Latence p50</span><span class="v">'+cap.p50+' ms</span><span class="note">actuelle</span></div>'+
+      '<div><span class="lib">Meilleure variante</span><span class="v gain">−'+cap.gain+' %</span><span class="note">sur le jeu réservé</span></div>'+
+      '<div><span class="lib">Écarts au rejeu</span><span class="v">'+(act?act.f.toFixed(1):'—')+' %</span><span class="note">variante en ombre ou active</span></div>'+
+      '<div><span class="lib">Coût de recherche</span><span class="v">'+(act?act.c*0.9:0).toFixed(1)+' k</span><span class="note">jetons pour cette lignée</span></div>';
+    $('#onglets').innerHTML=cap.etat==='muet'?'':ONGLETS.map(o=>'<button class="'+(o[0]===onglet?'on':'')+'" data-o="'+o[0]+'">'+o[1]+'</button>').join('');
+    $('#onglets').querySelectorAll('button').forEach(b=>b.onclick=()=>{onglet=b.dataset.o;centre()});
+    const z=$('#zone');
+    if(cap.etat==='muet'){z.innerHTML='<div class="note" style="padding:20px 4px">Cette capacité ne déclare aucune mesure. Le moteur ne la touche pas et ne la compte pas parmi les stables : elle est dite muette.</div>';return}
+    ({carte,lignee,ombre,contrat})[onglet](z);
+  }
+  function carte(z){
+    // x = latence (colonnes), y = écarts (lignes) ; la cellule garde la meilleure variante (MAP-Elites)
+    const W=560,H=250,L=70,T=18,cw=(W-L-10)/6,ch=(H-T-40)/4;
+    const lmin=Math.min(...cap.vars.map(v=>v.l)),lmax=Math.max(...cap.vars.map(v=>v.l));
+    const bx=v=>Math.min(5,Math.floor((v.l-lmin)/((lmax-lmin)||1)*5.999));
+    const by=v=>v.f<.25?0:v.f<.6?1:v.f<1.2?2:3;
+    const cell={}; cap.vars.forEach(v=>{const k=bx(v)+','+by(v);if(!cell[k]||cell[k].l>v.l)cell[k]=v});
+    let s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:720px">';
+    for(let y=0;y<4;y++)for(let x=0;x<6;x++){const v=cell[x+','+y];const fill=v?(v.e==='tombe'?'var(--danger-doux)':v.e==='ombre'?'var(--alerte-doux)':'var(--accent-doux)'):'transparent';
+      s+='<rect x="'+(L+x*cw)+'" y="'+(T+y*ch)+'" width="'+(cw-3)+'" height="'+(ch-3)+'" rx="7" fill="'+fill+'" stroke="var(--filet)" '+(v?'data-v="'+v.i+'" style="cursor:pointer"':'')+'/>';
+      if(v)s+='<text x="'+(L+x*cw+cw/2-1)+'" y="'+(T+y*ch+ch/2+3)+'" text-anchor="middle" style="fill:var(--encre);pointer-events:none">'+v.i+'</text>'}
+    ['< 0,25 %','< 0,6 %','< 1,2 %','plus'].forEach((t,i)=>s+='<text x="'+(L-8)+'" y="'+(T+i*ch+ch/2+3)+'" text-anchor="end">'+t+'</text>');
+    s+='<text x="'+L+'" y="'+(H-20)+'">plus rapide ←→ plus lent</text><text x="4" y="12">écarts</text>';
+    s+='</svg>';
+    z.innerHTML=s+'<div class="note" style="margin-top:6px">Chaque case garde la meilleure variante de son genre : une solution lente mais sûre vit à côté d\'une rapide mais risquée. On ne converge pas vers un seul optimum. Cliquez une case pour l\'analyser.</div>';
+    z.querySelectorAll('[data-v]').forEach(r=>r.onclick=()=>{vsel=r.dataset.v;analyse()});
+  }
+  function lignee(z){
+    const vs=cap.vars,prof={},kids={};
+    vs.forEach(v=>{(kids[v.p||'']=kids[v.p||'']||[]).push(v)});
+    const pos={};let col=0;
+    (function place(p,d){(kids[p]||[]).forEach(v=>{pos[v.i]={d:d,r:col++};place(v.i,d+1)})})('',0);
+    const maxd=Math.max(...Object.values(pos).map(p=>p.d)),W=Math.max(560,(maxd+1)*110+60),H=col*34+20;
+    let s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="min-width:'+Math.min(W,560)+'px">';
+    vs.forEach(v=>{if(v.p&&pos[v.p]){const a=pos[v.p],b=pos[v.i];s+='<path d="M'+(a.d*110+36)+' '+(a.r*34+16)+' C'+(a.d*110+80)+' '+(a.r*34+16)+' '+(b.d*110+0)+' '+(b.r*34+16)+' '+(b.d*110+24)+' '+(b.r*34+16)+'" fill="none" stroke="var(--filet)" stroke-width="1.5"/>'}});
+    vs.forEach(v=>{const p=pos[v.i];const col=v.e==='tombe'?'var(--danger)':v.e==='ombre'?'var(--alerte)':v.e==='actif'?'var(--ok)':'var(--accent)';
+      s+='<g data-v="'+v.i+'" style="cursor:pointer"><circle cx="'+(p.d*110+30)+'" cy="'+(p.r*34+16)+'" r="9" fill="'+col+'" opacity="'+(v.e==='archive'?.35:1)+'"/><text x="'+(p.d*110+44)+'" y="'+(p.r*34+19)+'" style="fill:var(--encre)">'+v.i+' · '+v.l+' ms'+(v.e==='tombe'?' ✕':'')+'</text></g>'});
+    s+='</svg>';
+    z.innerHTML=s+'<div class="note" style="margin-top:6px">Vert : en service · ambre : en ombre · teinté : archive (un ancêtre médiocre peut engendrer le meilleur descendant) · rouge ✕ : tombe, gardée avec sa raison.</div>';
+    z.querySelectorAll('[data-v]').forEach(g=>g.onclick=()=>{vsel=g.dataset.v;analyse()});
+  }
+  let tic=null;
+  function ombre(z){
+    const v=cap.vars.find(x=>x.e==='ombre');
+    if(!v){z.innerHTML='<div class="note" style="padding:16px 4px">Aucune variante en ombre sur cette capacité. Elle entre en ombre quand le verdict calculé le permet.</div>';return}
+    let n=3217+Math.floor(Math.random()*40);
+    z.innerHTML='<div class="cadran" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">'+
+     '<div><span class="lib">Appels comparés</span><span class="v mono" id="o-n">'+n+'</span><span class="note">appels réels des 6 dernières heures</span></div>'+
+     '<div><span class="lib">Divergences</span><span class="v gain">0</span><span class="note">lecture seule : aucune écriture détournée</span></div>'+
+     '<div><span class="lib">p50 actuelle → variante</span><span class="v">38 → 26 ms</span><span class="note">p95 : 71 → 49 ms</span></div>'+
+     '<div><span class="lib">Isolation</span><span class="v" style="font-size:13px">cage · sans réseau</span><span class="note">la variante ne touche rien</span></div></div>'+
+     '<div style="margin-top:12px" class="lib">Deux courbes, mêmes appels</div><svg viewBox="0 0 560 120" width="100%" style="max-width:720px"><polyline fill="none" stroke="var(--encre-3)" stroke-width="1.6" points="'+serie(38,5,0)+'"/><polyline fill="none" stroke="var(--accent)" stroke-width="2" points="'+serie(26,4,1)+'"/><text x="6" y="12">actuelle (gris) et variante (vert)</text></svg>'+
+     '<div class="note">Une écriture serait simulée et comparée sans toucher aux données. En cas de divergence, le retour est automatique.</div>';
+    clearInterval(tic);tic=setInterval(()=>{const e=$('#o-n');if(!e){clearInterval(tic);return}n+=1+Math.floor(Math.random()*3);e.textContent=n},900);
+  }
+  function serie(base,amp,k){let s=[];for(let i=0;i<56;i++){const y=60-(base-20)*1.3+Math.sin(i*.6+k)*amp+Math.cos(i*.23)*amp*.5;s.push((i*10)+','+y.toFixed(1))}return s.join(' ')}
+  function contrat(z){
+    z.innerHTML='<table><tr><th>Élément</th><th>État</th><th>Détail</th></tr>'+
+    '<tr><td>Appels gardés</td><td class="oui">1 240</td><td>tirés du journal, comptes retirés (anonymisés), 30 jours</td></tr>'+
+    '<tr><td>Jeu réservé</td><td class="oui">248 (20 %)</td><td>jamais montré au mutateur · tiré à chaque cycle</td></tr>'+
+    '<tr><td>Variantes pièges</td><td class="oui">7</td><td>mauvaises exprès (ordre, arrondi, doublon, filtre oublié…) : si l\'une passe, tout s\'arrête</td></tr>'+
+    '<tr><td>Mesures déclarées</td><td class="oui">durée · erreurs · coût</td><td>le module les déclare dans son manifeste ; jamais d\'autre critère</td></tr>'+
+    '<tr><td>Cloisonnement</td><td class="oui">respecté</td><td>les entrées du rejeu gardent leur compte ; une variante n\'a jamais plus de droits</td></tr>'+
+    '<tr><td>Corpus trop étroit</td><td class="non">seuil : 200 appels</td><td>sous le seuil, la capacité n\'est pas promue (voir « en images »)</td></tr></table>';
+  }
+
+  // ── analyse ────────────────────────────────────────────────────────
+  function analyse(){
+    const v=cap.vars.find(x=>x.i===vsel)||cap.vars.find(x=>x.e==='ombre')||cap.vars.find(x=>x.e==='actif');
+    $('#a-var').textContent=v?(cap.id.split('.')[1]+' · '+v.i):'—';
+    if(!v||cap.etat==='muet'){$('#a-preuves').innerHTML='<div class="note">Rien à prouver : pas de mesure.</div>';$('#a-verdict').textContent=cap.verdict;$('#a-verdict').style.background='var(--filet)';$('#a-verdict').style.color='var(--encre-2)';$('#routage').innerHTML='';$('#route-note').textContent='';$('#lecons').innerHTML='';return}
+    $('#a-preuves').innerHTML=cap.preuves.map((p,i)=>'<div class="preuve '+(p[2]===1?'':p[2]===0?'al':'mu')+'"><span class="k">'+(p[2]===1?'✓':p[2]===0?'!':'·')+'</span><div>'+(i+1)+'. '+esc(p[0])+'<small>'+esc(p[1])+'</small></div></div>').join('');
+    const bon=v.e==='tombe';
+    $('#a-verdict').textContent=bon?'Tombe : gardée avec sa raison, jamais re-proposée.':cap.verdict;
+    $('#a-verdict').style.background=bon?'var(--danger-doux)':cap.preuves.some(p=>p[2]===0)?'var(--alerte-doux)':'var(--ok-doux)';
+    $('#a-verdict').style.color=bon?'var(--danger)':cap.preuves.some(p=>p[2]===0)?'var(--alerte)':'var(--ok)';
+    routage();
+    $('#lecons').innerHTML=cap.lecons.length?cap.lecons.map(l=>'<div class="note" style="border-left:2px solid var(--danger);padding-left:8px">'+esc(l)+'</div>').join(''):'<div class="note">Aucune pour l\'instant.</div>';
+  }
+  function routage(){
+    const r=$('#routage'); r.innerHTML=[0,1,10,25,50,100].map(p=>'<button class="'+(p===cap.route?'on':'')+'" data-p="'+p+'">'+p+' %</button>').join('');
+    r.querySelectorAll('button').forEach(b=>b.onclick=()=>{const p=+b.dataset.p; if(p>cap.route&&!cap.vars.some(v=>v.e==='ombre')){toast('Monter exige une variante en ombre avec un verdict favorable');return} cap.route=p;routage();toast('Part du trafic réel : '+p+' % — appliquée sans redémarrage')});
+    $('#route-note').textContent=cap.route?cap.route+' % des appels de lecture passent par la variante ; le reste par l\'actuelle. Aiguillage seul : rien à restaurer.':'Toute la charge passe par la version actuelle.';
+  }
+  $('#retour').onclick=()=>{cap.route=0;cap.vars.forEach(v=>{if(v.e==='ombre')v.e='archive'});toast('Retour instantané : 0 % — version actuelle seule, journalisé');tout()};
+  $('#geler').onclick=()=>toast('Lignée gelée : plus de mutation sur cette branche (réversible)');
+
+  function tout(){rail();centre();analyse()}
+  tout();
+})();
+</script>
+</body>
+</html>
