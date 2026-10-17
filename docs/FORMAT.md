@@ -21,7 +21,9 @@ Décision de Drisse : **chaque fichier de code a la même anatomie**, pour que l
 | `AUTEUR` | `Atek Drisse` |
 | `GIT` | `github.com/Marplestrange` |
 | `MAIL` | `atek.drisse@gmail.com` |
-| `MODULE` / `DÉPÔT` | module d'appartenance et sa version dépôt |
+| `MODULE` | module d'appartenance |
+| `VERSION CN` | version dépôt du code nexus de ce fichier (ex. `1.9.0`) et son empreinte (ex. `#a3f9c2`) |
+| `VERSION EC` | version EC du ou des points (ex. `EC21 #7be104`). Dans un fichier du dépôt, la borne EC est la **référence** : `EC0 (référence 1.9.0)`. Dans un fichier d'EC rangé à part : `EC21` |
 | `ZONES` | `CN`, ou `CN + EC (n points : id @contrat, …)` |
 | `RÔLE` | **ce que fait** le fichier (1 à 3 lignes) |
 | `MÉTHODE` | **comment** il le fait (1 à 3 lignes) |
@@ -31,12 +33,14 @@ Décision de Drisse : **chaque fichier de code a la même anatomie**, pour que l
 Chaque marqueur est une ligne de commentaire qui contient **exactement** ces mots, pour qu'un programme les retrouve sans ambiguïté :
 
 ```
-BORNE CN
+BORNE CN version=<dépôt> empreinte=<hash>
 FIN BORNE CN
-BORNE EC point=<identifiant> contrat=@<version>
+BORNE EC point=<identifiant> contrat=@<version> version=<EC> empreinte=<hash>
 FIN BORNE EC
 EXPLICATIF CN / EC
 ```
+
+Les **versions sont dans les marqueurs** : on lit sur la borne elle-même quelle version du nexus (`CN`) et quelle EC (`EC`) elle porte. L'empreinte est calculée par l'outil sur le contenu de la borne ; si elle ne correspond plus, la borne a été modifiée sans que sa version ne soit mise à jour, et l'outil le signale.
 
 Le préfixe de commentaire dépend du langage : `#` (Python, shell, TOML), `//` (JavaScript), `/* … */` (CSS), `<!-- … -->` (HTML). Un fichier sans commentaires possibles (JSON) reçoit un fichier compagnon `.borne` qui porte la même information.
 
@@ -49,20 +53,22 @@ Le préfixe de commentaire dépend du langage : `#` (Python, shell, TOML), `//` 
 # AUTEUR   : Atek Drisse
 # GIT      : github.com/Marplestrange
 # MAIL     : atek.drisse@gmail.com
-# MODULE   : vue                      DÉPÔT : 0.1.0
+# MODULE   : vue
+# VERSION CN : 0.1.0  #3d90e1        (le nexus de ce fichier : version dépôt + empreinte)
+# VERSION EC : EC0 (référence 0.1.0)  (aucune EC en service ; sinon ex. EC8 #7be104)
 # ZONES    : CN + EC (1 point : verdict.composer @1.0)
 # RÔLE     : transforme les relevés de toutes les sources en un verdict et des compteurs.
 # MÉTHODE  : fonction pure ; une source muette n'est jamais « stable » ; la première panne est citée.
 # ══════════════════════════════════════════════════════════════════════════════
 from __future__ import annotations
 
-# ▼▼▼ BORNE CN : code nexus, intouchable, écrit par le dépôt seul ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3d90e1 : code nexus, intouchable, écrit par le dépôt seul ▼▼▼
 def composer_vue(releves):
     """Façade du contrat : valide l'entrée, appelle le point, valide la sortie."""
     return appeler_point("verdict.composer", releves)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
-# ▼▼▼ BORNE EC point=verdict.composer contrat=@1.0 : référence du dépôt, remplaçable par une EC ▼▼▼
+# ▼▼▼ BORNE EC point=verdict.composer contrat=@1.0 version=EC0 empreinte=b81c07 : référence du dépôt, remplaçable ▼▼▼
 SEUIL_TLS_PANNE, SEUIL_TLS_REGARDER = 7, 21
 
 def composer(releves):
@@ -87,11 +93,11 @@ def composer(releves):
 5. Chaque `point=` est déclaré dans le manifeste du module, avec son contrat et son corpus ; chaque point déclaré a sa borne.
 6. Aucun fichier **intouchable** (`docs/NEXUS.md` §4) ne contient de borne EC.
 7. L'**explicatif** existe et nomme la façade CN, chaque point EC et le contrat.
-8. **Empreintes** : une empreinte par borne CN et par borne EC, publiées avec la version dépôt (elles alimentent `1.9.0+EC21.a3f9c2`).
+8. **Versions et empreintes** : chaque borne porte sa version (`CN` : dépôt ; `EC` : numéro d'EC) et son empreinte, recalculée à chaque passage. Une borne **CN** dont l'empreinte change sans que la version dépôt ne monte est une erreur ; une borne **EC** de référence modifiée de même. Les versions de l'en-tête doivent égaler celles des marqueurs, et la `VERSION CN` doit égaler celle du manifeste du module. Ces empreintes alimentent `1.9.0+EC21.a3f9c2`.
 
 ## 6. Les EC rangées à part ont le même format
 
-Une EC évoluée, stockée dans `/var/cassandra/ec/<module>/`, est un fichier au **même format universel** : en-tête (avec `ORIGINE : EC21`, l'empreinte du nexus visé, le contrat prouvé), **une seule borne EC**, son explicatif. Aucune borne CN : une EC ne contient jamais de nexus. Le chargeur refuse tout fichier d'EC qui en contient une.
+Une EC évoluée, stockée dans `/var/cassandra/ec/<module>/`, est un fichier au **même format universel** : en-tête (`VERSION CN : néant`, `VERSION EC : EC21 #7be104`, et en plus `NEXUS VISÉ : 1.9.0 #3d90e1`, `CONTRAT PROUVÉ : @1.3`), **une seule borne EC** (`version=EC21`), son explicatif. Aucune borne CN : une EC ne contient jamais de nexus. Le chargeur refuse tout fichier d'EC qui en contient une.
 
 ## 7. Mise en place
 
