@@ -48,21 +48,33 @@ Les **versions sont dans les marqueurs** : on lit sur la borne quelle version du
 
 Préfixe de commentaire selon le langage : `#` (Python, shell, TOML), `//` (JavaScript), `/* … */` (CSS), `<!-- … -->` (HTML). Un fichier sans commentaires possibles (JSON) reçoit un fichier compagnon `.borne`.
 
+## 3 bis. Nommage : la zone est dans le nom du fichier
+
+Décision de Drisse : le nom d'un fichier dit sa zone. **Préfixe `CN_` ou `EC_`**, suivi du nom : `CN_composer.py`, `EC_verdict_composer.py`.
+
+- Le soulignement garde un nom Python valide et lisible. La zone se lit d'un coup d'œil dans l'éditeur, dans les listes de fichiers et dans les messages d'erreur (`File EC_composer.py, line 12`).
+- `CN_` : code nexus. `EC_` : point d'évolution (la référence du dépôt, ou une EC évoluée).
+- **Exceptions** (noms que le chargeur, l'installateur ou les utilisateurs retrouvent par nom) : `manifeste.toml`, `module.py`, `installer.sh`, `verifier.sh`, `retirer.sh`, les programmes de `commandes/`, `main.py`, `install.sh`, `deploy.sh`, `pousser.sh`, `LICENSE`, `README.md`. Ils sont **CN par déclaration** dans le fichier `INTOUCHABLES` ; l'outil de bornes le vérifie.
+- **Fichiers de test** : `test_*.py` (découverte automatique) ; CN par leur dossier `tests/`.
+- **Documents de projet** (`NEXUS.md`, `FORMAT.md`…) : pas de préfixe. Un `.md` qui fait partie d'une zone (fiche d'un point d'évolution, journal d'une évolution) prend `EC_`, une fiche du nexus `CN_`.
+- **EC évoluées** dans le stock : `EC_<point>__<EC>.py`, ex. `EC_verdict_composer__EC8.py` (le double soulignement sépare le point du numéro d'EC).
+- Vérification : le préfixe égale le champ `ZONE` de l'en-tête et le dossier ; sinon l'outil signale l'écart.
+
 ## 4. Où vivent les fichiers
 
 ```
 modules/vue/
-  composer.py                          CN   la façade du contrat, appelle le point
-  points/verdict.composer.ec.py        EC   la RÉFÉRENCE du dépôt (EC0), écrite par le dépôt
-  contrats/verdict.composer.*          CN   schéma, invariants, corpus doré
-/var/cassandra/ec/vue/verdict.composer/EC8.ec.py     EC évoluée, écrite par l'évolution seule
+  CN_composer.py                       CN   la façade du contrat, appelle le point
+  points/EC_verdict_composer.py        EC   la RÉFÉRENCE du dépôt (EC0), écrite par le dépôt
+  contrats/CN_verdict_composer.*       CN   schéma, invariants, corpus doré
+/var/cassandra/ec/vue/verdict.composer/EC_verdict_composer__EC8.py     EC évoluée, écrite par l'évolution seule
 ```
 
 Au chargement, le nexus résout un point : **EC en service** (stock) si elle est compatible et saine, sinon **référence** du dépôt. Le dépôt n'écrit jamais dans le stock ; l'évolution n'écrit jamais dans `modules/`.
 
 ## 5. Exemple : deux fichiers pour le point `verdict.composer`
 
-**`modules/vue/composer.py`** (CN)
+**`modules/vue/CN_composer.py`** (CN)
 
 ```python
 # ══════════════════════════════════════════════════════════════════════════════
@@ -75,7 +87,7 @@ Au chargement, le nexus résout un point : **EC en service** (stock) si elle est
 # ZONE       : CN
 # VERSION CN : 0.1.0  #3d90e1
 # VERSION EC : néant
-# EC LIÉES   : verdict.composer @1.0 -> points/verdict.composer.ec.py
+# EC LIÉES   : verdict.composer @1.0 -> points/EC_verdict_composer.py
 # RÔLE       : reçoit les relevés des sources, garantit le contrat, rend le verdict.
 # MÉTHODE    : valide l'entrée, appelle le point d'évolution, valide la sortie, sert la référence si l'EC faillit.
 # ══════════════════════════════════════════════════════════════════════════════
@@ -93,7 +105,7 @@ def composer_vue(releves):
 # EC : le calcul vit dans le point `verdict.composer`, remplaçable sans toucher à ce fichier.
 ```
 
-**`modules/vue/points/verdict.composer.ec.py`** (référence EC0)
+**`modules/vue/points/EC_verdict_composer.py`** (référence EC0)
 
 ```python
 # ══════════════════════════════════════════════════════════════════════════════
@@ -106,7 +118,7 @@ def composer_vue(releves):
 # ZONE       : EC
 # VERSION CN : néant
 # VERSION EC : EC0 (référence 0.1.0)  #b81c07
-# HÔTE CN    : composer.py · verdict.composer @1.0
+# HÔTE CN    : CN_composer.py · verdict.composer @1.0
 # RÔLE       : transforme les relevés de toutes les sources en un verdict et des compteurs.
 # MÉTHODE    : fonction pure ; une source muette n'est jamais « stable » ; la première panne est citée.
 # ══════════════════════════════════════════════════════════════════════════════
@@ -122,13 +134,14 @@ def composer(releves):
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
 # EC : cette fonction est remplaçable par une EC ; elle ne peut changer ni sa signature ni les
 #      invariants du contrat (« source muette ≠ stable ») et n'importe que la bibliothèque standard pure.
-# CN : appelée uniquement par la façade `composer_vue` (composer.py).
+# CN : appelée uniquement par la façade `composer_vue` (CN_composer.py).
 ```
 
 ## 6. Ce que vérifie l'outil de bornes (`outils/bornes.py`)
 
 1. L'en-tête est complet ; licence, auteur, dépôt et courriel sont ceux du projet.
 2. **Un fichier = une zone** : `ZONE` correspond à la borne présente ; aucune ligne de code hors borne ; borne ouverte puis fermée.
+   **Nommage** : le préfixe `CN_` / `EC_` du fichier égale `ZONE` et le dossier (sauf les exceptions déclarées dans `INTOUCHABLES`).
 3. **Renvois** : chaque point listé dans `EC LIÉES` d'un CN existe comme fichier EC qui le désigne comme `HÔTE CN`, et inversement.
 4. Un fichier **EC** n'importe que la bibliothèque standard pure et `ec_api`, sans `ctx`, `self`, E/S, horloge ni hasard (`docs/NEXUS.md` §3).
 5. Chaque `point=` est déclaré dans le manifeste du module, avec son contrat et son corpus ; chaque point déclaré a sa référence.
@@ -138,7 +151,7 @@ def composer(releves):
 
 ## 7. Les EC évoluées
 
-Une EC rangée dans `/var/cassandra/ec/<module>/<point>/EC<n>.ec.py` suit **le même format** : `ZONE : EC`, `VERSION EC : EC21 #…`, `HÔTE CN`, `NEXUS VISÉ`, `CONTRAT PROUVÉ`, une seule borne EC, son explicatif. Le chargeur refuse tout fichier de ce dossier qui contient du nexus, ou dont l'hôte CN ne désigne pas le point.
+Une EC rangée dans `/var/cassandra/ec/<module>/<point>/EC_<point>__EC<n>.py` suit **le même format** : `ZONE : EC`, `VERSION EC : EC21 #…`, `HÔTE CN`, `NEXUS VISÉ`, `CONTRAT PROUVÉ`, une seule borne EC, son explicatif. Le chargeur refuse tout fichier de ce dossier qui contient du nexus, ou dont l'hôte CN ne désigne pas le point.
 
 ## 8. Mise en place
 
