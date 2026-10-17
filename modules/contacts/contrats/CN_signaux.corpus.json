@@ -1,0 +1,3236 @@
+{
+ "cas": [
+  {
+   "cas": "aucune fiche",
+   "entree": {
+    "fiches": []
+   },
+   "sortie": {
+    "paires": []
+   }
+  },
+  {
+   "cas": "une seule fiche",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "Marie Dupont",
+      "emails": [
+       "marie@x.fr"
+      ],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": []
+   }
+  },
+  {
+   "cas": "même adresse",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "marie@x.fr"
+      ],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "Marie@X.fr "
+      ],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "adresse": "marie@x.fr des deux côtés",
+       "local": "« marie » chez deux domaines"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "même partie locale chez deux domaines",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "marie.dupont@x.fr"
+      ],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "marie.dupont@y.com"
+      ],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "local": "« marie.dupont » chez deux domaines"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "partie locale trop courte ou vide de sens",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "jo@x.fr",
+       "info@x.fr"
+      ],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "jo@y.fr",
+       "info@y.fr"
+      ],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": []
+   }
+  },
+  {
+   "cas": "même nom aux accents près",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "Hélène Müller",
+      "emails": [],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "helene muller",
+      "emails": [],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "nom": "« helene muller » une fois le nom normalisé"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "même société, forme juridique ignorée",
+   "entree": {
+    "fiches": [
+     {
+      "company": "Durand SARL",
+      "display_name": "",
+      "emails": [],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "durand",
+      "display_name": "",
+      "emails": [],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "societe": "même société : « durand »"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "même téléphone, formats différents",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "a",
+      "mobile": "",
+      "phone": "+33 6 12 34 56 78",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "b",
+      "mobile": "06.12.34.56.78",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "tel": "même numéro, …5678"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "téléphone trop court",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "a",
+      "mobile": "",
+      "phone": "1234",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "b",
+      "mobile": "",
+      "phone": "1234",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": []
+   }
+  },
+  {
+   "cas": "même site, forme différente",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": "https://www.exemple.fr/accueil"
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": "exemple.fr"
+     }
+    ]
+   },
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "site": "même site : exemple.fr"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "site sans point",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": "localhost"
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": "localhost"
+     }
+    ]
+   },
+   "sortie": {
+    "paires": []
+   }
+  },
+  {
+   "cas": "trois fiches, deux motifs",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "x@y.fr"
+      ],
+      "id": "a",
+      "mobile": "",
+      "phone": "0611223344",
+      "website": ""
+     },
+     {
+      "company": "Z",
+      "display_name": "",
+      "emails": [
+       "x@y.fr"
+      ],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "c",
+      "mobile": "",
+      "phone": "06 11 22 33 44",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "adresse": "x@y.fr des deux côtés"
+      }
+     },
+     {
+      "a": "a",
+      "b": "c",
+      "signaux": {
+       "tel": "même numéro, …3344"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "un seau de plus de huit fiches est ignoré",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f0",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f1",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f2",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f3",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f4",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f5",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f6",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f7",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f8",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": []
+   }
+  },
+  {
+   "cas": "un seau de huit fiches compte",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f0",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f1",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f2",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f3",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f4",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f5",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f6",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "commun@x.fr"
+      ],
+      "id": "f7",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": [
+     {
+      "a": "f0",
+      "b": "f1",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f0",
+      "b": "f2",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f0",
+      "b": "f3",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f0",
+      "b": "f4",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f0",
+      "b": "f5",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f0",
+      "b": "f6",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f0",
+      "b": "f7",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f1",
+      "b": "f2",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f1",
+      "b": "f3",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f1",
+      "b": "f4",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f1",
+      "b": "f5",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f1",
+      "b": "f6",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f1",
+      "b": "f7",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f2",
+      "b": "f3",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f2",
+      "b": "f4",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f2",
+      "b": "f5",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f2",
+      "b": "f6",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f2",
+      "b": "f7",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f3",
+      "b": "f4",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f3",
+      "b": "f5",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f3",
+      "b": "f6",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f3",
+      "b": "f7",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f4",
+      "b": "f5",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f4",
+      "b": "f6",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f4",
+      "b": "f7",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f5",
+      "b": "f6",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f5",
+      "b": "f7",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     },
+     {
+      "a": "f6",
+      "b": "f7",
+      "signaux": {
+       "adresse": "commun@x.fr des deux côtés",
+       "local": "« commun » chez deux domaines"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "même identifiant des deux côtés",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "x@y.fr"
+      ],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "x@y.fr"
+      ],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": []
+   }
+  },
+  {
+   "cas": "champs vides et absents",
+   "entree": {
+    "fiches": [
+     {
+      "id": "a"
+     },
+     {
+      "emails": null,
+      "id": "b"
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "c",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": []
+   }
+  },
+  {
+   "cas": "nom fait de symboles",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "★★★",
+      "emails": [],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "★★★",
+      "emails": [],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "nom": "« sym:★★★ » une fois le nom normalisé"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plusieurs adresses par fiche",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "a@x.fr",
+       "b@x.fr"
+      ],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "b@x.fr",
+       "c@x.fr"
+      ],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "c@x.fr"
+      ],
+      "id": "c",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "adresse": "b@x.fr des deux côtés"
+      }
+     },
+     {
+      "a": "b",
+      "b": "c",
+      "signaux": {
+       "adresse": "c@x.fr des deux côtés"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ordre des identifiants dans la paire",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "x@y.fr"
+      ],
+      "id": "z",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "x@y.fr"
+      ],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "z",
+      "signaux": {
+       "adresse": "x@y.fr des deux côtés"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "carnet de 120 fiches avec doublons répartis",
+   "entree": {
+    "fiches": [
+     {
+      "company": "Société 0 SARL",
+      "display_name": "Contact 0 Dupont",
+      "emails": [
+       "u0@dom0.fr"
+      ],
+      "id": "g000",
+      "mobile": "",
+      "phone": "0600000000",
+      "website": "www.site0.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 1",
+      "emails": [],
+      "id": "g001",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 2",
+      "emails": [
+       "u2@dom2.fr"
+      ],
+      "id": "g002",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 3 Dupont",
+      "emails": [],
+      "id": "g003",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 4",
+      "emails": [
+       "u4@dom4.fr"
+      ],
+      "id": "g004",
+      "mobile": "",
+      "phone": "0600004444",
+      "website": ""
+     },
+     {
+      "company": "Société 5 SARL",
+      "display_name": "Personne 5",
+      "emails": [],
+      "id": "g005",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 6 Dupont",
+      "emails": [
+       "u6@dom1.fr"
+      ],
+      "id": "g006",
+      "mobile": "",
+      "phone": "",
+      "website": "www.site6.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 7",
+      "emails": [],
+      "id": "g007",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 8",
+      "emails": [
+       "u8@dom3.fr"
+      ],
+      "id": "g008",
+      "mobile": "",
+      "phone": "0600008888",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 9 Dupont",
+      "emails": [],
+      "id": "g009",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 3 SARL",
+      "display_name": "Personne 10",
+      "emails": [
+       "u10@dom0.fr"
+      ],
+      "id": "g010",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 11",
+      "emails": [],
+      "id": "g011",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 12 Dupont",
+      "emails": [
+       "u12@dom2.fr"
+      ],
+      "id": "g012",
+      "mobile": "",
+      "phone": "0600013332",
+      "website": "www.site1.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 13",
+      "emails": [],
+      "id": "g013",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 14",
+      "emails": [
+       "u14@dom4.fr"
+      ],
+      "id": "g014",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 1 SARL",
+      "display_name": "Contact 15 Dupont",
+      "emails": [],
+      "id": "g015",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 16",
+      "emails": [
+       "u16@dom1.fr"
+      ],
+      "id": "g016",
+      "mobile": "",
+      "phone": "0600017776",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 17",
+      "emails": [],
+      "id": "g017",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 18 Dupont",
+      "emails": [
+       "u18@dom3.fr"
+      ],
+      "id": "g018",
+      "mobile": "",
+      "phone": "",
+      "website": "www.site7.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 19",
+      "emails": [],
+      "id": "g019",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 6 SARL",
+      "display_name": "Personne 20",
+      "emails": [
+       "u20@dom0.fr"
+      ],
+      "id": "g020",
+      "mobile": "",
+      "phone": "0600022220",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 21 Dupont",
+      "emails": [],
+      "id": "g021",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 22",
+      "emails": [
+       "u22@dom2.fr"
+      ],
+      "id": "g022",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 23",
+      "emails": [],
+      "id": "g023",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 24 Dupont",
+      "emails": [
+       "u24@dom4.fr"
+      ],
+      "id": "g024",
+      "mobile": "",
+      "phone": "0600026664",
+      "website": "www.site2.fr"
+     },
+     {
+      "company": "Société 4 SARL",
+      "display_name": "Personne 25",
+      "emails": [],
+      "id": "g025",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 26",
+      "emails": [
+       "u26@dom1.fr"
+      ],
+      "id": "g026",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 27 Dupont",
+      "emails": [],
+      "id": "g027",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 28",
+      "emails": [
+       "u28@dom3.fr"
+      ],
+      "id": "g028",
+      "mobile": "",
+      "phone": "0600031108",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 29",
+      "emails": [],
+      "id": "g029",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 2 SARL",
+      "display_name": "Contact 30 Dupont",
+      "emails": [
+       "u30@dom0.fr"
+      ],
+      "id": "g030",
+      "mobile": "",
+      "phone": "",
+      "website": "www.site8.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 31",
+      "emails": [],
+      "id": "g031",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 32",
+      "emails": [
+       "u32@dom2.fr"
+      ],
+      "id": "g032",
+      "mobile": "",
+      "phone": "0600035552",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 33 Dupont",
+      "emails": [],
+      "id": "g033",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 34",
+      "emails": [
+       "u34@dom4.fr"
+      ],
+      "id": "g034",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 0 SARL",
+      "display_name": "Personne 35",
+      "emails": [],
+      "id": "g035",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 36 Dupont",
+      "emails": [
+       "u36@dom1.fr"
+      ],
+      "id": "g036",
+      "mobile": "",
+      "phone": "0600039996",
+      "website": "www.site3.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 37",
+      "emails": [],
+      "id": "g037",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 38",
+      "emails": [
+       "u38@dom3.fr"
+      ],
+      "id": "g038",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 39 Dupont",
+      "emails": [],
+      "id": "g039",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 0 SARL",
+      "display_name": "Personne 40",
+      "emails": [
+       "u0@dom0.fr"
+      ],
+      "id": "g040",
+      "mobile": "",
+      "phone": "0600000000",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 41",
+      "emails": [],
+      "id": "g041",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 2 Dupont",
+      "emails": [
+       "u2@dom2.fr"
+      ],
+      "id": "g042",
+      "mobile": "",
+      "phone": "",
+      "website": "www.site2.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 43",
+      "emails": [],
+      "id": "g043",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 44",
+      "emails": [
+       "u4@dom4.fr"
+      ],
+      "id": "g044",
+      "mobile": "",
+      "phone": "0600004444",
+      "website": ""
+     },
+     {
+      "company": "Société 5 SARL",
+      "display_name": "Contact 5 Dupont",
+      "emails": [],
+      "id": "g045",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 46",
+      "emails": [
+       "u6@dom1.fr"
+      ],
+      "id": "g046",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 47",
+      "emails": [],
+      "id": "g047",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 8 Dupont",
+      "emails": [
+       "u8@dom3.fr"
+      ],
+      "id": "g048",
+      "mobile": "",
+      "phone": "0600008888",
+      "website": "www.site8.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 49",
+      "emails": [],
+      "id": "g049",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 3 SARL",
+      "display_name": "Personne 50",
+      "emails": [
+       "u10@dom0.fr"
+      ],
+      "id": "g050",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 11 Dupont",
+      "emails": [],
+      "id": "g051",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 52",
+      "emails": [
+       "u12@dom2.fr"
+      ],
+      "id": "g052",
+      "mobile": "",
+      "phone": "0600013332",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 53",
+      "emails": [],
+      "id": "g053",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 14 Dupont",
+      "emails": [
+       "u14@dom4.fr"
+      ],
+      "id": "g054",
+      "mobile": "",
+      "phone": "",
+      "website": "www.site3.fr"
+     },
+     {
+      "company": "Société 1 SARL",
+      "display_name": "Personne 55",
+      "emails": [],
+      "id": "g055",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 56",
+      "emails": [
+       "u16@dom1.fr"
+      ],
+      "id": "g056",
+      "mobile": "",
+      "phone": "0600017776",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 17 Dupont",
+      "emails": [],
+      "id": "g057",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 58",
+      "emails": [
+       "u18@dom3.fr"
+      ],
+      "id": "g058",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 59",
+      "emails": [],
+      "id": "g059",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 6 SARL",
+      "display_name": "Contact 20 Dupont",
+      "emails": [
+       "u20@dom0.fr"
+      ],
+      "id": "g060",
+      "mobile": "",
+      "phone": "0600022220",
+      "website": "www.site9.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 61",
+      "emails": [],
+      "id": "g061",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 62",
+      "emails": [
+       "u22@dom2.fr"
+      ],
+      "id": "g062",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 23 Dupont",
+      "emails": [],
+      "id": "g063",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 64",
+      "emails": [
+       "u24@dom4.fr"
+      ],
+      "id": "g064",
+      "mobile": "",
+      "phone": "0600026664",
+      "website": ""
+     },
+     {
+      "company": "Société 4 SARL",
+      "display_name": "Personne 65",
+      "emails": [],
+      "id": "g065",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 26 Dupont",
+      "emails": [
+       "u26@dom1.fr"
+      ],
+      "id": "g066",
+      "mobile": "",
+      "phone": "",
+      "website": "www.site4.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 67",
+      "emails": [],
+      "id": "g067",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 68",
+      "emails": [
+       "u28@dom3.fr"
+      ],
+      "id": "g068",
+      "mobile": "",
+      "phone": "0600031108",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 29 Dupont",
+      "emails": [],
+      "id": "g069",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 2 SARL",
+      "display_name": "Personne 70",
+      "emails": [
+       "u30@dom0.fr"
+      ],
+      "id": "g070",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 71",
+      "emails": [],
+      "id": "g071",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 32 Dupont",
+      "emails": [
+       "u32@dom2.fr"
+      ],
+      "id": "g072",
+      "mobile": "",
+      "phone": "0600035552",
+      "website": "www.site10.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 73",
+      "emails": [],
+      "id": "g073",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 74",
+      "emails": [
+       "u34@dom4.fr"
+      ],
+      "id": "g074",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 0 SARL",
+      "display_name": "Contact 35 Dupont",
+      "emails": [],
+      "id": "g075",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 76",
+      "emails": [
+       "u36@dom1.fr"
+      ],
+      "id": "g076",
+      "mobile": "",
+      "phone": "0600039996",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 77",
+      "emails": [],
+      "id": "g077",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 38 Dupont",
+      "emails": [
+       "u38@dom3.fr"
+      ],
+      "id": "g078",
+      "mobile": "",
+      "phone": "",
+      "website": "www.site5.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 79",
+      "emails": [],
+      "id": "g079",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 0 SARL",
+      "display_name": "Personne 80",
+      "emails": [
+       "u0@dom0.fr"
+      ],
+      "id": "g080",
+      "mobile": "",
+      "phone": "0600000000",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 1 Dupont",
+      "emails": [],
+      "id": "g081",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 82",
+      "emails": [
+       "u2@dom2.fr"
+      ],
+      "id": "g082",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 83",
+      "emails": [],
+      "id": "g083",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 4 Dupont",
+      "emails": [
+       "u4@dom4.fr"
+      ],
+      "id": "g084",
+      "mobile": "",
+      "phone": "0600004444",
+      "website": "www.site4.fr"
+     },
+     {
+      "company": "Société 5 SARL",
+      "display_name": "Personne 85",
+      "emails": [],
+      "id": "g085",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 86",
+      "emails": [
+       "u6@dom1.fr"
+      ],
+      "id": "g086",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 7 Dupont",
+      "emails": [],
+      "id": "g087",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 88",
+      "emails": [
+       "u8@dom3.fr"
+      ],
+      "id": "g088",
+      "mobile": "",
+      "phone": "0600008888",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 89",
+      "emails": [],
+      "id": "g089",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 3 SARL",
+      "display_name": "Contact 10 Dupont",
+      "emails": [
+       "u10@dom0.fr"
+      ],
+      "id": "g090",
+      "mobile": "",
+      "phone": "",
+      "website": "www.site10.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 91",
+      "emails": [],
+      "id": "g091",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 92",
+      "emails": [
+       "u12@dom2.fr"
+      ],
+      "id": "g092",
+      "mobile": "",
+      "phone": "0600013332",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 13 Dupont",
+      "emails": [],
+      "id": "g093",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 94",
+      "emails": [
+       "u14@dom4.fr"
+      ],
+      "id": "g094",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 1 SARL",
+      "display_name": "Personne 95",
+      "emails": [],
+      "id": "g095",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 16 Dupont",
+      "emails": [
+       "u16@dom1.fr"
+      ],
+      "id": "g096",
+      "mobile": "",
+      "phone": "0600017776",
+      "website": "www.site5.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 97",
+      "emails": [],
+      "id": "g097",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 98",
+      "emails": [
+       "u18@dom3.fr"
+      ],
+      "id": "g098",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 19 Dupont",
+      "emails": [],
+      "id": "g099",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 6 SARL",
+      "display_name": "Personne 100",
+      "emails": [
+       "u20@dom0.fr"
+      ],
+      "id": "g100",
+      "mobile": "",
+      "phone": "0600022220",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 101",
+      "emails": [],
+      "id": "g101",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 22 Dupont",
+      "emails": [
+       "u22@dom2.fr"
+      ],
+      "id": "g102",
+      "mobile": "",
+      "phone": "",
+      "website": "www.site0.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 103",
+      "emails": [],
+      "id": "g103",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 104",
+      "emails": [
+       "u24@dom4.fr"
+      ],
+      "id": "g104",
+      "mobile": "",
+      "phone": "0600026664",
+      "website": ""
+     },
+     {
+      "company": "Société 4 SARL",
+      "display_name": "Contact 25 Dupont",
+      "emails": [],
+      "id": "g105",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 106",
+      "emails": [
+       "u26@dom1.fr"
+      ],
+      "id": "g106",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 107",
+      "emails": [],
+      "id": "g107",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 28 Dupont",
+      "emails": [
+       "u28@dom3.fr"
+      ],
+      "id": "g108",
+      "mobile": "",
+      "phone": "0600031108",
+      "website": "www.site6.fr"
+     },
+     {
+      "company": "",
+      "display_name": "Personne 109",
+      "emails": [],
+      "id": "g109",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "Société 2 SARL",
+      "display_name": "Personne 110",
+      "emails": [
+       "u30@dom0.fr"
+      ],
+      "id": "g110",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 31 Dupont",
+      "emails": [],
+      "id": "g111",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 112",
+      "emails": [
+       "u32@dom2.fr"
+      ],
+      "id": "g112",
+      "mobile": "",
+      "phone": "0600035552",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 113",
+      "emails": [],
+      "id": "g113",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 34 Dupont",
+      "emails": [
+       "u34@dom4.fr"
+      ],
+      "id": "g114",
+      "mobile": "",
+      "phone": "",
+      "website": "www.site1.fr"
+     },
+     {
+      "company": "Société 0 SARL",
+      "display_name": "Personne 115",
+      "emails": [],
+      "id": "g115",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 116",
+      "emails": [
+       "u36@dom1.fr"
+      ],
+      "id": "g116",
+      "mobile": "",
+      "phone": "0600039996",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Contact 37 Dupont",
+      "emails": [],
+      "id": "g117",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 118",
+      "emails": [
+       "u38@dom3.fr"
+      ],
+      "id": "g118",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Personne 119",
+      "emails": [],
+      "id": "g119",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "sortie": {
+    "paires": [
+     {
+      "a": "g000",
+      "b": "g040",
+      "signaux": {
+       "adresse": "u0@dom0.fr des deux côtés",
+       "societe": "même société : « societe 0 »",
+       "tel": "même numéro, …0000"
+      }
+     },
+     {
+      "a": "g000",
+      "b": "g080",
+      "signaux": {
+       "adresse": "u0@dom0.fr des deux côtés",
+       "societe": "même société : « societe 0 »",
+       "tel": "même numéro, …0000"
+      }
+     },
+     {
+      "a": "g040",
+      "b": "g080",
+      "signaux": {
+       "adresse": "u0@dom0.fr des deux côtés",
+       "societe": "même société : « societe 0 »",
+       "tel": "même numéro, …0000"
+      }
+     },
+     {
+      "a": "g000",
+      "b": "g035",
+      "signaux": {
+       "societe": "même société : « societe 0 »"
+      }
+     },
+     {
+      "a": "g000",
+      "b": "g075",
+      "signaux": {
+       "societe": "même société : « societe 0 »"
+      }
+     },
+     {
+      "a": "g000",
+      "b": "g115",
+      "signaux": {
+       "societe": "même société : « societe 0 »"
+      }
+     },
+     {
+      "a": "g035",
+      "b": "g040",
+      "signaux": {
+       "societe": "même société : « societe 0 »"
+      }
+     },
+     {
+      "a": "g035",
+      "b": "g075",
+      "signaux": {
+       "societe": "même société : « societe 0 »"
+      }
+     },
+     {
+      "a": "g035",
+      "b": "g080",
+      "signaux": {
+       "societe": "même société : « societe 0 »"
+      }
+     },
+     {
+      "a": "g035",
+      "b": "g115",
+      "signaux": {
+       "societe": "même société : « societe 0 »"
+      }
+     },
+     {
+      "a": "g040",
+      "b": "g075",
+      "signaux": {
+       "societe": "même société : « societe 0 »"
+      }
+     },
+     {
+      "a": "g040",
+      "b": "g115",
+      "signaux": {
+       "societe": "même société : « societe 0 »"
+      }
+     },
+     {
+      "a": "g075",
+      "b": "g080",
+      "signaux": {
+       "societe": "même société : « societe 0 »"
+      }
+     },
+     {
+      "a": "g075",
+      "b": "g115",
+      "signaux": {
+       "societe": "même société : « societe 0 »"
+      }
+     },
+     {
+      "a": "g080",
+      "b": "g115",
+      "signaux": {
+       "societe": "même société : « societe 0 »"
+      }
+     },
+     {
+      "a": "g000",
+      "b": "g102",
+      "signaux": {
+       "site": "même site : site0.fr"
+      }
+     },
+     {
+      "a": "g002",
+      "b": "g042",
+      "signaux": {
+       "adresse": "u2@dom2.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g002",
+      "b": "g082",
+      "signaux": {
+       "adresse": "u2@dom2.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g042",
+      "b": "g082",
+      "signaux": {
+       "adresse": "u2@dom2.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g004",
+      "b": "g044",
+      "signaux": {
+       "adresse": "u4@dom4.fr des deux côtés",
+       "tel": "même numéro, …4444"
+      }
+     },
+     {
+      "a": "g004",
+      "b": "g084",
+      "signaux": {
+       "adresse": "u4@dom4.fr des deux côtés",
+       "tel": "même numéro, …4444"
+      }
+     },
+     {
+      "a": "g044",
+      "b": "g084",
+      "signaux": {
+       "adresse": "u4@dom4.fr des deux côtés",
+       "tel": "même numéro, …4444"
+      }
+     },
+     {
+      "a": "g005",
+      "b": "g045",
+      "signaux": {
+       "societe": "même société : « societe 5 »"
+      }
+     },
+     {
+      "a": "g005",
+      "b": "g085",
+      "signaux": {
+       "societe": "même société : « societe 5 »"
+      }
+     },
+     {
+      "a": "g045",
+      "b": "g085",
+      "signaux": {
+       "societe": "même société : « societe 5 »"
+      }
+     },
+     {
+      "a": "g006",
+      "b": "g046",
+      "signaux": {
+       "adresse": "u6@dom1.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g006",
+      "b": "g086",
+      "signaux": {
+       "adresse": "u6@dom1.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g046",
+      "b": "g086",
+      "signaux": {
+       "adresse": "u6@dom1.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g006",
+      "b": "g108",
+      "signaux": {
+       "site": "même site : site6.fr"
+      }
+     },
+     {
+      "a": "g008",
+      "b": "g048",
+      "signaux": {
+       "adresse": "u8@dom3.fr des deux côtés",
+       "tel": "même numéro, …8888"
+      }
+     },
+     {
+      "a": "g008",
+      "b": "g088",
+      "signaux": {
+       "adresse": "u8@dom3.fr des deux côtés",
+       "tel": "même numéro, …8888"
+      }
+     },
+     {
+      "a": "g048",
+      "b": "g088",
+      "signaux": {
+       "adresse": "u8@dom3.fr des deux côtés",
+       "tel": "même numéro, …8888"
+      }
+     },
+     {
+      "a": "g010",
+      "b": "g050",
+      "signaux": {
+       "adresse": "u10@dom0.fr des deux côtés",
+       "societe": "même société : « societe 3 »"
+      }
+     },
+     {
+      "a": "g010",
+      "b": "g090",
+      "signaux": {
+       "adresse": "u10@dom0.fr des deux côtés",
+       "societe": "même société : « societe 3 »"
+      }
+     },
+     {
+      "a": "g050",
+      "b": "g090",
+      "signaux": {
+       "adresse": "u10@dom0.fr des deux côtés",
+       "societe": "même société : « societe 3 »"
+      }
+     },
+     {
+      "a": "g012",
+      "b": "g052",
+      "signaux": {
+       "adresse": "u12@dom2.fr des deux côtés",
+       "tel": "même numéro, …3332"
+      }
+     },
+     {
+      "a": "g012",
+      "b": "g092",
+      "signaux": {
+       "adresse": "u12@dom2.fr des deux côtés",
+       "tel": "même numéro, …3332"
+      }
+     },
+     {
+      "a": "g052",
+      "b": "g092",
+      "signaux": {
+       "adresse": "u12@dom2.fr des deux côtés",
+       "tel": "même numéro, …3332"
+      }
+     },
+     {
+      "a": "g012",
+      "b": "g114",
+      "signaux": {
+       "site": "même site : site1.fr"
+      }
+     },
+     {
+      "a": "g014",
+      "b": "g054",
+      "signaux": {
+       "adresse": "u14@dom4.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g014",
+      "b": "g094",
+      "signaux": {
+       "adresse": "u14@dom4.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g054",
+      "b": "g094",
+      "signaux": {
+       "adresse": "u14@dom4.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g015",
+      "b": "g055",
+      "signaux": {
+       "societe": "même société : « societe 1 »"
+      }
+     },
+     {
+      "a": "g015",
+      "b": "g095",
+      "signaux": {
+       "societe": "même société : « societe 1 »"
+      }
+     },
+     {
+      "a": "g055",
+      "b": "g095",
+      "signaux": {
+       "societe": "même société : « societe 1 »"
+      }
+     },
+     {
+      "a": "g016",
+      "b": "g056",
+      "signaux": {
+       "adresse": "u16@dom1.fr des deux côtés",
+       "tel": "même numéro, …7776"
+      }
+     },
+     {
+      "a": "g016",
+      "b": "g096",
+      "signaux": {
+       "adresse": "u16@dom1.fr des deux côtés",
+       "tel": "même numéro, …7776"
+      }
+     },
+     {
+      "a": "g056",
+      "b": "g096",
+      "signaux": {
+       "adresse": "u16@dom1.fr des deux côtés",
+       "tel": "même numéro, …7776"
+      }
+     },
+     {
+      "a": "g018",
+      "b": "g058",
+      "signaux": {
+       "adresse": "u18@dom3.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g018",
+      "b": "g098",
+      "signaux": {
+       "adresse": "u18@dom3.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g058",
+      "b": "g098",
+      "signaux": {
+       "adresse": "u18@dom3.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g020",
+      "b": "g060",
+      "signaux": {
+       "adresse": "u20@dom0.fr des deux côtés",
+       "societe": "même société : « societe 6 »",
+       "tel": "même numéro, …2220"
+      }
+     },
+     {
+      "a": "g020",
+      "b": "g100",
+      "signaux": {
+       "adresse": "u20@dom0.fr des deux côtés",
+       "societe": "même société : « societe 6 »",
+       "tel": "même numéro, …2220"
+      }
+     },
+     {
+      "a": "g060",
+      "b": "g100",
+      "signaux": {
+       "adresse": "u20@dom0.fr des deux côtés",
+       "societe": "même société : « societe 6 »",
+       "tel": "même numéro, …2220"
+      }
+     },
+     {
+      "a": "g022",
+      "b": "g062",
+      "signaux": {
+       "adresse": "u22@dom2.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g022",
+      "b": "g102",
+      "signaux": {
+       "adresse": "u22@dom2.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g062",
+      "b": "g102",
+      "signaux": {
+       "adresse": "u22@dom2.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g024",
+      "b": "g064",
+      "signaux": {
+       "adresse": "u24@dom4.fr des deux côtés",
+       "tel": "même numéro, …6664"
+      }
+     },
+     {
+      "a": "g024",
+      "b": "g104",
+      "signaux": {
+       "adresse": "u24@dom4.fr des deux côtés",
+       "tel": "même numéro, …6664"
+      }
+     },
+     {
+      "a": "g064",
+      "b": "g104",
+      "signaux": {
+       "adresse": "u24@dom4.fr des deux côtés",
+       "tel": "même numéro, …6664"
+      }
+     },
+     {
+      "a": "g024",
+      "b": "g042",
+      "signaux": {
+       "site": "même site : site2.fr"
+      }
+     },
+     {
+      "a": "g025",
+      "b": "g065",
+      "signaux": {
+       "societe": "même société : « societe 4 »"
+      }
+     },
+     {
+      "a": "g025",
+      "b": "g105",
+      "signaux": {
+       "societe": "même société : « societe 4 »"
+      }
+     },
+     {
+      "a": "g065",
+      "b": "g105",
+      "signaux": {
+       "societe": "même société : « societe 4 »"
+      }
+     },
+     {
+      "a": "g026",
+      "b": "g066",
+      "signaux": {
+       "adresse": "u26@dom1.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g026",
+      "b": "g106",
+      "signaux": {
+       "adresse": "u26@dom1.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g066",
+      "b": "g106",
+      "signaux": {
+       "adresse": "u26@dom1.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g028",
+      "b": "g068",
+      "signaux": {
+       "adresse": "u28@dom3.fr des deux côtés",
+       "tel": "même numéro, …1108"
+      }
+     },
+     {
+      "a": "g028",
+      "b": "g108",
+      "signaux": {
+       "adresse": "u28@dom3.fr des deux côtés",
+       "tel": "même numéro, …1108"
+      }
+     },
+     {
+      "a": "g068",
+      "b": "g108",
+      "signaux": {
+       "adresse": "u28@dom3.fr des deux côtés",
+       "tel": "même numéro, …1108"
+      }
+     },
+     {
+      "a": "g030",
+      "b": "g070",
+      "signaux": {
+       "adresse": "u30@dom0.fr des deux côtés",
+       "societe": "même société : « societe 2 »"
+      }
+     },
+     {
+      "a": "g030",
+      "b": "g110",
+      "signaux": {
+       "adresse": "u30@dom0.fr des deux côtés",
+       "societe": "même société : « societe 2 »"
+      }
+     },
+     {
+      "a": "g070",
+      "b": "g110",
+      "signaux": {
+       "adresse": "u30@dom0.fr des deux côtés",
+       "societe": "même société : « societe 2 »"
+      }
+     },
+     {
+      "a": "g030",
+      "b": "g048",
+      "signaux": {
+       "site": "même site : site8.fr"
+      }
+     },
+     {
+      "a": "g032",
+      "b": "g072",
+      "signaux": {
+       "adresse": "u32@dom2.fr des deux côtés",
+       "tel": "même numéro, …5552"
+      }
+     },
+     {
+      "a": "g032",
+      "b": "g112",
+      "signaux": {
+       "adresse": "u32@dom2.fr des deux côtés",
+       "tel": "même numéro, …5552"
+      }
+     },
+     {
+      "a": "g072",
+      "b": "g112",
+      "signaux": {
+       "adresse": "u32@dom2.fr des deux côtés",
+       "tel": "même numéro, …5552"
+      }
+     },
+     {
+      "a": "g034",
+      "b": "g074",
+      "signaux": {
+       "adresse": "u34@dom4.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g034",
+      "b": "g114",
+      "signaux": {
+       "adresse": "u34@dom4.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g074",
+      "b": "g114",
+      "signaux": {
+       "adresse": "u34@dom4.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g036",
+      "b": "g076",
+      "signaux": {
+       "adresse": "u36@dom1.fr des deux côtés",
+       "tel": "même numéro, …9996"
+      }
+     },
+     {
+      "a": "g036",
+      "b": "g116",
+      "signaux": {
+       "adresse": "u36@dom1.fr des deux côtés",
+       "tel": "même numéro, …9996"
+      }
+     },
+     {
+      "a": "g076",
+      "b": "g116",
+      "signaux": {
+       "adresse": "u36@dom1.fr des deux côtés",
+       "tel": "même numéro, …9996"
+      }
+     },
+     {
+      "a": "g036",
+      "b": "g054",
+      "signaux": {
+       "site": "même site : site3.fr"
+      }
+     },
+     {
+      "a": "g038",
+      "b": "g078",
+      "signaux": {
+       "adresse": "u38@dom3.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g038",
+      "b": "g118",
+      "signaux": {
+       "adresse": "u38@dom3.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g078",
+      "b": "g118",
+      "signaux": {
+       "adresse": "u38@dom3.fr des deux côtés"
+      }
+     },
+     {
+      "a": "g066",
+      "b": "g084",
+      "signaux": {
+       "site": "même site : site4.fr"
+      }
+     },
+     {
+      "a": "g072",
+      "b": "g090",
+      "signaux": {
+       "site": "même site : site10.fr"
+      }
+     },
+     {
+      "a": "g078",
+      "b": "g096",
+      "signaux": {
+       "site": "même site : site5.fr"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "numéro de neuf chiffres exactement (limite : compte)",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "a",
+      "mobile": "",
+      "phone": "612345678",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "b",
+      "mobile": "0 612 345 678",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "origine": "ajouté le 17-10-2026 pour couvrir les bornes des seuils",
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "tel": "même numéro, …5678"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "numéro de huit chiffres (limite : trop court)",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "a",
+      "mobile": "",
+      "phone": "12345678",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "b",
+      "mobile": "",
+      "phone": "12345678",
+      "website": ""
+     }
+    ]
+   },
+   "origine": "ajouté le 17-10-2026 pour couvrir les bornes des seuils",
+   "sortie": {
+    "paires": []
+   }
+  },
+  {
+   "cas": "partie locale de quatre caractères exactement (limite : compte)",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "jean@x.fr"
+      ],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "jean@y.fr"
+      ],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "origine": "ajouté le 17-10-2026 pour couvrir les bornes des seuils",
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "local": "« jean » chez deux domaines"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "partie locale de trois caractères (limite : trop courte)",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "jea@x.fr"
+      ],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "jea@y.fr"
+      ],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "origine": "ajouté le 17-10-2026 pour couvrir les bornes des seuils",
+   "sortie": {
+    "paires": []
+   }
+  },
+  {
+   "cas": "deux fiches seulement partagent le seau (limite basse)",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "p@q.fr"
+      ],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "p@q.fr"
+      ],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "origine": "ajouté le 17-10-2026 pour couvrir les bornes des seuils",
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "adresse": "p@q.fr des deux côtés"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "site en majuscules avec schéma et chemin",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": "HTTP://WWW.Exemple.FR/Page"
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": "exemple.fr/autre"
+     }
+    ]
+   },
+   "origine": "ajouté le 17-10-2026 pour couvrir les bornes des seuils",
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "site": "même site : exemple.fr"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "même nom entre une fiche et plusieurs autres",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "Jean Martin",
+      "emails": [],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "jean  MARTIN",
+      "emails": [],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "Jean Martin SAS",
+      "emails": [],
+      "id": "c",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "origine": "ajouté le 17-10-2026 pour couvrir les bornes des seuils",
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "nom": "« jean martin » une fois le nom normalisé"
+      }
+     },
+     {
+      "a": "a",
+      "b": "c",
+      "signaux": {
+       "nom": "« jean martin » une fois le nom normalisé"
+      }
+     },
+     {
+      "a": "b",
+      "b": "c",
+      "signaux": {
+       "nom": "« jean martin » une fois le nom normalisé"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "adresse avec espaces et majuscules",
+   "entree": {
+    "fiches": [
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "  A@B.FR  "
+      ],
+      "id": "a",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     },
+     {
+      "company": "",
+      "display_name": "",
+      "emails": [
+       "a@b.fr"
+      ],
+      "id": "b",
+      "mobile": "",
+      "phone": "",
+      "website": ""
+     }
+    ]
+   },
+   "origine": "ajouté le 17-10-2026 pour couvrir les bornes des seuils",
+   "sortie": {
+    "paires": [
+     {
+      "a": "a",
+      "b": "b",
+      "signaux": {
+       "adresse": "a@b.fr des deux côtés"
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "contrat": "1.0",
+ "origine": "sorties de signaux() AVANT sa conversion en point d'évolution (17-10-2026) ; données synthétiques",
+ "point": "contacts.signaux"
+}

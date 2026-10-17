@@ -1,0 +1,53 @@
+{
+ "point": "contacts.signaux",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "fiches"
+  ],
+  "properties": {
+   "fiches": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "required": [
+      "id"
+     ]
+    }
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "paires"
+  ],
+  "properties": {
+   "paires": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "required": [
+      "a",
+      "b",
+      "signaux"
+     ],
+     "properties": {
+      "signaux": {
+       "type": "object"
+      }
+     }
+    }
+   }
+  }
+ },
+ "invariants": [
+  "une paire n'apparaît qu'une fois, dans l'ordre (a, b) trié, jamais une fiche avec elle-même",
+  "un seau d'une seule fiche, ou de plus de huit fiches, ne produit aucune paire",
+  "l'adresse est comparée sans casse ni espaces ; le nom sans accents ni forme juridique ; le numéro sur ses neuf derniers chiffres ; le site sans schéma ni « www. »",
+  "une partie locale de moins de quatre caractères, ou vide de sens (info, contact…), ne rapproche personne",
+  "l'ordre des paires rendues est celui de la première rencontre : il ne change pas"
+ ]
+}

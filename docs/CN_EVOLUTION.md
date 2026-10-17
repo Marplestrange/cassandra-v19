@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution V19 — note de conception -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7a8bc5 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d778db ▼▼▼ -->
 # Évolution V19 — note de conception
 
 Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le moteur V18 (diff d'un fichier unique `cassandra.py`), qui n'a plus d'objet.
@@ -183,6 +183,39 @@ Faits relevés : CodeEvolve (Inter&Co + WPI, 152 étoiles, v0.3.1) annonce dépa
 4. Écritures simulées en ombre, vérificateur indépendant pour l'irréversible.
 5. Créer / élaguer / recomposer ; observations vers le noyau.
 6. Écran ; export git et store.
+## 7. État de la construction (17-10-2026)
+
+**Construit, testé, déployé sur Amizo (Linux, suite complète verte) :**
+
+| Pièce | Fichier | Ce qu'elle fait |
+|---|---|---|
+| Points d'évolution | `noyau/CN_points.py` | contrat JSON, résolveur de compatibilité, hôtes d'exécution, disjoncteur (3 fautes en 10 min), **ombre**, **routage par part du trafic** (tranche stable), retour instantané, chargement du texte vérifié sans bytecode |
+| Corpus de rejeu | `noyau/CN_rejeu.py` | les entrées réelles de chaque point, comptées ; **partition réservée** (1 cas sur 5) jamais montrée au générateur ; borne ; cas dorés jamais évincés |
+| Évaluateur | `noyau/CN_evaluateur.py` | équivalence par paliers, gain mesuré à part sur le réservé, **bruit de mesure**, et **auto-test par mutations** (il dit si son corpus est trop faible) |
+| Orchestrateur | `noyau/CN_evolution.py` | cibler (valeur = appels × durée, muet si non mesuré), proposer, écrire l'EC au format universel, ombre, paliers 10/50/100 %, visite à 30 jours, tombes, **chaîne d'empreintes** |
+| Orfan v1 | `orfan/CN_orfan.py` | profil par lignes exécutées, 5 optimisations déterministes (zéro jeton), moteur à modèle (stratège / exécutant), composition ; **ne connaît pas le noyau** |
+| Module Évolution | `modules/evolution/` | cibles, état, proposer, retour, visiter comme capacités (droits, preuve, retour), moteur périodique des paliers, 4 réglages |
+| Pilote | `modules/vue/` | `verdict.composer` est un point d'évolution (référence EC0, façade, contrat, corpus doré de 49 cas) |
+| Outils | `outils/CN_bornes.py`, `CN_entete.py`, `CN_renommer.py` | format universel, versions cohérentes, `--monter`, renommage `CN_` |
+
+**Chiffres mesurés, pas annoncés**
+- Le corpus doré de `vue` attrapait **70 %** des variantes fausses avec 15 cas, **92 %** avec 49 (l'évaluateur l'a dit, on l'a renforcé).
+- Un gain n'est retenu que s'il dépasse 5 % **et** deux fois le bruit de mesure de la machine.
+- Suite complète : 1 441 bancs sur Linux, 0 échec.
+
+**Ce qui est vrai à ce jour, dit sans détour**
+- **Aucune EC n'est en service nulle part.** Tout le mécanisme existe et est éprouvé sur des cas synthétiques et sur `vue`, mais aucun gain réel n'a encore été mesuré en production.
+- Sur Amizo, le corpus de `vue` compte 49 cas dorés pour un minimum de 200 : l'évaluateur répondra « corpus trop étroit » tant que le trafic réel n'aura pas rempli le corpus. C'est voulu.
+- Le moteur **à modèle** n'a été éprouvé qu'avec un faux modèle : il reste à le brancher sur un rôle réel du module Modèles et à mesurer son coût en jetons.
+- Le module Évolution est déployé mais **non activé** sur Amizo : l'activer est un choix de l'administrateur.
+
+**Reste à faire**
+1. Extraire d'autres points (`securite.analyse`, `mesures.moteur`, `fastpanel`, `sensorium`) pour avoir plusieurs cibles réelles.
+2. Activer l'évolution sur Amizo, laisser le corpus se remplir, lancer une vraie proposition.
+3. L'écran Cockpit/Atelier (la maquette) branché sur les capacités du module.
+4. Orfan R&D : génome prompts et politiques, co-évolution, archive par contextes.
+5. EC dans un autre langage (WebAssembly d'abord).
+
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 
 <!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->

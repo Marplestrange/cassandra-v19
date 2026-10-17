@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.1.0  #839438
+# VERSION CN : 0.2.0  #3c03a6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=839438 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=3c03a6 ▼▼▼
 [module]
 id = "contacts"
 nom = "Carnet d'adresses"
-version = "0.1.0"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi."
 confiance = "interne"
@@ -256,3 +256,11 @@ stockage = true
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "signaux"
+libelle = "Le rapprochement des doublons : des fiches en entrée, les paires qui se ressemblent et ce qui les motive en sortie (par seaux, une fonction pure)"
+contrat = "1.0"
+reference = "points/EC_signaux"
+fonction = "signaux"
+runtime = "python"

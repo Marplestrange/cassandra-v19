@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e4fecf
+# VERSION CN : 0.2.0  #d57be2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet d'adresses.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e4fecf ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=d57be2 ▼▼▼
 """Le carnet d'adresses.
 
 Porté de la V18 (`contact_*`, `contacts_*`, vCard, CSV), avec ses leçons :
@@ -149,41 +149,12 @@ def meilleure(a, b):
     return min(a["id"], b["id"])
 
 
-def signaux(fiches):
-    """Tous les rapprochements, paire par paire, avec ce qui les motive. Par SEAUX plutôt que chacun contre chacun : mille fiches feraient un demi-million de comparaisons."""
-    seaux = {}
-
-    def poser(cle, valeur, fid, dit):
-        if valeur:
-            seaux.setdefault((cle, valeur), []).append((fid, dit))
-    for c in fiches:
-        fid = c["id"]
-        for a in c.get("emails") or []:
-            a = a.strip().lower()
-            if not a:
-                continue
-            poser("adresse", a, fid, "%s des deux côtés" % a)
-            loc = a.split("@")[0]
-            if len(loc) >= LOCAL_MIN and loc not in LOCAL_VIDES:
-                poser("local", loc, fid, "« %s » chez deux domaines" % loc)
-        nom = norm_nom(c.get("display_name"))
-        poser("nom", nom, fid, "« %s » une fois le nom normalisé" % nom)
-        tel = norm_tel(c.get("phone")) or norm_tel(c.get("mobile"))
-        poser("tel", tel, fid, "même numéro, …%s" % tel[-4:])
-        soc = norm_nom(c.get("company"))
-        poser("societe", soc, fid, "même société : « %s »" % soc)
-        site = norm_site(c.get("website"))
-        poser("site", site, fid, "même site : %s" % site)
-    paires = {}
-    for (cle, _), lot in seaux.items():
-        if len(lot) < 2 or len(lot) > 8:
-            continue
-        for i in range(len(lot)):
-            for j in range(i + 1, len(lot)):
-                a, b = sorted((lot[i][0], lot[j][0]))
-                if a != b:
-                    paires.setdefault((a, b), {})[cle] = lot[i][1]
-    return paires
+def signaux(fiches, appeler):
+    """Tous les rapprochements, paire par paire, avec ce qui les motive. Le calcul (par SEAUX plutôt que chacun contre chacun) est un POINT D'ÉVOLUTION : points/EC_signaux.py.
+    Cette façade ne transmet que les champs utiles (jamais la photo ni les notes) et rebâtit le dictionnaire {(a, b): {motif: ce qui le dit}}."""
+    champs = ("id", "emails", "display_name", "phone", "mobile", "company", "website")
+    sortie = appeler("signaux", {"fiches": [{k: f.get(k) for k in champs} for f in fiches]})
+    return {(p["a"], p["b"]): p["signaux"] for p in sortie["paires"]}
 
 
 def jumelles(a, b, sig):
@@ -510,7 +481,7 @@ def brancher(ctx):
         par_id = {f["id"]: f for f in fiches}
         ecartees = {(r["a"], r["b"]) for r in db.lire("SELECT a, b FROM pas_doublons WHERE compte=?", (compte,))}
         sortie = {"jumelles": [], "sur": [], "probable": [], "possible": [], "piege": []}
-        for (a, b), sig in signaux(fiches).items():
+        for (a, b), sig in signaux(fiches, ctx.point).items():
             if (a, b) in ecartees:
                 continue
             nom_ok = "nom" in sig
