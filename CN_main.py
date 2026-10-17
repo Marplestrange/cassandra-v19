@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ae5495
+# VERSION CN : 0.1.0  #9bbed3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ae5495 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9bbed3 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import types
 import collections
+import json
 import logging
 import os
 import sys
@@ -56,6 +57,8 @@ from noyau.CN_bus import TOUT, Bus
 from noyau.CN_catalogue import Catalogue
 from noyau.CN_contexte import Contexte
 from noyau.CN_points import ServicePoints
+from noyau.CN_rejeu import Rejeu
+from noyau.CN_evaluateur import Evaluateur
 from noyau.CN_droits import Droits
 from noyau.CN_executeur import Executeur
 from noyau.CN_identite import Identite
@@ -89,6 +92,10 @@ class Noyau:
         self.catalogue = Catalogue(self.base)
         self._donnees = Path(donnees)
         self.points = ServicePoints(self._donnees / "ec", alerte=lambda gid, texte: self.bus.emettre("noyau.point_suspendu", source="noyau", donnees={"point": gid, "texte": texte}))
+        rejeu_cfg = self.config.get("rejeu") or {}
+        self.rejeu = Rejeu(self._donnees / "rejeu.db", max_par_point=int(rejeu_cfg.get("max_par_point", 2000)), actif=bool(rejeu_cfg.get("actif", True)))
+        self.points.enregistreur = self.rejeu.enregistrer           # chaque appel d'un point nourrit le corpus de rejeu (les entrées seulement, sur cette instance)
+        self.evaluateur = Evaluateur(self.points, self.rejeu, minimum=int(rejeu_cfg.get("minimum", 200)))
         self._stockages = {}       # module -> son Stockage, ouvert une fois
         self.droits = Droits(self.base)
         self.reglages = Reglages(self.base, Path(donnees) / "secrets.cle")      # la clé qui chiffre les secrets, à part de la base
@@ -137,6 +144,13 @@ class Noyau:
         if m.points_evolution:
             for defaut in self.points.declarer(m, Path(m.source).parent):
                 log.warning("point d'évolution écarté : %s", defaut)
+            for p in m.points_evolution:                                 # le corpus doré du dépôt est le premier rejeu : jamais évincé
+                corpus = Path(m.source).parent / "contrats" / ("CN_%s.corpus.json" % p.id.replace(".", "_"))
+                if corpus.exists():
+                    try:
+                        self.rejeu.importer("%s.%s" % (m.id, p.id), json.loads(corpus.read_text(encoding="utf-8")).get("cas", []), "dore")
+                    except (OSError, ValueError) as ex:
+                        log.warning("corpus doré illisible (%s) : %s", corpus.name, ex)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
                        {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
                         "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine, "point": self.points.appeler,

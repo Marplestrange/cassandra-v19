@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #42712f
+# VERSION CN : 0.1.0  #5b2cd3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=42712f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5b2cd3 ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -225,6 +225,14 @@ class ServicePoints:
 
     def points(self, module: str | None = None) -> list:
         return sorted(g for g, d in self._points.items() if module is None or d.module == module)
+
+    def reference(self, module: str, point: str) -> dict:
+        """Ce que l'évaluateur compare à un candidat : le fichier de la référence, sa fonction, son contrat, et l'appelable de la référence (la spécification)."""
+        d = self._points.get("%s.%s" % (module, point))
+        if d is None:
+            raise PointInconnu("%s.%s" % (module, point))
+        return {"gid": d.gid, "fichier": d.reference, "fonction": d.p.fonction, "runtime": d.p.runtime, "contrat": d.contrat, "version_contrat": d.p.contrat,
+                "appelable": self._executer(d, d.reference, d.p.runtime)}
 
     # ── le stock : l'EC en service ───────────────────────────────────────
     def _dossier_stock(self, d: _Declare):
