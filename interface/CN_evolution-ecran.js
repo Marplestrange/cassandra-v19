@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #0887cc
+// VERSION CN : 0.2.0  #ab6fa8
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=0887cc ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=ab6fa8 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ». */
 (function () {
@@ -164,7 +164,7 @@
 
     function entete() {
       const ch = S.etat.chaine || {};
-      return '<div class="entete"><div><h1>Évolution</h1><div class="note mono">' + (S.etat.cibles || []).length + " points déclarés · " + tousVivants().length + " pièces vivantes · " + (S.versions.evolution ? "module " + esc(S.versions.evolution) : "") + '</div></div>' +
+      return '<div class="entete"><div><div class="note mono">' + (S.etat.cibles || []).length + " points déclarés · " + tousVivants().length + " pièces vivantes · " + (S.versions.evolution ? "module " + esc(S.versions.evolution) : "") + '</div></div>' +
         '<div class="d">' + puce(ch.ok ? "chaîne scellée · " + (ch.mailles || 0) + " maillons ✓" : "chaîne ROMPUE à la maille " + ch.rupture_a, ch.ok ? "ok" : "dg") +
         '<button class="btn" data-a="tiroir">Moteur : ' + esc(S.moteur) + ' ▾</button><button class="btn" data-a="actualiser">Actualiser</button></div></div>' +
         '<nav class="verre vues"><button data-vue="cockpit" class="' + (S.vue === "cockpit" ? "on" : "") + '">Cockpit</button><button data-vue="atelier" class="' + (S.vue === "atelier" ? "on" : "") + '">Atelier</button></nav>';
