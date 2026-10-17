@@ -68,16 +68,15 @@ Module `[[moteurs]]` enfichable, interface étroite : « une capacité, un contr
 
 Faits relevés : CodeEvolve (Inter&Co + WPI, 152 étoiles, v0.3.1) annonce dépasser OpenEvolve et ShinkaEvolve sur 6 problèmes sur 9 (ses propres chiffres), méta-prompts, CVT-MAP-Elites, diffs SEARCH/REPLACE ; réserves : Python ≥ 3.13.5, dépendances lourdes, six mois sans push. GEPA (MIT, 7 020 étoiles) évolue prompts et politiques d'agents par réflexion sur les traces et frontière de Pareto. GigaEvo (AIRI, 24 étoiles, ≥ 3.12, dernier push 11-2025) : écarté. FrugalEvo : article seul (stratège fort + exécutant économe), pas de dépôt trouvé.
 
-**Orfan, moteur hybride natif** — trois génomes dans une seule boucle, un seul budget, un seul rejeu :
-1. **Code** : diffs entre marqueurs ; mutations déterministes gratuites d'abord (mémoïser une fonction pure, invariant sorti d'une boucle, liste → ensemble) ; profil de l'appel donné au mutateur.
-2. **Prompts** : prompts d'agents et prompt du mutateur lui-même ; réflexion sur les traces d'exécution et frontière de Pareto (esprit GEPA, réécrit).
-3. **Politiques** : seuils du Sensorium, règles de la Proactivité ; recherche locale sans modèle sur les acquittements réels.
-4. **Co-évolution** prompt ↔ code : un prompt qui engendre des tombes est puni, un qui engendre des gains est gardé.
-5. **Stratège et exécutant** (idée FrugalEvo) : un modèle fort propose, un modèle économe implémente ; palier choisi au rendement.
-6. **Évaluation par paliers** (5 %, 25 %, 100 % du rejeu), filtre avant évaluation (signature, imports, réseau), doublons écartés par arbre syntaxique, tombes comprises.
-7. **Archive sur le contexte réel** (petit/gros compte, pointe, panneau lent).
-8. **Reprise sur incident** (état en base, chaîne d'empreintes).
-Python standard seulement, dans le Python du noyau, en cage. Sa valeur se mesure par la course des moteurs ; s'il ne gagne pas, la comparaison le montre.
+**Orfan est un projet à part entière** (dépôt, banc et feuille de route propres, avec une vraie R&D). Cassandra ne le connaît que par le contrat d'adaptateur : « une capacité, un contrat de rejeu, un budget → des variantes classées ». Aucune intégration externe : bibliothèque standard seulement.
+
+**Orfan v1 = le moteur de la V18, amélioré, pour les modules.** Livré avec Cassandra :
+- pièce = diff + hypothèse (gain chiffré, équivalence prouvée) + test rouge-vert + empreinte + verdict calculé (jamais « neutre ») ;
+- chaîne d'empreintes partagée, rupture = arrêt ; tombes et leçons ; retour arrière par pièce inverse après vérification ;
+- périmètre par propriété, veto d'un vérificateur indépendant, bulletin, visite à J+30 ;
+- **améliorations** : unité = le module (diff sur son dossier) ; cibles prises dans le trafic réel (la V18 avait 67 pièces sur 231 sur du code mort) ; équivalence prouvée par le **rejeu** en plus du test ; évaluation **par paliers** (5 %, 25 %, 100 %) et arrêt à la première divergence ; filtre avant évaluation (signature, imports, réseau) ; doublons écartés par empreinte d'arbre syntaxique, tombes comprises ; reprise sur incident ; mutateur pris dans le registre de modèles.
+
+**Orfan R&D (hors v1, dans son projet)** : génome prompts (réflexion sur les traces, frontière de Pareto, esprit GEPA), génome politiques (seuils du Sensorium, règles de la Proactivité, recherche locale sans modèle), co-évolution prompt ↔ code, stratège fort + exécutant économe (idée FrugalEvo), archive dont les cases sont les contextes réels, fossilisation des décisions de modèle, mutations déterministes gratuites. Chaque chantier se juge par la course des moteurs ; rien n'est annoncé avant d'être mesuré.
 
 ## 5. Risques et limites
 
