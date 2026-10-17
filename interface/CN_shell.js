@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #62ec3f
+// VERSION CN : 0.1.0  #518b8f
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=62ec3f ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=518b8f ▼▼▼
 /* Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 
    1. Les THÈMES : un module livre un thème complet ([[habillages]] : des variables CSS). Il apparaît dans le sélecteur d'apparence,
@@ -175,7 +175,7 @@
   async function remplacerV18(onglet, mid) {
     const racine = document.getElementById("tab-" + onglet), dessin = (CASS.sceneSurMesure || {})[mid];
     if (!racine || !dessin) return;
-    racine.innerHTML = '<div class="sh-scene"><h2 class="sh-titre">' + esc(onglet === "evolution" ? "Évolution" : onglet) + '</h2><div class="sh-corps"></div></div>';
+    racine.innerHTML = '<div class="sh-scene"><h2 class="sh-titre">' + esc(onglet === "evolution" ? "Évolution" : onglet) + '</h2>' + (onglet === "evolution" ? '<p class="sh-legende">Ce que Cassandra améliore par elle-même, ce que le noyau a prouvé, et ce qu&#39;elle met en service seule.</p>' : "") + '<div class="sh-corps"></div></div>';
     try {
       const moi = CASS.moi || (CASS.moi = await (await fetch("/api/moi", { headers: { "X-Session-Token": token() } })).json());
       await dessin(racine.querySelector(".sh-corps"), { ecran: mid + ":cockpit", moi: moi });

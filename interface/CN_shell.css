@@ -12,9 +12,10 @@
 /* RÔLE       : shell.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=1771d4 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=10571b ▼▼▼ */
 /* Le squelette : scène générique des modules. Rien que les jetons de la V18 (--surface, --line, --txt…), pour que tout thème la reprenne. */
 .sh-scene { padding: 20px 24px 40px; max-width: 1180px; }
+.sh-titre + .sh-legende { margin: -12px 0 16px; font-size: 11px; color: var(--txt-faint); }
 .sh-titre { margin: 0 0 16px; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; color: var(--txt-strong); letter-spacing: .05em; }
 .sh-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; align-items: stretch; }
 .sh-tuile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow-glass); min-width: 0; }
