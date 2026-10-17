@@ -1,7 +1,7 @@
 # Bornes du code : nexus et points d'évolution
 
 Statut : conception (17-10-2026) + audit chiffré de l'existant. Rien n'est encore refactoré.
-Complète `docs/EVOLUTION.md` (§2 ter à 2 sexies) : là-bas, le principe ; ici, **comment le code est découpé et borné fichier par fichier**.
+**À lire après `docs/NEXUS.md`** (ce qu'est le nexus et la liste des intouchables). Complète `docs/EVOLUTION.md` (§2 ter à 2 sexies) : là-bas, le principe ; ici, **comment le code est découpé et borné fichier par fichier**.
 
 ## 1. Principe
 
