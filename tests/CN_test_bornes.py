@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ad3ed9
+# VERSION CN : 0.1.0  #47df84
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'outil de bornes : détection des marqueurs, pureté d'une EC, conformité d'un fichier, scellement des empreintes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ad3ed9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=47df84 ▼▼▼
 """Bancs de l'outil de bornes : détection des marqueurs, pureté d'une EC, conformité d'un fichier, scellement des empreintes."""
 import shutil
 import sys
@@ -196,6 +196,20 @@ class Scellement(unittest.TestCase):
         (self.tmp / "CN_a.py").write_text(t, encoding="utf-8", newline="\n")
         self.assertTrue(any("empreinte à recalculer" in i for i in B.analyser("CN_a.py")["infos"]))
         self.assertFalse(any("empreinte à recalculer" in i for i in avant))
+
+
+class SansGit(unittest.TestCase):
+    def test_sans_git_ce_que_git_ignorerait_n_est_pas_liste(self):
+        """Sur une machine où le dépôt arrive par tar (pas de .git), `node_modules` et `__pycache__` ne sont pas des fichiers du projet."""
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp, True)
+        for chemin in ("CN_a.py", "modules/x/CN_b.py", "outils/ui/node_modules/lib/index.js", "modules/x/__pycache__/b.pyc"):
+            f = tmp / chemin
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text("x", encoding="utf-8")
+        ancienne, B.RACINE = B.RACINE, tmp
+        self.addCleanup(setattr, B, "RACINE", ancienne)
+        self.assertEqual(sorted(B.fichiers_suivis()), ["CN_a.py", "modules/x/CN_b.py"])
 
 
 if __name__ == "__main__":

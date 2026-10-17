@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7b80c0
+# VERSION CN : 0.1.0  #5ef81c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7b80c0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5ef81c ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -374,6 +374,7 @@ class ServicePoints:
             if s is not None and (s / "SUSPENDUE.json").exists():
                 (s / "SUSPENDUE.json").unlink()
             self._verifiees.clear()
+            self._hotes.clear()                              # un hôte garde le fichier chargé : une EC réécrite sous le même nom, dans la même fraction de seconde, ne doit pas servir l'ancienne
         return True
 
     def etat(self, module: str, point: str) -> dict:

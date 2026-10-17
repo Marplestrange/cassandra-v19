@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fb9c5d
+# VERSION CN : 0.1.0  #325d5a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : lit tous les fichiers suivis par git et dit s'ils respectent docs/CN_FORMAT.md (nom, en-tête, bornes, pureté des EC).
 # MÉTHODE    : analyse textuelle et arbre syntaxique Python ; mode audit par défaut (rien ne bloque), --strict pour l'intégration continue.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fb9c5d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=325d5a ▼▼▼
 """Outil de bornes. Usage :
     python outils/CN_bornes.py                 audit de tout le dépôt (résumé par module)
     python outils/CN_bornes.py --module vue    un seul module
@@ -52,7 +52,7 @@ STDLIB_PURE = {"__future__", "math", "re", "json", "itertools", "functools", "co
                "struct", "ec_api", "abc", "numbers"}
 NOMS_INTERDITS = {"ctx", "self", "cls", "open", "print", "input", "exec", "eval", "__import__", "compile", "globals", "locals"}
 INDICES_DECISIFS = ("verif", "signature", "droit", "secret", "mdp", "password", "token", "jeton", "auth", "permission", "autoris", "chiffr", "empreinte", "hash")
-IGNORER_DOSSIERS = {".git", "__pycache__", "brouillons", "donnees"}
+IGNORER_DOSSIERS = {".git", "__pycache__", "brouillons", "donnees", "node_modules", ".venv", "venv", ".pytest_cache"}      # sans git (le dépôt arrive par tar), ce que git ignorerait
 
 RE_CHAMP = re.compile(r"^\s*(?:#|//|--|/\*|<!--|\*)?\s*(" + "|".join(re.escape(c) for c in CHAMPS + ("EC LIÉES", "HÔTE CN", "NEXUS VISÉ", "CONTRAT PROUVÉ", "RUNTIME")) + r")\s*:\s*(.*?)\s*(?:-->|\*/)?\s*$")
 RE_BORNE_CN = re.compile(r"BORNE CN version=(\S+) empreinte=([0-9a-f]+)")
