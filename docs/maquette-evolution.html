@@ -344,6 +344,13 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <button class="opt on" data-moteur="OpenEvolve"><b class="mono">OpenEvolve</b><span class="note">Apache-2.0 · bibliothèque Python · îlots, MAP-Elites, multi-objectifs, évaluation parallèle. Défaut.</span><span class="puce ok">actif, 7,5 k étoiles</span></button>
     <button class="opt" data-moteur="ShinkaEvolve"><b class="mono">ShinkaEvolve</b><span class="note">Apache-2.0 · sobre en essais · modèles locaux · mutation par agent en ligne de commande. Pour un budget serré.</span><span class="puce ok">actif, 1,4 k étoiles</span></button>
   </div>
+  <div class="choix">
+    <button class="opt" data-moteur="CodeEvolve"><b class="mono">CodeEvolve</b><span class="note">algorithme génétique en îlots · essayé avec des modèles ouverts. À vérifier avant inscription.</span><span class="puce al">à valider</span></button>
+    <button class="opt" data-moteur="Natif Cassandra"><b class="mono">Natif Cassandra</b><span class="note">boucle minimale écrite par nous : muter, évaluer, garder. Aucune dépendance, tourne partout.</span><span class="puce ok">sans installation</span></button>
+  </div>
+  <div class="champ"><span class="lib">Moteur par module</span><select><option>fastpanel : OpenEvolve</option><option>vue : ShinkaEvolve</option><option>securite : Natif Cassandra</option></select></div>
+  <div class="champ"><span class="lib">Course des moteurs</span><label class="note"><input type="checkbox" checked> confier la même capacité à deux moteurs sur le même rejeu ; garder le meilleur gain par jeton</label></div>
+  <div class="champ"><span class="lib">Moteur maison</span><input type="text" value="tout moteur qui passe le banc de conformité peut être branché" disabled></div>
   <div class="note">Le moteur tourne dans son propre processus, en cage, sans réseau. Il ne rend que des candidats : l'évaluation, la mise en ombre et la promotion restent à l'étage Cassandra.</div>
   <div class="champ"><span class="lib">Mutateur</span><select><option>cc-sonnet (registre de modèles)</option><option>cc-haiku</option><option>modèle local qwen3:4b-instruct</option></select></div>
   <div class="champ"><span class="lib">Évaluateur</span><input type="text" value="code déterministe : rejeu + mesures déclarées" disabled></div>
