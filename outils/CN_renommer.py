@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5664e0
+# VERSION CN : 0.1.0  #64fdfe
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : donne le préfixe CN_ à chaque fichier suivi (hors noms imposés de l'extérieur) et réécrit toutes les références.
 # MÉTHODE    : plan complet d'abord ; imports Python réécrits par l'arbre syntaxique (alias gardé : le corps du code ne change pas) ; chaînes réécrites par règles ; contrôle des résidus.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5664e0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=64fdfe ▼▼▼
 """Renommage atomique (docs/FORMAT.md §3 bis et §8). Usage :
     python outils/CN_renommer.py                         SIMULATION : plan, nombre de références réécrites par règle, résidus ; n'écrit rien
     python outils/CN_renommer.py --racine DOSSIER        travaille sur une copie du dépôt (à essayer d'abord)
@@ -103,7 +103,7 @@ class Reecriture:
     def __init__(self, racine: Path, carte: dict[str, str]):
         self.racine, self.carte = racine, carte
         self.py = {c: n for c, n in carte.items() if c.endswith(".py")}
-        self.dotted = {dotted(c): dotted(n) for c, n in self.py.items()}
+        self.dotted = {dotted(c): dotted(n) for c, n in self.py.items() if "." in dotted(c)}      # un nom à un seul segment (« main ») est un mot de la prose : seuls les imports le réécrivent
         stems: dict[str, list[str]] = {}
         for c in self.py:
             stems.setdefault(Path(c).stem, []).append(c)
@@ -204,7 +204,7 @@ class Reecriture:
         if chemin.startswith(SERVIS) and chemin.endswith((".js", ".css", ".html")):
             return source                                  # servis : les URL gardent leur nom, le serveur retire le préfixe
         s = source
-        if self.re_libres and not est_qualifie(chemin):
+        if self.re_libres:                                 # le contenu d'une unité ou d'un programme racine référence bien des fichiers du dépôt (main.py) : ses propres noms, eux, ne sont pas dans cette liste
             s, k = self.re_libres.subn(lambda m: self.libres[m.group(1)], s)
             self._n("noms avec extension", k)
         if self.re_qualifies:
