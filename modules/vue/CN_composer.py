@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : vue
 # ZONE       : CN
-# VERSION CN : 0.1.0  #cbef68
+# VERSION CN : 0.2.0  #cbef68
 # VERSION EC : néant
 # EC LIÉES   : verdict.composer @1.0 -> points/EC_verdict_composer.*
 # RÔLE       : reçoit les relevés des sources, appelle le point d'évolution `verdict.composer`, rend le verdict.
 # MÉTHODE    : met les arguments en données (admin, compte, sources, quand) et passe par le noyau (ctx.point), qui valide le contrat et sert l'EC ou la référence.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=cbef68 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=cbef68 ▼▼▼
 """La composition de la vue d'ensemble : la FAÇADE du point d'évolution `verdict.composer`.
 
 Le calcul (une fonction PURE) vit dans points/EC_verdict_composer.* : la référence du dépôt, qu'une EC peut remplacer, dans n'importe quel format.

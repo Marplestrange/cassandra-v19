@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.1.0)  #a9d7c7
+# VERSION EC : EC0 (référence 0.2.0)  #a9d7c7
 # HÔTE CN    : CN_composer.py · verdict.composer @1.0
 # RÔLE       : transforme les relevés de toutes les sources en un verdict, des compteurs et les gestes à faire.
 # MÉTHODE    : fonction pure ; une source muette n'est jamais « stable » ; la première panne est citée ; une machine attendue hors ligne est une panne.

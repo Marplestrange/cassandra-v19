@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ac2991
+# VERSION CN : 0.1.0  #393867
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : lit tous les fichiers suivis par git et dit s'ils respectent docs/CN_FORMAT.md (nom, en-tête, bornes, pureté des EC).
 # MÉTHODE    : analyse textuelle et arbre syntaxique Python ; mode audit par défaut (rien ne bloque), --strict pour l'intégration continue.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ac2991 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=393867 ▼▼▼
 """Outil de bornes. Usage :
     python outils/CN_bornes.py                 audit de tout le dépôt (résumé par module)
     python outils/CN_bornes.py --module vue    un seul module
@@ -21,6 +21,7 @@
     python outils/CN_bornes.py --json          sortie lisible par un programme
     python outils/CN_bornes.py --strict        code de sortie 1 s'il reste des erreurs (intégration continue)
     python outils/CN_bornes.py --sceller [F]   recalcule et écrit les empreintes (un fichier, ou tous)
+    python outils/CN_bornes.py --monter M V    monte la version du module M à V partout (manifeste, en-têtes, marqueurs), puis scelle
 Le mode par défaut est l'AUDIT : il informe, il ne bloque rien.
 """
 from __future__ import annotations
@@ -195,6 +196,13 @@ def analyser(chemin: str) -> dict:
     for b in bornes:
         if zone in ("CN", "EC") and b["type"] != zone:
             r["erreurs"].append(f"borne {b['type']} dans un fichier de ZONE {zone}")
+        if b["type"] == "CN":                                    # la version dit la même chose partout : en-tête, marqueur, manifeste du module
+            v_tete = champs.get("VERSION CN", "").split()[0] if champs.get("VERSION CN", "").split() else ""
+            if v_tete and v_tete != "néant" and v_tete != b["m"][0]:
+                r["erreurs"].append("version : l'en-tête dit %s, le marqueur de borne %s" % (v_tete, b["m"][0]))
+            v_mod = version_du_module(module_de(chemin)) if chemin.startswith("modules/") else None
+            if v_mod and v_tete and v_tete != "néant" and v_tete != v_mod:
+                r["erreurs"].append("version : le fichier dit %s, le manifeste du module %s (python outils/CN_bornes.py --monter MODULE VERSION)" % (v_tete, v_mod))
         calc = empreinte(b["corps"])
         declaree = b["m"][1] if b["type"] == "CN" else b["m"][3]
         if declaree != calc:
@@ -321,6 +329,47 @@ def afficher(a: dict, detail: bool = False) -> None:
                 print(f"   point possible : {nom} ({n} l.){' — semble décisive' if dec else ''}")
 
 
+def version_du_module(module: str) -> str | None:
+    """La version dépôt du module, lue dans son manifeste."""
+    for nom in ("CN_manifeste.toml", "manifeste.toml"):
+        f = RACINE / "modules" / module / nom
+        if f.exists():
+            m = re.search(r'^version\s*=\s*"([^"]+)"', f.read_text(encoding="utf-8"), re.M)
+            if m:
+                return m.group(1)
+    return None
+
+
+def monter(module: str, version: str) -> list:
+    """Monte la version d'un module PARTOUT d'un seul geste : manifeste, en-tête et marqueur de chaque fichier CN, mention de la référence des points ; puis scelle.
+    Rend la liste des fichiers modifiés. Une version se monte quand le contenu du module change (le déploiement le rappelle)."""
+    ancienne = version_du_module(module)
+    if not ancienne:
+        raise ValueError("module introuvable : " + module)
+    if not re.match(r"^\d+\.\d+\.\d+$", version):
+        raise ValueError("version « majeure.mineure.correctif », ex. 0.2.0")
+    modifies = []
+    dossier = RACINE / "modules" / module
+    for f in sorted(dossier.rglob("*")):
+        if not f.is_file() or "__pycache__" in f.parts:
+            continue
+        texte = f.read_text(encoding="utf-8") if f.suffix in COMMENTAIRE or f.suffix == ".borne" else None
+        if texte is None:
+            continue
+        neuf = texte
+        if f.name in ("CN_manifeste.toml", "manifeste.toml"):
+            neuf = re.sub(r'^version\s*=\s*"[^"]+"', 'version = "%s"' % version, neuf, count=1, flags=re.M)
+        neuf = re.sub(r"(VERSION CN\s*:\s*)" + re.escape(ancienne), lambda m: m.group(1) + version, neuf)
+        neuf = re.sub(r"(BORNE CN version=)" + re.escape(ancienne), lambda m: m.group(1) + version, neuf)
+        neuf = neuf.replace("(référence %s)" % ancienne, "(référence %s)" % version)
+        if neuf != texte:
+            f.write_text(neuf, encoding="utf-8", newline="\n")
+            modifies.append(str(f.relative_to(RACINE)).replace(os.sep, "/"))
+    for c in modifies:
+        sceller(c)
+    return modifies
+
+
 def sceller(chemin: str) -> bool:
     """Recalcule l'empreinte de la borne et l'écrit dans le marqueur et dans l'en-tête. Rend True si le fichier a changé."""
     texte = lire(chemin)
@@ -352,6 +401,11 @@ def principal(argv: list[str]) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     args = argv[1:]
+    if "--monter" in args:
+        i = args.index("--monter")
+        mods = monter(args[i + 1], args[i + 2])
+        print("%d fichier(s) mis à la version %s" % (len(mods), args[i + 2]))
+        return 0
     if "--sceller" in args:
         cibles = [args[args.index("--sceller") + 1]] if args.index("--sceller") + 1 < len(args) and not args[args.index("--sceller") + 1].startswith("--") else [c for c in fichiers_suivis() if (RACINE / c).is_file()]
         n = sum(1 for c in cibles if sceller(c))

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #47df84
+# VERSION CN : 0.1.0  #07fc60
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'outil de bornes : détection des marqueurs, pureté d'une EC, conformité d'un fichier, scellement des empreintes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=47df84 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=07fc60 ▼▼▼
 """Bancs de l'outil de bornes : détection des marqueurs, pureté d'une EC, conformité d'un fichier, scellement des empreintes."""
 import shutil
 import sys
@@ -196,6 +196,49 @@ class Scellement(unittest.TestCase):
         (self.tmp / "CN_a.py").write_text(t, encoding="utf-8", newline="\n")
         self.assertTrue(any("empreinte à recalculer" in i for i in B.analyser("CN_a.py")["infos"]))
         self.assertFalse(any("empreinte à recalculer" in i for i in avant))
+
+
+class Versions(unittest.TestCase):
+    """La version dit la même chose partout, et se monte d'un seul geste."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        ancienne, B.RACINE = B.RACINE, self.tmp
+        self.addCleanup(setattr, B, "RACINE", ancienne)
+        d = self.tmp / "modules" / "essai"
+        d.mkdir(parents=True)
+        (d / "CN_manifeste.toml").write_text('[module]\nid = "essai"\nversion = "0.1.0"\n', encoding="utf-8")
+        corps = fichier_cn().replace("0.1.0  #000000", "0.1.0  #000000")
+        (d / "CN_a.py").write_text(corps, encoding="utf-8", newline="\n")
+        B.sceller("modules/essai/CN_a.py")
+
+    def test_un_fichier_qui_dit_autre_chose_que_le_manifeste_est_signale(self):
+        self.assertEqual(B.analyser("modules/essai/CN_a.py")["erreurs"], [])
+        (self.tmp / "modules" / "essai" / "CN_manifeste.toml").write_text('[module]\nid = "essai"\nversion = "0.2.0"\n', encoding="utf-8")
+        self.assertTrue(any("le manifeste du module 0.2.0" in e for e in B.analyser("modules/essai/CN_a.py")["erreurs"]))
+
+    def test_un_marqueur_qui_dit_autre_chose_que_l_en_tete_est_signale(self):
+        p = self.tmp / "modules" / "essai" / "CN_a.py"
+        p.write_text(p.read_text(encoding="utf-8").replace("BORNE CN version=0.1.0", "BORNE CN version=9.9.9"), encoding="utf-8", newline="\n")
+        self.assertTrue(any("le marqueur de borne 9.9.9" in e for e in B.analyser("modules/essai/CN_a.py")["erreurs"]))
+
+    def test_monter_met_tout_a_jour_et_rend_le_module_conforme(self):
+        modifies = B.monter("essai", "0.2.0")
+        self.assertIn("modules/essai/CN_manifeste.toml", modifies)
+        self.assertIn("modules/essai/CN_a.py", modifies)
+        self.assertEqual(B.version_du_module("essai"), "0.2.0")
+        t = (self.tmp / "modules" / "essai" / "CN_a.py").read_text(encoding="utf-8")
+        self.assertIn("VERSION CN : 0.2.0", t)
+        self.assertIn("BORNE CN version=0.2.0", t)
+        self.assertEqual(B.analyser("modules/essai/CN_a.py")["erreurs"], [])
+        self.assertEqual([i for i in B.analyser("modules/essai/CN_a.py")["infos"] if "empreinte" in i], [])
+
+    def test_une_version_mal_formee_ou_un_module_inconnu_est_refuse(self):
+        with self.assertRaises(ValueError):
+            B.monter("essai", "2")
+        with self.assertRaises(ValueError):
+            B.monter("absent", "1.0.0")
 
 
 class SansGit(unittest.TestCase):
