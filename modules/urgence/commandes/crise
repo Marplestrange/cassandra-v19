@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""Les mesures de la crise automatique, EN LECTURE SEULE, à root. Usage : crise mesurer <json>  ->  une ligne de JSON.
+Entrée : {"services": ["nginx", ...], "fenetre_min": 10}. Sortie : {"ok": true, "services": {nom: {"enabled", "active"}}, "adresses": [...] | null}.
+Rien n'est modifié ; chaque nom est validé (jamais un shell) ; une mesure qui échoue vaut null — jamais « tout va bien »."""
+import json
+import re
+import shutil
+import subprocess
+import sys
+
+RE_NOM = re.compile(r"^[A-Za-z0-9@._-]{1,60}$")
+
+
+def run(cmd, timeout=20):
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, errors="replace")
+        return r.returncode, (r.stdout or "").strip()
+    except Exception:
+        return None, ""
+
+
+def service(nom):
+    """{enabled, active} d'une unité, ou None si elle n'existe pas sur cette machine."""
+    rc, e = run(["systemctl", "is-enabled", nom + ".service"], 10)
+    if rc is None or e in ("", "not-found") or "No such file" in e:
+        return None
+    active = run(["systemctl", "is-active", nom + ".service"], 10)[1] == "active"
+    return {"enabled": e not in ("disabled", "masked", "not-found"), "active": active}
+
+
+def adresses(fenetre_min):
+    """Les adresses distinctes des alertes CrowdSec de la fenêtre ; null si CrowdSec est absent ou n'a pas répondu."""
+    if not shutil.which("cscli"):
+        return None
+    rc, t = run(["cscli", "alerts", "list", "--since", "%dm" % fenetre_min, "--limit", "0", "-o", "json"], 60)
+    if rc != 0:
+        return None
+    try:
+        alertes = json.loads(t or "null") or []
+    except ValueError:
+        return None
+    return sorted({str((a.get("source") or {}).get("value") or "") for a in alertes if (a.get("source") or {}).get("value")})
+
+
+def main(argv):
+    if len(argv) < 3 or argv[1] != "mesurer":
+        print(json.dumps({"ok": False, "erreur": "usage : crise mesurer <json>"}))
+        return 1
+    try:
+        a = json.loads(argv[2])
+        noms = [str(x) for x in (a.get("services") or [])][:30]
+        fenetre = max(2, min(120, int(a.get("fenetre_min") or 10)))
+        if not all(RE_NOM.match(n) for n in noms):
+            raise ValueError
+    except (ValueError, TypeError, AttributeError):
+        print(json.dumps({"ok": False, "erreur": "arguments illisibles"}))
+        return 1
+    svc = {n: service(n) for n in noms}
+    print(json.dumps({"ok": True, "services": {n: s for n, s in svc.items() if s}, "adresses": adresses(fenetre)}, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

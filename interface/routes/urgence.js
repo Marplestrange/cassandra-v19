@@ -14,5 +14,11 @@
   });
   P("/api/urgence/lever", "urgence.lever", { args: () => ({}), sortie: (x) => ok({ defaits: x.defaits }) });
   P("/api/urgence/confirmer", "urgence.confirmer", { args: (r) => ({ minutes: +(r.body.minutes || 240) }), sortie: (x) => ok({ fin: x.fin }) });
-  P("/api/urgence/crise-lever", "urgence.crise_lever", { args: () => ({}), sortie: ok });
+  // Lever la crise : l'automatique d'abord (elle ne se lève jamais seule), sinon la crise du noyau.
+  P("/api/urgence/crise-lever", null, {
+    faire: async (req, agir) => {
+      try { return ok(await agir("urgence.crise_auto_lever", { motif: String(req.body.motif || "") })); }
+      catch (e) { if (!/aucune crise automatique/.test(e.message)) throw e; return ok(await agir("urgence.crise_lever", {})); }
+    },
+  });
 })();

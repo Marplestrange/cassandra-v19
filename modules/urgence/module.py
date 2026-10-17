@@ -14,6 +14,8 @@ import json
 import time
 from datetime import datetime, timezone
 
+from . import crise as cr
+
 NIVEAUX = (1, 2, 3)
 
 
@@ -43,6 +45,124 @@ def brancher(ctx):
     def freins():
         return u.freins()
 
+    # ── la crise automatique ──
+    mem = {"etat": {}, "mesure": None, "retenue": None}
+
+    def objet_crise():
+        return ctx.lire("crise", "auto", portee=ctx.TOUT)
+
+    def config():
+        def r(nom, defaut):
+            try:
+                v = ctx.reglage(nom)
+            except Exception:
+                v = None
+            return defaut if v in (None, "") else v
+        return {"actif": bool(r("crise_auto_actif", True)), "palier": r("crise_auto_palier", "raconter"), "part_paralysie": int(r("crise_part_paralysie", 50)) / 100.0,
+                "duree_s": int(r("crise_duree_s", cr.DUREE_S)), "fenetre_min": int(r("crise_fenetre_attaque_min", cr.FENETRE_ATTAQUE_MIN)),
+                "seuil_adresses": int(r("crise_seuil_adresses", cr.SEUIL_ADRESSES)), "confiance": str(r("crise_confiance", "")).replace(",", " ").split(),
+                "services": [x.strip() for x in str(r("crise_services_critiques", ",".join(cr.SERVICES_CRITIQUES))).split(",") if x.strip()]}
+
+    def mesurer_crise(cfg):
+        """(services, sites, adresses) — chacun None si sa mesure a échoué : une mesure qui échoue ne déclenche jamais rien."""
+        services = adresses = sites = None
+        try:
+            r = ctx.racine("crise", ["mesurer", json.dumps({"services": cfg["services"], "fenetre_min": cfg["fenetre_min"]})], delai=90)
+            d = json.loads((r.get("sortie") or "").strip().splitlines()[-1])
+            if r.get("ok") and d.get("ok"):
+                services, adresses = d.get("services") or {}, d.get("adresses")
+        except Exception:
+            pass
+        try:
+            rows = ctx.stockage_lecture("sites").lire("SELECT m.domaine, m.up FROM mesures m JOIN (SELECT domaine, MAX(id) AS i FROM mesures WHERE ts > ? GROUP BY domaine) x ON m.id = x.i",
+                                                      (time.time() - 1800,))
+            sites = [{"up": bool(x["up"])} for x in rows]
+        except Exception:
+            sites = None
+        return services, sites, adresses
+
+    def declencher(raison, types):
+        """Coupe les envois et retient les gestes des agents (sauf ce qui était déjà posé : on ne lève pas ensuite ce qu'on n'a pas posé)."""
+        f = freins()
+        info = {"depuis": time.time(), "raison": raison, "types": types, "par": "cassandra", "envois_pose": False, "gel_pose": False, "calme_dit": False}
+        if "envois" not in f:
+            u.freiner("envois", True, "crise : " + raison, "cassandra")
+            info["envois_pose"] = True
+        if "gel" not in f:
+            u.freiner("gel", True, "crise : " + raison, "cassandra")
+            info["gel_pose"] = True
+        ctx.poser("crise", "auto", "Crise automatique", etat="en_cours", donnees=info)
+        ctx.emettre("crise.declenchee", objet=("crise", "auto"), donnees={"raison": raison, "types": types, "envois_pose": info["envois_pose"], "gel_pose": info["gel_pose"]})
+        return info
+
+    def veille(c):
+        cfg = config()
+        if not cfg["actif"]:
+            return
+        o = objet_crise()
+        mem["etat"]["actif"] = bool(o)
+        if o:
+            mem["etat"]["calme_dit"] = bool((o["donnees"] or {}).get("calme_dit"))
+        services, sites, adresses = mesurer_crise(cfg)
+        ev = cr.evaluer(services, sites, adresses, cfg)
+        mem["mesure"] = {"t": time.time(), "evaluation": ev, "services": None if services is None else len(services), "sites": None if sites is None else len(sites), "adresses": None if adresses is None else len(adresses)}
+        d = cr.decider(ev, mem["etat"], time.time(), cfg)
+        mem["etat"] = d["etat"]
+        act = d["action"]
+        if not act:
+            if not ev["paralysie"] and not ev["attaque"]:
+                mem["retenue"] = None
+            return
+        if act[0] == "declencher":
+            mem["retenue"] = None
+            declencher(act[1], act[2])
+        elif act[0] == "retenir":
+            mem["retenue"] = {"t": time.time(), "raison": act[1], "types": act[2]}
+            ctx.emettre("crise.retenue", objet=("crise", "auto"), donnees={"raison": act[1], "types": act[2], "palier": cfg["palier"]})
+        elif act[0] == "calme" and o:
+            ctx.poser("crise", "auto", o["libelle"], etat=o["etat"], donnees=dict(o["donnees"], calme_dit=True))
+            ctx.emettre("crise.calme", objet=("crise", "auto"), donnees={"depuis_s": int(time.time() - float((o["donnees"] or {}).get("depuis") or time.time()))})
+
+    def det_crise(c):
+        o = objet_crise()
+        if o:
+            d = o["donnees"] or {}
+            return [{"objet": ("crise", "auto"), "titre": "Crise automatique en cours : %s" % d.get("raison", "?"),
+                     "detail": "Les envois sont coupés et les agents n'écrivent plus. %sLevez la crise quand c'est réglé (Sécurité › Défenses)." % ("La situation est revenue au calme. " if d.get("calme_dit") else "")}]
+        r = mem["retenue"]
+        ev = (mem["mesure"] or {}).get("evaluation", {})
+        if r and (ev.get("paralysie") or ev.get("attaque")):              # tant que la cause tient, le constat reste ouvert
+            return [{"objet": ("crise", "auto"), "titre": "Crise détectée, non déclenchée : %s" % r["raison"],
+                     "detail": "Le palier choisi est « raconter » : rien n'est coupé. Passez le réglage « crise_auto_palier » à « auto » pour qu'elle agisse seule, ou confinez à la main."}]
+        return []
+
+    def crise_auto_lever(c, motif=""):
+        o = objet_crise()
+        if not o:
+            raise ValueError("aucune crise automatique en cours")
+        d = o["donnees"] or {}
+        par = ctx.compte or "humain"
+        if d.get("envois_pose"):
+            u.freiner("envois", False, "crise levée", par)
+        if d.get("gel_pose"):
+            u.freiner("gel", False, "crise levée", par)
+        ctx.retirer("crise", "auto")
+        mem["etat"] = {}
+        mem["retenue"] = None
+        ctx.emettre("crise.levee", objet=("crise", "auto"), donnees={"par": par, "motif": " ".join(str(motif or "").split())[:200]})
+        return {"info": d, "motif": str(motif or "")[:200]}
+
+    def prouver_levee_crise(c, res):
+        return objet_crise() is None
+
+    def defaire_levee_crise(c, res):
+        d = res["info"]
+        if d.get("envois_pose"):
+            u.freiner("envois", True, "retour arrière", ctx.compte or "humain")
+        if d.get("gel_pose"):
+            u.freiner("gel", True, "retour arrière", ctx.compte or "humain")
+        ctx.poser("crise", "auto", "Crise automatique", etat="en_cours", donnees=d)
+
     # ── l'état ──
     def etat(c, ip_session=""):
         o = objet_courant()
@@ -62,7 +182,15 @@ def brancher(ctx):
                 conf["lecture_impossible"] = rd["lecture_impossible"]
         f = freins()
         return {"ok": True, "etat": {"gel": "gel" in f, "envois_coupes": "envois" in f, "confine": actif, "confinement": conf,
-                                     "crise": {"actif": bool(u.en_crise())}, "usages": {}}, "ip": ip_session or ""}
+                                     "crise": crise_etat(), "usages": {}}, "ip": ip_session or ""}
+
+    def crise_etat():
+        o = objet_crise()
+        if o:
+            d = o["donnees"] or {}
+            return {"actif": True, "auto": True, "raison": d.get("raison", ""), "types": d.get("types", []), "depuis": minutes_ts(d.get("depuis")), "par": d.get("par", ""),
+                    "calme_dit": bool(d.get("calme_dit")), "envois": bool(d.get("envois_pose")), "gel": bool(d.get("gel_pose"))}
+        return {"actif": bool(u.en_crise()), "auto": False, "retenue": mem["retenue"]["raison"] if mem["retenue"] else ""}
 
     # ── les freins du noyau ──
     def frein(nom):
@@ -230,6 +358,9 @@ def brancher(ctx):
             lever_tout("échéance")
 
     ctx.moteur("echeance", echeance)
+    ctx.moteur("veille", veille)
+    ctx.detecteur("crise", det_crise)
+    ctx.implementer("crise_auto_lever", crise_auto_lever, prouver_levee_crise, defaire_levee_crise)
     ctx.implementer("etat", etat)
     ctx.implementer("geler", geler, prouver_gel, defaire_gel)
     ctx.implementer("couper_envois", couper_envois, prouver_envois, defaire_envois)

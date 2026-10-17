@@ -31,12 +31,16 @@ class FauxConfiner:
         self.appels = []
         self.casse = ""
         self.muet = False
+        self.crise = {"ok": True, "services": {}, "adresses": []}          # ce que répond la mesure de la crise
 
     def demander(self, module, commande, args=(), stdin=None, delai=30):
-        if commande != "confiner":
-            return {"ok": False, "erreur": "commande inconnue"}
         if self.muet:
             return {"ok": False, "erreur": "le courtier ne répond pas", "sortie": ""}
+        if commande == "crise":
+            self.appels.append(("crise", json.loads(args[1])))
+            return {"ok": bool(self.crise.get("ok")), "code": 0, "sortie": json.dumps(self.crise), "erreur": ""}
+        if commande != "confiner":
+            return {"ok": False, "erreur": "commande inconnue"}
         verbe = args[0]
         a = json.loads(args[1]) if len(args) > 1 else {}
         self.appels.append((verbe, a))

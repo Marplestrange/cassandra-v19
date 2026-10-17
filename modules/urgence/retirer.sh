@@ -3,6 +3,6 @@
 set -eu
 p=/usr/libexec/cassandra/urgence/confiner
 [ -x "$p" ] && "$p" lever >/dev/null 2>&1 || true
-rm -f "$p"
+rm -f "$p" /usr/libexec/cassandra/urgence/crise
 rmdir /usr/libexec/cassandra/urgence 2>/dev/null || true
 echo "urgence : commande retirée (confinement levé s'il y en avait un)"
