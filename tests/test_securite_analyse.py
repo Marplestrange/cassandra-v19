@@ -284,6 +284,13 @@ class Verdict(unittest.TestCase):
         self.assertEqual(fam["niveau"], "regarder")
         self.assertIn("impossible", fam["dit"])
 
+    def test_un_confinement_en_cours_se_voit_dans_les_defenses(self):
+        d = an.etat(releves(), "t", confinement={"ok": True, "actif": True, "niveau": 2})
+        f = [x for x in d["verdict"]["familles"] if x["page"] == "defenses"][0]
+        self.assertEqual(f["niveau"], "regarder")
+        self.assertIn("Cassandra confinée", f["dit"])
+        self.assertIn("Cassandra libre", [x for x in an.etat(releves(), "t")["verdict"]["familles"] if x["page"] == "defenses"][0]["dit"])
+
     def test_fail2ban_se_lit(self):
         f = an.fail2ban(releves())
         self.assertTrue(f["actif"])

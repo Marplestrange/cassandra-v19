@@ -1,0 +1,18 @@
+/* Les gestes d'urgence (la cloche et Sécurité › Confiner Cassandra) : /api/urgence/* (V18) -> capacités urgence.* du noyau.
+   Aucun n'est un outil d'agent. L'adresse de la session ne se lit JAMAIS ici : le noyau la prend sur la connexion (ip_session), quoi que l'écran envoie. */
+(function () {
+  const P = (c, cap, o) => CASS.route("POST", c, cap, o);
+  const ok = (x) => Object.assign({ ok: true }, x);
+
+  P("/api/urgence/etat", "urgence.etat", { args: () => ({}), sortie: (x) => x });
+  P("/api/urgence/geler", "urgence.geler", { args: (r) => ({ actif: !!r.body.actif }), sortie: (x) => ok({ actif: x.actif }) });
+  P("/api/urgence/envois", "urgence.couper_envois", { args: (r) => ({ actif: !!r.body.actif }), sortie: (x) => ok({ coupes: x.actif }) });
+  P("/api/urgence/sessions", "urgence.sessions_revoquer", { args: (r) => ({ courant: r.jeton || "" }), sortie: (x) => ok({ revoquees: x.revoquees }) });
+  P("/api/urgence/confiner", "urgence.confiner", {
+    args: (r) => ({ niveau: +r.body.niveau, minutes: +(r.body.minutes || 30), mot: String(r.body.mot || ""), motif: String(r.body.motif || ""), courant: r.jeton || "" }),
+    sortie: (x) => ok({ niveau: x.niveau, fin: x.fin, faites: x.faites, ip: x.ip }),
+  });
+  P("/api/urgence/lever", "urgence.lever", { args: () => ({}), sortie: (x) => ok({ defaits: x.defaits }) });
+  P("/api/urgence/confirmer", "urgence.confirmer", { args: (r) => ({ minutes: +(r.body.minutes || 240) }), sortie: (x) => ok({ fin: x.fin }) });
+  P("/api/urgence/crise-lever", "urgence.crise_lever", { args: () => ({}), sortie: ok });
+})();

@@ -23,13 +23,14 @@ log = logging.getLogger("noyau.executeur")
 
 
 class Executeur:
-    def __init__(self, catalogue, bus, crise, droits=None, identite=None, exiger_compte=False):
+    def __init__(self, catalogue, bus, crise, droits=None, identite=None, exiger_compte=False, freins=None):
         self.identite = identite
         self.exiger_compte = exiger_compte   # vrai en service : un acte SANS compte, ou au nom d'un compte inconnu, est refusé ET surveillé
         self.droits = droits          # le service des droits (noyau/droits.py) ; None : aucun droit n'est vérifié
         self.catalogue = catalogue
         self.bus = bus
         self.crise = crise            # appelable : True quand le noyau est en crise (seule la lecture passe)
+        self.freins = freins          # appelable : l'ensemble des freins posés (« gel » : les agents n'écrivent plus ; « envois » : plus rien ne sort de la maison)
         self.contextes = {}           # module -> Contexte
 
     @staticmethod
@@ -76,6 +77,15 @@ class Executeur:
         if c.ecrit and self.crise():
             self._evt("capacite.refusee", e, acteur, cause, {"raison": "crise : seule la lecture passe"}, compte)
             return {"statut": "refuse", "raison": "le noyau est en crise : seule la lecture passe"}
+
+        if (c.ecrit or c.sortant) and self.freins is not None:
+            freins = self.freins()
+            if "gel" in freins and c.ecrit and acteur != "humain":
+                self._evt("capacite.refusee", e, acteur, cause, {"raison": "autonomie gelée : les agents observent, ils n'agissent plus"}, compte)
+                return {"statut": "refuse", "raison": "l'autonomie est gelée : les agents observent, ils n'agissent plus"}
+            if "envois" in freins and c.sortant:
+                self._evt("capacite.refusee", e, acteur, cause, {"raison": "envois coupés : rien ne sort plus de la maison"}, compte)
+                return {"statut": "refuse", "raison": "les envois sont coupés : rien ne sort plus de la maison"}
 
         demande = self._evt("capacite.demandee", e, acteur, cause, {"args": self._masquer(args, c.masque), "essai": essai}, compte)
         ctx = self.contextes.get(e.module)

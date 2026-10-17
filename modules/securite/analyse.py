@@ -487,7 +487,7 @@ def verdict(d):
     return {"niveau": niveau, "titre": titre, "sous": " ".join(sous), "chiffres": chiffres, "familles": familles}
 
 
-def etat(m, heure="", port_cassandra=9000, ailleurs=None, panneau=None):
+def etat(m, heure="", port_cassandra=9000, ailleurs=None, panneau=None, confinement=None):
     """L'état de sécurité de la machine, dans la forme que lit l'écran, depuis les relevés bruts de `mesurer`. Une mesure qui manque est dite manquante."""
     machine = adresses_machine(m.get("ip_addr"))
     fw = parefeu(m, panneau)
@@ -495,7 +495,7 @@ def etat(m, heure="", port_cassandra=9000, ailleurs=None, panneau=None):
     d = {"ok": True, "machine": machine, "parefeu": fw, "exposition": exposition(m.get("ecoutes"), machine, fw, port_cassandra), "box_redirections": None,
          "outils": outils(m), "ssh": ssh(m), "comptes": comptes, "cles_fichiers": m.get("cles_ssh") or {}, "cles": [], "fail2ban": fail2ban(m), "maj": maj(m),
          "cage": {"etat": m.get("cage") or "", "commandes_24h": 0, "vetos_24h": 0, "caviardages_24h": 0, "gestes_invites_24h": 0, "sessions": 0},
-         "confinement": {}, "mesure": heure, "hote": m.get("hote") or "", "manques": [k for k in ("ecoutes", "ip_addr", "iptables", "sshd") if m.get(k) is None and not (k == "iptables" and m.get("nft") is not None)]}
+         "confinement": confinement or {}, "mesure": heure, "hote": m.get("hote") or "", "manques": [k for k in ("ecoutes", "ip_addr", "iptables", "sshd") if m.get(k) is None and not (k == "iptables" and m.get("nft") is not None)]}
     d["verdict"] = verdict(d)
     if d["manques"]:                         # un relevé manque : le verdict ne dit pas « stable », il dit ce qu'il ne sait pas
         noms = {"ecoutes": "les services à l'écoute", "ip_addr": "les adresses de la machine", "iptables": "le pare-feu", "sshd": "la configuration SSH"}

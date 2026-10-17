@@ -82,7 +82,7 @@ class Noyau:
         self._files_async, self._fils_async, self._verrou_async = {}, {}, threading.Lock()      # les moteurs asynchrones sur événement : leur file, leur fil
         self._stop_async = False   # posé par `arreter` : les moteurs asynchrones s'arrêtent proprement
         self.passerelle = None     # l'API HTTP, posée par `demarrer`
-        self.executeur = Executeur(self.catalogue, self.bus, self.en_crise, self.droits, self.identite, exiger_compte)
+        self.executeur = Executeur(self.catalogue, self.bus, self.en_crise, self.droits, self.identite, exiger_compte, freins=self.freins)
         self.detecteurs = []       # (module, Detecteur, fonction)
         self._derniere = {}        # (module, detecteur) -> dernier passage
         self._pannes = {}          # (module, detecteur) -> pannes de suite
@@ -120,6 +120,7 @@ class Noyau:
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
                        {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
                         "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine,
+                        "urgence": types.SimpleNamespace(freins=self.freins, freiner=self.freiner, en_crise=self.en_crise, crise=self.crise),
                         "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, capacites=self.capacites_de, catalogue=self.catalogue_modules, activer=self.activer, desactiver=self.desactiver)})
         self.executeur.contextes[m.id] = ctx
         return ctx
@@ -643,6 +644,19 @@ class Noyau:
     def crise(self, active: bool, raison: str = "", acteur: str = "cassandra") -> None:
         self.base.ecrire("INSERT INTO etat_noyau(cle, valeur) VALUES ('crise', ?) ON CONFLICT(cle) DO UPDATE SET valeur=excluded.valeur", ("1" if active else "0",))
         self.bus.emettre("noyau.crise" if active else "noyau.crise_levee", source="noyau", acteur=acteur, donnees={"raison": raison})
+
+    # ---------- les freins : deux gestes d'urgence plus fins que la crise ----------
+    FREINS = ("gel", "envois")
+
+    def freins(self) -> set:
+        """Les freins posés. « gel » : les agents lisent, ils n'écrivent plus. « envois » : plus rien ne sort de la maison (toute capacité qui se déclare sortante), pour tous."""
+        return {r["cle"] for r in self.base.lire("SELECT cle FROM etat_noyau WHERE cle IN ('gel','envois') AND valeur='1'")}
+
+    def freiner(self, nom: str, active: bool, raison: str = "", acteur: str = "humain") -> None:
+        if nom not in self.FREINS:
+            raise ValueError("frein inconnu : « %s » (parmi %s)" % (nom, ", ".join(self.FREINS)))
+        self.base.ecrire("INSERT INTO etat_noyau(cle, valeur) VALUES (?, ?) ON CONFLICT(cle) DO UPDATE SET valeur=excluded.valeur", (nom, "1" if active else "0"))
+        self.bus.emettre("noyau.frein_pose" if active else "noyau.frein_leve", source="noyau", acteur=acteur, donnees={"frein": nom, "raison": raison})
 
     # ---------- le plafond d'autonomie : un choix d'administrateur ----------
     def regler_palier(self, cle: str, palier: str, acteur: str = "humain") -> dict:

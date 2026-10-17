@@ -68,7 +68,11 @@ def brancher(ctx):
             panneau = ctx.executer_lecture("fastpanel.parefeu")
         except Exception:
             panneau = None
-        return analyse.etat(cache["m"], time.strftime("%Y-%m-%d %H:%M:%S"), ailleurs=ailleurs, panneau=panneau)
+        try:                                                           # le confinement en cours (module des gestes d'urgence) : « Cassandra confinée » dans les défenses
+            confinement = ((ctx.executer_lecture("urgence.etat") or {}).get("etat") or {}).get("confinement")
+        except Exception:
+            confinement = None
+        return analyse.etat(cache["m"], time.strftime("%Y-%m-%d %H:%M:%S"), ailleurs=ailleurs, panneau=panneau, confinement=confinement)
 
     # ── les gestes exécutés à root : la commande « agir » du courtier, table fermée, chaque geste vérifié avant de répondre ──
     def agir(verbe, geste, args=None, delai=180):

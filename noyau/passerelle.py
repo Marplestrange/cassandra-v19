@@ -288,5 +288,11 @@ class Passerelle:
             args, essai = corps.get("args") or {}, bool(corps.get("essai"))
             if not isinstance(args, dict):
                 raise ValueError("« args » doit être un objet")
+        # L'adresse de la SESSION vient de la connexion, jamais du corps : une capacité qui la déclare (`ip_session`) la reçoit d'ici, et celle qu'un client
+        # enverrait est écrasée — une adresse fournie par le client permettrait de s'enfermer dehors en s'autorisant quelqu'un d'autre.
+        if "ip_session" in self._noms_args(e):
+            args["ip_session"] = self._ip(h)
+        else:
+            args.pop("ip_session", None)
         r = self.noyau.executeur.executer(cle, acteur, args, essai=essai, compte=compte)
         return self._repondre(h, STATUTS_HTTP.get(r["statut"], 200), r)

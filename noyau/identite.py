@@ -557,6 +557,11 @@ class Identite:
         with self.base.transaction() as c:
             return c.execute("DELETE FROM sessions WHERE compte=? AND id!=?", (compte, _empreinte(courant or ""))).rowcount
 
+    def revoquer_toutes_autres(self, courant: str) -> int:
+        """Ferme les sessions de TOUS les comptes sauf la courante (le geste d'urgence : chacun devra se reconnecter, y compris les agents invités)."""
+        with self.base.transaction() as c:
+            return c.execute("DELETE FROM sessions WHERE id!=?", (_empreinte(courant or ""),)).rowcount
+
     # ---- les jetons de mise en place et de réinitialisation du mot de passe ----
     def jeton_creer(self, compte: str, heures: int = 72) -> dict:
         compte = (compte or "").strip().lower()

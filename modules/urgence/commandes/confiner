@@ -1,0 +1,356 @@
+#!/usr/bin/env python3
+"""Le confinement d'urgence, À ROOT, par le courtier : couper les mots de passe SSH, puis fermer le réseau à tout le monde sauf à la session qui le demande.
+Usage : confiner <poser|confirmer> <json>   |   confiner <lever|lever_auto|etat>   ->  une ligne de JSON : {"ok": true|false, ...}
+
+Le danger du confinement n'est pas de couper trop : c'est de SE couper soi-même. Les garde-fous sont ici, pas dans l'appelant :
+  - l'adresse de la session en cours est TOUJOURS autorisée, avant toute règle qui ferme, et son règle est relue après la pose ; sinon tout est défait ;
+  - le réseau se règle dans UNE chaîne à nous (CASSANDRA-CONFINEMENT), accrochée en tête d'INPUT : la lever la retire en entier, sans toucher au pare-feu de la machine ;
+  - une ÉCHÉANCE, pas une intention : une minuterie systemd, indépendante de Cassandra, lève le confinement à la fin du délai si personne ne le confirme ;
+  - les règles ne sont pas enregistrées (pas de netfilter-persistent) : un redémarrage de la machine rouvre aussi la porte. Dans le pire des cas, la machine rouvre.
+Niveaux : 1 = mots de passe SSH coupés ; 2 = + SSH fermé à tous sauf la session ; 3 = + tout fermé sauf la session, la machine et Tailscale (Docker arrêté).
+Un geste qui échoue défait ceux d'avant : rien n'est laissé en place.
+"""
+import ipaddress
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+ETAT = os.environ.get("CASSANDRA_CONFINEMENT_ETAT") or "/var/lib/cassandra-securite/confinement.json"
+CHAINE = "CASSANDRA-CONFINEMENT"
+UNITE_FIN = "cassandra-confinement-fin"
+INSTALLE = "/usr/libexec/cassandra/urgence/confiner"
+MOI = INSTALLE if os.path.exists(INSTALLE) else os.path.realpath(__file__)
+DROPIN_SSH = "/etc/ssh/sshd_config.d/00-cassandra-securite.conf"
+FAMILLES = (("iptables", 4), ("ip6tables", 6))
+MINUTES_MIN, MINUTES_MAX, MINUTES_MAX_CONFIRMER = 5, 240, 1440
+
+
+def run(cmd, timeout=30):
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, errors="replace")
+        return r.returncode, ((r.stdout or "") + (r.stderr or "")).strip()
+    except FileNotFoundError:
+        return 127, "%s introuvable" % cmd[0]
+    except Exception as e:
+        return 1, "%s : %s" % (type(e).__name__, e)
+
+
+def echo(d):
+    print(json.dumps(d, ensure_ascii=False))
+    sys.exit(0 if d.get("ok") else 1)
+
+
+def refus(raison):
+    echo({"ok": False, "erreur": raison})
+
+
+# ── ce qui est pur : les règles de la chaîne ────────────────────────────────────────────────────────────────────
+def adresse(ip):
+    try:
+        return ipaddress.ip_address(str(ip).strip())
+    except ValueError:
+        return None
+
+
+def regles(niveau, ip, famille, port_ssh=22):
+    """Les règles de la chaîne, dans l'ordre : d'abord tout ce qui doit TOUJOURS passer (la machine, les connexions établies, Tailscale, la session), puis ce qui ferme.
+    Une règle qui ferme n'est jamais avant l'autorisation de la session."""
+    a = adresse(ip)
+    r = [["-i", "lo", "-j", "ACCEPT"], ["-m", "conntrack", "--ctstate", "RELATED,ESTABLISHED", "-j", "ACCEPT"], ["-i", "tailscale0", "-j", "ACCEPT"]]
+    if a is not None and a.version == famille:
+        r.append(["-s", str(a), "-j", "ACCEPT"])                       # la session en cours : toujours joignable, sur tous les ports
+    if niveau == 2:
+        r.append(["-p", "tcp", "--dport", str(int(port_ssh)), "-j", "DROP"])
+    elif niveau >= 3:
+        r.append(["-j", "DROP"])
+    return r
+
+
+def a_une_session_avant_toute_fermeture(lignes, ip):
+    """Vrai si, dans les règles données (listées par `-S`), l'ACCEPT de la session précède la première règle qui ferme."""
+    vu_ouverture = False
+    for l in lignes:
+        if "-s %s" % ip in l and l.rstrip().endswith("-j ACCEPT"):
+            vu_ouverture = True
+        if l.rstrip().endswith("-j DROP") and not vu_ouverture:
+            return False
+    return vu_ouverture
+
+
+# ── l'état (la vérité : le fichier ET la chaîne) ───────────────────────────────────────────────────────────────
+def lire_etat():
+    try:
+        with open(ETAT, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def ecrire_etat(d):
+    os.makedirs(os.path.dirname(ETAT), mode=0o750, exist_ok=True)
+    tmp = ETAT + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False)
+    os.replace(tmp, ETAT)
+
+
+def chaine_presente():
+    return run(["iptables", "-S", CHAINE], 10)[0] == 0
+
+
+def actif(unite):
+    return run(["systemctl", "is-active", unite], 10)[1].strip() == "active"
+
+
+def etat():
+    e = lire_etat()
+    presente = chaine_presente()
+    if not e and not presente:
+        return {"ok": True, "actif": False}
+    if e and float(e.get("fin", 0)) <= time.time():
+        return dict(e, ok=True, actif=True, echu=True, chaine=presente)          # la minuterie aurait dû lever : le dire, l'appelant lève
+    return dict(e or {}, ok=True, actif=True, chaine=presente, orphelin=not e)
+
+
+# ── SSH : couper les mots de passe (le même fichier que le geste de la sécurité : ce qu'il y avait est rendu à la levée) ─────
+def cles_autorisees():
+    utilisateurs = {"root"}
+    try:
+        for l in open("/etc/group", encoding="utf-8", errors="replace"):
+            c = l.strip().split(":")
+            if len(c) >= 4 and c[0] in ("sudo", "wheel") and c[3]:
+                utilisateurs |= {x for x in c[3].split(",") if x}
+    except Exception:
+        pass
+    n = 0
+    for u in utilisateurs:
+        if re.match(r"^[a-z_][a-z0-9_.-]{0,31}$", u):
+            try:
+                n += sum(1 for l in open(("/root" if u == "root" else "/home/" + u) + "/.ssh/authorized_keys", encoding="utf-8", errors="replace")
+                         if l.strip() and not l.strip().startswith("#"))
+            except Exception:
+                pass
+    return n
+
+
+def dropin_lire():
+    try:
+        return open(DROPIN_SSH, encoding="utf-8").read()
+    except OSError:
+        return None
+
+
+def dropin_ecrire(texte):
+    try:
+        if texte is None:
+            if os.path.exists(DROPIN_SSH):
+                os.unlink(DROPIN_SSH)
+        else:
+            os.makedirs(os.path.dirname(DROPIN_SSH), exist_ok=True)
+            with open(DROPIN_SSH, "w", encoding="utf-8") as f:
+                f.write(texte)
+    except OSError as e:
+        return False, "écriture impossible : %s" % e
+    rc, t = run(["sshd", "-t"], 10)
+    if rc != 0:
+        return False, "sshd refuse la configuration : %s" % t[-200:]
+    if run(["systemctl", "reload", "ssh"], 20)[0] != 0:
+        run(["systemctl", "reload", "sshd"], 20)
+    return True, ""
+
+
+def sshd_effectif():
+    rc, t = run(["sshd", "-T"], 10)
+    cfg = {}
+    for l in (t if rc == 0 else "").splitlines():
+        k, _, v = l.partition(" ")
+        cfg[k.strip().lower()] = v.strip()
+    return cfg
+
+
+def texte_dropin(avant):
+    lignes = {}
+    for l in (avant or "").splitlines():
+        if l.strip() and not l.strip().startswith("#"):
+            k, _, v = l.strip().partition(" ")
+            lignes[k] = v.strip()
+    lignes.update({"PasswordAuthentication": "no", "KbdInteractiveAuthentication": "no"})
+    return "# Posé par Cassandra (confinement d'urgence). Levé avec lui : le fichier d'avant est remis.\n" + "".join("%s %s\n" % (k, v) for k, v in lignes.items())
+
+
+def ssh_poser():
+    if not cles_autorisees():
+        return False, "aucune clé autorisée pour root ni pour un administrateur (sudo) : couper les mots de passe vous laisserait dehors", None
+    avant = dropin_lire()
+    ok, raison = dropin_ecrire(texte_dropin(avant))
+    if ok and sshd_effectif().get("passwordauthentication") != "no":
+        ok, raison = False, "sshd ne lit pas ce fichier (Include absent de sshd_config ?)"
+    if not ok:
+        dropin_ecrire(avant)
+        return False, raison + " : rien n'a changé", None
+    return True, "", avant
+
+
+# ── le réseau : une chaîne à nous, en tête d'INPUT ─────────────────────────────────────────────────────────────
+def port_ssh():
+    try:
+        return int(sshd_effectif().get("port") or 22)
+    except ValueError:
+        return 22
+
+
+def reseau_poser(niveau, ip, port):
+    """Pose la chaîne dans chaque famille disponible. Rend (ok, raison). La session est autorisée AVANT toute règle qui ferme, et relue après."""
+    for outil, fam in FAMILLES:
+        if run([outil, "-S"], 10)[0] != 0:
+            if fam == 4:
+                return False, "iptables est absent ou inutilisable : aucun confinement réseau possible"
+            continue
+        run([outil, "-N", CHAINE], 10)
+        run([outil, "-F", CHAINE], 10)
+        for r in regles(niveau, ip, fam, port):
+            rc, t = run([outil, "-A", CHAINE] + r, 10)
+            if rc != 0:
+                reseau_lever()
+                return False, "règle refusée par %s : %s" % (outil, t[-160:])
+        if run([outil, "-C", "INPUT", "-j", CHAINE], 10)[0] != 0:
+            rc, t = run([outil, "-I", "INPUT", "1", "-j", CHAINE], 10)
+            if rc != 0:
+                reseau_lever()
+                return False, "chaîne non accrochée par %s : %s" % (outil, t[-160:])
+    a = adresse(ip)
+    outil = "iptables" if a is not None and a.version == 4 else "ip6tables"
+    rc, t = run([outil, "-S", CHAINE], 10)
+    if niveau >= 2 and (rc != 0 or not a_une_session_avant_toute_fermeture(t.splitlines(), str(a))):
+        reseau_lever()
+        return False, "après la pose, l'adresse de votre session n'est plus autorisée avant la fermeture : tout est défait"
+    return True, ""
+
+
+def reseau_lever():
+    for outil, _ in FAMILLES:
+        for _i in range(5):                                    # un accrochage en double ne doit pas survivre
+            if run([outil, "-D", "INPUT", "-j", CHAINE], 10)[0] != 0:
+                break
+        run([outil, "-F", CHAINE], 10)
+        run([outil, "-X", CHAINE], 10)
+
+
+def docker_arreter():
+    if run(["systemctl", "is-active", "docker"], 10)[1].strip() != "active":
+        return False
+    run(["systemctl", "stop", "docker", "docker.socket"], 120)
+    return True
+
+
+# ── l'échéance : une minuterie systemd, hors de Cassandra ─────────────────────────────────────────────────────
+def minuterie(minutes):
+    run(["systemctl", "stop", UNITE_FIN + ".timer"], 15)
+    rc, t = run(["systemd-run", "--unit=" + UNITE_FIN, "--on-active=%ds" % (int(minutes) * 60), "--collect", "/usr/bin/python3", MOI, "lever_auto"], 20)
+    return rc == 0, t[-160:]
+
+
+def lever():
+    """Défait dans l'ordre inverse : Docker, réseau, SSH. Idempotent : sans confinement, ne fait rien et le dit."""
+    e = lire_etat() or {}
+    defaits = []
+    run(["systemctl", "stop", UNITE_FIN + ".timer"], 15)
+    if e.get("docker_arrete"):
+        run(["systemctl", "start", "docker"], 120)
+        defaits.append("docker")
+    if chaine_presente() or e.get("niveau", 0) >= 2:
+        reseau_lever()
+        defaits.append("reseau")
+    if e.get("ssh_pose"):
+        ok, raison = dropin_ecrire(e.get("avant_ssh"))
+        defaits.append("ssh" if ok else "ssh (échec : %s)" % raison)
+    try:
+        os.remove(ETAT)
+    except OSError:
+        pass
+    return {"ok": True, "defaits": defaits, "etait_actif": bool(e)}
+
+
+def poser(a):
+    niveau = a.get("niveau")
+    if niveau not in (1, 2, 3):
+        refus("niveau inconnu (1, 2 ou 3)")
+    ip = str(a.get("ip") or "").strip()
+    if adresse(ip) is None:
+        refus("adresse de votre session illisible : refus prudent, sans elle vous vous couperiez vous-même")
+    try:
+        minutes = max(MINUTES_MIN, min(MINUTES_MAX, int(a.get("minutes") or 30)))
+    except (TypeError, ValueError):
+        minutes = 30
+    if lire_etat() or chaine_presente():
+        refus("déjà confiné")
+    faites = []
+    e = {"niveau": niveau, "ip": ip, "par": str(a.get("par") or "")[:80], "motif": str(a.get("motif") or "")[:400], "debut": time.time(),
+         "fin": time.time() + minutes * 60, "confirme": False, "faites": faites, "port_ssh": port_ssh()}
+    ecrire_etat(e)                                               # d'abord l'état : un arrêt en cours de route laisse de quoi lever
+    ok, raison, avant = ssh_poser()
+    if not ok:
+        lever()
+        refus(raison)
+    e.update({"ssh_pose": True, "avant_ssh": avant})
+    faites.append("ssh_mdp")
+    ecrire_etat(e)
+    if niveau >= 2:
+        ok, raison = reseau_poser(niveau, ip, e["port_ssh"])
+        if not ok:
+            lever()
+            refus(raison)
+        faites.append("reseau")
+        if niveau >= 3 and docker_arreter():
+            e["docker_arrete"] = True
+            faites.append("docker")
+    ok, raison = minuterie(minutes)
+    if not ok:
+        lever()
+        refus("la minuterie d'échéance n'a pas pu être posée (%s) : sans elle, pas de confinement — tout est défait" % raison)
+    ecrire_etat(e)
+    echo({"ok": True, "niveau": niveau, "ip": ip, "fin": e["fin"], "faites": faites})
+
+
+def confirmer(a):
+    e = lire_etat()
+    if not e:
+        refus("aucun confinement en cours")
+    try:
+        minutes = max(MINUTES_MIN, min(MINUTES_MAX_CONFIRMER, int(a.get("minutes") or 240)))
+    except (TypeError, ValueError):
+        minutes = 240
+    ok, raison = minuterie(minutes)
+    if not ok:
+        refus("la nouvelle échéance n'a pas pu être posée (%s) : l'ancienne reste" % raison)
+    e.update({"fin": time.time() + minutes * 60, "confirme": True})
+    ecrire_etat(e)
+    echo({"ok": True, "fin": e["fin"]})
+
+
+def main(argv):
+    if len(argv) < 2:
+        refus("usage : confiner <poser|confirmer> <json> | <lever|lever_auto|etat>")
+    verbe = argv[1]
+    if verbe == "etat":
+        echo(etat())
+    if os.geteuid() != 0:
+        refus("ce programme s'exécute en root")
+    if verbe in ("lever", "lever_auto"):
+        echo(lever())
+    if verbe in ("poser", "confirmer"):
+        try:
+            a = json.loads(argv[2]) if len(argv) > 2 else {}
+            if not isinstance(a, dict):
+                raise ValueError
+        except ValueError:
+            refus("arguments illisibles")
+        return poser(a) if verbe == "poser" else confirmer(a)
+    refus("verbe inconnu : %s" % verbe)
+
+
+if __name__ == "__main__":
+    main(sys.argv)

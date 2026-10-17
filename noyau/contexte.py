@@ -69,6 +69,13 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé la gestion des modules ([permissions] modules)" % self.module)
         return self._intro["gestion_modules"]
 
+    def urgence(self):
+        """Les freins du noyau (.freins(), .freiner(nom, actif, raison, acteur)) et la crise, pour le module des gestes d'urgence ([permissions] urgence).
+        Un frein ne se pose que par ses capacités : droit, journal, retour."""
+        if not self.manifeste.permissions.urgence:
+            raise PermissionError("le module « %s » n'a pas demandé les gestes d'urgence ([permissions] urgence)" % self.module)
+        return self._intro["urgence"]
+
     def executer_lecture(self, capacite: str, **args):
         """Appelle une capacité de LECTURE d'un autre module (« module.capacite ») et rend son résultat (None si elle échoue).
         Réservé aux modules qui l'ont demandé ([permissions] lectures) ; jamais une écriture."""

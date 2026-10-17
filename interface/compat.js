@@ -61,7 +61,7 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
   function traduire(res, statutHttp, opt) {
     const st = res && res.statut;
     if (st === "refuse") return reponse(403, { error: (res && (res.raison || res.erreur)) || "refusé", reason: (res && res.raison) || "", success: false });
-    if (st === "echec" || st === "annulee") return reponse(500, { error: (res && (res.erreur || res.raison)) || "échec", success: false });
+    if (st === "echec" || st === "annulee") { const m = (res && (res.erreur || res.raison || res.motif)) || "échec"; return reponse(500, { error: m, reason: m, success: false }); }
     let sortie = res && res.resultat !== undefined ? res.resultat : res;
     if (st === "racontee") sortie = { raconte: true, resultat: sortie };
     if (opt && opt.sortie) sortie = opt.sortie(sortie, res);
