@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ea4569
+# VERSION CN : 0.1.0  #dba719
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : reçoit des variantes d'un moteur de recherche, ne retient que celles que l'évaluateur prouve, les met en service sans risque et vérifie le gain plus tard.
 # MÉTHODE    : le moteur ne propose que du texte ; ici tout est déterministe : évaluation, pièges, écriture de l'EC, ombre, paliers, retour, chaîne d'empreintes, tombes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ea4569 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=dba719 ▼▼▼
 """L'évolution (docs/CN_EVOLUTION.md) : le côté NEXUS. Le moteur de recherche (Orfan, ou un autre par le contrat d'adaptateur) ne fait que PROPOSER du texte ;
 tout ce qui décide est ici, en code déterministe :
 
@@ -187,6 +187,7 @@ class Evolution:
         if p["score"] is None or p["score"] < self.seuils["pieges_min"]:
             return {"ok": False, "raison": "corpus trop faible pour juger : %s %% des variantes fausses seulement sont attrapées (seuil %s %%)" % (round(100 * (p["score"] or 0)), round(100 * self.seuils["pieges_min"])),
                     "essais": essais, "piece": None, "pieges": p}
+        meilleur["eval"] = dict(meilleur["eval"], pieges={"score": p["score"], "mutants": p["mutants"]})
         piece = self._ecrire(module, point, ref, meilleur)
         return {"ok": True, "raison": "", "essais": essais, "piece": piece, "pieges": {"score": p["score"], "mutants": p["mutants"]}}
 
