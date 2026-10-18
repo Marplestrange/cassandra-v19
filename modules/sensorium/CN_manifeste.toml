@@ -273,3 +273,11 @@ contrat = "1.0"
 reference = "points/EC_cron_derniere"
 fonction = "point_cron_derniere"
 runtime = "python"
+
+[[points_evolution]]
+id = "fp_formes"
+libelle = "Les comptes mail et FTP de FastPanel, mis en forme : ce que le collecteur a lu (table de mogwai, API, fichiers de postfix et des serveurs FTP, dossiers) en entrée, les comptes en sortie"
+contrat = "1.0"
+reference = "points/EC_fp_formes"
+fonction = "point_fp_formes"
+runtime = "python"

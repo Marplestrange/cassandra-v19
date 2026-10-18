@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.4  #bd1e68
+# VERSION CN : 0.1.4  #6a201e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.4 empreinte=bd1e68 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=6a201e ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -1027,80 +1027,37 @@ def collect_fastpanel_databases() -> list:
     return dbs
 
 
+def _fp_formes(entree) -> list:
+    """Ce que le collecteur a lu de FastPanel, mis en forme. La forme est un POINT D'ÉVOLUTION : points/EC_fp_formes.py ; les LECTURES (mogwai, API, fichiers) restent ici."""
+    return _point("fp_formes", entree)["valeur"]
+
+
 def collect_fastpanel_mail() -> list:
     """[FP1→FP2→FS] Comptes mail : mogwai → API /api/email → postfix fallback."""
     now = datetime.now().isoformat()
-    accounts, seen = [], set()
     if not _fp_available():
         return []
 
     # [FP1] mogwai emails boxes list — liste toutes les boîtes
-    mogwai_out = _mogwai(["emails", "boxes", "list"])
-    for row in _mogwai_parse_table(mogwai_out):
-        addr = row.get("address", "")
-        if not addr or "@" not in addr or addr in seen:
-            continue
-        seen.add(addr)
-        parts = addr.split("@")
-        size_mb  = 0
-        quota_mb = 0
-        try:
-            size_mb  = round(int(row.get("size", 0) or 0) / 1024 / 1024, 1)
-            quota_mb = round(int(row.get("quota", 0) or 0) / 1024 / 1024, 1)
-        except Exception:
-            pass
-        accounts.append({
-            "email":    addr,
-            "domain":   parts[1],
-            "login":    parts[0],
-            "quota_mb": quota_mb,
-            "used_mb":  size_mb,
-            "status":   "active" if row.get("enabled","true") == "true" else "suspended",
-            "last_check": now,
-        })
-    if accounts:
-        return accounts
+    comptes = _fp_formes({"op": "mail_mogwai", "rows": _mogwai_parse_table(_mogwai(["emails", "boxes", "list"])), "now": now})
+    if comptes:
+        return comptes
 
     # [FP2] API — endpoint non officiel, tentative
-    api_boxes = _fp_api_get_list("/api/email/boxes?filter[limit]=1000")
-    for box in api_boxes:
-        addr = box.get("address", box.get("email", ""))
-        if not addr or "@" not in addr or addr in seen:
-            continue
-        seen.add(addr)
-        parts = addr.split("@")
-        accounts.append({
-            "email":    addr,
-            "domain":   parts[1] if len(parts) > 1 else "",
-            "login":    parts[0],
-            "quota_mb": box.get("quota", 0) or 0,
-            "used_mb":  box.get("size",  0) or 0,
-            "status":   "active" if box.get("enabled", True) else "suspended",
-            "last_check": now,
-        })
-    if accounts:
-        return accounts
+    comptes = _fp_formes({"op": "mail_api", "boxes": _fp_api_get_list("/api/email/boxes?filter[limit]=1000"), "now": now})
+    if comptes:
+        return comptes
 
     # [FS] Fallback postfix virtual/vmailbox
+    fichiers = []
     for vfile in ["/etc/postfix/virtual", "/etc/postfix/vmailbox"]:
         if not Path(vfile).exists():
             continue
         try:
-            for line in Path(vfile).read_text(errors="replace").splitlines():
-                line = line.strip()
-                if line and not line.startswith("#") and "@" in line:
-                    email = line.split()[0]
-                    if "@" in email and email not in seen:
-                        seen.add(email)
-                        p = email.split("@")
-                        accounts.append({
-                            "email": email, "domain": p[1], "login": p[0],
-                            "quota_mb": 0, "used_mb": 0, "status": "active",
-                            "last_check": now,
-                        })
+            fichiers.append([vfile, Path(vfile).read_text(errors="replace")])
         except Exception:
             pass
-    return accounts
+    return _fp_formes({"op": "mail_postfix", "fichiers": fichiers, "now": now})
 
 
 def collect_fastpanel_ftp() -> list:
@@ -1109,99 +1066,36 @@ def collect_fastpanel_ftp() -> list:
     Le commentaire d'origine affirmait que « FP2 n'expose pas de table FTP » :
     c'est faux, `ftp_account` existe et porte même `virtualhost_id`, donc le
     site servi. Le balayage des fichiers de mots de passe ne le savait pas."""
-    now  = datetime.now().isoformat()
-    accounts, seen = [], set()
+    now = datetime.now().isoformat()
     if not _fp_available():
         return []
 
-    for a in _fp_sqlite_ftp():
-        if a["login"] and a["login"] not in seen:
-            seen.add(a["login"])
-            a["last_check"] = now
-            accounts.append(a)
-    if accounts:
-        return accounts
+    comptes = _fp_formes({"op": "ftp_base", "liste": _fp_sqlite_ftp(), "now": now})
+    if comptes:
+        return comptes
 
-    # [FP6-A] proftpd : /etc/proftpd/passwd (format passwd unix)
-    proftpd_passwd = Path("/etc/proftpd/passwd")
-    if proftpd_passwd.exists():
+    def texte(chemin):
+        """Le contenu d'un fichier de serveur FTP, ou None s'il n'existe pas ou ne se lit pas."""
+        f = Path(chemin)
+        if not f.exists():
+            return None
         try:
-            for line in proftpd_passwd.read_text(errors="replace").splitlines():
-                parts = line.split(":")
-                if len(parts) >= 6 and parts[0] not in seen:
-                    login    = parts[0]
-                    home_dir = parts[5] if len(parts) > 5 else ""
-                    seen.add(login)
-                    # Déduire le propriétaire FP2 depuis home_dir (/var/www/<user>/...)
-                    owner = ""
-                    m = re.search(r"/var/www/([^/]+)/", home_dir)
-                    if m:
-                        owner = m.group(1)
-                    accounts.append({
-                        "login":    login,
-                        "home_dir": home_dir,
-                        "status":   "active",
-                        "owner":    owner,
-                        "last_check": now,
-                    })
+            return f.read_text(errors="replace")
         except Exception:
-            pass
+            return None
 
-    # [FP6-B] pure-ftpd : /etc/pure-ftpd/pureftpd.passwd
-    pure_passwd = Path("/etc/pure-ftpd/pureftpd.passwd")
-    if pure_passwd.exists():
-        try:
-            for line in pure_passwd.read_text(errors="replace").splitlines():
-                parts = line.split(":")
-                if len(parts) >= 8 and parts[0] not in seen:
-                    login    = parts[0]
-                    home_dir = parts[5] if len(parts) > 5 else ""
-                    seen.add(login)
-                    owner = ""
-                    m = re.search(r"/var/www/([^/]+)/", home_dir)
-                    if m:
-                        owner = m.group(1)
-                    accounts.append({
-                        "login": login, "home_dir": home_dir,
-                        "status": "active", "owner": owner, "last_check": now,
-                    })
-        except Exception:
-            pass
+    # [FP6-A] proftpd, [FP6-B] pure-ftpd, [FP6-C] vsftpd
+    comptes = _fp_formes({"op": "ftp_fichiers", "proftpd": texte("/etc/proftpd/passwd"), "pure": texte("/etc/pure-ftpd/pureftpd.passwd"), "vsftpd": texte("/etc/vsftpd.userlist"), "now": now})
+    if comptes:
+        return comptes
 
-    # [FP6-C] vsftpd : /etc/vsftpd.userlist ou /etc/vsftpd/user_conf/
-    vsftpd_ul = Path("/etc/vsftpd.userlist")
-    if vsftpd_ul.exists():
-        try:
-            for login in vsftpd_ul.read_text(errors="replace").splitlines():
-                login = login.strip()
-                if login and not login.startswith("#") and login not in seen:
-                    seen.add(login)
-                    accounts.append({
-                        "login": login, "home_dir": f"/var/www/{login}/data",
-                        "status": "active", "owner": login, "last_check": now,
-                    })
-        except Exception:
-            pass
-
-    # [FP6-D] FTP via FP2 stockés dans les homes utilisateurs
-    # FP2 crée des comptes FTP comme sous-utilisateurs Linux
-    if not accounts:
-        fp_users = _fp_get_fp2_usernames()
-        for user in fp_users:
-            ftp_dir = Path(f"/var/www/{user}/data/ftp")
-            if ftp_dir.exists():
-                # Les comptes FTP FP2 sont des dossiers dans data/ftp/
-                for sub in ftp_dir.iterdir():
-                    if sub.is_dir() and sub.name not in seen:
-                        seen.add(sub.name)
-                        accounts.append({
-                            "login":    sub.name,
-                            "home_dir": str(sub),
-                            "status":   "active",
-                            "owner":    user,
-                            "last_check": now,
-                        })
-    return accounts
+    # [FP6-D] FTP via FP2 stockés dans les homes utilisateurs : FP2 crée des comptes FTP comme sous-utilisateurs Linux
+    utilisateurs = []
+    for user in _fp_get_fp2_usernames():
+        ftp_dir = Path(f"/var/www/{user}/data/ftp")
+        if ftp_dir.exists():
+            utilisateurs.append([user, [[sub.name, str(sub)] for sub in ftp_dir.iterdir() if sub.is_dir()]])
+    return _fp_formes({"op": "ftp_dossiers", "utilisateurs": utilisateurs, "now": now})
 
 
 def _fp_get_fp2_usernames() -> list:

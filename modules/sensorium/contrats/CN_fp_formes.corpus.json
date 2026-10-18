@@ -1,0 +1,1123 @@
+{
+ "point": "sensorium.fp_formes",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de sensorium, données synthétiques",
+ "cas": [
+  {
+   "cas": "mogwai vide",
+   "entree": {
+    "op": "mail_mogwai",
+    "rows": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "mogwai une boîte",
+   "entree": {
+    "op": "mail_mogwai",
+    "rows": [
+     {
+      "address": "a@exemple.test",
+      "size": "1048576",
+      "quota": "5242880",
+      "enabled": "true"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 5.0,
+      "used_mb": 1.0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mogwai suspendue",
+   "entree": {
+    "op": "mail_mogwai",
+    "rows": [
+     {
+      "address": "a@exemple.test",
+      "size": "0",
+      "quota": "0",
+      "enabled": "false"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0.0,
+      "used_mb": 0.0,
+      "status": "suspended",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mogwai sans enabled",
+   "entree": {
+    "op": "mail_mogwai",
+    "rows": [
+     {
+      "address": "a@exemple.test"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0.0,
+      "used_mb": 0.0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mogwai enabled autre",
+   "entree": {
+    "op": "mail_mogwai",
+    "rows": [
+     {
+      "address": "a@exemple.test",
+      "enabled": "True"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0.0,
+      "used_mb": 0.0,
+      "status": "suspended",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mogwai doublons",
+   "entree": {
+    "op": "mail_mogwai",
+    "rows": [
+     {
+      "address": "a@exemple.test"
+     },
+     {
+      "address": "a@exemple.test",
+      "size": "9"
+     },
+     {
+      "address": "b@exemple.test"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0.0,
+      "used_mb": 0.0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "email": "b@exemple.test",
+      "domain": "exemple.test",
+      "login": "b",
+      "quota_mb": 0.0,
+      "used_mb": 0.0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mogwai sans arobase",
+   "entree": {
+    "op": "mail_mogwai",
+    "rows": [
+     {
+      "address": "pas-une-adresse"
+     },
+     {
+      "address": ""
+     },
+     {},
+     {
+      "address": "c@exemple.test"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "c@exemple.test",
+      "domain": "exemple.test",
+      "login": "c",
+      "quota_mb": 0.0,
+      "used_mb": 0.0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mogwai taille illisible",
+   "entree": {
+    "op": "mail_mogwai",
+    "rows": [
+     {
+      "address": "a@exemple.test",
+      "size": "beaucoup",
+      "quota": "2097152"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0,
+      "used_mb": 0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mogwai quota illisible",
+   "entree": {
+    "op": "mail_mogwai",
+    "rows": [
+     {
+      "address": "a@exemple.test",
+      "size": "1048576",
+      "quota": "x"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0,
+      "used_mb": 1.0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mogwai taille décimale",
+   "entree": {
+    "op": "mail_mogwai",
+    "rows": [
+     {
+      "address": "a@exemple.test",
+      "size": "1572864",
+      "quota": "10485760"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 10.0,
+      "used_mb": 1.5,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mogwai taille vide",
+   "entree": {
+    "op": "mail_mogwai",
+    "rows": [
+     {
+      "address": "a@exemple.test",
+      "size": "",
+      "quota": ""
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0.0,
+      "used_mb": 0.0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mogwai arobases multiples",
+   "entree": {
+    "op": "mail_mogwai",
+    "rows": [
+     {
+      "address": "a@b@exemple.test"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@b@exemple.test",
+      "domain": "b",
+      "login": "a",
+      "quota_mb": 0.0,
+      "used_mb": 0.0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mogwai maintenant différent",
+   "entree": {
+    "op": "mail_mogwai",
+    "rows": [
+     {
+      "address": "a@exemple.test"
+     }
+    ],
+    "now": "2030-01-01T00:00:00"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0.0,
+      "used_mb": 0.0,
+      "status": "active",
+      "last_check": "2030-01-01T00:00:00"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "api vide",
+   "entree": {
+    "op": "mail_api",
+    "boxes": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "api adresse",
+   "entree": {
+    "op": "mail_api",
+    "boxes": [
+     {
+      "address": "a@exemple.test",
+      "quota": 100,
+      "size": 5,
+      "enabled": true
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 100,
+      "used_mb": 5,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "api email",
+   "entree": {
+    "op": "mail_api",
+    "boxes": [
+     {
+      "email": "b@exemple.test"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "b@exemple.test",
+      "domain": "exemple.test",
+      "login": "b",
+      "quota_mb": 0,
+      "used_mb": 0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "api suspendue",
+   "entree": {
+    "op": "mail_api",
+    "boxes": [
+     {
+      "address": "a@exemple.test",
+      "enabled": false
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0,
+      "used_mb": 0,
+      "status": "suspended",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "api valeurs nulles",
+   "entree": {
+    "op": "mail_api",
+    "boxes": [
+     {
+      "address": "a@exemple.test",
+      "quota": null,
+      "size": null
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0,
+      "used_mb": 0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "api doublons et vides",
+   "entree": {
+    "op": "mail_api",
+    "boxes": [
+     {
+      "address": "a@exemple.test"
+     },
+     {
+      "address": "a@exemple.test"
+     },
+     {
+      "address": ""
+     },
+     {},
+     {
+      "address": "sans"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0,
+      "used_mb": 0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "api adresse prime sur email",
+   "entree": {
+    "op": "mail_api",
+    "boxes": [
+     {
+      "address": "a@exemple.test",
+      "email": "z@exemple.test"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0,
+      "used_mb": 0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "api arobase final",
+   "entree": {
+    "op": "mail_api",
+    "boxes": [
+     {
+      "address": "a@"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@",
+      "domain": "",
+      "login": "a",
+      "quota_mb": 0,
+      "used_mb": 0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "postfix aucun fichier",
+   "entree": {
+    "op": "mail_postfix",
+    "fichiers": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "postfix virtual",
+   "entree": {
+    "op": "mail_postfix",
+    "fichiers": [
+     [
+      "/etc/postfix/virtual",
+      "# commentaire\na@exemple.test   a\n\nb@exemple.test b\n"
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0,
+      "used_mb": 0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "email": "b@exemple.test",
+      "domain": "exemple.test",
+      "login": "b",
+      "quota_mb": 0,
+      "used_mb": 0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "postfix deux fichiers",
+   "entree": {
+    "op": "mail_postfix",
+    "fichiers": [
+     [
+      "/etc/postfix/virtual",
+      "a@exemple.test a\n"
+     ],
+     [
+      "/etc/postfix/vmailbox",
+      "a@exemple.test x/\nc@exemple.test c/\n"
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0,
+      "used_mb": 0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "email": "c@exemple.test",
+      "domain": "exemple.test",
+      "login": "c",
+      "quota_mb": 0,
+      "used_mb": 0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "postfix lignes sans arobase",
+   "entree": {
+    "op": "mail_postfix",
+    "fichiers": [
+     [
+      "/etc/postfix/virtual",
+      "pas d'adresse\n   \n#a@b.c\n@domaine.test x\n"
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "@domaine.test",
+      "domain": "domaine.test",
+      "login": "",
+      "quota_mb": 0,
+      "used_mb": 0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "postfix espaces",
+   "entree": {
+    "op": "mail_postfix",
+    "fichiers": [
+     [
+      "/etc/postfix/virtual",
+      "   a@exemple.test    a   \n"
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "email": "a@exemple.test",
+      "domain": "exemple.test",
+      "login": "a",
+      "quota_mb": 0,
+      "used_mb": 0,
+      "status": "active",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "postfix fichier vide",
+   "entree": {
+    "op": "mail_postfix",
+    "fichiers": [
+     [
+      "/etc/postfix/virtual",
+      ""
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ftp base vide",
+   "entree": {
+    "op": "ftp_base",
+    "liste": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ftp base",
+   "entree": {
+    "op": "ftp_base",
+    "liste": [
+     {
+      "login": "a",
+      "home_dir": "/h/a",
+      "status": "active",
+      "owner": "u",
+      "site": "s.test",
+      "created": "2026-01-01"
+     },
+     {
+      "login": "b"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "login": "a",
+      "home_dir": "/h/a",
+      "status": "active",
+      "owner": "u",
+      "site": "s.test",
+      "created": "2026-01-01",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "login": "b",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ftp base doublons",
+   "entree": {
+    "op": "ftp_base",
+    "liste": [
+     {
+      "login": "a"
+     },
+     {
+      "login": "a",
+      "x": 1
+     },
+     {
+      "login": ""
+     },
+     {
+      "login": null
+     },
+     {
+      "login": "b"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "login": "a",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "login": "b",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ftp fichiers absents",
+   "entree": {
+    "op": "ftp_fichiers",
+    "proftpd": null,
+    "pure": null,
+    "vsftpd": null,
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ftp proftpd",
+   "entree": {
+    "op": "ftp_fichiers",
+    "proftpd": "alice:x:1000:1000:Alice:/var/www/alice/data/www:/bin/false\nbob:x:1001:1001:Bob:/home/bob:/bin/false\ncourt:x:1\n",
+    "pure": null,
+    "vsftpd": null,
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "login": "alice",
+      "home_dir": "/var/www/alice/data/www",
+      "status": "active",
+      "owner": "alice",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "login": "bob",
+      "home_dir": "/home/bob",
+      "status": "active",
+      "owner": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ftp proftpd sans propriétaire",
+   "entree": {
+    "op": "ftp_fichiers",
+    "proftpd": "z:x:1:1:Z:/srv/z:/bin/false",
+    "pure": null,
+    "vsftpd": null,
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "login": "z",
+      "home_dir": "/srv/z",
+      "status": "active",
+      "owner": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ftp proftpd propriétaire sans slash final",
+   "entree": {
+    "op": "ftp_fichiers",
+    "proftpd": "z:x:1:1:Z:/var/www/zed:/bin/false",
+    "pure": null,
+    "vsftpd": null,
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "login": "z",
+      "home_dir": "/var/www/zed",
+      "status": "active",
+      "owner": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ftp pure-ftpd",
+   "entree": {
+    "op": "ftp_fichiers",
+    "proftpd": null,
+    "pure": "carl:hash:1000:1000::/var/www/carl/data/./:::::::::::\nshort:x:1\n",
+    "vsftpd": null,
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "login": "carl",
+      "home_dir": "/var/www/carl/data/./",
+      "status": "active",
+      "owner": "carl",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ftp pure-ftpd huit champs",
+   "entree": {
+    "op": "ftp_fichiers",
+    "proftpd": null,
+    "pure": "d:h:1:1:g:/var/www/d/data/:/bin:x",
+    "vsftpd": null,
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "login": "d",
+      "home_dir": "/var/www/d/data/",
+      "status": "active",
+      "owner": "d",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ftp vsftpd",
+   "entree": {
+    "op": "ftp_fichiers",
+    "proftpd": null,
+    "pure": null,
+    "vsftpd": "# liste\nerin\n\n  frank  \n#gina\n",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "login": "erin",
+      "home_dir": "/var/www/erin/data",
+      "status": "active",
+      "owner": "erin",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "login": "frank",
+      "home_dir": "/var/www/frank/data",
+      "status": "active",
+      "owner": "frank",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ftp les trois, doublons entre eux",
+   "entree": {
+    "op": "ftp_fichiers",
+    "proftpd": "a:x:1:1:A:/var/www/a/data/x:/s\n",
+    "pure": "a:h:1:1:g:/var/www/a/data/:/b:x\nb:h:1:1:g:/var/www/b/data/:/b:x\n",
+    "vsftpd": "b\nc\n",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "login": "a",
+      "home_dir": "/var/www/a/data/x",
+      "status": "active",
+      "owner": "a",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "login": "b",
+      "home_dir": "/var/www/b/data/",
+      "status": "active",
+      "owner": "b",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "login": "c",
+      "home_dir": "/var/www/c/data",
+      "status": "active",
+      "owner": "c",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ftp fichiers vides",
+   "entree": {
+    "op": "ftp_fichiers",
+    "proftpd": "",
+    "pure": "",
+    "vsftpd": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ftp proftpd doublon",
+   "entree": {
+    "op": "ftp_fichiers",
+    "proftpd": "a:x:1:1:A:/var/www/a/data:/s\na:x:2:2:A:/var/www/a/data:/s\n",
+    "pure": null,
+    "vsftpd": null,
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "login": "a",
+      "home_dir": "/var/www/a/data",
+      "status": "active",
+      "owner": "a",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ftp dossiers aucun",
+   "entree": {
+    "op": "ftp_dossiers",
+    "utilisateurs": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ftp dossiers",
+   "entree": {
+    "op": "ftp_dossiers",
+    "utilisateurs": [
+     [
+      "alice",
+      [
+       [
+        "ftp1",
+        "/var/www/alice/data/ftp/ftp1"
+       ],
+       [
+        "ftp2",
+        "/var/www/alice/data/ftp/ftp2"
+       ]
+      ]
+     ],
+     [
+      "bob",
+      [
+       [
+        "ftp1",
+        "/var/www/bob/data/ftp/ftp1"
+       ],
+       [
+        "ftp3",
+        "/var/www/bob/data/ftp/ftp3"
+       ]
+      ]
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "login": "ftp1",
+      "home_dir": "/var/www/alice/data/ftp/ftp1",
+      "status": "active",
+      "owner": "alice",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "login": "ftp2",
+      "home_dir": "/var/www/alice/data/ftp/ftp2",
+      "status": "active",
+      "owner": "alice",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "login": "ftp3",
+      "home_dir": "/var/www/bob/data/ftp/ftp3",
+      "status": "active",
+      "owner": "bob",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ftp dossiers un utilisateur sans compte",
+   "entree": {
+    "op": "ftp_dossiers",
+    "utilisateurs": [
+     [
+      "alice",
+      []
+     ],
+     [
+      "bob",
+      [
+       [
+        "x",
+        "/p/x"
+       ]
+      ]
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "login": "x",
+      "home_dir": "/p/x",
+      "status": "active",
+      "owner": "bob",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  }
+ ]
+}

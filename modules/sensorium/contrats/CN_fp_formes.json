@@ -1,0 +1,38 @@
+{
+ "point": "sensorium.fp_formes",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "op",
+   "now"
+  ],
+  "properties": {
+   "op": {
+    "enum": [
+     "mail_mogwai",
+     "mail_api",
+     "mail_postfix",
+     "ftp_base",
+     "ftp_fichiers",
+     "ftp_dossiers"
+    ]
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un compte n'apparaît qu'une fois par source",
+  "une adresse sans arobase n'est pas un compte mail",
+  "une taille ou un quota illisible vaut zéro, jamais une erreur",
+  "un compte FTP dont le dossier est sous /var/www/<utilisateur>/ a cet utilisateur pour propriétaire",
+  "un fichier de serveur FTP absent se passe en None : rien n'est inventé",
+  "chaque compte porte l'instant de la vérification reçu : jamais l'horloge"
+ ]
+}

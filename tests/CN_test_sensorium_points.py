@@ -6,14 +6,15 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3533f7
+# VERSION CN : 0.1.0  #14e58a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le démon du Sensorium, seul et sans noyau, appelle ses points d'évolution ; que ses appels nourrissent le rejeu que le noyau absorbe ; et qu'une panne du service ne perd jamais une mesure.
 # MÉTHODE    : charge CN_sensorium.py comme module, un dossier de données temporaire, puis appelle les fonctions façades.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3533f7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=14e58a ▼▼▼
 import importlib.util
+import json
 import os
 import shutil
 import sys
@@ -110,6 +111,69 @@ class DemonEtPoints(unittest.TestCase):
         finally:
             ps._SVC.appeler = vrai
         self.assertEqual(r["breakdown"], {"cpu": -20})
+
+
+class FauxFichier:
+    """Un système de fichiers de poche : ce que le collecteur lirait sur une machine, sans toucher la vraie."""
+    def __init__(self, chemin, fs, dirs):
+        self.chemin, self.fs, self.dirs = str(chemin), fs, dirs
+        self.name = self.chemin.rstrip("/").split("/")[-1]
+
+    def exists(self):
+        return self.chemin in self.fs or self.chemin in self.dirs
+
+    def is_dir(self):
+        return self.chemin in self.dirs and self.chemin not in self.fs
+
+    def read_text(self, **kw):
+        v = self.fs[self.chemin]
+        if isinstance(v, dict) and "__erreur__" in v:
+            raise OSError(v["__erreur__"])
+        return v
+
+    def iterdir(self):
+        pref = self.chemin.rstrip("/") + "/"
+        vus = []
+        for k in list(self.dirs) + list(self.fs):
+            if k.startswith(pref) and "/" not in k[len(pref):] and k not in vus:
+                vus.append(k)
+        return [FauxFichier(k, self.fs, self.dirs) for k in vus]
+
+    def __str__(self):
+        return self.chemin
+
+
+class Collecteurs(unittest.TestCase):
+    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (21 scénarios, aucun écart)."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.donnees = self.tmp / "donnees" / "sensorium"
+        self.donnees.mkdir(parents=True)
+        (self.tmp / "donnees" / "ec").mkdir()
+        self.m = charger_demon(self.donnees)
+        import CN_points_sensorium as ps
+        ps._SVC = ps._REJEU = None
+        ps._ECHEC = ""
+
+    def jouer(self, fonction, sc):
+        m = self.m
+        fs, dirs = dict(sc.get("fs", {})), set(sc.get("dirs", []))
+        m.Path = lambda chemin: FauxFichier(chemin, fs, dirs)
+        m.datetime = type("DT", (), {"now": staticmethod(lambda tz=None: type("N", (), {"isoformat": staticmethod(lambda: "2026-10-17T12:00:00.000001")})())})
+        m._fp_available = lambda: sc.get("dispo", True)
+        m._mogwai = lambda args, timeout=15: sc.get("mogwai", "")
+        m._fp_api_get_list = lambda ep: list(sc.get("api", []))
+        m._fp_sqlite_ftp = lambda: [dict(x) for x in sc.get("base_ftp", [])]
+        m._fp_get_fp2_usernames = lambda: list(sc.get("users", []))
+        return json.loads(json.dumps(getattr(m, fonction)()))
+
+    def test_les_collecteurs_rendent_ce_que_rendait_l_ancien_code(self):
+        scenarios = json.loads((Path(__file__).resolve().parent / "CN_donnees_collecteurs.json").read_text(encoding="utf-8"))
+        self.assertGreaterEqual(len(scenarios), 20)
+        for x in scenarios:
+            self.assertEqual(self.jouer(x["fonction"], x["scenario"]), x["attendu"], "%s : %s" % (x["fonction"], json.dumps(x["scenario"], ensure_ascii=False)[:160]))
 
 
 if __name__ == "__main__":

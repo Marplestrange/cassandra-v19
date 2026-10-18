@@ -1,0 +1,509 @@
+[
+ {
+  "fonction": "collect_fastpanel_mail",
+  "scenario": {
+   "dispo": false,
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_mail",
+  "scenario": {
+   "mogwai": "ADDRESS  SIZE  QUOTA  ENABLED\na@exemple.test  1048576  5242880  true\nb@exemple.test  0  0  false\nbad  1  1  true\na@exemple.test  9  9  true\n",
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "email": "a@exemple.test",
+    "domain": "exemple.test",
+    "login": "a",
+    "quota_mb": 5.0,
+    "used_mb": 1.0,
+    "status": "active",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "email": "b@exemple.test",
+    "domain": "exemple.test",
+    "login": "b",
+    "quota_mb": 0.0,
+    "used_mb": 0.0,
+    "status": "suspended",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_mail",
+  "scenario": {
+   "mogwai": "ADDRESS\tSIZE\tQUOTA\tENABLED\nc@exemple.test\t2097152\t4194304\ttrue\n",
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "email": "c@exemple.test",
+    "domain": "exemple.test",
+    "login": "c",
+    "quota_mb": 4.0,
+    "used_mb": 2.0,
+    "status": "active",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_mail",
+  "scenario": {
+   "mogwai": "",
+   "api": [
+    {
+     "address": "x@exemple.test",
+     "quota": 5,
+     "size": 1,
+     "enabled": true
+    },
+    {
+     "email": "y@exemple.test"
+    },
+    {
+     "address": "x@exemple.test"
+    }
+   ],
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "email": "x@exemple.test",
+    "domain": "exemple.test",
+    "login": "x",
+    "quota_mb": 5,
+    "used_mb": 1,
+    "status": "active",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "email": "y@exemple.test",
+    "domain": "exemple.test",
+    "login": "y",
+    "quota_mb": 0,
+    "used_mb": 0,
+    "status": "active",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_mail",
+  "scenario": {
+   "mogwai": "rien d'utile",
+   "api": [],
+   "fs": {
+    "/etc/postfix/virtual": "a@exemple.test a\n# c\nb@exemple.test b\n",
+    "/etc/postfix/vmailbox": "b@exemple.test b/\nc@exemple.test c/\n"
+   }
+  },
+  "attendu": [
+   {
+    "email": "a@exemple.test",
+    "domain": "exemple.test",
+    "login": "a",
+    "quota_mb": 0,
+    "used_mb": 0,
+    "status": "active",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "email": "b@exemple.test",
+    "domain": "exemple.test",
+    "login": "b",
+    "quota_mb": 0,
+    "used_mb": 0,
+    "status": "active",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "email": "c@exemple.test",
+    "domain": "exemple.test",
+    "login": "c",
+    "quota_mb": 0,
+    "used_mb": 0,
+    "status": "active",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_mail",
+  "scenario": {
+   "fs": {
+    "/etc/postfix/vmailbox": "z@exemple.test z/\n"
+   }
+  },
+  "attendu": [
+   {
+    "email": "z@exemple.test",
+    "domain": "exemple.test",
+    "login": "z",
+    "quota_mb": 0,
+    "used_mb": 0,
+    "status": "active",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_mail",
+  "scenario": {
+   "fs": {
+    "/etc/postfix/virtual": {
+     "__erreur__": "illisible"
+    },
+    "/etc/postfix/vmailbox": "z@exemple.test z/\n"
+   }
+  },
+  "attendu": [
+   {
+    "email": "z@exemple.test",
+    "domain": "exemple.test",
+    "login": "z",
+    "quota_mb": 0,
+    "used_mb": 0,
+    "status": "active",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_mail",
+  "scenario": {
+   "fs": {
+    "/etc/postfix/virtual": {
+     "__erreur__": "illisible"
+    }
+   }
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_mail",
+  "scenario": {
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_mail",
+  "scenario": {
+   "mogwai": "ADDRESS  SIZE  QUOTA  ENABLED\na@exemple.test  1048576  5242880  true\nb@exemple.test  0  0  false\nbad  1  1  true\na@exemple.test  9  9  true\n",
+   "api": [
+    {
+     "address": "ignoré@exemple.test"
+    }
+   ],
+   "fs": {
+    "/etc/postfix/virtual": "ignoré@exemple.test x\n"
+   }
+  },
+  "attendu": [
+   {
+    "email": "a@exemple.test",
+    "domain": "exemple.test",
+    "login": "a",
+    "quota_mb": 5.0,
+    "used_mb": 1.0,
+    "status": "active",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "email": "b@exemple.test",
+    "domain": "exemple.test",
+    "login": "b",
+    "quota_mb": 0.0,
+    "used_mb": 0.0,
+    "status": "suspended",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_ftp",
+  "scenario": {
+   "dispo": false,
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_ftp",
+  "scenario": {
+   "base_ftp": [
+    {
+     "login": "a",
+     "home_dir": "/h/a",
+     "status": "active",
+     "owner": "u",
+     "site": "s.test",
+     "created": "2026-01-01"
+    },
+    {
+     "login": "a"
+    },
+    {
+     "login": ""
+    },
+    {
+     "login": "b"
+    }
+   ],
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "login": "a",
+    "home_dir": "/h/a",
+    "status": "active",
+    "owner": "u",
+    "site": "s.test",
+    "created": "2026-01-01",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "login": "b",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_ftp",
+  "scenario": {
+   "base_ftp": [],
+   "fs": {
+    "/etc/proftpd/passwd": "alice:x:1000:1000:Alice:/var/www/alice/data/www:/bin/false\nbob:x:1001:1001:Bob:/home/bob:/bin/false\ncourt:x:1\n"
+   }
+  },
+  "attendu": [
+   {
+    "login": "alice",
+    "home_dir": "/var/www/alice/data/www",
+    "status": "active",
+    "owner": "alice",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "login": "bob",
+    "home_dir": "/home/bob",
+    "status": "active",
+    "owner": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_ftp",
+  "scenario": {
+   "fs": {
+    "/etc/pure-ftpd/pureftpd.passwd": "carl:hash:1000:1000::/var/www/carl/data/./:::::::::::\nalice:h:1:1:g:/var/www/alice/data/:/b:x\n"
+   }
+  },
+  "attendu": [
+   {
+    "login": "carl",
+    "home_dir": "/var/www/carl/data/./",
+    "status": "active",
+    "owner": "carl",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "login": "alice",
+    "home_dir": "/var/www/alice/data/",
+    "status": "active",
+    "owner": "alice",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_ftp",
+  "scenario": {
+   "fs": {
+    "/etc/vsftpd.userlist": "# liste\nerin\n\n  frank  \n"
+   }
+  },
+  "attendu": [
+   {
+    "login": "erin",
+    "home_dir": "/var/www/erin/data",
+    "status": "active",
+    "owner": "erin",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "login": "frank",
+    "home_dir": "/var/www/frank/data",
+    "status": "active",
+    "owner": "frank",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_ftp",
+  "scenario": {
+   "fs": {
+    "/etc/proftpd/passwd": "alice:x:1000:1000:Alice:/var/www/alice/data/www:/bin/false\nbob:x:1001:1001:Bob:/home/bob:/bin/false\ncourt:x:1\n",
+    "/etc/pure-ftpd/pureftpd.passwd": "carl:hash:1000:1000::/var/www/carl/data/./:::::::::::\nalice:h:1:1:g:/var/www/alice/data/:/b:x\n",
+    "/etc/vsftpd.userlist": "# liste\nerin\n\n  frank  \n"
+   }
+  },
+  "attendu": [
+   {
+    "login": "alice",
+    "home_dir": "/var/www/alice/data/www",
+    "status": "active",
+    "owner": "alice",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "login": "bob",
+    "home_dir": "/home/bob",
+    "status": "active",
+    "owner": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "login": "carl",
+    "home_dir": "/var/www/carl/data/./",
+    "status": "active",
+    "owner": "carl",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "login": "erin",
+    "home_dir": "/var/www/erin/data",
+    "status": "active",
+    "owner": "erin",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "login": "frank",
+    "home_dir": "/var/www/frank/data",
+    "status": "active",
+    "owner": "frank",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_ftp",
+  "scenario": {
+   "fs": {
+    "/etc/proftpd/passwd": {
+     "__erreur__": "x"
+    },
+    "/etc/vsftpd.userlist": "# liste\nerin\n\n  frank  \n"
+   }
+  },
+  "attendu": [
+   {
+    "login": "erin",
+    "home_dir": "/var/www/erin/data",
+    "status": "active",
+    "owner": "erin",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "login": "frank",
+    "home_dir": "/var/www/frank/data",
+    "status": "active",
+    "owner": "frank",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_ftp",
+  "scenario": {
+   "users": [
+    "alice",
+    "bob"
+   ],
+   "dirs": [
+    "/var/www/alice/data/ftp",
+    "/var/www/alice/data/ftp/f1",
+    "/var/www/alice/data/ftp/f2",
+    "/var/www/bob/data/ftp",
+    "/var/www/bob/data/ftp/f1"
+   ],
+   "fs2": 1,
+   "fs": {
+    "/etc/proftpd/passwd": "",
+    "/etc/pure-ftpd/pureftpd.passwd": "",
+    "/etc/vsftpd.userlist": ""
+   }
+  },
+  "attendu": [
+   {
+    "login": "f1",
+    "home_dir": "/var/www/alice/data/ftp/f1",
+    "status": "active",
+    "owner": "alice",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "login": "f2",
+    "home_dir": "/var/www/alice/data/ftp/f2",
+    "status": "active",
+    "owner": "alice",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_ftp",
+  "scenario": {
+   "users": [
+    "alice",
+    "carla"
+   ],
+   "dirs": [
+    "/var/www/alice/data/ftp",
+    "/var/www/alice/data/ftp/ftp_a"
+   ],
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "login": "ftp_a",
+    "home_dir": "/var/www/alice/data/ftp/ftp_a",
+    "status": "active",
+    "owner": "alice",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_ftp",
+  "scenario": {
+   "users": [],
+   "dirs": [],
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_ftp",
+  "scenario": {
+   "users": [
+    "alice"
+   ],
+   "dirs": [
+    "/var/www/alice/data/ftp"
+   ],
+   "fs": {
+    "/var/www/alice/data/ftp/fichier": "x"
+   }
+  },
+  "attendu": []
+ }
+]
