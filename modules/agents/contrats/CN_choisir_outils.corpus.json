@@ -1,0 +1,1625 @@
+{
+ "point": "agents.choisir_outils",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de agents, données synthétiques",
+ "cas": [
+  {
+   "cas": "aucun outil",
+   "entree": {
+    "outils": [],
+    "texte": "bonjour",
+    "maxi": 5
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "demande sur les sites",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "liste mes sites",
+    "maxi": 3
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "demande sur le courrier",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "lis mon courrier",
+    "maxi": 3
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "demande sur le dns",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "corrige le dns",
+    "maxi": 4
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "aucun mot reconnu, les lectures d'abord",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "xyz",
+    "maxi": 4
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "demande vide",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "",
+    "maxi": 4
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": null,
+    "maxi": 4
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "maxi un",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "sites",
+    "maxi": 1
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "maxi zéro",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "sites",
+    "maxi": 0
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "maxi énorme",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "sites courrier dns",
+    "maxi": 50
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mots vides ignorés",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "le la les de du des sites",
+    "maxi": 3
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "accents et casse",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "SÉCURITÉ audit",
+    "maxi": 3
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "égalité, lectures avant écritures",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "courrier",
+    "maxi": 5
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "égalité, ordre alphabétique",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "relevé enregistrements",
+    "maxi": 5
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "remplissage par lectures",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "agenda",
+    "maxi": 6
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "risque absent de la sélection",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "supprimer",
+    "maxi": 2
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "mots de moins de trois lettres",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "a b c",
+    "maxi": 3
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "chiffres",
+   "entree": {
+    "outils": [
+     {
+      "cle": "a.b2",
+      "description": "outil 42",
+      "risque": "lecture"
+     },
+     {
+      "cle": "c.d",
+      "description": "autre",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "42",
+    "maxi": 2
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "a.b2",
+      "description": "outil 42",
+      "risque": "lecture"
+     },
+     {
+      "cle": "c.d",
+      "description": "autre",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "un seul outil",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "sites",
+    "maxi": 3
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "outils sans lecture",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     }
+    ],
+    "texte": "xyz",
+    "maxi": 3
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ponctuation",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "sites, courrier ; dns !",
+    "maxi": 4
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "clé avec soulignés",
+   "entree": {
+    "outils": [
+     {
+      "cle": "a.liste_des_sites",
+      "description": "x",
+      "risque": "lecture"
+     },
+     {
+      "cle": "b.autre",
+      "description": "y",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "sites",
+    "maxi": 2
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "a.liste_des_sites",
+      "description": "x",
+      "risque": "lecture"
+     },
+     {
+      "cle": "b.autre",
+      "description": "y",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "description seule",
+   "entree": {
+    "outils": [
+     {
+      "cle": "zzz.yyy",
+      "description": "surveille la flotte",
+      "risque": "lecture"
+     },
+     {
+      "cle": "aaa.bbb",
+      "description": "autre",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "flotte",
+    "maxi": 2
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "zzz.yyy",
+      "description": "surveille la flotte",
+      "risque": "lecture"
+     },
+     {
+      "cle": "aaa.bbb",
+      "description": "autre",
+      "risque": "lecture"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "maxi négatif",
+   "entree": {
+    "outils": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     },
+     {
+      "cle": "sites.supprimer",
+      "description": "Supprime un site",
+      "risque": "destructif"
+     },
+     {
+      "cle": "courrier.lire",
+      "description": "Lire le courrier",
+      "risque": "lecture"
+     },
+     {
+      "cle": "courrier.envoyer",
+      "description": "Envoyer un courrier",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "dns.releve",
+      "description": "Relevé des enregistrements DNS",
+      "risque": "lecture"
+     },
+     {
+      "cle": "dns.corriger",
+      "description": "Corrige un enregistrement",
+      "risque": "ecriture"
+     },
+     {
+      "cle": "agenda.jour",
+      "description": "Le programme du jour",
+      "risque": "lecture"
+     },
+     {
+      "cle": "notes.chercher",
+      "description": "Cherche dans les notes",
+      "risque": "lecture"
+     },
+     {
+      "cle": "flotte.etat",
+      "description": "État de la flotte de machines",
+      "risque": "lecture"
+     },
+     {
+      "cle": "securite.audit",
+      "description": "Audit de sécurité",
+      "risque": "lecture"
+     }
+    ],
+    "texte": "sites",
+    "maxi": -1
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "sites.liste",
+      "description": "Liste des sites hébergés",
+      "risque": "lecture"
+     }
+    ]
+   }
+  }
+ ]
+}

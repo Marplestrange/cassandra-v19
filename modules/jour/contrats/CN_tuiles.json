@@ -1,0 +1,25 @@
+{
+ "point": "jour.tuiles",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "items",
+   "metas"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un nombre est toujours compté sur les items reçus : jamais inventé",
+  "la composition d'un nombre le dit (« 2 tâches · 1 rappel ») et suit l'ordre des genres",
+  "le courrier non configuré compte zéro non lu",
+  "un genre inconnu est ignoré",
+  "les mêmes items donnent toujours les mêmes tuiles"
+ ]
+}

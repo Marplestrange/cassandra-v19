@@ -1,0 +1,26 @@
+{
+ "point": "agents.choisir_outils",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "outils",
+   "texte",
+   "maxi"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "jamais plus de `maxi` outils",
+  "un outil dont le nom ou la description touche la demande passe avant les autres",
+  "à score égal, une lecture passe avant une écriture, puis l'ordre alphabétique de la clé",
+  "le complément est fait de lectures seulement",
+  "la même demande donne toujours la même sélection"
+ ]
+}

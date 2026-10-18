@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.0  #afef40
+# VERSION CN : 0.1.0  #47259c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=afef40 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=47259c ▼▼▼
 """Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils."""
 from __future__ import annotations
 
@@ -66,18 +66,12 @@ def score(outil, ms):
     return len(ms & cible)
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+
+
 def choisir_outils(outils, texte, maxi):
-    """Les outils présentés d'emblée : ceux dont le nom ou le libellé touche la demande d'abord, puis les lectures (peu risquées, utiles pour vérifier), jusqu'à `maxi`.
-    Les autres restent joignables par outil_cherche / outil_appeler : présenter deux cents outils à chaque tour coûterait 30 000 jetons."""
-    ms = mots(texte)
-    notes = sorted(((score(o, ms), 0 if o["risque"] == "lecture" else 1, o["cle"], o) for o in outils), key=lambda x: (-x[0], x[1], x[2]))
-    pris = [x[3] for x in notes if x[0] > 0][:maxi]
-    for x in notes:
-        if len(pris) >= maxi:
-            break
-        if x[3] not in pris and x[3]["risque"] == "lecture":
-            pris.append(x[3])
-    return pris
+    """Les outils présentés d'emblée : ceux dont le nom ou le libellé touche la demande d'abord, puis les lectures (peu risquées, utiles pour vérifier), jusqu'à `maxi`. Le calcul est un POINT D'ÉVOLUTION : points/EC_choisir_outils.py."""
+    return _point("choisir_outils", {"outils": outils, "texte": texte, "maxi": maxi})["valeur"]
 
 
 def descriptif(o):

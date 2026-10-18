@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.0  #61bd51
+# VERSION CN : 0.1.0  #368c2e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=61bd51 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=368c2e ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -41,6 +41,7 @@ ECRITURES_RISQUEES = ("moyen", "eleve")
 
 
 def brancher(ctx):
+    o._point = ctx.point
     db = ctx.stockage
 
     def compte_agit():

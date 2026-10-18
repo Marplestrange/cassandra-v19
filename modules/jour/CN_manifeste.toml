@@ -36,3 +36,11 @@ lectures = true
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "tuiles"
+libelle = "Les tuiles de la vue du jour (à faire, en retard, accords, à relire, courrier) : les items rassemblés et les métadonnées en entrée, les nombres et leur composition en sortie"
+contrat = "1.0"
+reference = "points/EC_tuiles"
+fonction = "point_tuiles"
+runtime = "python"

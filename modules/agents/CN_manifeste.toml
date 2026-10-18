@@ -167,3 +167,11 @@ contrat = "1.0"
 reference = "points/EC_resume_resultat"
 fonction = "point_resume_resultat"
 runtime = "python"
+
+[[points_evolution]]
+id = "choisir_outils"
+libelle = "Les outils présentés d'emblée à un agent : le catalogue, la demande et le nombre maximal en entrée, la sélection en sortie (ceux que la demande touche, puis les lectures)"
+contrat = "1.0"
+reference = "points/EC_choisir_outils"
+fonction = "point_choisir_outils"
+runtime = "python"

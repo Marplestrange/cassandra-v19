@@ -1,0 +1,771 @@
+{
+ "point": "jour.tuiles",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de jour, données synthétiques",
+ "cas": [
+  {
+   "cas": "rien",
+   "entree": {
+    "items": [],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 0,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "une tâche du jour",
+   "entree": {
+    "items": [
+     {
+      "bande": "jour",
+      "quoi": "tache",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 1,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "1 tâche",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "deux tâches et un rappel",
+   "entree": {
+    "items": [
+     {
+      "bande": "jour",
+      "quoi": "tache",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "tache",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "rappel",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 3,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "2 tâches · 1 rappel",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "rendez-vous",
+   "entree": {
+    "items": [
+     {
+      "bande": "jour",
+      "quoi": "event",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "event",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 2,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "2 rendez-vous",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "décision hors bande",
+   "entree": {
+    "items": [
+     {
+      "bande": "jour",
+      "quoi": "decision",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "brule",
+      "quoi": "decision",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 2,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "2 décisions",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "en retard",
+   "entree": {
+    "items": [
+     {
+      "bande": "brule",
+      "quoi": "tache",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "brule",
+      "quoi": "rappel",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "brule",
+      "quoi": "rappel",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 0,
+     "en_retard": 3,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "",
+     "en_retard_s": "1 tâche · 2 rappels",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "en retard hors jour",
+   "entree": {
+    "items": [
+     {
+      "bande": "jour",
+      "quoi": "tache",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "brule",
+      "quoi": "tache",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 1,
+     "en_retard": 1,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "1 tâche",
+     "en_retard_s": "1 tâche",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "accords",
+   "entree": {
+    "items": [
+     {
+      "bande": "jour",
+      "quoi": "mandat",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "autre",
+      "quoi": "mandat",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 0,
+     "en_retard": 0,
+     "accord": 2,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "",
+     "en_retard_s": "",
+     "accord_s": "2 envois à accorder",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "notes à relire",
+   "entree": {
+    "items": [
+     {
+      "bande": "autre",
+      "quoi": "note",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "note",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 0,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 2,
+     "non_lus_s": "",
+     "a_faire_s": "",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": "2 notes"
+    }
+   }
+  },
+  {
+   "cas": "courrier non configuré",
+   "entree": {
+    "items": [],
+    "metas": {
+     "courrier": {
+      "non_lus": 5,
+      "gardes": 2,
+      "configuree": false
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 0,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "sur 2 gardés",
+     "a_faire_s": "",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "courrier configuré",
+   "entree": {
+    "items": [],
+    "metas": {
+     "courrier": {
+      "non_lus": 5,
+      "gardes": 2,
+      "configuree": true
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 5,
+     "a_faire": 0,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "sur 2 gardés",
+     "a_faire_s": "",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "courrier un gardé",
+   "entree": {
+    "items": [],
+    "metas": {
+     "courrier": {
+      "non_lus": 3,
+      "gardes": 1,
+      "configuree": true
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 3,
+     "a_faire": 0,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "sur 1 gardé",
+     "a_faire_s": "",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "courrier sans gardés",
+   "entree": {
+    "items": [],
+    "metas": {
+     "courrier": {
+      "non_lus": 3,
+      "gardes": 0,
+      "configuree": true
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 3,
+     "a_faire": 0,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "courrier valeurs absentes",
+   "entree": {
+    "items": [],
+    "metas": {
+     "courrier": {
+      "configuree": true
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 0,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "courrier None",
+   "entree": {
+    "items": [],
+    "metas": {
+     "courrier": null
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 0,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "tout mélangé",
+   "entree": {
+    "items": [
+     {
+      "bande": "jour",
+      "quoi": "tache",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "rappel",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "event",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "decision",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "brule",
+      "quoi": "tache",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "brule",
+      "quoi": "rappel",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "autre",
+      "quoi": "mandat",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "autre",
+      "quoi": "note",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "autre",
+      "quoi": "note",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {
+     "courrier": {
+      "non_lus": 12,
+      "gardes": 4,
+      "configuree": true
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 12,
+     "a_faire": 4,
+     "en_retard": 2,
+     "accord": 1,
+     "a_relire": 2,
+     "non_lus_s": "sur 4 gardés",
+     "a_faire_s": "1 tâche · 1 rappel · 1 rendez-vous · 1 décision",
+     "en_retard_s": "1 tâche · 1 rappel",
+     "accord_s": "1 envoi à accorder",
+     "a_relire_s": "2 notes"
+    }
+   }
+  },
+  {
+   "cas": "quoi inconnu ignoré",
+   "entree": {
+    "items": [
+     {
+      "bande": "jour",
+      "quoi": "autre",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "tache",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 1,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "1 tâche",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "pluriels",
+   "entree": {
+    "items": [
+     {
+      "bande": "jour",
+      "quoi": "event",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "event",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "event",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "tache",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "tache",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "rappel",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 6,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "2 tâches · 1 rappel · 3 rendez-vous",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "décisions et tâches",
+   "entree": {
+    "items": [
+     {
+      "bande": "jour",
+      "quoi": "decision",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "decision",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "jour",
+      "quoi": "tache",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 3,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "1 tâche · 2 décisions",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "bande inconnue",
+   "entree": {
+    "items": [
+     {
+      "bande": "zzz",
+      "quoi": "tache",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 0,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "non lus textes",
+   "entree": {
+    "items": [],
+    "metas": {
+     "courrier": {
+      "non_lus": "7",
+      "gardes": "3",
+      "configuree": 1
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 7,
+     "a_faire": 0,
+     "en_retard": 0,
+     "accord": 0,
+     "a_relire": 0,
+     "non_lus_s": "sur 3 gardés",
+     "a_faire_s": "",
+     "en_retard_s": "",
+     "accord_s": "",
+     "a_relire_s": ""
+    }
+   }
+  },
+  {
+   "cas": "trois mandats",
+   "entree": {
+    "items": [
+     {
+      "bande": "x",
+      "quoi": "mandat",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "x",
+      "quoi": "mandat",
+      "titre": "t",
+      "poids": 0
+     },
+     {
+      "bande": "x",
+      "quoi": "mandat",
+      "titre": "t",
+      "poids": 0
+     }
+    ],
+    "metas": {}
+   },
+   "sortie": {
+    "valeur": {
+     "non_lus": 0,
+     "a_faire": 0,
+     "en_retard": 0,
+     "accord": 3,
+     "a_relire": 0,
+     "non_lus_s": "",
+     "a_faire_s": "",
+     "en_retard_s": "",
+     "accord_s": "3 envois à accorder",
+     "a_relire_s": ""
+    }
+   }
+  }
+ ]
+}

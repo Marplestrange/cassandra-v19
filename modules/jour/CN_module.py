@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : jour
 # ZONE       : CN
-# VERSION CN : 0.1.0  #aa0dc8
+# VERSION CN : 0.1.0  #37ab1b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le bureau du jour : assemble les signaux que les modules déclarent.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=aa0dc8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=37ab1b ▼▼▼
 """Le bureau du jour : assemble les signaux que les modules déclarent.
 
 Une source qui échoue ne disparaît pas : elle rend une ligne qui dit qu'elle est en panne. C'est le point le plus important de l'écran — une bande
@@ -58,24 +58,17 @@ def compo(items, bande=None, quois=()):
     return " · ".join(bouts)
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+
+
 def tuiles(items, metas):
-    def n(bande=None, quois=()):
-        return sum(1 for x in items if (bande is None or x["bande"] == bande) and x["quoi"] in quois)
-    ce = metas.get("courrier") or {}
-    garde = int(ce.get("gardes") or 0)
-    return {"non_lus": int(ce.get("non_lus") or 0) if ce.get("configuree") else 0,
-            "a_faire": n("jour", ("tache", "rappel", "event")) + n(None, ("decision",)),
-            "en_retard": n("brule", ("tache", "rappel")),
-            "accord": n(None, ("mandat",)),
-            "a_relire": n(None, ("note",)),
-            "non_lus_s": ("sur %d gardé%s" % (garde, "s" if garde > 1 else "")) if garde else "",
-            "a_faire_s": " · ".join(x for x in [compo(items, "jour", ("tache", "rappel", "event")), compo(items, None, ("decision",))] if x),
-            "en_retard_s": compo(items, "brule", ("tache", "rappel")),
-            "accord_s": compo(items, None, ("mandat",)),
-            "a_relire_s": compo(items, None, ("note",))}
+    """tuiles. Le calcul est un POINT D'ÉVOLUTION : points/EC_tuiles.py."""
+    return _point("tuiles", {"items": items, "metas": metas})["valeur"]
 
 
 def brancher(ctx):
+    global _point
+    _point = ctx.point
     verrou = threading.Lock()
     garde = {}                     # (compte, module.signal) -> (ts, resultat) pour les sources à cadence
 
