@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9060b0
+# VERSION CN : 0.1.0  #6ed8d5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le démon du Sensorium, seul et sans noyau, appelle ses points d'évolution ; que ses appels nourrissent le rejeu que le noyau absorbe ; et qu'une panne du service ne perd jamais une mesure.
 # MÉTHODE    : charge CN_sensorium.py comme module, un dossier de données temporaire, puis appelle les fonctions façades.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9060b0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6ed8d5 ▼▼▼
 import importlib.util
 import json
 import os
@@ -339,6 +339,7 @@ class Collecteurs(unittest.TestCase):
             for src, ino, pos in sc.get("curseur", []):
                 db.execute("INSERT INTO log_errors_curseur VALUES (?,?,?,?,?)", (src, ino, pos, None, "x"))
             m.get_conn = lambda: Conn(db)
+            m.LOG_ERREURS_JOURNALD = False          # le journal système n'est pas une mesure rejouée : seule sa forme l'est
             contenus = {k: v.encode("utf-8") for k, v in sc.get("fs", {}).items()}
 
             def stat(chemin):
