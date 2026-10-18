@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #66a0e5
+// VERSION CN : 0.1.0  #5590db
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=66a0e5 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=5590db ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -187,8 +187,30 @@
     return (d.epingles || []).filter((p) => d.groupes.some((g) => g.id === p.groupe && g.entrees.some((e) => e.id === p.entree)));
   }
   const nbDe = (n) => { const b = n.badge || {}; return b.n ? '<span class="d19-nb ' + (b.niveau || "") + '">' + b.n + "</span>" : (b.niveau ? '<span class="d19-nb ' + b.niveau + '">!</span>' : ""); };
+  // ── la capsule : où je suis, et si quelque chose brûle (au-dessus de la colonne, dans l'espace libre sous la barre) ──
+  const NIV = { danger: ["danger", "À traiter"], alerte: ["alerte", "À regarder"] };
+  function rendreCapsule(rail) {
+    const c = $("#d19-cap"); if (!c) return;
+    const g = ent(), propre = !!(E.pageNom && !E.actif && E.fil);
+    if (!E.d || (!g && !propre)) { c.style.display = "none"; return; }
+    let niv = "", n = 0, lib, ic;
+    if (propre) { niv = E.d.niveau || ""; lib = E.fil[1] || E.fil[0]; ic = g ? g.icone : "panorama"; }
+    else {
+      niv = g.niveau || ""; lib = g.libelle; ic = g.icone;
+      g.entrees.forEach((e) => { n += (e.badge && e.badge.n) || 0; });
+    }
+    const [k, txt] = NIV[niv] || ["ok", "Tout va bien"];
+    c.style.display = ""; c.className = "n-" + k + (rail ? " rail" : "");
+    c.title = lib + " · " + (k === "ok" ? "tout est en ordre" : txt.toLowerCase() + (n ? " (" + n + ")" : "")) + " — cliquer pour voir";
+    c.innerHTML = '<span class="ic">' + ico(ic) + '<i class="pt"></i></span><span class="tx"><b>' + esc(lib) + "</b><small>" + esc(k === "ok" ? txt : txt + (n ? " · " + n : "")) + "</small></span>";
+  }
+  function capsuleAller() {
+    const g = ent(); if (!g || (E.pageNom && !E.actif)) { aller(E.g || (E.d.groupes[0] || {}).id, ""); return; }
+    const e = g.entrees.find((x) => x.badge && (x.badge.niveau === "danger" || x.badge.niveau === "alerte")) || g.entrees[0];
+    aller(g.id, e.id, "");
+  }
   function rendreGauche() {
-    const g = ent(), sd = $("#d19-side"); if (!g) { sd.innerHTML = ""; return; }
+    const g = ent(), sd = $("#d19-side"); rendreCapsule(E.side === "rail" && !isPetit()); if (!g) { sd.innerHTML = ""; return; }
     const rail = E.side === "rail" && !isPetit();
     sd.classList.toggle("ferme", !E.side);
     sd.classList.toggle("rail", rail);
@@ -741,6 +763,7 @@
     const side = document.createElement("aside"); side.id = "d19-side"; side.setAttribute("aria-label", "Menu du groupe");
     const scrim = document.createElement("div"); scrim.id = "d19-scrim";
     corps.insertBefore(side, main); corps.insertBefore(scrim, main);
+    const cap = document.createElement("button"); cap.id = "d19-cap"; cap.type = "button"; cap.setAttribute("aria-label", "Où je suis, et l'état"); corps.appendChild(cap);
     const strip = document.createElement("div"); strip.id = "d19-strip"; main.insertBefore(strip, main.firstChild);
     const cass = document.createElement("aside"); cass.id = "d19-cass"; cass.setAttribute("aria-label", "Itare et Cassandra"); cass.innerHTML = '<div class="in"></div>'; corps.appendChild(cass);
     const autres = '<div id="d19-fly"></div><div class="d19-tip" id="d19-tip"></div><div id="d19-plus"></div><div id="d19-ms"><div class="back" data-msback="1"></div><div class="box"></div></div>'
@@ -793,6 +816,7 @@
       if (c("[data-gen-nouveau]")) { genererMdp(); return; }
       if (c("[data-gen-copier]")) { const v = document.getElementById("d19-gen-sortie").value; if (v && navigator.clipboard) navigator.clipboard.writeText(v).then(() => toast("Copié."), () => toast("Copie refusée par le navigateur.")); return; }
       if ((x = c("[data-lat]"))) { if (E.pageAction) E.pageAction(x.dataset.lat); return; }
+      if (c("#d19-cap")) { capsuleAller(); return; }
       if ((x = c("#d19-side .pinned"))) { aller(x.dataset.pg, x.dataset.pe, x.dataset.pv); return; }
       if ((x = c("#d19-side .sub"))) { aller(E.g, x.dataset.e, x.dataset.v); return; }
       if ((x = c("#d19-side .ent"))) {

@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=8a31e1 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=888722 ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -388,6 +388,28 @@ body.d19 .tab-content h1,body.d19 .sh-scene h1,body.d19 .mx-head h1{
   display:inline-block;padding-bottom:10px;position:relative;
 }
 body.d19 .tab-content h1::after,body.d19 .sh-scene h1::after,body.d19 .mx-head h1::after{content:"";position:absolute;left:0;bottom:0;width:44px;height:3px;border-radius:3px;background:linear-gradient(90deg,#2dd4bf,var(--accent));box-shadow:0 0 12px rgba(45,212,191,.55)}
+/* ---------- la capsule sous la barre : le groupe où l'on est, et l'état en un coup d'œil ---------- */
+.app-body{position:relative}
+#d19-cap{position:absolute;left:14px;top:12px;width:248px;height:54px;z-index:21;display:flex;align-items:center;gap:11px;padding:0 14px 0 10px;border-radius:18px;cursor:pointer;text-align:left;font:inherit;color:var(--txt-strong);
+  background:linear-gradient(165deg,rgba(255,255,255,.82),rgba(255,255,255,.5));-webkit-backdrop-filter:blur(20px) saturate(1.6);backdrop-filter:blur(20px) saturate(1.6);
+  border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(16,24,40,.05),0 12px 28px -14px rgba(15,70,66,.3);transition:transform .15s,box-shadow .15s}
+#d19-cap:hover{transform:translateY(-1px);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 16px 30px -12px rgba(15,110,100,.38)}
+#d19-cap .ic{position:relative;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;color:var(--accent);background:var(--acc-10)}
+#d19-cap .ic svg.d-i{width:18px;height:18px}
+#d19-cap .pt{position:absolute;right:-3px;top:-3px;width:11px;height:11px;border-radius:50%;background:#22c55e;border:2px solid #fff;box-shadow:0 0 8px rgba(34,197,94,.7)}
+#d19-cap.n-alerte .pt{background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,.8)}
+#d19-cap.n-danger .pt{background:#e11d48;box-shadow:0 0 9px rgba(225,29,72,.85);animation:d19-cap-p 1.6s ease-in-out infinite}
+#d19-cap.n-alerte .ic{color:#b45309;background:rgba(245,158,11,.14)}#d19-cap.n-danger .ic{color:#be123c;background:rgba(225,29,72,.12)}
+@keyframes d19-cap-p{50%{box-shadow:0 0 0 5px rgba(225,29,72,.18),0 0 9px rgba(225,29,72,.85)}}
+#d19-cap .tx{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+#d19-cap .tx b{font:600 14px 'Inter',system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#d19-cap .tx small{font:500 11.5px 'Inter',system-ui,sans-serif;color:var(--txt-faint)}
+#d19-cap.n-alerte .tx small{color:#b45309}#d19-cap.n-danger .tx small{color:#be123c}
+#d19-cap.rail{width:64px;padding:0;justify-content:center}#d19-cap.rail .tx{display:none}
+body.d19 #d19-side.ferme ~ #d19-cap{display:none!important}
+#app-container[data-w="s"] #d19-cap,#app-container[data-w="xs"] #d19-cap{display:none!important}
+:root[data-theme="dark"] #d19-cap{background:linear-gradient(165deg,rgba(255,255,255,.1),rgba(255,255,255,.04));border-color:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 28px -14px rgba(0,0,0,.6)}
+:root[data-theme="dark"] #d19-cap .pt{border-color:#1e2632}
 /* ▲▲▲ FIN BORNE CN ▲▲▲ */
 
 /* ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ */
