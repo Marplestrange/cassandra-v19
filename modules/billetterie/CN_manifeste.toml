@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #73dbd4
+# VERSION CN : 0.1.0  #fb7933
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=73dbd4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fb7933 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -528,6 +528,74 @@ perimetre = ["l'ordre du programme d'un événement"]
 preuve = "l'ordre relu"
 retour = "remettre l'ordre d'avant"
 paliers = ["raconter", "auto", "maitre"]
+[[capacites]]
+id = "portefeuille"
+libelle = "Le portefeuille d'un revendeur ou d'un artiste : ce qui lui est dû, retirable aujourd'hui, en attente de sa date, déjà demandé ou versé, et ses dernières lignes"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "mouvements"
+libelle = "Le registre des mouvements (écriture seule), filtré par porteur ou par événement"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "retraits"
+libelle = "Les demandes de retrait, par état ou par porteur"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "provision"
+libelle = "Inscrire à la main une somme due (commission, fixe, forfait) ou un ajustement dans le registre"
+risque = "faible"
+droit = "gerer"
+perimetre = ["une ligne du registre d'un porteur"]
+preuve = "la ligne relue dans le registre"
+retour = "écrire la ligne contraire (le registre ne se retouche jamais)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "retrait_demander"
+libelle = "Demander un retrait : le montant est réservé dans le portefeuille (seuil minimal, disponible seulement)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["une demande de retrait et sa réserve"]
+preuve = "la demande relue en attente"
+retour = "refuser la demande : la réserve revient par une ligne contraire"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "retrait_valider"
+libelle = "Valider une demande de retrait (le virement reste à faire, hors de Cassandra)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["l'état d'une demande de retrait"]
+preuve = "la demande relue validée"
+retour = "la remettre en attente"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "retrait_payer"
+libelle = "Enregistrer que le virement d'une demande validée est parti"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["l'état d'une demande de retrait"]
+preuve = "la demande relue payée"
+retour = "la remettre à validée"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "retrait_refuser"
+libelle = "Refuser une demande de retrait : le montant revient au portefeuille"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["l'état d'une demande de retrait et sa réserve"]
+preuve = "la demande relue refusée"
+retour = "rouvrir la demande si le portefeuille la couvre encore"
+paliers = ["raconter", "auto", "maitre"]
+
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
