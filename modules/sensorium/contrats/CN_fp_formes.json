@@ -16,7 +16,13 @@
      "mail_postfix",
      "ftp_base",
      "ftp_fichiers",
-     "ftp_dossiers"
+     "ftp_dossiers",
+     "users_base",
+     "users_api",
+     "users_dossiers",
+     "dbs_base",
+     "dbs_api",
+     "dbs_mysql"
     ]
    }
   }

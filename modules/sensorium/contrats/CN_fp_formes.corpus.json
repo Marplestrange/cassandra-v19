@@ -1118,6 +1118,708 @@
      }
     ]
    }
+  },
+  {
+   "cas": "users base vide",
+   "entree": {
+    "op": "users_base",
+    "liste": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "users base",
+   "entree": {
+    "op": "users_base",
+    "liste": [
+     {
+      "username": "alice",
+      "roles": "ROLE_USER",
+      "ssh": true
+     },
+     {
+      "username": "alice"
+     },
+     {
+      "username": ""
+     },
+     {
+      "username": null
+     },
+     {
+      "username": "bob"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "username": "alice",
+      "roles": "ROLE_USER",
+      "ssh": true,
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "username": "bob",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "users api vide",
+   "entree": {
+    "op": "users_api",
+    "api_users": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "users api complet",
+   "entree": {
+    "op": "users_api",
+    "api_users": [
+     {
+      "username": "alice",
+      "quota": 5368709120,
+      "disk_used": 1073741824,
+      "enabled": true,
+      "restore_email": "a@exemple.test",
+      "created_at": "2026-01-01",
+      "last_login": "2026-10-01",
+      "roles": [
+       "ROLE_USER",
+       "ROLE_ADMIN"
+      ]
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "username": "alice",
+      "email": "a@exemple.test",
+      "status": "active",
+      "disk_quota_gb": 5.0,
+      "disk_used_gb": 1.0,
+      "created_at": "2026-01-01",
+      "last_login": "2026-10-01",
+      "roles": "ROLE_USER,ROLE_ADMIN",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "users api login et email",
+   "entree": {
+    "op": "users_api",
+    "api_users": [
+     {
+      "login": "bob",
+      "email": "b@exemple.test",
+      "disk_usage": 2147483648
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "username": "bob",
+      "email": "b@exemple.test",
+      "status": "active",
+      "disk_quota_gb": 0,
+      "disk_used_gb": 2.0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_login": "",
+      "roles": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "users api suspendu",
+   "entree": {
+    "op": "users_api",
+    "api_users": [
+     {
+      "username": "carl",
+      "enabled": false
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "username": "carl",
+      "email": "",
+      "status": "suspended",
+      "disk_quota_gb": 0,
+      "disk_used_gb": 0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_login": "",
+      "roles": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "users api quota nul",
+   "entree": {
+    "op": "users_api",
+    "api_users": [
+     {
+      "username": "dan",
+      "quota": 0,
+      "disk_used": 0
+     },
+     {
+      "username": "eve",
+      "quota": null
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "username": "dan",
+      "email": "",
+      "status": "active",
+      "disk_quota_gb": 0,
+      "disk_used_gb": 0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_login": "",
+      "roles": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "username": "eve",
+      "email": "",
+      "status": "active",
+      "disk_quota_gb": 0,
+      "disk_used_gb": 0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_login": "",
+      "roles": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "users api doublons",
+   "entree": {
+    "op": "users_api",
+    "api_users": [
+     {
+      "username": "a"
+     },
+     {
+      "username": "a",
+      "quota": 1073741824
+     },
+     {
+      "username": ""
+     },
+     {}
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "username": "a",
+      "email": "",
+      "status": "active",
+      "disk_quota_gb": 0,
+      "disk_used_gb": 0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_login": "",
+      "roles": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "users api sans roles",
+   "entree": {
+    "op": "users_api",
+    "api_users": [
+     {
+      "username": "fay"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "username": "fay",
+      "email": "",
+      "status": "active",
+      "disk_quota_gb": 0,
+      "disk_used_gb": 0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_login": "",
+      "roles": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "users api arrondi",
+   "entree": {
+    "op": "users_api",
+    "api_users": [
+     {
+      "username": "gus",
+      "quota": 1610612736,
+      "disk_used": 1234567890
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "username": "gus",
+      "email": "",
+      "status": "active",
+      "disk_quota_gb": 1.5,
+      "disk_used_gb": 1.15,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_login": "",
+      "roles": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "users api taille texte numérique",
+   "entree": {
+    "op": "users_api",
+    "api_users": [
+     {
+      "username": "hal",
+      "quota": "2147483648",
+      "disk_used": "1073741824"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "username": "hal",
+      "email": "",
+      "status": "active",
+      "disk_quota_gb": 2.0,
+      "disk_used_gb": 1.0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_login": "",
+      "roles": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "users dossiers",
+   "entree": {
+    "op": "users_dossiers",
+    "dossiers": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "users dossiers du",
+   "entree": {
+    "op": "users_dossiers",
+    "dossiers": [
+     [
+      "alice",
+      "1073741824\t/var/www/alice/data"
+     ],
+     [
+      "bob",
+      "512\t/var/www/bob/data"
+     ],
+     [
+      "carl",
+      ""
+     ],
+     [
+      "dan",
+      "illisible"
+     ],
+     [
+      "eve",
+      "2147483648 /x"
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "username": "alice",
+      "email": "",
+      "status": "active",
+      "disk_quota_gb": 0,
+      "disk_used_gb": 1.0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_login": "",
+      "roles": "ROLE_USER",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "username": "bob",
+      "email": "",
+      "status": "active",
+      "disk_quota_gb": 0,
+      "disk_used_gb": 0.0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_login": "",
+      "roles": "ROLE_USER",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "username": "carl",
+      "email": "",
+      "status": "active",
+      "disk_quota_gb": 0,
+      "disk_used_gb": 0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_login": "",
+      "roles": "ROLE_USER",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "username": "dan",
+      "email": "",
+      "status": "active",
+      "disk_quota_gb": 0,
+      "disk_used_gb": 0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_login": "",
+      "roles": "ROLE_USER",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "username": "eve",
+      "email": "",
+      "status": "active",
+      "disk_quota_gb": 0,
+      "disk_used_gb": 2.0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_login": "",
+      "roles": "ROLE_USER",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "dbs base vide",
+   "entree": {
+    "op": "dbs_base",
+    "liste": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "dbs base",
+   "entree": {
+    "op": "dbs_base",
+    "liste": [
+     {
+      "name": "shop",
+      "size_mb": 12.5
+     },
+     {
+      "name": "shop"
+     },
+     {
+      "name": ""
+     },
+     {
+      "name": "blog"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "shop",
+      "size_mb": 12.5,
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "name": "blog",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "dbs api vide",
+   "entree": {
+    "op": "dbs_api",
+    "api_dbs": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "dbs api complète",
+   "entree": {
+    "op": "dbs_api",
+    "api_dbs": [
+     {
+      "name": "shop",
+      "db_user": "u",
+      "size_mb": 12.5,
+      "type": "postgres",
+      "owner": {
+       "username": "alice"
+      }
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "shop",
+      "db_user": "u",
+      "size_mb": 12.5,
+      "db_type": "postgres",
+      "owner": "alice",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "dbs api autres clés",
+   "entree": {
+    "op": "dbs_api",
+    "api_dbs": [
+     {
+      "name": "blog",
+      "user": "v",
+      "size": "3.5"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "blog",
+      "db_user": "v",
+      "size_mb": 3.5,
+      "db_type": "mysql",
+      "owner": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "dbs api sans propriétaire",
+   "entree": {
+    "op": "dbs_api",
+    "api_dbs": [
+     {
+      "name": "x",
+      "owner": null
+     },
+     {
+      "name": "y",
+      "owner": {}
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "x",
+      "db_user": "",
+      "size_mb": 0.0,
+      "db_type": "mysql",
+      "owner": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "name": "y",
+      "db_user": "",
+      "size_mb": 0.0,
+      "db_type": "mysql",
+      "owner": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "dbs api doublons",
+   "entree": {
+    "op": "dbs_api",
+    "api_dbs": [
+     {
+      "name": "a"
+     },
+     {
+      "name": "a",
+      "size": 9
+     },
+     {
+      "name": ""
+     },
+     {}
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "a",
+      "db_user": "",
+      "size_mb": 0.0,
+      "db_type": "mysql",
+      "owner": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "dbs api taille nulle",
+   "entree": {
+    "op": "dbs_api",
+    "api_dbs": [
+     {
+      "name": "z",
+      "size_mb": null,
+      "size": null
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "z",
+      "db_user": "",
+      "size_mb": 0.0,
+      "db_type": "mysql",
+      "owner": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "dbs mysql vide",
+   "entree": {
+    "op": "dbs_mysql",
+    "texte": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "dbs mysql",
+   "entree": {
+    "op": "dbs_mysql",
+    "texte": "information_schema\t0.1\nshop\t12.50\nmysql\t3\nblog\t0.25\nsys\t0\nperformance_schema\t1\n",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "shop",
+      "db_user": "",
+      "size_mb": 12.5,
+      "db_type": "mysql",
+      "owner": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "name": "blog",
+      "db_user": "",
+      "size_mb": 0.25,
+      "db_type": "mysql",
+      "owner": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "dbs mysql lignes courtes et doublons",
+   "entree": {
+    "op": "dbs_mysql",
+    "texte": "shop\nshop\t1\nshop\t2\n\nx\t\ny\tbeaucoup\nz\t4\n",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "shop",
+      "db_user": "",
+      "size_mb": 1.0,
+      "db_type": "mysql",
+      "owner": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "name": "x",
+      "db_user": "",
+      "size_mb": 0.0,
+      "db_type": "mysql",
+      "owner": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "name": "z",
+      "db_user": "",
+      "size_mb": 4.0,
+      "db_type": "mysql",
+      "owner": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
   }
  ]
 }

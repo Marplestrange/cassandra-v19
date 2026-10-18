@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #14e58a
+# VERSION CN : 0.1.0  #62bc65
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le démon du Sensorium, seul et sans noyau, appelle ses points d'évolution ; que ses appels nourrissent le rejeu que le noyau absorbe ; et qu'une panne du service ne perd jamais une mesure.
 # MÉTHODE    : charge CN_sensorium.py comme module, un dossier de données temporaire, puis appelle les fonctions façades.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=14e58a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=62bc65 ▼▼▼
 import importlib.util
 import json
 import os
@@ -134,7 +134,7 @@ class FauxFichier:
     def iterdir(self):
         pref = self.chemin.rstrip("/") + "/"
         vus = []
-        for k in list(self.dirs) + list(self.fs):
+        for k in sorted(self.dirs) + sorted(self.fs):
             if k.startswith(pref) and "/" not in k[len(pref):] and k not in vus:
                 vus.append(k)
         return [FauxFichier(k, self.fs, self.dirs) for k in vus]
@@ -142,9 +142,16 @@ class FauxFichier:
     def __str__(self):
         return self.chemin
 
+    def __truediv__(self, x):
+        return FauxFichier(self.chemin.rstrip("/") + "/" + x, self.fs, self.dirs)
+
+    @property
+    def parent(self):
+        return FauxFichier(self.chemin.rsplit("/", 1)[0] or "/", self.fs, self.dirs)
+
 
 class Collecteurs(unittest.TestCase):
-    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (21 scénarios, aucun écart)."""
+    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (33 scénarios : mail, FTP, comptes, bases ; aucun écart)."""
 
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
@@ -167,6 +174,14 @@ class Collecteurs(unittest.TestCase):
         m._fp_api_get_list = lambda ep: list(sc.get("api", []))
         m._fp_sqlite_ftp = lambda: [dict(x) for x in sc.get("base_ftp", [])]
         m._fp_get_fp2_usernames = lambda: list(sc.get("users", []))
+        m._fp_sqlite_users = lambda: [dict(x) for x in sc.get("base_users", [])]
+        m._fp_sqlite_databases = lambda: [dict(x) for x in sc.get("base_dbs", [])]
+
+        def run_cmd(cmd, *a, **k):
+            if cmd.startswith("du -sb"):
+                return sc.get("du", {}).get(cmd.split()[2].strip("'"), "")
+            return sc.get("mysql", "")
+        m.run_cmd = run_cmd
         return json.loads(json.dumps(getattr(m, fonction)()))
 
     def test_les_collecteurs_rendent_ce_que_rendait_l_ancien_code(self):

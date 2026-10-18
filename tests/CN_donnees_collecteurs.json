@@ -505,5 +505,264 @@
    }
   },
   "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_users",
+  "scenario": {
+   "dispo": false,
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_users",
+  "scenario": {
+   "base_users": [
+    {
+     "username": "alice",
+     "roles": "R"
+    },
+    {
+     "username": "alice"
+    },
+    {
+     "username": ""
+    },
+    {
+     "username": "bob"
+    }
+   ],
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "username": "alice",
+    "roles": "R",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "username": "bob",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_users",
+  "scenario": {
+   "api": [
+    {
+     "username": "alice",
+     "quota": 5368709120,
+     "disk_used": 1073741824,
+     "enabled": true,
+     "restore_email": "a@e.test",
+     "roles": [
+      "ROLE_USER"
+     ]
+    },
+    {
+     "login": "bob",
+     "enabled": false
+    },
+    {
+     "username": "alice"
+    },
+    {}
+   ],
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "username": "alice",
+    "email": "a@e.test",
+    "status": "active",
+    "disk_quota_gb": 5.0,
+    "disk_used_gb": 1.0,
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_login": "",
+    "roles": "ROLE_USER",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "username": "bob",
+    "email": "",
+    "status": "suspended",
+    "disk_quota_gb": 0,
+    "disk_used_gb": 0,
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_login": "",
+    "roles": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_users",
+  "scenario": {
+   "dirs": [
+    "/var/www/alice",
+    "/var/www/alice/data",
+    "/var/www/bob",
+    "/var/www/bob/data",
+    "/var/www/.cache",
+    "/var/www/.cache/data",
+    "/var/www/vide"
+   ],
+   "du": {
+    "/var/www/alice/data": "2147483648\t/var/www/alice/data",
+    "/var/www/bob/data": ""
+   },
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_users",
+  "scenario": {
+   "dirs": [
+    "/var/www/zed",
+    "/var/www/zed/data"
+   ],
+   "du": {
+    "/var/www/zed/data": "illisible"
+   },
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_users",
+  "scenario": {
+   "dirs": [],
+   "du": {},
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_users",
+  "scenario": {
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_databases",
+  "scenario": {
+   "dispo": false,
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_databases",
+  "scenario": {
+   "base_dbs": [
+    {
+     "name": "shop",
+     "size_mb": 1.5
+    },
+    {
+     "name": "shop"
+    },
+    {
+     "name": ""
+    },
+    {
+     "name": "blog"
+    }
+   ],
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "name": "shop",
+    "size_mb": 1.5,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "name": "blog",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_databases",
+  "scenario": {
+   "api": [
+    {
+     "name": "shop",
+     "db_user": "u",
+     "size_mb": 12.5,
+     "type": "pg",
+     "owner": {
+      "username": "alice"
+     }
+    },
+    {
+     "name": "b",
+     "user": "v",
+     "size": "3"
+    },
+    {
+     "name": "shop"
+    },
+    {
+     "name": ""
+    }
+   ],
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "name": "shop",
+    "db_user": "u",
+    "size_mb": 12.5,
+    "db_type": "pg",
+    "owner": "alice",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "name": "b",
+    "db_user": "v",
+    "size_mb": 3.0,
+    "db_type": "mysql",
+    "owner": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_databases",
+  "scenario": {
+   "mysql": "information_schema\t0.1\nshop\t12.5\nmysql\t1\nblog\t0.25\nbad\tx\nlong\n",
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "name": "shop",
+    "db_user": "",
+    "size_mb": 12.5,
+    "db_type": "mysql",
+    "owner": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "name": "blog",
+    "db_user": "",
+    "size_mb": 0.25,
+    "db_type": "mysql",
+    "owner": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_databases",
+  "scenario": {
+   "mysql": "",
+   "fs": {}
+  },
+  "attendu": []
  }
 ]

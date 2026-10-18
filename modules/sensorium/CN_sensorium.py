@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.4  #6a201e
+# VERSION CN : 0.1.4  #9734d2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.4 empreinte=6a201e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=9734d2 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -637,77 +637,38 @@ def _fp_available() -> bool:
 # ============================================================
 
 def collect_fastpanel_users() -> list:
-    """[FP1→FP2→FS] Users FP2 : mogwai → API /api/users → scan /var/www."""
+    """[FP1→FP2→FS] Users FP2 : mogwai → API /api/users → scan /var/www. La forme de chaque source est un POINT D'ÉVOLUTION (points/EC_fp_formes.py)."""
     now = datetime.now().isoformat()
-    users, seen = [], set()
     if not _fp_available():
         return []
 
     # [FP0] La base de FastPanel d'abord : elle seule donne les rôles, l'accès
     # SSH et le quota réel. Le balayage de /var/www ne devinait qu'un login.
-    for u in _fp_sqlite_users():
-        if u["username"] and u["username"] not in seen:
-            seen.add(u["username"])
-            u["last_check"] = now
-            users.append(u)
+    users = _fp_formes({"op": "users_base", "liste": _fp_sqlite_users(), "now": now})
     if users:
         return users
 
-    # [FP1] Source primaire : mogwai users list (si disponible)
-    # Nota : mogwai n'expose pas encore "users list" dans la doc officielle,
-    # on passe directement à l'API qui est documentée.
-
     # [FP2] API REST — endpoint correct : GET /api/users
-    api_users = _fp_api_get_list("/api/users")
-    for u in api_users:
-        uname = u.get("username", u.get("login", ""))
-        if not uname or uname in seen:
-            continue
-        seen.add(uname)
-        # Calcul disk depuis quota (en octets dans l'API FP2)
-        quota_raw = u.get("quota")
-        used_raw  = u.get("disk_used", u.get("disk_usage", 0)) or 0
-        quota_gb  = round(int(quota_raw) / 1024**3, 2) if quota_raw else 0
-        used_gb   = round(int(used_raw)  / 1024**3, 2) if used_raw  else 0
-        # FP2 retourne enabled=true/false
-        enabled = u.get("enabled", True)
-        status  = "active" if enabled else "suspended"
-        users.append({
-            "username":     uname,
-            "email":        u.get("restore_email", u.get("email", "")),
-            "status":       status,
-            "disk_quota_gb": quota_gb,
-            "disk_used_gb":  used_gb,
-            "created_at":   u.get("created_at", now),
-            "last_login":   u.get("last_login", ""),
-            "roles":        ",".join(u.get("roles", [])),
-            "last_check":   now,
-        })
+    users = _fp_formes({"op": "users_api", "api_users": _fp_api_get_list("/api/users"), "now": now})
     if users:
         return users
 
     # [FS] Fallback filesystem : scan /var/www/<user>/data/
     base = Path(FP_USER_HOME).parent.parent  # → /var/www/
+    dossiers = []
     if base.exists():
         for d in base.iterdir():
-            if not d.is_dir() or d.name in seen or d.name.startswith("."):
+            if not d.is_dir() or d.name.startswith("."):
                 continue
             data_dir = d / "data"
             if not data_dir.exists():
                 continue
-            seen.add(d.name)
             try:
                 out = run_cmd(f"du -sb {shlex.quote(str(data_dir))} 2>/dev/null")
-                used_gb = round(int(out.split()[0]) / 1024**3, 2) if out else 0
             except Exception:
-                used_gb = 0
-            users.append({
-                "username": d.name, "email": "", "status": "active",
-                "disk_quota_gb": 0, "disk_used_gb": used_gb,
-                "created_at": now, "last_login": "", "roles": "ROLE_USER",
-                "last_check": now,
-            })
-    return users
+                out = ""
+            dossiers.append([d.name, out])
+    return _fp_formes({"op": "users_dossiers", "dossiers": dossiers, "now": now})
 
 
 _NOM_SITE_VALIDE = re.compile(r"^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,63}|xn--[a-z0-9-]{2,59})$")
@@ -968,9 +929,8 @@ def _fp_sqlite_databases() -> list:
 
 
 def collect_fastpanel_databases() -> list:
-    """[FP2→MySQL] Bases de données : API /api/db → mysql information_schema."""
+    """[FP2→MySQL] Bases de données : API /api/db → mysql information_schema. La forme de chaque source est un POINT D'ÉVOLUTION (points/EC_fp_formes.py)."""
     now = datetime.now().isoformat()
-    dbs, seen = [], set()
     if not _fp_available():
         return []
 
@@ -979,30 +939,13 @@ def collect_fastpanel_databases() -> list:
     # frappe est de FastPanel) et `db.site_id` — le rattachement au site.
     # L'API et `information_schema` ne donnent que le nom et la taille, d'où
     # les colonnes « User DB » et « Propriétaire » restées vides à l'écran.
-    for d in _fp_sqlite_databases():
-        if d["name"] and d["name"] not in seen:
-            seen.add(d["name"])
-            d["last_check"] = now
-            dbs.append(d)
+    dbs = _fp_formes({"op": "dbs_base", "liste": _fp_sqlite_databases(), "now": now})
     if dbs:
         return dbs
 
     # [FP2] API — FP2 gère des bases utilisateurs, pas sa propre DB
     # Note: endpoint non documenté officiellement, on tente /api/db/list
-    api_dbs = _fp_api_get_list("/api/db/list?filter[limit]=1000")
-    for db in api_dbs:
-        name = db.get("name", "")
-        if not name or name in seen:
-            continue
-        seen.add(name)
-        dbs.append({
-            "name":     name,
-            "db_user":  db.get("db_user", db.get("user", "")),
-            "size_mb":  float(db.get("size_mb", db.get("size", 0)) or 0),
-            "db_type":  db.get("type", "mysql"),
-            "owner":    (db.get("owner", {}) or {}).get("username", ""),
-            "last_check": now,
-        })
+    dbs = _fp_formes({"op": "dbs_api", "api_dbs": _fp_api_get_list("/api/db/list?filter[limit]=1000"), "now": now})
     if dbs:
         return dbs
 
@@ -1012,19 +955,7 @@ def collect_fastpanel_databases() -> list:
         "\"SELECT table_schema, ROUND(SUM(data_length+index_length)/1024/1024,2) "
         "FROM information_schema.tables GROUP BY table_schema\" 2>/dev/null"
     )
-    skip = {"information_schema", "performance_schema", "mysql", "sys"}
-    for line in out.splitlines():
-        parts = line.split("\t")
-        if len(parts) >= 2 and parts[0] not in skip and parts[0] not in seen:
-            try:
-                seen.add(parts[0])
-                dbs.append({
-                    "name": parts[0], "db_user": "", "size_mb": float(parts[1] or 0),
-                    "db_type": "mysql", "owner": "", "last_check": now,
-                })
-            except Exception:
-                pass
-    return dbs
+    return _fp_formes({"op": "dbs_mysql", "texte": out, "now": now})
 
 
 def _fp_formes(entree) -> list:
