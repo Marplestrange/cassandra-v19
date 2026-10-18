@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #bf6fe4
+// VERSION CN : 0.1.0  #90605c
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=bf6fe4 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=90605c ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -68,7 +68,7 @@
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
     close: '<path d="M6 6l12 12M18 6L6 18"/>',
-    down: '<path d="M6 9l6 6 6-6"/>', right: '<path d="M9 6l6 6-6 6"/>', left: '<path d="M15 6l-6 6 6 6"/>',
+    down: '<path d="M6 9l6 6 6-6"/>', up: '<path d="M18 15l-6-6-6 6"/>', right: '<path d="M9 6l6 6-6 6"/>', left: '<path d="M15 6l-6 6 6 6"/>',
     lock: '<rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>', key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/>',
     plus: '<path d="M12 5v14M5 12h14"/>', dots: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
     refresh: '<path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/>',
@@ -91,7 +91,7 @@
     d: null, moi: null, compte: "", g: "", e: "", vue: "", actif: null, side: "full", sideAvant: "full", sideTouche: false, ouv: new Set(),
     panel: false, manual: null, sel: { itare: "page", cassandra: "page", inv: "page" }, fils: { itare: [], cassandra: [], inv: [] }, msgs: {}, dernier: {},
     invites: new Set(["itare"]), fmenu: false, sug: false, regOuvert: false, idees: { mode: "itare", idees: [], urgent: false, actes: {} }, actes: { itare: [], cassandra: [], inv: [] },
-    fil: null, lateral: null, pageNom: "", famModules: "tous",
+    fil: null, lateral: null, pageNom: "", famModules: "tous", crMenu: null, crumbs: [],
     faits: new Set(), refuses: new Set(), nouveau: { itare: false, cassandra: false, inv: false }, attente: 0, rec: [], ms: false, w: "l",
     prefs: { verre: true }, brouillon: "",
   };
@@ -214,21 +214,52 @@
 
   // ── le rendu : bandeau de page / pastilles ────────────────────────────────
   const estPin = () => !!(E.d && (E.d.epingles || []).some((p) => p.cle === cleDe(E.g, E.e, E.vue)));
+  // ── le fil d'Ariane : chaque niveau se visite, et chacun propose ses voisins ───────────────
+  function crumbs() {
+    const g = ent(), e = entree(), d = E.d;
+    if (E.actif && g && e) {
+      const vues = e.enfants || [], v = vues.find((f) => (f.vue || f.id) === E.vue);
+      const c = [
+        { l: g.libelle, ic: g.icone, go: () => aller(g.id, ""), sib: d.groupes.map((x) => ({ l: x.libelle, ic: x.icone, on: x.id === g.id, go: () => aller(x.id, "") })) },
+        { l: e.libelle, go: () => aller(g.id, e.id, ""), sib: g.entrees.map((x) => ({ l: x.libelle, ic: x.icone, on: x.id === e.id, go: () => aller(g.id, x.id, "") })) },
+      ];
+      const premV = !vues.length || E.vue === (vues[0].vue || vues[0].id);
+      c[1].ici = premV; c[0].ici = premV && e.id === g.entrees[0].id;       // viser ce niveau ne bougerait pas : « remonter » le saute
+      if (E.vue) c.push({ l: v ? v.libelle : E.vue, go: null, sib: vues.map((f) => ({ l: f.libelle, on: (f.vue || f.id) === E.vue, go: () => aller(g.id, e.id, f.vue || f.id) })) });
+      c[c.length - 1].cur = true;
+      return c;
+    }
+    if (E.pageNom && E.fil) {
+      const L = E.lateral, act = (id) => () => { if (E.pageAction) E.pageAction(id); };
+      const c = [{ l: E.fil[0], go: () => window.switchTab("settings") }];
+      if (E.fil.length > 1) c.push({ l: E.fil[1], go: L && E.pageAction ? act(L.items[0].id) : null });
+      if (E.fil.length > 2) c.push({ l: E.fil[2], go: null, sib: L ? L.items.map((i) => ({ l: i.libelle, ic: i.icone, on: i.id === L.actif, go: act(i.id) })) : null });
+      c[c.length - 1].cur = true;
+      return c;
+    }
+    return [];
+  }
+  function remonter() { const c = E.crumbs || []; for (let i = c.length - 2; i >= 0; i--) if (c[i].go && !c[i].ici) { E.crMenu = null; c[i].go(); return; } }
   function rendreStrip() {
     const el = $("#d19-strip"), g = ent(), e = entree();
-    if (E.d && E.pageNom && E.fil && !E.actif) {                          // une page propre (avatar) : son fil d'Ariane, et ses pastilles sur téléphone
-      el.style.display = "";
-      el.innerHTML = '<div class="fil">' + E.fil.map((p, i) => (i < E.fil.length - 1 ? "<span>" + esc(p) + "</span><span>›</span>" : "<span>" + esc(p) + "</span>")).join("") + "</div>"
-        + (E.lateral ? '<div class="pills" id="d19-pills">' + E.lateral.items.map((i) => '<button class="pl' + (i.id === E.lateral.actif ? " on" : "") + '" data-lat="' + esc(i.id) + '">' + esc(i.libelle) + "</button>").join("") + "</div>" : "");
-      return;
-    }
-    if (!E.d || !g || !e || !E.actif) { el.innerHTML = ""; el.style.display = "none"; return; }
+    const page = !!(E.d && E.pageNom && E.fil && !E.actif), norm = !!(E.d && g && e && E.actif);
+    if (!page && !norm) { E.crumbs = []; el.innerHTML = ""; el.style.display = "none"; return; }
     el.style.display = "";
-    const parts = [g.libelle, e.libelle].concat(E.vue ? [((e.enfants.find((f) => (f.vue || f.id) === E.vue) || {}).libelle) || E.vue] : []);
-    el.innerHTML = '<div class="fil">' + parts.map((p, i) => (i < parts.length - 1 ? '<button data-fil="' + i + '">' + esc(p) + "</button><span>›</span>" : "<span>" + esc(p) + "</span>")).join("") + "</div>"
-      + '<button class="pin' + (estPin() ? " on" : "") + '" data-pin="1" title="Épingler cette page" aria-label="Épingler cette page">' + ico("star") + "</button>"
-      + '<button class="tit" data-ms="1" aria-label="Changer d’entrée">' + ico(e.icone) + "<span>" + esc(e.libelle) + "</span>" + ico("down") + "</button>"
-      + '<div class="pills" id="d19-pills">' + e.enfants.map((f) => '<button class="pl' + (E.vue === (f.vue || f.id) ? " on" : "") + '" data-sx="' + esc(f.vue || f.id) + '">' + esc(f.libelle) + "</button>").join("") + "</div>";
+    const c = (E.crumbs = crumbs());
+    const sep = '<span class="cr-sep" aria-hidden="true">' + ico("right") + "</span>";
+    const peut = c.slice(0, -1).some((x) => x.go && !x.ici);
+    const fil = '<nav class="fil" aria-label="Fil d’Ariane"><button class="cr-up" data-cr-up="1" title="Niveau supérieur (Alt + ↑)" aria-label="Niveau supérieur"' + (peut ? "" : " disabled") + ">" + ico("up") + "</button>"
+      + c.map((x, i) => '<span class="cr-wrap">' + (x.cur ? '<span class="cr cur" aria-current="page">' + (x.ic ? ico(x.ic) : "") + esc(x.l) + "</span>" : '<button class="cr" data-cr="' + i + '">' + (x.ic ? ico(x.ic) : "") + esc(x.l) + "</button>")
+        + (x.sib && x.sib.length > 1 ? '<button class="cr-c' + (E.crMenu === i ? " on" : "") + '" data-crm="' + i + '" aria-haspopup="true" aria-expanded="' + (E.crMenu === i) + '" aria-label="Autres pages de ce niveau" title="Autres pages de ce niveau">' + ico("down") + "</button>" : "")
+        + (E.crMenu === i && x.sib ? '<div class="cr-menu" role="menu">' + x.sib.map((t, j) => '<button role="menuitem" class="' + (t.on ? "on" : "") + '" data-crs="' + i + "." + j + '">' + (t.ic ? ico(t.ic) : "") + esc(t.l) + "</button>").join("") + "</div>" : "")
+        + "</span>").join(sep) + "</nav>";
+    if (page) {
+      el.innerHTML = fil + (E.lateral ? '<div class="pills" id="d19-pills">' + E.lateral.items.map((i) => '<button class="pl' + (i.id === E.lateral.actif ? " on" : "") + '" data-lat="' + esc(i.id) + '">' + esc(i.libelle) + "</button>").join("") + "</div>" : "");
+    } else {
+      el.innerHTML = fil + '<button class="pin' + (estPin() ? " on" : "") + '" data-pin="1" title="Épingler cette page" aria-label="Épingler cette page">' + ico("star") + "</button>"
+        + '<button class="tit" data-ms="1" aria-label="Changer d’entrée">' + ico(e.icone) + "<span>" + esc(e.libelle) + "</span>" + ico("down") + "</button>"
+        + '<div class="pills" id="d19-pills">' + e.enfants.map((f) => '<button class="pl' + (E.vue === (f.vue || f.id) ? " on" : "") + '" data-sx="' + esc(f.vue || f.id) + '">' + esc(f.libelle) + "</button>").join("") + "</div>";
+    }
     const on = $(".pl.on", el), pc = $("#d19-pills");
     if (on && pc) pc.scrollLeft = Math.max(0, on.offsetLeft - 70);
   }
@@ -684,7 +715,7 @@
   function fermerPops() { const u = $("#usermenu"); if (u && u.classList.contains("open") && typeof window.fermerCompte === "function") window.fermerCompte(); const a = $("#alert-dropdown"); if (a && a.classList.contains("open") && typeof window.toggleAlertDropdown === "function") window.toggleAlertDropdown(); }
 
   // ── le dessin d'ensemble ───────────────────────────────────────────────────
-  function rendre() { rendreHaut(); rendreGauche(); rendreStrip(); if (E.panel) rendrePanel(); }
+  function rendre() { E.crMenu = null; rendreHaut(); rendreGauche(); rendreStrip(); if (E.panel) rendrePanel(); }
   async function charger() {
     try {
       E.d = await agir("affichage.lire_disposition", {});
@@ -754,7 +785,10 @@
       if ((x = c("[data-msen]"))) { ouvrirMs(false); aller(E.g, x.dataset.msen); return; }
       if ((x = c("[data-mspin]"))) { ouvrirMs(false); aller(x.dataset.pg, x.dataset.pe, x.dataset.pv); return; }
       if ((x = c("#d19-strip [data-sx]"))) { aller(E.g, E.e, x.dataset.sx); return; }
-      if ((x = c("#d19-strip [data-fil]"))) { if (+x.dataset.fil === 0) aller(E.g, ""); return; }
+      if ((x = c("#d19-strip [data-cr-up]"))) { remonter(); return; }
+      if ((x = c("#d19-strip [data-crm]"))) { const i = +x.dataset.crm; E.crMenu = E.crMenu === i ? null : i; rendreStrip(); return; }
+      if ((x = c("#d19-strip [data-crs]"))) { const ij = x.dataset.crs.split(".").map(Number), t = E.crumbs[ij[0]] && E.crumbs[ij[0]].sib[ij[1]]; E.crMenu = null; if (t && t.go) t.go(); else rendreStrip(); return; }
+      if ((x = c("#d19-strip [data-cr]"))) { const k = E.crumbs[+x.dataset.cr]; E.crMenu = null; if (k && k.go) k.go(); else rendreStrip(); return; }
       if ((x = c("#d19-strip [data-pin]"))) { basculerPin(); return; }
       if (c("[data-gen-nouveau]")) { genererMdp(); return; }
       if (c("[data-gen-copier]")) { const v = document.getElementById("d19-gen-sortie").value; if (v && navigator.clipboard) navigator.clipboard.writeText(v).then(() => toast("Copié."), () => toast("Copie refusée par le navigateur.")); return; }
@@ -792,6 +826,7 @@
       if ((x = c("[data-d19-info]"))) { if (typeof window.fermerCompte === "function") window.fermerCompte(); marquerPage({ id: "affichage:info", ecran: "affichage:vue_info", libelle: "Info Cassandra" }); if (CASS.ouvrirEcran) CASS.ouvrirEcran("affichage:vue_info", "Info Cassandra"); return; }
       if (c("[data-d19-verre]")) { E.prefs.verre = !E.prefs.verre; sauverPrefs(); appliquerPrefs(); completerAvatar(); return; }
       if (c("[data-d19-v18]")) { try { localStorage.setItem("cass_disposition", "v18"); } catch (e) {} location.reload(); return; }
+      if (E.crMenu != null && !c("#d19-strip .cr-wrap")) { E.crMenu = null; rendreStrip(); }
       if (E.sug && !c("#d19-cass .sug") && !c("[data-sug]")) { E.sug = false; rendrePanel(); }
       if (E.fmenu && !c("#d19-cass .fmenu") && !c("[data-fsel]")) { E.fmenu = false; rendrePanel(); }
       if (!c("#d19-plus") && !c("[data-plus]")) $("#d19-plus").classList.remove("ouvert");
@@ -812,6 +847,8 @@
       if (!$("#d19-top") || $("#app-container").classList.contains("hidden")) return;
       const typ = /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || "");
       if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "k") { ev.preventDefault(); palOuvrir(); return; }
+      if (ev.key === "Escape" && E.crMenu != null) { E.crMenu = null; rendreStrip(); return; }
+      if (ev.altKey && ev.key === "ArrowUp") { ev.preventDefault(); remonter(); return; }
       if (ev.key === "Escape") { if (E.fmenu) { E.fmenu = false; rendrePanel(); return; } if (E.sug) { E.sug = false; rendrePanel(); return; } palFermer(); flyFermer(); if (E.panel) ouvrirPanel(false); return; }
       if ($("#d19-pal").classList.contains("ouvert")) { if (ev.key === "ArrowDown") { ev.preventDefault(); palSel = Math.min(palSel + 1, palRes.length - 1); palRender(); } else if (ev.key === "ArrowUp") { ev.preventDefault(); palSel = Math.max(palSel - 1, 0); palRender(); } else if (ev.key === "Enter") { ev.preventDefault(); palChoisir(palSel); } return; }
       if (ev.altKey && /^[1-9]$/.test(ev.key) && E.d && E.d.groupes[+ev.key - 1]) { ev.preventDefault(); aller(E.d.groupes[+ev.key - 1].id, ""); return; }

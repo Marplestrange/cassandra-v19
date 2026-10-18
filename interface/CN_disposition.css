@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=6bbf37 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=438992 ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -107,6 +107,31 @@ body.d19 .app-body{position:relative}
 #d19-strip .pin.on{color:#d97706}#d19-strip .pin.on svg.d-i{fill:currentColor}
 #d19-strip .tit,#d19-strip .pills{display:none}
 
+/* ---------- le fil d'Ariane : un vrai bandeau, des niveaux qui se visitent, des voisins en menu ---------- */
+#d19-strip{padding:20px max(28px,env(safe-area-inset-right,0px)) 10px 28px;gap:14px;min-height:60px;align-items:center}
+#d19-strip .fil{display:flex;align-items:center;flex-wrap:wrap;gap:0;font:500 13px 'Inter',system-ui,sans-serif;color:var(--txt-soft);min-width:0}
+#d19-strip .cr-up{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--txt-faint);background:var(--surface);border:1px solid var(--line);margin-right:10px;cursor:pointer;flex:none;padding:0}
+#d19-strip .cr-up svg.d-i{width:15px;height:15px}
+#d19-strip .cr-up:hover:not(:disabled){color:var(--accent);border-color:var(--accent);background:var(--acc-10)}
+#d19-strip .cr-up:disabled{opacity:.4;cursor:default}
+#d19-strip .cr-wrap{position:relative;display:inline-flex;align-items:center}
+#d19-strip .cr{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:9px;color:var(--txt-soft);background:none;border:0;font:inherit;cursor:pointer;white-space:nowrap}
+#d19-strip .cr svg.d-i{width:15px;height:15px;color:var(--txt-faint)}
+#d19-strip button.cr:hover{background:var(--acc-10);color:var(--accent)}
+#d19-strip button.cr:hover svg.d-i{color:var(--accent)}
+#d19-strip .cr.cur{color:var(--txt-strong);font-weight:600;cursor:default;background:var(--surface);box-shadow:var(--shadow-glass)}
+#d19-strip .cr-c{width:22px;height:26px;margin-left:-4px;border-radius:7px;display:grid;place-items:center;color:var(--txt-faint);background:none;border:0;cursor:pointer;padding:0}
+#d19-strip .cr-c svg.d-i{width:13px;height:13px}
+#d19-strip .cr-c:hover,#d19-strip .cr-c.on{background:var(--acc-10);color:var(--accent)}
+#d19-strip .cr-sep{display:inline-grid;place-items:center;color:var(--txt-ghost,#b4bbc6);margin:0 3px}
+#d19-strip .cr-sep svg.d-i{width:13px;height:13px}
+#d19-strip .cr-menu{position:absolute;top:100%;left:0;margin-top:8px;min-width:210px;max-height:60vh;overflow:auto;background:var(--surface-solid,#fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-glass),0 16px 36px rgba(16,24,40,.18);padding:6px;z-index:60}
+#d19-strip .cr-menu button{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;border-radius:8px;text-align:left;background:none;border:0;color:var(--txt);font:inherit;font-size:13px;cursor:pointer}
+#d19-strip .cr-menu button svg.d-i{width:15px;height:15px;color:var(--txt-faint)}
+#d19-strip .cr-menu button:hover{background:var(--acc-10);color:var(--accent)}
+#d19-strip .cr-menu button.on{background:var(--acc-10);color:var(--accent);font-weight:600}
+#d19-strip .pin{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);padding:0}
+#d19-strip .pin svg.d-i{width:16px;height:16px}
 /* ---------- aperçu au survol d'une dalle ---------- */
 #d19-fly{position:absolute;top:60px;z-index:45;display:none;min-width:320px;max-width:calc(100% - 16px);max-height:calc(100% - 90px);overflow:auto;background:var(--d-pop);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:0 0 16px 16px;box-shadow:var(--shadow-glass),0 18px 40px rgba(16,24,40,.16);padding:12px 14px 14px}
 #d19-fly.ouvert{display:block}
