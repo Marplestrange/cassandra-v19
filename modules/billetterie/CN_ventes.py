@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6b45bc
+# VERSION CN : 0.1.0  #1d5f56
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6b45bc ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1d5f56 ▼▼▼
 """Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
 
 Ce fichier DÉCIDE : qui peut acheter quoi, à quel prix, combien de places restent, quand une vente est acquise, ce qu'elle rapporte au revendeur et quand elle s'annule.
@@ -107,7 +107,7 @@ def verifier_promo(tx, code, evt, quantite_totale, sous_total):
     return max(0, int(remise)), p
 
 
-def devis(ctx, tx, evt, lignes, *, canal, code_promo="", don=0, sans_compte=False) -> dict:
+def devis(ctx, tx, evt, lignes, *, canal, code_promo="", don=0, sans_compte=False, forcer=False) -> dict:
     """Chiffre un panier et vérifie qu'il peut se vendre. Rien n'est écrit. Les prix viennent de la base."""
     if evt["statut"] != "en vente":
         raise ValueError("cet événement n'est pas en vente (état : %s)" % evt["statut"])
@@ -120,7 +120,7 @@ def devis(ctx, tx, evt, lignes, *, canal, code_promo="", don=0, sans_compte=Fals
         raise ValueError("le panier est vide")
     s = stock(tx, evt)
     total_places = sum(voulu.values())
-    if total_places > s["restant"]:
+    if total_places > s["restant"] and not forcer:         # `forcer` : une vente de caisse faite hors ligne, l'argent est déjà pris
         raise ValueError("il ne reste que %d place(s)" % s["restant"])
     out, sous_total = [], 0
     for tid, q in voulu.items():
@@ -137,7 +137,7 @@ def devis(ctx, tx, evt, lignes, *, canal, code_promo="", don=0, sans_compte=Fals
             if t["fermeture"] and aujourdhui() > t["fermeture"]:
                 raise ValueError("la vente de « %s » est terminée" % t["nom"])
         st = [x for x in s["types"] if x["id"] == tid][0]
-        if st["restant"] is not None and q > st["restant"]:
+        if st["restant"] is not None and q > st["restant"] and not forcer:
             raise ValueError("« %s » : il ne reste que %d place(s)" % (t["nom"], st["restant"]))
         sous_total += t["prix"] * q
         out.append({"type_billet_id": tid, "nom": t["nom"], "prix": t["prix"], "quantite": q, "entrees": t["entrees"]})
@@ -247,8 +247,8 @@ def client_pour(tx, nom, mail, sans_compte=True):
     return tx.execute("INSERT INTO clients(ref, nom, mail, compte) VALUES (?,?,?,?)", (ids.nouvelle_ref(tx, "client"), r.texte(nom, 120), mail, 0 if sans_compte else 1)).lastrowid
 
 
-def creer_commande(ctx, tx, evt, lignes, *, canal, nom="", mail="", revendeur_code="", code_promo="", don=0, sans_compte=False, moyen="", par=""):
-    d = devis(ctx, tx, evt, lignes, canal=canal, code_promo=code_promo, don=don, sans_compte=sans_compte)
+def creer_commande(ctx, tx, evt, lignes, *, canal, nom="", mail="", revendeur_code="", code_promo="", don=0, sans_compte=False, moyen="", par="", forcer=False):
+    d = devis(ctx, tx, evt, lignes, canal=canal, code_promo=code_promo, don=don, sans_compte=sans_compte, forcer=forcer)
     rev, formule_id, attribution = None, None, ""
     if revendeur_code:
         rev = trouver_revendeur(tx, revendeur_code)
@@ -273,15 +273,16 @@ def creer_commande(ctx, tx, evt, lignes, *, canal, nom="", mail="", revendeur_co
     return cid, d
 
 
-def creer_billet(ctx, tx, evt, *, commande=None, ligne=None, type_billet=None, categorie="", nom="", mail="", revendeur_id=None, entrees=1):
-    n = ids.suivant(tx, "billet:%d" % evt["id"])
-    numero = "%s-%04d" % (bil.lettre_evenement(evt["id"]), n)
+def creer_billet(ctx, tx, evt, *, commande=None, ligne=None, type_billet=None, categorie="", nom="", mail="", revendeur_id=None, entrees=1, numero=None):
+    if not numero:
+        n = ids.suivant(tx, "billet:%d" % evt["id"])
+        numero = "%s-%04d" % (bil.lettre_evenement(evt["id"]), n)
     tx.execute("INSERT INTO billets(ref, numero, commande_id, ligne_id, evenement_id, type_billet_id, categorie_invite, nom, mail, revendeur_id, entrees) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                (ids.nouvelle_ref(tx, "billet"), numero, commande, ligne, evt["id"], type_billet, categorie, r.texte(nom, 120), r.texte(mail, 160), revendeur_id, entrees))
     return numero
 
 
-def encaisser(ctx, tx, cmd, moyen, reference="", par=""):
+def encaisser(ctx, tx, cmd, moyen, reference="", par="", numeros=None):
     """La commande est PAYÉE : les billets naissent, la commission s'écrit, le code promo compte. Idempotent sur la référence du prestataire."""
     if reference:
         autre = tx.execute("SELECT id, ref FROM commandes WHERE reference_externe = ?", (reference,)).fetchone()
@@ -297,10 +298,12 @@ def encaisser(ctx, tx, cmd, moyen, reference="", par=""):
         s = stock(tx, evt)
         if qte > s["restant"]:
             raise ValueError("la réservation a expiré et les places sont reparties")
+    donnes = list(numeros or [])                                       # des numéros déjà réservés (caisse hors ligne) : on les utilise, dans l'ordre
     numeros = []
     for l in tx.execute("SELECT * FROM lignes_commande WHERE commande_id = ? ORDER BY id", (cmd["id"],)).fetchall():
         for _ in range(l["quantite"]):
-            numeros.append(creer_billet(ctx, tx, evt, commande=cmd["id"], ligne=l["id"], type_billet=l["type_billet_id"], nom=cmd["nom"], mail=cmd["mail"], revendeur_id=cmd["revendeur_id"], entrees=l["entrees"]))
+            numeros.append(creer_billet(ctx, tx, evt, commande=cmd["id"], ligne=l["id"], type_billet=l["type_billet_id"], nom=cmd["nom"], mail=cmd["mail"], revendeur_id=cmd["revendeur_id"], entrees=l["entrees"],
+                                        numero=donnes.pop(0) if donnes else None))
     ecrire_commission(ctx, tx, cmd, evt, qte, +1)
     if cmd["promo_code"]:
         tx.execute("UPDATE promos SET usages = usages + 1 WHERE code = ?", (cmd["promo_code"],))

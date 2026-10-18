@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ec66d4
+# VERSION CN : 0.1.0  #8657ac
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ec66d4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8657ac ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -36,6 +36,10 @@ sensible = true
 [[droits]]
 id = "controler"
 libelle = "Contrôler les billets à l'entrée (l'ouvreur : lire les billets, voir le contrôle, rejouer ses entrées hors ligne)"
+
+[[droits]]
+id = "vendre"
+libelle = "Vendre à la caisse (le caissier : ouvrir sa caisse, vendre, clôturer, réserver des numéros pour vendre sans réseau)"
 
 [[points_evolution]]
 id = "commission"
@@ -798,6 +802,58 @@ droit = "gerer"
 perimetre = ["l'état d'un conflit et le billet bloqué"]
 preuve = "le conflit relu arbitré"
 retour = "remettre le conflit à arbitrer et le billet valide"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "caisses"
+libelle = "Les caisses d'un événement (ouvertes ou clôturées)"
+risque = "lecture"
+droit = "vendre"
+
+[[capacites]]
+id = "caisse_etat"
+libelle = "Une caisse : ce qu'elle a encaissé par moyen, ce qu'elle doit avoir en espèces, la réserve de numéros restante, ses dernières ventes"
+risque = "lecture"
+droit = "vendre"
+
+[[capacites]]
+id = "caisse_ouvrir"
+libelle = "Ouvrir une caisse (un caissier, un appareil, un fond de caisse) pour un événement en vente"
+risque = "faible"
+droit = "vendre"
+perimetre = ["une session de caisse"]
+preuve = "la caisse relue ouverte"
+retour = "retirer la caisse tant qu'elle n'a rien vendu"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "caisse_reserver"
+libelle = "Réserver un bloc de numéros de billets signés pour vendre sans réseau (un numéro réservé n'est jamais réattribué)"
+risque = "faible"
+droit = "vendre"
+perimetre = ["des numéros de billets réservés"]
+preuve = "les numéros relus"
+retour = "retirer les numéros non utilisés (ils ne reviennent jamais)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "caisse_vendre"
+libelle = "Vendre à la caisse (espèces avec rendu de monnaie, terminal de carte, carte déclarée) ; sans réseau, avec les numéros réservés"
+risque = "moyen"
+droit = "vendre"
+perimetre = ["une commande payée et ses billets"]
+preuve = "la commande relue payée"
+retour = "rembourser la vente et retirer ses numéros"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "caisse_cloturer"
+libelle = "Clôturer la caisse : comptage des espèces, écart consigné, numéro de clôture continu ; les numéros non utilisés sont retirés"
+risque = "moyen"
+droit = "vendre"
+perimetre = ["l'état d'une caisse et sa clôture numérotée"]
+preuve = "la caisse relue clôturée"
+retour = "rouvrir la caisse (le numéro de clôture n'est pas rendu)"
 paliers = ["raconter", "auto", "maitre"]
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
