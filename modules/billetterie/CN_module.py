@@ -25,6 +25,7 @@ n'est réutilisé, chaque écriture se défait. La suite (registre, ventes, cais
 from __future__ import annotations
 
 from . import CN_entites as entites
+from . import CN_commandes as commandes
 from . import CN_evenements as evenements
 from . import CN_registre as registre
 
@@ -36,6 +37,7 @@ def brancher(ctx):
         e.brancher(ctx)
     evenements.brancher(ctx, db, E)
     registre.brancher(ctx, db)
+    commandes.brancher(ctx, db)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

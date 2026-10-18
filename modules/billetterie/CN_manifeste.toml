@@ -26,6 +26,7 @@ licence = "AGPL-3.0-or-later"
 
 [permissions]
 stockage = true
+secrets = true
 
 [[droits]]
 id = "gerer"
@@ -594,6 +595,151 @@ droit = "gerer"
 perimetre = ["l'état d'une demande de retrait et sa réserve"]
 preuve = "la demande relue refusée"
 retour = "rouvrir la demande si le portefeuille la couvre encore"
+paliers = ["raconter", "auto", "maitre"]
+
+[[moteurs]]
+id = "expirer"
+libelle = "Libérer les places des commandes dont la réservation est écoulée"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 30
+
+[[capacites]]
+id = "promos"
+libelle = "La liste : le code promo (recherche par code ou référence)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "promo"
+libelle = "Une fiche : le code promo"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "promo_save"
+libelle = "Créer ou modifier le code promo (pourcentage ou euros par billet, événement, plafond d'utilisations, fin ; un code n'est jamais réutilisé)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["le code promo"]
+preuve = "la fiche relue"
+retour = "remettre la fiche d'avant, ou retirer la fiche neuve (son code reste retiré)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "promo_delete"
+libelle = "Supprimer le code promo (refusé s'il a servi : on le désactive)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["le code promo"]
+preuve = "la fiche n'existe plus"
+retour = "remettre la fiche, avec son code"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "stock"
+libelle = "Les places de l'événement : vendues, retenues le temps de payer, restantes, par type de billet"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "panier_devis"
+libelle = "Chiffrer un panier sans rien écrire : prix de la base, code promo, don, frais sans compte, places disponibles"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "commandes"
+libelle = "Les commandes d'un événement (par état, par nom, par courriel ou par référence)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "commande"
+libelle = "Une commande entière : ses lignes et ses billets"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "billets"
+libelle = "Les billets d'un événement (par état, par nom, par numéro)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "billet"
+libelle = "Un billet : son numéro de contrôle et le contenu de son QR code"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "commande_creer"
+libelle = "Créer une commande à la main ou à la caisse (retient les places ; avec un moyen immédiat, l'encaisse et émet les billets)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["une commande, ses places retenues et, si encaissée, ses billets et la commission du revendeur"]
+preuve = "la commande relue (en cours ou payée)"
+retour = "l'annuler, ou la rembourser si elle était encaissée"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "commande_encaisser"
+libelle = "Encaisser une commande en cours (une même référence de paiement ne livre qu'une fois) : émet les billets, écrit la commission du revendeur"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la commande, ses billets et la commission"]
+preuve = "la commande relue payée"
+retour = "rembourser par une ligne contraire et remettre la commande en cours"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "commande_rembourser"
+libelle = "Rembourser une commande payée : billets annulés, places rendues, commission retirée (le remboursement chez le prestataire reste à faire)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la commande, ses billets et la commission du revendeur"]
+preuve = "la commande relue remboursée"
+retour = "rouvrir la commande si les places n'ont pas été revendues"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "commande_annuler"
+libelle = "Annuler une commande en cours (les places retenues reviennent)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["l'état d'une commande en cours"]
+preuve = "la commande relue annulée"
+retour = "la rouvrir si les places sont encore libres"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "billet_reemettre"
+libelle = "Réémettre un billet : un nouveau QR et un nouveau numéro de contrôle, l'ancien ne passe plus"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la version d'un billet"]
+preuve = "la version relue"
+retour = "remettre la version d'avant"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "billet_transferer"
+libelle = "Transférer un billet à un autre porteur (nom et courriel)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["le porteur d'un billet"]
+preuve = "le porteur relu"
+retour = "remettre le porteur d'avant"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "invitation_emettre"
+libelle = "Émettre une invitation (billet gratuit) dans une catégorie d'invités, dans la limite de son quota"
+risque = "faible"
+droit = "gerer"
+perimetre = ["un billet d'invitation et le compteur de la catégorie"]
+preuve = "le billet relu valide"
+retour = "annuler le billet et rendre l'invitation au quota"
 paliers = ["raconter", "auto", "maitre"]
 
 # ▲▲▲ FIN BORNE CN ▲▲▲

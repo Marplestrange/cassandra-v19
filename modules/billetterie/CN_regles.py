@@ -215,8 +215,14 @@ def defaire_apres_artiste(tx, e):
 
 
 def dependances_artiste(tx, a):
+    out = []
     n = tx.execute("SELECT COUNT(*) FROM passages WHERE artiste_id = ?", (a["id"],)).fetchone()[0]
-    return ["%d passage(s) au programme" % n] if n else []
+    if n:
+        out.append("%d passage(s) au programme" % n)
+    n = tx.execute("SELECT COUNT(*) FROM mouvements WHERE porteur = 'artiste' AND porteur_id = ?", (a["id"],)).fetchone()[0]
+    if n:
+        out.append("%d ligne(s) au registre (l'argent ne s'efface pas)" % n)
+    return out
 
 
 # ── revendeurs ───────────────────────────────────────────────────────────────
@@ -248,6 +254,12 @@ def dependances_revendeur(tx, r):
     n = tx.execute("SELECT COUNT(*) FROM affectations WHERE revendeur_id = ?", (r["id"],)).fetchone()[0]
     if n:
         out.append("%d affectation(s) à des événements" % n)
+    n = tx.execute("SELECT COUNT(*) FROM commandes WHERE revendeur_id = ?", (r["id"],)).fetchone()[0]
+    if n:
+        out.append("%d commande(s) lui sont attribuées" % n)
+    n = tx.execute("SELECT COUNT(*) FROM mouvements WHERE porteur = 'revendeur' AND porteur_id = ?", (r["id"],)).fetchone()[0]
+    if n:
+        out.append("%d ligne(s) au registre (l'argent ne s'efface pas)" % n)
     return out
 
 
@@ -289,7 +301,7 @@ def jauge(tx, evt):
 
 def dependances_evenement(tx, e):
     out = []
-    for table, lib in (("types_billets", "type(s) de billet"), ("passages", "passage(s)"), ("affectations", "affectation(s)"), ("invitations", "invitation(s)")):
+    for table, lib in (("commandes", "commande(s)"), ("billets", "billet(s)"), ("types_billets", "type(s) de billet"), ("passages", "passage(s)"), ("affectations", "affectation(s)"), ("invitations", "invitation(s)")):
         n = tx.execute("SELECT COUNT(*) FROM %s WHERE evenement_id = ?" % table, (e["id"],)).fetchone()[0]
         if n:
             out.append("%d %s (à retirer d'abord)" % (n, lib))
@@ -322,6 +334,11 @@ def preparer_type(tx, d, avant):
     if clash:
         raise ValueError("cet événement a déjà un billet « %s »" % vals["nom"])
     return vals
+
+
+def dependances_type(tx, t):
+    n = tx.execute("SELECT COUNT(*) FROM lignes_commande WHERE type_billet_id = ?", (t["id"],)).fetchone()[0]
+    return ["%d ligne(s) de commande : il a déjà été vendu ou réservé" % n] if n else []
 
 
 def preparer_passage(tx, d, avant):

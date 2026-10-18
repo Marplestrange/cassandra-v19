@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from . import CN_crud as crud
 from . import CN_regles as r
+from . import CN_ventes as ventes
 
 CHAMPS_SALLE = ("nom", "adresse", "contact", "location", "acompte", "caution", "assis", "debout", "pmr", "erp", "heure_fin", "bruit", "alcool", "age", "equipements", "annulation", "assurance")
 CHAMPS_FORMULE = ("nom", "role", "forfait", "com", "fixe", "palier_n", "palier_com", "note")
@@ -34,13 +35,14 @@ def construire(db):
     """Rend {nom: Entite}. Les règles de chacune sont dans CN_regles.py ; ce fichier ne fait que les assembler."""
     E = {}
     E["salle"] = crud.Entite(db, "salle", "salles", "salle", "la salle", CHAMPS_SALLE, r.preparer_salle, dependances=r.dependances_salle)
-    E["formule"] = crud.Entite(db, "formule", "formules", "formule", "la formule", CHAMPS_FORMULE, r.preparer_formule, dependances=r.dependances_formule)
+    E["formule"] = crud.Entite(db, "formule", "formules", "formule", "la formule", CHAMPS_FORMULE, r.preparer_formule, dependances=r.dependances_formule,
+                               avant_maj=lambda tx, avant, vals: ventes.figer_formule(tx, avant["id"]))
     E["artiste"] = crud.Entite(db, "artiste", "artistes", "artiste", "l'artiste", CHAMPS_ARTISTE, r.preparer_artiste, dependances=r.dependances_artiste,
                                apres=r.apres_artiste, defaire_apres=r.defaire_apres_artiste, champ_libelle="scene")
     E["revendeur"] = crud.Entite(db, "revendeur", "revendeurs", "revendeur", "le revendeur", CHAMPS_REVENDEUR, r.preparer_revendeur, dependances=r.dependances_revendeur,
                                  tombes=(("code", "code"),))
     E["evenement"] = crud.Entite(db, "evenement", "evenements", "evenement", "l'événement", CHAMPS_EVENEMENT, r.preparer_evenement, dependances=r.dependances_evenement)
-    E["type_billet"] = crud.Entite(db, "type_billet", "types_billets", "type", "le type de billet", CHAMPS_TYPE, r.preparer_type)
+    E["type_billet"] = crud.Entite(db, "type_billet", "types_billets", "type", "le type de billet", CHAMPS_TYPE, r.preparer_type, dependances=r.dependances_type)
     E["passage"] = crud.Entite(db, "passage", "passages", "passage", "le passage", CHAMPS_PASSAGE, r.preparer_passage, champ_libelle="id")
     E["affectation"] = crud.Entite(db, "affectation", "affectations", "affectation", "l'affectation", CHAMPS_AFFECTATION, r.preparer_affectation, champ_libelle="id")
     E["invitation"] = crud.Entite(db, "invitation", "invitations", "invitation", "la catégorie d'invités", CHAMPS_INVITATION, r.preparer_invitation, champ_libelle="categorie")

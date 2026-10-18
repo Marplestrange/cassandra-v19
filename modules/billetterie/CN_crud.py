@@ -45,7 +45,7 @@ def _ligne(tx, table, ident):
 
 
 class Entite:
-    def __init__(self, db, id_, table, type_ref, libelle, champs, preparer, dependances=None, apres=None, defaire_apres=None, tombes=(), champ_libelle="nom"):
+    def __init__(self, db, id_, table, type_ref, libelle, champs, preparer, dependances=None, apres=None, defaire_apres=None, tombes=(), champ_libelle="nom", avant_maj=None):
         self.db, self.id, self.table, self.type_ref, self.libelle = db, id_, table, type_ref, libelle
         self.champs = tuple(champs)            # les noms que la capacité d'écriture annonce (lisibles par la console et par Itare)
         self.preparer = preparer              # (tx, donnees, avant) -> {colonne: valeur}, ou ValueError
@@ -54,6 +54,7 @@ class Entite:
         self.defaire_apres = defaire_apres    # (tx, effets) -> None
         self.tombes = tuple(tombes)           # ((type, colonne), ...) : d'autres identifiants à ne jamais réutiliser (le code d'un revendeur)
         self.champ_libelle = champ_libelle
+        self.avant_maj = avant_maj            # (tx, avant, valeurs) : appelé juste avant de modifier une fiche existante (figer les conditions d'une formule)
 
     # ---- lectures ----
     def lister(self, c, q="", limite=500):
@@ -79,6 +80,8 @@ class Entite:
                     raise ValueError("%s introuvable" % self.libelle)
             vals = dict(self.preparer(tx, d, avant))
             if avant:
+                if self.avant_maj:
+                    self.avant_maj(tx, avant, vals)
                 if vals:
                     tx.execute("UPDATE %s SET %s WHERE id = ?" % (self.table, ", ".join("%s = ?" % k for k in vals)), tuple(vals.values()) + (avant["id"],))
                 ident = avant["id"]

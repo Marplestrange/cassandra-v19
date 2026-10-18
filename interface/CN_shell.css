@@ -12,9 +12,11 @@
 /* RÔLE       : shell.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=10571b ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=3d2ad9 ▼▼▼ */
 /* Le squelette : scène générique des modules. Rien que les jetons de la V18 (--surface, --line, --txt…), pour que tout thème la reprenne. */
 .sh-scene { padding: 20px 24px 40px; max-width: 1180px; }
+/* Le cadre d'un onglet coupe (overflow:hidden) : une scène plus haute que l'écran, comme Évolution (6 900 px), doit y défiler, sinon tout ce qui dépasse est inaccessible. */
+.tab-content:has(> .sh-scene) { overflow-y: auto; }
 .sh-titre + .sh-legende { margin: -12px 0 16px; font-size: 11px; color: var(--txt-faint); }
 .sh-titre { margin: 0 0 16px; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; color: var(--txt-strong); letter-spacing: .05em; }
 .sh-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; align-items: stretch; }
