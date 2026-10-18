@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=d6248f ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=6bbf37 ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -274,6 +274,14 @@ body.d19 #usermenu .d19-themes button{height:26px}
 .d19-st{display:flex;align-items:center;gap:8px;color:var(--accent);font:500 14px 'JetBrains Mono',monospace;margin:24px 0 10px}
 .d19-apercu.carre{border-radius:12px}
 @media (max-width:760px){.d19-tbl td.l{width:auto}.d19-tbl td{display:block;border-top:0;padding:4px 14px}.d19-tbl tr{display:block;border-top:1px solid var(--line);padding:8px 0}.d19-tbl thead{display:none}.d19-tbl td.lien{width:auto}}
+/* ---------- Mon coffre-fort : la colonne de gauche remplace le retour de l'ancienne vue ---------- */
+body.d19 #tab-vault .cf-back{display:none}
+.d19-gen{display:flex;flex-direction:column;gap:12px}
+.d19-gen .sortie{display:flex;gap:8px;flex-wrap:wrap}
+.d19-gen .sortie input{flex:1;min-width:200px;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface-solid,#fff);color:var(--txt);font:500 14px 'JetBrains Mono',monospace}
+.d19-gen label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt-soft)}
+.d19-gen input[type=range]{flex:1;max-width:280px}
+.d19-gen .choix{display:flex;gap:16px;flex-wrap:wrap}
 /* ---------- largeurs mesurées sur le cadre ---------- */
 #app-container[data-w="xl"] #d19-cass.ouvert{width:370px}
 #app-container[data-w="s"] #d19-top .nav-fleches,#app-container[data-w="s"] #d19-vtxt,#app-container[data-w="xs"] #d19-top .nav-fleches,#app-container[data-w="xs"] #d19-vtxt,#app-container[data-w="xs"] #d19-theme,#app-container[data-w="xs"] #d19-groupes,#app-container[data-w="xs"] #d19-btn-cass{display:none}

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #e0febd
+// VERSION CN : 0.1.0  #f4932d
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=e0febd ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f4932d ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -69,6 +69,7 @@
     search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
     close: '<path d="M6 6l12 12M18 6L6 18"/>',
     down: '<path d="M6 9l6 6 6-6"/>', right: '<path d="M9 6l6 6-6 6"/>', left: '<path d="M15 6l-6 6 6 6"/>',
+    lock: '<rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>', key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/>',
     plus: '<path d="M12 5v14M5 12h14"/>', dots: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
     refresh: '<path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/>',
   };
@@ -144,6 +145,8 @@
   // une page ouverte ailleurs que par la disposition (notification, lien, bouton) : on suit
   function suivre(nom) {
     if (!E.d || E.silence) return;
+    const pg = PAGES_V18[nom];
+    if (pg) { entrerPageV18(nom, pg); return; }                          // une page de l'ancienne interface qui a sa colonne (le coffre)
     if (nom !== E.pageNom) { E.fil = null; E.lateral = null; E.pageNom = ""; }
     let trouve = null;
     for (const g of E.d.groupes) for (const e of g.entrees) {
@@ -490,6 +493,51 @@
     };
     r.readAsDataURL(fichier);
   }
+  // ── une page de l'ancienne interface, rangée en rubriques dans la colonne de gauche ──────────
+  function appliquerCoffre(id) {
+    const g = (i) => document.getElementById(i);
+    const etat = document.querySelector("#tab-vault .cf-state"), porte = document.querySelector("#tab-vault .cf-gate"), onb = g("cf-onboard"), jr = g("cf-audit") && g("cf-audit").closest(".card");
+    if (typeof window.cfVue === "function") window.cfVue(id === "coffre" ? "cf-v-secrets" : "cf-v-accueil");
+    if (id === "coffre") return;
+    if (!g("d19-gen")) {                                              // l'outil neuf : un générateur de mot de passe, tiré dans le navigateur
+      const host = onb && onb.parentNode, c = document.createElement("section");
+      c.className = "card"; c.id = "d19-gen";
+      c.innerHTML = '<div class="card-title">Générateur de mot de passe</div><div class="d19-gen"><div class="sortie"><input type="text" id="d19-gen-sortie" readonly aria-label="Mot de passe généré"><button type="button" class="d19-btn sec" data-gen-copier="1">Copier</button><button type="button" class="d19-btn" data-gen-nouveau="1">Générer</button></div>'
+        + '<label>Longueur : <b id="d19-gen-n">20</b><input type="range" id="d19-gen-long" min="8" max="64" value="20"></label><div class="choix"><label><input type="checkbox" id="d19-gen-maj" checked> Majuscules</label><label><input type="checkbox" id="d19-gen-min" checked> Minuscules</label><label><input type="checkbox" id="d19-gen-chi" checked> Chiffres</label><label><input type="checkbox" id="d19-gen-sym" checked> Symboles</label></div>'
+        + '<p class="cf-note">Tiré dans ton navigateur, avec le hasard du système : rien n’est envoyé ni enregistré.</p></div>';
+      (host || document.querySelector("#tab-vault .cf-page")).appendChild(c);
+      genererMdp();
+    }
+    const aff = (e, v) => { if (e) e.style.display = v ? "" : "none"; };
+    aff(etat, id === "tableau"); aff(porte, id === "tableau"); aff(onb, id === "outils"); aff(g("d19-gen"), id === "outils"); aff(jr, id === "rapport");
+  }
+  function genererMdp() {
+    const n = +document.getElementById("d19-gen-long").value, jeux = [["d19-gen-maj", "ABCDEFGHJKLMNPQRSTUVWXYZ"], ["d19-gen-min", "abcdefghijkmnopqrstuvwxyz"], ["d19-gen-chi", "23456789"], ["d19-gen-sym", "!#$%&*+-=?@^_"]]
+      .filter((x) => document.getElementById(x[0]).checked);
+    document.getElementById("d19-gen-n").textContent = n;
+    const sortie = document.getElementById("d19-gen-sortie");
+    if (!jeux.length) { sortie.value = ""; return; }
+    const tous = jeux.map((x) => x[1]).join(""), alea = (m) => { const b = new Uint32Array(1); let v; do { crypto.getRandomValues(b); v = b[0]; } while (v >= 4294967296 - (4294967296 % m)); return v % m; };
+    const c = jeux.map((x) => x[1][alea(x[1].length)]);                  // au moins un caractère de chaque jeu choisi
+    while (c.length < n) c.push(tous[alea(tous.length)]);
+    for (let i = c.length - 1; i > 0; i--) { const j = alea(i + 1); [c[i], c[j]] = [c[j], c[i]]; }
+    sortie.value = c.slice(0, n).join("");
+  }
+  const PAGES_V18 = {
+    vault: { titre: "Mon coffre-fort", sous: "chiffré de bout en bout", appliquer: appliquerCoffre,
+      items: [{ id: "tableau", libelle: "Tableau de bord", icone: "panorama" }, { id: "coffre", libelle: "Coffre", icone: "lock" }, { id: "outils", libelle: "Outils", icone: "key" }, { id: "rapport", libelle: "Rapport", icone: "scroll" }] },
+  };
+  function entrerPageV18(nom, pg) {
+    E.rubV18 = E.rubV18 || {}; E.actif = null; E.hors = nom; E.pageNom = nom;
+    majPageV18(nom, pg, E.rubV18[nom] || pg.items[0].id);
+  }
+  function majPageV18(nom, pg, rub) {
+    E.rubV18[nom] = rub;
+    E.fil = ["Paramètres", pg.titre, (pg.items.find((i) => i.id === rub) || {}).libelle || rub];
+    E.lateral = { titre: pg.titre, sous: pg.sous, actif: rub, items: pg.items };
+    E.pageAction = (id) => majPageV18(nom, pg, id);
+    pg.appliquer(rub); rendre();
+  }
   // ── une page propre : son onglet, son fil d'Ariane ────────────────────────
   function marquerPage(a) {
     E.pageNom = a.ecran && CASS.nomOnglet ? CASS.nomOnglet(a.ecran) : "";
@@ -709,7 +757,9 @@
       if ((x = c("#d19-strip [data-sx]"))) { aller(E.g, E.e, x.dataset.sx); return; }
       if ((x = c("#d19-strip [data-fil]"))) { if (+x.dataset.fil === 0) aller(E.g, ""); return; }
       if ((x = c("#d19-strip [data-pin]"))) { basculerPin(); return; }
-      if ((x = c("[data-lat]"))) { const corps = document.querySelector("#tab-" + E.pageNom + " .sh-corps"); if (corps && E.pageAction) E.pageAction(x.dataset.lat); return; }
+      if (c("[data-gen-nouveau]")) { genererMdp(); return; }
+      if (c("[data-gen-copier]")) { const v = document.getElementById("d19-gen-sortie").value; if (v && navigator.clipboard) navigator.clipboard.writeText(v).then(() => toast("Copié."), () => toast("Copie refusée par le navigateur.")); return; }
+      if ((x = c("[data-lat]"))) { if (E.pageAction) E.pageAction(x.dataset.lat); return; }
       if ((x = c("#d19-side .pinned"))) { aller(x.dataset.pg, x.dataset.pe, x.dataset.pv); return; }
       if ((x = c("#d19-side .sub"))) { aller(E.g, x.dataset.e, x.dataset.v); return; }
       if ((x = c("#d19-side .ent"))) {
@@ -747,8 +797,9 @@
       if (E.fmenu && !c("#d19-cass .fmenu") && !c("[data-fsel]")) { E.fmenu = false; rendrePanel(); }
       if (!c("#d19-plus") && !c("[data-plus]")) $("#d19-plus").classList.remove("ouvert");
     });
+    app.addEventListener("change", function (ev) { if (/^d19-gen-(maj|min|chi|sym)$/.test(ev.target.id)) genererMdp(); });
     app.addEventListener("submit", function (ev) { if (ev.target.id === "d19-f") { ev.preventDefault(); const i = $("#d19-in"), v = i.value; i.value = ""; E.brouillon = ""; envoyer(v); } });
-    app.addEventListener("input", function (ev) { if (ev.target.id === "d19-pal-in") { palSel = 0; palRender(); } else if (ev.target.id === "d19-in") E.brouillon = ev.target.value; });
+    app.addEventListener("input", function (ev) { if (ev.target.id === "d19-gen-long") { genererMdp(); return; } if (ev.target.id === "d19-pal-in") { palSel = 0; palRender(); } else if (ev.target.id === "d19-in") E.brouillon = ev.target.value; });
     app.addEventListener("mouseover", function (ev) {
       const b = ev.target.closest("#d19-groupes .d19-gr");
       if (b && peutSurvoler()) { clearTimeout(flyT); flyT = setTimeout(() => flyOuvrir(b), $("#d19-fly").classList.contains("ouvert") ? 60 : 280); return; }
