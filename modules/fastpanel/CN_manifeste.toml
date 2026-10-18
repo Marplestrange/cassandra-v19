@@ -375,3 +375,11 @@ contrat = "1.0"
 reference = "points/EC_audit"
 fonction = "point_audit"
 runtime = "python"
+
+[[points_evolution]]
+id = "lecture"
+libelle = "La lecture des données du panneau FastPanel (comptes, sites, bases, FTP, boîtes mail, DNS, services) en deux temps : le plan (le schéma de cette version, les requêtes à poser) puis la forme (les lignes lues, mises en forme) ; le nexus fait les lectures"
+contrat = "1.0"
+reference = "points/EC_lecture"
+fonction = "point_lecture"
+runtime = "python"

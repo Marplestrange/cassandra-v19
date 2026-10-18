@@ -1,0 +1,54 @@
+{
+ "point": "fastpanel.lecture",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "phase",
+   "op",
+   "schema",
+   "options"
+  ],
+  "properties": {
+   "phase": {
+    "enum": [
+     "plan",
+     "forme"
+    ]
+   },
+   "op": {
+    "enum": [
+     "utilisateurs",
+     "sites",
+     "bases",
+     "ftp",
+     "mail",
+     "dns",
+     "services"
+    ]
+   },
+   "schema": {
+    "type": "object"
+   },
+   "options": {
+    "type": "object"
+   },
+   "jeux": {
+    "type": "array"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object"
+ },
+ "invariants": [
+  "l'EC ne lit jamais la base : elle ne rend que des requêtes SELECT, jamais d'écriture",
+  "un schéma d'une autre version du panneau qui manque d'une colonne optionnelle ne fait pas échouer : la colonne est remplacée par une valeur neutre",
+  "un schéma sans la table des boîtes mail ou des enregistrements DNS rend une erreur qui le DIT, jamais une liste vide",
+  "un nom d'hôte invalide (« _ », un joker) n'est pas un site",
+  "l'état d'un certificat est calculé à l'instant reçu : jamais à l'horloge",
+  "un service décrit sous deux clés n'est compté qu'une fois",
+  "les mêmes lignes donnent toujours la même forme"
+ ]
+}

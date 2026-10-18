@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #a53d62
+# VERSION CN : 0.2.0  #5434db
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont FastPanel.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=a53d62 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=5434db ▼▼▼
 """Le pont FastPanel.
 
 Deux voies, chacune pour ce qu'elle fait de mieux :
@@ -69,7 +69,6 @@ RE_SERVICE = re.compile(r"^[A-Za-z0-9@._\-]{1,64}$")
 RE_HOTE = re.compile(r"^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,63}|xn--[a-z0-9-]{2,59})$")
 ACTIONS_RELANCER = ("start", "restart")
 ACTIONS_ARRETER = ("stop",)
-ETATS_ACTIFS = {"active", "running", "started", "on", "up", "1", "true", "enabled"}
 FIN_SUPPORT_PHP = {
     "5.6": "2018-12-31", "7.0": "2019-01-10", "7.1": "2019-12-01", "7.2": "2020-11-30", "7.3": "2021-12-06", "7.4": "2022-11-28",
     "8.0": "2023-11-26", "8.1": "2025-12-31", "8.2": "2026-12-31", "8.3": "2027-12-31", "8.4": "2028-12-31",
@@ -384,151 +383,57 @@ def hote_valide(d):
     return bool(RE_HOTE.match(str(d or "").strip().rstrip(".").lower()))
 
 
-def php_normalise(v):
-    """« 83 » -> « 8.3 » : FastPanel range la version PHP d'un backend sous la forme compacte."""
-    s = str(v or "").strip()
-    if not s or not any(c.isdigit() for c in s):
-        return ""
-    return s[0] + "." + s[1:] if s.isdigit() and len(s) >= 2 else s
-
-
-def _jours(date_iso, maintenant=None):
-    """Jours entre maintenant et une date ISO (les dix premiers caractères comptent). None si la date n'en est pas une."""
-    if not re.match(r"^\d{4}-\d{2}-\d{2}", str(date_iso or "")):
-        return None
-    fin = datetime.strptime(str(date_iso)[:10], "%Y-%m-%d")
-    base = (maintenant or datetime.now(timezone.utc).replace(tzinfo=None)).replace(hour=0, minute=0, second=0, microsecond=0)
-    return (fin - base).days
-
-
 # ------------------------------------------------------------------ lectures du parc
+def _lecture(op, tables, **options):
+    """Lire une famille de données du panneau. Le PLAN (quelles requêtes, selon les colonnes de CETTE version de FastPanel) et la FORME (ce que les lignes deviennent) sont un POINT D'ÉVOLUTION :
+    points/EC_lecture.py. Les lectures se font ICI, en SELECT seulement : l'EC ne touche jamais la base."""
+    schema = {t: sorted(_colonnes(t)) for t in tables}
+    plan = _point("lecture", {"phase": "plan", "op": op, "schema": schema, "options": options})
+    if plan.get("erreur"):
+        raise PontErreur(plan["erreur"], genre="source")
+    jeux = [_requete(q) if q else [] for q in plan["requetes"]]
+    return _point("lecture", {"phase": "forme", "op": op, "schema": schema, "options": options, "jeux": jeux})["valeur"]
+
+
 def lire_utilisateurs():
     _exiger("panel_account", "username")
-    cols = _colonnes("panel_account")
-    def c(nom, defaut="''"):
-        return "COALESCE(p.%s,%s)" % (nom, defaut) if nom in cols else defaut
-    lignes = _requete(
-        "SELECT p.username, %s, %s, %s, %s, %s, %s, %s, (SELECT COUNT(*) FROM site s WHERE s.owner_id = p.id), (SELECT COUNT(*) FROM db d WHERE d.owner_id = p.id) "
-        "FROM panel_account p ORDER BY p.username" % (c("home_dir"), c("status"), c("roles"), c("ssh_access", "0"), c("quota_value", "0"), c("restore_email"), c("created_at")))
-    sortie = []
-    for r in lignes:
-        if not r[0]:
-            continue
-        quota = round(float(r[5] or 0) / 1073741824.0, 2)
-        sortie.append({"compte": r[0], "dossier": _t(r[1]), "statut": _t(r[2]) or "active", "roles": _t(r[3]), "ssh": _vrai(r[4]),
-                       "quota_go": quota if quota > 0 else None, "courriel": _t(r[6]), "cree": _t(r[7])[:19], "sites": r[8], "bases": r[9]})
-    return sortie
+    return _lecture("utilisateurs", ("panel_account",))
+
+
+def lire_sites(seuil=30, maintenant=None):
+    """Les sites du panneau, avec l'état de leur certificat. Quatre états : aucun (rien de rattaché), inconnu (rattaché sans date lisible), echu, proche (sous le seuil), actif.
+    L'horloge se lit ICI : l'EC reçoit l'instant."""
+    _exiger("site", "domain")
+    auj = maintenant or datetime.now(timezone.utc).replace(tzinfo=None)
+    return _lecture("sites", ("certificate", "website_backends", "site_stats"), seuil=seuil, maintenant=auj.strftime("%Y-%m-%d %H:%M:%S"))
+
+
+def lire_bases():
+    _exiger("db", "name")
+    return _lecture("bases", ("db", "datbases_users", "database_user"))
+
+
+def lire_ftp():
+    _exiger("ftp_account", "name")
+    return _lecture("ftp", ("ftp_account",))
+
+
+def lire_mail():
+    return _lecture("mail", ("mailboxes", "email_domain"))
+
+
+def lire_dns():
+    return _lecture("dns", ("record", "domain"))
+
+
+def lire_services():
+    """Un service par identifiant : le panneau décrit exim sous deux clés (name et service). La mise en forme est un POINT D'ÉVOLUTION (points/EC_lecture.py, opération « services »)."""
+    return _point("lecture", {"phase": "forme", "op": "services", "schema": {}, "options": {}, "jeux": [appeler("GET", "/api/services")]})["valeur"]
+
 
 
 def _proprietaires_sites():
     return {nom_hote(r[0]): _t(r[1]).strip().lower() for r in _requete("SELECT s.domain, COALESCE(p.username,'') FROM site s LEFT JOIN panel_account p ON s.owner_id = p.id") if r[0]}
-
-
-def _php_par_site():
-    cols = _colonnes("website_backends")
-    if not {"frontend_id", "handler", "handler_version"} <= cols:
-        return {}
-    ordre = "ORDER BY COALESCE(b.main,0) DESC, b.id" if "main" in cols else "ORDER BY b.id"
-    sortie = {}
-    for r in _requete("SELECT s.domain, COALESCE(b.handler,''), COALESCE(b.handler_version,'') FROM website_backends b JOIN site s ON b.frontend_id = s.id " + ordre):
-        d = nom_hote(r[0])
-        if d and d not in sortie:
-            sortie[d] = {"gestionnaire": _t(r[1]), "php": php_normalise(r[2])}
-    return sortie
-
-
-def _stats_sites():
-    if "site_id" not in _colonnes("site_stats"):
-        return {}
-    sortie = {}
-    for r in _requete("SELECT s.domain, COALESCE(t.error_count,0), COALESCE(t.status_code,0), COALESCE(t.size,0), COALESCE(t.databases_size,0) FROM site_stats t JOIN site s ON t.site_id = s.id"):
-        if r[0]:
-            sortie[nom_hote(r[0])] = {"erreurs": r[1], "code_http": r[2], "fichiers_mo": _mo(r[3]), "bases_mo": _mo(r[4])}
-    return sortie
-
-
-def lire_sites(seuil=30, maintenant=None):
-    """Les sites du panneau, avec l'état de leur certificat. Quatre états : aucun (rien de rattaché), inconnu (rattaché sans date lisible),
-    echu, proche (sous le seuil), actif."""
-    _exiger("site", "domain")
-    cert = _colonnes("certificate")
-    fin = "c.expired_at" if "expired_at" in cert else ("c.expires" if "expires" in cert else "''")
-    lignes = _requete(
-        "SELECT s.domain, COALESCE(p.username,''), COALESCE(s.status,''), s.certificate_id, %s FROM site s "
-        "LEFT JOIN panel_account p ON s.owner_id = p.id LEFT JOIN certificate c ON s.certificate_id = c.id ORDER BY s.domain" % fin)
-    php, stats = _php_par_site(), _stats_sites()
-    sortie = []
-    for r in lignes:
-        if not hote_valide(r[0]):
-            continue
-        attache = r[3] is not None and str(r[3]) not in ("", "0")
-        j = _jours(r[4], maintenant) if attache else None
-        etat = "aucun" if not attache else ("inconnu" if j is None else ("echu" if j <= 0 else ("proche" if j <= seuil else "actif")))
-        s = {"domaine": r[0], "proprietaire": r[1], "statut": _t(r[2]), "ssl": {"etat": etat, "jours": j, "echeance": _t(r[4])[:10] if j is not None else ""}}
-        s.update(php.get(nom_hote(r[0]), {"gestionnaire": "", "php": ""}))
-        s.update(stats.get(nom_hote(r[0]), {}))
-        sortie.append(s)
-    return sortie
-
-
-def lire_bases():
-    cols = _exiger("db", "name")
-    site = "s.domain" if "site_id" in cols else "''"
-    jointure = "LEFT JOIN site s ON d.site_id = s.id" if "site_id" in cols else ""
-    def c(nom, defaut):
-        return "COALESCE(d.%s,%s)" % (nom, defaut) if nom in cols else defaut
-    utilisateurs = ("(SELECT GROUP_CONCAT(du.login, ', ') FROM datbases_users lu JOIN database_user du ON du.id = lu.user_id WHERE lu.database_id = d.id)"
-                    if _colonnes("datbases_users") and _colonnes("database_user") else "''")
-    lignes = _requete("SELECT d.name, %s, %s, COALESCE(p.username,''), COALESCE(%s,''), %s, %s, %s, %s, d.id FROM db d LEFT JOIN panel_account p ON d.owner_id = p.id %s ORDER BY d.name"
-                      % (c("engine", "'mysql'"), c("size", "0"), site, c("charset", "''"), c("created_at", "''"), c("dump_at", "''"), utilisateurs, jointure))
-    return [{"id": r[9], "nom": r[0], "moteur": r[1] or "mysql", "taille_mo": _mo(r[2]), "proprietaire": r[3], "site": r[4], "jeu": r[5],
-             "cree": _t(r[6])[:19], "derniere_copie": _t(r[7])[:19], "utilisateurs": _t(r[8])} for r in lignes if r[0]]
-
-
-def lire_ftp():
-    cols = _exiger("ftp_account", "name")
-    site = "COALESCE(s.domain,'')" if "virtualhost_id" in cols else "''"
-    jointure = "LEFT JOIN site s ON f.virtualhost_id = s.id" if "virtualhost_id" in cols else ""
-    dossier = "COALESCE(f.home_dir,'')" if "home_dir" in cols else "''"
-    actif = "f.enabled" if "enabled" in cols else "1"
-    cree = "COALESCE(f.created,'')" if "created" in cols else "''"
-    lignes = _requete("SELECT f.name, %s, %s, COALESCE(p.username,''), %s, %s FROM ftp_account f LEFT JOIN panel_account p ON f.owner_id = p.id %s ORDER BY f.name" % (dossier, actif, site, cree, jointure))
-    return [{"compte": r[0], "dossier": r[1], "statut": "active" if _vrai(r[2]) else "suspendu", "proprietaire": r[3], "site": r[4], "cree": _t(r[5])[:19]} for r in lignes if r[0]]
-
-
-def _premiere(table, *candidats):
-    cols = _colonnes(table)
-    return next((c for c in candidats if c in cols), "")
-
-
-def lire_mail():
-    cols = _colonnes("mailboxes")
-    adr = _premiere("mailboxes", "address", "email", "login")
-    if not cols or not adr:
-        raise PontErreur("la table des boîtes mail est absente ou d'un schéma inconnu (autre version de FastPanel ?)", genre="source")
-    q, t, a = _premiere("mailboxes", "quota"), _premiere("mailboxes", "size", "used"), _premiere("mailboxes", "enabled", "active")
-    dom = "domain_id" in cols and bool(_colonnes("email_domain"))
-    lignes = _requete("SELECT m.%s, %s, %s, %s, %s FROM mailboxes m %s ORDER BY m.%s"
-                      % (adr, "COALESCE(m.%s,0)" % q if q else "0", "COALESCE(m.%s,0)" % t if t else "0", "COALESCE(m.%s,1)" % a if a else "1",
-                         "COALESCE(e.name,'')" if dom else "''", "LEFT JOIN email_domain e ON m.domain_id = e.id" if dom else "", adr))
-    sortie = []
-    for r in lignes:
-        if r[0]:
-            sortie.append({"adresse": r[0], "domaine": r[4] or (str(r[0]).split("@")[-1] if "@" in str(r[0]) else ""), "quota_mo": round(float(r[1] or 0) / 1048576.0, 1),
-                           "utilise_mo": round(float(r[2] or 0) / 1048576.0, 1), "statut": "active" if _vrai(r[3]) else "suspendue"})
-    return sortie
-
-
-def lire_dns():
-    cols = _colonnes("record")
-    nom, typ, val = _premiere("record", "name", "host"), _premiere("record", "type", "rtype"), _premiere("record", "value", "content", "data")
-    if not cols or not (nom and typ and val):
-        raise PontErreur("la table des enregistrements DNS est absente ou d'un schéma inconnu (autre version de FastPanel ?)", genre="source")
-    ttl = _premiere("record", "ttl")
-    zone = "domain_id" in cols and bool(_colonnes("domain"))
-    lignes = _requete("SELECT %s, r.%s, r.%s, r.%s, %s FROM record r %s ORDER BY 1, r.%s"
-                      % ("COALESCE(d.name,'')" if zone else "''", nom, typ, val, "COALESCE(r.%s,0)" % ttl if ttl else "0", "LEFT JOIN domain d ON r.domain_id = d.id" if zone else "", typ))
-    return [{"zone": r[0], "nom": r[1], "type": r[2], "valeur": r[3], "ttl": r[4]} for r in lignes if r[1] or r[3]]
 
 
 def lire_copies(limite=60):
@@ -609,31 +514,6 @@ def audit_php(sites, maintenant=None):
 
 
 # ------------------------------------------------------------------ services (par l'API)
-def _actif(etat):
-    e = str(etat or "").strip().lower()
-    return e in ETATS_ACTIFS or e.startswith("activ")
-
-
-def lire_services():
-    """Un service par identifiant : le panneau décrit exim sous deux clés (name et service), les compter deux fois comptait un service de trop."""
-    vus, sortie = set(), []
-    for s in _liste(appeler("GET", "/api/services")):
-        ident = s.get("id")
-        if ident is None or str(ident) in vus:
-            continue
-        noms = []
-        for cle in ("name", "service", "unit", "title"):
-            n = str(s.get(cle) or "").strip()
-            if n and n.lower().replace(".service", "") not in [x.lower().replace(".service", "") for x in noms]:
-                noms.append(n)
-        if not noms:
-            continue
-        vus.add(str(ident))
-        etat = str(s.get("state") or s.get("status") or "")
-        sortie.append({"id": str(ident), "nom": noms[0], "alias": [x.lower().replace(".service", "") for x in noms[1:]], "etat": etat, "actif": _actif(etat)})
-    return sortie
-
-
 def _trouver_service(services, nom):
     court = str(nom or "").strip().lower().replace(".service", "")
     for s in services:

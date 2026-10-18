@@ -1,0 +1,4898 @@
+{
+ "point": "fastpanel.lecture",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de fastpanel, données synthétiques",
+ "cas": [
+  {
+   "cas": "plan : utilisateurs complets",
+   "entree": {
+    "phase": "plan",
+    "op": "utilisateurs",
+    "schema": {
+     "panel_account": [
+      "id",
+      "username",
+      "home_dir",
+      "status",
+      "roles",
+      "ssh_access",
+      "quota_value",
+      "restore_email",
+      "created_at"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT p.username, COALESCE(p.home_dir,''), COALESCE(p.status,''), COALESCE(p.roles,''), COALESCE(p.ssh_access,0), COALESCE(p.quota_value,0), COALESCE(p.restore_email,''), COALESCE(p.created_at,''), (SELECT COUNT(*) FROM site s WHERE s.owner_id = p.id), (SELECT COUNT(*) FROM db d WHERE d.owner_id = p.id) FROM panel_account p ORDER BY p.username"
+    ]
+   }
+  },
+  {
+   "cas": "forme : utilisateurs complets",
+   "entree": {
+    "phase": "forme",
+    "op": "utilisateurs",
+    "schema": {
+     "panel_account": [
+      "id",
+      "username",
+      "home_dir",
+      "status",
+      "roles",
+      "ssh_access",
+      "quota_value",
+      "restore_email",
+      "created_at"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "alice",
+       "/var/www/alice",
+       "active",
+       "ROLE_USER",
+       1,
+       5368709120,
+       "a@exemple.test",
+       "2025-01-02 03:04:05.678",
+       3,
+       2
+      ],
+      [
+       "bob",
+       null,
+       null,
+       null,
+       0,
+       0,
+       null,
+       null,
+       0,
+       0
+      ],
+      [
+       "",
+       "x",
+       "x",
+       "x",
+       1,
+       1,
+       "x",
+       "x",
+       0,
+       0
+      ],
+      [
+       "carla",
+       "/home/c",
+       "suspended",
+       "ROLE_ADMIN",
+       "true",
+       1073741824,
+       "c@e.test",
+       "2024-12-31",
+       10,
+       4
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "compte": "alice",
+      "dossier": "/var/www/alice",
+      "statut": "active",
+      "roles": "ROLE_USER",
+      "ssh": true,
+      "quota_go": 5.0,
+      "courriel": "a@exemple.test",
+      "cree": "2025-01-02 03:04:05",
+      "sites": 3,
+      "bases": 2
+     },
+     {
+      "compte": "bob",
+      "dossier": "",
+      "statut": "active",
+      "roles": "",
+      "ssh": false,
+      "quota_go": null,
+      "courriel": "",
+      "cree": "",
+      "sites": 0,
+      "bases": 0
+     },
+     {
+      "compte": "carla",
+      "dossier": "/home/c",
+      "statut": "suspended",
+      "roles": "ROLE_ADMIN",
+      "ssh": true,
+      "quota_go": 1.0,
+      "courriel": "c@e.test",
+      "cree": "2024-12-31",
+      "sites": 10,
+      "bases": 4
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : utilisateurs minimal",
+   "entree": {
+    "phase": "plan",
+    "op": "utilisateurs",
+    "schema": {
+     "panel_account": [
+      "id",
+      "username"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT p.username, '', '', '', 0, 0, '', '', (SELECT COUNT(*) FROM site s WHERE s.owner_id = p.id), (SELECT COUNT(*) FROM db d WHERE d.owner_id = p.id) FROM panel_account p ORDER BY p.username"
+    ]
+   }
+  },
+  {
+   "cas": "forme : utilisateurs minimal",
+   "entree": {
+    "phase": "forme",
+    "op": "utilisateurs",
+    "schema": {
+     "panel_account": [
+      "id",
+      "username"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "alice",
+       "",
+       "",
+       "",
+       "0",
+       "0",
+       "",
+       "",
+       1,
+       0
+      ],
+      [
+       "bob",
+       "",
+       "",
+       "",
+       "0",
+       "0",
+       "",
+       "",
+       0,
+       0
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "compte": "alice",
+      "dossier": "",
+      "statut": "active",
+      "roles": "",
+      "ssh": false,
+      "quota_go": null,
+      "courriel": "",
+      "cree": "",
+      "sites": 1,
+      "bases": 0
+     },
+     {
+      "compte": "bob",
+      "dossier": "",
+      "statut": "active",
+      "roles": "",
+      "ssh": false,
+      "quota_go": null,
+      "courriel": "",
+      "cree": "",
+      "sites": 0,
+      "bases": 0
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : utilisateurs partiels",
+   "entree": {
+    "phase": "plan",
+    "op": "utilisateurs",
+    "schema": {
+     "panel_account": [
+      "id",
+      "username",
+      "status",
+      "quota_value"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT p.username, '', COALESCE(p.status,''), '', 0, COALESCE(p.quota_value,0), '', '', (SELECT COUNT(*) FROM site s WHERE s.owner_id = p.id), (SELECT COUNT(*) FROM db d WHERE d.owner_id = p.id) FROM panel_account p ORDER BY p.username"
+    ]
+   }
+  },
+  {
+   "cas": "forme : utilisateurs partiels",
+   "entree": {
+    "phase": "forme",
+    "op": "utilisateurs",
+    "schema": {
+     "panel_account": [
+      "id",
+      "username",
+      "status",
+      "quota_value"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "alice",
+       "",
+       "active",
+       "",
+       "0",
+       2147483648,
+       "",
+       "",
+       2,
+       1
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "compte": "alice",
+      "dossier": "",
+      "statut": "active",
+      "roles": "",
+      "ssh": false,
+      "quota_go": 2.0,
+      "courriel": "",
+      "cree": "",
+      "sites": 2,
+      "bases": 1
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : utilisateurs sans table",
+   "entree": {
+    "phase": "plan",
+    "op": "utilisateurs",
+    "schema": {},
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT p.username, '', '', '', 0, 0, '', '', (SELECT COUNT(*) FROM site s WHERE s.owner_id = p.id), (SELECT COUNT(*) FROM db d WHERE d.owner_id = p.id) FROM panel_account p ORDER BY p.username"
+    ]
+   }
+  },
+  {
+   "cas": "forme : utilisateurs sans table",
+   "entree": {
+    "phase": "forme",
+    "op": "utilisateurs",
+    "schema": {},
+    "options": {},
+    "jeux": [
+     []
+    ]
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "forme : utilisateurs vides",
+   "entree": {
+    "phase": "forme",
+    "op": "utilisateurs",
+    "schema": {
+     "panel_account": [
+      "id",
+      "username",
+      "home_dir",
+      "status",
+      "roles",
+      "ssh_access",
+      "quota_value",
+      "restore_email",
+      "created_at"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     []
+    ]
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "forme : utilisateurs quota fractionnaire",
+   "entree": {
+    "phase": "forme",
+    "op": "utilisateurs",
+    "schema": {
+     "panel_account": [
+      "id",
+      "username",
+      "home_dir",
+      "status",
+      "roles",
+      "ssh_access",
+      "quota_value",
+      "restore_email",
+      "created_at"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "a",
+       "",
+       "",
+       "",
+       "0",
+       1610612736,
+       "",
+       "",
+       0,
+       0
+      ],
+      [
+       "b",
+       "",
+       "",
+       "",
+       "0",
+       1000,
+       "",
+       "",
+       0,
+       0
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "compte": "a",
+      "dossier": "",
+      "statut": "active",
+      "roles": "",
+      "ssh": false,
+      "quota_go": 1.5,
+      "courriel": "",
+      "cree": "",
+      "sites": 0,
+      "bases": 0
+     },
+     {
+      "compte": "b",
+      "dossier": "",
+      "statut": "active",
+      "roles": "",
+      "ssh": false,
+      "quota_go": null,
+      "courriel": "",
+      "cree": "",
+      "sites": 0,
+      "bases": 0
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : sites complets",
+   "entree": {
+    "phase": "plan",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version",
+      "main"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count",
+      "status_code",
+      "size",
+      "databases_size"
+     ]
+    },
+    "options": {
+     "seuil": 30,
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT s.domain, COALESCE(p.username,''), COALESCE(s.status,''), s.certificate_id, c.expired_at FROM site s LEFT JOIN panel_account p ON s.owner_id = p.id LEFT JOIN certificate c ON s.certificate_id = c.id ORDER BY s.domain",
+     "SELECT s.domain, COALESCE(b.handler,''), COALESCE(b.handler_version,'') FROM website_backends b JOIN site s ON b.frontend_id = s.id ORDER BY COALESCE(b.main,0) DESC, b.id",
+     "SELECT s.domain, COALESCE(t.error_count,0), COALESCE(t.status_code,0), COALESCE(t.size,0), COALESCE(t.databases_size,0) FROM site_stats t JOIN site s ON t.site_id = s.id"
+    ]
+   }
+  },
+  {
+   "cas": "forme : sites complets",
+   "entree": {
+    "phase": "forme",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version",
+      "main"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count",
+      "status_code",
+      "size",
+      "databases_size"
+     ]
+    },
+    "options": {
+     "seuil": 30,
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": [
+     [
+      [
+       "exemple.fr",
+       "alice",
+       "active",
+       5,
+       "2026-12-01 00:00:00"
+      ],
+      [
+       "www.autre.org",
+       "bob",
+       "active",
+       null,
+       ""
+      ],
+      [
+       "_",
+       "x",
+       "",
+       0,
+       ""
+      ],
+      [
+       "*.joker.fr",
+       "x",
+       "",
+       1,
+       ""
+      ],
+      [
+       "proche.fr",
+       "alice",
+       "",
+       7,
+       "2026-10-20"
+      ],
+      [
+       "echu.fr",
+       "alice",
+       "",
+       8,
+       "2026-10-10"
+      ],
+      [
+       "inconnu.fr",
+       "alice",
+       "",
+       9,
+       "pas une date"
+      ],
+      [
+       "zero.fr",
+       "alice",
+       "",
+       "0",
+       ""
+      ],
+      [
+       "pile.fr",
+       "a",
+       "",
+       3,
+       "2026-10-17"
+      ],
+      [
+       "sous.domaine.exemple.fr",
+       "alice",
+       "",
+       5,
+       "2026-11-16"
+      ]
+     ],
+     [
+      [
+       "exemple.fr",
+       "php_fpm",
+       "83"
+      ],
+      [
+       "exemple.fr",
+       "autre",
+       "74"
+      ],
+      [
+       "www.autre.org",
+       "apache",
+       "8.1"
+      ],
+      [
+       "proche.fr",
+       "",
+       ""
+      ],
+      [
+       "echu.fr",
+       "php_fpm",
+       "abc"
+      ]
+     ],
+     [
+      [
+       "exemple.fr",
+       3,
+       200,
+       10485760,
+       5242880
+      ],
+      [
+       "www.autre.org",
+       0,
+       0,
+       null,
+       null
+      ],
+      [
+       null,
+       1,
+       1,
+       1,
+       1
+      ],
+      [
+       "proche.fr",
+       null,
+       500,
+       "x",
+       "y"
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domaine": "exemple.fr",
+      "proprietaire": "alice",
+      "statut": "active",
+      "ssl": {
+       "etat": "actif",
+       "jours": 45,
+       "echeance": "2026-12-01"
+      },
+      "gestionnaire": "php_fpm",
+      "php": "8.3",
+      "erreurs": 3,
+      "code_http": 200,
+      "fichiers_mo": 10.0,
+      "bases_mo": 5.0
+     },
+     {
+      "domaine": "www.autre.org",
+      "proprietaire": "bob",
+      "statut": "active",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "apache",
+      "php": "8.1",
+      "erreurs": 0,
+      "code_http": 0,
+      "fichiers_mo": 0.0,
+      "bases_mo": 0.0
+     },
+     {
+      "domaine": "proche.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "proche",
+       "jours": 3,
+       "echeance": "2026-10-20"
+      },
+      "gestionnaire": "",
+      "php": "",
+      "erreurs": null,
+      "code_http": 500,
+      "fichiers_mo": 0.0,
+      "bases_mo": 0.0
+     },
+     {
+      "domaine": "echu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": -7,
+       "echeance": "2026-10-10"
+      },
+      "gestionnaire": "php_fpm",
+      "php": ""
+     },
+     {
+      "domaine": "inconnu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "inconnu",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "zero.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "pile.fr",
+      "proprietaire": "a",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": 0,
+       "echeance": "2026-10-17"
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "sous.domaine.exemple.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "proche",
+       "jours": 30,
+       "echeance": "2026-11-16"
+      },
+      "gestionnaire": "",
+      "php": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : sites seuil 5",
+   "entree": {
+    "phase": "plan",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version",
+      "main"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count",
+      "status_code",
+      "size",
+      "databases_size"
+     ]
+    },
+    "options": {
+     "seuil": 5,
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT s.domain, COALESCE(p.username,''), COALESCE(s.status,''), s.certificate_id, c.expired_at FROM site s LEFT JOIN panel_account p ON s.owner_id = p.id LEFT JOIN certificate c ON s.certificate_id = c.id ORDER BY s.domain",
+     "SELECT s.domain, COALESCE(b.handler,''), COALESCE(b.handler_version,'') FROM website_backends b JOIN site s ON b.frontend_id = s.id ORDER BY COALESCE(b.main,0) DESC, b.id",
+     "SELECT s.domain, COALESCE(t.error_count,0), COALESCE(t.status_code,0), COALESCE(t.size,0), COALESCE(t.databases_size,0) FROM site_stats t JOIN site s ON t.site_id = s.id"
+    ]
+   }
+  },
+  {
+   "cas": "forme : sites seuil 5",
+   "entree": {
+    "phase": "forme",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version",
+      "main"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count",
+      "status_code",
+      "size",
+      "databases_size"
+     ]
+    },
+    "options": {
+     "seuil": 5,
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": [
+     [
+      [
+       "exemple.fr",
+       "alice",
+       "active",
+       5,
+       "2026-12-01 00:00:00"
+      ],
+      [
+       "www.autre.org",
+       "bob",
+       "active",
+       null,
+       ""
+      ],
+      [
+       "_",
+       "x",
+       "",
+       0,
+       ""
+      ],
+      [
+       "*.joker.fr",
+       "x",
+       "",
+       1,
+       ""
+      ],
+      [
+       "proche.fr",
+       "alice",
+       "",
+       7,
+       "2026-10-20"
+      ],
+      [
+       "echu.fr",
+       "alice",
+       "",
+       8,
+       "2026-10-10"
+      ],
+      [
+       "inconnu.fr",
+       "alice",
+       "",
+       9,
+       "pas une date"
+      ],
+      [
+       "zero.fr",
+       "alice",
+       "",
+       "0",
+       ""
+      ],
+      [
+       "pile.fr",
+       "a",
+       "",
+       3,
+       "2026-10-17"
+      ],
+      [
+       "sous.domaine.exemple.fr",
+       "alice",
+       "",
+       5,
+       "2026-11-16"
+      ]
+     ],
+     [
+      [
+       "exemple.fr",
+       "php_fpm",
+       "83"
+      ],
+      [
+       "exemple.fr",
+       "autre",
+       "74"
+      ],
+      [
+       "www.autre.org",
+       "apache",
+       "8.1"
+      ],
+      [
+       "proche.fr",
+       "",
+       ""
+      ],
+      [
+       "echu.fr",
+       "php_fpm",
+       "abc"
+      ]
+     ],
+     [
+      [
+       "exemple.fr",
+       3,
+       200,
+       10485760,
+       5242880
+      ],
+      [
+       "www.autre.org",
+       0,
+       0,
+       null,
+       null
+      ],
+      [
+       null,
+       1,
+       1,
+       1,
+       1
+      ],
+      [
+       "proche.fr",
+       null,
+       500,
+       "x",
+       "y"
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domaine": "exemple.fr",
+      "proprietaire": "alice",
+      "statut": "active",
+      "ssl": {
+       "etat": "actif",
+       "jours": 45,
+       "echeance": "2026-12-01"
+      },
+      "gestionnaire": "php_fpm",
+      "php": "8.3",
+      "erreurs": 3,
+      "code_http": 200,
+      "fichiers_mo": 10.0,
+      "bases_mo": 5.0
+     },
+     {
+      "domaine": "www.autre.org",
+      "proprietaire": "bob",
+      "statut": "active",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "apache",
+      "php": "8.1",
+      "erreurs": 0,
+      "code_http": 0,
+      "fichiers_mo": 0.0,
+      "bases_mo": 0.0
+     },
+     {
+      "domaine": "proche.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "proche",
+       "jours": 3,
+       "echeance": "2026-10-20"
+      },
+      "gestionnaire": "",
+      "php": "",
+      "erreurs": null,
+      "code_http": 500,
+      "fichiers_mo": 0.0,
+      "bases_mo": 0.0
+     },
+     {
+      "domaine": "echu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": -7,
+       "echeance": "2026-10-10"
+      },
+      "gestionnaire": "php_fpm",
+      "php": ""
+     },
+     {
+      "domaine": "inconnu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "inconnu",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "zero.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "pile.fr",
+      "proprietaire": "a",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": 0,
+       "echeance": "2026-10-17"
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "sous.domaine.exemple.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "actif",
+       "jours": 30,
+       "echeance": "2026-11-16"
+      },
+      "gestionnaire": "",
+      "php": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : sites seuil 60",
+   "entree": {
+    "phase": "plan",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version",
+      "main"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count",
+      "status_code",
+      "size",
+      "databases_size"
+     ]
+    },
+    "options": {
+     "seuil": 60,
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT s.domain, COALESCE(p.username,''), COALESCE(s.status,''), s.certificate_id, c.expired_at FROM site s LEFT JOIN panel_account p ON s.owner_id = p.id LEFT JOIN certificate c ON s.certificate_id = c.id ORDER BY s.domain",
+     "SELECT s.domain, COALESCE(b.handler,''), COALESCE(b.handler_version,'') FROM website_backends b JOIN site s ON b.frontend_id = s.id ORDER BY COALESCE(b.main,0) DESC, b.id",
+     "SELECT s.domain, COALESCE(t.error_count,0), COALESCE(t.status_code,0), COALESCE(t.size,0), COALESCE(t.databases_size,0) FROM site_stats t JOIN site s ON t.site_id = s.id"
+    ]
+   }
+  },
+  {
+   "cas": "forme : sites seuil 60",
+   "entree": {
+    "phase": "forme",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version",
+      "main"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count",
+      "status_code",
+      "size",
+      "databases_size"
+     ]
+    },
+    "options": {
+     "seuil": 60,
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": [
+     [
+      [
+       "exemple.fr",
+       "alice",
+       "active",
+       5,
+       "2026-12-01 00:00:00"
+      ],
+      [
+       "www.autre.org",
+       "bob",
+       "active",
+       null,
+       ""
+      ],
+      [
+       "_",
+       "x",
+       "",
+       0,
+       ""
+      ],
+      [
+       "*.joker.fr",
+       "x",
+       "",
+       1,
+       ""
+      ],
+      [
+       "proche.fr",
+       "alice",
+       "",
+       7,
+       "2026-10-20"
+      ],
+      [
+       "echu.fr",
+       "alice",
+       "",
+       8,
+       "2026-10-10"
+      ],
+      [
+       "inconnu.fr",
+       "alice",
+       "",
+       9,
+       "pas une date"
+      ],
+      [
+       "zero.fr",
+       "alice",
+       "",
+       "0",
+       ""
+      ],
+      [
+       "pile.fr",
+       "a",
+       "",
+       3,
+       "2026-10-17"
+      ],
+      [
+       "sous.domaine.exemple.fr",
+       "alice",
+       "",
+       5,
+       "2026-11-16"
+      ]
+     ],
+     [
+      [
+       "exemple.fr",
+       "php_fpm",
+       "83"
+      ],
+      [
+       "exemple.fr",
+       "autre",
+       "74"
+      ],
+      [
+       "www.autre.org",
+       "apache",
+       "8.1"
+      ],
+      [
+       "proche.fr",
+       "",
+       ""
+      ],
+      [
+       "echu.fr",
+       "php_fpm",
+       "abc"
+      ]
+     ],
+     [
+      [
+       "exemple.fr",
+       3,
+       200,
+       10485760,
+       5242880
+      ],
+      [
+       "www.autre.org",
+       0,
+       0,
+       null,
+       null
+      ],
+      [
+       null,
+       1,
+       1,
+       1,
+       1
+      ],
+      [
+       "proche.fr",
+       null,
+       500,
+       "x",
+       "y"
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domaine": "exemple.fr",
+      "proprietaire": "alice",
+      "statut": "active",
+      "ssl": {
+       "etat": "proche",
+       "jours": 45,
+       "echeance": "2026-12-01"
+      },
+      "gestionnaire": "php_fpm",
+      "php": "8.3",
+      "erreurs": 3,
+      "code_http": 200,
+      "fichiers_mo": 10.0,
+      "bases_mo": 5.0
+     },
+     {
+      "domaine": "www.autre.org",
+      "proprietaire": "bob",
+      "statut": "active",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "apache",
+      "php": "8.1",
+      "erreurs": 0,
+      "code_http": 0,
+      "fichiers_mo": 0.0,
+      "bases_mo": 0.0
+     },
+     {
+      "domaine": "proche.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "proche",
+       "jours": 3,
+       "echeance": "2026-10-20"
+      },
+      "gestionnaire": "",
+      "php": "",
+      "erreurs": null,
+      "code_http": 500,
+      "fichiers_mo": 0.0,
+      "bases_mo": 0.0
+     },
+     {
+      "domaine": "echu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": -7,
+       "echeance": "2026-10-10"
+      },
+      "gestionnaire": "php_fpm",
+      "php": ""
+     },
+     {
+      "domaine": "inconnu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "inconnu",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "zero.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "pile.fr",
+      "proprietaire": "a",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": 0,
+       "echeance": "2026-10-17"
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "sous.domaine.exemple.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "proche",
+       "jours": 30,
+       "echeance": "2026-11-16"
+      },
+      "gestionnaire": "",
+      "php": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : sites sans seuil",
+   "entree": {
+    "phase": "plan",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version",
+      "main"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count",
+      "status_code",
+      "size",
+      "databases_size"
+     ]
+    },
+    "options": {
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT s.domain, COALESCE(p.username,''), COALESCE(s.status,''), s.certificate_id, c.expired_at FROM site s LEFT JOIN panel_account p ON s.owner_id = p.id LEFT JOIN certificate c ON s.certificate_id = c.id ORDER BY s.domain",
+     "SELECT s.domain, COALESCE(b.handler,''), COALESCE(b.handler_version,'') FROM website_backends b JOIN site s ON b.frontend_id = s.id ORDER BY COALESCE(b.main,0) DESC, b.id",
+     "SELECT s.domain, COALESCE(t.error_count,0), COALESCE(t.status_code,0), COALESCE(t.size,0), COALESCE(t.databases_size,0) FROM site_stats t JOIN site s ON t.site_id = s.id"
+    ]
+   }
+  },
+  {
+   "cas": "forme : sites sans seuil",
+   "entree": {
+    "phase": "forme",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version",
+      "main"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count",
+      "status_code",
+      "size",
+      "databases_size"
+     ]
+    },
+    "options": {
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": [
+     [
+      [
+       "exemple.fr",
+       "alice",
+       "active",
+       5,
+       "2026-12-01 00:00:00"
+      ],
+      [
+       "www.autre.org",
+       "bob",
+       "active",
+       null,
+       ""
+      ],
+      [
+       "_",
+       "x",
+       "",
+       0,
+       ""
+      ],
+      [
+       "*.joker.fr",
+       "x",
+       "",
+       1,
+       ""
+      ],
+      [
+       "proche.fr",
+       "alice",
+       "",
+       7,
+       "2026-10-20"
+      ],
+      [
+       "echu.fr",
+       "alice",
+       "",
+       8,
+       "2026-10-10"
+      ],
+      [
+       "inconnu.fr",
+       "alice",
+       "",
+       9,
+       "pas une date"
+      ],
+      [
+       "zero.fr",
+       "alice",
+       "",
+       "0",
+       ""
+      ],
+      [
+       "pile.fr",
+       "a",
+       "",
+       3,
+       "2026-10-17"
+      ],
+      [
+       "sous.domaine.exemple.fr",
+       "alice",
+       "",
+       5,
+       "2026-11-16"
+      ]
+     ],
+     [
+      [
+       "exemple.fr",
+       "php_fpm",
+       "83"
+      ],
+      [
+       "exemple.fr",
+       "autre",
+       "74"
+      ],
+      [
+       "www.autre.org",
+       "apache",
+       "8.1"
+      ],
+      [
+       "proche.fr",
+       "",
+       ""
+      ],
+      [
+       "echu.fr",
+       "php_fpm",
+       "abc"
+      ]
+     ],
+     [
+      [
+       "exemple.fr",
+       3,
+       200,
+       10485760,
+       5242880
+      ],
+      [
+       "www.autre.org",
+       0,
+       0,
+       null,
+       null
+      ],
+      [
+       null,
+       1,
+       1,
+       1,
+       1
+      ],
+      [
+       "proche.fr",
+       null,
+       500,
+       "x",
+       "y"
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domaine": "exemple.fr",
+      "proprietaire": "alice",
+      "statut": "active",
+      "ssl": {
+       "etat": "actif",
+       "jours": 45,
+       "echeance": "2026-12-01"
+      },
+      "gestionnaire": "php_fpm",
+      "php": "8.3",
+      "erreurs": 3,
+      "code_http": 200,
+      "fichiers_mo": 10.0,
+      "bases_mo": 5.0
+     },
+     {
+      "domaine": "www.autre.org",
+      "proprietaire": "bob",
+      "statut": "active",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "apache",
+      "php": "8.1",
+      "erreurs": 0,
+      "code_http": 0,
+      "fichiers_mo": 0.0,
+      "bases_mo": 0.0
+     },
+     {
+      "domaine": "proche.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "proche",
+       "jours": 3,
+       "echeance": "2026-10-20"
+      },
+      "gestionnaire": "",
+      "php": "",
+      "erreurs": null,
+      "code_http": 500,
+      "fichiers_mo": 0.0,
+      "bases_mo": 0.0
+     },
+     {
+      "domaine": "echu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": -7,
+       "echeance": "2026-10-10"
+      },
+      "gestionnaire": "php_fpm",
+      "php": ""
+     },
+     {
+      "domaine": "inconnu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "inconnu",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "zero.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "pile.fr",
+      "proprietaire": "a",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": 0,
+       "echeance": "2026-10-17"
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "sous.domaine.exemple.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "proche",
+       "jours": 30,
+       "echeance": "2026-11-16"
+      },
+      "gestionnaire": "",
+      "php": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : sites sans php ni stats",
+   "entree": {
+    "phase": "plan",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expires"
+     ]
+    },
+    "options": {
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT s.domain, COALESCE(p.username,''), COALESCE(s.status,''), s.certificate_id, c.expires FROM site s LEFT JOIN panel_account p ON s.owner_id = p.id LEFT JOIN certificate c ON s.certificate_id = c.id ORDER BY s.domain",
+     null,
+     null
+    ]
+   }
+  },
+  {
+   "cas": "forme : sites sans php ni stats",
+   "entree": {
+    "phase": "forme",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expires"
+     ]
+    },
+    "options": {
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": [
+     [
+      [
+       "exemple.fr",
+       "alice",
+       "active",
+       5,
+       "2026-12-01 00:00:00"
+      ],
+      [
+       "www.autre.org",
+       "bob",
+       "active",
+       null,
+       ""
+      ],
+      [
+       "_",
+       "x",
+       "",
+       0,
+       ""
+      ],
+      [
+       "*.joker.fr",
+       "x",
+       "",
+       1,
+       ""
+      ],
+      [
+       "proche.fr",
+       "alice",
+       "",
+       7,
+       "2026-10-20"
+      ],
+      [
+       "echu.fr",
+       "alice",
+       "",
+       8,
+       "2026-10-10"
+      ],
+      [
+       "inconnu.fr",
+       "alice",
+       "",
+       9,
+       "pas une date"
+      ],
+      [
+       "zero.fr",
+       "alice",
+       "",
+       "0",
+       ""
+      ],
+      [
+       "pile.fr",
+       "a",
+       "",
+       3,
+       "2026-10-17"
+      ],
+      [
+       "sous.domaine.exemple.fr",
+       "alice",
+       "",
+       5,
+       "2026-11-16"
+      ]
+     ],
+     [],
+     []
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domaine": "exemple.fr",
+      "proprietaire": "alice",
+      "statut": "active",
+      "ssl": {
+       "etat": "actif",
+       "jours": 45,
+       "echeance": "2026-12-01"
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "www.autre.org",
+      "proprietaire": "bob",
+      "statut": "active",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "proche.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "proche",
+       "jours": 3,
+       "echeance": "2026-10-20"
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "echu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": -7,
+       "echeance": "2026-10-10"
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "inconnu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "inconnu",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "zero.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "pile.fr",
+      "proprietaire": "a",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": 0,
+       "echeance": "2026-10-17"
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "sous.domaine.exemple.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "proche",
+       "jours": 30,
+       "echeance": "2026-11-16"
+      },
+      "gestionnaire": "",
+      "php": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : sites php sans colonne main",
+   "entree": {
+    "phase": "plan",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version"
+     ]
+    },
+    "options": {
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT s.domain, COALESCE(p.username,''), COALESCE(s.status,''), s.certificate_id, c.expired_at FROM site s LEFT JOIN panel_account p ON s.owner_id = p.id LEFT JOIN certificate c ON s.certificate_id = c.id ORDER BY s.domain",
+     "SELECT s.domain, COALESCE(b.handler,''), COALESCE(b.handler_version,'') FROM website_backends b JOIN site s ON b.frontend_id = s.id ORDER BY b.id",
+     null
+    ]
+   }
+  },
+  {
+   "cas": "forme : sites php sans colonne main",
+   "entree": {
+    "phase": "forme",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version"
+     ]
+    },
+    "options": {
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": [
+     [
+      [
+       "exemple.fr",
+       "alice",
+       "active",
+       5,
+       "2026-12-01 00:00:00"
+      ],
+      [
+       "www.autre.org",
+       "bob",
+       "active",
+       null,
+       ""
+      ],
+      [
+       "_",
+       "x",
+       "",
+       0,
+       ""
+      ],
+      [
+       "*.joker.fr",
+       "x",
+       "",
+       1,
+       ""
+      ],
+      [
+       "proche.fr",
+       "alice",
+       "",
+       7,
+       "2026-10-20"
+      ],
+      [
+       "echu.fr",
+       "alice",
+       "",
+       8,
+       "2026-10-10"
+      ],
+      [
+       "inconnu.fr",
+       "alice",
+       "",
+       9,
+       "pas une date"
+      ],
+      [
+       "zero.fr",
+       "alice",
+       "",
+       "0",
+       ""
+      ],
+      [
+       "pile.fr",
+       "a",
+       "",
+       3,
+       "2026-10-17"
+      ],
+      [
+       "sous.domaine.exemple.fr",
+       "alice",
+       "",
+       5,
+       "2026-11-16"
+      ]
+     ],
+     [
+      [
+       "exemple.fr",
+       "php_fpm",
+       "83"
+      ],
+      [
+       "exemple.fr",
+       "autre",
+       "74"
+      ],
+      [
+       "www.autre.org",
+       "apache",
+       "8.1"
+      ],
+      [
+       "proche.fr",
+       "",
+       ""
+      ],
+      [
+       "echu.fr",
+       "php_fpm",
+       "abc"
+      ]
+     ],
+     []
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domaine": "exemple.fr",
+      "proprietaire": "alice",
+      "statut": "active",
+      "ssl": {
+       "etat": "actif",
+       "jours": 45,
+       "echeance": "2026-12-01"
+      },
+      "gestionnaire": "php_fpm",
+      "php": "8.3"
+     },
+     {
+      "domaine": "www.autre.org",
+      "proprietaire": "bob",
+      "statut": "active",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "apache",
+      "php": "8.1"
+     },
+     {
+      "domaine": "proche.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "proche",
+       "jours": 3,
+       "echeance": "2026-10-20"
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "echu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": -7,
+       "echeance": "2026-10-10"
+      },
+      "gestionnaire": "php_fpm",
+      "php": ""
+     },
+     {
+      "domaine": "inconnu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "inconnu",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "zero.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "pile.fr",
+      "proprietaire": "a",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": 0,
+       "echeance": "2026-10-17"
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "sous.domaine.exemple.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "proche",
+       "jours": 30,
+       "echeance": "2026-11-16"
+      },
+      "gestionnaire": "",
+      "php": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : sites sans certificat",
+   "entree": {
+    "phase": "plan",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ]
+    },
+    "options": {
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT s.domain, COALESCE(p.username,''), COALESCE(s.status,''), s.certificate_id, '' FROM site s LEFT JOIN panel_account p ON s.owner_id = p.id LEFT JOIN certificate c ON s.certificate_id = c.id ORDER BY s.domain",
+     null,
+     null
+    ]
+   }
+  },
+  {
+   "cas": "forme : sites sans certificat",
+   "entree": {
+    "phase": "forme",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ]
+    },
+    "options": {
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": [
+     [
+      [
+       "a.fr",
+       "u",
+       "",
+       null,
+       null
+      ],
+      [
+       "b.fr",
+       "u",
+       "",
+       3,
+       ""
+      ]
+     ],
+     [],
+     []
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domaine": "a.fr",
+      "proprietaire": "u",
+      "statut": "",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "b.fr",
+      "proprietaire": "u",
+      "statut": "",
+      "ssl": {
+       "etat": "inconnu",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : sites stats seules",
+   "entree": {
+    "phase": "plan",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count"
+     ]
+    },
+    "options": {
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT s.domain, COALESCE(p.username,''), COALESCE(s.status,''), s.certificate_id, c.expired_at FROM site s LEFT JOIN panel_account p ON s.owner_id = p.id LEFT JOIN certificate c ON s.certificate_id = c.id ORDER BY s.domain",
+     null,
+     "SELECT s.domain, COALESCE(t.error_count,0), COALESCE(t.status_code,0), COALESCE(t.size,0), COALESCE(t.databases_size,0) FROM site_stats t JOIN site s ON t.site_id = s.id"
+    ]
+   }
+  },
+  {
+   "cas": "forme : sites stats seules",
+   "entree": {
+    "phase": "forme",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count"
+     ]
+    },
+    "options": {
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": [
+     [
+      [
+       "exemple.fr",
+       "alice",
+       "active",
+       5,
+       "2026-12-01 00:00:00"
+      ],
+      [
+       "www.autre.org",
+       "bob",
+       "active",
+       null,
+       ""
+      ],
+      [
+       "_",
+       "x",
+       "",
+       0,
+       ""
+      ],
+      [
+       "*.joker.fr",
+       "x",
+       "",
+       1,
+       ""
+      ],
+      [
+       "proche.fr",
+       "alice",
+       "",
+       7,
+       "2026-10-20"
+      ],
+      [
+       "echu.fr",
+       "alice",
+       "",
+       8,
+       "2026-10-10"
+      ],
+      [
+       "inconnu.fr",
+       "alice",
+       "",
+       9,
+       "pas une date"
+      ],
+      [
+       "zero.fr",
+       "alice",
+       "",
+       "0",
+       ""
+      ],
+      [
+       "pile.fr",
+       "a",
+       "",
+       3,
+       "2026-10-17"
+      ],
+      [
+       "sous.domaine.exemple.fr",
+       "alice",
+       "",
+       5,
+       "2026-11-16"
+      ]
+     ],
+     [],
+     [
+      [
+       "exemple.fr",
+       3,
+       200,
+       10485760,
+       5242880
+      ],
+      [
+       "www.autre.org",
+       0,
+       0,
+       null,
+       null
+      ],
+      [
+       null,
+       1,
+       1,
+       1,
+       1
+      ],
+      [
+       "proche.fr",
+       null,
+       500,
+       "x",
+       "y"
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domaine": "exemple.fr",
+      "proprietaire": "alice",
+      "statut": "active",
+      "ssl": {
+       "etat": "actif",
+       "jours": 45,
+       "echeance": "2026-12-01"
+      },
+      "gestionnaire": "",
+      "php": "",
+      "erreurs": 3,
+      "code_http": 200,
+      "fichiers_mo": 10.0,
+      "bases_mo": 5.0
+     },
+     {
+      "domaine": "www.autre.org",
+      "proprietaire": "bob",
+      "statut": "active",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": "",
+      "erreurs": 0,
+      "code_http": 0,
+      "fichiers_mo": 0.0,
+      "bases_mo": 0.0
+     },
+     {
+      "domaine": "proche.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "proche",
+       "jours": 3,
+       "echeance": "2026-10-20"
+      },
+      "gestionnaire": "",
+      "php": "",
+      "erreurs": null,
+      "code_http": 500,
+      "fichiers_mo": 0.0,
+      "bases_mo": 0.0
+     },
+     {
+      "domaine": "echu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": -7,
+       "echeance": "2026-10-10"
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "inconnu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "inconnu",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "zero.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "pile.fr",
+      "proprietaire": "a",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": 0,
+       "echeance": "2026-10-17"
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "sous.domaine.exemple.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "proche",
+       "jours": 30,
+       "echeance": "2026-11-16"
+      },
+      "gestionnaire": "",
+      "php": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "forme : sites aucun",
+   "entree": {
+    "phase": "forme",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version",
+      "main"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count",
+      "status_code",
+      "size",
+      "databases_size"
+     ]
+    },
+    "options": {
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": [
+     [],
+     [],
+     []
+    ]
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "plan : sites seuil négatif",
+   "entree": {
+    "phase": "plan",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version",
+      "main"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count",
+      "status_code",
+      "size",
+      "databases_size"
+     ]
+    },
+    "options": {
+     "seuil": -5,
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT s.domain, COALESCE(p.username,''), COALESCE(s.status,''), s.certificate_id, c.expired_at FROM site s LEFT JOIN panel_account p ON s.owner_id = p.id LEFT JOIN certificate c ON s.certificate_id = c.id ORDER BY s.domain",
+     "SELECT s.domain, COALESCE(b.handler,''), COALESCE(b.handler_version,'') FROM website_backends b JOIN site s ON b.frontend_id = s.id ORDER BY COALESCE(b.main,0) DESC, b.id",
+     "SELECT s.domain, COALESCE(t.error_count,0), COALESCE(t.status_code,0), COALESCE(t.size,0), COALESCE(t.databases_size,0) FROM site_stats t JOIN site s ON t.site_id = s.id"
+    ]
+   }
+  },
+  {
+   "cas": "forme : sites seuil négatif",
+   "entree": {
+    "phase": "forme",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version",
+      "main"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count",
+      "status_code",
+      "size",
+      "databases_size"
+     ]
+    },
+    "options": {
+     "seuil": -5,
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": [
+     [
+      [
+       "exemple.fr",
+       "alice",
+       "active",
+       5,
+       "2026-12-01 00:00:00"
+      ],
+      [
+       "www.autre.org",
+       "bob",
+       "active",
+       null,
+       ""
+      ],
+      [
+       "_",
+       "x",
+       "",
+       0,
+       ""
+      ],
+      [
+       "*.joker.fr",
+       "x",
+       "",
+       1,
+       ""
+      ],
+      [
+       "proche.fr",
+       "alice",
+       "",
+       7,
+       "2026-10-20"
+      ],
+      [
+       "echu.fr",
+       "alice",
+       "",
+       8,
+       "2026-10-10"
+      ],
+      [
+       "inconnu.fr",
+       "alice",
+       "",
+       9,
+       "pas une date"
+      ],
+      [
+       "zero.fr",
+       "alice",
+       "",
+       "0",
+       ""
+      ],
+      [
+       "pile.fr",
+       "a",
+       "",
+       3,
+       "2026-10-17"
+      ],
+      [
+       "sous.domaine.exemple.fr",
+       "alice",
+       "",
+       5,
+       "2026-11-16"
+      ]
+     ],
+     [
+      [
+       "exemple.fr",
+       "php_fpm",
+       "83"
+      ],
+      [
+       "exemple.fr",
+       "autre",
+       "74"
+      ],
+      [
+       "www.autre.org",
+       "apache",
+       "8.1"
+      ],
+      [
+       "proche.fr",
+       "",
+       ""
+      ],
+      [
+       "echu.fr",
+       "php_fpm",
+       "abc"
+      ]
+     ],
+     [
+      [
+       "exemple.fr",
+       3,
+       200,
+       10485760,
+       5242880
+      ],
+      [
+       "www.autre.org",
+       0,
+       0,
+       null,
+       null
+      ],
+      [
+       null,
+       1,
+       1,
+       1,
+       1
+      ],
+      [
+       "proche.fr",
+       null,
+       500,
+       "x",
+       "y"
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domaine": "exemple.fr",
+      "proprietaire": "alice",
+      "statut": "active",
+      "ssl": {
+       "etat": "actif",
+       "jours": 45,
+       "echeance": "2026-12-01"
+      },
+      "gestionnaire": "php_fpm",
+      "php": "8.3",
+      "erreurs": 3,
+      "code_http": 200,
+      "fichiers_mo": 10.0,
+      "bases_mo": 5.0
+     },
+     {
+      "domaine": "www.autre.org",
+      "proprietaire": "bob",
+      "statut": "active",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "apache",
+      "php": "8.1",
+      "erreurs": 0,
+      "code_http": 0,
+      "fichiers_mo": 0.0,
+      "bases_mo": 0.0
+     },
+     {
+      "domaine": "proche.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "actif",
+       "jours": 3,
+       "echeance": "2026-10-20"
+      },
+      "gestionnaire": "",
+      "php": "",
+      "erreurs": null,
+      "code_http": 500,
+      "fichiers_mo": 0.0,
+      "bases_mo": 0.0
+     },
+     {
+      "domaine": "echu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": -7,
+       "echeance": "2026-10-10"
+      },
+      "gestionnaire": "php_fpm",
+      "php": ""
+     },
+     {
+      "domaine": "inconnu.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "inconnu",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "zero.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "pile.fr",
+      "proprietaire": "a",
+      "statut": "",
+      "ssl": {
+       "etat": "echu",
+       "jours": 0,
+       "echeance": "2026-10-17"
+      },
+      "gestionnaire": "",
+      "php": ""
+     },
+     {
+      "domaine": "sous.domaine.exemple.fr",
+      "proprietaire": "alice",
+      "statut": "",
+      "ssl": {
+       "etat": "actif",
+       "jours": 30,
+       "echeance": "2026-11-16"
+      },
+      "gestionnaire": "",
+      "php": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "forme : sites php doublons",
+   "entree": {
+    "phase": "forme",
+    "op": "sites",
+    "schema": {
+     "site": [
+      "id",
+      "domain"
+     ],
+     "certificate": [
+      "id",
+      "expired_at"
+     ],
+     "website_backends": [
+      "id",
+      "frontend_id",
+      "handler",
+      "handler_version",
+      "main"
+     ],
+     "site_stats": [
+      "site_id",
+      "error_count",
+      "status_code",
+      "size",
+      "databases_size"
+     ]
+    },
+    "options": {
+     "maintenant": "2026-10-17 12:00:00"
+    },
+    "jeux": [
+     [
+      [
+       "a.fr",
+       "u",
+       "",
+       null,
+       null
+      ]
+     ],
+     [
+      [
+       "a.fr",
+       "x",
+       "81"
+      ],
+      [
+       "a.fr",
+       "y",
+       "74"
+      ],
+      [
+       "www.a.fr",
+       "z",
+       "8.0"
+      ]
+     ],
+     []
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domaine": "a.fr",
+      "proprietaire": "u",
+      "statut": "",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": ""
+      },
+      "gestionnaire": "x",
+      "php": "8.1"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : bases complètes",
+   "entree": {
+    "phase": "plan",
+    "op": "bases",
+    "schema": {
+     "db": [
+      "id",
+      "name",
+      "engine",
+      "size",
+      "site_id",
+      "charset",
+      "created_at",
+      "dump_at",
+      "owner_id"
+     ],
+     "datbases_users": [
+      "database_id",
+      "user_id"
+     ],
+     "database_user": [
+      "id",
+      "login"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT d.name, COALESCE(d.engine,'mysql'), COALESCE(d.size,0), COALESCE(p.username,''), COALESCE(s.domain,''), COALESCE(d.charset,''), COALESCE(d.created_at,''), COALESCE(d.dump_at,''), (SELECT GROUP_CONCAT(du.login, ', ') FROM datbases_users lu JOIN database_user du ON du.id = lu.user_id WHERE lu.database_id = d.id), d.id FROM db d LEFT JOIN panel_account p ON d.owner_id = p.id LEFT JOIN site s ON d.site_id = s.id ORDER BY d.name"
+    ]
+   }
+  },
+  {
+   "cas": "forme : bases complètes",
+   "entree": {
+    "phase": "forme",
+    "op": "bases",
+    "schema": {
+     "db": [
+      "id",
+      "name",
+      "engine",
+      "size",
+      "site_id",
+      "charset",
+      "created_at",
+      "dump_at",
+      "owner_id"
+     ],
+     "datbases_users": [
+      "database_id",
+      "user_id"
+     ],
+     "database_user": [
+      "id",
+      "login"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "shop",
+       "mysql",
+       104857600,
+       "alice",
+       "exemple.fr",
+       "utf8mb4",
+       "2025-02-03 04:05:06.7",
+       "2026-10-16 02:00:00",
+       "u1, u2",
+       1
+      ],
+      [
+       "blog",
+       null,
+       null,
+       "bob",
+       "",
+       "",
+       "",
+       "",
+       "",
+       2
+      ],
+      [
+       "",
+       "x",
+       1,
+       "x",
+       "x",
+       "x",
+       "x",
+       "x",
+       "x",
+       3
+      ],
+      [
+       "pg",
+       "postgres",
+       "abc",
+       "c",
+       "s",
+       "latin1",
+       null,
+       null,
+       null,
+       4
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": 1,
+      "nom": "shop",
+      "moteur": "mysql",
+      "taille_mo": 100.0,
+      "proprietaire": "alice",
+      "site": "exemple.fr",
+      "jeu": "utf8mb4",
+      "cree": "2025-02-03 04:05:06",
+      "derniere_copie": "2026-10-16 02:00:00",
+      "utilisateurs": "u1, u2"
+     },
+     {
+      "id": 2,
+      "nom": "blog",
+      "moteur": "mysql",
+      "taille_mo": 0.0,
+      "proprietaire": "bob",
+      "site": "",
+      "jeu": "",
+      "cree": "",
+      "derniere_copie": "",
+      "utilisateurs": ""
+     },
+     {
+      "id": 4,
+      "nom": "pg",
+      "moteur": "postgres",
+      "taille_mo": 0.0,
+      "proprietaire": "c",
+      "site": "s",
+      "jeu": "latin1",
+      "cree": "",
+      "derniere_copie": "",
+      "utilisateurs": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : bases minimales",
+   "entree": {
+    "phase": "plan",
+    "op": "bases",
+    "schema": {
+     "db": [
+      "id",
+      "name"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT d.name, 'mysql', 0, COALESCE(p.username,''), COALESCE('',''), '', '', '', '', d.id FROM db d LEFT JOIN panel_account p ON d.owner_id = p.id  ORDER BY d.name"
+    ]
+   }
+  },
+  {
+   "cas": "forme : bases minimales",
+   "entree": {
+    "phase": "forme",
+    "op": "bases",
+    "schema": {
+     "db": [
+      "id",
+      "name"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "shop",
+       "mysql",
+       0,
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       1
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": 1,
+      "nom": "shop",
+      "moteur": "mysql",
+      "taille_mo": 0.0,
+      "proprietaire": "",
+      "site": "",
+      "jeu": "",
+      "cree": "",
+      "derniere_copie": "",
+      "utilisateurs": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : bases sans utilisateurs",
+   "entree": {
+    "phase": "plan",
+    "op": "bases",
+    "schema": {
+     "db": [
+      "id",
+      "name",
+      "engine",
+      "site_id"
+     ],
+     "datbases_users": [
+      "database_id"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT d.name, COALESCE(d.engine,'mysql'), 0, COALESCE(p.username,''), COALESCE(s.domain,''), '', '', '', '', d.id FROM db d LEFT JOIN panel_account p ON d.owner_id = p.id LEFT JOIN site s ON d.site_id = s.id ORDER BY d.name"
+    ]
+   }
+  },
+  {
+   "cas": "forme : bases sans utilisateurs",
+   "entree": {
+    "phase": "forme",
+    "op": "bases",
+    "schema": {
+     "db": [
+      "id",
+      "name",
+      "engine",
+      "site_id"
+     ],
+     "datbases_users": [
+      "database_id"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "shop",
+       "mysql",
+       0,
+       "a",
+       "s",
+       "",
+       "",
+       "",
+       "",
+       1
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": 1,
+      "nom": "shop",
+      "moteur": "mysql",
+      "taille_mo": 0.0,
+      "proprietaire": "a",
+      "site": "s",
+      "jeu": "",
+      "cree": "",
+      "derniere_copie": "",
+      "utilisateurs": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "forme : bases vides",
+   "entree": {
+    "phase": "forme",
+    "op": "bases",
+    "schema": {
+     "db": [
+      "id",
+      "name",
+      "engine",
+      "size",
+      "site_id",
+      "charset",
+      "created_at",
+      "dump_at",
+      "owner_id"
+     ],
+     "datbases_users": [
+      "database_id",
+      "user_id"
+     ],
+     "database_user": [
+      "id",
+      "login"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     []
+    ]
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "plan : bases colonnes partielles",
+   "entree": {
+    "phase": "plan",
+    "op": "bases",
+    "schema": {
+     "db": [
+      "id",
+      "name",
+      "size",
+      "charset",
+      "dump_at"
+     ],
+     "datbases_users": [
+      "x"
+     ],
+     "database_user": [
+      "id"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT d.name, 'mysql', COALESCE(d.size,0), COALESCE(p.username,''), COALESCE('',''), COALESCE(d.charset,''), '', COALESCE(d.dump_at,''), (SELECT GROUP_CONCAT(du.login, ', ') FROM datbases_users lu JOIN database_user du ON du.id = lu.user_id WHERE lu.database_id = d.id), d.id FROM db d LEFT JOIN panel_account p ON d.owner_id = p.id  ORDER BY d.name"
+    ]
+   }
+  },
+  {
+   "cas": "forme : bases colonnes partielles",
+   "entree": {
+    "phase": "forme",
+    "op": "bases",
+    "schema": {
+     "db": [
+      "id",
+      "name",
+      "size",
+      "charset",
+      "dump_at"
+     ],
+     "datbases_users": [
+      "x"
+     ],
+     "database_user": [
+      "id"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "a",
+       "mysql",
+       2097152,
+       "",
+       "",
+       "utf8",
+       "",
+       "2026-01-01 00:00:00",
+       "",
+       9
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": 9,
+      "nom": "a",
+      "moteur": "mysql",
+      "taille_mo": 2.0,
+      "proprietaire": "",
+      "site": "",
+      "jeu": "utf8",
+      "cree": "",
+      "derniere_copie": "2026-01-01 00:00:00",
+      "utilisateurs": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : ftp complets",
+   "entree": {
+    "phase": "plan",
+    "op": "ftp",
+    "schema": {
+     "ftp_account": [
+      "id",
+      "name",
+      "virtualhost_id",
+      "home_dir",
+      "enabled",
+      "created"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT f.name, COALESCE(f.home_dir,''), f.enabled, COALESCE(p.username,''), COALESCE(s.domain,''), COALESCE(f.created,'') FROM ftp_account f LEFT JOIN panel_account p ON f.owner_id = p.id LEFT JOIN site s ON f.virtualhost_id = s.id ORDER BY f.name"
+    ]
+   }
+  },
+  {
+   "cas": "forme : ftp complets",
+   "entree": {
+    "phase": "forme",
+    "op": "ftp",
+    "schema": {
+     "ftp_account": [
+      "id",
+      "name",
+      "virtualhost_id",
+      "home_dir",
+      "enabled",
+      "created"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "alice_ftp",
+       "/var/www/alice",
+       1,
+       "alice",
+       "exemple.fr",
+       "2025-03-04 05:06:07"
+      ],
+      [
+       "bob_ftp",
+       "",
+       0,
+       "bob",
+       "",
+       ""
+      ],
+      [
+       "",
+       "x",
+       1,
+       "x",
+       "x",
+       "x"
+      ],
+      [
+       "carla",
+       "/c",
+       "true",
+       "c",
+       "s",
+       null
+      ],
+      [
+       "dan",
+       "/d",
+       "off",
+       "d",
+       "s",
+       "2024"
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "compte": "alice_ftp",
+      "dossier": "/var/www/alice",
+      "statut": "active",
+      "proprietaire": "alice",
+      "site": "exemple.fr",
+      "cree": "2025-03-04 05:06:07"
+     },
+     {
+      "compte": "bob_ftp",
+      "dossier": "",
+      "statut": "suspendu",
+      "proprietaire": "bob",
+      "site": "",
+      "cree": ""
+     },
+     {
+      "compte": "carla",
+      "dossier": "/c",
+      "statut": "active",
+      "proprietaire": "c",
+      "site": "s",
+      "cree": ""
+     },
+     {
+      "compte": "dan",
+      "dossier": "/d",
+      "statut": "suspendu",
+      "proprietaire": "d",
+      "site": "s",
+      "cree": "2024"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : ftp minimal",
+   "entree": {
+    "phase": "plan",
+    "op": "ftp",
+    "schema": {
+     "ftp_account": [
+      "id",
+      "name"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT f.name, '', 1, COALESCE(p.username,''), '', '' FROM ftp_account f LEFT JOIN panel_account p ON f.owner_id = p.id  ORDER BY f.name"
+    ]
+   }
+  },
+  {
+   "cas": "forme : ftp minimal",
+   "entree": {
+    "phase": "forme",
+    "op": "ftp",
+    "schema": {
+     "ftp_account": [
+      "id",
+      "name"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "a",
+       "",
+       1,
+       "",
+       "",
+       ""
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "compte": "a",
+      "dossier": "",
+      "statut": "active",
+      "proprietaire": "",
+      "site": "",
+      "cree": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : ftp sans enabled",
+   "entree": {
+    "phase": "plan",
+    "op": "ftp",
+    "schema": {
+     "ftp_account": [
+      "id",
+      "name",
+      "home_dir",
+      "created"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT f.name, COALESCE(f.home_dir,''), 1, COALESCE(p.username,''), '', COALESCE(f.created,'') FROM ftp_account f LEFT JOIN panel_account p ON f.owner_id = p.id  ORDER BY f.name"
+    ]
+   }
+  },
+  {
+   "cas": "forme : ftp sans enabled",
+   "entree": {
+    "phase": "forme",
+    "op": "ftp",
+    "schema": {
+     "ftp_account": [
+      "id",
+      "name",
+      "home_dir",
+      "created"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "a",
+       "/h",
+       1,
+       "u",
+       "",
+       "2024-01-01"
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "compte": "a",
+      "dossier": "/h",
+      "statut": "active",
+      "proprietaire": "u",
+      "site": "",
+      "cree": "2024-01-01"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "forme : ftp vides",
+   "entree": {
+    "phase": "forme",
+    "op": "ftp",
+    "schema": {
+     "ftp_account": [
+      "id",
+      "name",
+      "virtualhost_id",
+      "home_dir",
+      "enabled",
+      "created"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     []
+    ]
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "plan : mail complet",
+   "entree": {
+    "phase": "plan",
+    "op": "mail",
+    "schema": {
+     "mailboxes": [
+      "id",
+      "address",
+      "quota",
+      "size",
+      "enabled",
+      "domain_id"
+     ],
+     "email_domain": [
+      "id",
+      "name"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT m.address, COALESCE(m.quota,0), COALESCE(m.size,0), COALESCE(m.enabled,1), COALESCE(e.name,'') FROM mailboxes m LEFT JOIN email_domain e ON m.domain_id = e.id ORDER BY m.address"
+    ]
+   }
+  },
+  {
+   "cas": "forme : mail complet",
+   "entree": {
+    "phase": "forme",
+    "op": "mail",
+    "schema": {
+     "mailboxes": [
+      "id",
+      "address",
+      "quota",
+      "size",
+      "enabled",
+      "domain_id"
+     ],
+     "email_domain": [
+      "id",
+      "name"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "alice@exemple.fr",
+       1073741824,
+       52428800,
+       1,
+       "exemple.fr"
+      ],
+      [
+       "bob@autre.org",
+       0,
+       0,
+       0,
+       ""
+      ],
+      [
+       "sansarobase",
+       null,
+       null,
+       null,
+       ""
+      ],
+      [
+       "",
+       1,
+       1,
+       1,
+       "x"
+      ],
+      [
+       "c@d.fr",
+       "2097152",
+       "1048576",
+       "1",
+       null
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "adresse": "alice@exemple.fr",
+      "domaine": "exemple.fr",
+      "quota_mo": 1024.0,
+      "utilise_mo": 50.0,
+      "statut": "active"
+     },
+     {
+      "adresse": "bob@autre.org",
+      "domaine": "autre.org",
+      "quota_mo": 0.0,
+      "utilise_mo": 0.0,
+      "statut": "suspendue"
+     },
+     {
+      "adresse": "sansarobase",
+      "domaine": "",
+      "quota_mo": 0.0,
+      "utilise_mo": 0.0,
+      "statut": "suspendue"
+     },
+     {
+      "adresse": "c@d.fr",
+      "domaine": "d.fr",
+      "quota_mo": 2.0,
+      "utilise_mo": 1.0,
+      "statut": "active"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : mail autres noms de colonnes",
+   "entree": {
+    "phase": "plan",
+    "op": "mail",
+    "schema": {
+     "mailboxes": [
+      "id",
+      "email",
+      "used",
+      "active"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT m.email, 0, COALESCE(m.used,0), COALESCE(m.active,1), '' FROM mailboxes m  ORDER BY m.email"
+    ]
+   }
+  },
+  {
+   "cas": "forme : mail autres noms de colonnes",
+   "entree": {
+    "phase": "forme",
+    "op": "mail",
+    "schema": {
+     "mailboxes": [
+      "id",
+      "email",
+      "used",
+      "active"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "a@b.fr",
+       0,
+       1048576,
+       1,
+       ""
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "adresse": "a@b.fr",
+      "domaine": "b.fr",
+      "quota_mo": 0.0,
+      "utilise_mo": 1.0,
+      "statut": "active"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : mail avec login",
+   "entree": {
+    "phase": "plan",
+    "op": "mail",
+    "schema": {
+     "mailboxes": [
+      "login",
+      "quota"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT m.login, COALESCE(m.quota,0), 0, 1, '' FROM mailboxes m  ORDER BY m.login"
+    ]
+   }
+  },
+  {
+   "cas": "forme : mail avec login",
+   "entree": {
+    "phase": "forme",
+    "op": "mail",
+    "schema": {
+     "mailboxes": [
+      "login",
+      "quota"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "a@b.fr",
+       5242880,
+       0,
+       1,
+       ""
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "adresse": "a@b.fr",
+      "domaine": "b.fr",
+      "quota_mo": 5.0,
+      "utilise_mo": 0.0,
+      "statut": "active"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : mail sans domaine joint",
+   "entree": {
+    "phase": "plan",
+    "op": "mail",
+    "schema": {
+     "mailboxes": [
+      "address",
+      "domain_id"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT m.address, 0, 0, 1, '' FROM mailboxes m  ORDER BY m.address"
+    ]
+   }
+  },
+  {
+   "cas": "forme : mail sans domaine joint",
+   "entree": {
+    "phase": "forme",
+    "op": "mail",
+    "schema": {
+     "mailboxes": [
+      "address",
+      "domain_id"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "a@b.fr",
+       0,
+       0,
+       1,
+       ""
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "adresse": "a@b.fr",
+      "domaine": "b.fr",
+      "quota_mo": 0.0,
+      "utilise_mo": 0.0,
+      "statut": "active"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : mail table absente",
+   "entree": {
+    "phase": "plan",
+    "op": "mail",
+    "schema": {},
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "erreur": "la table des boîtes mail est absente ou d'un schéma inconnu (autre version de FastPanel ?)"
+   }
+  },
+  {
+   "cas": "plan : mail sans colonne d'adresse",
+   "entree": {
+    "phase": "plan",
+    "op": "mail",
+    "schema": {
+     "mailboxes": [
+      "id",
+      "quota"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "erreur": "la table des boîtes mail est absente ou d'un schéma inconnu (autre version de FastPanel ?)"
+   }
+  },
+  {
+   "cas": "forme : mail vide",
+   "entree": {
+    "phase": "forme",
+    "op": "mail",
+    "schema": {
+     "mailboxes": [
+      "id",
+      "address",
+      "quota",
+      "size",
+      "enabled",
+      "domain_id"
+     ],
+     "email_domain": [
+      "id",
+      "name"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     []
+    ]
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "plan : dns complet",
+   "entree": {
+    "phase": "plan",
+    "op": "dns",
+    "schema": {
+     "record": [
+      "id",
+      "name",
+      "type",
+      "value",
+      "ttl",
+      "domain_id"
+     ],
+     "domain": [
+      "id",
+      "name"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT COALESCE(d.name,''), r.name, r.type, r.value, COALESCE(r.ttl,0) FROM record r LEFT JOIN domain d ON r.domain_id = d.id ORDER BY 1, r.type"
+    ]
+   }
+  },
+  {
+   "cas": "forme : dns complet",
+   "entree": {
+    "phase": "forme",
+    "op": "dns",
+    "schema": {
+     "record": [
+      "id",
+      "name",
+      "type",
+      "value",
+      "ttl",
+      "domain_id"
+     ],
+     "domain": [
+      "id",
+      "name"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "exemple.fr",
+       "www",
+       "A",
+       "192.0.2.1",
+       300
+      ],
+      [
+       "exemple.fr",
+       "@",
+       "MX",
+       "10 mail.exemple.fr",
+       3600
+      ],
+      [
+       "",
+       "",
+       "",
+       "",
+       0
+      ],
+      [
+       "exemple.fr",
+       "",
+       "TXT",
+       "v=spf1 -all",
+       null
+      ],
+      [
+       "z.fr",
+       "api",
+       "CNAME",
+       "",
+       60
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "zone": "exemple.fr",
+      "nom": "www",
+      "type": "A",
+      "valeur": "192.0.2.1",
+      "ttl": 300
+     },
+     {
+      "zone": "exemple.fr",
+      "nom": "@",
+      "type": "MX",
+      "valeur": "10 mail.exemple.fr",
+      "ttl": 3600
+     },
+     {
+      "zone": "exemple.fr",
+      "nom": "",
+      "type": "TXT",
+      "valeur": "v=spf1 -all",
+      "ttl": null
+     },
+     {
+      "zone": "z.fr",
+      "nom": "api",
+      "type": "CNAME",
+      "valeur": "",
+      "ttl": 60
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : dns autres colonnes",
+   "entree": {
+    "phase": "plan",
+    "op": "dns",
+    "schema": {
+     "record": [
+      "host",
+      "rtype",
+      "content",
+      "ttl"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT '', r.host, r.rtype, r.content, COALESCE(r.ttl,0) FROM record r  ORDER BY 1, r.rtype"
+    ]
+   }
+  },
+  {
+   "cas": "forme : dns autres colonnes",
+   "entree": {
+    "phase": "forme",
+    "op": "dns",
+    "schema": {
+     "record": [
+      "host",
+      "rtype",
+      "content",
+      "ttl"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "",
+       "www",
+       "A",
+       "192.0.2.1",
+       5
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "zone": "",
+      "nom": "www",
+      "type": "A",
+      "valeur": "192.0.2.1",
+      "ttl": 5
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : dns avec data",
+   "entree": {
+    "phase": "plan",
+    "op": "dns",
+    "schema": {
+     "record": [
+      "name",
+      "type",
+      "data"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT '', r.name, r.type, r.data, 0 FROM record r  ORDER BY 1, r.type"
+    ]
+   }
+  },
+  {
+   "cas": "forme : dns avec data",
+   "entree": {
+    "phase": "forme",
+    "op": "dns",
+    "schema": {
+     "record": [
+      "name",
+      "type",
+      "data"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "",
+       "x",
+       "TXT",
+       "t",
+       0
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "zone": "",
+      "nom": "x",
+      "type": "TXT",
+      "valeur": "t",
+      "ttl": 0
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : dns sans ttl ni zone",
+   "entree": {
+    "phase": "plan",
+    "op": "dns",
+    "schema": {
+     "record": [
+      "name",
+      "type",
+      "value",
+      "domain_id"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": [
+     "SELECT '', r.name, r.type, r.value, 0 FROM record r  ORDER BY 1, r.type"
+    ]
+   }
+  },
+  {
+   "cas": "forme : dns sans ttl ni zone",
+   "entree": {
+    "phase": "forme",
+    "op": "dns",
+    "schema": {
+     "record": [
+      "name",
+      "type",
+      "value",
+      "domain_id"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     [
+      [
+       "",
+       "x",
+       "A",
+       "1.2.3.4",
+       0
+      ]
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "zone": "",
+      "nom": "x",
+      "type": "A",
+      "valeur": "1.2.3.4",
+      "ttl": 0
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plan : dns table absente",
+   "entree": {
+    "phase": "plan",
+    "op": "dns",
+    "schema": {},
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "erreur": "la table des enregistrements DNS est absente ou d'un schéma inconnu (autre version de FastPanel ?)"
+   }
+  },
+  {
+   "cas": "plan : dns colonnes inconnues",
+   "entree": {
+    "phase": "plan",
+    "op": "dns",
+    "schema": {
+     "record": [
+      "id",
+      "foo"
+     ]
+    },
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "erreur": "la table des enregistrements DNS est absente ou d'un schéma inconnu (autre version de FastPanel ?)"
+   }
+  },
+  {
+   "cas": "forme : dns vide",
+   "entree": {
+    "phase": "forme",
+    "op": "dns",
+    "schema": {
+     "record": [
+      "id",
+      "name",
+      "type",
+      "value",
+      "ttl",
+      "domain_id"
+     ],
+     "domain": [
+      "id",
+      "name"
+     ]
+    },
+    "options": {},
+    "jeux": [
+     []
+    ]
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "plan : services",
+   "entree": {
+    "phase": "plan",
+    "op": "services",
+    "schema": {},
+    "options": {},
+    "jeux": []
+   },
+   "sortie": {
+    "requetes": []
+   }
+  },
+  {
+   "cas": "forme : services",
+   "entree": {
+    "phase": "forme",
+    "op": "services",
+    "schema": {},
+    "options": {},
+    "jeux": [
+     [
+      {
+       "id": 1,
+       "name": "nginx",
+       "state": "active"
+      },
+      {
+       "id": 1,
+       "name": "doublon"
+      },
+      {
+       "id": 2,
+       "name": "exim",
+       "service": "exim4.service",
+       "status": "running"
+      },
+      {
+       "id": null,
+       "name": "sans id"
+      },
+      {
+       "id": 3
+      },
+      {
+       "id": 4,
+       "name": "php",
+       "unit": "php8.3-fpm.service",
+       "title": "PHP",
+       "state": "Activé"
+      },
+      {
+       "id": 5,
+       "name": "mysql.service",
+       "service": "mysql",
+       "state": "stopped"
+      },
+      "pas un dict",
+      {
+       "id": 6,
+       "title": "Seul titre",
+       "state": "ON"
+      },
+      {
+       "id": 7,
+       "name": "x",
+       "state": ""
+      }
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "1",
+      "nom": "nginx",
+      "alias": [],
+      "etat": "active",
+      "actif": true
+     },
+     {
+      "id": "2",
+      "nom": "exim",
+      "alias": [
+       "exim4"
+      ],
+      "etat": "running",
+      "actif": true
+     },
+     {
+      "id": "4",
+      "nom": "php",
+      "alias": [
+       "php8.3-fpm"
+      ],
+      "etat": "Activé",
+      "actif": true
+     },
+     {
+      "id": "5",
+      "nom": "mysql.service",
+      "alias": [],
+      "etat": "stopped",
+      "actif": false
+     },
+     {
+      "id": "6",
+      "nom": "Seul titre",
+      "alias": [],
+      "etat": "ON",
+      "actif": true
+     },
+     {
+      "id": "7",
+      "nom": "x",
+      "alias": [],
+      "etat": "",
+      "actif": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "forme : services enveloppés",
+   "entree": {
+    "phase": "forme",
+    "op": "services",
+    "schema": {},
+    "options": {},
+    "jeux": [
+     {
+      "data": [
+       {
+        "id": 1,
+        "name": "nginx",
+        "state": "active"
+       },
+       {
+        "id": 1,
+        "name": "doublon"
+       },
+       {
+        "id": 2,
+        "name": "exim",
+        "service": "exim4.service",
+        "status": "running"
+       },
+       {
+        "id": null,
+        "name": "sans id"
+       },
+       {
+        "id": 3
+       },
+       {
+        "id": 4,
+        "name": "php",
+        "unit": "php8.3-fpm.service",
+        "title": "PHP",
+        "state": "Activé"
+       },
+       {
+        "id": 5,
+        "name": "mysql.service",
+        "service": "mysql",
+        "state": "stopped"
+       },
+       "pas un dict",
+       {
+        "id": 6,
+        "title": "Seul titre",
+        "state": "ON"
+       },
+       {
+        "id": 7,
+        "name": "x",
+        "state": ""
+       }
+      ]
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "1",
+      "nom": "nginx",
+      "alias": [],
+      "etat": "active",
+      "actif": true
+     },
+     {
+      "id": "2",
+      "nom": "exim",
+      "alias": [
+       "exim4"
+      ],
+      "etat": "running",
+      "actif": true
+     },
+     {
+      "id": "4",
+      "nom": "php",
+      "alias": [
+       "php8.3-fpm"
+      ],
+      "etat": "Activé",
+      "actif": true
+     },
+     {
+      "id": "5",
+      "nom": "mysql.service",
+      "alias": [],
+      "etat": "stopped",
+      "actif": false
+     },
+     {
+      "id": "6",
+      "nom": "Seul titre",
+      "alias": [],
+      "etat": "ON",
+      "actif": true
+     },
+     {
+      "id": "7",
+      "nom": "x",
+      "alias": [],
+      "etat": "",
+      "actif": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "forme : services un dictionnaire",
+   "entree": {
+    "phase": "forme",
+    "op": "services",
+    "schema": {},
+    "options": {},
+    "jeux": [
+     {
+      "id": 1,
+      "name": "seul"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "1",
+      "nom": "seul",
+      "alias": [],
+      "etat": "",
+      "actif": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "forme : services vides",
+   "entree": {
+    "phase": "forme",
+    "op": "services",
+    "schema": {},
+    "options": {},
+    "jeux": [
+     []
+    ]
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "forme : services dictionnaire vide",
+   "entree": {
+    "phase": "forme",
+    "op": "services",
+    "schema": {},
+    "options": {},
+    "jeux": [
+     {}
+    ]
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "forme : services alias doublon",
+   "entree": {
+    "phase": "forme",
+    "op": "services",
+    "schema": {},
+    "options": {},
+    "jeux": [
+     [
+      {
+       "id": 1,
+       "name": "Exim",
+       "service": "exim.service",
+       "unit": "EXIM",
+       "title": "exim"
+      }
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "1",
+      "nom": "Exim",
+      "alias": [],
+      "etat": "",
+      "actif": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "forme : services états actifs",
+   "entree": {
+    "phase": "forme",
+    "op": "services",
+    "schema": {},
+    "options": {},
+    "jeux": [
+     [
+      {
+       "id": 0,
+       "name": "s0",
+       "state": "active"
+      },
+      {
+       "id": 1,
+       "name": "s1",
+       "state": "running"
+      },
+      {
+       "id": 2,
+       "name": "s2",
+       "state": "started"
+      },
+      {
+       "id": 3,
+       "name": "s3",
+       "state": "on"
+      },
+      {
+       "id": 4,
+       "name": "s4",
+       "state": "up"
+      },
+      {
+       "id": 5,
+       "name": "s5",
+       "state": "1"
+      },
+      {
+       "id": 6,
+       "name": "s6",
+       "state": "true"
+      },
+      {
+       "id": 7,
+       "name": "s7",
+       "state": "enabled"
+      },
+      {
+       "id": 8,
+       "name": "s8",
+       "state": "Activated"
+      },
+      {
+       "id": 9,
+       "name": "s9",
+       "state": "inactive"
+      },
+      {
+       "id": 10,
+       "name": "s10",
+       "state": "failed"
+      },
+      {
+       "id": 11,
+       "name": "s11",
+       "state": "OFF"
+      },
+      {
+       "id": 12,
+       "name": "s12",
+       "state": "activation"
+      }
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "0",
+      "nom": "s0",
+      "alias": [],
+      "etat": "active",
+      "actif": true
+     },
+     {
+      "id": "1",
+      "nom": "s1",
+      "alias": [],
+      "etat": "running",
+      "actif": true
+     },
+     {
+      "id": "2",
+      "nom": "s2",
+      "alias": [],
+      "etat": "started",
+      "actif": true
+     },
+     {
+      "id": "3",
+      "nom": "s3",
+      "alias": [],
+      "etat": "on",
+      "actif": true
+     },
+     {
+      "id": "4",
+      "nom": "s4",
+      "alias": [],
+      "etat": "up",
+      "actif": true
+     },
+     {
+      "id": "5",
+      "nom": "s5",
+      "alias": [],
+      "etat": "1",
+      "actif": true
+     },
+     {
+      "id": "6",
+      "nom": "s6",
+      "alias": [],
+      "etat": "true",
+      "actif": true
+     },
+     {
+      "id": "7",
+      "nom": "s7",
+      "alias": [],
+      "etat": "enabled",
+      "actif": true
+     },
+     {
+      "id": "8",
+      "nom": "s8",
+      "alias": [],
+      "etat": "Activated",
+      "actif": true
+     },
+     {
+      "id": "9",
+      "nom": "s9",
+      "alias": [],
+      "etat": "inactive",
+      "actif": false
+     },
+     {
+      "id": "10",
+      "nom": "s10",
+      "alias": [],
+      "etat": "failed",
+      "actif": false
+     },
+     {
+      "id": "11",
+      "nom": "s11",
+      "alias": [],
+      "etat": "OFF",
+      "actif": false
+     },
+     {
+      "id": "12",
+      "nom": "s12",
+      "alias": [],
+      "etat": "activation",
+      "actif": true
+     }
+    ]
+   }
+  }
+ ]
+}
