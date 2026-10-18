@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.1  #b89763
+# VERSION CN : 0.1.2  #b89763
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : entetes.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

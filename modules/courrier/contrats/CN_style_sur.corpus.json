@@ -1,0 +1,133 @@
+{
+ "point": "courrier.style_sur",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de courrier, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "valeur": "color:#c00;font-weight:bold;background:url(x)"
+   },
+   "sortie": {
+    "valeur": "color:#c00;font-weight:bold"
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "valeur": "background:url(http://pirate/x.png)"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "valeur": 0
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "valeur": "width:expression(alert(1))"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "valeur": "behavior:url(x.htc)"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "valeur": "background-image:url(javascript:alert(1))"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "valeur": "font-size"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "valeur": null
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "valeur": "text-align"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "valeur": "color"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "valeur": "height"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "valeur": "text-decoration"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "valeur": "font-weight"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "valeur": "font-family"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  }
+ ]
+}

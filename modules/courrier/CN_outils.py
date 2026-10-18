@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.1  #495eb8
+# VERSION CN : 0.1.2  #d123b5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=495eb8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=d123b5 ▼▼▼
 """Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
 
 Le nettoyage du HTML est une LISTE BLANCHE bâtie sur un vrai analyseur (html.parser), pas une série d'expressions régulières qui retirent ce qu'on
@@ -274,17 +274,8 @@ DATA_IMAGE = re.compile(r"^data:image/(png|jpeg|jpg|gif|webp);base64,[A-Za-z0-9+
 
 
 def style_sur(valeur):
-    """Les seules propriétés de mise en forme, avec des valeurs sans url(), sans expression, sans @import, sans accolade."""
-    sortie = []
-    for decl in (valeur or "").split(";"):
-        if ":" not in decl:
-            continue
-        prop, _, val = decl.partition(":")
-        prop, val = prop.strip().lower(), val.strip()
-        bas = val.lower()
-        if prop in STYLES and VALEUR_STYLE.match(val) and not any(x in bas for x in ("url(", "expression", "javascript", "@import", "behavior", "binding", "\\")):
-            sortie.append("%s:%s" % (prop, val))
-    return ";".join(sortie)
+    """Les seules propriétés de mise en forme, avec des valeurs sans url(), sans expression, sans @import, sans accolade. Le calcul est un POINT D'ÉVOLUTION : points/EC_style_sur.py."""
+    return _appeler_point("style_sur", {"valeur": valeur})["valeur"]
 
 
 def hote_de(url):

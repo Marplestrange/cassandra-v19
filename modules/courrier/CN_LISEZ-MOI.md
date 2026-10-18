@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : courrier -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.1.1  #000000 -->
+<!-- VERSION CN : 0.1.2  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : courrier — la boîte IMAP de chaque compte -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.1 empreinte=86cc78 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.2 empreinte=86cc78 ▼▼▼ -->
 # courrier — la boîte IMAP de chaque compte
 
 Porté de la V18 (`_imap_*`, `itare_mail_*`, `mail_*`, `_courrier_*`, ~2 000 lignes lues). Le noyau apprend que **un module est un paquet de son dossier** (`from . import outils`).
