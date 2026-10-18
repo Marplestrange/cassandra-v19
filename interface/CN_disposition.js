@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #9dc14a
+// VERSION CN : 0.1.0  #5e082d
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=9dc14a ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=5e082d ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -72,6 +72,17 @@
     plus: '<path d="M12 5v14M5 12h14"/>', dots: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
     refresh: '<path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/>',
   };
+  // le logo de Cassandra : le toit (celui de l'ancienne interface) ; il tient lieu de logo tant que l'organisation n'a pas le sien
+  const TOIT = '<svg class="d-i toit" viewBox="0 0 24 24"><path d="M4 11.5l8-7 8 7"/><path d="M6.5 20h11"/><circle cx="12" cy="14.5" r="2.4" fill="currentColor" stroke="none"/></svg>';
+  let faviconOrigine = null;
+  function favicon(logo) {
+    let l = document.querySelector('link[rel="icon"]');
+    if (!l) { l = document.createElement("link"); l.setAttribute("rel", "icon"); document.head.appendChild(l); }
+    if (faviconOrigine === null) faviconOrigine = { href: l.getAttribute("href") || "/favicon.svg", type: l.getAttribute("type") || "image/svg+xml" };
+    const m = /^data:(image\/[a-z+]+);/.exec(logo || "");
+    l.setAttribute("type", m ? m[1] : faviconOrigine.type);
+    l.setAttribute("href", m ? logo : faviconOrigine.href);
+  }
   const ico = (k, c) => '<svg class="d-i' + (c ? " " + c : "") + '" viewBox="0 0 24 24">' + (IC[k] || IC.plus) + "</svg>";
 
   // ── l'état ─────────────────────────────────────────────────────────────────
@@ -151,7 +162,8 @@
     lg.className = "d19-logo" + (o.logo ? " img" : "") + (E.d.niveau === "danger" ? " s-danger" : E.d.niveau === "alerte" ? " s-alerte" : "");
     lg.title = (o.nom || "Cassandra") + " · " + (E.d.niveau === "danger" ? "un point urgent à regarder" : E.d.niveau === "alerte" ? "des points à regarder" : "tout est en ordre");
     lg.style.backgroundImage = o.logo ? "url(" + o.logo + ")" : "";
-    lg.textContent = o.logo ? "" : (o.nom || "C").trim().charAt(0).toUpperCase();
+    lg.innerHTML = o.logo ? "" : TOIT;
+    favicon(o.logo);
     $("#d19-groupes").innerHTML = E.d.groupes.map((g, i) => '<button class="d19-gr' + (g.id === E.g && E.actif ? " on" : "") + '" data-g="' + esc(g.id) + '" data-tip="' + esc(g.libelle) + " · Alt+" + (i + 1) + '" aria-label="' + esc(g.libelle) + '">' + ico(g.icone) + pastille(g) + "</button>").join("");
     const urg = !!(E.idees && E.idees.urgent);
     $("#d19-btn-cass").classList.toggle("d19-idee", urg);
@@ -457,7 +469,7 @@
         + '<label for="o-tz">Fuseau horaire</label><input type="text" id="o-tz" value="' + esc(o.fuseau) + '" autocomplete="off">'
         + '<label for="o-lg">Langue par défaut</label><select id="o-lg"><option value="fr"' + (o.langue === "fr" ? " selected" : "") + '>Français</option><option value="en"' + (o.langue === "en" ? " selected" : "") + '>English</option></select>'
         + '</div><p style="margin:16px 0 0"><button class="d19-btn" id="o-ok">Enregistrer</button> <span id="o-msg" style="margin-left:10px;color:var(--txt-faint)"></span></p></div></div>';
-      const ap = $("#o-ap", corps), maj = () => { ap.style.backgroundImage = logo ? "url(" + logo + ")" : ""; ap.textContent = logo ? "" : ($("#o-nom", corps).value || "C").trim().charAt(0).toUpperCase(); };
+      const ap = $("#o-ap", corps), maj = () => { ap.style.backgroundImage = logo ? "url(" + logo + ")" : ""; ap.innerHTML = logo ? "" : TOIT; };
       maj();
       $("#o-nom", corps).addEventListener("input", maj);
       $("#o-logo", corps).addEventListener("change", function (ev) { const f = ev.target.files && ev.target.files[0]; if (f) redimensionner(f, function (u) { if (!u) { $("#o-msg", corps).textContent = "Image trop lourde ou illisible."; return; } logo = u; maj(); }); });
