@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.1  #fc9c81
+# VERSION CN : 0.1.2  #fc9c81
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : derive.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

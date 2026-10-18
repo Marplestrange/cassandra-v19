@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.1  #e290c6
+# VERSION CN : 0.1.2  #5106d0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les tâches planifiées : la logique pure (expressions cron, occurrences, description en français, verdict d'une tâche, collisions, dérive).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=e290c6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=5106d0 ▼▼▼
 """Les tâches planifiées : la logique pure (expressions cron, occurrences, description en français, verdict d'une tâche, collisions, dérive).
 
 Portée de la V18. Rien ici ne touche le système : le module lit et écrit les crontabs par le courtier, et passe les temps et les durées à ces fonctions.

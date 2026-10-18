@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #86e1ed
+# VERSION EC : EC0 (référence 0.3.1)  #86e1ed
 # HÔTE CN    : CN_module.py · meilleure @1.0
 # RÔLE       : propose, entre deux fiches qui se ressemblent, celle à garder : la plus renseignée, à égalité la plus ancienne.
 # MÉTHODE    : fonction pure : un score de remplissage (champs non vides, adresses, photo, favori) ; à égalité la création la plus ancienne ; à égalité totale le plus petit identifiant.

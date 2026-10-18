@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : journal
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2cecb5
+# VERSION CN : 0.1.1  #0ccc52
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le journal : le fil des agents et le lecteur unifié des journaux.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2cecb5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=0ccc52 ▼▼▼
 """Le journal : le fil des agents et le lecteur unifié des journaux.
 
 Porté de la V18 (`journal_*`), avec ses leçons :

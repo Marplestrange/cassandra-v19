@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.0  #071d32
+# VERSION CN : 0.3.1  #071d32
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : signaux.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

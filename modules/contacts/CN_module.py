@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.0  #18660c
+# VERSION CN : 0.3.1  #79dac1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet d'adresses.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=18660c ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=79dac1 ▼▼▼
 """Le carnet d'adresses.
 
 Porté de la V18 (`contact_*`, `contacts_*`, vCard, CSV), avec ses leçons :

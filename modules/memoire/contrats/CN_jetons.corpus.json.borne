@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c40083
+# VERSION CN : 0.1.1  #c40083
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : jetons.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

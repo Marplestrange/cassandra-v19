@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5048c6
+# VERSION CN : 0.1.1  #5048c6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : termes.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

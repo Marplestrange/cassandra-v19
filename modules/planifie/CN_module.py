@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.1  #2846fe
+# VERSION CN : 0.1.2  #22fe04
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les tâches planifiées : tout ce qui tourne tout seul sur la machine, et est-ce que ça va.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=2846fe ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=22fe04 ▼▼▼
 """Les tâches planifiées : tout ce qui tourne tout seul sur la machine, et est-ce que ça va.
 
 Porté de la V18 (`cron_*`, `_crontab_*`), avec ses leçons :

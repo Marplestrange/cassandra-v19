@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #cbdfba
+# VERSION EC : EC0 (référence 0.3.1)  #cbdfba
 # HÔTE CN    : CN_module.py · csv_apparier @1.0
 # RÔLE       : reconnaît les colonnes d'un CSV de contacts (Google, Outlook, français, anglais) et dit à quel champ de la fiche chacune correspond.
 # MÉTHODE    : fonction pure : chaque en-tête est aplati (sans accents ni ponctuation) puis cherché dans la table des libellés connus.

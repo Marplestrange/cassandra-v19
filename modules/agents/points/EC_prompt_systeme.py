@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #000000
+# VERSION EC : EC0 (référence 0.3.0)  #07711c
 # HÔTE CN    : CN_module.py · prompt_systeme @1.0
 # RÔLE       : prompt_systeme.
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=prompt_systeme contrat=@1.0 version=EC0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE EC point=prompt_systeme contrat=@1.0 version=EC0 empreinte=07711c ▼▼▼
 
 META_CHERCHE = "outil_cherche"
 

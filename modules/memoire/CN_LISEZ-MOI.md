@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : memoire -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION CN : 0.1.1  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : Mémoire -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=37604b ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.1 empreinte=37604b ▼▼▼ -->
 # Mémoire
 
 Un souvenir est un fait daté, prouvé, propriétaire, corrigeable d'une phrase. Une seule porte d'écriture (`ecrire`), des versions liées, un veto, des doutes, des épisodes, des rappels conditionnés aux capteurs, un journal chaîné.

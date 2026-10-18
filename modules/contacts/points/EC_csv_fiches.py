@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #daa490
+# VERSION EC : EC0 (référence 0.3.1)  #daa490
 # HÔTE CN    : CN_module.py · csv_fiches @1.0
 # RÔLE       : transforme les lignes d'un CSV de contacts en fiches, selon l'appariement des colonnes.
 # MÉTHODE    : fonction pure : une fiche par ligne ; un nom recomposé du prénom et du nom si aucun nom complet n'est donné ; une ligne sans nom ni adresse est ignorée.

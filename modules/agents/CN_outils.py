@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9dac03
+# VERSION CN : 0.1.1  #9dac03
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9dac03 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=9dac03 ▼▼▼
 """Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils."""
 from __future__ import annotations
 

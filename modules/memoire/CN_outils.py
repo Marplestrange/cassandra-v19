@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e31d64
+# VERSION CN : 0.1.1  #ece52f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les fonctions pures de la mémoire : gardes, clés, proximité, routage, perception. Rien ici ne touche la base.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e31d64 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=ece52f ▼▼▼
 """Les fonctions pures de la mémoire : gardes, clés, proximité, routage, perception. Rien ici ne touche la base."""
 from __future__ import annotations
 

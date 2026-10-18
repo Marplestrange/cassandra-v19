@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #4dcc08
+# VERSION EC : EC0 (référence 0.3.1)  #4dcc08
 # HÔTE CN    : CN_module.py · csv_decoder @1.0
 # RÔLE       : trouve l'encodage d'un fichier CSV de contacts et le lit en texte.
 # MÉTHODE    : fonction pure : UTF-8 d'abord parce qu'il échoue franchement sur ce qui n'en est pas ; cp1252 accepte presque tout ; une marque d'ordre des octets est retirée.

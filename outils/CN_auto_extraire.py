@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6a296e
+# VERSION CN : 0.1.0  #7fa31f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'extracteur proactif : trouve dans les fichiers CN des modules les fonctions éligibles à l'évolution (EC) et les en sort, sans qu'on les désigne.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6a296e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7fa31f ▼▼▼
 """L'extracteur proactif : trouve dans les fichiers CN des modules les fonctions éligibles à l'évolution (EC) et les en sort, sans qu'on les désigne.
 
    python outils/CN_auto_extraire.py lister   [--module M]            ce qui est éligible, et pourquoi le reste ne l'est pas (n'écrit rien)
@@ -215,6 +215,9 @@ def examiner(module, chemin):
         if texte.count("\n") > MAX_FERMETURE:
             non("fermeture trop grosse (%d lignes)" % texte.count("\n"))
             continue
+        if any("_appeler_point(" in (ast.get_source_segment(src, nd) or "") for nd, _ in vus.values()):
+            non("appelle un point déjà extrait")
+            continue
         partage = _etat_partage(vus, noms)
         if partage:
             non("état partagé : " + partage)
@@ -257,7 +260,7 @@ def balayer(seulement=None):
 # ── 2. la synthèse du corpus ───────────────────────────────────────────────────
 TEXTES = ["", " ", "a", "abc", "Bonjour le monde", "ligne1\nligne2\n", "  espaces  ", "a,b;c", "https://exemple.test/x?y=1", "2026-10-17T12:00:00", "2026-10-17 12:00", "a@exemple.test",
           "é à ü", "x" * 40, "-1", "42", "3.14", "true", '{"a": 1}', "# titre\ntexte", "<b>gras</b> et <i>x</i>", "tab\tsep", "/var/www/x/y.txt", "CLE=valeur\n#c\nAUTRE=2",
-          "Nom Prénom <a@exemple.test>", "exemple.test", "127.0.0.1", "10:30", "1h30", "oui", "non", "a.b.c"]
+          "Nom Prénom <a@exemple.test>", "exemple.test", "127.0.0.1", "10:30", "1h30", "oui", "non", "a.b.c", "2026-10-17", "../x", "a/b/c", "C:\\x"]
 ENTIERS = [0, 1, 2, 3, -1, 5, 10, 60, 100, 1024, 3600, 86400, 1760000000]
 REELS = [0.0, 0.5, 1.5, -2.25, 100.0, 1e6, 2.0 / 3]
 LISTES = [[], [1, 2, 3], ["a", "b"], ["a", "b", "a"], [{"a": 1}, {"a": 2}], [[1, 2], [3, 4]], [0.5, 1.5], ["x", 1, None], ["un", "deux", "trois", "quatre"], [3, 1, 2]]
@@ -267,10 +270,109 @@ NOM_TEXTE = re.compile(r"(texte|text|txt|^s$|^t$|ligne|line|nom|name|chaine|msg|
 NOM_ENTIER = re.compile(r"(^n$|^i$|^j$|^k$|nb|nombre|count|port|taille|size|secondes|^sec|ms$|jours|heures|minutes|duree|^ts|instant|^now|delta|limite|^max|^min|seuil|pct|ratio|total|pos$|index|idx|rang|niveau|age|annee|mois)", re.I)
 NOM_LISTE = re.compile(r"(liste|lst|items|rows|lignes|elements|^els|noms$|ids$|args|parts|champs|tous|resultats|results|entries|events|evenements|cles$|keys|mots$|valeurs|values|^xs$|seq)", re.I)
 NOM_DICT = re.compile(r"(^d$|dic|data|donnees|cfg|conf|config|obj|objet|fiche|entree|row|record|enregistrement|etat|mapping|table|index$|meta|infos?$|options?|params?$)", re.I)
+METHODES_TEXTE = {"split", "strip", "lstrip", "rstrip", "lower", "upper", "startswith", "endswith", "replace", "splitlines", "encode", "format", "find", "isdigit", "title", "capitalize", "partition", "rsplit", "zfill", "casefold"}
+METHODES_DICT = {"get", "items", "keys", "values", "setdefault", "update"}
+FONCTIONS_TEXTE = {"match", "search", "fullmatch", "findall", "sub", "split", "finditer"}
+_LITTERAUX = {}
 
 
-def _piscine(nom, defaut, annotation):
-    """Les valeurs à essayer pour un paramètre : celles de son type probable d'abord (nom, défaut, annotation), un peu de tout le reste ensuite."""
+def litteraux(module):
+    """Les valeurs JSON que le module et ses bancs écrivent en toutes lettres : des textes, des listes, des dictionnaires RÉELS (un message, une fiche, une règle), meilleures que n'importe quelle devinette."""
+    if module in _LITTERAUX:
+        return _LITTERAUX[module]
+    res = {"str": [], "int": [], "list": [], "dict": []}
+    vus = set()
+    fich = list((RACINE / "tests").glob("CN_test_%s*.py" % module)) + [f for f in (RACINE / "modules" / module).rglob("*.py") if "points" not in f.parts]
+    for f in fich:
+        try:
+            arbre = ast.parse(lire(f))
+        except SyntaxError:
+            continue
+        for n in ast.walk(arbre):
+            if not isinstance(n, (ast.Constant, ast.Dict, ast.List)):
+                continue
+            try:
+                v = ast.literal_eval(n)
+            except Exception:
+                continue
+            k = type(v).__name__
+            if k not in res or isinstance(v, bool) or not _exact(v):
+                continue
+            if k == "str" and not (0 < len(v) <= 160):
+                continue
+            if k in ("list", "dict") and (not v or len(json.dumps(v, ensure_ascii=False)) > 600):
+                continue
+            cle = json.dumps(v, sort_keys=True, ensure_ascii=False)
+            if (k, cle) in vus:
+                continue
+            vus.add((k, cle))
+            if len(res[k]) < 400:
+                res[k].append(v)
+    _LITTERAUX[module] = res
+    return res
+
+
+def _usage(fn, nom):
+    """Ce que le code fait du paramètre : traité comme un texte, un dictionnaire (et quelles clés il lit), une liste, un nombre."""
+    ev = {"texte": 0, "dict": 0, "liste": 0, "nombre": 0, "cles": []}
+    for n in ast.walk(fn):
+        if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) and n.value.id == nom:
+            if n.attr in METHODES_TEXTE:
+                ev["texte"] += 1
+            elif n.attr in METHODES_DICT:
+                ev["dict"] += 1
+            elif n.attr in ("append", "extend", "sort", "index", "count"):
+                ev["liste"] += 1
+        if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and isinstance(n.func.value, ast.Name) and n.func.value.id == nom and n.func.attr == "get" and n.args and isinstance(n.args[0], ast.Constant):
+            ev["cles"].append(n.args[0].value)
+        elif isinstance(n, ast.Subscript) and isinstance(n.value, ast.Name) and n.value.id == nom:
+            sl = n.slice
+            if isinstance(sl, ast.Constant) and isinstance(sl.value, str):
+                ev["dict"] += 1
+                ev["cles"].append(sl.value)
+            elif (isinstance(sl, ast.Constant) and isinstance(sl.value, int)) or isinstance(sl, ast.Slice):
+                ev["liste"] += 1
+        elif isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and isinstance(n.func.value, ast.Name) and n.func.value.id == "re" and n.func.attr in FONCTIONS_TEXTE and any(isinstance(a, ast.Name) and a.id == nom for a in n.args):
+            ev["texte"] += 1
+        elif isinstance(n, ast.Compare) and isinstance(n.left, ast.Name) and n.left.id == nom and any(isinstance(c, ast.Constant) and isinstance(c.value, (int, float)) and not isinstance(c.value, bool) for c in n.comparators):
+            ev["nombre"] += 1
+        elif isinstance(n, ast.BinOp) and any(isinstance(x, ast.Name) and x.id == nom for x in (n.left, n.right)) and any(isinstance(x, ast.Constant) and isinstance(x.value, (int, float)) for x in (n.left, n.right)):
+            ev["nombre"] += 1
+        elif isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id in ("len", "sorted", "set", "list", "tuple", "enumerate", "zip", "sum", "any", "all", "max", "min", "reversed") and any(isinstance(a, ast.Name) and a.id == nom for a in n.args):
+            ev["liste"] += 1
+        elif isinstance(n, ast.For) and isinstance(n.iter, ast.Name) and n.iter.id == nom:
+            ev["liste"] += 1
+    return ev
+
+
+def _constantes(arbre):
+    textes, entiers = [], []
+    for n in ast.walk(arbre):
+        if isinstance(n, ast.Constant):
+            v = n.value
+            if isinstance(v, str) and 0 < len(v) <= 60 and v not in textes:
+                textes.append(v)
+            elif isinstance(v, int) and not isinstance(v, bool) and v not in entiers:
+                entiers.append(v)
+    return textes, entiers
+
+
+def _dedupe(valeurs):
+    vus, res = set(), []
+    for v in valeurs:
+        try:
+            k = json.dumps(v, sort_keys=True, ensure_ascii=False)
+        except (TypeError, ValueError):
+            continue
+        if k not in vus:
+            vus.add(k)
+            res.append(v)
+    return res
+
+
+def _piscine(nom, defaut, annotation, usage, lit, consts, hasard):
+    """Les valeurs à essayer pour un paramètre, les plus plausibles d'abord : défaut, annotation, usage dans le code, nom ; puis les valeurs littérales du dépôt ; puis un peu de tout."""
+    ctext, cint = consts
     pref = []
     t = (annotation or "").lower()
     if defaut is not None:
@@ -280,26 +382,49 @@ def _piscine(nom, defaut, annotation):
             pref.append(v)
         except Exception:
             pass
-    if t.startswith("str") or (not t and NOM_TEXTE.search(nom)):
-        pref += TEXTES
-    elif t.startswith("int") or (not t and NOM_ENTIER.search(nom)):
-        pref += ENTIERS
-    elif t.startswith("float"):
-        pref += REELS + ENTIERS[:4]
-    elif t.startswith(("list", "tuple", "set")) or (not t and NOM_LISTE.search(nom)):
-        pref += LISTES
-    elif t.startswith("dict") or (not t and NOM_DICT.search(nom)):
-        pref += DICTS
+    famille = None
+    if t.startswith("str"):
+        famille = "texte"
+    elif t.startswith(("int", "float")):
+        famille = "nombre"
+    elif t.startswith(("list", "tuple", "set")):
+        famille = "liste"
+    elif t.startswith("dict"):
+        famille = "dict"
     elif t.startswith("bool"):
+        famille = "bool"
+    if not famille:
+        pts = {"texte": usage["texte"], "dict": usage["dict"] * 1.2, "liste": usage["liste"], "nombre": usage["nombre"]}
+        if max(pts.values()) > 0:
+            famille = max(pts, key=pts.get)
+        elif NOM_TEXTE.search(nom):
+            famille = "texte"
+        elif NOM_ENTIER.search(nom):
+            famille = "nombre"
+        elif NOM_LISTE.search(nom):
+            famille = "liste"
+        elif NOM_DICT.search(nom):
+            famille = "dict"
+    textes = ctext + [x + "x" for x in ctext[:6]] + [" " + x + " " for x in ctext[:4]] + lit["str"][:120] + TEXTES
+    if famille == "texte":
+        pref += textes
+    elif famille == "nombre":
+        pref += _dedupe([c + d for c in consts[1][:6] for d in (-1, 0, 1)] + lit["int"][:20] + ENTIERS + REELS)
+    elif famille == "liste":
+        pref += lit["list"][:100] + LISTES + [[x] for x in ctext[:6]]
+    elif famille == "dict":
+        pref += lit["dict"][:100]
+        cles = _dedupe(usage["cles"])
+        if cles:
+            valeurs = ctext + lit["str"][:20] + [None, "", 0, 1, True, False, [], {}, ["a", "b"], {"a": 1}] + TEXTES[:6]
+            for _ in range(80):
+                k = hasard.sample(cles, hasard.randint(0, len(cles)))
+                pref.append({c: hasard.choice(valeurs) for c in k})
+        pref += DICTS
+    elif famille == "bool":
         pref += BOOLS
-    reste = TEXTES[:8] + ENTIERS[:5] + REELS[:3] + LISTES[:5] + DICTS[:4] + BOOLS + [None]
-    vus, res = set(), []
-    for v in pref + reste:
-        k = json.dumps(v, sort_keys=True, ensure_ascii=False)
-        if k not in vus:
-            vus.add(k)
-            res.append(v)
-    return res, len(pref)
+    reste = textes[:10] + ENTIERS[:5] + REELS[:3] + (lit["list"][:6] or LISTES[:5]) + (lit["dict"][:6] or DICTS[:4]) + BOOLS + [None]
+    return _dedupe(pref + reste), len(_dedupe(pref))
 
 
 def recolter(c):
@@ -329,7 +454,9 @@ def recolter(c):
                 except Exception:
                     continue
                 if all(p in args or p in c["defauts"] for p in c["params"]) and set(args) <= set(c["params"]):
-                    trouves.append({p: args[p] if p in args else ast.literal_eval(c["defauts"][p]) for p in c["params"]})
+                    complet = {p: args[p] if p in args else ast.literal_eval(c["defauts"][p]) for p in c["params"]}
+                    if _exact(complet):
+                        trouves.append(complet)
     return trouves
 
 
@@ -359,50 +486,50 @@ def _executer(f, kw, secondes, lignes):
 
 
 def _exact(sortie):
-    """La sortie survit-elle EXACTEMENT au tour JSON (ni tuple, ni ensemble, ni clé entière, ni nombre spécial) ?"""
+    """La valeur survit-elle EXACTEMENT au tour JSON (ni tuple, ni ensemble, ni octets, ni clé entière, ni nombre spécial) ?"""
     try:
         return json.loads(json.dumps(sortie, ensure_ascii=False)) == sortie
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, RecursionError):
         return False
 
 
-def synthetiser(c, budget_s=4.0):
+def synthetiser(c, budget_s=8.0):
     """Cherche un corpus qui PROUVE la fonction. Rend {"ok": bool, "cas": [(nom, [args])], "raison": str, "couverture": float, "sorties": int}."""
     ns = {}
+    vide = {"ok": False, "cas": [], "couverture": 0, "sorties": 0}
     try:
         exec(compile(c["texte"], "<candidat>", "exec"), ns)
         f = ns[c["fn"]]
     except Exception as e:
-        return {"ok": False, "raison": "la fermeture ne s'exécute pas seule : %s" % type(e).__name__, "cas": [], "couverture": 0, "sorties": 0}
+        return dict(vide, raison="la fermeture ne s'exécute pas seule : %s" % type(e).__name__)
     arbre = ast.parse(c["texte"])
     fn = next(n for n in arbre.body if isinstance(n, ast.FunctionDef) and n.name == c["fn"])
     attendues = {x.lineno for x in ast.walk(fn) if isinstance(x, ast.stmt) and x is not fn and not (isinstance(x, ast.Expr) and isinstance(x.value, ast.Constant))}
-    piscines = [_piscine(p, c["defauts"].get(p), c["annotations"].get(p)) for p in c["params"]]
     graine = int(hashlib.sha256((c["module"] + c["fn"]).encode()).hexdigest()[:8], 16)
     hasard = random.Random(graine)
+    lit = litteraux(c["module"])
+    consts = _constantes(arbre)
+    piscines = [_piscine(p, c["defauts"].get(p), c["annotations"].get(p), _usage(fn, p), lit, consts, hasard) for p in c["params"]]
     candidats = [dict(x) for x in recolter(c)]
-    tailles = [len(p[0]) for p in piscines]
     total = 1
-    for t in tailles:
-        total *= max(1, t)
+    for v, _ in piscines:
+        total *= max(1, len(v))
     if not piscines:
         combos = [{}]
-    elif total <= 1200:
+    elif total <= 2000:
         combos = [dict(zip(c["params"], v)) for v in itertools.product(*[p[0] for p in piscines])]
         hasard.shuffle(combos)
     else:
         combos = []
-        for _ in range(1500):
+        for _ in range(3000):
             kw = {}
             for p, (valeurs, npref) in zip(c["params"], piscines):
-                kw[p] = valeurs[hasard.randrange(npref)] if npref and hasard.random() < 0.8 else valeurs[hasard.randrange(len(valeurs))]
+                kw[p] = valeurs[hasard.randrange(npref)] if npref and hasard.random() < 0.85 else valeurs[hasard.randrange(len(valeurs))]
             combos.append(kw)
-    ordre = candidats + combos
-    garde, couvertes, sorties, vus = [], set(), set(), set()
+    reussis, vus = [], set()
     debut = time.perf_counter()
-    reussis = 0
-    for kw in ordre:
-        if time.perf_counter() - debut > budget_s or len(garde) >= CAS_MAX:
+    for kw in candidats + combos:
+        if time.perf_counter() - debut > budget_s or len(reussis) >= 400:
             break
         cle = json.dumps(kw, sort_keys=True, ensure_ascii=False, default=repr)
         if cle in vus:
@@ -410,33 +537,43 @@ def synthetiser(c, budget_s=4.0):
         vus.add(cle)
         avant = copy.deepcopy(kw)
         lignes = set()
+        copie = copy.deepcopy(kw)
         try:
-            r1 = _executer(f, copy.deepcopy(kw), 0.5, lignes)
-            if kw != avant:
-                continue
+            r1 = _executer(f, copie, 0.5, lignes)
+            if copie != avant:
+                return dict(vide, raison="modifie ses entrées")
             r2 = _executer(f, copy.deepcopy(kw), 0.5, set())
         except Exception:
             continue
-        reussis += 1
         if r1 != r2 or not _exact(r1):
             continue
-        copie = copy.deepcopy(kw)
-        _executer(f, copie, 0.5, set())
-        if copie != avant:
-            return {"ok": False, "raison": "modifie ses entrées", "cas": [], "couverture": 0, "sorties": 0}
-        nouvelle = {l for l in lignes if l[1] in attendues} - couvertes
-        sk = json.dumps(r1, sort_keys=True, ensure_ascii=False)
-        if nouvelle or sk not in sorties or kw in candidats:
+        reussis.append((kw, r1, {l[1] for l in lignes if l[1] in attendues}, kw in candidats))
+    if not reussis:
+        return dict(vide, raison="entrées introuvables (aucun des %d essais ne rend un résultat exact)" % len(vus))
+    # le choix : d'abord ce qui AJOUTE de la couverture, puis les sorties encore jamais vues, puis de quoi élargir le corpus
+    garde, couvertes, sorties = [], set(), set()
+    for kw, r, ls, _ in sorted(reussis, key=lambda t: (not t[3], -len(t[2]))):
+        sk = json.dumps(r, sort_keys=True, ensure_ascii=False)
+        if (ls - couvertes) or sk not in sorties:
             garde.append(kw)
-            couvertes |= {l for l in lignes if l[1] in attendues}
+            couvertes |= ls
             sorties.add(sk)
-    couv = len({l[1] for l in couvertes}) / max(1, len(attendues))
+        if len(garde) >= CAS_MAX:
+            break
+    for kw, r, ls, _ in reussis:
+        if len(garde) >= 14:
+            break
+        if kw not in garde:
+            garde.append(kw)
+            sorties.add(json.dumps(r, sort_keys=True, ensure_ascii=False))
+    couv = len(couvertes) / max(1, len(attendues))
+    toutes_bool = all(isinstance(r, bool) for _, r, _, _ in reussis)
     if len(garde) < CAS_MIN:
-        return {"ok": False, "raison": "entrées introuvables (%d cas qui marchent sur %d essais)" % (len(garde), len(vus)), "cas": [], "couverture": round(couv, 2), "sorties": len(sorties)}
-    if len(sorties) < SORTIES_MIN:
-        return {"ok": False, "raison": "sorties trop uniformes (%d distinctes)" % len(sorties), "cas": [], "couverture": round(couv, 2), "sorties": len(sorties)}
+        return dict(vide, raison="entrées introuvables (%d cas valides sur %d essais)" % (len(reussis), len(vus)), couverture=round(couv, 2), sorties=len(sorties))
+    if len(sorties) < (2 if toutes_bool else SORTIES_MIN):
+        return dict(vide, raison="sorties trop uniformes (%d distinctes)" % len(sorties), couverture=round(couv, 2), sorties=len(sorties))
     if couv < COUVERTURE_MIN:
-        return {"ok": False, "raison": "couverture insuffisante (%d %%)" % int(couv * 100), "cas": [], "couverture": round(couv, 2), "sorties": len(sorties)}
+        return dict(vide, raison="couverture insuffisante (%d %%)" % int(couv * 100), couverture=round(couv, 2), sorties=len(sorties))
     cas = [("cas %02d" % (i + 1), [kw[p] for p in c["params"]]) for i, kw in enumerate(garde)]
     return {"ok": True, "raison": "", "cas": cas, "couverture": round(couv, 2), "sorties": len(sorties)}
 

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : salon
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1169d7
+# VERSION CN : 0.1.1  #98a6a0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le salon : des fils de travail où les personnes et les agents se parlent.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1169d7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=98a6a0 ▼▼▼
 """Le salon : des fils de travail où les personnes et les agents se parlent.
 
 Porté de la V18 (`salon_*`), avec ses leçons :
@@ -51,26 +51,32 @@ RESUME_GARDE = 200          # les derniers messages restent hors du résumé : c
 CORPS_MAX = 200000
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 def nom_propre(nom):
     return re.sub(r"[^a-z0-9_\-]", "", str(nom or "").strip().lower())[:32]
 
 
 def destinataires_de(d):
-    """Le champ, normalisé : noms propres, `tous` -> _TOUS_ ; un humain se nomme par son compte (« humain:x »). Jamais lu dans le corps."""
-    if isinstance(d, str):
-        d = re.split(r"[,\s]+", d)
-    out = []
-    for x in d or []:
-        x = str(x or "").strip().lstrip("@")
-        if x.lower() in ("tous", "all", "_tous_"):
-            x = TOUS
-        elif x.lower().startswith("humain:"):
-            x = "humain:" + x[7:].strip()[:80]
-        else:
-            x = nom_propre(x.lower().replace("invité:", "").replace("invite:", ""))
-        if x and x not in out:
-            out.append(x)
-    return out
+    """Le champ, normalisé : noms propres, `tous` -> _TOUS_ ; un humain se nomme par son compte (« humain:x »). Jamais lu dans le corps. Le calcul est un POINT D'ÉVOLUTION : points/EC_destinataires_de.py."""
+    return _appeler_point("destinataires_de", {"d": d})["valeur"]
 
 
 def requete_fts(q):
@@ -80,6 +86,8 @@ def requete_fts(q):
 
 
 def brancher(ctx):
+    global _point
+    _point = ctx.point
     db = ctx.stockage
     verrou = threading.Lock()
     ctx.pause_tours = 0.0

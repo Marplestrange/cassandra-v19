@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : salon
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5cf865
+# VERSION CN : 0.1.1  #aa4588
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Des fils de travail où les personnes et les agents se parlent : un message a un auteur, des destinataires et un corps ; adresser un agent résident (Cassandra, Itare) le fait répondre dans le fil, un tour à la fois, avec un budget qui borne la conversation d'agents entre eux. Cloisonné : un compte ne voit que ses fils.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5cf865 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=aa4588 ▼▼▼
 [module]
 id = "salon"
 nom = "Le Salon"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "Des fils de travail où les personnes et les agents se parlent : un message a un auteur, des destinataires et un corps ; adresser un agent résident (Cassandra, Itare) le fait répondre dans le fil, un tour à la fois, avec un budget qui borne la conversation d'agents entre eux. Cloisonné : un compte ne voit que ses fils."
 confiance = "interne"
@@ -226,3 +226,11 @@ agir = true
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "destinataires_de"
+libelle = "Le champ, normalisé : noms propres, `tous` -> _TOUS_ ; un humain se nomme par son compte (« humain:x »). Jamais lu dans le corps (extrait automatiquement de CN_module.py)"
+contrat = "1.0"
+reference = "points/EC_destinataires_de"
+fonction = "point_destinataires_de"
+runtime = "python"

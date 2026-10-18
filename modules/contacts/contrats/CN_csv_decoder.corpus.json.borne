@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.0  #b0232c
+# VERSION CN : 0.3.1  #b0232c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : csv_decoder.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

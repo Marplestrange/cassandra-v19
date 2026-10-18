@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.0  #bfe0da
+# VERSION CN : 0.1.1  #bfe0da
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La page « Les moteurs » de la mémoire : jamais une page écrite à la main, chaque nombre est LU dans les constantes en service (quotas, plafonds, seuils, durées). Portée de la V18 (memoire_moteurs) : le texte est le même, les valeurs viennen
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=bfe0da ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=bfe0da ▼▼▼
 """La page « Les moteurs » de la mémoire : jamais une page écrite à la main, chaque nombre est LU dans les constantes en service (quotas, plafonds, seuils, durées).
 Portée de la V18 (memoire_moteurs) : le texte est le même, les valeurs viennent du module."""
 

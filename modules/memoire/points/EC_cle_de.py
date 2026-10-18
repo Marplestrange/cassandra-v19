@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #000000
+# VERSION EC : EC0 (référence 0.3.0)  #4ac2f8
 # HÔTE CN    : CN_module.py · cle_de @1.0
 # RÔLE       : Un slug : segments ascii en minuscules, jamais une phrase, jamais d'accent ni d'espace. La catégorie n'entre PAS dans la clé : une même réalité a une seule clé.
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=cle_de contrat=@1.0 version=EC0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE EC point=cle_de contrat=@1.0 version=EC0 empreinte=4ac2f8 ▼▼▼
 import re
 import unicodedata
 

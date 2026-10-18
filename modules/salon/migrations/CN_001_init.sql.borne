@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : salon
 # ZONE       : CN
-# VERSION CN : 0.1.0  #db104e
+# VERSION CN : 0.1.1  #db104e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Migration 001_init.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)

@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : journal
 # ZONE       : CN
-# VERSION CN : 0.1.0  #814046
+# VERSION CN : 0.1.1  #814046
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : niveau.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

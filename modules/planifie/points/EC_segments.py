@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #000000
+# VERSION EC : EC0 (référence 0.3.0)  #36ef55
 # HÔTE CN    : CN_module.py · segments @1.0
 # RÔLE       : Une commande shell découpée en segments ; None si elle n'est pas analysable (l'appelant la traite alors avec prudence).
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=segments contrat=@1.0 version=EC0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE EC point=segments contrat=@1.0 version=EC0 empreinte=36ef55 ▼▼▼
 import shlex
 
 SEPARATEURS = {";", "|", "||", "&&", "&", "\n"}

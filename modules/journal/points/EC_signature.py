@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #000000
+# VERSION EC : EC0 (référence 0.3.0)  #fdb46b
 # HÔTE CN    : CN_module.py · signature @1.0
 # RÔLE       : Empreinte d'une erreur, débarrassée de ce qui change à chaque occurrence (ports, adresses, dates).
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=signature contrat=@1.0 version=EC0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE EC point=signature contrat=@1.0 version=EC0 empreinte=fdb46b ▼▼▼
 import hashlib
 import re
 

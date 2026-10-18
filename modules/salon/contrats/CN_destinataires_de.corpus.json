@@ -1,0 +1,230 @@
+{
+ "point": "salon.destinataires_de",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de salon, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "d": "@Cassandra, itare  tous"
+   },
+   "sortie": {
+    "valeur": [
+     "cassandra",
+     "itare",
+     "_TOUS_"
+    ]
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "d": null
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "d": [
+     "cassandra",
+     "CASSANDRA",
+     "@cassandra"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "cassandra"
+    ]
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "d": "abc"
+   },
+   "sortie": {
+    "valeur": [
+     "abc"
+    ]
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "d": [
+     {
+      "a": 1
+     },
+     {
+      "a": 2
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "a1",
+     "a2"
+    ]
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "d": [
+     "a",
+     "b"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "a",
+     "b"
+    ]
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "d": "a"
+   },
+   "sortie": {
+    "valeur": [
+     "a"
+    ]
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "d": "Bonjour le monde"
+   },
+   "sortie": {
+    "valeur": [
+     "bonjour",
+     "le",
+     "monde"
+    ]
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "d": [
+     1,
+     2,
+     3
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "1",
+     "2",
+     "3"
+    ]
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "d": "  espaces  "
+   },
+   "sortie": {
+    "valeur": [
+     "espaces"
+    ]
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "d": {
+     "x": "1",
+     "y": "2",
+     "z": ""
+    }
+   },
+   "sortie": {
+    "valeur": [
+     "x",
+     "y",
+     "z"
+    ]
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "d": {
+     "k": null
+    }
+   },
+   "sortie": {
+    "valeur": [
+     "k"
+    ]
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "d": {
+     "nom": "n",
+     "valeur": 3
+    }
+   },
+   "sortie": {
+    "valeur": [
+     "nom",
+     "valeur"
+    ]
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "d": {
+     "id": 1,
+     "name": "x",
+     "items": [
+      1,
+      2
+     ]
+    }
+   },
+   "sortie": {
+    "valeur": [
+     "id",
+     "name",
+     "items"
+    ]
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "d": "ligne1\nligne2\n"
+   },
+   "sortie": {
+    "valeur": [
+     "ligne1",
+     "ligne2"
+    ]
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "d": "a,b;c"
+   },
+   "sortie": {
+    "valeur": [
+     "a",
+     "bc"
+    ]
+   }
+  }
+ ]
+}

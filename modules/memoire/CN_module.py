@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.0  #17b85c
+# VERSION CN : 0.1.1  #17b85c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La mémoire.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=17b85c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=17b85c ▼▼▼
 """La mémoire.
 
 Portée de la V18 (l'« îlot mémoire » : `memoire_*`, `perception_*`, `chaine_*`), avec ses leçons — elles sont payées :

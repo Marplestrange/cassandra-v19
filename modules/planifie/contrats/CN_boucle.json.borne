@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.1  #0b0081
+# VERSION CN : 0.1.2  #0b0081
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : boucle.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)
