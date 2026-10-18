@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #eac4f7
+# VERSION CN : 0.1.0  #c1f821
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : sort d'un fichier de module les fonctions pures d'un point d'évolution : écrit la référence EC (avec ses dépendances copiées), le contrat, le corpus doré et la déclaration au manifeste.
 # MÉTHODE    : fermeture transitive des noms de premier niveau par l'arbre syntaxique ; le corpus doré est la sortie de la référence extraite, copiée mot pour mot de l'ancien code ; rien n'est écrasé sans --forcer.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=eac4f7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c1f821 ▼▼▼
 """Usage : un script `spec` appelle extraire(spec). Le spec décrit le point ; l'outil écrit quatre choses :
    modules/<m>/points/EC_<point>.py · contrats/CN_<point>.json · contrats/CN_<point>.corpus.json · l'entrée [[points_evolution]] du manifeste.
    La façade du module (CN_module.py) et la liste des tests restent à la main : c'est là que se décide ce qui voyage dans l'entrée."""
@@ -203,9 +203,57 @@ def _patcher_sites(chemin, fn, nreq, exclure=None):
     return lignes, restes, ("\r\n" if "\r\n" in brut else "\n")
 
 
+def poser_facade_globale(spec):
+    """Mode « point global » : la façade GARDE la signature d'origine et lit `_point`, posé par brancher() (`<objet>._point = ctx.point` dans le module qui branche).
+    Pour les fonctions que d'autres fonctions du même fichier appellent, sans ctx : aucun site d'appel n'est touché."""
+    ap = spec["appel"]
+    fn, params, sortie = ap["fn"], ap["params"], ap.get("sortie", "valeur")
+    f = RACINE / spec["facade_fichier"]
+    brut = f.read_bytes().decode("utf-8")
+    nl = "\r\n" if "\r\n" in brut else "\n"
+    src = brut.replace("\r\n", "\n")
+    arbre = ast.parse(src)
+    corps = [n for n in arbre.body if isinstance(n, ast.FunctionDef) and n.name == fn]
+    if not corps:
+        return ["déjà converti ou introuvable : " + fn]
+    n = corps[0]
+    if "_point(" in ast.get_source_segment(src, n):
+        return []
+    lignes = src.split("\n")
+    entete_def = lignes[n.lineno - 1]
+    doc = (ast.get_docstring(n) or "").split("\n")[0].rstrip(".")
+    fac = [entete_def, '    """%s. Le calcul est un POINT D\'ÉVOLUTION : points/EC_%s.py."""' % (doc or fn, spec["point"]),
+           '    return _point("%s", {%s})["%s"]' % (spec["point"], ", ".join('"%s": %s' % (q, q) for q in params), sortie)]
+    lignes[n.lineno - 1 - len(n.decorator_list):n.end_lineno] = fac
+    texte = "\n".join(lignes)
+    if "\n_point = None" not in texte:
+        i = next(k for k, l in enumerate(lignes) if l == entete_def)
+        lignes[i:i] = ["_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)", "", ""]
+        texte = "\n".join(lignes)
+    ast.parse(texte)
+    f.write_bytes(texte.replace("\n", nl).encode("utf-8"))
+    restes = []
+    if spec.get("brancher_fichier"):
+        g = RACINE / spec["brancher_fichier"]
+        b2 = g.read_bytes().decode("utf-8")
+        nl2 = "\r\n" if "\r\n" in b2 else "\n"
+        t2 = b2.replace("\r\n", "\n")
+        ligne = "    %s._point = ctx.point" % spec["brancher_objet"]
+        if ligne not in t2:
+            marque = "def brancher(ctx):\n"
+            if marque not in t2:
+                return ["brancher(ctx) introuvable dans " + spec["brancher_fichier"]]
+            t2 = t2.replace(marque, marque + ligne + "\n", 1)
+            ast.parse(t2)
+            g.write_bytes(t2.replace("\n", nl2).encode("utf-8"))
+    return restes
+
+
 def poser_facade(spec):
     """Remplace la fonction d'origine par sa façade et passe ctx.point aux sites d'appel qui ont un ctx (dans le fichier et dans spec["sites_fichiers"]) ; rend ce qui reste à la main."""
     ap = spec["appel"]
+    if ap.get("mode") == "global":
+        return poser_facade_globale(spec)
     fn, params, sortie = ap["fn"], ap["params"], ap.get("sortie", "valeur")
     f = RACINE / spec["facade_fichier"]
     arbre = ast.parse(f.read_bytes().decode("utf-8").replace("\r\n", "\n"))

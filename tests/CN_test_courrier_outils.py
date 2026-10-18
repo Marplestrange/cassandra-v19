@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ac95ce
+# VERSION CN : 0.1.0  #22f259
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des outils purs du courrier : noms de dossiers, en-têtes, classement, et surtout le nettoyage du HTML face aux vecteurs d'attaque connus.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ac95ce ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=22f259 ▼▼▼
 """Bancs des outils purs du courrier : noms de dossiers, en-têtes, classement, et surtout le nettoyage du HTML face aux vecteurs d'attaque connus."""
 import email
 import importlib.util
@@ -33,6 +33,7 @@ _dossier = RACINE / "modules" / "courrier"
 _svc = _P.ServicePoints(Path(tempfile.mkdtemp()) / "ec")
 _svc.declarer(_M.charger(_dossier / "CN_manifeste.toml"), _dossier)
 POINT = lambda nom, entree: _svc.appeler("courrier", nom, entree)
+o._point = POINT                     # les fonctions du module qui s'appellent entre elles lisent `_point`, posé par brancher() en service
 
 
 class Dossiers(unittest.TestCase):

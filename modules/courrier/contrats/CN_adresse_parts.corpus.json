@@ -1,0 +1,187 @@
+{
+ "point": "courrier.adresse_parts",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de courrier, données synthétiques",
+ "cas": [
+  {
+   "cas": "nom et adresse",
+   "entree": {
+    "brut": "\"Alice Martin\" <Alice@Exemple.TEST>"
+   },
+   "sortie": {
+    "valeur": [
+     "Alice Martin",
+     "alice@exemple.test"
+    ]
+   }
+  },
+  {
+   "cas": "adresse seule",
+   "entree": {
+    "brut": "bob@exemple.test"
+   },
+   "sortie": {
+    "valeur": [
+     "bob",
+     "bob@exemple.test"
+    ]
+   }
+  },
+  {
+   "cas": "entre chevrons",
+   "entree": {
+    "brut": "<c@exemple.test>"
+   },
+   "sortie": {
+    "valeur": [
+     "c",
+     "c@exemple.test"
+    ]
+   }
+  },
+  {
+   "cas": "nom encodé",
+   "entree": {
+    "brut": "=?utf-8?B?Q2Fmw6k=?= <cafe@exemple.test>"
+   },
+   "sortie": {
+    "valeur": [
+     "Café",
+     "cafe@exemple.test"
+    ]
+   }
+  },
+  {
+   "cas": "vide",
+   "entree": {
+    "brut": ""
+   },
+   "sortie": {
+    "valeur": [
+     "",
+     ""
+    ]
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "brut": null
+   },
+   "sortie": {
+    "valeur": [
+     "",
+     ""
+    ]
+   }
+  },
+  {
+   "cas": "nom seul",
+   "entree": {
+    "brut": "Nom Seul"
+   },
+   "sortie": {
+    "valeur": [
+     "nom",
+     "nom"
+    ]
+   }
+  },
+  {
+   "cas": "deux adresses",
+   "entree": {
+    "brut": "a@b.test, d@e.test"
+   },
+   "sortie": {
+    "valeur": [
+     "",
+     ""
+    ]
+   }
+  },
+  {
+   "cas": "chevrons vides",
+   "entree": {
+    "brut": "\"X\" <>"
+   },
+   "sortie": {
+    "valeur": [
+     "X",
+     ""
+    ]
+   }
+  },
+  {
+   "cas": "espaces",
+   "entree": {
+    "brut": "  Z  <z@e.test>  "
+   },
+   "sortie": {
+    "valeur": [
+     "Z",
+     "z@e.test"
+    ]
+   }
+  },
+  {
+   "cas": "encodé quoted",
+   "entree": {
+    "brut": "=?utf-8?Q?=C3=A9?= <e@e.test>"
+   },
+   "sortie": {
+    "valeur": [
+     "é",
+     "e@e.test"
+    ]
+   }
+  },
+  {
+   "cas": "nom avec virgule",
+   "entree": {
+    "brut": "\"Durand, Paul\" <p@d.test>"
+   },
+   "sortie": {
+    "valeur": [
+     "Durand, Paul",
+     "p@d.test"
+    ]
+   }
+  },
+  {
+   "cas": "majuscules",
+   "entree": {
+    "brut": "ADMIN@EXEMPLE.TEST"
+   },
+   "sortie": {
+    "valeur": [
+     "admin",
+     "admin@exemple.test"
+    ]
+   }
+  },
+  {
+   "cas": "commentaire",
+   "entree": {
+    "brut": "p@d.test (Paul)"
+   },
+   "sortie": {
+    "valeur": [
+     "Paul",
+     "p@d.test"
+    ]
+   }
+  },
+  {
+   "cas": "nombre",
+   "entree": {
+    "brut": 42
+   },
+   "sortie": {
+    "valeur": [
+     "42",
+     "42"
+    ]
+   }
+  }
+ ]
+}

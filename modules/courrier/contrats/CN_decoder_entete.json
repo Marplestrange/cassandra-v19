@@ -1,0 +1,23 @@
+{
+ "point": "courrier.decoder_entete",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "s"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un en-tête sans encodage est rendu inchangé",
+  "un octet invalide est remplacé, jamais une erreur",
+  "None se lit comme un texte vide",
+  "un en-tête illisible est rendu tel quel"
+ ]
+}

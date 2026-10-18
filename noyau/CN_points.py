@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #21ce08
+# VERSION CN : 0.1.0  #09ac49
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=21ce08 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=09ac49 ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -43,7 +43,7 @@ SEUIL_FAUTES = 3                   # fautes d'une EC avant suspension
 FENETRE_S = 600                    # ... dans cette fenêtre (dix minutes)
 
 STDLIB_PURE = {"__future__", "math", "re", "json", "itertools", "functools", "collections", "dataclasses", "typing", "enum", "fractions", "decimal", "string",
-               "textwrap", "unicodedata", "operator", "copy", "heapq", "bisect", "statistics", "hashlib", "base64", "struct", "ec_api", "abc", "numbers", "ipaddress", "datetime", "shlex"}
+               "textwrap", "unicodedata", "operator", "copy", "heapq", "bisect", "statistics", "hashlib", "base64", "struct", "ec_api", "abc", "numbers", "ipaddress", "datetime", "shlex", "email", "html", "quopri", "binascii"}
 # Une horloge ou un hasard lu par un attribut (datetime.now(), random.choice…) rendrait l'EC non déterministe : refusé même si le module est pur.
 ATTRIBUTS_INTERDITS = {"now", "today", "utcnow", "fromtimestamp", "utcfromtimestamp", "monotonic", "perf_counter", "random", "randint", "choice", "shuffle", "uuid4", "urandom"}
 NOMS_INTERDITS = {"ctx", "self", "cls", "open", "print", "input", "exec", "eval", "__import__", "compile", "globals", "locals"}
@@ -115,6 +115,7 @@ def analyser_purete(source: str) -> list:
     except SyntaxError as e:
         return ["syntaxe illisible (%s)" % e.msg]
     fautes = set()
+    dans_classe = {id(x) for c in ast.walk(arbre) if isinstance(c, ast.ClassDef) for x in ast.walk(c)}       # `self` et `cls` ne sont interdits qu'HORS d'une classe du fichier : un module n'a pas de « self »
     for n in ast.walk(arbre):
         if isinstance(n, ast.Import):
             for a in n.names:
@@ -123,11 +124,11 @@ def analyser_purete(source: str) -> list:
         elif isinstance(n, ast.ImportFrom):
             if (n.module or "").split(".")[0] not in STDLIB_PURE:
                 fautes.add("import interdit : %s" % n.module)
-        elif isinstance(n, ast.Name) and n.id in NOMS_INTERDITS:
+        elif isinstance(n, ast.Name) and n.id in NOMS_INTERDITS and not (n.id in ("self", "cls") and id(n) in dans_classe):
             fautes.add("nom interdit : " + n.id)
         elif isinstance(n, ast.Attribute) and n.attr in ATTRIBUTS_INTERDITS:
             fautes.add("horloge ou hasard : ." + n.attr)
-        elif isinstance(n, ast.arg) and n.arg in NOMS_INTERDITS:
+        elif isinstance(n, ast.arg) and n.arg in NOMS_INTERDITS and not (n.arg in ("self", "cls") and id(n) in dans_classe):
             fautes.add("paramètre interdit : " + n.arg)
         elif isinstance(n, (ast.Global, ast.Nonlocal, ast.Await, ast.Yield)):
             fautes.add("global / nonlocal / await / yield")

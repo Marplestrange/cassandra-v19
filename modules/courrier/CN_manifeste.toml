@@ -288,3 +288,51 @@ contrat = "1.0"
 reference = "points/EC_roles_uniques"
 fonction = "point_roles_uniques"
 runtime = "python"
+
+[[points_evolution]]
+id = "utf7_decoder"
+libelle = "Le décodage d'un nom de dossier IMAP (UTF-7 modifié : « envoy&AOk-s » devient « envoyés »)"
+contrat = "1.0"
+reference = "points/EC_utf7_decoder"
+fonction = "point_utf7_decoder"
+runtime = "python"
+
+[[points_evolution]]
+id = "decoder_entete"
+libelle = "Le décodage d'un en-tête de message (RFC 2047) : le texte brut en entrée, le texte lisible en sortie"
+contrat = "1.0"
+reference = "points/EC_decoder_entete"
+fonction = "point_decoder_entete"
+runtime = "python"
+
+[[points_evolution]]
+id = "adresse_parts"
+libelle = "Le nom affiché et l'adresse (en minuscules) d'un en-tête From ou To"
+contrat = "1.0"
+reference = "points/EC_adresse_parts"
+fonction = "point_adresse_parts"
+runtime = "python"
+
+[[points_evolution]]
+id = "role_du_dossier"
+libelle = "Le rôle d'un dossier de boîte (corbeille, envoyés, brouillons, indésirables, archives, réception) : le nom et les drapeaux du serveur en entrée, le rôle en sortie"
+contrat = "1.0"
+reference = "points/EC_role_du_dossier"
+fonction = "point_role_du_dossier"
+runtime = "python"
+
+[[points_evolution]]
+id = "motif_technique"
+libelle = "Le message vient-il d'une machine ? : l'expéditeur et l'objet en entrée, le motif technique reconnu (ou vide) en sortie"
+contrat = "1.0"
+reference = "points/EC_motif_technique"
+fonction = "point_motif_technique"
+runtime = "python"
+
+[[points_evolution]]
+id = "html_en_texte"
+libelle = "L'aplatissement d'un message HTML sans partie texte : le HTML en entrée, le texte lisible en sortie"
+contrat = "1.0"
+reference = "points/EC_html_en_texte"
+fonction = "point_html_en_texte"
+runtime = "python"

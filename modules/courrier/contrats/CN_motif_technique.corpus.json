@@ -1,0 +1,208 @@
+{
+ "point": "courrier.motif_technique",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de courrier, données synthétiques",
+ "cas": [
+  {
+   "cas": "certbot",
+   "entree": {
+    "m": {
+     "from_addr": "certbot@exemple.test",
+     "subject": "Renouvellement"
+    }
+   },
+   "sortie": {
+    "valeur": "expéditeur technique"
+   }
+  },
+  {
+   "cas": "cron",
+   "entree": {
+    "m": {
+     "from_addr": "root@srv.test",
+     "subject": "Cron <root@srv> run-parts"
+    }
+   },
+   "sortie": {
+    "valeur": "expéditeur technique"
+   }
+  },
+  {
+   "cas": "client parle de sauvegarde",
+   "entree": {
+    "m": {
+     "from_addr": "client@exemple.test",
+     "subject": "Devis sauvegarde"
+    }
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "objet et expéditeur",
+   "entree": {
+    "m": {
+     "from_addr": "monit@srv.test",
+     "subject": "certificat expiré"
+    }
+   },
+   "sortie": {
+    "valeur": "expéditeur technique"
+   }
+  },
+  {
+   "cas": "expéditeur par from",
+   "entree": {
+    "m": {
+     "from": "nagios@srv.test",
+     "subject": "x"
+    }
+   },
+   "sortie": {
+    "valeur": "expéditeur technique"
+   }
+  },
+  {
+   "cas": "sans rien",
+   "entree": {
+    "m": {}
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "expéditeur vide",
+   "entree": {
+    "m": {
+     "from_addr": "",
+     "subject": "disk space"
+    }
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "objet technique seul",
+   "entree": {
+    "m": {
+     "from_addr": "ami@exemple.test",
+     "subject": "raid degraded"
+    }
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "noreply",
+   "entree": {
+    "m": {
+     "from_addr": "noreply@service.test",
+     "subject": "Bienvenue"
+    }
+   },
+   "sortie": {
+    "valeur": "expéditeur technique"
+   }
+  },
+  {
+   "cas": "mailer-daemon",
+   "entree": {
+    "m": {
+     "from_addr": "MAILER-DAEMON@srv.test",
+     "subject": "Undelivered"
+    }
+   },
+   "sortie": {
+    "valeur": "expéditeur technique"
+   }
+  },
+  {
+   "cas": "objet dans l'expéditeur",
+   "entree": {
+    "m": {
+     "from_addr": "backup",
+     "subject": "ok"
+    }
+   },
+   "sortie": {
+    "valeur": "expéditeur technique"
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "m": {
+     "from_addr": null,
+     "subject": null
+    }
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "majuscules",
+   "entree": {
+    "m": {
+     "from_addr": "ZABBIX@SRV.TEST",
+     "subject": "FAILED"
+    }
+   },
+   "sortie": {
+    "valeur": "expéditeur technique"
+   }
+  },
+  {
+   "cas": "let's encrypt",
+   "entree": {
+    "m": {
+     "from_addr": "expiry@letsencrypt.org",
+     "subject": "Certificate expiration"
+    }
+   },
+   "sortie": {
+    "valeur": "expéditeur technique"
+   }
+  },
+  {
+   "cas": "admin",
+   "entree": {
+    "m": {
+     "from_addr": "admin@exemple.test",
+     "subject": "Bonjour"
+    }
+   },
+   "sortie": {
+    "valeur": "expéditeur technique"
+   }
+  },
+  {
+   "cas": "expéditeur humain",
+   "entree": {
+    "m": {
+     "from_addr": "paul@exemple.test",
+     "subject": "Réunion"
+    }
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "sauvegarde fr",
+   "entree": {
+    "m": {
+     "from_addr": "borg@nas.test",
+     "subject": "sauvegarde terminée"
+    }
+   },
+   "sortie": {
+    "valeur": "expéditeur technique"
+   }
+  }
+ ]
+}

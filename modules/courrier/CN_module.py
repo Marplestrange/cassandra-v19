@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0af438
+# VERSION CN : 0.1.0  #77aa62
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0af438 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=77aa62 ▼▼▼
 """Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 
 Porté de la V18 (`_imap_*`, `itare_mail_*`, `mail_*`, `_courrier_*`), avec ses leçons :
@@ -63,6 +63,7 @@ class CourrierErreur(Exception):
 
 
 def brancher(ctx):
+    o._point = ctx.point
     db = ctx.stockage
 
     # ------------------------------------------------------------------ réglages et identifiants (par compte)

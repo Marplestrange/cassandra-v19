@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e5093a
+# VERSION CN : 0.1.0  #12884e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les points d'évolution RÉELS du dépôt (les points déclarés ci-dessous) : déclarés sans défaut, équivalents à leur corpus doré (produit par l'ancien code), et protégés par un corpus assez fort pour juger une variante. Tout nouveau po
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e5093a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=12884e ▼▼▼
 """Les points d'évolution RÉELS du dépôt (les points déclarés ci-dessous) : déclarés sans défaut, équivalents à leur corpus doré (produit par l'ancien code),
 et protégés par un corpus assez fort pour juger une variante. Tout nouveau point réel s'ajoute à la liste : ce banc est sa porte d'entrée."""
 import json
@@ -48,9 +48,15 @@ POINTS = [("vue", "verdict.composer", "EC_verdict_composer", 0.85),
           ("flotte", "lire_metriques", "EC_lire_metriques", 1.00),
           ("ged", "media_kind", "EC_media_kind", 0.90),
           ("courrier", "roles_uniques", "EC_roles_uniques", 1.00),
-          ("agents", "resume_resultat", "EC_resume_resultat", 0.95)]
+          ("agents", "resume_resultat", "EC_resume_resultat", 0.95),
+          ("courrier", "utf7_decoder", "EC_utf7_decoder", 0.75),
+          ("courrier", "decoder_entete", "EC_decoder_entete", 1.00),
+          ("courrier", "adresse_parts", "EC_adresse_parts", 0.85),
+          ("courrier", "role_du_dossier", "EC_role_du_dossier", 1.00),
+          ("courrier", "motif_technique", "EC_motif_technique", 1.00),
+          ("courrier", "html_en_texte", "EC_html_en_texte", 0.90)]
 # (cas dorés, variantes fausses) minimaux ; une très petite fonction ne peut pas engendrer trente mutants : son plancher de score est alors de 1,0
-SEUILS = {("agents", "resume_resultat"): (20, 26), ("courrier", "roles_uniques"): (16, 9), ("ged", "media_kind"): (20, 15), ("flotte", "lire_metriques"): (20, 11), ("memoire", "json_extraire"): (20, 12), ("contacts", "csv_fiches"): (20, 15), ("notes", "md_vers_html"): (20, 24), ("notes", "lire_entete"): (20, 22), ("contacts", "csv_apparier"): (15, 3)}
+SEUILS = {("courrier", "html_en_texte"): (20, 16), ("courrier", "motif_technique"): (15, 5), ("courrier", "role_du_dossier"): (20, 6), ("courrier", "adresse_parts"): (13, 3), ("courrier", "decoder_entete"): (13, 3), ("courrier", "utf7_decoder"): (18, 7), ("agents", "resume_resultat"): (20, 26), ("courrier", "roles_uniques"): (16, 9), ("ged", "media_kind"): (20, 15), ("flotte", "lire_metriques"): (20, 11), ("memoire", "json_extraire"): (20, 12), ("contacts", "csv_fiches"): (20, 15), ("notes", "md_vers_html"): (20, 24), ("notes", "lire_entete"): (20, 22), ("contacts", "csv_apparier"): (15, 3)}
 
 
 def manifeste_de(dossier: Path):

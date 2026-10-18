@@ -1,0 +1,24 @@
+{
+ "point": "courrier.html_en_texte",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "page"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un script ou un style n'apparaît jamais dans le texte",
+  "les entités reviennent en lettres",
+  "les blancs sont resserrés et les lignes vides multiples réduites à une",
+  "un HTML cassé ne lève jamais d'erreur",
+  "le même HTML donne toujours le même texte"
+ ]
+}

@@ -1,0 +1,23 @@
+{
+ "point": "courrier.motif_technique",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "m"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un signal sur l'expéditeur est exigé : un mot technique dans l'objet d'un client ne suffit pas",
+  "rien de reconnu rend un texte vide",
+  "la casse est sans effet",
+  "le même message donne toujours le même motif"
+ ]
+}

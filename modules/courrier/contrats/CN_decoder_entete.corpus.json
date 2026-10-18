@@ -1,0 +1,142 @@
+{
+ "point": "courrier.decoder_entete",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de courrier, données synthétiques",
+ "cas": [
+  {
+   "cas": "base64",
+   "entree": {
+    "s": "=?utf-8?B?Q2Fmw6k=?="
+   },
+   "sortie": {
+    "valeur": "Café"
+   }
+  },
+  {
+   "cas": "quoted-printable latin",
+   "entree": {
+    "s": "=?iso-8859-1?Q?caf=E9?="
+   },
+   "sortie": {
+    "valeur": "café"
+   }
+  },
+  {
+   "cas": "texte simple",
+   "entree": {
+    "s": "plain"
+   },
+   "sortie": {
+    "valeur": "plain"
+   }
+  },
+  {
+   "cas": "vide",
+   "entree": {
+    "s": ""
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "s": null
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "deux mots collés",
+   "entree": {
+    "s": "=?utf-8?q?a?= =?utf-8?q?b?="
+   },
+   "sortie": {
+    "valeur": "ab"
+   }
+  },
+  {
+   "cas": "mélange",
+   "entree": {
+    "s": "Re: =?UTF-8?B?w6l0w6k=?= (été)"
+   },
+   "sortie": {
+    "valeur": "Re: été (�t�)"
+   }
+  },
+  {
+   "cas": "encodage inconnu",
+   "entree": {
+    "s": "=?unknown-enc?q?x?="
+   },
+   "sortie": {
+    "valeur": "=?unknown-enc?q?x?="
+   }
+  },
+  {
+   "cas": "base64 invalide",
+   "entree": {
+    "s": "=?utf-8?B?!!!?="
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "nombre",
+   "entree": {
+    "s": 123
+   },
+   "sortie": {
+    "valeur": "123"
+   }
+  },
+  {
+   "cas": "accent brut",
+   "entree": {
+    "s": "déjà"
+   },
+   "sortie": {
+    "valeur": "déjà"
+   }
+  },
+  {
+   "cas": "sujet long",
+   "entree": {
+    "s": "=?utf-8?B?QUJDQUJDQUJDQUJDQUJDQUJDQUJDQUJDQUJDQUJDQUJDQUJDQUJDQUJDQUJDQUJDQUJDQUJDQUJDQUJD?="
+   },
+   "sortie": {
+    "valeur": "ABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABC"
+   }
+  },
+  {
+   "cas": "utf-8 invalide",
+   "entree": {
+    "s": "=?utf-8?q?=FF=FE?="
+   },
+   "sortie": {
+    "valeur": "��"
+   }
+  },
+  {
+   "cas": "deux encodages",
+   "entree": {
+    "s": "=?utf-8?q?a?= et =?iso-8859-1?q?=E9?="
+   },
+   "sortie": {
+    "valeur": "a et é"
+   }
+  },
+  {
+   "cas": "espaces",
+   "entree": {
+    "s": "  x  "
+   },
+   "sortie": {
+    "valeur": "  x  "
+   }
+  }
+ ]
+}

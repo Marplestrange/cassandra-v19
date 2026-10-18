@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #abf851
+# VERSION CN : 0.1.0  #6d2135
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : lit tous les fichiers suivis par git et dit s'ils respectent docs/CN_FORMAT.md (nom, en-tête, bornes, pureté des EC).
 # MÉTHODE    : analyse textuelle et arbre syntaxique Python ; mode audit par défaut (rien ne bloque), --strict pour l'intégration continue.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=abf851 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6d2135 ▼▼▼
 """Outil de bornes. Usage :
     python outils/CN_bornes.py                 audit de tout le dépôt (résumé par module)
     python outils/CN_bornes.py --module vue    un seul module
@@ -50,7 +50,7 @@ COMMENTAIRE = {".py": "#", ".sh": "#", ".toml": "#", ".yml": "#", ".yaml": "#", 
 SANS_COMMENTAIRE = {".json", ".sql", ".wasm", ".bin"}
 STDLIB_PURE = {"__future__", "math", "re", "json", "itertools", "functools", "collections", "dataclasses", "typing", "enum", "fractions",
                "decimal", "string", "textwrap", "unicodedata", "operator", "copy", "heapq", "bisect", "statistics", "hashlib", "base64",
-               "struct", "ec_api", "abc", "numbers", "ipaddress", "datetime", "shlex"}
+               "struct", "ec_api", "abc", "numbers", "ipaddress", "datetime", "shlex", "email", "html", "quopri", "binascii"}
 ATTRIBUTS_INTERDITS = {"now", "today", "utcnow", "fromtimestamp", "utcfromtimestamp", "monotonic", "perf_counter", "random", "randint", "choice", "shuffle", "uuid4", "urandom"}
 NOMS_INTERDITS = {"ctx", "self", "cls", "open", "print", "input", "exec", "eval", "__import__", "compile", "globals", "locals"}
 INDICES_DECISIFS = ("verif", "signature", "droit", "secret", "mdp", "password", "token", "jeton", "auth", "permission", "autoris", "chiffr", "empreinte", "hash")
@@ -236,6 +236,7 @@ def pureté(source: str) -> list[str]:
     except SyntaxError as e:
         return [f"syntaxe illisible ({e.msg})"]
     fautes: set[str] = set()
+    dans_classe = {id(x) for c in ast.walk(arbre) if isinstance(c, ast.ClassDef) for x in ast.walk(c)}       # `self` et `cls` ne sont interdits qu'HORS d'une classe du fichier
     for n in ast.walk(arbre):
         if isinstance(n, ast.Import):
             for a in n.names:
@@ -244,11 +245,11 @@ def pureté(source: str) -> list[str]:
         elif isinstance(n, ast.ImportFrom):
             if (n.module or "").split(".")[0] not in STDLIB_PURE:
                 fautes.add(f"import interdit : {n.module}")
-        elif isinstance(n, ast.Name) and n.id in NOMS_INTERDITS:
+        elif isinstance(n, ast.Name) and n.id in NOMS_INTERDITS and not (n.id in ("self", "cls") and id(n) in dans_classe):
             fautes.add(f"nom interdit : {n.id}")
         elif isinstance(n, ast.Attribute) and n.attr in ATTRIBUTS_INTERDITS:
             fautes.add(f"horloge ou hasard : .{n.attr}")
-        elif isinstance(n, ast.arg) and n.arg in NOMS_INTERDITS:
+        elif isinstance(n, ast.arg) and n.arg in NOMS_INTERDITS and not (n.arg in ("self", "cls") and id(n) in dans_classe):
             fautes.add(f"paramètre interdit : {n.arg}")
         elif isinstance(n, (ast.Global, ast.Nonlocal, ast.Await, ast.Yield)):
             fautes.add("global / nonlocal / await / yield")

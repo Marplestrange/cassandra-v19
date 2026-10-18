@@ -1,0 +1,257 @@
+{
+ "point": "courrier.role_du_dossier",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de courrier, données synthétiques",
+ "cas": [
+  {
+   "cas": "corbeille par drapeau",
+   "entree": {
+    "nom": "Papiers",
+    "flags": "\\HasNoChildren \\Trash"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "envoyés par drapeau",
+   "entree": {
+    "nom": "X",
+    "flags": "\\Sent"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "brouillons par drapeau",
+   "entree": {
+    "nom": "X",
+    "flags": "\\Drafts"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "indésirables par drapeau",
+   "entree": {
+    "nom": "X",
+    "flags": "\\Junk"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "archives par drapeau",
+   "entree": {
+    "nom": "X",
+    "flags": "\\Archive"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "tous par drapeau",
+   "entree": {
+    "nom": "X",
+    "flags": "\\All"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "le drapeau l'emporte sur le nom",
+   "entree": {
+    "nom": "Corbeille",
+    "flags": "\\Sent"
+   },
+   "sortie": {
+    "valeur": "trash"
+   }
+  },
+  {
+   "cas": "nom corbeille",
+   "entree": {
+    "nom": "Corbeille",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": "trash"
+   }
+  },
+  {
+   "cas": "nom deleted",
+   "entree": {
+    "nom": "Deleted Messages",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": "trash"
+   }
+  },
+  {
+   "cas": "nom envoyés",
+   "entree": {
+    "nom": "Messages envoyés",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": "sent"
+   }
+  },
+  {
+   "cas": "nom sent",
+   "entree": {
+    "nom": "Sent Items",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": "sent"
+   }
+  },
+  {
+   "cas": "nom brouillon",
+   "entree": {
+    "nom": "Mes brouillons",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": "drafts"
+   }
+  },
+  {
+   "cas": "nom draft",
+   "entree": {
+    "nom": "Drafts",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": "drafts"
+   }
+  },
+  {
+   "cas": "nom spam",
+   "entree": {
+    "nom": "Spam",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": "junk"
+   }
+  },
+  {
+   "cas": "nom indésirable",
+   "entree": {
+    "nom": "Courrier indésirable",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": "junk"
+   }
+  },
+  {
+   "cas": "nom junk",
+   "entree": {
+    "nom": "Junk E-mail",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": "junk"
+   }
+  },
+  {
+   "cas": "nom archive",
+   "entree": {
+    "nom": "Archives 2024",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": "archive"
+   }
+  },
+  {
+   "cas": "boîte de réception",
+   "entree": {
+    "nom": "INBOX",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": "inbox"
+   }
+  },
+  {
+   "cas": "inbox en minuscules",
+   "entree": {
+    "nom": "inbox",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": "inbox"
+   }
+  },
+  {
+   "cas": "dossier ordinaire",
+   "entree": {
+    "nom": "Clients",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "sans nom",
+   "entree": {
+    "nom": "",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "nom": null,
+    "flags": null
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "drapeau en majuscules ignoré",
+   "entree": {
+    "nom": "x",
+    "flags": "\\TRASH"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "inbox avec autre texte",
+   "entree": {
+    "nom": "INBOX.Clients",
+    "flags": ""
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "drapeaux multiples",
+   "entree": {
+    "nom": "x",
+    "flags": "\\Junk \\Trash"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  }
+ ]
+}

@@ -1,0 +1,214 @@
+{
+ "point": "courrier.html_en_texte",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de courrier, données synthétiques",
+ "cas": [
+  {
+   "cas": "vide",
+   "entree": {
+    "page": ""
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "page": null
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "paragraphe",
+   "entree": {
+    "page": "<p>Bonjour</p>"
+   },
+   "sortie": {
+    "valeur": "Bonjour"
+   }
+  },
+  {
+   "cas": "deux paragraphes",
+   "entree": {
+    "page": "<p>Un</p><p>Deux</p>"
+   },
+   "sortie": {
+    "valeur": "Un\n\nDeux"
+   }
+  },
+  {
+   "cas": "br",
+   "entree": {
+    "page": "a<br>b<br/>c"
+   },
+   "sortie": {
+    "valeur": "a\nb\nc"
+   }
+  },
+  {
+   "cas": "entités",
+   "entree": {
+    "page": "caf&eacute; &amp; th&#233; &lt;b&gt;"
+   },
+   "sortie": {
+    "valeur": "café & thé <b>"
+   }
+  },
+  {
+   "cas": "script ignoré",
+   "entree": {
+    "page": "avant<script>alert(1)</script>après"
+   },
+   "sortie": {
+    "valeur": "avantaprès"
+   }
+  },
+  {
+   "cas": "style ignoré",
+   "entree": {
+    "page": "<style>p{color:red}</style><p>texte</p>"
+   },
+   "sortie": {
+    "valeur": "texte"
+   }
+  },
+  {
+   "cas": "liste",
+   "entree": {
+    "page": "<ul><li>a</li><li>b</li></ul>"
+   },
+   "sortie": {
+    "valeur": "a\n\nb"
+   }
+  },
+  {
+   "cas": "tableau",
+   "entree": {
+    "page": "<table><tr><td>a</td><td>b</td></tr><tr><td>c</td><td>d</td></tr></table>"
+   },
+   "sortie": {
+    "valeur": "ab\n\ncd"
+   }
+  },
+  {
+   "cas": "titre",
+   "entree": {
+    "page": "<h1>Titre</h1><p>corps</p>"
+   },
+   "sortie": {
+    "valeur": "Titre\n\ncorps"
+   }
+  },
+  {
+   "cas": "espaces multiples",
+   "entree": {
+    "page": "<p>a      b\t\tc</p>"
+   },
+   "sortie": {
+    "valeur": "a b c"
+   }
+  },
+  {
+   "cas": "lignes vides multiples",
+   "entree": {
+    "page": "<p>a</p>\n\n\n\n<p>b</p>"
+   },
+   "sortie": {
+    "valeur": "a\n\nb"
+   }
+  },
+  {
+   "cas": "balise non fermée",
+   "entree": {
+    "page": "<p>un <b>gras"
+   },
+   "sortie": {
+    "valeur": "un gras"
+   }
+  },
+  {
+   "cas": "html cassé",
+   "entree": {
+    "page": "<<>>< p >a"
+   },
+   "sortie": {
+    "valeur": "<<>>< p >a"
+   }
+  },
+  {
+   "cas": "div",
+   "entree": {
+    "page": "<div>a</div><div>b</div>"
+   },
+   "sortie": {
+    "valeur": "a\n\nb"
+   }
+  },
+  {
+   "cas": "lien",
+   "entree": {
+    "page": "<a href=\"https://e.test\">cliquez</a>"
+   },
+   "sortie": {
+    "valeur": "cliquez"
+   }
+  },
+  {
+   "cas": "image",
+   "entree": {
+    "page": "<img src=\"x.png\" alt=\"photo\">texte"
+   },
+   "sortie": {
+    "valeur": "texte"
+   }
+  },
+  {
+   "cas": "commentaire",
+   "entree": {
+    "page": "a<!-- caché -->b"
+   },
+   "sortie": {
+    "valeur": "ab"
+   }
+  },
+  {
+   "cas": "unicode",
+   "entree": {
+    "page": "<p>Café ☕</p>"
+   },
+   "sortie": {
+    "valeur": "Café ☕"
+   }
+  },
+  {
+   "cas": "pre",
+   "entree": {
+    "page": "<pre>a\n  b</pre>"
+   },
+   "sortie": {
+    "valeur": "a\nb"
+   }
+  },
+  {
+   "cas": "hr",
+   "entree": {
+    "page": "a<hr>b"
+   },
+   "sortie": {
+    "valeur": "ab"
+   }
+  },
+  {
+   "cas": "citation",
+   "entree": {
+    "page": "<blockquote>cité</blockquote>après"
+   },
+   "sortie": {
+    "valeur": "citéaprès"
+   }
+  }
+ ]
+}

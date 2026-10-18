@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3b0330
+# VERSION CN : 0.1.0  #363513
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3b0330 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=363513 ▼▼▼
 """Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats."""
 import json
 import shutil
@@ -341,6 +341,16 @@ class Contrat(unittest.TestCase):
     def test_la_purete(self):
         self.assertEqual(P.analyser_purete("import math\n\ndef f(x):\n    return math.sqrt(x)\n"), [])
         for mal in ("import os\n", "def f(ctx):\n    return 1\n", "def f():\n    return open('x')\n", "import time\n", "X=1\ndef f():\n    global X\n"):
+            self.assertTrue(P.analyser_purete(mal), mal)
+
+    def test_self_n_est_admis_que_dans_une_classe_du_fichier(self):
+        self.assertEqual(P.analyser_purete("class A:\n    def f(self):\n        return self\n"), [])
+        self.assertTrue(P.analyser_purete("def f(self):\n    return 1\n"))
+        self.assertTrue(P.analyser_purete("def f():\n    return self\n"))
+
+    def test_une_horloge_ou_un_hasard_lus_par_attribut_sont_refuses(self):
+        self.assertEqual(P.analyser_purete("import datetime\n\ndef f(s):\n    return datetime.datetime.strptime(s, '%Y')\n"), [])
+        for mal in ("import datetime\n\ndef f():\n    return datetime.datetime.now()\n", "import random\n\ndef f():\n    return random.random()\n"):
             self.assertTrue(P.analyser_purete(mal), mal)
 
 

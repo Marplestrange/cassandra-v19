@@ -1,0 +1,24 @@
+{
+ "point": "courrier.role_du_dossier",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "nom",
+   "flags"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "le drapeau annoncé par le serveur l'emporte sur le nom",
+  "un dossier sans rôle reconnu rend un texte vide",
+  "« inbox » ne se reconnaît qu'au nom exact",
+  "le même couple donne toujours le même rôle"
+ ]
+}

@@ -1,0 +1,23 @@
+{
+ "point": "courrier.adresse_parts",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "brut"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "l'adresse est rendue en minuscules",
+  "sans nom affiché, c'est la partie avant l'arobase qui s'affiche",
+  "un en-tête illisible rend le texte brut et une adresse vide",
+  "le même en-tête donne toujours le même couple"
+ ]
+}

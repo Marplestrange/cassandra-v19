@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d2f1fc
+# VERSION CN : 0.1.0  #176916
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d2f1fc ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=176916 ▼▼▼
 """Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
 
 Le nettoyage du HTML est une LISTE BLANCHE bâtie sur un vrai analyseur (html.parser), pas une série d'expressions régulières qui retirent ce qu'on
@@ -34,18 +34,12 @@ from urllib.parse import urlsplit
 
 
 # ------------------------------------------------------------------ noms de dossiers : UTF-7 modifié (RFC 3501)
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+
+
 def utf7_decoder(s):
-    """« envoy&AOk-s » -> « envoyés »."""
-    def un(m):
-        if m.group(1) == "":
-            return "&"
-        b = m.group(1).replace(",", "/")
-        b += "=" * (-len(b) % 4)
-        try:
-            return base64.b64decode(b).decode("utf-16-be")
-        except Exception:
-            return m.group(0)
-    return re.sub(r"&([^-]*)-", un, s or "")
+    """« envoy&AOk-s » -> « envoyés ». Le calcul est un POINT D'ÉVOLUTION : points/EC_utf7_decoder.py."""
+    return _point("utf7_decoder", {"s": s})["valeur"]
 
 
 def utf7_encoder(s):
@@ -79,15 +73,8 @@ def citer(nom):
 
 # ------------------------------------------------------------------ en-têtes
 def decoder_entete(s):
-    if s is None:
-        return ""
-    try:
-        sortie = ""
-        for txt, enc in decode_header(str(s)):
-            sortie += txt.decode(enc or "utf-8", errors="replace") if isinstance(txt, bytes) else txt
-        return sortie
-    except Exception:
-        return str(s)
+    """decoder_entete. Le calcul est un POINT D'ÉVOLUTION : points/EC_decoder_entete.py."""
+    return _point("decoder_entete", {"s": s})["valeur"]
 
 
 def date_iso(brut):
@@ -106,13 +93,8 @@ def date_iso(brut):
 
 
 def adresse_parts(brut):
-    """(nom affiché, adresse en minuscules) d'un en-tête From/To."""
-    try:
-        nom, adr = parseaddr(decoder_entete(brut))
-        adr = (adr or "").strip().lower()
-        return (nom or "").strip() or (adr.split("@")[0] if adr else ""), adr
-    except Exception:
-        return str(brut or ""), ""
+    """(nom affiché, adresse en minuscules) d'un en-tête From/To. Le calcul est un POINT D'ÉVOLUTION : points/EC_adresse_parts.py."""
+    return tuple(_point("adresse_parts", {"brut": brut})["valeur"])          # un couple, comme avant : le tour JSON en fait une liste
 
 
 def cle_de_fil(msg):
@@ -141,14 +123,8 @@ def role_drapeau(flags):
 
 
 def role_du_dossier(nom, flags):
-    r = role_drapeau(flags)
-    if r:
-        return r
-    bas = (nom or "").lower()
-    for role, motifs in ROLES_NOMS.items():
-        if any(m in bas for m in motifs):
-            return role
-    return "inbox" if bas == "inbox" else ""
+    """role_du_dossier. Le calcul est un POINT D'ÉVOLUTION : points/EC_role_du_dossier.py."""
+    return _point("role_du_dossier", {"nom": nom, "flags": flags})["valeur"]
 
 
 def roles_uniques(dossiers, appeler):
@@ -175,13 +151,8 @@ TECH_SUJ = re.compile(r"(cron\s*<|certificat|certificate|expir|renew|sauvegarde|
 
 
 def motif_technique(m):
-    """Motif technique reconnu, ou ''. Un signal sur l'EXPÉDITEUR est exigé : « sauvegarde » dans l'objet d'un client parle d'un devis, pas d'un serveur."""
-    exp, suj = m.get("from_addr") or m.get("from") or "", m.get("subject") or ""
-    if TECH_EXP.search(exp):
-        return "expéditeur technique"
-    if TECH_SUJ.search(suj) and TECH_EXP.search(exp + " " + suj):
-        return "objet et expéditeur techniques"
-    return ""
+    """Motif technique reconnu, ou ''. Un signal sur l'EXPÉDITEUR est exigé : « sauvegarde » dans l'objet d'un client parle d'un devis, pas d'un serveur. Le calcul est un POINT D'ÉVOLUTION : points/EC_motif_technique.py."""
+    return _point("motif_technique", {"m": m})["valeur"]
 
 
 def etat_du_message(m):
@@ -240,19 +211,8 @@ class _Texte(HTMLParser):
 
 
 def html_en_texte(page):
-    """Un HTML sans partie texte, aplati : les balises tombent, les entités reviennent en lettres, les blancs se resserrent."""
-    if not page:
-        return ""
-    p = _Texte()
-    try:
-        p.feed(page)
-        p.close()
-    except Exception:
-        return re.sub(r"<[^>]+>", " ", page)
-    t = "".join(p.sortie)
-    t = re.sub(r"[ \t\r\f\v]+", " ", t)
-    t = re.sub(r" *\n *", "\n", t)
-    return re.sub(r"\n\s*\n+", "\n\n", t).strip()
+    """Un HTML sans partie texte, aplati : les balises tombent, les entités reviennent en lettres, les blancs se resserrent. Le calcul est un POINT D'ÉVOLUTION : points/EC_html_en_texte.py."""
+    return _point("html_en_texte", {"page": page})["valeur"]
 
 
 def pieces_jointes(msg):

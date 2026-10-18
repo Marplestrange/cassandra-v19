@@ -1,0 +1,187 @@
+{
+ "point": "courrier.utf7_decoder",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de courrier, données synthétiques",
+ "cas": [
+  {
+   "cas": "envoyés",
+   "entree": {
+    "s": "envoy&AOk-s"
+   },
+   "sortie": {
+    "valeur": "envoyés"
+   }
+  },
+  {
+   "cas": "esperluette",
+   "entree": {
+    "s": "&-"
+   },
+   "sortie": {
+    "valeur": "&"
+   }
+  },
+  {
+   "cas": "esperluette au milieu",
+   "entree": {
+    "s": "a&-b"
+   },
+   "sortie": {
+    "valeur": "a&b"
+   }
+  },
+  {
+   "cas": "seul accent",
+   "entree": {
+    "s": "&AOk-"
+   },
+   "sortie": {
+    "valeur": "é"
+   }
+  },
+  {
+   "cas": "non fermé",
+   "entree": {
+    "s": "&AOk"
+   },
+   "sortie": {
+    "valeur": "&AOk"
+   }
+  },
+  {
+   "cas": "deux accents",
+   "entree": {
+    "s": "INBOX.&AOk-t&AOk-"
+   },
+   "sortie": {
+    "valeur": "INBOX.été"
+   }
+  },
+  {
+   "cas": "sans code",
+   "entree": {
+    "s": "INBOX"
+   },
+   "sortie": {
+    "valeur": "INBOX"
+   }
+  },
+  {
+   "cas": "vide",
+   "entree": {
+    "s": ""
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "s": null
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "virgule en base64",
+   "entree": {
+    "s": "&,,,-"
+   },
+   "sortie": {
+    "valeur": "￿"
+   }
+  },
+  {
+   "cas": "base64 invalide",
+   "entree": {
+    "s": "&!!!-"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "deux séquences",
+   "entree": {
+    "s": "x&AOk-&AOk-y"
+   },
+   "sortie": {
+    "valeur": "xééy"
+   }
+  },
+  {
+   "cas": "mélange",
+   "entree": {
+    "s": "A&-B&AOk-"
+   },
+   "sortie": {
+    "valeur": "A&Bé"
+   }
+  },
+  {
+   "cas": "lettres",
+   "entree": {
+    "s": "&AGEAYgBj-"
+   },
+   "sortie": {
+    "valeur": "abc"
+   }
+  },
+  {
+   "cas": "paire de substitution",
+   "entree": {
+    "s": "&2D3eAA-"
+   },
+   "sortie": {
+    "valeur": "😀"
+   }
+  },
+  {
+   "cas": "japonais",
+   "entree": {
+    "s": "&MOIwuDDLMNk-"
+   },
+   "sortie": {
+    "valeur": "モジニベ"
+   }
+  },
+  {
+   "cas": "corbeille",
+   "entree": {
+    "s": "&AMk-l&AOk-ments supprim&AOk-s"
+   },
+   "sortie": {
+    "valeur": "Éléments supprimés"
+   }
+  },
+  {
+   "cas": "tiret seul",
+   "entree": {
+    "s": "-"
+   },
+   "sortie": {
+    "valeur": "-"
+   }
+  },
+  {
+   "cas": "esperluette finale",
+   "entree": {
+    "s": "abc&"
+   },
+   "sortie": {
+    "valeur": "abc&"
+   }
+  },
+  {
+   "cas": "séquence vide puis texte",
+   "entree": {
+    "s": "&-&AOk-"
+   },
+   "sortie": {
+    "valeur": "&é"
+   }
+  }
+ ]
+}
