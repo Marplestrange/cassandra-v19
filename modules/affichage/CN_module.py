@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.2.1  #0265d6
+# VERSION CN : 0.3.0  #658ebf
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.1 empreinte=0265d6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=658ebf ▼▼▼
 """Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 
 Un module ne dit jamais comment il s'affiche. Il déclare des écrans (avec un gabarit), des tuiles (avec un composant et une source de données) et
@@ -32,7 +32,6 @@ import hashlib
 import json
 import re
 import time
-import zoneinfo
 from pathlib import Path
 
 BASES = {
@@ -55,11 +54,22 @@ INTERLOCUTEURS = ("itare", "cassandra", "inv")
 RANG_NIVEAU = {"": 0, "alerte": 1, "danger": 2}
 PERSONNELS = ("tache", "rappel", "event", "decision", "mandat", "note", "mail")      # ce qu'Itare voit : le poste de travail du compte, jamais l'état du parc
 MAX_EPINGLES = 12
-ORG_DEFAUT = {"nom": "Cassandra", "forme": "", "identifiant": "", "adresse": "", "fuseau": "Europe/Paris", "langue": "fr", "logo": ""}
-ORG_LONGUEURS = {"nom": 60, "forme": 60, "identifiant": 40, "adresse": 160}
+# L'organisation, en quatre rubriques : l'organisation elle-même, ses réseaux sociaux, ses heures d'ouverture, ses sous-traitants.
+RESEAUX = ("facebook", "instagram", "linkedin", "skype", "snapchat", "twitter", "whatsapp", "youtube")
+JOURS = ("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+SOUS_TRAITANTS = ("comptabilite", "informatique")
+SECTIONS_ORG = ("organisation", "reseaux", "heures", "soustraitants")
+LONG_ORG = {"raison_sociale": 80, "devise": 3, "pays": 2, "adresse": 300, "code_postal": 12, "ville": 80, "departement": 80, "telephone": 30, "mobile": 30, "fax": 30,
+            "email": 120, "web": 200, "code_barres": 60, "note": 2000}
+LONG_ST = {"raison_sociale": 80, "adresse": 300, "code_postal": 12, "ville": 80, "pays": 2, "departement": 80, "telephone": 30, "email": 120, "web": 200, "siren": 30,
+           "code_comptable": 30, "note": 2000}
+IMAGES_ORG = ("logo", "logo_carre")
+_EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+_URL = re.compile(r"^https?://[^\s]+$", re.I)
+_PAYS = re.compile(r"^[A-Z]{2}$")
+_DEVISE = re.compile(r"^[A-Z]{3}$")
 LOGO_MAX = 180000
 _LOGO = re.compile(r"^data:image/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$")
-_FUSEAU = re.compile(r"^[A-Za-z]+(/[A-Za-z0-9_+-]+){1,2}$|^UTC$")
 _CLE_EPINGLE = re.compile(r"^[a-z0-9_:.|-]{1,120}$", re.I)
 # Les gestes que le panneau a le droit de PROPOSER : une table fermée du nexus. Proposer n'est pas faire : l'exécution passe par l'exécuteur, qui refait toute vérification de droit.
 ACTES = {
@@ -423,9 +433,23 @@ def brancher(ctx):
         xs = [o["donnees"] for o in ctx.lister(portee=ctx.TOUT, type="epingle") if o["compte"] == compte]
         return sorted(xs, key=lambda d: (d.get("ts", 0), d.get("cle", "")))
 
+    def _donnees_org(ctx):
+        """L'organisation complète, avec ses défauts. Un ancien enregistrement à plat (nom, logo…) est relu comme la rubrique « organisation »."""
+        o = ((ctx.lire("organisation", "global", portee=ctx.TOUT) or {}).get("donnees")) or {}
+        if "organisation" not in o and any(k in o for k in ("nom", "logo")):
+            o = {"organisation": {"raison_sociale": o.get("nom", ""), "logo": o.get("logo", "")}}
+        org = {k: "" for k in LONG_ORG}
+        org.update({"raison_sociale": "Cassandra", "devise": "EUR", "pays": "FR", "logo": "", "logo_carre": ""})
+        org.update({k: v for k, v in (o.get("organisation") or {}).items() if k in org})
+        return {"organisation": org,
+                "reseaux": {r: dict({"id": "", "url": ""}, **{k: v for k, v in ((o.get("reseaux") or {}).get(r) or {}).items() if k in ("id", "url")}) for r in RESEAUX},
+                "heures": {j: str((o.get("heures") or {}).get(j, "")) for j in JOURS},
+                "soustraitants": {t: dict({k: "" for k in LONG_ST}, **{k: v for k, v in ((o.get("soustraitants") or {}).get(t) or {}).items() if k in LONG_ST}) for t in SOUS_TRAITANTS}}
+
     def _organisation(ctx):
-        o = ctx.lire("organisation", "global", portee=ctx.TOUT)
-        return dict(ORG_DEFAUT, **{k: v for k, v in ((o or {}).get("donnees") or {}).items() if k in ORG_DEFAUT})
+        """Ce que tout compte peut savoir de l'organisation : son nom et ses logos. Le reste (téléphones, sous-traitants, note) est pour l'administrateur."""
+        org = _donnees_org(ctx)["organisation"]
+        return {"nom": org["raison_sociale"] or "Cassandra", "logo": org["logo"], "logo_carre": org["logo_carre"]}
 
     def lire_disposition(ctx, role="utilisateur", compte=""):
         role, compte = _moi(ctx, role, compte)
@@ -440,44 +464,90 @@ def brancher(ctx):
                 "version": VERSION_AFFICHEE}
 
     def lire_organisation(ctx):
-        return _organisation(ctx)
+        if ctx.est_admin(ctx.compte or ""):
+            return dict(_donnees_org(ctx), complet=True)
+        return dict(_organisation(ctx), complet=False)
 
-    def modifier_organisation(ctx, nom=None, forme=None, identifiant=None, adresse=None, fuseau=None, langue=None, logo=None, reinitialiser=False):
+    def _texte(nom, v, n):
+        v = str(v if v is not None else "").strip()
+        if len(v) > n:
+            raise ValueError("%s : au plus %d caractères" % (nom, n))
+        return v
+
+    def _champ(nom, v, n):
+        v = _texte(nom, v, n)
+        if nom == "email" and v and not _EMAIL.match(v):
+            raise ValueError("email : une adresse de la forme nom@domaine.fr")
+        if nom == "web" and v and not _URL.match(v):
+            raise ValueError("web : une adresse commençant par http:// ou https://")
+        if nom == "pays" and v and not _PAYS.match(v):
+            raise ValueError("pays : le code à deux lettres (FR, BE…)")
+        if nom == "devise" and v and not _DEVISE.match(v):
+            raise ValueError("devise : le code à trois lettres (EUR, USD…)")
+        return v
+
+    def _image(nom, logo):
+        logo = str(logo or "")
+        if logo != "":
+            if len(logo) > LOGO_MAX or not _LOGO.match(logo):
+                raise ValueError("%s : une image png, jpeg, webp ou gif de %d Ko au plus (en data:image/…;base64)" % (nom, LOGO_MAX // 1000))
+            try:
+                base64.b64decode(logo.split(",", 1)[1], validate=True)
+            except ValueError:
+                raise ValueError("%s : image illisible" % nom)
+        return logo
+
+    def modifier_organisation(ctx, section="organisation", valeurs=None, reinitialiser=False):
+        """Règle UNE rubrique de l'organisation (organisation | reseaux | heures | soustraitants) : un administrateur seulement. `valeurs` ne dit que ce qui change."""
         if not ctx.est_admin(ctx.compte or ""):
             raise PermissionError("l'organisation se règle par un administrateur")
+        if section not in SECTIONS_ORG:
+            raise ValueError("rubrique : %s" % " | ".join(SECTIONS_ORG))
         existant = ctx.lire("organisation", "global", portee=ctx.TOUT)
         avant = copy.deepcopy(existant["donnees"]) if existant else None
+        complet = _donnees_org(ctx)
         if reinitialiser:
-            ctx.retirer("organisation", "global")
-            return {"avant": avant, "attendu": None}
-        nouveau = dict(avant or {})
-        for champ, v in (("nom", nom), ("forme", forme), ("identifiant", identifiant), ("adresse", adresse)):
-            if v is None:
-                continue
-            v = str(v).strip()
-            if len(v) > ORG_LONGUEURS[champ] or (champ == "nom" and not v):
-                raise ValueError("%s : %s" % (champ, "un texte de 1 à %d caractères" % ORG_LONGUEURS[champ] if champ == "nom" else "au plus %d caractères" % ORG_LONGUEURS[champ]))
-            nouveau[champ] = v
-        if fuseau is not None:
-            connus = zoneinfo.available_timezones()            # vide sur une machine sans base des fuseaux : on ne juge alors que la forme
-            if not _FUSEAU.match(str(fuseau)) or (connus and str(fuseau) not in connus):
-                raise ValueError("fuseau horaire inconnu : %s" % fuseau)
-            nouveau["fuseau"] = str(fuseau)
-        if langue is not None:
-            if langue not in ("fr", "en"):
-                raise ValueError("langue : fr | en")
-            nouveau["langue"] = langue
-        if logo is not None:
-            if logo != "":
-                if len(logo) > LOGO_MAX or not _LOGO.match(logo):
-                    raise ValueError("logo : une image png, jpeg, webp ou gif de %d Ko au plus (en data:image/…;base64)" % (LOGO_MAX // 1000))
-                try:
-                    base64.b64decode(logo.split(",", 1)[1], validate=True)
-                except ValueError:
-                    raise ValueError("logo : image illisible")
-            nouveau["logo"] = logo
-        ctx.poser("organisation", "global", "Organisation", etat="perso", donnees=nouveau)
-        return {"avant": avant, "attendu": nouveau}
+            nouveau = {k: v for k, v in complet.items() if k != section}
+            ctx.poser("organisation", "global", "Organisation", etat="perso", donnees=nouveau)
+            return {"avant": avant, "attendu": nouveau}
+        v = valeurs if isinstance(valeurs, dict) else {}
+        cible = complet[section]
+        if section == "organisation":
+            for k, x in v.items():
+                if k in IMAGES_ORG:
+                    cible[k] = _image(k, x)
+                elif k in LONG_ORG:
+                    cible[k] = _champ(k, x, LONG_ORG[k])
+                else:
+                    raise ValueError("champ inconnu : %s" % k)
+            if not cible["raison_sociale"]:
+                raise ValueError("raison_sociale : un texte de 1 à %d caractères" % LONG_ORG["raison_sociale"])
+        elif section == "reseaux":
+            for r, d in v.items():
+                if r not in RESEAUX or not isinstance(d, dict) or set(d) - {"id", "url"}:
+                    raise ValueError("réseau inconnu ou mal formé : %s" % r)
+                if "id" in d:
+                    cible[r]["id"] = _texte("id", d["id"], 80)
+                if "url" in d:
+                    u = _texte("url", d["url"], 200)
+                    if u and not _URL.match(u):
+                        raise ValueError("url : une adresse commençant par http:// ou https://")
+                    cible[r]["url"] = u
+        elif section == "heures":
+            for j, x in v.items():
+                if j not in JOURS:
+                    raise ValueError("jour inconnu : %s" % j)
+                cible[j] = _texte(j, x, 60)
+        else:
+            for t, d in v.items():
+                if t not in SOUS_TRAITANTS or not isinstance(d, dict):
+                    raise ValueError("sous-traitant inconnu ou mal formé : %s" % t)
+                for k, x in d.items():
+                    if k not in LONG_ST:
+                        raise ValueError("champ inconnu : %s" % k)
+                    cible[t][k] = _champ(k, x, LONG_ST[k])
+        ctx.poser("organisation", "global", "Organisation", etat="perso", donnees=complet)
+        return {"avant": avant, "attendu": complet}
 
     def prouver_org(ctx, res):
         o = ctx.lire("organisation", "global", portee=ctx.TOUT)
@@ -558,7 +628,7 @@ def brancher(ctx):
         except (PermissionError, KeyError, ValueError):
             pass
         org = _organisation(ctx)
-        return {"compte": compte, "role": role, "ip": ip_session, "organisation": org["nom"], "fuseau": org["fuseau"], "langue": org["langue"],
+        return {"compte": compte, "role": role, "ip": ip_session, "organisation": org["nom"],
                 "version": VERSION_AFFICHEE, "modules": len(ctx.manifestes_actifs()), "sessions": sessions}
 
     # ---------------------------------------------------------------- les fils du panneau, liés à une page

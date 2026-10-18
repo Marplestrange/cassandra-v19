@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=100d0f ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=d6248f ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -252,6 +252,28 @@ body.d19 #usermenu .d19-themes button{height:26px}
 .d19-info{display:grid;grid-template-columns:max-content 1fr;gap:6px 22px;font-size:13.5px;max-width:640px;margin:0}
 .d19-info dt{font:500 12px 'JetBrains Mono',monospace;color:var(--txt-faint)}.d19-info dd{margin:0;overflow-wrap:anywhere;color:var(--txt)}
 
+/* ---------- Société / Organisation : des tableaux, comme les écrans de paramétrage d'un ERP ---------- */
+.d19-societe{padding:6px max(24px,env(safe-area-inset-right,0px)) 40px 4px;width:100%;max-width:1180px;box-sizing:border-box}
+.sh-scene:has(.d19-societe){width:100%;max-width:none;box-sizing:border-box}
+.sh-corps:has(.d19-societe){width:100%}
+.d19-aide{color:var(--txt-faint);margin:6px 0 16px;max-width:90ch;line-height:1.5;font-size:13.5px}
+.d19-tbl{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface-solid,#fff)}
+.d19-tbl table{width:100%;border-collapse:collapse}
+.d19-tbl th{background:var(--ov-04);text-align:left;font-weight:500;color:var(--txt-soft);padding:11px 14px;font-size:13.5px}
+.d19-tbl td{padding:8px 14px;border-top:1px solid var(--line);vertical-align:middle;font-size:13.5px}
+.d19-tbl td.l{width:260px;color:var(--txt-strong)}
+.d19-tbl td.lien{white-space:nowrap;width:220px}
+.d19-tbl td.lien a{color:var(--accent);text-decoration:none}
+.d19-tbl input[type=text],.d19-tbl input[type=email],.d19-tbl input[type=url],.d19-tbl select,.d19-tbl textarea{width:100%;max-width:560px;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface-solid,#fff);color:var(--txt);font:inherit}
+.d19-tbl input.court{max-width:140px}
+.d19-tbl textarea{max-width:760px;resize:vertical}
+.d19-sauve{text-align:center;margin:18px 0 26px}
+.d19-btn.grand{padding:9px 28px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.d19-msg{display:block;margin-top:8px;color:var(--txt-faint);font-size:12.5px}
+.d19-i{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;background:var(--txt-ghost,#c7ccd4);color:#fff;font:700 10px/1 sans-serif;cursor:help;margin-left:4px}
+.d19-st{display:flex;align-items:center;gap:8px;color:var(--accent);font:500 14px 'JetBrains Mono',monospace;margin:24px 0 10px}
+.d19-apercu.carre{border-radius:12px}
+@media (max-width:760px){.d19-tbl td.l{width:auto}.d19-tbl td{display:block;border-top:0;padding:4px 14px}.d19-tbl tr{display:block;border-top:1px solid var(--line);padding:8px 0}.d19-tbl thead{display:none}.d19-tbl td.lien{width:auto}}
 /* ---------- largeurs mesurées sur le cadre ---------- */
 #app-container[data-w="xl"] #d19-cass.ouvert{width:370px}
 #app-container[data-w="s"] #d19-top .nav-fleches,#app-container[data-w="s"] #d19-vtxt,#app-container[data-w="xs"] #d19-top .nav-fleches,#app-container[data-w="xs"] #d19-vtxt,#app-container[data-w="xs"] #d19-theme,#app-container[data-w="xs"] #d19-groupes,#app-container[data-w="xs"] #d19-btn-cass{display:none}

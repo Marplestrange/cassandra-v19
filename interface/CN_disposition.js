@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #d2a9a3
+// VERSION CN : 0.1.0  #e0febd
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=d2a9a3 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=e0febd ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -161,11 +161,12 @@
   function rendreHaut() {
     if (!E.d) return;
     const lg = $("#d19-logo"), o = E.d.organisation || {};
-    lg.className = "d19-logo" + (o.logo ? " img" : "") + (E.d.niveau === "danger" ? " s-danger" : E.d.niveau === "alerte" ? " s-alerte" : "");
+    const logoBarre = o.logo || o.logo_carre || "";
+    lg.className = "d19-logo" + (logoBarre ? " img" : "") + (E.d.niveau === "danger" ? " s-danger" : E.d.niveau === "alerte" ? " s-alerte" : "");
     lg.title = (o.nom || "Cassandra") + " · " + (E.d.niveau === "danger" ? "un point urgent à regarder" : E.d.niveau === "alerte" ? "des points à regarder" : "tout est en ordre");
-    lg.style.backgroundImage = o.logo ? "url(" + o.logo + ")" : "";
-    lg.innerHTML = o.logo ? "" : TOIT;
-    favicon(o.logo);
+    lg.style.backgroundImage = logoBarre ? "url(" + logoBarre + ")" : "";
+    lg.innerHTML = logoBarre ? "" : TOIT;
+    favicon(o.logo_carre || o.logo);
     $("#d19-groupes").innerHTML = E.d.groupes.map((g, i) => '<button class="d19-gr' + (g.id === E.g && E.actif ? " on" : "") + '" data-g="' + esc(g.id) + '" data-tip="' + esc(g.libelle) + " · Alt+" + (i + 1) + '" aria-label="' + esc(g.libelle) + '">' + ico(g.icone) + pastille(g) + "</button>").join("");
     const urg = !!(E.idees && E.idees.urgent);
     $("#d19-btn-cass").classList.toggle("d19-idee", urg);
@@ -192,7 +193,7 @@
     if (E.lateral && E.pageNom) {                                       // la page a SA colonne (les familles de modules)
       const L = E.lateral;
       sd.innerHTML = "<h2>" + esc(L.titre) + '</h2><div class="d19-lat-sous">' + esc(L.sous) + "</div>"
-        + L.items.map((i) => '<button class="d19-si ent' + (i.id === L.actif ? " on" : "") + '" data-lat="' + esc(i.id) + '" data-tip="' + esc(i.libelle) + '">' + ico(i.icone || "puzzle") + "<span>" + esc(i.libelle) + '</span><span class="d19-nb">' + i.n + "</span></button>").join("");
+        + L.items.map((i) => '<button class="d19-si ent' + (i.id === L.actif ? " on" : "") + '" data-lat="' + esc(i.id) + '" data-tip="' + esc(i.libelle) + '">' + ico(i.icone || "puzzle") + "<span>" + esc(i.libelle) + "</span>" + (i.n == null ? "" : '<span class="d19-nb">' + i.n + "</span>") + "</button>").join("");
       return;
     }
     let h = "";
@@ -467,14 +468,20 @@
   }
 
   // ── les pages propres : Société / Organisation, Info Cassandra ─────────────
-  function redimensionner(fichier, fin) {
+  function redimensionner(fichier, fin, carre) {
     const r = new FileReader();
     r.onload = function () {
       const img = new Image();
       img.onload = function () {
-        const t = Math.min(1, 256 / Math.max(img.width, img.height)), c = document.createElement("canvas");
-        c.width = Math.max(1, Math.round(img.width * t)); c.height = Math.max(1, Math.round(img.height * t));
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        const c = document.createElement("canvas");
+        if (carre) {                                                       // le logo carré : recadré au centre, 128 px
+          const cote = Math.min(img.width, img.height); c.width = c.height = 128;
+          c.getContext("2d").drawImage(img, (img.width - cote) / 2, (img.height - cote) / 2, cote, cote, 0, 0, 128, 128);
+        } else {
+          const t = Math.min(1, 256 / Math.max(img.width, img.height));
+          c.width = Math.max(1, Math.round(img.width * t)); c.height = Math.max(1, Math.round(img.height * t));
+          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        }
         let u = c.toDataURL("image/png"); if (u.length > 170000) u = c.toDataURL("image/jpeg", 0.85);
         fin(u.length <= 175000 ? u : "");
       };
@@ -491,6 +498,88 @@
   async function ouvrirModules(fam) {
     E.famModules = fam || "tous"; marquerPage({ id: "menus:modules", ecran: "menus:vue_modules", libelle: "Modules et Applications" });
     CASS.ouvrirEcran("menus:vue_modules", "Modules et Applications");
+  }
+  // ── Société / Organisation : quatre rubriques, chacune un tableau ──────────
+  const PAYS = "AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW".split(" ");
+  const DEPTS = "01 Ain|02 Aisne|03 Allier|04 Alpes-de-Haute-Provence|05 Hautes-Alpes|06 Alpes-Maritimes|07 Ardèche|08 Ardennes|09 Ariège|10 Aube|11 Aude|12 Aveyron|13 Bouches-du-Rhône|14 Calvados|15 Cantal|16 Charente|17 Charente-Maritime|18 Cher|19 Corrèze|2A Corse-du-Sud|2B Haute-Corse|21 Côte-d’Or|22 Côtes-d’Armor|23 Creuse|24 Dordogne|25 Doubs|26 Drôme|27 Eure|28 Eure-et-Loir|29 Finistère|30 Gard|31 Haute-Garonne|32 Gers|33 Gironde|34 Hérault|35 Ille-et-Vilaine|36 Indre|37 Indre-et-Loire|38 Isère|39 Jura|40 Landes|41 Loir-et-Cher|42 Loire|43 Haute-Loire|44 Loire-Atlantique|45 Loiret|46 Lot|47 Lot-et-Garonne|48 Lozère|49 Maine-et-Loire|50 Manche|51 Marne|52 Haute-Marne|53 Mayenne|54 Meurthe-et-Moselle|55 Meuse|56 Morbihan|57 Moselle|58 Nièvre|59 Nord|60 Oise|61 Orne|62 Pas-de-Calais|63 Puy-de-Dôme|64 Pyrénées-Atlantiques|65 Hautes-Pyrénées|66 Pyrénées-Orientales|67 Bas-Rhin|68 Haut-Rhin|69 Rhône|70 Haute-Saône|71 Saône-et-Loire|72 Sarthe|73 Savoie|74 Haute-Savoie|75 Paris|76 Seine-Maritime|77 Seine-et-Marne|78 Yvelines|79 Deux-Sèvres|80 Somme|81 Tarn|82 Tarn-et-Garonne|83 Var|84 Vaucluse|85 Vendée|86 Vienne|87 Haute-Vienne|88 Vosges|89 Yonne|90 Territoire de Belfort|91 Essonne|92 Hauts-de-Seine|93 Seine-Saint-Denis|94 Val-de-Marne|95 Val-d’Oise|971 Guadeloupe|972 Martinique|973 Guyane|974 La Réunion|976 Mayotte".split("|");
+  const nomPays = (c) => { try { return new Intl.DisplayNames(["fr"], { type: "region" }).of(c) || c; } catch (e) { return c; } };
+  const nomDevise = (c) => { try { return new Intl.DisplayNames(["fr"], { type: "currency" }).of(c) || c; } catch (e) { return c; } };
+  const devises = () => { let l = []; try { l = Intl.supportedValuesOf("currency"); } catch (e) {} return l.length ? l : ["EUR", "USD", "GBP", "CHF", "CAD", "JPY"]; };
+  const CH_ORG = [["raison_sociale", "Raison sociale", "text"], ["devise", "Devise principale", "devise"], ["pays", "Pays", "pays"], ["adresse", "Adresse", "area"], ["code_postal", "Code postal", "court"],
+    ["ville", "Ville", "text"], ["departement", "Département / Canton", "dept"], ["telephone", "Téléphone", "tel"], ["mobile", "Tél portable", "tel"], ["fax", "Fax", "tel"], ["email", "Email", "email"],
+    ["web", "Web", "url"], ["code_barres", "Code-barres", "text"], ["logo", "Logo", "image"], ["logo_carre", "Logo (carré)", "image"], ["note", "Note", "area"]];
+  const CH_ST = [["raison_sociale", "Raison sociale", "text"], ["adresse", "Adresse", "area"], ["code_postal", "Code postal", "court"], ["ville", "Ville", "text"], ["pays", "Pays", "pays"], ["departement", "Département / Canton", "dept"],
+    ["telephone", "Téléphone", "tel"], ["email", "Email", "email"], ["web", "Web", "url"], ["siren", "Id. prof. 1 (SIREN)", "text"], ["code_comptable", "Code comptable", "text"], ["note", "Note", "area"]];
+  const RESEAUX = [["facebook", "Facebook"], ["instagram", "Instagram"], ["linkedin", "Linkedin"], ["skype", "Skype"], ["snapchat", "Snapchat"], ["twitter", "Twitter"], ["whatsapp", "Whatsapp"], ["youtube", "Youtube"]];
+  const JOURS = [["lundi", "Lundi"], ["mardi", "Mardi"], ["mercredi", "Mercredi"], ["jeudi", "Jeudi"], ["vendredi", "Vendredi"], ["samedi", "Samedi"], ["dimanche", "Dimanche"]];
+  const ST = [["comptabilite", "Fournisseur du service de Comptabilité", "archive"], ["informatique", "Fournisseur informatique", "fleet"]];
+  const RUBRIQUES = [{ id: "organisation", libelle: "Mon organisation", icone: "building" }, { id: "reseaux", libelle: "Réseaux sociaux", icone: "globe" },
+    { id: "heures", libelle: "Heures d’ouverture", icone: "clock" }, { id: "soustraitants", libelle: "Sous-traitants", icone: "puzzle" }];
+  function controle(id, type, v) {
+    v = v == null ? "" : v;
+    if (type === "area") return '<textarea id="' + id + '" rows="3">' + esc(v) + "</textarea>";
+    if (type === "pays") return '<select id="' + id + '"><option value=""></option>' + PAYS.map((c) => [c, nomPays(c)]).sort((a, b) => a[1].localeCompare(b[1], "fr")).map((x) => '<option value="' + x[0] + '"' + (x[0] === v ? " selected" : "") + ">" + esc(x[1]) + "</option>").join("") + "</select>";
+    if (type === "devise") return '<select id="' + id + '"><option value=""></option>' + devises().map((c) => '<option value="' + c + '"' + (c === v ? " selected" : "") + ">" + c + " — " + esc(nomDevise(c)) + "</option>").join("") + "</select>";
+    if (type === "dept") return '<input type="text" id="' + id + '" value="' + esc(v) + '" list="' + id + '-l" autocomplete="off"><datalist id="' + id + '-l">' + DEPTS.map((d) => '<option value="' + esc(d.slice(d.indexOf(" ") + 1)) + '">' + esc(d) + "</option>").join("") + "</datalist>";
+    const t = type === "email" ? "email" : type === "url" ? "url" : "text";
+    return '<input type="' + t + '" id="' + id + '" value="' + esc(v) + '" autocomplete="off"' + (type === "court" ? ' class="court"' : "") + ">";
+  }
+  const tableau = (titre, lignes) => '<div class="d19-tbl"><table><thead><tr><th colspan="2">' + esc(titre) + "</th></tr></thead><tbody>" + lignes + "</tbody></table></div>";
+  const sauve = (cle) => '<p class="d19-sauve"><button type="button" class="d19-btn grand" data-sauve="' + cle + '">Enregistrer</button><span class="d19-msg" data-msg="' + cle + '"></span></p>';
+  async function pageSociete(corps, rub) {
+    rub = RUBRIQUES.some((r) => r.id === rub) ? rub : (E.rubSociete || "organisation");
+    E.rubSociete = rub;
+    const nom = RUBRIQUES.find((r) => r.id === rub).libelle;
+    E.pageNom = CASS.nomOnglet("affichage:vue_societe"); E.fil = ["Paramètres", "Société / Organisation", nom];
+    E.lateral = { titre: "Société / Organisation", sous: "ce que Cassandra sait de vous", actif: rub, items: RUBRIQUES.map((r) => ({ id: r.id, libelle: r.libelle, icone: r.icone })) };
+    E.pageAction = (id) => pageSociete(corps, id);
+    const sc = corps.closest(".sh-scene"), t = sc && sc.querySelector(".sh-titre");
+    if (t) {
+      t.textContent = "Société / Organisation";
+      let l = sc.querySelector(".sh-legende"); if (!l) { l = document.createElement("p"); l.className = "sh-legende"; t.after(l); }
+      l.textContent = "Modifiez les informations de votre société ou organisation. Cliquez sur « Enregistrer » en bas de la rubrique pour sauvegarder.";
+    }
+    let o; try { o = await agir("affichage.lire_organisation", {}); } catch (e) { corps.innerHTML = '<div class="empty-state">' + esc(e.message) + "</div>"; rendre(); return; }
+    if (!o.complet) { corps.innerHTML = '<div class="empty-state">Ces informations se règlent par un administrateur.</div>'; rendre(); return; }
+    const images = { logo: o.organisation.logo || "", logo_carre: o.organisation.logo_carre || "" };
+    let h = "";
+    if (rub === "organisation") {
+      h = tableau("Société / Organisation", CH_ORG.map(([c, lib, type]) => "<tr><td class=\"l\">" + esc(lib) + "</td><td>" + (type === "image"
+        ? '<div class="d19-logozone"><span class="d19-apercu' + (c === "logo_carre" ? " carre" : "") + '" id="o-ap-' + c + '"></span><label class="d19-btn sec" for="o-' + c + '" style="cursor:pointer">Choisir une image…</label><input type="file" id="o-' + c + '" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button type="button" class="d19-btn sec" data-retire="' + c + '">Retirer</button></div>'
+        : controle("o-" + c, type, o.organisation[c])) + "</td></tr>").join("")) + sauve("organisation");
+    } else if (rub === "reseaux") {
+      h = '<p class="d19-aide">Les identifiants et adresses de vos pages. Ils s’affichent ici ; les modules qui en ont besoin les reprennent.</p><div class="d19-tbl"><table><thead><tr><th>Réseaux sociaux</th><th>ID du réseau social</th><th>Url</th><th></th></tr></thead><tbody>'
+        + RESEAUX.map(([r, lib]) => { const d = o.reseaux[r] || { id: "", url: "" }; return '<tr><td class="l">' + esc(lib) + '</td><td><input type="text" id="r-' + r + '-id" value="' + esc(d.id) + '" autocomplete="off"></td><td><input type="url" id="r-' + r + '-url" value="' + esc(d.url) + '" autocomplete="off"></td><td class="lien">' + (d.url ? '<a href="' + esc(d.url) + '" target="_blank" rel="noopener noreferrer">' + esc(d.id || d.url) + "</a>" : esc(d.id)) + "</td></tr>"; }).join("")
+        + "</tbody></table></div>" + sauve("reseaux");
+    } else if (rub === "heures") {
+      h = '<p class="d19-aide">Entrez ici les heures d’ouverture régulières de votre organisation.</p><div class="d19-tbl"><table><thead><tr><th>Jour</th><th>Valeur</th></tr></thead><tbody>'
+        + JOURS.map(([j, lib]) => '<tr><td class="l">' + lib + ' <span class="d19-i" title="Par exemple : 9h-12h / 14h-18h, ou : fermé">i</span></td><td><input type="text" id="h-' + j + '" value="' + esc(o.heures[j]) + '" autocomplete="off" placeholder="ex. 9h-18h"></td></tr>').join("") + "</tbody></table></div>" + sauve("heures");
+    } else {
+      h = '<p class="d19-aide">Si la gestion de votre application est sous-traitée à des prestataires externes (un comptable ou expert-comptable, un prestataire informatique), saisissez ici leurs informations afin qu’elles ne soient pas perdues en cas de remplacement de l’administrateur.</p>'
+        + ST.map(([k, lib, ic]) => '<h3 class="d19-st">' + ico(ic) + esc(lib) + "</h3>" + tableau("Société / Organisation", CH_ST.map(([c, l, type]) => '<tr><td class="l">' + esc(l) + "</td><td>" + controle("s-" + k + "-" + c, type, o.soustraitants[k][c]) + "</td></tr>").join("")) + sauve("st:" + k)).join("");
+    }
+    corps.innerHTML = '<div class="d19-societe">' + h + "</div>";
+    const val = (id) => { const e = document.getElementById(id); return e ? e.value : ""; };
+    const aper = (c) => { const e = document.getElementById("o-ap-" + c); if (e) { e.style.backgroundImage = images[c] ? "url(" + images[c] + ")" : ""; e.innerHTML = images[c] ? "" : TOIT; } };
+    if (rub === "organisation") {
+      ["logo", "logo_carre"].forEach((c) => {
+        aper(c);
+        const f = document.getElementById("o-" + c);
+        f.addEventListener("change", (ev) => { const fi = ev.target.files && ev.target.files[0]; if (fi) redimensionner(fi, (u) => { if (!u) { toast("Image trop lourde ou illisible."); return; } images[c] = u; aper(c); }, c === "logo_carre"); });
+      });
+      $$("[data-retire]", corps).forEach((b) => b.addEventListener("click", () => { images[b.dataset.retire] = ""; aper(b.dataset.retire); }));
+    }
+    $$("[data-sauve]", corps).forEach((b) => b.addEventListener("click", async () => {
+      const cle = b.dataset.sauve; let section, valeurs = {};
+      if (cle === "organisation") { section = "organisation"; CH_ORG.forEach(([c, , type]) => { valeurs[c] = type === "image" ? images[c] : val("o-" + c); }); }
+      else if (cle === "reseaux") { section = "reseaux"; RESEAUX.forEach(([r]) => { valeurs[r] = { id: val("r-" + r + "-id"), url: val("r-" + r + "-url") }; }); }
+      else if (cle === "heures") { section = "heures"; JOURS.forEach(([j]) => { valeurs[j] = val("h-" + j); }); }
+      else { section = "soustraitants"; const k = cle.slice(3); valeurs[k] = {}; CH_ST.forEach(([c]) => { valeurs[k][c] = val("s-" + k + "-" + c); }); }
+      const msg = $('[data-msg="' + cle + '"]', corps);
+      try { await agir("affichage.modifier_organisation", { section: section, valeurs: valeurs }); if (msg) msg.textContent = "Enregistré."; toast("Enregistré."); await charger(); }
+      catch (e) { if (msg) msg.textContent = e.message; toast(e.message); }
+    }));
+    rendre();
   }
   // « Modules et Applications » : l'ancienne vision Modules de Réglages, devenue une page. Sa colonne de gauche classe les modules par famille.
   async function pageModules(corps, fam) {
@@ -512,6 +601,7 @@
       l.textContent = "La gestion des modules : ce qui est actif, ce qui dépend de quoi, et les réglages propres à chaque module. Un module neuf n’est jamais activé de lui-même.";
     }
     corps.innerHTML = '<div class="settings-section-title">' + esc(tete) + '</div><div class="s-hint">Activer un module branche à chaud ses menus, ses capacités et ses moteurs ; le désactiver les retire.</div>' + (fam === "tous" ? cat : cat.filter((m) => (m.famille || "autres") === fam)).map((m) => M.fiche(m, "global", fam === "tous")).join("");
+    E.pageAction = (id) => pageModules(corps, id);
     const relire = async () => { await pageModules(corps, E.famModules); };
     M.gestes(corps, async () => { await relire(); CASS.disposition.rafraichir(); });
     M.lierChamps(corps, relire);
@@ -526,26 +616,7 @@
   CASS.sceneSurMesure.affichage = async function (corps, ctx) {
     const ecran = String(ctx.ecran).split(":")[1] || "";
     if (ecran === "vue_societe") {
-      const o = await agir("affichage.lire_organisation", {});
-      let logo = o.logo || "";
-      corps.innerHTML = '<div class="d19-page"><p class="sous">Ce que Cassandra affiche pour ton organisation : son nom et son logo, en haut à gauche de chaque écran. Par défaut, ceux de Cassandra.</p><div class="d19-carte"><div class="d19-form">'
-        + '<label for="o-nom">Nom</label><input type="text" id="o-nom" value="' + esc(o.nom) + '" autocomplete="off">'
-        + '<label>Logo</label><div class="d19-logozone"><span class="d19-apercu" id="o-ap"></span><label class="d19-btn sec" for="o-logo" style="cursor:pointer">Choisir une image…</label><input type="file" id="o-logo" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button type="button" class="d19-btn sec" id="o-rst">Logo de Cassandra</button></div>'
-        + '<label for="o-forme">Forme juridique</label><input type="text" id="o-forme" value="' + esc(o.forme) + '" autocomplete="off">'
-        + '<label for="o-id">Identifiant légal</label><input type="text" id="o-id" value="' + esc(o.identifiant) + '" autocomplete="off">'
-        + '<label for="o-adr">Adresse</label><input type="text" id="o-adr" value="' + esc(o.adresse) + '" autocomplete="off">'
-        + '<label for="o-tz">Fuseau horaire</label><input type="text" id="o-tz" value="' + esc(o.fuseau) + '" autocomplete="off">'
-        + '<label for="o-lg">Langue par défaut</label><select id="o-lg"><option value="fr"' + (o.langue === "fr" ? " selected" : "") + '>Français</option><option value="en"' + (o.langue === "en" ? " selected" : "") + '>English</option></select>'
-        + '</div><p style="margin:16px 0 0"><button class="d19-btn" id="o-ok">Enregistrer</button> <span id="o-msg" style="margin-left:10px;color:var(--txt-faint)"></span></p></div></div>';
-      const ap = $("#o-ap", corps), maj = () => { ap.style.backgroundImage = logo ? "url(" + logo + ")" : ""; ap.innerHTML = logo ? "" : TOIT; };
-      maj();
-      $("#o-nom", corps).addEventListener("input", maj);
-      $("#o-logo", corps).addEventListener("change", function (ev) { const f = ev.target.files && ev.target.files[0]; if (f) redimensionner(f, function (u) { if (!u) { $("#o-msg", corps).textContent = "Image trop lourde ou illisible."; return; } logo = u; maj(); }); });
-      $("#o-rst", corps).addEventListener("click", function () { logo = ""; maj(); });
-      $("#o-ok", corps).addEventListener("click", async function () {
-        try { await agir("affichage.modifier_organisation", { nom: $("#o-nom", corps).value, forme: $("#o-forme", corps).value, identifiant: $("#o-id", corps).value, adresse: $("#o-adr", corps).value, fuseau: $("#o-tz", corps).value, langue: $("#o-lg", corps).value, logo: logo });
-          $("#o-msg", corps).textContent = "Enregistré."; await charger(); } catch (e) { $("#o-msg", corps).textContent = e.message; }
-      });
+      await pageSociete(corps);
     } else if (ecran === "vue_info") {
       let s = {}; try { s = await agir("affichage.lire_session", {}); } catch (e) {}
       const nav = (navigator.userAgent.match(/(Firefox|Edg|Chrome|Safari)\/[\d.]+/) || ["—"])[0];
@@ -554,7 +625,7 @@
       const sess = s.sessions || [], f = (t) => (t ? new Date(t * 1000).toLocaleString("fr-FR") : "—");
       const L = [["Version actuelle", s.version || (E.d && E.d.version) || "—"], ["Dernière version stable en dépôt", "—"], ["Version d’installation initiale", "—"], 0,
         ["Session de", s.compte], ["Rôle", s.role], ["Adresse IP", s.ip || "—"], ["Navigateur et adresse", texteDe("um-ou")], ["Sites gérés", texteDe("um-sites")], ["FastPanel", texteDe("um-fp")], ["Organisation", s.organisation || "—"], ["Connecté depuis", f(sess[0] && sess[0].cree)], ["Connexion précédente", f(sess[1] && sess[1].cree)],
-        ["Thème courant", th], ["Gestionnaire de menu", "Barre à groupes + colonne (affichage)"], ["Langue", s.langue || "fr"], ["Fuseau horaire", Intl.DateTimeFormat().resolvedOptions().timeZone], ["Navigateur", nav],
+        ["Thème courant", th], ["Gestionnaire de menu", "Barre à groupes + colonne (affichage)"], ["Langue", navigator.language || "fr"], ["Fuseau horaire", Intl.DateTimeFormat().resolvedOptions().timeZone], ["Navigateur", nav],
         ["Présentation", document.body.classList.contains("allege") ? "Allégée" : "Complète"], ["Écran", screen.width + " × " + screen.height]];
       corps.innerHTML = '<div class="d19-page"><p class="sous">Version du logiciel, puis détail de la session en cours.</p><dl class="d19-info">' + L.map((r) => r ? "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd>" : '<dt></dt><dd><hr class="d19-sep" style="margin:6px 0"></dd>').join("") + "</dl></div>";
     } else if (CASS.console) { corps.innerHTML = '<div class="sh-console"></div>'; CASS.console("affichage", corps.querySelector(".sh-console")); }
@@ -638,7 +709,7 @@
       if ((x = c("#d19-strip [data-sx]"))) { aller(E.g, E.e, x.dataset.sx); return; }
       if ((x = c("#d19-strip [data-fil]"))) { if (+x.dataset.fil === 0) aller(E.g, ""); return; }
       if ((x = c("#d19-strip [data-pin]"))) { basculerPin(); return; }
-      if ((x = c("[data-lat]"))) { const corps = document.querySelector("#tab-" + E.pageNom + " .sh-corps"); if (corps) pageModules(corps, x.dataset.lat); return; }
+      if ((x = c("[data-lat]"))) { const corps = document.querySelector("#tab-" + E.pageNom + " .sh-corps"); if (corps && E.pageAction) E.pageAction(x.dataset.lat); return; }
       if ((x = c("#d19-side .pinned"))) { aller(x.dataset.pg, x.dataset.pe, x.dataset.pv); return; }
       if ((x = c("#d19-side .sub"))) { aller(E.g, x.dataset.e, x.dataset.v); return; }
       if ((x = c("#d19-side .ent"))) {

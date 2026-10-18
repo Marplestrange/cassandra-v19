@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c87642
+# VERSION CN : 0.1.0  #a0ae21
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation, les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit q
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c87642 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a0ae21 ▼▼▼
 """L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation,
 les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit quoi, qui peut régler l'organisation) se vérifie ici : le point d'évolution ne décide d'aucun accès."""
 import base64
@@ -316,21 +316,61 @@ class Affichage(unittest.TestCase):
         self.assertFalse(any(i.startswith("salon") for i in self.entrees(self.disposition(ROOT))))
 
     # ---- l'organisation
+    def modifier(self, section, valeurs=None, qui=ROOT, **plus):
+        return self.ex("affichage.modifier_organisation", qui, section=section, valeurs=valeurs or {}, **plus)
+
     def test_l_organisation_se_regle_par_un_administrateur_seulement(self):
+        self.addCleanup(lambda: [self.modifier(s, reinitialiser=True) for s in ("organisation", "reseaux", "heures", "soustraitants")])
         self.assertEqual(self.ok("affichage.lire_organisation", BEA)["nom"], "Cassandra")
-        refus = self.ex("affichage.modifier_organisation", BEA, nom="Pirate")
-        self.assertNotEqual(refus["statut"], "faite")
-        self.addCleanup(lambda: self.ex("affichage.modifier_organisation", ROOT, reinitialiser=True))
-        self.ok("affichage.modifier_organisation", ROOT, nom="Maison Exemple", fuseau="Europe/Paris", langue="fr", logo=PNG)
-        o = self.ok("affichage.lire_organisation", BEA)
-        self.assertEqual((o["nom"], o["logo"]), ("Maison Exemple", PNG))
-        self.assertEqual(self.disposition(BEA)["organisation"]["nom"], "Maison Exemple")
+        self.assertNotEqual(self.modifier("organisation", {"raison_sociale": "Pirate"}, qui=BEA)["statut"], "faite")
+        r = self.modifier("organisation", {"raison_sociale": "Maison Exemple", "devise": "EUR", "pays": "FR", "telephone": "01 02 03 04 05", "logo": PNG, "logo_carre": PNG})
+        self.assertEqual(r["statut"], "faite", r)
+        o = self.ok("affichage.lire_organisation", ROOT)
+        self.assertEqual((o["organisation"]["raison_sociale"], o["organisation"]["telephone"], o["organisation"]["logo"], o["complet"]), ("Maison Exemple", "01 02 03 04 05", PNG, True))
+        self.assertEqual(self.disposition(BEA)["organisation"], {"nom": "Maison Exemple", "logo": PNG, "logo_carre": PNG})
+
+    def test_un_compte_ne_lit_que_le_nom_et_les_logos(self):
+        self.addCleanup(lambda: [self.modifier(s, reinitialiser=True) for s in ("organisation", "soustraitants")])
+        self.modifier("organisation", {"telephone": "0102030405", "note": "secret de la maison"})
+        self.modifier("soustraitants", {"comptabilite": {"raison_sociale": "Cabinet Dupont", "siren": "123456789"}})
+        vu = self.ok("affichage.lire_organisation", BEA)
+        self.assertEqual(set(vu), {"nom", "logo", "logo_carre", "complet"})
+        self.assertFalse(vu["complet"])
+        self.assertNotIn("secret", str(self.disposition(BEA)["organisation"]))
+        plein = self.ok("affichage.lire_organisation", ROOT)
+        self.assertEqual(plein["soustraitants"]["comptabilite"]["siren"], "123456789")
+
+    def test_chaque_rubrique_s_enregistre_a_part(self):
+        self.addCleanup(lambda: [self.modifier(s, reinitialiser=True) for s in ("organisation", "reseaux", "heures", "soustraitants")])
+        self.assertEqual(self.modifier("reseaux", {"instagram": {"id": "maisondelaboheme", "url": "https://instagram.com/maisondelaboheme"}})["statut"], "faite")
+        self.assertEqual(self.modifier("heures", {"lundi": "9h-18h", "dimanche": "fermé"})["statut"], "faite")
+        self.assertEqual(self.modifier("soustraitants", {"informatique": {"raison_sociale": "Atelier Web", "email": "contact@atelier.fr", "web": "https://atelier.fr"}})["statut"], "faite")
+        o = self.ok("affichage.lire_organisation", ROOT)
+        self.assertEqual(o["reseaux"]["instagram"]["id"], "maisondelaboheme")
+        self.assertEqual(o["reseaux"]["facebook"], {"id": "", "url": ""})
+        self.assertEqual((o["heures"]["lundi"], o["heures"]["mardi"], o["heures"]["dimanche"]), ("9h-18h", "", "fermé"))
+        self.assertEqual(o["soustraitants"]["informatique"]["email"], "contact@atelier.fr")
+        self.assertEqual(o["organisation"]["raison_sociale"], "Cassandra")            # les autres rubriques n'ont pas bougé
+
+    def test_une_rubrique_se_remet_a_son_defaut(self):
+        self.addCleanup(lambda: self.modifier("heures", reinitialiser=True))
+        self.modifier("heures", {"mercredi": "10h-12h"})
+        self.assertEqual(self.modifier("heures", reinitialiser=True)["statut"], "faite")
+        self.assertEqual(self.ok("affichage.lire_organisation", ROOT)["heures"]["mercredi"], "")
 
     def test_une_organisation_invalide_est_refusee(self):
-        for mauvais in ({"nom": ""}, {"nom": "x" * 61}, {"fuseau": "pas un fuseau"}, {"langue": "klingon"}, {"logo": "data:image/svg+xml;base64,PHN2Zz4="},
-                        {"logo": "http://exemple.fr/logo.png"}, {"logo": "data:image/png;base64," + "A" * 200000}):
-            self.assertNotEqual(self.ex("affichage.modifier_organisation", ROOT, **mauvais)["statut"], "faite", mauvais)
-        self.assertEqual(self.ok("affichage.lire_organisation", ROOT)["nom"], "Cassandra")
+        self.addCleanup(lambda: self.modifier("organisation", reinitialiser=True))
+        mauvais = [("organisation", {"raison_sociale": ""}), ("organisation", {"raison_sociale": "x" * 81}), ("organisation", {"pays": "France"}), ("organisation", {"devise": "euro"}),
+                   ("organisation", {"email": "pas-un-mail"}), ("organisation", {"web": "javascript:alert(1)"}), ("organisation", {"inconnu": "x"}),
+                   ("organisation", {"logo": "data:image/svg+xml;base64,PHN2Zz4="}), ("organisation", {"logo_carre": "http://exemple.fr/logo.png"}),
+                   ("organisation", {"logo": "data:image/png;base64," + "A" * 200000}),
+                   ("reseaux", {"myspace": {"id": "x"}}), ("reseaux", {"facebook": {"url": "ftp://x"}}), ("reseaux", {"facebook": {"autre": "x"}}),
+                   ("heures", {"jeudi_soir": "x"}), ("heures", {"lundi": "x" * 61}),
+                   ("soustraitants", {"avocat": {"raison_sociale": "x"}}), ("soustraitants", {"comptabilite": {"inconnu": "x"}}), ("soustraitants", {"comptabilite": {"email": "x"}}),
+                   ("rubrique_inconnue", {"a": "b"})]
+        for section, v in mauvais:
+            self.assertNotEqual(self.modifier(section, v)["statut"], "faite", (section, v))
+        self.assertEqual(self.ok("affichage.lire_organisation", ROOT)["organisation"]["raison_sociale"], "Cassandra")
 
     # ---- les pages épinglées
     def test_une_epingle_appartient_a_son_compte(self):

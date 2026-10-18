@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.2.1  #1afba2
+# VERSION CN : 0.3.0  #4f6e07
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.1 empreinte=1afba2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=4f6e07 ▼▼▼
 [module]
 id = "affichage"
 nom = "Affichage"
-version = "0.2.1"
+version = "0.3.0"
 noyau_min = "0.1.0"
 description = "Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte."
 confiance = "interne"
@@ -150,7 +150,7 @@ masque = ["ip_session"]
 
 [[capacites]]
 id = "lire_organisation"
-libelle = "Lire l'organisation : nom, logo, forme juridique, identifiant légal, adresse, fuseau et langue par défaut"
+libelle = "Lire l'organisation : toutes ses rubriques pour un administrateur, son nom et ses logos pour les autres"
 risque = "lecture"
 
 [[capacites]]
@@ -160,7 +160,7 @@ risque = "lecture"
 
 [[capacites]]
 id = "modifier_organisation"
-libelle = "Régler l'organisation (nom, logo, forme juridique, identifiant légal, adresse, fuseau, langue) : un administrateur seulement"
+libelle = "Régler une rubrique de l'organisation (organisation, réseaux sociaux, heures d'ouverture, sous-traitants) : un administrateur seulement"
 risque = "faible"
 perimetre = ["l'objet organisation"]
 preuve = "relire l'organisation écrite"
