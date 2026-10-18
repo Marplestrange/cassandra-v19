@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #f4932d
+// VERSION CN : 0.1.0  #bf6fe4
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=f4932d ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=bf6fe4 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -195,8 +195,7 @@
     $("#d19-scrim").classList.toggle("on", !!E.side && E.side !== "rail" && isPetit());
     if (E.lateral && E.pageNom) {                                       // la page a SA colonne (les familles de modules)
       const L = E.lateral;
-      sd.innerHTML = "<h2>" + esc(L.titre) + '</h2><div class="d19-lat-sous">' + esc(L.sous) + "</div>"
-        + L.items.map((i) => '<button class="d19-si ent' + (i.id === L.actif ? " on" : "") + '" data-lat="' + esc(i.id) + '" data-tip="' + esc(i.libelle) + '">' + ico(i.icone || "puzzle") + "<span>" + esc(i.libelle) + "</span>" + (i.n == null ? "" : '<span class="d19-nb">' + i.n + "</span>") + "</button>").join("");
+      sd.innerHTML = L.items.map((i) => '<button class="d19-si ent' + (i.id === L.actif ? " on" : "") + '" data-lat="' + esc(i.id) + '" data-tip="' + esc(i.libelle) + '">' + ico(i.icone || "puzzle") + "<span>" + esc(i.libelle) + "</span>" + (i.n == null ? "" : '<span class="d19-nb">' + i.n + "</span>") + "</button>").join("");
       return;
     }
     let h = "";
