@@ -1,0 +1,668 @@
+{
+ "point": "securite.sans_options_cible",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de securite, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "j": [
+     "defaire",
+     "arret"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "defaire",
+     "arret"
+    ]
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "j": [
+     "collecteur"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "collecteur"
+    ]
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "j": [
+     "ok",
+     "ok",
+     "ok"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "ok",
+     "ok",
+     "ok"
+    ]
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "j": [
+     3,
+     1,
+     2
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     3,
+     1,
+     2
+    ]
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "j": [
+     0.5,
+     1.5
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     0.5,
+     1.5
+    ]
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "j": [
+     "192.168.1.199"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "192.168.1.199"
+    ]
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "j": "--reject-with"
+   },
+   "sortie": {
+    "valeur": [
+     "-",
+     "-",
+     "r",
+     "e",
+     "j",
+     "e",
+     "c",
+     "t",
+     "-",
+     "w",
+     "i",
+     "t",
+     "h"
+    ]
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "j": {
+     "installe": true,
+     "convient": true,
+     "resultat": {
+      "score": 62,
+      "avertissements": [
+       {
+        "id": "X"
+       }
+      ],
+      "suggestions_n": 31
+     }
+    }
+   },
+   "sortie": {
+    "valeur": [
+     "installe",
+     "convient",
+     "resultat"
+    ]
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "j": [
+     {
+      "robot": "GPTBot",
+      "n": 700
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "robot": "GPTBot",
+      "n": 700
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "j": [
+     "Appli"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "Appli"
+    ]
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "j": [
+     "faire",
+     "ssh_mdp"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "faire",
+     "ssh_mdp"
+    ]
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "j": "--to-source"
+   },
+   "sortie": {
+    "valeur": [
+     "-",
+     "-",
+     "t",
+     "o",
+     "-",
+     "s",
+     "o",
+     "u",
+     "r",
+     "c",
+     "e"
+    ]
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "j": [
+     "--reject-with"
+    ]
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "j": [
+     {
+      "jour": "2026-10-16",
+      "heure": 3,
+      "attaques": 42
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "jour": "2026-10-16",
+      "heure": 3,
+      "attaques": 42
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "j": {
+     "score": 62,
+     "avertissements": [
+      {
+       "id": "X"
+      }
+     ],
+     "suggestions_n": 31
+    }
+   },
+   "sortie": {
+    "valeur": [
+     "score",
+     "avertissements",
+     "suggestions_n"
+    ]
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "j": [
+     "root"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "root"
+    ]
+   }
+  },
+  {
+   "cas": "cas 17",
+   "entree": {
+    "j": [
+     {
+      "image": "nginx:1",
+      "critiques": 2,
+      "hautes": 5
+     },
+     {
+      "image": "x",
+      "erreur": "boom"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "image": "nginx:1",
+      "critiques": 2,
+      "hautes": 5
+     },
+     {
+      "image": "x",
+      "erreur": "boom"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 18",
+   "entree": {
+    "j": "--set-xmark"
+   },
+   "sortie": {
+    "valeur": [
+     "-",
+     "-",
+     "s",
+     "e",
+     "t",
+     "-",
+     "x",
+     "m",
+     "a",
+     "r",
+     "k"
+    ]
+   }
+  },
+  {
+   "cas": "cas 19",
+   "entree": {
+    "j": [
+     "agir"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "agir"
+    ]
+   }
+  },
+  {
+   "cas": "cas 20",
+   "entree": {
+    "j": {
+     "images": [
+      {
+       "image": "a",
+       "critiques": 2,
+       "corrigeables": 1
+      },
+      {
+       "image": "b",
+       "critiques": 0,
+       "corrigeables": 0
+      }
+     ]
+    }
+   },
+   "sortie": {
+    "valeur": [
+     "images"
+    ]
+   }
+  },
+  {
+   "cas": "cas 21",
+   "entree": {
+    "j": [
+     "danger",
+     "danger",
+     "danger"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "danger",
+     "danger",
+     "danger"
+    ]
+   }
+  },
+  {
+   "cas": "cas 22",
+   "entree": {
+    "j": [
+     {
+      "site": "a.fr",
+      "n": 4000,
+      "b": 1000
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "site": "a.fr",
+      "n": 4000,
+      "b": 1000
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 23",
+   "entree": {
+    "j": {
+     "shells": [
+      "root"
+     ],
+     "sudo": []
+    }
+   },
+   "sortie": {
+    "valeur": [
+     "shells",
+     "sudo"
+    ]
+   }
+  },
+  {
+   "cas": "cas 24",
+   "entree": {
+    "j": "--to-ports"
+   },
+   "sortie": {
+    "valeur": [
+     "-",
+     "-",
+     "t",
+     "o",
+     "-",
+     "p",
+     "o",
+     "r",
+     "t",
+     "s"
+    ]
+   }
+  },
+  {
+   "cas": "cas 25",
+   "entree": {
+    "j": [
+     {
+      "fichier": "/tmp/x",
+      "menace": "Eicar"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "fichier": "/tmp/x",
+      "menace": "Eicar"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 26",
+   "entree": {
+    "j": [
+     "—"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "—"
+    ]
+   }
+  },
+  {
+   "cas": "cas 27",
+   "entree": {
+    "j": [
+     "droits",
+     "comptes",
+     "securite"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "droits",
+     "comptes",
+     "securite"
+    ]
+   }
+  },
+  {
+   "cas": "cas 28",
+   "entree": {
+    "j": [
+     {
+      "ip": "198.51.100.7",
+      "n": 300,
+      "jours": 5,
+      "premier": "2026-10-08",
+      "dernier": "2026-10-16"
+     },
+     {
+      "ip": "192.168.1.9",
+      "n": 20,
+      "jours": 1,
+      "premier": "2026-10-16",
+      "dernier": "2026-10-16"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "ip": "198.51.100.7",
+      "n": 300,
+      "jours": 5,
+      "premier": "2026-10-08",
+      "dernier": "2026-10-16"
+     },
+     {
+      "ip": "192.168.1.9",
+      "n": 20,
+      "jours": 1,
+      "premier": "2026-10-16",
+      "dernier": "2026-10-16"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 29",
+   "entree": {
+    "j": [
+     "192.168.1.0/24"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "192.168.1.0/24"
+    ]
+   }
+  },
+  {
+   "cas": "cas 30",
+   "entree": {
+    "j": [
+     "installer",
+     "lynis"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "installer",
+     "lynis"
+    ]
+   }
+  },
+  {
+   "cas": "cas 31",
+   "entree": {
+    "j": "--to-destination"
+   },
+   "sortie": {
+    "valeur": [
+     "-",
+     "-",
+     "t",
+     "o",
+     "-",
+     "d",
+     "e",
+     "s",
+     "t",
+     "i",
+     "n",
+     "a",
+     "t",
+     "i",
+     "o",
+     "n"
+    ]
+   }
+  },
+  {
+   "cas": "cas 32",
+   "entree": {
+    "j": [
+     "3 / 3"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "3 / 3"
+    ]
+   }
+  },
+  {
+   "cas": "cas 33",
+   "entree": {
+    "j": [
+     {
+      "fichier": "f",
+      "menace": "m"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "fichier": "f",
+      "menace": "m"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 34",
+   "entree": {
+    "j": {
+     "passwordauthentication": "no",
+     "permitrootlogin": "prohibit-password",
+     "x11forwarding": "no",
+     "port": "22"
+    }
+   },
+   "sortie": {
+    "valeur": [
+     "passwordauthentication",
+     "permitrootlogin",
+     "x11forwarding",
+     "port"
+    ]
+   }
+  },
+  {
+   "cas": "cas 35",
+   "entree": {
+    "j": [
+     "defaire",
+     "ssh_mdp"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "defaire",
+     "ssh_mdp"
+    ]
+   }
+  },
+  {
+   "cas": "cas 36",
+   "entree": {
+    "j": [
+     "un",
+     "deux",
+     "trois",
+     "quatre"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "un",
+     "deux",
+     "trois",
+     "quatre"
+    ]
+   }
+  }
+ ]
+}

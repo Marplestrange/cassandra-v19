@@ -1,0 +1,173 @@
+{
+ "point": "agents.coherents",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de agents, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "msgs": [
+     {
+      "role": "tool",
+      "tool_call_id": "z",
+      "content": "orpheline"
+     },
+     {
+      "role": "user",
+      "content": "a"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       },
+       {
+        "id": "2",
+        "type": "function",
+        "function": {
+         "name": "y",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "r1"
+     },
+     {
+      "role": "assistant",
+      "content": "fin"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "user",
+      "content": "a"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       },
+       {
+        "id": "2",
+        "type": "function",
+        "function": {
+         "name": "y",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "r1"
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "2",
+      "content": "(résultat perdu : l'appel n'a pas abouti)"
+     },
+     {
+      "role": "assistant",
+      "content": "fin"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "msgs": [
+     {
+      "id": "1",
+      "type": "function",
+      "function": {
+       "name": "x",
+       "arguments": "{}"
+      }
+     },
+     {
+      "id": "2",
+      "type": "function",
+      "function": {
+       "name": "y",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "1",
+      "type": "function",
+      "function": {
+       "name": "x",
+       "arguments": "{}"
+      }
+     },
+     {
+      "id": "2",
+      "type": "function",
+      "function": {
+       "name": "y",
+       "arguments": "{}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "msgs": [
+     {
+      "a": 1
+     },
+     {
+      "a": 2
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": 1
+     },
+     {
+      "a": 2
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "msgs": []
+   },
+   "sortie": {
+    "valeur": []
+   }
+  }
+ ]
+}

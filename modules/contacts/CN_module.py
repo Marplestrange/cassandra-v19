@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.1  #79dac1
+# VERSION CN : 0.3.2  #dda62d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet d'adresses.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=79dac1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=dda62d ▼▼▼
 """Le carnet d'adresses.
 
 Porté de la V18 (`contact_*`, `contacts_*`, vCard, CSV), avec ses leçons :
@@ -116,14 +116,8 @@ def norm_domaine(d):
 
 
 def remplissage(c):
-    """Combien cette fiche porte d'informations : sert à choisir laquelle garder."""
-    n = sum(1 for k in ("display_name", "company", "job_title", "phone", "mobile", "address", "website", "notes", "anniversaire", "vault_ref") if str(c.get(k) or "").strip())
-    n += len(c.get("emails") or [])
-    if c.get("photo"):
-        n += 2
-    if c.get("favorite"):
-        n += 3
-    return n
+    """Combien cette fiche porte d'informations : sert à choisir laquelle garder. Le calcul est un POINT D'ÉVOLUTION : points/EC_remplissage.py."""
+    return _appeler_point("remplissage", {"c": c})["valeur"]
 
 
 def meilleure(a, b):

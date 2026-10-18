@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.2  #74dfe8
+# VERSION CN : 0.3.3  #76bf52
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes, le journal, les audits.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=74dfe8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.3 empreinte=76bf52 ▼▼▼
 """La sécurité : les gestes, le journal, les audits.
 
 Porté de la V18 (`securite_*`, `_sec_gestes`), avec ses leçons :
@@ -51,6 +51,8 @@ GESTES = [
 
 
 def brancher(ctx):
+    im._point = ctx.point
+    analyse._point = ctx.point
     db = ctx.stockage
 
     def releves(delai=120):

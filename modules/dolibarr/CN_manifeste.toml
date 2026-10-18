@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.3.0  #a089cd
+# VERSION CN : 0.3.1  #d421d9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=a089cd ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=d421d9 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
-version = "0.3.0"
+version = "0.3.1"
 noyau_min = "0.1.0"
 description = "Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur."
 confiance = "interne"
@@ -217,3 +217,11 @@ privileges = ["la clé d'API de Dolibarr donne les droits de son utilisateur : e
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "egaux"
+libelle = "Dolibarr rend souvent des nombres en texte (« 1 » pour 1) : on compare ce qui compte (extrait automatiquement de CN_module.py)"
+contrat = "1.0"
+reference = "points/EC_egaux"
+fonction = "point_egaux"
+runtime = "python"

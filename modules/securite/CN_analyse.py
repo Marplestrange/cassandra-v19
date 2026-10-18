@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.2  #2c0d30
+# VERSION CN : 0.3.3  #b2077d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'analyse de sécurité : des relevés BRUTS de la machine (commandes/CN_mesurer) -> exposition, pare-feu, accès, défenses, mises à jour, verdict. Fonctions pures, testées sans machine.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=2c0d30 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.3 empreinte=b2077d ▼▼▼
 """L'analyse de sécurité : des relevés BRUTS de la machine (commandes/CN_mesurer) -> exposition, pare-feu, accès, défenses, mises à jour, verdict. Fonctions pures, testées sans machine.
 
 Porté de la V18 (`_sec_*`, `_pf_*`), avec les leçons payées en service :
@@ -46,48 +46,33 @@ TS6 = ipaddress.ip_network("fd7a:115c:a1e0::/48")
 CIBLES = {"ACCEPT": "autorise", "DROP": "refuse", "REJECT": "rejette", "RETURN": "rend la main", "LOG": "note dans le journal"}
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 def portee(adresse):
-    """machine | tailscale | reseau | public | tout — pour une adresse d'écoute de `ss`."""
-    a = str(adresse or "").strip().strip("[]").split("%")[0]
-    if a in ("*", "0.0.0.0", "::", ""):
-        return "tout"
-    try:
-        ip = ipaddress.ip_address(a)
-    except ValueError:
-        return "tout"
-    if ip.is_loopback:
-        return "machine"
-    if (ip.version == 4 and ip in TS) or (ip.version == 6 and ip in TS6):
-        return "tailscale"
-    if ip.is_private or ip.is_link_local:
-        return "reseau"
-    return "public"
+    """machine | tailscale | reseau | public | tout — pour une adresse d'écoute de `ss`. Le calcul est un POINT D'ÉVOLUTION : points/EC_portee.py."""
+    return _appeler_point("portee", {"adresse": adresse})["valeur"]
 
 
 def adresses_machine(texte):
-    """Les adresses publiques que porte la machine elle-même ; sans v4 publique, elle est derrière une box."""
-    v4, v6, locaux, ips = [], [], [], []
-    for ligne in (texte or "").splitlines():
-        m = re.search(r"\binet6?\s+([0-9a-fA-F:.]+)/", ligne)
-        if not m:
-            continue
-        c = re.search(r"\binet\s+([0-9.]+/\d+)", ligne)
-        if c:
-            try:
-                n = ipaddress.ip_network(c.group(1), strict=False)
-                if n.is_private and not n.is_loopback and n.network_address not in TS and " docker" not in ligne and " br-" not in ligne:
-                    if str(n) not in locaux:
-                        locaux.append(str(n))
-                    ips.append(c.group(1).split("/")[0])
-            except (ValueError, TypeError):
-                pass
-        try:
-            ip = ipaddress.ip_address(m.group(1))
-        except ValueError:
-            continue
-        if ip.is_global and not (ip.version == 4 and ip in TS) and not (ip.version == 6 and ip in TS6):
-            (v4 if ip.version == 4 else v6).append(str(ip))
-    return {"public_v4": v4, "public_v6": v6, "reseaux_locaux": locaux, "ips_locales": ips}
+    """Les adresses publiques que porte la machine elle-même ; sans v4 publique, elle est derrière une box. Le calcul est un POINT D'ÉVOLUTION : points/EC_adresses_machine.py."""
+    return _appeler_point("adresses_machine", {"texte": texte})["valeur"]
 
 
 # ── le pare-feu du noyau (iptables -S) ──────────────────────────────────────────────────────────────────────────
@@ -133,18 +118,8 @@ _OPTIONS_CIBLE = ("--reject-with", "--log-prefix", "--log-level", "--to-destinat
 
 
 def _sans_options_cible(j):
-    out, saute = [], False
-    for x in j:
-        if saute:
-            saute = False
-            continue
-        if x in _OPTIONS_CIBLE:
-            saute = True
-            continue
-        if x in ("--log-uid", "--log-tcp-options", "--log-ip-options"):
-            continue
-        out.append(x)
-    return out
+    """_sans_options_cible. Le calcul est un POINT D'ÉVOLUTION : points/EC_sans_options_cible.py."""
+    return _appeler_point("sans_options_cible", {"j": j})["valeur"]
 
 
 def pf_lisible(j):
@@ -241,21 +216,8 @@ def pf_admis(v4, port, proto):
 
 
 def docker_publies(texte):
-    """Les ports publiés par Docker : ils passent par FORWARD, à côté d'INPUT — un pare-feu qui ne regarde qu'INPUT ne les voit pas."""
-    out = []
-    for l in (texte or "").splitlines():
-        try:
-            j = shlex.split(l)
-        except ValueError:
-            continue
-        if "DNAT" not in j:
-            continue
-        d, _ = _val(j, "-d")
-        vers, _ = _val(j, "--to-destination")
-        p, _ = _val(j, "-p")
-        ports = _ports(j)
-        out.append({"port": ports[0][0] if ports else 0, "proto": p or "tcp", "vers": vers, "portee": "machine" if d.startswith("127.") else ("tout" if not d else d)})
-    return out
+    """Les ports publiés par Docker : ils passent par FORWARD, à côté d'INPUT — un pare-feu qui ne regarde qu'INPUT ne les voit pas. Le calcul est un POINT D'ÉVOLUTION : points/EC_docker_publies.py."""
+    return _appeler_point("docker_publies", {"texte": texte})["valeur"]
 
 
 def pf_accord(regles_panneau, ch, politique_panneau, politique_noyau, refuse_tout):

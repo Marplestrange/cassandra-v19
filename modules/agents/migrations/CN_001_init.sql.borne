@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.1  #0926f5
+# VERSION CN : 0.1.2  #0926f5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Migration 001_init.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)

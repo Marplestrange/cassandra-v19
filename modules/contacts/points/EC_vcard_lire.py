@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.1)  #b4b46b
+# VERSION EC : EC0 (référence 0.3.2)  #b4b46b
 # HÔTE CN    : CN_module.py · vcard_lire @1.0
 # RÔLE       : lit un fichier vCard (RFC 6350) et rend les fiches qu'il contient, champ par champ.
 # MÉTHODE    : fonction pure : dépliage des lignes, puis un petit automate par carte ; tolérante, un champ inconnu est ignoré.

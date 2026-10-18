@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.1)  #eaa43e
+# VERSION EC : EC0 (référence 0.3.2)  #eaa43e
 # HÔTE CN    : CN_module.py · vcard_ecrire @1.0
 # RÔLE       : écrit des fiches au format vCard 3.0, échappées et repliées à 75 octets.
 # MÉTHODE    : fonction pure : une suite de lignes par fiche, chacune échappée puis repliée ; les champs vides sont omis.

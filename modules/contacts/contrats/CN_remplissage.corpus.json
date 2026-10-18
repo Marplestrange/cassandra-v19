@@ -1,0 +1,255 @@
+{
+ "point": "contacts.remplissage",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de contacts, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "c": {
+     "photo": " ",
+     "emails": "company",
+     "favorite": "display_name"
+    }
+   },
+   "sortie": {
+    "valeur": 12
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "c": {
+     "favorite": "emails",
+     "photo": [
+      "a",
+      "b"
+     ]
+    }
+   },
+   "sortie": {
+    "valeur": 5
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "c": {
+     "favorite": "voir",
+     "emails": "Alice Martin",
+     "photo": "Bonjour le monde"
+    }
+   },
+   "sortie": {
+    "valeur": 17
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "c": {
+     "emails": "abc",
+     "favorite": "Des fiches saisies à des moments différents : sinon nom + numéro identiques les feraient passer pour des jumelles d'import.",
+     "photo": "a"
+    }
+   },
+   "sortie": {
+    "valeur": 8
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "c": {
+     "photo": "Des fiches saisies à des moments différents : sinon nom + numéro identiques les feraient passer pour des jumelles d'import.",
+     "emails": "echec",
+     "favorite": "phone"
+    }
+   },
+   "sortie": {
+    "valeur": 10
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "c": {
+     "emails": "__main__",
+     "favorite": {
+      "a": 1
+     },
+     "photo": "__main__"
+    }
+   },
+   "sortie": {
+    "valeur": 13
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "c": {
+     "photo": "creer",
+     "emails": "vault_ref",
+     "favorite": "a"
+    }
+   },
+   "sortie": {
+    "valeur": 14
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "c": {
+     "photo": "vault_ref",
+     "emails": "Des fiches saisies à des moments différents : sinon nom + numéro identiques les feraient passer pour des jumelles d'import.",
+     "favorite": "resultat"
+    }
+   },
+   "sortie": {
+    "valeur": 128
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "c": {
+     "photo": "job_title",
+     "emails": [
+      "a",
+      "b"
+     ],
+     "favorite": "website"
+    }
+   },
+   "sortie": {
+    "valeur": 7
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "c": {
+     "photo": "__main__",
+     "emails": "mobile",
+     "favorite": "ligne1\nligne2\n"
+    }
+   },
+   "sortie": {
+    "valeur": 11
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "c": {
+     "photo": 1,
+     "favorite": "mobile",
+     "emails": "Bonjour le monde"
+    }
+   },
+   "sortie": {
+    "valeur": 21
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "c": {
+     "photo": "address",
+     "favorite": "abc",
+     "emails": "a"
+    }
+   },
+   "sortie": {
+    "valeur": 6
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "c": {
+     "photo": "ligne1\nligne2\n"
+    }
+   },
+   "sortie": {
+    "valeur": 2
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "c": {
+     "emails": {
+      "a": 1
+     },
+     "photo": "utf-8"
+    }
+   },
+   "sortie": {
+    "valeur": 3
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "c": {
+     "photo": null,
+     "favorite": " ",
+     "emails": "anniversaire"
+    }
+   },
+   "sortie": {
+    "valeur": 15
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "c": {
+     "favorite": "modifier",
+     "photo": 0,
+     "emails": "humain"
+    }
+   },
+   "sortie": {
+    "valeur": 9
+   }
+  },
+  {
+   "cas": "cas 17",
+   "entree": {
+    "c": {
+     "favorite": "phone",
+     "emails": "Bonjour le monde"
+    }
+   },
+   "sortie": {
+    "valeur": 19
+   }
+  },
+  {
+   "cas": "cas 18",
+   "entree": {
+    "c": {
+     "trouvee": false
+    }
+   },
+   "sortie": {
+    "valeur": 0
+   }
+  },
+  {
+   "cas": "cas 19",
+   "entree": {
+    "c": {
+     "emails": "a"
+    }
+   },
+   "sortie": {
+    "valeur": 1
+   }
+  }
+ ]
+}

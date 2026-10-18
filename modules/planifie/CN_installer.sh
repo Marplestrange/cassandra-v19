@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.2  #facec8
+# VERSION CN : 0.1.3  #facec8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Planifie pose, À ROOT : trois petites commandes que le courtier peut lancer (et rien d'autre), l'enrobage des tâches, et les dossiers que l'enrobage écrit.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=facec8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=facec8 ▼▼▼
 # Planifie pose, À ROOT : trois petites commandes que le courtier peut lancer (et rien d'autre), l'enrobage des tâches, et les dossiers que l'enrobage écrit.
 set -eu
 D="${CASSANDRA_MODULE_DIR:?le dossier du module}"

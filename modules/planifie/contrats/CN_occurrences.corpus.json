@@ -1,0 +1,294 @@
+{
+ "point": "planifie.occurrences",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de planifie, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "expr": "*/5 * * * *",
+    "du": "2026-10-12",
+    "au": "2026-10-13",
+    "max_par_jour": 4
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "at": "2026-10-12 00:00",
+      "recurrent": 288
+     },
+     {
+      "at": "2026-10-13 00:00",
+      "recurrent": 288
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "expr": "0 8,20 * * *",
+    "du": "2026-10-12",
+    "au": "2026-10-12",
+    "max_par_jour": 4
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "at": "2026-10-12 08:00",
+      "recurrent": 0
+     },
+     {
+      "at": "2026-10-12 20:00",
+      "recurrent": 0
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "expr": "@midnight",
+    "du": [
+     "cassandra"
+    ],
+    "au": 1,
+    "max_par_jour": -2.25
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "expr": 0.0,
+    "du": [
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ],
+    "au": [
+     {
+      "actif": 1,
+      "commande": "mysqldump a",
+      "horaire": "0 3 * * *",
+      "ref": "a",
+      "id": 1
+     },
+     {
+      "actif": 1,
+      "commande": "rsync b",
+      "horaire": "0 3 * * *",
+      "ref": "b",
+      "id": 2
+     },
+     {
+      "actif": 1,
+      "commande": "tar c",
+      "horaire": "0 3 * * *",
+      "ref": "c",
+      "id": 3
+     },
+     {
+      "actif": 1,
+      "commande": "echo d",
+      "horaire": "0 3 * * *",
+      "ref": "d",
+      "id": 4
+     },
+     {
+      "actif": 1,
+      "commande": "rsync e",
+      "horaire": "*/5 * * * *",
+      "ref": "e",
+      "id": 5
+     }
+    ],
+    "max_par_jour": 45
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "expr": "@hourly",
+    "du": [
+     100,
+     300
+    ],
+    "au": [
+     {
+      "a": 1
+     },
+     {
+      "a": 2
+     }
+    ],
+    "max_par_jour": 0.6666666666666666
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "expr": null,
+    "du": [
+     "/bin/true",
+     "/usr/local/bin/dump.sh"
+    ],
+    "au": [
+     100,
+     300
+    ],
+    "max_par_jour": 6
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "expr": "@monthly",
+    "du": [
+     "introuvable"
+    ],
+    "au": [
+     "/x"
+    ],
+    "max_par_jour": 1760000000
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "expr": "@hourly",
+    "du": [
+     "@monthly"
+    ],
+    "au": [
+     "/opt/absent.sh"
+    ],
+    "max_par_jour": 300
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "expr": "0 0 * * 0",
+    "du": [
+     "2026-10-12 08:00",
+     "2026-10-12 20:00"
+    ],
+    "au": {
+     "root": "# sauvegardes\nMAILTO=admin@x.fr\n0 2 * * * /usr/local/bin/dump.sh\n"
+    },
+    "max_par_jour": 4
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "expr": "@daily",
+    "du": 0.5,
+    "au": [
+     {
+      "a": 1
+     },
+     {
+      "a": 2
+     }
+    ],
+    "max_par_jour": 5
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "expr": null,
+    "du": [
+     "@monthly"
+    ],
+    "au": [
+     288,
+     288
+    ],
+    "max_par_jour": 1760000000
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "expr": "0 0 1 1 *",
+    "du": 2,
+    "au": [
+     {
+      "a": 1
+     },
+     {
+      "a": 2
+     }
+    ],
+    "max_par_jour": 60
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "expr": false,
+    "du": [
+     "/opt/absent.sh"
+    ],
+    "au": "@monthly",
+    "max_par_jour": 24
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "expr": 0,
+    "du": [
+     100
+    ],
+    "au": [
+     "@annually"
+    ],
+    "max_par_jour": 24
+   },
+   "sortie": {
+    "valeur": []
+   }
+  }
+ ]
+}

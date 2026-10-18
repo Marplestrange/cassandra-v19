@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.0  #125f0d
+# VERSION CN : 0.1.1  #125f0d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : role_du_dossier.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

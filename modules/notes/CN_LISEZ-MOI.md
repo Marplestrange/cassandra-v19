@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : notes -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION CN : 0.1.1  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : Notes -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=db0095 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.1 empreinte=db0095 ▼▼▼ -->
 # Notes
 
 Le carnet d'un compte : numéros stables (`N-0007`, jamais réattribués), renvois `[[N-0007]]` / `[[projet:12]]` avec rétro-liens, dossiers (deux niveaux), étiquettes, projet, état, relecture, cases à cocher liées aux tâches, versions, corbeille, fusion, note du jour, liens de partage, export, archive, import.

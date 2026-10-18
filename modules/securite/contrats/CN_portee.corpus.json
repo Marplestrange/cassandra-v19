@@ -1,0 +1,133 @@
+{
+ "point": "securite.portee",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de securite, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "adresse": "192.168.1.199"
+   },
+   "sortie": {
+    "valeur": "reseau"
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "adresse": "198.51.100.9"
+   },
+   "sortie": {
+    "valeur": "public"
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "adresse": "100.64.0.10"
+   },
+   "sortie": {
+    "valeur": "tailscale"
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "adresse": "127.0.0.1"
+   },
+   "sortie": {
+    "valeur": "machine"
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "adresse": "0.0.0.0"
+   },
+   "sortie": {
+    "valeur": "tout"
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "adresse": "outils"
+   },
+   "sortie": {
+    "valeur": "tout"
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "adresse": "[::1]"
+   },
+   "sortie": {
+    "valeur": "machine"
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "adresse": "*"
+   },
+   "sortie": {
+    "valeur": "tout"
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "adresse": "box"
+   },
+   "sortie": {
+    "valeur": "tout"
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "adresse": "3 adresses bannies ici"
+   },
+   "sortie": {
+    "valeur": "tout"
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "adresse": "https://exemple.test/x?y=1"
+   },
+   "sortie": {
+    "valeur": "tout"
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "adresse": "ip6tables"
+   },
+   "sortie": {
+    "valeur": "tout"
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "adresse": "mysql_local"
+   },
+   "sortie": {
+    "valeur": "tout"
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "adresse": "impossible"
+   },
+   "sortie": {
+    "valeur": "tout"
+   }
+  }
+ ]
+}

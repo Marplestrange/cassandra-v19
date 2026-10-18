@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agenda
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f625cf
+# VERSION CN : 0.1.1  #f625cf
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : ical_lire.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

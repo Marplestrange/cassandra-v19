@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.0  #00ade6
+# VERSION CN : 0.1.1  #00ade6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=00ade6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=00ade6 ▼▼▼
 """Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 
 Porté de la V18 (`_imap_*`, `itare_mail_*`, `mail_*`, `_courrier_*`), avec ses leçons :

@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5075f2
+# VERSION CN : 0.1.1  #5075f2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : html_en_texte.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

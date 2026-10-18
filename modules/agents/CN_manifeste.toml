@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.1  #a39216
+# VERSION CN : 0.1.2  #170388
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=a39216 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=170388 ▼▼▼
 [module]
 id = "agents"
 nom = "Agents"
-version = "0.1.1"
+version = "0.1.2"
 noyau_min = "0.1.0"
 description = "Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul."
 confiance = "interne"
@@ -182,4 +182,12 @@ libelle = "prompt_systeme (extrait automatiquement de CN_outils.py)"
 contrat = "1.0"
 reference = "points/EC_prompt_systeme"
 fonction = "point_prompt_systeme"
+runtime = "python"
+
+[[points_evolution]]
+id = "coherents"
+libelle = "Une conversation que l'API accepte : chaque message assistant porteur de `tool_calls` est suivi d'une réponse `tool` pour CHACUN de ses identifiants, et aucune réponse `tool` n'est orpheline (extrait automatiquement de CN_outils.py)"
+contrat = "1.0"
+reference = "points/EC_coherents"
+fonction = "point_coherents"
 runtime = "python"

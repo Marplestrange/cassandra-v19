@@ -1,0 +1,209 @@
+{
+ "point": "securite.adresses_machine",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de securite, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "texte": "2: enp3s0    inet 192.168.1.199/24 brd 192.168.1.255 scope global enp3s0\n3: tailscale0    inet 100.64.0.10/32 scope global tailscale0\n"
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [],
+     "public_v6": [],
+     "reseaux_locaux": [
+      "192.168.1.0/24"
+     ],
+     "ips_locales": [
+      "192.168.1.199"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "texte": "2: eth0    inet 198.51.100.9/32 scope global eth0\n1: lo inet 127.0.0.1/8 scope host lo\n"
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [
+      "198.51.100.9"
+     ],
+     "public_v6": [],
+     "reseaux_locaux": [],
+     "ips_locales": []
+    }
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "texte": "Cassandra confinée"
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [],
+     "public_v6": [],
+     "reseaux_locaux": [],
+     "ips_locales": []
+    }
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "texte": "<b>gras</b> et <i>x</i>"
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [],
+     "public_v6": [],
+     "reseaux_locaux": [],
+     "ips_locales": []
+    }
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "texte": "unite"
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [],
+     "public_v6": [],
+     "reseaux_locaux": [],
+     "ips_locales": []
+    }
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "texte": "Un outil de sécurité a trouvé un problème."
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [],
+     "public_v6": [],
+     "reseaux_locaux": [],
+     "ips_locales": []
+    }
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "texte": "-P INPUT DROP\n-N fastpanel_rules\n-A INPUT -i lo -j ACCEPT\n-A INPUT -j fastpanel_rules\n-A fastpanel_rules -p tcp -m tcp --dport 443 -j ACCEPT\n"
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [],
+     "public_v6": [],
+     "reseaux_locaux": [],
+     "ips_locales": []
+    }
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "texte": "oui"
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [],
+     "public_v6": [],
+     "reseaux_locaux": [],
+     "ips_locales": []
+    }
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "texte": "udp"
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [],
+     "public_v6": [],
+     "reseaux_locaux": [],
+     "ips_locales": []
+    }
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "texte": "/var/www/x/y.txt"
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [],
+     "public_v6": [],
+     "reseaux_locaux": [],
+     "ips_locales": []
+    }
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "texte": "https://exemple.test/x?y=1"
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [],
+     "public_v6": [],
+     "reseaux_locaux": [],
+     "ips_locales": []
+    }
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "texte": "ips_localesx"
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [],
+     "public_v6": [],
+     "reseaux_locaux": [],
+     "ips_locales": []
+    }
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "texte": "Cassandra"
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [],
+     "public_v6": [],
+     "reseaux_locaux": [],
+     "ips_locales": []
+    }
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "texte": "non"
+   },
+   "sortie": {
+    "valeur": {
+     "public_v4": [],
+     "public_v6": [],
+     "reseaux_locaux": [],
+     "ips_locales": []
+    }
+   }
+  }
+ ]
+}

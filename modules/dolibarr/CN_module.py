@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.3.0  #1182c7
+# VERSION CN : 0.3.1  #17111b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=1182c7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=17111b ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -79,6 +79,25 @@ class PontErreur(Exception):
     def __init__(self, message, code=None, genre="erreur"):
         super().__init__(message)
         self.code, self.genre = code, genre
+
+
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
 
 
 # ------------------------------------------------------------------ configuration
@@ -241,13 +260,8 @@ def _impayees(conf):
 
 
 def _egaux(a, b):
-    """Dolibarr rend souvent des nombres en texte (« 1 » pour 1) : on compare ce qui compte."""
-    if a is None or b is None:
-        return a is b or str(a or "") == str(b or "")
-    try:
-        return abs(float(a) - float(b)) < 1e-6
-    except (TypeError, ValueError):
-        return str(a) == str(b)
+    """Dolibarr rend souvent des nombres en texte (« 1 » pour 1) : on compare ce qui compte. Le calcul est un POINT D'ÉVOLUTION : points/EC_egaux.py."""
+    return _appeler_point("egaux", {"a": a, "b": b})["valeur"]
 
 
 def _verifier_champs(champs, permis, ce_quon_fait):
@@ -273,6 +287,8 @@ def _champs(objet, champs):
 
 # ------------------------------------------------------------------ le module
 def brancher(ctx):
+    global _point
+    _point = ctx.point
     global _CTX
     _CTX = ctx
     etat = {"comptes_t": 0.0}

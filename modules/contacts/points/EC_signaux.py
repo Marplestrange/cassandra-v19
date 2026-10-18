@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.1)  #00bf20
+# VERSION EC : EC0 (référence 0.3.2)  #00bf20
 # HÔTE CN    : CN_module.py · signaux @1.0
 # RÔLE       : trouve toutes les paires de fiches qui se ressemblent (adresse, nom, numéro, société, site) et dit ce qui les motive.
 # MÉTHODE    : fonction pure ; par SEAUX (une clé = un seau) plutôt que chacun contre chacun : mille fiches feraient un demi-million de comparaisons ; un seau de plus de huit fiches est ignoré.

@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.1  #e902ae
+# VERSION CN : 0.3.2  #13ea32
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=e902ae ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=13ea32 ▼▼▼
 [module]
 id = "contacts"
 nom = "Carnet d'adresses"
-version = "0.3.1"
+version = "0.3.2"
 noyau_min = "0.1.0"
 description = "Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi."
 confiance = "interne"
@@ -327,4 +327,12 @@ libelle = "Le nom, comparable : aplati, débarrassé de sa forme juridique. Un n
 contrat = "1.0"
 reference = "points/EC_norm_nom"
 fonction = "point_norm_nom"
+runtime = "python"
+
+[[points_evolution]]
+id = "remplissage"
+libelle = "Combien cette fiche porte d'informations : sert à choisir laquelle garder (extrait automatiquement de CN_module.py)"
+contrat = "1.0"
+reference = "points/EC_remplissage"
+fonction = "point_remplissage"
 runtime = "python"

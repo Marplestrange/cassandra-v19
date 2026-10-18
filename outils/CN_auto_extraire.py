@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7fa31f
+# VERSION CN : 0.1.0  #474bfe
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'extracteur proactif : trouve dans les fichiers CN des modules les fonctions éligibles à l'évolution (EC) et les en sort, sans qu'on les désigne.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7fa31f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=474bfe ▼▼▼
 """L'extracteur proactif : trouve dans les fichiers CN des modules les fonctions éligibles à l'évolution (EC) et les en sort, sans qu'on les désigne.
 
    python outils/CN_auto_extraire.py lister   [--module M]            ce qui est éligible, et pourquoi le reste ne l'est pas (n'écrit rien)
@@ -493,7 +493,7 @@ def _exact(sortie):
         return False
 
 
-def synthetiser(c, budget_s=8.0):
+def synthetiser(c, capturees=(), budget_s=8.0):
     """Cherche un corpus qui PROUVE la fonction. Rend {"ok": bool, "cas": [(nom, [args])], "raison": str, "couverture": float, "sorties": int}."""
     ns = {}
     vide = {"ok": False, "cas": [], "couverture": 0, "sorties": 0}
@@ -510,7 +510,7 @@ def synthetiser(c, budget_s=8.0):
     lit = litteraux(c["module"])
     consts = _constantes(arbre)
     piscines = [_piscine(p, c["defauts"].get(p), c["annotations"].get(p), _usage(fn, p), lit, consts, hasard) for p in c["params"]]
-    candidats = [dict(x) for x in recolter(c)]
+    candidats = [dict(x) for x in list(capturees) + recolter(c)]
     total = 1
     for v, _ in piscines:
         total *= max(1, len(v))
@@ -570,12 +570,63 @@ def synthetiser(c, budget_s=8.0):
     toutes_bool = all(isinstance(r, bool) for _, r, _, _ in reussis)
     if len(garde) < CAS_MIN:
         return dict(vide, raison="entrées introuvables (%d cas valides sur %d essais)" % (len(reussis), len(vus)), couverture=round(couv, 2), sorties=len(sorties))
-    if len(sorties) < (2 if toutes_bool else SORTIES_MIN):
+    if len(sorties) < 2:
         return dict(vide, raison="sorties trop uniformes (%d distinctes)" % len(sorties), couverture=round(couv, 2), sorties=len(sorties))
     if couv < COUVERTURE_MIN:
         return dict(vide, raison="couverture insuffisante (%d %%)" % int(couv * 100), couverture=round(couv, 2), sorties=len(sorties))
     cas = [("cas %02d" % (i + 1), [kw[p] for p in c["params"]]) for i, kw in enumerate(garde)]
     return {"ok": True, "raison": "", "cas": cas, "couverture": round(couv, 2), "sorties": len(sorties)}
+
+
+
+# ── 2 bis. la capture des appels réels ──────────────────────────────────────────
+def capturer(module, candidats, delai=900):
+    """Rejoue les bancs du module en observant les appels des fonctions candidates : leurs arguments RÉELS (un message lu, une fiche, une règle), la meilleure matière d'un corpus. Dans un sous-processus."""
+    tests = sorted((RACINE / "tests").glob("CN_test_%s*.py" % module))
+    if not tests or not candidats:
+        return {}
+    import tempfile
+    sortie = Path(tempfile.mkdtemp()) / "captures.json"
+    cibles = {c["fn"]: {"fichier": c["fichier"], "params": c["params"]} for c in candidats}
+    r = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--capture", module, str(sortie), json.dumps(cibles)], capture_output=True, text=True,
+                       encoding="utf-8", errors="replace", cwd=str(RACINE), timeout=delai)
+    if sortie.exists():
+        return json.loads(sortie.read_text(encoding="utf-8"))
+    return {}
+
+
+def _capture_interne(module, sortie, cibles):
+    import os
+    import unittest
+    captures = {fn: [] for fn in cibles}
+    vus = {fn: set() for fn in cibles}
+    suffixes = {fn: "/" + c["fichier"] for fn, c in cibles.items()}
+
+    def profil(frame, event, arg):
+        if event != "call":
+            return
+        co = frame.f_code
+        fn = co.co_name
+        if fn not in cibles or len(captures[fn]) >= 120 or not co.co_filename.replace("\\", "/").endswith(suffixes[fn]):
+            return
+        try:
+            kw = {p: copy.deepcopy(frame.f_locals[p]) for p in cibles[fn]["params"]}
+            if not _exact(kw):
+                return
+            cle = json.dumps(kw, sort_keys=True, ensure_ascii=False)
+        except Exception:
+            return
+        if cle not in vus[fn]:
+            vus[fn].add(cle)
+            captures[fn].append(kw)
+    tests = sorted((RACINE / "tests").glob("CN_test_%s*.py" % module))
+    suite = unittest.TestLoader().loadTestsFromNames(["tests." + t.stem for t in tests])
+    sys.setprofile(profil)
+    try:
+        unittest.TextTestRunner(stream=open(os.devnull, "w"), verbosity=0).run(suite)
+    finally:
+        sys.setprofile(None)
+    Path(sortie).write_text(json.dumps(captures, ensure_ascii=False), encoding="utf-8")
 
 
 # ── 3. l'extraction ────────────────────────────────────────────────────────────
@@ -649,9 +700,9 @@ def _mettre_a_jour_version(module):
     subprocess.run([sys.executable, str(RACINE / "outils" / "CN_bornes.py"), "--monter", module, "%d.%d.%d" % (a, b, c + 1)], capture_output=True, cwd=str(RACINE))
 
 
-def extraire_un(c, objet, verbeux=True):
+def extraire_un(c, objet, capturees=(), verbeux=True):
     """Extrait UNE fonction ; revient en arrière si quoi que ce soit échoue. Rend (point, resume) ou (None, raison)."""
-    s = synthetiser(c)
+    s = synthetiser(c, capturees)
     if not s["ok"]:
         return None, s["raison"]
     point = nom_de_point(c["module"], c["fn"], c["fichier"])
@@ -744,6 +795,7 @@ def principal(argv):
             continue
         br = branchement(m)
         touches = []
+        captures = capturer(m, d["candidats"])
         for c in d["candidats"]:
             if vus >= maxi:
                 break
@@ -752,7 +804,7 @@ def principal(argv):
                 break
             objet = br[Path(c["fichier"]).name]
             t0 = time.perf_counter()
-            point, resume = extraire_un(c, objet)
+            point, resume = extraire_un(c, objet, captures.get(c["fn"], ()))
             if point:
                 fait += 1
                 touches += [RACINE / c["fichier"], RACINE / "modules" / m / "CN_module.py", RACINE / "modules" / m / "CN_manifeste.toml", RACINE / "tests" / "CN_test_points_reels.py",
@@ -767,13 +819,17 @@ def principal(argv):
             sceller([RACINE / "modules" / m / "CN_manifeste.toml"], m)
     print("\n%d extraites ; %d laissées au nexus, avec leur raison" % (fait, len(rate)))
     if "--exceptions" in args:
-        ex = charger_exceptions()
+        scannes = {m for m, d in bal.items() if not d["ignore"]}
+        ex = {k: r for k, r in charger_exceptions().items() if k.split(":")[0] not in scannes}
         ex.update(rate)
         EXCEPTIONS.write_text(json.dumps(ex, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
     return 0
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 4 and sys.argv[1] == "--capture":
+        _capture_interne(sys.argv[2], sys.argv[3], json.loads(sys.argv[4]))
+        sys.exit(0)
     sys.exit(principal(sys.argv))
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

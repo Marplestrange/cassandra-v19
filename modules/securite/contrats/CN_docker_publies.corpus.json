@@ -1,0 +1,153 @@
+{
+ "point": "securite.docker_publies",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de securite, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "texte": "-A DOCKER ! -i docker0 -p tcp -m tcp --dport 8080 -j DNAT --to-destination 172.17.0.2:80\n-A DOCKER -d 127.0.0.1/32 ! -i docker0 -p tcp -m tcp --dport 5432 -j DNAT --to-destination 172.17.0.3:5432"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "port": 8080,
+      "proto": "tcp",
+      "vers": "172.17.0.2:80",
+      "portee": "tout"
+     },
+     {
+      "port": 5432,
+      "proto": "tcp",
+      "vers": "172.17.0.3:5432",
+      "portee": "machine"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "texte": "DNAT"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "port": 0,
+      "proto": "tcp",
+      "vers": "",
+      "portee": "tout"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "texte": "hote"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "texte": "services à l'écoute"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "texte": "3 adresses bannies ici"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "texte": "echecs_ssh_7j"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "texte": "avertissements"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "texte": "-P INPUT ACCEPT\n-P FORWARD ACCEPT\n-P OUTPUT ACCEPT\n"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "texte": "unites_en_echec"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "texte": "fail2ban"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "texte": "stable"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "texte": "sshd"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "texte": "processus"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "texte": "udp"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  }
+ ]
+}

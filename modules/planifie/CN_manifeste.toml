@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.2  #67aee3
+# VERSION CN : 0.1.3  #6dfa3b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Tout ce qui tourne tout seul sur la machine, et est-ce que ça va : les tâches de Cassandra et celles du système (crontabs, cron.d) fusionnées, l'état de chacune (cassée, en échec, muette), les exécutions réelles consignées par un enrobage, le verrou et la fenêtre, l'enchaînement, la maintenance, les collisions. Réservé à l'administrateur ; privilégié par nature, il passe par le courtier.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=67aee3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=6dfa3b ▼▼▼
 [module]
 id = "planifie"
 nom = "Tâches planifiées"
-version = "0.1.2"
+version = "0.1.3"
 noyau_min = "0.1.0"
 description = "Tout ce qui tourne tout seul sur la machine, et est-ce que ça va : les tâches de Cassandra et celles du système (crontabs, cron.d) fusionnées, l'état de chacune (cassée, en échec, muette), les exécutions réelles consignées par un enrobage, le verrou et la fenêtre, l'enchaînement, la maintenance, les collisions. Réservé à l'administrateur ; privilégié par nature, il passe par le courtier."
 confiance = "interne"
@@ -319,4 +319,28 @@ libelle = "Une commande shell découpée en segments ; None si elle n'est pas an
 contrat = "1.0"
 reference = "points/EC_segments"
 fonction = "point_segments"
+runtime = "python"
+
+[[points_evolution]]
+id = "occurrences"
+libelle = "Les exécutions d'une expression sur une plage. Jour par jour, jamais minute par minute (un `*/5` noierait le calendrier) : au-delà de `max_par_jour`, la première heure et un indicateur récurrent (extrait automatiquement de CN_cron.py)"
+contrat = "1.0"
+reference = "points/EC_occurrences"
+fonction = "point_occurrences"
+runtime = "python"
+
+[[points_evolution]]
+id = "suivante"
+libelle = "La prochaine exécution attendue, strictement après `ref` (extrait automatiquement de CN_cron.py)"
+contrat = "1.0"
+reference = "points/EC_suivante"
+fonction = "point_suivante"
+runtime = "python"
+
+[[points_evolution]]
+id = "destructeur"
+libelle = "Le motif destructeur reconnu dans la commande, ou « ». On ne demande confirmation que sur ce qui détruit vraiment : un avertissement qui s'affiche à chaque enregistrement n'avertit plus de rien (extrait automatiquement de CN_cron.py)"
+contrat = "1.0"
+reference = "points/EC_destructeur"
+fonction = "point_destructeur"
 runtime = "python"

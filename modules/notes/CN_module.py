@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : notes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #aeaa0b
+# VERSION CN : 0.1.1  #ed7d06
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les notes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=aeaa0b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=ed7d06 ▼▼▼
 """Les notes.
 
 Porté de la V18 (`note_*`, `notes_*`, `ca_*`, `_nt_*`), avec ses leçons :
@@ -65,6 +65,24 @@ RE_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 INDESIRABLE = re.compile(r"(?i)\b(spam|ind[ée]sirable|viagra|lottery|prize|winner|casino|crypto\s+bonus)\b")
 
 
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 def num_dit(n):
     return "N-%04d" % int(n)
 
@@ -75,13 +93,8 @@ def segment_ok(s):
 
 
 def dossier_ok(ch):
-    ch = str(ch or "").strip().replace("\\", "/")
-    if not ch:
-        return True
-    if ch.startswith("/") or (len(ch) > 1 and ch[1] == ":"):
-        return False
-    parts = ch.strip("/").split("/")
-    return len(parts) <= PROFONDEUR and all(segment_ok(x) for x in parts)
+    """dossier_ok. Le calcul est un POINT D'ÉVOLUTION : points/EC_dossier_ok.py."""
+    return _appeler_point("dossier_ok", {"ch": ch})["valeur"]
 
 
 def dossier_propre(ch):

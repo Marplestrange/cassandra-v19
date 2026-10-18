@@ -1,0 +1,133 @@
+{
+ "point": "notes.dossier_ok",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de notes, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "ch": "statut"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "ch": "\u0000x"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "ch": "/abs"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "ch": false
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "ch": "42"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "ch": "Chez Léo"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "ch": "Court"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "ch": "a.b.c"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "ch": "Échue"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "ch": "rien"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "ch": "Appeler"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "ch": "A"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "ch": "trois lignes"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "ch": "A moi"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  }
+ ]
+}

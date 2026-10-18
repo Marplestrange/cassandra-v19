@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agenda
 # ZONE       : CN
-# VERSION CN : 0.1.0  #87363d
+# VERSION CN : 0.1.1  #344b4b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'agenda.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=87363d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=344b4b ▼▼▼
 """L'agenda.
 
 Porté de la V18 (`itare_event_*`, `itare_reminder_*`, `itare_calendar_items`, `itare_agenda_list`, `ical_parse`, `rrule_expand`, `_caldav_*`), avec ses leçons :

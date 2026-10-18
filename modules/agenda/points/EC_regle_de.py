@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #000000
+# VERSION EC : EC0 (référence 0.3.0)  #51d7e9
 # HÔTE CN    : CN_module.py · regle_de @1.0
 # RÔLE       : Un mot (daily, weekly, quotidien…) ou une RRULE (avec ou sans « RRULE: ») -> la règle normalisée, ou '' si vide. Lève sur le reste.
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=regle_de contrat=@1.0 version=EC0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE EC point=regle_de contrat=@1.0 version=EC0 empreinte=51d7e9 ▼▼▼
 
 RECUR_MOTS = {"daily": "FREQ=DAILY", "weekly": "FREQ=WEEKLY", "monthly": "FREQ=MONTHLY", "yearly": "FREQ=YEARLY",
               "quotidien": "FREQ=DAILY", "hebdomadaire": "FREQ=WEEKLY", "mensuel": "FREQ=MONTHLY", "annuel": "FREQ=YEARLY"}

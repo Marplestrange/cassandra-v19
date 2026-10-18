@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.1  #9dac03
+# VERSION CN : 0.1.2  #e84299
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=9dac03 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=e84299 ▼▼▼
 """Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils."""
 from __future__ import annotations
 
@@ -101,29 +101,8 @@ def meta_outils():
 
 
 def coherents(msgs):
-    """Une conversation que l'API accepte : chaque message assistant porteur de `tool_calls` est suivi d'une réponse `tool` pour CHACUN de ses identifiants, et aucune réponse `tool` n'est orpheline.
-    Sinon DeepSeek rejette tout le tour (« insufficient tool messages following tool_calls ») et le travail du tour est perdu. Ce qui manque est complété par une réponse explicite plutôt que deviné ;
-    ce qui traîne est retiré."""
-    out, i = [], 0
-    while i < len(msgs):
-        m = msgs[i]
-        if m.get("role") == "tool":
-            i += 1                                           # orpheline : un résultat sans appel devant lui
-            continue
-        out.append(m)
-        i += 1
-        if m.get("role") == "assistant" and m.get("tool_calls"):
-            attendus = [tc.get("id") for tc in m["tool_calls"] if isinstance(tc, dict) and tc.get("id")]
-            vus = set()
-            while i < len(msgs) and msgs[i].get("role") == "tool":
-                if msgs[i].get("tool_call_id") in attendus and msgs[i].get("tool_call_id") not in vus:
-                    vus.add(msgs[i]["tool_call_id"])
-                    out.append(msgs[i])
-                i += 1
-            for a in attendus:
-                if a not in vus:
-                    out.append({"role": "tool", "tool_call_id": a, "content": "(résultat perdu : l'appel n'a pas abouti)"})
-    return out
+    """Une conversation que l'API accepte : chaque message assistant porteur de `tool_calls` est suivi d'une réponse `tool` pour CHACUN de ses identifiants, et aucune réponse `tool` n'est orpheline. Le calcul est un POINT D'ÉVOLUTION : points/EC_coherents.py."""
+    return _appeler_point("coherents", {"msgs": msgs})["valeur"]
 
 
 def court(x, maxi=RESULTAT_MAX):

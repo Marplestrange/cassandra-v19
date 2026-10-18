@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.1  #c38c6f
+# VERSION CN : 0.3.2  #c38c6f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : vcard_lire.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

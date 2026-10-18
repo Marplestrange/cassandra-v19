@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.2  #f093c1
+# VERSION CN : 0.3.3  #6490db
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Sécurité › En images : la page de diagrammes. Fonction PURE : l'état de sécurité (analyse.etat) + les totaux du collecteur -> tout ce que dessine l'écran.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=f093c1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.3 empreinte=6490db ▼▼▼
 """Sécurité › En images : la page de diagrammes. Fonction PURE : l'état de sécurité (analyse.etat) + les totaux du collecteur -> tout ce que dessine l'écran.
 
 Décision de Drisse (V18, 10-10, « garde tout ») : une page de diagrammes validée sur maquette. Tout vient de mesures déjà prises : l'état de l'onglet, les totaux d'attaques que tient le collecteur,
@@ -33,19 +33,28 @@ BOX = (("box.acces_distant", "Accès distant à la box"), ("box.upnp", "UPnP"), 
 NOMS_OUTILS = {"lynis": "Lynis", "trivy": "Trivy", "clamav": "ClamAV", "crowdsec": "CrowdSec"}
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 def de_confiance(adresse, extra=()):
-    try:
-        c = ipaddress.ip_network(str(adresse).strip(), strict=False)
-    except ValueError:
-        return True
-    for n in list(RESEAUX_DE_CONFIANCE) + [x for x in extra if x]:
-        try:
-            m = ipaddress.ip_network(str(n).strip(), strict=False)
-        except ValueError:
-            continue
-        if m.version == c.version and (c.subnet_of(m) or m.subnet_of(c)):
-            return True
-    return False
+    """de_confiance. Le calcul est un POINT D'ÉVOLUTION : points/EC_de_confiance.py."""
+    return _appeler_point("de_confiance", {"adresse": adresse, "extra": extra})["valeur"]
 
 
 def courriel_etats(valeur):

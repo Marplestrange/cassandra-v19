@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.0  #867eb4
+# VERSION CN : 0.1.1  #495eb8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=867eb4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=495eb8 ▼▼▼
 """Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
 
 Le nettoyage du HTML est une LISTE BLANCHE bâtie sur un vrai analyseur (html.parser), pas une série d'expressions régulières qui retirent ce qu'on
@@ -35,6 +35,24 @@ from urllib.parse import urlsplit
 
 # ------------------------------------------------------------------ noms de dossiers : UTF-7 modifié (RFC 3501)
 _point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+
+
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
 
 
 def utf7_decoder(s):
@@ -78,18 +96,8 @@ def decoder_entete(s):
 
 
 def date_iso(brut):
-    """Date normalisée et TRIABLE : les en-têtes Date arrivent dans une dizaine de formats et de fuseaux, trier la chaîne brute mélangerait janvier et juillet."""
-    if not brut:
-        return ""
-    try:
-        d = parsedate_to_datetime(brut)
-        if d is None:
-            return ""
-        if d.tzinfo is not None:
-            d = d.astimezone(timezone.utc).replace(tzinfo=None)
-        return d.strftime("%Y-%m-%d %H:%M:%S")
-    except Exception:
-        return ""
+    """Date normalisée et TRIABLE : les en-têtes Date arrivent dans une dizaine de formats et de fuseaux, trier la chaîne brute mélangerait janvier et juillet. Le calcul est un POINT D'ÉVOLUTION : points/EC_date_iso.py."""
+    return _appeler_point("date_iso", {"brut": brut})["valeur"]
 
 
 def adresse_parts(brut):

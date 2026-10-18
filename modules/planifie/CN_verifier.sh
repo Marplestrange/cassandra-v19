@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.2  #771cf8
+# VERSION CN : 0.1.3  #771cf8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La preuve que le module peut travailler : les trois commandes sont à root, l'enrobage est posé, et la lecture des crontabs répond.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=771cf8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=771cf8 ▼▼▼
 # La preuve que le module peut travailler : les trois commandes sont à root, l'enrobage est posé, et la lecture des crontabs répond.
 set -eu
 for c in lire_crontabs lire_table ecrire_crontab lancer; do

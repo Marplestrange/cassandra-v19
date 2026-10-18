@@ -1,0 +1,204 @@
+{
+ "point": "planifie.suivante",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de planifie, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "expr": "0 5 15 * 1",
+    "ref": "2026-10-12 12:00",
+    "avance_jours": 45
+   },
+   "sortie": {
+    "valeur": "2026-10-15 05:00"
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "expr": "*/10 * * * *",
+    "ref": "2026-10-12 10:20",
+    "avance_jours": 45
+   },
+   "sortie": {
+    "valeur": "2026-10-12 10:30"
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "expr": "0 5 * * 7",
+    "ref": "2026-10-10 12:00",
+    "avance_jours": 45
+   },
+   "sortie": {
+    "valeur": "2026-10-11 05:00"
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "expr": "0 5 15 * 1",
+    "ref": "2026-10-11 12:00",
+    "avance_jours": 45
+   },
+   "sortie": {
+    "valeur": "2026-10-12 05:00"
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "expr": "@reboot",
+    "ref": "2026-10-12 10:20",
+    "avance_jours": 45
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "expr": "0 0 1 1 *",
+    "ref": [
+     "/opt/x/run.sh",
+     "/usr/bin/y",
+     "/opt/w"
+    ],
+    "avance_jours": 1024
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "expr": "0 5 * * 0",
+    "ref": "2026-10-10 12:00",
+    "avance_jours": 45
+   },
+   "sortie": {
+    "valeur": "2026-10-11 05:00"
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "expr": "0 0 1 * *",
+    "ref": [
+     {
+      "chemin": "/usr/local/bin/dump.sh",
+      "present": 1
+     }
+    ],
+    "avance_jours": 46
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "expr": "@yearly",
+    "ref": [
+     "2026-10-13 03:00",
+     "2026-10-14 03:00",
+     "2026-10-15 03:00"
+    ],
+    "avance_jours": 59
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "expr": 0.0,
+    "ref": [
+     "cassandra"
+    ],
+    "avance_jours": 6
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "expr": null,
+    "ref": [
+     "@weekly"
+    ],
+    "avance_jours": 58
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "expr": "@weekly",
+    "ref": [
+     "\\brm\\s+-[rf]",
+     "\\bdd\\s+if=",
+     "\\bmkfs",
+     "\\breboot\\b",
+     "\\bshutdown\\b",
+     "\\bsed\\s+-i\\b",
+     "\\b(perl|python3?|ruby)\\s+.*-i\\b",
+     "\\bchmod\\b",
+     "\\bchown\\b",
+     "\\btee\\b",
+     "\\bkill(all)?\\b",
+     "\\bpkill\\b",
+     "\\buserdel\\b",
+     "\\bmkswap\\b",
+     "\\biptables\\b",
+     "\\bsystemctl\\s+(stop|disable|mask|restart)\\b",
+     "\\btruncate\\b"
+    ],
+    "avance_jours": 288
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "expr": 0.0,
+    "ref": [
+     "un",
+     "deux",
+     "trois",
+     "quatre"
+    ],
+    "avance_jours": 1000
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "expr": false,
+    "ref": [
+     "a",
+     "b"
+    ],
+    "avance_jours": 0.0
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  }
+ ]
+}

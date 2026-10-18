@@ -1,0 +1,133 @@
+{
+ "point": "courrier.date_iso",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de courrier, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "brut": "Mon, 05 Jan 2026 10:00:00 +0200"
+   },
+   "sortie": {
+    "valeur": "2026-01-05 08:00:00"
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "brut": "Tue, 07 Jul 2026 10:00:00 +0000"
+   },
+   "sortie": {
+    "valeur": "2026-07-07 10:00:00"
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "brut": "n'importe quoi"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "brut": ""
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "brut": "dossiers"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "brut": "abc"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "brut": "Bancs du module courrier : un vrai noyau, de vrais imaplib et smtplib, un serveur IMAP et un serveur SMTP de poche."
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "brut": "Nom Prénom <a@exemple.test>"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "brut": "1h30"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "brut": "mdp-smtp"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "brut": -1
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "brut": "true"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "brut": "a@b"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "brut": "echec"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  }
+ ]
+}

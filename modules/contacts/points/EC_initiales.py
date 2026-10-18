@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.1)  #c87264
+# VERSION EC : EC0 (référence 0.3.2)  #c87264
 # HÔTE CN    : CN_module.py · initiales @1.0
 # RÔLE       : reconnaît qu'un nom abrégé est la forme courte d'un nom complet, pour proposer un rapprochement de fiches.
 # MÉTHODE    : fonction pure : le dernier mot doit être identique, les précédents se correspondent lettre à lettre, au moins une initiale.

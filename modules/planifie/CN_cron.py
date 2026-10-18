@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.2  #5106d0
+# VERSION CN : 0.1.3  #b95590
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les tâches planifiées : la logique pure (expressions cron, occurrences, description en français, verdict d'une tâche, collisions, dérive).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=5106d0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=b95590 ▼▼▼
 """Les tâches planifiées : la logique pure (expressions cron, occurrences, description en français, verdict d'une tâche, collisions, dérive).
 
 Portée de la V18. Rien ici ne touche le système : le module lit et écrit les crontabs par le courtier, et passe les temps et les durées à ces fonctions.
@@ -127,25 +127,8 @@ def analyser(expr):
 
 
 def occurrences(expr, du, au, max_par_jour=4):
-    """Les exécutions d'une expression sur une plage. Jour par jour, jamais minute par minute (un `*/5` noierait le calendrier) : au-delà de `max_par_jour`, la première heure et un indicateur récurrent."""
-    p = analyser(expr)
-    if not p:
-        return []
-    mins, hours, jour_ok = p
-    try:
-        d, fin = datetime.strptime(du[:10], "%Y-%m-%d"), datetime.strptime(au[:10], "%Y-%m-%d")
-    except Exception:
-        return []
-    out = []
-    while d <= fin and len(out) < 400:
-        if jour_ok(d):
-            heures = sorted((h, m) for h in hours for m in mins)
-            if len(heures) > max_par_jour:
-                out.append({"at": "%s %02d:%02d" % (d.strftime("%Y-%m-%d"), *heures[0]), "recurrent": len(heures)})
-            else:
-                out += [{"at": "%s %02d:%02d" % (d.strftime("%Y-%m-%d"), h, m), "recurrent": 0} for h, m in heures]
-        d += timedelta(days=1)
-    return out
+    """Les exécutions d'une expression sur une plage. Jour par jour, jamais minute par minute (un `*/5` noierait le calendrier) : au-delà de `max_par_jour`, la première heure et un indicateur récurrent. Le calcul est un POINT D'ÉVOLUTION : points/EC_occurrences.py."""
+    return _appeler_point("occurrences", {"expr": expr, "du": du, "au": au, "max_par_jour": max_par_jour})["valeur"]
 
 
 def decrire(expr, appeler):
@@ -178,27 +161,8 @@ def precedente(expr, ref, retour_jours=21):
 
 
 def suivante(expr, ref, avance_jours=45):
-    """La prochaine exécution attendue, strictement après `ref`."""
-    p = analyser(expr)
-    if not p:
-        return ""
-    mins, hours, jour_ok = p
-    try:
-        d = datetime.strptime(ref[:16], "%Y-%m-%d %H:%M")
-    except Exception:
-        return ""
-    jour = d.replace(hour=0, minute=0)
-    for i in range(avance_jours + 1):
-        if jour_ok(jour):
-            for h in hours:
-                if i == 0 and h < d.hour:
-                    continue
-                for m in mins:
-                    if i == 0 and h == d.hour and m <= d.minute:
-                        continue
-                    return "%s %02d:%02d" % (jour.strftime("%Y-%m-%d"), h, m)
-        jour += timedelta(days=1)
-    return ""
+    """La prochaine exécution attendue, strictement après `ref`. Le calcul est un POINT D'ÉVOLUTION : points/EC_suivante.py."""
+    return _appeler_point("suivante", {"expr": expr, "ref": ref, "avance_jours": avance_jours})["valeur"]
 
 
 def apercu(expr, ref, appeler, n=5):
@@ -271,15 +235,8 @@ def cibles_manquantes(commande, existe=None, est_executable=None, trouver=None):
 
 
 def destructeur(commande):
-    """Le motif destructeur reconnu dans la commande, ou « ». On ne demande confirmation que sur ce qui détruit vraiment : un avertissement qui s'affiche à chaque enregistrement n'avertit plus de rien."""
-    cmd = (commande or "").strip()
-    for pat in DESTRUCTEURS:
-        if re.search(pat, cmd):
-            return "motif destructeur : %s" % pat.replace(r"\b", "").replace("\\s+", " ")
-    for pat, libelle in DESTRUCTEURS_EN_PLUS:
-        if re.search(pat, cmd):
-            return libelle
-    return ""
+    """Le motif destructeur reconnu dans la commande, ou « ». On ne demande confirmation que sur ce qui détruit vraiment : un avertissement qui s'affiche à chaque enregistrement n'avertit plus de rien. Le calcul est un POINT D'ÉVOLUTION : points/EC_destructeur.py."""
+    return _appeler_point("destructeur", {"commande": commande})["valeur"]
 
 
 def valider(expr, commande):

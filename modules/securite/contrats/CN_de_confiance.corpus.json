@@ -1,0 +1,207 @@
+{
+ "point": "securite.de_confiance",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de securite, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "adresse": "198.51.100.7",
+    "extra": [
+     "198.51.100.0/24"
+    ]
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "adresse": "0.0.0.0",
+    "extra": [
+     "en_arriere",
+     "installer",
+     "lynis"
+    ]
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "adresse": "politique",
+    "extra": [
+     "rpcbind.service"
+    ]
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "adresse": "CLE=valeur\n#c\nAUTRE=2",
+    "extra": [
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "adresse": "score 62/100",
+    "extra": [
+     "installer",
+     "lynis"
+    ]
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "adresse": "pas_encore",
+    "extra": [
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      4
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "adresse": 0,
+    "extra": [
+     "sshd"
+    ]
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "adresse": "-1",
+    "extra": [
+     "sensorium"
+    ]
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "adresse": "hote",
+    "extra": [
+     {
+      "image": "nginx:1",
+      "critiques": 2,
+      "hautes": 5
+     },
+     {
+      "image": "x",
+      "erreur": "boom"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "adresse": "tous",
+    "extra": [
+     {
+      "pays": "Chine",
+      "n": 50
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "adresse": "videur ARRÊTÉ",
+    "extra": [
+     [
+      "en_arriere",
+      "installer",
+      "lynis"
+     ]
+    ]
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "adresse": "clamav",
+    "extra": [
+     "Appli"
+    ]
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "adresse": "true",
+    "extra": [
+     "0 / 4"
+    ]
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "adresse": "tailscale",
+    "extra": [
+     "127.0.0.0/8"
+    ]
+   },
+   "sortie": {
+    "valeur": true
+   }
+  }
+ ]
+}

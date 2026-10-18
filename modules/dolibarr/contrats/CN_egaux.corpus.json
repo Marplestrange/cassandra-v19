@@ -1,0 +1,191 @@
+{
+ "point": "dolibarr.egaux",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de dolibarr, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "a": {
+     "idwarehouse": 0,
+     "notrigger": 0
+    },
+    "b": "/invoices"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "a": {
+     "comptes_t": 0.0
+    },
+    "b": {
+     "comptes_t": 0.0
+    }
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "a": null,
+    "b": {
+     "comptes_t": 0.0
+    }
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "a": 3,
+    "b": [
+     "a",
+     "b",
+     "a"
+    ]
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "a": 0.5,
+    "b": {
+     "delai": "15"
+    }
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "a": "/invoices",
+    "b": 3
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "a": "tiers",
+    "b": [
+     "a",
+     "b"
+    ]
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "a": [
+     1,
+     2,
+     3
+    ],
+    "b": -1
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "a": false,
+    "b": 0
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "a": [
+     {
+      "a": 1
+     },
+     {
+      "a": 2
+     }
+    ],
+    "b": "factures"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "a": {
+     "factures": "/invoices",
+     "devis": "/proposals",
+     "commandes": "/orders"
+    },
+    "b": false
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "a": [
+     1,
+     2,
+     3
+    ],
+    "b": 2
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "a": -1,
+    "b": [
+     1,
+     2,
+     3
+    ]
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "a": [
+     "a",
+     "b"
+    ],
+    "b": "produits"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  }
+ ]
+}

@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.1  #7d3334
+# VERSION CN : 0.3.2  #7d3334
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : norm_nom.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : notes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e622af
+# VERSION CN : 0.1.1  #e622af
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : lire_entete.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

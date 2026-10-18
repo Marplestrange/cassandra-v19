@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : contacts -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.3.1  #000000 -->
+<!-- VERSION CN : 0.3.2  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : contacts — le carnet d'adresses -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.3.1 empreinte=d27a4d ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.3.2 empreinte=d27a4d ▼▼▼ -->
 # contacts — le carnet d'adresses
 
 Porté de la V18 (`contact_*`, `contacts_*`, vCard, CSV, doublons, fusion), lu en entier. Une nouveauté du noyau : `ctx.acteur` (qui agit), pour ne montrer à un modèle que ce que l'administrateur a choisi.

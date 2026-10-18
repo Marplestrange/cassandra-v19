@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.2  #c8aefa
+# VERSION CN : 0.3.3  #90aec5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=c8aefa ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.3 empreinte=90aec5 ▼▼▼
 [module]
 id = "securite"
 nom = "Sécurité"
-version = "0.3.2"
+version = "0.3.3"
 noyau_min = "0.1.0"
 description = "La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel)."
 confiance = "interne"
@@ -225,3 +225,43 @@ droit = "voir"
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "portee"
+libelle = "machine | tailscale | reseau | public | tout — pour une adresse d'écoute de `ss` (extrait automatiquement de CN_analyse.py)"
+contrat = "1.0"
+reference = "points/EC_portee"
+fonction = "point_portee"
+runtime = "python"
+
+[[points_evolution]]
+id = "adresses_machine"
+libelle = "Les adresses publiques que porte la machine elle-même ; sans v4 publique, elle est derrière une box (extrait automatiquement de CN_analyse.py)"
+contrat = "1.0"
+reference = "points/EC_adresses_machine"
+fonction = "point_adresses_machine"
+runtime = "python"
+
+[[points_evolution]]
+id = "sans_options_cible"
+libelle = "_sans_options_cible (extrait automatiquement de CN_analyse.py)"
+contrat = "1.0"
+reference = "points/EC_sans_options_cible"
+fonction = "point_sans_options_cible"
+runtime = "python"
+
+[[points_evolution]]
+id = "docker_publies"
+libelle = "Les ports publiés par Docker : ils passent par FORWARD, à côté d'INPUT — un pare-feu qui ne regarde qu'INPUT ne les voit pas (extrait automatiquement de CN_analyse.py)"
+contrat = "1.0"
+reference = "points/EC_docker_publies"
+fonction = "point_docker_publies"
+runtime = "python"
+
+[[points_evolution]]
+id = "de_confiance"
+libelle = "de_confiance (extrait automatiquement de CN_images.py)"
+contrat = "1.0"
+reference = "points/EC_de_confiance"
+fonction = "point_de_confiance"
+runtime = "python"

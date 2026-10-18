@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d465da
+# VERSION CN : 0.1.1  #72d196
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La boîte mail de chaque compte, par IMAP : dossiers, messages (cache des en-têtes et du texte des trois derniers mois), lecture avec un HTML nettoyé par liste blanche (rien ne s'exécute, aucune image distante n'est chargée sans accord), gestes réversibles (lu, suivi, déplacer, archiver, corbeille, copier, dossiers), brouillons, et envoi par SMTP réservé à un humain. Les identifiants sont des réglages secrets PAR COMPTE, chiffrés : une boîte appartient à une personne, jamais au serveur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d465da ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=72d196 ▼▼▼
 [module]
 id = "courrier"
 nom = "Courrier"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "La boîte mail de chaque compte, par IMAP : dossiers, messages (cache des en-têtes et du texte des trois derniers mois), lecture avec un HTML nettoyé par liste blanche (rien ne s'exécute, aucune image distante n'est chargée sans accord), gestes réversibles (lu, suivi, déplacer, archiver, corbeille, copier, dossiers), brouillons, et envoi par SMTP réservé à un humain. Les identifiants sont des réglages secrets PAR COMPTE, chiffrés : une boîte appartient à une personne, jamais au serveur."
 confiance = "interne"
@@ -343,4 +343,12 @@ libelle = "La lecture des en-têtes d'une boîte : les réponses du serveur en e
 contrat = "1.0"
 reference = "points/EC_entetes"
 fonction = "point_entetes"
+runtime = "python"
+
+[[points_evolution]]
+id = "date_iso"
+libelle = "Date normalisée et TRIABLE : les en-têtes Date arrivent dans une dizaine de formats et de fuseaux, trier la chaîne brute mélangerait janvier et juillet (extrait automatiquement de CN_outils.py)"
+contrat = "1.0"
+reference = "points/EC_date_iso"
+fonction = "point_date_iso"
 runtime = "python"
