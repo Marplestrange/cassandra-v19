@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=a07f54 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=80463f ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -121,7 +121,6 @@ body.d19 .app-body{position:relative}
 :root[data-theme="dark"] .d19-si:hover{background:rgba(255,255,255,.08)}
 :root[data-theme="dark"] .d19-si.on{background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.07));box-shadow:0 6px 16px -6px rgba(0,0,0,.5),0 0 0 1px rgba(45,212,191,.25)}
 
-.d19-lat-sous{font:400 11px 'JetBrains Mono',monospace;color:var(--txt-faint);padding:0 10px 10px;margin-top:-6px}
 /* ---------- bandeau de page (ordinateur : fil d'Ariane et étoile) et pastilles (téléphone) ---------- */
 #d19-strip{display:flex;align-items:center;gap:8px;padding:8px max(20px,env(safe-area-inset-right,0px)) 0 24px;min-width:0;flex:none}
 #d19-strip .fil{display:flex;flex-wrap:wrap;gap:4px;font:500 11.5px 'JetBrains Mono',monospace;color:var(--txt-faint);min-width:0}
@@ -293,7 +292,6 @@ body.d19 #usermenu .d19-themes button{height:26px}
 /* ---------- pages propres : Société / Organisation, Info Cassandra, Modules ---------- */
 .d19-page{padding:24px max(30px,env(safe-area-inset-right,0px)) 40px 30px;max-width:820px}
 .d19-page h1{font:600 20px 'JetBrains Mono',monospace;margin:0 0 4px;color:var(--txt-strong)}
-.d19-page .sous{color:var(--txt-soft);margin:0 0 20px;max-width:62ch}
 .d19-form{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:12px 18px;align-items:center;max-width:680px}
 .d19-form label{font:500 12px 'JetBrains Mono',monospace;color:var(--txt-faint)}
 .d19-form input[type=text],.d19-form select{width:100%;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface-solid,#fff);color:var(--txt);font:inherit}
@@ -390,7 +388,6 @@ body.d19 .tab-content h1,body.d19 .sh-scene h1,body.d19 .mx-head h1{
   display:inline-block;padding-bottom:10px;position:relative;
 }
 body.d19 .tab-content h1::after,body.d19 .sh-scene h1::after,body.d19 .mx-head h1::after{content:"";position:absolute;left:0;bottom:0;width:44px;height:3px;border-radius:3px;background:linear-gradient(90deg,#2dd4bf,var(--accent));box-shadow:0 0 12px rgba(45,212,191,.55)}
-body.d19 .mx-lede,body.d19 .tab-content h1+p{font:400 13.5px/1.5 'Inter',system-ui,sans-serif;color:var(--txt-soft);max-width:70ch}
 /* ▲▲▲ FIN BORNE CN ▲▲▲ */
 
 /* ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ */

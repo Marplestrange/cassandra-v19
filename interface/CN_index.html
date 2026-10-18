@@ -13,7 +13,7 @@
 <!-- RÔLE       : la page unique de l'interface : le corps de la V18 et la liste des scripts. -->
 <!-- MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=0b2406 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=eebfb5 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -531,7 +531,7 @@
          fpnav-*, fpbadge-*, fpetat-*, fp-main-area, fp-side-etat sont conservés : le chargement des
          sections et du résumé les écrit encore. -->
     <header class="mx-head">
-      <div><h1>Hébergement</h1><p class="mx-lede" id="fp2-sous">Ce que le panneau porte — sites, certificats, bases, courrier, services — lu dans sa base, et ce qui demande un geste.</p></div>
+      <div><h1>Hébergement</h1></div>
       <div class="fp2-releve">
         <span class="fp2-panneau" id="fp2-panneau" title="État de l'API du panneau"><i></i>panneau</span>
         <span class="mx-meta">relevé <b id="fp2-releve">–</b> · <b id="fp2-age">jamais</b></span>
@@ -574,7 +574,7 @@
   </div>
   <div id="tab-fleet" class="tab-content mx-app">
     <header class="mx-head">
-      <div><h1>Flotte</h1><p class="mx-lede">Le parc autour de l'hôte : ce que trois sources en savent, ce qu'on peut y faire.</p></div>
+      <div><h1>Flotte</h1></div>
       <nav class="mx-scenes" aria-label="Vues">
         <span class="mx-scenes-lab">Vue</span>
         <button class="mx-scene" data-vue="maintenant" onclick="flVue('maintenant')">Maintenant</button>
@@ -599,7 +599,7 @@
        le rail se replie sur le côté comme celui de Réglages (il échappe donc à la barre des places). -->
   <div id="tab-securite" class="tab-content mx-app">
     <header class="mx-head">
-      <div><h1>Sécurité</h1><p class="mx-lede">Ce qui est exposé, qui peut entrer, ce qui défend, ce qui attend une mise à jour. Mesuré, puis commenté — jamais l’inverse.</p></div>
+      <div><h1>Sécurité</h1></div>
     </header>
     <div class="mx-body sc-corps" id="sc-corps">
       <aside class="mx-rail pl-sans sc-rail" aria-label="Familles de la sécurité">
@@ -921,7 +921,7 @@
   <div id="tab-memory" class="tab-content mx-app">
     <header class="mx-head">
       <div style="display:flex;flex-wrap:wrap;gap:6px 16px;align-items:flex-end;justify-content:space-between">
-        <div><h1>Mémoire</h1><p class="mx-lede">Un souvenir est un fait daté, prouvé, propriétaire, corrigeable d’une phrase. Un état se mesure, il ne se rappelle pas.</p></div>
+        <div><h1>Mémoire</h1></div>
         <div class="mv-tete-droite">
           <span class="mx-pill" id="mv-chaine" style="display:none;cursor:pointer" title="chaque geste du journal est chaîné au précédent par empreinte : une altération se voit au recalcul" onclick="memoireChaine()">chaîne</span>
           <span class="mx-meta">relevé <b id="mv-releve">—</b></span>
@@ -971,7 +971,7 @@
        du journal choisi. -->
   <div id="tab-journal" class="tab-content mx-app">
     <header class="mx-head">
-      <div><h1>Journaux</h1><p class="mx-lede">Tout ce que Cassandra et la machine écrivent, dans une seule ligne du temps.</p></div>
+      <div><h1>Journaux</h1></div>
       <nav class="mx-scenes" aria-label="Vues">
         <span class="mx-scenes-lab">Vue</span>
         <button class="mx-scene" data-vue="flux" onclick="jrVue('flux')">Ce qui s'est passé</button>
@@ -1006,7 +1006,6 @@
     <div class="sl-head">
       <div>
         <h2>Le salon</h2>
-        <p id="sl-sous">Votre tête-à-tête avec Cassandra, et les fils où elle, Itare et vos invités travaillent — avec vous, ou sans vous</p>
       </div>
       <span class="sl-pulse" id="sl-pulse"><i></i><span id="sl-pulse-txt">présence…</span></span>
       <div class="sl-sp"></div>
@@ -1274,7 +1273,7 @@
        reste, chargé à sa première ouverture. -->
     <header class="mx-head">
       <div style="display:flex;flex-wrap:wrap;gap:6px 16px;align-items:flex-end;justify-content:space-between">
-        <div><h1>Vue d'ensemble</h1><p class="mx-lede">Ce qui demande un geste ce matin, où, et ce que Cassandra a fait seule. Chaque carte dit d’où vient son chiffre et de quand il date.</p></div>
+        <div><h1>Vue d'ensemble</h1></div>
         <div class="vu-tete-droite">
           <span class="mx-pill" id="vu-portee">administrateur</span>
           <span class="mx-meta">vue relue à <b id="vu-releve">—</b> · <span id="vu-cadence">toutes les 60 s</span></span>
@@ -1420,7 +1419,7 @@
     <!-- LE SENSORIUM (08-10) : ce que les capteurs disent MAINTENANT, avec l'âge de chaque relevé, ce qui va arriver,
          ce qui a changé et pourquoi — et l'état des capteurs eux-mêmes. -->
     <header class="mx-head">
-      <div><h1>Sensorium</h1><p class="mx-lede">Ce que Cassandra perçoit de ses machines, mesuré — jamais rappelé. Chaque relevé dit son âge.</p></div>
+      <div><h1>Sensorium</h1></div>
       <nav class="mx-scenes" aria-label="Vues">
         <span class="mx-scenes-lab">Vue</span>
         <button class="mx-scene" data-vue="maintenant" onclick="snVue('maintenant')">Maintenant</button>
@@ -1443,7 +1442,7 @@
 
 <div id="tab-history" class="tab-content mx-app">
     <header class="mx-head">
-      <div><h1>Historique</h1><p class="mx-lede">Ce que la machine dit d'elle-même : un verdict d'abord, les mesures ensuite.</p></div>
+      <div><h1>Historique</h1></div>
       <nav class="mx-scenes" aria-label="Vues">
         <span class="mx-scenes-lab">Vue</span>
         <button class="mx-scene" data-vue="verdict" onclick="mxVue('verdict')">Maintenant</button>
@@ -1471,7 +1470,7 @@
          page en cartes. Le bandeau, la bannière et le volet « Analyse » ont fondu dans le verdict
          de la vue d'ensemble et dans les entrées du rail. -->
     <header class="mx-head">
-      <div><h1>Évolution</h1><p class="mx-lede">Ce que Cassandra change dans son propre code : ce qui attend votre décision, ce qu'elle a fait passe par passe, et ce qui l'encadre.</p></div>
+      <div><h1>Évolution</h1></div>
     </header>
     <div class="mx-body">
       <aside class="mx-rail" aria-label="Évolution">
@@ -1688,7 +1687,7 @@
   <div id="tab-mysites" class="tab-content mx-app">
     <header class="mx-head">
       <div style="display:flex;flex-wrap:wrap;gap:6px 16px;align-items:flex-end;justify-content:space-between">
-        <div><h1>Sites</h1><p class="mx-lede">Tes sites tels qu’ils répondent, ce que le panneau en sait, et ce qui demande un geste. Un clic ouvre la fiche ; les gestes lourds demandent une confirmation.</p></div>
+        <div><h1>Sites</h1></div>
         <div class="st-tete-droite">
           <span class="mx-pill" id="st-portee">—</span>
           <span class="mx-meta">relevé <b id="st-releve">—</b> · sonde 5 min</span>
@@ -1725,7 +1724,6 @@
       <div class="bu-tete" id="bu-tete">
         <div>
           <h1 class="bu-h1" id="bu-h1">Mon bureau</h1>
-          <p class="bu-sub" id="bu-legende"></p>
         </div>
         <div class="bu-scenes" id="bu-scenes"></div>
       </div>
@@ -2925,7 +2923,6 @@
       <div class="cf-head">
         <div>
           <h1>Mes secrets</h1>
-          <p class="cf-sub" id="cf-sub-n">une fiche par secret · révélé champ par champ, remasqué dix secondes après</p>
         </div>
         <div class="cf-sp">
           <button class="btn-x pri" id="cf-btn-new" onclick="cfNouveau()">Nouveau secret</button>
@@ -2973,7 +2970,7 @@
   <div id="tab-settings" class="tab-content mx-app">
    <div class="settings-page">
     <header class="mx-head">
-      <div><h1>Réglages</h1><p class="mx-lede" id="set-note"></p></div>
+      <div><h1>Réglages</h1></div>
       <div class="set-barre">
         <!-- Le commutateur de vision. Retiré pour un compte non-admin par `setVision`. -->
         <nav class="mx-scenes" id="set-visions" role="group" aria-label="Vision">

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #90605c
+// VERSION CN : 0.1.0  #66a0e5
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=90605c ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=66a0e5 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -554,7 +554,7 @@
     sortie.value = c.slice(0, n).join("");
   }
   const PAGES_V18 = {
-    vault: { titre: "Mon coffre-fort", sous: "chiffré de bout en bout", appliquer: appliquerCoffre,
+    vault: { titre: "Mon coffre-fort", appliquer: appliquerCoffre,
       items: [{ id: "tableau", libelle: "Tableau de bord", icone: "panorama" }, { id: "coffre", libelle: "Coffre", icone: "lock" }, { id: "outils", libelle: "Outils", icone: "key" }, { id: "rapport", libelle: "Rapport", icone: "scroll" }] },
   };
   function entrerPageV18(nom, pg) {
@@ -564,7 +564,7 @@
   function majPageV18(nom, pg, rub) {
     E.rubV18[nom] = rub;
     E.fil = ["Paramètres", pg.titre, (pg.items.find((i) => i.id === rub) || {}).libelle || rub];
-    E.lateral = { titre: pg.titre, sous: pg.sous, actif: rub, items: pg.items };
+    E.lateral = { titre: pg.titre, actif: rub, items: pg.items };
     E.pageAction = (id) => majPageV18(nom, pg, id);
     pg.appliquer(rub); rendre();
   }
@@ -609,7 +609,7 @@
     E.rubSociete = rub;
     const nom = RUBRIQUES.find((r) => r.id === rub).libelle;
     E.pageNom = CASS.nomOnglet("affichage:vue_societe"); E.fil = ["Paramètres", "Société / Organisation", nom];
-    E.lateral = { titre: "Société / Organisation", sous: "ce que Cassandra sait de vous", actif: rub, items: RUBRIQUES.map((r) => ({ id: r.id, libelle: r.libelle, icone: r.icone })) };
+    E.lateral = { titre: "Société / Organisation", actif: rub, items: RUBRIQUES.map((r) => ({ id: r.id, libelle: r.libelle, icone: r.icone })) };
     E.pageAction = (id) => pageSociete(corps, id);
     const sc = corps.closest(".sh-scene"), t = sc && sc.querySelector(".sh-titre");
     if (t) {
@@ -669,7 +669,7 @@
     if (fam !== "tous" && !cat.some((m) => (m.famille || "autres") === fam)) fam = "tous";
     E.famModules = fam;
     const nbDe = (f) => (f === "tous" ? cat.length : cat.filter((m) => (m.famille || "autres") === f).length);
-    E.lateral = { titre: "Modules", sous: "ce qui est installé et actif", actif: fam, items: [{ id: "tous", libelle: "Tous les modules", n: cat.length, icone: "puzzle" }].concat(M.familles().map((f) => ({ id: f, libelle: M.famLib(f), n: nbDe(f), icone: "panorama" }))) };
+    E.lateral = { titre: "Modules", actif: fam, items: [{ id: "tous", libelle: "Tous les modules", n: cat.length, icone: "puzzle" }].concat(M.familles().map((f) => ({ id: f, libelle: M.famLib(f), n: nbDe(f), icone: "panorama" }))) };
     const tete = fam === "tous" ? "Tous les modules" : M.famLib(fam);
     E.pageNom = CASS.nomOnglet("menus:vue_modules"); E.fil = ["Paramètres", "Modules et Applications", tete];
     const sc = corps.closest(".sh-scene"), t = sc && sc.querySelector(".sh-titre");
@@ -705,7 +705,7 @@
         ["Session de", s.compte], ["Rôle", s.role], ["Adresse IP", s.ip || "—"], ["Navigateur et adresse", texteDe("um-ou")], ["Sites gérés", texteDe("um-sites")], ["FastPanel", texteDe("um-fp")], ["Organisation", s.organisation || "—"], ["Connecté depuis", f(sess[0] && sess[0].cree)], ["Connexion précédente", f(sess[1] && sess[1].cree)],
         ["Thème courant", th], ["Gestionnaire de menu", "Barre à groupes + colonne (affichage)"], ["Langue", navigator.language || "fr"], ["Fuseau horaire", Intl.DateTimeFormat().resolvedOptions().timeZone], ["Navigateur", nav],
         ["Présentation", document.body.classList.contains("allege") ? "Allégée" : "Complète"], ["Écran", screen.width + " × " + screen.height]];
-      corps.innerHTML = '<div class="d19-page"><p class="sous">Version du logiciel, puis détail de la session en cours.</p><dl class="d19-info">' + L.map((r) => r ? "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd>" : '<dt></dt><dd><hr class="d19-sep" style="margin:6px 0"></dd>').join("") + "</dl></div>";
+      corps.innerHTML = '<div class="d19-page"><dl class="d19-info">' + L.map((r) => r ? "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd>" : '<dt></dt><dd><hr class="d19-sep" style="margin:6px 0"></dd>').join("") + "</dl></div>";
     } else if (CASS.console) { corps.innerHTML = '<div class="sh-console"></div>'; CASS.console("affichage", corps.querySelector(".sh-console")); }
   };
 
