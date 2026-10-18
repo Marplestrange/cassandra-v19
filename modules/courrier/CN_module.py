@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.0  #77aa62
+# VERSION CN : 0.1.0  #00ade6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=77aa62 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=00ade6 ▼▼▼
 """Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 
 Porté de la V18 (`_imap_*`, `itare_mail_*`, `mail_*`, `_courrier_*`), avec ses leçons :
@@ -269,31 +269,18 @@ def brancher(ctx):
             db.ecrire("UPDATE messages SET %s=? WHERE compte=? AND dossier=? AND uid IN (%s)" % (col, ",".join("?" * len(propres))), [1 if valeur else 0, compte, dossier] + propres)
 
     def analyser_entetes(donnees):
-        """{uid: ligne de cache} d'après une réponse FETCH d'en-têtes."""
-        sortie = {}
+        """{uid: ligne de cache} d'après une réponse FETCH d'en-têtes. La lecture est un POINT D'ÉVOLUTION : points/EC_entetes.py (opération « cache »)."""
+        items = []
         for item in donnees or []:
             if not isinstance(item, tuple) or len(item) < 2:
                 continue
             meta = item[0].decode(errors="replace") if isinstance(item[0], bytes) else str(item[0])
-            mu = re.search(r"UID (\d+)", meta)
-            if not mu:
-                continue
-            msg = email.message_from_bytes(item[1])
-            nom, adr = o.adresse_parts(msg.get("From"))
-            brut = o.decoder_entete(msg.get("Date"))
-            sortie[mu.group(1)] = {
-                "uid": mu.group(1), "msg_id": (msg.get("Message-ID") or "").strip()[:200], "fil": o.cle_de_fil(msg), "de_addr": adr, "de_nom": nom,
-                "a_addr": (o.decoder_entete(msg.get("To")) or "")[:300], "objet": o.decoder_entete(msg.get("Subject")) or "(sans objet)", "date_brute": brut, "date_iso": o.date_iso(brut),
-                "lu": 1 if "\\Seen" in meta else 0, "suivi": 1 if "\\Flagged" in meta else 0, "repondu": 1 if "\\Answered" in meta else 0,
-                "pj": 1 if re.search(r'attachment|"name"|filename', meta, re.I) else 0, "taille": int((re.search(r"RFC822\.SIZE (\d+)", meta) or [0, 0])[1] or 0)}
-        return sortie
+            items.append({"meta": meta, "raw": base64.b64encode(bytes(item[1])).decode("ascii")})
+        return ctx.point("entetes", {"op": "cache", "items": items})["valeur"]
 
     def ligne_message(v):
-        m = {"uid": v["uid"], "de": ("%s <%s>" % (v["de_nom"], v["de_addr"])).strip(), "de_nom": v["de_nom"], "de_addr": v["de_addr"], "objet": v["objet"], "date": v["date_brute"],
-             "date_iso": v["date_iso"], "lu": bool(v["lu"]), "suivi": bool(v["suivi"]), "repondu": bool(v["repondu"]), "pj": bool(v["pj"]), "taille": v["taille"], "fil": v.get("fil", "")}
-        m["technique"] = o.motif_technique({"from_addr": v["de_addr"], "subject": v["objet"]})
-        m["etat"] = o.etat_du_message({"from_addr": v["de_addr"], "subject": v["objet"], "answered": v["repondu"]})
-        return m
+        """La ligne que lit l'écran. Le calcul est un POINT D'ÉVOLUTION : points/EC_entetes.py (opération « ligne »)."""
+        return ctx.point("entetes", {"op": "ligne", "v": v})["valeur"]
 
     # ------------------------------------------------------------------ lectures
     def etat(c):

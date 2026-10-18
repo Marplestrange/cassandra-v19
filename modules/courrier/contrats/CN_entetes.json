@@ -1,0 +1,34 @@
+{
+ "point": "courrier.entetes",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "op"
+  ],
+  "properties": {
+   "op": {
+    "enum": [
+     "cache",
+     "ligne",
+     "etat"
+    ]
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un message technique reste technique même quand on y a répondu : sa nature décide",
+  "la date est normalisée en UTC et triable : jamais la chaîne brute",
+  "le fil est la racine des références, sinon la réponse à, sinon l'identifiant, sinon l'objet nettoyé",
+  "une réponse sans UID est ignorée",
+  "un en-tête illisible donne une valeur vide, jamais une erreur",
+  "les mêmes en-têtes donnent toujours les mêmes lignes"
+ ]
+}

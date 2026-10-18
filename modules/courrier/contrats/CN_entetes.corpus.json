@@ -1,0 +1,1464 @@
+{
+ "point": "courrier.entetes",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de courrier, données synthétiques",
+ "cas": [
+  {
+   "cas": "un message",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "101 (UID 101 FLAGS (\\Seen) RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "101": {
+      "uid": "101",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 1,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "flags",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "102 (UID 102 FLAGS (\\Seen \\Flagged \\Answered) RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     },
+     {
+      "meta": "103 (UID 103 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     },
+     {
+      "meta": "104 (UID 104 FLAGS (\\Flagged) RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     },
+     {
+      "meta": "105 (UID 105 FLAGS (\\Answered) RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "102": {
+      "uid": "102",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 1,
+      "suivi": 1,
+      "repondu": 1,
+      "pj": 0,
+      "taille": 1000
+     },
+     "103": {
+      "uid": "103",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     },
+     "104": {
+      "uid": "104",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 0,
+      "suivi": 1,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     },
+     "105": {
+      "uid": "105",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 1,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "références et sujet encodé",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "110 (UID 110 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {245}",
+      "raw": "RnJvbTogPT91dGYtOD9CP1EyRm13Nms9Pz0gPGNhZmVAZXhlbXBsZS50ZXN0Pg0KVG86IGFAYi50ZXN0LCBjQGQudGVzdA0KU3ViamVjdDogPT91dGYtOD9RP1JlPTNBX2ZhY3R1cmVfPUMzPUE5dD1DMz1BOT89DQpEYXRlOiBUaHUsIDE1IE9jdCAyMDI2IDA4OjMwOjAwIEdNVA0KSW4tUmVwbHktVG86IDxvcmlnQGV4ZW1wbGUudGVzdD4NClJlZmVyZW5jZXM6IDxyb290QGV4ZW1wbGUudGVzdD4gPHhAZXhlbXBsZS50ZXN0Pg0KDQo="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "110": {
+      "uid": "110",
+      "msg_id": "",
+      "fil": "<root@exemple.test>",
+      "de_addr": "cafe@exemple.test",
+      "de_nom": "Café",
+      "a_addr": "a@b.test, c@d.test",
+      "objet": "Re: facture été",
+      "date_brute": "Thu, 15 Oct 2026 08:30:00 GMT",
+      "date_iso": "2026-10-15 08:30:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "fuseaux",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "111 (UID 111 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {91}",
+      "raw": "RnJvbTogbW9uaXRAc3J2LnRlc3QNClN1YmplY3Q6IGNlcnRpZmljYXQgZXhwaXLDqQ0KRGF0ZTogV2VkLCAxNCBPY3QgMjAyNiAyMzo1OTo1OSAtMDUwMA0KDQo="
+     },
+     {
+      "meta": "112 (UID 112 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     },
+     {
+      "meta": "113 (UID 113 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {245}",
+      "raw": "RnJvbTogPT91dGYtOD9CP1EyRm13Nms9Pz0gPGNhZmVAZXhlbXBsZS50ZXN0Pg0KVG86IGFAYi50ZXN0LCBjQGQudGVzdA0KU3ViamVjdDogPT91dGYtOD9RP1JlPTNBX2ZhY3R1cmVfPUMzPUE5dD1DMz1BOT89DQpEYXRlOiBUaHUsIDE1IE9jdCAyMDI2IDA4OjMwOjAwIEdNVA0KSW4tUmVwbHktVG86IDxvcmlnQGV4ZW1wbGUudGVzdD4NClJlZmVyZW5jZXM6IDxyb290QGV4ZW1wbGUudGVzdD4gPHhAZXhlbXBsZS50ZXN0Pg0KDQo="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "111": {
+      "uid": "111",
+      "msg_id": "",
+      "fil": "suj:certificat expir��",
+      "de_addr": "monit@srv.test",
+      "de_nom": "monit",
+      "a_addr": "",
+      "objet": "certificat expir��",
+      "date_brute": "Wed, 14 Oct 2026 23:59:59 -0500",
+      "date_iso": "2026-10-15 04:59:59",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     },
+     "112": {
+      "uid": "112",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     },
+     "113": {
+      "uid": "113",
+      "msg_id": "",
+      "fil": "<root@exemple.test>",
+      "de_addr": "cafe@exemple.test",
+      "de_nom": "Café",
+      "a_addr": "a@b.test, c@d.test",
+      "objet": "Re: facture été",
+      "date_brute": "Thu, 15 Oct 2026 08:30:00 GMT",
+      "date_iso": "2026-10-15 08:30:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "date illisible",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "114 (UID 114 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {95}",
+      "raw": "RnJvbTogbm9yZXBseUBzZXJ2aWNlLnRlc3QNClRvOiB4QHkudGVzdA0KU3ViamVjdDogUmU6IFJlOiBGd2Q6IEZhY3R1cmUNCkRhdGU6IHBhcyB1bmUgZGF0ZQ0KDQo="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "114": {
+      "uid": "114",
+      "msg_id": "",
+      "fil": "suj:facture",
+      "de_addr": "noreply@service.test",
+      "de_nom": "noreply",
+      "a_addr": "x@y.test",
+      "objet": "Re: Re: Fwd: Facture",
+      "date_brute": "pas une date",
+      "date_iso": "",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "champs vides",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "115 (UID 115 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {21}",
+      "raw": "RnJvbTogDQpTdWJqZWN0OiANCg0K"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "115": {
+      "uid": "115",
+      "msg_id": "",
+      "fil": "",
+      "de_addr": "",
+      "de_nom": "",
+      "a_addr": "",
+      "objet": "(sans objet)",
+      "date_brute": "",
+      "date_iso": "",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "sujet seul",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "116 (UID 116 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {23}",
+      "raw": "U3ViamVjdDogU2V1bCBzdWpldA0KDQo="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "116": {
+      "uid": "116",
+      "msg_id": "",
+      "fil": "suj:seul sujet",
+      "de_addr": "",
+      "de_nom": "",
+      "a_addr": "",
+      "objet": "Seul sujet",
+      "date_brute": "",
+      "date_iso": "",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "très longs",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "117 (UID 117 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {812}",
+      "raw": "RnJvbTogQm9iIDxib2JAZXhlbXBsZS50ZXN0Pg0KVG86IHhAeS50ZXN0DQpTdWJqZWN0OiB4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4DQpEYXRlOiBNb24sIDEyIE9jdCAyMDI2IDAxOjAyOjAzICswMDAwDQpNZXNzYWdlLUlEOiA8eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5Pg0KDQo="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "117": {
+      "uid": "117",
+      "msg_id": "<yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+      "fil": "<yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+      "de_addr": "bob@exemple.test",
+      "de_nom": "Bob",
+      "a_addr": "x@y.test",
+      "objet": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "date_brute": "Mon, 12 Oct 2026 01:02:03 +0000",
+      "date_iso": "2026-10-12 01:02:03",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "pièce jointe détectée",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "120 (UID 120 FLAGS () RFC822.SIZE 1000 BODYSTRUCTURE ((\"TEXT\" \"PLAIN\") (\"APPLICATION\" \"PDF\" (\"NAME\" \"a.pdf\") NIL NIL \"BASE64\" 100) \"MIXED\" (\"name\" \"x\") attachment) BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "120": {
+      "uid": "120",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 1,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "pièce jointe par filename",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "121 (UID 121 FLAGS () RFC822.SIZE 1000 filename BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "121": {
+      "uid": "121",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 1,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "sans pièce jointe",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "122 (UID 122 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "122": {
+      "uid": "122",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "taille",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "123 (UID 123 FLAGS () RFC822.SIZE 987654321 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "123": {
+      "uid": "123",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 987654321
+     }
+    }
+   }
+  },
+  {
+   "cas": "sans taille",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "1 (UID 124 FLAGS ())",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "124": {
+      "uid": "124",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 0
+     }
+    }
+   }
+  },
+  {
+   "cas": "sans uid ignoré",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "1 (FLAGS ())",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     },
+     {
+      "meta": "125 (UID 125 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "125": {
+      "uid": "125",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "liste vide",
+   "entree": {
+    "op": "cache",
+    "items": []
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "op": "cache",
+    "items": null
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "plusieurs messages",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "130 (UID 130 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     },
+     {
+      "meta": "131 (UID 131 FLAGS (\\Seen) RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {245}",
+      "raw": "RnJvbTogPT91dGYtOD9CP1EyRm13Nms9Pz0gPGNhZmVAZXhlbXBsZS50ZXN0Pg0KVG86IGFAYi50ZXN0LCBjQGQudGVzdA0KU3ViamVjdDogPT91dGYtOD9RP1JlPTNBX2ZhY3R1cmVfPUMzPUE5dD1DMz1BOT89DQpEYXRlOiBUaHUsIDE1IE9jdCAyMDI2IDA4OjMwOjAwIEdNVA0KSW4tUmVwbHktVG86IDxvcmlnQGV4ZW1wbGUudGVzdD4NClJlZmVyZW5jZXM6IDxyb290QGV4ZW1wbGUudGVzdD4gPHhAZXhlbXBsZS50ZXN0Pg0KDQo="
+     },
+     {
+      "meta": "132 (UID 132 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {91}",
+      "raw": "RnJvbTogbW9uaXRAc3J2LnRlc3QNClN1YmplY3Q6IGNlcnRpZmljYXQgZXhwaXLDqQ0KRGF0ZTogV2VkLCAxNCBPY3QgMjAyNiAyMzo1OTo1OSAtMDUwMA0KDQo="
+     },
+     {
+      "meta": "133 (UID 133 FLAGS (\\Seen) RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {95}",
+      "raw": "RnJvbTogbm9yZXBseUBzZXJ2aWNlLnRlc3QNClRvOiB4QHkudGVzdA0KU3ViamVjdDogUmU6IFJlOiBGd2Q6IEZhY3R1cmUNCkRhdGU6IHBhcyB1bmUgZGF0ZQ0KDQo="
+     },
+     {
+      "meta": "134 (UID 134 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {21}",
+      "raw": "RnJvbTogDQpTdWJqZWN0OiANCg0K"
+     },
+     {
+      "meta": "135 (UID 135 FLAGS (\\Seen) RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {23}",
+      "raw": "U3ViamVjdDogU2V1bCBzdWpldA0KDQo="
+     },
+     {
+      "meta": "136 (UID 136 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     },
+     {
+      "meta": "137 (UID 137 FLAGS (\\Seen) RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {245}",
+      "raw": "RnJvbTogPT91dGYtOD9CP1EyRm13Nms9Pz0gPGNhZmVAZXhlbXBsZS50ZXN0Pg0KVG86IGFAYi50ZXN0LCBjQGQudGVzdA0KU3ViamVjdDogPT91dGYtOD9RP1JlPTNBX2ZhY3R1cmVfPUMzPUE5dD1DMz1BOT89DQpEYXRlOiBUaHUsIDE1IE9jdCAyMDI2IDA4OjMwOjAwIEdNVA0KSW4tUmVwbHktVG86IDxvcmlnQGV4ZW1wbGUudGVzdD4NClJlZmVyZW5jZXM6IDxyb290QGV4ZW1wbGUudGVzdD4gPHhAZXhlbXBsZS50ZXN0Pg0KDQo="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "130": {
+      "uid": "130",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     },
+     "131": {
+      "uid": "131",
+      "msg_id": "",
+      "fil": "<root@exemple.test>",
+      "de_addr": "cafe@exemple.test",
+      "de_nom": "Café",
+      "a_addr": "a@b.test, c@d.test",
+      "objet": "Re: facture été",
+      "date_brute": "Thu, 15 Oct 2026 08:30:00 GMT",
+      "date_iso": "2026-10-15 08:30:00",
+      "lu": 1,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     },
+     "132": {
+      "uid": "132",
+      "msg_id": "",
+      "fil": "suj:certificat expir��",
+      "de_addr": "monit@srv.test",
+      "de_nom": "monit",
+      "a_addr": "",
+      "objet": "certificat expir��",
+      "date_brute": "Wed, 14 Oct 2026 23:59:59 -0500",
+      "date_iso": "2026-10-15 04:59:59",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     },
+     "133": {
+      "uid": "133",
+      "msg_id": "",
+      "fil": "suj:facture",
+      "de_addr": "noreply@service.test",
+      "de_nom": "noreply",
+      "a_addr": "x@y.test",
+      "objet": "Re: Re: Fwd: Facture",
+      "date_brute": "pas une date",
+      "date_iso": "",
+      "lu": 1,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     },
+     "134": {
+      "uid": "134",
+      "msg_id": "",
+      "fil": "",
+      "de_addr": "",
+      "de_nom": "",
+      "a_addr": "",
+      "objet": "(sans objet)",
+      "date_brute": "",
+      "date_iso": "",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     },
+     "135": {
+      "uid": "135",
+      "msg_id": "",
+      "fil": "suj:seul sujet",
+      "de_addr": "",
+      "de_nom": "",
+      "a_addr": "",
+      "objet": "Seul sujet",
+      "date_brute": "",
+      "date_iso": "",
+      "lu": 1,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     },
+     "136": {
+      "uid": "136",
+      "msg_id": "<m1@exemple.test>",
+      "fil": "<m1@exemple.test>",
+      "de_addr": "alice@exemple.test",
+      "de_nom": "Alice Martin",
+      "a_addr": "bob@exemple.test",
+      "objet": "R��union demain",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+      "date_iso": "2026-10-16 10:00:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     },
+     "137": {
+      "uid": "137",
+      "msg_id": "",
+      "fil": "<root@exemple.test>",
+      "de_addr": "cafe@exemple.test",
+      "de_nom": "Café",
+      "a_addr": "a@b.test, c@d.test",
+      "objet": "Re: facture été",
+      "date_brute": "Thu, 15 Oct 2026 08:30:00 GMT",
+      "date_iso": "2026-10-15 08:30:00",
+      "lu": 1,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "deux fois le même uid",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "140 (UID 140 FLAGS (\\Seen) RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {162}",
+      "raw": "RnJvbTogIkFsaWNlIE1hcnRpbiIgPEFsaWNlQEV4ZW1wbGUuVEVTVD4NClRvOiBib2JAZXhlbXBsZS50ZXN0DQpTdWJqZWN0OiBSw6l1bmlvbiBkZW1haW4NCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAyMDANCk1lc3NhZ2UtSUQ6IDxtMUBleGVtcGxlLnRlc3Q+DQoNCg=="
+     },
+     {
+      "meta": "140 (UID 140 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {245}",
+      "raw": "RnJvbTogPT91dGYtOD9CP1EyRm13Nms9Pz0gPGNhZmVAZXhlbXBsZS50ZXN0Pg0KVG86IGFAYi50ZXN0LCBjQGQudGVzdA0KU3ViamVjdDogPT91dGYtOD9RP1JlPTNBX2ZhY3R1cmVfPUMzPUE5dD1DMz1BOT89DQpEYXRlOiBUaHUsIDE1IE9jdCAyMDI2IDA4OjMwOjAwIEdNVA0KSW4tUmVwbHktVG86IDxvcmlnQGV4ZW1wbGUudGVzdD4NClJlZmVyZW5jZXM6IDxyb290QGV4ZW1wbGUudGVzdD4gPHhAZXhlbXBsZS50ZXN0Pg0KDQo="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "140": {
+      "uid": "140",
+      "msg_id": "",
+      "fil": "<root@exemple.test>",
+      "de_addr": "cafe@exemple.test",
+      "de_nom": "Café",
+      "a_addr": "a@b.test, c@d.test",
+      "objet": "Re: facture été",
+      "date_brute": "Thu, 15 Oct 2026 08:30:00 GMT",
+      "date_iso": "2026-10-15 08:30:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "en-têtes sans ligne vide finale",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "1 (UID 141 FLAGS ())",
+      "raw": "RnJvbTogYUBiLnRlc3QNClN1YmplY3Q6IHM="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "141": {
+      "uid": "141",
+      "msg_id": "",
+      "fil": "suj:s",
+      "de_addr": "a@b.test",
+      "de_nom": "a",
+      "a_addr": "",
+      "objet": "s",
+      "date_brute": "",
+      "date_iso": "",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 0
+     }
+    }
+   }
+  },
+  {
+   "cas": "en-têtes vides",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "1 (UID 142 FLAGS ())",
+      "raw": ""
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "142": {
+      "uid": "142",
+      "msg_id": "",
+      "fil": "",
+      "de_addr": "",
+      "de_nom": "",
+      "a_addr": "",
+      "objet": "(sans objet)",
+      "date_brute": "",
+      "date_iso": "",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 0
+     }
+    }
+   }
+  },
+  {
+   "cas": "sans objet",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "143 (UID 143 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {32}",
+      "raw": "RnJvbTogYUBiLnRlc3QNClRvOiBjQGQudGVzdA0KDQo="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "143": {
+      "uid": "143",
+      "msg_id": "",
+      "fil": "",
+      "de_addr": "a@b.test",
+      "de_nom": "a",
+      "a_addr": "c@d.test",
+      "objet": "(sans objet)",
+      "date_brute": "",
+      "date_iso": "",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "de seulement l'adresse",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "144 (UID 144 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {78}",
+      "raw": "RnJvbTogc29sb0BleGVtcGxlLnRlc3QNClN1YmplY3Q6IHMNCkRhdGU6IEZyaSwgMTYgT2N0IDIwMjYgMTI6MDA6MDAgKzAwMDANCg0K"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "144": {
+      "uid": "144",
+      "msg_id": "",
+      "fil": "suj:s",
+      "de_addr": "solo@exemple.test",
+      "de_nom": "solo",
+      "a_addr": "",
+      "objet": "s",
+      "date_brute": "Fri, 16 Oct 2026 12:00:00 +0000",
+      "date_iso": "2026-10-16 12:00:00",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "subject re fwd",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "145 (UID 145 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {47}",
+      "raw": "RnJvbTogYUBiLnRlc3QNClN1YmplY3Q6IEZXRDogVFI6IFJlOiBEZXZpcw0KDQo="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "145": {
+      "uid": "145",
+      "msg_id": "",
+      "fil": "suj:devis",
+      "de_addr": "a@b.test",
+      "de_nom": "a",
+      "a_addr": "",
+      "objet": "FWD: TR: Re: Devis",
+      "date_brute": "",
+      "date_iso": "",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "subject vide, pas de références",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "146 (UID 146 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {32}",
+      "raw": "RnJvbTogYUBiLnRlc3QNClN1YmplY3Q6IFJlOg0KDQo="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "146": {
+      "uid": "146",
+      "msg_id": "",
+      "fil": "",
+      "de_addr": "a@b.test",
+      "de_nom": "a",
+      "a_addr": "",
+      "objet": "Re:",
+      "date_brute": "",
+      "date_iso": "",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "message-id seul",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "147 (UID 147 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {55}",
+      "raw": "RnJvbTogYUBiLnRlc3QNClN1YmplY3Q6IHMNCk1lc3NhZ2UtSUQ6IDxpZEB4LnRlc3Q+DQoNCg=="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "147": {
+      "uid": "147",
+      "msg_id": "<id@x.test>",
+      "fil": "<id@x.test>",
+      "de_addr": "a@b.test",
+      "de_nom": "a",
+      "a_addr": "",
+      "objet": "s",
+      "date_brute": "",
+      "date_iso": "",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "in-reply-to prime sur message-id",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "148 (UID 148 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {82}",
+      "raw": "RnJvbTogYUBiLnRlc3QNClN1YmplY3Q6IHMNCk1lc3NhZ2UtSUQ6IDxpZEB4LnRlc3Q+DQpJbi1SZXBseS1UbzogPHJlcEB4LnRlc3Q+DQoNCg=="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "148": {
+      "uid": "148",
+      "msg_id": "<id@x.test>",
+      "fil": "<rep@x.test>",
+      "de_addr": "a@b.test",
+      "de_nom": "a",
+      "a_addr": "",
+      "objet": "s",
+      "date_brute": "",
+      "date_iso": "",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "references priment",
+   "entree": {
+    "op": "cache",
+    "items": [
+     {
+      "meta": "149 (UID 149 FLAGS () RFC822.SIZE 1000 BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {119}",
+      "raw": "RnJvbTogYUBiLnRlc3QNClN1YmplY3Q6IHMNCk1lc3NhZ2UtSUQ6IDxpZEB4LnRlc3Q+DQpJbi1SZXBseS1UbzogPHJlcEB4LnRlc3Q+DQpSZWZlcmVuY2VzOiA8cjFAeC50ZXN0PiA8cjJAeC50ZXN0Pg0KDQo="
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "149": {
+      "uid": "149",
+      "msg_id": "<id@x.test>",
+      "fil": "<r1@x.test>",
+      "de_addr": "a@b.test",
+      "de_nom": "a",
+      "a_addr": "",
+      "objet": "s",
+      "date_brute": "",
+      "date_iso": "",
+      "lu": 0,
+      "suivi": 0,
+      "repondu": 0,
+      "pj": 0,
+      "taille": 1000
+     }
+    }
+   }
+  },
+  {
+   "cas": "ligne simple",
+   "entree": {
+    "op": "ligne",
+    "v": {
+     "uid": "7",
+     "de_nom": "Alice",
+     "de_addr": "alice@exemple.test",
+     "objet": "Bonjour",
+     "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": 1,
+     "suivi": 0,
+     "repondu": 0,
+     "pj": 1,
+     "taille": 1234,
+     "fil": "<a@b>"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "uid": "7",
+     "de": "Alice <alice@exemple.test>",
+     "de_nom": "Alice",
+     "de_addr": "alice@exemple.test",
+     "objet": "Bonjour",
+     "date": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": true,
+     "suivi": false,
+     "repondu": false,
+     "pj": true,
+     "taille": 1234,
+     "fil": "<a@b>",
+     "technique": "",
+     "etat": "traiter"
+    }
+   }
+  },
+  {
+   "cas": "ligne non lue",
+   "entree": {
+    "op": "ligne",
+    "v": {
+     "uid": "7",
+     "de_nom": "Alice",
+     "de_addr": "alice@exemple.test",
+     "objet": "Bonjour",
+     "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": 0,
+     "suivi": 1,
+     "repondu": 1,
+     "pj": 0,
+     "taille": 1234,
+     "fil": "<a@b>"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "uid": "7",
+     "de": "Alice <alice@exemple.test>",
+     "de_nom": "Alice",
+     "de_addr": "alice@exemple.test",
+     "objet": "Bonjour",
+     "date": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": false,
+     "suivi": true,
+     "repondu": true,
+     "pj": false,
+     "taille": 1234,
+     "fil": "<a@b>",
+     "technique": "",
+     "etat": "attente"
+    }
+   }
+  },
+  {
+   "cas": "ligne sans nom",
+   "entree": {
+    "op": "ligne",
+    "v": {
+     "uid": "7",
+     "de_nom": "",
+     "de_addr": "alice@exemple.test",
+     "objet": "Bonjour",
+     "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": 1,
+     "suivi": 0,
+     "repondu": 0,
+     "pj": 1,
+     "taille": 1234,
+     "fil": "<a@b>"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "uid": "7",
+     "de": "<alice@exemple.test>",
+     "de_nom": "",
+     "de_addr": "alice@exemple.test",
+     "objet": "Bonjour",
+     "date": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": true,
+     "suivi": false,
+     "repondu": false,
+     "pj": true,
+     "taille": 1234,
+     "fil": "<a@b>",
+     "technique": "",
+     "etat": "traiter"
+    }
+   }
+  },
+  {
+   "cas": "ligne sans fil",
+   "entree": {
+    "op": "ligne",
+    "v": {
+     "uid": "7",
+     "de_nom": "Alice",
+     "de_addr": "alice@exemple.test",
+     "objet": "Bonjour",
+     "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": 1,
+     "suivi": 0,
+     "repondu": 0,
+     "pj": 1,
+     "taille": 1234
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "uid": "7",
+     "de": "Alice <alice@exemple.test>",
+     "de_nom": "Alice",
+     "de_addr": "alice@exemple.test",
+     "objet": "Bonjour",
+     "date": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": true,
+     "suivi": false,
+     "repondu": false,
+     "pj": true,
+     "taille": 1234,
+     "fil": "",
+     "technique": "",
+     "etat": "traiter"
+    }
+   }
+  },
+  {
+   "cas": "ligne technique",
+   "entree": {
+    "op": "ligne",
+    "v": {
+     "uid": "7",
+     "de_nom": "Certbot",
+     "de_addr": "certbot@srv.test",
+     "objet": "Renouvellement",
+     "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": 1,
+     "suivi": 0,
+     "repondu": 0,
+     "pj": 1,
+     "taille": 1234,
+     "fil": "<a@b>"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "uid": "7",
+     "de": "Certbot <certbot@srv.test>",
+     "de_nom": "Certbot",
+     "de_addr": "certbot@srv.test",
+     "objet": "Renouvellement",
+     "date": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": true,
+     "suivi": false,
+     "repondu": false,
+     "pj": true,
+     "taille": 1234,
+     "fil": "<a@b>",
+     "technique": "expéditeur technique",
+     "etat": "tech"
+    }
+   }
+  },
+  {
+   "cas": "ligne technique répondue",
+   "entree": {
+    "op": "ligne",
+    "v": {
+     "uid": "7",
+     "de_nom": "Alice",
+     "de_addr": "root@srv.test",
+     "objet": "cron <root@srv>",
+     "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": 1,
+     "suivi": 0,
+     "repondu": 1,
+     "pj": 1,
+     "taille": 1234,
+     "fil": "<a@b>"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "uid": "7",
+     "de": "Alice <root@srv.test>",
+     "de_nom": "Alice",
+     "de_addr": "root@srv.test",
+     "objet": "cron <root@srv>",
+     "date": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": true,
+     "suivi": false,
+     "repondu": true,
+     "pj": true,
+     "taille": 1234,
+     "fil": "<a@b>",
+     "technique": "expéditeur technique",
+     "etat": "tech"
+    }
+   }
+  },
+  {
+   "cas": "ligne répondue",
+   "entree": {
+    "op": "ligne",
+    "v": {
+     "uid": "7",
+     "de_nom": "Alice",
+     "de_addr": "alice@exemple.test",
+     "objet": "Bonjour",
+     "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": 1,
+     "suivi": 0,
+     "repondu": 1,
+     "pj": 1,
+     "taille": 1234,
+     "fil": "<a@b>"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "uid": "7",
+     "de": "Alice <alice@exemple.test>",
+     "de_nom": "Alice",
+     "de_addr": "alice@exemple.test",
+     "objet": "Bonjour",
+     "date": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": true,
+     "suivi": false,
+     "repondu": true,
+     "pj": true,
+     "taille": 1234,
+     "fil": "<a@b>",
+     "technique": "",
+     "etat": "attente"
+    }
+   }
+  },
+  {
+   "cas": "ligne valeurs None",
+   "entree": {
+    "op": "ligne",
+    "v": {
+     "uid": "7",
+     "de_nom": "Alice",
+     "de_addr": "alice@exemple.test",
+     "objet": "Bonjour",
+     "date_brute": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": null,
+     "suivi": null,
+     "repondu": null,
+     "pj": null,
+     "taille": 0,
+     "fil": "<a@b>"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "uid": "7",
+     "de": "Alice <alice@exemple.test>",
+     "de_nom": "Alice",
+     "de_addr": "alice@exemple.test",
+     "objet": "Bonjour",
+     "date": "Fri, 16 Oct 2026 12:00:00 +0200",
+     "date_iso": "2026-10-16 10:00:00",
+     "lu": false,
+     "suivi": false,
+     "repondu": false,
+     "pj": false,
+     "taille": 0,
+     "fil": "<a@b>",
+     "technique": "",
+     "etat": "traiter"
+    }
+   }
+  },
+  {
+   "cas": "état à traiter",
+   "entree": {
+    "op": "etat",
+    "m": {
+     "from_addr": "a@b.test",
+     "subject": "x",
+     "answered": false
+    }
+   },
+   "sortie": {
+    "valeur": "traiter"
+   }
+  },
+  {
+   "cas": "état en attente",
+   "entree": {
+    "op": "etat",
+    "m": {
+     "from_addr": "a@b.test",
+     "subject": "x",
+     "answered": true
+    }
+   },
+   "sortie": {
+    "valeur": "attente"
+   }
+  },
+  {
+   "cas": "état technique",
+   "entree": {
+    "op": "etat",
+    "m": {
+     "from_addr": "monit@s.test",
+     "subject": "x"
+    }
+   },
+   "sortie": {
+    "valeur": "tech"
+   }
+  },
+  {
+   "cas": "état technique répondu",
+   "entree": {
+    "op": "etat",
+    "m": {
+     "from_addr": "monit@s.test",
+     "subject": "x",
+     "answered": true
+    }
+   },
+   "sortie": {
+    "valeur": "tech"
+   }
+  },
+  {
+   "cas": "état sans rien",
+   "entree": {
+    "op": "etat",
+    "m": {}
+   },
+   "sortie": {
+    "valeur": "traiter"
+   }
+  },
+  {
+   "cas": "état objet technique seul",
+   "entree": {
+    "op": "etat",
+    "m": {
+     "from_addr": "a@b.test",
+     "subject": "raid degraded"
+    }
+   },
+   "sortie": {
+    "valeur": "traiter"
+   }
+  }
+ ]
+}

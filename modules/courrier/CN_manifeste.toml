@@ -336,3 +336,11 @@ contrat = "1.0"
 reference = "points/EC_html_en_texte"
 fonction = "point_html_en_texte"
 runtime = "python"
+
+[[points_evolution]]
+id = "entetes"
+libelle = "La lecture des en-têtes d'une boîte : les réponses du serveur en entrée, les lignes du cache et ce que lit l'écran en sortie (expéditeur, objet, date triable, fil de discussion, état à traiter)"
+contrat = "1.0"
+reference = "points/EC_entetes"
+fonction = "point_entetes"
+runtime = "python"

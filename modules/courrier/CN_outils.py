@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.0  #176916
+# VERSION CN : 0.1.0  #867eb4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=176916 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=867eb4 ▼▼▼
 """Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
 
 Le nettoyage du HTML est une LISTE BLANCHE bâtie sur un vrai analyseur (html.parser), pas une série d'expressions régulières qui retirent ce qu'on
@@ -156,10 +156,8 @@ def motif_technique(m):
 
 
 def etat_du_message(m):
-    """« tech », « attente » ou « traiter ». L'ORDRE COMPTE : un message technique auquel on a répondu reste technique, c'est sa nature qui décide."""
-    if motif_technique(m):
-        return "tech"
-    return "attente" if m.get("answered") else "traiter"
+    """« tech », « attente » ou « traiter ». Le calcul est un POINT D'ÉVOLUTION : points/EC_entetes.py (opération « etat »)."""
+    return _point("entetes", {"op": "etat", "m": m})["valeur"]
 
 
 # ------------------------------------------------------------------ corps et pièces jointes
