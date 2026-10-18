@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #474bfe
+# VERSION CN : 0.1.0  #e9525e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'extracteur proactif : trouve dans les fichiers CN des modules les fonctions éligibles à l'évolution (EC) et les en sort, sans qu'on les désigne.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=474bfe ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e9525e ▼▼▼
 """L'extracteur proactif : trouve dans les fichiers CN des modules les fonctions éligibles à l'évolution (EC) et les en sort, sans qu'on les désigne.
 
    python outils/CN_auto_extraire.py lister   [--module M]            ce qui est éligible, et pourquoi le reste ne l'est pas (n'écrit rien)
@@ -580,7 +580,7 @@ def synthetiser(c, capturees=(), budget_s=8.0):
 
 
 # ── 2 bis. la capture des appels réels ──────────────────────────────────────────
-def capturer(module, candidats, delai=900):
+def capturer(module, candidats, delai=420):
     """Rejoue les bancs du module en observant les appels des fonctions candidates : leurs arguments RÉELS (un message lu, une fiche, une règle), la meilleure matière d'un corpus. Dans un sous-processus."""
     tests = sorted((RACINE / "tests").glob("CN_test_%s*.py" % module))
     if not tests or not candidats:
@@ -588,8 +588,12 @@ def capturer(module, candidats, delai=900):
     import tempfile
     sortie = Path(tempfile.mkdtemp()) / "captures.json"
     cibles = {c["fn"]: {"fichier": c["fichier"], "params": c["params"]} for c in candidats}
-    r = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--capture", module, str(sortie), json.dumps(cibles)], capture_output=True, text=True,
+    try:
+        subprocess.run([sys.executable, str(Path(__file__).resolve()), "--capture", module, str(sortie), json.dumps(cibles)], capture_output=True, text=True,
                        encoding="utf-8", errors="replace", cwd=str(RACINE), timeout=delai)
+    except subprocess.TimeoutExpired:
+        print("  (capture de %s : bancs trop longs sous observation, entrées synthétisées seulement)" % module)
+        return {}
     if sortie.exists():
         return json.loads(sortie.read_text(encoding="utf-8"))
     return {}

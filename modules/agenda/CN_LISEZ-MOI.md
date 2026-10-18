@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : agenda -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.1.1  #000000 -->
+<!-- VERSION CN : 0.1.2  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : Agenda -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.1 empreinte=8e96ac ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.2 empreinte=8e96ac ▼▼▼ -->
 # Agenda
 
 Événements (récurrence, alarme, liens vivants, journal), rappels, import/export iCalendar, lecture CalDAV, et la vue temporelle unique (`calendrier`) : événements, tâches datées, rappels, jalons des projets.

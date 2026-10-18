@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agenda
 # ZONE       : CN
-# VERSION CN : 0.1.1  #344b4b
+# VERSION CN : 0.1.2  #43837d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'agenda.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=344b4b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=43837d ▼▼▼
 """L'agenda.
 
 Porté de la V18 (`itare_event_*`, `itare_reminder_*`, `itare_calendar_items`, `itare_agenda_list`, `ical_parse`, `rrule_expand`, `_caldav_*`), avec ses leçons :
@@ -240,19 +240,8 @@ def ical_lire(texte, appeler):
 
 
 def plier(ligne):
-    """RFC 5545 : 75 octets au plus par ligne, la suite commence par une espace."""
-    b = ligne.encode("utf-8")
-    if len(b) <= 75:
-        return ligne
-    out, cur = [], ""
-    for ch in ligne:
-        if len((cur + ch).encode("utf-8")) > (75 if not out else 74):
-            out.append(cur)
-            cur = ch
-        else:
-            cur += ch
-    out.append(cur)
-    return "\r\n ".join(out)
+    """RFC 5545 : 75 octets au plus par ligne, la suite commence par une espace. Le calcul est un POINT D'ÉVOLUTION : points/EC_plier.py."""
+    return _appeler_point("plier", {"ligne": ligne})["valeur"]
 
 
 # ---------------------------------------------------------------------- le module

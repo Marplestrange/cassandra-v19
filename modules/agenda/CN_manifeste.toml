@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agenda
 # ZONE       : CN
-# VERSION CN : 0.1.1  #75acb5
+# VERSION CN : 0.1.2  #80c0ff
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'agenda d'un compte : événements (récurrences, alarme, liens vers ce qu'ils concernent, journal, préparation), rappels, import et export iCalendar, lecture de son serveur CalDAV, et la vue temporelle unique qui rassemble événements, tâches datées, rappels et jalons des projets. Il est à la personne : l'administrateur ne le voit pas.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=75acb5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=80c0ff ▼▼▼
 [module]
 id = "agenda"
 nom = "Agenda"
-version = "0.1.1"
+version = "0.1.2"
 noyau_min = "0.1.0"
 description = "L'agenda d'un compte : événements (récurrences, alarme, liens vers ce qu'ils concernent, journal, préparation), rappels, import et export iCalendar, lecture de son serveur CalDAV, et la vue temporelle unique qui rassemble événements, tâches datées, rappels et jalons des projets. Il est à la personne : l'administrateur ne le voit pas."
 confiance = "interne"
@@ -221,4 +221,12 @@ libelle = "Un mot (daily, weekly, quotidien…) ou une RRULE (avec ou sans « RR
 contrat = "1.0"
 reference = "points/EC_regle_de"
 fonction = "point_regle_de"
+runtime = "python"
+
+[[points_evolution]]
+id = "plier"
+libelle = "RFC 5545 : 75 octets au plus par ligne, la suite commence par une espace (extrait automatiquement de CN_module.py)"
+contrat = "1.0"
+reference = "points/EC_plier"
+fonction = "point_plier"
 runtime = "python"

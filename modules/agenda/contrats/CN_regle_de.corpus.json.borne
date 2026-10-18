@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agenda
 # ZONE       : CN
-# VERSION CN : 0.1.1  #577e58
+# VERSION CN : 0.1.2  #577e58
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : regle_de.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

@@ -1,0 +1,331 @@
+{
+ "point": "agenda.plier",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de agenda, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "ligne": "DESCRIPTION:ligne un\\nligne deux mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot "
+   },
+   "sortie": {
+    "valeur": "DESCRIPTION:ligne un\\nligne deux mot mot mot mot mot mot mot mot mot mot mo\r\n t mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot \r\n mot mot mot mot mot mot mot mot mot mot mot "
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "ligne": "BEGIN:VCALENDAR"
+   },
+   "sortie": {
+    "valeur": "BEGIN:VCALENDAR"
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "ligne": "VERSION:2.0"
+   },
+   "sortie": {
+    "valeur": "VERSION:2.0"
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "ligne": "PRODID:-//Cassandra//Agenda//FR"
+   },
+   "sortie": {
+    "valeur": "PRODID:-//Cassandra//Agenda//FR"
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "ligne": "CALSCALE:GREGORIAN"
+   },
+   "sortie": {
+    "valeur": "CALSCALE:GREGORIAN"
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "ligne": "BEGIN:VEVENT"
+   },
+   "sortie": {
+    "valeur": "BEGIN:VEVENT"
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "ligne": "UID:loc-53b12066172c6a03774a2961"
+   },
+   "sortie": {
+    "valeur": "UID:loc-53b12066172c6a03774a2961"
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "ligne": "DTSTAMP:20261018T174815Z"
+   },
+   "sortie": {
+    "valeur": "DTSTAMP:20261018T174815Z"
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "ligne": "SUMMARY:Proche"
+   },
+   "sortie": {
+    "valeur": "SUMMARY:Proche"
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "ligne": "DTSTART:20261020T090000"
+   },
+   "sortie": {
+    "valeur": "DTSTART:20261020T090000"
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "ligne": "END:VEVENT"
+   },
+   "sortie": {
+    "valeur": "END:VEVENT"
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "ligne": "END:VCALENDAR"
+   },
+   "sortie": {
+    "valeur": "END:VCALENDAR"
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "ligne": "UID:loc-1a993c75d67565680788fc40"
+   },
+   "sortie": {
+    "valeur": "UID:loc-1a993c75d67565680788fc40"
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "ligne": "DTSTAMP:20261018T174816Z"
+   },
+   "sortie": {
+    "valeur": "DTSTAMP:20261018T174816Z"
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "ligne": "SUMMARY:Réunion\\; importante\\, très"
+   },
+   "sortie": {
+    "valeur": "SUMMARY:Réunion\\; importante\\, très"
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "ligne": "DTSTART:20261021T140000"
+   },
+   "sortie": {
+    "valeur": "DTSTART:20261021T140000"
+   }
+  },
+  {
+   "cas": "cas 17",
+   "entree": {
+    "ligne": "DTEND:20261021T150000"
+   },
+   "sortie": {
+    "valeur": "DTEND:20261021T150000"
+   }
+  },
+  {
+   "cas": "cas 18",
+   "entree": {
+    "ligne": "LOCATION:Salle 2"
+   },
+   "sortie": {
+    "valeur": "LOCATION:Salle 2"
+   }
+  },
+  {
+   "cas": "cas 19",
+   "entree": {
+    "ligne": "URL:https://visio.example/x"
+   },
+   "sortie": {
+    "valeur": "URL:https://visio.example/x"
+   }
+  },
+  {
+   "cas": "cas 20",
+   "entree": {
+    "ligne": "RRULE:FREQ=WEEKLY"
+   },
+   "sortie": {
+    "valeur": "RRULE:FREQ=WEEKLY"
+   }
+  },
+  {
+   "cas": "cas 21",
+   "entree": {
+    "ligne": "UID:loc-ff572751c05fd57e4530b0b0"
+   },
+   "sortie": {
+    "valeur": "UID:loc-ff572751c05fd57e4530b0b0"
+   }
+  },
+  {
+   "cas": "cas 22",
+   "entree": {
+    "ligne": "DTSTAMP:20261018T174817Z"
+   },
+   "sortie": {
+    "valeur": "DTSTAMP:20261018T174817Z"
+   }
+  },
+  {
+   "cas": "cas 23",
+   "entree": {
+    "ligne": "SUMMARY:Congé"
+   },
+   "sortie": {
+    "valeur": "SUMMARY:Congé"
+   }
+  },
+  {
+   "cas": "cas 24",
+   "entree": {
+    "ligne": "DTSTART;VALUE=DATE:20261027"
+   },
+   "sortie": {
+    "valeur": "DTSTART;VALUE=DATE:20261027"
+   }
+  },
+  {
+   "cas": "cas 25",
+   "entree": {
+    "ligne": "FREQ=DAILY;COUNT=10"
+   },
+   "sortie": {
+    "valeur": "FREQ=DAILY;COUNT=10"
+   }
+  },
+  {
+   "cas": "cas 26",
+   "entree": {
+    "ligne": "Congé posé"
+   },
+   "sortie": {
+    "valeur": "Congé posé"
+   }
+  },
+  {
+   "cas": "cas 27",
+   "entree": {
+    "ligne": "modules"
+   },
+   "sortie": {
+    "valeur": "modules"
+   }
+  },
+  {
+   "cas": "cas 28",
+   "entree": {
+    "ligne": "{\"a\": 1}"
+   },
+   "sortie": {
+    "valeur": "{\"a\": 1}"
+   }
+  },
+  {
+   "cas": "cas 29",
+   "entree": {
+    "ligne": "2022-01-03 09:00"
+   },
+   "sortie": {
+    "valeur": "2022-01-03 09:00"
+   }
+  },
+  {
+   "cas": "cas 30",
+   "entree": {
+    "ligne": "127.0.0.1"
+   },
+   "sortie": {
+    "valeur": "127.0.0.1"
+   }
+  },
+  {
+   "cas": "cas 31",
+   "entree": {
+    "ligne": "projets.equipe"
+   },
+   "sortie": {
+    "valeur": "projets.equipe"
+   }
+  },
+  {
+   "cas": "cas 32",
+   "entree": {
+    "ligne": "Weekly"
+   },
+   "sortie": {
+    "valeur": "Weekly"
+   }
+  },
+  {
+   "cas": "cas 33",
+   "entree": {
+    "ligne": "FREQ=DAILY"
+   },
+   "sortie": {
+    "valeur": "FREQ=DAILY"
+   }
+  },
+  {
+   "cas": "cas 34",
+   "entree": {
+    "ligne": "2026-10-01"
+   },
+   "sortie": {
+    "valeur": "2026-10-01"
+   }
+  },
+  {
+   "cas": "cas 35",
+   "entree": {
+    "ligne": "projets.lister"
+   },
+   "sortie": {
+    "valeur": "projets.lister"
+   }
+  },
+  {
+   "cas": "cas 36",
+   "entree": {
+    "ligne": "taches.fiche"
+   },
+   "sortie": {
+    "valeur": "taches.fiche"
+   }
+  }
+ ]
+}
