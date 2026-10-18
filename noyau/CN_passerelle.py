@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #117d0f
+# VERSION CN : 0.1.0  #12edf6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=117d0f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=12edf6 ▼▼▼
 """La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 
 Un module n'écrit aucune route. Il déclare des capacités, et la passerelle les rend toutes joignables par la même URL :
@@ -159,11 +159,13 @@ class Passerelle:
         n = int(h.headers.get("Content-Length") or 0)
         if n > TAILLE_MAX:
             raise ValueError("corps trop grand (1 Mo au plus)")
+        h._brut = b""
         if n == 0:
             return {}
         if "json" not in (h.headers.get("Content-Type") or ""):
             raise ValueError("Content-Type : application/json attendu")
         brut = h.rfile.read(n)
+        h._brut = brut                                              # les octets exacts : un webhook SIGNÉ (Stripe) ne se vérifie que sur eux, jamais sur un JSON relu
         try:
             d = json.loads(brut.decode("utf-8"))
         except ValueError:
@@ -263,7 +265,9 @@ class Passerelle:
             return self._repondre(h, 404, {"erreur": "capacité inconnue ou non publique"})
         corps = self._corps(h)
         noms = self._noms_args(e)
-        if "corps_brut" in noms:                                   # un service extérieur (le webhook de Telegram) poste son propre JSON, sans enveloppe « args »
+        if "corps_octets" in noms:                                 # un webhook signé : les octets reçus, tels quels (la capacité masque cet argument du journal)
+            args = {"corps_octets": getattr(h, "_brut", b"")}
+        elif "corps_brut" in noms:                                 # un service extérieur (le webhook de Telegram) poste son propre JSON, sans enveloppe « args »
             args = {"corps_brut": corps}
         else:
             args = corps.get("args") or {}

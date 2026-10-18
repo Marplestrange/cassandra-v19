@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1d5f56
+# VERSION CN : 0.1.0  #5d6d90
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1d5f56 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5d6d90 ▼▼▼
 """Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
 
 Ce fichier DÉCIDE : qui peut acheter quoi, à quel prix, combien de places restent, quand une vente est acquise, ce qu'elle rapporte au revendeur et quand elle s'annule.
@@ -28,6 +28,7 @@ Règles qui tiennent tout :
 """
 from __future__ import annotations
 
+import secrets
 import time
 from datetime import date
 
@@ -46,6 +47,12 @@ DUREE_VIREMENT_S = 3 * 24 * 3600
 
 def aujourdhui() -> str:
     return date.fromtimestamp(horloge()).isoformat()
+
+
+def url(ctx, chemin: str) -> str:
+    """Une adresse de la boutique : le domaine du réglage, https sauf avis contraire."""
+    d = ctx.reglage("domaine")
+    return "%s://%s%s" % ("https" if ctx.reglage("https") else "http", d or "localhost", chemin)
 
 
 # ── le stock : ce qui reste à vendre ─────────────────────────────────────────
@@ -264,10 +271,10 @@ def creer_commande(ctx, tx, evt, lignes, *, canal, nom="", mail="", revendeur_co
     minutes = int(ctx.reglage("reservation_minutes"))
     expire = horloge() + (DUREE_VIREMENT_S if moyen == "virement" else minutes * 60)
     ref = ids.nouvelle_ref(tx, "commande")
-    cid = tx.execute("INSERT INTO commandes(ref, evenement_id, client_id, revendeur_id, canal, moyen, etat, sous_total, remise, don, frais, total, promo_code, nom, mail, attribution, formule_id, expire_le, par) "
-                     "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    cid = tx.execute("INSERT INTO commandes(ref, evenement_id, client_id, revendeur_id, canal, moyen, etat, sous_total, remise, don, frais, total, promo_code, nom, mail, attribution, formule_id, expire_le, par, suivi) "
+                     "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                      (ref, evt["id"], client, rev["id"] if rev else None, canal, moyen, "en_attente" if moyen == "virement" else "retenue", d["sous_total"], d["remise"], d["don"], d["frais"], d["total"],
-                      d["promo"], r.texte(nom, 120), r.texte(mail, 160), attribution, formule_id, expire, par)).lastrowid
+                      d["promo"], r.texte(nom, 120), r.texte(mail, 160), attribution, formule_id, expire, par, secrets.token_urlsafe(18))).lastrowid
     for l in d["lignes"]:
         tx.execute("INSERT INTO lignes_commande(commande_id, type_billet_id, nom, prix, quantite, entrees) VALUES (?,?,?,?,?,?)", (cid, l["type_billet_id"], l["nom"], l["prix"], l["quantite"], l["entrees"]))
     return cid, d
@@ -308,7 +315,18 @@ def encaisser(ctx, tx, cmd, moyen, reference="", par="", numeros=None):
     if cmd["promo_code"]:
         tx.execute("UPDATE promos SET usages = usages + 1 WHERE code = ?", (cmd["promo_code"],))
     tx.execute("UPDATE commandes SET etat = 'payee', moyen = ?, payee_le = datetime('now'), reference_externe = ?, par = ? WHERE id = ?", (moyen or cmd["moyen"], reference or None, par, cmd["id"]))
+    courriel_confirmation(ctx, tx, cmd, evt, numeros)
     return {"deja": False, "numeros": numeros}
+
+
+def courriel_confirmation(ctx, tx, cmd, evt, numeros):
+    """Le courriel de confirmation est PRÉPARÉ (table `courriels`) : c'est le courrier qui l'envoie. Un envoi qui échoue ne défait pas une vente."""
+    if not cmd["mail"]:
+        return
+    corps = ("Bonjour %s,\n\nVotre commande %s pour « %s » (%s) est confirmée : %d billet(s), %s.\n\nNuméros : %s\n\nVos billets, avec leur QR code, sont ici : %s\n\n%s"
+             % (cmd["nom"] or "", cmd["ref"], evt["nom"], evt["date_iso"] or "date à venir", len(numeros), ("%.2f €" % (cmd["total"] / 100)).replace(".", ","), ", ".join(numeros),
+                url(ctx, "/c/%s?s=%s" % (cmd["ref"], cmd["suivi"])), ctx.reglage("titulaire_nom")))
+    tx.execute("INSERT INTO courriels(a, objet, corps, commande_ref) VALUES (?,?,?,?)", (cmd["mail"], "Vos billets · %s" % evt["nom"], corps, cmd["ref"]))
 
 
 def rembourser(ctx, tx, cmd, motif=""):

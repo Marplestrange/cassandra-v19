@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8657ac
+# VERSION CN : 0.1.0  #57a404
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8657ac ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=57a404 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -27,6 +27,7 @@ licence = "AGPL-3.0-or-later"
 [permissions]
 stockage = true
 secrets = true
+reseau = ["l'API de Stripe (api.stripe.com), pour créer la page de paiement hébergée d'une commande"]
 
 [[droits]]
 id = "gerer"
@@ -166,6 +167,48 @@ id = "recu_fiscal_autonome"
 libelle = "Reçu fiscal de don produit par la billetterie (sans Dolibarr)"
 type = "booleen"
 defaut = true
+
+[[reglages]]
+id = "stripe_actif"
+libelle = "Paiement par carte bancaire (Stripe)"
+type = "booleen"
+defaut = false
+
+[[reglages]]
+id = "stripe_cle_secrete"
+libelle = "Clé secrète Stripe (sk_…) : jamais affichée"
+type = "secret"
+
+[[reglages]]
+id = "stripe_webhook_secret"
+libelle = "Secret de signature des webhooks Stripe (whsec_…) : jamais affiché"
+type = "secret"
+
+[[reglages]]
+id = "helloasso_actif"
+libelle = "Paiement par HelloAsso (adaptateur à venir)"
+type = "booleen"
+defaut = false
+
+[[reglages]]
+id = "paypal_actif"
+libelle = "Paiement par PayPal (adaptateur à venir)"
+type = "booleen"
+defaut = false
+
+[[reglages]]
+id = "virement_actif"
+libelle = "Paiement par virement bancaire (places retenues 3 jours)"
+type = "booleen"
+defaut = false
+
+[[reglages]]
+id = "iban"
+libelle = "IBAN qui reçoit les virements"
+
+[[reglages]]
+id = "virement_beneficiaire"
+libelle = "Bénéficiaire affiché pour les virements (sinon le nom de l'organisateur)"
 
 [[reglages]]
 id = "domaine"
@@ -855,6 +898,57 @@ perimetre = ["l'état d'une caisse et sa clôture numérotée"]
 preuve = "la caisse relue clôturée"
 retour = "rouvrir la caisse (le numéro de clôture n'est pas rendu)"
 paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "public_calendrier"
+libelle = "La boutique : les événements publiés, leur date, leur lieu, ce qu'il reste (public, rien d'un acheteur)"
+risque = "lecture"
+qui = ["anonyme"]
+
+[[capacites]]
+id = "public_evenement"
+libelle = "La page d'un événement publié : programme avec les heures, salle, billets et leur disponibilité, conditions d'achat, moyens de paiement (public)"
+risque = "lecture"
+qui = ["anonyme"]
+
+[[capacites]]
+id = "public_panier"
+libelle = "Chiffrer un panier de la boutique sans rien écrire : prix de la base, code promo, don, frais sans compte (public)"
+risque = "lecture"
+qui = ["anonyme"]
+
+[[capacites]]
+id = "public_commander"
+libelle = "Passer une commande depuis la boutique : retient les places le temps de payer, rend la page de paiement ou les instructions de virement (public, limité par origine)"
+risque = "moyen"
+perimetre = ["une commande en cours et ses places retenues (aucun billet avant le paiement)"]
+preuve = "la commande relue en cours"
+retour = "annuler la commande : les places reviennent"
+paliers = ["auto", "raconter"]
+qui = ["anonyme"]
+
+[[capacites]]
+id = "public_suivre"
+libelle = "Suivre SA commande avec son jeton de suivi : état, et billets avec QR une fois payée (public, jamais par la seule référence)"
+risque = "lecture"
+qui = ["anonyme"]
+
+[[capacites]]
+id = "public_webhook_stripe"
+libelle = "Le webhook de Stripe : un paiement confirmé livre la commande (public, protégé par la signature des octets reçus ; le montant doit être exact)"
+risque = "moyen"
+perimetre = ["la commande désignée par l'événement signé"]
+preuve = "la commande relue payée"
+retour = "rembourser la commande (le remboursement chez Stripe reste à faire)"
+paliers = ["auto", "raconter"]
+masque = ["corps_octets"]
+qui = ["anonyme"]
+
+[[capacites]]
+id = "courriels"
+libelle = "Les courriels préparés par la billetterie (confirmations de commande), à envoyer ou envoyés"
+risque = "lecture"
+droit = "gerer"
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
