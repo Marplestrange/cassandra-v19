@@ -1,0 +1,25 @@
+{
+ "point": "memoire.termes",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "question",
+   "n"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "jamais plus de n termes",
+  "un mot vide, un mot de moins de trois lettres ou un doublon est écarté",
+  "l'ordre est celui de la question",
+  "la casse est sans effet",
+  "une question vide rend une liste vide"
+ ]
+}

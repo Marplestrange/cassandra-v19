@@ -1,0 +1,24 @@
+{
+ "point": "memoire.routage",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "question"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "une question vide va au noyau",
+  "la première règle reconnue l'emporte (l'écriture avant l'épisode, avant la personne, avant la leçon, avant la perception)",
+  "une question sans règle reconnue va à « defaut »",
+  "la casse est sans effet",
+  "la même question donne toujours la même route"
+ ]
+}

@@ -316,3 +316,35 @@ contrat = "1.0"
 reference = "points/EC_json_extraire"
 fonction = "point_json_extraire"
 runtime = "python"
+
+[[points_evolution]]
+id = "routage"
+libelle = "Le routage d'une question de la mémoire (écriture, épisode, personne, leçon, perception, noyau, défaut) : la question en entrée, la route en sortie ; des règles, zéro appel de modèle"
+contrat = "1.0"
+reference = "points/EC_routage"
+fonction = "point_routage"
+runtime = "python"
+
+[[points_evolution]]
+id = "termes"
+libelle = "Les termes d'une question (sans mots vides, sans doublons, au plus n) : la question en entrée, la liste en sortie"
+contrat = "1.0"
+reference = "points/EC_termes"
+fonction = "point_termes"
+runtime = "python"
+
+[[points_evolution]]
+id = "jetons"
+libelle = "Les jetons d'un texte, pour rapprocher une question et un souvenir : le texte en entrée, l'ensemble des jetons (triés) en sortie"
+contrat = "1.0"
+reference = "points/EC_jetons"
+fonction = "point_jetons"
+runtime = "python"
+
+[[points_evolution]]
+id = "question_de"
+libelle = "La question que Cassandra pose pour lever un doute de sa mémoire (veto, réconciliation, revalidation) : la source et les valeurs en entrée, la question en français en sortie"
+contrat = "1.0"
+reference = "points/EC_question_de"
+fonction = "point_question_de"
+runtime = "python"

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2db551
+# VERSION CN : 0.1.0  #4aa857
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les points d'évolution RÉELS du dépôt (les points déclarés ci-dessous) : déclarés sans défaut, équivalents à leur corpus doré (produit par l'ancien code), et protégés par un corpus assez fort pour juger une variante. Tout nouveau po
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2db551 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4aa857 ▼▼▼
 """Les points d'évolution RÉELS du dépôt (les points déclarés ci-dessous) : déclarés sans défaut, équivalents à leur corpus doré (produit par l'ancien code),
 et protégés par un corpus assez fort pour juger une variante. Tout nouveau point réel s'ajoute à la liste : ce banc est sa porte d'entrée."""
 import json
@@ -62,9 +62,13 @@ POINTS = [("vue", "verdict.composer", "EC_verdict_composer", 0.85),
           ("dns", "dom_enregistre", "EC_dom_enregistre", 1.00),
           ("notes", "liens_de", "EC_liens_de", 1.00),
           ("jour", "tuiles", "EC_tuiles", 1.00),
-          ("agents", "choisir_outils", "EC_choisir_outils", 0.95)]
+          ("agents", "choisir_outils", "EC_choisir_outils", 0.95),
+          ("memoire", "routage", "EC_routage", 1.00),
+          ("memoire", "termes", "EC_termes", 0.90),
+          ("memoire", "jetons", "EC_jetons", 1.00),
+          ("memoire", "question_de", "EC_question_de", 0.95)]
 # (cas dorés, variantes fausses) minimaux ; une très petite fonction ne peut pas engendrer trente mutants : son plancher de score est alors de 1,0
-SEUILS = {("agents", "choisir_outils"): (20, 21), ("jour", "tuiles"): (20, 28), ("notes", "liens_de"): (20, 3), ("dns", "dom_enregistre"): (18, 13), ("contacts", "csv_decoder"): (11, 3), ("contacts", "meilleure"): (17, 11), ("courrier", "html_en_texte"): (20, 16), ("courrier", "motif_technique"): (15, 5), ("courrier", "role_du_dossier"): (20, 6), ("courrier", "adresse_parts"): (13, 3), ("courrier", "decoder_entete"): (13, 3), ("courrier", "utf7_decoder"): (18, 7), ("agents", "resume_resultat"): (20, 26), ("courrier", "roles_uniques"): (16, 9), ("ged", "media_kind"): (20, 15), ("flotte", "lire_metriques"): (20, 11), ("memoire", "json_extraire"): (20, 12), ("contacts", "csv_fiches"): (20, 15), ("notes", "md_vers_html"): (20, 24), ("notes", "lire_entete"): (20, 22), ("contacts", "csv_apparier"): (15, 3)}
+SEUILS = {("memoire", "question_de"): (18, 23), ("memoire", "jetons"): (18, 7), ("memoire", "termes"): (20, 8), ("memoire", "routage"): (20, 3), ("agents", "choisir_outils"): (20, 21), ("jour", "tuiles"): (20, 28), ("notes", "liens_de"): (20, 3), ("dns", "dom_enregistre"): (18, 13), ("contacts", "csv_decoder"): (11, 3), ("contacts", "meilleure"): (17, 11), ("courrier", "html_en_texte"): (20, 16), ("courrier", "motif_technique"): (15, 5), ("courrier", "role_du_dossier"): (20, 6), ("courrier", "adresse_parts"): (13, 3), ("courrier", "decoder_entete"): (13, 3), ("courrier", "utf7_decoder"): (18, 7), ("agents", "resume_resultat"): (20, 26), ("courrier", "roles_uniques"): (16, 9), ("ged", "media_kind"): (20, 15), ("flotte", "lire_metriques"): (20, 11), ("memoire", "json_extraire"): (20, 12), ("contacts", "csv_fiches"): (20, 15), ("notes", "md_vers_html"): (20, 24), ("notes", "lire_entete"): (20, 22), ("contacts", "csv_apparier"): (15, 3)}
 
 
 def manifeste_de(dossier: Path):

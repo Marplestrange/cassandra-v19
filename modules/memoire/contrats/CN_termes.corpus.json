@@ -1,0 +1,326 @@
+{
+ "point": "memoire.termes",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de memoire, données synthétiques",
+ "cas": [
+  {
+   "cas": "question 0",
+   "entree": {
+    "question": "Quelle est la capacité du disque dur du serveur Orion ?",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "quelle",
+     "capacité",
+     "disque",
+     "dur",
+     "serveur",
+     "orion"
+    ]
+   }
+  },
+  {
+   "cas": "question 1",
+   "entree": {
+    "question": "le le la de du",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "question 2",
+   "entree": {
+    "question": "",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "question 3",
+   "entree": {
+    "question": null,
+    "n": 8
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "question 4",
+   "entree": {
+    "question": "a b",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "question 5",
+   "entree": {
+    "question": "un mot",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "mot"
+    ]
+   }
+  },
+  {
+   "cas": "question 6",
+   "entree": {
+    "question": "serveur serveur serveur",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "serveur"
+    ]
+   }
+  },
+  {
+   "cas": "question 7",
+   "entree": {
+    "question": "alpha beta gamma delta epsilon zeta eta theta iota kappa",
+    "n": 3
+   },
+   "sortie": {
+    "valeur": [
+     "alpha",
+     "beta",
+     "gamma"
+    ]
+   }
+  },
+  {
+   "cas": "question 8",
+   "entree": {
+    "question": "alpha beta gamma delta epsilon zeta eta theta iota kappa",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "alpha",
+     "beta",
+     "gamma",
+     "delta",
+     "epsilon",
+     "zeta",
+     "eta",
+     "theta"
+    ]
+   }
+  },
+  {
+   "cas": "question 9",
+   "entree": {
+    "question": "alpha beta",
+    "n": 0
+   },
+   "sortie": {
+    "valeur": [
+     "alpha"
+    ]
+   }
+  },
+  {
+   "cas": "question 10",
+   "entree": {
+    "question": "nginx.conf et php-fpm, ssl_cert!",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "nginx.conf",
+     "php-fpm",
+     "ssl_cert"
+    ]
+   }
+  },
+  {
+   "cas": "question 11",
+   "entree": {
+    "question": "---abc--- ._x_.",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "abc"
+    ]
+   }
+  },
+  {
+   "cas": "question 12",
+   "entree": {
+    "question": "Éléphant épicerie",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "éléphant",
+     "épicerie"
+    ]
+   }
+  },
+  {
+   "cas": "question 13",
+   "entree": {
+    "question": "v1.2.3 build-42 id_7",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "v1.2.3",
+     "build-42",
+     "id_7"
+    ]
+   }
+  },
+  {
+   "cas": "question 14",
+   "entree": {
+    "question": "l'état de l'hôte",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "état",
+     "hôte"
+    ]
+   }
+  },
+  {
+   "cas": "question 15",
+   "entree": {
+    "question": "what is the status of the server",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "what",
+     "status",
+     "server"
+    ]
+   }
+  },
+  {
+   "cas": "question 16",
+   "entree": {
+    "question": "a1 b2 c3",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "question 17",
+   "entree": {
+    "question": "UPPER lower MiXeD",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "upper",
+     "lower",
+     "mixed"
+    ]
+   }
+  },
+  {
+   "cas": "question 18",
+   "entree": {
+    "question": "tiret-milieu point.milieu bas_milieu",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "tiret-milieu",
+     "point.milieu",
+     "bas_milieu"
+    ]
+   }
+  },
+  {
+   "cas": "question 19",
+   "entree": {
+    "question": "ab abc abcd",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "abc",
+     "abcd"
+    ]
+   }
+  },
+  {
+   "cas": "question 20",
+   "entree": {
+    "question": "même mot même mot",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "même",
+     "mot"
+    ]
+   }
+  },
+  {
+   "cas": "question 21",
+   "entree": {
+    "question": "12345 67",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "12345"
+    ]
+   }
+  },
+  {
+   "cas": "question 22",
+   "entree": {
+    "question": "été été étés",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "étés"
+    ]
+   }
+  },
+  {
+   "cas": "question 23",
+   "entree": {
+    "question": "xxxxx",
+    "n": 8
+   },
+   "sortie": {
+    "valeur": [
+     "xxxxx"
+    ]
+   }
+  },
+  {
+   "cas": "question 24",
+   "entree": {
+    "question": "trois mots seulement",
+    "n": 2
+   },
+   "sortie": {
+    "valeur": [
+     "trois",
+     "mots"
+    ]
+   }
+  }
+ ]
+}

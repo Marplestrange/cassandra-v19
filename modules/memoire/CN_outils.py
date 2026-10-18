@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2b2824
+# VERSION CN : 0.1.0  #e31d64
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les fonctions pures de la mémoire : gardes, clés, proximité, routage, perception. Rien ici ne touche la base.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2b2824 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e31d64 ▼▼▼
 """Les fonctions pures de la mémoire : gardes, clés, proximité, routage, perception. Rien ici ne touche la base."""
 from __future__ import annotations
 
@@ -238,13 +238,8 @@ def desechapper(t):
 
 
 def jetons(t):
-    t = unicodedata.normalize("NFKD", str(t or "").lower()).encode("ascii", "ignore").decode()
-    out = set()
-    for w in re.findall(r"[a-z0-9](?:[a-z0-9._/:-]*[a-z0-9])?", t):
-        if (len(w) < 4 and not w.isdigit()) or w in MOTS_VIDES:
-            continue
-        out.add(w[:7] if w.isalpha() else w)
-    return out
+    """jetons. Le calcul est un POINT D'ÉVOLUTION : points/EC_jetons.py."""
+    return set(_point("jetons", {"t": t})["valeur"])
 
 
 def est_identifiant(t):
@@ -266,31 +261,20 @@ def proximite(a, b):
 
 
 def termes(question, n=8):
-    vus, out = set(), []
-    for t in re.findall(r"[a-zA-Zàâäéèêëïîôöùûüç0-9][a-zA-Zàâäéèêëïîôöùûüç0-9._-]{2,}", (question or "").lower()):
-        t = t.strip("._-")
-        if len(t) < 3 or t in STOP or t in vus:
-            continue
-        vus.add(t)
-        out.append(t)
-        if len(out) >= n:
-            break
-    return out
+    """termes. Le calcul est un POINT D'ÉVOLUTION : points/EC_termes.py."""
+    return _point("termes", {"question": question, "n": n})["valeur"]
 
 
 def requete_fts(ts):
     return " OR ".join('"%s"' % t.replace('"', "") for t in ts)
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+
+
 def routage(question):
-    """Le routage par règles, zéro appel de modèle : une chaîne fermée sur la question."""
-    q = (question or "").strip()
-    if not q:
-        return "noyau"
-    for nom, rx in ROUTES:
-        if rx.search(q):
-            return nom
-    return "defaut"
+    """Le routage par règles, zéro appel de modèle : une chaîne fermée sur la question. Le calcul est un POINT D'ÉVOLUTION : points/EC_routage.py."""
+    return _point("routage", {"question": question})["valeur"]
 
 
 def score(rang_bm25):
@@ -343,15 +327,8 @@ def raison_humaine(raison):
 
 
 def question_de(source, valeur, raison="", ancienne="", age_txt=""):
-    """Une question se lit d'une traite : ce qu'elle voulait retenir, pourquoi elle hésite, ce qu'on attend (pas de jargon : veto, pièce, clé)."""
-    v = " ".join(str(valeur or "").split())[:220]
-    if source == "veto":
-        return "Je voulais retenir : « %s ». %s Je le garde ?" % (v, raison_humaine(raison))
-    if source == "reconciliation":
-        return "J'ai deux versions de la même chose. Celle que je retiens : « %s ». Une nouvelle, moins sûre : « %s ». Laquelle est vraie ?" % (" ".join(str(ancienne or "").split())[:200], v[:200])
-    if source == "revalidation":
-        return "Je m'appuie sur ceci, que j'ai déduit%s sans jamais le vérifier : « %s ». C'est toujours vrai ?" % ((" il y a " + age_txt) if age_txt else "", v[:200])
-    return v
+    """Une question se lit d'une traite : ce qu'elle voulait retenir, pourquoi elle hésite, ce qu'on attend (pas de jargon : veto, pièce, clé). Le calcul est un POINT D'ÉVOLUTION : points/EC_question_de.py."""
+    return _point("question_de", {"source": source, "valeur": valeur, "raison": raison, "ancienne": ancienne, "age_txt": age_txt})["valeur"]
 
 
 def declencheur_de(texte, actes=0):

@@ -1,0 +1,267 @@
+{
+ "point": "memoire.question_de",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de memoire, données synthétiques",
+ "cas": [
+  {
+   "cas": "source veto 0",
+   "entree": {
+    "source": "veto",
+    "valeur": "Léa préfère le thé",
+    "raison": "veto d'Itare : source douteuse.",
+    "ancienne": "",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "Je voulais retenir : « Léa préfère le thé ». Mais Itare, en relisant, a un doute : source douteuse. Je le garde ?"
+   }
+  },
+  {
+   "cas": "source veto 1",
+   "entree": {
+    "source": "veto",
+    "valeur": "x",
+    "raison": "aucun terme du fait dans la source",
+    "ancienne": "",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "Je voulais retenir : « x ». Mais je ne retrouve pas ça dans ce qui m'a amenée à le noter. Je le garde ?"
+   }
+  },
+  {
+   "cas": "source veto 2",
+   "entree": {
+    "source": "veto",
+    "valeur": "x",
+    "raison": "veto d'Itare",
+    "ancienne": "",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "Je voulais retenir : « x ». Mais Itare, en relisant, a un doute. Je le garde ?"
+   }
+  },
+  {
+   "cas": "source veto 3",
+   "entree": {
+    "source": "veto",
+    "valeur": "x",
+    "raison": "",
+    "ancienne": "",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "Je voulais retenir : « x ». Mais je n'ai pas pu le confirmer. Je le garde ?"
+   }
+  },
+  {
+   "cas": "source veto 4",
+   "entree": {
+    "source": "veto",
+    "valeur": "x",
+    "raison": "autre motif",
+    "ancienne": "",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "Je voulais retenir : « x ». Mais j'hésite : autre motif. Je le garde ?"
+   }
+  },
+  {
+   "cas": "source veto 5",
+   "entree": {
+    "source": "veto",
+    "valeur": "x",
+    "raison": null,
+    "ancienne": null,
+    "age_txt": null
+   },
+   "sortie": {
+    "valeur": "Je voulais retenir : « x ». Mais je n'ai pas pu le confirmer. Je le garde ?"
+   }
+  },
+  {
+   "cas": "source reconciliation 6",
+   "entree": {
+    "source": "reconciliation",
+    "valeur": "Nouvelle valeur",
+    "raison": "",
+    "ancienne": "Ancienne valeur",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "J'ai deux versions de la même chose. Celle que je retiens : « Ancienne valeur ». Une nouvelle, moins sûre : « Nouvelle valeur ». Laquelle est vraie ?"
+   }
+  },
+  {
+   "cas": "source reconciliation 7",
+   "entree": {
+    "source": "reconciliation",
+    "valeur": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+    "raison": "",
+    "ancienne": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "J'ai deux versions de la même chose. Celle que je retiens : « aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ». Une nouvelle, moins sûre : « nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn ». Laquelle est vraie ?"
+   }
+  },
+  {
+   "cas": "source reconciliation 8",
+   "entree": {
+    "source": "reconciliation",
+    "valeur": "x",
+    "raison": "",
+    "ancienne": null,
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "J'ai deux versions de la même chose. Celle que je retiens : «  ». Une nouvelle, moins sûre : « x ». Laquelle est vraie ?"
+   }
+  },
+  {
+   "cas": "source revalidation 9",
+   "entree": {
+    "source": "revalidation",
+    "valeur": "Il pleut",
+    "raison": "",
+    "ancienne": "",
+    "age_txt": "3 jours"
+   },
+   "sortie": {
+    "valeur": "Je m'appuie sur ceci, que j'ai déduit il y a 3 jours sans jamais le vérifier : « Il pleut ». C'est toujours vrai ?"
+   }
+  },
+  {
+   "cas": "source revalidation 10",
+   "entree": {
+    "source": "revalidation",
+    "valeur": "Il pleut",
+    "raison": "",
+    "ancienne": "",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "Je m'appuie sur ceci, que j'ai déduit sans jamais le vérifier : « Il pleut ». C'est toujours vrai ?"
+   }
+  },
+  {
+   "cas": "source revalidation 11",
+   "entree": {
+    "source": "revalidation",
+    "valeur": "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv",
+    "raison": "",
+    "ancienne": "",
+    "age_txt": "2 h"
+   },
+   "sortie": {
+    "valeur": "Je m'appuie sur ceci, que j'ai déduit il y a 2 h sans jamais le vérifier : « vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv ». C'est toujours vrai ?"
+   }
+  },
+  {
+   "cas": "source autre 12",
+   "entree": {
+    "source": "autre",
+    "valeur": "valeur seule",
+    "raison": "",
+    "ancienne": "",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "valeur seule"
+   }
+  },
+  {
+   "cas": "source autre 13",
+   "entree": {
+    "source": "autre",
+    "valeur": "  espaces   multiples  ",
+    "raison": "",
+    "ancienne": "",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "espaces multiples"
+   }
+  },
+  {
+   "cas": "source autre 14",
+   "entree": {
+    "source": "autre",
+    "valeur": null,
+    "raison": "",
+    "ancienne": "",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "source veto 15",
+   "entree": {
+    "source": "veto",
+    "valeur": "avec\nsauts\nde ligne",
+    "raison": "veto d'Itare : doute.",
+    "ancienne": "",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "Je voulais retenir : « avec sauts de ligne ». Mais Itare, en relisant, a un doute : doute. Je le garde ?"
+   }
+  },
+  {
+   "cas": "source veto 16",
+   "entree": {
+    "source": "veto",
+    "valeur": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "raison": "veto d'Itare : un très long motif. ",
+    "ancienne": "",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "Je voulais retenir : « xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ». Mais Itare, en relisant, a un doute : un très long motif. Je le garde ?"
+   }
+  },
+  {
+   "cas": "source revalidation 17",
+   "entree": {
+    "source": "revalidation",
+    "valeur": "x",
+    "raison": "",
+    "ancienne": "",
+    "age_txt": "1 mois"
+   },
+   "sortie": {
+    "valeur": "Je m'appuie sur ceci, que j'ai déduit il y a 1 mois sans jamais le vérifier : « x ». C'est toujours vrai ?"
+   }
+  },
+  {
+   "cas": "source reconciliation 18",
+   "entree": {
+    "source": "reconciliation",
+    "valeur": "a\nb",
+    "raison": "",
+    "ancienne": "c\nd",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "J'ai deux versions de la même chose. Celle que je retiens : « c d ». Une nouvelle, moins sûre : « a b ». Laquelle est vraie ?"
+   }
+  },
+  {
+   "cas": "source  19",
+   "entree": {
+    "source": "",
+    "valeur": "x",
+    "raison": "",
+    "ancienne": "",
+    "age_txt": ""
+   },
+   "sortie": {
+    "valeur": "x"
+   }
+  }
+ ]
+}

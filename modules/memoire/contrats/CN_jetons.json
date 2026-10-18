@@ -1,0 +1,24 @@
+{
+ "point": "memoire.jetons",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "t"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un mot de moins de quatre lettres est écarté, sauf un nombre",
+  "un mot vide est écarté",
+  "un mot alphabétique est tronqué à sept lettres, un mot avec chiffres est gardé entier",
+  "la casse et les accents sont sans effet",
+  "le même texte donne toujours le même ensemble"
+ ]
+}

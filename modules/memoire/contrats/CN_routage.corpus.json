@@ -1,0 +1,367 @@
+{
+ "point": "memoire.routage",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de memoire, données synthétiques",
+ "cas": [
+  {
+   "cas": "question 0 : retiens que je préfère le thé",
+   "entree": {
+    "question": "retiens que je préfère le thé"
+   },
+   "sortie": {
+    "valeur": "ecriture"
+   }
+  },
+  {
+   "cas": "question 1 : corrige : mon prénom est Léa",
+   "entree": {
+    "question": "corrige : mon prénom est Léa"
+   },
+   "sortie": {
+    "valeur": "personne"
+   }
+  },
+  {
+   "cas": "question 2 : la dernière fois on avait parl",
+   "entree": {
+    "question": "la dernière fois on avait parlé du serveur"
+   },
+   "sortie": {
+    "valeur": "episode"
+   }
+  },
+  {
+   "cas": "question 3 : hier tu avais dit autre chose",
+   "entree": {
+    "question": "hier tu avais dit autre chose"
+   },
+   "sortie": {
+    "valeur": "episode"
+   }
+  },
+  {
+   "cas": "question 4 : l'autre jour, quel était le pl",
+   "entree": {
+    "question": "l'autre jour, quel était le plan ?"
+   },
+   "sortie": {
+    "valeur": "episode"
+   }
+  },
+  {
+   "cas": "question 5 : je m'appelle Paul",
+   "entree": {
+    "question": "je m'appelle Paul"
+   },
+   "sortie": {
+    "valeur": "personne"
+   }
+  },
+  {
+   "cas": "question 6 : tutoie-moi s'il te plaît",
+   "entree": {
+    "question": "tutoie-moi s'il te plaît"
+   },
+   "sortie": {
+    "valeur": "personne"
+   }
+  },
+  {
+   "cas": "question 7 : quelles sont mes horaires ?",
+   "entree": {
+    "question": "quelles sont mes horaires ?"
+   },
+   "sortie": {
+    "valeur": "personne"
+   }
+  },
+  {
+   "cas": "question 8 : qu'as-tu appris de tes erreurs",
+   "entree": {
+    "question": "qu'as-tu appris de tes erreurs passées ?"
+   },
+   "sortie": {
+    "valeur": "lecon"
+   }
+  },
+  {
+   "cas": "question 9 : des leçons à retenir ?",
+   "entree": {
+    "question": "des leçons à retenir ?"
+   },
+   "sortie": {
+    "valeur": "ecriture"
+   }
+  },
+  {
+   "cas": "question 10 : il reste de la place sur le di",
+   "entree": {
+    "question": "il reste de la place sur le disque ?"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 11 : le site est-il en ligne ?",
+   "entree": {
+    "question": "le site est-il en ligne ?"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 12 : le certificat ssl expire quand",
+   "entree": {
+    "question": "le certificat ssl expire quand ?"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 13 : la charge cpu est haute ?",
+   "entree": {
+    "question": "la charge cpu est haute ?"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 14 : les sauvegardes tournent ?",
+   "entree": {
+    "question": "les sauvegardes tournent ?"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 15 : ça va ?",
+   "entree": {
+    "question": "ça va ?"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 16 : ports ouverts sur la machine",
+   "entree": {
+    "question": "ports ouverts sur la machine"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 17 : redémarrage requis ?",
+   "entree": {
+    "question": "redémarrage requis ?"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 18 : quelle est la capitale de la F",
+   "entree": {
+    "question": "quelle est la capitale de la France ?"
+   },
+   "sortie": {
+    "valeur": "defaut"
+   }
+  },
+  {
+   "cas": "question 19 : vide",
+   "entree": {
+    "question": ""
+   },
+   "sortie": {
+    "valeur": "noyau"
+   }
+  },
+  {
+   "cas": "question 20 :    ",
+   "entree": {
+    "question": "   "
+   },
+   "sortie": {
+    "valeur": "noyau"
+   }
+  },
+  {
+   "cas": "question 21 : vide",
+   "entree": {
+    "question": null
+   },
+   "sortie": {
+    "valeur": "noyau"
+   }
+  },
+  {
+   "cas": "question 22 : Explique-moi le DNS",
+   "entree": {
+    "question": "Explique-moi le DNS"
+   },
+   "sortie": {
+    "valeur": "defaut"
+   }
+  },
+  {
+   "cas": "question 23 : mise à jour de nginx",
+   "entree": {
+    "question": "mise à jour de nginx"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 24 : le conteneur est vivant ?",
+   "entree": {
+    "question": "le conteneur est vivant ?"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 25 : RAM libre",
+   "entree": {
+    "question": "RAM libre"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 26 : temperature du processeur",
+   "entree": {
+    "question": "temperature du processeur"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 27 : raid synchronisé ?",
+   "entree": {
+    "question": "raid synchronisé ?"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 28 : uptime du serveur",
+   "entree": {
+    "question": "uptime du serveur"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 29 : écoute sur le port 443",
+   "entree": {
+    "question": "écoute sur le port 443"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 30 : qui suis-je ?",
+   "entree": {
+    "question": "qui suis-je ?"
+   },
+   "sortie": {
+    "valeur": "personne"
+   }
+  },
+  {
+   "cas": "question 31 : retour d'expérience sur la mig",
+   "entree": {
+    "question": "retour d'expérience sur la migration"
+   },
+   "sortie": {
+    "valeur": "lecon"
+   }
+  },
+  {
+   "cas": "question 32 : RETIENS CECI",
+   "entree": {
+    "question": "RETIENS CECI"
+   },
+   "sortie": {
+    "valeur": "ecriture"
+   }
+  },
+  {
+   "cas": "question 33 : note : le mot de passe est cha",
+   "entree": {
+    "question": "note : le mot de passe est changé"
+   },
+   "sortie": {
+    "valeur": "defaut"
+   }
+  },
+  {
+   "cas": "question 34 : souviens-toi de ça",
+   "entree": {
+    "question": "souviens-toi de ça"
+   },
+   "sortie": {
+    "valeur": "ecriture"
+   }
+  },
+  {
+   "cas": "question 35 : la semaine dernière on avait u",
+   "entree": {
+    "question": "la semaine dernière on avait un incident"
+   },
+   "sortie": {
+    "valeur": "episode"
+   }
+  },
+  {
+   "cas": "question 36 : je suis fatigué",
+   "entree": {
+    "question": "je suis fatigué"
+   },
+   "sortie": {
+    "valeur": "personne"
+   }
+  },
+  {
+   "cas": "question 37 : pare-feu actif ?",
+   "entree": {
+    "question": "pare-feu actif ?"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 38 : inodes disponibles",
+   "entree": {
+    "question": "inodes disponibles"
+   },
+   "sortie": {
+    "valeur": "perception"
+   }
+  },
+  {
+   "cas": "question 39 : vouvoie-moi",
+   "entree": {
+    "question": "vouvoie-moi"
+   },
+   "sortie": {
+    "valeur": "personne"
+   }
+  }
+ ]
+}

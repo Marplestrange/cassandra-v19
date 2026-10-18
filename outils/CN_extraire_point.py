@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #67b71d
+# VERSION CN : 0.1.0  #f09254
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : sort d'un fichier de module les fonctions pures d'un point d'évolution : écrit la référence EC (avec ses dépendances copiées), le contrat, le corpus doré et la déclaration au manifeste.
 # MÉTHODE    : fermeture transitive des noms de premier niveau par l'arbre syntaxique ; le corpus doré est la sortie de la référence extraite, copiée mot pour mot de l'ancien code ; rien n'est écrasé sans --forcer.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=67b71d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f09254 ▼▼▼
 """Usage : un script `spec` appelle extraire(spec). Le spec décrit le point ; l'outil écrit quatre choses :
    modules/<m>/points/EC_<point>.py · contrats/CN_<point>.json · contrats/CN_<point>.corpus.json · l'entrée [[points_evolution]] du manifeste.
    La façade du module (CN_module.py) et la liste des tests restent à la main : c'est là que se décide ce qui voyage dans l'entrée."""
@@ -159,8 +159,8 @@ def _preparer(spec):
     spec["fonctions"] = [fn]
     spec["fonction"] = "point_" + spec["point"]
     arguments = ", ".join('entree["%s"]' % q for q in params)
-    spec["adaptateur"] = ('def point_%s(entree):\n    """Le point d\'évolution `%s` (contrat %s)."""\n    return {"%s": %s(%s)}\n'
-                          % (spec["point"], spec["point"], spec.get("contrat", "1.0"), sortie, fn, arguments))
+    spec["adaptateur"] = ('def point_%s(entree):\n    """Le point d\'évolution `%s` (contrat %s)."""\n    return {"%s": %s}\n'
+                          % (spec["point"], spec["point"], spec.get("contrat", "1.0"), sortie, ("sorted(%s(%s))" if ap.get("ensemble") else "%s(%s)") % (fn, arguments)))
     spec["entree"] = {"type": "object", "required": list(params)}
     spec["sortie"] = {"type": "object", "required": [sortie]}
     spec["cas"] = [{"cas": n, "entree": dict(zip(params, args))} for n, args in spec["cas"]]
@@ -223,7 +223,7 @@ def poser_facade_globale(spec):
     entete_def = lignes[n.lineno - 1]
     doc = (ast.get_docstring(n) or "").split("\n")[0].rstrip(".")
     fac = [entete_def, '    """%s. Le calcul est un POINT D\'ÉVOLUTION : points/EC_%s.py."""' % (doc or fn, spec["point"]),
-           '    return _point("%s", {%s})["%s"]' % (spec["point"], ", ".join('"%s": %s' % (q, q) for q in params), sortie)]
+           ('    return set(_point("%s", {%s})["%s"])' if ap.get("ensemble") else '    return _point("%s", {%s})["%s"]') % (spec["point"], ", ".join('"%s": %s' % (q, q) for q in params), sortie)]
     lignes[n.lineno - 1 - len(n.decorator_list):n.end_lineno] = fac
     texte = "\n".join(lignes)
     if "\n_point = None" not in texte:

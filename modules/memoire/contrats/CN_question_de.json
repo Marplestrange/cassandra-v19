@@ -1,0 +1,28 @@
+{
+ "point": "memoire.question_de",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "source",
+   "valeur",
+   "raison",
+   "ancienne",
+   "age_txt"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "une question se lit d'une traite : jamais de jargon (veto, pièce, clé)",
+  "une valeur trop longue est tronquée",
+  "les blancs multiples sont resserrés",
+  "une source inconnue rend la valeur seule",
+  "la même demande donne toujours la même question"
+ ]
+}

@@ -1,0 +1,236 @@
+{
+ "point": "memoire.jetons",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de memoire, données synthétiques",
+ "cas": [
+  {
+   "cas": "texte 0",
+   "entree": {
+    "t": "Le serveur Orion est hors ligne depuis hier"
+   },
+   "sortie": {
+    "valeur": [
+     "hier",
+     "hors",
+     "ligne",
+     "orion",
+     "serveur"
+    ]
+   }
+  },
+  {
+   "cas": "texte 1",
+   "entree": {
+    "t": ""
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "texte 2",
+   "entree": {
+    "t": null
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "texte 3",
+   "entree": {
+    "t": "nginx.conf php-fpm ssl_cert"
+   },
+   "sortie": {
+    "valeur": [
+     "nginx.conf",
+     "php-fpm",
+     "ssl_cert"
+    ]
+   }
+  },
+  {
+   "cas": "texte 4",
+   "entree": {
+    "t": "Éléphant épicerie ÉTÉ"
+   },
+   "sortie": {
+    "valeur": [
+     "elephan",
+     "epiceri"
+    ]
+   }
+  },
+  {
+   "cas": "texte 5",
+   "entree": {
+    "t": "port 443 et 80, version 8.2.1"
+   },
+   "sortie": {
+    "valeur": [
+     "443",
+     "8.2.1",
+     "80",
+     "port",
+     "version"
+    ]
+   }
+  },
+  {
+   "cas": "texte 6",
+   "entree": {
+    "t": "a b c d"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "texte 7",
+   "entree": {
+    "t": "abcdefghijk abcdefgh abcdefg"
+   },
+   "sortie": {
+    "valeur": [
+     "abcdefg"
+    ]
+   }
+  },
+  {
+   "cas": "texte 8",
+   "entree": {
+    "t": "12 345 6789"
+   },
+   "sortie": {
+    "valeur": [
+     "12",
+     "345",
+     "6789"
+    ]
+   }
+  },
+  {
+   "cas": "texte 9",
+   "entree": {
+    "t": "v1.2.3 build-42 id_7"
+   },
+   "sortie": {
+    "valeur": [
+     "build-42",
+     "id_7",
+     "v1.2.3"
+    ]
+   }
+  },
+  {
+   "cas": "texte 10",
+   "entree": {
+    "t": "les des une est sur dans pour par pas que"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "texte 11",
+   "entree": {
+    "t": "mot mot mot"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "texte 12",
+   "entree": {
+    "t": "tiret-milieu point.milieu slash/milieu deux:points"
+   },
+   "sortie": {
+    "valeur": [
+     "deux:points",
+     "point.milieu",
+     "slash/milieu",
+     "tiret-milieu"
+    ]
+   }
+  },
+  {
+   "cas": "texte 13",
+   "entree": {
+    "t": "https://exemple.test/a/b?c=d"
+   },
+   "sortie": {
+    "valeur": [
+     "https://exemple.test/a/b"
+    ]
+   }
+  },
+  {
+   "cas": "texte 14",
+   "entree": {
+    "t": "UPPER lower"
+   },
+   "sortie": {
+    "valeur": [
+     "lower",
+     "upper"
+    ]
+   }
+  },
+  {
+   "cas": "texte 15",
+   "entree": {
+    "t": "a1b2 c3"
+   },
+   "sortie": {
+    "valeur": [
+     "a1b2"
+    ]
+   }
+  },
+  {
+   "cas": "texte 16",
+   "entree": {
+    "t": "x.y.z"
+   },
+   "sortie": {
+    "valeur": [
+     "x.y.z"
+    ]
+   }
+  },
+  {
+   "cas": "texte 17",
+   "entree": {
+    "t": "---"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "texte 18",
+   "entree": {
+    "t": "ça marche très bien"
+   },
+   "sortie": {
+    "valeur": [
+     "bien",
+     "marche",
+     "tres"
+    ]
+   }
+  },
+  {
+   "cas": "texte 19",
+   "entree": {
+    "t": "docker-compose.yml"
+   },
+   "sortie": {
+    "valeur": [
+     "docker-compose.yml"
+    ]
+   }
+  }
+ ]
+}
