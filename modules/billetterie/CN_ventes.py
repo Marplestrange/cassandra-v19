@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5d6d90
+# VERSION CN : 0.1.0  #eaac31
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5d6d90 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=eaac31 ▼▼▼
 """Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
 
 Ce fichier DÉCIDE : qui peut acheter quoi, à quel prix, combien de places restent, quand une vente est acquise, ce qu'elle rapporte au revendeur et quand elle s'annule.
@@ -35,6 +35,7 @@ from datetime import date
 from . import CN_billets as bil
 from . import CN_identifiants as ids
 from . import CN_regles as r
+from . import CN_recus as recus
 from . import CN_registre as reg
 
 horloge = time.time                    # les bancs la remplacent pour simuler le temps
@@ -43,6 +44,7 @@ RETENANT = ("retenue", "en_attente")
 MOYENS_PRESTATAIRE = ("stripe", "helloasso", "paypal")
 MOYENS_IMMEDIATS = ("especes", "carte_terminal", "carte_declaree", "offert")
 DUREE_VIREMENT_S = 3 * 24 * 3600
+MOTIF_DON_REMBOURSE = "don remboursé"
 
 
 def aujourdhui() -> str:
@@ -338,6 +340,7 @@ def rembourser(ctx, tx, cmd, motif=""):
     ecrire_commission(ctx, tx, cmd, evt, qte, -1)
     tx.execute("UPDATE billets SET etat = 'annule' WHERE commande_id = ?", (cmd["id"],))
     tx.execute("UPDATE commandes SET etat = 'remboursee', note = ? WHERE id = ?", (r.texte(motif, 200), cmd["id"]))
+    recus.annuler_pour_commande(tx, cmd["id"], MOTIF_DON_REMBOURSE)
     return {"montant": cmd["total"], "chez_le_prestataire": cmd["moyen"] in MOYENS_PRESTATAIRE, "moyen": cmd["moyen"]}
 
 
@@ -348,6 +351,7 @@ def rejouer(ctx, tx, cmd):
     qte = tx.execute("SELECT COUNT(*) FROM billets WHERE commande_id = ? AND etat = 'valide'", (cmd["id"],)).fetchone()[0]
     ecrire_commission(ctx, tx, cmd, evt, qte, +1)
     tx.execute("UPDATE commandes SET etat = 'payee', note = '' WHERE id = ?", (cmd["id"],))
+    recus.rouvrir_pour_commande(tx, cmd["id"], MOTIF_DON_REMBOURSE)
 
 
 def expirer(tx) -> int:

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ddedc8
+# VERSION CN : 0.1.0  #14e880
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 5b : la liste d'attente (inscription, ordre, offres qui retiennent les places, expiration, paiement d'une offre, annulation de l'événement).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ddedc8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=14e880 ▼▼▼
 """Bancs de la billetterie, lot 5b : la liste d'attente (inscription, ordre, offres qui retiennent les places, expiration, paiement d'une offre, annulation de l'événement)."""
 import sys
 import unittest

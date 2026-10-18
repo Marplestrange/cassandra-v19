@@ -54,6 +54,25 @@ RE_ALARME = re.compile(r"^(\d{1,4})\s*(m|min|h|d|j)$", re.I)
 RE_ECH = re.compile(r"^\+(\d+)\s*(min|m|h|d|j)$", re.I)
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 # ---------------------------------------------------------------------- dates
 def lire_instant(s, journee=None):
     """'+30m' '+2h' '+3d' ; 'AAAA-MM-JJ HH:MM' ; 'AAAA-MM-JJTHH:MM' ; 'AAAA-MM-JJ'. -> ('AAAA-MM-JJ HH:MM' | 'AAAA-MM-JJ', date_seule). Lève si illisible."""
@@ -93,17 +112,8 @@ def minutes_alarme(a):
 
 # ---------------------------------------------------------------------- récurrence
 def regle_de(rec):
-    """Un mot (daily, weekly, quotidien…) ou une RRULE (avec ou sans « RRULE: ») -> la règle normalisée, ou '' si vide. Lève sur le reste."""
-    r = str(rec or "").strip()
-    if not r:
-        return ""
-    if r.upper().startswith("RRULE:"):
-        r = r[6:].strip()
-    if r.lower() in RECUR_MOTS:
-        return RECUR_MOTS[r.lower()]
-    if "FREQ=" in r.upper():
-        return r
-    raise ValueError("récurrence : %s ou une règle RRULE (FREQ=WEEKLY;BYDAY=MO,WE)" % ", ".join(sorted(set(RECUR_MOTS))))
+    """Un mot (daily, weekly, quotidien…) ou une RRULE (avec ou sans « RRULE: ») -> la règle normalisée, ou '' si vide. Lève sur le reste. Le calcul est un POINT D'ÉVOLUTION : points/EC_regle_de.py."""
+    return _appeler_point("regle_de", {"rec": rec})["valeur"]
 
 
 def analyser_regle(rule):
@@ -247,6 +257,8 @@ def plier(ligne):
 
 # ---------------------------------------------------------------------- le module
 def brancher(ctx):
+    global _point
+    _point = ctx.point
     db = ctx.stockage
 
     def compte_agit():

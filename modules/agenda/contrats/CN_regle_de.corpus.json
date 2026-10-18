@@ -1,0 +1,115 @@
+{
+ "point": "agenda.regle_de",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de agenda, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "rec": "FREQ=WEEKLY"
+   },
+   "sortie": {
+    "valeur": "FREQ=WEEKLY"
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "rec": "FREQ=DAILY"
+   },
+   "sortie": {
+    "valeur": "FREQ=DAILY"
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "rec": "mensuel"
+   },
+   "sortie": {
+    "valeur": "FREQ=MONTHLY"
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "rec": "annuel"
+   },
+   "sortie": {
+    "valeur": "FREQ=YEARLY"
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "rec": false
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "rec": "monthly"
+   },
+   "sortie": {
+    "valeur": "FREQ=MONTHLY"
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "rec": "hebdomadaire"
+   },
+   "sortie": {
+    "valeur": "FREQ=WEEKLY"
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "rec": "quotidien"
+   },
+   "sortie": {
+    "valeur": "FREQ=DAILY"
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "rec": "daily"
+   },
+   "sortie": {
+    "valeur": "FREQ=DAILY"
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "rec": "weekly"
+   },
+   "sortie": {
+    "valeur": "FREQ=WEEKLY"
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "rec": null
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "rec": "yearly"
+   },
+   "sortie": {
+    "valeur": "FREQ=YEARLY"
+   }
+  }
+ ]
+}

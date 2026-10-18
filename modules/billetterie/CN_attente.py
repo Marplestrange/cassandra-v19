@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5f9755
+# VERSION CN : 0.1.0  #f674b3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : la liste d'attente d'un billet épuisé.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5f9755 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f674b3 ▼▼▼
 """Billetterie : la liste d'attente d'un billet épuisé.
 
 Une personne s'inscrit quand le billet qu'elle veut n'est plus disponible ; dès qu'une place se libère (réservation expirée, remboursement, quota augmenté), la première inscrite

@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agenda
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d4afaa
+# VERSION CN : 0.1.1  #75acb5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'agenda d'un compte : événements (récurrences, alarme, liens vers ce qu'ils concernent, journal, préparation), rappels, import et export iCalendar, lecture de son serveur CalDAV, et la vue temporelle unique qui rassemble événements, tâches datées, rappels et jalons des projets. Il est à la personne : l'administrateur ne le voit pas.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d4afaa ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=75acb5 ▼▼▼
 [module]
 id = "agenda"
 nom = "Agenda"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "L'agenda d'un compte : événements (récurrences, alarme, liens vers ce qu'ils concernent, journal, préparation), rappels, import et export iCalendar, lecture de son serveur CalDAV, et la vue temporelle unique qui rassemble événements, tâches datées, rappels et jalons des projets. Il est à la personne : l'administrateur ne le voit pas."
 confiance = "interne"
@@ -213,4 +213,12 @@ libelle = "La lecture d'un flux iCalendar : le texte et le décalage horaire loc
 contrat = "1.0"
 reference = "points/EC_ical_lire"
 fonction = "point_ical_lire"
+runtime = "python"
+
+[[points_evolution]]
+id = "regle_de"
+libelle = "Un mot (daily, weekly, quotidien…) ou une RRULE (avec ou sans « RRULE: ») -> la règle normalisée, ou '' si vide. Lève sur le reste (extrait automatiquement de CN_module.py)"
+contrat = "1.0"
+reference = "points/EC_regle_de"
+fonction = "point_regle_de"
 runtime = "python"

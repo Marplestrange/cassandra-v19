@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #57a404
+# VERSION CN : 0.1.0  #3644c1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=57a404 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3644c1 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -167,6 +167,16 @@ id = "recu_fiscal_autonome"
 libelle = "Reçu fiscal de don produit par la billetterie (sans Dolibarr)"
 type = "booleen"
 defaut = true
+
+[[reglages]]
+id = "dons_eligible"
+libelle = "L'organisme est éligible aux reçus de dons (intérêt général, reconnu par l'administration)"
+type = "booleen"
+defaut = false
+
+[[reglages]]
+id = "dons_base_legale"
+libelle = "Base légale de l'éligibilité (article du CGI, décision de reconnaissance) : mentionnée sur chaque reçu"
 
 [[reglages]]
 id = "stripe_actif"
@@ -1041,4 +1051,58 @@ perimetre = ["des commandes en cours qui retiennent des places, la boîte d'envo
 preuve = "chaque inscription servie relue offerte"
 retour = "annuler les offres : les places reviennent, les inscrits reprennent leur rang"
 paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "recu_fiscal_emettre"
+libelle = "Émettre le reçu fiscal du don d'une commande payée (association éligible seulement, sans Dolibarr ; jamais pour un billet ; numéro continu, contenu figé)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["un reçu numéroté pour la part don d'une commande"]
+preuve = "le reçu relu en vigueur"
+retour = "annuler le reçu (il garde son numéro : un reçu ne s'efface pas)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "recu_fiscal_annuler"
+libelle = "Annuler un reçu fiscal avec son motif (le numéro reste, le trou s'explique)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["l'état d'un reçu"]
+preuve = "le reçu relu annulé"
+retour = "rouvrir le reçu s'il n'y en a pas d'autre en vigueur pour la commande"
+paliers = ["raconter", "auto"]
+
+[[capacites]]
+id = "recus_fiscaux"
+libelle = "Lire le registre des reçus fiscaux (par année, par état) et le total des reçus en vigueur"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "recu_fiscal"
+libelle = "Lire un reçu fiscal complet (organisme, donateur, montant, mention légale)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "recus_export"
+libelle = "Exporter le registre des reçus d'une année en CSV (comptabilité, contrôle ; conservation 10 ans)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "public_recu_demander"
+libelle = "Demander le reçu fiscal de SON don avec le jeton de sa commande (public) : le donateur donne son adresse postale"
+risque = "moyen"
+perimetre = ["un reçu numéroté pour la part don de sa commande"]
+preuve = "le reçu relu en vigueur"
+retour = "annuler le reçu (il garde son numéro)"
+paliers = ["auto", "raconter"]
+qui = ["anonyme"]
+
+[[capacites]]
+id = "public_recu"
+libelle = "Lire SON reçu fiscal avec le jeton de sa commande (public)"
+risque = "lecture"
+qui = ["anonyme"]
 
