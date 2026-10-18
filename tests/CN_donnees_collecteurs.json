@@ -5764,5 +5764,682 @@
    ],
    "log_errors": []
   }
+ },
+ {
+  "fonction": "collect_exposition",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_exposition",
+  "scenario": {
+   "cmds": {
+    "ss": "State Recv-Q Send-Q Local Address:Port Peer Address:Port Process\nLISTEN 0 128 0.0.0.0:22 0.0.0.0:* users:((\"sshd\",pid=1,fd=3))\nLISTEN 0 128 [::]:22 [::]:* users:((\"sshd\",pid=1,fd=4))\nLISTEN 0 511 127.0.0.1:9000 0.0.0.0:* users:((\"python3\",pid=5,fd=6))\nLISTEN 0 4096 100.64.0.1:8888 0.0.0.0:*\nLISTEN 0 4096 192.168.1.5:3306 0.0.0.0:*\nLISTEN 0 4096 203.0.113.5:443 0.0.0.0:*\nLISTEN 0 4096 *:25 *:*\ncourt"
+   }
+  },
+  "attendu": [
+   {
+    "port": 22,
+    "processus": "sshd",
+    "portee": "toutes les interfaces",
+    "public": 0,
+    "valeur": "sshd · réseau (toutes les interfaces) · SSH",
+    "sensible": 1,
+    "ip_publique": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 25,
+    "processus": "?",
+    "portee": "toutes les interfaces",
+    "public": 0,
+    "valeur": "? · réseau (toutes les interfaces)",
+    "sensible": 0,
+    "ip_publique": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 443,
+    "processus": "?",
+    "portee": "adresse publique 203.0.113.5",
+    "public": 0,
+    "valeur": "? · réseau (adresse publique 203.0.113.5)",
+    "sensible": 0,
+    "ip_publique": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 3306,
+    "processus": "?",
+    "portee": "réseau local",
+    "public": 0,
+    "valeur": "? · réseau local · MySQL",
+    "sensible": 1,
+    "ip_publique": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 8888,
+    "processus": "?",
+    "portee": "tailscale",
+    "public": 0,
+    "valeur": "? · tailscale · panneau FastPanel",
+    "sensible": 1,
+    "ip_publique": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 9000,
+    "processus": "python3",
+    "portee": "machine",
+    "public": 0,
+    "valeur": "python3 · machine · Cassandra",
+    "sensible": 1,
+    "ip_publique": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_exposition",
+  "scenario": {
+   "cmds": {
+    "ss": "State Recv-Q Send-Q Local Address:Port Peer Address:Port Process\nLISTEN 0 128 0.0.0.0:22 0.0.0.0:* users:((\"sshd\",pid=1,fd=3))\nLISTEN 0 128 [::]:22 [::]:* users:((\"sshd\",pid=1,fd=4))\nLISTEN 0 511 127.0.0.1:9000 0.0.0.0:* users:((\"python3\",pid=5,fd=6))\nLISTEN 0 4096 100.64.0.1:8888 0.0.0.0:*\nLISTEN 0 4096 192.168.1.5:3306 0.0.0.0:*\nLISTEN 0 4096 203.0.113.5:443 0.0.0.0:*\nLISTEN 0 4096 *:25 *:*\ncourt"
+   },
+   "ip_pub": "198.51.100.9",
+   "joignables": {
+    "22": true,
+    "443": true
+   },
+   "qui": [
+    "iptables",
+    "ip6tables"
+   ],
+   "cmds2": 0
+  },
+  "attendu": [
+   {
+    "port": 22,
+    "processus": "sshd",
+    "portee": "toutes les interfaces",
+    "public": 1,
+    "valeur": "sshd · PUBLIC (joignable sur 198.51.100.9, via la box) · SSH",
+    "sensible": 1,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 25,
+    "processus": "?",
+    "portee": "toutes les interfaces",
+    "public": 0,
+    "valeur": "? · réseau (toutes les interfaces) · IPv6 ouvert",
+    "sensible": 0,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 443,
+    "processus": "?",
+    "portee": "adresse publique 203.0.113.5",
+    "public": 1,
+    "valeur": "? · PUBLIC (joignable sur 198.51.100.9, via la box)",
+    "sensible": 0,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 3306,
+    "processus": "?",
+    "portee": "réseau local",
+    "public": 0,
+    "valeur": "? · réseau local · MySQL",
+    "sensible": 1,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 8888,
+    "processus": "?",
+    "portee": "tailscale",
+    "public": 0,
+    "valeur": "? · tailscale · panneau FastPanel",
+    "sensible": 1,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 9000,
+    "processus": "python3",
+    "portee": "machine",
+    "public": 0,
+    "valeur": "python3 · machine · Cassandra",
+    "sensible": 1,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_exposition",
+  "scenario": {
+   "cmds": {
+    "ss": "State Recv-Q Send-Q Local Address:Port Peer Address:Port Process\nLISTEN 0 128 0.0.0.0:22 0.0.0.0:* users:((\"sshd\",pid=1,fd=3))\nLISTEN 0 128 [::]:22 [::]:* users:((\"sshd\",pid=1,fd=4))\nLISTEN 0 511 127.0.0.1:9000 0.0.0.0:* users:((\"python3\",pid=5,fd=6))\nLISTEN 0 4096 100.64.0.1:8888 0.0.0.0:*\nLISTEN 0 4096 192.168.1.5:3306 0.0.0.0:*\nLISTEN 0 4096 203.0.113.5:443 0.0.0.0:*\nLISTEN 0 4096 *:25 *:*\ncourt",
+    "iptables": "-P INPUT DROP\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT",
+    "ip6tables": "-P INPUT ACCEPT"
+   },
+   "ip_pub": "198.51.100.9",
+   "joignables": {
+    "443": true
+   },
+   "qui": [
+    "iptables",
+    "ip6tables"
+   ]
+  },
+  "attendu": [
+   {
+    "port": 22,
+    "processus": "sshd",
+    "portee": "toutes les interfaces",
+    "public": 0,
+    "valeur": "sshd · réseau (toutes les interfaces) · IPv6 ouvert · SSH",
+    "sensible": 1,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 25,
+    "processus": "?",
+    "portee": "toutes les interfaces",
+    "public": 0,
+    "valeur": "? · réseau : refusé par le pare-feu, sauf le parc et Tailscale · IPv6 ouvert",
+    "sensible": 0,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 443,
+    "processus": "?",
+    "portee": "adresse publique 203.0.113.5",
+    "public": 1,
+    "valeur": "? · PUBLIC (joignable sur 198.51.100.9, via la box)",
+    "sensible": 0,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 3306,
+    "processus": "?",
+    "portee": "réseau local",
+    "public": 0,
+    "valeur": "? · réseau local · MySQL",
+    "sensible": 1,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 8888,
+    "processus": "?",
+    "portee": "tailscale",
+    "public": 0,
+    "valeur": "? · tailscale · panneau FastPanel",
+    "sensible": 1,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 9000,
+    "processus": "python3",
+    "portee": "machine",
+    "public": 0,
+    "valeur": "python3 · machine · Cassandra",
+    "sensible": 1,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_exposition",
+  "scenario": {
+   "cmds": {
+    "ss": "State Recv-Q Send-Q Local Address:Port Peer Address:Port Process\nLISTEN 0 128 0.0.0.0:22 0.0.0.0:* users:((\"sshd\",pid=1,fd=3))\nLISTEN 0 128 [::]:22 [::]:* users:((\"sshd\",pid=1,fd=4))\nLISTEN 0 511 127.0.0.1:9000 0.0.0.0:* users:((\"python3\",pid=5,fd=6))\nLISTEN 0 4096 100.64.0.1:8888 0.0.0.0:*\nLISTEN 0 4096 192.168.1.5:3306 0.0.0.0:*\nLISTEN 0 4096 203.0.113.5:443 0.0.0.0:*\nLISTEN 0 4096 *:25 *:*\ncourt",
+    "iptables": "-P INPUT ACCEPT"
+   },
+   "ip_pub": "198.51.100.9",
+   "qui": [
+    "iptables"
+   ]
+  },
+  "attendu": [
+   {
+    "port": 22,
+    "processus": "sshd",
+    "portee": "toutes les interfaces",
+    "public": 0,
+    "valeur": "sshd · réseau (toutes les interfaces) · SSH",
+    "sensible": 1,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 25,
+    "processus": "?",
+    "portee": "toutes les interfaces",
+    "public": 0,
+    "valeur": "? · réseau (toutes les interfaces)",
+    "sensible": 0,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 443,
+    "processus": "?",
+    "portee": "adresse publique 203.0.113.5",
+    "public": 0,
+    "valeur": "? · réseau (adresse publique 203.0.113.5)",
+    "sensible": 0,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 3306,
+    "processus": "?",
+    "portee": "réseau local",
+    "public": 0,
+    "valeur": "? · réseau local · MySQL",
+    "sensible": 1,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 8888,
+    "processus": "?",
+    "portee": "tailscale",
+    "public": 0,
+    "valeur": "? · tailscale · panneau FastPanel",
+    "sensible": 1,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 9000,
+    "processus": "python3",
+    "portee": "machine",
+    "public": 0,
+    "valeur": "python3 · machine · Cassandra",
+    "sensible": 1,
+    "ip_publique": "198.51.100.9",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_courriel_domaines",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_courriel_domaines",
+  "scenario": {
+   "qui": [
+    "dig"
+   ]
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_courriel_domaines",
+  "scenario": {
+   "qui": [
+    "dig"
+   ],
+   "sites": [
+    [
+     "exemple.test",
+     1,
+     ""
+    ],
+    [
+     "www.exemple.test",
+     1,
+     ""
+    ],
+    [
+     "autre.org",
+     0,
+     ""
+    ],
+    [
+     "tiers.net",
+     0,
+     ""
+    ],
+    [
+     "localhost",
+     0,
+     ""
+    ]
+   ],
+   "dig": {
+    "exemple.test": "\"v=spf1 ip4:203.0.113.5 -all\"",
+    "_dmarc.exemple.test": "\"v=DMARC1; p=reject\"",
+    "dkim._domainkey.exemple.test": "\"v=DKIM1; p=AAAA\"",
+    "autre.org": "\"v=spf1 +all\"\n\"autre texte\"",
+    "tiers.net": ""
+   },
+   "ip_pub": "203.0.113.5"
+  },
+  "attendu": [
+   {
+    "cle": "domaine_courriel.autre.org",
+    "categorie": "courriel",
+    "valeur": "SPF OUVERT À TOUS (+all) · cette machine (203.0.113.5) n'y est pas · DKIM : aucune signature trouvée · AUCUN DMARC",
+    "severite": "warning",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "cle": "domaine_courriel.exemple.test",
+    "categorie": "courriel",
+    "valeur": "SPF strict (-all) · DKIM : dkim · DMARC rejette l'usurpation",
+    "severite": "info",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "cle": "domaine_courriel.tiers.net",
+    "categorie": "courriel",
+    "valeur": "AUCUN SPF : n'importe qui peut écrire en son nom · DKIM : aucune signature trouvée · AUCUN DMARC",
+    "severite": "warning",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_courriel_domaines",
+  "scenario": {
+   "qui": [
+    "dig"
+   ],
+   "sites": [
+    [
+     "exemple.test",
+     1,
+     ""
+    ]
+   ],
+   "dig": {
+    "exemple.test": "\"v=spf1 ip4:203.0.113.5 -all\"",
+    "_dmarc.exemple.test": "\"v=DMARC1; p=reject\"",
+    "dkim._domainkey.exemple.test": "\"v=DKIM1; p=AAAA\"",
+    "autre.org": "\"v=spf1 +all\"\n\"autre texte\"",
+    "tiers.net": ""
+   },
+   "ip_pub": "198.51.100.9"
+  },
+  "attendu": [
+   {
+    "cle": "domaine_courriel.exemple.test",
+    "categorie": "courriel",
+    "valeur": "SPF strict (-all) · cette machine (198.51.100.9) n'y est pas · DKIM : dkim · DMARC rejette l'usurpation",
+    "severite": "info",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_courriel_domaines",
+  "scenario": {
+   "qui": [
+    "dig"
+   ],
+   "sites": [],
+   "dig": {
+    "exemple.test": "\"v=spf1 ip4:203.0.113.5 -all\"",
+    "_dmarc.exemple.test": "\"v=DMARC1; p=reject\"",
+    "dkim._domainkey.exemple.test": "\"v=DKIM1; p=AAAA\"",
+    "autre.org": "\"v=spf1 +all\"\n\"autre texte\"",
+    "tiers.net": ""
+   }
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_controles",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_controles",
+  "scenario": {
+   "sites": [
+    [
+     "a.test",
+     1,
+     "10.0.0.1"
+    ],
+    [
+     "b.test",
+     0,
+     ""
+    ],
+    [
+     "c.test",
+     1,
+     "[::1]"
+    ],
+    [
+     "d.test",
+     0,
+     null
+    ]
+   ],
+   "dns": {
+    "a.test": [
+     "1.1.1.1"
+    ],
+    "b.test": [
+     "1.1.1.1",
+     "2.2.2.2",
+     "3.3.3.3",
+     "4.4.4.4"
+    ],
+    "c.test": [
+     "9.9.9.9"
+    ],
+    "d.test": [
+     "1.1.1.1"
+    ]
+   },
+   "tls": {
+    "a.test": [
+     false,
+     "expiré"
+    ]
+   }
+  },
+  "attendu": [
+   {
+    "nom": "tls.a.test",
+    "ok": 0,
+    "valeur": "expiré",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "nom": "dns.a.test",
+    "ok": 1,
+    "valeur": "→ 1.1.1.1",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "nom": "dns.b.test",
+    "ok": 1,
+    "valeur": "→ 1.1.1.1, 2.2.2.2, 3.3.3.3 (les autres sites : 1.1.1.1)",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "nom": "tls.c.test",
+    "ok": 1,
+    "valeur": "valide",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "nom": "dns.c.test",
+    "ok": 1,
+    "valeur": "→ 9.9.9.9 (les autres sites : 1.1.1.1)",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "nom": "dns.d.test",
+    "ok": 1,
+    "valeur": "→ 1.1.1.1",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_controles",
+  "scenario": {
+   "sites": [
+    [
+     "a.test",
+     0,
+     ""
+    ],
+    [
+     "b.test",
+     0,
+     ""
+    ],
+    [
+     "c.test",
+     0,
+     ""
+    ]
+   ],
+   "dns": {
+    "a.test": [
+     "1.1.1.1"
+    ],
+    "b.test": [
+     "1.1.1.1"
+    ],
+    "c.test": [
+     "9.9.9.9"
+    ]
+   }
+  },
+  "attendu": [
+   {
+    "nom": "dns.a.test",
+    "ok": 1,
+    "valeur": "→ 1.1.1.1",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "nom": "dns.b.test",
+    "ok": 1,
+    "valeur": "→ 1.1.1.1",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "nom": "dns.c.test",
+    "ok": 1,
+    "valeur": "→ 9.9.9.9 (les autres sites : 1.1.1.1)",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_controles",
+  "scenario": {
+   "ports": [
+    [
+     25,
+     "tcp"
+    ],
+    [
+     993,
+     "tcp6"
+    ],
+    [
+     587,
+     "udp"
+    ],
+    [
+     110,
+     "tcp"
+    ]
+   ],
+   "bannieres": {
+    "25": "220 mx ESMTP",
+    "993": "* OK IMAP",
+    "110": "-ERR"
+   }
+  },
+  "attendu": [
+   {
+    "nom": "courriel.SMTP",
+    "ok": 1,
+    "valeur": "répond : 220 mx ESMTP",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "nom": "courriel.IMAPS",
+    "ok": 1,
+    "valeur": "répond : * OK IMAP",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "nom": "courriel.POP3",
+    "ok": 0,
+    "valeur": "ne répond pas comme attendu : -ERR",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_controles",
+  "scenario": {
+   "fs": {
+    "/etc/cassandra/config.json": "{\"app_public_url\": \"https://exemple.test/\"}"
+   },
+   "curl": "<input id=\"login-username\">"
+  },
+  "attendu": [
+   {
+    "nom": "cassandra.connexion",
+    "ok": 1,
+    "valeur": "la page de connexion s'affiche (https://exemple.test)",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_controles",
+  "scenario": {
+   "fs": {
+    "/etc/cassandra/config.json": "{\"base_url\": \"https://autre.test\"}"
+   },
+   "curl": "502"
+  },
+  "attendu": [
+   {
+    "nom": "cassandra.connexion",
+    "ok": 0,
+    "valeur": "page de connexion introuvable sur https://autre.test",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_controles",
+  "scenario": {
+   "fs": {
+    "/etc/cassandra/config.json": "pas du json"
+   },
+   "curl": "<form id=\"login\">"
+  },
+  "attendu": []
  }
 ]

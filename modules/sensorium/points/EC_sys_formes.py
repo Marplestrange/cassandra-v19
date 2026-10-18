@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #00812a
+# VERSION EC : EC0 (référence 0.3.0)  #c5168f
 # HÔTE CN    : CN_module.py · sys_formes @1.0
 # RÔLE       : transforme ce que le Sensorium lit du système (sorties de commandes, fichiers de configuration, JSON de smartctl) en sessions, ports, certificats, disques, état du matériel et sites web déclarés.
 # MÉTHODE    : fonctions pures, une par mesure ; le nexus lit les sources et décide des replis (who puis ss puis last ; ss puis netstat) ; l'EC ne lit jamais de fichier ni de commande.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=sys_formes contrat=@1.0 version=EC0 empreinte=00812a ▼▼▼
+# ▼▼▼ BORNE EC point=sys_formes contrat=@1.0 version=EC0 empreinte=c5168f ▼▼▼
 from datetime import datetime
 import re
 
@@ -559,6 +559,190 @@ def lignes_d_erreur(rx, fmt, texte, maintenant):
             trouvees.append([_date_de_ligne(m.group(1), fmt, maintenant), m.group(2).upper(), m.group(3).strip()[:500]])
     return trouvees
 
+def verdict_pare_feu(lignes):
+    """Le verdict d'un `iptables -S` : chaque règle atteinte depuis INPUT, sous-chaînes dépliées. Un « tout refuser » sans condition, au bout d'un chemin de sauts eux-mêmes sans condition, filtre autant qu'une politique DROP."""
+    pol, ch = {}, {}
+    for l in lignes:
+        j = l.split()
+        if len(j) >= 3 and j[0] == "-P":
+            pol[j[1]] = j[2]
+        elif len(j) >= 2 and j[0] == "-N":
+            ch.setdefault(j[1], [])
+        elif len(j) >= 2 and j[0] == "-A":
+            ch.setdefault(j[1], []).append(j[2:])
+    etat = {"regles": 0, "refus": 0, "refuse_tout": False, "ouverts": []}
+
+    def suivre(nom, prof, vu, sans_condition):
+        for j in ch.get(nom, []):
+            cible = j[j.index("-j") + 1] if "-j" in j and j.index("-j") + 1 < len(j) else ""
+            reste = list(j)
+            for opt in ("--reject-with", "--log-prefix", "--log-level"):
+                if opt in reste and reste.index(opt) + 1 < len(reste):
+                    k = reste.index(opt)
+                    del reste[k:k + 2]
+            pour_tout = [x for x in reste if x not in ("-j", cible)] == []
+            if cible == "ACCEPT" and sans_condition:
+                pts = []
+                for opt in ("--dport", "--dports"):
+                    if opt in reste and reste.index(opt) + 1 < len(reste):
+                        for mo in reste[reste.index(opt) + 1].split(","):
+                            a, _, b = mo.partition(":")
+                            if a.isdigit():
+                                pts.append((int(a), int(b) if b.isdigit() else int(a)))
+                autres = [x for x in reste if x.startswith("-") and x not in ("-p", "-m", "--dport", "--dports", "-j")]
+                if pts and not autres:
+                    etat["ouverts"].extend(pts)
+            if cible in ch and cible not in vu and prof < 6:
+                suivre(cible, prof + 1, vu | {cible}, sans_condition and pour_tout)
+                continue
+            etat["regles"] += 1
+            if cible in ("DROP", "REJECT"):
+                etat["refus"] += 1
+                if pour_tout and sans_condition:
+                    etat["refuse_tout"] = True
+            if pour_tout and cible in ("RETURN", "ACCEPT", "DROP", "REJECT"):
+                return
+
+    suivre("INPUT", 0, {"INPUT"}, True)
+    p = pol.get("INPUT", "?")
+    return {"politique": p, "filtre": p in ("DROP", "REJECT") or etat["refuse_tout"],
+            "regles": etat["regles"], "refus": etat["refus"], "ouverts": etat["ouverts"]}
+
+def ecoute_ss(texte):
+    """Les ports à l'écoute d'après `ss -ltnpH` : [[port, processus, [portées triées]]], dans l'ordre de première apparition."""
+    ecoute = {}
+    for l in texte.splitlines():
+        p = l.split()
+        if len(p) < 4:
+            continue
+        local = p[3]
+        m = re.match(r"^\[?(.*?)\]?:(\d+)$", local)
+        if not m:
+            continue
+        adr, port = m.group(1).split("%")[0], int(m.group(2))
+        pm = re.search(r'users:\(\("([^"]+)"', l)
+        proc = (pm.group(1) if pm else "?").split(" (")[0]
+        if adr in ("127.0.0.1", "::1") or adr.startswith("127."):
+            portee = "machine"
+        elif adr.startswith("100.") or adr.startswith("fd7a:115c"):
+            portee = "tailscale"
+        elif adr.startswith(("192.168.", "10.", "172.16.", "172.17.", "172.18.", "172.19.", "172.2", "172.30.", "172.31.", "fe80")):
+            portee = "réseau local"
+        elif adr in ("0.0.0.0", "*", "::"):
+            portee = "toutes les interfaces"
+        else:
+            portee = "adresse publique %s" % adr
+        e = ecoute.setdefault(port, {"proc": proc, "portees": set()})
+        e["portees"].add(portee)
+    return [[port, e["proc"], sorted(e["portees"])] for port, e in ecoute.items()]
+
+def ports_a_sonder(ecoute):
+    """Les ports qu'il faut tenter de joindre depuis l'extérieur : ceux qui écoutent ailleurs que sur la machine ou Tailscale."""
+    return [port for port, proc, portees in ecoute if not set(portees) <= {"machine", "tailscale"}]
+
+_PORTS_SENSIBLES_EC = {22: "SSH", 23: "Telnet", 3306: "MySQL", 5432: "PostgreSQL", 6379: "Redis", 27017: "MongoDB",
+                       2375: "Docker (API nue)", 2376: "Docker", 9200: "Elasticsearch", 11211: "Memcached",
+                       5900: "VNC", 3389: "Bureau à distance", 8888: "panneau FastPanel", 9000: "Cassandra"}
+
+def exposition(ecoute, publics, pf4, pf6, ip_pub, now):
+    """L'exposition de chaque port : ecoute = [[port, processus, portées]], publics = [[port, joignable de l'extérieur (True/False/None)]], pf4 et pf6 = les verdicts du pare-feu (ou None)."""
+    pubs = {port: ouvert for port, ouvert in publics}
+
+    def _ouvert(pf, port):
+        return (not pf) or (not pf["filtre"]) or any(a <= port <= b for a, b in pf["ouverts"])
+
+    out = []
+    for port, proc, portees in sorted(ecoute, key=lambda x: x[0]):
+        pub = pubs.get(port)
+        portee = ", ".join(sorted(portees))
+        if pub:
+            niveau = "PUBLIC (joignable sur %s, via la box)" % ip_pub
+        elif "toutes les interfaces" in portees or any(x.startswith("adresse publique") for x in portees):
+            if _ouvert(pf4, port):
+                niveau = "réseau (%s)" % portee
+            else:
+                niveau = "réseau : refusé par le pare-feu, sauf le parc et Tailscale"
+            if "toutes les interfaces" in portees and pf6:
+                niveau += " · IPv6 %s" % ("ouvert" if _ouvert(pf6, port) else "refusé")
+        else:
+            niveau = portee
+        sensible = _PORTS_SENSIBLES_EC.get(port)
+        out.append({"port": port, "processus": proc, "portee": portee, "public": 1 if pub else 0,
+                    "valeur": "%s · %s%s" % (proc, niveau, (" · %s" % sensible) if sensible else ""),
+                    "sensible": 1 if sensible else 0, "ip_publique": ip_pub, "last_check": now})
+    return out
+
+def racines_de_domaines(noms):
+    """Les domaines de deuxième niveau d'une liste de noms, triés, sans doublon."""
+    return sorted({".".join(str(n).strip(".").split(".")[-2:]) for n in noms if n and "." in str(n)})
+
+def courriel_domaine(txt_domaine, txt_dmarc, dkim, ip):
+    """Ce que disent SPF, DKIM et DMARC d'un domaine : [texte, gravité]. txt_* = les enregistrements TXT lus ; dkim = [[sélecteur, enregistrements]] ; ip = l'adresse publique de la machine."""
+    spf = next((t for t in txt_domaine if t.lower().startswith("v=spf1")), "")
+    dmarc = next((t for t in txt_dmarc if t.lower().startswith("v=dmarc1")), "")
+    trouves = [s for s, txts in dkim if any("p=" in t for t in txts)]
+    pol = (re.search(r"\bp=(\w+)", dmarc) or [None, ""])[1].lower()
+    parts = []
+    sev = "info"
+    if spf:
+        fin = (re.search(r"([~\-?+])all\b", spf) or [None, ""])[1]
+        parts.append("SPF %s" % {"-": "strict (-all)", "~": "souple (~all)", "?": "neutre (?all)", "+": "OUVERT À TOUS (+all)"}.get(fin, "sans fin"))
+        if fin == "+":
+            sev = "warning"
+        if ip and ("ip4:" + ip) not in spf and "include:" not in spf and " a " not in (spf + " ") and " mx " not in (spf + " "):
+            parts.append("cette machine (%s) n'y est pas" % ip)
+    else:
+        parts.append("AUCUN SPF : n'importe qui peut écrire en son nom")
+        sev = "warning"
+    parts.append(("DKIM : %s" % ", ".join(trouves)) if trouves else "DKIM : aucune signature trouvée")
+    if dmarc:
+        parts.append("DMARC %s" % {"none": "en surveillance seulement (p=none)", "quarantine": "met en quarantaine",
+                                    "reject": "rejette l'usurpation"}.get(pol, pol or "?"))
+    else:
+        parts.append("AUCUN DMARC")
+        sev = "warning"
+    return [" · ".join(parts), sev]
+
+def controles_site(dom, tls, ips, now):
+    """Les contrôles d'un site : son certificat vérifié (tls = None quand le site n'est pas en TLS, sinon [vérifié, détail]) et sa résolution DNS publique."""
+    res = []
+    if tls is not None:
+        ok, v = tls
+        res.append({"nom": "tls.%s" % dom, "ok": 1 if ok else 0, "valeur": v, "last_check": now})
+    res.append({"nom": "dns.%s" % dom, "ok": 1 if ips else 0, "valeur": ("→ %s" % ", ".join(ips[:3])) if ips else "ne résout pas", "last_check": now})
+    return res
+
+def controles_coherence(out):
+    """Cohérence DNS : un domaine qui pointe ailleurs que la majorité des autres est signalé."""
+    out = [dict(x) for x in out]
+    dns = [x for x in out if x["nom"].startswith("dns.") and x["ok"]]
+    compte = {}
+    for x in dns:
+        compte[x["valeur"]] = compte.get(x["valeur"], 0) + 1
+    if len(dns) >= 3:
+        majo = max(compte, key=compte.get)
+        for x in dns:
+            if x["valeur"] != majo and compte[x["valeur"]] == 1:
+                x["valeur"] += " (les autres sites : %s)" % majo[2:]
+    return out
+
+def controle_banniere(nom, banniere, attendu, now):
+    """Le contrôle d'un service de courriel : sa bannière commence-t-elle comme attendu ?"""
+    b = banniere
+    return {"nom": "courriel.%s" % nom, "ok": 1 if b.startswith(attendu) else 0,
+            "valeur": ("répond : %s" % b) if b.startswith(attendu) else ("ne répond pas comme attendu : %s" % (b or "rien")),
+            "last_check": now}
+
+def page_de_connexion(corps):
+    """La page lue est-elle la page de connexion de Cassandra ?"""
+    return "login-username" in corps or 'id="login' in corps
+
+def controle_connexion(ok, url, now):
+    """Le contrôle de l'interface de Cassandra : sa page de connexion."""
+    return {"nom": "cassandra.connexion", "ok": 1 if ok else 0,
+            "valeur": ("la page de connexion s'affiche (%s)" % url) if ok else ("page de connexion introuvable sur %s" % url),
+            "last_check": now}
+
 def forme(op, entree):
     if op == "sessions_base":
         return sessions_base(entree["who"], entree["ss"], entree["now"])
@@ -614,10 +798,32 @@ def forme(op, entree):
         return netdev_delta(entree["s1"], entree["s2"], entree["now"])
     if op == "lignes_d_erreur":
         return lignes_d_erreur(entree["rx"], entree["fmt"], entree["texte"], entree["maintenant"])
+    if op == "verdict_pare_feu":
+        return verdict_pare_feu(entree["lignes"])
+    if op == "ecoute_ss":
+        return ecoute_ss(entree["texte"])
+    if op == "ports_a_sonder":
+        return ports_a_sonder(entree["ecoute"])
+    if op == "exposition":
+        return exposition(entree["ecoute"], entree["publics"], entree["pf4"], entree["pf6"], entree["ip_pub"], entree["now"])
+    if op == "racines_de_domaines":
+        return racines_de_domaines(entree["noms"])
+    if op == "courriel_domaine":
+        return courriel_domaine(entree["txt_domaine"], entree["txt_dmarc"], entree["dkim"], entree["ip"])
+    if op == "controles_site":
+        return controles_site(entree["dom"], entree["tls"], entree["ips"], entree["now"])
+    if op == "controles_coherence":
+        return controles_coherence(entree["out"])
+    if op == "controle_banniere":
+        return controle_banniere(entree["service"], entree["banniere"], entree["attendu"], entree["now"])
+    if op == "page_de_connexion":
+        return page_de_connexion(entree["corps"])
+    if op == "controle_connexion":
+        return controle_connexion(entree["ok"], entree["url"], entree["now"])
     raise ValueError("opération inconnue : %s" % op)
 
 def point_sys_formes(entree):
-    """Le point d'évolution `sys_formes` (contrat 1.0) : ce que le Sensorium lit du système, mis en forme : sessions ouvertes, ports à l'écoute, certificats, disques (SMART), matériel (températures, heure, pare-feu), sites web déclarés, tâches planifiées, services, pools PHP, entrées-sorties des disques mouvements de paquets, instantané du serveur, processus, trafic réseau et lignes d'erreur des journaux. Le nexus lit les sources ; l'EC ne fait que la forme."""
+    """Le point d'évolution `sys_formes` (contrat 1.0) : ce que le Sensorium lit du système, mis en forme : sessions ouvertes, ports à l'écoute, certificats, disques (SMART), matériel (températures, heure, pare-feu), sites web déclarés, tâches planifiées, services, pools PHP, entrées-sorties des disques mouvements de paquets, instantané du serveur, processus, trafic réseau lignes d'erreur des journaux, verdict du pare-feu, exposition des ports, courriel des domaines et contrôles. Le nexus lit les sources ; l'EC ne fait que la forme."""
     return {"valeur": forme(entree["op"], entree)}
 
 # ▲▲▲ FIN BORNE EC ▲▲▲

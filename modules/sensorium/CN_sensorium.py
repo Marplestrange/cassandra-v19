@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.8  #037b54
+# VERSION CN : 0.1.9  #892e5f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.8 empreinte=037b54 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.9 empreinte=892e5f ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -3205,33 +3205,22 @@ def collect_controles() -> list:
     # TLS vérifié et DNS public, en parallèle
     def _site(r):
         dom, ssl_on, ip = r[0], r[1], (r[2] or "").strip("[]")
-        res = []
+        tls = None
         if ssl_on:
             ok, v = _tls_verifie(dom, ip)
-            res.append({"nom": "tls.%s" % dom, "ok": 1 if ok else 0, "valeur": v, "last_check": now})
-        ips = _dns_public(dom)
-        res.append({"nom": "dns.%s" % dom, "ok": 1 if ips else 0, "valeur": ("→ %s" % ", ".join(ips[:3])) if ips else "ne résout pas", "last_check": now})
-        return res
+            tls = [bool(ok), v]
+        ips = list(_dns_public(dom) or [])
+        return _sys_formes("controles_site", dom=dom, tls=tls, ips=ips, now=now)     # la forme : POINT D'ÉVOLUTION (points/EC_sys_formes.py)
     with ThreadPoolExecutor(max_workers=6) as ex:
         for res in ex.map(_site, list(sites)):
             out.extend(res)
     # Cohérence DNS : un domaine qui pointe ailleurs que la majorité des autres
-    dns = [x for x in out if x["nom"].startswith("dns.") and x["ok"]]
-    compte = {}
-    for x in dns:
-        compte[x["valeur"]] = compte.get(x["valeur"], 0) + 1
-    if len(dns) >= 3:
-        majo = max(compte, key=compte.get)
-        for x in dns:
-            if x["valeur"] != majo and compte[x["valeur"]] == 1:
-                x["valeur"] += " (les autres sites : %s)" % majo[2:]
+    out = _sys_formes("controles_coherence", out=out)
     # Courriel : la bannière de chaque port ouvert
     for port, (nom, tls, attendu) in _PORTS_COURRIEL.items():
         if port in ports:
             b = _banniere(port, tls)
-            out.append({"nom": "courriel.%s" % nom, "ok": 1 if b.startswith(attendu) else 0,
-                        "valeur": ("répond : %s" % b) if b.startswith(attendu) else ("ne répond pas comme attendu : %s" % (b or "rien")),
-                        "last_check": now})
+            out.append(_sys_formes("controle_banniere", service=nom, banniere=b, attendu=attendu, now=now))
     # L'interface de Cassandra : sa page de connexion
     try:
         cfg = json.load(open(CASSANDRA_CONFIG, encoding="utf-8"))
@@ -3240,14 +3229,12 @@ def collect_controles() -> list:
         url = ""
     if url:
         corps = run_cmd(["curl", "-skL", "--max-time", "8", url + "/"], timeout=12) or ""
-        ok = "login-username" in corps or 'id="login' in corps
+        ok = _sys_formes("page_de_connexion", corps=corps)
         if not ok:
             time.sleep(3)      # même prudence qu'en sondant les sites : l'instant d'un redémarrage n'est pas une panne
             corps = run_cmd(["curl", "-skL", "--max-time", "8", url + "/"], timeout=12) or ""
-            ok = "login-username" in corps or 'id="login' in corps
-        out.append({"nom": "cassandra.connexion", "ok": 1 if ok else 0,
-                    "valeur": ("la page de connexion s'affiche (%s)" % url) if ok else ("page de connexion introuvable sur %s" % url),
-                    "last_check": now})
+            ok = _sys_formes("page_de_connexion", corps=corps)
+        out.append(_sys_formes("controle_connexion", ok=bool(ok), url=url, now=now))
     return out
 
 
@@ -3393,38 +3380,12 @@ def _ip_publique() -> str:
 
 def collect_exposition() -> list:
     now = datetime.now().isoformat()
-    ecoute = {}
-    for l in (run_cmd(["ss", "-ltnpH"], timeout=10) or "").splitlines():
-        p = l.split()
-        if len(p) < 4:
-            continue
-        local = p[3]
-        m = re.match(r"^\[?(.*?)\]?:(\d+)$", local)
-        if not m:
-            continue
-        adr, port = m.group(1).split("%")[0], int(m.group(2))
-        pm = re.search(r'users:\(\("([^"]+)"', l)
-        proc = (pm.group(1) if pm else "?").split(" (")[0]
-        if adr in ("127.0.0.1", "::1") or adr.startswith("127."):
-            portee = "machine"
-        elif adr.startswith("100.") or adr.startswith("fd7a:115c"):
-            portee = "tailscale"
-        elif adr.startswith(("192.168.", "10.", "172.16.", "172.17.", "172.18.", "172.19.", "172.2", "172.30.", "172.31.", "fe80")):
-            portee = "réseau local"
-        elif adr in ("0.0.0.0", "*", "::"):
-            portee = "toutes les interfaces"
-        else:
-            portee = "adresse publique %s" % adr
-        e = ecoute.setdefault(port, {"proc": proc, "portees": set()})
-        e["portees"].add(portee)
+    ecoute = _sys_formes("ecoute_ss", texte=run_cmd(["ss", "-ltnpH"], timeout=10) or "")
     ip_pub = _ip_publique()
-    candidats = [pt for pt, e in ecoute.items() if not e["portees"] <= {"machine", "tailscale"}]
+    candidats = _sys_formes("ports_a_sonder", ecoute=ecoute)
     # CE QUE LE PARE-FEU EN FAIT (09-10) : « réseau (toutes les interfaces) » mentait dès que le pare-feu filtre.
     pf4 = _pf_verdict((run_cmd(["iptables", "-S"], timeout=10) or "").splitlines()) if _qui("iptables") else None
     pf6 = _pf_verdict((run_cmd(["ip6tables", "-S"], timeout=10) or "").splitlines()) if _qui("ip6tables") else None
-
-    def _ouvert(pf, port):
-        return (not pf) or (not pf["filtre"]) or any(a <= port <= b for a, b in pf["ouverts"])
 
     def frappe(port):
         if not ip_pub:
@@ -3438,26 +3399,7 @@ def collect_exposition() -> list:
     with ThreadPoolExecutor(max_workers=16) as ex:
         for port, ouvert in ex.map(frappe, candidats):
             publics[port] = ouvert
-    out = []
-    for port, e in sorted(ecoute.items()):
-        pub = publics.get(port)
-        portee = ", ".join(sorted(e["portees"]))
-        if pub:
-            niveau = "PUBLIC (joignable sur %s, via la box)" % ip_pub
-        elif "toutes les interfaces" in e["portees"] or any(x.startswith("adresse publique") for x in e["portees"]):
-            if _ouvert(pf4, port):
-                niveau = "réseau (%s)" % portee
-            else:
-                niveau = "réseau : refusé par le pare-feu, sauf le parc et Tailscale"
-            if "toutes les interfaces" in e["portees"] and pf6:
-                niveau += " · IPv6 %s" % ("ouvert" if _ouvert(pf6, port) else "refusé")
-        else:
-            niveau = portee
-        sensible = _PORTS_SENSIBLES.get(port)
-        out.append({"port": port, "processus": e["proc"], "portee": portee, "public": 1 if pub else 0,
-                    "valeur": "%s · %s%s" % (e["proc"], niveau, (" · %s" % sensible) if sensible else ""),
-                    "sensible": 1 if sensible else 0, "ip_publique": ip_pub, "last_check": now})
-    return out
+    return _sys_formes("exposition", ecoute=ecoute, publics=[[p, o] for p, o in publics.items()], pf4=pf4, pf6=pf6, ip_pub=ip_pub, now=now)
 
 
 # LA SANTÉ DES APPLICATIONS (08-10) : le serveur va bien, mais les sites servent-ils des erreurs ? MySQL
@@ -3934,7 +3876,7 @@ def collect_courriel_domaines() -> list:
         k.close()
     except Exception:
         noms = set()
-    racines = sorted({".".join(str(n).strip(".").split(".")[-2:]) for n in noms if n and "." in str(n)})
+    racines = _sys_formes("racines_de_domaines", noms=sorted(noms, key=str))
 
     def txt(nom):
         return [l.strip().strip('"').replace('" "', "") for l in (run_cmd(["dig", "+short", "+time=3", "+tries=1", "TXT", nom], timeout=8) or "").splitlines() if l.strip()]
@@ -3945,30 +3887,9 @@ def collect_courriel_domaines() -> list:
         pass
     out = []
     for d in racines:
-        spf = next((t for t in txt(d) if t.lower().startswith("v=spf1")), "")
-        dmarc = next((t for t in txt("_dmarc." + d) if t.lower().startswith("v=dmarc1")), "")
-        dkim = [s for s in _DKIM_SELECTEURS if any("p=" in t for t in txt("%s._domainkey.%s" % (s, d)))]
-        pol = (re.search(r"\bp=(\w+)", dmarc) or [None, ""])[1].lower()
-        parts = []
-        sev = "info"
-        if spf:
-            fin = (re.search(r"([~\-?+])all\b", spf) or [None, ""])[1]
-            parts.append("SPF %s" % {"-": "strict (-all)", "~": "souple (~all)", "?": "neutre (?all)", "+": "OUVERT À TOUS (+all)"}.get(fin, "sans fin"))
-            if fin == "+":
-                sev = "warning"
-            if ip and ("ip4:" + ip) not in spf and "include:" not in spf and " a " not in (spf + " ") and " mx " not in (spf + " "):
-                parts.append("cette machine (%s) n'y est pas" % ip)
-        else:
-            parts.append("AUCUN SPF : n'importe qui peut écrire en son nom")
-            sev = "warning"
-        parts.append(("DKIM : %s" % ", ".join(dkim)) if dkim else "DKIM : aucune signature trouvée")
-        if dmarc:
-            parts.append("DMARC %s" % {"none": "en surveillance seulement (p=none)", "quarantine": "met en quarantaine",
-                                        "reject": "rejette l'usurpation"}.get(pol, pol or "?"))
-        else:
-            parts.append("AUCUN DMARC")
-            sev = "warning"
-        out.append(_mesure("domaine_courriel.%s" % d, "courriel", " · ".join(parts), sev))
+        texte, sev = _sys_formes("courriel_domaine", txt_domaine=txt(d), txt_dmarc=txt("_dmarc." + d),
+                                 dkim=[[sel, txt("%s._domainkey.%s" % (sel, d))] for sel in _DKIM_SELECTEURS], ip=ip)
+        out.append(_mesure("domaine_courriel.%s" % d, "courriel", texte, sev))
     _DOMAINES_CACHE.update({"t": time.time(), "d": out})
     return out
 
@@ -4446,57 +4367,9 @@ def _world_elaguer(conn, prefixe: str, vus: set) -> int:
 
 
 def _pf_verdict(lignes: list) -> dict:
-    """Le verdict d'un `iptables -S` : chaque règle atteinte depuis INPUT, sous-chaînes dépliées. Même règle
-    que `_pf_parcours` dans cassandra.py (onglet Sécurité) : un « tout refuser » sans condition, au bout d'un
-    chemin de sauts eux-mêmes sans condition, filtre autant qu'une politique DROP."""
-    pol, ch = {}, {}
-    for l in lignes:
-        j = l.split()
-        if len(j) >= 3 and j[0] == "-P":
-            pol[j[1]] = j[2]
-        elif len(j) >= 2 and j[0] == "-N":
-            ch.setdefault(j[1], [])
-        elif len(j) >= 2 and j[0] == "-A":
-            ch.setdefault(j[1], []).append(j[2:])
-    etat = {"regles": 0, "refus": 0, "refuse_tout": False, "ouverts": []}
-
-    def suivre(nom, prof, vu, sans_condition):
-        for j in ch.get(nom, []):
-            cible = j[j.index("-j") + 1] if "-j" in j and j.index("-j") + 1 < len(j) else ""
-            # « --reject-with icmp-… » appartient à la cible : un REJECT final reste un « tout refuser ».
-            reste = list(j)
-            for opt in ("--reject-with", "--log-prefix", "--log-level"):
-                if opt in reste and reste.index(opt) + 1 < len(reste):
-                    k = reste.index(opt)
-                    del reste[k:k + 2]
-            pour_tout = [x for x in reste if x not in ("-j", cible)] == []
-            # Un port ouvert À TOUS : ACCEPT atteint sans condition, sans source ni interface, avec un port.
-            if cible == "ACCEPT" and sans_condition:
-                pts = []
-                for opt in ("--dport", "--dports"):
-                    if opt in reste and reste.index(opt) + 1 < len(reste):
-                        for mo in reste[reste.index(opt) + 1].split(","):
-                            a, _, b = mo.partition(":")
-                            if a.isdigit():
-                                pts.append((int(a), int(b) if b.isdigit() else int(a)))
-                autres = [x for x in reste if x.startswith("-") and x not in ("-p", "-m", "--dport", "--dports", "-j")]
-                if pts and not autres:
-                    etat["ouverts"].extend(pts)
-            if cible in ch and cible not in vu and prof < 6:
-                suivre(cible, prof + 1, vu | {cible}, sans_condition and pour_tout)
-                continue
-            etat["regles"] += 1
-            if cible in ("DROP", "REJECT"):
-                etat["refus"] += 1
-                if pour_tout and sans_condition:
-                    etat["refuse_tout"] = True
-            if pour_tout and cible in ("RETURN", "ACCEPT", "DROP", "REJECT"):
-                return
-
-    suivre("INPUT", 0, {"INPUT"}, True)
-    p = pol.get("INPUT", "?")
-    return {"politique": p, "filtre": p in ("DROP", "REJECT") or etat["refuse_tout"],
-            "regles": etat["regles"], "refus": etat["refus"], "ouverts": etat["ouverts"]}
+    """Le verdict d'un `iptables -S` : chaque règle atteinte depuis INPUT, sous-chaînes dépliées. La règle (même que `_pf_parcours`
+    dans cassandra.py, onglet Sécurité) est un POINT D'ÉVOLUTION : points/EC_sys_formes.py."""
+    return _sys_formes("verdict_pare_feu", lignes=lignes)
 
 
 def _duree_txt(sec) -> str:

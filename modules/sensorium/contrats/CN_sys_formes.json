@@ -36,7 +36,18 @@
      "processus_agreges",
      "netdev_lire",
      "netdev_delta",
-     "lignes_d_erreur"
+     "lignes_d_erreur",
+     "verdict_pare_feu",
+     "ecoute_ss",
+     "ports_a_sonder",
+     "exposition",
+     "racines_de_domaines",
+     "courriel_domaine",
+     "controles_site",
+     "controles_coherence",
+     "controle_banniere",
+     "page_de_connexion",
+     "controle_connexion"
     ]
    }
   }

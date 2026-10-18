@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e495ab
+# VERSION CN : 0.1.0  #9060b0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le démon du Sensorium, seul et sans noyau, appelle ses points d'évolution ; que ses appels nourrissent le rejeu que le noyau absorbe ; et qu'une panne du service ne perd jamais une mesure.
 # MÉTHODE    : charge CN_sensorium.py comme module, un dossier de données temporaire, puis appelle les fonctions façades.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e495ab ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9060b0 ▼▼▼
 import importlib.util
 import json
 import os
@@ -230,7 +230,7 @@ class FauxOuvert:
 
 
 class Collecteurs(unittest.TestCase):
-    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (150 scénarios : mail, FTP, comptes, bases, sauvegardes, crons, sites, sessions, ports, certificats, SMART, matériel, sites web, tâches planifiées, services, disques, PHP-FPM, paquets, instantané du serveur, processus, réseau, erreurs des journaux ; aucun écart)."""
+    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (167 scénarios : mail, FTP, comptes, bases, sauvegardes, crons, sites, sessions, ports, certificats, SMART, matériel, sites web, tâches planifiées, services, disques, PHP-FPM, paquets, instantané du serveur, processus, réseau, erreurs des journaux, exposition des ports, courriel des domaines, contrôles ; aucun écart)."""
 
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
@@ -278,6 +278,57 @@ class Collecteurs(unittest.TestCase):
             return sc.get("mysql", "")
         m.run_cmd = run_cmd
         m._read_meminfo = lambda: dict(sc.get("mi", {}))
+        if fonction in ("collect_controles", "collect_exposition", "collect_courriel_domaines"):
+            import io
+            import sqlite3
+            m.time = type("T", (), {"sleep": staticmethod(lambda s: None), "time": staticmethod(lambda: 10 ** 9)})()
+            m._qui = lambda nom: nom in sc.get("qui", [])
+
+            def cmd(c, *a, **k):
+                c = " ".join(c) if isinstance(c, list) else c
+                if c.startswith("dig "):
+                    return sc.get("dig", {}).get(c.split()[-1], "")
+                if c.startswith("curl"):
+                    return sc.get("curl", "")
+                for cle, val in sc.get("cmds", {}).items():
+                    if c.startswith(cle):
+                        return val
+                return ""
+            m.run_cmd = cmd
+            m._ip_publique = lambda: sc.get("ip_pub", "")
+            m._DOMAINES_CACHE = {"t": 0, "d": None}
+            db = sqlite3.connect(":memory:")
+            db.execute("CREATE TABLE web_sites (domain, ssl_enabled, listen_ip)")
+            db.execute("CREATE TABLE open_ports (port, protocol)")
+            for d, ssl, ip in sc.get("sites", []):
+                db.execute("INSERT INTO web_sites VALUES (?,?,?)", (d, ssl, ip))
+            for port, proto in sc.get("ports", []):
+                db.execute("INSERT INTO open_ports VALUES (?,?)", (port, proto))
+            m.get_conn = lambda: Conn(db)
+            m._tls_verifie = lambda dom, ip: tuple(sc.get("tls", {}).get(dom, [True, "valide"]))
+            m._dns_public = lambda dom: list(sc.get("dns", {}).get(dom, []))
+            m._banniere = lambda port, tls: sc.get("bannieres", {}).get(str(port), "")
+            m.CASSANDRA_CONFIG = "/etc/cassandra/config.json"
+
+            def ouvrir(chemin, mode="r", encoding=None):
+                if chemin not in sc.get("fs", {}):
+                    raise OSError("absent")
+                return io.StringIO(sc["fs"][chemin])
+            m.open = ouvrir
+
+            class Ctx:
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *a):
+                    return False
+
+            def joindre(adresse, timeout=2):
+                if sc.get("joignables", {}).get(str(adresse[1])):
+                    return Ctx()
+                raise OSError("refusé")
+            m.socket = type("S", (), {"create_connection": staticmethod(joindre)})()
+            return json.loads(json.dumps(getattr(m, fonction)()))
         if fonction == "collect_log_errors":
             import fnmatch
             import glob

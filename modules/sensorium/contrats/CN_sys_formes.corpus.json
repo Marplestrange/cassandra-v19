@@ -3196,6 +3196,2092 @@
      ]
     ]
    }
+  },
+  {
+   "cas": "pare-feu vide",
+   "entree": {
+    "op": "verdict_pare_feu",
+    "lignes": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "politique": "?",
+     "filtre": false,
+     "regles": 0,
+     "refus": 0,
+     "ouverts": []
+    }
+   }
+  },
+  {
+   "cas": "pare-feu ouvert",
+   "entree": {
+    "op": "verdict_pare_feu",
+    "lignes": [
+     "-P INPUT ACCEPT",
+     "-P FORWARD ACCEPT",
+     "-P OUTPUT ACCEPT"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "politique": "ACCEPT",
+     "filtre": false,
+     "regles": 0,
+     "refus": 0,
+     "ouverts": []
+    }
+   }
+  },
+  {
+   "cas": "pare-feu politique drop",
+   "entree": {
+    "op": "verdict_pare_feu",
+    "lignes": [
+     "-P INPUT DROP",
+     "-A INPUT -i lo -j ACCEPT",
+     "-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT",
+     "-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "politique": "DROP",
+     "filtre": true,
+     "regles": 3,
+     "refus": 0,
+     "ouverts": [
+      [
+       22,
+       22
+      ],
+      [
+       80,
+       80
+      ],
+      [
+       443,
+       443
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "pare-feu sauts",
+   "entree": {
+    "op": "verdict_pare_feu",
+    "lignes": [
+     "-P INPUT ACCEPT",
+     "-N socle",
+     "-N ufw-in",
+     "-A INPUT -j socle",
+     "-A socle -p tcp --dport 8080:8090 -j ACCEPT",
+     "-A socle -s 10.0.0.0/8 -j ACCEPT",
+     "-A socle -j ufw-in",
+     "-A ufw-in -p tcp --dport 3306 -j DROP",
+     "-A ufw-in -j REJECT --reject-with icmp-port-unreachable"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "politique": "ACCEPT",
+     "filtre": true,
+     "regles": 4,
+     "refus": 2,
+     "ouverts": [
+      [
+       8080,
+       8090
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "pare-feu boucle",
+   "entree": {
+    "op": "verdict_pare_feu",
+    "lignes": [
+     "-P INPUT ACCEPT",
+     "-N a",
+     "-N b",
+     "-A INPUT -j a",
+     "-A a -j b",
+     "-A b -j a",
+     "-A b -j DROP"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "politique": "ACCEPT",
+     "filtre": true,
+     "regles": 2,
+     "refus": 1,
+     "ouverts": []
+    }
+   }
+  },
+  {
+   "cas": "pare-feu profond",
+   "entree": {
+    "op": "verdict_pare_feu",
+    "lignes": [
+     "-P INPUT ACCEPT",
+     "-N c0",
+     "-N c1",
+     "-N c2",
+     "-N c3",
+     "-N c4",
+     "-N c5",
+     "-N c6",
+     "-N c7",
+     "-N c8",
+     "-A INPUT -j c0",
+     "-A c0 -j c1",
+     "-A c1 -j c2",
+     "-A c2 -j c3",
+     "-A c3 -j c4",
+     "-A c4 -j c5",
+     "-A c5 -j c6",
+     "-A c6 -j c7",
+     "-A c7 -j c8",
+     "-A c8 -j DROP"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "politique": "ACCEPT",
+     "filtre": false,
+     "regles": 1,
+     "refus": 0,
+     "ouverts": []
+    }
+   }
+  },
+  {
+   "cas": "pare-feu conditions",
+   "entree": {
+    "op": "verdict_pare_feu",
+    "lignes": [
+     "-P INPUT ACCEPT",
+     "-A INPUT -s 1.2.3.4 -j DROP",
+     "-A INPUT -i eth0 -p tcp --dport 22 -j ACCEPT",
+     "-A INPUT -p tcp --dport 25 -m conntrack --ctstate NEW -j ACCEPT",
+     "-A INPUT -p tcp --dport abc -j ACCEPT"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "politique": "ACCEPT",
+     "filtre": false,
+     "regles": 4,
+     "refus": 1,
+     "ouverts": []
+    }
+   }
+  },
+  {
+   "cas": "pare-feu journal",
+   "entree": {
+    "op": "verdict_pare_feu",
+    "lignes": [
+     "-P INPUT ACCEPT",
+     "-A INPUT -j LOG --log-prefix test --log-level 4",
+     "-A INPUT -j REJECT --reject-with tcp-reset"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "politique": "ACCEPT",
+     "filtre": true,
+     "regles": 2,
+     "refus": 1,
+     "ouverts": []
+    }
+   }
+  },
+  {
+   "cas": "pare-feu lignes courtes",
+   "entree": {
+    "op": "verdict_pare_feu",
+    "lignes": [
+     "-P",
+     "-N",
+     "-A INPUT",
+     "",
+     "-A INPUT -j"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "politique": "?",
+     "filtre": false,
+     "regles": 2,
+     "refus": 0,
+     "ouverts": []
+    }
+   }
+  },
+  {
+   "cas": "écoute vide",
+   "entree": {
+    "op": "ecoute_ss",
+    "texte": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "écoute",
+   "entree": {
+    "op": "ecoute_ss",
+    "texte": "State Recv-Q Send-Q Local Address:Port Peer Address:Port Process\nLISTEN 0 128 0.0.0.0:22 0.0.0.0:* users:((\"sshd\",pid=1,fd=3))\nLISTEN 0 128 [::]:22 [::]:* users:((\"sshd\",pid=1,fd=4))\nLISTEN 0 511 127.0.0.1:9000 0.0.0.0:* users:((\"python3 (Cassandra)\",pid=5,fd=6))\nLISTEN 0 4096 100.64.0.1:8888 0.0.0.0:*\nLISTEN 0 4096 fd7a:115c:a1e0::1:80 [::]:*\nLISTEN 0 4096 192.168.1.5:3306 0.0.0.0:*\nLISTEN 0 4096 203.0.113.5:443 0.0.0.0:*\nLISTEN 0 4096 [fe80::1%eth0]:5353 [::]:*\nLISTEN 0 4096 172.20.0.1:5432 0.0.0.0:*\nLISTEN 0 4096 *:25 *:*\ncourt\nLISTEN 0 4096 pasdeport 0.0.0.0:*",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      22,
+      "sshd",
+      [
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      9000,
+      "python3",
+      [
+       "machine"
+      ]
+     ],
+     [
+      8888,
+      "?",
+      [
+       "tailscale"
+      ]
+     ],
+     [
+      80,
+      "?",
+      [
+       "tailscale"
+      ]
+     ],
+     [
+      3306,
+      "?",
+      [
+       "réseau local"
+      ]
+     ],
+     [
+      443,
+      "?",
+      [
+       "adresse publique 203.0.113.5"
+      ]
+     ],
+     [
+      5353,
+      "?",
+      [
+       "réseau local"
+      ]
+     ],
+     [
+      5432,
+      "?",
+      [
+       "réseau local"
+      ]
+     ],
+     [
+      25,
+      "?",
+      [
+       "toutes les interfaces"
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "ports à sonder vide",
+   "entree": {
+    "op": "ports_a_sonder",
+    "ecoute": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ports à sonder",
+   "entree": {
+    "op": "ports_a_sonder",
+    "ecoute": [
+     [
+      22,
+      "sshd",
+      [
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      9000,
+      "python3",
+      [
+       "machine"
+      ]
+     ],
+     [
+      8888,
+      "?",
+      [
+       "tailscale"
+      ]
+     ],
+     [
+      3306,
+      "mysqld",
+      [
+       "réseau local"
+      ]
+     ],
+     [
+      443,
+      "nginx",
+      [
+       "adresse publique 203.0.113.5",
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      25,
+      "exim",
+      [
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      6379,
+      "redis",
+      [
+       "machine",
+       "tailscale"
+      ]
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     22,
+     3306,
+     443,
+     25
+    ]
+   }
+  },
+  {
+   "cas": "exposition vide",
+   "entree": {
+    "op": "exposition",
+    "ecoute": [],
+    "publics": [],
+    "pf4": null,
+    "pf6": null,
+    "ip_pub": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "exposition sans pare-feu",
+   "entree": {
+    "op": "exposition",
+    "ecoute": [
+     [
+      22,
+      "sshd",
+      [
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      9000,
+      "python3",
+      [
+       "machine"
+      ]
+     ],
+     [
+      8888,
+      "?",
+      [
+       "tailscale"
+      ]
+     ],
+     [
+      3306,
+      "mysqld",
+      [
+       "réseau local"
+      ]
+     ],
+     [
+      443,
+      "nginx",
+      [
+       "adresse publique 203.0.113.5",
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      25,
+      "exim",
+      [
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      6379,
+      "redis",
+      [
+       "machine",
+       "tailscale"
+      ]
+     ]
+    ],
+    "publics": [
+     [
+      22,
+      null
+     ],
+     [
+      3306,
+      null
+     ],
+     [
+      443,
+      null
+     ],
+     [
+      25,
+      null
+     ]
+    ],
+    "pf4": null,
+    "pf6": null,
+    "ip_pub": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "port": 22,
+      "processus": "sshd",
+      "portee": "toutes les interfaces",
+      "public": 0,
+      "valeur": "sshd · réseau (toutes les interfaces) · SSH",
+      "sensible": 1,
+      "ip_publique": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 25,
+      "processus": "exim",
+      "portee": "toutes les interfaces",
+      "public": 0,
+      "valeur": "exim · réseau (toutes les interfaces)",
+      "sensible": 0,
+      "ip_publique": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 443,
+      "processus": "nginx",
+      "portee": "adresse publique 203.0.113.5, toutes les interfaces",
+      "public": 0,
+      "valeur": "nginx · réseau (adresse publique 203.0.113.5, toutes les interfaces)",
+      "sensible": 0,
+      "ip_publique": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 3306,
+      "processus": "mysqld",
+      "portee": "réseau local",
+      "public": 0,
+      "valeur": "mysqld · réseau local · MySQL",
+      "sensible": 1,
+      "ip_publique": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 6379,
+      "processus": "redis",
+      "portee": "machine, tailscale",
+      "public": 0,
+      "valeur": "redis · machine, tailscale · Redis",
+      "sensible": 1,
+      "ip_publique": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 8888,
+      "processus": "?",
+      "portee": "tailscale",
+      "public": 0,
+      "valeur": "? · tailscale · panneau FastPanel",
+      "sensible": 1,
+      "ip_publique": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 9000,
+      "processus": "python3",
+      "portee": "machine",
+      "public": 0,
+      "valeur": "python3 · machine · Cassandra",
+      "sensible": 1,
+      "ip_publique": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "exposition pare-feu fermé",
+   "entree": {
+    "op": "exposition",
+    "ecoute": [
+     [
+      22,
+      "sshd",
+      [
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      9000,
+      "python3",
+      [
+       "machine"
+      ]
+     ],
+     [
+      8888,
+      "?",
+      [
+       "tailscale"
+      ]
+     ],
+     [
+      3306,
+      "mysqld",
+      [
+       "réseau local"
+      ]
+     ],
+     [
+      443,
+      "nginx",
+      [
+       "adresse publique 203.0.113.5",
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      25,
+      "exim",
+      [
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      6379,
+      "redis",
+      [
+       "machine",
+       "tailscale"
+      ]
+     ]
+    ],
+    "publics": [
+     [
+      22,
+      false
+     ],
+     [
+      3306,
+      false
+     ],
+     [
+      443,
+      true
+     ],
+     [
+      25,
+      false
+     ]
+    ],
+    "pf4": {
+     "politique": "DROP",
+     "filtre": true,
+     "regles": 4,
+     "refus": 0,
+     "ouverts": [
+      [
+       22,
+       22
+      ],
+      [
+       80,
+       80
+      ],
+      [
+       443,
+       443
+      ]
+     ]
+    },
+    "pf6": {
+     "politique": "DROP",
+     "filtre": true,
+     "regles": 2,
+     "refus": 0,
+     "ouverts": [
+      [
+       443,
+       443
+      ]
+     ]
+    },
+    "ip_pub": "198.51.100.9",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "port": 22,
+      "processus": "sshd",
+      "portee": "toutes les interfaces",
+      "public": 0,
+      "valeur": "sshd · réseau (toutes les interfaces) · IPv6 refusé · SSH",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 25,
+      "processus": "exim",
+      "portee": "toutes les interfaces",
+      "public": 0,
+      "valeur": "exim · réseau : refusé par le pare-feu, sauf le parc et Tailscale · IPv6 refusé",
+      "sensible": 0,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 443,
+      "processus": "nginx",
+      "portee": "adresse publique 203.0.113.5, toutes les interfaces",
+      "public": 1,
+      "valeur": "nginx · PUBLIC (joignable sur 198.51.100.9, via la box)",
+      "sensible": 0,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 3306,
+      "processus": "mysqld",
+      "portee": "réseau local",
+      "public": 0,
+      "valeur": "mysqld · réseau local · MySQL",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 6379,
+      "processus": "redis",
+      "portee": "machine, tailscale",
+      "public": 0,
+      "valeur": "redis · machine, tailscale · Redis",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 8888,
+      "processus": "?",
+      "portee": "tailscale",
+      "public": 0,
+      "valeur": "? · tailscale · panneau FastPanel",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 9000,
+      "processus": "python3",
+      "portee": "machine",
+      "public": 0,
+      "valeur": "python3 · machine · Cassandra",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "exposition pare-feu ouvert",
+   "entree": {
+    "op": "exposition",
+    "ecoute": [
+     [
+      22,
+      "sshd",
+      [
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      9000,
+      "python3",
+      [
+       "machine"
+      ]
+     ],
+     [
+      8888,
+      "?",
+      [
+       "tailscale"
+      ]
+     ],
+     [
+      3306,
+      "mysqld",
+      [
+       "réseau local"
+      ]
+     ],
+     [
+      443,
+      "nginx",
+      [
+       "adresse publique 203.0.113.5",
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      25,
+      "exim",
+      [
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      6379,
+      "redis",
+      [
+       "machine",
+       "tailscale"
+      ]
+     ]
+    ],
+    "publics": [
+     [
+      22,
+      true
+     ],
+     [
+      3306,
+      false
+     ],
+     [
+      443,
+      false
+     ],
+     [
+      25,
+      false
+     ]
+    ],
+    "pf4": {
+     "politique": "ACCEPT",
+     "filtre": false,
+     "regles": 1,
+     "refus": 1,
+     "ouverts": []
+    },
+    "pf6": {
+     "politique": "DROP",
+     "filtre": true,
+     "regles": 2,
+     "refus": 0,
+     "ouverts": [
+      [
+       443,
+       443
+      ]
+     ]
+    },
+    "ip_pub": "198.51.100.9",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "port": 22,
+      "processus": "sshd",
+      "portee": "toutes les interfaces",
+      "public": 1,
+      "valeur": "sshd · PUBLIC (joignable sur 198.51.100.9, via la box) · SSH",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 25,
+      "processus": "exim",
+      "portee": "toutes les interfaces",
+      "public": 0,
+      "valeur": "exim · réseau (toutes les interfaces) · IPv6 refusé",
+      "sensible": 0,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 443,
+      "processus": "nginx",
+      "portee": "adresse publique 203.0.113.5, toutes les interfaces",
+      "public": 0,
+      "valeur": "nginx · réseau (adresse publique 203.0.113.5, toutes les interfaces) · IPv6 ouvert",
+      "sensible": 0,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 3306,
+      "processus": "mysqld",
+      "portee": "réseau local",
+      "public": 0,
+      "valeur": "mysqld · réseau local · MySQL",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 6379,
+      "processus": "redis",
+      "portee": "machine, tailscale",
+      "public": 0,
+      "valeur": "redis · machine, tailscale · Redis",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 8888,
+      "processus": "?",
+      "portee": "tailscale",
+      "public": 0,
+      "valeur": "? · tailscale · panneau FastPanel",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 9000,
+      "processus": "python3",
+      "portee": "machine",
+      "public": 0,
+      "valeur": "python3 · machine · Cassandra",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "exposition ipv6 ouvert",
+   "entree": {
+    "op": "exposition",
+    "ecoute": [
+     [
+      22,
+      "sshd",
+      [
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      9000,
+      "python3",
+      [
+       "machine"
+      ]
+     ],
+     [
+      8888,
+      "?",
+      [
+       "tailscale"
+      ]
+     ],
+     [
+      3306,
+      "mysqld",
+      [
+       "réseau local"
+      ]
+     ],
+     [
+      443,
+      "nginx",
+      [
+       "adresse publique 203.0.113.5",
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      25,
+      "exim",
+      [
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      6379,
+      "redis",
+      [
+       "machine",
+       "tailscale"
+      ]
+     ]
+    ],
+    "publics": [
+     [
+      22,
+      false
+     ],
+     [
+      25,
+      false
+     ]
+    ],
+    "pf4": {
+     "politique": "DROP",
+     "filtre": true,
+     "regles": 4,
+     "refus": 0,
+     "ouverts": [
+      [
+       22,
+       22
+      ],
+      [
+       80,
+       80
+      ],
+      [
+       443,
+       443
+      ]
+     ]
+    },
+    "pf6": {
+     "politique": "ACCEPT",
+     "filtre": false,
+     "regles": 0,
+     "refus": 0,
+     "ouverts": []
+    },
+    "ip_pub": "198.51.100.9",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "port": 22,
+      "processus": "sshd",
+      "portee": "toutes les interfaces",
+      "public": 0,
+      "valeur": "sshd · réseau (toutes les interfaces) · IPv6 ouvert · SSH",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 25,
+      "processus": "exim",
+      "portee": "toutes les interfaces",
+      "public": 0,
+      "valeur": "exim · réseau : refusé par le pare-feu, sauf le parc et Tailscale · IPv6 ouvert",
+      "sensible": 0,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 443,
+      "processus": "nginx",
+      "portee": "adresse publique 203.0.113.5, toutes les interfaces",
+      "public": 0,
+      "valeur": "nginx · réseau (adresse publique 203.0.113.5, toutes les interfaces) · IPv6 ouvert",
+      "sensible": 0,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 3306,
+      "processus": "mysqld",
+      "portee": "réseau local",
+      "public": 0,
+      "valeur": "mysqld · réseau local · MySQL",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 6379,
+      "processus": "redis",
+      "portee": "machine, tailscale",
+      "public": 0,
+      "valeur": "redis · machine, tailscale · Redis",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 8888,
+      "processus": "?",
+      "portee": "tailscale",
+      "public": 0,
+      "valeur": "? · tailscale · panneau FastPanel",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 9000,
+      "processus": "python3",
+      "portee": "machine",
+      "public": 0,
+      "valeur": "python3 · machine · Cassandra",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "exposition port public connu sensible",
+   "entree": {
+    "op": "exposition",
+    "ecoute": [
+     [
+      3306,
+      "mysqld",
+      [
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      9000,
+      "py",
+      [
+       "toutes les interfaces"
+      ]
+     ],
+     [
+      8080,
+      "x",
+      [
+       "adresse publique 1.2.3.4"
+      ]
+     ]
+    ],
+    "publics": [
+     [
+      3306,
+      true
+     ],
+     [
+      9000,
+      false
+     ],
+     [
+      8080,
+      false
+     ]
+    ],
+    "pf4": {
+     "politique": "DROP",
+     "filtre": true,
+     "regles": 4,
+     "refus": 0,
+     "ouverts": [
+      [
+       22,
+       22
+      ],
+      [
+       80,
+       80
+      ],
+      [
+       443,
+       443
+      ]
+     ]
+    },
+    "pf6": null,
+    "ip_pub": "198.51.100.9",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "port": 3306,
+      "processus": "mysqld",
+      "portee": "toutes les interfaces",
+      "public": 1,
+      "valeur": "mysqld · PUBLIC (joignable sur 198.51.100.9, via la box) · MySQL",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 8080,
+      "processus": "x",
+      "portee": "adresse publique 1.2.3.4",
+      "public": 0,
+      "valeur": "x · réseau : refusé par le pare-feu, sauf le parc et Tailscale",
+      "sensible": 0,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 9000,
+      "processus": "py",
+      "portee": "toutes les interfaces",
+      "public": 0,
+      "valeur": "py · réseau : refusé par le pare-feu, sauf le parc et Tailscale · Cassandra",
+      "sensible": 1,
+      "ip_publique": "198.51.100.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "racines vide",
+   "entree": {
+    "op": "racines_de_domaines",
+    "noms": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "racines",
+   "entree": {
+    "op": "racines_de_domaines",
+    "noms": [
+     "a.exemple.test",
+     "b.exemple.test",
+     "exemple.test",
+     "autre.org.",
+     "localhost",
+     "",
+     null,
+     5,
+     "x.y.z.fr",
+     ".point.net"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "autre.org",
+     "exemple.test",
+     "point.net",
+     "z.fr"
+    ]
+   }
+  },
+  {
+   "cas": "courriel rien",
+   "entree": {
+    "op": "courriel_domaine",
+    "txt_domaine": [],
+    "txt_dmarc": [],
+    "dkim": [
+     [
+      "default",
+      []
+     ],
+     [
+      "dkim",
+      []
+     ]
+    ],
+    "ip": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "AUCUN SPF : n'importe qui peut écrire en son nom · DKIM : aucune signature trouvée · AUCUN DMARC",
+     "warning"
+    ]
+   }
+  },
+  {
+   "cas": "courriel complet",
+   "entree": {
+    "op": "courriel_domaine",
+    "txt_domaine": [
+     "v=spf1 ip4:203.0.113.5 -all"
+    ],
+    "txt_dmarc": [
+     "v=DMARC1; p=reject; rua=mailto:x@y"
+    ],
+    "dkim": [
+     [
+      "default",
+      []
+     ],
+     [
+      "dkim",
+      [
+       "v=DKIM1; p=AAAA"
+      ]
+     ],
+     [
+      "mail",
+      [
+       "v=DKIM1; k=rsa"
+      ]
+     ],
+     [
+      "google",
+      [
+       "p=BBBB",
+       "autre"
+      ]
+     ]
+    ],
+    "ip": "203.0.113.5",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "SPF strict (-all) · DKIM : dkim, google · DMARC rejette l'usurpation",
+     "info"
+    ]
+   }
+  },
+  {
+   "cas": "courriel spf sans cette machine",
+   "entree": {
+    "op": "courriel_domaine",
+    "txt_domaine": [
+     "v=spf1 ip4:203.0.113.5 -all"
+    ],
+    "txt_dmarc": [
+     "v=DMARC1; p=reject; rua=mailto:x@y"
+    ],
+    "dkim": [
+     [
+      "default",
+      []
+     ],
+     [
+      "dkim",
+      [
+       "v=DKIM1; p=AAAA"
+      ]
+     ],
+     [
+      "mail",
+      [
+       "v=DKIM1; k=rsa"
+      ]
+     ],
+     [
+      "google",
+      [
+       "p=BBBB",
+       "autre"
+      ]
+     ]
+    ],
+    "ip": "198.51.100.9",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "SPF strict (-all) · cette machine (198.51.100.9) n'y est pas · DKIM : dkim, google · DMARC rejette l'usurpation",
+     "info"
+    ]
+   }
+  },
+  {
+   "cas": "courriel spf avec include",
+   "entree": {
+    "op": "courriel_domaine",
+    "txt_domaine": [
+     "v=spf1 include:_spf.exemple.test ~all"
+    ],
+    "txt_dmarc": [
+     "v=DMARC1; p=none"
+    ],
+    "dkim": [
+     [
+      "default",
+      []
+     ],
+     [
+      "dkim",
+      []
+     ]
+    ],
+    "ip": "198.51.100.9",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "SPF souple (~all) · DKIM : aucune signature trouvée · DMARC en surveillance seulement (p=none)",
+     "info"
+    ]
+   }
+  },
+  {
+   "cas": "courriel spf ouvert",
+   "entree": {
+    "op": "courriel_domaine",
+    "txt_domaine": [
+     "v=spf1 +all"
+    ],
+    "txt_dmarc": [
+     "v=DMARC1; p=quarantine"
+    ],
+    "dkim": [
+     [
+      "default",
+      []
+     ],
+     [
+      "dkim",
+      [
+       "v=DKIM1; p=AAAA"
+      ]
+     ],
+     [
+      "mail",
+      [
+       "v=DKIM1; k=rsa"
+      ]
+     ],
+     [
+      "google",
+      [
+       "p=BBBB",
+       "autre"
+      ]
+     ]
+    ],
+    "ip": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "SPF OUVERT À TOUS (+all) · DKIM : dkim, google · DMARC met en quarantaine",
+     "warning"
+    ]
+   }
+  },
+  {
+   "cas": "courriel spf neutre",
+   "entree": {
+    "op": "courriel_domaine",
+    "txt_domaine": [
+     "V=SPF1 ?all"
+    ],
+    "txt_dmarc": [
+     "v=dmarc1; p=bizarre"
+    ],
+    "dkim": [
+     [
+      "default",
+      []
+     ],
+     [
+      "dkim",
+      []
+     ]
+    ],
+    "ip": "1.1.1.1",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "SPF neutre (?all) · cette machine (1.1.1.1) n'y est pas · DKIM : aucune signature trouvée · DMARC bizarre",
+     "info"
+    ]
+   }
+  },
+  {
+   "cas": "courriel spf sans fin",
+   "entree": {
+    "op": "courriel_domaine",
+    "txt_domaine": [
+     "v=spf1 a mx"
+    ],
+    "txt_dmarc": [
+     "v=DMARC1"
+    ],
+    "dkim": [
+     [
+      "default",
+      []
+     ],
+     [
+      "dkim",
+      []
+     ]
+    ],
+    "ip": "1.1.1.1",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "SPF sans fin · DKIM : aucune signature trouvée · DMARC ?",
+     "info"
+    ]
+   }
+  },
+  {
+   "cas": "courriel spf avec a",
+   "entree": {
+    "op": "courriel_domaine",
+    "txt_domaine": [
+     "v=spf1 a -all"
+    ],
+    "txt_dmarc": [],
+    "dkim": [
+     [
+      "default",
+      []
+     ],
+     [
+      "dkim",
+      []
+     ]
+    ],
+    "ip": "1.1.1.1",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "SPF strict (-all) · DKIM : aucune signature trouvée · AUCUN DMARC",
+     "warning"
+    ]
+   }
+  },
+  {
+   "cas": "courriel spf avec mx",
+   "entree": {
+    "op": "courriel_domaine",
+    "txt_domaine": [
+     "v=spf1 mx -all"
+    ],
+    "txt_dmarc": [],
+    "dkim": [
+     [
+      "default",
+      []
+     ],
+     [
+      "dkim",
+      []
+     ]
+    ],
+    "ip": "1.1.1.1",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "SPF strict (-all) · DKIM : aucune signature trouvée · AUCUN DMARC",
+     "warning"
+    ]
+   }
+  },
+  {
+   "cas": "courriel plusieurs spf",
+   "entree": {
+    "op": "courriel_domaine",
+    "txt_domaine": [
+     "autre",
+     "v=spf1 -all",
+     "v=spf1 +all"
+    ],
+    "txt_dmarc": [
+     "x",
+     "v=DMARC1; p=reject"
+    ],
+    "dkim": [],
+    "ip": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "SPF strict (-all) · DKIM : aucune signature trouvée · DMARC rejette l'usurpation",
+     "info"
+    ]
+   }
+  },
+  {
+   "cas": "site tls ok",
+   "entree": {
+    "op": "controles_site",
+    "dom": "a.test",
+    "tls": [
+     true,
+     "valide"
+    ],
+    "ips": [
+     "1.1.1.1",
+     "2.2.2.2",
+     "3.3.3.3",
+     "4.4.4.4"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "tls.a.test",
+      "ok": 1,
+      "valeur": "valide",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.a.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1, 2.2.2.2, 3.3.3.3",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "site tls en échec",
+   "entree": {
+    "op": "controles_site",
+    "dom": "a.test",
+    "tls": [
+     false,
+     "expiré"
+    ],
+    "ips": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "tls.a.test",
+      "ok": 0,
+      "valeur": "expiré",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.a.test",
+      "ok": 0,
+      "valeur": "ne résout pas",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "site sans tls",
+   "entree": {
+    "op": "controles_site",
+    "dom": "a.test",
+    "tls": null,
+    "ips": [
+     "1.1.1.1"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "dns.a.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "site sans tls ne résout pas",
+   "entree": {
+    "op": "controles_site",
+    "dom": "a.test",
+    "tls": null,
+    "ips": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "dns.a.test",
+      "ok": 0,
+      "valeur": "ne résout pas",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cohérence vide",
+   "entree": {
+    "op": "controles_coherence",
+    "out": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cohérence deux sites",
+   "entree": {
+    "op": "controles_coherence",
+    "out": [
+     {
+      "nom": "dns.a.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.b.test",
+      "ok": 1,
+      "valeur": "→ 2.2.2.2",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "dns.a.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.b.test",
+      "ok": 1,
+      "valeur": "→ 2.2.2.2",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cohérence un intrus",
+   "entree": {
+    "op": "controles_coherence",
+    "out": [
+     {
+      "nom": "dns.a.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.b.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.c.test",
+      "ok": 1,
+      "valeur": "→ 9.9.9.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "tls.a.test",
+      "ok": 1,
+      "valeur": "valide",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "dns.a.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.b.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.c.test",
+      "ok": 1,
+      "valeur": "→ 9.9.9.9 (les autres sites : 1.1.1.1)",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "tls.a.test",
+      "ok": 1,
+      "valeur": "valide",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cohérence deux intrus",
+   "entree": {
+    "op": "controles_coherence",
+    "out": [
+     {
+      "nom": "dns.a.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.b.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.c.test",
+      "ok": 1,
+      "valeur": "→ 9.9.9.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.d.test",
+      "ok": 1,
+      "valeur": "→ 8.8.8.8",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "dns.a.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.b.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.c.test",
+      "ok": 1,
+      "valeur": "→ 9.9.9.9 (les autres sites : 1.1.1.1)",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.d.test",
+      "ok": 1,
+      "valeur": "→ 8.8.8.8 (les autres sites : 1.1.1.1)",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cohérence deux identiques minoritaires",
+   "entree": {
+    "op": "controles_coherence",
+    "out": [
+     {
+      "nom": "dns.a.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.b.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.c.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.d.test",
+      "ok": 1,
+      "valeur": "→ 9.9.9.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.e.test",
+      "ok": 1,
+      "valeur": "→ 9.9.9.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "dns.a.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.b.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.c.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.d.test",
+      "ok": 1,
+      "valeur": "→ 9.9.9.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.e.test",
+      "ok": 1,
+      "valeur": "→ 9.9.9.9",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cohérence sans résolution",
+   "entree": {
+    "op": "controles_coherence",
+    "out": [
+     {
+      "nom": "dns.a.test",
+      "ok": 0,
+      "valeur": "ne résout pas",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.b.test",
+      "ok": 0,
+      "valeur": "ne résout pas",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.c.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "dns.a.test",
+      "ok": 0,
+      "valeur": "ne résout pas",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.b.test",
+      "ok": 0,
+      "valeur": "ne résout pas",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "nom": "dns.c.test",
+      "ok": 1,
+      "valeur": "→ 1.1.1.1",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "bannière attendue",
+   "entree": {
+    "op": "controle_banniere",
+    "service": "SMTP",
+    "banniere": "220 mx.exemple.test ESMTP",
+    "attendu": "220",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "nom": "courriel.SMTP",
+     "ok": 1,
+     "valeur": "répond : 220 mx.exemple.test ESMTP",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "bannière autre",
+   "entree": {
+    "op": "controle_banniere",
+    "service": "IMAP",
+    "banniere": "* BYE",
+    "attendu": "* OK",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "nom": "courriel.IMAP",
+     "ok": 0,
+     "valeur": "ne répond pas comme attendu : * BYE",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "bannière vide",
+   "entree": {
+    "op": "controle_banniere",
+    "service": "POP3",
+    "banniere": "",
+    "attendu": "+OK",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "nom": "courriel.POP3",
+     "ok": 0,
+     "valeur": "ne répond pas comme attendu : rien",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "page de connexion oui",
+   "entree": {
+    "op": "page_de_connexion",
+    "corps": "<input id=\"login-username\">",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "page de connexion id",
+   "entree": {
+    "op": "page_de_connexion",
+    "corps": "<form id=\"login\">",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "page de connexion non",
+   "entree": {
+    "op": "page_de_connexion",
+    "corps": "502 Bad Gateway",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "connexion ok",
+   "entree": {
+    "op": "controle_connexion",
+    "ok": true,
+    "url": "https://exemple.test",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "nom": "cassandra.connexion",
+     "ok": 1,
+     "valeur": "la page de connexion s'affiche (https://exemple.test)",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "connexion ko",
+   "entree": {
+    "op": "controle_connexion",
+    "ok": false,
+    "url": "https://exemple.test",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "nom": "cassandra.connexion",
+     "ok": 0,
+     "valeur": "page de connexion introuvable sur https://exemple.test",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
   }
  ]
 }
