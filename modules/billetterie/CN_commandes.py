@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Billetterie
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : billetterie
+# ZONE       : CN
+# VERSION CN : 0.1.0  #8e4f34
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Billetterie : les capacités des ventes (commandes, billets, codes promo, invitations) offertes au titulaire, aux agents et, plus tard, à la caisse.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e4f34 ▼▼▼
 """Billetterie : les capacités des ventes (commandes, billets, codes promo, invitations) offertes au titulaire, aux agents et, plus tard, à la caisse.
 
 Chaque écriture se prouve et se défait. Les règles sont dans CN_ventes.py ; ici on enchaîne : ouvrir UNE transaction, appeler la règle, rendre de quoi relire et défaire.
@@ -272,3 +287,9 @@ def brancher(ctx, db):
         with db.transaction() as tx:
             return {"expirees": v.expirer(tx)}
     ctx.moteur("expirer", expirer)
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : preparer_promo, dependances_promo, brancher
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

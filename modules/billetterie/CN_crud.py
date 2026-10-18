@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2d0018
+# VERSION CN : 0.1.0  #2b790a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : l'usine des fiches (salles, artistes, revendeurs, formules, événements, billets, ...).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2d0018 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2b790a ▼▼▼
 """Billetterie : l'usine des fiches (salles, artistes, revendeurs, formules, événements, billets, ...).
 
 Chaque fiche a le MÊME cycle, et chaque écriture est réversible (la sûreté vient du retour arrière, jamais d'une permission) :

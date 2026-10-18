@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Billetterie
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : billetterie
+# ZONE       : CN
+# VERSION CN : 0.1.0  #df2435
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Billetterie : la signature des billets (ce qui décide si un billet est authentique).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=df2435 ▼▼▼
 """Billetterie : la signature des billets (ce qui décide si un billet est authentique).
 
 Un billet porte un NUMÉRO (A-0430) et une VERSION (réémettre un billet change sa version : l'ancien QR ne passe plus). Sa signature est un HMAC-SHA256 du numéro
@@ -73,3 +88,9 @@ def lettre_evenement(evenement_id: int) -> str:
         n, r = divmod(n - 1, 26)
         s = chr(65 + r) + s
     return s or "A"
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : cle, signature, code_controle, contenu_qr, lire, authentique, lettre_evenement
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

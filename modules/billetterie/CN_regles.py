@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c20ae2
+# VERSION CN : 0.1.0  #1b482c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : les règles de chaque fiche (ce qui est permis d'enregistrer, et ce qui part avec).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c20ae2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1b482c ▼▼▼
 """Billetterie : les règles de chaque fiche (ce qui est permis d'enregistrer, et ce qui part avec).
 
 Un `preparer` reçoit la transaction, ce que l'appelant a donné (`d`, seulement les champs précisés) et la fiche d'avant (None si neuve) ;

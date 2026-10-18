@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6d545d
+# VERSION CN : 0.1.0  #6664f1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : branchement du module.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6d545d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6664f1 ▼▼▼
 """La billetterie : branchement du module.
 
 Un événement, une salle, des artistes et des revendeurs, des formules de rémunération, des billets, une caisse, un contrôle à l'entrée, une boutique publique,

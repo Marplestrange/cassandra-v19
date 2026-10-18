@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ad37b2
+# VERSION CN : 0.1.0  #1b8382
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : les fiches du module, assemblées (salles, formules, artistes, revendeurs, événements, billets, passages, affectations, invitations).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ad37b2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1b8382 ▼▼▼
 """Billetterie : les fiches du module, assemblées (salles, formules, artistes, revendeurs, événements, billets, passages, affectations, invitations)."""
 from __future__ import annotations
 

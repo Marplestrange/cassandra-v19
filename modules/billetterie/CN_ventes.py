@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Billetterie
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : billetterie
+# ZONE       : CN
+# VERSION CN : 0.1.0  #6b45bc
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6b45bc ▼▼▼
 """Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
 
 Ce fichier DÉCIDE : qui peut acheter quoi, à quel prix, combien de places restent, quand une vente est acquise, ce qu'elle rapporte au revendeur et quand elle s'annule.
@@ -317,3 +332,9 @@ def rejouer(ctx, tx, cmd):
 def expirer(tx) -> int:
     """Les commandes dont la réservation est écoulée libèrent leurs places (elles n'ont jamais fait de billets)."""
     return tx.execute("UPDATE commandes SET etat = 'expiree' WHERE etat IN ('retenue','en_attente') AND expire_le <= ?", (horloge(),)).rowcount
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : aujourdhui, retenus, vendus, stock, mode_achat, verifier_promo, devis, trouver_revendeur …
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

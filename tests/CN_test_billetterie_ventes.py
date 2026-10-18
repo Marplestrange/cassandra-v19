@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs de la billetterie, lot 3
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #1f6c61
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs de la billetterie, lot 3 : le stock et les places retenues, le prix, les codes promo, les commandes, les billets signés, la commission d'un revendeur (la somme des lignes vaut toujours ce que rapporte la formule), les remboursements, 
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1f6c61 ▼▼▼
 """Bancs de la billetterie, lot 3 : le stock et les places retenues, le prix, les codes promo, les commandes, les billets signés, la commission d'un revendeur (la somme des lignes
 vaut toujours ce que rapporte la formule), les remboursements, les invitations, les formules figées."""
 import sys
@@ -20,6 +35,7 @@ class Ventes(Monde):
         self.mod.CN_ventes.horloge = lambda: self.t[0]
         self.addCleanup(setattr, self.mod.CN_ventes, "horloge", __import__("time").time)
         self.e = self.evenement(quota=10)
+        self.salle_id = self.ok("evenement", id=self.e["id"])["evenement"]["salle_id"]
         self.ok("evenement_publier", id=self.e["id"])
         types = self.ok("evenement_fiche", id=self.e["id"])["types"]
         self.plein = [t for t in types if t["nom"] == "Plein tarif"][0]["id"]
@@ -47,14 +63,14 @@ class Prix(Ventes):
         self.assertEqual((d["sous_total"], d["total"], d["places"]), (3000 + 1000, 4000, 3))
 
     def test_un_billet_d_un_autre_evenement_est_refuse(self):
-        autre = self.evenement(nom="Autre", salle_id=self.e["salle_id"], quota=5)
+        autre = self.evenement(nom="Autre", salle_id=self.salle_id, quota=5)
         self.ok("evenement_publier", id=autre["id"])
         tid = self.ok("evenement_fiche", id=autre["id"])["types"][0]["id"]
         self.assertIn("n'existe pas", self.echec("panier_devis", evenement_id=self.e["id"], lignes=[{"type_billet_id": tid, "quantite": 1}]))
 
     def test_un_panier_vide_ou_un_evenement_en_brouillon_ne_se_vend_pas(self):
         self.assertIn("vide", self.echec("panier_devis", evenement_id=self.e["id"], lignes=[]))
-        b = self.evenement(nom="Brouillon", salle_id=self.e["salle_id"])
+        b = self.evenement(nom="Brouillon", salle_id=self.salle_id)
         self.assertIn("pas en vente", self.echec("panier_devis", evenement_id=b["id"], lignes=[{"type_billet_id": 1, "quantite": 1}]))
 
     def test_code_promo_en_pourcentage_et_en_euros(self):
@@ -293,7 +309,7 @@ class Commissions(Ventes):
         f = self.formule(nom="Simple", com=500, palier_n=0, palier_com=0, fixe=0)
         rev = self.ok("revendeur_save", nom="Karim Benali")
         code = self.ok("revendeur", id=rev["id"])["revendeur"]["code"]
-        e = self.evenement(nom="Concert", salle_id=self.e["salle_id"], quota=30, prix=1500)
+        e = self.evenement(nom="Concert", salle_id=self.salle_id, quota=30, prix=1500)
         self.ok("evenement_publier", id=e["id"])
         tid = self.ok("evenement_fiche", id=e["id"])["types"][0]["id"]
         self.ok("affectation_save", evenement_id=e["id"], revendeur_id=rev["id"], formule_id=f["id"], quota=20)
@@ -391,7 +407,7 @@ class Commissions(Ventes):
         self.ok("formule_save", id=self.fc["id"], com=900, fixe=5000)       # la formule change APRÈS une vente
         self.vendre(1, revendeur_code=self.code)                            # l'événement garde ses conditions d'origine
         self.assertEqual(self.du(), 2 * 300 + 1000)
-        autre = self.evenement(nom="Neuf", salle_id=self.e["salle_id"], quota=10)
+        autre = self.evenement(nom="Neuf", salle_id=self.salle_id, quota=10)
         self.ok("evenement_publier", id=autre["id"])
         self.ok("affectation_save", evenement_id=autre["id"], revendeur_id=self.rev["id"], formule_id=self.fc["id"])
         tid = self.ok("evenement_fiche", id=autre["id"])["types"][0]["id"]
@@ -423,3 +439,9 @@ class Suppressions(Ventes):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Ventes, Prix, Stock, Commandes, Billets, Commissions, Suppressions
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)
