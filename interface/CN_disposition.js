@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #5590db
+// VERSION CN : 0.1.0  #264c19
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=5590db ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=264c19 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -222,8 +222,7 @@
     }
     let h = "";
     const ep = epinglesVisibles();
-    if (ep.length) h += "<h2>Épinglés</h2>" + ep.map((p) => '<button class="d19-si pinned" data-tip="' + esc(p.libelle) + '" data-pg="' + esc(p.groupe) + '" data-pe="' + esc(p.entree) + '" data-pv="' + esc(p.vue || "") + '">' + ico("star") + "<span>" + esc(p.libelle) + "</span></button>").join("") + '<hr class="d19-sep">';
-    h += "<h2>" + esc(g.libelle) + "</h2>";
+    if (ep.length) h += ep.map((p) => '<button class="d19-si pinned" data-tip="' + esc(p.libelle) + '" data-pg="' + esc(p.groupe) + '" data-pe="' + esc(p.entree) + '" data-pv="' + esc(p.vue || "") + '">' + ico("star") + "<span>" + esc(p.libelle) + "</span></button>").join("") + '<hr class="d19-sep">';
     const chev = (o) => ico("right", "car" + (o ? " ouv" : ""));
     for (const e of g.entrees) {
       const ouv = E.ouv.has(e.id) && e.enfants.length, actif = E.actif && E.e === e.id && E.g === g.id;
@@ -747,6 +746,21 @@
       completerAvatar(); rendre();
     } catch (e) { console.warn("disposition :", e); }
   }
+  // ── le pouls : l'état (capsule, points des groupes, pastilles) suit le Sensorium tout seul, sans rien fermer ──
+  let pouleEnCours = false;
+  async function pouls() {
+    if (pouleEnCours || !E.d || !token() || document.hidden) return;
+    pouleEnCours = true;
+    try {
+      const d = await agir("affichage.lire_disposition", {});
+      if (d && d.etag !== E.d.etag) {
+        E.d = d;
+        if (!E.d.groupes.some((g) => g.id === E.g)) { E.g = E.d.groupes[0] ? E.d.groupes[0].id : ""; E.e = ""; }
+        rendreHaut(); rendreGauche();                                   // ni le fil, ni les menus ouverts, ni le panneau ne sont touchés
+      }
+    } catch (e) { /* un raté ne casse rien : le prochain battement refait */ }
+    pouleEnCours = false;
+  }
   function construire() {
     if ($("#d19-top")) return;
     document.body.classList.add("d19");
@@ -914,7 +928,8 @@
     idees(true);
     if (!lance) {
       lance = true;
-      setInterval(function () { if (token() && !document.hidden && E.d) { charger().then(() => idees()); } }, 60000);
+      setInterval(pouls, 15000); document.addEventListener("visibilitychange", pouls);
+      setInterval(function () { if (token() && !document.hidden && E.d) idees(); }, 60000);
       const sw = window.switchTab;
       window.switchTab = function (name) { const r = sw.apply(this, arguments); window.__d19Onglet = name; try { suivre(name); } catch (e) {} return r; };
     }
