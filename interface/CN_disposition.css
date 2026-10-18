@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=54becb ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=c23d48 ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -41,8 +41,8 @@ body.d19 .app-body{position:relative}
 #d19-top .nav-f{width:36px;height:36px;border-radius:10px;border:0;background:none;color:var(--d-encre);font-size:20px;cursor:pointer;opacity:.9}
 #d19-top .nav-f:hover:not(:disabled){background:var(--d-doux)}
 #d19-top .nav-f:disabled{opacity:.35}
-#d19-top .d19-logo{color:#0b7c74}
-.d19-logo{width:38px;height:38px;border-radius:50%;background:#fff center/cover no-repeat;box-shadow:0 0 0 3px rgba(74,222,128,.85),0 1px 4px rgba(0,0,0,.25);display:grid;place-items:center;font:700 15px 'JetBrains Mono',monospace;color:#0b7c74;margin:0 10px 0 0;flex:none;border:0;cursor:pointer;overflow:hidden;transition:box-shadow .3s}
+#d19-top .d19-logo{color:var(--d-encre)}
+.d19-logo{width:38px;height:38px;border-radius:50%;background:transparent center/contain no-repeat;box-shadow:none;display:grid;place-items:center;font:700 22px 'JetBrains Mono',monospace;margin:0 10px 0 0;flex:none;border:0;cursor:pointer;overflow:hidden;transition:box-shadow .3s}
 .d19-logo.s-alerte{box-shadow:0 0 0 3px #f59e0b,0 1px 4px rgba(0,0,0,.25)}
 .d19-logo.s-danger{box-shadow:0 0 0 3px var(--danger,#be123c),0 1px 4px rgba(0,0,0,.25)}
 #d19-groupes{display:flex;align-items:stretch;gap:5px;min-width:0;flex:1;height:100%;padding-left:10px}
