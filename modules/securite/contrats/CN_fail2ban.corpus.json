@@ -1,0 +1,1080 @@
+{
+ "point": "securite.fail2ban",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de securite, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "m": {
+     "ecoutes": [],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": true,
+     "jails": [
+      {
+       "jail": "sshd",
+       "echecs": 9,
+       "bannies": 2,
+       "total": 5,
+       "ips": [
+        "1.2.3.4",
+        "5.6.7.8"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 22,
+       "processus": "sshd",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 1\nTotal banned: 5\nBanned IP list: 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": true,
+     "jails": [
+      {
+       "jail": "sshd",
+       "echecs": 9,
+       "bannies": 1,
+       "total": 5,
+       "ips": [
+        "5.6.7.8"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "m": {
+     "a": {
+      "b": [
+       1,
+       2
+      ]
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": false,
+     "jails": []
+    }
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 22,
+       "processus": "sshd",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "clamav": {
+       "installe": true,
+       "convient": true,
+       "resultat": {
+        "infectes": [
+         {
+          "fichier": "f",
+          "menace": "m"
+         }
+        ]
+       }
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": true,
+     "jails": [
+      {
+       "jail": "sshd",
+       "echecs": 9,
+       "bannies": 2,
+       "total": 5,
+       "ips": [
+        "1.2.3.4",
+        "5.6.7.8"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 22,
+       "processus": "sshd",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "yes",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": true,
+     "jails": [
+      {
+       "jail": "sshd",
+       "echecs": 9,
+       "bannies": 2,
+       "total": 5,
+       "ips": [
+        "1.2.3.4",
+        "5.6.7.8"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 80,
+       "processus": "nginx",
+       "pid": 1,
+       "unite": ""
+      },
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 22,
+       "processus": "sshd",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": true,
+     "jails": [
+      {
+       "jail": "sshd",
+       "echecs": 9,
+       "bannies": 2,
+       "total": 5,
+       "ips": [
+        "1.2.3.4",
+        "5.6.7.8"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "m": {
+     "ecoutes": [],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": null,
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": true,
+     "jails": [
+      {
+       "jail": "sshd",
+       "echecs": 9,
+       "bannies": 2,
+       "total": 5,
+       "ips": [
+        "1.2.3.4",
+        "5.6.7.8"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "m": {
+     "ecoutes": null,
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": true,
+     "jails": [
+      {
+       "jail": "sshd",
+       "echecs": 9,
+       "bannies": 2,
+       "total": 5,
+       "ips": [
+        "1.2.3.4",
+        "5.6.7.8"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 80,
+       "processus": "nginx",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT ACCEPT\n-P FORWARD ACCEPT\n-P OUTPUT ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": true,
+     "jails": [
+      {
+       "jail": "sshd",
+       "echecs": 9,
+       "bannies": 2,
+       "total": 5,
+       "ips": [
+        "1.2.3.4",
+        "5.6.7.8"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 3306,
+       "processus": "mysqld",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT ACCEPT\n-P FORWARD ACCEPT\n-P OUTPUT ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": true,
+     "jails": [
+      {
+       "jail": "sshd",
+       "echecs": 9,
+       "bannies": 2,
+       "total": 5,
+       "ips": [
+        "1.2.3.4",
+        "5.6.7.8"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 22,
+       "processus": "sshd",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": true,
+     "jails": [
+      {
+       "jail": "sshd",
+       "echecs": 9,
+       "bannies": 2,
+       "total": 5,
+       "ips": [
+        "1.2.3.4",
+        "5.6.7.8"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 22,
+       "processus": "sshd",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "lynis": {
+       "installe": true,
+       "convient": true,
+       "resultat": {
+        "score": 70,
+        "avertissements": [],
+        "suggestions_n": 4
+       }
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": true,
+     "jails": [
+      {
+       "jail": "sshd",
+       "echecs": 9,
+       "bannies": 2,
+       "total": 5,
+       "ips": [
+        "1.2.3.4",
+        "5.6.7.8"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 22,
+       "processus": "sshd",
+       "pid": 1,
+       "unite": ""
+      },
+      {
+       "proto": "tcp",
+       "adresse": "127.0.0.1",
+       "port": 9000,
+       "processus": "python3",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": true,
+     "jails": [
+      {
+       "jail": "sshd",
+       "echecs": 9,
+       "bannies": 2,
+       "total": 5,
+       "ips": [
+        "1.2.3.4",
+        "5.6.7.8"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 22,
+       "processus": "sshd",
+       "pid": 1,
+       "unite": ""
+      },
+      {
+       "proto": "tcp",
+       "adresse": "127.0.0.1",
+       "port": 9000,
+       "processus": "python3",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "trivy": {
+       "installe": true,
+       "convient": true,
+       "resultat": {
+        "images": [
+         {
+          "image": "nginx:1",
+          "critiques": 2,
+          "hautes": 5
+         },
+         {
+          "image": "x",
+          "erreur": "boom"
+         }
+        ]
+       }
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "actif": true,
+     "jails": [
+      {
+       "jail": "sshd",
+       "echecs": 9,
+       "bannies": 2,
+       "total": 5,
+       "ips": [
+        "1.2.3.4",
+        "5.6.7.8"
+       ]
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

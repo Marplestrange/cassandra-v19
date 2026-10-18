@@ -1,0 +1,124 @@
+{
+ "point": "projets.date_ok",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de projets, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "v": "2026-11-01"
+   },
+   "sortie": {
+    "valeur": "2026-11-01"
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "v": "2026-12-01"
+   },
+   "sortie": {
+    "valeur": "2026-12-01"
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "v": "2026-10-15"
+   },
+   "sortie": {
+    "valeur": "2026-10-15"
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "v": "2026-10-21"
+   },
+   "sortie": {
+    "valeur": "2026-10-21"
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "v": "2026-10-01"
+   },
+   "sortie": {
+    "valeur": "2026-10-01"
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "v": "2026-10-29"
+   },
+   "sortie": {
+    "valeur": "2026-10-29"
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "v": "2026-12-15"
+   },
+   "sortie": {
+    "valeur": "2026-12-15"
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "v": "2026-11-11"
+   },
+   "sortie": {
+    "valeur": "2026-11-11"
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "v": "2027-01-01"
+   },
+   "sortie": {
+    "valeur": "2027-01-01"
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "v": "2026-12-24"
+   },
+   "sortie": {
+    "valeur": "2026-12-24"
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "v": ""
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "v": false
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "v": null
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  }
+ ]
+}

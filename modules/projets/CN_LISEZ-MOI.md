@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : projets -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION CN : 0.1.1  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : projets — les projets d'un compte -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=301557 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.1 empreinte=301557 ▼▼▼ -->
 # projets — les projets d'un compte
 
 Porté de la V18 (`pj_*`, `projet_*` : en-tête, rôles, phases, jalons, décisions, journal, plan de référence, corbeille, avancement), lu en entier pour ce cœur.

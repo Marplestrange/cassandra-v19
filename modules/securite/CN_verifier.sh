@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.3  #b7417f
+# VERSION CN : 0.3.4  #b7417f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Sécurité vérifie, À ROOT : les deux commandes sont posées, à root, exécutables.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.3 empreinte=b7417f ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.4 empreinte=b7417f ▼▼▼
 # Sécurité vérifie, À ROOT : les deux commandes sont posées, à root, exécutables.
 set -eu
 for c in mesurer agir outils; do

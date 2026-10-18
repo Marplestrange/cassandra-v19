@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.3  #b95590
+# VERSION CN : 0.1.4  #f0899a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les tâches planifiées : la logique pure (expressions cron, occurrences, description en français, verdict d'une tâche, collisions, dérive).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.3 empreinte=b95590 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=f0899a ▼▼▼
 """Les tâches planifiées : la logique pure (expressions cron, occurrences, description en français, verdict d'une tâche, collisions, dérive).
 
 Portée de la V18. Rien ici ne touche le système : le module lit et écrit les crontabs par le courtier, et passe les temps et les durées à ces fonctions.
@@ -137,27 +137,8 @@ def decrire(expr, appeler):
 
 
 def precedente(expr, ref, retour_jours=21):
-    """La dernière exécution ATTENDUE à `ref` ou avant : la référence contre laquelle se mesure le silence."""
-    p = analyser(expr)
-    if not p:
-        return ""
-    mins, hours, jour_ok = p
-    try:
-        d = datetime.strptime(ref[:16], "%Y-%m-%d %H:%M")
-    except Exception:
-        return ""
-    jour = d.replace(hour=0, minute=0)
-    for i in range(retour_jours + 1):
-        if jour_ok(jour):
-            for h in reversed(hours):
-                if i == 0 and h > d.hour:
-                    continue
-                for m in reversed(mins):
-                    if i == 0 and h == d.hour and m > d.minute:
-                        continue
-                    return "%s %02d:%02d" % (jour.strftime("%Y-%m-%d"), h, m)
-        jour -= timedelta(days=1)
-    return ""
+    """La dernière exécution ATTENDUE à `ref` ou avant : la référence contre laquelle se mesure le silence. Le calcul est un POINT D'ÉVOLUTION : points/EC_precedente.py."""
+    return _appeler_point("precedente", {"expr": expr, "ref": ref, "retour_jours": retour_jours})["valeur"]
 
 
 def suivante(expr, ref, avance_jours=45):

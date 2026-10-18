@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : jour
 # ZONE       : CN
-# VERSION CN : 0.1.0  #37ab1b
+# VERSION CN : 0.1.1  #20ba4d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le bureau du jour : assemble les signaux que les modules déclarent.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=37ab1b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=20ba4d ▼▼▼
 """Le bureau du jour : assemble les signaux que les modules déclarent.
 
 Une source qui échoue ne disparaît pas : elle rend une ligne qui dit qu'elle est en panne. C'est le point le plus important de l'écran — une bande
@@ -33,14 +33,27 @@ QUOI_NOM = {"tache": ("tâche", "tâches"), "rappel": ("rappel", "rappels"), "ev
             "mandat": ("envoi à accorder", "envois à accorder"), "note": ("note", "notes"), "mail": ("message", "messages")}
 
 
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 def propre(x):
-    """Un item reçu d'un module : la forme est imposée ici, jamais crue sur parole."""
-    if not isinstance(x, dict) or x.get("bande") not in CLES_BANDES:
-        return None
-    g = x.get("geste")
-    return {"bande": x["bande"], "quoi": str(x.get("quoi") or "")[:30], "titre": str(x.get("titre") or "")[:160], "detail": str(x.get("detail") or "")[:200],
-            "nat": str(x.get("nat") or "")[:30], "ref": str(x.get("ref") or "")[:80], "poids": int(x.get("poids") or 0), "ou": str(x.get("ou") or "")[:30],
-            "geste": [str(g[0])[:30], str(g[1])[:30]] if isinstance(g, (list, tuple)) and len(g) == 2 else None}
+    """Un item reçu d'un module : la forme est imposée ici, jamais crue sur parole. Le calcul est un POINT D'ÉVOLUTION : points/EC_propre.py."""
+    return _appeler_point("propre", {"x": x})["valeur"]
 
 
 def compo(items, bande=None, quois=()):

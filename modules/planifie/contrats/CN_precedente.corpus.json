@@ -1,0 +1,168 @@
+{
+ "point": "planifie.precedente",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de planifie, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "expr": "0 2 * * *",
+    "ref": "2026-10-18 01:59",
+    "retour_jours": 21
+   },
+   "sortie": {
+    "valeur": "2026-10-17 02:00"
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "expr": "0 3 * * *",
+    "ref": "2026-10-12 02:59",
+    "retour_jours": 21
+   },
+   "sortie": {
+    "valeur": "2026-10-11 03:00"
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "expr": "*/10 * * * *",
+    "ref": "2026-10-12 10:25",
+    "retour_jours": 21
+   },
+   "sortie": {
+    "valeur": "2026-10-12 10:20"
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "expr": "*/10 * * * *",
+    "ref": "2026-10-12 09:59",
+    "retour_jours": 21
+   },
+   "sortie": {
+    "valeur": "2026-10-12 09:50"
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "expr": "0 2 * * *",
+    "ref": "2026-10-18 18:59",
+    "retour_jours": 21
+   },
+   "sortie": {
+    "valeur": "2026-10-18 02:00"
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "expr": "0 1 * * *",
+    "ref": "2026-10-18 19:00",
+    "retour_jours": 21
+   },
+   "sortie": {
+    "valeur": "2026-10-18 01:00"
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "expr": "30 1 * * *",
+    "ref": "2026-10-18 19:00",
+    "retour_jours": 21
+   },
+   "sortie": {
+    "valeur": "2026-10-18 01:30"
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "expr": "0 3 * * *",
+    "ref": "2026-10-18 19:00",
+    "retour_jours": 21
+   },
+   "sortie": {
+    "valeur": "2026-10-18 03:00"
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "expr": "@monthly",
+    "ref": [
+     "03:00",
+     "03:10",
+     "03:20"
+    ],
+    "retour_jours": "0 0 * * 0"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "expr": false,
+    "ref": [
+     "cassandra",
+     "système"
+    ],
+    "retour_jours": 0
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "expr": "0 2 * * *",
+    "ref": "2026-10-18 19:00",
+    "retour_jours": 21
+   },
+   "sortie": {
+    "valeur": "2026-10-18 02:00"
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "expr": "*/10 * * * *",
+    "ref": "2026-10-12 10:20",
+    "retour_jours": 21
+   },
+   "sortie": {
+    "valeur": "2026-10-12 10:20"
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "expr": "0 2 * * *",
+    "ref": "2026-10-18 19:01",
+    "retour_jours": 21
+   },
+   "sortie": {
+    "valeur": "2026-10-18 02:00"
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "expr": "0 1 * * *",
+    "ref": "2026-10-18 19:01",
+    "retour_jours": 21
+   },
+   "sortie": {
+    "valeur": "2026-10-18 01:00"
+   }
+  }
+ ]
+}

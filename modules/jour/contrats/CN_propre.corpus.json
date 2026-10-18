@@ -1,0 +1,376 @@
+{
+ "point": "jour.propre",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de jour, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "x": {
+     "bande": "jour",
+     "quoi": "tache",
+     "titre": "Un fait du jour",
+     "detail": "",
+     "poids": 10
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "bande": "jour",
+     "quoi": "tache",
+     "titre": "Un fait du jour",
+     "detail": "",
+     "nat": "",
+     "ref": "",
+     "poids": 10,
+     "ou": "",
+     "geste": null
+    }
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "x": {
+     "bande": "regarder",
+     "quoi": "tache",
+     "titre": "Lent n°1",
+     "detail": "",
+     "poids": 10
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "bande": "regarder",
+     "quoi": "tache",
+     "titre": "Lent n°1",
+     "detail": "",
+     "nat": "",
+     "ref": "",
+     "poids": 10,
+     "ou": "",
+     "geste": null
+    }
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "x": {
+     "bande": "brule",
+     "quoi": "tache",
+     "titre": "Disque plein",
+     "detail": "",
+     "poids": 10
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "bande": "brule",
+     "quoi": "tache",
+     "titre": "Disque plein",
+     "detail": "",
+     "nat": "",
+     "ref": "",
+     "poids": 10,
+     "ou": "",
+     "geste": null
+    }
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "x": {
+     "bande": "regarder",
+     "quoi": "tache",
+     "titre": "Lent n°2",
+     "detail": "",
+     "poids": 10
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "bande": "regarder",
+     "quoi": "tache",
+     "titre": "Lent n°2",
+     "detail": "",
+     "nat": "",
+     "ref": "",
+     "poids": 10,
+     "ou": "",
+     "geste": null
+    }
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "x": {
+     "bande": "brule",
+     "quoi": "tache",
+     "titre": "Rendre le devis",
+     "detail": "En retard de 2 jour(s).",
+     "nat": "tache",
+     "ref": "1",
+     "poids": 92,
+     "ou": "proj",
+     "geste": [
+      "Ouvrir",
+      "ouvrir"
+     ]
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "bande": "brule",
+     "quoi": "tache",
+     "titre": "Rendre le devis",
+     "detail": "En retard de 2 jour(s).",
+     "nat": "tache",
+     "ref": "1",
+     "poids": 92,
+     "ou": "proj",
+     "geste": [
+      "Ouvrir",
+      "ouvrir"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "x": {
+     "bande": "jour",
+     "quoi": "tache",
+     "titre": "Appeler le notaire",
+     "detail": "échéance du jour",
+     "nat": "tache",
+     "ref": "2",
+     "poids": 35,
+     "ou": "proj",
+     "geste": [
+      "Ouvrir",
+      "ouvrir"
+     ]
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "bande": "jour",
+     "quoi": "tache",
+     "titre": "Appeler le notaire",
+     "detail": "échéance du jour",
+     "nat": "tache",
+     "ref": "2",
+     "poids": 35,
+     "ou": "proj",
+     "geste": [
+      "Ouvrir",
+      "ouvrir"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "x": {
+     "bande": "brule",
+     "quoi": "tache",
+     "titre": "Secret de Bea",
+     "detail": "En retard de 1 jour(s).",
+     "nat": "tache",
+     "ref": "1",
+     "poids": 91,
+     "ou": "proj",
+     "geste": [
+      "Ouvrir",
+      "ouvrir"
+     ]
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "bande": "brule",
+     "quoi": "tache",
+     "titre": "Secret de Bea",
+     "detail": "En retard de 1 jour(s).",
+     "nat": "tache",
+     "ref": "1",
+     "poids": 91,
+     "ou": "proj",
+     "geste": [
+      "Ouvrir",
+      "ouvrir"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "x": {
+     "bande": "brule",
+     "quoi": "rappel",
+     "titre": "Rappel oublié",
+     "detail": "En retard de 1 jour(s).",
+     "nat": "rappel",
+     "ref": "2",
+     "poids": 101,
+     "ou": "rem",
+     "geste": [
+      "Ouvrir",
+      "ouvrir"
+     ]
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "bande": "brule",
+     "quoi": "rappel",
+     "titre": "Rappel oublié",
+     "detail": "En retard de 1 jour(s).",
+     "nat": "rappel",
+     "ref": "2",
+     "poids": 101,
+     "ou": "rem",
+     "geste": [
+      "Ouvrir",
+      "ouvrir"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "x": {
+     "bande": "jour",
+     "quoi": "rappel",
+     "titre": "Rappeler Sandrine",
+     "detail": "14:30",
+     "nat": "rappel",
+     "ref": "1",
+     "poids": 40,
+     "ou": "rem",
+     "geste": [
+      "Reporter",
+      "reporter"
+     ]
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "bande": "jour",
+     "quoi": "rappel",
+     "titre": "Rappeler Sandrine",
+     "detail": "14:30",
+     "nat": "rappel",
+     "ref": "1",
+     "poids": 40,
+     "ou": "rem",
+     "geste": [
+      "Reporter",
+      "reporter"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "x": {
+     "bande": "jour",
+     "quoi": "event",
+     "titre": "Réunion",
+     "detail": "10:00",
+     "nat": "event",
+     "ref": "1",
+     "poids": 30,
+     "ou": "cal",
+     "geste": [
+      "Voir",
+      "ouvrir"
+     ]
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "bande": "jour",
+     "quoi": "event",
+     "titre": "Réunion",
+     "detail": "10:00",
+     "nat": "event",
+     "ref": "1",
+     "poids": 30,
+     "ou": "cal",
+     "geste": [
+      "Voir",
+      "ouvrir"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "x": {
+     "bande": "inconnue",
+     "titre": "refusé : bande inconnue"
+    }
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "x": {
+     "bande": "jour",
+     "geste": "bea@x.fr",
+     "nat": "agenda",
+     "detail": "bea@x.fr",
+     "ref": "faux",
+     "quoi": true,
+     "ou": "jour"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "bande": "jour",
+     "quoi": "True",
+     "titre": "",
+     "detail": "bea@x.fr",
+     "nat": "agenda",
+     "ref": "faux",
+     "poids": 0,
+     "ou": "jour",
+     "geste": null
+    }
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "x": "pas un item"
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "x": {
+     "poids": "root@x.fr"
+    }
+   },
+   "sortie": {
+    "valeur": null
+   }
+  }
+ ]
+}

@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : jour
 # ZONE       : CN
-# VERSION CN : 0.1.0  #29c1da
+# VERSION CN : 0.1.1  #a829de
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le bureau du jour : ce qui brûle, ce qui est à regarder, ce qui tombe aujourd'hui. Chaque module déclare ses signaux ([[signaux]]) ; ce module les assemble pour le compte qui regarde, sans jamais cacher une source en panne.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=29c1da ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=a829de ▼▼▼
 [module]
 id = "jour"
 nom = "Aujourd'hui"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "Le bureau du jour : ce qui brûle, ce qui est à regarder, ce qui tombe aujourd'hui. Chaque module déclare ses signaux ([[signaux]]) ; ce module les assemble pour le compte qui regarde, sans jamais cacher une source en panne."
 confiance = "interne"
@@ -43,4 +43,12 @@ libelle = "Les tuiles de la vue du jour (à faire, en retard, accords, à relire
 contrat = "1.0"
 reference = "points/EC_tuiles"
 fonction = "point_tuiles"
+runtime = "python"
+
+[[points_evolution]]
+id = "propre"
+libelle = "Un item reçu d'un module : la forme est imposée ici, jamais crue sur parole (extrait automatiquement de CN_module.py)"
+contrat = "1.0"
+reference = "points/EC_propre"
+fonction = "point_propre"
 runtime = "python"

@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.3  #afe9ba
+# VERSION CN : 0.3.4  #afe9ba
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : adresses_machine.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

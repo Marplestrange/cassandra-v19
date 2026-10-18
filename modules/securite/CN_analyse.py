@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.3  #b2077d
+# VERSION CN : 0.3.4  #737894
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'analyse de sécurité : des relevés BRUTS de la machine (commandes/CN_mesurer) -> exposition, pare-feu, accès, défenses, mises à jour, verdict. Fonctions pures, testées sans machine.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.3 empreinte=b2077d ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.4 empreinte=737894 ▼▼▼
 """L'analyse de sécurité : des relevés BRUTS de la machine (commandes/CN_mesurer) -> exposition, pare-feu, accès, défenses, mises à jour, verdict. Fonctions pures, testées sans machine.
 
 Porté de la V18 (`_sec_*`, `_pf_*`), avec les leçons payées en service :
@@ -321,17 +321,8 @@ def ssh(m):
 
 
 def fail2ban(m):
-    f = m.get("fail2ban") or {}
-    if not f.get("actif"):
-        return {"actif": False, "jails": []}
-    jails = []
-    for j, s in (f.get("jails") or {}).items():
-        def n(lib):
-            x = re.search(lib + r":\s*(\d+)", s or "")
-            return int(x.group(1)) if x else 0
-        ips = re.search(r"Banned IP list:\s*(.*)", s or "")
-        jails.append({"jail": j, "echecs": n("Total failed"), "bannies": n("Currently banned"), "total": n("Total banned"), "ips": [x for x in (ips.group(1).split() if ips else []) if x][:50]})
-    return {"actif": True, "jails": jails}
+    """fail2ban. Le calcul est un POINT D'ÉVOLUTION : points/EC_fail2ban.py."""
+    return _appeler_point("fail2ban", {"m": m})["valeur"]
 
 
 def maj(m):
@@ -375,20 +366,8 @@ def _niveau_outil(k, o):
 
 
 def outils(m):
-    """Lynis, Trivy, ClamAV, CrowdSec : optionnels, jamais requis. L'état vient de leur programme (à root) ; sans lui, seulement ce qui est présent sur la machine."""
-    etat_complet = m.get("outils_etat") or {}
-    pres = m.get("outils") or {}
-    sortie = {}
-    for k, (nom, role) in OUTILS.items():
-        e = dict(etat_complet.get(k) or {})
-        e.setdefault("installe", bool(pres.get(k)))
-        e.setdefault("convient", True)
-        e.setdefault("pourquoi", "")
-        e.setdefault("resultat", None)
-        e.update({"nom": nom, "role": role, "present": True})
-        e["niveau"], e["dit"] = _niveau_outil(k, e)
-        sortie[k] = e
-    return sortie
+    """Lynis, Trivy, ClamAV, CrowdSec : optionnels, jamais requis. L'état vient de leur programme (à root) ; sans lui, seulement ce qui est présent sur la machine. Le calcul est un POINT D'ÉVOLUTION : points/EC_outils_analyse.py."""
+    return _appeler_point("outils_analyse", {"m": m})["valeur"]
 
 
 def verdict(d):

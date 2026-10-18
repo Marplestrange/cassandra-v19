@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.3  #90aec5
+# VERSION CN : 0.3.4  #4f69c2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.3 empreinte=90aec5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.4 empreinte=4f69c2 ▼▼▼
 [module]
 id = "securite"
 nom = "Sécurité"
-version = "0.3.3"
+version = "0.3.4"
 noyau_min = "0.1.0"
 description = "La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel)."
 confiance = "interne"
@@ -264,4 +264,20 @@ libelle = "de_confiance (extrait automatiquement de CN_images.py)"
 contrat = "1.0"
 reference = "points/EC_de_confiance"
 fonction = "point_de_confiance"
+runtime = "python"
+
+[[points_evolution]]
+id = "fail2ban"
+libelle = "fail2ban (extrait automatiquement de CN_analyse.py)"
+contrat = "1.0"
+reference = "points/EC_fail2ban"
+fonction = "point_fail2ban"
+runtime = "python"
+
+[[points_evolution]]
+id = "outils_analyse"
+libelle = "Lynis, Trivy, ClamAV, CrowdSec : optionnels, jamais requis. L'état vient de leur programme (à root) ; sans lui, seulement ce qui est présent sur la machine (extrait automatiquement de CN_analyse.py)"
+contrat = "1.0"
+reference = "points/EC_outils_analyse"
+fonction = "point_outils_analyse"
 runtime = "python"

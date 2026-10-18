@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.3  #a54b9f
+# VERSION CN : 0.3.4  #a54b9f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : portee.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

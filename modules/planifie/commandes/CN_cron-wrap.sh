@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.3  #ed9322
+# VERSION CN : 0.1.4  #ed9322
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Enrobage des tâches planifiées Cassandra — version 3
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.3 empreinte=ed9322 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=ed9322 ▼▼▼
 # Enrobage des tâches planifiées Cassandra — version 3
 # Exécute la commande, puis dépose un compte rendu dans le spool. Écrit dans un fichier temporaire renommé ensuite : l'ingestion ne lit jamais un compte rendu à moitié écrit.
 # Appelé par cron, À ROOT : il ne SOURCE rien que le noyau (sans privilège) puisse écrire. Les options (verrou, fenêtre) sont lues ligne à ligne et seul un chiffre est retenu ;

@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.3  #67d138
+# VERSION CN : 0.3.4  #67d138
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : de_confiance.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

@@ -1,0 +1,1699 @@
+{
+ "point": "securite.outils_analyse",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de securite, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "m": {
+     "ecoutes": [],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "trivy": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "clamav": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "crowdsec": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "m": {
+     "ecoutes": [],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "clamav": {
+       "installe": true,
+       "convient": true,
+       "resultat": {
+        "infectes": [],
+        "analyses": 1200,
+        "signatures": "2026-10-16 09:00"
+       }
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "trivy": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "clamav": {
+      "installe": true,
+      "convient": true,
+      "resultat": {
+       "infectes": [],
+       "analyses": 1200,
+       "signatures": "2026-10-16 09:00"
+      },
+      "pourquoi": "",
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "ok",
+      "dit": "1200 fichiers analysés · aucune menace · signatures du 2026-10-16 09:00"
+     },
+     "crowdsec": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "m": {
+     "ecoutes": [],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "crowdsec": {
+       "installe": true,
+       "convient": true,
+       "resultat": {
+        "moteur": true,
+        "videur": false
+       }
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "trivy": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "clamav": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "crowdsec": {
+      "installe": true,
+      "convient": true,
+      "resultat": {
+       "moteur": true,
+       "videur": false
+      },
+      "pourquoi": "",
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "panne",
+      "dit": "moteur actif · videur ARRÊTÉ"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "m": {
+     "ecoutes": [],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "crowdsec": {
+       "installe": true,
+       "convient": true,
+       "resultat": {
+        "moteur": true,
+        "videur": true,
+        "decisions_locales": 3,
+        "liste_communautaire": 9000,
+        "alertes_24h": 1
+       }
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "trivy": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "clamav": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "crowdsec": {
+      "installe": true,
+      "convient": true,
+      "resultat": {
+       "moteur": true,
+       "videur": true,
+       "decisions_locales": 3,
+       "liste_communautaire": 9000,
+       "alertes_24h": 1
+      },
+      "pourquoi": "",
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "ok",
+      "dit": "3 adresses bannies ici · 9000 de la liste communautaire · 1 alerte en 24 h"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "m": {
+     "ecoutes": [],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "lynis": {
+       "installe": true,
+       "convient": true,
+       "resultat": null
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": true,
+      "convient": true,
+      "resultat": null,
+      "pourquoi": "",
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "pas_encore",
+      "dit": "installé · premier passage à venir"
+     },
+     "trivy": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "clamav": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "crowdsec": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "m": {
+     "ecoutes": [],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "lynis": {
+       "installe": true,
+       "convient": true,
+       "resultat": {
+        "score": 62,
+        "avertissements": [
+         {
+          "id": "X"
+         }
+        ],
+        "suggestions_n": 31
+       }
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": true,
+      "convient": true,
+      "resultat": {
+       "score": 62,
+       "avertissements": [
+        {
+         "id": "X"
+        }
+       ],
+       "suggestions_n": 31
+      },
+      "pourquoi": "",
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "regarder",
+      "dit": "score 62/100 · 1 avertissement · 31 conseils"
+     },
+     "trivy": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "clamav": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "crowdsec": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "m": {
+     "ecoutes": [],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "trivy": {
+       "installe": true,
+       "convient": true,
+       "resultat": {
+        "images": [
+         {
+          "image": "a",
+          "critiques": 2,
+          "corrigeables": 1
+         },
+         {
+          "image": "b",
+          "critiques": 0,
+          "corrigeables": 0
+         }
+        ]
+       }
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "trivy": {
+      "installe": true,
+      "convient": true,
+      "resultat": {
+       "images": [
+        {
+         "image": "a",
+         "critiques": 2,
+         "corrigeables": 1
+        },
+        {
+         "image": "b",
+         "critiques": 0,
+         "corrigeables": 0
+        }
+       ]
+      },
+      "pourquoi": "",
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "regarder",
+      "dit": "2 images · 2 failles critiques · 1 déjà corrigée par leur auteur, en attente d'une nouvelle image"
+     },
+     "clamav": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "crowdsec": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "m": {
+     "ecoutes": [],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "clamav": {
+       "installe": true,
+       "convient": true,
+       "resultat": {
+        "infectes": [
+         {
+          "fichier": "/tmp/x",
+          "menace": "Eicar"
+         }
+        ]
+       }
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "trivy": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "clamav": {
+      "installe": true,
+      "convient": true,
+      "resultat": {
+       "infectes": [
+        {
+         "fichier": "/tmp/x",
+         "menace": "Eicar"
+        }
+       ]
+      },
+      "pourquoi": "",
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "panne",
+      "dit": "1 FICHIER INFECTÉ"
+     },
+     "crowdsec": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 22,
+       "processus": "sshd",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "clamav": {
+       "installe": true,
+       "convient": true,
+       "resultat": {
+        "infectes": [
+         {
+          "fichier": "f",
+          "menace": "m"
+         }
+        ]
+       }
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "trivy": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "clamav": {
+      "installe": true,
+      "convient": true,
+      "resultat": {
+       "infectes": [
+        {
+         "fichier": "f",
+         "menace": "m"
+        }
+       ]
+      },
+      "pourquoi": "",
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "panne",
+      "dit": "1 FICHIER INFECTÉ"
+     },
+     "crowdsec": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "m": {
+     "ecoutes": [],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "clamav": {
+       "installe": false,
+       "convient": false,
+       "pourquoi": "1024 Mo de mémoire : le démon l'écraserait"
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "trivy": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "clamav": {
+      "installe": false,
+      "convient": false,
+      "pourquoi": "1024 Mo de mémoire : le démon l'écraserait",
+      "resultat": null,
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé · 1024 Mo de mémoire : le démon l'écraserait"
+     },
+     "crowdsec": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 22,
+       "processus": "sshd",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "lynis": {
+       "installe": true,
+       "convient": true,
+       "resultat": {
+        "score": 70,
+        "avertissements": [],
+        "suggestions_n": 4
+       }
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": true,
+      "convient": true,
+      "resultat": {
+       "score": 70,
+       "avertissements": [],
+       "suggestions_n": 4
+      },
+      "pourquoi": "",
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "ok",
+      "dit": "score 70/100 · 0 avertissement · 4 conseils"
+     },
+     "trivy": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "clamav": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "crowdsec": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 22,
+       "processus": "sshd",
+       "pid": 1,
+       "unite": ""
+      },
+      {
+       "proto": "tcp",
+       "adresse": "127.0.0.1",
+       "port": 9000,
+       "processus": "python3",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "trivy": {
+       "installe": true,
+       "convient": true,
+       "resultat": {
+        "images": [
+         {
+          "image": "nginx:1",
+          "critiques": 2,
+          "hautes": 5
+         },
+         {
+          "image": "x",
+          "erreur": "boom"
+         }
+        ]
+       }
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "trivy": {
+      "installe": true,
+      "convient": true,
+      "resultat": {
+       "images": [
+        {
+         "image": "nginx:1",
+         "critiques": 2,
+         "hautes": 5
+        },
+        {
+         "image": "x",
+         "erreur": "boom"
+        }
+       ]
+      },
+      "pourquoi": "",
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "regarder",
+      "dit": "2 images · 2 failles critiques · 0 déjà corrigée par leur auteur, en attente d'une nouvelle image"
+     },
+     "clamav": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "crowdsec": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "m": {
+     "ecoutes": [
+      {
+       "proto": "tcp",
+       "adresse": "0.0.0.0",
+       "port": 22,
+       "processus": "sshd",
+       "pid": 1,
+       "unite": ""
+      },
+      {
+       "proto": "tcp",
+       "adresse": "127.0.0.1",
+       "port": 9000,
+       "processus": "python3",
+       "pid": 1,
+       "unite": ""
+      }
+     ],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": false,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo",
+     "outils_etat": {
+      "crowdsec": {
+       "installe": true,
+       "convient": true,
+       "resultat": {
+        "moteur": true,
+        "videur": true,
+        "bannies": [
+         {
+          "ip": "Ip:198.51.100.7"
+         }
+        ],
+        "pays_7j": [
+         {
+          "pays": "CN",
+          "n": 50
+         }
+        ]
+       }
+      }
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "trivy": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "clamav": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "crowdsec": {
+      "installe": true,
+      "convient": true,
+      "resultat": {
+       "moteur": true,
+       "videur": true,
+       "bannies": [
+        {
+         "ip": "Ip:198.51.100.7"
+        }
+       ],
+       "pays_7j": [
+        {
+         "pays": "CN",
+         "n": 50
+        }
+       ]
+      },
+      "pourquoi": "",
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "ok",
+      "dit": "0 adresse bannie ici · 0 de la liste communautaire · 0 alerte en 24 h"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "m": {
+     "ecoutes": [],
+     "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n",
+     "iptables": "-P INPUT DROP\n-P FORWARD DROP\n-P OUTPUT ACCEPT\n-A INPUT -i lo -j ACCEPT\n-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\n-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT\n-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT\n-A INPUT -s 192.168.1.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT\n-A INPUT -s 100.64.1.5/32 -p tcp -m tcp --dport 9090 -j ACCEPT\n",
+     "ip6tables": null,
+     "iptables_docker": null,
+     "nft": null,
+     "sshd": {
+      "passwordauthentication": "no",
+      "permitrootlogin": "prohibit-password",
+      "x11forwarding": "no",
+      "port": "22"
+     },
+     "echecs_ssh_7j": 3,
+     "comptes": {
+      "shells": [
+       "root"
+      ],
+      "sudo": []
+     },
+     "cles_ssh": {
+      "root": 1
+     },
+     "fail2ban": {
+      "present": true,
+      "actif": true,
+      "jails": {
+       "sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"
+      }
+     },
+     "maj": {
+      "apt": true,
+      "a_mettre_a_jour": 4,
+      "securite": 0,
+      "auto_installe": true,
+      "auto_conf": "APT::Periodic::Unattended-Upgrade \"1\";",
+      "unites_en_echec": []
+     },
+     "outils": {
+      "lynis": true,
+      "trivy": false,
+      "clamav": false,
+      "crowdsec": false
+     },
+     "cage": "active",
+     "hote": "amizo"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "lynis": {
+      "installe": true,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Lynis",
+      "role": "Audit de durcissement du système, chaque semaine : un score et des conseils.",
+      "present": true,
+      "niveau": "pas_encore",
+      "dit": "installé · premier passage à venir"
+     },
+     "trivy": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "Trivy",
+      "role": "Failles connues dans les images Docker, chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "clamav": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "ClamAV",
+      "role": "Antivirus des fichiers venus de l'extérieur (sites, documents, dossiers personnels), chaque semaine.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     },
+     "crowdsec": {
+      "installe": false,
+      "convient": true,
+      "pourquoi": "",
+      "resultat": null,
+      "nom": "CrowdSec",
+      "role": "Bloque les attaquants repérés ici et ceux que sa communauté signale ; réseaux de confiance jamais bannis.",
+      "present": true,
+      "niveau": "",
+      "dit": "non installé"
+     }
+    }
+   }
+  }
+ ]
+}

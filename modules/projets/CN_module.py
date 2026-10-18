@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : projets
 # ZONE       : CN
-# VERSION CN : 0.1.0  #76b36a
+# VERSION CN : 0.1.1  #4fef41
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les projets.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=76b36a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=4fef41 ▼▼▼
 """Les projets.
 
 Porté de la V18 (`pj_*`, `projet_*`), avec ses leçons :
@@ -66,17 +66,28 @@ ENFANTS = {
 }
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 def date_ok(v):
-    """Une date ISO, ou ''. Jamais une approximation."""
-    v = str(v or "").strip()
-    if v and not RE_DATE.match(v):
-        raise ValueError("date invalide « %s » (AAAA-MM-JJ attendu)" % v)
-    if v:
-        try:
-            datetime.strptime(v, "%Y-%m-%d")
-        except ValueError:
-            raise ValueError("date impossible « %s »" % v)
-    return v
+    """Une date ISO, ou ''. Jamais une approximation. Le calcul est un POINT D'ÉVOLUTION : points/EC_date_ok.py."""
+    return _appeler_point("date_ok", {"v": v})["valeur"]
 
 
 def journal(notes):
@@ -96,6 +107,8 @@ def jours_entre(a, b):
 
 
 def brancher(ctx):
+    global _point
+    _point = ctx.point
     db = ctx.stockage
 
     def compte_agit():

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.3  #6490db
+# VERSION CN : 0.3.4  #6490db
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Sécurité › En images : la page de diagrammes. Fonction PURE : l'état de sécurité (analyse.etat) + les totaux du collecteur -> tout ce que dessine l'écran.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.3 empreinte=6490db ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.4 empreinte=6490db ▼▼▼
 """Sécurité › En images : la page de diagrammes. Fonction PURE : l'état de sécurité (analyse.etat) + les totaux du collecteur -> tout ce que dessine l'écran.
 
 Décision de Drisse (V18, 10-10, « garde tout ») : une page de diagrammes validée sur maquette. Tout vient de mesures déjà prises : l'état de l'onglet, les totaux d'attaques que tient le collecteur,
