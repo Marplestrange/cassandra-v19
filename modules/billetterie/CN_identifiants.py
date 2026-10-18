@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #cc3b19
+# VERSION CN : 0.1.0  #39a722
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : des identifiants qui ne sont JAMAIS réutilisés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=cc3b19 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=39a722 ▼▼▼
 """Billetterie : des identifiants qui ne sont JAMAIS réutilisés.
 
 Une référence (EVT-000001) ou un code de vente (LEA-00A3) désigne une chose pour toujours. `sequences` compte, `retires` se souvient : une fiche
@@ -26,7 +26,7 @@ import unicodedata
 
 PREFIXES = {"salle": "SAL", "artiste": "ART", "revendeur": "REV", "formule": "FOR", "evenement": "EVT", "type": "TYP",
             "client": "CLI", "commande": "CMD", "billet": "BIL", "promo": "PRO", "retrait": "RET", "mouvement": "MOU",
-            "caisse": "CAI", "versement": "VER", "attente": "ATT", "passage": "PAS", "affectation": "AFF", "invitation": "INV"}
+            "caisse": "CAI", "versement": "VER", "attente": "ATT", "passage": "PAS", "affectation": "AFF", "invitation": "INV", "conflit": "CNF"}
 _BASE36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1b482c
+# VERSION CN : 0.1.0  #52223e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : les règles de chaque fiche (ce qui est permis d'enregistrer, et ce qui part avec).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1b482c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=52223e ▼▼▼
 """Billetterie : les règles de chaque fiche (ce qui est permis d'enregistrer, et ce qui part avec).
 
 Un `preparer` reçoit la transaction, ce que l'appelant a donné (`d`, seulement les champs précisés) et la fiche d'avant (None si neuve) ;
@@ -329,7 +329,8 @@ def preparer_type(tx, d, avant):
         raise ValueError("la vente ne peut pas fermer avant d'ouvrir")
     vals = {"evenement_id": e["id"], "nom": requis(g("nom"), "le nom du billet", 60), "description": texte(g("description", ""), 200), "prix": entier(g("prix", 0), "prix"),
             "quota": entier(g("quota", 0), "quota"), "entrees": entier(g("entrees", 1), "entrées par billet", 1, 20), "visible": booleen(g("visible", 1)),
-            "ouverture": ouv, "fermeture": fer, "canaux": ",".join(c.strip() for c in canaux), "rang": entier(g("rang", 0), "rang", 0, 999)}
+            "ouverture": ouv, "fermeture": fer, "canaux": ",".join(c.strip() for c in canaux), "rang": entier(g("rang", 0), "rang", 0, 999),
+            "porte": requis(g("porte", "Entrée principale"), "la porte", 40)}
     clash = tx.execute("SELECT id FROM types_billets WHERE evenement_id = ? AND nom = ? AND id <> ?", (e["id"], vals["nom"], (avant or {}).get("id", 0))).fetchone()
     if clash:
         raise ValueError("cet événement a déjà un billet « %s »" % vals["nom"])
@@ -386,7 +387,7 @@ def preparer_invitation(tx, d, avant):
     quota = entier(g("quota", 0), "quota d'invitations")
     if avant and quota < avant["emises"]:
         raise ValueError("%d invitation(s) déjà émise(s) : le quota ne peut pas descendre en dessous" % avant["emises"])
-    return {"evenement_id": e["id"], "categorie": requis(g("categorie"), "la catégorie d'invités", 60), "quota": quota}
+    return {"evenement_id": e["id"], "categorie": requis(g("categorie"), "la catégorie d'invités", 60), "quota": quota, "porte": requis(g("porte", "Backstage"), "la porte", 40)}
 
 
 def integrite(f):

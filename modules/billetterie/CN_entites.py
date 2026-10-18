@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1b8382
+# VERSION CN : 0.1.0  #0aeb7f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : les fiches du module, assemblées (salles, formules, artistes, revendeurs, événements, billets, passages, affectations, invitations).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1b8382 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0aeb7f ▼▼▼
 """Billetterie : les fiches du module, assemblées (salles, formules, artistes, revendeurs, événements, billets, passages, affectations, invitations)."""
 from __future__ import annotations
 
@@ -25,10 +25,10 @@ CHAMPS_FORMULE = ("nom", "role", "forfait", "com", "fixe", "palier_n", "palier_c
 CHAMPS_ARTISTE = ("scene", "legal", "genre", "statut", "mail", "tel", "rider", "bio", "formule_id", "vend", "siret", "ape", "tva", "adresse", "code_postal", "ville", "pays", "adhesion_fin", "compte")
 CHAMPS_REVENDEUR = ("nom", "statut", "mail", "tel", "compte", "siret", "ape", "tva", "adresse", "code_postal", "ville", "pays", "actif", "suspendu_motif")
 CHAMPS_EVENEMENT = ("nom", "date_iso", "salle_id", "conf", "quota", "prix", "type", "description", "accroche", "tags", "portes", "debut", "fin", "age", "responsable", "projet_ref", "achat", "frais_sans_compte", "pause")
-CHAMPS_TYPE = ("evenement_id", "nom", "description", "prix", "quota", "entrees", "visible", "ouverture", "fermeture", "canaux", "rang")
+CHAMPS_TYPE = ("evenement_id", "nom", "description", "prix", "quota", "entrees", "visible", "ouverture", "fermeture", "canaux", "rang", "porte")
 CHAMPS_PASSAGE = ("evenement_id", "artiste_id", "ordre", "duree", "formule_id")
 CHAMPS_AFFECTATION = ("evenement_id", "revendeur_id", "formule_id", "quota")
-CHAMPS_INVITATION = ("evenement_id", "categorie", "quota")
+CHAMPS_INVITATION = ("evenement_id", "categorie", "quota", "porte")
 
 
 def construire(db):

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #44a1bf
+# VERSION CN : 0.1.0  #ec66d4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=44a1bf ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ec66d4 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -32,6 +32,10 @@ secrets = true
 id = "gerer"
 libelle = "Gérer la billetterie (le titulaire de l'instance : événements, formules, revendeurs, argent, réglages)"
 sensible = true
+
+[[droits]]
+id = "controler"
+libelle = "Contrôler les billets à l'entrée (l'ouvreur : lire les billets, voir le contrôle, rejouer ses entrées hors ligne)"
 
 [[points_evolution]]
 id = "commission"
@@ -740,6 +744,60 @@ droit = "gerer"
 perimetre = ["un billet d'invitation et le compteur de la catégorie"]
 preuve = "le billet relu valide"
 retour = "annuler le billet et rendre l'invitation au quota"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "controle_etat"
+libelle = "Le contrôle d'un événement : entrées, restants, invités entrés, refusés, conflits, les derniers passages"
+risque = "lecture"
+droit = "controler"
+
+[[capacites]]
+id = "controle_chercher"
+libelle = "Chercher un billet par nom ou par numéro (pour une validation à la main)"
+risque = "lecture"
+droit = "controler"
+
+[[capacites]]
+id = "controle_liste"
+libelle = "La liste des billets valides à télécharger avant de passer hors ligne, avec la règle du titulaire"
+risque = "lecture"
+droit = "controler"
+
+[[capacites]]
+id = "conflits"
+libelle = "Les conflits d'entrée : un même billet vu à deux portes pendant une coupure"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "controler"
+libelle = "Présenter un billet à l'entrée (QR ou numéro de contrôle) : authentique, de cet événement, valable, pas déjà utilisé ; consigne le passage"
+risque = "faible"
+droit = "controler"
+perimetre = ["le passage d'un billet à une porte"]
+preuve = "la ligne du journal des passages relue"
+retour = "annuler l'entrée : l'entrée est rendue au billet, la ligne reste marquée annulée"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "controle_synchroniser"
+libelle = "Rejouer les entrées prises hors ligne, dans l'ordre de l'heure de l'appareil : un billet déjà utilisé devient un conflit"
+risque = "faible"
+droit = "controler"
+perimetre = ["des passages et des conflits d'entrée"]
+preuve = "les entrées relues"
+retour = "annuler les entrées rejouées et retirer les conflits créés"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "conflit_arbitrer"
+libelle = "Arbitrer un conflit d'entrée : accepter (même personne ou erreur) ou bloquer le billet"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["l'état d'un conflit et le billet bloqué"]
+preuve = "le conflit relu arbitré"
+retour = "remettre le conflit à arbitrer et le billet valide"
 paliers = ["raconter", "auto", "maitre"]
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
