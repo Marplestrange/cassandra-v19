@@ -1,0 +1,355 @@
+{
+ "point": "memoire.cle_de",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de memoire, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "cle": "Config/Nginx Écoute 8080!"
+   },
+   "sortie": {
+    "valeur": "nginx-ecoute-8080"
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "cle": "  Été--Ça//va  "
+   },
+   "sortie": {
+    "valeur": "ete-ca/va"
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "cle": "???"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "cle": "  espaces  "
+   },
+   "sortie": {
+    "valeur": "espaces"
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "cle": "42"
+   },
+   "sortie": {
+    "valeur": "42"
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "cle": "non"
+   },
+   "sortie": {
+    "valeur": "non"
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "cle": "oui"
+   },
+   "sortie": {
+    "valeur": "oui"
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "cle": 3
+   },
+   "sortie": {
+    "valeur": "3"
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "cle": "a,b;c"
+   },
+   "sortie": {
+    "valeur": "a-b-c"
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "cle": [
+     "a",
+     "b"
+    ]
+   },
+   "sortie": {
+    "valeur": "a-b"
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "cle": "3.14"
+   },
+   "sortie": {
+    "valeur": "3.14"
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "cle": 0.5
+   },
+   "sortie": {
+    "valeur": "0.5"
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "cle": "a"
+   },
+   "sortie": {
+    "valeur": "a"
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "cle": "# titre\ntexte"
+   },
+   "sortie": {
+    "valeur": "titre-texte"
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "cle": [
+     {
+      "a": 1
+     },
+     {
+      "a": 2
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": "a-1-a-2"
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "cle": "{\"a\": 1}"
+   },
+   "sortie": {
+    "valeur": "a-1"
+   }
+  },
+  {
+   "cas": "cas 17",
+   "entree": {
+    "cle": "é à ü"
+   },
+   "sortie": {
+    "valeur": "e-a-u"
+   }
+  },
+  {
+   "cas": "cas 18",
+   "entree": {
+    "cle": "CLE=valeur\n#c\nAUTRE=2"
+   },
+   "sortie": {
+    "valeur": "cle-valeur-c-autre-2"
+   }
+  },
+  {
+   "cas": "cas 19",
+   "entree": {
+    "cle": "abc"
+   },
+   "sortie": {
+    "valeur": "abc"
+   }
+  },
+  {
+   "cas": "cas 20",
+   "entree": {
+    "cle": -1
+   },
+   "sortie": {
+    "valeur": "1"
+   }
+  },
+  {
+   "cas": "cas 21",
+   "entree": {
+    "cle": "1h30"
+   },
+   "sortie": {
+    "valeur": "1h30"
+   }
+  },
+  {
+   "cas": "cas 22",
+   "entree": {
+    "cle": {
+     "nom": "n",
+     "valeur": 3
+    }
+   },
+   "sortie": {
+    "valeur": "nom-n-valeur-3"
+   }
+  },
+  {
+   "cas": "cas 23",
+   "entree": {
+    "cle": "10:30"
+   },
+   "sortie": {
+    "valeur": "10-30"
+   }
+  },
+  {
+   "cas": "cas 24",
+   "entree": {
+    "cle": "tab\tsep"
+   },
+   "sortie": {
+    "valeur": "tab-sep"
+   }
+  },
+  {
+   "cas": "cas 25",
+   "entree": {
+    "cle": "2026-10-17 12:00"
+   },
+   "sortie": {
+    "valeur": "2026-10-17-12-00"
+   }
+  },
+  {
+   "cas": "cas 26",
+   "entree": {
+    "cle": "a.b.c"
+   },
+   "sortie": {
+    "valeur": "a.b.c"
+   }
+  },
+  {
+   "cas": "cas 27",
+   "entree": {
+    "cle": "https://exemple.test/x?y=1"
+   },
+   "sortie": {
+    "valeur": "https-/exemple.test/x-y-1"
+   }
+  },
+  {
+   "cas": "cas 28",
+   "entree": {
+    "cle": {
+     "a": 1,
+     "b": "x"
+    }
+   },
+   "sortie": {
+    "valeur": "a-1-b-x"
+   }
+  },
+  {
+   "cas": "cas 29",
+   "entree": {
+    "cle": [
+     "a",
+     "b",
+     "a"
+    ]
+   },
+   "sortie": {
+    "valeur": "a-b-a"
+   }
+  },
+  {
+   "cas": "cas 30",
+   "entree": {
+    "cle": "exemple.test"
+   },
+   "sortie": {
+    "valeur": "exemple.test"
+   }
+  },
+  {
+   "cas": "cas 31",
+   "entree": {
+    "cle": "/var/www/x/y.txt"
+   },
+   "sortie": {
+    "valeur": "var/www/x/y.txt"
+   }
+  },
+  {
+   "cas": "cas 32",
+   "entree": {
+    "cle": true
+   },
+   "sortie": {
+    "valeur": "true"
+   }
+  },
+  {
+   "cas": "cas 33",
+   "entree": {
+    "cle": "a@exemple.test"
+   },
+   "sortie": {
+    "valeur": "a-exemple.test"
+   }
+  },
+  {
+   "cas": "cas 34",
+   "entree": {
+    "cle": [
+     1,
+     2,
+     3
+    ]
+   },
+   "sortie": {
+    "valeur": "1-2-3"
+   }
+  },
+  {
+   "cas": "cas 35",
+   "entree": {
+    "cle": "2026-10-17T12:00:00"
+   },
+   "sortie": {
+    "valeur": "2026-10-17t12-00-00"
+   }
+  },
+  {
+   "cas": "cas 36",
+   "entree": {
+    "cle": "127.0.0.1"
+   },
+   "sortie": {
+    "valeur": "127.0.0.1"
+   }
+  }
+ ]
+}

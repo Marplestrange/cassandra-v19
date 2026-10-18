@@ -1,0 +1,28 @@
+{
+ "point": "agents.prompt_systeme",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "agent",
+   "compte",
+   "quand",
+   "bloc_memoire",
+   "persona_instance",
+   "ton_compte",
+   "n_outils"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "la sortie est identique à celle de l'ancien code sur chaque cas du corpus",
+  "aucune entrée n'est modifiée",
+  "la sortie survit exactement au tour JSON"
+ ]
+}

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f43bf4
+# VERSION CN : 0.1.0  #d34a9d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les points d'évolution RÉELS du dépôt (les points déclarés ci-dessous) : déclarés sans défaut, équivalents à leur corpus doré (produit par l'ancien code), et protégés par un corpus assez fort pour juger une variante. Tout nouveau po
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f43bf4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d34a9d ▼▼▼
 """Les points d'évolution RÉELS du dépôt (les points déclarés ci-dessous) : déclarés sans défaut, équivalents à leur corpus doré (produit par l'ancien code),
 et protégés par un corpus assez fort pour juger une variante. Tout nouveau point réel s'ajoute à la liste : ce banc est sa porte d'entrée."""
 import json
@@ -90,9 +90,15 @@ POINTS = [("billetterie", "commission", "EC_commission", 0.85),
           ("sensorium", "cron_derniere", "EC_cron_derniere", 0.60),
           ("sensorium", "fp_formes", "EC_fp_formes", 0.80),
           ("sensorium", "sys_formes", "EC_sys_formes", 0.85),
-          ("dns", "normaliser", "EC_normaliser", 1.00)]
+          ("dns", "normaliser", "EC_normaliser", 1.00),
+          ("agents", "prompt_systeme", "EC_prompt_systeme", 0.80),
+          ("contacts", "norm_nom", "EC_norm_nom", 0.85),
+          ("journal", "signature", "EC_signature", 0.65),
+          ("memoire", "cle_de", "EC_cle_de", 0.80),
+          ("planifie", "segments", "EC_segments", 1.00),
+          ("salon", "destinataires_de", "EC_destinataires_de", 0.70)]
 # (cas dorés, variantes fausses) minimaux ; une très petite fonction ne peut pas engendrer trente mutants : son plancher de score est alors de 1,0
-SEUILS = {("dns", "normaliser"): (20, 3), ("billetterie", "commission"): (25, 25), ("sensorium", "cron_derniere"): (13, 9), ("sensorium", "duree_txt"): (14, 4), ("sensorium", "mogwai_table"): (19, 10), ("sensorium", "pente"): (11, 25), ("journal", "niveau"): (20, 6), ("flotte", "duree"): (13, 22), ("sauvegardes", "etat"): (11, 6), ("sauvegardes", "age_mot"): (12, 14), ("planifie", "boucle"): (10, 11), ("planifie", "derive"): (13, 14), ("projets", "glissement"): (12, 8), ("modeles", "messages_ollama"): (15, 5), ("modeles", "appels_de"): (17, 8), ("dns", "derives"): (18, 11), ("notes", "graphe"): (20, 12), ("fastpanel", "audit"): (20, 27), ("memoire", "question_de"): (18, 23), ("memoire", "jetons"): (18, 7), ("memoire", "termes"): (20, 8), ("memoire", "routage"): (20, 3), ("agents", "choisir_outils"): (20, 21), ("jour", "tuiles"): (20, 28), ("notes", "liens_de"): (20, 3), ("dns", "dom_enregistre"): (18, 13), ("contacts", "csv_decoder"): (11, 3), ("contacts", "meilleure"): (17, 11), ("courrier", "html_en_texte"): (20, 16), ("courrier", "motif_technique"): (15, 5), ("courrier", "role_du_dossier"): (20, 6), ("courrier", "adresse_parts"): (13, 3), ("courrier", "decoder_entete"): (13, 3), ("courrier", "utf7_decoder"): (18, 7), ("agents", "resume_resultat"): (20, 26), ("courrier", "roles_uniques"): (16, 9), ("ged", "media_kind"): (20, 15), ("flotte", "lire_metriques"): (20, 11), ("memoire", "json_extraire"): (20, 12), ("contacts", "csv_fiches"): (20, 15), ("notes", "md_vers_html"): (20, 24), ("notes", "lire_entete"): (20, 22), ("contacts", "csv_apparier"): (15, 3)}
+SEUILS = {("salon", "destinataires_de"): (14, 12), ("planifie", "segments"): (20, 3), ("memoire", "cle_de"): (20, 4), ("journal", "signature"): (20, 3), ("contacts", "norm_nom"): (20, 5), ("agents", "prompt_systeme"): (20, 9), ("dns", "normaliser"): (20, 3), ("billetterie", "commission"): (25, 25), ("sensorium", "cron_derniere"): (13, 9), ("sensorium", "duree_txt"): (14, 4), ("sensorium", "mogwai_table"): (19, 10), ("sensorium", "pente"): (11, 25), ("journal", "niveau"): (20, 6), ("flotte", "duree"): (13, 22), ("sauvegardes", "etat"): (11, 6), ("sauvegardes", "age_mot"): (12, 14), ("planifie", "boucle"): (10, 11), ("planifie", "derive"): (13, 14), ("projets", "glissement"): (12, 8), ("modeles", "messages_ollama"): (15, 5), ("modeles", "appels_de"): (17, 8), ("dns", "derives"): (18, 11), ("notes", "graphe"): (20, 12), ("fastpanel", "audit"): (20, 27), ("memoire", "question_de"): (18, 23), ("memoire", "jetons"): (18, 7), ("memoire", "termes"): (20, 8), ("memoire", "routage"): (20, 3), ("agents", "choisir_outils"): (20, 21), ("jour", "tuiles"): (20, 28), ("notes", "liens_de"): (20, 3), ("dns", "dom_enregistre"): (18, 13), ("contacts", "csv_decoder"): (11, 3), ("contacts", "meilleure"): (17, 11), ("courrier", "html_en_texte"): (20, 16), ("courrier", "motif_technique"): (15, 5), ("courrier", "role_du_dossier"): (20, 6), ("courrier", "adresse_parts"): (13, 3), ("courrier", "decoder_entete"): (13, 3), ("courrier", "utf7_decoder"): (18, 7), ("agents", "resume_resultat"): (20, 26), ("courrier", "roles_uniques"): (16, 9), ("ged", "media_kind"): (20, 15), ("flotte", "lire_metriques"): (20, 11), ("memoire", "json_extraire"): (20, 12), ("contacts", "csv_fiches"): (20, 15), ("notes", "md_vers_html"): (20, 24), ("notes", "lire_entete"): (20, 22), ("contacts", "csv_apparier"): (15, 3)}
 
 
 def egal_approx(a, b, tol=1e-9):

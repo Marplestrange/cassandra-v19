@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.0  #61c21e
+# VERSION CN : 0.3.1  #e902ae
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=61c21e ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=e902ae ▼▼▼
 [module]
 id = "contacts"
 nom = "Carnet d'adresses"
-version = "0.3.0"
+version = "0.3.1"
 noyau_min = "0.1.0"
 description = "Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi."
 confiance = "interne"
@@ -319,4 +319,12 @@ libelle = "Le décodage d'un fichier CSV : les octets (base64) en entrée, le te
 contrat = "1.0"
 reference = "points/EC_csv_decoder"
 fonction = "point_csv_decoder"
+runtime = "python"
+
+[[points_evolution]]
+id = "norm_nom"
+libelle = "Le nom, comparable : aplati, débarrassé de sa forme juridique. Un nom sans aucune lettre garde la signature de ses symboles (extrait automatiquement de CN_module.py)"
+contrat = "1.0"
+reference = "points/EC_norm_nom"
+fonction = "point_norm_nom"
 runtime = "python"

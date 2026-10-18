@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.0  #47259c
+# VERSION CN : 0.1.0  #9dac03
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=47259c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9dac03 ▼▼▼
 """Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils."""
 from __future__ import annotations
 
@@ -42,18 +42,27 @@ REGLES = """## RÈGLES (non négociables)
 6. Si un doute est posé à la fin du bloc mémoire, pose-le à la personne en une phrase, à la fin de ta réponse, avec ses choix."""
 
 
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 def prompt_systeme(agent, compte, quand, bloc_memoire, persona_instance, ton_compte, n_outils):
-    nom, role = PERSONAS.get(agent, PERSONAS["cassandra"])
-    parties = ["Tu es %s, %s" % (nom, role), "Nous sommes le %s. Tu parles avec **%s**." % (quand, compte)]
-    if persona_instance:
-        parties.append("## TON TON (réglé pour toute l'instance)\n" + str(persona_instance).strip()[:2000])
-    if ton_compte:
-        parties.append("## CE QUE %s T'A DEMANDÉ SUR TA MANIÈRE\n%s" % (compte, str(ton_compte).strip()[:2000]))
-    parties.append("## TES OUTILS\nTu en as %d présentés ; pour en trouver d'autres, `%s` (une recherche par mots) puis `%s` (clé de la capacité + arguments). Chaque outil dit son risque et son palier." % (n_outils, META_CHERCHE, META_APPELER))
-    if bloc_memoire:
-        parties.append("## MÉMOIRE (ce que tu sais, avec sa fraîcheur)\n" + bloc_memoire)
-    parties.append(REGLES)
-    return "\n\n".join(parties)
+    """prompt_systeme. Le calcul est un POINT D'ÉVOLUTION : points/EC_prompt_systeme.py."""
+    return _appeler_point("prompt_systeme", {"agent": agent, "compte": compte, "quand": quand, "bloc_memoire": bloc_memoire, "persona_instance": persona_instance, "ton_compte": ton_compte, "n_outils": n_outils})["valeur"]
 
 
 def mots(texte):

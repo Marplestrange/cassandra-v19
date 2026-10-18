@@ -42,6 +42,24 @@ from datetime import datetime, timedelta, timezone
 ROLES = ("claude", "itare", "cassandra")
 
 
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 def _utcnow():
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
@@ -144,13 +162,8 @@ def _age_s(ts) -> int:
 
 
 def _signature(texte: str) -> str:
-    """Empreinte d'une erreur, débarrassée de ce qui change à chaque occurrence (ports, adresses, dates)."""
-    t = (texte or "").lower()
-    t = re.sub(r"\d{4}-\d{2}-\d{2}[t ]\d{2}:\d{2}(:\d{2})?", " ", t)
-    t = re.sub(r"0x[0-9a-f]+|\b\d+\b", "N", t)
-    t = re.sub(r"/[\w./\-]+", "/PATH", t)
-    t = re.sub(r"\s+", " ", t).strip()
-    return hashlib.sha1(t[:400].encode("utf-8")).hexdigest()[:16]
+    """Empreinte d'une erreur, débarrassée de ce qui change à chaque occurrence (ports, adresses, dates). Le calcul est un POINT D'ÉVOLUTION : points/EC_signature.py."""
+    return _appeler_point("signature", {"texte": texte})["valeur"]
 
 
 def brancher(ctx):

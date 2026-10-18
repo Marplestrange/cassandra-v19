@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : journal
 # ZONE       : CN
-# VERSION CN : 0.1.0  #41880b
+# VERSION CN : 0.1.1  #ff772e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le journal des agents (les consultations entre les trois rôles — claude, itare, cassandra — inscrites avec la question et la réponse) et le lecteur unifié des journaux : les tables des modules, les fichiers du système, un flux fusionné, une ligne du temps, les anomalies jamais vues et les veilles sur motif. Cloisonné en lecture : on ne lit que ce qui existe.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=41880b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=ff772e ▼▼▼
 [module]
 id = "journal"
 nom = "Le Journal"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "Le journal des agents (les consultations entre les trois rôles — claude, itare, cassandra — inscrites avec la question et la réponse) et le lecteur unifié des journaux : les tables des modules, les fichiers du système, un flux fusionné, une ligne du temps, les anomalies jamais vues et les veilles sur motif. Cloisonné en lecture : on ne lit que ce qui existe."
 confiance = "interne"
@@ -188,4 +188,12 @@ libelle = "Le niveau d'une ligne de journal (critique, erreur, avertissement, in
 contrat = "1.0"
 reference = "points/EC_niveau"
 fonction = "point_niveau"
+runtime = "python"
+
+[[points_evolution]]
+id = "signature"
+libelle = "Empreinte d'une erreur, débarrassée de ce qui change à chaque occurrence (ports, adresses, dates) (extrait automatiquement de CN_module.py)"
+contrat = "1.0"
+reference = "points/EC_signature"
+fonction = "point_signature"
 runtime = "python"

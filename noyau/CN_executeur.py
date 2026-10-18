@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #388868
+# VERSION CN : 0.1.0  #1cde56
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=388868 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1cde56 ▼▼▼
 """L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 
 Le contrat de souveraineté tient ici, en un seul endroit :
@@ -139,7 +139,9 @@ class Executeur:
         except Exception as ex:
             log.exception("échec de %s", e.cle)
             self._evt("capacite.echouee", e, acteur, demande, {"erreur": str(ex)[:300]}, compte)
-            self._apprendre(e, False, humain, demande, compte)
+            # un refus de validation ne rétrograde pas la capacité quand il vient d'un humain OU d'un visiteur anonyme : sinon deux visiteurs qui se trompent de jeton
+            # feraient redescendre « payer » au palier « raconter » et fermeraient la boutique à tout le monde
+            self._apprendre(e, False, humain or acteur == "anonyme", demande, compte)
             return {"statut": "echec", "erreur": str(ex), "evenement": demande}
         res = {} if res is None else res
         # consigné AVANT la preuve : de quoi prouver ou défaire après une mort du processus

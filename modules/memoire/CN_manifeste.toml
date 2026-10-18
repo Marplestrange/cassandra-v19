@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d62f2e
+# VERSION CN : 0.1.1  #e1e701
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La mémoire de Cassandra : un souvenir est un fait daté, prouvé, propriétaire, corrigeable d'une phrase. Une seule porte d'écriture avec ses gardes (secret, consigne, données sensibles, sujet, quotas), des versions liées plutôt que des éditions, un veto pour les écritures critiques, des doutes posés à l'humain, des épisodes, des rappels conditionnés aux capteurs, un journal chaîné par empreintes. Un état se mesure, il ne se rappelle pas : « je ne sais pas » est une réponse de succès. Cloisonnée : on ne voit que sa portée.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d62f2e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=e1e701 ▼▼▼
 [module]
 id = "memoire"
 nom = "Mémoire"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "La mémoire de Cassandra : un souvenir est un fait daté, prouvé, propriétaire, corrigeable d'une phrase. Une seule porte d'écriture avec ses gardes (secret, consigne, données sensibles, sujet, quotas), des versions liées plutôt que des éditions, un veto pour les écritures critiques, des doutes posés à l'humain, des épisodes, des rappels conditionnés aux capteurs, un journal chaîné par empreintes. Un état se mesure, il ne se rappelle pas : « je ne sais pas » est une réponse de succès. Cloisonnée : on ne voit que sa portée."
 confiance = "interne"
@@ -347,4 +347,12 @@ libelle = "La question que Cassandra pose pour lever un doute de sa mémoire (ve
 contrat = "1.0"
 reference = "points/EC_question_de"
 fonction = "point_question_de"
+runtime = "python"
+
+[[points_evolution]]
+id = "cle_de"
+libelle = "Un slug : segments ascii en minuscules, jamais une phrase, jamais d'accent ni d'espace. La catégorie n'entre PAS dans la clé : une même réalité a une seule clé (extrait automatiquement de CN_outils.py)"
+contrat = "1.0"
+reference = "points/EC_cle_de"
+fonction = "point_cle_de"
 runtime = "python"

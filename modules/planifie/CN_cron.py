@@ -41,6 +41,25 @@ DESTRUCTEURS_EN_PLUS = [
 ETAT_ORDRE = {"cassé": 0, "échec": 1, "muet": 2, "inconnu": 3, "ok": 4, "désactivé": 5}
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 # ------------------------------------------------------------------ expressions
 def champ(spec, bas, haut):
     """Développe un champ cron en ensemble de valeurs (`*`, `a`, `a-b`, `a,b,c`, `*/n`, `a-b/n`). Ensemble vide si le champ est illisible : le cron est alors non projetable plutôt que d'inventer des exécutions."""
@@ -206,22 +225,8 @@ def reference(user, commande):
 
 # ------------------------------------------------------------------ la commande
 def segments(cmd):
-    """Une commande shell découpée en segments ; None si elle n'est pas analysable (l'appelant la traite alors avec prudence)."""
-    lexer = shlex.shlex(cmd, posix=True, punctuation_chars=True)
-    lexer.whitespace_split = True
-    try:
-        tokens = list(lexer)
-    except ValueError:
-        return None
-    segs, cur = [], []
-    for t in tokens:
-        if t in SEPARATEURS:
-            segs.append(cur)
-            cur = []
-        else:
-            cur.append(t)
-    segs.append(cur)
-    return [s for s in segs if s]
+    """Une commande shell découpée en segments ; None si elle n'est pas analysable (l'appelant la traite alors avec prudence). Le calcul est un POINT D'ÉVOLUTION : points/EC_segments.py."""
+    return _appeler_point("segments", {"cmd": cmd})["valeur"]
 
 
 def cibles(commande):

@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.1  #5e8bfa
+# VERSION CN : 0.1.2  #67aee3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Tout ce qui tourne tout seul sur la machine, et est-ce que ça va : les tâches de Cassandra et celles du système (crontabs, cron.d) fusionnées, l'état de chacune (cassée, en échec, muette), les exécutions réelles consignées par un enrobage, le verrou et la fenêtre, l'enchaînement, la maintenance, les collisions. Réservé à l'administrateur ; privilégié par nature, il passe par le courtier.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=5e8bfa ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=67aee3 ▼▼▼
 [module]
 id = "planifie"
 nom = "Tâches planifiées"
-version = "0.1.1"
+version = "0.1.2"
 noyau_min = "0.1.0"
 description = "Tout ce qui tourne tout seul sur la machine, et est-ce que ça va : les tâches de Cassandra et celles du système (crontabs, cron.d) fusionnées, l'état de chacune (cassée, en échec, muette), les exécutions réelles consignées par un enrobage, le verrou et la fenêtre, l'enchaînement, la maintenance, les collisions. Réservé à l'administrateur ; privilégié par nature, il passe par le courtier."
 confiance = "interne"
@@ -311,4 +311,12 @@ libelle = "Deux tâches qui s'attendent l'une l'autre ne partiraient jamais : la
 contrat = "1.0"
 reference = "points/EC_boucle"
 fonction = "point_boucle"
+runtime = "python"
+
+[[points_evolution]]
+id = "segments"
+libelle = "Une commande shell découpée en segments ; None si elle n'est pas analysable (l'appelant la traite alors avec prudence) (extrait automatiquement de CN_cron.py)"
+contrat = "1.0"
+reference = "points/EC_segments"
+fonction = "point_segments"
 runtime = "python"

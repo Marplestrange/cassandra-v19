@@ -982,3 +982,63 @@ perimetre = ["la date de l'événement, la boîte d'envoi, la disponibilité des
 preuve = "la date relue"
 retour = "remettre l'ancienne date ; un courriel déjà parti ne se rappelle pas"
 paliers = ["raconter", "auto", "maitre"]
+
+[[moteurs]]
+id = "attente"
+libelle = "Proposer les places libérées à la liste d'attente, dans l'ordre d'inscription"
+mode = "periodique"
+toutes_les_s = 120
+duree_max_s = 30
+
+[[capacites]]
+id = "public_attente_inscrire"
+libelle = "S'inscrire sur la liste d'attente d'un billet épuisé (public, limité par origine ; refusé s'il reste des places)"
+risque = "faible"
+perimetre = ["une inscription sur la liste d'attente"]
+preuve = "l'inscription relue"
+retour = "retirer l'inscription"
+paliers = ["auto", "raconter"]
+qui = ["anonyme"]
+
+[[capacites]]
+id = "public_attente_suivre"
+libelle = "Suivre SON inscription sur la liste d'attente avec son jeton : rang, ou l'offre à payer (public)"
+risque = "lecture"
+qui = ["anonyme"]
+
+[[capacites]]
+id = "public_attente_retirer"
+libelle = "Se retirer de la liste d'attente ou refuser une offre : les places retenues reviennent et passent à la personne suivante (public, par jeton)"
+risque = "faible"
+perimetre = ["l'inscription et, si une offre était faite, la commande qui retenait les places"]
+preuve = "l'inscription relue retirée"
+retour = "remettre l'inscription dans son état d'avant (l'offre reprend si sa réservation court encore)"
+paliers = ["auto", "raconter"]
+qui = ["anonyme"]
+
+[[capacites]]
+id = "public_payer"
+libelle = "Payer une commande qui retient déjà ses places (offre de la liste d'attente) : rend la page de paiement ou les instructions de virement (public, par jeton de suivi)"
+risque = "faible"
+perimetre = ["la page de paiement chez le prestataire, ou le passage d'une commande en attente de virement"]
+preuve = "la commande relue avec son moyen de paiement"
+retour = "remettre la commande dans son état d'avant ; une page de paiement non payée n'encaisse rien"
+paliers = ["auto", "raconter"]
+qui = ["anonyme"]
+
+[[capacites]]
+id = "attente_liste"
+libelle = "Lire la liste d'attente d'un événement : qui attend quoi, dans quel ordre, quelles offres sont faites"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "attente_proposer"
+libelle = "Faire maintenant les offres que le stock permet à la liste d'attente (les places sont retenues pour la durée du réglage ; un courriel part)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["des commandes en cours qui retiennent des places, la boîte d'envoi, la liste d'attente"]
+preuve = "chaque inscription servie relue offerte"
+retour = "annuler les offres : les places reviennent, les inscrits reprennent leur rang"
+paliers = ["raconter", "auto", "maitre"]
+

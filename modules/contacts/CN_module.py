@@ -60,6 +60,24 @@ SYSTEME = ("cassandra", "itare", "noyau", "operateur")
 PRIVES = ("emails", "addr", "phone", "mobile", "address")
 CSV_MAX = 6 * 1024 * 1024
 IMPORT_MAX = 5000
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 # ------------------------------------------------------------------ comparaison de noms, numéros, sites
 def aplatir(s):
     t = unicodedata.normalize("NFD", str(s or ""))
@@ -68,14 +86,8 @@ def aplatir(s):
 
 
 def norm_nom(s):
-    """Le nom, comparable : aplati, débarrassé de sa forme juridique. Un nom sans aucune lettre garde la signature de ses symboles."""
-    t = aplatir(s)
-    if not t:
-        brut = " ".join(str(s or "").split())
-        return ("sym:" + brut.lower()) if brut else ""
-    for f in FORMES:
-        t = re.sub(r"(^|\s)%s(\s|$)" % re.escape(f), " ", t)
-    return " ".join(t.split())
+    """Le nom, comparable : aplati, débarrassé de sa forme juridique. Un nom sans aucune lettre garde la signature de ses symboles. Le calcul est un POINT D'ÉVOLUTION : points/EC_norm_nom.py."""
+    return _appeler_point("norm_nom", {"s": s})["valeur"]
 
 
 _point = None          # posé par brancher() : les points d'évolution du module (ctx.point)

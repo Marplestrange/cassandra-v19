@@ -147,6 +147,24 @@ Contraintes : ne cite un terme (nom de site, de service, de fichier, de machine)
 === FIN ==="""
 
 
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 def maintenant():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -212,15 +230,8 @@ def a_un_secret(texte):
 
 
 def cle_de(cle):
-    """Un slug : segments ascii en minuscules, jamais une phrase, jamais d'accent ni d'espace. La catégorie n'entre PAS dans la clé : une même réalité a une seule clé."""
-    s = unicodedata.normalize("NFKD", str(cle or "")).encode("ascii", "ignore").decode().lower().strip()
-    for c in CATEGORIES:
-        if s.startswith(c + "/"):
-            s = s[len(c) + 1:]
-            break
-    s = re.sub(r"[^a-z0-9/._-]+", "-", s)
-    s = re.sub(r"-{2,}", "-", s)
-    return re.sub(r"/{2,}", "/", s).strip("-/.")[:100]
+    """Un slug : segments ascii en minuscules, jamais une phrase, jamais d'accent ni d'espace. La catégorie n'entre PAS dans la clé : une même réalité a une seule clé. Le calcul est un POINT D'ÉVOLUTION : points/EC_cle_de.py."""
+    return _appeler_point("cle_de", {"cle": cle})["valeur"]
 
 
 def langue(texte):

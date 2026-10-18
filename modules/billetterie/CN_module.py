@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d66757
+# VERSION CN : 0.1.0  #5ffe89
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : branchement du module.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d66757 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5ffe89 ▼▼▼
 """La billetterie : branchement du module.
 
 Un événement, une salle, des artistes et des revendeurs, des formules de rémunération, des billets, une caisse, un contrôle à l'entrée, une boutique publique,
@@ -25,6 +25,7 @@ n'est réutilisé, chaque écriture se défait. La suite (registre, ventes, cais
 from __future__ import annotations
 
 from . import CN_annulation as annulation
+from . import CN_attente as attente
 from . import CN_entites as entites
 from . import CN_boutique as boutique
 from . import CN_caisse as caisse
@@ -44,7 +45,8 @@ def brancher(ctx):
     commandes.brancher(ctx, db)
     controle.brancher(ctx, db)
     caisse.brancher(ctx, db)
-    boutique.brancher(ctx, db)
+    outils = boutique.brancher(ctx, db)
+    attente.brancher(ctx, db, outils)
     annulation.brancher(ctx, db)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

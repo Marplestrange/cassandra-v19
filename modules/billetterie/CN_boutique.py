@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9b87f9
+# VERSION CN : 0.1.0  #3877b6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : la boutique PUBLIQUE (calendrier, page d'un événement, panier, commande, suivi, webhook du prestataire).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9b87f9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3877b6 ▼▼▼
 """Billetterie : la boutique PUBLIQUE (calendrier, page d'un événement, panier, commande, suivi, webhook du prestataire).
 
 Ces capacités se déclarent publiques (`qui = ["anonyme"]`) : elles s'exécutent avant toute connexion. Donc :
@@ -126,6 +126,7 @@ def brancher(ctx, db):
                     etat = "épuisé"
                 types.append({"ref": t["ref"], "nom": t["nom"], "description": t["description"], "prix": t["prix"], "entrees": t["entrees"], "etat": etat,
                               "plus_que": st["restant"] if (st["restant"] is not None and 0 < st["restant"] <= 10) else None})
+            attente = bool(ctx.reglage("liste_attente")) and e["statut"] in ("en vente", "complet")
             mode = v.mode_achat(ctx, e)
             return {"evenement": {"ref": e["ref"], "nom": e["nom"], "date": e["date_iso"], "description": e["description"], "accroche": e["accroche"], "tags": e["tags"],
                                   "portes": e["portes"], "debut": e["debut"], "fin": e["fin"], "age": e["age"], "configuration": e["conf"], "etat": etat_public(tx, e, s)},
@@ -133,7 +134,7 @@ def brancher(ctx, db):
                     "programme": prog, "billets": types, "places_restantes": s["restant"],
                     "achat": {"compte_obligatoire": mode == "obligatoire", "frais_sans_compte": (e["frais_sans_compte"] if e["frais_sans_compte"] is not None else int(ctx.reglage("frais_sans_compte"))),
                               "don_possible": ctx.reglage("titulaire_statut") == "association"},
-                    "paiements": moyens(), "organisateur": {"nom": ctx.reglage("titulaire_nom"), "mail": ctx.reglage("titulaire_mail")}}
+                    "paiements": moyens(), "liste_attente": attente, "organisateur": {"nom": ctx.reglage("titulaire_nom"), "mail": ctx.reglage("titulaire_mail")}}
 
     def _lignes(tx, e, lignes):
         out = []
@@ -150,6 +151,24 @@ def brancher(ctx, db):
             e = evt_pub(tx, evenement)
             d = v.devis(ctx, tx, e, _lignes(tx, e, lignes), canal="boutique", code_promo=code_promo, don=don, sans_compte=bool(sans_compte))
         return {"lignes": d["lignes"], "places": d["places"], "sous_total": d["sous_total"], "remise": d["remise"], "promo": d["promo"], "don": d["don"], "frais": d["frais"], "total": d["total"]}
+
+    # ── préparer le paiement d'une commande qui retient déjà ses places ──────
+    def payer(cmd, e, moyen, abandonner_si_echec=False):
+        """Rend de quoi payer : les instructions de virement, ou l'adresse de la page de paiement chez le prestataire. Sert à la commande directe ET à l'offre faite à la liste d'attente."""
+        if moyen == "virement":
+            with db.transaction() as tx:
+                tx.execute("UPDATE commandes SET moyen = 'virement', etat = 'en_attente', expire_le = MAX(expire_le, ?) WHERE id = ?", (v.horloge() + v.DUREE_VIREMENT_S, cmd["id"]))
+            return {"type": "virement", "iban": ctx.reglage("iban"), "beneficiaire": ctx.reglage("virement_beneficiaire") or ctx.reglage("titulaire_nom"), "reference": cmd["ref"], "montant": cmd["total"], "delai_jours": 3}
+        try:
+            page = stripe.creer_page_de_paiement(ctx.reglage("stripe_cle_secrete"), cmd, e, v.url(ctx, "/c/%s?s=%s" % (cmd["ref"], cmd["suivi"])), v.url(ctx, "/e/%s" % e["ref"]), http=HTTP.get("stripe"))
+        except RuntimeError as ex:
+            if abandonner_si_echec:
+                with db.transaction() as tx:
+                    tx.execute("UPDATE commandes SET etat = 'annulee', note = ? WHERE id = ?", (str(ex)[:200], cmd["id"]))
+            raise ValueError("le paiement n'a pas pu être préparé : %s" % ex)
+        with db.transaction() as tx:
+            tx.execute("UPDATE commandes SET session_prestataire = ?, moyen = 'stripe' WHERE id = ?", (page["id"], cmd["id"]))
+        return {"type": "stripe", "url": page["url"]}
 
     # ── commander ────────────────────────────────────────────────────────────
     def commander(c, evenement="", lignes=None, nom="", mail="", moyen="", code_promo="", don=0, sans_compte=False, code_revendeur="", ip="", consentement=False):
@@ -176,19 +195,7 @@ def brancher(ctx, db):
                 tx.execute("UPDATE clients SET consentement = 1 WHERE mail = ?", (mail,))
             cmd = dict(tx.execute("SELECT * FROM commandes WHERE id = ?", (cid,)).fetchone())
         sortie = {"commande": cmd["ref"], "suivi": cmd["suivi"], "total": d["total"], "places": d["places"], "expire_le": cmd["expire_le"], "attribution": cmd["attribution"]}
-        if moyen == "virement":
-            sortie["paiement"] = {"type": "virement", "iban": ctx.reglage("iban"), "beneficiaire": ctx.reglage("virement_beneficiaire") or ctx.reglage("titulaire_nom"), "reference": cmd["ref"], "montant": d["total"],
-                                  "delai_jours": 3}
-            return sortie
-        try:
-            page = stripe.creer_page_de_paiement(ctx.reglage("stripe_cle_secrete"), cmd, e, v.url(ctx, "/c/%s?s=%s" % (cmd["ref"], cmd["suivi"])), v.url(ctx, "/e/%s" % e["ref"]), http=HTTP.get("stripe"))
-        except RuntimeError as ex:
-            with db.transaction() as tx:
-                tx.execute("UPDATE commandes SET etat = 'annulee', note = ? WHERE id = ?", (str(ex)[:200], cid))
-            raise ValueError("le paiement n'a pas pu être préparé : %s" % ex)
-        with db.transaction() as tx:
-            tx.execute("UPDATE commandes SET session_prestataire = ? WHERE id = ?", (page["id"], cid))
-        sortie["paiement"] = {"type": "stripe", "url": page["url"]}
+        sortie["paiement"] = payer(cmd, e, moyen, abandonner_si_echec=True)
         return sortie
 
     def prouver_commander(c, res):
@@ -283,6 +290,35 @@ def brancher(ctx, db):
         return {"courriels": db.lire(sql + " ORDER BY id DESC LIMIT ?", tuple(p) + (max(1, min(int(limite or 100), 500)),))}
     ctx.implementer("courriels", courriels)
     ctx.implementer("public_webhook_stripe", webhook_stripe, prouver_webhook, defaire_webhook, simuler=lambda x, **_: "recevrait un événement de Stripe")
+
+    def payer_commande(c, commande="", suivi="", moyen=""):
+        """Payer une commande qui retient déjà ses places (l'offre faite à la liste d'attente, ou une commande reprise) : même jeton de suivi que pour la consulter."""
+        en_ligne()
+        if moyen not in {m["id"] for m in moyens()}:
+            raise ValueError("ce moyen de paiement n'est pas proposé")
+        with db.transaction() as tx:
+            x = tx.execute("SELECT * FROM commandes WHERE ref = ?", (str(commande).strip().upper(),)).fetchone()
+            if not x or not x["suivi"] or not hmac.compare_digest(str(x["suivi"]), str(suivi)):
+                raise ValueError("commande introuvable")
+            x = dict(x)
+            if x["etat"] not in ("retenue", "en_attente") or x["expire_le"] <= v.horloge():
+                raise ValueError("cette réservation n'est plus valable")
+            e = r.ligne(tx, "evenements", x["evenement_id"])
+        return {"commande": x["ref"], "total": x["total"], "paiement": payer(x, e, moyen), "moyen": moyen,
+                "avant": {"id": x["id"], "etat": x["etat"], "moyen": x["moyen"], "expire_le": x["expire_le"], "session_prestataire": x["session_prestataire"]}}
+
+    def prouver_payer(c, res):
+        x = db.lire("SELECT moyen FROM commandes WHERE ref = ?", (res["commande"],))
+        return bool(x) and x[0]["moyen"] == res["moyen"]
+
+    def defaire_payer(c, res):
+        a = res["avant"]
+        with db.transaction() as tx:
+            tx.execute("UPDATE commandes SET etat = ?, moyen = ?, expire_le = ?, session_prestataire = ? WHERE id = ? AND etat IN ('retenue','en_attente')",
+                       (a["etat"], a["moyen"], a["expire_le"], a["session_prestataire"], a["id"]))
+
+    ctx.implementer("public_payer", payer_commande, prouver_payer, defaire_payer, simuler=lambda x, commande="", **_: "préparerait le paiement de la commande %s" % commande)
+    return {"payer": payer, "en_ligne": en_ligne, "evt_pub": evt_pub, "moyens": moyens}
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

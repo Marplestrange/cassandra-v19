@@ -1,0 +1,436 @@
+{
+ "point": "planifie.segments",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de planifie, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "cmd": "1h30"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "1h30"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "cmd": "true"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "true"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "cmd": "a,b;c"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "a,b"
+     ],
+     [
+      "c"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "cmd": "a.b.c"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "a.b.c"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "cmd": "127.0.0.1"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "127.0.0.1"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "cmd": "3.14"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "3.14"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "cmd": "<b>gras</b> et <i>x</i>"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "<",
+      "b",
+      ">",
+      "gras",
+      "<",
+      "/b",
+      ">",
+      "et",
+      "<",
+      "i",
+      ">",
+      "x",
+      "<",
+      "/i",
+      ">"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "cmd": "{\"a\": 1}"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "{a:",
+      "1}"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "cmd": "abc"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "abc"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "cmd": "Nom Prénom <a@exemple.test>"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "Nom",
+      "Prénom",
+      "<",
+      "a@exemple.test",
+      ">"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "cmd": "  espaces  "
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "espaces"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "cmd": "a"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "a"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "cmd": "CLE=valeur\n#c\nAUTRE=2"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "CLE=valeur",
+      "AUTRE=2"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "cmd": "é à ü"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "é",
+      "à",
+      "ü"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "cmd": "a@exemple.test"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "a@exemple.test"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "cmd": "# titre\ntexte"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "texte"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 17",
+   "entree": {
+    "cmd": "oui"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "oui"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 18",
+   "entree": {
+    "cmd": "tab\tsep"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "tab",
+      "sep"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 19",
+   "entree": {
+    "cmd": "Bonjour le monde"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "Bonjour",
+      "le",
+      "monde"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 20",
+   "entree": {
+    "cmd": "exemple.test"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "exemple.test"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 21",
+   "entree": {
+    "cmd": null
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 22",
+   "entree": {
+    "cmd": "ligne1\nligne2\n"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "ligne1",
+      "ligne2"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 23",
+   "entree": {
+    "cmd": "42"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "42"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 24",
+   "entree": {
+    "cmd": "non"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "non"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 25",
+   "entree": {
+    "cmd": "2026-10-17 12:00"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "2026-10-17",
+      "12:00"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 26",
+   "entree": {
+    "cmd": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 27",
+   "entree": {
+    "cmd": "/var/www/x/y.txt"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "/var/www/x/y.txt"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 28",
+   "entree": {
+    "cmd": "-1"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "-1"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 29",
+   "entree": {
+    "cmd": "https://exemple.test/x?y=1"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "https://exemple.test/x?y=1"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 30",
+   "entree": {
+    "cmd": "10:30"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "10:30"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "cas 31",
+   "entree": {
+    "cmd": "2026-10-17T12:00:00"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "2026-10-17T12:00:00"
+     ]
+    ]
+   }
+  }
+ ]
+}

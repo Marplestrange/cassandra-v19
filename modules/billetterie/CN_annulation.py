@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3c4228
+# VERSION CN : 0.1.0  #b3878e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : annuler ou reporter un événement, par une seule procédure.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3c4228 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b3878e ▼▼▼
 """Billetterie : annuler ou reporter un événement, par une seule procédure.
 
 Deux gestes, une seule règle : on annonce d'abord les chiffres (`evenement_impact`, qui n'écrit rien), puis on agit.
@@ -23,6 +23,7 @@ Chaque geste se prouve et se défait ; défaire un courriel déjà parti est imp
 """
 from __future__ import annotations
 
+from . import CN_attente as att
 from . import CN_regles as r
 from . import CN_registre as reg
 from . import CN_ventes as v
@@ -111,9 +112,10 @@ def brancher(ctx, db):
                                 "Bonjour %s,\n\n« %s » (%s) est annulé.\nMotif : %s\nLes ventes que vous avez faites sont remboursées et les commissions correspondantes sont reprises.\n\n%s" % (rv["nom"], e["nom"], e["date_iso"], motif, org()))
                 if cid:
                     courriels.append(cid)
+            attente_avant = att.fermer_evenement(tx, e["id"])
             tx.execute("UPDATE evenements SET statut = 'annulé', publie = 0, motif_annulation = ? WHERE id = ?", (motif, e["id"]))
         return {"id": e["id"], "avant": {"statut": e["statut"], "publie": e["publie"], "motif": e["motif_annulation"]}, "remboursees": remboursees, "abandonnees": abandonnees,
-                "invitations_annulees": invites, "courriels": courriels, "reste_a_faire": restes, "chiffres": chiffres}
+                "invitations_annulees": invites, "attente_fermee": attente_avant, "courriels": courriels, "reste_a_faire": restes, "chiffres": chiffres}
 
     def prouver_annuler(c, res):
         x = db.lire("SELECT statut FROM evenements WHERE id = ?", (res["id"],))
@@ -131,6 +133,8 @@ def brancher(ctx, db):
                 tx.execute("UPDATE commandes SET etat = ?, note = '' WHERE id = ? AND etat = 'annulee'", (a["etat"], a["id"]))
             for bid in res["invitations_annulees"]:
                 tx.execute("UPDATE billets SET etat = 'valide' WHERE id = ?", (bid,))
+            for a in res.get("attente_fermee", []):
+                tx.execute("UPDATE attente SET etat = ? WHERE id = ? AND etat = 'retiree'", (a["etat"], a["id"]))
             for mid in res["courriels"]:
                 tx.execute("DELETE FROM courriels WHERE id = ? AND etat = 'a_envoyer'", (mid,))
             tx.execute("UPDATE evenements SET statut = ?, publie = ?, motif_annulation = ? WHERE id = ?", (res["avant"]["statut"], res["avant"]["publie"], res["avant"]["motif"], res["id"]))

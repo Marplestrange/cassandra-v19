@@ -58,6 +58,7 @@ def guillemets(s):
 
 
 def brancher(ctx):
+    k._point = ctx.point
     db = ctx.stockage
     ctx.dossier_donnees = None
     cache = {"t": 0.0, "jobs": None, "erreur": ""}

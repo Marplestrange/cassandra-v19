@@ -1,0 +1,304 @@
+{
+ "point": "journal.signature",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de journal, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "texte": "connexion refusée sur le port 54321"
+   },
+   "sortie": {
+    "valeur": "2d7309e8c74b4a93"
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "texte": "connexion refusée sur le port 54322"
+   },
+   "sortie": {
+    "valeur": "2d7309e8c74b4a93"
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "texte": "connexion refusée"
+   },
+   "sortie": {
+    "valeur": "a52ba60d53149067"
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "texte": "disque plein"
+   },
+   "sortie": {
+    "valeur": "fb7038758972c203"
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "texte": []
+   },
+   "sortie": {
+    "valeur": "da39a3ee5e6b4b0d"
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "texte": "ligne1\nligne2\n"
+   },
+   "sortie": {
+    "valeur": "177d8e9e38800274"
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "texte": "-1"
+   },
+   "sortie": {
+    "valeur": "7cac39ef1a3aa10f"
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "texte": "a,b;c"
+   },
+   "sortie": {
+    "valeur": "5f7661bbb80d2d79"
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "texte": "a@exemple.test"
+   },
+   "sortie": {
+    "valeur": "15931dc0e4f603f1"
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "texte": "a"
+   },
+   "sortie": {
+    "valeur": "86f7e437faa5a7fc"
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "texte": "42"
+   },
+   "sortie": {
+    "valeur": "b51a60734da64be0"
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "texte": "127.0.0.1"
+   },
+   "sortie": {
+    "valeur": "4661efaf55cb3668"
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "texte": "https://exemple.test/x?y=1"
+   },
+   "sortie": {
+    "valeur": "d673c23636aac6b5"
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "texte": "Bonjour le monde"
+   },
+   "sortie": {
+    "valeur": "0cf446c52e9d8a8f"
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "texte": "1h30"
+   },
+   "sortie": {
+    "valeur": "8891b690fdb652be"
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "texte": "CLE=valeur\n#c\nAUTRE=2"
+   },
+   "sortie": {
+    "valeur": "283362f2d7ac3ac9"
+   }
+  },
+  {
+   "cas": "cas 17",
+   "entree": {
+    "texte": "é à ü"
+   },
+   "sortie": {
+    "valeur": "c257dbd47bb99c06"
+   }
+  },
+  {
+   "cas": "cas 18",
+   "entree": {
+    "texte": "tab\tsep"
+   },
+   "sortie": {
+    "valeur": "e4cec4883d376c95"
+   }
+  },
+  {
+   "cas": "cas 19",
+   "entree": {
+    "texte": "Nom Prénom <a@exemple.test>"
+   },
+   "sortie": {
+    "valeur": "7836831aea8c9e76"
+   }
+  },
+  {
+   "cas": "cas 20",
+   "entree": {
+    "texte": "{\"a\": 1}"
+   },
+   "sortie": {
+    "valeur": "a282ce53a053e55a"
+   }
+  },
+  {
+   "cas": "cas 21",
+   "entree": {
+    "texte": "exemple.test"
+   },
+   "sortie": {
+    "valeur": "6873fb092ec6ba1c"
+   }
+  },
+  {
+   "cas": "cas 22",
+   "entree": {
+    "texte": "true"
+   },
+   "sortie": {
+    "valeur": "5ffe533b830f08a0"
+   }
+  },
+  {
+   "cas": "cas 23",
+   "entree": {
+    "texte": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   },
+   "sortie": {
+    "valeur": "47372a7b27569d25"
+   }
+  },
+  {
+   "cas": "cas 24",
+   "entree": {
+    "texte": "  espaces  "
+   },
+   "sortie": {
+    "valeur": "e41f3773189d78f7"
+   }
+  },
+  {
+   "cas": "cas 25",
+   "entree": {
+    "texte": "abc"
+   },
+   "sortie": {
+    "valeur": "a9993e364706816a"
+   }
+  },
+  {
+   "cas": "cas 26",
+   "entree": {
+    "texte": "non"
+   },
+   "sortie": {
+    "valeur": "37031f99ac78580c"
+   }
+  },
+  {
+   "cas": "cas 27",
+   "entree": {
+    "texte": "# titre\ntexte"
+   },
+   "sortie": {
+    "valeur": "e06fd3b992fe35bb"
+   }
+  },
+  {
+   "cas": "cas 28",
+   "entree": {
+    "texte": "a.b.c"
+   },
+   "sortie": {
+    "valeur": "62322b00c8c084c1"
+   }
+  },
+  {
+   "cas": "cas 29",
+   "entree": {
+    "texte": "<b>gras</b> et <i>x</i>"
+   },
+   "sortie": {
+    "valeur": "5dfd96de0e0fbca6"
+   }
+  },
+  {
+   "cas": "cas 30",
+   "entree": {
+    "texte": "/var/www/x/y.txt"
+   },
+   "sortie": {
+    "valeur": "13e3fd3b860259b4"
+   }
+  },
+  {
+   "cas": "cas 31",
+   "entree": {
+    "texte": "oui"
+   },
+   "sortie": {
+    "valeur": "5898fc860300e228"
+   }
+  },
+  {
+   "cas": "cas 32",
+   "entree": {
+    "texte": "10:30"
+   },
+   "sortie": {
+    "valeur": "04b3d9a4ca6225fe"
+   }
+  },
+  {
+   "cas": "cas 33",
+   "entree": {
+    "texte": "3.14"
+   },
+   "sortie": {
+    "valeur": "48657cdd5c5c4181"
+   }
+  }
+ ]
+}
