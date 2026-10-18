@@ -1,0 +1,26 @@
+{
+ "point": "projets.glissement",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "p",
+   "phases",
+   "jalons"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "seul un retard compte : une avance ou une date identique ne glisse pas",
+  "sans date de référence ou sans date actuelle, rien n'est compté",
+  "le plus grand glissement est rendu avec la liste",
+  "un projet qui n'a pas glissé rend zéro, jamais une absence",
+  "les mêmes dates donnent toujours les mêmes jours"
+ ]
+}

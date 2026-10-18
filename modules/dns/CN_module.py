@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dns
 # ZONE       : CN
-# VERSION CN : 0.2.0  #4b1631
+# VERSION CN : 0.2.0  #10a6d6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Domaines et DNS.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=4b1631 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=10a6d6 ▼▼▼
 """Domaines et DNS.
 
 Porté de la V18 (`_dns_*`, `_detect_dns`, `_aut_dns_corriger`, `_dom_expiration`), avec ses leçons :
@@ -244,17 +244,8 @@ def brancher(ctx):
 
     # ------------------------------------------------------------------ le moteur
     def calculer_derives(rel, inconnus, ref, ip_now, ip_ref):
-        derives = []
-        for cle in sorted(set(ref) | set(rel)):
-            if cle in inconnus:
-                continue                                       # on n'a pas pu lire ce nom : ni dérive ni conformité
-            att, obs = ref.get(cle), rel.get(cle)
-            nom, typ = cle.split("|")
-            ip_derivee = bool(typ == "A" and ip_now and ip_ref and ip_now != ip_ref and att == [ip_ref] and obs == [ip_ref])
-            if att == obs and not ip_derivee:
-                continue
-            derives.append({"cle": cle, "nom": nom, "type": typ, "attendu": att or [], "observe": obs or [], "ip_derivee": ip_derivee})
-        return derives
+        """Les dérives entre la relève et la référence. Le calcul est un POINT D'ÉVOLUTION : points/EC_derives.py (un ensemble voyage en liste triée)."""
+        return ctx.point("derives", {"rel": rel, "inconnus": sorted(inconnus), "ref": ref, "ip_now": ip_now, "ip_ref": ip_ref})["valeur"]
 
     def moteur_releve(c):
         ip_now = ip_publique()

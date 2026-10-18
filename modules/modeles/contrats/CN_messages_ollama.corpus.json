@@ -1,0 +1,587 @@
+{
+ "point": "modeles.messages_ollama",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de modeles, données synthétiques",
+ "cas": [
+  {
+   "cas": "aucun message",
+   "entree": {
+    "msgs": []
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "messages simples",
+   "entree": {
+    "msgs": [
+     {
+      "role": "user",
+      "content": "salut"
+     },
+     {
+      "role": "assistant",
+      "content": "bonjour"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "user",
+      "content": "salut"
+     },
+     {
+      "role": "assistant",
+      "content": "bonjour"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "contenu absent",
+   "entree": {
+    "msgs": [
+     {
+      "role": "assistant"
+     },
+     {
+      "role": "user",
+      "content": null
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "assistant",
+      "content": ""
+     },
+     {
+      "role": "user",
+      "content": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "appel d'outil avec arguments texte",
+   "entree": {
+    "msgs": [
+     {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+       {
+        "id": "c1",
+        "function": {
+         "name": "sites.liste",
+         "arguments": "{\"a\": 1}"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+       {
+        "function": {
+         "name": "sites.liste",
+         "arguments": {
+          "a": 1
+         }
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "cas": "appel d'outil avec arguments objet",
+   "entree": {
+    "msgs": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "id": "c1",
+        "function": {
+         "name": "x",
+         "arguments": {
+          "a": 1
+         }
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "function": {
+         "name": "x",
+         "arguments": {
+          "a": 1
+         }
+        }
+       }
+      ],
+      "content": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "arguments texte vides",
+   "entree": {
+    "msgs": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "id": "c1",
+        "function": {
+         "name": "x",
+         "arguments": ""
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "function": {
+         "name": "x",
+         "arguments": {}
+        }
+       }
+      ],
+      "content": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "arguments illisibles",
+   "entree": {
+    "msgs": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "id": "c1",
+        "function": {
+         "name": "x",
+         "arguments": "{oops"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "function": {
+         "name": "x",
+         "arguments": {}
+        }
+       }
+      ],
+      "content": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "résultat d'outil avec le nom retrouvé",
+   "entree": {
+    "msgs": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "id": "c1",
+        "function": {
+         "name": "sites.liste",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "c1",
+      "content": "résultat"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "function": {
+         "name": "sites.liste",
+         "arguments": {}
+        }
+       }
+      ],
+      "content": ""
+     },
+     {
+      "role": "tool",
+      "content": "résultat",
+      "tool_name": "sites.liste"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "résultat d'outil sans appel connu",
+   "entree": {
+    "msgs": [
+     {
+      "role": "tool",
+      "tool_call_id": "zzz",
+      "content": "r",
+      "name": "garde"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "tool",
+      "content": "r",
+      "name": "garde",
+      "tool_name": "garde"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "résultat d'outil sans identifiant",
+   "entree": {
+    "msgs": [
+     {
+      "role": "tool",
+      "content": "r"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "tool",
+      "content": "r",
+      "tool_name": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "deux appels, deux résultats",
+   "entree": {
+    "msgs": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "id": "a",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       },
+       {
+        "id": "b",
+        "function": {
+         "name": "y",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "b",
+      "content": "rb"
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "a",
+      "content": "ra"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "function": {
+         "name": "x",
+         "arguments": {}
+        }
+       },
+       {
+        "function": {
+         "name": "y",
+         "arguments": {}
+        }
+       }
+      ],
+      "content": ""
+     },
+     {
+      "role": "tool",
+      "content": "rb",
+      "tool_name": "y"
+     },
+     {
+      "role": "tool",
+      "content": "ra",
+      "tool_name": "x"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "appel sans fonction",
+   "entree": {
+    "msgs": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "id": "a"
+       }
+      ]
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "function": {}
+       }
+      ],
+      "content": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "appel sans id",
+   "entree": {
+    "msgs": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "None",
+      "content": "r"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "function": {
+         "name": "x",
+         "arguments": {}
+        }
+       }
+      ],
+      "content": ""
+     },
+     {
+      "role": "tool",
+      "content": "r",
+      "tool_name": "x"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "appels vides",
+   "entree": {
+    "msgs": [
+     {
+      "role": "assistant",
+      "tool_calls": []
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "assistant",
+      "tool_calls": [],
+      "content": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "champs conservés",
+   "entree": {
+    "msgs": [
+     {
+      "role": "user",
+      "content": "x",
+      "images": [
+       "abc"
+      ],
+      "extra": 1
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "user",
+      "content": "x",
+      "images": [
+       "abc"
+      ],
+      "extra": 1
+     }
+    ]
+   }
+  },
+  {
+   "cas": "système",
+   "entree": {
+    "msgs": [
+     {
+      "role": "system",
+      "content": "règles"
+     },
+     {
+      "role": "user",
+      "content": "q"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "system",
+      "content": "règles"
+     },
+     {
+      "role": "user",
+      "content": "q"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "même identifiant réutilisé",
+   "entree": {
+    "msgs": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "id": "a",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "id": "a",
+        "function": {
+         "name": "y",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "a",
+      "content": "r"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "function": {
+         "name": "x",
+         "arguments": {}
+        }
+       }
+      ],
+      "content": ""
+     },
+     {
+      "role": "assistant",
+      "tool_calls": [
+       {
+        "function": {
+         "name": "y",
+         "arguments": {}
+        }
+       }
+      ],
+      "content": ""
+     },
+     {
+      "role": "tool",
+      "content": "r",
+      "tool_name": "y"
+     }
+    ]
+   }
+  }
+ ]
+}

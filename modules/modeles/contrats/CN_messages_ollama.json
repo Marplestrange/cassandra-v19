@@ -1,0 +1,24 @@
+{
+ "point": "modeles.messages_ollama",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "msgs"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un résultat d'outil retrouve le nom de son outil par l'identifiant de l'appel",
+  "des arguments illisibles deviennent un objet vide, jamais une erreur",
+  "le contenu absent devient un texte vide",
+  "les autres champs d'un message sont conservés",
+  "l'ordre des messages est conservé"
+ ]
+}

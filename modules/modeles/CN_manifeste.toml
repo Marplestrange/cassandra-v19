@@ -214,3 +214,19 @@ reseau = ["le fournisseur de chaque modèle déclaré", "l'Ollama local"]
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "appels_de"
+libelle = "Les appels d'outils d'un message de modèle, normalisés : les appels bruts en entrée, [{id, nom, arguments}] en sortie ; des arguments illisibles sont rendus tels quels pour que le modèle se corrige"
+contrat = "1.0"
+reference = "points/EC_appels_de"
+fonction = "point_appels_de"
+runtime = "python"
+
+[[points_evolution]]
+id = "messages_ollama"
+libelle = "Le format des messages pour Ollama : les messages au format OpenAI en entrée, au format natif d'Ollama en sortie (arguments en objet, résultat d'outil avec le nom de l'outil)"
+contrat = "1.0"
+reference = "points/EC_messages_ollama"
+fonction = "point_messages_ollama"
+runtime = "python"

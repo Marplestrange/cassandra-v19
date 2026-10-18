@@ -1,0 +1,1044 @@
+{
+ "point": "notes.graphe",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de notes, données synthétiques",
+ "cas": [
+  {
+   "cas": "aucune note",
+   "entree": {
+    "vivantes": []
+   },
+   "sortie": {
+    "sortants": {},
+    "entrants": {},
+    "titres": {}
+   }
+  },
+  {
+   "cas": "une note seule",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "Seule",
+      "corps": "rien",
+      "ref": "N-0001"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": []
+    },
+    "entrants": {},
+    "titres": {
+     "1": "Seule"
+    }
+   }
+  },
+  {
+   "cas": "un lien par numéro",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "voir [[N-0002]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N-0002",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B"
+    }
+   }
+  },
+  {
+   "cas": "un lien par titre",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "voir [[Ma note B]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "Ma note B",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "Ma note B",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "Ma note B"
+    }
+   }
+  },
+  {
+   "cas": "titre insensible à la casse",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[MA NOTE B]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "Ma note B",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "MA NOTE B",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "Ma note B"
+    }
+   }
+  },
+  {
+   "cas": "lien mort",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[N-0099]] et [[Inconnue]]",
+      "ref": "N-0001"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "",
+       "num": null,
+       "ref": "N-0099",
+       "mort": true,
+       "inclus": false
+      },
+      {
+       "id": "",
+       "num": null,
+       "ref": "Inconnue",
+       "mort": true,
+       "inclus": false
+      }
+     ]
+    },
+    "entrants": {},
+    "titres": {
+     "1": "A"
+    }
+   }
+  },
+  {
+   "cas": "lien mort et vivant",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[N-0002]] [[N-0042]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N-0002",
+       "mort": false,
+       "inclus": false
+      },
+      {
+       "id": "",
+       "num": null,
+       "ref": "N-0042",
+       "mort": true,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B"
+    }
+   }
+  },
+  {
+   "cas": "inclusion",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "![[N-0002]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N-0002",
+       "mort": false,
+       "inclus": true
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B"
+    }
+   }
+  },
+  {
+   "cas": "ancre ignorée pour la cible",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[N-0002#^p1]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N-0002#^p1",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B"
+    }
+   }
+  },
+  {
+   "cas": "lien de projet ignoré",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[projet:12]] [[N-0002]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N-0002",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B"
+    }
+   }
+  },
+  {
+   "cas": "lien vers soi",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[N-0001]]",
+      "ref": "N-0001"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0001",
+       "num": 1,
+       "ref": "N-0001",
+       "mort": false,
+       "inclus": false
+      }
+     ]
+    },
+    "entrants": {
+     "1": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A"
+    }
+   }
+  },
+  {
+   "cas": "deux liens vers la même note",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[N-0002]] [[N-0002]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N-0002",
+       "mort": false,
+       "inclus": false
+      },
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N-0002",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B"
+    }
+   }
+  },
+  {
+   "cas": "entrants multiples",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[N-0003]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "[[N-0003]]",
+      "ref": "N-0002"
+     },
+     {
+      "num": 3,
+      "titre": "C",
+      "corps": "",
+      "ref": "N-0003"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0003",
+       "num": 3,
+       "ref": "N-0003",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": [
+      {
+       "id": "N-0003",
+       "num": 3,
+       "ref": "N-0003",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "3": []
+    },
+    "entrants": {
+     "3": [
+      1,
+      2
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B",
+     "3": "C"
+    }
+   }
+  },
+  {
+   "cas": "chaîne",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[N-0002]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "[[N-0003]]",
+      "ref": "N-0002"
+     },
+     {
+      "num": 3,
+      "titre": "C",
+      "corps": "[[N-0001]]",
+      "ref": "N-0003"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N-0002",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": [
+      {
+       "id": "N-0003",
+       "num": 3,
+       "ref": "N-0003",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "3": [
+      {
+       "id": "N-0001",
+       "num": 1,
+       "ref": "N-0001",
+       "mort": false,
+       "inclus": false
+      }
+     ]
+    },
+    "entrants": {
+     "2": [
+      1
+     ],
+     "3": [
+      2
+     ],
+     "1": [
+      3
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B",
+     "3": "C"
+    }
+   }
+  },
+  {
+   "cas": "numéro sans zéros",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[N-2]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N-2",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B"
+    }
+   }
+  },
+  {
+   "cas": "numéro sans tiret",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[N2]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N2",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B"
+    }
+   }
+  },
+  {
+   "cas": "numéro en minuscules",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[n-0002]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "n-0002",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B"
+    }
+   }
+  },
+  {
+   "cas": "titre qui ressemble à un numéro",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[N-0002x]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "N-0002x",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N-0002x",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "N-0002x"
+    }
+   }
+  },
+  {
+   "cas": "corps vide",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": null,
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [],
+     "2": []
+    },
+    "entrants": {},
+    "titres": {
+     "1": "A",
+     "2": "B"
+    }
+   }
+  },
+  {
+   "cas": "alias ignoré",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[N-0002|le texte]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N-0002",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B"
+    }
+   }
+  },
+  {
+   "cas": "titres doublons",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[Même]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "Même",
+      "corps": "",
+      "ref": "N-0002"
+     },
+     {
+      "num": 3,
+      "titre": "même",
+      "corps": "",
+      "ref": "N-0003"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0003",
+       "num": 3,
+       "ref": "Même",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": [],
+     "3": []
+    },
+    "entrants": {
+     "3": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "Même",
+     "3": "même"
+    }
+   }
+  },
+  {
+   "cas": "références propres",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[N-0002]]",
+      "ref": "id-un"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "",
+      "ref": "id-deux"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "id-deux",
+       "num": 2,
+       "ref": "N-0002",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B"
+    }
+   }
+  },
+  {
+   "cas": "plusieurs liens mêlés",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[N-0002]] ![[N-0003]] [[Zéro]] [[projet:1]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "[[A]]",
+      "ref": "N-0002"
+     },
+     {
+      "num": 3,
+      "titre": "C",
+      "corps": "",
+      "ref": "N-0003"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N-0002",
+       "mort": false,
+       "inclus": false
+      },
+      {
+       "id": "N-0003",
+       "num": 3,
+       "ref": "N-0003",
+       "mort": false,
+       "inclus": true
+      },
+      {
+       "id": "",
+       "num": null,
+       "ref": "Zéro",
+       "mort": true,
+       "inclus": false
+      }
+     ],
+     "2": [
+      {
+       "id": "N-0001",
+       "num": 1,
+       "ref": "A",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "3": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ],
+     "3": [
+      1
+     ],
+     "1": [
+      2
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B",
+     "3": "C"
+    }
+   }
+  },
+  {
+   "cas": "espaces dans le lien",
+   "entree": {
+    "vivantes": [
+     {
+      "num": 1,
+      "titre": "A",
+      "corps": "[[  N-0002  ]]",
+      "ref": "N-0001"
+     },
+     {
+      "num": 2,
+      "titre": "B",
+      "corps": "",
+      "ref": "N-0002"
+     }
+    ]
+   },
+   "sortie": {
+    "sortants": {
+     "1": [
+      {
+       "id": "N-0002",
+       "num": 2,
+       "ref": "N-0002",
+       "mort": false,
+       "inclus": false
+      }
+     ],
+     "2": []
+    },
+    "entrants": {
+     "2": [
+      1
+     ]
+    },
+    "titres": {
+     "1": "A",
+     "2": "B"
+    }
+   }
+  }
+ ]
+}

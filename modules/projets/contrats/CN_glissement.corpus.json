@@ -1,0 +1,452 @@
+{
+ "point": "projets.glissement",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de projets, données synthétiques",
+ "cas": [
+  {
+   "cas": "rien",
+   "entree": {
+    "p": {
+     "ref_date": "2026-01-15"
+    },
+    "phases": [],
+    "jalons": []
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [],
+     "max_jours": 0,
+     "reference": "2026-01-15"
+    }
+   }
+  },
+  {
+   "cas": "tenu",
+   "entree": {
+    "p": {
+     "ref_date": "2026-01-15"
+    },
+    "phases": [
+     {
+      "nom": "A",
+      "ref_fin": "2026-03-01",
+      "fin": "2026-03-01"
+     }
+    ],
+    "jalons": [
+     {
+      "nom": "J",
+      "ref_date": "2026-03-10",
+      "date": "2026-03-10"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [],
+     "max_jours": 0,
+     "reference": "2026-01-15"
+    }
+   }
+  },
+  {
+   "cas": "phase en retard",
+   "entree": {
+    "p": {
+     "ref_date": "2026-01-15"
+    },
+    "phases": [
+     {
+      "nom": "A",
+      "ref_fin": "2026-03-01",
+      "fin": "2026-03-11"
+     }
+    ],
+    "jalons": []
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [
+      {
+       "genre": "phase",
+       "nom": "A",
+       "jours": 10,
+       "prevu": "2026-03-01",
+       "maintenant": "2026-03-11"
+      }
+     ],
+     "max_jours": 10,
+     "reference": "2026-01-15"
+    }
+   }
+  },
+  {
+   "cas": "jalon en retard",
+   "entree": {
+    "p": {
+     "ref_date": "2026-01-15"
+    },
+    "phases": [],
+    "jalons": [
+     {
+      "nom": "J",
+      "ref_date": "2026-03-10",
+      "date": "2026-04-09"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [
+      {
+       "genre": "jalon",
+       "nom": "J",
+       "jours": 30,
+       "prevu": "2026-03-10",
+       "maintenant": "2026-04-09"
+      }
+     ],
+     "max_jours": 30,
+     "reference": "2026-01-15"
+    }
+   }
+  },
+  {
+   "cas": "phase en avance",
+   "entree": {
+    "p": {
+     "ref_date": "2026-01-15"
+    },
+    "phases": [
+     {
+      "nom": "A",
+      "ref_fin": "2026-03-11",
+      "fin": "2026-03-01"
+     }
+    ],
+    "jalons": []
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [],
+     "max_jours": 0,
+     "reference": "2026-01-15"
+    }
+   }
+  },
+  {
+   "cas": "sans référence",
+   "entree": {
+    "p": {
+     "ref_date": "2026-01-15"
+    },
+    "phases": [
+     {
+      "nom": "A",
+      "ref_fin": "",
+      "fin": "2026-03-11"
+     },
+     {
+      "nom": "B",
+      "ref_fin": null,
+      "fin": "2026-03-11"
+     }
+    ],
+    "jalons": [
+     {
+      "nom": "J",
+      "ref_date": "",
+      "date": "2026-04-01"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [],
+     "max_jours": 0,
+     "reference": "2026-01-15"
+    }
+   }
+  },
+  {
+   "cas": "sans date actuelle",
+   "entree": {
+    "p": {
+     "ref_date": "2026-01-15"
+    },
+    "phases": [
+     {
+      "nom": "A",
+      "ref_fin": "2026-03-01",
+      "fin": ""
+     }
+    ],
+    "jalons": [
+     {
+      "nom": "J",
+      "ref_date": "2026-03-10",
+      "date": null
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [],
+     "max_jours": 0,
+     "reference": "2026-01-15"
+    }
+   }
+  },
+  {
+   "cas": "plusieurs retards, le maximum",
+   "entree": {
+    "p": {
+     "ref_date": "2026-01-15"
+    },
+    "phases": [
+     {
+      "nom": "A",
+      "ref_fin": "2026-03-01",
+      "fin": "2026-03-04"
+     },
+     {
+      "nom": "B",
+      "ref_fin": "2026-03-01",
+      "fin": "2026-03-21"
+     }
+    ],
+    "jalons": [
+     {
+      "nom": "J",
+      "ref_date": "2026-03-10",
+      "date": "2026-03-12"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [
+      {
+       "genre": "phase",
+       "nom": "A",
+       "jours": 3,
+       "prevu": "2026-03-01",
+       "maintenant": "2026-03-04"
+      },
+      {
+       "genre": "phase",
+       "nom": "B",
+       "jours": 20,
+       "prevu": "2026-03-01",
+       "maintenant": "2026-03-21"
+      },
+      {
+       "genre": "jalon",
+       "nom": "J",
+       "jours": 2,
+       "prevu": "2026-03-10",
+       "maintenant": "2026-03-12"
+      }
+     ],
+     "max_jours": 20,
+     "reference": "2026-01-15"
+    }
+   }
+  },
+  {
+   "cas": "jalons seuls",
+   "entree": {
+    "p": {
+     "ref_date": "2026-01-15"
+    },
+    "phases": [],
+    "jalons": [
+     {
+      "nom": "J1",
+      "ref_date": "2026-03-10",
+      "date": "2026-03-15"
+     },
+     {
+      "nom": "J2",
+      "ref_date": "2026-04-10",
+      "date": "2026-05-10"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [
+      {
+       "genre": "jalon",
+       "nom": "J1",
+       "jours": 5,
+       "prevu": "2026-03-10",
+       "maintenant": "2026-03-15"
+      },
+      {
+       "genre": "jalon",
+       "nom": "J2",
+       "jours": 30,
+       "prevu": "2026-04-10",
+       "maintenant": "2026-05-10"
+      }
+     ],
+     "max_jours": 30,
+     "reference": "2026-01-15"
+    }
+   }
+  },
+  {
+   "cas": "référence du projet absente",
+   "entree": {
+    "p": {
+     "ref_date": null
+    },
+    "phases": [
+     {
+      "nom": "A",
+      "ref_fin": "2026-03-01",
+      "fin": "2026-03-04"
+     }
+    ],
+    "jalons": []
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [
+      {
+       "genre": "phase",
+       "nom": "A",
+       "jours": 3,
+       "prevu": "2026-03-01",
+       "maintenant": "2026-03-04"
+      }
+     ],
+     "max_jours": 3,
+     "reference": null
+    }
+   }
+  },
+  {
+   "cas": "dates illisibles",
+   "entree": {
+    "p": {
+     "ref_date": "2026-01-15"
+    },
+    "phases": [
+     {
+      "nom": "A",
+      "ref_fin": "pas",
+      "fin": "2026-03-04"
+     },
+     {
+      "nom": "B",
+      "ref_fin": "2026-03-04",
+      "fin": "pas"
+     }
+    ],
+    "jalons": []
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [
+      {
+       "genre": "phase",
+       "nom": "B",
+       "jours": 0,
+       "prevu": "2026-03-04",
+       "maintenant": "pas"
+      }
+     ],
+     "max_jours": 0,
+     "reference": "2026-01-15"
+    }
+   }
+  },
+  {
+   "cas": "même jour",
+   "entree": {
+    "p": {
+     "ref_date": "2026-01-15"
+    },
+    "phases": [
+     {
+      "nom": "A",
+      "ref_fin": "2026-03-01",
+      "fin": "2026-03-01"
+     }
+    ],
+    "jalons": []
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [],
+     "max_jours": 0,
+     "reference": "2026-01-15"
+    }
+   }
+  },
+  {
+   "cas": "un jour de retard",
+   "entree": {
+    "p": {
+     "ref_date": "2026-01-15"
+    },
+    "phases": [
+     {
+      "nom": "A",
+      "ref_fin": "2026-03-01",
+      "fin": "2026-03-02"
+     }
+    ],
+    "jalons": []
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [
+      {
+       "genre": "phase",
+       "nom": "A",
+       "jours": 1,
+       "prevu": "2026-03-01",
+       "maintenant": "2026-03-02"
+      }
+     ],
+     "max_jours": 1,
+     "reference": "2026-01-15"
+    }
+   }
+  },
+  {
+   "cas": "à cheval sur les années",
+   "entree": {
+    "p": {
+     "ref_date": "2026-01-15"
+    },
+    "phases": [
+     {
+      "nom": "A",
+      "ref_fin": "2025-12-30",
+      "fin": "2026-01-02"
+     }
+    ],
+    "jalons": []
+   },
+   "sortie": {
+    "valeur": {
+     "lignes": [
+      {
+       "genre": "phase",
+       "nom": "A",
+       "jours": 3,
+       "prevu": "2025-12-30",
+       "maintenant": "2026-01-02"
+      }
+     ],
+     "max_jours": 3,
+     "reference": "2026-01-15"
+    }
+   }
+  }
+ ]
+}

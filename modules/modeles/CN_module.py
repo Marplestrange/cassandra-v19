@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #815f44
+# VERSION CN : 0.1.0  #dabe86
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les modèles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=815f44 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=dabe86 ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -217,44 +217,15 @@ def brancher(ctx):
                   (time.strftime("%Y-%m-%d"), role or "", mid, 0 if ok else 1, e, s, secondes))
 
     def appels_de(brut_calls):
-        """Les appels d'outils d'un message, normalisés : [{id, nom, arguments (dict)}]. Des arguments illisibles sont rendus tels quels sous `_brut` : le modèle se corrige au tour suivant."""
-        out = []
-        for i, tc in enumerate(brut_calls or []):
-            f = (tc or {}).get("function") or {}
-            a = f.get("arguments")
-            if isinstance(a, str):
-                try:
-                    a = json.loads(a) if a.strip() else {}
-                except ValueError:
-                    a = {"_brut": a[:2000]}
-            out.append({"id": str((tc or {}).get("id") or "call_%d" % i), "nom": str(f.get("name") or ""), "arguments": a if isinstance(a, dict) else {"_brut": str(a)[:2000]}})
-        return out
+        """Les appels d'outils d'un message, normalisés : [{id, nom, arguments (dict)}]. Des arguments illisibles sont rendus tels quels sous `_brut` : le modèle se corrige au tour suivant. Le calcul est un POINT D'ÉVOLUTION : points/EC_appels_de.py."""
+        return ctx.point("appels_de", {"brut_calls": brut_calls})["valeur"]
 
     def outils_openai(outils):
         return [{"type": "function", "function": {"name": t["nom"], "description": str(t.get("description") or "")[:1000], "parameters": t.get("parametres") or {"type": "object", "properties": {}}}} for t in outils]
 
     def messages_ollama(msgs):
-        """Le format OpenAI vers le natif d'Ollama : arguments en objet, résultat d'outil avec le nom de l'outil."""
-        noms, out = {}, []
-        for m in msgs:
-            m = dict(m)
-            m["content"] = m.get("content") or ""
-            if m.get("tool_calls"):
-                tcs = []
-                for tc in m["tool_calls"]:
-                    f = dict(tc.get("function") or {})
-                    noms[str(tc.get("id"))] = f.get("name", "")
-                    if isinstance(f.get("arguments"), str):
-                        try:
-                            f["arguments"] = json.loads(f["arguments"] or "{}")
-                        except ValueError:
-                            f["arguments"] = {}
-                    tcs.append({"function": f})
-                m["tool_calls"] = tcs
-            if m.get("role") == "tool":
-                m["tool_name"] = noms.get(str(m.pop("tool_call_id", "")), m.get("name", ""))
-            out.append(m)
-        return out
+        """Le format OpenAI vers le natif d'Ollama : arguments en objet, résultat d'outil avec le nom de l'outil. Le calcul est un POINT D'ÉVOLUTION : points/EC_messages_ollama.py."""
+        return ctx.point("messages_ollama", {"msgs": msgs})["valeur"]
 
     def appel_ollama(cle_, modele, base, msgs, max_tokens, temperature, allow_reasoning, timeout, reflexion, outils=None):
         """L'API NATIVE : la seule qui accepte `think` (couper la réflexion) et `num_ctx` (la fenêtre)."""

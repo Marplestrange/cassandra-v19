@@ -1,0 +1,39 @@
+{
+ "point": "dns.derives",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "rel",
+   "inconnus",
+   "ref",
+   "ip_now",
+   "ip_ref"
+  ],
+  "properties": {
+   "rel": {
+    "type": "object"
+   },
+   "inconnus": {
+    "type": "array"
+   },
+   "ref": {
+    "type": "object"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un nom qu'on n'a pas pu lire n'est ni une dérive ni une conformité",
+  "une dérive d'adresse publique n'existe que pour un enregistrement A resté sur l'ancienne adresse du serveur",
+  "les dérives sont rendues dans l'ordre alphabétique des clés",
+  "un enregistrement apparu ou disparu est une dérive",
+  "la même relève donne toujours les mêmes dérives"
+ ]
+}

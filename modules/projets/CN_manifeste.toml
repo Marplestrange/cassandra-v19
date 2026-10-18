@@ -264,3 +264,11 @@ lectures = true
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "glissement"
+libelle = "Le glissement d'un projet par rapport à sa référence : le projet, ses phases et ses jalons en entrée, les retards (en jours) et le plus grand en sortie"
+contrat = "1.0"
+reference = "points/EC_glissement"
+fonction = "point_glissement"
+runtime = "python"

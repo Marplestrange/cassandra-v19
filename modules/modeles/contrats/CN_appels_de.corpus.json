@@ -1,0 +1,478 @@
+{
+ "point": "modeles.appels_de",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de modeles, données synthétiques",
+ "cas": [
+  {
+   "cas": "aucun appel",
+   "entree": {
+    "brut_calls": []
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "brut_calls": null
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "un appel avec arguments texte",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "c1",
+      "function": {
+       "name": "sites.liste",
+       "arguments": "{\"a\": 1}"
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "c1",
+      "nom": "sites.liste",
+      "arguments": {
+       "a": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "arguments en objet",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "c1",
+      "function": {
+       "name": "x",
+       "arguments": {
+        "a": 1
+       }
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "c1",
+      "nom": "x",
+      "arguments": {
+       "a": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "arguments vides",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "c1",
+      "function": {
+       "name": "x",
+       "arguments": ""
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "c1",
+      "nom": "x",
+      "arguments": {}
+     }
+    ]
+   }
+  },
+  {
+   "cas": "arguments blancs",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "c1",
+      "function": {
+       "name": "x",
+       "arguments": "   "
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "c1",
+      "nom": "x",
+      "arguments": {}
+     }
+    ]
+   }
+  },
+  {
+   "cas": "arguments illisibles",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "c1",
+      "function": {
+       "name": "x",
+       "arguments": "{pas json"
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "c1",
+      "nom": "x",
+      "arguments": {
+       "_brut": "{pas json"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "arguments illisibles très longs",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "c1",
+      "function": {
+       "name": "x",
+       "arguments": "{zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "c1",
+      "nom": "x",
+      "arguments": {
+       "_brut": "{zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "arguments qui ne sont pas un objet",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "c1",
+      "function": {
+       "name": "x",
+       "arguments": "[1, 2]"
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "c1",
+      "nom": "x",
+      "arguments": {
+       "_brut": "[1, 2]"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "arguments nombre",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "c1",
+      "function": {
+       "name": "x",
+       "arguments": 42
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "c1",
+      "nom": "x",
+      "arguments": {
+       "_brut": "42"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "arguments absents",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "c1",
+      "function": {
+       "name": "x"
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "c1",
+      "nom": "x",
+      "arguments": {
+       "_brut": "None"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sans id",
+   "entree": {
+    "brut_calls": [
+     {
+      "function": {
+       "name": "x",
+       "arguments": "{}"
+      }
+     },
+     {
+      "function": {
+       "name": "y",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "call_0",
+      "nom": "x",
+      "arguments": {}
+     },
+     {
+      "id": "call_1",
+      "nom": "y",
+      "arguments": {}
+     }
+    ]
+   }
+  },
+  {
+   "cas": "id numérique",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": 7,
+      "function": {
+       "name": "x",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "7",
+      "nom": "x",
+      "arguments": {}
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sans nom",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "c",
+      "function": {
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "c",
+      "nom": "",
+      "arguments": {}
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sans fonction",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "c"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "c",
+      "nom": "",
+      "arguments": {
+       "_brut": "None"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "élément None",
+   "entree": {
+    "brut_calls": [
+     null,
+     {
+      "id": "c",
+      "function": {
+       "name": "x",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "call_0",
+      "nom": "",
+      "arguments": {
+       "_brut": "None"
+      }
+     },
+     {
+      "id": "c",
+      "nom": "x",
+      "arguments": {}
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plusieurs appels",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "a",
+      "function": {
+       "name": "x",
+       "arguments": "{\"k\": \"v\"}"
+      }
+     },
+     {
+      "id": "b",
+      "function": {
+       "name": "y",
+       "arguments": {}
+      }
+     },
+     {
+      "id": "c",
+      "function": {
+       "name": "z",
+       "arguments": "oops"
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "a",
+      "nom": "x",
+      "arguments": {
+       "k": "v"
+      }
+     },
+     {
+      "id": "b",
+      "nom": "y",
+      "arguments": {}
+     },
+     {
+      "id": "c",
+      "nom": "z",
+      "arguments": {
+       "_brut": "oops"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "nombre en texte très long",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "c",
+      "function": {
+       "name": "x",
+       "arguments": 1000000000000000000000000000000
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "c",
+      "nom": "x",
+      "arguments": {
+       "_brut": "1000000000000000000000000000000"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "cas": "unicode",
+   "entree": {
+    "brut_calls": [
+     {
+      "id": "c",
+      "function": {
+       "name": "café",
+       "arguments": "{\"é\": \"ü\"}"
+      }
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "c",
+      "nom": "café",
+      "arguments": {
+       "é": "ü"
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

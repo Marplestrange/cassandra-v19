@@ -1,0 +1,31 @@
+{
+ "point": "notes.graphe",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "vivantes"
+  ],
+  "properties": {
+   "vivantes": {
+    "type": "array"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "sortants",
+   "entrants",
+   "titres"
+  ]
+ },
+ "invariants": [
+  "un lien qui ne mène à aucune note vivante est dit mort, jamais ignoré",
+  "un lien vers un projet ou autre chose qu'une note n'entre pas dans le graphe",
+  "une note n'est citée qu'une fois par une même note dans les entrants",
+  "une ancre ne change pas la cible",
+  "le même ensemble de notes donne toujours le même graphe"
+ ]
+}

@@ -1,0 +1,591 @@
+{
+ "point": "dns.derives",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de dns, données synthétiques",
+ "cas": [
+  {
+   "cas": "rien",
+   "entree": {
+    "rel": {},
+    "inconnus": [],
+    "ref": {},
+    "ip_now": "",
+    "ip_ref": ""
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "identiques",
+   "entree": {
+    "rel": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "inconnus": [],
+    "ref": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "ip_now": "",
+    "ip_ref": ""
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "valeur changée",
+   "entree": {
+    "rel": {
+     "a.fr|A": [
+      "192.0.2.9"
+     ]
+    },
+    "inconnus": [],
+    "ref": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "ip_now": "",
+    "ip_ref": ""
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "a.fr|A",
+      "nom": "a.fr",
+      "type": "A",
+      "attendu": [
+       "192.0.2.1"
+      ],
+      "observe": [
+       "192.0.2.9"
+      ],
+      "ip_derivee": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "enregistrement disparu",
+   "entree": {
+    "rel": {},
+    "inconnus": [],
+    "ref": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "ip_now": "",
+    "ip_ref": ""
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "a.fr|A",
+      "nom": "a.fr",
+      "type": "A",
+      "attendu": [
+       "192.0.2.1"
+      ],
+      "observe": [],
+      "ip_derivee": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "enregistrement apparu",
+   "entree": {
+    "rel": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "inconnus": [],
+    "ref": {},
+    "ip_now": "",
+    "ip_ref": ""
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "a.fr|A",
+      "nom": "a.fr",
+      "type": "A",
+      "attendu": [],
+      "observe": [
+       "192.0.2.1"
+      ],
+      "ip_derivee": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "nom inconnu ignoré",
+   "entree": {
+    "rel": {},
+    "inconnus": [
+     "a.fr|A"
+    ],
+    "ref": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "ip_now": "",
+    "ip_ref": ""
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "inconnu et dérive voisine",
+   "entree": {
+    "rel": {
+     "b.fr|A": [
+      "1.1.1.1"
+     ]
+    },
+    "inconnus": [
+     "a.fr|A"
+    ],
+    "ref": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ],
+     "b.fr|A": [
+      "2.2.2.2"
+     ]
+    },
+    "ip_now": "",
+    "ip_ref": ""
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "b.fr|A",
+      "nom": "b.fr",
+      "type": "A",
+      "attendu": [
+       "2.2.2.2"
+      ],
+      "observe": [
+       "1.1.1.1"
+      ],
+      "ip_derivee": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ip publique changée, enregistrement inchangé",
+   "entree": {
+    "rel": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "inconnus": [],
+    "ref": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "ip_now": "198.51.100.7",
+    "ip_ref": "192.0.2.1"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "a.fr|A",
+      "nom": "a.fr",
+      "type": "A",
+      "attendu": [
+       "192.0.2.1"
+      ],
+      "observe": [
+       "192.0.2.1"
+      ],
+      "ip_derivee": true
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ip publique changée, autre valeur",
+   "entree": {
+    "rel": {
+     "a.fr|A": [
+      "203.0.113.5"
+     ]
+    },
+    "inconnus": [],
+    "ref": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "ip_now": "198.51.100.7",
+    "ip_ref": "192.0.2.1"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "a.fr|A",
+      "nom": "a.fr",
+      "type": "A",
+      "attendu": [
+       "192.0.2.1"
+      ],
+      "observe": [
+       "203.0.113.5"
+      ],
+      "ip_derivee": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ip changée mais type MX",
+   "entree": {
+    "rel": {
+     "a.fr|MX": [
+      "10 m.a.fr"
+     ]
+    },
+    "inconnus": [],
+    "ref": {
+     "a.fr|MX": [
+      "10 m.a.fr"
+     ]
+    },
+    "ip_now": "198.51.100.7",
+    "ip_ref": "192.0.2.1"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ip inchangée",
+   "entree": {
+    "rel": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "inconnus": [],
+    "ref": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "ip_now": "192.0.2.1",
+    "ip_ref": "192.0.2.1"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ip actuelle vide",
+   "entree": {
+    "rel": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "inconnus": [],
+    "ref": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "ip_now": "",
+    "ip_ref": "192.0.2.1"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ip de référence vide",
+   "entree": {
+    "rel": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "inconnus": [],
+    "ref": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "ip_now": "198.51.100.7",
+    "ip_ref": ""
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "deux valeurs, une ip dérivée",
+   "entree": {
+    "rel": {
+     "a.fr|A": [
+      "192.0.2.1",
+      "192.0.2.2"
+     ]
+    },
+    "inconnus": [],
+    "ref": {
+     "a.fr|A": [
+      "192.0.2.1",
+      "192.0.2.2"
+     ]
+    },
+    "ip_now": "198.51.100.7",
+    "ip_ref": "192.0.2.1"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "plusieurs types",
+   "entree": {
+    "rel": {
+     "a.fr|A": [
+      "1.1.1.1"
+     ],
+     "a.fr|MX": [
+      "10 m"
+     ],
+     "a.fr|TXT": [
+      "v=spf1"
+     ]
+    },
+    "inconnus": [],
+    "ref": {
+     "a.fr|A": [
+      "1.1.1.1"
+     ],
+     "a.fr|MX": [
+      "10 x"
+     ],
+     "a.fr|TXT": [
+      "v=spf1"
+     ]
+    },
+    "ip_now": "",
+    "ip_ref": ""
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "a.fr|MX",
+      "nom": "a.fr",
+      "type": "MX",
+      "attendu": [
+       "10 x"
+      ],
+      "observe": [
+       "10 m"
+      ],
+      "ip_derivee": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ordre trié des clés",
+   "entree": {
+    "rel": {
+     "z.fr|A": [
+      "1"
+     ],
+     "a.fr|A": [
+      "2"
+     ],
+     "m.fr|A": [
+      "3"
+     ]
+    },
+    "inconnus": [],
+    "ref": {
+     "z.fr|A": [
+      "9"
+     ],
+     "a.fr|A": [
+      "9"
+     ],
+     "m.fr|A": [
+      "9"
+     ]
+    },
+    "ip_now": "",
+    "ip_ref": ""
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "a.fr|A",
+      "nom": "a.fr",
+      "type": "A",
+      "attendu": [
+       "9"
+      ],
+      "observe": [
+       "2"
+      ],
+      "ip_derivee": false
+     },
+     {
+      "cle": "m.fr|A",
+      "nom": "m.fr",
+      "type": "A",
+      "attendu": [
+       "9"
+      ],
+      "observe": [
+       "3"
+      ],
+      "ip_derivee": false
+     },
+     {
+      "cle": "z.fr|A",
+      "nom": "z.fr",
+      "type": "A",
+      "attendu": [
+       "9"
+      ],
+      "observe": [
+       "1"
+      ],
+      "ip_derivee": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "liste vide contre absent",
+   "entree": {
+    "rel": {
+     "a.fr|A": []
+    },
+    "inconnus": [],
+    "ref": {},
+    "ip_now": "",
+    "ip_ref": ""
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "a.fr|A",
+      "nom": "a.fr",
+      "type": "A",
+      "attendu": [],
+      "observe": [],
+      "ip_derivee": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "absent contre liste vide",
+   "entree": {
+    "rel": {},
+    "inconnus": [],
+    "ref": {
+     "a.fr|A": []
+    },
+    "ip_now": "",
+    "ip_ref": ""
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "a.fr|A",
+      "nom": "a.fr",
+      "type": "A",
+      "attendu": [],
+      "observe": [],
+      "ip_derivee": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "dérive ip et inconnu",
+   "entree": {
+    "rel": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "inconnus": [
+     "a.fr|A"
+    ],
+    "ref": {
+     "a.fr|A": [
+      "192.0.2.1"
+     ]
+    },
+    "ip_now": "198.51.100.7",
+    "ip_ref": "192.0.2.1"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "sous-domaines",
+   "entree": {
+    "rel": {
+     "www.a.fr|CNAME": [
+      "a.fr."
+     ],
+     "a.fr|A": [
+      "1.2.3.4"
+     ]
+    },
+    "inconnus": [],
+    "ref": {
+     "www.a.fr|CNAME": [
+      "b.fr."
+     ],
+     "a.fr|A": [
+      "1.2.3.4"
+     ]
+    },
+    "ip_now": "",
+    "ip_ref": ""
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "cle": "www.a.fr|CNAME",
+      "nom": "www.a.fr",
+      "type": "CNAME",
+      "attendu": [
+       "b.fr."
+      ],
+      "observe": [
+       "a.fr."
+      ],
+      "ip_derivee": false
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -6,19 +6,20 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f09254
+# VERSION CN : 0.1.0  #bcf10b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : sort d'un fichier de module les fonctions pures d'un point d'évolution : écrit la référence EC (avec ses dépendances copiées), le contrat, le corpus doré et la déclaration au manifeste.
 # MÉTHODE    : fermeture transitive des noms de premier niveau par l'arbre syntaxique ; le corpus doré est la sortie de la référence extraite, copiée mot pour mot de l'ancien code ; rien n'est écrasé sans --forcer.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f09254 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=bcf10b ▼▼▼
 """Usage : un script `spec` appelle extraire(spec). Le spec décrit le point ; l'outil écrit quatre choses :
    modules/<m>/points/EC_<point>.py · contrats/CN_<point>.json · contrats/CN_<point>.corpus.json · l'entrée [[points_evolution]] du manifeste.
    La façade du module (CN_module.py) et la liste des tests restent à la main : c'est là que se décide ce qui voyage dans l'entrée."""
 import ast
 import json
 import sys
+import textwrap
 from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
@@ -67,8 +68,22 @@ def _fermeture(noms, imports, racines):
     return vus, utilises
 
 
+def _avec_imbriquees(src, noms):
+    """Les fonctions imbriquées (dans brancher() par exemple) sont HISSÉES au premier niveau du texte de travail : elles deviennent des fonctions ordinaires pour la fermeture."""
+    arbre = ast.parse(src)
+    lignes = src.split("\n")
+    for nom in noms:
+        n = next((x for x in ast.walk(arbre) if isinstance(x, ast.FunctionDef) and x.name == nom), None)
+        if n is None:
+            raise SystemExit("fonction imbriquée introuvable : " + nom)
+        src += "\n\n" + textwrap.dedent("\n".join(lignes[n.lineno - 1:n.end_lineno])) + "\n"
+    return src
+
+
 def corps_de_reference(spec):
     src = (RACINE / spec["source"]).read_text(encoding="utf-8")
+    if spec.get("imbriquees"):
+        src = _avec_imbriquees(src, spec["imbriquees"])
     arbre = ast.parse(src)
     noms, imports = _niveau_module(arbre)
     vus, utilises = _fermeture(noms, imports, spec["fonctions"])
@@ -252,11 +267,40 @@ def poser_facade_globale(spec):
     return restes
 
 
+def poser_facade_imbriquee(spec):
+    """La fonction imbriquée (dans brancher()) garde sa place et sa signature : son corps devient un appel à ctx.point."""
+    ap = spec["appel"]
+    fn, params, sortie = ap["fn"], ap["params"], ap.get("sortie", "valeur")
+    f = RACINE / spec["facade_fichier"]
+    brut = f.read_bytes().decode("utf-8")
+    nl = "\r\n" if "\r\n" in brut else "\n"
+    src = brut.replace("\r\n", "\n")
+    arbre = ast.parse(src)
+    n = next((x for x in ast.walk(arbre) if isinstance(x, ast.FunctionDef) and x.name == fn), None)
+    if n is None:
+        return ["fonction imbriquée introuvable : " + fn]
+    lignes = src.split("\n")
+    if "ctx.point(" in "\n".join(lignes[n.lineno - 1:n.end_lineno]):
+        return []
+    entete = lignes[n.lineno - 1]
+    marge = entete[:len(entete) - len(entete.lstrip())]
+    doc = (ast.get_docstring(n) or "").split("\n")[0].rstrip(".")
+    fac = [entete, marge + '    """%s. Le calcul est un POINT D\'ÉVOLUTION : points/EC_%s.py."""' % (doc or fn, spec["point"]),
+           marge + '    return ctx.point("%s", {%s})["%s"]' % (spec["point"], ", ".join('"%s": %s' % (q, q) for q in params), sortie)]
+    lignes[n.lineno - 1 - len(n.decorator_list):n.end_lineno] = fac
+    neuf = "\n".join(lignes)
+    ast.parse(neuf)
+    f.write_bytes(neuf.replace("\n", nl).encode("utf-8"))
+    return []
+
+
 def poser_facade(spec):
     """Remplace la fonction d'origine par sa façade et passe ctx.point aux sites d'appel qui ont un ctx (dans le fichier et dans spec["sites_fichiers"]) ; rend ce qui reste à la main."""
     ap = spec["appel"]
     if ap.get("mode") == "global":
         return poser_facade_globale(spec)
+    if ap.get("mode") == "imbriquee":
+        return poser_facade_imbriquee(spec)
     fn, params, sortie = ap["fn"], ap["params"], ap.get("sortie", "valeur")
     f = RACINE / spec["facade_fichier"]
     arbre = ast.parse(f.read_bytes().decode("utf-8").replace("\r\n", "\n"))

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : notes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #be6ebc
+# VERSION CN : 0.1.0  #aeaa0b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les notes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=be6ebc ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=aeaa0b ▼▼▼
 """Les notes.
 
 Porté de la V18 (`note_*`, `notes_*`, `ca_*`, `_nt_*`), avec ses leçons :
@@ -355,26 +355,9 @@ def brancher(ctx):
         return out
 
     def graphe(vivantes):
-        """Qui cite qui, en un seul balayage : le faire par note coûterait un balayage par note affichée."""
-        par_num = {n["num"]: n for n in vivantes}
-        par_titre = {n["titre"].casefold(): n for n in vivantes}
-        sortants, entrants, titres = {}, {}, {}
-        for n in vivantes:
-            titres[n["num"]] = n["titre"]
-            sortants.setdefault(n["num"], [])
-            for l in liens_de(n["corps"]):
-                if l["kind"] != "note":
-                    continue
-                ref = l["ref"].split("#")[0].strip()
-                m = RE_NUM.match(ref)
-                cible = par_num.get(int(m.group(1))) if m else par_titre.get(ref.casefold())
-                if cible:
-                    sortants[n["num"]].append({"id": cible["ref"], "num": cible["num"], "ref": l["ref"], "mort": False, "inclus": l["inclus"]})
-                    if n["num"] not in entrants.setdefault(cible["num"], []):
-                        entrants[cible["num"]].append(n["num"])
-                else:
-                    sortants[n["num"]].append({"id": "", "num": None, "ref": l["ref"], "mort": True, "inclus": l["inclus"]})
-        return sortants, entrants, titres
+        """Qui cite qui, en un seul balayage. Le calcul est un POINT D'ÉVOLUTION : points/EC_graphe.py (les numéros de note, clés d'un objet JSON, redeviennent des entiers ici)."""
+        r = ctx.point("graphe", {"vivantes": vivantes})
+        return ({int(k): v for k, v in r["sortants"].items()}, {int(k): v for k, v in r["entrants"].items()}, {int(k): v for k, v in r["titres"].items()})
 
     # ------------------------------------------------------------------ santé
     def sg_liens(f):

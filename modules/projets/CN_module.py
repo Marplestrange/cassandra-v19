@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : projets
 # ZONE       : CN
-# VERSION CN : 0.1.0  #95279f
+# VERSION CN : 0.1.0  #76b36a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les projets.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=95279f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=76b36a ▼▼▼
 """Les projets.
 
 Porté de la V18 (`pj_*`, `projet_*`), avec ses leçons :
@@ -207,14 +207,8 @@ def brancher(ctx):
                 "detail": ("%d sur %d (phases, pondérées par leur charge)" % (fait, total)) if total else ""}
 
     def glissement(p, phases, jalons):
-        lignes = []
-        for ph in phases:
-            if ph["ref_fin"] and ph["fin"] and ph["fin"] > ph["ref_fin"]:
-                lignes.append({"genre": "phase", "nom": ph["nom"], "jours": jours_entre(ph["ref_fin"], ph["fin"]), "prevu": ph["ref_fin"], "maintenant": ph["fin"]})
-        for j in jalons:
-            if j["ref_date"] and j["date"] and j["date"] > j["ref_date"]:
-                lignes.append({"genre": "jalon", "nom": j["nom"], "jours": jours_entre(j["ref_date"], j["date"]), "prevu": j["ref_date"], "maintenant": j["date"]})
-        return {"lignes": lignes, "max_jours": max([l["jours"] for l in lignes] or [0]), "reference": p["ref_date"]}
+        """glissement. Le calcul est un POINT D'ÉVOLUTION : points/EC_glissement.py."""
+        return ctx.point("glissement", {"p": p, "phases": phases, "jalons": jalons})["valeur"]
 
     def voir(c, id=0):
         compte = compte_agit()

@@ -1,0 +1,23 @@
+{
+ "point": "modeles.appels_de",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "brut_calls"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "des arguments illisibles ne font jamais échouer : ils sont rendus sous `_brut`, tronqués à 2000 caractères, pour que le modèle se corrige au tour suivant",
+  "un appel sans identifiant en reçoit un, par son rang",
+  "les arguments rendus sont toujours un dictionnaire",
+  "l'ordre des appels est celui du modèle"
+ ]
+}

@@ -173,3 +173,11 @@ contrat = "1.0"
 reference = "points/EC_dom_enregistre"
 fonction = "point_dom_enregistre"
 runtime = "python"
+
+[[points_evolution]]
+id = "derives"
+libelle = "Les dérives du DNS : la relève, la référence et les adresses publiques en entrée, les enregistrements qui ont dérivé en sortie (un nom qu'on n'a pas pu lire n'est ni une dérive ni une conformité)"
+contrat = "1.0"
+reference = "points/EC_derives"
+fonction = "point_derives"
+runtime = "python"
