@@ -956,3 +956,29 @@ droit = "gerer"
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[capacites]]
+id = "evenement_impact"
+libelle = "Les chiffres d'une annulation ou d'un report, avant de confirmer : commandes à rembourser par moyen, commissions à reprendre, artistes et revendeurs à prévenir, salle (rien n'est écrit)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "evenement_annuler"
+libelle = "Annuler un événement : vente fermée, commandes payées remboursées, invitations annulées, commissions reprises, acheteurs, artistes et revendeurs prévenus (l'argent à rendre chez le prestataire ou à la main est listé)"
+risque = "eleve"
+droit = "gerer"
+perimetre = ["l'événement, ses commandes, ses billets, le registre des commissions, la boîte d'envoi"]
+preuve = "plus aucun billet valide ni commande ouverte, événement annulé"
+retour = "rouvrir l'événement, rejouer les commandes remboursées ; un courriel déjà parti ne se rappelle pas"
+paliers = ["raconter"]
+
+[[capacites]]
+id = "evenement_reporter"
+libelle = "Reporter un événement à une nouvelle date : les billets restent valables, acheteurs, artistes et revendeurs prévenus, commissions retirables seulement après la nouvelle date"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la date de l'événement, la boîte d'envoi, la disponibilité des commissions"]
+preuve = "la date relue"
+retour = "remettre l'ancienne date ; un courriel déjà parti ne se rappelle pas"
+paliers = ["raconter", "auto", "maitre"]

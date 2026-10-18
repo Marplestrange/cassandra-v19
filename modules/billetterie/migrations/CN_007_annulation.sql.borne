@@ -1,0 +1,15 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Migration 007_annulation.sql
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : billetterie
+# ZONE       : CN
+# VERSION CN : 0.1.0  #dc1b7c
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Migration 007_annulation.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)
+# MÉTHODE    : à compléter par l'auteur
+# ══════════════════════════════════════════════════════════════════════════════
+# FICHIER    : CN_007_annulation.sql  (empreinte du contenu #dc1b7c)

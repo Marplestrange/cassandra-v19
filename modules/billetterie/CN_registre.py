@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f9d14b
+# VERSION CN : 0.1.0  #d9fb02
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : le registre des mouvements (le « portefeuille » des revendeurs et des artistes) et les demandes de retrait.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f9d14b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d9fb02 ▼▼▼
 """Billetterie : le registre des mouvements (le « portefeuille » des revendeurs et des artistes) et les demandes de retrait.
 
 Règles d'or :
@@ -69,9 +69,10 @@ def ecrire(tx, porteur, porteur_id, nature, montant, *, evenement_id=None, dispo
 def soldes(tx, porteur, porteur_id, au=""):
     """Ce qui est dû au porteur : retirable aujourd'hui, en attente de sa date, et ce qui est déjà parti en demande de retrait ou versé."""
     au = au or date.today().isoformat()
-    ligne = tx.execute("SELECT COALESCE(SUM(CASE WHEN disponible_le <= ? THEN montant ELSE 0 END), 0) AS disponible, "
-                       "COALESCE(SUM(CASE WHEN disponible_le > ? THEN montant ELSE 0 END), 0) AS en_attente, COALESCE(SUM(montant), 0) AS du "
-                       "FROM mouvements WHERE porteur = ? AND porteur_id = ?", (au, au, porteur, int(porteur_id))).fetchone()
+    eff = "(CASE WHEN COALESCE(e.dispo_min, '') > m.disponible_le THEN e.dispo_min ELSE m.disponible_le END)"       # un événement reporté repousse la disponibilité de ses lignes
+    ligne = tx.execute("SELECT COALESCE(SUM(CASE WHEN %s <= ? THEN m.montant ELSE 0 END), 0) AS disponible, "
+                       "COALESCE(SUM(CASE WHEN %s > ? THEN m.montant ELSE 0 END), 0) AS en_attente, COALESCE(SUM(m.montant), 0) AS du "
+                       "FROM mouvements m LEFT JOIN evenements e ON e.id = m.evenement_id WHERE m.porteur = ? AND m.porteur_id = ?" % (eff, eff), (au, au, porteur, int(porteur_id))).fetchone()
     en_cours = tx.execute("SELECT COALESCE(SUM(montant),0) FROM retraits WHERE porteur = ? AND porteur_id = ? AND etat IN ('demandee','validee')", (porteur, int(porteur_id))).fetchone()[0]
     verse = tx.execute("SELECT COALESCE(SUM(montant),0) FROM retraits WHERE porteur = ? AND porteur_id = ? AND etat = 'payee'", (porteur, int(porteur_id))).fetchone()[0]
     return {"au": au, "disponible": ligne["disponible"], "en_attente": ligne["en_attente"], "du": ligne["du"], "retraits_en_cours": en_cours, "verse": verse}
