@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=438992 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=4980df ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -94,6 +94,32 @@ body.d19 .app-body{position:relative}
 .d19-tip{position:fixed;z-index:200;background:#101828;color:#fff;font:500 11.5px 'JetBrains Mono',monospace;padding:5px 9px;border-radius:8px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s}
 .d19-tip.v{opacity:1}
 #d19-scrim{display:none}
+/* ---------- la colonne en verre poli : une dalle flottante, givrée, éclairée par le haut ---------- */
+#d19-side{
+  --v-teinte:rgba(20,184,166,.10);
+  margin:10px 0 14px 14px;padding:16px 10px 14px 10px;border-radius:22px;
+  background:
+    radial-gradient(120% 60% at 0% 0%,var(--v-teinte),transparent 60%),
+    linear-gradient(165deg,rgba(255,255,255,.78),rgba(255,255,255,.42));
+  -webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);
+  border:1px solid rgba(255,255,255,.7);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(16,24,40,.04),0 1px 2px rgba(16,24,40,.05),0 18px 40px -14px rgba(15,70,66,.28);
+}
+:root[data-theme="dark"] #d19-side{--v-teinte:rgba(45,212,191,.12);background:radial-gradient(120% 60% at 0% 0%,var(--v-teinte),transparent 60%),linear-gradient(165deg,rgba(255,255,255,.09),rgba(255,255,255,.03));border-color:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 18px 40px -14px rgba(0,0,0,.6)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #d19-side{--v-teinte:rgba(45,212,191,.12);background:radial-gradient(120% 60% at 0% 0%,var(--v-teinte),transparent 60%),linear-gradient(165deg,rgba(255,255,255,.09),rgba(255,255,255,.03));border-color:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 18px 40px -14px rgba(0,0,0,.6)}}
+#d19-side.ferme{margin-left:0;margin-right:0;border-width:0;box-shadow:none}
+#d19-side.rail{padding:14px 6px}
+#d19-side::-webkit-scrollbar{width:6px}#d19-side::-webkit-scrollbar-thumb{background:rgba(15,70,66,.18);border-radius:3px}
+#d19-side h2{color:var(--accent);opacity:.85;letter-spacing:.09em;display:flex;align-items:center;gap:8px}
+#d19-side h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.d19-si{position:relative;transition:background .15s,color .15s,transform .15s,box-shadow .15s}
+.d19-si:hover{background:rgba(255,255,255,.65);transform:translateX(2px)}
+.d19-si.on{background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.7));color:var(--accent);box-shadow:0 1px 0 rgba(255,255,255,1) inset,0 6px 16px -6px rgba(15,110,100,.35),0 0 0 1px rgba(20,184,166,.18)}
+.d19-si.on::before{content:"";position:absolute;left:-10px;top:22%;bottom:22%;width:4px;border-radius:0 4px 4px 0;background:linear-gradient(180deg,#2dd4bf,var(--accent));box-shadow:0 0 10px rgba(45,212,191,.7)}
+.d19-si.on>svg.d-i:first-child{color:var(--accent)}
+.d19-sep{border-top:0;height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent)}
+:root[data-theme="dark"] .d19-si:hover{background:rgba(255,255,255,.08)}
+:root[data-theme="dark"] .d19-si.on{background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.07));box-shadow:0 6px 16px -6px rgba(0,0,0,.5),0 0 0 1px rgba(45,212,191,.25)}
 
 .d19-lat-sous{font:400 11px 'JetBrains Mono',monospace;color:var(--txt-faint);padding:0 10px 10px;margin-top:-6px}
 /* ---------- bandeau de page (ordinateur : fil d'Ariane et étoile) et pastilles (téléphone) ---------- */
