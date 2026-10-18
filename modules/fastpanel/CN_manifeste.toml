@@ -367,3 +367,11 @@ privileges = ["la base SQLite du panneau est ouverte en lecture seule", "le comp
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "audit"
+libelle = "L'audit des sites du panneau : leurs certificats (échus, proches, absents, inconnus) et leur version de PHP (fin de support, bientôt) ; les sites et l'instant en entrée, l'audit en sortie"
+contrat = "1.0"
+reference = "points/EC_audit"
+fonction = "point_audit"
+runtime = "python"

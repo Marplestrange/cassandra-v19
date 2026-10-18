@@ -1,0 +1,37 @@
+{
+ "point": "fastpanel.audit",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "op",
+   "sites"
+  ],
+  "properties": {
+   "op": {
+    "enum": [
+     "certificats",
+     "php"
+    ]
+   },
+   "sites": {
+    "type": "array"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un certificat échu, proche, absent ou inconnu est dit tel quel : jamais compté « actif »",
+  "les certificats proches sont triés du plus pressé au moins pressé",
+  "une version de PHP absente de la table de fin de support n'est ni finie ni proche",
+  "un site sans version lisible n'est rendu « version non lue » que si son gestionnaire est de la famille PHP",
+  "la fin de support est comparée à l'instant reçu : jamais à l'horloge",
+  "les mêmes sites et le même instant donnent toujours le même audit"
+ ]
+}

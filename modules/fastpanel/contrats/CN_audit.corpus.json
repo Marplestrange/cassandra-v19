@@ -1,0 +1,1337 @@
+{
+ "point": "fastpanel.audit",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de fastpanel, données synthétiques",
+ "cas": [
+  {
+   "cas": "aucun site",
+   "entree": {
+    "op": "certificats",
+    "sites": [],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "echus": [],
+     "proches": [],
+     "sans": [],
+     "inconnus": [],
+     "actifs": 0,
+     "total": 0
+    }
+   }
+  },
+  {
+   "cas": "un site actif",
+   "entree": {
+    "op": "certificats",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "echus": [],
+     "proches": [],
+     "sans": [],
+     "inconnus": [],
+     "actifs": 1,
+     "total": 1
+    }
+   }
+  },
+  {
+   "cas": "échu",
+   "entree": {
+    "op": "certificats",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "echu",
+       "jours": -3,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "echus": [
+      "a.test"
+     ],
+     "proches": [],
+     "sans": [],
+     "inconnus": [],
+     "actifs": 0,
+     "total": 1
+    }
+   }
+  },
+  {
+   "cas": "proche",
+   "entree": {
+    "op": "certificats",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "proche",
+       "jours": 5,
+       "echeance": "2026-10-22"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "echus": [],
+     "proches": [
+      {
+       "domaine": "a.test",
+       "jours": 5,
+       "echeance": "2026-10-22"
+      }
+     ],
+     "sans": [],
+     "inconnus": [],
+     "actifs": 1,
+     "total": 1
+    }
+   }
+  },
+  {
+   "cas": "proches triés par jours",
+   "entree": {
+    "op": "certificats",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "proche",
+       "jours": 20,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "b.test",
+      "ssl": {
+       "etat": "proche",
+       "jours": 3,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "c.test",
+      "ssl": {
+       "etat": "proche",
+       "jours": 11,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "echus": [],
+     "proches": [
+      {
+       "domaine": "b.test",
+       "jours": 3,
+       "echeance": "2027-01-01"
+      },
+      {
+       "domaine": "c.test",
+       "jours": 11,
+       "echeance": "2027-01-01"
+      },
+      {
+       "domaine": "a.test",
+       "jours": 20,
+       "echeance": "2027-01-01"
+      }
+     ],
+     "sans": [],
+     "inconnus": [],
+     "actifs": 3,
+     "total": 3
+    }
+   }
+  },
+  {
+   "cas": "sans certificat",
+   "entree": {
+    "op": "certificats",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "echus": [],
+     "proches": [],
+     "sans": [
+      "a.test"
+     ],
+     "inconnus": [],
+     "actifs": 0,
+     "total": 1
+    }
+   }
+  },
+  {
+   "cas": "inconnu",
+   "entree": {
+    "op": "certificats",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "inconnu",
+       "jours": null,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "echus": [],
+     "proches": [],
+     "sans": [],
+     "inconnus": [
+      "a.test"
+     ],
+     "actifs": 0,
+     "total": 1
+    }
+   }
+  },
+  {
+   "cas": "tout mélangé",
+   "entree": {
+    "op": "certificats",
+    "sites": [
+     {
+      "domaine": "a",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "b",
+      "ssl": {
+       "etat": "echu",
+       "jours": -1,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "c",
+      "ssl": {
+       "etat": "proche",
+       "jours": 7,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "d",
+      "ssl": {
+       "etat": "aucun",
+       "jours": null,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "e",
+      "ssl": {
+       "etat": "inconnu",
+       "jours": null,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "f",
+      "ssl": {
+       "etat": "proche",
+       "jours": 2,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "g",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "echus": [
+      "b"
+     ],
+     "proches": [
+      {
+       "domaine": "f",
+       "jours": 2,
+       "echeance": "2027-01-01"
+      },
+      {
+       "domaine": "c",
+       "jours": 7,
+       "echeance": "2027-01-01"
+      }
+     ],
+     "sans": [
+      "d"
+     ],
+     "inconnus": [
+      "e"
+     ],
+     "actifs": 4,
+     "total": 7
+    }
+   }
+  },
+  {
+   "cas": "proches à égalité de jours",
+   "entree": {
+    "op": "certificats",
+    "sites": [
+     {
+      "domaine": "b.test",
+      "ssl": {
+       "etat": "proche",
+       "jours": 4,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "proche",
+       "jours": 4,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "echus": [],
+     "proches": [
+      {
+       "domaine": "b.test",
+       "jours": 4,
+       "echeance": "2027-01-01"
+      },
+      {
+       "domaine": "a.test",
+       "jours": 4,
+       "echeance": "2027-01-01"
+      }
+     ],
+     "sans": [],
+     "inconnus": [],
+     "actifs": 2,
+     "total": 2
+    }
+   }
+  },
+  {
+   "cas": "deux échus",
+   "entree": {
+    "op": "certificats",
+    "sites": [
+     {
+      "domaine": "a",
+      "ssl": {
+       "etat": "echu",
+       "jours": -1,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "b",
+      "ssl": {
+       "etat": "echu",
+       "jours": -9,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "echus": [
+      "a",
+      "b"
+     ],
+     "proches": [],
+     "sans": [],
+     "inconnus": [],
+     "actifs": 0,
+     "total": 2
+    }
+   }
+  },
+  {
+   "cas": "état hors liste",
+   "entree": {
+    "op": "certificats",
+    "sites": [
+     {
+      "domaine": "a",
+      "ssl": {
+       "etat": "zzz",
+       "jours": 1,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "echus": [],
+     "proches": [],
+     "sans": [],
+     "inconnus": [],
+     "actifs": 0,
+     "total": 1
+    }
+   }
+  },
+  {
+   "cas": "php 8.3 supporté",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.3",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "php 5.6 fini",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "5.6",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [
+      {
+       "domaine": "a.test",
+       "php": "5.6",
+       "fin": "2018-12-31"
+      }
+     ],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "php 7.4 fini",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "7.4",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [
+      {
+       "domaine": "a.test",
+       "php": "7.4",
+       "fin": "2022-11-28"
+      }
+     ],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "php 8.1 fini",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.1",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [
+      {
+       "domaine": "a.test",
+       "php": "8.1",
+       "fin": "2025-12-31"
+      }
+     ],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "php 8.2 bientôt",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.2",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [
+      {
+       "domaine": "a.test",
+       "php": "8.2",
+       "fin": "2026-12-31"
+      }
+     ],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "php 8.4 loin",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.4",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "php inconnu de la table",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "9.9",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "php illisible",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "abc",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [],
+     "version_non_lue": [
+      {
+       "domaine": "a.test",
+       "gestionnaire": "php_fpm"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "php absent, gestionnaire php",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "PHP_FPM",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [],
+     "version_non_lue": [
+      {
+       "domaine": "a.test",
+       "gestionnaire": "PHP_FPM"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "php absent, gestionnaire autre",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "nginx",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "php absent, gestionnaire absent",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "php avec patch",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.2.14",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [
+      {
+       "domaine": "a.test",
+       "php": "8.2",
+       "fin": "2026-12-31"
+      }
+     ],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "php avec texte",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a.test",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "PHP 7.2 (fpm)",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [
+      {
+       "domaine": "a.test",
+       "php": "7.2",
+       "fin": "2020-11-30"
+      }
+     ],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "plusieurs sites",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.3",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "b",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "7.0",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "c",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.2",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "d",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [
+      {
+       "domaine": "b",
+       "php": "7.0",
+       "fin": "2019-01-10"
+      }
+     ],
+     "bientot": [
+      {
+       "domaine": "c",
+       "php": "8.2",
+       "fin": "2026-12-31"
+      }
+     ],
+     "version_non_lue": [
+      {
+       "domaine": "d",
+       "gestionnaire": "php_fpm"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "apache et itk",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "apache",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "b",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "mpm_itk",
+      "proprietaire": "u",
+      "statut": "active"
+     },
+     {
+      "domaine": "c",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "",
+      "gestionnaire": "fastuser",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [],
+     "version_non_lue": [
+      {
+       "domaine": "a",
+       "gestionnaire": "apache"
+      },
+      {
+       "domaine": "b",
+       "gestionnaire": "mpm_itk"
+      },
+      {
+       "domaine": "c",
+       "gestionnaire": "fastuser"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "aucun site",
+   "entree": {
+    "op": "php",
+    "sites": [],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "x",
+      "ssl": {
+       "etat": "actif",
+       "jours": 1,
+       "echeance": ""
+      },
+      "php": null,
+      "gestionnaire": null
+     }
+    ],
+    "maintenant": "2026-10-17 12:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "pile à la date de fin",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.2",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-12-31 08:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [
+      {
+       "domaine": "a",
+       "php": "8.2",
+       "fin": "2026-12-31"
+      }
+     ],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "la veille de la fin",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.2",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2026-12-30 08:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [
+      {
+       "domaine": "a",
+       "php": "8.2",
+       "fin": "2026-12-31"
+      }
+     ],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "le lendemain de la fin",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.2",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2027-01-01 08:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [
+      {
+       "domaine": "a",
+       "php": "8.2",
+       "fin": "2026-12-31"
+      }
+     ],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "pile à cent vingt jours",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.1",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2025-09-02 08:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "à cent vingt et un jours",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.1",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2025-09-01 08:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "à cent dix-neuf jours",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.1",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2025-09-03 08:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [],
+     "bientot": [
+      {
+       "domaine": "a",
+       "php": "8.1",
+       "fin": "2025-12-31"
+      }
+     ],
+     "version_non_lue": []
+    }
+   }
+  },
+  {
+   "cas": "très loin dans le futur",
+   "entree": {
+    "op": "php",
+    "sites": [
+     {
+      "domaine": "a",
+      "ssl": {
+       "etat": "actif",
+       "jours": 100,
+       "echeance": "2027-01-01"
+      },
+      "php": "8.4",
+      "gestionnaire": "php_fpm",
+      "proprietaire": "u",
+      "statut": "active"
+     }
+    ],
+    "maintenant": "2040-01-01 00:00:00"
+   },
+   "sortie": {
+    "valeur": {
+     "fin_de_support": [
+      {
+       "domaine": "a",
+       "php": "8.4",
+       "fin": "2028-12-31"
+      }
+     ],
+     "bientot": [],
+     "version_non_lue": []
+    }
+   }
+  }
+ ]
+}

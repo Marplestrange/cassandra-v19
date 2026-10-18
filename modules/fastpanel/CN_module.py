@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #555647
+# VERSION CN : 0.2.0  #a53d62
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont FastPanel.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=555647 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=a53d62 ▼▼▼
 """Le pont FastPanel.
 
 Deux voies, chacune pour ce qu'elle fait de mieux :
@@ -91,6 +91,7 @@ class PontErreur(Exception):
 
 # ------------------------------------------------------------------ réglages
 _CTX = None
+_point = None          # les points d'évolution du module (ctx.point), posés par brancher()
 _SESSIONS = {}          # base -> {"jeton", "t"} : une session par adresse, en mémoire seulement
 _TRACE_LOGIN = []       # ce que chaque tentative de connexion a réellement renvoyé (sans jamais citer un secret)
 
@@ -574,11 +575,8 @@ def _proxys():
 
 # ------------------------------------------------------------------ les audits (fonctions pures sur des listes)
 def audit_certificats(sites):
-    return {"echus": [s["domaine"] for s in sites if s["ssl"]["etat"] == "echu"],
-            "proches": [{"domaine": s["domaine"], "jours": s["ssl"]["jours"], "echeance": s["ssl"]["echeance"]} for s in sorted((s for s in sites if s["ssl"]["etat"] == "proche"), key=lambda x: x["ssl"]["jours"])],
-            "sans": [s["domaine"] for s in sites if s["ssl"]["etat"] == "aucun"],
-            "inconnus": [s["domaine"] for s in sites if s["ssl"]["etat"] == "inconnu"],
-            "actifs": sum(1 for s in sites if s["ssl"]["etat"] in ("actif", "proche")), "total": len(sites)}
+    """Les certificats des sites rangés par état. Le calcul est un POINT D'ÉVOLUTION : points/EC_audit.py (opération « certificats »)."""
+    return _point("audit", {"op": "certificats", "sites": sites})["valeur"]
 
 
 def audit_sauvegardes(sites, copies, proxys, seuil_j, maintenant=None):
@@ -605,23 +603,9 @@ def audit_sauvegardes(sites, copies, proxys, seuil_j, maintenant=None):
 
 
 def audit_php(sites, maintenant=None):
-    auj = (maintenant or datetime.now(timezone.utc).replace(tzinfo=None))
-    aujourdhui, bientot = auj.strftime("%Y-%m-%d"), (auj + timedelta(days=120)).strftime("%Y-%m-%d")
-    finis, proches, inconnus = [], [], []
-    for s in sites:
-        m = re.search(r"(\d+\.\d+)", s.get("php") or "")
-        if not m:
-            if (s.get("gestionnaire") or "").lower() in ("php_fpm", "mpm_itk", "fastuser", "php", "apache"):
-                inconnus.append({"domaine": s["domaine"], "gestionnaire": s["gestionnaire"]})
-            continue
-        fin = FIN_SUPPORT_PHP.get(m.group(1))
-        if not fin:
-            continue
-        if fin < aujourdhui:
-            finis.append({"domaine": s["domaine"], "php": m.group(1), "fin": fin})
-        elif fin < bientot:
-            proches.append({"domaine": s["domaine"], "php": m.group(1), "fin": fin})
-    return {"fin_de_support": finis, "bientot": proches, "version_non_lue": inconnus}
+    """Les versions de PHP en fin de support ou bientôt. Le calcul est un POINT D'ÉVOLUTION : points/EC_audit.py (opération « php »). L'horloge se lit ICI."""
+    auj = maintenant or datetime.now(timezone.utc).replace(tzinfo=None)
+    return _point("audit", {"op": "php", "sites": sites, "maintenant": auj.strftime("%Y-%m-%d %H:%M:%S")})["valeur"]
 
 
 # ------------------------------------------------------------------ services (par l'API)
@@ -660,8 +644,9 @@ def _trouver_service(services, nom):
 
 # ------------------------------------------------------------------ le branchement
 def brancher(ctx):
-    global _CTX
+    global _CTX, _point
     _CTX = ctx
+    _point = ctx.point
     PANNEAU = ("fastpanel", "principal")
     memoire = {"audit_t": 0.0}
 
