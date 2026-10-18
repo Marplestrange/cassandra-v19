@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.9  #587fce
+# VERSION CN : 0.1.10  #587fce
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : fp_formes.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

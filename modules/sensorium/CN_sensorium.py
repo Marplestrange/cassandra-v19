@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.9  #892e5f
+# VERSION CN : 0.1.10  #0708f9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.9 empreinte=892e5f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.10 empreinte=0708f9 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -2246,6 +2246,85 @@ def collect_phpfpm_pools():
         except Exception:
             pass
     return _sys_formes("pools_php", confs=lus, ps=ps, journaux=journaux, jour=jour, now=now)
+
+
+def collect_redis_stats():
+    out = run_cmd("redis-cli INFO stats")
+    if out:
+        hits   = re.search(r'keyspace_hits:(\d+)', out)
+        misses = re.search(r'keyspace_misses:(\d+)', out)
+        if hits and misses:
+            total = int(hits.group(1)) + int(misses.group(1))
+            hit_rate = round(100.0 * int(hits.group(1)) / total, 1) if total > 0 else 0
+            return {"ts": datetime.now().isoformat(), "hit_rate": hit_rate,
+                    "total_keys": 0, "last_check": datetime.now().isoformat()}
+    return None
+
+
+def collect_dns_servers():
+    servers = []
+    now = datetime.now().isoformat()
+    if Path("/etc/bind/named.conf").exists():
+        out = run_cmd("named -v")
+        version = re.search(r'BIND ([\d.]+)', out)
+        servers.append({"server_type": "bind",
+                        "version": version.group(1) if version else "unknown",
+                        "running": 1 if "active" in run_cmd("systemctl is-active bind9") else 0,
+                        "last_check": now})
+    if Path("/etc/powerdns/pdns.conf").exists():
+        servers.append({"server_type": "powerdns", "version": "unknown",
+                        "running": 1 if "active" in run_cmd("systemctl is-active pdns") else 0,
+                        "last_check": now})
+    return servers, []
+
+
+def collect_backup_runs():
+    runs = []
+    now = datetime.now().isoformat()
+    conf_candidates = [
+        Path("/root/.config/rclone/rclone.conf"),
+        Path("/etc/rclone/rclone.conf"),
+        Path("/home/rclone/.config/rclone/rclone.conf"),
+    ]
+    for conf in conf_candidates:
+        if not conf.exists():
+            continue
+        try:
+            config = configparser.ConfigParser()
+            config.read(conf)
+            for section in config.sections():
+                log_status = "unknown"
+                log_path = Path(f"/var/log/rclone/{section}.log")
+                if log_path.exists():
+                    last_line = run_cmd(f"tail -1 {shlex.quote(str(log_path))}")
+                    if "Transferred" in last_line:
+                        log_status = "success"
+                    elif "ERROR" in last_line:
+                        log_status = "error"
+                runs.append({"remote": section, "ts": now, "status": log_status,
+                             "size_gb": 0, "files_count": 0, "last_check": now})
+        except Exception:
+            pass
+    return runs
+
+
+def collect_vpn_connections():
+    vpns = []
+    now = datetime.now().isoformat()
+    out = run_cmd("wg show")
+    if out:
+        vpns.append({"type": "wireguard", "name": "wg0", "status": "active", "last_check": now})
+    ts_out = run_cmd("tailscale status --json")
+    if ts_out:
+        try:
+            data = json.loads(ts_out)
+            self_data = data.get("Self", {})
+            vpns.append({"type": "tailscale",
+                         "name": self_data.get("DNSName", "").split(".")[0],
+                         "status": "connected", "last_check": now})
+        except Exception:
+            pass
+    return vpns
 
 
 def collect_cron_jobs():

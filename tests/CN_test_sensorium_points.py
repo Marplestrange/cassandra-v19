@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6ed8d5
+# VERSION CN : 0.1.0  #ec7add
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le démon du Sensorium, seul et sans noyau, appelle ses points d'évolution ; que ses appels nourrissent le rejeu que le noyau absorbe ; et qu'une panne du service ne perd jamais une mesure.
 # MÉTHODE    : charge CN_sensorium.py comme module, un dossier de données temporaire, puis appelle les fonctions façades.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6ed8d5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ec7add ▼▼▼
 import importlib.util
 import json
 import os
@@ -227,6 +227,17 @@ class FauxOuvert:
 
     def read(self, n):
         return self.contenu[self.pos:self.pos + n]
+
+
+class Integrite(unittest.TestCase):
+    """Le démon plantait au démarrage quand une découpe emportait des fonctions voisines : aucun collecteur appelé ne peut manquer."""
+
+    def test_tout_collecteur_appele_est_defini(self):
+        import ast
+        arbre = ast.parse((Path(__file__).resolve().parent.parent / "modules" / "sensorium" / "CN_sensorium.py").read_text(encoding="utf-8"))
+        definis = {n.name for n in arbre.body if isinstance(n, ast.FunctionDef)}
+        appeles = {n.id for n in ast.walk(arbre) if isinstance(n, ast.Name) and n.id.startswith(("collect_", "_collect_"))}
+        self.assertEqual(sorted(appeles - definis), [])
 
 
 class Collecteurs(unittest.TestCase):
