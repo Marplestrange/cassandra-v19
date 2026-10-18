@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=80463f ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=8a31e1 ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -97,7 +97,7 @@ body.d19 .app-body{position:relative}
 /* ---------- la colonne en verre poli : une dalle flottante, givrée, éclairée par le haut ---------- */
 #d19-side{
   --v-teinte:rgba(20,184,166,.10);
-  margin:10px 0 14px 14px;padding:16px 10px 14px 10px;border-radius:22px;
+  margin:76px 0 14px 14px;padding:16px 10px 14px 10px;border-radius:22px;       /* 76 px : la dalle repart au niveau du titre de page, sous le bandeau du fil */
   background:
     radial-gradient(120% 60% at 0% 0%,var(--v-teinte),transparent 60%),
     linear-gradient(165deg,rgba(255,255,255,.78),rgba(255,255,255,.42));
@@ -334,7 +334,7 @@ body.d19 #tab-vault .cf-back{display:none}
 /* ---------- largeurs mesurées sur le cadre ---------- */
 #app-container[data-w="xl"] #d19-cass.ouvert{width:370px}
 #app-container[data-w="s"] #d19-top .nav-fleches,#app-container[data-w="s"] #d19-vtxt,#app-container[data-w="xs"] #d19-top .nav-fleches,#app-container[data-w="xs"] #d19-vtxt,#app-container[data-w="xs"] #d19-theme,#app-container[data-w="xs"] #d19-groupes,#app-container[data-w="xs"] #d19-btn-cass{display:none}
-#app-container[data-w="s"] #d19-side,#app-container[data-w="xs"] #d19-side{position:absolute;top:60px;bottom:0;left:0;width:min(280px,80%);background:var(--d-pop);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:var(--shadow-glass);border-right:1px solid var(--line);z-index:50}
+#app-container[data-w="s"] #d19-side,#app-container[data-w="xs"] #d19-side{position:absolute;margin:0;top:60px;bottom:0;left:0;width:min(280px,80%);background:var(--d-pop);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:var(--shadow-glass);border-right:1px solid var(--line);z-index:50}
 #app-container[data-w="s"] #d19-side.ferme,#app-container[data-w="xs"] #d19-side.ferme{transform:translateX(-105%);width:min(280px,80%);padding-left:14px;box-shadow:none}
 #app-container[data-w="s"] #d19-scrim.on,#app-container[data-w="xs"] #d19-scrim.on{display:block;position:absolute;inset:60px 0 0 0;background:rgba(16,24,40,.28);z-index:49}
 #app-container[data-w="xs"] #d19-side,#app-container[data-w="xs"] #d19-scrim{display:none!important}
