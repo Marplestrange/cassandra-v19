@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7b729e
+# VERSION CN : 0.1.0  #92bab2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du corpus de rejeu et de l'évaluateur : la partition réservée, la borne, l'équivalence par paliers, le gain qui tient, et l'évaluateur qui se teste lui-même.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7b729e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=92bab2 ▼▼▼
 """Bancs du corpus de rejeu et de l'évaluateur : la partition réservée, la borne, l'équivalence par paliers, le gain qui tient, et l'évaluateur qui se teste lui-même."""
 import json
 import shutil
@@ -47,6 +47,20 @@ class Stockage(unittest.TestCase):
         s = self.r.stats("m.p")
         self.assertEqual((s["distincts"], s["appels"]), (1, 2))
         self.assertEqual(s["duree_moyenne_ms"], 2.0)
+
+    def test_absorber_ajoute_les_deltas_d_un_autre_processus_sans_rien_compter_deux_fois(self):
+        autre = R.Rejeu(self.tmp / "autre.db")
+        autre.enregistrer("m.p", {"x": 1}, {}, 2.0)
+        autre.enregistrer("m.p", {"x": 1}, {}, 4.0)
+        autre.enregistrer("m.p", {"x": 2}, {}, 1.0)
+        self.assertEqual(self.r.absorber(self.tmp / "autre.db"), 3)
+        self.assertEqual(self.r.absorber(self.tmp / "autre.db"), 0)                      # rien de nouveau : rien d'ajouté
+        s = self.r.stats("m.p")
+        self.assertEqual((s["distincts"], s["appels"]), (2, 3))
+        autre.enregistrer("m.p", {"x": 2}, {}, 3.0)
+        self.assertEqual(self.r.absorber(self.tmp / "autre.db"), 1)                      # seul le delta
+        self.assertEqual(self.r.stats("m.p")["appels"], 4)
+        self.assertEqual(self.r.absorber(self.tmp / "absent.db"), 0)                     # un fichier absent n'est pas une erreur
 
     def test_la_partition_reservee_est_stable_et_proche_d_un_cinquieme(self):
         for i in range(300):

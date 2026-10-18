@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.2.0  #a59144
+# VERSION CN : 0.2.0  #bc519c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=a59144 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=bc519c ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -56,10 +56,19 @@ def brancher(ctx):
         return gid.split(".", 1)
 
     # ── les lectures ─────────────────────────────────────────────────────
+    def absorber_externes():
+        """Les appels que le démon du Sensorium garde dans son propre fichier (un autre processus) rejoignent le corpus de rejeu : seuls les deltas sont pris."""
+        try:
+            evo.rejeu.absorber(evo.rejeu.chemin.parent / "sensorium" / "rejeu_sensorium.db")
+        except Exception:
+            pass                                                   # un fichier du démon illisible ne doit jamais gêner l'écran
+
     def cibles(c):
+        absorber_externes()
         return {"cibles": evo.cibles()}
 
     def etat(c):
+        absorber_externes()
         points = []
         for gid in evo.points.points():
             m, p = gid.split(".", 1)
@@ -108,6 +117,7 @@ def brancher(ctx):
 
     # ── le moteur périodique : les paliers avancent seulement si les preuves le permettent ──
     def tick(c):
+        absorber_externes()
         avances = evo.tick()
         visites = evo.visiter()
         return {"avances": avances, "visites": visites}

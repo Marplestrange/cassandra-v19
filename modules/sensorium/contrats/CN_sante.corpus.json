@@ -1,0 +1,1742 @@
+{
+ "point": "sensorium.sante",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de sensorium, données synthétiques",
+ "cas": [
+  {
+   "cas": "tout va bien",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "cpu 0",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 0
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "ram 0",
+   "entree": {
+    "metrics": {
+     "ram_pct": 0
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "disque 0",
+   "entree": {
+    "metrics": {
+     "disk_pct": 0
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "cpu 75",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 75
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "ram 75",
+   "entree": {
+    "metrics": {
+     "ram_pct": 75
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "disque 75",
+   "entree": {
+    "metrics": {
+     "disk_pct": 75
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "cpu 76",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 76
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 95,
+     "status": "excellent",
+     "breakdown": {
+      "cpu": -5
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "ram 76",
+   "entree": {
+    "metrics": {
+     "ram_pct": 76
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 95,
+     "status": "excellent",
+     "breakdown": {
+      "ram": -5
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "disque 76",
+   "entree": {
+    "metrics": {
+     "disk_pct": 76
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 95,
+     "status": "excellent",
+     "breakdown": {
+      "disk": -5
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "cpu 85",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 85
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 95,
+     "status": "excellent",
+     "breakdown": {
+      "cpu": -5
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "ram 85",
+   "entree": {
+    "metrics": {
+     "ram_pct": 85
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 95,
+     "status": "excellent",
+     "breakdown": {
+      "ram": -5
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "disque 85",
+   "entree": {
+    "metrics": {
+     "disk_pct": 85
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 95,
+     "status": "excellent",
+     "breakdown": {
+      "disk": -5
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "cpu 86",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 86
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 88,
+     "status": "good",
+     "breakdown": {
+      "cpu": -12
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "ram 86",
+   "entree": {
+    "metrics": {
+     "ram_pct": 86
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 88,
+     "status": "good",
+     "breakdown": {
+      "ram": -12
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "disque 86",
+   "entree": {
+    "metrics": {
+     "disk_pct": 86
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 88,
+     "status": "good",
+     "breakdown": {
+      "disk": -12
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "cpu 95",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 95
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 88,
+     "status": "good",
+     "breakdown": {
+      "cpu": -12
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "ram 95",
+   "entree": {
+    "metrics": {
+     "ram_pct": 95
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 88,
+     "status": "good",
+     "breakdown": {
+      "ram": -12
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "disque 95",
+   "entree": {
+    "metrics": {
+     "disk_pct": 95
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 88,
+     "status": "good",
+     "breakdown": {
+      "disk": -12
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "cpu 96",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 96
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 80,
+     "status": "good",
+     "breakdown": {
+      "cpu": -20
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "ram 96",
+   "entree": {
+    "metrics": {
+     "ram_pct": 96
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 80,
+     "status": "good",
+     "breakdown": {
+      "ram": -20
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "disque 96",
+   "entree": {
+    "metrics": {
+     "disk_pct": 96
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 80,
+     "status": "good",
+     "breakdown": {
+      "disk": -20
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "cpu 100",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 100
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 80,
+     "status": "good",
+     "breakdown": {
+      "cpu": -20
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "ram 100",
+   "entree": {
+    "metrics": {
+     "ram_pct": 100
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 80,
+     "status": "good",
+     "breakdown": {
+      "ram": -20
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "disque 100",
+   "entree": {
+    "metrics": {
+     "disk_pct": 100
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 80,
+     "status": "good",
+     "breakdown": {
+      "disk": -20
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "tout saturé",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 99,
+     "ram_pct": 99,
+     "disk_pct": 99
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 40,
+     "status": "critical",
+     "breakdown": {
+      "cpu": -20,
+      "ram": -20,
+      "disk": -20
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "certificat valide",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": [
+     {
+      "domain": "a.test",
+      "days_left": 60
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "certificat qui expire",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": [
+     {
+      "domain": "a.test",
+      "days_left": 14
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 95,
+     "status": "excellent",
+     "breakdown": {
+      "ssl": -5
+     },
+     "alerts_count": 1
+    }
+   }
+  },
+  {
+   "cas": "certificat à quinze jours",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": [
+     {
+      "domain": "a.test",
+      "days_left": 15
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "certificat expiré",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": [
+     {
+      "domain": "a.test",
+      "days_left": 0
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 95,
+     "status": "excellent",
+     "breakdown": {
+      "ssl": -5
+     },
+     "alerts_count": 1
+    }
+   }
+  },
+  {
+   "cas": "certificat négatif",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": [
+     {
+      "domain": "a.test",
+      "days_left": -5
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 95,
+     "status": "excellent",
+     "breakdown": {
+      "ssl": -5
+     },
+     "alerts_count": 1
+    }
+   }
+  },
+  {
+   "cas": "certificat sans jours",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": [
+     {
+      "domain": "a.test"
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "certificat jours texte",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": [
+     {
+      "domain": "a.test",
+      "days_left": "bientôt"
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "certificat sans domaine",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": [
+     {
+      "days_left": 3
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 95,
+     "status": "excellent",
+     "breakdown": {
+      "ssl": -5
+     },
+     "alerts_count": 1
+    }
+   }
+  },
+  {
+   "cas": "cinq certificats à problème",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": [
+     {
+      "domain": "d0",
+      "days_left": 2
+     },
+     {
+      "domain": "d1",
+      "days_left": 2
+     },
+     {
+      "domain": "d2",
+      "days_left": 2
+     },
+     {
+      "domain": "d3",
+      "days_left": 2
+     },
+     {
+      "domain": "d4",
+      "days_left": 2
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 80,
+     "status": "good",
+     "breakdown": {
+      "ssl": -20
+     },
+     "alerts_count": 5
+    }
+   }
+  },
+  {
+   "cas": "deux certificats à problème",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": [
+     {
+      "domain": "d0",
+      "days_left": 2
+     },
+     {
+      "domain": "d1",
+      "days_left": 2
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 90,
+     "status": "excellent",
+     "breakdown": {
+      "ssl": -10
+     },
+     "alerts_count": 2
+    }
+   }
+  },
+  {
+   "cas": "trois à problème",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": [
+     {
+      "domain": "d0",
+      "days_left": 2
+     },
+     {
+      "domain": "d1",
+      "days_left": 2
+     },
+     {
+      "domain": "d2",
+      "days_left": 2
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 85,
+     "status": "good",
+     "breakdown": {
+      "ssl": -15
+     },
+     "alerts_count": 3
+    }
+   }
+  },
+  {
+   "cas": "cinq certificats sains",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": [
+     {
+      "domain": "d0",
+      "days_left": 90
+     },
+     {
+      "domain": "d1",
+      "days_left": 90
+     },
+     {
+      "domain": "d2",
+      "days_left": 90
+     },
+     {
+      "domain": "d3",
+      "days_left": 90
+     },
+     {
+      "domain": "d4",
+      "days_left": 90
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "oom 1",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 1,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 95,
+     "status": "excellent",
+     "breakdown": {
+      "oom": -5
+     },
+     "alerts_count": 1
+    }
+   }
+  },
+  {
+   "cas": "services en échec 1",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 1
+   },
+   "sortie": {
+    "valeur": {
+     "score": 95,
+     "status": "excellent",
+     "breakdown": {
+      "failed_units": -5
+     },
+     "alerts_count": 1
+    }
+   }
+  },
+  {
+   "cas": "oom 2",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 2,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 90,
+     "status": "excellent",
+     "breakdown": {
+      "oom": -10
+     },
+     "alerts_count": 2
+    }
+   }
+  },
+  {
+   "cas": "services en échec 2",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 2
+   },
+   "sortie": {
+    "valeur": {
+     "score": 90,
+     "status": "excellent",
+     "breakdown": {
+      "failed_units": -10
+     },
+     "alerts_count": 2
+    }
+   }
+  },
+  {
+   "cas": "oom 3",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 3,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 85,
+     "status": "good",
+     "breakdown": {
+      "oom": -15
+     },
+     "alerts_count": 3
+    }
+   }
+  },
+  {
+   "cas": "services en échec 3",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 3
+   },
+   "sortie": {
+    "valeur": {
+     "score": 85,
+     "status": "good",
+     "breakdown": {
+      "failed_units": -15
+     },
+     "alerts_count": 3
+    }
+   }
+  },
+  {
+   "cas": "oom 5",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 5,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 85,
+     "status": "good",
+     "breakdown": {
+      "oom": -15
+     },
+     "alerts_count": 5
+    }
+   }
+  },
+  {
+   "cas": "services en échec 5",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 5
+   },
+   "sortie": {
+    "valeur": {
+     "score": 80,
+     "status": "good",
+     "breakdown": {
+      "failed_units": -20
+     },
+     "alerts_count": 5
+    }
+   }
+  },
+  {
+   "cas": "smart sain",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": [
+     {
+      "health": "PASSED",
+      "reallocated_sectors": 0
+     }
+    ],
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "smart échoué",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": [
+     {
+      "health": "FAILED"
+     }
+    ],
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 90,
+     "status": "excellent",
+     "breakdown": {
+      "smart": -10
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "smart secteurs réalloués",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": [
+     {
+      "health": "PASSED",
+      "reallocated_sectors": 3
+     }
+    ],
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 95,
+     "status": "excellent",
+     "breakdown": {
+      "smart_warn": -5
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "smart deux avertissements",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": [
+     {
+      "reallocated_sectors": 1
+     },
+     {
+      "reallocated_sectors": 2
+     }
+    ],
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 90,
+     "status": "excellent",
+     "breakdown": {
+      "smart_warn": -5
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "smart échec après avertissement",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": [
+     {
+      "reallocated_sectors": 1
+     },
+     {
+      "health": "FAILED"
+     },
+     {
+      "health": "FAILED"
+     }
+    ],
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 85,
+     "status": "good",
+     "breakdown": {
+      "smart_warn": -5,
+      "smart": -10
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "smart sans santé",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": [
+     {
+      "reallocated_sectors": null
+     }
+    ],
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "smart vide",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": [],
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 100,
+     "status": "excellent",
+     "breakdown": {},
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "tout mêlé",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 90,
+     "ram_pct": 80,
+     "disk_pct": 97
+    },
+    "ssl_certs": [
+     {
+      "domain": "a",
+      "days_left": 1
+     },
+     {
+      "domain": "b",
+      "days_left": 40
+     }
+    ],
+    "services": [],
+    "fail2ban": [],
+    "smart": [
+     {
+      "health": "FAILED"
+     }
+    ],
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 2,
+    "failed_count": 3
+   },
+   "sortie": {
+    "valeur": {
+     "score": 23,
+     "status": "critical",
+     "breakdown": {
+      "cpu": -12,
+      "ram": -5,
+      "disk": -20,
+      "ssl": -5,
+      "oom": -10,
+      "failed_units": -15,
+      "smart": -10
+     },
+     "alerts_count": 6
+    }
+   }
+  },
+  {
+   "cas": "score plancher",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 99,
+     "ram_pct": 99,
+     "disk_pct": 99
+    },
+    "ssl_certs": [
+     {
+      "domain": "d0",
+      "days_left": -1
+     },
+     {
+      "domain": "d1",
+      "days_left": -1
+     },
+     {
+      "domain": "d2",
+      "days_left": -1
+     },
+     {
+      "domain": "d3",
+      "days_left": -1
+     },
+     {
+      "domain": "d4",
+      "days_left": -1
+     },
+     {
+      "domain": "d5",
+      "days_left": -1
+     },
+     {
+      "domain": "d6",
+      "days_left": -1
+     },
+     {
+      "domain": "d7",
+      "days_left": -1
+     },
+     {
+      "domain": "d8",
+      "days_left": -1
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": [
+     {
+      "health": "FAILED"
+     }
+    ],
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 9,
+    "failed_count": 9
+   },
+   "sortie": {
+    "valeur": {
+     "score": 0,
+     "status": "critical",
+     "breakdown": {
+      "cpu": -20,
+      "ram": -20,
+      "disk": -20,
+      "ssl": -20,
+      "oom": -15,
+      "failed_units": -20,
+      "smart": -10
+     },
+     "alerts_count": 27
+    }
+   }
+  },
+  {
+   "cas": "pile à 90",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 80,
+     "ram_pct": 0,
+     "disk_pct": 0
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": [
+     {
+      "reallocated_sectors": 5
+     }
+    ],
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 90,
+     "status": "excellent",
+     "breakdown": {
+      "cpu": -5,
+      "smart_warn": -5
+     },
+     "alerts_count": 0
+    }
+   }
+  },
+  {
+   "cas": "pile à 75",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 90,
+     "ram_pct": 90,
+     "disk_pct": 0
+    },
+    "ssl_certs": null,
+    "services": null,
+    "fail2ban": null,
+    "smart": [
+     {
+      "reallocated_sectors": 1
+     }
+    ],
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 1
+   },
+   "sortie": {
+    "valeur": {
+     "score": 66,
+     "status": "warning",
+     "breakdown": {
+      "cpu": -12,
+      "ram": -12,
+      "failed_units": -5,
+      "smart_warn": -5
+     },
+     "alerts_count": 1
+    }
+   }
+  },
+  {
+   "cas": "pile à 50",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 99,
+     "ram_pct": 99,
+     "disk_pct": 99
+    },
+    "ssl_certs": [
+     {
+      "domain": "x",
+      "days_left": 0
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 35,
+     "status": "critical",
+     "breakdown": {
+      "cpu": -20,
+      "ram": -20,
+      "disk": -20,
+      "ssl": -5
+     },
+     "alerts_count": 1
+    }
+   }
+  },
+  {
+   "cas": "juste sous 50",
+   "entree": {
+    "metrics": {
+     "cpu_pct": 99,
+     "ram_pct": 99,
+     "disk_pct": 99
+    },
+    "ssl_certs": [
+     {
+      "domain": "x",
+      "days_left": 0
+     },
+     {
+      "domain": "x",
+      "days_left": 0
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 0,
+    "failed_count": 0
+   },
+   "sortie": {
+    "valeur": {
+     "score": 30,
+     "status": "critical",
+     "breakdown": {
+      "cpu": -20,
+      "ram": -20,
+      "disk": -20,
+      "ssl": -10
+     },
+     "alerts_count": 2
+    }
+   }
+  },
+  {
+   "cas": "alertes comptées",
+   "entree": {
+    "metrics": {},
+    "ssl_certs": [
+     {
+      "domain": "a",
+      "days_left": 0
+     },
+     {
+      "domain": "b",
+      "days_left": 5
+     }
+    ],
+    "services": null,
+    "fail2ban": null,
+    "smart": null,
+    "sysctl": null,
+    "dns": null,
+    "oom_count": 2,
+    "failed_count": 3
+   },
+   "sortie": {
+    "valeur": {
+     "score": 65,
+     "status": "warning",
+     "breakdown": {
+      "ssl": -10,
+      "oom": -10,
+      "failed_units": -15
+     },
+     "alerts_count": 7
+    }
+   }
+  }
+ ]
+}

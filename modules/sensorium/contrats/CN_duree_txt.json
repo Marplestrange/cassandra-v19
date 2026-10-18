@@ -1,0 +1,23 @@
+{
+ "point": "sensorium.duree_txt",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "sec"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "une valeur illisible se dit « ? », jamais une erreur",
+  "à partir d'un jour, on dit jours et heures",
+  "en deçà, heures et minutes",
+  "la même durée donne toujours le même texte"
+ ]
+}

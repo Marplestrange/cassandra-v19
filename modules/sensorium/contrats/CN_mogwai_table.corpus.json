@@ -1,0 +1,311 @@
+{
+ "point": "sensorium.mogwai_table",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de sensorium, données synthétiques",
+ "cas": [
+  {
+   "cas": "vide",
+   "entree": {
+    "output": ""
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "output": null
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "en-tête seul",
+   "entree": {
+    "output": "NOM  ETAT"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "deux colonnes",
+   "entree": {
+    "output": "NOM   ETAT\nsite1   actif\nsite2   inactif"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "site1",
+      "etat": "actif"
+     },
+     {
+      "nom": "site2",
+      "etat": "inactif"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "séparées par tabulations",
+   "entree": {
+    "output": "NOM\tOWNER\tALIAS\nsite1\tbob\t\nsite2\t\tw.site2"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "site1",
+      "owner": "bob",
+      "alias": ""
+     },
+     {
+      "nom": "site2",
+      "owner": "",
+      "alias": "w.site2"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "tabulation et espaces",
+   "entree": {
+    "output": "NOM\tOWNER\tALIAS\nsite1 \tbob \t   \nsite2\t \tx"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "site1",
+      "owner": "bob",
+      "alias": ""
+     },
+     {
+      "nom": "site2",
+      "owner": "",
+      "alias": "x"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cellule vide au milieu",
+   "entree": {
+    "output": "A  B  C\n1       3"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": "1",
+      "b": "3",
+      "c": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ligne trop courte",
+   "entree": {
+    "output": "A  B  C\n1"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": "1",
+      "b": "",
+      "c": ""
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ligne trop longue",
+   "entree": {
+    "output": "A  B\n1  2  3  4"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": "1",
+      "b": "2"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "lignes vides ignorées",
+   "entree": {
+    "output": "A  B\n\n1  2\n\n\n3  4\n"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": "1",
+      "b": "2"
+     },
+     {
+      "a": "3",
+      "b": "4"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "en-têtes avec espaces",
+   "entree": {
+    "output": "Date de création  Nom du site\n2026-01-01  exemple"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "date_de_création": "2026-01-01",
+      "nom_du_site": "exemple"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "en-têtes en majuscules",
+   "entree": {
+    "output": "NOM  DOMAINE\nx  y"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "x",
+      "domaine": "y"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "espaces de fin",
+   "entree": {
+    "output": "A  B   \n1  2   "
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": "1",
+      "b": "2"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "un seul espace ne coupe pas",
+   "entree": {
+    "output": "A  B\nvaleur avec espace  autre"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": "valeur avec espace",
+      "b": "autre"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "retours chariot",
+   "entree": {
+    "output": "A  B\r\n1  2\r\n"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": "1",
+      "b": "2"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "en-têtes dupliqués",
+   "entree": {
+    "output": "A  A\n1  2"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": "2"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "beaucoup de colonnes",
+   "entree": {
+    "output": "C1  C2  C3  C4  C5  C6\n1  2  3  4  5  6"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "c1": "1",
+      "c2": "2",
+      "c3": "3",
+      "c4": "4",
+      "c5": "5",
+      "c6": "6"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "unicode",
+   "entree": {
+    "output": "NOM  VILLE\nZoé  Genève"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "nom": "Zoé",
+      "ville": "Genève"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "en-têtes vides ignorés",
+   "entree": {
+    "output": "A\t\tB\n1\t2\t3"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": "1",
+      "b": "2"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "une ligne de données",
+   "entree": {
+    "output": "ID  NAME\n7  seven"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "id": "7",
+      "name": "seven"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "tabulation seulement dans la ligne de données",
+   "entree": {
+    "output": "A  B\n1\t2"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": "1\t2",
+      "b": ""
+     }
+    ]
+   }
+  }
+ ]
+}

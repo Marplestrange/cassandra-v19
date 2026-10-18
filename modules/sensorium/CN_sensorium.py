@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.3  #86f839
+# VERSION CN : 0.1.3  #bd1e68
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.3 empreinte=86f839 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=bd1e68 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -60,6 +60,8 @@ from pathlib import Path
 from collections import defaultdict
 from typing import Dict, List, Any, Optional, Tuple
 from http.server import HTTPServer, BaseHTTPRequestHandler
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))          # le chargeur des points est un voisin du démon
+import CN_points_sensorium as _points_sensorium
 
 # ============================================================
 # CONFIGURATION
@@ -610,31 +612,8 @@ def _mogwai(args: list, timeout: int = 15) -> str:
 
 
 def _mogwai_parse_table(output: str) -> list[dict]:
-    """Parse la sortie tabulaire de mogwai (colonnes séparées par des espaces multiples)."""
-    if not output:
-        return []
-    lines = output.strip().splitlines()
-    if len(lines) < 2:
-        return []
-    # Ligne 0 = en-têtes, lignes 1+ = données
-    # mogwai sépare par des TABULATIONS et complète chaque cellule d'espaces ; une cellule vide n'est
-    # que des espaces. Couper sur « tabulation OU deux espaces » faisait glisser les colonnes (20-09 :
-    # l'OWNER d'un site devenait son alias). Quand il y a des tabulations, on ne coupe que sur elles.
-    sep = r'\t' if "\t" in lines[0] else r'  +'
-    headers = re.split(sep, lines[0].strip())
-    headers = [h.strip().lower().replace(" ", "_") for h in headers if h.strip()]
-    rows = []
-    for line in lines[1:]:
-        if not line.strip():
-            continue
-        vals = re.split(sep, line.strip())
-        vals = [v.strip() for v in vals]
-        # Aligner sur le nombre de colonnes
-        while len(vals) < len(headers):
-            vals.append("")
-        row = {headers[i]: vals[i] for i in range(len(headers))}
-        rows.append(row)
-    return rows
+    """Parse la sortie tabulaire de mogwai (colonnes séparées par des espaces multiples). Le calcul est un POINT D'ÉVOLUTION : points/EC_mogwai_table.py."""
+    return _point("mogwai_table", {"output": output})["valeur"]
 
 
 # PERF[O1] — lru_cache sur _fp_available() : 8+ appels → 1 syscall réel
@@ -1407,24 +1386,8 @@ _CRON_RUN_RE = re.compile(r"CRON\[\d+\]:\s*\((?P<user>[^)]+)\)\s+CMD\s+\((?P<cmd
 
 
 def _cron_run_lookup(runs: dict, user: str, command: str) -> str:
-    """Dernière exécution d'une commande de crontab.
-
-    Le journal reproduit la commande telle qu'écrite, mais cron applique parfois
-    des retouches (échappement des %, redirections). On tente l'égalité stricte,
-    puis l'inclusion, avant d'abandonner — mieux vaut « inconnu » qu'un faux
-    rattachement qui masquerait un cron réellement muet."""
-    cmd = (command or "").strip()[:300]
-    exact = runs.get((user, cmd))
-    if exact:
-        return exact
-    best = ""
-    for (u, c), ts in runs.items():
-        if u != user:
-            continue
-        if c.startswith(cmd[:120]) or cmd.startswith(c[:120]):
-            if ts > best:
-                best = ts
-    return best
+    """Dernière exécution d'une commande de crontab. Le calcul est un POINT D'ÉVOLUTION : points/EC_cron_derniere.py (le dictionnaire à clés couples voyage en liste)."""
+    return _point("cron_derniere", {"runs": [[u, c, ts] for (u, c), ts in runs.items()], "user": user, "command": command})["valeur"]
 
 
 def _cron_last_runs() -> dict:
@@ -3643,20 +3606,8 @@ PROJ_HISTO_JOURS = 30
 
 
 def _pente(points):
-    """(pente par jour, r²) d'une série [(t_jours, y)], ou (None, 0)."""
-    n = len(points)
-    if n < 6:
-        return None, 0.0
-    mx = sum(p[0] for p in points) / n
-    my = sum(p[1] for p in points) / n
-    sxx = sum((p[0] - mx) ** 2 for p in points)
-    if sxx <= 0:
-        return None, 0.0
-    sxy = sum((p[0] - mx) * (p[1] - my) for p in points)
-    a = sxy / sxx
-    syy = sum((p[1] - my) ** 2 for p in points)
-    r2 = (sxy * sxy) / (sxx * syy) if syy > 0 else 0.0
-    return a, r2
+    """(pente par jour, r²) d'une série [(t_jours, y)], ou (None, 0). Le calcul est un POINT D'ÉVOLUTION : points/EC_pente.py."""
+    return _point("pente", {"points": points})["valeur"]
 
 
 def noter_historiques(montages: list):
@@ -5114,76 +5065,14 @@ def save_many(table: str, rows: list):
 save_volatile = save_many
 
 
+def _point(nom, entree):
+    """Les points d'évolution du Sensorium : le service du noyau (disjoncteur, ombre, routage) sur le stock d'EC, ou à défaut la référence du dépôt. Voir CN_points_sensorium.py."""
+    return _points_sensorium.appeler(nom, entree, os.environ.get("CASSANDRA_DATA_DIR"))
+
+
 def compute_health_score(metrics, ssl_certs, services, fail2ban, smart, sysctl, dns, oom_count, failed_count):
-    """
-    Calcul du score de santé (0–100).
-    PERF: ssl_certs = liste complète → on filtre ici pour ne pénaliser que les expirés/expirants.
-    Ancienne logique: -2pts par cert (même valides!) → -12pts avec 6 sites normaux = score faussé.
-    """
-    score = 100
-    breakdown = {}
-
-    # CPU
-    cpu = metrics.get("cpu_pct", 0)
-    if   cpu > 95: score -= 20; breakdown["cpu"] = -20
-    elif cpu > 85: score -= 12; breakdown["cpu"] = -12
-    elif cpu > 75: score -= 5;  breakdown["cpu"] = -5
-
-    # RAM
-    ram = metrics.get("ram_pct", 0)
-    if   ram > 95: score -= 20; breakdown["ram"] = -20
-    elif ram > 85: score -= 12; breakdown["ram"] = -12
-    elif ram > 75: score -= 5;  breakdown["ram"] = -5
-
-    # Disque
-    disk = metrics.get("disk_pct", 0)
-    if   disk > 95: score -= 20; breakdown["disk"] = -20
-    elif disk > 85: score -= 12; breakdown["disk"] = -12
-    elif disk > 75: score -= 5;  breakdown["disk"] = -5
-
-    # SSL — UNIQUEMENT certs expirés ou expirant dans les 14 jours (pas tous les certs!)
-    ssl_problems = []
-    for c in (ssl_certs or []):
-        days = c.get("days_left", 999)
-        if isinstance(days, (int, float)):
-            if days <= 0:
-                ssl_problems.append(("expired", c.get("domain", "?")))
-            elif days <= 14:
-                ssl_problems.append(("expiring", c.get("domain", "?")))
-    ssl_penalty = min(len(ssl_problems) * 5, 20)
-    if ssl_penalty:
-        score -= ssl_penalty
-        breakdown["ssl"] = -ssl_penalty
-
-    # OOM
-    oom_penalty = min(oom_count * 5, 15)
-    if oom_penalty:
-        score -= oom_penalty
-        breakdown["oom"] = -oom_penalty
-
-    # Services en échec
-    fail_penalty = min(failed_count * 5, 20)
-    if fail_penalty:
-        score -= fail_penalty
-        breakdown["failed_units"] = -fail_penalty
-
-    # SMART disques
-    for d in (smart or []):
-        if d.get("health", "PASSED") == "FAILED":
-            score -= 10; breakdown["smart"] = -10; break
-        if (d.get("reallocated_sectors", 0) or 0) > 0:
-            score -= 5; breakdown.setdefault("smart_warn", -5)
-
-    score = max(0, min(100, score))
-    status = ("critical"  if score < 50 else
-              "warning"   if score < 75 else
-              "good"      if score < 90 else "excellent")
-    return {
-        "score": score,
-        "status": status,
-        "breakdown": breakdown,
-        "alerts_count": len(ssl_problems) + oom_count + failed_count,
-    }
+    """Calcul du score de santé (0–100). Le calcul est un POINT D'ÉVOLUTION : points/EC_sante.py."""
+    return _point("sante", {"metrics": metrics, "ssl_certs": ssl_certs, "services": services, "fail2ban": fail2ban, "smart": smart, "sysctl": sysctl, "dns": dns, "oom_count": oom_count, "failed_count": failed_count})["valeur"]
 
 
 def save_health_score(score_data):
@@ -5407,13 +5296,8 @@ def _pf_verdict(lignes: list) -> dict:
 
 
 def _duree_txt(sec) -> str:
-    try:
-        sec = int(sec)
-    except Exception:
-        return "?"
-    j, r = divmod(sec, 86400)
-    h, r = divmod(r, 3600)
-    return ("%d j %d h" % (j, h)) if j else ("%d h %d min" % (h, r // 60))
+    """_duree_txt. Le calcul est un POINT D'ÉVOLUTION : points/EC_duree_txt.py."""
+    return _point("duree_txt", {"sec": sec})["valeur"]
 
 
 def build_world_model():

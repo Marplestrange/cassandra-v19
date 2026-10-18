@@ -233,3 +233,43 @@ droit = "voir_securite"
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "sante"
+libelle = "Le score de santé d'une machine (0 à 100) : ses mesures en entrée, le score, son état (excellent, bon, à surveiller, critique) et le détail des points perdus en sortie"
+contrat = "1.0"
+reference = "points/EC_sante"
+fonction = "point_sante"
+runtime = "python"
+
+[[points_evolution]]
+id = "pente"
+libelle = "La pente d'une série de mesures (par jour) et la qualité de l'ajustement (r²) : les points en entrée, [pente, r²] en sortie ; sous six points, aucune tendance"
+contrat = "1.0"
+reference = "points/EC_pente"
+fonction = "point_pente"
+runtime = "python"
+
+[[points_evolution]]
+id = "mogwai_table"
+libelle = "La table que rend l'outil mogwai de FastPanel : le texte en entrée, une liste de lignes (en-têtes en minuscules) en sortie"
+contrat = "1.0"
+reference = "points/EC_mogwai_table"
+fonction = "point_mogwai_table"
+runtime = "python"
+
+[[points_evolution]]
+id = "duree_txt"
+libelle = "Une durée en secondes dite en mots (« 3 j 4 h », « 2 h 15 min ») ; « ? » quand elle est illisible"
+contrat = "1.0"
+reference = "points/EC_duree_txt"
+fonction = "point_duree_txt"
+runtime = "python"
+
+[[points_evolution]]
+id = "cron_derniere"
+libelle = "La dernière exécution d'une commande de crontab, retrouvée dans le journal : les exécutions connues, le compte et la commande en entrée, la date en sortie (vide si inconnue)"
+contrat = "1.0"
+reference = "points/EC_cron_derniere"
+fonction = "point_cron_derniere"
+runtime = "python"

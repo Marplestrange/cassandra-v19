@@ -1,0 +1,25 @@
+{
+ "point": "sensorium.mogwai_table",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "output"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "avec des tabulations, seules elles séparent : une cellule vide ne fait jamais glisser les colonnes",
+  "une ligne plus courte que l'en-tête est complétée de cellules vides",
+  "une ligne vide est ignorée",
+  "moins de deux lignes : aucune donnée",
+  "les en-têtes sont en minuscules, sans espaces",
+  "le même texte donne toujours les mêmes lignes"
+ ]
+}

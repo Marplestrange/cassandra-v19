@@ -1,0 +1,33 @@
+{
+ "point": "sensorium.sante",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "metrics",
+   "ssl_certs",
+   "services",
+   "fail2ban",
+   "smart",
+   "sysctl",
+   "dns",
+   "oom_count",
+   "failed_count"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "le score est borné de 0 à 100",
+  "seuls les certificats expirés ou expirant sous quatorze jours coûtent des points, pas tous les certificats",
+  "chaque famille de problème a un plafond : aucune ne peut à elle seule vider le score",
+  "le détail dit ce qui a coûté chaque point",
+  "un disque qui échoue à son test coûte dix points, jamais plus d'une fois",
+  "le même état donne toujours le même score"
+ ]
+}

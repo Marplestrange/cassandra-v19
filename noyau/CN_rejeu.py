@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0eb062
+# VERSION CN : 0.1.0  #3ef4c1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : garde, par point d'évolution, les ENTRÉES réellement reçues (distinctes, comptées), avec une partition réservée que le générateur ne voit jamais.
 # MÉTHODE    : une table SQLite ; l'entrée est identifiée par son empreinte ; la partition réservée se décide par l'empreinte (déterministe) ; borne par point, les cas dorés jamais évincés.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0eb062 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3ef4c1 ▼▼▼
 """Le corpus de rejeu (docs/CN_EVOLUTION.md §2) : la matière du banc d'essai de toute évolution.
 
 On ne garde que les ENTRÉES : la sortie de référence est recalculée par la référence du dépôt à chaque évaluation, car c'est elle la spécification
@@ -41,7 +41,8 @@ PURGE_TOUS_LES = 100               # on vérifie la borne tous les N enregistrem
 SCHEMA = """CREATE TABLE IF NOT EXISTS appels(
   gid TEXT NOT NULL, h TEXT NOT NULL, entree TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 1, origine TEXT NOT NULL DEFAULT 'reel', reserve INTEGER NOT NULL,
   premier REAL NOT NULL, dernier REAL NOT NULL, ms_somme REAL NOT NULL DEFAULT 0, ms_n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(gid, h));
-CREATE INDEX IF NOT EXISTS appels_gid ON appels(gid, reserve);"""
+CREATE INDEX IF NOT EXISTS appels_gid ON appels(gid, reserve);
+CREATE TABLE IF NOT EXISTS absorbes(source TEXT NOT NULL, gid TEXT NOT NULL, h TEXT NOT NULL, n INTEGER NOT NULL, ms_somme REAL NOT NULL, ms_n INTEGER NOT NULL, PRIMARY KEY(source, gid, h));"""
 
 
 def empreinte(entree) -> str:
@@ -114,6 +115,36 @@ class Rejeu:
                           (gid, h, json.dumps(entree, ensure_ascii=False, sort_keys=True), origine, 1 if est_reserve(h) else 0, t, t))
                 nouveaux += 1
         return nouveaux
+
+    def absorber(self, chemin) -> int:
+        """Prend les appels enregistrés par un AUTRE processus (le démon du Sensorium garde les siens dans son propre fichier) : seuls les DELTAS depuis la dernière absorption sont ajoutés,
+        donc absorber deux fois de suite ne compte rien deux fois. Rend le nombre d'appels ajoutés. Un fichier absent ou illisible n'est pas une erreur : rien n'est ajouté."""
+        autre = Path(chemin)
+        if not autre.exists():
+            return 0
+        source = str(autre.resolve())
+        try:
+            lecture = sqlite3.connect(autre.resolve().as_uri() + "?mode=ro", uri=True, timeout=5)
+            lecture.row_factory = sqlite3.Row
+            try:
+                lignes = lecture.execute("SELECT gid,h,entree,n,reserve,premier,dernier,ms_somme,ms_n FROM appels WHERE origine!='dore'").fetchall()
+            finally:
+                lecture.close()
+        except sqlite3.Error:
+            return 0
+        ajoutes = 0
+        with self._verrou, self._con() as c:
+            for r in lignes:
+                vu = c.execute("SELECT n, ms_somme, ms_n FROM absorbes WHERE source=? AND gid=? AND h=?", (source, r["gid"], r["h"])).fetchone()
+                dn, dms, dmn = r["n"] - (vu["n"] if vu else 0), r["ms_somme"] - (vu["ms_somme"] if vu else 0.0), r["ms_n"] - (vu["ms_n"] if vu else 0)
+                if dn <= 0:
+                    continue
+                c.execute("INSERT INTO appels(gid,h,entree,n,origine,reserve,premier,dernier,ms_somme,ms_n) VALUES(?,?,?,?, 'reel', ?,?,?,?,?) "
+                          "ON CONFLICT(gid,h) DO UPDATE SET n=n+excluded.n, dernier=MAX(dernier, excluded.dernier), ms_somme=ms_somme+excluded.ms_somme, ms_n=ms_n+excluded.ms_n",
+                          (r["gid"], r["h"], r["entree"], dn, 1 if est_reserve(r["h"]) else 0, r["premier"], r["dernier"], dms, dmn))
+                c.execute("INSERT OR REPLACE INTO absorbes(source,gid,h,n,ms_somme,ms_n) VALUES(?,?,?,?,?,?)", (source, r["gid"], r["h"], r["n"], r["ms_somme"], r["ms_n"]))
+                ajoutes += dn
+        return ajoutes
 
     # ── la lecture ───────────────────────────────────────────────────────
     def corpus(self, gid: str, partition: str = "tout") -> list:

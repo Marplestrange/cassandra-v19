@@ -1,0 +1,23 @@
+{
+ "point": "sensorium.pente",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "points"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "moins de six points : aucune pente, jamais une pente inventée",
+  "des abscisses toutes égales ne donnent aucune pente",
+  "le r² vaut zéro quand les ordonnées sont constantes",
+  "les mêmes points donnent toujours la même pente"
+ ]
+}

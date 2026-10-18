@@ -1,0 +1,151 @@
+{
+ "point": "sensorium.duree_txt",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de sensorium, données synthétiques",
+ "cas": [
+  {
+   "cas": "zéro",
+   "entree": {
+    "sec": 0
+   },
+   "sortie": {
+    "valeur": "0 h 0 min"
+   }
+  },
+  {
+   "cas": "une minute",
+   "entree": {
+    "sec": 60
+   },
+   "sortie": {
+    "valeur": "0 h 1 min"
+   }
+  },
+  {
+   "cas": "59 minutes",
+   "entree": {
+    "sec": 3599
+   },
+   "sortie": {
+    "valeur": "0 h 59 min"
+   }
+  },
+  {
+   "cas": "une heure",
+   "entree": {
+    "sec": 3600
+   },
+   "sortie": {
+    "valeur": "1 h 0 min"
+   }
+  },
+  {
+   "cas": "une heure et demie",
+   "entree": {
+    "sec": 5400
+   },
+   "sortie": {
+    "valeur": "1 h 30 min"
+   }
+  },
+  {
+   "cas": "vingt-trois heures",
+   "entree": {
+    "sec": 86399
+   },
+   "sortie": {
+    "valeur": "23 h 59 min"
+   }
+  },
+  {
+   "cas": "un jour",
+   "entree": {
+    "sec": 86400
+   },
+   "sortie": {
+    "valeur": "1 j 0 h"
+   }
+  },
+  {
+   "cas": "un jour trois heures",
+   "entree": {
+    "sec": 97200
+   },
+   "sortie": {
+    "valeur": "1 j 3 h"
+   }
+  },
+  {
+   "cas": "dix jours",
+   "entree": {
+    "sec": 864000
+   },
+   "sortie": {
+    "valeur": "10 j 0 h"
+   }
+  },
+  {
+   "cas": "texte",
+   "entree": {
+    "sec": "3600"
+   },
+   "sortie": {
+    "valeur": "1 h 0 min"
+   }
+  },
+  {
+   "cas": "illisible",
+   "entree": {
+    "sec": "abc"
+   },
+   "sortie": {
+    "valeur": "?"
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "sec": null
+   },
+   "sortie": {
+    "valeur": "?"
+   }
+  },
+  {
+   "cas": "décimal",
+   "entree": {
+    "sec": 3600.9
+   },
+   "sortie": {
+    "valeur": "1 h 0 min"
+   }
+  },
+  {
+   "cas": "négatif",
+   "entree": {
+    "sec": -60
+   },
+   "sortie": {
+    "valeur": "-1 j 23 h"
+   }
+  },
+  {
+   "cas": "très long",
+   "entree": {
+    "sec": 100000000
+   },
+   "sortie": {
+    "valeur": "1157 j 9 h"
+   }
+  },
+  {
+   "cas": "vide",
+   "entree": {
+    "sec": ""
+   },
+   "sortie": {
+    "valeur": "?"
+   }
+  }
+ ]
+}

@@ -1,0 +1,34 @@
+{
+ "point": "sensorium.cron_derniere",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "runs",
+   "user",
+   "command"
+  ],
+  "properties": {
+   "runs": {
+    "type": "array"
+   },
+   "user": {
+    "type": "string"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "mieux vaut « inconnu » (vide) qu'un faux rattachement qui masquerait un cron réellement muet",
+  "l'égalité stricte prime sur l'inclusion",
+  "seules les exécutions du même compte comptent",
+  "entre plusieurs candidats par inclusion, la plus récente l'emporte",
+  "la même demande donne toujours la même date"
+ ]
+}

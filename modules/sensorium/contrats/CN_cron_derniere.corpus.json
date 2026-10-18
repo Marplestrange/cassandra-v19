@@ -1,0 +1,361 @@
+{
+ "point": "sensorium.cron_derniere",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de sensorium, données synthétiques",
+ "cas": [
+  {
+   "cas": "égalité stricte",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "/usr/bin/backup.sh",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/clean.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "bob",
+      "/usr/bin/backup.sh",
+      "2026-10-16T03:00:00"
+     ]
+    ],
+    "user": "root",
+    "command": "/usr/bin/backup.sh"
+   },
+   "sortie": {
+    "valeur": "2026-10-17T03:00:00"
+   }
+  },
+  {
+   "cas": "autre compte",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "/usr/bin/backup.sh",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/clean.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "bob",
+      "/usr/bin/backup.sh",
+      "2026-10-16T03:00:00"
+     ]
+    ],
+    "user": "bob",
+    "command": "/usr/bin/backup.sh"
+   },
+   "sortie": {
+    "valeur": "2026-10-16T03:00:00"
+   }
+  },
+  {
+   "cas": "compte inconnu",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "/usr/bin/backup.sh",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/clean.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "bob",
+      "/usr/bin/backup.sh",
+      "2026-10-16T03:00:00"
+     ]
+    ],
+    "user": "zed",
+    "command": "/usr/bin/backup.sh"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "commande inconnue",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "/usr/bin/backup.sh",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/clean.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "bob",
+      "/usr/bin/backup.sh",
+      "2026-10-16T03:00:00"
+     ]
+    ],
+    "user": "root",
+    "command": "/usr/bin/autre.sh"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "inclusion : la commande est plus longue",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "/usr/bin/backup.sh",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/clean.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "bob",
+      "/usr/bin/backup.sh",
+      "2026-10-16T03:00:00"
+     ]
+    ],
+    "user": "root",
+    "command": "/usr/bin/clean.sh --all --verbose"
+   },
+   "sortie": {
+    "valeur": "2026-10-17T04:00:00"
+   }
+  },
+  {
+   "cas": "inclusion : la commande est plus courte",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "/usr/bin/backup.sh",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/clean.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "bob",
+      "/usr/bin/backup.sh",
+      "2026-10-16T03:00:00"
+     ]
+    ],
+    "user": "root",
+    "command": "/usr/bin/clean.sh"
+   },
+   "sortie": {
+    "valeur": "2026-10-17T04:00:00"
+   }
+  },
+  {
+   "cas": "espaces autour",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "/usr/bin/backup.sh",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/clean.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "bob",
+      "/usr/bin/backup.sh",
+      "2026-10-16T03:00:00"
+     ]
+    ],
+    "user": "root",
+    "command": "  /usr/bin/backup.sh  "
+   },
+   "sortie": {
+    "valeur": "2026-10-17T03:00:00"
+   }
+  },
+  {
+   "cas": "commande vide",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "/usr/bin/backup.sh",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/clean.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "bob",
+      "/usr/bin/backup.sh",
+      "2026-10-16T03:00:00"
+     ]
+    ],
+    "user": "root",
+    "command": ""
+   },
+   "sortie": {
+    "valeur": "2026-10-17T04:00:00"
+   }
+  },
+  {
+   "cas": "commande None",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "/usr/bin/backup.sh",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/clean.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "bob",
+      "/usr/bin/backup.sh",
+      "2026-10-16T03:00:00"
+     ]
+    ],
+    "user": "root",
+    "command": null
+   },
+   "sortie": {
+    "valeur": "2026-10-17T04:00:00"
+   }
+  },
+  {
+   "cas": "aucune exécution",
+   "entree": {
+    "runs": [],
+    "user": "root",
+    "command": "x"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "plusieurs candidats, la plus récente",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "/a/b.sh x",
+      "2026-10-10T00:00:00"
+     ],
+     [
+      "root",
+      "/a/b.sh y",
+      "2026-10-12T00:00:00"
+     ],
+     [
+      "root",
+      "/a/b.sh z",
+      "2026-10-11T00:00:00"
+     ]
+    ],
+    "user": "root",
+    "command": "/a/b.sh"
+   },
+   "sortie": {
+    "valeur": "2026-10-12T00:00:00"
+   }
+  },
+  {
+   "cas": "commande très longue",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "2026-10-10T00:00:00"
+     ]
+    ],
+    "user": "root",
+    "command": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   },
+   "sortie": {
+    "valeur": "2026-10-10T00:00:00"
+   }
+  },
+  {
+   "cas": "préfixe de 120",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyA",
+      "2026-10-10T00:00:00"
+     ]
+    ],
+    "user": "root",
+    "command": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyB"
+   },
+   "sortie": {
+    "valeur": "2026-10-10T00:00:00"
+   }
+  },
+  {
+   "cas": "préfixe différent avant 120",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyAyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+      "2026-10-10T00:00:00"
+     ]
+    ],
+    "user": "root",
+    "command": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyByyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "égalité stricte prime",
+   "entree": {
+    "runs": [
+     [
+      "root",
+      "/a.sh",
+      "2026-01-01T00:00:00"
+     ],
+     [
+      "root",
+      "/a.sh x",
+      "2026-12-01T00:00:00"
+     ]
+    ],
+    "user": "root",
+    "command": "/a.sh"
+   },
+   "sortie": {
+    "valeur": "2026-01-01T00:00:00"
+   }
+  }
+ ]
+}
