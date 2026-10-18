@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4db450
+# VERSION CN : 0.1.0  #ca8604
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4db450 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ca8604 ▼▼▼
 """Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v"""
 import os
 import sys
@@ -2071,13 +2071,13 @@ class SensoriumRelieAuNoyau(unittest.TestCase):
 
 
 class SensoriumGardeEntier(unittest.TestCase):
-    """Le collecteur de la V18 devient CN_sensorium.py : renommé, jamais découpé, seuls des chemins deviennent configurables."""
+    """Le collecteur de la V18 devient CN_sensorium.py : renommé, jamais découpé en fichiers ; seuls des chemins deviennent configurables et la FORME de ses mesures passe aux points d'évolution (le fichier maigrit d'autant, les LECTURES restent)."""
 
     def test_le_fichier_compile_et_n_est_pas_decoupe(self):
         import py_compile
         f = RACINE / "modules" / "sensorium" / "CN_sensorium.py"
         py_compile.compile(str(f), doraise=True)
-        self.assertGreater(len(f.read_text(encoding="utf-8").splitlines()), 6000)
+        self.assertGreater(len(f.read_text(encoding="utf-8").splitlines()), 4000)
 
     def test_les_chemins_se_reglent_par_l_environnement_et_gardent_leurs_defauts(self):
         import importlib.util
