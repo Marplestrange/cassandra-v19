@@ -1,0 +1,28 @@
+{
+ "point": "billetterie.commission",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "formule",
+   "places"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "des centimes entiers en entrée comme en sortie, jamais de décimale",
+  "le total est la somme du forfait, de la commission et du fixe",
+  "un artiste à cachet fixe ne reçoit que son cachet : ni commission ni fixe, quel que soit le nombre de places",
+  "le forfait n'existe que pour un artiste, le fixe et le palier que pour un revendeur indépendant : un champ qui ne concerne pas le groupe est ignoré",
+  "le fixe du revendeur n'est dû que dès la première place vendue",
+  "au-delà du palier, chaque place rapporte la commission du palier ; un palier de zéro place est une absence de palier",
+  "un nombre de places négatif vaut zéro",
+  "les mêmes entrées donnent toujours les mêmes centimes"
+ ]
+}

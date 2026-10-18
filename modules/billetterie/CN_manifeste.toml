@@ -1,0 +1,536 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Billetterie
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : billetterie
+# ZONE       : CN
+# VERSION CN : 0.1.0  #73dbd4
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=73dbd4 ▼▼▼
+[module]
+id = "billetterie"
+nom = "Billetterie"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif."
+confiance = "interne"
+famille = "gestion"
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[permissions]
+stockage = true
+
+[[droits]]
+id = "gerer"
+libelle = "Gérer la billetterie (le titulaire de l'instance : événements, formules, revendeurs, argent, réglages)"
+sensible = true
+
+[[points_evolution]]
+id = "commission"
+libelle = "Ce que rapporte une formule pour un nombre de places vendues : la formule et les places en entrée, le forfait, la commission, le fixe et le total (en centimes) en sortie"
+contrat = "1.0"
+reference = "points/EC_commission"
+fonction = "point_commission"
+runtime = "python"
+[[reglages]]
+id = "titulaire_nom"
+libelle = "Nom de l'organisateur (le titulaire de l'instance)"
+
+[[reglages]]
+id = "titulaire_statut"
+libelle = "Statut de l'organisateur"
+type = "choix"
+defaut = "association"
+choix = ["association", "autre"]
+
+[[reglages]]
+id = "titulaire_tva"
+libelle = "L'organisateur est assujetti à la TVA"
+type = "booleen"
+defaut = false
+
+[[reglages]]
+id = "titulaire_adresse"
+libelle = "Adresse de l'organisateur"
+
+[[reglages]]
+id = "titulaire_mail"
+libelle = "Courriel d'envoi des billets"
+
+[[reglages]]
+id = "titulaire_tel"
+libelle = "Téléphone de l'organisateur"
+
+[[reglages]]
+id = "titulaire_siret"
+libelle = "SIRET de l'organisateur"
+
+[[reglages]]
+id = "retrait_delai_jours"
+libelle = "Délai après l'événement avant qu'une commission soit retirable (jours)"
+type = "entier"
+defaut = 7
+minimum = 0
+maximum = 90
+
+[[reglages]]
+id = "retrait_seuil"
+libelle = "Seuil minimal d'un retrait (centimes)"
+type = "entier"
+defaut = 2000
+minimum = 0
+maximum = 1000000
+
+[[reglages]]
+id = "compte_client"
+libelle = "Compte client à l'achat"
+type = "choix"
+defaut = "libre"
+choix = ["libre", "obligatoire"]
+
+[[reglages]]
+id = "frais_sans_compte"
+libelle = "Frais de service d'un achat sans compte (centimes)"
+type = "entier"
+defaut = 200
+minimum = 0
+maximum = 100000
+
+[[reglages]]
+id = "reservation_minutes"
+libelle = "Durée pendant laquelle les places d'un panier sont retenues pendant le paiement (minutes)"
+type = "entier"
+defaut = 10
+minimum = 1
+maximum = 120
+
+[[reglages]]
+id = "liste_attente"
+libelle = "Liste d'attente quand un billet est épuisé"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "offre_attente_heures"
+libelle = "Durée de l'offre faite à la liste d'attente (heures)"
+type = "entier"
+defaut = 24
+minimum = 1
+maximum = 168
+
+[[reglages]]
+id = "wallet_apple"
+libelle = "Billets pour Apple Wallet"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "wallet_google"
+libelle = "Billets pour Google Wallet"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "reserve_caisse"
+libelle = "Taille de la réserve de numéros de billets d'une caisse (numéros)"
+type = "entier"
+defaut = 50
+minimum = 10
+maximum = 1000
+
+[[reglages]]
+id = "regle_hors_ligne"
+libelle = "Règle du contrôle hors ligne quand deux portes ne se parlent pas"
+type = "choix"
+defaut = "portes"
+choix = ["portes", "signaler", "secours"]
+
+[[reglages]]
+id = "recu_fiscal_autonome"
+libelle = "Reçu fiscal de don produit par la billetterie (sans Dolibarr)"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "domaine"
+libelle = "Domaine de la boutique (sans https:// ni chemin)"
+
+[[reglages]]
+id = "https"
+libelle = "Boutique en connexion sécurisée (https)"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "boutique_en_ligne"
+libelle = "Boutique en ligne (sinon page d'attente)"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "chemin_accueil"
+libelle = "Page d'accueil par défaut de la boutique"
+defaut = "/calendrier"
+
+[[reglages]]
+id = "chemin_evenement"
+libelle = "Chemin d'une page événement ({id})"
+defaut = "/e/{id}"
+
+[[reglages]]
+id = "chemin_compte"
+libelle = "Chemin du compte client"
+defaut = "/compte"
+
+[[reglages]]
+id = "chemin_revendeur"
+libelle = "Chemin du lien de vente d'un revendeur ({code})"
+defaut = "/r/{code}"
+
+[[reglages]]
+id = "chemin_retours"
+libelle = "Chemin des retours des prestataires de paiement ({fournisseur})"
+defaut = "/hooks/{fournisseur}"
+
+[[capacites]]
+id = "salles"
+libelle = "La liste : la salle (recherche par nom ou référence)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "salle"
+libelle = "Une fiche : la salle"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "salle_save"
+libelle = "Créer ou modifier la salle (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["la salle"]
+preuve = "la fiche relue"
+retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "salle_delete"
+libelle = "Supprimer la salle (refusé tant qu'elle sert ailleurs)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["la salle"]
+preuve = "la fiche n'existe plus"
+retour = "remettre la fiche, avec sa référence"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "formules"
+libelle = "La liste : la formule de rémunération (recherche par nom ou référence)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "formule"
+libelle = "Une fiche : la formule de rémunération"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "formule_save"
+libelle = "Créer ou modifier la formule de rémunération (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["la formule de rémunération"]
+preuve = "la fiche relue"
+retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "formule_delete"
+libelle = "Supprimer la formule de rémunération (refusé tant qu'elle sert ailleurs)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["la formule de rémunération"]
+preuve = "la fiche n'existe plus"
+retour = "remettre la fiche, avec sa référence"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "artistes"
+libelle = "La liste : la fiche artiste (et sa casquette de vendeur) (recherche par nom ou référence)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "artiste"
+libelle = "Une fiche : la fiche artiste (et sa casquette de vendeur)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "artiste_save"
+libelle = "Créer ou modifier la fiche artiste (et sa casquette de vendeur) (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["la fiche artiste (et sa casquette de vendeur)"]
+preuve = "la fiche relue"
+retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "artiste_delete"
+libelle = "Supprimer la fiche artiste (et sa casquette de vendeur) (refusé tant qu'elle sert ailleurs)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["la fiche artiste (et sa casquette de vendeur)"]
+preuve = "la fiche n'existe plus"
+retour = "remettre la fiche, avec sa référence"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "revendeurs"
+libelle = "La liste : le revendeur indépendant (recherche par nom ou référence)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "revendeur"
+libelle = "Une fiche : le revendeur indépendant"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "revendeur_save"
+libelle = "Créer ou modifier le revendeur indépendant (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["le revendeur indépendant"]
+preuve = "la fiche relue"
+retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "revendeur_delete"
+libelle = "Supprimer le revendeur indépendant (refusé tant qu'elle sert ailleurs)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["le revendeur indépendant"]
+preuve = "la fiche n'existe plus"
+retour = "remettre la fiche, avec sa référence"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "evenements"
+libelle = "La liste : l'événement (recherche par nom ou référence)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "evenement"
+libelle = "Une fiche : l'événement"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "evenement_save"
+libelle = "Créer ou modifier l'événement (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["l'événement"]
+preuve = "la fiche relue"
+retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "evenement_delete"
+libelle = "Supprimer l'événement (refusé tant qu'elle sert ailleurs)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["l'événement"]
+preuve = "la fiche n'existe plus"
+retour = "remettre la fiche, avec sa référence"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "type_billets"
+libelle = "La liste : le type de billet d'un événement (recherche par nom ou référence)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "type_billet"
+libelle = "Une fiche : le type de billet d'un événement"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "type_billet_save"
+libelle = "Créer ou modifier le type de billet d'un événement (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["le type de billet d'un événement"]
+preuve = "la fiche relue"
+retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "type_billet_delete"
+libelle = "Supprimer le type de billet d'un événement (refusé tant qu'elle sert ailleurs)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["le type de billet d'un événement"]
+preuve = "la fiche n'existe plus"
+retour = "remettre la fiche, avec sa référence"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "passages"
+libelle = "La liste : un passage au programme (recherche par nom ou référence)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "passage"
+libelle = "Une fiche : un passage au programme"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "passage_save"
+libelle = "Créer ou modifier un passage au programme (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["un passage au programme"]
+preuve = "la fiche relue"
+retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "passage_delete"
+libelle = "Supprimer un passage au programme (refusé tant qu'elle sert ailleurs)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["un passage au programme"]
+preuve = "la fiche n'existe plus"
+retour = "remettre la fiche, avec sa référence"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "affectations"
+libelle = "La liste : l'affectation d'un revendeur à un événement (recherche par nom ou référence)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "affectation"
+libelle = "Une fiche : l'affectation d'un revendeur à un événement"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "affectation_save"
+libelle = "Créer ou modifier l'affectation d'un revendeur à un événement (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["l'affectation d'un revendeur à un événement"]
+preuve = "la fiche relue"
+retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "affectation_delete"
+libelle = "Supprimer l'affectation d'un revendeur à un événement (refusé tant qu'elle sert ailleurs)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["l'affectation d'un revendeur à un événement"]
+preuve = "la fiche n'existe plus"
+retour = "remettre la fiche, avec sa référence"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "invitations"
+libelle = "La liste : une catégorie d'invités et son quota (recherche par nom ou référence)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "invitation"
+libelle = "Une fiche : une catégorie d'invités et son quota"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "invitation_save"
+libelle = "Créer ou modifier une catégorie d'invités et son quota (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["une catégorie d'invités et son quota"]
+preuve = "la fiche relue"
+retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "invitation_delete"
+libelle = "Supprimer une catégorie d'invités et son quota (refusé tant qu'elle sert ailleurs)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["une catégorie d'invités et son quota"]
+preuve = "la fiche n'existe plus"
+retour = "remettre la fiche, avec sa référence"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "evenement_fiche"
+libelle = "L'événement entier : salle, jauge, types de billets, programme, affectations, invitations"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "commission"
+libelle = "Ce que rapporterait une formule pour un nombre de places (calcul du point d'évolution)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "evenement_publier"
+libelle = "Mettre un événement en vente (date, salle, places et jauge exigées ; deux billets par défaut s'il n'en a aucun)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la mise en vente d'un événement"]
+preuve = "l'événement relu en vente"
+retour = "le remettre en brouillon et retirer les billets créés par défaut"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "evenement_depublier"
+libelle = "Retirer un événement de la vente (retour au brouillon)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la mise en vente d'un événement"]
+preuve = "l'événement relu en brouillon"
+retour = "le remettre en vente"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "programme_ordonner"
+libelle = "Changer l'ordre de passage des artistes d'un événement"
+risque = "faible"
+droit = "gerer"
+perimetre = ["l'ordre du programme d'un événement"]
+preuve = "l'ordre relu"
+retour = "remettre l'ordre d'avant"
+paliers = ["raconter", "auto", "maitre"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

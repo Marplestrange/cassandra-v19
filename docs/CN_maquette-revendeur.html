@@ -1,0 +1,221 @@
+<!doctype html>
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : maquette-revendeur.html -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : maquette-revendeur.html -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=a5ac98 ▼▼▼ -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cassandra V19 · Écran revendeur</title>
+<style>
+:root{
+  --sol:#eef1f5; --halo:#e9edf3; --verre:rgba(255,255,255,.66); --verre-fort:rgba(255,255,255,.86);
+  --encre:#101828; --encre-2:#475467; --encre-3:#8b95a3; --filet:rgba(16,24,40,.09);
+  --accent:#0b7c74; --accent-doux:rgba(11,124,116,.10); --accent-encre:#ffffff;
+  --ok:#047857; --ok-doux:rgba(4,120,87,.10); --alerte:#b45309; --alerte-doux:rgba(180,83,9,.11); --danger:#be123c; --danger-doux:rgba(190,18,60,.10);
+  --ombre:0 1px 2px rgba(16,24,40,.05),0 8px 24px rgba(16,24,40,.06);
+  --mono:ui-monospace,Menlo,Consolas,monospace; --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --sol:#0d1117; --halo:#111a24; --verre:rgba(26,33,44,.66); --verre-fort:rgba(30,38,50,.9);
+  --encre:#e6ebf2; --encre-2:#aab4c3; --encre-3:#707c8d; --filet:rgba(230,235,242,.10);
+  --accent:#34b3a8; --accent-doux:rgba(52,179,168,.14); --accent-encre:#06201d;
+  --ok:#3ecf9a; --ok-doux:rgba(62,207,154,.12); --alerte:#e7a14c; --alerte-doux:rgba(231,161,76,.13); --danger:#ff6b8b; --danger-doux:rgba(255,107,139,.12);
+  --ombre:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --sol:#0d1117; --halo:#111a24; --verre:rgba(26,33,44,.66); --verre-fort:rgba(30,38,50,.9);
+  --encre:#e6ebf2; --encre-2:#aab4c3; --encre-3:#707c8d; --filet:rgba(230,235,242,.10);
+  --accent:#34b3a8; --accent-doux:rgba(52,179,168,.14); --accent-encre:#06201d;
+  --ok:#3ecf9a; --ok-doux:rgba(62,207,154,.12); --alerte:#e7a14c; --alerte-doux:rgba(231,161,76,.13); --danger:#ff6b8b; --danger-doux:rgba(255,107,139,.12);
+  --ombre:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28); color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 var(--sans);color:var(--encre);background:radial-gradient(1200px 600px at 80% -10%,var(--halo),transparent),var(--sol);min-height:100vh}
+.page{max-width:1080px;margin:0 auto;padding:20px 16px 64px}
+.verre{background:var(--verre);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border-radius:16px;box-shadow:var(--ombre);border:1px solid var(--filet)}
+header.haut{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;margin-bottom:16px}
+.marque{font-weight:700;letter-spacing:.2px}
+.marque small{display:block;font-weight:500;color:var(--encre-3);font-size:12px}
+.sp{flex:1}
+.pastille{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 10px;border-radius:99px;background:var(--accent-doux);color:var(--accent);font-weight:600}
+.pastille.ok{background:var(--ok-doux);color:var(--ok)}
+.pastille.al{background:var(--alerte-doux);color:var(--alerte)}
+.pastille.da{background:var(--danger-doux);color:var(--danger)}
+.live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:p 2s infinite}
+@keyframes p{70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.live::before{animation:none}}
+.onglets{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;margin:0 -2px}
+.onglets button{flex:none;border:1px solid var(--filet);background:var(--verre);color:var(--encre-2);padding:9px 14px;border-radius:12px;font:inherit;cursor:pointer;text-align:left}
+.onglets button b{display:block;color:var(--encre);font-size:14px}
+.onglets button span{font-size:12px}
+.onglets button[aria-selected="true"]{background:var(--verre-fort);border-color:var(--accent);box-shadow:var(--ombre)}
+.onglets button:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tuiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.tuile{padding:16px}
+.tuile .l{font-size:12px;color:var(--encre-3);text-transform:uppercase;letter-spacing:.6px}
+.tuile .v{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.tuile .n{font-size:12px;color:var(--encre-2);margin-top:2px}
+.tuile.fort{background:var(--accent);color:var(--accent-encre)}
+.tuile.fort .l,.tuile.fort .n{color:inherit;opacity:.85}
+.grille{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}
+.bloc{padding:18px}
+.bloc h2{margin:0 0 4px;font-size:16px}
+.bloc .sous{color:var(--encre-3);font-size:13px;margin:0 0 14px}
+.barre{height:10px;background:var(--filet);border-radius:99px;overflow:hidden;margin:8px 0 4px}
+.barre i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .4s}
+.rangee{display:flex;justify-content:space-between;font-size:13px;color:var(--encre-2)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:12px;text-align:left;color:var(--encre-3);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--filet)}
+td{padding:9px 8px;border-bottom:1px solid var(--filet);vertical-align:middle}
+td.m,th.m{text-align:right;font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono);font-size:13px}
+.btn{border:1px solid var(--filet);background:var(--verre-fort);color:var(--encre);padding:9px 14px;border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
+.btn.pri{background:var(--accent);color:var(--accent-encre);border-color:transparent}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.lien{display:flex;gap:8px;margin-top:10px}
+.lien input{flex:1;min-width:0;border:1px solid var(--filet);background:var(--verre-fort);color:var(--encre);padding:9px 10px;border-radius:10px;font:13px var(--mono)}
+.qr{width:96px;height:96px;border-radius:10px;background:
+  conic-gradient(var(--encre) 25%,transparent 0 50%,var(--encre) 0 75%,transparent 0) 0 0/16px 16px,var(--verre-fort);border:1px solid var(--filet);flex:none}
+.flux{list-style:none;margin:0;padding:0;max-height:260px;overflow:auto}
+.flux li{display:flex;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--filet);font-size:14px}
+.flux time{color:var(--encre-3);font-size:12px;min-width:44px}
+.flux .plus{margin-left:auto;font-weight:700;color:var(--ok);font-variant-numeric:tabular-nums}
+.aide{font-size:13px;color:var(--encre-2);background:var(--alerte-doux);border-radius:10px;padding:10px 12px;margin-top:12px}
+.espece{margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pied{margin-top:28px;font-size:12px;color:var(--encre-3);text-align:center}
+@media (max-width:820px){.tuiles{grid-template-columns:repeat(2,1fr)}.grille{grid-template-columns:1fr}}
+@media (max-width:420px){.tuile .v{font-size:23px}th.cache,td.cache{display:none}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="haut verre">
+  <div class="marque">Mes ventes<small>Compte revendeur · Léa Martin</small></div>
+  <span class="sp"></span>
+  <span class="pastille live ok" id="etat">En direct</span>
+  <button class="btn" id="theme" type="button" aria-label="Changer de thème">◐</button>
+</header>
+
+<nav class="onglets" role="tablist" aria-label="Événements" id="onglets"></nav>
+
+<section class="tuiles" id="tuiles" aria-live="polite"></section>
+
+<div class="grille">
+  <div>
+    <section class="bloc verre" style="margin-bottom:16px">
+      <h2>Ma progression</h2>
+      <p class="sous" id="prog-sous"></p>
+      <div class="barre"><i id="prog-barre"></i></div>
+      <div class="rangee"><span id="prog-g"></span><span id="prog-d"></span></div>
+      <div class="lien" style="align-items:center">
+        <div class="qr" role="img" aria-label="QR code de mon lien de vente"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:var(--encre-2)">Mon lien de vente pour cet événement</div>
+          <div class="lien"><input id="lien" readonly value="https://billets.exemple.org/e/soiree-hiver?r=LEA-7K3Q"><button class="btn" id="copier" type="button">Copier</button></div>
+        </div>
+      </div>
+      <div class="espece">
+        <button class="btn" type="button" id="espece">＋ Vente en espèces</button>
+        <span style="font-size:13px;color:var(--encre-3)">Billet émis « à reverser » : je dois le prix net au titulaire.</span>
+      </div>
+    </section>
+
+    <section class="bloc verre">
+      <h2>Mes billets</h2>
+      <p class="sous">Chaque billet reste attribué à mon compte.</p>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Billet</th><th class="cache">Acheteur</th><th>État</th><th class="m">Prix</th><th class="m">Commission</th></tr></thead>
+        <tbody id="billets"></tbody>
+      </table></div>
+    </section>
+  </div>
+
+  <div>
+    <section class="bloc verre" style="margin-bottom:16px">
+      <h2>Mon portefeuille</h2>
+      <p class="sous">Toutes mes commissions, tous événements confondus.</p>
+      <div class="rangee"><span>Disponible</span><b id="w-dispo" class="mono"></b></div>
+      <div class="rangee" style="margin-top:6px"><span>En attente</span><b id="w-att" class="mono"></b></div>
+      <div class="rangee" style="margin-top:6px"><span>Déjà versé</span><b id="w-vers" class="mono"></b></div>
+      <hr style="border:0;border-top:1px solid var(--filet);margin:14px 0">
+      <button class="btn pri" id="retrait" type="button" style="width:100%">Demander un retrait</button>
+      <div class="aide" id="aide-retrait"></div>
+    </section>
+
+    <section class="bloc verre">
+      <h2>Ventes en direct</h2>
+      <p class="sous">Se met à jour à chaque billet vendu.</p>
+      <ul class="flux" id="flux"></ul>
+    </section>
+  </div>
+</div>
+
+<p class="pied">Maquette · données fictives · le solde se calcule à partir du registre, jamais modifié à la main.</p>
+</div>
+
+<script>
+(function(){
+  var E=[
+    {id:"hiver",nom:"Soirée d'hiver",date:"12 déc. 2026",quota:20,prix:1500,com:500,dispo:false,
+     billets:[["A-0412","M. Durand","payé",0],["A-0413","S. Petit","payé",0],["A-0415","K. Okafor","espèces",1],["A-0419","J. Roche","payé",0],["A-0421","N. Haddad","payé",0],["A-0422","C. Weber","virement en attente",2]],
+     vendus:14,att:2},
+    {id:"concert",nom:"Concert de printemps",date:"20 mars 2027",quota:30,prix:1200,com:400,dispo:false,billets:[["B-0007","I. Costa","payé",0]],vendus:3,att:0},
+    {id:"gala",nom:"Gala d'automne",date:"3 oct. 2026 · terminé",quota:20,prix:1500,com:500,dispo:true,billets:[["G-0101","P. Lopez","payé",0],["G-0102","A. Nguyen","payé",0]],vendus:20,att:0}
+  ];
+  var W={dispo:10000,att:8500,vers:5000}, MIN=2000, cur=0;
+  function eur(c){return (c/100).toLocaleString("fr-FR",{minimumFractionDigits:2})+" €"}
+  function $(i){return document.getElementById(i)}
+  function pastille(s,k){var c=k==0?"ok":k==1?"al":"da";return '<span class="pastille '+c+'">'+s+'</span>'}
+  function dessiner(){
+    var e=E[cur];
+    $("onglets").innerHTML=E.map(function(x,i){return '<button role="tab" type="button" aria-selected="'+(i==cur)+'" data-i="'+i+'"><b>'+x.nom+'</b><span>'+x.date+'</span></button>'}).join("");
+    var com=e.vendus*e.com;
+    $("tuiles").innerHTML=
+      '<div class="tuile verre fort"><div class="l">Commissions</div><div class="v">'+eur(com)+'</div><div class="n">'+eur(e.com)+' par billet</div></div>'+
+      '<div class="tuile verre"><div class="l">Billets vendus</div><div class="v">'+e.vendus+'</div><div class="n">sur '+e.quota+' confiés</div></div>'+
+      '<div class="tuile verre"><div class="l">Chiffre vendu</div><div class="v">'+eur(e.vendus*e.prix)+'</div><div class="n">'+eur(e.prix)+' le billet</div></div>'+
+      '<div class="tuile verre"><div class="l">À reverser</div><div class="v">'+eur(e.billets.filter(function(b){return b[3]==1}).length*(e.prix-e.com))+'</div><div class="n">ventes en espèces</div></div>';
+    $("prog-sous").textContent=e.nom+" · "+e.date;
+    $("prog-barre").style.width=Math.round(e.vendus/e.quota*100)+"%";
+    $("prog-g").textContent=e.vendus+" vendus";
+    $("prog-d").textContent=(e.quota-e.vendus)+" restants";
+    $("billets").innerHTML=e.billets.map(function(b){return '<tr><td class="mono">'+b[0]+'</td><td class="cache">'+b[1]+'</td><td>'+pastille(b[2],b[3])+'</td><td class="m">'+eur(e.prix)+'</td><td class="m">'+(b[3]==2?'—':eur(e.com))+'</td></tr>'}).join("");
+    $("w-dispo").textContent=eur(W.dispo);$("w-att").textContent=eur(W.att);$("w-vers").textContent=eur(W.vers);
+    var ok=W.dispo>=MIN; $("retrait").disabled=!ok;
+    $("aide-retrait").innerHTML=ok?"Je peux retirer jusqu'à <b>"+eur(W.dispo)+"</b>. Le titulaire valide, puis paie par virement.":"Retrait possible dès <b>"+eur(MIN)+"</b> disponibles. Une commission devient disponible <b>7 jours après l'événement</b>.";
+  }
+  document.addEventListener("click",function(ev){
+    var b=ev.target.closest("[data-i]"); if(b){cur=+b.dataset.i;dessiner();}
+  });
+  $("copier").onclick=function(){try{navigator.clipboard.writeText($("lien").value)}catch(x){}$("copier").textContent="Copié";setTimeout(function(){$("copier").textContent="Copier"},1500)};
+  $("retrait").onclick=function(){$("aide-retrait").innerHTML="Demande de <b>"+eur(W.dispo)+"</b> envoyée au titulaire. État : <b>demandée</b>."};
+  $("espece").onclick=function(){var e=E[cur];if(e.vendus>=e.quota)return;e.vendus++;e.billets.unshift(["X-"+(9000+e.vendus),"Vente directe","espèces",1]);journal("Vente en espèces · à reverser",0);dessiner()};
+  $("theme").onclick=function(){var r=document.documentElement;r.dataset.theme=(r.dataset.theme=="dark")?"light":"dark"};
+  var flux=[["14:32","Billet A-0422 · virement en attente",null],["14:05","Billet A-0421 · N. Haddad",500],["13:48","Billet A-0419 · J. Roche",500],["11:20","Billet A-0415 · espèces",null]];
+  function journal(t,c){flux.unshift([new Date().toTimeString().slice(0,5),t,c]);rendreFlux()}
+  function rendreFlux(){$("flux").innerHTML=flux.slice(0,12).map(function(f){return '<li><time>'+f[0]+'</time><span>'+f[1]+'</span><span class="plus">'+(f[2]?"+ "+eur(f[2]):"")+'</span></li>'}).join("")}
+  setTimeout(function(){var e=E[0];if(cur==0&&e.vendus<e.quota){e.vendus++;e.billets.unshift(["A-0423","T. Garnier","payé",0]);W.att+=e.com;journal("Billet A-0423 · T. Garnier",e.com);dessiner()}},6000);
+  rendreFlux();dessiner();
+})();
+</script>
+</body>
+</html>
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->

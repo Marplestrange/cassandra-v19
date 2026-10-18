@@ -1,0 +1,582 @@
+{
+ "point": "billetterie.commission",
+ "contrat": "1.0",
+ "origine": "sorties de la référence, recoupées par une écriture indépendante (place par place) ; données synthétiques",
+ "cas": [
+  {
+   "cas": "artiste A, aucune place",
+   "entree": {
+    "formule": {
+     "role": "artiste",
+     "forfait": 8000,
+     "com": 500,
+     "fixe": 0,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 0
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 8000,
+     "commission": 0,
+     "fixe": 0,
+     "total": 8000
+    }
+   }
+  },
+  {
+   "cas": "artiste A, 18 places",
+   "entree": {
+    "formule": {
+     "role": "artiste",
+     "forfait": 8000,
+     "com": 500,
+     "fixe": 0,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 18
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 8000,
+     "commission": 9000,
+     "fixe": 0,
+     "total": 17000
+    }
+   }
+  },
+  {
+   "cas": "artiste B, 18 places",
+   "entree": {
+    "formule": {
+     "role": "artiste",
+     "forfait": 11000,
+     "com": 300,
+     "fixe": 0,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 18
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 11000,
+     "commission": 5400,
+     "fixe": 0,
+     "total": 16400
+    }
+   }
+  },
+  {
+   "cas": "artiste: une place",
+   "entree": {
+    "formule": {
+     "role": "artiste",
+     "forfait": 8000,
+     "com": 500,
+     "fixe": 0,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 1
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 8000,
+     "commission": 500,
+     "fixe": 0,
+     "total": 8500
+    }
+   }
+  },
+  {
+   "cas": "artiste: places négatives = zéro",
+   "entree": {
+    "formule": {
+     "role": "artiste",
+     "forfait": 8000,
+     "com": 500,
+     "fixe": 0,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": -5
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 8000,
+     "commission": 0,
+     "fixe": 0,
+     "total": 8000
+    }
+   }
+  },
+  {
+   "cas": "artiste: commission nulle",
+   "entree": {
+    "formule": {
+     "role": "artiste",
+     "forfait": 5000,
+     "com": 0,
+     "fixe": 0,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 40
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 5000,
+     "commission": 0,
+     "fixe": 0,
+     "total": 5000
+    }
+   }
+  },
+  {
+   "cas": "cachet, aucune place",
+   "entree": {
+    "formule": {
+     "role": "cachet",
+     "forfait": 10000,
+     "com": 0,
+     "fixe": 0,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 0
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 10000,
+     "commission": 0,
+     "fixe": 0,
+     "total": 10000
+    }
+   }
+  },
+  {
+   "cas": "cachet: les places ne changent rien",
+   "entree": {
+    "formule": {
+     "role": "cachet",
+     "forfait": 10000,
+     "com": 0,
+     "fixe": 0,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 60
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 10000,
+     "commission": 0,
+     "fixe": 0,
+     "total": 10000
+    }
+   }
+  },
+  {
+   "cas": "cachet: une commission saisie par erreur ne compte pas",
+   "entree": {
+    "formule": {
+     "role": "cachet",
+     "forfait": 10000,
+     "com": 700,
+     "fixe": 0,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 60
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 10000,
+     "commission": 0,
+     "fixe": 0,
+     "total": 10000
+    }
+   }
+  },
+  {
+   "cas": "revendeur: aucune place, aucun fixe",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 0,
+     "com": 300,
+     "fixe": 2000,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 0
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 0,
+     "fixe": 0,
+     "total": 0
+    }
+   }
+  },
+  {
+   "cas": "revendeur: une place déclenche le fixe",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 0,
+     "com": 300,
+     "fixe": 2000,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 1
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 300,
+     "fixe": 2000,
+     "total": 2300
+    }
+   }
+  },
+  {
+   "cas": "revendeur: fixe seul",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 0,
+     "com": 0,
+     "fixe": 2500,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 7
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 0,
+     "fixe": 2500,
+     "total": 2500
+    }
+   }
+  },
+  {
+   "cas": "revendeur: sans palier",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 0,
+     "com": 300,
+     "fixe": 0,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 25
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 7500,
+     "fixe": 0,
+     "total": 7500
+    }
+   }
+  },
+  {
+   "cas": "revendeur: palier, sous le seuil",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 0,
+     "com": 300,
+     "fixe": 0,
+     "palier": true,
+     "palier_n": 12,
+     "palier_com": 500
+    },
+    "places": 11
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 3300,
+     "fixe": 0,
+     "total": 3300
+    }
+   }
+  },
+  {
+   "cas": "revendeur: palier, au seuil",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 0,
+     "com": 300,
+     "fixe": 0,
+     "palier": true,
+     "palier_n": 12,
+     "palier_com": 500
+    },
+    "places": 12
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 3600,
+     "fixe": 0,
+     "total": 3600
+    }
+   }
+  },
+  {
+   "cas": "revendeur: palier, au-delà d'une place",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 0,
+     "com": 300,
+     "fixe": 0,
+     "palier": true,
+     "palier_n": 12,
+     "palier_com": 500
+    },
+    "places": 13
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 4100,
+     "fixe": 0,
+     "total": 4100
+    }
+   }
+  },
+  {
+   "cas": "revendeur: palier, bien au-delà",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 0,
+     "com": 300,
+     "fixe": 0,
+     "palier": true,
+     "palier_n": 12,
+     "palier_com": 500
+    },
+    "places": 30
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 12600,
+     "fixe": 0,
+     "total": 12600
+    }
+   }
+  },
+  {
+   "cas": "revendeur: palier avec fixe",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 0,
+     "com": 300,
+     "fixe": 1000,
+     "palier": true,
+     "palier_n": 10,
+     "palier_com": 450
+    },
+    "places": 25
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 9750,
+     "fixe": 1000,
+     "total": 10750
+    }
+   }
+  },
+  {
+   "cas": "revendeur: palier désactivé, ses chiffres sont ignorés",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 0,
+     "com": 300,
+     "fixe": 0,
+     "palier": false,
+     "palier_n": 5,
+     "palier_com": 999
+    },
+    "places": 20
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 6000,
+     "fixe": 0,
+     "total": 6000
+    }
+   }
+  },
+  {
+   "cas": "revendeur: palier actif mais seuil zéro = sans palier",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 0,
+     "com": 300,
+     "fixe": 0,
+     "palier": true,
+     "palier_n": 0,
+     "palier_com": 999
+    },
+    "places": 20
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 6000,
+     "fixe": 0,
+     "total": 6000
+    }
+   }
+  },
+  {
+   "cas": "revendeur: places négatives = zéro",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 0,
+     "com": 300,
+     "fixe": 2000,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": -3
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 0,
+     "fixe": 0,
+     "total": 0
+    }
+   }
+  },
+  {
+   "cas": "revendeur: palier d'une place",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 0,
+     "com": 100,
+     "fixe": 0,
+     "palier": true,
+     "palier_n": 1,
+     "palier_com": 900
+    },
+    "places": 4
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 2800,
+     "fixe": 0,
+     "total": 2800
+    }
+   }
+  },
+  {
+   "cas": "artiste: le fixe n'est jamais compté",
+   "entree": {
+    "formule": {
+     "role": "artiste",
+     "forfait": 1000,
+     "com": 200,
+     "fixe": 777,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 3
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 1000,
+     "commission": 600,
+     "fixe": 0,
+     "total": 1600
+    }
+   }
+  },
+  {
+   "cas": "artiste: le palier n'est jamais compté",
+   "entree": {
+    "formule": {
+     "role": "artiste",
+     "forfait": 1000,
+     "com": 200,
+     "fixe": 0,
+     "palier": true,
+     "palier_n": 2,
+     "palier_com": 900
+    },
+    "places": 10
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 1000,
+     "commission": 2000,
+     "fixe": 0,
+     "total": 3000
+    }
+   }
+  },
+  {
+   "cas": "revendeur: le forfait n'est jamais compté",
+   "entree": {
+    "formule": {
+     "role": "independant",
+     "forfait": 5555,
+     "com": 300,
+     "fixe": 0,
+     "palier": false,
+     "palier_n": 0,
+     "palier_com": 0
+    },
+    "places": 4
+   },
+   "sortie": {
+    "valeur": {
+     "forfait": 0,
+     "commission": 1200,
+     "fixe": 0,
+     "total": 1200
+    }
+   }
+  }
+ ]
+}
