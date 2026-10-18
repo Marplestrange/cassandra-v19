@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #5e082d
+// VERSION CN : 0.1.0  #157d2e
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=5e082d ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=157d2e ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -426,15 +426,28 @@
   }
 
   // ── le menu de l'avatar : celui de l'ancienne interface, complété ──────────
+  // l'apparence : un thème (icônes) et un habillage (noms), à la place des initiales de l'ancien sélecteur
+  function themeActuel() { const r = document.documentElement; return r.getAttribute("data-habillage") || r.getAttribute("data-theme") || "light"; }
+  function blocApparence() {
+    const etats = (typeof TH_ETATS !== "undefined" ? TH_ETATS : []), hab = CASS.habillages || {};
+    const racine = document.documentElement, courant = racine.getAttribute("data-habillage") || "", base = racine.getAttribute("data-theme") || "light";
+    const bases = etats.filter((x) => !hab[x[0]]);
+    const themes = bases.map((x) => '<button type="button" role="radio" aria-checked="' + (!courant && (x[0] === base || (x[0] === "auto" && !racine.getAttribute("data-theme"))) ? "true" : "false") + '" data-d19-theme="' + esc(x[0]) + '" title="' + esc(x[1]) + '" aria-label="' + esc(x[1]) + '">' + x[2] + "</button>").join("");
+    const habs = ['<button type="button" class="d19-chip' + (!courant ? " on" : "") + '" data-d19-hab="">Cassandra</button>'].concat(Object.keys(hab).map((id) => '<button type="button" class="d19-chip' + (courant === id ? " on" : "") + '" data-d19-hab="' + esc(id) + '">' + esc(hab[id].libelle || id) + "</button>")).join("");
+    return '<div class="um-h">Thème</div><div class="d19-themes" role="radiogroup" aria-label="Thème">' + themes + '</div><div class="um-h" style="margin-top:10px">Habillage</div><div class="d19-habs">' + habs + "</div>";
+  }
   function completerAvatar() {
     const um = $("#usermenu"); if (!um) return;
     $$("[data-d19-av]", um).forEach((x) => x.remove());
+    const seg = $("#um-seg", um), ancien = seg && seg.closest(".um-sec");
+    if (ancien) ancien.style.display = "none";                       // l'ancien sélecteur (initiales) cède la place
     const hote = $(".um-acts", um); if (!hote) return;
-    const sec = document.createElement("div"); sec.className = "um-sec"; sec.setAttribute("data-d19-av", "1");
-    sec.innerHTML = '<div class="um-h">Organisation et paramètres</div><div class="um-acts">' + (E.d.avatar || []).map((a) => '<button class="um-i" role="menuitem" data-d19-avid="' + esc(a.id) + '">' + ico(a.icone || "info") + esc(a.libelle) + "</button>").join("")
+    const app = document.createElement("div"); app.className = "um-sec"; app.setAttribute("data-d19-av", "1"); app.innerHTML = blocApparence();
+    const acts = document.createElement("div"); acts.className = "um-acts"; acts.setAttribute("data-d19-av", "1");
+    acts.innerHTML = (E.d.avatar || []).map((a) => '<button class="um-i" role="menuitem" data-d19-avid="' + esc(a.id) + '">' + ico(a.icone || "info") + esc(a.libelle) + "</button>").join("")
       + '<button class="um-i" role="menuitem" data-d19-verre="1">' + ico("palette") + "Verre dépoli : " + (E.prefs.verre ? "oui" : "non") + "</button>"
-      + '<button class="um-i" role="menuitem" data-d19-v18="1">' + ico("menu") + "Revenir à l’ancienne disposition</button></div>";
-    hote.parentNode.insertBefore(sec, hote);
+      + '<button class="um-i" role="menuitem" data-d19-v18="1">' + ico("menu") + "Ancienne disposition</button>";
+    hote.parentNode.insertBefore(app, hote); hote.parentNode.insertBefore(acts, hote);
   }
 
   // ── les pages propres : Société / Organisation, Info Cassandra ─────────────
@@ -596,6 +609,8 @@
       if ((x = c("#d19-pal [data-pi]"))) { palChoisir(+x.dataset.pi); return; }
       if (c("#d19-pal > div")) return;
       if (c("#d19-pal")) { palFermer(); return; }
+      if ((x = c("[data-d19-theme]"))) { if (typeof window.appliquerTheme === "function") window.appliquerTheme(x.dataset.d19Theme); setTimeout(completerAvatar, 50); return; }
+      if ((x = c("[data-d19-hab]"))) { const id = x.dataset.d19Hab, r = document.documentElement; if (typeof window.appliquerTheme === "function") window.appliquerTheme(id || (r.getAttribute("data-theme") === "dark" ? "dark" : "light")); setTimeout(completerAvatar, 50); return; }
       if ((x = c("[data-d19-avid]"))) { const a = (E.d.avatar || []).find((y) => y.id === x.dataset.d19Avid); if (typeof window.fermerCompte === "function") window.fermerCompte(); if (a) { E.silence = false; ouvrirNoeud(a); } return; }
       if (c("[data-d19-verre]")) { E.prefs.verre = !E.prefs.verre; sauverPrefs(); appliquerPrefs(); completerAvatar(); return; }
       if (c("[data-d19-v18]")) { try { localStorage.setItem("cass_disposition", "v18"); } catch (e) {} location.reload(); return; }

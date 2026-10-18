@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=f43fe7 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=5b69a1 ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -21,8 +21,8 @@
   --d-pop:rgba(255,255,255,.96);
 }
 :root[data-theme="dark"]{--d-barre-haut:#186059; --d-barre:#14524d; --d-encre:#eafaf8; --d-doux:rgba(255,255,255,.12); --d-pop:rgba(30,38,50,.98)}
-:root[data-habillage="papier"]{--d-barre-haut:#ffffff; --d-barre:#f6f7f9; --d-encre:#101828; --d-doux:rgba(16,24,40,.07); --d-dalle:rgba(16,24,40,.045); --d-dalle-haut:rgba(255,255,255,.95); --d-dalle-bas:rgba(16,24,40,.10); --d-dalle-on:rgba(11,124,116,.12); --d-dalle-ombre:rgba(16,24,40,.12)}
-:root[data-habillage="ardoise"]{--d-barre-haut:#3b4a61; --d-barre:#334155}
+:root[data-habillage="themes:papier"]{--d-barre-haut:#ffffff; --d-barre:#f6f7f9; --d-encre:#101828; --d-doux:rgba(16,24,40,.07); --d-dalle:rgba(16,24,40,.045); --d-dalle-haut:rgba(255,255,255,.95); --d-dalle-bas:rgba(16,24,40,.10); --d-dalle-on:rgba(11,124,116,.12); --d-dalle-ombre:rgba(16,24,40,.12)}
+:root[data-habillage="themes:ardoise"]{--d-barre-haut:#3b4a61; --d-barre:#334155}
 
 body.d19 .header, body.d19 #sidebar, body.d19 .sb-scrim, body.d19 #mobile-bottom-nav{display:none!important}
 body.d19 #app-container{position:relative}
@@ -179,6 +179,13 @@ body.d19 .app-body{position:relative}
 .d19-pill{display:inline-block;padding:2px 10px;border-radius:999px;font:600 11px 'JetBrains Mono',monospace;background:rgba(4,120,87,.1);color:var(--ok,#047857)}
 .d19-pill.alerte{background:rgba(180,83,9,.12);color:var(--warn,#b45309)}
 
+/* ---------- le menu de l'avatar : thème (icônes) et habillage ---------- */
+#usermenu .d19-themes{display:flex;gap:3px;padding:3px;border-radius:10px;background:var(--ov-04);border:1px solid var(--line)}
+#usermenu .d19-themes button{flex:1;display:grid;place-items:center;height:30px;border-radius:8px;border:0;background:transparent;color:var(--txt-muted);cursor:pointer}
+#usermenu .d19-themes button svg{width:16px;height:16px}
+#usermenu .d19-themes button[aria-checked="true"]{background:var(--surface-solid,#fff);color:var(--txt-strong);box-shadow:var(--shadow-glass)}
+#usermenu .d19-habs{display:flex;flex-wrap:wrap;gap:6px}
+#usermenu [data-d19-av] .um-h{margin-bottom:6px}
 /* ---------- palette, voile, toast ---------- */
 #d19-pal{position:absolute;inset:0;background:rgba(16,24,40,.35);display:none;align-items:flex-start;justify-content:center;padding-top:80px;z-index:90}
 #d19-pal.ouvert{display:flex}
