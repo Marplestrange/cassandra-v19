@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.7  #ffc949
+# VERSION CN : 0.1.8  #ffc949
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : sante.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

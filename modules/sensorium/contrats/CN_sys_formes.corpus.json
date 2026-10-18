@@ -2518,6 +2518,684 @@
      ]
     ]
    }
+  },
+  {
+   "cas": "serveur complet",
+   "entree": {
+    "op": "instantane_serveur",
+    "stat1": "cpu  100 0 50 800 10 0 5 0 0 0\ncpu0 1 2 3 4",
+    "stat2": "cpu  150 0 80 900 12 0 8 0 0 0\ncpu0 1 2 3 4",
+    "loadavg": "0.52 0.40 0.30 1/200 999",
+    "mi": {
+     "MemTotal": 8000000,
+     "MemAvailable": 3000000,
+     "SwapTotal": 2000000,
+     "SwapFree": 1500000
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "ts": "2026-10-17T12:00:00.123456",
+     "cpu": 45.9,
+     "la1": 0.52,
+     "la5": 0.4,
+     "la15": 0.3,
+     "mem_used": 5120000000,
+     "mem_total": 8192000000,
+     "swap_used": 512000000,
+     "swap_total": 2048000000
+    }
+   }
+  },
+  {
+   "cas": "serveur sans lecture",
+   "entree": {
+    "op": "instantane_serveur",
+    "stat1": null,
+    "stat2": null,
+    "loadavg": null,
+    "mi": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "ts": "2026-10-17T12:00:00.123456",
+     "cpu": 0.0,
+     "la1": 0.0,
+     "la5": 0.0,
+     "la15": 0.0,
+     "mem_used": 0,
+     "mem_total": 0,
+     "swap_used": 0,
+     "swap_total": 0
+    }
+   }
+  },
+  {
+   "cas": "serveur cpu inchangé",
+   "entree": {
+    "op": "instantane_serveur",
+    "stat1": "cpu  100 0 50 800 10 0 5 0 0 0\ncpu0 1 2 3 4",
+    "stat2": "cpu  100 0 50 800 10 0 5 0 0 0\ncpu0 1 2 3 4",
+    "loadavg": "1 2 3",
+    "mi": {
+     "MemTotal": 8000000,
+     "MemAvailable": 3000000,
+     "SwapTotal": 2000000,
+     "SwapFree": 1500000
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "ts": "2026-10-17T12:00:00.123456",
+     "cpu": 0.0,
+     "la1": 1.0,
+     "la5": 2.0,
+     "la15": 3.0,
+     "mem_used": 5120000000,
+     "mem_total": 8192000000,
+     "swap_used": 512000000,
+     "swap_total": 2048000000
+    }
+   }
+  },
+  {
+   "cas": "serveur cpu illisible",
+   "entree": {
+    "op": "instantane_serveur",
+    "stat1": "cpu a b c d",
+    "stat2": "cpu  150 0 80 900 12 0 8 0 0 0\ncpu0 1 2 3 4",
+    "loadavg": "x y z",
+    "mi": {
+     "MemTotal": 8000000,
+     "MemAvailable": 3000000,
+     "SwapTotal": 2000000,
+     "SwapFree": 1500000
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "ts": "2026-10-17T12:00:00.123456",
+     "cpu": 0.0,
+     "la1": 0.0,
+     "la5": 0.0,
+     "la15": 0.0,
+     "mem_used": 5120000000,
+     "mem_total": 8192000000,
+     "swap_used": 512000000,
+     "swap_total": 2048000000
+    }
+   }
+  },
+  {
+   "cas": "serveur cpu à zéro",
+   "entree": {
+    "op": "instantane_serveur",
+    "stat1": "cpu 1 1 1 1",
+    "stat2": "cpu 1 1 1 1",
+    "loadavg": "0.1 0.2",
+    "mi": {
+     "MemTotal": 8000000,
+     "MemAvailable": 3000000,
+     "SwapTotal": 2000000,
+     "SwapFree": 1500000
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "ts": "2026-10-17T12:00:00.123456",
+     "cpu": 0.0,
+     "la1": 0.0,
+     "la5": 0.0,
+     "la15": 0.0,
+     "mem_used": 5120000000,
+     "mem_total": 8192000000,
+     "swap_used": 512000000,
+     "swap_total": 2048000000
+    }
+   }
+  },
+  {
+   "cas": "serveur mémoire sans disponible",
+   "entree": {
+    "op": "instantane_serveur",
+    "stat1": "cpu  100 0 50 800 10 0 5 0 0 0\ncpu0 1 2 3 4",
+    "stat2": "cpu  150 0 80 900 12 0 8 0 0 0\ncpu0 1 2 3 4",
+    "loadavg": "0 0 0",
+    "mi": {
+     "MemTotal": 100,
+     "MemFree": 40
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "ts": "2026-10-17T12:00:00.123456",
+     "cpu": 45.9,
+     "la1": 0.0,
+     "la5": 0.0,
+     "la15": 0.0,
+     "mem_used": 61440,
+     "mem_total": 102400,
+     "swap_used": 0,
+     "swap_total": 0
+    }
+   }
+  },
+  {
+   "cas": "serveur mémoire vide",
+   "entree": {
+    "op": "instantane_serveur",
+    "stat1": "cpu  100 0 50 800 10 0 5 0 0 0\ncpu0 1 2 3 4",
+    "stat2": "cpu  150 0 80 900 12 0 8 0 0 0\ncpu0 1 2 3 4",
+    "loadavg": "0 0 0",
+    "mi": {
+     "SwapTotal": 5
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "ts": "2026-10-17T12:00:00.123456",
+     "cpu": 45.9,
+     "la1": 0.0,
+     "la5": 0.0,
+     "la15": 0.0,
+     "mem_used": 0,
+     "mem_total": 0,
+     "swap_used": 5120,
+     "swap_total": 5120
+    }
+   }
+  },
+  {
+   "cas": "processus vide",
+   "entree": {
+    "op": "processus_agreges",
+    "stats": [],
+    "uptime": "1000.5 900",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "processus",
+   "entree": {
+    "op": "processus_agreges",
+    "stats": [
+     "123 (nginx) S 1 123 123 0 -1 4194560 100 0 0 0 40 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "124 (nginx) S 1 123 123 0 -1 4194560 100 0 0 0 5 5 0 0 20 0 1 0 100 1000000 300 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "5 (Web Content) R 1 5 5 0 -1 4194560 100 0 0 0 900 100 0 0 20 0 1 0 100 1000000 2000 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "6 (a (b) c) S 1 6 6 0 -1 0 0 0 0 0 1 1 0 0 20 0 1 0 1 1 7 1 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "court",
+     "",
+     "1 (x) S"
+    ],
+    "uptime": "1000.5 900",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "Web Content",
+      "avg_cpu": 0.9,
+      "max_cpu": 0.9,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "nginx",
+      "avg_cpu": 0.04,
+      "max_cpu": 0.04,
+      "mem_mb": 7812.5,
+      "count": 2
+     },
+     {
+      "name": "a (b) c",
+      "avg_cpu": 0.0,
+      "max_cpu": 0.0,
+      "mem_mb": 0.0,
+      "count": 1
+     }
+    ]
+   }
+  },
+  {
+   "cas": "processus sans uptime",
+   "entree": {
+    "op": "processus_agreges",
+    "stats": [
+     "123 (nginx) S 1 123 123 0 -1 4194560 100 0 0 0 40 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "5 (Web Content) R 1 5 5 0 -1 4194560 100 0 0 0 900 100 0 0 20 0 1 0 100 1000000 2000 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0"
+    ],
+    "uptime": null,
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "Web Content",
+      "avg_cpu": 900.0,
+      "max_cpu": 900.0,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "nginx",
+      "avg_cpu": 40.0,
+      "max_cpu": 40.0,
+      "mem_mb": 3906.2,
+      "count": 1
+     }
+    ]
+   }
+  },
+  {
+   "cas": "processus uptime nul",
+   "entree": {
+    "op": "processus_agreges",
+    "stats": [
+     "123 (nginx) S 1 123 123 0 -1 4194560 100 0 0 0 40 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "5 (Web Content) R 1 5 5 0 -1 4194560 100 0 0 0 900 100 0 0 20 0 1 0 100 1000000 2000 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0"
+    ],
+    "uptime": "0 0",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "nginx",
+      "avg_cpu": 0.0,
+      "max_cpu": 0.0,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "Web Content",
+      "avg_cpu": 0.0,
+      "max_cpu": 0.0,
+      "mem_mb": 3906.2,
+      "count": 1
+     }
+    ]
+   }
+  },
+  {
+   "cas": "processus uptime illisible",
+   "entree": {
+    "op": "processus_agreges",
+    "stats": [
+     "123 (nginx) S 1 123 123 0 -1 4194560 100 0 0 0 40 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0"
+    ],
+    "uptime": "bientôt",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "nginx",
+      "avg_cpu": 40.0,
+      "max_cpu": 40.0,
+      "mem_mb": 3906.2,
+      "count": 1
+     }
+    ]
+   }
+  },
+  {
+   "cas": "processus sans parenthèses",
+   "entree": {
+    "op": "processus_agreges",
+    "stats": [
+     "12 nom S 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23"
+    ],
+    "uptime": "10",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "?",
+      "avg_cpu": 1.9,
+      "max_cpu": 1.9,
+      "mem_mb": 0.1,
+      "count": 1
+     }
+    ]
+   }
+  },
+  {
+   "cas": "processus plus de douze",
+   "entree": {
+    "op": "processus_agreges",
+    "stats": [
+     "123 (p00) S 1 123 123 0 -1 4194560 100 0 0 0 0 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p01) S 1 123 123 0 -1 4194560 100 0 0 0 7 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p02) S 1 123 123 0 -1 4194560 100 0 0 0 14 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p03) S 1 123 123 0 -1 4194560 100 0 0 0 21 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p04) S 1 123 123 0 -1 4194560 100 0 0 0 28 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p05) S 1 123 123 0 -1 4194560 100 0 0 0 35 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p06) S 1 123 123 0 -1 4194560 100 0 0 0 42 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p07) S 1 123 123 0 -1 4194560 100 0 0 0 49 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p08) S 1 123 123 0 -1 4194560 100 0 0 0 56 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p09) S 1 123 123 0 -1 4194560 100 0 0 0 63 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p10) S 1 123 123 0 -1 4194560 100 0 0 0 70 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p11) S 1 123 123 0 -1 4194560 100 0 0 0 77 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p12) S 1 123 123 0 -1 4194560 100 0 0 0 84 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p13) S 1 123 123 0 -1 4194560 100 0 0 0 91 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+     "123 (p14) S 1 123 123 0 -1 4194560 100 0 0 0 98 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0"
+    ],
+    "uptime": "500",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "name": "p14",
+      "avg_cpu": 0.2,
+      "max_cpu": 0.2,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "p13",
+      "avg_cpu": 0.18,
+      "max_cpu": 0.18,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "p12",
+      "avg_cpu": 0.17,
+      "max_cpu": 0.17,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "p11",
+      "avg_cpu": 0.15,
+      "max_cpu": 0.15,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "p10",
+      "avg_cpu": 0.14,
+      "max_cpu": 0.14,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "p09",
+      "avg_cpu": 0.13,
+      "max_cpu": 0.13,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "p08",
+      "avg_cpu": 0.11,
+      "max_cpu": 0.11,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "p07",
+      "avg_cpu": 0.1,
+      "max_cpu": 0.1,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "p06",
+      "avg_cpu": 0.08,
+      "max_cpu": 0.08,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "p05",
+      "avg_cpu": 0.07,
+      "max_cpu": 0.07,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "p04",
+      "avg_cpu": 0.06,
+      "max_cpu": 0.06,
+      "mem_mb": 3906.2,
+      "count": 1
+     },
+     {
+      "name": "p03",
+      "avg_cpu": 0.04,
+      "max_cpu": 0.04,
+      "mem_mb": 3906.2,
+      "count": 1
+     }
+    ]
+   }
+  },
+  {
+   "cas": "réseau vide",
+   "entree": {
+    "op": "netdev_lire",
+    "texte": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "réseau",
+   "entree": {
+    "op": "netdev_lire",
+    "texte": "Inter-|   Receive  |  Transmit\n face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed\n    lo: 1000 10 0 0 0 0 0 0 1000 10 0 0 0 0 0 0\n  eth0: 5000 50 0 0 0 0 0 0 7000 70 0 0 0 0 0 0\n  wlan0: 1 2 3\npas de deux points\n  eth1:9 1 0 0 0 0 0 0 4 3 0 0 0 0 0 0",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "eth0": {
+      "rx_bytes": 5000,
+      "rx_packets": 50,
+      "tx_bytes": 7000,
+      "tx_packets": 70
+     },
+     "eth1": {
+      "rx_bytes": 9,
+      "rx_packets": 1,
+      "tx_bytes": 4,
+      "tx_packets": 3
+     }
+    }
+   }
+  },
+  {
+   "cas": "réseau illisible",
+   "entree": {
+    "op": "netdev_lire",
+    "texte": "\n\n  eth0: x 50 0 0 0 0 0 0 7000 70\n  eth1: 1 1 0 0 0 0 0 0 1 1",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "réseau delta vide",
+   "entree": {
+    "op": "netdev_delta",
+    "s1": {},
+    "s2": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "réseau delta",
+   "entree": {
+    "op": "netdev_delta",
+    "s1": {
+     "eth0": {
+      "rx_bytes": 5000,
+      "rx_packets": 50,
+      "tx_bytes": 7000,
+      "tx_packets": 70
+     },
+     "eth1": {
+      "rx_bytes": 1,
+      "rx_packets": 1,
+      "tx_bytes": 1,
+      "tx_packets": 1
+     }
+    },
+    "s2": {
+     "eth0": {
+      "rx_bytes": 6000,
+      "rx_packets": 60,
+      "tx_bytes": 7500,
+      "tx_packets": 75
+     },
+     "eth2": {
+      "rx_bytes": 1,
+      "rx_packets": 1,
+      "tx_bytes": 1,
+      "tx_packets": 1
+     }
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "ts": "2026-10-17T12:00:00.123456",
+      "interface": "eth0",
+      "rx_bytes": 1000,
+      "tx_bytes": 500,
+      "rx_packets": 10,
+      "tx_packets": 5
+     }
+    ]
+   }
+  },
+  {
+   "cas": "erreurs vide",
+   "entree": {
+    "op": "lignes_d_erreur",
+    "rx": "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (ERROR|CRITICAL)\\s+(.*)$",
+    "fmt": "%Y-%m-%d %H:%M:%S",
+    "texte": "",
+    "maintenant": "2026-10-17 12:00:00",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "erreurs cassandra",
+   "entree": {
+    "op": "lignes_d_erreur",
+    "rx": "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (ERROR|CRITICAL)\\s+(.*)$",
+    "fmt": "%Y-%m-%d %H:%M:%S",
+    "texte": "2026-10-17 09:00:01 ERROR   boum\n2026-10-17 09:00:02 INFO ok\n2026-10-17 09:00:03 CRITICAL   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n2026-10-17 09:00:04 ERROR    \nbruit",
+    "maintenant": "2026-10-17 12:00:00",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "2026-10-17 09:00:01",
+      "ERROR",
+      "boum"
+     ],
+     [
+      "2026-10-17 09:00:03",
+      "CRITICAL",
+      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+     ],
+     [
+      "2026-10-17 09:00:04",
+      "ERROR",
+      ""
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "erreurs nginx",
+   "entree": {
+    "op": "lignes_d_erreur",
+    "rx": "^(\\d{4}/\\d{2}/\\d{2} \\d{2}:\\d{2}:\\d{2}) \\[(error|crit|alert|emerg)\\] (.*)$",
+    "fmt": "%Y/%m/%d %H:%M:%S",
+    "texte": "2026/10/17 09:00:01 [error] 12#12: *1 boum\n2026/10/17 09:00:02 [warn] ignoré\n2026/10/17 09:00:03 [crit] grave\n2026/13/45 25:00:03 [alert] date impossible",
+    "maintenant": "2026-10-17 12:00:00",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "2026-10-17 09:00:01",
+      "ERROR",
+      "12#12: *1 boum"
+     ],
+     [
+      "2026-10-17 09:00:03",
+      "CRIT",
+      "grave"
+     ],
+     [
+      "2026-10-17 12:00:00",
+      "ALERT",
+      "date impossible"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "erreurs php-fpm",
+   "entree": {
+    "op": "lignes_d_erreur",
+    "rx": "^\\[(\\d{2}-[A-Za-z]{3}-\\d{4} \\d{2}:\\d{2}:\\d{2})\\] (ERROR|ALERT|CRITICAL|EMERGENCY): (.*)$",
+    "fmt": "%d-%b-%Y %H:%M:%S",
+    "texte": "[17-Oct-2026 09:00:01] ERROR: pool www\n[01-Jan-2026 00:00:00] ALERT: x\n[31-Dec-2026 23:59:59] EMERGENCY: fin\n[17-Xxx-2026 09:00:01] CRITICAL: mois inconnu\n[17-Oct-2026 09:00:01] WARNING: ignoré",
+    "maintenant": "2026-10-17 12:00:00",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "2026-10-17 09:00:01",
+      "ERROR",
+      "pool www"
+     ],
+     [
+      "2026-01-01 00:00:00",
+      "ALERT",
+      "x"
+     ],
+     [
+      "2026-12-31 23:59:59",
+      "EMERGENCY",
+      "fin"
+     ],
+     [
+      "2026-10-17 12:00:00",
+      "CRITICAL",
+      "mois inconnu"
+     ]
+    ]
+   }
   }
  ]
 }

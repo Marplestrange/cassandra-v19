@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.7  #d1c65a
+# VERSION CN : 0.1.8  #d1c65a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : sys_formes.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

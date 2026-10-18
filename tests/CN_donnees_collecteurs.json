@@ -3437,5 +3437,2332 @@
     ]
    ]
   }
+ },
+ {
+  "fonction": "collect_fp_server_stat",
+  "scenario": {
+   "dispo": false
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fp_server_stat",
+  "scenario": {},
+  "attendu": [
+   {
+    "ts": "2026-10-17T12:00:00.000001",
+    "cpu": 0.0,
+    "la1": 0.0,
+    "la5": 0.0,
+    "la15": 0.0,
+    "mem_used": 0,
+    "mem_total": 0,
+    "swap_used": 0,
+    "swap_total": 0
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fp_server_stat",
+  "scenario": {
+   "fs": {
+    "/proc/stat": [
+     "cpu  100 0 50 800 10 0 5 0 0 0\ncpu0 1 2 3 4",
+     "cpu  150 0 80 900 12 0 8 0 0 0\ncpu0 1 2 3 4"
+    ],
+    "/proc/loadavg": "0.52 0.40 0.30 1/200 9"
+   },
+   "mi": {
+    "MemTotal": 8000000,
+    "MemAvailable": 3000000,
+    "SwapTotal": 2000000,
+    "SwapFree": 1500000
+   }
+  },
+  "attendu": [
+   {
+    "ts": "2026-10-17T12:00:00.000001",
+    "cpu": 45.9,
+    "la1": 0.52,
+    "la5": 0.4,
+    "la15": 0.3,
+    "mem_used": 5120000000,
+    "mem_total": 8192000000,
+    "swap_used": 512000000,
+    "swap_total": 2048000000
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fp_server_stat",
+  "scenario": {
+   "fs": {
+    "/proc/stat": {
+     "__erreur__": "x"
+    },
+    "/proc/loadavg": "x"
+   },
+   "mi": {
+    "MemTotal": 100
+   }
+  },
+  "attendu": [
+   {
+    "ts": "2026-10-17T12:00:00.000001",
+    "cpu": 0.0,
+    "la1": 0.0,
+    "la5": 0.0,
+    "la15": 0.0,
+    "mem_used": 102400,
+    "mem_total": 102400,
+    "swap_used": 0,
+    "swap_total": 0
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fp_server_stat",
+  "scenario": {
+   "fs": {
+    "/proc/stat": "cpu  100 0 50 800 10 0 5 0 0 0\ncpu0 1 2 3 4"
+   },
+   "mi": {
+    "MemTotal": 8000000,
+    "MemAvailable": 3000000,
+    "SwapTotal": 2000000,
+    "SwapFree": 1500000
+   }
+  },
+  "attendu": [
+   {
+    "ts": "2026-10-17T12:00:00.000001",
+    "cpu": 0.0,
+    "la1": 0.0,
+    "la5": 0.0,
+    "la15": 0.0,
+    "mem_used": 5120000000,
+    "mem_total": 8192000000,
+    "swap_used": 512000000,
+    "swap_total": 2048000000
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fp_server_stat",
+  "scenario": {
+   "fs": {
+    "/proc/stat": "cpu a",
+    "/proc/loadavg": {
+     "__erreur__": "x"
+    }
+   },
+   "mi": {}
+  },
+  "attendu": [
+   {
+    "ts": "2026-10-17T12:00:00.000001",
+    "cpu": 0.0,
+    "la1": 0.0,
+    "la5": 0.0,
+    "la15": 0.0,
+    "mem_used": 0,
+    "mem_total": 0,
+    "swap_used": 0,
+    "swap_total": 0
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fp_process_stat",
+  "scenario": {
+   "dispo": false
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fp_process_stat",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fp_process_stat",
+  "scenario": {
+   "fs": {
+    "/proc/123/stat": "123 (nginx) S 1 123 123 0 -1 4194560 100 0 0 0 40 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+    "/proc/5/stat": "5 (Web Content) R 1 5 5 0 -1 4194560 100 0 0 0 900 100 0 0 20 0 1 0 100 1000000 2000 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+    "/proc/uptime": "1000.5 900",
+    "/proc/9/stat": {
+     "__erreur__": "x"
+    },
+    "/proc/self/stat": "123 (nginx) S 1 123 123 0 -1 4194560 100 0 0 0 40 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+    "/proc/7/stat": "court"
+   },
+   "dirs": [
+    "/proc",
+    "/proc/123",
+    "/proc/5",
+    "/proc/9",
+    "/proc/self",
+    "/proc/7"
+   ]
+  },
+  "attendu": [
+   {
+    "name": "Web Content",
+    "avg_cpu": 0.9,
+    "max_cpu": 0.9,
+    "mem_mb": 3906.2,
+    "count": 1
+   },
+   {
+    "name": "nginx",
+    "avg_cpu": 0.04,
+    "max_cpu": 0.04,
+    "mem_mb": 3906.2,
+    "count": 1
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fp_process_stat",
+  "scenario": {
+   "fs": {
+    "/proc/123/stat": "123 (nginx) S 1 123 123 0 -1 4194560 100 0 0 0 40 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0"
+   },
+   "dirs": [
+    "/proc",
+    "/proc/123"
+   ]
+  },
+  "attendu": [
+   {
+    "name": "nginx",
+    "avg_cpu": 40.0,
+    "max_cpu": 40.0,
+    "mem_mb": 3906.2,
+    "count": 1
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fp_process_stat",
+  "scenario": {
+   "fs": {
+    "/proc/123/stat": "123 (nginx) S 1 123 123 0 -1 4194560 100 0 0 0 40 10 0 0 20 0 1 0 100 1000000 500 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0",
+    "/proc/uptime": "0 0"
+   },
+   "dirs": [
+    "/proc",
+    "/proc/123"
+   ]
+  },
+  "attendu": [
+   {
+    "name": "nginx",
+    "avg_cpu": 0.0,
+    "max_cpu": 0.0,
+    "mem_mb": 3906.2,
+    "count": 1
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fp_net_stat",
+  "scenario": {
+   "dispo": false
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fp_net_stat",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fp_net_stat",
+  "scenario": {
+   "fs": {
+    "/proc/net/dev": [
+     "Inter-|   Receive  |  Transmit\n face |bytes packets\n    lo: 1000 10 0 0 0 0 0 0 1000 10 0 0 0 0 0 0\n  eth0: 5000 50 0 0 0 0 0 0 7000 70 0 0 0 0 0 0\n  eth1:9 1 0 0 0 0 0 0 4 3 0 0 0 0 0 0",
+     "Inter-|   Receive  |  Transmit\n face |bytes packets\n    lo: 2000 20 0 0 0 0 0 0 2000 20 0 0 0 0 0 0\n  eth0: 6000 60 0 0 0 0 0 0 7500 75 0 0 0 0 0 0"
+    ]
+   }
+  },
+  "attendu": [
+   {
+    "ts": "2026-10-17T12:00:00.000001",
+    "interface": "eth0",
+    "rx_bytes": 1000,
+    "tx_bytes": 500,
+    "rx_packets": 10,
+    "tx_packets": 5
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fp_net_stat",
+  "scenario": {
+   "fs": {
+    "/proc/net/dev": "Inter-|   Receive  |  Transmit\n face |bytes packets\n    lo: 1000 10 0 0 0 0 0 0 1000 10 0 0 0 0 0 0\n  eth0: 5000 50 0 0 0 0 0 0 7000 70 0 0 0 0 0 0\n  eth1:9 1 0 0 0 0 0 0 4 3 0 0 0 0 0 0"
+   }
+  },
+  "attendu": [
+   {
+    "ts": "2026-10-17T12:00:00.000001",
+    "interface": "eth0",
+    "rx_bytes": 0,
+    "tx_bytes": 0,
+    "rx_packets": 0,
+    "tx_packets": 0
+   },
+   {
+    "ts": "2026-10-17T12:00:00.000001",
+    "interface": "eth1",
+    "rx_bytes": 0,
+    "tx_bytes": 0,
+    "rx_packets": 0,
+    "tx_packets": 0
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fp_net_stat",
+  "scenario": {
+   "fs": {
+    "/proc/net/dev": {
+     "__erreur__": "x"
+    }
+   }
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_log_errors",
+  "scenario": {},
+  "attendu": {
+   "n": 0,
+   "curseur": [],
+   "log_errors": []
+  }
+ },
+ {
+  "fonction": "collect_log_errors",
+  "scenario": {
+   "stat": {
+    "/var/log/cassandra.log": [
+     107,
+     1
+    ]
+   },
+   "fs": {
+    "/var/log/cassandra.log": "2026-10-17 09:00:01 ERROR   boum\n2026-10-17 09:00:02 INFO ok\n2026-10-17 09:00:03 CRITICAL   critique\nbruit\n"
+   }
+  },
+  "attendu": {
+   "n": 0,
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     107
+    ]
+   ],
+   "log_errors": []
+  }
+ },
+ {
+  "fonction": "collect_log_errors",
+  "scenario": {
+   "stat": {
+    "/var/log/cassandra.log": [
+     107,
+     1
+    ]
+   },
+   "fs": {
+    "/var/log/cassandra.log": "2026-10-17 09:00:01 ERROR   boum\n2026-10-17 09:00:02 INFO ok\n2026-10-17 09:00:03 CRITICAL   critique\nbruit\n"
+   },
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     0
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 2,
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     107
+    ]
+   ],
+   "log_errors": [
+    [
+     "2026-10-17 09:00:01",
+     "cassandra",
+     "ERROR",
+     "boum",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:03",
+     "cassandra",
+     "CRITICAL",
+     "critique",
+     1,
+     "2026-10-17 12:00:00"
+    ]
+   ]
+  }
+ },
+ {
+  "fonction": "collect_log_errors",
+  "scenario": {
+   "stat": {
+    "/var/log/cassandra.log": [
+     107,
+     1
+    ],
+    "/var/log/nginx/error.log": [
+     112,
+     4
+    ],
+    "/var/log/php8.2-fpm.log": [
+     77,
+     6
+    ]
+   },
+   "fs": {
+    "/var/log/cassandra.log": "2026-10-17 09:00:01 ERROR   boum\n2026-10-17 09:00:02 INFO ok\n2026-10-17 09:00:03 CRITICAL   critique\nbruit\n",
+    "/var/log/nginx/error.log": "2026/10/17 09:00:01 [error] 12#12: boum\n2026/10/17 09:00:02 [warn] x\n2026/13/45 25:00:03 [crit] date impossible\n",
+    "/var/log/php8.2-fpm.log": "[17-Oct-2026 09:00:01] ERROR: pool www\n[31-Dec-2026 23:59:59] EMERGENCY: fin\n"
+   },
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     0
+    ],
+    [
+     "fichier:/var/log/nginx/error.log",
+     4,
+     0
+    ],
+    [
+     "fichier:/var/log/php8.2-fpm.log",
+     6,
+     0
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 6,
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     107
+    ],
+    [
+     "fichier:/var/log/nginx/error.log",
+     4,
+     112
+    ],
+    [
+     "fichier:/var/log/php8.2-fpm.log",
+     6,
+     77
+    ]
+   ],
+   "log_errors": [
+    [
+     "2026-10-17 09:00:01",
+     "cassandra",
+     "ERROR",
+     "boum",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:03",
+     "cassandra",
+     "CRITICAL",
+     "critique",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:01",
+     "nginx",
+     "ERROR",
+     "12#12: boum",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 12:00:00",
+     "nginx",
+     "CRIT",
+     "date impossible",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:01",
+     "php-fpm",
+     "ERROR",
+     "pool www",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-12-31 23:59:59",
+     "php-fpm",
+     "EMERGENCY",
+     "fin",
+     1,
+     "2026-10-17 12:00:00"
+    ]
+   ]
+  }
+ },
+ {
+  "fonction": "collect_log_errors",
+  "scenario": {
+   "stat": {
+    "/var/log/cassandra.log": [
+     107,
+     2
+    ]
+   },
+   "fs": {
+    "/var/log/cassandra.log": "2026-10-17 09:00:01 ERROR   boum\n2026-10-17 09:00:02 INFO ok\n2026-10-17 09:00:03 CRITICAL   critique\nbruit\n"
+   },
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     30
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 2,
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     2,
+     107
+    ]
+   ],
+   "log_errors": [
+    [
+     "2026-10-17 09:00:01",
+     "cassandra",
+     "ERROR",
+     "boum",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:03",
+     "cassandra",
+     "CRITICAL",
+     "critique",
+     1,
+     "2026-10-17 12:00:00"
+    ]
+   ]
+  }
+ },
+ {
+  "fonction": "collect_log_errors",
+  "scenario": {
+   "stat": {
+    "/var/log/cassandra.log": [
+     10,
+     1
+    ]
+   },
+   "fs": {
+    "/var/log/cassandra.log": "2026-10-17"
+   },
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     500
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 0,
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     500
+    ]
+   ],
+   "log_errors": []
+  }
+ },
+ {
+  "fonction": "collect_log_errors",
+  "scenario": {
+   "stat": {
+    "/var/log/cassandra.log": [
+     107,
+     1
+    ]
+   },
+   "fs": {
+    "/var/log/cassandra.log": "2026-10-17 09:00:01 ERROR   boum\n2026-10-17 09:00:02 INFO ok\n2026-10-17 09:00:03 CRITICAL   critique\nbruit\n"
+   },
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     107
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 0,
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     107
+    ]
+   ],
+   "log_errors": []
+  }
+ },
+ {
+  "fonction": "collect_log_errors",
+  "scenario": {
+   "stat": {
+    "/var/log/cassandra.log": [
+     104,
+     1
+    ]
+   },
+   "fs": {
+    "/var/log/cassandra.log": "2026-10-17 09:00:01 ERROR   boum\n2026-10-17 09:00:02 INFO ok\n2026-10-17 09:00:03 CRITICAL   critique\nbru"
+   },
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     0
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 2,
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     101
+    ]
+   ],
+   "log_errors": [
+    [
+     "2026-10-17 09:00:01",
+     "cassandra",
+     "ERROR",
+     "boum",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:03",
+     "cassandra",
+     "CRITICAL",
+     "critique",
+     1,
+     "2026-10-17 12:00:00"
+    ]
+   ]
+  }
+ },
+ {
+  "fonction": "collect_log_errors",
+  "scenario": {
+   "stat": {
+    "/var/log/cassandra.log": [
+     10700,
+     1
+    ]
+   },
+   "fs": {
+    "/var/log/cassandra.log": "2026-10-17 09:00:00 ERROR   erreur numéro 0\n2026-10-17 09:00:01 ERROR   erreur numéro 1\n2026-10-17 09:00:02 ERROR   erreur numéro 2\n2026-10-17 09:00:03 ERROR   erreur numéro 3\n2026-10-17 09:00:04 ERROR   erreur numéro 4\n2026-10-17 09:00:05 ERROR   erreur numéro 5\n2026-10-17 09:00:06 ERROR   erreur numéro 6\n2026-10-17 09:00:07 ERROR   erreur numéro 7\n2026-10-17 09:00:08 ERROR   erreur numéro 8\n2026-10-17 09:00:09 ERROR   erreur numéro 9\n2026-10-17 09:00:10 ERROR   erreur numéro 10\n2026-10-17 09:00:11 ERROR   erreur numéro 11\n2026-10-17 09:00:12 ERROR   erreur numéro 12\n2026-10-17 09:00:13 ERROR   erreur numéro 13\n2026-10-17 09:00:14 ERROR   erreur numéro 14\n2026-10-17 09:00:15 ERROR   erreur numéro 15\n2026-10-17 09:00:16 ERROR   erreur numéro 16\n2026-10-17 09:00:17 ERROR   erreur numéro 17\n2026-10-17 09:00:18 ERROR   erreur numéro 18\n2026-10-17 09:00:19 ERROR   erreur numéro 19\n2026-10-17 09:00:20 ERROR   erreur numéro 20\n2026-10-17 09:00:21 ERROR   erreur numéro 21\n2026-10-17 09:00:22 ERROR   erreur numéro 22\n2026-10-17 09:00:23 ERROR   erreur numéro 23\n2026-10-17 09:00:24 ERROR   erreur numéro 24\n2026-10-17 09:00:25 ERROR   erreur numéro 25\n2026-10-17 09:00:26 ERROR   erreur numéro 26\n2026-10-17 09:00:27 ERROR   erreur numéro 27\n2026-10-17 09:00:28 ERROR   erreur numéro 28\n2026-10-17 09:00:29 ERROR   erreur numéro 29\n2026-10-17 09:00:30 ERROR   erreur numéro 30\n2026-10-17 09:00:31 ERROR   erreur numéro 31\n2026-10-17 09:00:32 ERROR   erreur numéro 32\n2026-10-17 09:00:33 ERROR   erreur numéro 33\n2026-10-17 09:00:34 ERROR   erreur numéro 34\n2026-10-17 09:00:35 ERROR   erreur numéro 35\n2026-10-17 09:00:36 ERROR   erreur numéro 36\n2026-10-17 09:00:37 ERROR   erreur numéro 37\n2026-10-17 09:00:38 ERROR   erreur numéro 38\n2026-10-17 09:00:39 ERROR   erreur numéro 39\n2026-10-17 09:00:40 ERROR   erreur numéro 40\n2026-10-17 09:00:41 ERROR   erreur numéro 41\n2026-10-17 09:00:42 ERROR   erreur numéro 42\n2026-10-17 09:00:43 ERROR   erreur numéro 43\n2026-10-17 09:00:44 ERROR   erreur numéro 44\n2026-10-17 09:00:45 ERROR   erreur numéro 45\n2026-10-17 09:00:46 ERROR   erreur numéro 46\n2026-10-17 09:00:47 ERROR   erreur numéro 47\n2026-10-17 09:00:48 ERROR   erreur numéro 48\n2026-10-17 09:00:49 ERROR   erreur numéro 49\n2026-10-17 09:00:50 ERROR   erreur numéro 50\n2026-10-17 09:00:51 ERROR   erreur numéro 51\n2026-10-17 09:00:52 ERROR   erreur numéro 52\n2026-10-17 09:00:53 ERROR   erreur numéro 53\n2026-10-17 09:00:54 ERROR   erreur numéro 54\n2026-10-17 09:00:55 ERROR   erreur numéro 55\n2026-10-17 09:00:56 ERROR   erreur numéro 56\n2026-10-17 09:00:57 ERROR   erreur numéro 57\n2026-10-17 09:00:58 ERROR   erreur numéro 58\n2026-10-17 09:00:59 ERROR   erreur numéro 59\n2026-10-17 09:00:00 ERROR   erreur numéro 60\n2026-10-17 09:00:01 ERROR   erreur numéro 61\n2026-10-17 09:00:02 ERROR   erreur numéro 62\n2026-10-17 09:00:03 ERROR   erreur numéro 63\n2026-10-17 09:00:04 ERROR   erreur numéro 64\n2026-10-17 09:00:05 ERROR   erreur numéro 65\n2026-10-17 09:00:06 ERROR   erreur numéro 66\n2026-10-17 09:00:07 ERROR   erreur numéro 67\n2026-10-17 09:00:08 ERROR   erreur numéro 68\n2026-10-17 09:00:09 ERROR   erreur numéro 69\n2026-10-17 09:00:10 ERROR   erreur numéro 70\n2026-10-17 09:00:11 ERROR   erreur numéro 71\n2026-10-17 09:00:12 ERROR   erreur numéro 72\n2026-10-17 09:00:13 ERROR   erreur numéro 73\n2026-10-17 09:00:14 ERROR   erreur numéro 74\n2026-10-17 09:00:15 ERROR   erreur numéro 75\n2026-10-17 09:00:16 ERROR   erreur numéro 76\n2026-10-17 09:00:17 ERROR   erreur numéro 77\n2026-10-17 09:00:18 ERROR   erreur numéro 78\n2026-10-17 09:00:19 ERROR   erreur numéro 79\n2026-10-17 09:00:20 ERROR   erreur numéro 80\n2026-10-17 09:00:21 ERROR   erreur numéro 81\n2026-10-17 09:00:22 ERROR   erreur numéro 82\n2026-10-17 09:00:23 ERROR   erreur numéro 83\n2026-10-17 09:00:24 ERROR   erreur numéro 84\n2026-10-17 09:00:25 ERROR   erreur numéro 85\n2026-10-17 09:00:26 ERROR   erreur numéro 86\n2026-10-17 09:00:27 ERROR   erreur numéro 87\n2026-10-17 09:00:28 ERROR   erreur numéro 88\n2026-10-17 09:00:29 ERROR   erreur numéro 89\n2026-10-17 09:00:30 ERROR   erreur numéro 90\n2026-10-17 09:00:31 ERROR   erreur numéro 91\n2026-10-17 09:00:32 ERROR   erreur numéro 92\n2026-10-17 09:00:33 ERROR   erreur numéro 93\n2026-10-17 09:00:34 ERROR   erreur numéro 94\n2026-10-17 09:00:35 ERROR   erreur numéro 95\n2026-10-17 09:00:36 ERROR   erreur numéro 96\n2026-10-17 09:00:37 ERROR   erreur numéro 97\n2026-10-17 09:00:38 ERROR   erreur numéro 98\n2026-10-17 09:00:39 ERROR   erreur numéro 99\n2026-10-17 09:00:40 ERROR   erreur numéro 100\n2026-10-17 09:00:41 ERROR   erreur numéro 101\n2026-10-17 09:00:42 ERROR   erreur numéro 102\n2026-10-17 09:00:43 ERROR   erreur numéro 103\n2026-10-17 09:00:44 ERROR   erreur numéro 104\n2026-10-17 09:00:45 ERROR   erreur numéro 105\n2026-10-17 09:00:46 ERROR   erreur numéro 106\n2026-10-17 09:00:47 ERROR   erreur numéro 107\n2026-10-17 09:00:48 ERROR   erreur numéro 108\n2026-10-17 09:00:49 ERROR   erreur numéro 109\n2026-10-17 09:00:50 ERROR   erreur numéro 110\n2026-10-17 09:00:51 ERROR   erreur numéro 111\n2026-10-17 09:00:52 ERROR   erreur numéro 112\n2026-10-17 09:00:53 ERROR   erreur numéro 113\n2026-10-17 09:00:54 ERROR   erreur numéro 114\n2026-10-17 09:00:55 ERROR   erreur numéro 115\n2026-10-17 09:00:56 ERROR   erreur numéro 116\n2026-10-17 09:00:57 ERROR   erreur numéro 117\n2026-10-17 09:00:58 ERROR   erreur numéro 118\n2026-10-17 09:00:59 ERROR   erreur numéro 119\n2026-10-17 09:00:00 ERROR   erreur numéro 120\n2026-10-17 09:00:01 ERROR   erreur numéro 121\n2026-10-17 09:00:02 ERROR   erreur numéro 122\n2026-10-17 09:00:03 ERROR   erreur numéro 123\n2026-10-17 09:00:04 ERROR   erreur numéro 124\n2026-10-17 09:00:05 ERROR   erreur numéro 125\n2026-10-17 09:00:06 ERROR   erreur numéro 126\n2026-10-17 09:00:07 ERROR   erreur numéro 127\n2026-10-17 09:00:08 ERROR   erreur numéro 128\n2026-10-17 09:00:09 ERROR   erreur numéro 129\n2026-10-17 09:00:10 ERROR   erreur numéro 130\n2026-10-17 09:00:11 ERROR   erreur numéro 131\n2026-10-17 09:00:12 ERROR   erreur numéro 132\n2026-10-17 09:00:13 ERROR   erreur numéro 133\n2026-10-17 09:00:14 ERROR   erreur numéro 134\n2026-10-17 09:00:15 ERROR   erreur numéro 135\n2026-10-17 09:00:16 ERROR   erreur numéro 136\n2026-10-17 09:00:17 ERROR   erreur numéro 137\n2026-10-17 09:00:18 ERROR   erreur numéro 138\n2026-10-17 09:00:19 ERROR   erreur numéro 139\n2026-10-17 09:00:20 ERROR   erreur numéro 140\n2026-10-17 09:00:21 ERROR   erreur numéro 141\n2026-10-17 09:00:22 ERROR   erreur numéro 142\n2026-10-17 09:00:23 ERROR   erreur numéro 143\n2026-10-17 09:00:24 ERROR   erreur numéro 144\n2026-10-17 09:00:25 ERROR   erreur numéro 145\n2026-10-17 09:00:26 ERROR   erreur numéro 146\n2026-10-17 09:00:27 ERROR   erreur numéro 147\n2026-10-17 09:00:28 ERROR   erreur numéro 148\n2026-10-17 09:00:29 ERROR   erreur numéro 149\n2026-10-17 09:00:30 ERROR   erreur numéro 150\n2026-10-17 09:00:31 ERROR   erreur numéro 151\n2026-10-17 09:00:32 ERROR   erreur numéro 152\n2026-10-17 09:00:33 ERROR   erreur numéro 153\n2026-10-17 09:00:34 ERROR   erreur numéro 154\n2026-10-17 09:00:35 ERROR   erreur numéro 155\n2026-10-17 09:00:36 ERROR   erreur numéro 156\n2026-10-17 09:00:37 ERROR   erreur numéro 157\n2026-10-17 09:00:38 ERROR   erreur numéro 158\n2026-10-17 09:00:39 ERROR   erreur numéro 159\n2026-10-17 09:00:40 ERROR   erreur numéro 160\n2026-10-17 09:00:41 ERROR   erreur numéro 161\n2026-10-17 09:00:42 ERROR   erreur numéro 162\n2026-10-17 09:00:43 ERROR   erreur numéro 163\n2026-10-17 09:00:44 ERROR   erreur numéro 164\n2026-10-17 09:00:45 ERROR   erreur numéro 165\n2026-10-17 09:00:46 ERROR   erreur numéro 166\n2026-10-17 09:00:47 ERROR   erreur numéro 167\n2026-10-17 09:00:48 ERROR   erreur numéro 168\n2026-10-17 09:00:49 ERROR   erreur numéro 169\n2026-10-17 09:00:50 ERROR   erreur numéro 170\n2026-10-17 09:00:51 ERROR   erreur numéro 171\n2026-10-17 09:00:52 ERROR   erreur numéro 172\n2026-10-17 09:00:53 ERROR   erreur numéro 173\n2026-10-17 09:00:54 ERROR   erreur numéro 174\n2026-10-17 09:00:55 ERROR   erreur numéro 175\n2026-10-17 09:00:56 ERROR   erreur numéro 176\n2026-10-17 09:00:57 ERROR   erreur numéro 177\n2026-10-17 09:00:58 ERROR   erreur numéro 178\n2026-10-17 09:00:59 ERROR   erreur numéro 179\n2026-10-17 09:00:00 ERROR   erreur numéro 180\n2026-10-17 09:00:01 ERROR   erreur numéro 181\n2026-10-17 09:00:02 ERROR   erreur numéro 182\n2026-10-17 09:00:03 ERROR   erreur numéro 183\n2026-10-17 09:00:04 ERROR   erreur numéro 184\n2026-10-17 09:00:05 ERROR   erreur numéro 185\n2026-10-17 09:00:06 ERROR   erreur numéro 186\n2026-10-17 09:00:07 ERROR   erreur numéro 187\n2026-10-17 09:00:08 ERROR   erreur numéro 188\n2026-10-17 09:00:09 ERROR   erreur numéro 189\n2026-10-17 09:00:10 ERROR   erreur numéro 190\n2026-10-17 09:00:11 ERROR   erreur numéro 191\n2026-10-17 09:00:12 ERROR   erreur numéro 192\n2026-10-17 09:00:13 ERROR   erreur numéro 193\n2026-10-17 09:00:14 ERROR   erreur numéro 194\n2026-10-17 09:00:15 ERROR   erreur numéro 195\n2026-10-17 09:00:16 ERROR   erreur numéro 196\n2026-10-17 09:00:17 ERROR   erreur numéro 197\n2026-10-17 09:00:18 ERROR   erreur numéro 198\n2026-10-17 09:00:19 ERROR   erreur numéro 199\n2026-10-17 09:00:20 ERROR   erreur numéro 200\n2026-10-17 09:00:21 ERROR   erreur numéro 201\n2026-10-17 09:00:22 ERROR   erreur numéro 202\n2026-10-17 09:00:23 ERROR   erreur numéro 203\n2026-10-17 09:00:24 ERROR   erreur numéro 204\n2026-10-17 09:00:25 ERROR   erreur numéro 205\n2026-10-17 09:00:26 ERROR   erreur numéro 206\n2026-10-17 09:00:27 ERROR   erreur numéro 207\n2026-10-17 09:00:28 ERROR   erreur numéro 208\n2026-10-17 09:00:29 ERROR   erreur numéro 209\n2026-10-17 09:00:30 ERROR   erreur numéro 210\n2026-10-17 09:00:31 ERROR   erreur numéro 211\n2026-10-17 09:00:32 ERROR   erreur numéro 212\n2026-10-17 09:00:33 ERROR   erreur numéro 213\n2026-10-17 09:00:34 ERROR   erreur numéro 214\n2026-10-17 09:00:35 ERROR   erreur numéro 215\n2026-10-17 09:00:36 ERROR   erreur numéro 216\n2026-10-17 09:00:37 ERROR   erreur numéro 217\n2026-10-17 09:00:38 ERROR   erreur numéro 218\n2026-10-17 09:00:39 ERROR   erreur numéro 219\n2026-10-17 09:00:40 ERROR   erreur numéro 220\n2026-10-17 09:00:41 ERROR   erreur numéro 221\n2026-10-17 09:00:42 ERROR   erreur numéro 222\n2026-10-17 09:00:43 ERROR   erreur numéro 223\n2026-10-17 09:00:44 ERROR   erreur numéro 224\n2026-10-17 09:00:45 ERROR   erreur numéro 225\n2026-10-17 09:00:46 ERROR   erreur numéro 226\n2026-10-17 09:00:47 ERROR   erreur numéro 227\n2026-10-17 09:00:48 ERROR   erreur numéro 228\n2026-10-17 09:00:49 ERROR   erreur numéro 229\n"
+   },
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     0
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 201,
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     10700
+    ]
+   ],
+   "log_errors": [
+    [
+     "2026-10-17 09:00:00",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 0",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:01",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 1",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:02",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 2",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:03",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 3",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:04",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 4",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:05",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 5",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:06",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 6",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:07",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 7",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:08",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 8",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:09",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 9",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:10",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 10",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:11",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 11",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:12",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 12",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:13",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 13",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:14",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 14",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:15",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 15",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:16",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 16",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:17",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 17",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:18",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 18",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:19",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 19",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:20",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 20",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:21",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 21",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:22",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 22",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:23",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 23",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:24",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 24",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:25",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 25",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:26",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 26",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:27",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 27",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:28",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 28",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:29",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 29",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:30",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 30",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:31",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 31",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:32",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 32",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:33",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 33",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:34",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 34",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:35",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 35",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:36",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 36",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:37",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 37",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:38",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 38",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:39",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 39",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:40",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 40",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:41",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 41",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:42",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 42",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:43",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 43",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:44",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 44",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:45",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 45",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:46",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 46",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:47",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 47",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:48",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 48",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:49",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 49",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:50",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 50",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:51",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 51",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:52",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 52",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:53",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 53",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:54",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 54",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:55",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 55",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:56",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 56",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:57",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 57",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:58",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 58",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:59",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 59",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:00",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 60",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:01",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 61",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:02",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 62",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:03",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 63",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:04",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 64",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:05",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 65",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:06",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 66",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:07",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 67",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:08",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 68",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:09",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 69",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:10",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 70",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:11",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 71",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:12",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 72",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:13",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 73",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:14",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 74",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:15",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 75",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:16",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 76",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:17",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 77",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:18",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 78",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:19",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 79",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:20",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 80",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:21",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 81",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:22",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 82",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:23",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 83",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:24",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 84",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:25",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 85",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:26",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 86",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:27",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 87",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:28",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 88",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:29",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 89",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:30",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 90",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:31",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 91",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:32",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 92",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:33",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 93",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:34",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 94",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:35",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 95",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:36",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 96",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:37",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 97",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:38",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 98",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:39",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 99",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:40",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 100",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:41",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 101",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:42",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 102",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:43",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 103",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:44",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 104",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:45",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 105",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:46",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 106",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:47",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 107",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:48",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 108",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:49",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 109",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:50",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 110",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:51",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 111",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:52",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 112",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:53",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 113",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:54",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 114",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:55",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 115",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:56",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 116",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:57",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 117",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:58",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 118",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:59",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 119",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:00",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 120",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:01",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 121",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:02",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 122",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:03",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 123",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:04",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 124",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:05",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 125",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:06",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 126",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:07",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 127",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:08",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 128",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:09",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 129",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:10",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 130",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:11",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 131",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:12",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 132",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:13",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 133",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:14",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 134",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:15",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 135",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:16",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 136",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:17",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 137",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:18",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 138",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:19",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 139",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:20",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 140",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:21",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 141",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:22",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 142",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:23",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 143",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:24",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 144",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:25",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 145",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:26",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 146",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:27",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 147",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:28",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 148",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:29",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 149",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:30",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 150",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:31",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 151",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:32",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 152",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:33",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 153",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:34",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 154",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:35",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 155",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:36",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 156",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:37",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 157",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:38",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 158",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:39",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 159",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:40",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 160",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:41",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 161",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:42",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 162",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:43",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 163",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:44",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 164",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:45",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 165",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:46",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 166",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:47",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 167",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:48",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 168",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:49",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 169",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:50",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 170",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:51",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 171",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:52",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 172",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:53",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 173",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:54",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 174",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:55",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 175",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:56",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 176",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:57",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 177",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:58",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 178",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:59",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 179",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:00",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 180",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:01",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 181",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:02",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 182",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:03",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 183",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:04",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 184",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:05",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 185",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:06",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 186",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:07",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 187",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:08",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 188",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:09",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 189",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:10",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 190",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:11",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 191",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:12",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 192",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:13",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 193",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:14",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 194",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:15",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 195",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:16",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 196",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:17",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 197",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:18",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 198",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:19",
+     "cassandra",
+     "ERROR",
+     "erreur numéro 199",
+     1,
+     "2026-10-17 12:00:00"
+    ],
+    [
+     "2026-10-17 09:00:49",
+     "cassandra",
+     "ERROR",
+     "… et 30 autres erreurs de cassandra dans cette passe, non détaillées",
+     30,
+     "2026-10-17 12:00:00"
+    ]
+   ]
+  }
+ },
+ {
+  "fonction": "collect_log_errors",
+  "scenario": {
+   "stat": {
+    "/var/log/cassandra.log": [
+     5,
+     1
+    ]
+   },
+   "fs": {
+    "/var/log/cassandra.log": "xxxxx"
+   },
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     0
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 0,
+   "curseur": [
+    [
+     "fichier:/var/log/cassandra.log",
+     1,
+     0
+    ]
+   ],
+   "log_errors": []
+  }
  }
 ]

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #44001d
+# VERSION CN : 0.1.0  #e495ab
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le démon du Sensorium, seul et sans noyau, appelle ses points d'évolution ; que ses appels nourrissent le rejeu que le noyau absorbe ; et qu'une panne du service ne perd jamais une mesure.
 # MÉTHODE    : charge CN_sensorium.py comme module, un dossier de données temporaire, puis appelle les fonctions façades.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=44001d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e495ab ▼▼▼
 import importlib.util
 import json
 import os
@@ -230,7 +230,7 @@ class FauxOuvert:
 
 
 class Collecteurs(unittest.TestCase):
-    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (124 scénarios : mail, FTP, comptes, bases, sauvegardes, crons, sites, sessions, ports, certificats, SMART, matériel, sites web, tâches planifiées, services, disques, PHP-FPM, paquets ; aucun écart)."""
+    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (150 scénarios : mail, FTP, comptes, bases, sauvegardes, crons, sites, sessions, ports, certificats, SMART, matériel, sites web, tâches planifiées, services, disques, PHP-FPM, paquets, instantané du serveur, processus, réseau, erreurs des journaux ; aucun écart)."""
 
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
@@ -277,6 +277,34 @@ class Collecteurs(unittest.TestCase):
                 return sc.get("du", {}).get(c.split()[2].strip("'"), "")
             return sc.get("mysql", "")
         m.run_cmd = run_cmd
+        m._read_meminfo = lambda: dict(sc.get("mi", {}))
+        if fonction == "collect_log_errors":
+            import fnmatch
+            import glob
+            import sqlite3
+            db = sqlite3.connect(":memory:")
+            db.row_factory = sqlite3.Row
+            db.execute("CREATE TABLE log_errors_curseur (source TEXT PRIMARY KEY, inode INTEGER, position INTEGER, curseur TEXT, maj TEXT)")
+            for src, ino, pos in sc.get("curseur", []):
+                db.execute("INSERT INTO log_errors_curseur VALUES (?,?,?,?,?)", (src, ino, pos, None, "x"))
+            m.get_conn = lambda: Conn(db)
+            contenus = {k: v.encode("utf-8") for k, v in sc.get("fs", {}).items()}
+
+            def stat(chemin):
+                if chemin not in sc.get("stat", {}):
+                    raise OSError("absent")
+                taille, ino = sc["stat"][chemin]
+                return type("St", (), {"st_size": taille, "st_ino": ino})()
+            m.os = type("OS", (), dict({k: getattr(os, k) for k in dir(os)}, stat=staticmethod(stat)))()
+            m.open = lambda chemin, mode="r": FauxOuvert(contenus[chemin])
+            vrai_glob = glob.glob
+            glob.glob = lambda motif: [k for k in sorted(contenus) if fnmatch.fnmatch(k, motif)]
+            try:
+                n = getattr(m, fonction)()
+            finally:
+                glob.glob = vrai_glob
+            return json.loads(json.dumps({"n": n, "curseur": [list(r) for r in db.execute("SELECT source, inode, position FROM log_errors_curseur ORDER BY source").fetchall()],
+                                          "log_errors": [list(r)[1:] for r in db.execute("SELECT * FROM log_errors ORDER BY id").fetchall()]}))
         if fonction == "collect_paquets_mouvements":
             import sqlite3
             db = sqlite3.connect(":memory:")

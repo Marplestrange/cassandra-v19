@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #26e92c
+# VERSION EC : EC0 (référence 0.3.0)  #00812a
 # HÔTE CN    : CN_module.py · sys_formes @1.0
 # RÔLE       : transforme ce que le Sensorium lit du système (sorties de commandes, fichiers de configuration, JSON de smartctl) en sessions, ports, certificats, disques, état du matériel et sites web déclarés.
 # MÉTHODE    : fonctions pures, une par mesure ; le nexus lit les sources et décide des replis (who puis ss puis last ; ss puis netstat) ; l'EC ne lit jamais de fichier ni de commande.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=sys_formes contrat=@1.0 version=EC0 empreinte=26e92c ▼▼▼
+# ▼▼▼ BORNE EC point=sys_formes contrat=@1.0 version=EC0 empreinte=00812a ▼▼▼
 from datetime import datetime
 import re
 
@@ -417,6 +417,148 @@ def paquets_lignes(source, lignes):
         res.append([ts.replace(" ", "T"), pq.split(":")[0][:80], txt[:300]])
     return res
 
+def _cpu_pct(stat1, stat2):
+    try:
+        cpu1 = [int(x) for x in stat1.splitlines()[0].split()[1:]]
+        cpu2 = [int(x) for x in stat2.splitlines()[0].split()[1:]]
+        total = sum(b - a for a, b in zip(cpu1, cpu2))
+        idle = cpu2[3] - cpu1[3]
+        return round((1 - idle / total) * 100, 1) if total > 0 else 0.0
+    except Exception:
+        return 0.0
+
+def _charge(texte):
+    try:
+        parts = texte.split()
+        return float(parts[0]), float(parts[1]), float(parts[2])
+    except Exception:
+        return 0.0, 0.0, 0.0
+
+def instantane_serveur(stat1, stat2, loadavg, mi, now):
+    """L'instantané du serveur : processeur (deux relevés de /proc/stat), charge, mémoire et swap (octets, d'après /proc/meminfo en ko). Une lecture manquante (None) vaut zéro."""
+    la1, la5, la15 = _charge(loadavg)
+    mem_total = mi.get("MemTotal", 0) * 1024
+    mem_avail = mi.get("MemAvailable", mi.get("MemFree", 0)) * 1024
+    swap_total = mi.get("SwapTotal", 0) * 1024
+    swap_free = mi.get("SwapFree", 0) * 1024
+    return {
+        "ts": now,
+        "cpu": _cpu_pct(stat1, stat2),
+        "la1": la1,
+        "la5": la5,
+        "la15": la15,
+        "mem_used": mem_total - mem_avail,
+        "mem_total": mem_total,
+        "swap_used": swap_total - swap_free,
+        "swap_total": swap_total,
+    }
+
+def processus_agreges(stats, uptime):
+    """Les douze processus les plus gourmands : stats = les textes de /proc/<pid>/stat, regroupés par nom ; uptime = le texte de /proc/uptime (ou None)."""
+    hz = 100
+    processes = []
+    for stat_text in stats:
+        try:
+            name_m = re.search(r"\((.+)\)", stat_text)
+            name = name_m.group(1) if name_m else "?"
+            rest = re.sub(r"\(.+\)\s+", "", stat_text).split()
+            utime = int(rest[11])
+            stime = int(rest[12])
+            rss = int(rest[21]) * 4096
+            processes.append({"name": name, "cpu_ticks": utime + stime, "mem": rss})
+        except Exception:
+            continue
+    agg = {}
+    for p in processes:
+        n = p["name"]
+        if n not in agg:
+            agg[n] = {"name": n, "cpu_ticks": 0, "mem": 0, "count": 0}
+        agg[n]["cpu_ticks"] += p["cpu_ticks"]
+        agg[n]["mem"] += p["mem"]
+        agg[n]["count"] += 1
+    uptime_s = 1.0
+    try:
+        uptime_s = float(uptime.split()[0])
+    except Exception:
+        pass
+    result = []
+    for v in agg.values():
+        cpu_pct = round(v["cpu_ticks"] / hz / uptime_s * 100, 2) if uptime_s > 0 else 0.0
+        result.append({
+            "name": v["name"],
+            "avg_cpu": cpu_pct,
+            "max_cpu": cpu_pct,
+            "mem_mb": round(v["mem"] / 1024 / 1024, 1),
+            "count": v["count"],
+        })
+    return sorted(result, key=lambda x: x["avg_cpu"], reverse=True)[:12]
+
+def netdev_lire(texte):
+    """Les compteurs réseau par interface d'après /proc/net/dev (sans `lo`)."""
+    stats = {}
+    try:
+        lines = texte.splitlines()[2:]
+        for line in lines:
+            if ":" not in line:
+                continue
+            iface, data = line.split(":", 1)
+            iface = iface.strip()
+            if iface == "lo":
+                continue
+            parts = data.split()
+            if len(parts) < 9:
+                continue
+            stats[iface] = {
+                "rx_bytes": int(parts[0]),
+                "rx_packets": int(parts[1]),
+                "tx_bytes": int(parts[8]),
+                "tx_packets": int(parts[9]),
+            }
+    except Exception:
+        pass
+    return stats
+
+def netdev_delta(s1, s2, now):
+    """Le trafic par interface entre deux relevés des compteurs."""
+    result = []
+    for iface in s1:
+        if iface not in s2:
+            continue
+        d1, d2 = s1[iface], s2[iface]
+        result.append({
+            "ts": now,
+            "interface": iface,
+            "rx_bytes": d2["rx_bytes"] - d1["rx_bytes"],
+            "tx_bytes": d2["tx_bytes"] - d1["tx_bytes"],
+            "rx_packets": d2["rx_packets"] - d1["rx_packets"],
+            "tx_packets": d2["tx_packets"] - d1["tx_packets"],
+        })
+    return result
+
+_MOIS_ANGLAIS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+def _date_de_ligne(texte, fmt, maintenant):
+    try:
+        if "%b" in fmt:
+            for i, m in enumerate(_MOIS_ANGLAIS):
+                if "-%s-" % m in texte:
+                    texte = texte.replace("-%s-" % m, "-%02d-" % (i + 1))
+                    break
+            fmt = fmt.replace("%b", "%m")
+        return datetime.strptime(texte, fmt).strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return maintenant
+
+def lignes_d_erreur(rx, fmt, texte, maintenant):
+    """Les lignes d'erreur d'un morceau de journal : [date « AAAA-MM-JJ HH:MM:SS », niveau en majuscules, message (500 caractères)]. Le mois abrégé est traduit à la main : `%b` dépend de la langue du processus. Une date illisible vaut `maintenant`."""
+    expr = re.compile(rx)
+    trouvees = []
+    for brute in texte.splitlines():
+        m = expr.match(brute)
+        if m:
+            trouvees.append([_date_de_ligne(m.group(1), fmt, maintenant), m.group(2).upper(), m.group(3).strip()[:500]])
+    return trouvees
+
 def forme(op, entree):
     if op == "sessions_base":
         return sessions_base(entree["who"], entree["ss"], entree["now"])
@@ -462,10 +604,20 @@ def forme(op, entree):
         return diskstats_delta(entree["s1"], entree["s2"], entree["now"])
     if op == "paquets_lignes":
         return paquets_lignes(entree["source"], entree["lignes"])
+    if op == "instantane_serveur":
+        return instantane_serveur(entree["stat1"], entree["stat2"], entree["loadavg"], entree["mi"], entree["now"])
+    if op == "processus_agreges":
+        return processus_agreges(entree["stats"], entree["uptime"])
+    if op == "netdev_lire":
+        return netdev_lire(entree["texte"])
+    if op == "netdev_delta":
+        return netdev_delta(entree["s1"], entree["s2"], entree["now"])
+    if op == "lignes_d_erreur":
+        return lignes_d_erreur(entree["rx"], entree["fmt"], entree["texte"], entree["maintenant"])
     raise ValueError("opération inconnue : %s" % op)
 
 def point_sys_formes(entree):
-    """Le point d'évolution `sys_formes` (contrat 1.0) : ce que le Sensorium lit du système, mis en forme : sessions ouvertes, ports à l'écoute, certificats, disques (SMART), matériel (températures, heure, pare-feu), sites web déclarés, tâches planifiées, services, pools PHP, entrées-sorties des disques et mouvements de paquets. Le nexus lit les sources ; l'EC ne fait que la forme."""
+    """Le point d'évolution `sys_formes` (contrat 1.0) : ce que le Sensorium lit du système, mis en forme : sessions ouvertes, ports à l'écoute, certificats, disques (SMART), matériel (températures, heure, pare-feu), sites web déclarés, tâches planifiées, services, pools PHP, entrées-sorties des disques mouvements de paquets, instantané du serveur, processus, trafic réseau et lignes d'erreur des journaux. Le nexus lit les sources ; l'EC ne fait que la forme."""
     return {"valeur": forme(entree["op"], entree)}
 
 # ▲▲▲ FIN BORNE EC ▲▲▲

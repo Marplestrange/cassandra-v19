@@ -31,7 +31,12 @@
      "pools_php",
      "diskstats_lire",
      "diskstats_delta",
-     "paquets_lignes"
+     "paquets_lignes",
+     "instantane_serveur",
+     "processus_agreges",
+     "netdev_lire",
+     "netdev_delta",
+     "lignes_d_erreur"
     ]
    }
   }

@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.7  #a6d589
+# VERSION CN : 0.1.8  #a6d589
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : cron_derniere.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

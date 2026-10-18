@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.7  #52e4ec
+# VERSION CN : 0.1.8  #52e4ec
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : mogwai_table.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.7  #0d5f0c
+# VERSION CN : 0.1.8  #037b54
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.7 empreinte=0d5f0c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.8 empreinte=037b54 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -1549,108 +1549,53 @@ def collect_fp_server_stat(period_hours: int = 24) -> list:
     Retourne UN snapshot instantané (CPU, load, RAM, swap) à partir de /proc.
     L'historisation sur period_hours est faite par le collecteur principal qui appelle
     cette fonction à intervalles réguliers et accumule les snapshots en SQLite.
+    Les LECTURES restent ici ; la forme est un POINT D'ÉVOLUTION (points/EC_sys_formes.py).
     """
     if not _fp_available():
         return []
     now_str = datetime.now().isoformat()
 
     # CPU depuis /proc/stat (mode snapshot — différence sur 0.2s)
-    cpu_pct = 0.0
+    stat1 = stat2 = None
     try:
-        lines1 = Path("/proc/stat").read_text().splitlines()
-        cpu1   = [int(x) for x in lines1[0].split()[1:]]
+        stat1 = Path("/proc/stat").read_text()
         time.sleep(0.2)
-        lines2 = Path("/proc/stat").read_text().splitlines()
-        cpu2   = [int(x) for x in lines2[0].split()[1:]]
-        total  = sum(b - a for a, b in zip(cpu1, cpu2))
-        idle   = cpu2[3] - cpu1[3]
-        cpu_pct = round((1 - idle / total) * 100, 1) if total > 0 else 0.0
+        stat2 = Path("/proc/stat").read_text()
     except Exception:
-        pass
-
-    # Load average depuis /proc/loadavg
-    la1 = la5 = la15 = 0.0
+        stat1 = stat2 = None
+    loadavg = None
     try:
-        parts = Path("/proc/loadavg").read_text().split()
-        la1, la5, la15 = float(parts[0]), float(parts[1]), float(parts[2])
+        loadavg = Path("/proc/loadavg").read_text()
     except Exception:
         pass
-
     # RAM + swap depuis /proc/meminfo (PERF[O2] : lecture partagée)
-    mi = _read_meminfo()
-    mem_total  = mi.get("MemTotal",   0) * 1024
-    mem_avail  = mi.get("MemAvailable", mi.get("MemFree", 0)) * 1024
-    mem_used   = mem_total - mem_avail
-    swap_total = mi.get("SwapTotal", 0) * 1024
-    swap_free  = mi.get("SwapFree",  0) * 1024
-    swap_used  = swap_total - swap_free
-
-    return [{
-        "ts":         now_str,
-        "cpu":        cpu_pct,
-        "la1":        la1,
-        "la5":        la5,
-        "la15":       la15,
-        "mem_used":   mem_used,
-        "mem_total":  mem_total,
-        "swap_used":  swap_used,
-        "swap_total": swap_total,
-    }]
+    return [_sys_formes("instantane_serveur", stat1=stat1, stat2=stat2, loadavg=loadavg, mi=_read_meminfo(), now=now_str)]
 
 
 def collect_fp_process_stat(period_hours: int = 1) -> list:
-    """[FP5] Top 12 processus par CPU depuis /proc/<pid>/stat — snapshot temps-réel."""
+    """[FP5] Top 12 processus par CPU depuis /proc/<pid>/stat — snapshot temps-réel. Les LECTURES restent ici ;
+    la forme est un POINT D'ÉVOLUTION (points/EC_sys_formes.py)."""
     if not _fp_available():
         return []
 
-    hz = 100  # CONFIG_HZ standard Linux
-    processes = []
+    stats = []
     try:
         proc_base = Path("/proc")
         for pid_dir in proc_base.iterdir():
             if not pid_dir.name.isdigit():
                 continue
             try:
-                stat_text = (pid_dir / "stat").read_text()
-                name_m    = re.search(r"\((.+)\)", stat_text)
-                name      = name_m.group(1) if name_m else "?"
-                rest      = re.sub(r"\(.+\)\s+", "", stat_text).split()
-                utime     = int(rest[11])
-                stime     = int(rest[12])
-                rss       = int(rest[21]) * 4096
-                processes.append({"name": name, "cpu_ticks": utime + stime, "mem": rss})
+                stats.append((pid_dir / "stat").read_text())
             except Exception:
                 continue
     except Exception:
         pass
-
-    agg: dict = {}
-    for p in processes:
-        n = p["name"]
-        if n not in agg:
-            agg[n] = {"name": n, "cpu_ticks": 0, "mem": 0, "count": 0}
-        agg[n]["cpu_ticks"] += p["cpu_ticks"]
-        agg[n]["mem"]       += p["mem"]
-        agg[n]["count"]     += 1
-
-    uptime_s = 1.0
+    uptime = None
     try:
-        uptime_s = float(Path("/proc/uptime").read_text().split()[0])
+        uptime = Path("/proc/uptime").read_text()
     except Exception:
         pass
-
-    result = []
-    for v in agg.values():
-        cpu_pct = round(v["cpu_ticks"] / hz / uptime_s * 100, 2) if uptime_s > 0 else 0.0
-        result.append({
-            "name":    v["name"],
-            "avg_cpu": cpu_pct,
-            "max_cpu": cpu_pct,
-            "mem_mb":  round(v["mem"] / 1024 / 1024, 1),
-            "count":   v["count"],
-        })
-
-    return sorted(result, key=lambda x: x["avg_cpu"], reverse=True)[:12]
+    return _sys_formes("processus_agreges", stats=stats, uptime=uptime)
 
 
 def collect_fp_disk_stat(period_hours: int = 24) -> list:
@@ -1680,47 +1625,16 @@ def collect_fp_net_stat(period_hours: int = 24) -> list:
     now_str = datetime.now().isoformat()
 
     def _read_netdev():
-        stats = {}
         try:
-            lines = Path("/proc/net/dev").read_text().splitlines()[2:]
-            for line in lines:
-                if ":" not in line:
-                    continue
-                iface, data = line.split(":", 1)
-                iface = iface.strip()
-                if iface == "lo":
-                    continue
-                parts = data.split()
-                if len(parts) < 9:
-                    continue
-                stats[iface] = {
-                    "rx_bytes":   int(parts[0]),
-                    "rx_packets": int(parts[1]),
-                    "tx_bytes":   int(parts[8]),
-                    "tx_packets": int(parts[9]),
-                }
+            texte = Path("/proc/net/dev").read_text()
         except Exception:
-            pass
-        return stats
+            return {}
+        return _sys_formes("netdev_lire", texte=texte)
 
     s1 = _read_netdev()
     time.sleep(0.5)
     s2 = _read_netdev()
-
-    result = []
-    for iface in s1:
-        if iface not in s2:
-            continue
-        d1, d2 = s1[iface], s2[iface]
-        result.append({
-            "ts":         now_str,
-            "interface":  iface,
-            "rx_bytes":   d2["rx_bytes"]   - d1["rx_bytes"],
-            "tx_bytes":   d2["tx_bytes"]   - d1["tx_bytes"],
-            "rx_packets": d2["rx_packets"] - d1["rx_packets"],
-            "tx_packets": d2["tx_packets"] - d1["tx_packets"],
-        })
-    return result
+    return _sys_formes("netdev_delta", s1=s1, s2=s2, now=now_str)
 
 
 def save_fp_stats(server, processes, disk, net):
@@ -1890,7 +1804,6 @@ def collect_log_errors():
         maintenant = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         a_ecrire = []
         for service, motif, rx, fmt in LOG_ERREURS_FICHIERS:
-            expr = re.compile(rx)
             for chemin in sorted(_glob.glob(motif)):
                 cle = "fichier:" + chemin
                 try:
@@ -1914,12 +1827,8 @@ def collect_log_errors():
                 if fin < 0:
                     continue          # une ligne en cours d'écriture : elle sera lue entière la prochaine fois
                 utile = bloc[:fin + 1]
-                trouvees = []
-                for brute in utile.decode("utf-8", "replace").splitlines():
-                    m = expr.match(brute)
-                    if m:
-                        trouvees.append((_log_erreur_date(m.group(1), fmt), service,
-                                         m.group(2).upper(), m.group(3).strip()[:500]))
+                trouvees = [(ts, service, niveau, msg) for ts, niveau, msg in
+                            _sys_formes("lignes_d_erreur", rx=rx, fmt=fmt, texte=utile.decode("utf-8", "replace"), maintenant=maintenant)]
                 if trouvees:
                     a_ecrire.append((service, trouvees))
                 _log_errors_curseur(conn, cle, st.st_ino, pos + len(utile), None, maintenant)
