@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #4a21a4
+// VERSION CN : 0.1.0  #54fcef
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=4a21a4 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=54fcef ▼▼▼
 /* Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 
    Réglages a maintenant trois visions :
@@ -74,14 +74,7 @@
   function monter() {
     const rail = document.querySelector("#tab-settings .set-nav"), lay = document.querySelector("#tab-settings .settings-layout");
     if (!rail || !lay) return false;
-    // la vision « Modules », après « La machine »
-    const vis = document.getElementById("set-visions");
-    if (vis && !vis.querySelector('[data-vis="modules"]')) {
-      const b = document.createElement("button");
-      b.className = "mx-scene set-vis"; b.setAttribute("data-vis", "modules"); b.setAttribute("aria-pressed", "false"); b.textContent = "Modules";
-      b.onclick = () => window.setVision("modules");
-      vis.appendChild(b);
-    }
+    // (la vision « Modules » n'est plus dans Réglages : elle est devenue la page « Modules et Applications », voir disposition.js)
     // « Mes modules » dans Mon compte
     if (!rail.querySelector('[data-fam="moi-modules"]')) {
       const b = bouton("moi-modules", "Mes modules", "Ce que les modules vous laissent régler", ICO_MOD);
@@ -89,20 +82,6 @@
       ancre ? ancre.after(b) : rail.appendChild(b);
       lay.appendChild(section("moi-modules", "set-mod-moi"));
       SET_VISIONS.moi.push("moi-modules"); SET_FAMILLES.push("moi-modules");
-    }
-    // la vision Modules : une entrée « Tous » puis une par famille (refaites à chaque lecture du catalogue)
-    for (const x of rail.querySelectorAll("[data-mods]")) x.remove();
-    SET_VISIONS.modules = [];
-    const liste = [["mods-tous", "Tous les modules", catalogue.filter((m) => m.etat === "actif").length + " actifs sur " + catalogue.length, ICO_MOD]]
-      .concat(familles().map((f) => ["mods-" + f, famLib(f), catalogue.filter((m) => (m.famille || "autres") === f).length + " module(s)", ICO_FAM]));
-    for (const [fam, titre, sous, ico] of liste) {
-      const b = bouton(fam, titre, sous, ico); b.setAttribute("data-mods", "1");
-      b.style.display = (ETAT.reglages && ETAT.reglages._setVision === "modules") ? "" : "none";
-      const n = document.createElement("span"); n.className = "n"; n.textContent = fam === "mods-tous" ? catalogue.length : catalogue.filter((m) => "mods-" + (m.famille || "autres") === fam).length; b.appendChild(n);
-      rail.appendChild(b);
-      SET_VISIONS.modules.push(fam);
-      if (SET_FAMILLES.indexOf(fam) < 0) SET_FAMILLES.push(fam);
-      if (!document.getElementById("set-" + fam)) lay.appendChild(section(fam, "set-" + fam));
     }
     return true;
   }
@@ -152,6 +131,9 @@
     lierChamps(el, async () => { await lire(); CASS.reglagesDe(mid, el); });
   };
 
+  // Ce que la page « Modules et Applications » (disposition.js) emprunte à cet écran : le catalogue, la fiche d'un module, ses gestes et ses champs.
+  CASS.modulesUi = { lire: lire, fiche: (m, p, c) => fiche(m, p, c), gestes: (r, a) => gestes(r, a), lierChamps: lierChamps, familles: familles, famLib: famLib, catalogue: () => catalogue, gere: () => gere, nomDe: nomDe };
+
   // ── la fiche d'un module ────────────────────────────────────────────
   function fiche(m, portee, compact) {
     const [lib, cls] = ETATS[m.etat] || [m.etat, ""];
@@ -181,7 +163,7 @@
       (mes.length && !compact ? '<details style="margin-top:6px"' + (portee === "compte" ? " open" : "") + '><summary class="s-hint" style="cursor:pointer">' + mes.length + " réglage" + (mes.length > 1 ? "s" : "") + "</summary>" + mes.map(champ).join("") + "</details>" : "") + "</div>";
   }
 
-  function gestes(racine) {
+  function gestes(racine, apres) {
     racine.querySelectorAll("[data-ouvrir]").forEach((b) => b.addEventListener("click", () => CASS.ouvrirConsole(b.dataset.ouvrir, b.dataset.nom)));
     racine.querySelectorAll("[data-geste]").forEach((b) => b.addEventListener("click", async () => {
       const mid = b.dataset.mod, g = b.dataset.geste;
@@ -194,7 +176,7 @@
       } catch (e) {
         if (typeof toast === "function") toast(e.message, "err");
       }
-      await rendre(true);
+      await (apres || rendre)(true);
     }));
   }
 

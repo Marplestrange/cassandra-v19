@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #96ecf3
+// VERSION CN : 0.1.0  #d2a9a3
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=96ecf3 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=d2a9a3 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -90,6 +90,7 @@
     d: null, moi: null, compte: "", g: "", e: "", vue: "", actif: null, side: "full", sideAvant: "full", sideTouche: false, ouv: new Set(),
     panel: false, manual: null, sel: { itare: "page", cassandra: "page", inv: "page" }, fils: { itare: [], cassandra: [], inv: [] }, msgs: {}, dernier: {},
     invites: new Set(["itare"]), fmenu: false, sug: false, regOuvert: false, idees: { mode: "itare", idees: [], urgent: false, actes: {} }, actes: { itare: [], cassandra: [], inv: [] },
+    fil: null, lateral: null, pageNom: "", famModules: "tous",
     faits: new Set(), refuses: new Set(), nouveau: { itare: false, cassandra: false, inv: false }, attente: 0, rec: [], ms: false, w: "l",
     prefs: { verre: true }, brouillon: "",
   };
@@ -112,7 +113,7 @@
   }
   function ouvrirNoeud(n, vue) {
     if (n.onglet) { window.switchTab(n.onglet); pontVue(n.id.split(".")[0], vue || n.vue); }
-    else if (n.ecran === "menus:vue_modules") { window.switchTab("settings"); setTimeout(function () { if (typeof window.setVision === "function") window.setVision("modules"); }, 250); }
+    else if (n.ecran === "menus:vue_modules") ouvrirModules(E.famModules || "tous");
     else if (n.ecran && CASS.ouvrirEcran) CASS.ouvrirEcran(n.ecran, n.libelle);
   }
   function chemin() { const g = ent(), e = entree(); if (!g || !e) return ""; return g.libelle + " › " + e.libelle + (E.vue ? " › " + ((e.enfants.find((f) => (f.vue || f.id) === E.vue) || {}).libelle || E.vue) : ""); }
@@ -143,6 +144,7 @@
   // une page ouverte ailleurs que par la disposition (notification, lien, bouton) : on suit
   function suivre(nom) {
     if (!E.d || E.silence) return;
+    if (nom !== E.pageNom) { E.fil = null; E.lateral = null; E.pageNom = ""; }
     let trouve = null;
     for (const g of E.d.groupes) for (const e of g.entrees) {
       if (e.onglet === nom) trouve = { g: g.id, e: e.id, vue: E.actif && E.actif.e === e.id ? E.actif.vue : "" };
@@ -187,6 +189,12 @@
     sd.classList.toggle("ferme", !E.side);
     sd.classList.toggle("rail", rail);
     $("#d19-scrim").classList.toggle("on", !!E.side && E.side !== "rail" && isPetit());
+    if (E.lateral && E.pageNom) {                                       // la page a SA colonne (les familles de modules)
+      const L = E.lateral;
+      sd.innerHTML = "<h2>" + esc(L.titre) + '</h2><div class="d19-lat-sous">' + esc(L.sous) + "</div>"
+        + L.items.map((i) => '<button class="d19-si ent' + (i.id === L.actif ? " on" : "") + '" data-lat="' + esc(i.id) + '" data-tip="' + esc(i.libelle) + '">' + ico(i.icone || "puzzle") + "<span>" + esc(i.libelle) + '</span><span class="d19-nb">' + i.n + "</span></button>").join("");
+      return;
+    }
     let h = "";
     const ep = epinglesVisibles();
     if (ep.length) h += "<h2>Épinglés</h2>" + ep.map((p) => '<button class="d19-si pinned" data-tip="' + esc(p.libelle) + '" data-pg="' + esc(p.groupe) + '" data-pe="' + esc(p.entree) + '" data-pv="' + esc(p.vue || "") + '">' + ico("star") + "<span>" + esc(p.libelle) + "</span></button>").join("") + '<hr class="d19-sep">';
@@ -205,6 +213,12 @@
   const estPin = () => !!(E.d && (E.d.epingles || []).some((p) => p.cle === cleDe(E.g, E.e, E.vue)));
   function rendreStrip() {
     const el = $("#d19-strip"), g = ent(), e = entree();
+    if (E.d && E.pageNom && E.fil && !E.actif) {                          // une page propre (avatar) : son fil d'Ariane, et ses pastilles sur téléphone
+      el.style.display = "";
+      el.innerHTML = '<div class="fil">' + E.fil.map((p, i) => (i < E.fil.length - 1 ? "<span>" + esc(p) + "</span><span>›</span>" : "<span>" + esc(p) + "</span>")).join("") + "</div>"
+        + (E.lateral ? '<div class="pills" id="d19-pills">' + E.lateral.items.map((i) => '<button class="pl' + (i.id === E.lateral.actif ? " on" : "") + '" data-lat="' + esc(i.id) + '">' + esc(i.libelle) + "</button>").join("") + "</div>" : "");
+      return;
+    }
     if (!E.d || !g || !e || !E.actif) { el.innerHTML = ""; el.style.display = "none"; return; }
     el.style.display = "";
     const parts = [g.libelle, e.libelle].concat(E.vue ? [((e.enfants.find((f) => (f.vue || f.id) === E.vue) || {}).libelle) || E.vue] : []);
@@ -390,7 +404,7 @@
   function palChoisir(i) {
     const x = palRes[i]; if (!x) return; palFermer();
     if (x.act) { ouvrirPanel(true); proposerActe(E.idees.idees.find((y) => y.acte === x.act) || { acte: x.act, cible: "" }); }
-    else if (x.av) { const a = (E.d.avatar || []).find((y) => y.id === x.av); if (a) ouvrirNoeud(a); }
+    else if (x.av) { const a = (E.d.avatar || []).find((y) => y.id === x.av); if (a) { marquerPage(a); ouvrirNoeud(a); } }
     else aller(x.g, x.e, x.v);
   }
 
@@ -469,7 +483,46 @@
     };
     r.readAsDataURL(fichier);
   }
+  // ── une page propre : son onglet, son fil d'Ariane ────────────────────────
+  function marquerPage(a) {
+    E.pageNom = a.ecran && CASS.nomOnglet ? CASS.nomOnglet(a.ecran) : "";
+    E.fil = ["Paramètres", a.id === "menus:modules" ? "Modules et Applications" : a.libelle]; E.lateral = null;
+  }
+  async function ouvrirModules(fam) {
+    E.famModules = fam || "tous"; marquerPage({ id: "menus:modules", ecran: "menus:vue_modules", libelle: "Modules et Applications" });
+    CASS.ouvrirEcran("menus:vue_modules", "Modules et Applications");
+  }
+  // « Modules et Applications » : l'ancienne vision Modules de Réglages, devenue une page. Sa colonne de gauche classe les modules par famille.
+  async function pageModules(corps, fam) {
+    const M = CASS.modulesUi;
+    if (!M) { corps.innerHTML = '<div class="empty-state">Écran indisponible.</div>'; return; }
+    await M.lire();
+    const cat = M.catalogue();
+    fam = fam || E.famModules || "tous";
+    if (fam !== "tous" && !cat.some((m) => (m.famille || "autres") === fam)) fam = "tous";
+    E.famModules = fam;
+    const nbDe = (f) => (f === "tous" ? cat.length : cat.filter((m) => (m.famille || "autres") === f).length);
+    E.lateral = { titre: "Modules", sous: "ce qui est installé et actif", actif: fam, items: [{ id: "tous", libelle: "Tous les modules", n: cat.length, icone: "puzzle" }].concat(M.familles().map((f) => ({ id: f, libelle: M.famLib(f), n: nbDe(f), icone: "panorama" }))) };
+    const tete = fam === "tous" ? "Tous les modules" : M.famLib(fam);
+    E.pageNom = CASS.nomOnglet("menus:vue_modules"); E.fil = ["Paramètres", "Modules et Applications", tete];
+    const sc = corps.closest(".sh-scene"), t = sc && sc.querySelector(".sh-titre");
+    if (t) {                                                           // un titre et sa légende, comme les autres pages
+      t.textContent = "Modules et Applications";
+      let l = sc.querySelector(".sh-legende"); if (!l) { l = document.createElement("p"); l.className = "sh-legende"; t.after(l); }
+      l.textContent = "La gestion des modules : ce qui est actif, ce qui dépend de quoi, et les réglages propres à chaque module. Un module neuf n’est jamais activé de lui-même.";
+    }
+    corps.innerHTML = '<div class="settings-section-title">' + esc(tete) + '</div><div class="s-hint">Activer un module branche à chaud ses menus, ses capacités et ses moteurs ; le désactiver les retire.</div>' + (fam === "tous" ? cat : cat.filter((m) => (m.famille || "autres") === fam)).map((m) => M.fiche(m, "global", fam === "tous")).join("");
+    const relire = async () => { await pageModules(corps, E.famModules); };
+    M.gestes(corps, async () => { await relire(); CASS.disposition.rafraichir(); });
+    M.lierChamps(corps, relire);
+    rendre();
+  }
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};
+  CASS.sceneSurMesure.menus = async function (corps, ctx) {
+    const ecran = String(ctx.ecran).split(":")[1] || "";
+    if (ecran === "vue_modules") await pageModules(corps);
+    else if (CASS.console) { corps.innerHTML = '<div class="sh-console"></div>'; CASS.console("menus", corps.querySelector(".sh-console")); }
+  };
   CASS.sceneSurMesure.affichage = async function (corps, ctx) {
     const ecran = String(ctx.ecran).split(":")[1] || "";
     if (ecran === "vue_societe") {
@@ -585,6 +638,7 @@
       if ((x = c("#d19-strip [data-sx]"))) { aller(E.g, E.e, x.dataset.sx); return; }
       if ((x = c("#d19-strip [data-fil]"))) { if (+x.dataset.fil === 0) aller(E.g, ""); return; }
       if ((x = c("#d19-strip [data-pin]"))) { basculerPin(); return; }
+      if ((x = c("[data-lat]"))) { const corps = document.querySelector("#tab-" + E.pageNom + " .sh-corps"); if (corps) pageModules(corps, x.dataset.lat); return; }
       if ((x = c("#d19-side .pinned"))) { aller(x.dataset.pg, x.dataset.pe, x.dataset.pv); return; }
       if ((x = c("#d19-side .sub"))) { aller(E.g, x.dataset.e, x.dataset.v); return; }
       if ((x = c("#d19-side .ent"))) {
@@ -614,8 +668,8 @@
       if (c("#d19-pal")) { palFermer(); return; }
       if ((x = c("[data-d19-theme]"))) { if (typeof window.appliquerTheme === "function") window.appliquerTheme(x.dataset.d19Theme); setTimeout(completerAvatar, 50); return; }
       if ((x = c("[data-d19-hab]"))) { const id = x.dataset.d19Hab, r = document.documentElement; if (typeof window.appliquerTheme === "function") window.appliquerTheme(id || (r.getAttribute("data-theme") === "dark" ? "dark" : "light")); setTimeout(completerAvatar, 50); return; }
-      if ((x = c("[data-d19-avid]"))) { const a = (E.d.avatar || []).find((y) => y.id === x.dataset.d19Avid); if (typeof window.fermerCompte === "function") window.fermerCompte(); if (a) { E.silence = false; ouvrirNoeud(a); } return; }
-      if ((x = c("[data-d19-info]"))) { if (typeof window.fermerCompte === "function") window.fermerCompte(); if (CASS.ouvrirEcran) CASS.ouvrirEcran("affichage:vue_info", "Info Cassandra"); return; }
+      if ((x = c("[data-d19-avid]"))) { const a = (E.d.avatar || []).find((y) => y.id === x.dataset.d19Avid); if (typeof window.fermerCompte === "function") window.fermerCompte(); if (a) { E.silence = false; marquerPage(a); ouvrirNoeud(a); } return; }
+      if ((x = c("[data-d19-info]"))) { if (typeof window.fermerCompte === "function") window.fermerCompte(); marquerPage({ id: "affichage:info", ecran: "affichage:vue_info", libelle: "Info Cassandra" }); if (CASS.ouvrirEcran) CASS.ouvrirEcran("affichage:vue_info", "Info Cassandra"); return; }
       if (c("[data-d19-verre]")) { E.prefs.verre = !E.prefs.verre; sauverPrefs(); appliquerPrefs(); completerAvatar(); return; }
       if (c("[data-d19-v18]")) { try { localStorage.setItem("cass_disposition", "v18"); } catch (e) {} location.reload(); return; }
       if (E.sug && !c("#d19-cass .sug") && !c("[data-sug]")) { E.sug = false; rendrePanel(); }

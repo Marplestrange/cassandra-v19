@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=24c2ea ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=100d0f ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -95,6 +95,7 @@ body.d19 .app-body{position:relative}
 .d19-tip.v{opacity:1}
 #d19-scrim{display:none}
 
+.d19-lat-sous{font:400 11px 'JetBrains Mono',monospace;color:var(--txt-faint);padding:0 10px 10px;margin-top:-6px}
 /* ---------- bandeau de page (ordinateur : fil d'Ariane et étoile) et pastilles (téléphone) ---------- */
 #d19-strip{display:flex;align-items:center;gap:8px;padding:8px max(20px,env(safe-area-inset-right,0px)) 0 24px;min-width:0;flex:none}
 #d19-strip .fil{display:flex;flex-wrap:wrap;gap:4px;font:500 11.5px 'JetBrains Mono',monospace;color:var(--txt-faint);min-width:0}

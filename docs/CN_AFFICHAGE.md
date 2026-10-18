@@ -12,7 +12,7 @@
 <!-- RÔLE       : Module affichage : la disposition (menus du haut, colonne de gauche, menu avatar) -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=eb61a4 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=6b3de1 ▼▼▼ -->
 # Module affichage : la disposition (menus du haut, colonne de gauche, menu avatar)
 
 Note de conception, 18-10. Maquette de référence (interactive) : `brouillons/maquette-menus-artifact.html`, publiée en page privée.
@@ -112,7 +112,7 @@ La disposition est calculée UNE fois côté serveur (mêmes groupes, mêmes ent
 
 On **garde le menu de l'avatar actuel** (identité, session, apparence, écran allégé, coffre, paramètres, raccourcis, verrouiller, déconnecter) et on le range en sections dans cet ordre :
 
-Décision 18-10 (Drisse) : le menu de l'avatar **reste celui de l'ancienne interface**, avec seulement **deux entrées ajoutées** : **Modules / Applications** (la page Modules de Réglages) et **Société / Organisation** (nom, logo, forme juridique, identifiant légal, adresse, fuseau et langue par défaut ; le nom et le logo s'affichent en tête de la barre, et le favicon suit le logo ; par défaut le toit de Cassandra). Le reste est inchangé : identité, session, apparence, écran allégé, Mon coffre-fort, Paramètres généraux, Raccourcis clavier, Verrouiller, Se déconnecter. **Info Cassandra** n'est pas une entrée : c'est un lien tout en bas, à côté du numéro de version. L'apparence perd ses initiales : un thème en icônes (clair, crème, sombre, système) et un sélecteur d'habillage (Cassandra, Ardoise, Papier, puis ceux des modules).
+Décision 18-10 (Drisse) : le menu de l'avatar **reste celui de l'ancienne interface**, avec seulement **deux entrées ajoutées** : **Modules / Applications** (la page Modules de Réglages) et **Société / Organisation** (nom, logo, forme juridique, identifiant légal, adresse, fuseau et langue par défaut ; le nom et le logo s'affichent en tête de la barre, et le favicon suit le logo ; par défaut le toit de Cassandra). Le reste est inchangé : identité, session, apparence, écran allégé, Mon coffre-fort, Paramètres généraux, Raccourcis clavier, Verrouiller, Se déconnecter. **Modules et Applications** est une page à part entière (ce n'est plus une vision de Réglages) : titre et légende comme les autres pages, fil d'Ariane (Paramètres › Modules et Applications › famille), et une colonne de gauche propre à la page qui classe les modules par famille (Tous les modules, Socle, Sécurité, Réseau…, avec leur nombre) ; sur téléphone, ces familles deviennent les pastilles du bandeau. Le catalogue, les fiches, l'activation et les réglages sont ceux de l'ancien écran (`CASS.modulesUi`, exposé par `modules-ui.js`). **Info Cassandra** n'est pas une entrée : c'est un lien tout en bas, à côté du numéro de version. L'apparence perd ses initiales : un thème en icônes (clair, crème, sombre, système) et un sélecteur d'habillage (Cassandra, Ardoise, Papier, puis ceux des modules).
 
 Apparence (segments clair / crème / sombre / thèmes de modules) et Écran allégé restent dans le menu (blocs actuels) ; le bouton thème de la barre haute reste un raccourci vers le même sélecteur.
 
