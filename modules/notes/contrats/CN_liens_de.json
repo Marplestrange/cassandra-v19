@@ -1,0 +1,24 @@
+{
+ "point": "notes.liens_de",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "corps"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un lien sans type est un lien de note",
+  "un « ! » devant le lien en fait une inclusion",
+  "l'alias après « | » n'est pas gardé",
+  "l'ordre des liens est celui du texte",
+  "un lien non fermé n'en est pas un"
+ ]
+}

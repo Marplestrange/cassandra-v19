@@ -1,0 +1,29 @@
+{
+ "point": "contacts.csv_decoder",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "octets"
+  ],
+  "properties": {
+   "octets": {
+    "type": "string"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "texte",
+   "encodage"
+  ]
+ },
+ "invariants": [
+  "UTF-8 d'abord, puis cp1252, puis latin-1",
+  "une marque d'ordre des octets UTF-8 est retirée et dite",
+  "un fichier illisible est approché, jamais une erreur",
+  "le même fichier donne toujours le même texte"
+ ]
+}

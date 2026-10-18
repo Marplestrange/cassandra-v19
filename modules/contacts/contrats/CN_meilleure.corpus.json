@@ -1,0 +1,369 @@
+{
+ "point": "contacts.meilleure",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de contacts, données synthétiques",
+ "cas": [
+  {
+   "cas": "plus renseignée",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100,
+     "display_name": "A",
+     "phone": "1"
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100,
+     "display_name": "B"
+    }
+   },
+   "sortie": {
+    "valeur": 1
+   }
+  },
+  {
+   "cas": "plus renseignée à droite",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100,
+     "display_name": "B",
+     "company": "X"
+    }
+   },
+   "sortie": {
+    "valeur": 2
+   }
+  },
+  {
+   "cas": "égalité, la plus ancienne",
+   "entree": {
+    "a": {
+     "id": 5,
+     "created_at": 100,
+     "display_name": "A"
+    },
+    "b": {
+     "id": 6,
+     "created_at": 200,
+     "display_name": "B"
+    }
+   },
+   "sortie": {
+    "valeur": 5
+   }
+  },
+  {
+   "cas": "égalité, la plus ancienne à droite",
+   "entree": {
+    "a": {
+     "id": 5,
+     "created_at": 300,
+     "display_name": "A"
+    },
+    "b": {
+     "id": 6,
+     "created_at": 200,
+     "display_name": "B"
+    }
+   },
+   "sortie": {
+    "valeur": 6
+   }
+  },
+  {
+   "cas": "égalité totale, plus petit id",
+   "entree": {
+    "a": {
+     "id": 9,
+     "created_at": 100,
+     "display_name": "A"
+    },
+    "b": {
+     "id": 4,
+     "created_at": 100,
+     "display_name": "B"
+    }
+   },
+   "sortie": {
+    "valeur": 4
+   }
+  },
+  {
+   "cas": "adresses comptées",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100,
+     "emails": [
+      "a@e.test",
+      "b@e.test"
+     ]
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100,
+     "display_name": "x"
+    }
+   },
+   "sortie": {
+    "valeur": 1
+   }
+  },
+  {
+   "cas": "photo vaut deux",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100,
+     "photo": "x"
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100,
+     "display_name": "a"
+    }
+   },
+   "sortie": {
+    "valeur": 1
+   }
+  },
+  {
+   "cas": "photo contre trois champs",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100,
+     "photo": "x"
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100,
+     "display_name": "a",
+     "phone": "1",
+     "mobile": "2"
+    }
+   },
+   "sortie": {
+    "valeur": 2
+   }
+  },
+  {
+   "cas": "favori vaut trois",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100,
+     "favorite": 1
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100,
+     "display_name": "a",
+     "phone": "1"
+    }
+   },
+   "sortie": {
+    "valeur": 1
+   }
+  },
+  {
+   "cas": "favori contre quatre champs",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100,
+     "favorite": 1
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100,
+     "display_name": "a",
+     "phone": "1",
+     "mobile": "2",
+     "company": "c"
+    }
+   },
+   "sortie": {
+    "valeur": 2
+   }
+  },
+  {
+   "cas": "champs blancs ignorés",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100,
+     "display_name": "  ",
+     "phone": ""
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100
+    }
+   },
+   "sortie": {
+    "valeur": 1
+   }
+  },
+  {
+   "cas": "référence du coffre",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100,
+     "vault_ref": "v"
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100
+    }
+   },
+   "sortie": {
+    "valeur": 1
+   }
+  },
+  {
+   "cas": "tous les champs",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100,
+     "display_name": "a",
+     "company": "b",
+     "job_title": "c",
+     "phone": "d",
+     "mobile": "e",
+     "address": "f",
+     "website": "g",
+     "notes": "h",
+     "anniversaire": "i",
+     "vault_ref": "j"
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100,
+     "display_name": "a"
+    }
+   },
+   "sortie": {
+    "valeur": 1
+   }
+  },
+  {
+   "cas": "ids texte",
+   "entree": {
+    "a": {
+     "id": "b",
+     "created_at": 100,
+     "display_name": "a"
+    },
+    "b": {
+     "id": "a",
+     "created_at": 100,
+     "display_name": "a"
+    }
+   },
+   "sortie": {
+    "valeur": "a"
+   }
+  },
+  {
+   "cas": "créations égales, ids numériques",
+   "entree": {
+    "a": {
+     "id": 10,
+     "created_at": 50
+    },
+    "b": {
+     "id": 2,
+     "created_at": 50
+    }
+   },
+   "sortie": {
+    "valeur": 2
+   }
+  },
+  {
+   "cas": "anniversaire",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100,
+     "anniversaire": "1990-01-01"
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100
+    }
+   },
+   "sortie": {
+    "valeur": 1
+   }
+  },
+  {
+   "cas": "emails None",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100,
+     "emails": null
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100,
+     "display_name": "x"
+    }
+   },
+   "sortie": {
+    "valeur": 2
+   }
+  },
+  {
+   "cas": "None dans un champ",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100,
+     "display_name": null
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100,
+     "phone": "1"
+    }
+   },
+   "sortie": {
+    "valeur": 2
+   }
+  },
+  {
+   "cas": "remplissage égal par photo et favori",
+   "entree": {
+    "a": {
+     "id": 1,
+     "created_at": 100,
+     "photo": "p",
+     "favorite": 1
+    },
+    "b": {
+     "id": 2,
+     "created_at": 100,
+     "display_name": "a",
+     "phone": "1",
+     "mobile": "2",
+     "company": "c",
+     "job_title": "d"
+    }
+   },
+   "sortie": {
+    "valeur": 1
+   }
+  }
+ ]
+}

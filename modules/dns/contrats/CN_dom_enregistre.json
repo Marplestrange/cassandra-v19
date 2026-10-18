@@ -1,0 +1,23 @@
+{
+ "point": "dns.dom_enregistre",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "domaine"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un nom sans point ou vide rend un texte vide",
+  "la casse et le point final sont sans effet",
+  "un second niveau public (co, com, org, net, gov, ac) sous un code de pays à deux lettres garde trois libellés",
+  "le même nom donne toujours le même domaine"
+ ]
+}

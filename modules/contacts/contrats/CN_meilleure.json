@@ -1,0 +1,24 @@
+{
+ "point": "contacts.meilleure",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "a",
+   "b"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "une proposition seulement : la fusion elle-même demande son geste",
+  "la fiche la plus renseignée l'emporte, puis la plus ancienne, puis le plus petit identifiant",
+  "un champ blanc ne compte pas",
+  "la photo vaut deux points, le favori trois"
+ ]
+}

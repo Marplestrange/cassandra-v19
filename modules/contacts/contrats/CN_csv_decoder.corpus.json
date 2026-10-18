@@ -1,0 +1,137 @@
+{
+ "point": "contacts.csv_decoder",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de contacts, données synthétiques",
+ "cas": [
+  {
+   "cas": "utf-8",
+   "entree": {
+    "octets": "UHLDqW5vbTtOb20KWm/DqTvFknVmCg=="
+   },
+   "sortie": {
+    "texte": "Prénom;Nom\nZoé;Œuf\n",
+    "encodage": "utf-8"
+   }
+  },
+  {
+   "cas": "utf-8 avec marque",
+   "entree": {
+    "octets": "77u/UHLDqW5vbTtOb20="
+   },
+   "sortie": {
+    "texte": "Prénom;Nom",
+    "encodage": "utf-8-bom"
+   }
+  },
+  {
+   "cas": "cp1252",
+   "entree": {
+    "octets": "UHLpbm9tO05vbQpKb3PpO0NhZukK"
+   },
+   "sortie": {
+    "texte": "Prénom;Nom\nJosé;Café\n",
+    "encodage": "cp1252"
+   }
+  },
+  {
+   "cas": "latin-1 hors cp1252",
+   "entree": {
+    "octets": "QYFC"
+   },
+   "sortie": {
+    "texte": "AB",
+    "encodage": "latin-1"
+   }
+  },
+  {
+   "cas": "vide",
+   "entree": {
+    "octets": ""
+   },
+   "sortie": {
+    "texte": "",
+    "encodage": "utf-8"
+   }
+  },
+  {
+   "cas": "ascii",
+   "entree": {
+    "octets": "YTtiCjE7Mgo="
+   },
+   "sortie": {
+    "texte": "a;b\n1;2\n",
+    "encodage": "utf-8"
+   }
+  },
+  {
+   "cas": "octets invalides",
+   "entree": {
+    "octets": "//79"
+   },
+   "sortie": {
+    "texte": "ÿþý",
+    "encodage": "cp1252"
+   }
+  },
+  {
+   "cas": "marque seule",
+   "entree": {
+    "octets": "77u/"
+   },
+   "sortie": {
+    "texte": "",
+    "encodage": "utf-8-bom"
+   }
+  },
+  {
+   "cas": "utf-8 tronqué",
+   "entree": {
+    "octets": "ww=="
+   },
+   "sortie": {
+    "texte": "Ã",
+    "encodage": "cp1252"
+   }
+  },
+  {
+   "cas": "euro en cp1252",
+   "entree": {
+    "octets": "gA=="
+   },
+   "sortie": {
+    "texte": "€",
+    "encodage": "cp1252"
+   }
+  },
+  {
+   "cas": "retours chariot",
+   "entree": {
+    "octets": "YTtiDQoxOzINCg=="
+   },
+   "sortie": {
+    "texte": "a;b\r\n1;2\r\n",
+    "encodage": "utf-8"
+   }
+  },
+  {
+   "cas": "emoji",
+   "entree": {
+    "octets": "4piVIGNhZsOp"
+   },
+   "sortie": {
+    "texte": "☕ café",
+    "encodage": "utf-8"
+   }
+  },
+  {
+   "cas": "deux marques",
+   "entree": {
+    "octets": "77u/77u/eA=="
+   },
+   "sortie": {
+    "texte": "﻿x",
+    "encodage": "utf-8-bom"
+   }
+  }
+ ]
+}

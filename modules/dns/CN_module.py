@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dns
 # ZONE       : CN
-# VERSION CN : 0.2.0  #088454
+# VERSION CN : 0.2.0  #4b1631
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Domaines et DNS.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=088454 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=4b1631 ▼▼▼
 """Domaines et DNS.
 
 Porté de la V18 (`_dns_*`, `_detect_dns`, `_aut_dns_corriger`, `_dom_expiration`), avec ses leçons :
@@ -115,13 +115,8 @@ def resolveurs_systeme():
 
 
 def dom_enregistre(domaine):
-    """Le domaine qu'on RENOUVELLE : « app.exemple.org » -> « exemple.org » ; « x.co.uk » -> « x.co.uk »."""
-    p = [x for x in str(domaine or "").lower().strip(".").split(".") if x]
-    if len(p) < 2:
-        return ""
-    if len(p) >= 3 and len(p[-1]) == 2 and p[-2] in ("co", "com", "org", "net", "gov", "ac"):
-        return ".".join(p[-3:])
-    return ".".join(p[-2:])
+    """Le domaine qu'on RENOUVELLE : « app.exemple.org » -> « exemple.org » ; « x.co.uk » -> « x.co.uk ». Le calcul est un POINT D'ÉVOLUTION : points/EC_dom_enregistre.py."""
+    return _point("dom_enregistre", {"domaine": domaine})["valeur"]
 
 
 def normaliser(typ, val):

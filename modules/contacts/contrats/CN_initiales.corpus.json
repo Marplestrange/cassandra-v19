@@ -1,0 +1,247 @@
+{
+ "point": "contacts.initiales",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de contacts, données synthétiques",
+ "cas": [
+  {
+   "cas": "initiale",
+   "entree": {
+    "a": "J. Danet",
+    "b": "Julie Danet"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "initiale inverse",
+   "entree": {
+    "a": "Julie Danet",
+    "b": "J. Danet"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "identiques",
+   "entree": {
+    "a": "Julie Danet",
+    "b": "Julie Danet"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "nom différent",
+   "entree": {
+    "a": "J. Danet",
+    "b": "Julie Martin"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "initiale différente",
+   "entree": {
+    "a": "K. Danet",
+    "b": "Julie Danet"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "un seul mot",
+   "entree": {
+    "a": "Julie",
+    "b": "J."
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "longueurs différentes",
+   "entree": {
+    "a": "J. P. Danet",
+    "b": "Julie Danet"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "deux initiales",
+   "entree": {
+    "a": "J. P. Danet",
+    "b": "Julie Pierre Danet"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "une initiale sur deux",
+   "entree": {
+    "a": "J. Pierre Danet",
+    "b": "Julie Pierre Danet"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "initiale sans point",
+   "entree": {
+    "a": "J Danet",
+    "b": "Julie Danet"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "accents",
+   "entree": {
+    "a": "É. Léger",
+    "b": "Émilie Léger"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "casse",
+   "entree": {
+    "a": "j. DANET",
+    "b": "julie danet"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "forme juridique",
+   "entree": {
+    "a": "J. Danet SARL",
+    "b": "Julie Danet"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "vide",
+   "entree": {
+    "a": "",
+    "b": ""
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "a": null,
+    "b": null
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "un vide",
+   "entree": {
+    "a": "J. Danet",
+    "b": ""
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "trois mots abrégés",
+   "entree": {
+    "a": "A. B. Danet",
+    "b": "Anne Bea Danet"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "préfixe plus long",
+   "entree": {
+    "a": "Ju Danet",
+    "b": "Julie Danet"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "les deux abrégés",
+   "entree": {
+    "a": "J. Danet",
+    "b": "J. Danet"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "initiale égale au mot",
+   "entree": {
+    "a": "J Danet",
+    "b": "J Danet"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "mots inversés",
+   "entree": {
+    "a": "Danet J.",
+    "b": "Julie Danet"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "symboles",
+   "entree": {
+    "a": "☆ ☆",
+    "b": "★ ★"
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "tirets",
+   "entree": {
+    "a": "J-P Danet",
+    "b": "Jean-Pierre Danet"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "espaces multiples",
+   "entree": {
+    "a": "J.   Danet",
+    "b": "Julie    Danet"
+   },
+   "sortie": {
+    "valeur": true
+   }
+  }
+ ]
+}

@@ -296,3 +296,27 @@ contrat = "1.0"
 reference = "points/EC_csv_fiches"
 fonction = "point_csv_fiches"
 runtime = "python"
+
+[[points_evolution]]
+id = "initiales"
+libelle = "Deux noms sont-ils la même personne, l'un abrégé (« J. Danet » et « Julie Danet ») ? : deux noms en entrée, un booléen en sortie"
+contrat = "1.0"
+reference = "points/EC_initiales"
+fonction = "point_initiales"
+runtime = "python"
+
+[[points_evolution]]
+id = "meilleure"
+libelle = "Laquelle de deux fiches doublons mérite d'absorber l'autre : deux fiches en entrée, l'identifiant à garder en sortie (une proposition seulement)"
+contrat = "1.0"
+reference = "points/EC_meilleure"
+fonction = "point_meilleure"
+runtime = "python"
+
+[[points_evolution]]
+id = "csv_decoder"
+libelle = "Le décodage d'un fichier CSV : les octets (base64) en entrée, le texte et l'encodage reconnu en sortie (UTF-8 d'abord, puis cp1252, puis latin-1)"
+contrat = "1.0"
+reference = "points/EC_csv_decoder"
+fonction = "point_csv_decoder"
+runtime = "python"

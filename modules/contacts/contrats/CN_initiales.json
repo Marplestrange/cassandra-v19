@@ -1,0 +1,24 @@
+{
+ "point": "contacts.initiales",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "a",
+   "b"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "le dernier mot doit être identique",
+  "au moins un des mots précédents est une initiale de l'autre",
+  "deux noms de longueurs différentes ne se correspondent pas",
+  "la casse et les accents sont sans effet"
+ ]
+}

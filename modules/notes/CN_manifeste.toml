@@ -349,3 +349,11 @@ contrat = "1.0"
 reference = "points/EC_md_vers_html"
 fonction = "point_md_vers_html"
 runtime = "python"
+
+[[points_evolution]]
+id = "liens_de"
+libelle = "Les liens d'une note (vers une note, un projet, une inclusion, une ancre) : le texte en entrée, la liste des liens en sortie"
+contrat = "1.0"
+reference = "points/EC_liens_de"
+fonction = "point_liens_de"
+runtime = "python"

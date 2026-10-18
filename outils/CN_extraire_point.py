@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c1f821
+# VERSION CN : 0.1.0  #67b71d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : sort d'un fichier de module les fonctions pures d'un point d'évolution : écrit la référence EC (avec ses dépendances copiées), le contrat, le corpus doré et la déclaration au manifeste.
 # MÉTHODE    : fermeture transitive des noms de premier niveau par l'arbre syntaxique ; le corpus doré est la sortie de la référence extraite, copiée mot pour mot de l'ancien code ; rien n'est écrasé sans --forcer.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c1f821 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=67b71d ▼▼▼
 """Usage : un script `spec` appelle extraire(spec). Le spec décrit le point ; l'outil écrit quatre choses :
    modules/<m>/points/EC_<point>.py · contrats/CN_<point>.json · contrats/CN_<point>.corpus.json · l'entrée [[points_evolution]] du manifeste.
    La façade du module (CN_module.py) et la liste des tests restent à la main : c'est là que se décide ce qui voyage dans l'entrée."""
@@ -238,7 +238,10 @@ def poser_facade_globale(spec):
         b2 = g.read_bytes().decode("utf-8")
         nl2 = "\r\n" if "\r\n" in b2 else "\n"
         t2 = b2.replace("\r\n", "\n")
-        ligne = "    %s._point = ctx.point" % spec["brancher_objet"]
+        if spec["brancher_objet"] == "ce module":                     # les façades sont dans le module qui branche : `_point` est son propre global
+            ligne = "    global _point\n    _point = ctx.point"
+        else:
+            ligne = "    %s._point = ctx.point" % spec["brancher_objet"]
         if ligne not in t2:
             marque = "def brancher(ctx):\n"
             if marque not in t2:

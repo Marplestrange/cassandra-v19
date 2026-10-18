@@ -1,0 +1,187 @@
+{
+ "point": "dns.dom_enregistre",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de dns, données synthétiques",
+ "cas": [
+  {
+   "cas": "sous-domaine",
+   "entree": {
+    "domaine": "app.exemple.org"
+   },
+   "sortie": {
+    "valeur": "exemple.org"
+   }
+  },
+  {
+   "cas": "domaine simple",
+   "entree": {
+    "domaine": "exemple.org"
+   },
+   "sortie": {
+    "valeur": "exemple.org"
+   }
+  },
+  {
+   "cas": "co.uk",
+   "entree": {
+    "domaine": "x.co.uk"
+   },
+   "sortie": {
+    "valeur": "x.co.uk"
+   }
+  },
+  {
+   "cas": "sous-domaine co.uk",
+   "entree": {
+    "domaine": "www.x.co.uk"
+   },
+   "sortie": {
+    "valeur": "x.co.uk"
+   }
+  },
+  {
+   "cas": "com.au",
+   "entree": {
+    "domaine": "a.b.com.au"
+   },
+   "sortie": {
+    "valeur": "b.com.au"
+   }
+  },
+  {
+   "cas": "gov",
+   "entree": {
+    "domaine": "a.b.gov.fr"
+   },
+   "sortie": {
+    "valeur": "b.gov.fr"
+   }
+  },
+  {
+   "cas": "deux lettres sans second niveau",
+   "entree": {
+    "domaine": "a.b.fr"
+   },
+   "sortie": {
+    "valeur": "b.fr"
+   }
+  },
+  {
+   "cas": "un seul mot",
+   "entree": {
+    "domaine": "localhost"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "vide",
+   "entree": {
+    "domaine": ""
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "domaine": null
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "point final",
+   "entree": {
+    "domaine": "exemple.org."
+   },
+   "sortie": {
+    "valeur": "exemple.org"
+   }
+  },
+  {
+   "cas": "majuscules",
+   "entree": {
+    "domaine": "WWW.Exemple.ORG"
+   },
+   "sortie": {
+    "valeur": "exemple.org"
+   }
+  },
+  {
+   "cas": "points multiples",
+   "entree": {
+    "domaine": "a..b.org"
+   },
+   "sortie": {
+    "valeur": "b.org"
+   }
+  },
+  {
+   "cas": "profond",
+   "entree": {
+    "domaine": "a.b.c.d.exemple.net"
+   },
+   "sortie": {
+    "valeur": "exemple.net"
+   }
+  },
+  {
+   "cas": "ac.uk",
+   "entree": {
+    "domaine": "labo.univ.ac.uk"
+   },
+   "sortie": {
+    "valeur": "univ.ac.uk"
+   }
+  },
+  {
+   "cas": "net",
+   "entree": {
+    "domaine": "x.net.fr"
+   },
+   "sortie": {
+    "valeur": "x.net.fr"
+   }
+  },
+  {
+   "cas": "org",
+   "entree": {
+    "domaine": "x.org.uk"
+   },
+   "sortie": {
+    "valeur": "x.org.uk"
+   }
+  },
+  {
+   "cas": "trois lettres",
+   "entree": {
+    "domaine": "a.b.com"
+   },
+   "sortie": {
+    "valeur": "b.com"
+   }
+  },
+  {
+   "cas": "espaces",
+   "entree": {
+    "domaine": "  exemple.org  "
+   },
+   "sortie": {
+    "valeur": "  exemple.org  "
+   }
+  },
+  {
+   "cas": "nombre",
+   "entree": {
+    "domaine": 12
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  }
+ ]
+}

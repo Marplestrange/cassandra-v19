@@ -1,0 +1,337 @@
+{
+ "point": "notes.liens_de",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de notes, données synthétiques",
+ "cas": [
+  {
+   "cas": "vide",
+   "entree": {
+    "corps": ""
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "corps": null
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "lien de note",
+   "entree": {
+    "corps": "voir [[N-0011]] ici"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "note",
+      "ref": "N-0011",
+      "brut": "N-0011",
+      "inclus": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "lien de projet",
+   "entree": {
+    "corps": "[[projet:12]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "projet",
+      "ref": "12",
+      "brut": "projet:12",
+      "inclus": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "inclusion",
+   "entree": {
+    "corps": "![[N-0002]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "note",
+      "ref": "N-0002",
+      "brut": "N-0002",
+      "inclus": true
+     }
+    ]
+   }
+  },
+  {
+   "cas": "avec ancre",
+   "entree": {
+    "corps": "[[N-0012#^ancre]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "note",
+      "ref": "N-0012#^ancre",
+      "brut": "N-0012#^ancre",
+      "inclus": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "avec alias",
+   "entree": {
+    "corps": "[[N-0003|le texte]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "note",
+      "ref": "N-0003",
+      "brut": "N-0003",
+      "inclus": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "deux liens",
+   "entree": {
+    "corps": "[[N-1]] et [[projet:2]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "note",
+      "ref": "N-1",
+      "brut": "N-1",
+      "inclus": false
+     },
+     {
+      "kind": "projet",
+      "ref": "2",
+      "brut": "projet:2",
+      "inclus": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "espaces",
+   "entree": {
+    "corps": "[[  N-5  ]] [[ projet : 7 ]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "note",
+      "ref": "N-5",
+      "brut": "N-5",
+      "inclus": false
+     },
+     {
+      "kind": "projet",
+      "ref": "7",
+      "brut": "projet : 7",
+      "inclus": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "type en majuscules",
+   "entree": {
+    "corps": "[[PROJET:9]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "projet",
+      "ref": "9",
+      "brut": "PROJET:9",
+      "inclus": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "lien vide",
+   "entree": {
+    "corps": "[[]]"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "non fermé",
+   "entree": {
+    "corps": "[[N-1"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "crochets simples",
+   "entree": {
+    "corps": "[N-1]"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "lien très long",
+   "entree": {
+    "corps": "[[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]]"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "lien de 160",
+   "entree": {
+    "corps": "[[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "note",
+      "ref": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "brut": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "inclus": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "deux-points multiples",
+   "entree": {
+    "corps": "[[a:b:c]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "a",
+      "ref": "b:c",
+      "brut": "a:b:c",
+      "inclus": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "inclusion et lien",
+   "entree": {
+    "corps": "![[N-1]] [[N-2]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "note",
+      "ref": "N-1",
+      "brut": "N-1",
+      "inclus": true
+     },
+     {
+      "kind": "note",
+      "ref": "N-2",
+      "brut": "N-2",
+      "inclus": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sur plusieurs lignes",
+   "entree": {
+    "corps": "[[N-1\n]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "note",
+      "ref": "N-1",
+      "brut": "N-1",
+      "inclus": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "unicode",
+   "entree": {
+    "corps": "[[Café]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "note",
+      "ref": "Café",
+      "brut": "Café",
+      "inclus": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "nombre",
+   "entree": {
+    "corps": 12
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "alias avec crochet",
+   "entree": {
+    "corps": "[[N-1|a]b]]"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "trois crochets",
+   "entree": {
+    "corps": "[[[N-1]]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "note",
+      "ref": "[N-1",
+      "brut": "[N-1",
+      "inclus": false
+     }
+    ]
+   }
+  },
+  {
+   "cas": "préfixe point d'exclamation seul",
+   "entree": {
+    "corps": "! [[N-1]]"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "kind": "note",
+      "ref": "N-1",
+      "brut": "N-1",
+      "inclus": false
+     }
+    ]
+   }
+  }
+ ]
+}

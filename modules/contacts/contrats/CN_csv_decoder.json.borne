@@ -1,0 +1,15 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : csv_decoder.json
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : contacts
+# ZONE       : CN
+# VERSION CN : 0.3.0  #7b9012
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : csv_decoder.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)
+# MÉTHODE    : à compléter par l'auteur
+# ══════════════════════════════════════════════════════════════════════════════
+# FICHIER    : CN_csv_decoder.json  (empreinte du contenu #7b9012)

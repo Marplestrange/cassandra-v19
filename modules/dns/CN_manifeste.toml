@@ -165,3 +165,11 @@ contrat = "1.0"
 reference = "points/EC_analyser"
 fonction = "point_analyser"
 runtime = "python"
+
+[[points_evolution]]
+id = "dom_enregistre"
+libelle = "Le domaine qu'on renouvelle : un nom d'hôte en entrée, son domaine enregistré en sortie (« app.exemple.org » donne « exemple.org », « x.co.uk » reste « x.co.uk »)"
+contrat = "1.0"
+reference = "points/EC_dom_enregistre"
+fonction = "point_dom_enregistre"
+runtime = "python"

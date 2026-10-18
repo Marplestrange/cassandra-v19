@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : notes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e5ffa8
+# VERSION CN : 0.1.0  #be6ebc
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les notes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e5ffa8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=be6ebc ▼▼▼
 """Les notes.
 
 Porté de la V18 (`note_*`, `notes_*`, `ca_*`, `_nt_*`), avec ses leçons :
@@ -96,18 +96,12 @@ def dossier_projet(projet):
     return s if segment_ok(s) else ""
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+
+
 def liens_de(corps):
-    """`[[N-0011]]` vers une note, `[[projet:12]]` vers un projet ; `![[…]]` inclut au lieu de renvoyer ; `[[N-0012#^ancre]]` vise un paragraphe."""
-    out = []
-    for m in RE_LIEN.finditer(str(corps or "")):
-        brut = m.group(1).strip()
-        if ":" in brut:
-            kind, _, ref = brut.partition(":")
-            kind, ref = kind.strip().lower(), ref.strip()
-        else:
-            kind, ref = "note", brut
-        out.append({"kind": kind, "ref": ref, "brut": brut, "inclus": m.group(0).startswith("!")})
-    return out
+    """`[[N-0011]]` vers une note, `[[projet:12]]` vers un projet ; `![[…]]` inclut au lieu de renvoyer ; `[[N-0012#^ancre]]` vise un paragraphe. Le calcul est un POINT D'ÉVOLUTION : points/EC_liens_de.py."""
+    return _point("liens_de", {"corps": corps})["valeur"]
 
 
 def cases_de(corps):
@@ -210,6 +204,8 @@ def mdp_ok(range_, donne):
 
 
 def brancher(ctx):
+    global _point
+    _point = ctx.point
     db = ctx.stockage
     essais = {}                      # jeton -> horodatages des mots de passe faux (en mémoire : un redémarrage vide le compteur, pas le lien)
 

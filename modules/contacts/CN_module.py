@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.0  #91d7ee
+# VERSION CN : 0.3.0  #18660c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet d'adresses.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=91d7ee ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=18660c ▼▼▼
 """Le carnet d'adresses.
 
 Porté de la V18 (`contact_*`, `contacts_*`, vCard, CSV), avec ses leçons :
@@ -78,20 +78,12 @@ def norm_nom(s):
     return " ".join(t.split())
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+
+
 def initiales(a, b):
-    """« J. Danet » est-il la forme abrégée de « Julie Danet » ? Le DERNIER mot doit être identique et les précédents se correspondre lettre à lettre."""
-    x, y = norm_nom(a).split(), norm_nom(b).split()
-    if len(x) < 2 or len(y) < 2 or len(x) != len(y) or x[-1] != y[-1]:
-        return False
-    abrege = False
-    for m, n in zip(x[:-1], y[:-1]):
-        if m == n:
-            continue
-        if (len(m) == 1 and n.startswith(m)) or (len(n) == 1 and m.startswith(n)):
-            abrege = True
-            continue
-        return False
-    return abrege
+    """« J. Danet » est-il la forme abrégée de « Julie Danet » ? Le DERNIER mot doit être identique et les précédents se correspondre lettre à lettre. Le calcul est un POINT D'ÉVOLUTION : points/EC_initiales.py."""
+    return _point("initiales", {"a": a, "b": b})["valeur"]
 
 
 def norm_tel(s):
@@ -123,13 +115,8 @@ def remplissage(c):
 
 
 def meilleure(a, b):
-    """Laquelle mérite d'absorber l'autre : la plus renseignée, et à égalité la plus ancienne (la plus citée ailleurs). Une PROPOSITION seulement."""
-    ra, rb = remplissage(a), remplissage(b)
-    if ra != rb:
-        return a["id"] if ra > rb else b["id"]
-    if a["created_at"] != b["created_at"]:
-        return a["id"] if a["created_at"] < b["created_at"] else b["id"]
-    return min(a["id"], b["id"])
+    """Laquelle mérite d'absorber l'autre : la plus renseignée, et à égalité la plus ancienne (la plus citée ailleurs). Une PROPOSITION seulement. Le calcul est un POINT D'ÉVOLUTION : points/EC_meilleure.py."""
+    return _point("meilleure", {"a": a, "b": b})["valeur"]
 
 
 def signaux(fiches, appeler):
@@ -161,15 +148,9 @@ def vcard_lire(texte, appeler):
 
 
 def csv_decoder(octets):
-    """UTF-8 d'abord parce qu'il ÉCHOUE franchement sur ce qui n'en est pas, alors que cp1252 accepte n'importe quels octets sans jamais lever."""
-    if octets[:3] == b"\xef\xbb\xbf":
-        return octets[3:].decode("utf-8", "replace"), "utf-8-bom"
-    for enc in ("utf-8", "cp1252", "latin-1"):
-        try:
-            return octets.decode(enc), enc
-        except UnicodeDecodeError:
-            continue
-    return octets.decode("utf-8", "replace"), "utf-8 (approché)"
+    """UTF-8 d'abord, puis cp1252, puis latin-1. Le calcul est un POINT D'ÉVOLUTION : points/EC_csv_decoder.py (les octets voyagent en base64)."""
+    sortie = _point("csv_decoder", {"octets": base64.b64encode(bytes(octets)).decode("ascii")})
+    return sortie["texte"], sortie["encodage"]
 
 
 def csv_lire(octets):
@@ -197,6 +178,8 @@ def csv_fiches(d, appariement, appeler):
 
 
 def brancher(ctx):
+    global _point
+    _point = ctx.point
     db = ctx.stockage
 
     # ------------------------------------------------------------------ le compte et la vue
