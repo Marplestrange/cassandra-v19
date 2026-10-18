@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.5  #34160c
+# VERSION CN : 0.1.6  #40a3e4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.5 empreinte=34160c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.6 empreinte=40a3e4 ▼▼▼
 [module]
 id = "sensorium"
 nom = "Sensorium"
-version = "0.1.5"
+version = "0.1.6"
 noyau_min = "0.1.0"
 description = "Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles."
 confiance = "interne"
@@ -280,4 +280,12 @@ libelle = "Les comptes mail et FTP de FastPanel, mis en forme : ce que le collec
 contrat = "1.0"
 reference = "points/EC_fp_formes"
 fonction = "point_fp_formes"
+runtime = "python"
+
+[[points_evolution]]
+id = "sys_formes"
+libelle = "Les mesures du système, mises en forme : ce que le collecteur a lu (sessions, ports, certificats, disques, matériel, fichiers des serveurs web) en entrée, la mesure en sortie"
+contrat = "1.0"
+reference = "points/EC_sys_formes"
+fonction = "point_sys_formes"
 runtime = "python"

@@ -6,19 +6,20 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #62299d
+# VERSION CN : 0.1.0  #7eab5f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le démon du Sensorium, seul et sans noyau, appelle ses points d'évolution ; que ses appels nourrissent le rejeu que le noyau absorbe ; et qu'une panne du service ne perd jamais une mesure.
 # MÉTHODE    : charge CN_sensorium.py comme module, un dossier de données temporaire, puis appelle les fonctions façades.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=62299d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7eab5f ▼▼▼
 import importlib.util
 import json
 import os
 import shutil
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -153,6 +154,23 @@ class FauxFichier:
                 vus.append(k)
         return [FauxFichier(k, self.fs, self.dirs) for k in vus]
 
+    def is_file(self):
+        return self.chemin in self.fs
+
+    @property
+    def suffix(self):
+        n = self.name
+        i = n.rfind(".")
+        return n[i:] if 0 < i < len(n) - 1 else ""
+
+    def __lt__(self, autre):
+        return self.chemin < autre.chemin
+
+    def glob(self, motif):
+        import fnmatch
+        pref = self.chemin.rstrip("/") + "/"
+        return [FauxFichier(k, self.fs, self.dirs) for k in sorted(self.fs) if k.startswith(pref) and fnmatch.fnmatch(k[len(pref):], motif)]
+
     def __str__(self):
         return self.chemin
 
@@ -178,7 +196,7 @@ class FauxFichier:
 
 
 class Collecteurs(unittest.TestCase):
-    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (57 scénarios : mail, FTP, comptes, bases, sauvegardes, crons, sites ; aucun écart)."""
+    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (96 scénarios : mail, FTP, comptes, bases, sauvegardes, crons, sites, sessions, ports, certificats, SMART, matériel, sites web ; aucun écart)."""
 
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
@@ -207,12 +225,22 @@ class Collecteurs(unittest.TestCase):
         m._fp_sqlite_users = lambda: [dict(x) for x in sc.get("base_users", [])]
         m._fp_sqlite_databases = lambda: [dict(x) for x in sc.get("base_dbs", [])]
 
+        m.os = type("OS", (), {"uname": staticmethod(lambda: type("U", (), {"machine": "x86_64"})()), "environ": os.environ, "path": os.path, "getpid": staticmethod(os.getpid)})()
+        m.time = type("T", (), {"sleep": staticmethod(lambda s: None), "time": staticmethod(time.time)})()
+        m._qui = lambda nom: nom in sc.get("qui", [])
+        m._sonde_http = lambda d, ip="": sc.get("http", {}).get(d, "200")
+
         def run_cmd(cmd, *a, **k):
-            if cmd.startswith("openssl x509 -in"):
-                chemin = cmd.split("-in ", 1)[1].split(" -noout", 1)[0].strip("'")
-                return sc.get("openssl", {}).get(chemin.split("/")[-2], "")
-            if cmd.startswith("du -sb"):
-                return sc.get("du", {}).get(cmd.split()[2].strip("'"), "")
+            c = " ".join(cmd) if isinstance(cmd, list) else cmd
+            if c.startswith("openssl x509 -in"):
+                chemin = c.split("-in ", 1)[1].split(" -noout", 1)[0].strip("'")
+                o = sc.get("openssl", {})
+                return o.get(chemin, o.get(chemin.split("/")[-2], ""))
+            for cle, val in sc.get("cmds", {}).items():
+                if c.startswith(cle):
+                    return val
+            if c.startswith("du -sb"):
+                return sc.get("du", {}).get(c.split()[2].strip("'"), "")
             return sc.get("mysql", "")
         m.run_cmd = run_cmd
         return json.loads(json.dumps(getattr(m, fonction)()))

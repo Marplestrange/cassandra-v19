@@ -1,0 +1,333 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Sensorium : les mesures du système (référence)
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : sensorium
+# ZONE       : EC
+# RUNTIME    : python
+# VERSION CN : néant
+# VERSION EC : EC0 (référence 0.3.0)  #929aae
+# HÔTE CN    : CN_module.py · sys_formes @1.0
+# RÔLE       : transforme ce que le Sensorium lit du système (sorties de commandes, fichiers de configuration, JSON de smartctl) en sessions, ports, certificats, disques, état du matériel et sites web déclarés.
+# MÉTHODE    : fonctions pures, une par mesure ; le nexus lit les sources et décide des replis (who puis ss puis last ; ss puis netstat) ; l'EC ne lit jamais de fichier ni de commande.
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE EC point=sys_formes contrat=@1.0 version=EC0 empreinte=929aae ▼▼▼
+from datetime import datetime
+import re
+
+def _ip_de_pair(peer):
+    ip = None
+    m = re.search(r"\[::ffff:((\d{1,3}\.){3}\d{1,3})\]", peer)
+    if m:
+        ip = m.group(1)
+    else:
+        m = re.match(r"((\d{1,3}\.){3}\d{1,3}):\d+", peer)
+        if m:
+            ip = m.group(1)
+        else:
+            m = re.match(r"\[([^\]]+)\]:\d+", peer)
+            if m:
+                ip = m.group(1)
+    return ip
+
+def sessions_base(who_out, ss_out, now):
+    """Les sessions ouvertes : `who` d'abord, puis les connexions SSH établies d'après `ss`. Un utilisateur sur un terminal, une adresse en SSH, n'apparaissent qu'une fois."""
+    sessions = []
+    seen = set()
+    for line in who_out.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split()
+        if len(parts) < 2:
+            continue
+        user = parts[0]
+        tty = parts[1] if len(parts) > 1 else "?"
+        ip_m = re.search(r"\(([\d.:a-fA-F]+)\)", line)
+        ip = ip_m.group(1) if ip_m else "local"
+        login_time = " ".join(parts[2:4]) if len(parts) >= 4 else parts[2] if len(parts) >= 3 else now
+        key = f"{user}:{tty}"
+        if key not in seen:
+            seen.add(key)
+            sessions.append({"user": user, "ip": ip, "login_time": login_time, "last_check": now})
+    for line in ss_out.splitlines():
+        if not line.strip() or line.startswith("Netid"):
+            continue
+        parts = line.split()
+        local_idx = -1
+        for i, p in enumerate(parts):
+            if p.endswith(":22") or ":22 " in p or p == "[::]:22" or "]:22" in p:
+                local_idx = i
+                break
+        if local_idx < 0:
+            local_idx = 4
+        peer_idx = local_idx + 1
+        if peer_idx >= len(parts):
+            continue
+        ip = _ip_de_pair(parts[peer_idx])
+        if not ip or ip in ("127.0.0.1", "::1"):
+            continue
+        proc_str = " ".join(parts[peer_idx + 1:]) if peer_idx + 1 < len(parts) else ""
+        user_m = re.search(r'users=\(\("([^"]+)"', proc_str)
+        user = user_m.group(1) if user_m else "sshd"
+        key = f"ssh:{ip}"
+        if key not in seen:
+            seen.add(key)
+            sessions.append({"user": user, "ip": ip, "login_time": now, "last_check": now})
+    return sessions
+
+def sessions_last(last_out, now):
+    """Repli quand ni `who` ni `ss` ne donnent rien : les connexions encore ouvertes d'après `last`."""
+    sessions = []
+    seen = set()
+    for line in last_out.splitlines():
+        parts = line.split()
+        if len(parts) < 3:
+            continue
+        user = parts[0]
+        ip_m = re.search(r"([\d.]+)", parts[2]) if len(parts) > 2 else None
+        ip = ip_m.group(1) if ip_m else "local"
+        key = f"{user}:{ip}"
+        if key not in seen:
+            seen.add(key)
+            sessions.append({"user": user, "ip": ip, "login_time": now, "last_check": now})
+    return sessions
+
+def ports_ss(out, now):
+    """Les ports à l'écoute d'après `ss -tulnp`, triés par numéro."""
+    ports = []
+    seen = set()
+    for line in out.splitlines():
+        line = line.strip()
+        if not line or line.startswith("Netid"):
+            continue
+        parts = line.split()
+        if len(parts) < 5:
+            continue
+        proto = parts[0].lower()
+        local = ""
+        for col in parts[3:6]:
+            if re.search(r":\d+$", col) or re.search(r"\]:\d+$", col):
+                local = col
+                break
+        if not local:
+            continue
+        port_m = re.search(r":([\d]+)$", local)
+        if not port_m:
+            continue
+        port = int(port_m.group(1))
+        if port == 0:
+            continue
+        proc_col = " ".join(parts[5:]) if len(parts) > 5 else ""
+        pname_m = re.search(r'"([^"]+)"', proc_col)
+        process = pname_m.group(1)[:40] if pname_m else "system"
+        key = f"{proto}:{port}"
+        if key not in seen:
+            seen.add(key)
+            ports.append({"port": port, "protocol": proto, "process": process, "pid": 0, "last_check": now})
+    return sorted(ports, key=lambda x: x["port"])
+
+def ports_netstat(out, now):
+    """Repli : les ports à l'écoute d'après `netstat -tulnp`."""
+    ports = []
+    seen = set()
+    for line in out.splitlines():
+        m = re.search(r"(tcp6?|udp6?)\s+\d+\s+\d+\s+[\d.:*]+:(\d+)\s+[\d.:*]+\s+\w+\s*(\S*)", line)
+        if m:
+            proto = m.group(1).lower()
+            port = int(m.group(2))
+            proc = m.group(3).split("/")[-1][:40] if "/" in m.group(3) else "system"
+            key = f"{proto}:{port}"
+            if key not in seen:
+                seen.add(key)
+                ports.append({"port": port, "protocol": proto, "process": proc, "pid": 0, "last_check": now})
+    return sorted(ports, key=lambda x: x["port"])
+
+def _nom_de_fichier(chemin):
+    return chemin.rstrip("/").rsplit("/", 1)[-1]
+
+def _radical(chemin):
+    nom = _nom_de_fichier(chemin)
+    i = nom.rfind(".")
+    return nom[:i] if 0 < i < len(nom) - 1 else nom
+
+def certificat(sortie, chemin, indice, now):
+    """Un certificat d'après la sortie d'openssl (date, sujet, émetteur, noms alternatifs) ; None quand elle est illisible. `now` : l'instant reçu, en ISO."""
+    if not sortie:
+        return None
+    date_m = re.search(r"notAfter=(.+)", sortie)
+    if not date_m:
+        return None
+    try:
+        expiry = datetime.strptime(date_m.group(1).strip(), "%b %d %H:%M:%S %Y %Z")
+    except Exception:
+        try:
+            expiry = datetime.strptime(date_m.group(1).strip(), "%b %d %H:%M:%S %Y")
+        except Exception:
+            return None
+    days = (expiry - datetime.fromisoformat(now)).days
+    domain = indice
+    san_m = re.search(r"DNS:([\w.*-]+)", sortie)
+    if san_m:
+        domain = san_m.group(1)
+    elif not domain:
+        cn_m = re.search(r"CN\s*=\s*([\w.*-]+)", sortie)
+        domain = cn_m.group(1) if cn_m else _radical(chemin)
+    if not domain or domain.strip(" -") == "":
+        domain = _radical(chemin)
+    issuer = ""
+    iss_m = re.search(r"issuer=(.+)", sortie)
+    if iss_m:
+        s = iss_m.group(1)
+        o_m = re.search(r"\bO\s*=\s*([^,/\n]+)", s)
+        cn_m = re.search(r"\bCN\s*=\s*([^,/\n]+)", s)
+        issuer = (o_m.group(1).strip() if o_m else (cn_m.group(1).strip() if cn_m else s.strip()))[:60]
+    return {"domain": domain, "days_left": days, "cert_path": chemin,
+            "issuer": issuer, "expiry_date": expiry.strftime("%Y-%m-%d"),
+            "status": "expired" if days <= 0 else ("expiring" if days <= 30 else "valid"),
+            "last_check": now}
+
+def disque_smart(d, dev, now):
+    """Un disque d'après le JSON de smartctl : santé, température, heures, secteurs réalloués ou en attente, usure."""
+    attrs = {a.get("id"): a for a in ((d.get("ata_smart_attributes") or {}).get("table") or [])}
+
+    def brut(i):
+        a = attrs.get(i)
+        return int((a.get("raw") or {}).get("value") or 0) if a else None
+
+    def normal(i):
+        a = attrs.get(i)
+        return int(a.get("value")) if a and a.get("value") is not None else None
+    nv = d.get("nvme_smart_health_information_log") or {}
+    usure = nv.get("percentage_used")
+    if usure is None:
+        for i in (231, 202, 177, 233):
+            v = normal(i)
+            if v is not None and 0 <= v <= 100:
+                usure = 100 - v
+                break
+    st = (d.get("smart_status") or {}).get("passed")
+    return {
+        "device": dev, "model": (d.get("model_name") or d.get("model_family") or "")[:60],
+        "health": "PASSED" if st is True else ("FAILED" if st is False else "unknown"),
+        "temperature": (d.get("temperature") or {}).get("current"),
+        "power_on_hours": (d.get("power_on_time") or {}).get("hours"),
+        "reallocated_sectors": brut(5) if brut(5) is not None else nv.get("media_errors"),
+        "pending_sectors": brut(197),
+        "uncorrectable": brut(198) if brut(198) is not None else brut(187),
+        "usure_pct": usure,
+        "last_check": now}
+
+def temperature_max(valeurs):
+    """La température la plus haute parmi les mesures plausibles (en degrés) ; None quand il n'y en a aucune."""
+    temps = [v for v in valeurs if 0 < v < 150]
+    return round(max(temps), 1) if temps else None
+
+def heure_systeme(td):
+    """L'heure est-elle synchronisée, et le fuseau, d'après `timedatectl show`."""
+    td = td or ""
+    m = re.search(r"Timezone=(\S+)", td)
+    return {"heure_synchro": "oui" if "NTPSynchronized=yes" in td else ("non" if "NTPSynchronized=no" in td else ""),
+            "fuseau": m.group(1) if m else ""}
+
+def nom_du_systeme(texte):
+    """Le nom lisible de l'OS d'après /etc/os-release ; vide quand il n'y est pas."""
+    try:
+        osr = dict(l.split("=", 1) for l in texte.splitlines() if "=" in l)
+        return osr.get("PRETTY_NAME", "").strip('"')
+    except Exception:
+        return ""
+
+def nombre_regles_nft(texte):
+    """Le nombre de règles d'un jeu nftables."""
+    return len([l for l in (texte or "").splitlines() if l.strip().startswith(("ip ", "tcp ", "udp ", "ct ", "iif", "oif", "counter", "drop", "accept", "reject"))])
+
+def nombre_regles_iptables(texte):
+    """Le nombre de règles d'après `iptables -S`."""
+    return len([l for l in (texte or "").splitlines() if l.startswith("-A ")])
+
+def sites_nginx(contenu):
+    """Les noms de site qu'un fichier nginx déclare : [(domaine, ssl, racine, ip d'écoute)]."""
+    ssl = bool(re.search(r"ssl_certificate", contenu))
+    root_m = re.search(r"root\s+([^;]+);", contenu)
+    root = root_m.group(1).strip() if root_m else ""
+    ip_m = re.search(r"^\s*listen\s+(\d{1,3}(?:\.\d{1,3}){3}|\[[0-9a-fA-F:]+\]):\d+", contenu, re.M)
+    ip = ip_m.group(1) if ip_m else ""
+    trouves = []
+    for sn in re.findall(r"server_name\s+([^;]+);", contenu):
+        for domain in sn.strip().split():
+            if domain and not domain.startswith(("_", "*", "#")):
+                trouves.append([domain, ssl, root, ip])
+    return trouves
+
+def sites_apache(contenu):
+    """Les noms de site qu'un fichier apache déclare : [(domaine, ssl, racine)]."""
+    ssl = bool(re.search(r"SSLEngine\s+on", contenu, re.IGNORECASE))
+    root_m = re.search(r"DocumentRoot\s+(\S+)", contenu)
+    root = root_m.group(1).strip() if root_m else ""
+    trouves = []
+    for sn in re.findall(r"ServerName\s+(\S+)", contenu):
+        trouves.append([sn.strip(), ssl, root])
+    for sa in re.findall(r"ServerAlias\s+(.+)", contenu):
+        for d in sa.strip().split():
+            trouves.append([d, ssl, root])
+    return trouves
+
+def certificats_nginx(contenu):
+    """Les certificats qu'un fichier nginx déclare : l'indice de domaine (son premier server_name) et les chemins."""
+    sn_m = re.search(r"server_name\s+([^;]+);", contenu)
+    hint = sn_m.group(1).strip().split()[0] if sn_m else ""
+    return {"indice": hint, "chemins": re.findall(r"ssl_certificate\s+([^;]+);", contenu)}
+
+def certificats_apache(contenu):
+    """Les certificats qu'un fichier apache déclare."""
+    sn_m = re.search(r"ServerName\s+(\S+)", contenu)
+    hint = sn_m.group(1) if sn_m else ""
+    return {"indice": hint, "chemins": re.findall(r"SSLCertificateFile\s+(\S+)", contenu)}
+
+def forme(op, entree):
+    if op == "sessions_base":
+        return sessions_base(entree["who"], entree["ss"], entree["now"])
+    if op == "sessions_last":
+        return sessions_last(entree["last"], entree["now"])
+    if op == "ports_ss":
+        return ports_ss(entree["sortie"], entree["now"])
+    if op == "ports_netstat":
+        return ports_netstat(entree["sortie"], entree["now"])
+    if op == "certificat":
+        return certificat(entree["sortie"], entree["chemin"], entree["indice"], entree["now"])
+    if op == "disque_smart":
+        return disque_smart(entree["d"], entree["dev"], entree["now"])
+    if op == "temperature_max":
+        return temperature_max(entree["valeurs"])
+    if op == "heure_systeme":
+        return heure_systeme(entree["td"])
+    if op == "nom_du_systeme":
+        return nom_du_systeme(entree["texte"])
+    if op == "regles_nft":
+        return nombre_regles_nft(entree["texte"])
+    if op == "regles_iptables":
+        return nombre_regles_iptables(entree["texte"])
+    if op == "sites_nginx":
+        return sites_nginx(entree["contenu"])
+    if op == "sites_apache":
+        return sites_apache(entree["contenu"])
+    if op == "certificats_nginx":
+        return certificats_nginx(entree["contenu"])
+    if op == "certificats_apache":
+        return certificats_apache(entree["contenu"])
+    raise ValueError("opération inconnue : %s" % op)
+
+def point_sys_formes(entree):
+    """Le point d'évolution `sys_formes` (contrat 1.0) : ce que le Sensorium lit du système, mis en forme : sessions ouvertes, ports à l'écoute, certificats, disques (SMART), matériel (températures, heure, pare-feu) et sites web déclarés. Le nexus lit les sources ; l'EC ne fait que la forme."""
+    return {"valeur": forme(entree["op"], entree)}
+
+# ▲▲▲ FIN BORNE EC ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# EC : `point_sys_formes(entree)` est le point d'évolution. Les fonctions du fichier d'origine dont il dépend sont COPIÉES ici : une EC ne peut importer que la bibliothèque standard pure.
+#      L'évolution peut en remplacer le corps ; elle ne peut changer ni la signature ni la forme de la sortie.
+# CN : appelée par la façade de sensorium (CN_module.py) par ctx.point, qui ne transmet que les champs utiles.
+# LIEN : contrat dans contrats/CN_sys_formes.json ; corpus doré dans contrats/CN_sys_formes.corpus.json (sorties de l'ancien code, données synthétiques).

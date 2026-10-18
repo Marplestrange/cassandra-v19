@@ -1,0 +1,46 @@
+{
+ "point": "sensorium.sys_formes",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "op"
+  ],
+  "properties": {
+   "op": {
+    "enum": [
+     "sessions_base",
+     "sessions_last",
+     "ports_ss",
+     "ports_netstat",
+     "certificat",
+     "disque_smart",
+     "temperature_max",
+     "heure_systeme",
+     "nom_du_systeme",
+     "regles_nft",
+     "regles_iptables",
+     "sites_nginx",
+     "sites_apache",
+     "certificats_nginx",
+     "certificats_apache"
+    ]
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "une session n'apparaît qu'une fois par terminal ou par adresse SSH",
+  "un port n'apparaît qu'une fois par protocole",
+  "un certificat illisible vaut None, jamais une erreur",
+  "l'état d'un certificat suit les jours restants : expiré à 0, bientôt jusqu'à 30, valide au-delà",
+  "une mesure absente reste vide : rien n'est inventé",
+  "les jours restants se comptent depuis l'instant reçu : jamais l'horloge"
+ ]
+}

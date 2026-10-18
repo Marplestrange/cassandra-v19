@@ -1524,5 +1524,1024 @@
    "fs": {}
   },
   "attendu": []
+ },
+ {
+  "fonction": "collect_active_sessions",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_active_sessions",
+  "scenario": {
+   "cmds": {
+    "who": "alice pts/0 2026-10-17 09:12 (203.0.113.7)\nbob tty1 2026-10-17 08:00\ncarl pts/1 2026-10-17\ndan\n\nalice pts/0 2026-10-17 09:30 (203.0.113.8)\neve pts/2 2026-10-17 10:00 (2001:db8::1)"
+   }
+  },
+  "attendu": [
+   {
+    "user": "alice",
+    "ip": "203.0.113.7",
+    "login_time": "2026-10-17 09:12",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "bob",
+    "ip": "local",
+    "login_time": "2026-10-17 08:00",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "carl",
+    "ip": "local",
+    "login_time": "2026-10-17",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "eve",
+    "ip": "2001:db8::1",
+    "login_time": "2026-10-17 10:00",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_active_sessions",
+  "scenario": {
+   "cmds": {
+    "ss ": "Recv-Q Send-Q Local Address:Port Peer Address:Port Process\n0 0 10.0.0.1:22 203.0.113.9:5555 users:((\"sshd\",pid=1,fd=3))\n0 0 10.0.0.1:22 203.0.113.9:5556 users:((\"sshd\",pid=2,fd=3))\n0 0 10.0.0.1:22 127.0.0.1:5557\n0 0 [::ffff:10.0.0.1]:22 [::ffff:198.51.100.4]:6000\n0 0 [::]:22 [2001:db8::5]:7000 users:((\"sshd\",pid=3,fd=4))\n0 0 10.0.0.1:22\nNetid State x"
+   }
+  },
+  "attendu": [
+   {
+    "user": "sshd",
+    "ip": "203.0.113.9",
+    "login_time": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "sshd",
+    "ip": "198.51.100.4",
+    "login_time": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "sshd",
+    "ip": "2001:db8::5",
+    "login_time": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_active_sessions",
+  "scenario": {
+   "cmds": {
+    "who": "alice pts/0 2026-10-17 09:12 (203.0.113.7)\nbob tty1 2026-10-17 08:00\ncarl pts/1 2026-10-17\ndan\n\nalice pts/0 2026-10-17 09:30 (203.0.113.8)\neve pts/2 2026-10-17 10:00 (2001:db8::1)",
+    "ss ": "Recv-Q Send-Q Local Address:Port Peer Address:Port Process\n0 0 10.0.0.1:22 203.0.113.9:5555 users:((\"sshd\",pid=1,fd=3))\n0 0 10.0.0.1:22 203.0.113.9:5556 users:((\"sshd\",pid=2,fd=3))\n0 0 10.0.0.1:22 127.0.0.1:5557\n0 0 [::ffff:10.0.0.1]:22 [::ffff:198.51.100.4]:6000\n0 0 [::]:22 [2001:db8::5]:7000 users:((\"sshd\",pid=3,fd=4))\n0 0 10.0.0.1:22\nNetid State x"
+   }
+  },
+  "attendu": [
+   {
+    "user": "alice",
+    "ip": "203.0.113.7",
+    "login_time": "2026-10-17 09:12",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "bob",
+    "ip": "local",
+    "login_time": "2026-10-17 08:00",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "carl",
+    "ip": "local",
+    "login_time": "2026-10-17",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "eve",
+    "ip": "2001:db8::1",
+    "login_time": "2026-10-17 10:00",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "sshd",
+    "ip": "203.0.113.9",
+    "login_time": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "sshd",
+    "ip": "198.51.100.4",
+    "login_time": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "sshd",
+    "ip": "2001:db8::5",
+    "login_time": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_active_sessions",
+  "scenario": {
+   "cmds": {
+    "last": "alice pts/0 203.0.113.7 Fri Oct 17 09:12 still logged in\nbob pts/1 :0 Fri\nalice pts/2 203.0.113.7 Fri\nx y"
+   }
+  },
+  "attendu": [
+   {
+    "user": "alice",
+    "ip": "203.0.113.7",
+    "login_time": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "bob",
+    "ip": "0",
+    "login_time": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_active_sessions",
+  "scenario": {
+   "cmds": {
+    "who": "zed pts/3",
+    "last": "alice pts/0 203.0.113.7 Fri Oct 17 09:12 still logged in\nbob pts/1 :0 Fri\nalice pts/2 203.0.113.7 Fri\nx y"
+   }
+  },
+  "attendu": [
+   {
+    "user": "zed",
+    "ip": "local",
+    "login_time": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_active_sessions",
+  "scenario": {
+   "cmds": {
+    "who": "z"
+   }
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_open_ports",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_open_ports",
+  "scenario": {
+   "cmds": {
+    "ss ": "Netid State Recv-Q Send-Q Local Address:Port Peer Address:Port Process\ntcp LISTEN 0 128 0.0.0.0:22 0.0.0.0:* users:((\"sshd\",pid=1,fd=3))\nudp UNCONN 0 0 127.0.0.53%lo:53 0.0.0.0:* users:((\"systemd-resolve\",pid=5,fd=13))\ntcp LISTEN 0 4096 0.0.0.0:0 0.0.0.0:*\ncourt ligne\ntcp LISTEN 0 4096 127.0.0.1:9000 0.0.0.0:*"
+   }
+  },
+  "attendu": [
+   {
+    "port": 22,
+    "protocol": "tcp",
+    "process": "sshd",
+    "pid": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 53,
+    "protocol": "udp",
+    "process": "systemd-resolve",
+    "pid": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 9000,
+    "protocol": "tcp",
+    "process": "system",
+    "pid": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_open_ports",
+  "scenario": {
+   "cmds": {
+    "netstat": "tcp 0 0 0.0.0.0:22 0.0.0.0:* LISTEN 1/sshd\ntcp6 0 0 :::80 :::* LISTEN 2/nginx\nudp 0 0 127.0.0.53:53 0.0.0.0:* 5/x\ntcp 0 0 0.0.0.0:443 0.0.0.0:* LISTEN -"
+   }
+  },
+  "attendu": [
+   {
+    "port": 22,
+    "protocol": "tcp",
+    "process": "sshd",
+    "pid": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 53,
+    "protocol": "udp",
+    "process": "x",
+    "pid": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 80,
+    "protocol": "tcp6",
+    "process": "nginx",
+    "pid": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 443,
+    "protocol": "tcp",
+    "process": "system",
+    "pid": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_open_ports",
+  "scenario": {
+   "cmds": {
+    "ss ": "Netid State Recv-Q Send-Q Local Address:Port Peer Address:Port Process\ntcp LISTEN 0 128 0.0.0.0:22 0.0.0.0:* users:((\"sshd\",pid=1,fd=3))\nudp UNCONN 0 0 127.0.0.53%lo:53 0.0.0.0:* users:((\"systemd-resolve\",pid=5,fd=13))\ntcp LISTEN 0 4096 0.0.0.0:0 0.0.0.0:*\ncourt ligne\ntcp LISTEN 0 4096 127.0.0.1:9000 0.0.0.0:*",
+    "netstat": "tcp 0 0 0.0.0.0:22 0.0.0.0:* LISTEN 1/sshd\ntcp6 0 0 :::80 :::* LISTEN 2/nginx\nudp 0 0 127.0.0.53:53 0.0.0.0:* 5/x\ntcp 0 0 0.0.0.0:443 0.0.0.0:* LISTEN -"
+   }
+  },
+  "attendu": [
+   {
+    "port": 22,
+    "protocol": "tcp",
+    "process": "sshd",
+    "pid": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 53,
+    "protocol": "udp",
+    "process": "systemd-resolve",
+    "pid": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "port": 9000,
+    "protocol": "tcp",
+    "process": "system",
+    "pid": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_ssl_certificates",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_ssl_certificates",
+  "scenario": {
+   "fs": {
+    "/etc/nginx/conf.d/a.conf": "server {\n  server_name a.test;\n  ssl_certificate /etc/ssl/a.pem;\n  ssl_certificate /etc/ssl/b.pem;\n}",
+    "/etc/ssl/a.pem": "x",
+    "/etc/ssl/b.pem": "x"
+   },
+   "dirs": [
+    "/etc/nginx",
+    "/etc/nginx/conf.d"
+   ],
+   "openssl": {
+    "/etc/ssl/a.pem": "notAfter=Dec 25 12:00:00 2026 GMT\nsubject=CN = exemple.test\nissuer=C = US, O = Let's Encrypt, CN = R3\nX509v3 Subject Alternative Name:\n    DNS:exemple.test, DNS:www.exemple.test",
+    "/etc/ssl/b.pem": "notAfter=Oct 20 12:00:00 2026 GMT\nissuer=CN = Autorité"
+   }
+  },
+  "attendu": [
+   {
+    "domain": "a.test",
+    "days_left": 2,
+    "cert_path": "/etc/ssl/b.pem",
+    "issuer": "Autorité",
+    "expiry_date": "2026-10-20",
+    "status": "expiring",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "domain": "exemple.test",
+    "days_left": 68,
+    "cert_path": "/etc/ssl/a.pem",
+    "issuer": "Let's Encrypt",
+    "expiry_date": "2026-12-25",
+    "status": "valid",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_ssl_certificates",
+  "scenario": {
+   "fs": {
+    "/etc/nginx/conf.d/a.conf": "server {\n  server_name a.test;\n  ssl_certificate /etc/ssl/a.pem;\n  ssl_certificate /etc/ssl/b.pem;\n}",
+    "/etc/ssl/a.pem": "x"
+   },
+   "dirs": [
+    "/etc/nginx"
+   ],
+   "openssl": {
+    "/etc/ssl/a.pem": ""
+   }
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_ssl_certificates",
+  "scenario": {
+   "fs": {
+    "/etc/nginx/conf.d/a.conf": "server {\n  server_name a.test;\n  ssl_certificate /etc/ssl/a.pem;\n  ssl_certificate /etc/ssl/b.pem;\n}",
+    "/etc/ssl/a.pem": "x"
+   },
+   "dirs": [
+    "/etc/nginx"
+   ],
+   "openssl": {
+    "/etc/ssl/a.pem": "notAfter=n importe quoi"
+   }
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_ssl_certificates",
+  "scenario": {
+   "fs": {
+    "/etc/apache2/sites-enabled/s.conf": "ServerName ap.test\nSSLCertificateFile /etc/ssl/c.pem\nSSLCertificateFile /etc/ssl/a.pem",
+    "/etc/ssl/c.pem": "x",
+    "/etc/ssl/a.pem": "x"
+   },
+   "dirs": [
+    "/etc/apache2/sites-enabled"
+   ],
+   "openssl": {
+    "/etc/ssl/c.pem": "notAfter=Oct 20 12:00:00 2026 GMT\nissuer=CN = Autorité",
+    "/etc/ssl/a.pem": "notAfter=Dec 25 12:00:00 2026 GMT\nsubject=CN = exemple.test\nissuer=C = US, O = Let's Encrypt, CN = R3\nX509v3 Subject Alternative Name:\n    DNS:exemple.test, DNS:www.exemple.test"
+   }
+  },
+  "attendu": [
+   {
+    "domain": "ap.test",
+    "days_left": 2,
+    "cert_path": "/etc/ssl/c.pem",
+    "issuer": "Autorité",
+    "expiry_date": "2026-10-20",
+    "status": "expiring",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "domain": "exemple.test",
+    "days_left": 68,
+    "cert_path": "/etc/ssl/a.pem",
+    "issuer": "Let's Encrypt",
+    "expiry_date": "2026-12-25",
+    "status": "valid",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_ssl_certificates",
+  "scenario": {
+   "fs": {
+    "/etc/letsencrypt/live/l.test/cert.pem": "x",
+    "/etc/letsencrypt/live/m.test/cert.pem": "x"
+   },
+   "dirs": [
+    "/etc/letsencrypt/live",
+    "/etc/letsencrypt/live/l.test",
+    "/etc/letsencrypt/live/m.test"
+   ],
+   "openssl": {
+    "/etc/letsencrypt/live/l.test/cert.pem": "notAfter=Oct 20 12:00:00 2026 GMT\nissuer=CN = Autorité",
+    "/etc/letsencrypt/live/m.test/cert.pem": "notAfter=Jan  1 00:00:00 2026 GMT"
+   }
+  },
+  "attendu": [
+   {
+    "domain": "m.test",
+    "days_left": -290,
+    "cert_path": "/etc/letsencrypt/live/m.test/cert.pem",
+    "issuer": "",
+    "expiry_date": "2026-01-01",
+    "status": "expired",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "domain": "l.test",
+    "days_left": 2,
+    "cert_path": "/etc/letsencrypt/live/l.test/cert.pem",
+    "issuer": "Autorité",
+    "expiry_date": "2026-10-20",
+    "status": "expiring",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_ssl_certificates",
+  "scenario": {
+   "fs": {
+    "/etc/nginx/a.conf": {
+     "__erreur__": "x"
+    },
+    "/etc/nginx/b.conf": "server {\n  server_name a.test;\n  ssl_certificate /etc/ssl/a.pem;\n  ssl_certificate /etc/ssl/b.pem;\n}",
+    "/etc/ssl/a.pem": "x"
+   },
+   "dirs": [
+    "/etc/nginx"
+   ],
+   "openssl": {
+    "/etc/ssl/a.pem": "notAfter=Dec 25 12:00:00 2026 GMT\nsubject=CN = exemple.test\nissuer=C = US, O = Let's Encrypt, CN = R3\nX509v3 Subject Alternative Name:\n    DNS:exemple.test, DNS:www.exemple.test"
+   }
+  },
+  "attendu": [
+   {
+    "domain": "exemple.test",
+    "days_left": 68,
+    "cert_path": "/etc/ssl/a.pem",
+    "issuer": "Let's Encrypt",
+    "expiry_date": "2026-12-25",
+    "status": "valid",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_ssl_certificates",
+  "scenario": {
+   "fs": {
+    "/etc/nginx/x.conf": "ssl_certificate  '/etc/ssl/a.pem' ;",
+    "/etc/ssl/a.pem": "x"
+   },
+   "dirs": [
+    "/etc/nginx"
+   ],
+   "openssl": {
+    "/etc/ssl/a.pem": "notAfter=Dec 25 12:00:00 2026 GMT\nsubject=CN = exemple.test\nissuer=C = US, O = Let's Encrypt, CN = R3\nX509v3 Subject Alternative Name:\n    DNS:exemple.test, DNS:www.exemple.test"
+   }
+  },
+  "attendu": [
+   {
+    "domain": "exemple.test",
+    "days_left": 68,
+    "cert_path": "/etc/ssl/a.pem",
+    "issuer": "Let's Encrypt",
+    "expiry_date": "2026-12-25",
+    "status": "valid",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_disk_smart",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_disk_smart",
+  "scenario": {
+   "qui": [
+    "smartctl"
+   ]
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_disk_smart",
+  "scenario": {
+   "qui": [
+    "smartctl"
+   ],
+   "cmds": {
+    "lsblk": "sda disk\nsda1 part\nnvme0n1 disk\nsr0 rom\ncourt",
+    "smartctl -j -a /dev/sda": "{\"model_name\": \"Samsung SSD\", \"smart_status\": {\"passed\": true}, \"temperature\": {\"current\": 34}, \"power_on_time\": {\"hours\": 12}, \"ata_smart_attributes\": {\"table\": [{\"id\": 5, \"value\": 100, \"raw\": {\"value\": 0}}, {\"id\": 177, \"value\": 93}]}}",
+    "smartctl -j -a /dev/nvme0n1": "{\"model_family\": \"NVMe\", \"smart_status\": {\"passed\": false}, \"nvme_smart_health_information_log\": {\"percentage_used\": 4, \"media_errors\": 3}}"
+   }
+  },
+  "attendu": [
+   {
+    "device": "/dev/sda",
+    "model": "Samsung SSD",
+    "health": "PASSED",
+    "temperature": 34,
+    "power_on_hours": 12,
+    "reallocated_sectors": 0,
+    "pending_sectors": null,
+    "uncorrectable": null,
+    "usure_pct": 7,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "device": "/dev/nvme0n1",
+    "model": "NVMe",
+    "health": "FAILED",
+    "temperature": null,
+    "power_on_hours": null,
+    "reallocated_sectors": 3,
+    "pending_sectors": null,
+    "uncorrectable": null,
+    "usure_pct": 4,
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_disk_smart",
+  "scenario": {
+   "qui": [
+    "smartctl"
+   ],
+   "cmds": {
+    "lsblk": "sda disk\nsda1 part\nnvme0n1 disk\nsr0 rom\ncourt",
+    "smartctl -j -a /dev/sda": "pas du json"
+   }
+  },
+  "attendu": [
+   {
+    "device": "/dev/sda",
+    "model": "",
+    "health": "unknown",
+    "temperature": null,
+    "power_on_hours": null,
+    "reallocated_sectors": null,
+    "pending_sectors": null,
+    "uncorrectable": null,
+    "usure_pct": null,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "device": "/dev/nvme0n1",
+    "model": "",
+    "health": "unknown",
+    "temperature": null,
+    "power_on_hours": null,
+    "reallocated_sectors": null,
+    "pending_sectors": null,
+    "uncorrectable": null,
+    "usure_pct": null,
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_disk_smart",
+  "scenario": {
+   "qui": [
+    "smartctl"
+   ],
+   "cmds": {
+    "lsblk": "sdb disk",
+    "smartctl": "{}"
+   }
+  },
+  "attendu": [
+   {
+    "device": "/dev/sdb",
+    "model": "",
+    "health": "unknown",
+    "temperature": null,
+    "power_on_hours": null,
+    "reallocated_sectors": null,
+    "pending_sectors": null,
+    "uncorrectable": null,
+    "usure_pct": null,
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_hardware_state",
+  "scenario": {},
+  "attendu": [
+   {
+    "last_check": "2026-10-17T12:00:00.000001",
+    "temp_max": null,
+    "batterie": "",
+    "heure_synchro": "",
+    "fuseau": "",
+    "os": "",
+    "arch": "x86_64",
+    "virtualisation": "",
+    "pare_feu": "",
+    "securite_noyau": ""
+   }
+  ]
+ },
+ {
+  "fonction": "collect_hardware_state",
+  "scenario": {
+   "fs": {
+    "/sys/class/thermal/thermal_zone0/temp": "45000",
+    "/sys/class/thermal/thermal_zone1/temp": "61500",
+    "/sys/class/hwmon/hwmon0/temp1_input": "50000",
+    "/etc/os-release": "NAME=\"Debian\"\nPRETTY_NAME=\"Debian GNU/Linux 12 (bookworm)\"",
+    "/sys/module/apparmor/parameters/enabled": "Y\n"
+   },
+   "dirs": [
+    "/sys/class/thermal",
+    "/sys/class/hwmon"
+   ],
+   "qui": [
+    "timedatectl",
+    "systemd-detect-virt",
+    "ufw"
+   ],
+   "cmds": {
+    "timedatectl": "Timezone=Europe/Paris\nNTPSynchronized=yes",
+    "systemd-detect-virt": "kvm\n",
+    "ufw": "Status: active"
+   }
+  },
+  "attendu": [
+   {
+    "last_check": "2026-10-17T12:00:00.000001",
+    "temp_max": 61.5,
+    "batterie": "",
+    "heure_synchro": "oui",
+    "fuseau": "Europe/Paris",
+    "os": "Debian GNU/Linux 12 (bookworm)",
+    "arch": "x86_64",
+    "virtualisation": "kvm",
+    "pare_feu": "ufw actif",
+    "securite_noyau": "AppArmor"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_hardware_state",
+  "scenario": {
+   "fs": {
+    "/sys/class/thermal/thermal_zone0/temp": "pas un nombre",
+    "/sys/class/thermal/thermal_zone1/temp": "-5000",
+    "/sys/class/thermal/thermal_zone2/temp": "200000",
+    "/sys/class/power_supply/BAT0/capacity": "80",
+    "/sys/class/power_supply/BAT0/status": "Charging"
+   },
+   "dirs": [
+    "/sys/class/thermal"
+   ]
+  },
+  "attendu": [
+   {
+    "last_check": "2026-10-17T12:00:00.000001",
+    "temp_max": null,
+    "batterie": "",
+    "heure_synchro": "",
+    "fuseau": "",
+    "os": "",
+    "arch": "x86_64",
+    "virtualisation": "",
+    "pare_feu": "",
+    "securite_noyau": ""
+   }
+  ]
+ },
+ {
+  "fonction": "collect_hardware_state",
+  "scenario": {
+   "fs": {
+    "/sys/class/power_supply/BAT0/capacity": "80"
+   },
+   "dirs": []
+  },
+  "attendu": [
+   {
+    "last_check": "2026-10-17T12:00:00.000001",
+    "temp_max": null,
+    "batterie": "",
+    "heure_synchro": "",
+    "fuseau": "",
+    "os": "",
+    "arch": "x86_64",
+    "virtualisation": "",
+    "pare_feu": "",
+    "securite_noyau": ""
+   }
+  ]
+ },
+ {
+  "fonction": "collect_hardware_state",
+  "scenario": {
+   "qui": [
+    "timedatectl",
+    "firewall-cmd",
+    "getenforce"
+   ],
+   "cmds": {
+    "timedatectl": "NTPSynchronized=no",
+    "firewall-cmd": "running",
+    "getenforce": "Enforcing\n"
+   }
+  },
+  "attendu": [
+   {
+    "last_check": "2026-10-17T12:00:00.000001",
+    "temp_max": null,
+    "batterie": "",
+    "heure_synchro": "non",
+    "fuseau": "",
+    "os": "",
+    "arch": "x86_64",
+    "virtualisation": "",
+    "pare_feu": "firewalld actif",
+    "securite_noyau": "SELinux enforcing"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_hardware_state",
+  "scenario": {
+   "qui": [
+    "ufw",
+    "firewall-cmd"
+   ],
+   "cmds": {
+    "ufw": "Status: inactive",
+    "firewall-cmd": "not running"
+   }
+  },
+  "attendu": [
+   {
+    "last_check": "2026-10-17T12:00:00.000001",
+    "temp_max": null,
+    "batterie": "",
+    "heure_synchro": "",
+    "fuseau": "",
+    "os": "",
+    "arch": "x86_64",
+    "virtualisation": "",
+    "pare_feu": "",
+    "securite_noyau": ""
+   }
+  ]
+ },
+ {
+  "fonction": "collect_hardware_state",
+  "scenario": {
+   "qui": [
+    "nft"
+   ],
+   "cmds": {
+    "nft": "table inet filter {\nip saddr 1.2.3.4 drop\ntcp dport 22 accept\n}"
+   }
+  },
+  "attendu": [
+   {
+    "last_check": "2026-10-17T12:00:00.000001",
+    "temp_max": null,
+    "batterie": "",
+    "heure_synchro": "",
+    "fuseau": "",
+    "os": "",
+    "arch": "x86_64",
+    "virtualisation": "",
+    "pare_feu": "nftables (2 règles)",
+    "securite_noyau": ""
+   }
+  ]
+ },
+ {
+  "fonction": "collect_hardware_state",
+  "scenario": {
+   "qui": [
+    "nft",
+    "iptables"
+   ],
+   "cmds": {
+    "nft": "table inet filter {",
+    "iptables": "-P INPUT ACCEPT\n-A INPUT -j DROP"
+   }
+  },
+  "attendu": [
+   {
+    "last_check": "2026-10-17T12:00:00.000001",
+    "temp_max": null,
+    "batterie": "",
+    "heure_synchro": "",
+    "fuseau": "",
+    "os": "",
+    "arch": "x86_64",
+    "virtualisation": "",
+    "pare_feu": "iptables (1 règles)",
+    "securite_noyau": ""
+   }
+  ]
+ },
+ {
+  "fonction": "collect_hardware_state",
+  "scenario": {
+   "qui": [
+    "iptables"
+   ],
+   "cmds": {
+    "iptables": "-P INPUT ACCEPT"
+   }
+  },
+  "attendu": [
+   {
+    "last_check": "2026-10-17T12:00:00.000001",
+    "temp_max": null,
+    "batterie": "",
+    "heure_synchro": "",
+    "fuseau": "",
+    "os": "",
+    "arch": "x86_64",
+    "virtualisation": "",
+    "pare_feu": "aucune règle",
+    "securite_noyau": ""
+   }
+  ]
+ },
+ {
+  "fonction": "collect_hardware_state",
+  "scenario": {
+   "qui": [
+    "ufw"
+   ],
+   "cmds": {
+    "ufw": "État : actif"
+   }
+  },
+  "attendu": [
+   {
+    "last_check": "2026-10-17T12:00:00.000001",
+    "temp_max": null,
+    "batterie": "",
+    "heure_synchro": "",
+    "fuseau": "",
+    "os": "",
+    "arch": "x86_64",
+    "virtualisation": "",
+    "pare_feu": "ufw actif",
+    "securite_noyau": ""
+   }
+  ]
+ },
+ {
+  "fonction": "collect_web_sites",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_web_sites",
+  "scenario": {
+   "fs": {
+    "/etc/nginx/conf.d/a.conf": "server {\n  listen 10.0.0.1:443 ssl;\n  server_name exemple.test www.exemple.test _ *.x.test;\n  root /var/www/a/data/www/exemple.test;\n  ssl_certificate /x.pem;\n}"
+   },
+   "dirs": [
+    "/etc/nginx/conf.d"
+   ]
+  },
+  "attendu": [
+   {
+    "domain": "exemple.test",
+    "ssl_enabled": 1,
+    "server_type": "nginx",
+    "php_version": "",
+    "document_root": "/var/www/a/data/www/exemple.test",
+    "status": "active",
+    "listen_ip": "10.0.0.1",
+    "last_check": "2026-10-17T12:00:00.000001",
+    "http_code": "200",
+    "reponse": "répond"
+   },
+   {
+    "domain": "www.exemple.test",
+    "ssl_enabled": 1,
+    "server_type": "nginx",
+    "php_version": "",
+    "document_root": "/var/www/a/data/www/exemple.test",
+    "status": "active",
+    "listen_ip": "10.0.0.1",
+    "last_check": "2026-10-17T12:00:00.000001",
+    "http_code": "200",
+    "reponse": "répond"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_web_sites",
+  "scenario": {
+   "fs": {
+    "/etc/nginx/fastpanel2-sites/u/x.conf": "server { server_name f.test; }",
+    "/etc/nginx/fastpanel2-sites/u/x.conf.bak": "server { server_name bak.test; }",
+    "/etc/nginx/fastpanel2-sites/u/inc.includes": "server_name inc.test;"
+   },
+   "dirs": [
+    "/etc/nginx/fastpanel2-sites"
+   ],
+   "http": {
+    "f.test": "502"
+   }
+  },
+  "attendu": [
+   {
+    "domain": "f.test",
+    "ssl_enabled": 0,
+    "server_type": "nginx",
+    "php_version": "",
+    "document_root": "",
+    "status": "active",
+    "listen_ip": "",
+    "last_check": "2026-10-17T12:00:00.000001",
+    "http_code": "502",
+    "reponse": "erreur 502"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_web_sites",
+  "scenario": {
+   "fs": {
+    "/etc/apache2/sites-enabled/s.conf": "<VirtualHost *:443>\nServerName ap.test\nServerAlias www.ap.test exemple.test\nDocumentRoot /var/www/ap\nSSLEngine on\n</VirtualHost>",
+    "/etc/nginx/conf.d/a.conf": "server {\n  listen 10.0.0.1:443 ssl;\n  server_name exemple.test www.exemple.test _ *.x.test;\n  root /var/www/a/data/www/exemple.test;\n  ssl_certificate /x.pem;\n}"
+   },
+   "dirs": [
+    "/etc/apache2/sites-enabled",
+    "/etc/nginx/conf.d"
+   ],
+   "http": {
+    "ap.test": "404",
+    "exemple.test": "000",
+    "www.exemple.test": "301"
+   }
+  },
+  "attendu": [
+   {
+    "domain": "ap.test",
+    "ssl_enabled": 1,
+    "server_type": "apache",
+    "php_version": "",
+    "document_root": "/var/www/ap",
+    "status": "active",
+    "listen_ip": "",
+    "last_check": "2026-10-17T12:00:00.000001",
+    "http_code": "404",
+    "reponse": "répond"
+   },
+   {
+    "domain": "exemple.test",
+    "ssl_enabled": 1,
+    "server_type": "nginx",
+    "php_version": "",
+    "document_root": "/var/www/a/data/www/exemple.test",
+    "status": "active",
+    "listen_ip": "10.0.0.1",
+    "last_check": "2026-10-17T12:00:00.000001",
+    "http_code": "000",
+    "reponse": "ne répond pas"
+   },
+   {
+    "domain": "www.ap.test",
+    "ssl_enabled": 1,
+    "server_type": "apache",
+    "php_version": "",
+    "document_root": "/var/www/ap",
+    "status": "active",
+    "listen_ip": "",
+    "last_check": "2026-10-17T12:00:00.000001",
+    "http_code": "200",
+    "reponse": "répond"
+   },
+   {
+    "domain": "www.exemple.test",
+    "ssl_enabled": 1,
+    "server_type": "nginx",
+    "php_version": "",
+    "document_root": "/var/www/a/data/www/exemple.test",
+    "status": "active",
+    "listen_ip": "10.0.0.1",
+    "last_check": "2026-10-17T12:00:00.000001",
+    "http_code": "301",
+    "reponse": "répond"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_web_sites",
+  "scenario": {
+   "fs": {
+    "/etc/nginx/conf.d/a.conf": {
+     "__erreur__": "x"
+    },
+    "/etc/nginx/conf.d/b.conf": "server_name -- ;"
+   },
+   "dirs": [
+    "/etc/nginx/conf.d"
+   ]
+  },
+  "attendu": []
  }
 ]

@@ -1,0 +1,1693 @@
+{
+ "point": "sensorium.sys_formes",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de sensorium, données synthétiques",
+ "cas": [
+  {
+   "cas": "sessions vides",
+   "entree": {
+    "op": "sessions_base",
+    "who": "",
+    "ss": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "sessions who",
+   "entree": {
+    "op": "sessions_base",
+    "who": "alice pts/0 2026-10-17 09:12 (203.0.113.7)\nbob tty1 2026-10-17 08:00\ncarl pts/1 2026-10-17\ndan\n\nalice pts/0 2026-10-17 09:30 (203.0.113.8)\neve pts/2 2026-10-17 10:00 (2001:db8::1)",
+    "ss": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "alice",
+      "ip": "203.0.113.7",
+      "login_time": "2026-10-17 09:12",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "bob",
+      "ip": "local",
+      "login_time": "2026-10-17 08:00",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "carl",
+      "ip": "local",
+      "login_time": "2026-10-17",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "eve",
+      "ip": "2001:db8::1",
+      "login_time": "2026-10-17 10:00",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sessions ss",
+   "entree": {
+    "op": "sessions_base",
+    "who": "",
+    "ss": "Recv-Q Send-Q Local Address:Port Peer Address:Port Process\n0 0 10.0.0.1:22 203.0.113.9:5555 users:((\"sshd\",pid=1,fd=3))\n0 0 10.0.0.1:22 203.0.113.9:5556 users:((\"sshd\",pid=2,fd=3))\n0 0 10.0.0.1:22 127.0.0.1:5557\n0 0 [::ffff:10.0.0.1]:22 [::ffff:198.51.100.4]:6000\n0 0 [::]:22 [2001:db8::5]:7000 users:((\"sshd\",pid=3,fd=4))\n0 0 [::1]:22 [::1]:7001\n0 0 10.0.0.1:22\nNetid State x\n0 0 a b c 192.0.2.1:99 users:((\"x\"))\n0 0 a b",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "sshd",
+      "ip": "203.0.113.9",
+      "login_time": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "sshd",
+      "ip": "198.51.100.4",
+      "login_time": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "sshd",
+      "ip": "2001:db8::5",
+      "login_time": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "sshd",
+      "ip": "192.0.2.1",
+      "login_time": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sessions les deux",
+   "entree": {
+    "op": "sessions_base",
+    "who": "alice pts/0 2026-10-17 09:12 (203.0.113.7)\nbob tty1 2026-10-17 08:00\ncarl pts/1 2026-10-17\ndan\n\nalice pts/0 2026-10-17 09:30 (203.0.113.8)\neve pts/2 2026-10-17 10:00 (2001:db8::1)",
+    "ss": "Recv-Q Send-Q Local Address:Port Peer Address:Port Process\n0 0 10.0.0.1:22 203.0.113.9:5555 users:((\"sshd\",pid=1,fd=3))\n0 0 10.0.0.1:22 203.0.113.9:5556 users:((\"sshd\",pid=2,fd=3))\n0 0 10.0.0.1:22 127.0.0.1:5557\n0 0 [::ffff:10.0.0.1]:22 [::ffff:198.51.100.4]:6000\n0 0 [::]:22 [2001:db8::5]:7000 users:((\"sshd\",pid=3,fd=4))\n0 0 [::1]:22 [::1]:7001\n0 0 10.0.0.1:22\nNetid State x\n0 0 a b c 192.0.2.1:99 users:((\"x\"))\n0 0 a b",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "alice",
+      "ip": "203.0.113.7",
+      "login_time": "2026-10-17 09:12",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "bob",
+      "ip": "local",
+      "login_time": "2026-10-17 08:00",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "carl",
+      "ip": "local",
+      "login_time": "2026-10-17",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "eve",
+      "ip": "2001:db8::1",
+      "login_time": "2026-10-17 10:00",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "sshd",
+      "ip": "203.0.113.9",
+      "login_time": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "sshd",
+      "ip": "198.51.100.4",
+      "login_time": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "sshd",
+      "ip": "2001:db8::5",
+      "login_time": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "sshd",
+      "ip": "192.0.2.1",
+      "login_time": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sessions heure d'ouverture sur trois champs",
+   "entree": {
+    "op": "sessions_base",
+    "who": "zed pts/3 2026-10-17",
+    "ss": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "zed",
+      "ip": "local",
+      "login_time": "2026-10-17",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sessions who sur deux champs",
+   "entree": {
+    "op": "sessions_base",
+    "who": "zed pts/3",
+    "ss": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "zed",
+      "ip": "local",
+      "login_time": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sessions who sans adresse",
+   "entree": {
+    "op": "sessions_base",
+    "who": "zed pts/3 2026-10-17 11:00",
+    "ss": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "zed",
+      "ip": "local",
+      "login_time": "2026-10-17 11:00",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "last vide",
+   "entree": {
+    "op": "sessions_last",
+    "last": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "last",
+   "entree": {
+    "op": "sessions_last",
+    "last": "alice pts/0 203.0.113.7 Fri Oct 17 09:12:00 2026 still logged in\nbob pts/1 :0 Fri Oct 17\nalice pts/2 203.0.113.7 Fri\ncourt x\ncarl pts/3 hote.exemple Fri",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "alice",
+      "ip": "203.0.113.7",
+      "login_time": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "bob",
+      "ip": "0",
+      "login_time": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "carl",
+      "ip": ".",
+      "login_time": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ports ss vide",
+   "entree": {
+    "op": "ports_ss",
+    "sortie": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ports ss",
+   "entree": {
+    "op": "ports_ss",
+    "sortie": "Netid State Recv-Q Send-Q Local Address:Port Peer Address:Port Process\ntcp LISTEN 0 128 0.0.0.0:22 0.0.0.0:* users:((\"sshd\",pid=1,fd=3))\ntcp LISTEN 0 128 [::]:22 [::]:* users:((\"sshd\",pid=1,fd=4))\nudp UNCONN 0 0 127.0.0.53%lo:53 0.0.0.0:* users:((\"systemd-resolve\",pid=5,fd=13))\ntcp LISTEN 0 511 *:80 *:* users:((\"nginx-with-a-name-that-is-quite-long-indeed-yes\",pid=9,fd=6))\ntcp LISTEN 0 4096 127.0.0.1:9000 0.0.0.0:*\ntcp LISTEN 0 4096 0.0.0.0:0 0.0.0.0:*\ntcp LISTEN 0 4096 pasdeport 0.0.0.0:*\ncourt ligne\n\nUDP UNCONN 0 0 0.0.0.0:68 0.0.0.0:* users:((\"dhclient\",pid=3,fd=6))",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "port": 22,
+      "protocol": "tcp",
+      "process": "sshd",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 53,
+      "protocol": "udp",
+      "process": "systemd-resolve",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 68,
+      "protocol": "udp",
+      "process": "dhclient",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 80,
+      "protocol": "tcp",
+      "process": "nginx-with-a-name-that-is-quite-long-ind",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 9000,
+      "protocol": "tcp",
+      "process": "system",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ports ss doublons",
+   "entree": {
+    "op": "ports_ss",
+    "sortie": "Netid State Recv-Q Send-Q Local Address:Port Peer Address:Port Process\ntcp LISTEN 0 128 0.0.0.0:22 0.0.0.0:* users:((\"sshd\",pid=1,fd=3))\ntcp LISTEN 0 128 [::]:22 [::]:* users:((\"sshd\",pid=1,fd=4))\nudp UNCONN 0 0 127.0.0.53%lo:53 0.0.0.0:* users:((\"systemd-resolve\",pid=5,fd=13))\ntcp LISTEN 0 511 *:80 *:* users:((\"nginx-with-a-name-that-is-quite-long-indeed-yes\",pid=9,fd=6))\ntcp LISTEN 0 4096 127.0.0.1:9000 0.0.0.0:*\ntcp LISTEN 0 4096 0.0.0.0:0 0.0.0.0:*\ntcp LISTEN 0 4096 pasdeport 0.0.0.0:*\ncourt ligne\n\nUDP UNCONN 0 0 0.0.0.0:68 0.0.0.0:* users:((\"dhclient\",pid=3,fd=6))\nNetid State Recv-Q Send-Q Local Address:Port Peer Address:Port Process\ntcp LISTEN 0 128 0.0.0.0:22 0.0.0.0:* users:((\"sshd\",pid=1,fd=3))\ntcp LISTEN 0 128 [::]:22 [::]:* users:((\"sshd\",pid=1,fd=4))\nudp UNCONN 0 0 127.0.0.53%lo:53 0.0.0.0:* users:((\"systemd-resolve\",pid=5,fd=13))\ntcp LISTEN 0 511 *:80 *:* users:((\"nginx-with-a-name-that-is-quite-long-indeed-yes\",pid=9,fd=6))\ntcp LISTEN 0 4096 127.0.0.1:9000 0.0.0.0:*\ntcp LISTEN 0 4096 0.0.0.0:0 0.0.0.0:*\ntcp LISTEN 0 4096 pasdeport 0.0.0.0:*\ncourt ligne\n\nUDP UNCONN 0 0 0.0.0.0:68 0.0.0.0:* users:((\"dhclient\",pid=3,fd=6))",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "port": 22,
+      "protocol": "tcp",
+      "process": "sshd",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 53,
+      "protocol": "udp",
+      "process": "systemd-resolve",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 68,
+      "protocol": "udp",
+      "process": "dhclient",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 80,
+      "protocol": "tcp",
+      "process": "nginx-with-a-name-that-is-quite-long-ind",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 9000,
+      "protocol": "tcp",
+      "process": "system",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "ports netstat vide",
+   "entree": {
+    "op": "ports_netstat",
+    "sortie": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "ports netstat",
+   "entree": {
+    "op": "ports_netstat",
+    "sortie": "Proto Recv-Q Send-Q Local Address Foreign Address State PID/Program name\ntcp 0 0 0.0.0.0:22 0.0.0.0:* LISTEN 1/sshd\ntcp6 0 0 :::80 :::* LISTEN 2/nginx\nudp 0 0 127.0.0.53:53 0.0.0.0:* 5/systemd-resolve\ntcp 0 0 0.0.0.0:443 0.0.0.0:* LISTEN -\ntcp 0 0 0.0.0.0:22 0.0.0.0:* LISTEN 1/sshd\nn'importe quoi",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "port": 22,
+      "protocol": "tcp",
+      "process": "sshd",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 53,
+      "protocol": "udp",
+      "process": "systemd-resolve",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 80,
+      "protocol": "tcp6",
+      "process": "nginx",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "port": 443,
+      "protocol": "tcp",
+      "process": "system",
+      "pid": 0,
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "certificat vide",
+   "entree": {
+    "op": "certificat",
+    "sortie": "",
+    "chemin": "/etc/ssl/a.pem",
+    "indice": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "certificat sans date",
+   "entree": {
+    "op": "certificat",
+    "sortie": "subject=CN = x",
+    "chemin": "/etc/ssl/a.pem",
+    "indice": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "certificat complet",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Dec 25 12:00:00 2026 GMT\nsubject=CN = exemple.test\nissuer=C = US, O = Let's Encrypt, CN = R3\nX509v3 Subject Alternative Name:\n    DNS:exemple.test, DNS:www.exemple.test",
+    "chemin": "/etc/letsencrypt/live/exemple.test/cert.pem",
+    "indice": "indice.test",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "exemple.test",
+     "days_left": 68,
+     "cert_path": "/etc/letsencrypt/live/exemple.test/cert.pem",
+     "issuer": "Let's Encrypt",
+     "expiry_date": "2026-12-25",
+     "status": "valid",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat sans san avec indice",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Dec 25 12:00:00 2026 GMT\nissuer=O = Mon Autorité",
+    "chemin": "/etc/ssl/a.pem",
+    "indice": "indice.test",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "indice.test",
+     "days_left": 68,
+     "cert_path": "/etc/ssl/a.pem",
+     "issuer": "Mon Autorité",
+     "expiry_date": "2026-12-25",
+     "status": "valid",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat sans san ni indice : cn",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Dec 25 12:00:00 2026 GMT\nsubject=CN = cn.exemple.test\nissuer=CN = Autorité",
+    "chemin": "/etc/ssl/a.pem",
+    "indice": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "cn.exemple.test",
+     "days_left": 68,
+     "cert_path": "/etc/ssl/a.pem",
+     "issuer": "Autorité",
+     "expiry_date": "2026-12-25",
+     "status": "valid",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat sans san ni indice ni cn : fichier",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Dec 25 12:00:00 2026 GMT",
+    "chemin": "/etc/ssl/mon.site.pem",
+    "indice": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "mon.site",
+     "days_left": 68,
+     "cert_path": "/etc/ssl/mon.site.pem",
+     "issuer": "",
+     "expiry_date": "2026-12-25",
+     "status": "valid",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat indice tiret",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Dec 25 12:00:00 2026 GMT",
+    "chemin": "/etc/ssl/b.pem",
+    "indice": " -- ",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "b",
+     "days_left": 68,
+     "cert_path": "/etc/ssl/b.pem",
+     "issuer": "",
+     "expiry_date": "2026-12-25",
+     "status": "valid",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat fichier sans extension",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Dec 25 12:00:00 2026 GMT",
+    "chemin": "/etc/ssl/fullchain",
+    "indice": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "fullchain",
+     "days_left": 68,
+     "cert_path": "/etc/ssl/fullchain",
+     "issuer": "",
+     "expiry_date": "2026-12-25",
+     "status": "valid",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat fichier caché",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Dec 25 12:00:00 2026 GMT",
+    "chemin": "/etc/ssl/.cert",
+    "indice": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": ".cert",
+     "days_left": 68,
+     "cert_path": "/etc/ssl/.cert",
+     "issuer": "",
+     "expiry_date": "2026-12-25",
+     "status": "valid",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat fichier point final",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Dec 25 12:00:00 2026 GMT",
+    "chemin": "/etc/ssl/cert.",
+    "indice": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "cert.",
+     "days_left": 68,
+     "cert_path": "/etc/ssl/cert.",
+     "issuer": "",
+     "expiry_date": "2026-12-25",
+     "status": "valid",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat chemin avec barre finale",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Dec 25 12:00:00 2026 GMT",
+    "chemin": "/etc/ssl/dossier.d/",
+    "indice": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "dossier",
+     "days_left": 68,
+     "cert_path": "/etc/ssl/dossier.d/",
+     "issuer": "",
+     "expiry_date": "2026-12-25",
+     "status": "valid",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat sans fuseau",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Dec 25 12:00:00 2026",
+    "chemin": "/etc/ssl/a.pem",
+    "indice": "x.test",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "x.test",
+     "days_left": 68,
+     "cert_path": "/etc/ssl/a.pem",
+     "issuer": "",
+     "expiry_date": "2026-12-25",
+     "status": "valid",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat date illisible",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=bientôt",
+    "chemin": "/etc/ssl/a.pem",
+    "indice": "x.test",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "certificat expiré",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Jan  1 00:00:00 2026 GMT",
+    "chemin": "/etc/ssl/a.pem",
+    "indice": "x.test",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "x.test",
+     "days_left": -290,
+     "cert_path": "/etc/ssl/a.pem",
+     "issuer": "",
+     "expiry_date": "2026-01-01",
+     "status": "expired",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat expire dans trente jours",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Nov 16 12:00:00 2026 GMT",
+    "chemin": "/etc/ssl/a.pem",
+    "indice": "x.test",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "x.test",
+     "days_left": 29,
+     "cert_path": "/etc/ssl/a.pem",
+     "issuer": "",
+     "expiry_date": "2026-11-16",
+     "status": "expiring",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat expire dans trente et un jours",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Nov 17 12:00:01 2026 GMT",
+    "chemin": "/etc/ssl/a.pem",
+    "indice": "x.test",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "x.test",
+     "days_left": 31,
+     "cert_path": "/etc/ssl/a.pem",
+     "issuer": "",
+     "expiry_date": "2026-11-17",
+     "status": "valid",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat expire aujourd'hui",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Oct 17 18:00:00 2026 GMT",
+    "chemin": "/etc/ssl/a.pem",
+    "indice": "x.test",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "x.test",
+     "days_left": 0,
+     "cert_path": "/etc/ssl/a.pem",
+     "issuer": "",
+     "expiry_date": "2026-10-17",
+     "status": "expired",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat émetteur long",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Dec 25 12:00:00 2026 GMT\nissuer=O = AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "chemin": "/etc/ssl/a.pem",
+    "indice": "x.test",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "x.test",
+     "days_left": 68,
+     "cert_path": "/etc/ssl/a.pem",
+     "issuer": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+     "expiry_date": "2026-12-25",
+     "status": "valid",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "certificat émetteur sans champ",
+   "entree": {
+    "op": "certificat",
+    "sortie": "notAfter=Dec 25 12:00:00 2026 GMT\nissuer=  inconnu  ",
+    "chemin": "/etc/ssl/a.pem",
+    "indice": "x.test",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "domain": "x.test",
+     "days_left": 68,
+     "cert_path": "/etc/ssl/a.pem",
+     "issuer": "inconnu",
+     "expiry_date": "2026-12-25",
+     "status": "valid",
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "smart vide",
+   "entree": {
+    "op": "disque_smart",
+    "d": {},
+    "dev": "/dev/sda",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "device": "/dev/sda",
+     "model": "",
+     "health": "unknown",
+     "temperature": null,
+     "power_on_hours": null,
+     "reallocated_sectors": null,
+     "pending_sectors": null,
+     "uncorrectable": null,
+     "usure_pct": null,
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "smart ata",
+   "entree": {
+    "op": "disque_smart",
+    "d": {
+     "model_name": "Samsung SSD 860",
+     "smart_status": {
+      "passed": true
+     },
+     "temperature": {
+      "current": 34
+     },
+     "power_on_time": {
+      "hours": 1200
+     },
+     "ata_smart_attributes": {
+      "table": [
+       {
+        "id": 5,
+        "value": 100,
+        "raw": {
+         "value": 0
+        }
+       },
+       {
+        "id": 197,
+        "value": 100,
+        "raw": {
+         "value": 2
+        }
+       },
+       {
+        "id": 198,
+        "value": 100,
+        "raw": {
+         "value": 1
+        }
+       },
+       {
+        "id": 177,
+        "value": 93,
+        "raw": {
+         "value": 7
+        }
+       }
+      ]
+     }
+    },
+    "dev": "/dev/sda",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "device": "/dev/sda",
+     "model": "Samsung SSD 860",
+     "health": "PASSED",
+     "temperature": 34,
+     "power_on_hours": 1200,
+     "reallocated_sectors": 0,
+     "pending_sectors": 2,
+     "uncorrectable": 1,
+     "usure_pct": 7,
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "smart ata en échec",
+   "entree": {
+    "op": "disque_smart",
+    "d": {
+     "model_name": "Samsung SSD 860",
+     "smart_status": {
+      "passed": false
+     },
+     "temperature": {
+      "current": 34
+     },
+     "power_on_time": {
+      "hours": 1200
+     },
+     "ata_smart_attributes": {
+      "table": [
+       {
+        "id": 5,
+        "value": 100,
+        "raw": {
+         "value": 0
+        }
+       },
+       {
+        "id": 197,
+        "value": 100,
+        "raw": {
+         "value": 2
+        }
+       },
+       {
+        "id": 198,
+        "value": 100,
+        "raw": {
+         "value": 1
+        }
+       },
+       {
+        "id": 177,
+        "value": 93,
+        "raw": {
+         "value": 7
+        }
+       }
+      ]
+     }
+    },
+    "dev": "/dev/sdb",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "device": "/dev/sdb",
+     "model": "Samsung SSD 860",
+     "health": "FAILED",
+     "temperature": 34,
+     "power_on_hours": 1200,
+     "reallocated_sectors": 0,
+     "pending_sectors": 2,
+     "uncorrectable": 1,
+     "usure_pct": 7,
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "smart nvme",
+   "entree": {
+    "op": "disque_smart",
+    "d": {
+     "model_family": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+     "smart_status": {
+      "passed": true
+     },
+     "nvme_smart_health_information_log": {
+      "percentage_used": 4,
+      "media_errors": 3
+     }
+    },
+    "dev": "/dev/nvme0n1",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "device": "/dev/nvme0n1",
+     "model": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+     "health": "PASSED",
+     "temperature": null,
+     "power_on_hours": null,
+     "reallocated_sectors": 3,
+     "pending_sectors": null,
+     "uncorrectable": null,
+     "usure_pct": 4,
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "smart nvme sans usure",
+   "entree": {
+    "op": "disque_smart",
+    "d": {
+     "nvme_smart_health_information_log": {
+      "media_errors": 0
+     }
+    },
+    "dev": "/dev/nvme0n1",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "device": "/dev/nvme0n1",
+     "model": "",
+     "health": "unknown",
+     "temperature": null,
+     "power_on_hours": null,
+     "reallocated_sectors": 0,
+     "pending_sectors": null,
+     "uncorrectable": null,
+     "usure_pct": null,
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "smart usure par 231",
+   "entree": {
+    "op": "disque_smart",
+    "d": {
+     "ata_smart_attributes": {
+      "table": [
+       {
+        "id": 231,
+        "value": 88,
+        "raw": {
+         "value": 0
+        }
+       },
+       {
+        "id": 177,
+        "value": 50
+       }
+      ]
+     }
+    },
+    "dev": "/dev/sdc",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "device": "/dev/sdc",
+     "model": "",
+     "health": "unknown",
+     "temperature": null,
+     "power_on_hours": null,
+     "reallocated_sectors": null,
+     "pending_sectors": null,
+     "uncorrectable": null,
+     "usure_pct": 12,
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "smart usure hors bornes",
+   "entree": {
+    "op": "disque_smart",
+    "d": {
+     "ata_smart_attributes": {
+      "table": [
+       {
+        "id": 231,
+        "value": 250
+       },
+       {
+        "id": 202,
+        "value": 80
+       }
+      ]
+     }
+    },
+    "dev": "/dev/sdc",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "device": "/dev/sdc",
+     "model": "",
+     "health": "unknown",
+     "temperature": null,
+     "power_on_hours": null,
+     "reallocated_sectors": null,
+     "pending_sectors": null,
+     "uncorrectable": null,
+     "usure_pct": 20,
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "smart 187 sans 198",
+   "entree": {
+    "op": "disque_smart",
+    "d": {
+     "ata_smart_attributes": {
+      "table": [
+       {
+        "id": 187,
+        "raw": {
+         "value": 9
+        }
+       }
+      ]
+     }
+    },
+    "dev": "/dev/sdd",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "device": "/dev/sdd",
+     "model": "",
+     "health": "unknown",
+     "temperature": null,
+     "power_on_hours": null,
+     "reallocated_sectors": null,
+     "pending_sectors": null,
+     "uncorrectable": 9,
+     "usure_pct": null,
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "smart attribut sans valeur brute",
+   "entree": {
+    "op": "disque_smart",
+    "d": {
+     "ata_smart_attributes": {
+      "table": [
+       {
+        "id": 5,
+        "raw": {}
+       },
+       {
+        "id": 197
+       },
+       {
+        "id": 233,
+        "value": null
+       }
+      ]
+     }
+    },
+    "dev": "/dev/sde",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "device": "/dev/sde",
+     "model": "",
+     "health": "unknown",
+     "temperature": null,
+     "power_on_hours": null,
+     "reallocated_sectors": 0,
+     "pending_sectors": 0,
+     "uncorrectable": null,
+     "usure_pct": null,
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "smart table nulle",
+   "entree": {
+    "op": "disque_smart",
+    "d": {
+     "ata_smart_attributes": null,
+     "temperature": null,
+     "power_on_time": null,
+     "smart_status": null
+    },
+    "dev": "/dev/sdf",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "device": "/dev/sdf",
+     "model": "",
+     "health": "unknown",
+     "temperature": null,
+     "power_on_hours": null,
+     "reallocated_sectors": null,
+     "pending_sectors": null,
+     "uncorrectable": null,
+     "usure_pct": null,
+     "last_check": "2026-10-17T12:00:00.123456"
+    }
+   }
+  },
+  {
+   "cas": "temp vide",
+   "entree": {
+    "op": "temperature_max",
+    "valeurs": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "temp plausibles",
+   "entree": {
+    "op": "temperature_max",
+    "valeurs": [
+     34.0,
+     51.55,
+     47.2
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": 51.5
+   }
+  },
+  {
+   "cas": "temp hors bornes",
+   "entree": {
+    "op": "temperature_max",
+    "valeurs": [
+     0,
+     -5,
+     150,
+     200
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "temp mélange",
+   "entree": {
+    "op": "temperature_max",
+    "valeurs": [
+     0,
+     61.04,
+     150,
+     12.3
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": 61.0
+   }
+  },
+  {
+   "cas": "heure oui",
+   "entree": {
+    "op": "heure_systeme",
+    "td": "Timezone=Europe/Paris\nNTPSynchronized=yes",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "heure_synchro": "oui",
+     "fuseau": "Europe/Paris"
+    }
+   }
+  },
+  {
+   "cas": "heure non",
+   "entree": {
+    "op": "heure_systeme",
+    "td": "NTPSynchronized=no\nTimezone=UTC",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "heure_synchro": "non",
+     "fuseau": "UTC"
+    }
+   }
+  },
+  {
+   "cas": "heure vide",
+   "entree": {
+    "op": "heure_systeme",
+    "td": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "heure_synchro": "",
+     "fuseau": ""
+    }
+   }
+  },
+  {
+   "cas": "heure nulle",
+   "entree": {
+    "op": "heure_systeme",
+    "td": null,
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "heure_synchro": "",
+     "fuseau": ""
+    }
+   }
+  },
+  {
+   "cas": "os",
+   "entree": {
+    "op": "nom_du_systeme",
+    "texte": "NAME=\"Debian GNU/Linux\"\nPRETTY_NAME=\"Debian GNU/Linux 12 (bookworm)\"\nID=debian",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": "Debian GNU/Linux 12 (bookworm)"
+   }
+  },
+  {
+   "cas": "os sans nom",
+   "entree": {
+    "op": "nom_du_systeme",
+    "texte": "ID=debian",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "os vide",
+   "entree": {
+    "op": "nom_du_systeme",
+    "texte": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "os sans guillemets",
+   "entree": {
+    "op": "nom_du_systeme",
+    "texte": "PRETTY_NAME=Alpine",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": "Alpine"
+   }
+  },
+  {
+   "cas": "nft vide",
+   "entree": {
+    "op": "regles_nft",
+    "texte": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": 0
+   }
+  },
+  {
+   "cas": "nft",
+   "entree": {
+    "op": "regles_nft",
+    "texte": "table inet filter {\n  chain input {\n    ip saddr 1.2.3.4 drop\n    tcp dport 22 accept\n    counter\n    iif lo accept\n    oif lo accept\n    ct state established accept\n    reject\n  }\n}",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": 7
+   }
+  },
+  {
+   "cas": "nft nul",
+   "entree": {
+    "op": "regles_nft",
+    "texte": null,
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": 0
+   }
+  },
+  {
+   "cas": "iptables",
+   "entree": {
+    "op": "regles_iptables",
+    "texte": "-P INPUT ACCEPT\n-A INPUT -p tcp --dport 22 -j ACCEPT\n-A INPUT -j DROP\n -A mal",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": 2
+   }
+  },
+  {
+   "cas": "iptables aucun",
+   "entree": {
+    "op": "regles_iptables",
+    "texte": "-P INPUT ACCEPT",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": 0
+   }
+  },
+  {
+   "cas": "iptables nul",
+   "entree": {
+    "op": "regles_iptables",
+    "texte": null,
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": 0
+   }
+  },
+  {
+   "cas": "nginx vide",
+   "entree": {
+    "op": "sites_nginx",
+    "contenu": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "nginx complet",
+   "entree": {
+    "op": "sites_nginx",
+    "contenu": "server {\n  listen 10.0.0.1:443 ssl;\n  server_name exemple.test www.exemple.test _ *.x.test #c;\n  root /var/www/alice/data/www/exemple.test;\n  ssl_certificate /etc/letsencrypt/live/exemple.test/cert.pem;\n  ssl_certificate /etc/x/b.pem;\n}\n",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "exemple.test",
+      true,
+      "/var/www/alice/data/www/exemple.test",
+      "10.0.0.1"
+     ],
+     [
+      "www.exemple.test",
+      true,
+      "/var/www/alice/data/www/exemple.test",
+      "10.0.0.1"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "nginx sans ssl ni racine",
+   "entree": {
+    "op": "sites_nginx",
+    "contenu": "server { server_name a.test; }",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "a.test",
+      false,
+      "",
+      ""
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "nginx écoute ipv6",
+   "entree": {
+    "op": "sites_nginx",
+    "contenu": "server {\n  listen [2001:db8::1]:80;\n  server_name b.test;\n}",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "b.test",
+      false,
+      "",
+      "[2001:db8::1]"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "nginx écoute sans ip",
+   "entree": {
+    "op": "sites_nginx",
+    "contenu": "server {\n  listen 80;\n  server_name b.test;\n}",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "b.test",
+      false,
+      "",
+      ""
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "nginx plusieurs blocs",
+   "entree": {
+    "op": "sites_nginx",
+    "contenu": "server_name a.test; server_name b.test c.test;",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "a.test",
+      false,
+      "",
+      ""
+     ],
+     [
+      "b.test",
+      false,
+      "",
+      ""
+     ],
+     [
+      "c.test",
+      false,
+      "",
+      ""
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "apache vide",
+   "entree": {
+    "op": "sites_apache",
+    "contenu": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "apache complet",
+   "entree": {
+    "op": "sites_apache",
+    "contenu": "<VirtualHost *:443>\n  ServerName exemple.test\n  ServerAlias www.exemple.test autre.test\n  DocumentRoot /var/www/x\n  SSLEngine on\n</VirtualHost>",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "exemple.test",
+      true,
+      "/var/www/x"
+     ],
+     [
+      "www.exemple.test",
+      true,
+      "/var/www/x"
+     ],
+     [
+      "autre.test",
+      true,
+      "/var/www/x"
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "apache ssl en majuscules",
+   "entree": {
+    "op": "sites_apache",
+    "contenu": "ServerName a.test\nSSLENGINE ON",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "a.test",
+      true,
+      ""
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "apache sans ssl",
+   "entree": {
+    "op": "sites_apache",
+    "contenu": "ServerName a.test\nSSLEngine off",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "a.test",
+      false,
+      ""
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "apache deux hôtes",
+   "entree": {
+    "op": "sites_apache",
+    "contenu": "ServerName a.test\nServerName b.test\nServerAlias c.test",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     [
+      "a.test",
+      false,
+      ""
+     ],
+     [
+      "b.test",
+      false,
+      ""
+     ],
+     [
+      "c.test",
+      false,
+      ""
+     ]
+    ]
+   }
+  },
+  {
+   "cas": "certs nginx vide",
+   "entree": {
+    "op": "certificats_nginx",
+    "contenu": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "indice": "",
+     "chemins": []
+    }
+   }
+  },
+  {
+   "cas": "certs nginx",
+   "entree": {
+    "op": "certificats_nginx",
+    "contenu": "server {\n  listen 10.0.0.1:443 ssl;\n  server_name exemple.test www.exemple.test _ *.x.test #c;\n  root /var/www/alice/data/www/exemple.test;\n  ssl_certificate /etc/letsencrypt/live/exemple.test/cert.pem;\n  ssl_certificate /etc/x/b.pem;\n}\n",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "indice": "exemple.test",
+     "chemins": [
+      "/etc/letsencrypt/live/exemple.test/cert.pem",
+      "/etc/x/b.pem"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "certs nginx sans nom",
+   "entree": {
+    "op": "certificats_nginx",
+    "contenu": "ssl_certificate /x.pem;",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "indice": "",
+     "chemins": [
+      "/x.pem"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "certs apache vide",
+   "entree": {
+    "op": "certificats_apache",
+    "contenu": "",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "indice": "",
+     "chemins": []
+    }
+   }
+  },
+  {
+   "cas": "certs apache",
+   "entree": {
+    "op": "certificats_apache",
+    "contenu": "ServerName a.test\nSSLCertificateFile /etc/a.pem\nSSLCertificateFile /etc/b.pem",
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": {
+     "indice": "a.test",
+     "chemins": [
+      "/etc/a.pem",
+      "/etc/b.pem"
+     ]
+    }
+   }
+  }
+ ]
+}

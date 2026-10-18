@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.5  #8449c6
+# VERSION CN : 0.1.6  #c1163f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.5 empreinte=8449c6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.6 empreinte=c1163f ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -861,6 +861,12 @@ def _fp_formes(entree) -> list:
     return _point("fp_formes", entree)["valeur"]
 
 
+def _sys_formes(op, **entree):
+    """Ce que le collecteur a lu du système, mis en forme. La forme est un POINT D'ÉVOLUTION : points/EC_sys_formes.py ; les LECTURES (commandes, fichiers) et les replis restent ici."""
+    entree["op"] = op
+    return _point("sys_formes", entree)["valeur"]
+
+
 def collect_fastpanel_mail() -> list:
     """[FP1→FP2→FS] Comptes mail : mogwai → API /api/email → postfix fallback."""
     now = datetime.now().isoformat()
@@ -1209,132 +1215,22 @@ def collect_fastpanel_services() -> list:
 
 
 def collect_active_sessions():
-    sessions = []
+    """Sessions ouvertes : who, puis les connexions SSH établies (ss), puis last en repli. La forme est un POINT D'ÉVOLUTION (points/EC_sys_formes.py)."""
     now = datetime.now().isoformat()
-    seen = set()
-
-    out = run_cmd("who --ips 2>/dev/null || who")
-    for line in out.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        parts = line.split()
-        if len(parts) < 2:
-            continue
-        user = parts[0]
-        tty  = parts[1] if len(parts) > 1 else "?"
-        ip_m = re.search(r"\(([\d.:a-fA-F]+)\)", line)
-        ip   = ip_m.group(1) if ip_m else "local"
-        login_time = " ".join(parts[2:4]) if len(parts) >= 4 else parts[2] if len(parts) >= 3 else now
-        key = f"{user}:{tty}"
-        if key not in seen:
-            seen.add(key)
-            sessions.append({"user": user, "ip": ip, "login_time": login_time, "last_check": now})
-
-    ss_out = run_cmd("ss -tnp state established 'sport = :22'")
-    for line in ss_out.splitlines():
-        if not line.strip() or line.startswith("Netid"):
-            continue
-        parts = line.split()
-        local_idx = -1
-        for i, p in enumerate(parts):
-            if p.endswith(":22") or ":22 " in p or p == "[::]:22" or "]:22" in p:
-                local_idx = i
-                break
-        if local_idx < 0:
-            local_idx = 4
-        peer_idx = local_idx + 1
-        if peer_idx >= len(parts):
-            continue
-        peer = parts[peer_idx]
-        ip = None
-        m = re.search(r"\[::ffff:((\d{1,3}\.){3}\d{1,3})\]", peer)
-        if m:
-            ip = m.group(1)
-        else:
-            m = re.match(r"((\d{1,3}\.){3}\d{1,3}):\d+", peer)
-            if m:
-                ip = m.group(1)
-            else:
-                m = re.match(r"\[([^\]]+)\]:\d+", peer)
-                if m:
-                    ip = m.group(1)
-        if not ip or ip in ("127.0.0.1", "::1"):
-            continue
-        proc_str = " ".join(parts[peer_idx+1:]) if peer_idx+1 < len(parts) else ""
-        user_m = re.search(r'users=\(\("([^"]+)"', proc_str)
-        user = user_m.group(1) if user_m else "sshd"
-        key = f"ssh:{ip}"
-        if key not in seen:
-            seen.add(key)
-            sessions.append({"user": user, "ip": ip, "login_time": now, "last_check": now})
-
+    sessions = _sys_formes("sessions_base", who=run_cmd("who --ips 2>/dev/null || who"),
+                           ss=run_cmd("ss -tnp state established 'sport = :22'"), now=now)
     if not sessions:
-        last_out = run_cmd("last -n 20 -F 2>/dev/null | grep -v reboot | grep still")
-        for line in last_out.splitlines():
-            parts = line.split()
-            if len(parts) < 3:
-                continue
-            user = parts[0]
-            ip_m = re.search(r"([\d.]+)", parts[2]) if len(parts) > 2 else None
-            ip   = ip_m.group(1) if ip_m else "local"
-            key  = f"{user}:{ip}"
-            if key not in seen:
-                seen.add(key)
-                sessions.append({"user": user, "ip": ip, "login_time": now, "last_check": now})
-
+        sessions = _sys_formes("sessions_last", last=run_cmd("last -n 20 -F 2>/dev/null | grep -v reboot | grep still"), now=now)
     return sessions
 
 
 def collect_open_ports():
-    ports = []
-    now  = datetime.now().isoformat()
-    seen = set()
-
-    out = run_cmd("ss -tulnp 2>/dev/null")
-    for line in out.splitlines():
-        line = line.strip()
-        if not line or line.startswith("Netid"):
-            continue
-        parts = line.split()
-        if len(parts) < 5:
-            continue
-        proto = parts[0].lower()
-        local = ""
-        for col in parts[3:6]:
-            if re.search(r":\d+$", col) or re.search(r"\]:\d+$", col):
-                local = col
-                break
-        if not local:
-            continue
-        port_m = re.search(r":([\d]+)$", local)
-        if not port_m:
-            continue
-        port = int(port_m.group(1))
-        if port == 0:
-            continue
-        proc_col = " ".join(parts[5:]) if len(parts) > 5 else ""
-        pname_m = re.search(r'"([^"]+)"', proc_col)
-        process = pname_m.group(1)[:40] if pname_m else "system"
-        key = f"{proto}:{port}"
-        if key not in seen:
-            seen.add(key)
-            ports.append({"port": port, "protocol": proto, "process": process, "pid": 0, "last_check": now})
-
+    """Ports à l'écoute : ss, puis netstat en repli. La forme est un POINT D'ÉVOLUTION (points/EC_sys_formes.py)."""
+    now = datetime.now().isoformat()
+    ports = _sys_formes("ports_ss", sortie=run_cmd("ss -tulnp 2>/dev/null"), now=now)
     if not ports:
-        ns_out = run_cmd("netstat -tulnp 2>/dev/null")
-        for line in ns_out.splitlines():
-            m = re.search(r"(tcp6?|udp6?)\s+\d+\s+\d+\s+[\d.:*]+:(\d+)\s+[\d.:*]+\s+\w+\s*(\S*)", line)
-            if m:
-                proto = m.group(1).lower()
-                port  = int(m.group(2))
-                proc  = m.group(3).split("/")[-1][:40] if "/" in m.group(3) else "system"
-                key   = f"{proto}:{port}"
-                if key not in seen:
-                    seen.add(key)
-                    ports.append({"port": port, "protocol": proto, "process": proc, "pid": 0, "last_check": now})
-
-    return sorted(ports, key=lambda x: x["port"])
+        ports = _sys_formes("ports_netstat", sortie=run_cmd("netstat -tulnp 2>/dev/null"), now=now)
+    return ports
 
 
 def collect_web_sites():
@@ -1368,15 +1264,8 @@ def collect_web_sites():
             if ndir.endswith("fastpanel2-sites") and conf.suffix != ".conf":
                 continue
             try:
-                content = conf.read_text(errors="replace")
-                ssl = bool(re.search(r"ssl_certificate", content))
-                root_m = re.search(r"root\s+([^;]+);", content)
-                root = root_m.group(1).strip() if root_m else ""
-                ip_m = re.search(r"^\s*listen\s+(\d{1,3}(?:\.\d{1,3}){3}|\[[0-9a-fA-F:]+\]):\d+", content, re.M)
-                for sn in re.findall(r"server_name\s+([^;]+);", content):
-                    for domain in sn.strip().split():
-                        if domain and not domain.startswith(("_", "*", "#")):
-                            add_site(domain, ssl, "nginx", root, ip=ip_m.group(1) if ip_m else "")
+                for domain, ssl, root, ip in _sys_formes("sites_nginx", contenu=conf.read_text(errors="replace")):
+                    add_site(domain, ssl, "nginx", root, ip=ip)
             except Exception:
                 pass
 
@@ -1388,15 +1277,8 @@ def collect_web_sites():
             continue
         for conf in p.rglob("*.conf"):
             try:
-                content = conf.read_text(errors="replace")
-                ssl = bool(re.search(r"SSLEngine\s+on", content, re.IGNORECASE))
-                root_m = re.search(r"DocumentRoot\s+(\S+)", content)
-                root = root_m.group(1).strip() if root_m else ""
-                for sn in re.findall(r"ServerName\s+(\S+)", content):
-                    add_site(sn.strip(), ssl, "apache", root)
-                for sa in re.findall(r"ServerAlias\s+(.+)", content):
-                    for d in sa.strip().split():
-                        add_site(d, ssl, "apache", root)
+                for domain, ssl, root in _sys_formes("sites_apache", contenu=conf.read_text(errors="replace")):
+                    add_site(domain, ssl, "apache", root)
             except Exception:
                 pass
 
@@ -1422,6 +1304,7 @@ def collect_web_sites():
 
 
 def collect_ssl_certificates():
+    """Certificats : ceux que déclarent nginx et apache, puis ceux de certbot. Les LECTURES (fichiers, openssl) restent ici ; la forme est un POINT D'ÉVOLUTION (points/EC_sys_formes.py)."""
     certs = []
     now   = datetime.now().isoformat()
     seen_paths = set()
@@ -1436,47 +1319,13 @@ def collect_ssl_certificates():
         out = run_cmd(f"openssl x509 -in {shlex.quote(cert_path)} -noout -enddate -subject -issuer -ext subjectAltName 2>/dev/null")
         if not out:
             return None
-        date_m = re.search(r"notAfter=(.+)", out)
-        if not date_m:
-            return None
-        try:
-            expiry = datetime.strptime(date_m.group(1).strip(), "%b %d %H:%M:%S %Y %Z")
-        except Exception:
-            try:
-                expiry = datetime.strptime(date_m.group(1).strip(), "%b %d %H:%M:%S %Y")
-            except Exception:
-                return None
-        days = (expiry - datetime.now()).days
-        domain = hint_domain
-        san_m = re.search(r"DNS:([\w.*-]+)", out)
-        if san_m:
-            domain = san_m.group(1)
-        elif not domain:
-            cn_m = re.search(r"CN\s*=\s*([\w.*-]+)", out)
-            domain = cn_m.group(1) if cn_m else Path(cert_path).stem
-        # garde-fou domaine : jamais vide ni "--" → on retombe sur le nom du fichier
-        if not domain or domain.strip(" -") == "":
-            domain = Path(cert_path).stem
-        # issuer : on isole la ligne issuer= (après subject=) puis O= ou CN=
-        issuer = ""
-        iss_m = re.search(r"issuer=(.+)", out)
-        if iss_m:
-            s = iss_m.group(1)
-            o_m  = re.search(r"\bO\s*=\s*([^,/\n]+)", s)
-            cn_m = re.search(r"\bCN\s*=\s*([^,/\n]+)", s)
-            issuer = (o_m.group(1).strip() if o_m else (cn_m.group(1).strip() if cn_m else s.strip()))[:60]
-        return {"domain": domain, "days_left": days, "cert_path": cert_path,
-                "issuer": issuer, "expiry_date": expiry.strftime("%Y-%m-%d"),
-                "status": "expired" if days <= 0 else ("expiring" if days <= 30 else "valid"),
-                "last_check": now}
+        return _sys_formes("certificat", sortie=out, chemin=cert_path, indice=hint_domain, now=now)
 
     for conf in list(Path("/etc/nginx").rglob("*.conf")) + list(Path("/etc/nginx").rglob("*")):
         try:
-            content = conf.read_text(errors="replace")
-            sn_m = re.search(r"server_name\s+([^;]+);", content)
-            hint = sn_m.group(1).strip().split()[0] if sn_m else ""
-            for cp in re.findall(r"ssl_certificate\s+([^;]+);", content):
-                r = parse_cert(cp, hint)
+            decl = _sys_formes("certificats_nginx", contenu=conf.read_text(errors="replace"))
+            for cp in decl["chemins"]:
+                r = parse_cert(cp, decl["indice"])
                 if r: certs.append(r)
         except Exception:
             pass
@@ -1484,11 +1333,9 @@ def collect_ssl_certificates():
     for apache_dir in ["/etc/apache2/sites-enabled", "/etc/httpd/conf.d"]:
         for conf in Path(apache_dir).rglob("*.conf") if Path(apache_dir).exists() else []:
             try:
-                content = conf.read_text(errors="replace")
-                sn_m = re.search(r"ServerName\s+(\S+)", content)
-                hint = sn_m.group(1) if sn_m else ""
-                for cp in re.findall(r"SSLCertificateFile\s+(\S+)", content):
-                    r = parse_cert(cp, hint)
+                decl = _sys_formes("certificats_apache", contenu=conf.read_text(errors="replace"))
+                for cp in decl["chemins"]:
+                    r = parse_cert(cp, decl["indice"])
                     if r: certs.append(r)
             except Exception:
                 pass
@@ -2488,7 +2335,7 @@ def collect_sysctl_security():
 def collect_disk_smart():
     """SMART RÉEL (08-10) : le relevé ne lisait que « PASSED/FAILED » et posait 0 partout — or ce qui annonce la mort
     d'un disque, des semaines avant, c'est l'usure, les secteurs réalloués ou en attente, les erreurs. smartctl -j
-    (JSON) lit ATA, SSD et NVMe de la même façon."""
+    (JSON) lit ATA, SSD et NVMe de la même façon. La forme est un POINT D'ÉVOLUTION (points/EC_sys_formes.py)."""
     smart_data = []
     now = datetime.now().isoformat()
     if not _qui("smartctl"):
@@ -2503,33 +2350,7 @@ def collect_disk_smart():
             d = json.loads(run_cmd(["smartctl", "-j", "-a", dev], timeout=30) or "{}")
         except Exception:
             d = {}
-        attrs = {a.get("id"): a for a in ((d.get("ata_smart_attributes") or {}).get("table") or [])}
-        def brut(i):
-            a = attrs.get(i)
-            return int((a.get("raw") or {}).get("value") or 0) if a else None
-        def normal(i):
-            a = attrs.get(i)
-            return int(a.get("value")) if a and a.get("value") is not None else None
-        nv = d.get("nvme_smart_health_information_log") or {}
-        usure = nv.get("percentage_used")
-        if usure is None:
-            # SSD SATA : durée de vie restante normalisée (177 Samsung, 231/202/233 selon les fabricants)
-            for i in (231, 202, 177, 233):
-                v = normal(i)
-                if v is not None and 0 <= v <= 100:
-                    usure = 100 - v
-                    break
-        st = (d.get("smart_status") or {}).get("passed")
-        smart_data.append({
-            "device": dev, "model": (d.get("model_name") or d.get("model_family") or "")[:60],
-            "health": "PASSED" if st is True else ("FAILED" if st is False else "unknown"),
-            "temperature": (d.get("temperature") or {}).get("current"),
-            "power_on_hours": (d.get("power_on_time") or {}).get("hours"),
-            "reallocated_sectors": brut(5) if brut(5) is not None else nv.get("media_errors"),
-            "pending_sectors": brut(197),
-            "uncorrectable": brut(198) if brut(198) is not None else brut(187),
-            "usure_pct": usure,
-            "last_check": now})
+        smart_data.append(_sys_formes("disque_smart", d=d, dev=dev, now=now))
     return smart_data
 
 
@@ -3036,18 +2857,17 @@ def collect_interfaces() -> list:
 
 def collect_hardware_state() -> list:
     """Températures (zones thermiques et hwmon), batterie (portables), heure synchronisée, OS, virtualisation,
-    pare-feu actif, AppArmor / SELinux. Chaque mesure absente reste vide : rien n'est inventé."""
+    pare-feu actif, AppArmor / SELinux. Chaque mesure absente reste vide : rien n'est inventé. Les LECTURES restent
+    ici ; la forme est un POINT D'ÉVOLUTION (points/EC_sys_formes.py)."""
     now = datetime.now().isoformat()
     e = {"last_check": now}
     temps = []
     for f in list(Path("/sys/class/thermal").glob("thermal_zone*/temp")) + list(Path("/sys/class/hwmon").glob("hwmon*/temp*_input")):
         try:
-            v = int(f.read_text().strip()) / 1000.0
-            if 0 < v < 150:
-                temps.append(v)
+            temps.append(int(f.read_text().strip()) / 1000.0)
         except Exception:
             pass
-    e["temp_max"] = round(max(temps), 1) if temps else None
+    e["temp_max"] = _sys_formes("temperature_max", valeurs=temps)
     bat = sorted(Path("/sys/class/power_supply").glob("BAT*"))
     if bat:
         try:
@@ -3057,14 +2877,12 @@ def collect_hardware_state() -> list:
     else:
         e["batterie"] = ""
     td = run_cmd(["timedatectl", "show", "-p", "NTPSynchronized", "-p", "Timezone"], timeout=5) if _qui("timedatectl") else ""
-    e["heure_synchro"] = "oui" if "NTPSynchronized=yes" in (td or "") else ("non" if "NTPSynchronized=no" in (td or "") else "")
-    m = re.search(r"Timezone=(\S+)", td or "")
-    e["fuseau"] = m.group(1) if m else ""
+    e.update(_sys_formes("heure_systeme", td=td))
     try:
-        osr = dict(l.split("=", 1) for l in Path("/etc/os-release").read_text().splitlines() if "=" in l)
-        e["os"] = osr.get("PRETTY_NAME", "").strip('"')
+        texte_os = Path("/etc/os-release").read_text()
     except Exception:
-        e["os"] = ""
+        texte_os = ""
+    e["os"] = _sys_formes("nom_du_systeme", texte=texte_os)
     e["arch"] = os.uname().machine
     e["virtualisation"] = (run_cmd(["systemd-detect-virt"], timeout=5) or "").strip() if _qui("systemd-detect-virt") else ""
     # Le pare-feu RÉELLEMENT actif : on demande à chacun, dans l'ordre où ils se superposent.
@@ -3077,11 +2895,11 @@ def collect_hardware_state() -> list:
         if (run_cmd(["firewall-cmd", "--state"], timeout=8) or "").strip() == "running":
             fw = "firewalld actif"
     if not fw and _qui("nft"):
-        n = len([l for l in (run_cmd(["nft", "list", "ruleset"], timeout=8) or "").splitlines() if l.strip().startswith(("ip ", "tcp ", "udp ", "ct ", "iif", "oif", "counter", "drop", "accept", "reject"))])
+        n = _sys_formes("regles_nft", texte=run_cmd(["nft", "list", "ruleset"], timeout=8) or "")
         if n:
             fw = "nftables (%d règles)" % n
     if not fw and _qui("iptables"):
-        n = len([l for l in (run_cmd(["iptables", "-S"], timeout=8) or "").splitlines() if l.startswith("-A ")])
+        n = _sys_formes("regles_iptables", texte=run_cmd(["iptables", "-S"], timeout=8) or "")
         fw = ("iptables (%d règles)" % n) if n else "aucune règle"
     e["pare_feu"] = fw
     mac = []

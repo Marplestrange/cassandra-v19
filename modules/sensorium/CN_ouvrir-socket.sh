@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.5  #dc12db
+# VERSION CN : 0.1.6  #dc12db
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Attend le socket du collecteur, puis l'ouvre au groupe du noyau (le collecteur le crée en 0600, root seul).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.5 empreinte=dc12db ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.6 empreinte=dc12db ▼▼▼
 # Attend le socket du collecteur, puis l'ouvre au groupe du noyau (le collecteur le crée en 0600, root seul).
 # usage : CN_ouvrir-socket.sh DOSSIER_DU_SOCKET GROUPE
 dossier="$1"; groupe="$2"; sock="$dossier/knowledge.sock"
