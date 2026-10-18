@@ -1,0 +1,142 @@
+{
+ "point": "flotte.duree",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de flotte, données synthétiques",
+ "cas": [
+  {
+   "cas": "zéro",
+   "entree": {
+    "m": 0
+   },
+   "sortie": {
+    "valeur": "moins d'une minute"
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "m": null
+   },
+   "sortie": {
+    "valeur": "moins d'une minute"
+   }
+  },
+  {
+   "cas": "une minute",
+   "entree": {
+    "m": 1
+   },
+   "sortie": {
+    "valeur": "1 min"
+   }
+  },
+  {
+   "cas": "cinquante-neuf",
+   "entree": {
+    "m": 59
+   },
+   "sortie": {
+    "valeur": "59 min"
+   }
+  },
+  {
+   "cas": "une heure",
+   "entree": {
+    "m": 60
+   },
+   "sortie": {
+    "valeur": "1 h 00"
+   }
+  },
+  {
+   "cas": "une heure cinq",
+   "entree": {
+    "m": 65
+   },
+   "sortie": {
+    "valeur": "1 h 05"
+   }
+  },
+  {
+   "cas": "vingt-trois heures",
+   "entree": {
+    "m": 1439
+   },
+   "sortie": {
+    "valeur": "23 h 59"
+   }
+  },
+  {
+   "cas": "un jour",
+   "entree": {
+    "m": 1440
+   },
+   "sortie": {
+    "valeur": "1 j 0 h"
+   }
+  },
+  {
+   "cas": "un jour et trois heures",
+   "entree": {
+    "m": 1620
+   },
+   "sortie": {
+    "valeur": "1 j 3 h"
+   }
+  },
+  {
+   "cas": "dix jours",
+   "entree": {
+    "m": 14400
+   },
+   "sortie": {
+    "valeur": "10 j 0 h"
+   }
+  },
+  {
+   "cas": "texte",
+   "entree": {
+    "m": "90"
+   },
+   "sortie": {
+    "valeur": "1 h 30"
+   }
+  },
+  {
+   "cas": "décimal",
+   "entree": {
+    "m": 90.7
+   },
+   "sortie": {
+    "valeur": "1 h 30"
+   }
+  },
+  {
+   "cas": "négatif",
+   "entree": {
+    "m": -5
+   },
+   "sortie": {
+    "valeur": "moins d'une minute"
+   }
+  },
+  {
+   "cas": "vide",
+   "entree": {
+    "m": ""
+   },
+   "sortie": {
+    "valeur": "moins d'une minute"
+   }
+  },
+  {
+   "cas": "trois cents jours",
+   "entree": {
+    "m": 432000
+   },
+   "sortie": {
+    "valeur": "300 j 0 h"
+   }
+  }
+ ]
+}

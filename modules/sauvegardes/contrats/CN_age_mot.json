@@ -1,0 +1,23 @@
+{
+ "point": "sauvegardes.age_mot",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "h"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "aucune sauvegarde se dit « jamais », jamais zéro",
+  "moins d'une heure se dit en minutes (une au moins)",
+  "moins de quarante-huit heures se dit en heures",
+  "le même âge donne toujours le même mot"
+ ]
+}

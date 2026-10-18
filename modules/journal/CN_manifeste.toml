@@ -181,3 +181,11 @@ source = "flux_recent"
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "niveau"
+libelle = "Le niveau d'une ligne de journal (critique, erreur, avertissement, info) : le texte brut en entrée, le niveau en sortie"
+contrat = "1.0"
+reference = "points/EC_niveau"
+fonction = "point_niveau"
+runtime = "python"

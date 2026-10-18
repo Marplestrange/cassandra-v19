@@ -320,3 +320,11 @@ contrat = "1.0"
 reference = "points/EC_lire_metriques"
 fonction = "point_lire_metriques"
 runtime = "python"
+
+[[points_evolution]]
+id = "duree"
+libelle = "Une durée dite en mots (« 3 h 05 », « 2 j 4 h ») : les minutes en entrée, le texte en sortie"
+contrat = "1.0"
+reference = "points/EC_duree"
+fonction = "point_duree"
+runtime = "python"

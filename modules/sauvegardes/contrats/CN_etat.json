@@ -1,0 +1,24 @@
+{
+ "point": "sauvegardes.etat",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "h",
+   "seuil_h"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "aucune sauvegarde est un danger : jamais « ok »",
+  "sous le seuil, ok ; jusqu'à trois fois le seuil, à surveiller ; au-delà, danger",
+  "le seuil est un réglage : le même âge peut changer d'état avec lui",
+  "le même âge et le même seuil donnent toujours le même état"
+ ]
+}

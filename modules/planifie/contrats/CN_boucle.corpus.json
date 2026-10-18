@@ -1,0 +1,218 @@
+{
+ "point": "planifie.boucle",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de planifie, données synthétiques",
+ "cas": [
+  {
+   "cas": "aucune attente",
+   "entree": {
+    "ref": "a",
+    "apres": "b",
+    "suivants": {}
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "pas de suivant",
+   "entree": {
+    "ref": "a",
+    "apres": "b",
+    "suivants": {
+     "a": ""
+    }
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "attente directe",
+   "entree": {
+    "ref": "a",
+    "apres": "b",
+    "suivants": {
+     "b": "a"
+    }
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "chaîne sans boucle",
+   "entree": {
+    "ref": "a",
+    "apres": "b",
+    "suivants": {
+     "b": "c",
+     "c": "d"
+    }
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "chaîne qui boucle",
+   "entree": {
+    "ref": "a",
+    "apres": "b",
+    "suivants": {
+     "b": "c",
+     "c": "a"
+    }
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "boucle ailleurs",
+   "entree": {
+    "ref": "a",
+    "apres": "b",
+    "suivants": {
+     "b": "c",
+     "c": "b"
+    }
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "auto-attente",
+   "entree": {
+    "ref": "a",
+    "apres": "a",
+    "suivants": {
+     "a": "a"
+    }
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "chaîne très longue",
+   "entree": {
+    "ref": "a",
+    "apres": "x0",
+    "suivants": {
+     "x0": "x1",
+     "x1": "x2",
+     "x2": "x3",
+     "x3": "x4",
+     "x4": "x5",
+     "x5": "x6",
+     "x6": "x7",
+     "x7": "x8",
+     "x8": "x9",
+     "x9": "x10",
+     "x10": "x11",
+     "x11": "x12",
+     "x12": "x13",
+     "x13": "x14",
+     "x14": "x15",
+     "x15": "x16",
+     "x16": "x17",
+     "x17": "x18",
+     "x18": "x19",
+     "x19": "x20",
+     "x20": "x21",
+     "x21": "x22",
+     "x22": "x23",
+     "x23": "x24",
+     "x24": "x25",
+     "x25": "x26",
+     "x26": "x27",
+     "x27": "x28",
+     "x28": "x29",
+     "x29": "x30"
+    }
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "chaîne de douze",
+   "entree": {
+    "ref": "a",
+    "apres": "x0",
+    "suivants": {
+     "x0": "x1",
+     "x1": "x2",
+     "x2": "x3",
+     "x3": "x4",
+     "x4": "x5",
+     "x5": "x6",
+     "x6": "x7",
+     "x7": "x8",
+     "x8": "x9",
+     "x9": "x10",
+     "x10": "x11",
+     "x11": "x12",
+     "x12": "a"
+    }
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "chaîne de treize",
+   "entree": {
+    "ref": "a",
+    "apres": "x0",
+    "suivants": {
+     "x0": "x1",
+     "x1": "x2",
+     "x2": "x3",
+     "x3": "x4",
+     "x4": "x5",
+     "x5": "x6",
+     "x6": "x7",
+     "x7": "x8",
+     "x8": "x9",
+     "x9": "x10",
+     "x10": "x11",
+     "x11": "x12",
+     "x12": "x13",
+     "x13": "a"
+    }
+   },
+   "sortie": {
+    "valeur": true
+   }
+  },
+  {
+   "cas": "valeurs None",
+   "entree": {
+    "ref": "a",
+    "apres": "b",
+    "suivants": {
+     "b": null
+    }
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "référence vide",
+   "entree": {
+    "ref": "",
+    "apres": "b",
+    "suivants": {
+     "b": ""
+    }
+   },
+   "sortie": {
+    "valeur": false
+   }
+  }
+ ]
+}

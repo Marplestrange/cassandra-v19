@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.1  #67bf04
+# VERSION CN : 0.1.1  #2846fe
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les tâches planifiées : tout ce qui tourne tout seul sur la machine, et est-ce que ça va.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=67bf04 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=2846fe ▼▼▼
 """Les tâches planifiées : tout ce qui tourne tout seul sur la machine, et est-ce que ça va.
 
 Porté de la V18 (`cron_*`, `_crontab_*`), avec ses leçons :
@@ -255,8 +255,8 @@ def brancher(ctx):
         moy = duree_moyenne(ref)
         durees = [r["duree_ms"] for r in db.lire("SELECT duree_ms FROM executions WHERE ref=? AND code=0 AND duree_ms>0 ORDER BY id", (ref,))]
         auj = utc()
-        return {"tache": j, "executions": runs, "reglages": reglages_de(ref), "prochaines": k.apercu(expr, maintenant(), 5) if j["actif"] else [],
-                "cibles": [{"chemin": t, "present": 0 if t in manque else 1} for t in k.cibles(j.get("commande") or "")], "derive": k.derive(durees),
+        return {"tache": j, "executions": runs, "reglages": reglages_de(ref), "prochaines": k.apercu(expr, maintenant(), ctx.point, 5) if j["actif"] else [],
+                "cibles": [{"chemin": t, "present": 0 if t in manque else 1} for t in k.cibles(j.get("commande") or "")], "derive": k.derive(durees, ctx.point),
                 "modifs": [{"ts": datetime.fromtimestamp(r["ts"]).strftime("%Y-%m-%d %H:%M:%S"), "acteur": r["acteur"], "quoi": r["quoi"]} for r in db.lire("SELECT ts, acteur, quoi FROM modifs WHERE ref=? ORDER BY id DESC LIMIT 12", (ref,))],
                 "duree_moyenne_ms": moy, "intervalle_min": inter, "chevauche": bool(inter and moy and moy / 60000.0 > inter),
                 "occurrences_touchees": len(k.occurrences(expr, auj.strftime("%Y-%m-%d"), (auj + timedelta(days=30)).strftime("%Y-%m-%d"), 24)) if j["actif"] else 0,
@@ -308,7 +308,7 @@ def brancher(ctx):
         ok, e = k.valider(expression or "", "x")
         if not ok:
             raise ValueError(e)
-        return {"expression": e, "humain": k.decrire(e, ctx.point), "prochaines": k.apercu(e, maintenant(), nombre)}
+        return {"expression": e, "humain": k.decrire(e, ctx.point), "prochaines": k.apercu(e, maintenant(), ctx.point, nombre)}
 
     def maintenance_etat(c):
         reservee()
@@ -377,7 +377,7 @@ def brancher(ctx):
         if projet_id:
             db.ecrire("INSERT OR REPLACE INTO liens(ref, projet_id, libelle) VALUES (?,?,?)", (ref, int(projet_id), desc[:120]))
         modif(ref, "créée" if not avant else "modifiée : %s → %s" % (avant["horaire"], e))
-        return {"id": nid, "ref": ref, "horaire": e, "commande": cmd, "actif": bool(actif), "enrobee": bool(enrobee), "utilisateur": user, "prochaines": k.apercu(e, maintenant(), 3), "avant": avant}
+        return {"id": nid, "ref": ref, "horaire": e, "commande": cmd, "actif": bool(actif), "enrobee": bool(enrobee), "utilisateur": user, "prochaines": k.apercu(e, maintenant(), ctx.point, 3), "avant": avant}
 
     def prouver_sauvee(c, res):
         r = db.lire("SELECT * FROM naturelles WHERE id=?", (res["id"],))
@@ -510,7 +510,7 @@ def brancher(ctx):
         if apres == ref:
             raise ValueError("une tâche ne peut pas s'enchaîner à elle-même")
         suivants = {r["ref"]: r["apres_ref"] for r in db.lire("SELECT ref, apres_ref FROM reglages_tache WHERE apres_ref<>''")}
-        if apres and k.boucle(ref, apres, suivants):
+        if apres and k.boucle(ref, apres, suivants, ctx.point):
             raise ValueError("cet enchaînement forme une boucle — les deux tâches s'attendraient indéfiniment")
         vals = {"fenetre_min": max(0, min(1440, int(fenetre_min or 0))), "verrou": 1 if verrou else 0, "essais": max(0, min(5, int(essais or 0))), "motif_echec": str(motif_echec or "")[:120],
                 "apres_ref": apres, "apres_si_ok": 1 if apres_si_ok else 0, "nom": str(nom or "")[:120]}
@@ -673,7 +673,7 @@ def brancher(ctx):
             if j["etat"] in ("cassé", "échec", "muet"):
                 out.append({"objet": ("tache_planifiee", j["ref"]), "titre": "Tâche planifiée %s : %s" % ({"cassé": "cassée", "échec": "en échec", "muet": "muette"}[j["etat"]], nom[:80]),
                             "detail": j["etat_detail"], "niveau": "critique" if j["critique"] else "attention"})
-            d = k.derive([r["duree_ms"] for r in db.lire("SELECT duree_ms FROM executions WHERE ref=? AND code=0 AND duree_ms>0 ORDER BY id", (j["ref"],))])
+            d = k.derive([r["duree_ms"] for r in db.lire("SELECT duree_ms FROM executions WHERE ref=? AND code=0 AND duree_ms>0 ORDER BY id", (j["ref"],))], ctx.point)
             if d:
                 out.append({"objet": ("tache_planifiee", j["ref"] + ":derive"), "titre": "Tâche planifiée plus lente : %s" % nom[:80],
                             "detail": "%d s en moyenne au début, %d s maintenant (×%s) : la fenêtre de nuit finira par ne plus suffire." % (d["avant_ms"] // 1000, d["apres_ms"] // 1000, d["facteur"]), "niveau": "attention"})

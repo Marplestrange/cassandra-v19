@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.1  #3a4612
+# VERSION CN : 0.1.1  #e290c6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les tâches planifiées : la logique pure (expressions cron, occurrences, description en français, verdict d'une tâche, collisions, dérive).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=3a4612 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=e290c6 ▼▼▼
 """Les tâches planifiées : la logique pure (expressions cron, occurrences, description en français, verdict d'une tâche, collisions, dérive).
 
 Portée de la V18. Rien ici ne touche le système : le module lit et écrit les crontabs par le courtier, et passe les temps et les durées à ces fonctions.
@@ -182,16 +182,9 @@ def suivante(expr, ref, avance_jours=45):
     return ""
 
 
-def apercu(expr, ref, n=5):
-    """Les prochaines exécutions, pour vérifier AVANT d'enregistrer : `0 5 * * 7` et `0 5 7 * *` se ressemblent et ne veulent pas du tout dire la même chose."""
-    out = []
-    for _ in range(max(1, min(int(n or 5), 12))):
-        s = suivante(expr, ref)
-        if not s:
-            break
-        out.append(s)
-        ref = s
-    return out
+def apercu(expr, ref, appeler, n=5):
+    """Les prochaines exécutions, pour vérifier AVANT d'enregistrer : `0 5 * * 7` et `0 5 7 * *` se ressemblent et ne veulent pas du tout dire la même chose. Le calcul est un POINT D'ÉVOLUTION : points/EC_apercu.py."""
+    return appeler("apercu", {"expr": expr, "ref": ref, "n": n})["valeur"]
 
 
 def intervalle_min(expr, ref):
@@ -347,25 +340,14 @@ def repartir(collision):
     return [{"ref": t["ref"], "libelle": t["libelle"], "at": "%02d:%02d" % ((h + (m + i * 10) // 60) % 24, (m + i * 10) % 60)} for i, t in enumerate(collision.get("taches", []))]
 
 
-def derive(durees, mini=8):
-    """Compare le premier tiers des durées au dernier : une moyenne globale masquerait la pente. Une tâche qui ne tombe jamais en erreur mais met trois fois plus de temps qu'il y a trois semaines."""
-    if len(durees) < mini:
-        return {}
-    n = max(2, len(durees) // 3)
-    a, b = sum(durees[:n]) / float(n), sum(durees[-n:]) / float(n)
-    if a <= 0 or b / a < 1.6:
-        return {}
-    return {"avant_ms": int(a), "apres_ms": int(b), "facteur": round(b / a, 1), "mesures": len(durees)}
+def derive(durees, appeler, mini=8):
+    """Compare le premier tiers des durées au dernier : une moyenne globale masquerait la pente. Une tâche qui ne tombe jamais en erreur mais met trois fois plus de temps qu'il y a trois semaines. Le calcul est un POINT D'ÉVOLUTION : points/EC_derive.py."""
+    return appeler("derive", {"durees": durees, "mini": mini})["valeur"]
 
 
-def boucle(ref, apres, suivants, profondeur=0):
-    """Deux tâches qui s'attendent l'une l'autre ne partiraient jamais, et rien ne le dirait. `suivants` : ref -> ref qu'elle attend."""
-    if profondeur > 12:
-        return True
-    s = suivants.get(apres) or ""
-    if not s:
-        return False
-    return True if s == ref else boucle(ref, s, suivants, profondeur + 1)
+def boucle(ref, apres, suivants, appeler):
+    """Deux tâches qui s'attendent l'une l'autre ne partiraient jamais, et rien ne le dirait. `suivants` : ref -> ref qu'elle attend. Le calcul est un POINT D'ÉVOLUTION : points/EC_boucle.py."""
+    return appeler("boucle", {"ref": ref, "apres": apres, "suivants": suivants})["valeur"]
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

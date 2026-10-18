@@ -99,3 +99,19 @@ paliers = ["raconter", "auto", "maitre"]
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "age_mot"
+libelle = "L'âge d'une sauvegarde dit en mots (jamais, 12 min, 5 h, 3 j) : l'âge en heures en entrée, le texte en sortie"
+contrat = "1.0"
+reference = "points/EC_age_mot"
+fonction = "point_age_mot"
+runtime = "python"
+
+[[points_evolution]]
+id = "etat"
+libelle = "L'état d'une sauvegarde (ok, à surveiller, danger) selon son âge : l'âge et le seuil en heures en entrée, l'état en sortie"
+contrat = "1.0"
+reference = "points/EC_etat"
+fonction = "point_etat"
+runtime = "python"

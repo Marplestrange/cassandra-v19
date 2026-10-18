@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sauvegardes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #bf6d26
+# VERSION CN : 0.1.0  #b1dff5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sauvegardes : les plans, l'historique des copies, les destinations, la couverture.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=bf6d26 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b1dff5 ▼▼▼
 """Les sauvegardes : les plans, l'historique des copies, les destinations, la couverture.
 
 Porté de la V18 (`sauv_*`), avec ses leçons :
@@ -43,27 +43,22 @@ def _age_h(ts):
     return None
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+
+
 def _age_mot(h):
-    if h is None:
-        return "jamais"
-    if h < 1:
-        return "%d min" % max(1, int(h * 60))
-    if h < 48:
-        return "%d h" % int(h)
-    return "%d j" % int(h / 24)
+    """_age_mot. Le calcul est un POINT D'ÉVOLUTION : points/EC_age_mot.py."""
+    return _point("age_mot", {"h": h})["valeur"]
 
 
 def _etat(h, seuil_h=24.0):
-    if h is None:
-        return "danger"
-    if h <= seuil_h:
-        return "ok"
-    if h <= seuil_h * 3:
-        return "warn"
-    return "danger"
+    """_etat. Le calcul est un POINT D'ÉVOLUTION : points/EC_etat.py."""
+    return _point("etat", {"h": h, "seuil_h": seuil_h})["valeur"]
 
 
 def brancher(ctx):
+    global _point
+    _point = ctx.point
     db = ctx.stockage
 
     def _plan(pid):

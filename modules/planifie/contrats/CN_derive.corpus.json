@@ -1,0 +1,345 @@
+{
+ "point": "planifie.derive",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de planifie, données synthétiques",
+ "cas": [
+  {
+   "cas": "trop peu de mesures",
+   "entree": {
+    "durees": [
+     10,
+     10,
+     10
+    ],
+    "mini": 8
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "stable",
+   "entree": {
+    "durees": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "mini": 8
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "dérive nette",
+   "entree": {
+    "durees": [
+     100,
+     100,
+     100,
+     100,
+     110,
+     110,
+     110,
+     110,
+     300,
+     300,
+     300,
+     300
+    ],
+    "mini": 8
+   },
+   "sortie": {
+    "valeur": {
+     "avant_ms": 100,
+     "apres_ms": 300,
+     "facteur": 3.0,
+     "mesures": 12
+    }
+   }
+  },
+  {
+   "cas": "dérive juste au seuil",
+   "entree": {
+    "durees": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     160,
+     160,
+     160,
+     160,
+     160,
+     160
+    ],
+    "mini": 8
+   },
+   "sortie": {
+    "valeur": {
+     "avant_ms": 100,
+     "apres_ms": 160,
+     "facteur": 1.6,
+     "mesures": 12
+    }
+   }
+  },
+  {
+   "cas": "dérive juste sous le seuil",
+   "entree": {
+    "durees": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     159,
+     159,
+     159,
+     159,
+     159,
+     159
+    ],
+    "mini": 8
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "début à zéro",
+   "entree": {
+    "durees": [
+     0,
+     0,
+     0,
+     0,
+     50,
+     50,
+     50,
+     50,
+     50,
+     50,
+     50,
+     50
+    ],
+    "mini": 8
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "baisse",
+   "entree": {
+    "durees": [
+     300,
+     300,
+     300,
+     300,
+     300,
+     300,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "mini": 8
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "mini personnalisé",
+   "entree": {
+    "durees": [
+     10,
+     10,
+     40,
+     40
+    ],
+    "mini": 4
+   },
+   "sortie": {
+    "valeur": {
+     "avant_ms": 10,
+     "apres_ms": 40,
+     "facteur": 4.0,
+     "mesures": 4
+    }
+   }
+  },
+  {
+   "cas": "mini zéro",
+   "entree": {
+    "durees": [],
+    "mini": 0
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "vide",
+   "entree": {
+    "durees": [],
+    "mini": 8
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "un tiers arrondi",
+   "entree": {
+    "durees": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     500,
+     500,
+     500
+    ],
+    "mini": 8
+   },
+   "sortie": {
+    "valeur": {
+     "avant_ms": 100,
+     "apres_ms": 500,
+     "facteur": 5.0,
+     "mesures": 9
+    }
+   }
+  },
+  {
+   "cas": "onze mesures",
+   "entree": {
+    "durees": [
+     100,
+     100,
+     100,
+     120,
+     120,
+     120,
+     120,
+     120,
+     400,
+     400,
+     400
+    ],
+    "mini": 8
+   },
+   "sortie": {
+    "valeur": {
+     "avant_ms": 100,
+     "apres_ms": 400,
+     "facteur": 4.0,
+     "mesures": 11
+    }
+   }
+  },
+  {
+   "cas": "décimales",
+   "entree": {
+    "durees": [
+     100.5,
+     100.5,
+     100.5,
+     100.5,
+     100.5,
+     100.5,
+     100.5,
+     100.5,
+     250.9,
+     250.9,
+     250.9,
+     250.9
+    ],
+    "mini": 8
+   },
+   "sortie": {
+    "valeur": {
+     "avant_ms": 100,
+     "apres_ms": 250,
+     "facteur": 2.5,
+     "mesures": 12
+    }
+   }
+  },
+  {
+   "cas": "très grandes valeurs",
+   "entree": {
+    "durees": [
+     1000000,
+     1000000,
+     1000000,
+     1000000,
+     1000000,
+     1000000,
+     1000000,
+     1000000,
+     5000000,
+     5000000,
+     5000000,
+     5000000
+    ],
+    "mini": 8
+   },
+   "sortie": {
+    "valeur": {
+     "avant_ms": 1000000,
+     "apres_ms": 5000000,
+     "facteur": 5.0,
+     "mesures": 12
+    }
+   }
+  },
+  {
+   "cas": "une seule grosse",
+   "entree": {
+    "durees": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     1000
+    ],
+    "mini": 8
+   },
+   "sortie": {
+    "valeur": {
+     "avant_ms": 100,
+     "apres_ms": 325,
+     "facteur": 3.2,
+     "mesures": 12
+    }
+   }
+  }
+ ]
+}

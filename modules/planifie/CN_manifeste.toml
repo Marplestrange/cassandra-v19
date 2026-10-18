@@ -288,3 +288,27 @@ contrat = "1.0"
 reference = "points/EC_collisions"
 fonction = "point_collisions"
 runtime = "python"
+
+[[points_evolution]]
+id = "apercu"
+libelle = "Les prochaines exécutions d'une expression cron, pour vérifier avant d'enregistrer : l'expression, l'instant de départ et le nombre en entrée, les dates en sortie"
+contrat = "1.0"
+reference = "points/EC_apercu"
+fonction = "point_apercu"
+runtime = "python"
+
+[[points_evolution]]
+id = "derive"
+libelle = "La dérive de la durée d'une tâche planifiée : ses durées successives en entrée, l'écart du dernier tiers au premier en sortie (une tâche qui ne plante jamais mais met trois fois plus de temps)"
+contrat = "1.0"
+reference = "points/EC_derive"
+fonction = "point_derive"
+runtime = "python"
+
+[[points_evolution]]
+id = "boucle"
+libelle = "Deux tâches qui s'attendent l'une l'autre ne partiraient jamais : la tâche, celle qu'elle attendrait et la table des attentes en entrée, un booléen en sortie"
+contrat = "1.0"
+reference = "points/EC_boucle"
+fonction = "point_boucle"
+runtime = "python"

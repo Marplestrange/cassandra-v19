@@ -1,0 +1,23 @@
+{
+ "point": "flotte.duree",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "m"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "moins d'une minute se dit « moins d'une minute », jamais zéro",
+  "les heures sont écrites sur deux chiffres pour les minutes",
+  "une valeur illisible se lit comme zéro",
+  "la même durée donne toujours le même texte"
+ ]
+}

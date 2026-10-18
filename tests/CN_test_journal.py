@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #809ba2
+# VERSION CN : 0.1.0  #c4b522
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du journal : le fil des agents (trois rôles, signature jamais devinée), le lecteur de sources, l'enveloppe commune, les veilles réversibles, et la lecture en lecture seule de la base d'un autre module.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=809ba2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c4b522 ▼▼▼
 """Bancs du journal : le fil des agents (trois rôles, signature jamais devinée), le lecteur de sources,
 l'enveloppe commune, les veilles réversibles, et la lecture en lecture seule de la base d'un autre module."""
 import importlib.util
@@ -32,6 +32,14 @@ import CN_main as moteur                      # noqa: E402
 spec = importlib.util.spec_from_file_location("journal_module_test", RACINE / "modules" / "journal" / "CN_module.py")
 jm = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(jm)
+
+# le module sans noyau : ses points d'évolution sont branchés sur leurs références, comme le ferait brancher()
+import tempfile                              # noqa: E402
+from noyau import CN_manifeste as _M, CN_points as _P          # noqa: E402
+_dossier = RACINE / "modules" / "journal"
+_svc = _P.ServicePoints(Path(tempfile.mkdtemp()) / "ec")
+_svc.declarer(_M.charger(_dossier / "CN_manifeste.toml"), _dossier)
+jm._point = lambda nom, entree: _svc.appeler("journal", nom, entree)
 
 BEA = "bea@x.fr"
 

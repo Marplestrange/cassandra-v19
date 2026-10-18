@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b63cec
+# VERSION CN : 0.1.0  #913c50
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des tâches planifiées : la logique pure des expressions cron, puis le module avec un courtier simulé (une machine dont on tient les crontabs).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b63cec ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=913c50 ▼▼▼
 """Bancs des tâches planifiées : la logique pure des expressions cron, puis le module avec un courtier simulé (une machine dont on tient les crontabs)."""
 import json
 import os
@@ -74,7 +74,7 @@ class Expressions(unittest.TestCase):
         self.assertEqual(k.precedente("*/10 * * * *", "2026-10-12 10:20"), "2026-10-12 10:20")      # inclusive
         self.assertEqual(k.suivante("*/10 * * * *", "2026-10-12 10:20"), "2026-10-12 10:30")        # stricte
         self.assertEqual(k.suivante("@reboot", "2026-10-12 10:20"), "")
-        self.assertEqual(k.apercu("0 3 * * *", "2026-10-12 10:00", 3), ["2026-10-13 03:00", "2026-10-14 03:00", "2026-10-15 03:00"])
+        self.assertEqual(k.apercu("0 3 * * *", "2026-10-12 10:00", POINT, 3), ["2026-10-13 03:00", "2026-10-14 03:00", "2026-10-15 03:00"])
 
     def test_occurrences_sans_noyer_le_calendrier(self):
         o = k.occurrences("*/5 * * * *", "2026-10-12", "2026-10-13")
@@ -135,12 +135,12 @@ class Expressions(unittest.TestCase):
         self.assertEqual([x["at"] for x in k.repartir(c[0])], ["03:00", "03:10", "03:20"])       # les minutes bougent, jamais l'heure
 
     def test_derive_et_boucle(self):
-        self.assertEqual(k.derive([100] * 8), {})
-        d = k.derive([100] * 4 + [150] * 4 + [300] * 4)
+        self.assertEqual(k.derive([100] * 8, POINT), {})
+        d = k.derive([100] * 4 + [150] * 4 + [300] * 4, POINT)
         self.assertEqual((d["avant_ms"], d["apres_ms"], d["facteur"]), (100, 300, 3.0))
-        self.assertEqual(k.derive([100, 300]), {})                                               # trop peu de mesures
-        self.assertTrue(k.boucle("a", "b", {"b": "c", "c": "a"}))
-        self.assertFalse(k.boucle("a", "b", {"b": "c"}))
+        self.assertEqual(k.derive([100, 300], POINT), {})                                               # trop peu de mesures
+        self.assertTrue(k.boucle("a", "b", {"b": "c", "c": "a"}, POINT))
+        self.assertFalse(k.boucle("a", "b", {"b": "c"}, POINT))
 
 
 class Racine:

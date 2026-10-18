@@ -1,0 +1,317 @@
+{
+ "point": "journal.niveau",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de journal, données synthétiques",
+ "cas": [
+  {
+   "cas": "critical",
+   "entree": {
+    "v": "CRITICAL",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "critique"
+   }
+  },
+  {
+   "cas": "crit",
+   "entree": {
+    "v": "crit",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "critique"
+   }
+  },
+  {
+   "cas": "fatal",
+   "entree": {
+    "v": "FATAL: x",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "critique"
+   }
+  },
+  {
+   "cas": "alert",
+   "entree": {
+    "v": "alert",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "critique"
+   }
+  },
+  {
+   "cas": "error",
+   "entree": {
+    "v": "ERROR",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "erreur"
+   }
+  },
+  {
+   "cas": "erreur",
+   "entree": {
+    "v": "Erreur",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "erreur"
+   }
+  },
+  {
+   "cas": "err",
+   "entree": {
+    "v": "err",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "erreur"
+   }
+  },
+  {
+   "cas": "fail",
+   "entree": {
+    "v": "failed",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "erreur"
+   }
+  },
+  {
+   "cas": "traceback",
+   "entree": {
+    "v": "Traceback (most recent call last)",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "erreur"
+   }
+  },
+  {
+   "cas": "warning",
+   "entree": {
+    "v": "WARNING",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "avertissement"
+   }
+  },
+  {
+   "cas": "warn",
+   "entree": {
+    "v": "warn",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "avertissement"
+   }
+  },
+  {
+   "cas": "avertissement",
+   "entree": {
+    "v": "avertissement",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "avertissement"
+   }
+  },
+  {
+   "cas": "avoir",
+   "entree": {
+    "v": "à avoir",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "info"
+   }
+  },
+  {
+   "cas": "debug",
+   "entree": {
+    "v": "debug",
+    "defaut": "erreur"
+   },
+   "sortie": {
+    "valeur": "info"
+   }
+  },
+  {
+   "cas": "notice",
+   "entree": {
+    "v": "notice",
+    "defaut": "erreur"
+   },
+   "sortie": {
+    "valeur": "info"
+   }
+  },
+  {
+   "cas": "info",
+   "entree": {
+    "v": "info",
+    "defaut": "erreur"
+   },
+   "sortie": {
+    "valeur": "info"
+   }
+  },
+  {
+   "cas": "ok",
+   "entree": {
+    "v": "ok",
+    "defaut": "erreur"
+   },
+   "sortie": {
+    "valeur": "info"
+   }
+  },
+  {
+   "cas": "success",
+   "entree": {
+    "v": "success",
+    "defaut": "erreur"
+   },
+   "sortie": {
+    "valeur": "info"
+   }
+  },
+  {
+   "cas": "un",
+   "entree": {
+    "v": "1",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "avertissement"
+   }
+  },
+  {
+   "cas": "true",
+   "entree": {
+    "v": "true",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "avertissement"
+   }
+  },
+  {
+   "cas": "vrai",
+   "entree": {
+    "v": "vrai",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "avertissement"
+   }
+  },
+  {
+   "cas": "oui",
+   "entree": {
+    "v": "oui",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "avertissement"
+   }
+  },
+  {
+   "cas": "vide",
+   "entree": {
+    "v": "",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "info"
+   }
+  },
+  {
+   "cas": "vide défaut autre",
+   "entree": {
+    "v": "",
+    "defaut": "erreur"
+   },
+   "sortie": {
+    "valeur": "erreur"
+   }
+  },
+  {
+   "cas": "None",
+   "entree": {
+    "v": null,
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "info"
+   }
+  },
+  {
+   "cas": "inconnu",
+   "entree": {
+    "v": "bizarre",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "info"
+   }
+  },
+  {
+   "cas": "inconnu défaut",
+   "entree": {
+    "v": "bizarre",
+    "defaut": "critique"
+   },
+   "sortie": {
+    "valeur": "critique"
+   }
+  },
+  {
+   "cas": "espaces",
+   "entree": {
+    "v": "  error  ",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "erreur"
+   }
+  },
+  {
+   "cas": "préfixe",
+   "entree": {
+    "v": "errors found",
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "erreur"
+   }
+  },
+  {
+   "cas": "nombre",
+   "entree": {
+    "v": 3,
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "info"
+   }
+  },
+  {
+   "cas": "zéro",
+   "entree": {
+    "v": 0,
+    "defaut": "info"
+   },
+   "sortie": {
+    "valeur": "info"
+   }
+  }
+ ]
+}

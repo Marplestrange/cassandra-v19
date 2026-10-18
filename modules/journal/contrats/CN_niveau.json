@@ -1,0 +1,24 @@
+{
+ "point": "journal.niveau",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "v",
+   "defaut"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "le premier préfixe reconnu l'emporte (la gravité d'abord)",
+  "un texte sans niveau reconnu prend le défaut",
+  "la casse et les espaces sont sans effet",
+  "le même texte donne toujours le même niveau"
+ ]
+}

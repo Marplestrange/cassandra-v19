@@ -1,0 +1,137 @@
+{
+ "point": "sauvegardes.etat",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de sauvegardes, données synthétiques",
+ "cas": [
+  {
+   "cas": "jamais",
+   "entree": {
+    "h": null,
+    "seuil_h": 24.0
+   },
+   "sortie": {
+    "valeur": "danger"
+   }
+  },
+  {
+   "cas": "récente",
+   "entree": {
+    "h": 3,
+    "seuil_h": 24.0
+   },
+   "sortie": {
+    "valeur": "ok"
+   }
+  },
+  {
+   "cas": "pile au seuil",
+   "entree": {
+    "h": 24,
+    "seuil_h": 24.0
+   },
+   "sortie": {
+    "valeur": "ok"
+   }
+  },
+  {
+   "cas": "juste au-dessus",
+   "entree": {
+    "h": 24.01,
+    "seuil_h": 24.0
+   },
+   "sortie": {
+    "valeur": "warn"
+   }
+  },
+  {
+   "cas": "trois fois le seuil",
+   "entree": {
+    "h": 72,
+    "seuil_h": 24.0
+   },
+   "sortie": {
+    "valeur": "warn"
+   }
+  },
+  {
+   "cas": "juste au-dessus de trois fois",
+   "entree": {
+    "h": 72.01,
+    "seuil_h": 24.0
+   },
+   "sortie": {
+    "valeur": "danger"
+   }
+  },
+  {
+   "cas": "seuil personnalisé ok",
+   "entree": {
+    "h": 40,
+    "seuil_h": 48.0
+   },
+   "sortie": {
+    "valeur": "ok"
+   }
+  },
+  {
+   "cas": "seuil personnalisé warn",
+   "entree": {
+    "h": 100,
+    "seuil_h": 48.0
+   },
+   "sortie": {
+    "valeur": "warn"
+   }
+  },
+  {
+   "cas": "seuil personnalisé danger",
+   "entree": {
+    "h": 200,
+    "seuil_h": 48.0
+   },
+   "sortie": {
+    "valeur": "danger"
+   }
+  },
+  {
+   "cas": "zéro",
+   "entree": {
+    "h": 0,
+    "seuil_h": 24.0
+   },
+   "sortie": {
+    "valeur": "ok"
+   }
+  },
+  {
+   "cas": "négatif",
+   "entree": {
+    "h": -1,
+    "seuil_h": 24.0
+   },
+   "sortie": {
+    "valeur": "ok"
+   }
+  },
+  {
+   "cas": "seuil zéro",
+   "entree": {
+    "h": 1,
+    "seuil_h": 0.0
+   },
+   "sortie": {
+    "valeur": "danger"
+   }
+  },
+  {
+   "cas": "jamais avec seuil",
+   "entree": {
+    "h": null,
+    "seuil_h": 100.0
+   },
+   "sortie": {
+    "valeur": "danger"
+   }
+  }
+ ]
+}

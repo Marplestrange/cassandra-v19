@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : flotte
 # ZONE       : CN
-# VERSION CN : 0.1.1  #21acfb
+# VERSION CN : 0.1.1  #1a8f97
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La flotte : les fonctions pures (noms, durées, lecture des sondes, fusion du parc, verdict) et l'accès au monde (Tailscale, SSH, TCP, HTTP).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=21acfb ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=1a8f97 ▼▼▼
 """La flotte : les fonctions pures (noms, durées, lecture des sondes, fusion du parc, verdict) et l'accès au monde (Tailscale, SSH, TCP, HTTP).
 
 Tout ce qui touche le réseau ou un binaire passe par la classe `Acces` : un banc la remplace, rien d'autre ne sort du module.
@@ -100,15 +100,12 @@ def minutes_entre(a, b):
         return 0
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+
+
 def duree(m):
-    m = int(m or 0)
-    if m < 1:
-        return "moins d'une minute"
-    if m < 60:
-        return "%d min" % m
-    if m < 1440:
-        return "%d h %02d" % (m // 60, m % 60)
-    return "%d j %d h" % (m // 1440, (m % 1440) // 60)
+    """duree. Le calcul est un POINT D'ÉVOLUTION : points/EC_duree.py."""
+    return _point("duree", {"m": m})["valeur"]
 
 
 def commande_sonde(windows):

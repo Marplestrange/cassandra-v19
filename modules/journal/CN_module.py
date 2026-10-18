@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : journal
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e35553
+# VERSION CN : 0.1.0  #2cecb5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le journal : le fil des agents et le lecteur unifié des journaux.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e35553 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2cecb5 ▼▼▼
 """Le journal : le fil des agents et le lecteur unifié des journaux.
 
 Porté de la V18 (`journal_*`), avec ses leçons :
@@ -124,16 +124,12 @@ def _ts_norm(v) -> str:
     return s[:19]
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+
+
 def _niveau(v, defaut="info") -> str:
-    s = str(v if v is not None else "").strip().lower()
-    if not s:
-        return defaut
-    for cle, niveau in _ENV_NIVEAUX:
-        if s == cle or s.startswith(cle):
-            return niveau
-    if s in ("1", "true", "vrai", "oui"):
-        return "avertissement"
-    return defaut
+    """_niveau. Le calcul est un POINT D'ÉVOLUTION : points/EC_niveau.py."""
+    return _point("niveau", {"v": v, "defaut": defaut})["valeur"]
 
 
 def _age_s(ts) -> int:
@@ -158,6 +154,8 @@ def _signature(texte: str) -> str:
 
 
 def brancher(ctx):
+    global _point
+    _point = ctx.point
     db = ctx.stockage
 
     def reglage(nom, defaut):

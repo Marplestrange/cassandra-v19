@@ -1,0 +1,25 @@
+{
+ "point": "planifie.derive",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "durees",
+   "mini"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "moins de mesures que le minimum : aucune conclusion",
+  "une dérive se dit à partir d'un facteur de 1,6",
+  "une moyenne de départ nulle ne conclut rien",
+  "la comparaison est faite sur le premier et le dernier tiers : une moyenne globale masquerait la pente",
+  "les mêmes durées donnent toujours le même verdict"
+ ]
+}

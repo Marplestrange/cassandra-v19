@@ -1,0 +1,26 @@
+{
+ "point": "planifie.apercu",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "expr",
+   "ref",
+   "n"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "chaque date est strictement postérieure à la précédente et à l'instant de départ",
+  "une expression illisible ou jamais atteinte rend une liste vide",
+  "au plus douze dates, au moins une",
+  "le jour du mois et le jour de la semaine, quand les deux sont restreints, s'additionnent",
+  "la même expression et le même départ donnent toujours les mêmes dates"
+ ]
+}

@@ -1,0 +1,25 @@
+{
+ "point": "planifie.boucle",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "ref",
+   "apres",
+   "suivants"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "un cycle est toujours dit, jamais ignoré",
+  "au-delà de douze maillons, on le tient pour un cycle",
+  "une tâche sans attente ne forme pas de cycle",
+  "la même table donne toujours la même réponse"
+ ]
+}

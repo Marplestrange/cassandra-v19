@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : flotte
 # ZONE       : CN
-# VERSION CN : 0.1.1  #9b2b9d
+# VERSION CN : 0.1.1  #ee6d5c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=9b2b9d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=ee6d5c ▼▼▼
 """La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
 
 Porté de la V18 (`flotte_*`, `fleet_*`, `ms_*`), avec ses leçons :
@@ -43,6 +43,7 @@ RE_NOM = re.compile(r"^[a-z0-9][a-z0-9_-]{0,40}$")
 
 
 def brancher(ctx):
+    o._point = ctx.point
     db = ctx.stockage
     acces = o.Acces()
     ctx.acces = acces

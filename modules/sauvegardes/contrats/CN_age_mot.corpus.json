@@ -1,0 +1,133 @@
+{
+ "point": "sauvegardes.age_mot",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de sauvegardes, données synthétiques",
+ "cas": [
+  {
+   "cas": "jamais",
+   "entree": {
+    "h": null
+   },
+   "sortie": {
+    "valeur": "jamais"
+   }
+  },
+  {
+   "cas": "moins d'une minute",
+   "entree": {
+    "h": 0.001
+   },
+   "sortie": {
+    "valeur": "1 min"
+   }
+  },
+  {
+   "cas": "une minute",
+   "entree": {
+    "h": 0.016666666666666666
+   },
+   "sortie": {
+    "valeur": "1 min"
+   }
+  },
+  {
+   "cas": "quelques minutes",
+   "entree": {
+    "h": 0.5
+   },
+   "sortie": {
+    "valeur": "30 min"
+   }
+  },
+  {
+   "cas": "juste sous une heure",
+   "entree": {
+    "h": 0.999
+   },
+   "sortie": {
+    "valeur": "59 min"
+   }
+  },
+  {
+   "cas": "une heure",
+   "entree": {
+    "h": 1
+   },
+   "sortie": {
+    "valeur": "1 h"
+   }
+  },
+  {
+   "cas": "quinze heures",
+   "entree": {
+    "h": 15.9
+   },
+   "sortie": {
+    "valeur": "15 h"
+   }
+  },
+  {
+   "cas": "quarante-sept heures",
+   "entree": {
+    "h": 47.99
+   },
+   "sortie": {
+    "valeur": "47 h"
+   }
+  },
+  {
+   "cas": "quarante-huit heures",
+   "entree": {
+    "h": 48
+   },
+   "sortie": {
+    "valeur": "2 j"
+   }
+  },
+  {
+   "cas": "trois jours",
+   "entree": {
+    "h": 72
+   },
+   "sortie": {
+    "valeur": "3 j"
+   }
+  },
+  {
+   "cas": "dix jours",
+   "entree": {
+    "h": 240
+   },
+   "sortie": {
+    "valeur": "10 j"
+   }
+  },
+  {
+   "cas": "zéro",
+   "entree": {
+    "h": 0
+   },
+   "sortie": {
+    "valeur": "1 min"
+   }
+  },
+  {
+   "cas": "négatif",
+   "entree": {
+    "h": -3
+   },
+   "sortie": {
+    "valeur": "1 min"
+   }
+  },
+  {
+   "cas": "très ancien",
+   "entree": {
+    "h": 9600
+   },
+   "sortie": {
+    "valeur": "400 j"
+   }
+  }
+ ]
+}
