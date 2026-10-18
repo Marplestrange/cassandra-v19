@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : menus
 # ZONE       : CN
-# VERSION CN : 0.3.0  #653eed
+# VERSION CN : 0.3.1  #653eed
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module de menus : assemble l'arbre de navigation à partir de ce que les modules actifs DÉCLARENT.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=653eed ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=653eed ▼▼▼
 """Le module de menus : assemble l'arbre de navigation à partir de ce que les modules actifs DÉCLARENT.
 
 Un module ne touche jamais à l'interface pour s'y inscrire : il déclare ses entrées dans son manifeste ([[menus]]), et ce module les

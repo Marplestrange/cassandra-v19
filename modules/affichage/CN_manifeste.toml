@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.2.0  #142fe6
+# VERSION CN : 0.2.1  #1afba2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=142fe6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.1 empreinte=1afba2 ▼▼▼
 [module]
 id = "affichage"
 nom = "Affichage"
-version = "0.2.0"
+version = "0.2.1"
 noyau_min = "0.1.0"
 description = "Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte."
 confiance = "interne"
@@ -217,30 +217,12 @@ domaine = "socle"
 gabarit = "liste_detail"
 
 [[menus]]
-id = "affichage"
-libelle = "Affichage"
-ecran = "vue_affichage"
-ordre = 30
-role = "admin"
-icone = "palette"
-zone = "avatar"
-
-[[menus]]
 id = "societe"
 libelle = "Société / Organisation"
 ecran = "vue_societe"
 ordre = 20
 role = "admin"
 icone = "building"
-zone = "avatar"
-
-[[menus]]
-id = "info"
-libelle = "Info Cassandra"
-ecran = "vue_info"
-ordre = 90
-role = "utilisateur"
-icone = "info"
 zone = "avatar"
 
 [permissions]

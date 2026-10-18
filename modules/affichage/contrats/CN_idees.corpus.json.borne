@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.2.0  #b2f444
+# VERSION CN : 0.2.1  #b2f444
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : idees.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

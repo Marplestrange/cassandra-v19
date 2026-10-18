@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.2.0  #0265d6
+# VERSION CN : 0.2.1  #0265d6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=0265d6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.1 empreinte=0265d6 ▼▼▼
 """Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 
 Un module ne dit jamais comment il s'affiche. Il déclare des écrans (avec un gabarit), des tuiles (avec un composant et une source de données) et

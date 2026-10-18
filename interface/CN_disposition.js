@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #157d2e
+// VERSION CN : 0.1.0  #ddbe42
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=157d2e ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=ddbe42 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -445,9 +445,11 @@
     const app = document.createElement("div"); app.className = "um-sec"; app.setAttribute("data-d19-av", "1"); app.innerHTML = blocApparence();
     const acts = document.createElement("div"); acts.className = "um-acts"; acts.setAttribute("data-d19-av", "1");
     acts.innerHTML = (E.d.avatar || []).map((a) => '<button class="um-i" role="menuitem" data-d19-avid="' + esc(a.id) + '">' + ico(a.icone || "info") + esc(a.libelle) + "</button>").join("")
-      + '<button class="um-i" role="menuitem" data-d19-verre="1">' + ico("palette") + "Verre dépoli : " + (E.prefs.verre ? "oui" : "non") + "</button>"
-      + '<button class="um-i" role="menuitem" data-d19-v18="1">' + ico("menu") + "Ancienne disposition</button>";
+      ;
     hote.parentNode.insertBefore(app, hote); hote.parentNode.insertBefore(acts, hote);
+    // « Info Cassandra » : tout en bas, à côté du numéro de version
+    const pied = $(".um-pied", um);
+    if (pied) { const v = pied.querySelector(".bu-sp"); const b = document.createElement("button"); b.type = "button"; b.className = "d19-info-lien"; b.setAttribute("data-d19-av", "1"); b.setAttribute("data-d19-info", "1"); b.textContent = "Info Cassandra ›"; pied.insertBefore(b, v ? v.nextSibling : null); }
   }
 
   // ── les pages propres : Société / Organisation, Info Cassandra ─────────────
@@ -612,6 +614,7 @@
       if ((x = c("[data-d19-theme]"))) { if (typeof window.appliquerTheme === "function") window.appliquerTheme(x.dataset.d19Theme); setTimeout(completerAvatar, 50); return; }
       if ((x = c("[data-d19-hab]"))) { const id = x.dataset.d19Hab, r = document.documentElement; if (typeof window.appliquerTheme === "function") window.appliquerTheme(id || (r.getAttribute("data-theme") === "dark" ? "dark" : "light")); setTimeout(completerAvatar, 50); return; }
       if ((x = c("[data-d19-avid]"))) { const a = (E.d.avatar || []).find((y) => y.id === x.dataset.d19Avid); if (typeof window.fermerCompte === "function") window.fermerCompte(); if (a) { E.silence = false; ouvrirNoeud(a); } return; }
+      if ((x = c("[data-d19-info]"))) { if (typeof window.fermerCompte === "function") window.fermerCompte(); if (CASS.ouvrirEcran) CASS.ouvrirEcran("affichage:vue_info", "Info Cassandra"); return; }
       if (c("[data-d19-verre]")) { E.prefs.verre = !E.prefs.verre; sauverPrefs(); appliquerPrefs(); completerAvatar(); return; }
       if (c("[data-d19-v18]")) { try { localStorage.setItem("cass_disposition", "v18"); } catch (e) {} location.reload(); return; }
       if (E.sug && !c("#d19-cass .sug") && !c("[data-sug]")) { E.sug = false; rendrePanel(); }

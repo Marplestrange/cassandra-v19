@@ -12,7 +12,7 @@
 <!-- RÔLE       : Module affichage : la disposition (menus du haut, colonne de gauche, menu avatar) -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=4b79a0 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=eb61a4 ▼▼▼ -->
 # Module affichage : la disposition (menus du haut, colonne de gauche, menu avatar)
 
 Note de conception, 18-10. Maquette de référence (interactive) : `brouillons/maquette-menus-artifact.html`, publiée en page privée.
@@ -112,11 +112,7 @@ La disposition est calculée UNE fois côté serveur (mêmes groupes, mêmes ent
 
 On **garde le menu de l'avatar actuel** (identité, session, apparence, écran allégé, coffre, paramètres, raccourcis, verrouiller, déconnecter) et on le range en sections dans cet ordre :
 
-1. Identité (nom, mail, rôle) et **Cette session** (ouverte depuis, depuis, entité).
-2. **Paramètres généraux** : Modules (module `modules`), Utilisateurs et groupes (module `comptes`/`droits`), **Société / Organisation** (nom, logo, forme juridique, identifiant légal, adresse, fuseau et langue par défaut). Le nom et le logo de la société s'affichent en tête de la barre haute ; par défaut ceux de Cassandra. Réglage global (admin), stocké par `affichage` (objet `theme_perso` ou un objet `organisation` dédié, à trancher au codage).
-3. Mon compte, Mon coffre-fort, Raccourcis clavier.
-4. Verrouiller l'écran, Se déconnecter.
-5. Pied : « Cassandra 19.0 » → page **Info Cassandra**.
+Décision 18-10 (Drisse) : le menu de l'avatar **reste celui de l'ancienne interface**, avec seulement **deux entrées ajoutées** : **Modules / Applications** (la page Modules de Réglages) et **Société / Organisation** (nom, logo, forme juridique, identifiant légal, adresse, fuseau et langue par défaut ; le nom et le logo s'affichent en tête de la barre, et le favicon suit le logo ; par défaut le toit de Cassandra). Le reste est inchangé : identité, session, apparence, écran allégé, Mon coffre-fort, Paramètres généraux, Raccourcis clavier, Verrouiller, Se déconnecter. **Info Cassandra** n'est pas une entrée : c'est un lien tout en bas, à côté du numéro de version. L'apparence perd ses initiales : un thème en icônes (clair, crème, sombre, système) et un sélecteur d'habillage (Cassandra, Ardoise, Papier, puis ceux des modules).
 
 Apparence (segments clair / crème / sombre / thèmes de modules) et Écran allégé restent dans le menu (blocs actuels) ; le bouton thème de la barre haute reste un raccourci vers le même sélecteur.
 

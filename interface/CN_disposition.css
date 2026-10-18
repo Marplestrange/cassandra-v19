@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=5b69a1 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=e6aba7 ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -185,6 +185,9 @@ body.d19 .app-body{position:relative}
 #usermenu .d19-themes button svg{width:16px;height:16px}
 #usermenu .d19-themes button[aria-checked="true"]{background:var(--surface-solid,#fff);color:var(--txt-strong);box-shadow:var(--shadow-glass)}
 #usermenu .d19-habs{display:flex;flex-wrap:wrap;gap:6px}
+#usermenu .d19-habs .d19-chip{font-size:11px;padding:4px 10px}
+#usermenu .d19-info-lien{background:none;border:0;padding:0;color:var(--accent);font:inherit;font-size:inherit;cursor:pointer;text-decoration:underline;margin-left:auto}
+#usermenu .d19-info-lien:hover{color:var(--accent-deep,var(--accent))}
 #usermenu [data-d19-av] .um-h{margin-bottom:6px}
 /* ---------- palette, voile, toast ---------- */
 #d19-pal{position:absolute;inset:0;background:rgba(16,24,40,.35);display:none;align-items:flex-start;justify-content:center;padding-top:80px;z-index:90}
