@@ -2543,5 +2543,899 @@
    ]
   },
   "attendu": []
+ },
+ {
+  "fonction": "collect_cron_jobs",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_cron_jobs",
+  "scenario": {
+   "cmds": {
+    "crontab": "# c\n* * * * * root /usr/bin/x\n0 3 * * * /usr/bin/y\n17 * * * * alice cd /\ncourt"
+   }
+  },
+  "attendu": [
+   {
+    "user": "root",
+    "schedule": "* * * * *",
+    "command": "/usr/bin/x",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "root",
+    "schedule": "0 3 * * *",
+    "command": "/usr/bin/y",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "alice",
+    "schedule": "17 * * * *",
+    "command": "cd /",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_cron_jobs",
+  "scenario": {
+   "cmds": {
+    "crontab": "no crontab for root"
+   }
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_cron_jobs",
+  "scenario": {
+   "fs": {
+    "/etc/crontab": "# c\n* * * * * root /usr/bin/x\n0 3 * * * /usr/bin/y\n17 * * * * alice cd /\ncourt",
+    "/etc/cron.d/logrotate": "0 1 * * * /bin/z",
+    "/etc/cron.d/.cache": "0 1 * * * /bin/no",
+    "/var/spool/cron/crontabs/bob": "5 5 * * * /bin/b"
+   },
+   "dirs": [
+    "/etc/cron.d",
+    "/var/spool/cron/crontabs"
+   ]
+  },
+  "attendu": [
+   {
+    "user": "root",
+    "schedule": "* * * * *",
+    "command": "/usr/bin/x",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "system",
+    "schedule": "0 3 * * *",
+    "command": "/usr/bin/y",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "alice",
+    "schedule": "17 * * * *",
+    "command": "cd /",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "logrotate",
+    "schedule": "0 1 * * *",
+    "command": "/bin/z",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "bob",
+    "schedule": "5 5 * * *",
+    "command": "/bin/b",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_cron_jobs",
+  "scenario": {
+   "fs": {
+    "/etc/crontab": {
+     "__erreur__": "x"
+    },
+    "/etc/cron.d/a": {
+     "__erreur__": "x"
+    },
+    "/var/spool/cron/crontabs/b": "# c\n* * * * * root /usr/bin/x\n0 3 * * * /usr/bin/y\n17 * * * * alice cd /\ncourt"
+   },
+   "dirs": [
+    "/etc/cron.d",
+    "/var/spool/cron/crontabs"
+   ]
+  },
+  "attendu": [
+   {
+    "user": "root",
+    "schedule": "* * * * *",
+    "command": "/usr/bin/x",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "b",
+    "schedule": "0 3 * * *",
+    "command": "/usr/bin/y",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "alice",
+    "schedule": "17 * * * *",
+    "command": "cd /",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_services",
+  "scenario": {
+   "api": [
+    {
+     "name": "nginx",
+     "status": "running",
+     "version": "1.2"
+    },
+    {}
+   ]
+  },
+  "attendu": [
+   {
+    "name": "nginx",
+    "status": "running",
+    "version": "1.2",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "name": "",
+    "status": "unknown",
+    "version": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_services",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_services",
+  "scenario": {
+   "cmds": {
+    "systemctl show nginx": "loaded",
+    "systemctl is-active nginx": "active\n",
+    "systemctl show redis": "loaded",
+    "systemctl is-active redis": "weird",
+    "systemctl show mysql": "not-found",
+    "systemctl show fail2ban": "loaded",
+    "systemctl is-active fail2ban": "failed"
+   }
+  },
+  "attendu": [
+   {
+    "name": "nginx",
+    "status": "active",
+    "version": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "name": "fail2ban",
+    "status": "failed",
+    "version": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fp_disk_stat",
+  "scenario": {
+   "dispo": false
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fp_disk_stat",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fp_disk_stat",
+  "scenario": {
+   "fs": {
+    "/proc/diskstats": [
+     "8 0 sda 100 0 2000 0 50 0 800 0 0 0 0 0 0\n8 1 sda1 1 0 1 0 1 0 1 0 0 0 0 0 0\n259 0 nvme0n1 5 0 40 0 6 0 48 0 0 0 0 0 0\n8 16 sdb 9 0 90 0 10 0 100 0 0 0 0 0 0",
+     "8 0 sda 110 0 2400 0 60 0 1000 0 0 0 0 0 0\n259 0 nvme0n1 5 0 40 0 6 0 48 0 0 0 0 0 0\n8 32 sdc 1 0 1 0 1 0 1 0 0 0 0 0 0"
+    ]
+   }
+  },
+  "attendu": [
+   {
+    "ts": "2026-10-17T12:00:00.000001",
+    "device": "sda",
+    "read_bytes": 204800,
+    "write_bytes": 102400,
+    "read_iops": 10,
+    "write_iops": 10
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fp_disk_stat",
+  "scenario": {
+   "fs": {
+    "/proc/diskstats": "8 0 sda 100 0 2000 0 50 0 800 0 0 0 0 0 0\n8 1 sda1 1 0 1 0 1 0 1 0 0 0 0 0 0\n259 0 nvme0n1 5 0 40 0 6 0 48 0 0 0 0 0 0\n8 16 sdb 9 0 90 0 10 0 100 0 0 0 0 0 0"
+   }
+  },
+  "attendu": [
+   {
+    "ts": "2026-10-17T12:00:00.000001",
+    "device": "sda",
+    "read_bytes": 0,
+    "write_bytes": 0,
+    "read_iops": 0,
+    "write_iops": 0
+   },
+   {
+    "ts": "2026-10-17T12:00:00.000001",
+    "device": "sdb",
+    "read_bytes": 0,
+    "write_bytes": 0,
+    "read_iops": 0,
+    "write_iops": 0
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fp_disk_stat",
+  "scenario": {
+   "fs": {
+    "/proc/diskstats": {
+     "__erreur__": "x"
+    }
+   }
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fp_disk_stat",
+  "scenario": {
+   "fs": {
+    "/proc/diskstats": [
+     "8 0 sda 1 0 1 0 1 0 1",
+     "8 0 sda 110 0 2400 0 60 0 1000 0 0 0 0 0 0\n259 0 nvme0n1 5 0 40 0 6 0 48 0 0 0 0 0 0\n8 32 sdc 1 0 1 0 1 0 1 0 0 0 0 0 0"
+    ]
+   }
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_phpfpm_pools",
+  "scenario": {},
+  "attendu": []
+ },
+ {
+  "fonction": "collect_phpfpm_pools",
+  "scenario": {
+   "fs": {
+    "/etc/php/8.2/fpm/pool.d/www.conf": "[global]\n[www]\nlisten = /run/php/php8.2-fpm.sock\npm.max_children = 20\n[autre]\npm.max_children = x"
+   },
+   "dirs": [
+    "/etc/php"
+   ]
+  },
+  "attendu": [
+   {
+    "pool": "autre",
+    "socket": "",
+    "total_processes": 0,
+    "active_processes": 0,
+    "idle_processes": 0,
+    "max_children": null,
+    "slow_requests": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "pool": "www",
+    "socket": "/run/php/php8.2-fpm.sock",
+    "total_processes": 0,
+    "active_processes": 0,
+    "idle_processes": 0,
+    "max_children": 20,
+    "slow_requests": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_phpfpm_pools",
+  "scenario": {
+   "fs": {
+    "/etc/php/8.2/fpm/pool.d/www.conf": "[global]\n[www]\nlisten = /run/php/php8.2-fpm.sock\npm.max_children = 20\n[autre]\npm.max_children = x",
+    "/etc/php/8.1/fpm/pool.d/x.conf": {
+     "__erreur__": "x"
+    },
+    "/var/log/php8.2-fpm.log": "[17-Oct-2026 10:00:00] [pool www] server reached pm.max_children\n[16-Oct-2026 10:00:00] [pool www] server reached pm.max_children",
+    "/var/log/php-fpm/e.log": {
+     "__erreur__": "x"
+    }
+   },
+   "cmds": {
+    "ps": "S php-fpm: pool www\nR php-fpm: pool www\nR php-fpm: pool fantome\nS nginx"
+   }
+  },
+  "attendu": [
+   {
+    "pool": "autre",
+    "socket": "",
+    "total_processes": 0,
+    "active_processes": 0,
+    "idle_processes": 0,
+    "max_children": null,
+    "slow_requests": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "pool": "fantome",
+    "socket": "",
+    "total_processes": 1,
+    "active_processes": 1,
+    "idle_processes": 0,
+    "max_children": null,
+    "slow_requests": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "pool": "www",
+    "socket": "/run/php/php8.2-fpm.sock",
+    "total_processes": 2,
+    "active_processes": 1,
+    "idle_processes": 1,
+    "max_children": 20,
+    "slow_requests": 1,
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_phpfpm_pools",
+  "scenario": {
+   "cmds": {
+    "ps": "S php-fpm: pool www\nR php-fpm: pool www\nR php-fpm: pool fantome\nS nginx"
+   }
+  },
+  "attendu": [
+   {
+    "pool": "fantome",
+    "socket": "",
+    "total_processes": 1,
+    "active_processes": 1,
+    "idle_processes": 0,
+    "max_children": null,
+    "slow_requests": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "pool": "www",
+    "socket": "",
+    "total_processes": 2,
+    "active_processes": 1,
+    "idle_processes": 1,
+    "max_children": null,
+    "slow_requests": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_phpfpm_pools",
+  "scenario": {
+   "fs": {
+    "/opt/php82/etc/php-fpm.d/a.conf": "[global]\n[www]\nlisten = /run/php/php8.2-fpm.sock\npm.max_children = 20\n[autre]\npm.max_children = x",
+    "/etc/php-fpm.d/b.conf": "[www]\nlisten = /b.sock"
+   }
+  },
+  "attendu": [
+   {
+    "pool": "autre",
+    "socket": "",
+    "total_processes": 0,
+    "active_processes": 0,
+    "idle_processes": 0,
+    "max_children": null,
+    "slow_requests": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "pool": "www",
+    "socket": "/b.sock",
+    "total_processes": 0,
+    "active_processes": 0,
+    "idle_processes": 0,
+    "max_children": 20,
+    "slow_requests": 0,
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_paquets_mouvements",
+  "scenario": {},
+  "attendu": {
+   "n": 0,
+   "changelog": [],
+   "curseur": []
+  }
+ },
+ {
+  "fonction": "collect_paquets_mouvements",
+  "scenario": {
+   "stat": {
+    "/var/log/dpkg.log": [
+     317,
+     1
+    ]
+   },
+   "journaux": {
+    "/var/log/dpkg.log": "2026-10-17 09:00:01 install nginx:amd64 <none> 1.22\n2026-10-17 09:00:02 upgrade curl:amd64 7.1 7.2\n2026-10-17 09:00:03 remove old <none> <none>\nbruit\n2026-10-17 09:00:04 configure x 1 2\n2026-10-17 09:00:05 purge pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp a b\n"
+   }
+  },
+  "attendu": {
+   "n": 0,
+   "changelog": [],
+   "curseur": [
+    [
+     "dpkg",
+     1,
+     317
+    ]
+   ]
+  }
+ },
+ {
+  "fonction": "collect_paquets_mouvements",
+  "scenario": {
+   "stat": {
+    "/var/log/dpkg.log": [
+     317,
+     1
+    ]
+   },
+   "journaux": {
+    "/var/log/dpkg.log": "2026-10-17 09:00:01 install nginx:amd64 <none> 1.22\n2026-10-17 09:00:02 upgrade curl:amd64 7.1 7.2\n2026-10-17 09:00:03 remove old <none> <none>\nbruit\n2026-10-17 09:00:04 configure x 1 2\n2026-10-17 09:00:05 purge pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp a b\n"
+   },
+   "curseur": [
+    [
+     "dpkg",
+     1,
+     0
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 4,
+   "changelog": [
+    [
+     "2026-10-17T09:00:01",
+     "paquet",
+     "nginx",
+     "modified",
+     null,
+     "nginx installé",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:02",
+     "paquet",
+     "curl",
+     "modified",
+     null,
+     "curl mis à jour (7.1 → 7.2)",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:03",
+     "paquet",
+     "old",
+     "modified",
+     null,
+     "old retiré",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:05",
+     "paquet",
+     "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+     "modified",
+     null,
+     "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp purgé",
+     "info"
+    ]
+   ],
+   "curseur": [
+    [
+     "dpkg",
+     1,
+     317
+    ]
+   ]
+  }
+ },
+ {
+  "fonction": "collect_paquets_mouvements",
+  "scenario": {
+   "stat": {
+    "/var/log/dpkg.log": [
+     317,
+     1
+    ],
+    "/var/log/dnf.rpm.log": [
+     191,
+     7
+    ]
+   },
+   "journaux": {
+    "/var/log/dpkg.log": "2026-10-17 09:00:01 install nginx:amd64 <none> 1.22\n2026-10-17 09:00:02 upgrade curl:amd64 7.1 7.2\n2026-10-17 09:00:03 remove old <none> <none>\nbruit\n2026-10-17 09:00:04 configure x 1 2\n2026-10-17 09:00:05 purge pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp a b\n",
+    "/var/log/dnf.rpm.log": "2026-10-17T09:00:01Z SUBDEBUG Upgrade: curl-7.1\n2026-10-17T09:00:02+0200 SUBDEBUG Installed: vim-8\n2026-10-17T09:00:03Z SUBDEBUG Erase: old-1\n2026-10-17T09:00:04Z SUBDEBUG Upgraded: curl-7.0\n"
+   },
+   "curseur": [
+    [
+     "dpkg",
+     1,
+     0
+    ],
+    [
+     "dnf",
+     7,
+     0
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 8,
+   "changelog": [
+    [
+     "2026-10-17T09:00:01",
+     "paquet",
+     "nginx",
+     "modified",
+     null,
+     "nginx installé",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:02",
+     "paquet",
+     "curl",
+     "modified",
+     null,
+     "curl mis à jour (7.1 → 7.2)",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:03",
+     "paquet",
+     "old",
+     "modified",
+     null,
+     "old retiré",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:05",
+     "paquet",
+     "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+     "modified",
+     null,
+     "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp purgé",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:01",
+     "paquet",
+     "curl-7.1",
+     "modified",
+     null,
+     "curl-7.1 mis à jour",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:02",
+     "paquet",
+     "vim-8",
+     "modified",
+     null,
+     "vim-8 installé",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:03",
+     "paquet",
+     "old-1",
+     "modified",
+     null,
+     "old-1 retiré",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:04",
+     "paquet",
+     "curl-7.0",
+     "modified",
+     null,
+     "curl-7.0 remplacé",
+     "info"
+    ]
+   ],
+   "curseur": [
+    [
+     "dnf",
+     7,
+     191
+    ],
+    [
+     "dpkg",
+     1,
+     317
+    ]
+   ]
+  }
+ },
+ {
+  "fonction": "collect_paquets_mouvements",
+  "scenario": {
+   "stat": {
+    "/var/log/dpkg.log": [
+     317,
+     2
+    ]
+   },
+   "journaux": {
+    "/var/log/dpkg.log": "2026-10-17 09:00:01 install nginx:amd64 <none> 1.22\n2026-10-17 09:00:02 upgrade curl:amd64 7.1 7.2\n2026-10-17 09:00:03 remove old <none> <none>\nbruit\n2026-10-17 09:00:04 configure x 1 2\n2026-10-17 09:00:05 purge pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp a b\n"
+   },
+   "curseur": [
+    [
+     "dpkg",
+     1,
+     10
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 4,
+   "changelog": [
+    [
+     "2026-10-17T09:00:01",
+     "paquet",
+     "nginx",
+     "modified",
+     null,
+     "nginx installé",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:02",
+     "paquet",
+     "curl",
+     "modified",
+     null,
+     "curl mis à jour (7.1 → 7.2)",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:03",
+     "paquet",
+     "old",
+     "modified",
+     null,
+     "old retiré",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:05",
+     "paquet",
+     "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+     "modified",
+     null,
+     "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp purgé",
+     "info"
+    ]
+   ],
+   "curseur": [
+    [
+     "dpkg",
+     2,
+     317
+    ]
+   ]
+  }
+ },
+ {
+  "fonction": "collect_paquets_mouvements",
+  "scenario": {
+   "stat": {
+    "/var/log/dpkg.log": [
+     10,
+     1
+    ]
+   },
+   "journaux": {
+    "/var/log/dpkg.log": "2026-10-17"
+   },
+   "curseur": [
+    [
+     "dpkg",
+     1,
+     500
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 0,
+   "changelog": [],
+   "curseur": [
+    [
+     "dpkg",
+     1,
+     0
+    ]
+   ]
+  }
+ },
+ {
+  "fonction": "collect_paquets_mouvements",
+  "scenario": {
+   "stat": {
+    "/var/log/dpkg.log": [
+     312,
+     1
+    ]
+   },
+   "journaux": {
+    "/var/log/dpkg.log": "2026-10-17 09:00:01 install nginx:amd64 <none> 1.22\n2026-10-17 09:00:02 upgrade curl:amd64 7.1 7.2\n2026-10-17 09:00:03 remove old <none> <none>\nbruit\n2026-10-17 09:00:04 configure x 1 2\n2026-10-17 09:00:05 purge pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+   },
+   "curseur": [
+    [
+     "dpkg",
+     1,
+     0
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 3,
+   "changelog": [
+    [
+     "2026-10-17T09:00:01",
+     "paquet",
+     "nginx",
+     "modified",
+     null,
+     "nginx installé",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:02",
+     "paquet",
+     "curl",
+     "modified",
+     null,
+     "curl mis à jour (7.1 → 7.2)",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:03",
+     "paquet",
+     "old",
+     "modified",
+     null,
+     "old retiré",
+     "info"
+    ]
+   ],
+   "curseur": [
+    [
+     "dpkg",
+     1,
+     186
+    ]
+   ]
+  }
+ },
+ {
+  "fonction": "collect_paquets_mouvements",
+  "scenario": {
+   "stat": {
+    "/var/log/dpkg.log": [
+     317,
+     1
+    ]
+   },
+   "journaux": {
+    "/var/log/dpkg.log": "2026-10-17 09:00:01 install nginx:amd64 <none> 1.22\n2026-10-17 09:00:02 upgrade curl:amd64 7.1 7.2\n2026-10-17 09:00:03 remove old <none> <none>\nbruit\n2026-10-17 09:00:04 configure x 1 2\n2026-10-17 09:00:05 purge pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp a b\n"
+   },
+   "curseur": [
+    [
+     "dpkg",
+     1,
+     317
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 0,
+   "changelog": [],
+   "curseur": [
+    [
+     "dpkg",
+     1,
+     317
+    ]
+   ]
+  }
+ },
+ {
+  "fonction": "collect_paquets_mouvements",
+  "scenario": {
+   "stat": {
+    "/var/log/dnf.rpm.log": [
+     191,
+     3
+    ]
+   },
+   "journaux": {
+    "/var/log/dnf.rpm.log": "2026-10-17T09:00:01Z SUBDEBUG Upgrade: curl-7.1\n2026-10-17T09:00:02+0200 SUBDEBUG Installed: vim-8\n2026-10-17T09:00:03Z SUBDEBUG Erase: old-1\n2026-10-17T09:00:04Z SUBDEBUG Upgraded: curl-7.0\n"
+   },
+   "curseur": [
+    [
+     "dnf",
+     3,
+     20
+    ]
+   ]
+  },
+  "attendu": {
+   "n": 3,
+   "changelog": [
+    [
+     "2026-10-17T09:00:02",
+     "paquet",
+     "vim-8",
+     "modified",
+     null,
+     "vim-8 installé",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:03",
+     "paquet",
+     "old-1",
+     "modified",
+     null,
+     "old-1 retiré",
+     "info"
+    ],
+    [
+     "2026-10-17T09:00:04",
+     "paquet",
+     "curl-7.0",
+     "modified",
+     null,
+     "curl-7.0 remplacé",
+     "info"
+    ]
+   ],
+   "curseur": [
+    [
+     "dnf",
+     3,
+     191
+    ]
+   ]
+  }
  }
 ]

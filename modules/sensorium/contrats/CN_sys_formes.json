@@ -24,7 +24,14 @@
      "sites_nginx",
      "sites_apache",
      "certificats_nginx",
-     "certificats_apache"
+     "certificats_apache",
+     "cron_lignes",
+     "services_api",
+     "services_systemctl",
+     "pools_php",
+     "diskstats_lire",
+     "diskstats_delta",
+     "paquets_lignes"
     ]
    }
   }

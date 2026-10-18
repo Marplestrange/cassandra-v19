@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #929aae
+# VERSION EC : EC0 (référence 0.3.0)  #26e92c
 # HÔTE CN    : CN_module.py · sys_formes @1.0
 # RÔLE       : transforme ce que le Sensorium lit du système (sorties de commandes, fichiers de configuration, JSON de smartctl) en sessions, ports, certificats, disques, état du matériel et sites web déclarés.
 # MÉTHODE    : fonctions pures, une par mesure ; le nexus lit les sources et décide des replis (who puis ss puis last ; ss puis netstat) ; l'EC ne lit jamais de fichier ni de commande.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=sys_formes contrat=@1.0 version=EC0 empreinte=929aae ▼▼▼
+# ▼▼▼ BORNE EC point=sys_formes contrat=@1.0 version=EC0 empreinte=26e92c ▼▼▼
 from datetime import datetime
 import re
 
@@ -287,6 +287,136 @@ def certificats_apache(contenu):
     hint = sn_m.group(1) if sn_m else ""
     return {"indice": hint, "chemins": re.findall(r"SSLCertificateFile\s+(\S+)", contenu)}
 
+def cron_lignes(texte, utilisateur, now):
+    """Les tâches planifiées d'un fichier crontab : une ligne par tâche, l'utilisateur lu dans la sixième colonne des fichiers système, sinon celui donné."""
+    jobs = []
+    for line in texte.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split()
+        if len(parts) >= 7 and re.match(r"[a-zA-Z_][a-zA-Z0-9_-]*$", parts[5]):
+            jobs.append({"user": parts[5], "schedule": " ".join(parts[:5]),
+                         "command": " ".join(parts[6:])[:200], "last_check": now})
+        elif len(parts) >= 6:
+            jobs.append({"user": utilisateur, "schedule": " ".join(parts[:5]),
+                         "command": " ".join(parts[5:])[:200], "last_check": now})
+    return jobs
+
+def services_api(liste, now):
+    """Les services d'après l'API du panneau."""
+    return [{"name": s.get("name", ""), "status": s.get("status", "unknown"),
+             "version": s.get("version", ""), "last_check": now} for s in liste]
+
+def services_systemctl(etats, now):
+    """Les services d'après systemctl : [[nom, état]] ; seuls les états connus comptent."""
+    return [{"name": svc, "status": st, "version": "", "last_check": now}
+            for svc, st in etats
+            if st in ("active", "inactive", "failed", "activating", "deactivating")]
+
+def pools_php(confs, ps_sortie, journaux, jour, now):
+    """Les pools PHP-FPM : confs [[chemin, texte]] (plafond pm.max_children, socket), processus vivants d'après `ps`, saturations du jour dans les journaux (textes)."""
+    pools = {}
+    for chemin, content in confs:
+        nom = None
+        for l in content.splitlines():
+            t = l.strip()
+            m = re.match(r"^\[([^\]]+)\]$", t)
+            if m and m.group(1) != "global":
+                nom = m.group(1)
+                pools.setdefault(nom, {"pool": nom, "socket": "", "max_children": None, "conf": chemin})
+            elif nom and t.startswith("listen") and "=" in t and not t.startswith("listen."):
+                pools[nom]["socket"] = t.split("=", 1)[1].strip()
+            elif nom and t.startswith("pm.max_children") and "=" in t:
+                try:
+                    pools[nom]["max_children"] = int(t.split("=", 1)[1].strip())
+                except ValueError:
+                    pass
+    vivants = {}
+    for l in (ps_sortie or "").splitlines():
+        m = re.search(r"php-fpm: pool (\S+)", l)
+        if m:
+            v = vivants.setdefault(m.group(1), [0, 0])
+            v[0] += 1
+            if l.strip().startswith("R"):
+                v[1] += 1
+    satures = {}
+    for texte in journaux:
+        for l in texte.splitlines()[-3000:]:
+            m = re.search(r"\[pool (\S+)\] server reached pm.max_children", l)
+            if m and jour in l:
+                satures[m.group(1)] = satures.get(m.group(1), 0) + 1
+    out = []
+    for nom in sorted(set(pools) | set(vivants)):
+        p = pools.get(nom, {"pool": nom, "socket": "", "max_children": None})
+        n, actifs = vivants.get(nom, [0, 0])
+        out.append({"pool": nom, "socket": p.get("socket", ""), "total_processes": n, "active_processes": actifs,
+                    "idle_processes": max(0, n - actifs), "max_children": p.get("max_children"),
+                    "slow_requests": satures.get(nom, 0), "last_check": now})
+    return out
+
+def diskstats_lire(texte):
+    """Les compteurs d'entrées-sorties par disque d'après /proc/diskstats (les partitions sont ignorées)."""
+    stats = {}
+    try:
+        for line in texte.splitlines():
+            parts = line.split()
+            if len(parts) < 14:
+                continue
+            dev = parts[2]
+            if re.search(r"\d+$", dev) and not re.match(r"^[sv]d[a-z]$", dev):
+                continue
+            stats[dev] = {
+                "reads": int(parts[3]),
+                "read_sects": int(parts[5]),
+                "writes": int(parts[7]),
+                "write_sects": int(parts[9]),
+            }
+    except Exception:
+        pass
+    return stats
+
+def diskstats_delta(s1, s2, now):
+    """Le débit et les opérations par disque entre deux relevés des compteurs."""
+    result = []
+    for dev in s1:
+        if dev not in s2:
+            continue
+        d1, d2 = s1[dev], s2[dev]
+        result.append({
+            "ts": now,
+            "device": dev,
+            "read_bytes": (d2["read_sects"] - d1["read_sects"]) * 512,
+            "write_bytes": (d2["write_sects"] - d1["write_sects"]) * 512,
+            "read_iops": d2["reads"] - d1["reads"],
+            "write_iops": d2["writes"] - d1["writes"],
+        })
+    return result
+
+_PAQUETS = {
+    "dpkg": re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (install|upgrade|remove|purge) (\S+) (\S+) (\S+)"),
+    "dnf": re.compile(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\S* SUBDEBUG (Upgrade|Installed|Erase|Upgraded|Install): (\S+)"),
+}
+
+def paquets_lignes(source, lignes):
+    """Les mouvements de paquets d'un journal (dpkg ou dnf) : [instant ISO, nom du paquet, texte]."""
+    rx = _PAQUETS[source]
+    res = []
+    for l in lignes:
+        m = rx.match(l)
+        if not m:
+            continue
+        if source == "dpkg":
+            ts, act, pq, avant, apres = m.groups()
+            verbe = {"install": "installé", "upgrade": "mis à jour", "remove": "retiré", "purge": "purgé"}[act]
+            txt = "%s %s" % (pq.split(":")[0], verbe) + ((" (%s → %s)" % (avant, apres)) if act == "upgrade" else "")
+        else:
+            ts, act, pq = m.groups()
+            verbe = {"Upgrade": "mis à jour", "Upgraded": "remplacé", "Installed": "installé", "Install": "installé", "Erase": "retiré"}.get(act, act)
+            txt = "%s %s" % (pq, verbe)
+        res.append([ts.replace(" ", "T"), pq.split(":")[0][:80], txt[:300]])
+    return res
+
 def forme(op, entree):
     if op == "sessions_base":
         return sessions_base(entree["who"], entree["ss"], entree["now"])
@@ -318,10 +448,24 @@ def forme(op, entree):
         return certificats_nginx(entree["contenu"])
     if op == "certificats_apache":
         return certificats_apache(entree["contenu"])
+    if op == "cron_lignes":
+        return cron_lignes(entree["texte"], entree["utilisateur"], entree["now"])
+    if op == "services_api":
+        return services_api(entree["liste"], entree["now"])
+    if op == "services_systemctl":
+        return services_systemctl(entree["etats"], entree["now"])
+    if op == "pools_php":
+        return pools_php(entree["confs"], entree["ps"], entree["journaux"], entree["jour"], entree["now"])
+    if op == "diskstats_lire":
+        return diskstats_lire(entree["texte"])
+    if op == "diskstats_delta":
+        return diskstats_delta(entree["s1"], entree["s2"], entree["now"])
+    if op == "paquets_lignes":
+        return paquets_lignes(entree["source"], entree["lignes"])
     raise ValueError("opération inconnue : %s" % op)
 
 def point_sys_formes(entree):
-    """Le point d'évolution `sys_formes` (contrat 1.0) : ce que le Sensorium lit du système, mis en forme : sessions ouvertes, ports à l'écoute, certificats, disques (SMART), matériel (températures, heure, pare-feu) et sites web déclarés. Le nexus lit les sources ; l'EC ne fait que la forme."""
+    """Le point d'évolution `sys_formes` (contrat 1.0) : ce que le Sensorium lit du système, mis en forme : sessions ouvertes, ports à l'écoute, certificats, disques (SMART), matériel (températures, heure, pare-feu), sites web déclarés, tâches planifiées, services, pools PHP, entrées-sorties des disques et mouvements de paquets. Le nexus lit les sources ; l'EC ne fait que la forme."""
     return {"valeur": forme(entree["op"], entree)}
 
 # ▲▲▲ FIN BORNE EC ▲▲▲

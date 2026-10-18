@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7eab5f
+# VERSION CN : 0.1.0  #44001d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le démon du Sensorium, seul et sans noyau, appelle ses points d'évolution ; que ses appels nourrissent le rejeu que le noyau absorbe ; et qu'une panne du service ne perd jamais une mesure.
 # MÉTHODE    : charge CN_sensorium.py comme module, un dossier de données temporaire, puis appelle les fonctions façades.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7eab5f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=44001d ▼▼▼
 import importlib.util
 import json
 import os
@@ -144,6 +144,8 @@ class FauxFichier:
         v = self.fs[self.chemin]
         if isinstance(v, dict) and "__erreur__" in v:
             raise OSError(v["__erreur__"])
+        if isinstance(v, list):                       # des relevés successifs d'un même fichier
+            return v.pop(0) if len(v) > 1 else v[0]
         return v
 
     def iterdir(self):
@@ -195,8 +197,40 @@ class FauxFichier:
         return FauxFichier(self.chemin.rsplit("/", 1)[0] or "/", self.fs, self.dirs)
 
 
+class Conn:
+    """Une base en mémoire que le collecteur peut « fermer » sans la perdre : le banc relit ce qu'il y a écrit."""
+    def __init__(self, c):
+        self.c = c
+
+    def execute(self, *a):
+        return self.c.execute(*a)
+
+    def commit(self):
+        self.c.commit()
+
+    def close(self):
+        pass
+
+
+class FauxOuvert:
+    def __init__(self, contenu):
+        self.contenu, self.pos = contenu, 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def seek(self, p):
+        self.pos = p
+
+    def read(self, n):
+        return self.contenu[self.pos:self.pos + n]
+
+
 class Collecteurs(unittest.TestCase):
-    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (96 scénarios : mail, FTP, comptes, bases, sauvegardes, crons, sites, sessions, ports, certificats, SMART, matériel, sites web ; aucun écart)."""
+    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (124 scénarios : mail, FTP, comptes, bases, sauvegardes, crons, sites, sessions, ports, certificats, SMART, matériel, sites web, tâches planifiées, services, disques, PHP-FPM, paquets ; aucun écart)."""
 
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
@@ -211,7 +245,7 @@ class Collecteurs(unittest.TestCase):
 
     def jouer(self, fonction, sc):
         m = self.m
-        fs, dirs = dict(sc.get("fs", {})), set(sc.get("dirs", []))
+        fs, dirs = {k: (list(v) if isinstance(v, list) else v) for k, v in sc.get("fs", {}).items()}, set(sc.get("dirs", []))
         m.Path = lambda chemin: FauxFichier(chemin, fs, dirs)
         m.datetime = FauxDT
         m._fp_available = lambda: sc.get("dispo", True)
@@ -243,6 +277,25 @@ class Collecteurs(unittest.TestCase):
                 return sc.get("du", {}).get(c.split()[2].strip("'"), "")
             return sc.get("mysql", "")
         m.run_cmd = run_cmd
+        if fonction == "collect_paquets_mouvements":
+            import sqlite3
+            db = sqlite3.connect(":memory:")
+            db.execute("CREATE TABLE changelog (ts, entity_type, entity_name, change_type, old_value, new_value, severity)")
+            db.execute("CREATE TABLE paquets_curseur (source TEXT PRIMARY KEY, inode, position)")
+            for src, ino, pos in sc.get("curseur", []):
+                db.execute("INSERT INTO paquets_curseur VALUES (?,?,?)", (src, ino, pos))
+            m.get_conn = lambda: Conn(db)
+            contenus = {k: v.encode("utf-8") for k, v in sc.get("journaux", {}).items()}
+
+            def stat(chemin):
+                if chemin not in sc.get("stat", {}):
+                    raise OSError("absent")
+                taille, ino = sc["stat"][chemin]
+                return type("St", (), {"st_size": taille, "st_ino": ino})()
+            m.os = type("OS", (), dict({k: getattr(os, k) for k in dir(os)}, stat=staticmethod(stat)))()
+            m.open = lambda chemin, mode="r": FauxOuvert(contenus[chemin])
+            n = getattr(m, fonction)()
+            return json.loads(json.dumps({"n": n, "changelog": db.execute("SELECT * FROM changelog").fetchall(), "curseur": db.execute("SELECT * FROM paquets_curseur ORDER BY source").fetchall()}))
         return json.loads(json.dumps(getattr(m, fonction)()))
 
     def test_les_collecteurs_rendent_ce_que_rendait_l_ancien_code(self):

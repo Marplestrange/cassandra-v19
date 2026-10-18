@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.6  #c1163f
+# VERSION CN : 0.1.7  #0d5f0c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.6 empreinte=c1163f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.7 empreinte=0d5f0c ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -1187,31 +1187,18 @@ def collect_fastpanel_services() -> list:
     # [FP2] API tentative
     api_svcs = _fp_api_get_list("/api/service/list")
     if api_svcs:
-        for s in api_svcs:
-            svcs.append({
-                "name":       s.get("name", ""),
-                "status":     s.get("status", "unknown"),
-                "version":    s.get("version", ""),
-                "last_check": now,
-            })
-        return svcs
+        return _sys_formes("services_api", liste=api_svcs, now=now)
 
     # [FS] systemctl fallback — SEULES LES UNITÉS INSTALLÉES (19-09). `is-active` répond « inactive »
     # pour une unité qui n'existe pas : 19 des 28 noms de la liste n'étaient pas installés sur la
     # machine, et l'écran les comptait « tombés », avec un bouton « démarrer » sur du vide.
+    etats = []
     for svc in fp2_services:
         charge = run_cmd(f"systemctl show {svc} -p LoadState --value 2>/dev/null").strip()
         if charge != "loaded":
             continue
-        st = run_cmd(f"systemctl is-active {svc} 2>/dev/null").strip()
-        if st in ("active", "inactive", "failed", "activating", "deactivating"):
-            svcs.append({
-                "name":       svc,
-                "status":     st,
-                "version":    "",
-                "last_check": now,
-            })
-    return svcs
+        etats.append([svc, run_cmd(f"systemctl is-active {svc} 2>/dev/null").strip()])
+    return _sys_formes("services_systemctl", etats=etats, now=now)
 
 
 def collect_active_sessions():
@@ -1673,43 +1660,17 @@ def collect_fp_disk_stat(period_hours: int = 24) -> list:
     now_str = datetime.now().isoformat()
 
     def _read_diskstats():
-        stats = {}
         try:
-            for line in Path("/proc/diskstats").read_text().splitlines():
-                parts = line.split()
-                if len(parts) < 14:
-                    continue
-                dev = parts[2]
-                if re.search(r"\d+$", dev) and not re.match(r"^[sv]d[a-z]$", dev):
-                    continue
-                stats[dev] = {
-                    "reads":       int(parts[3]),
-                    "read_sects":  int(parts[5]),
-                    "writes":      int(parts[7]),
-                    "write_sects": int(parts[9]),
-                }
+            texte = Path("/proc/diskstats").read_text()
         except Exception:
-            pass
-        return stats
+            return {}
+        return _sys_formes("diskstats_lire", texte=texte)
 
     s1 = _read_diskstats()
     time.sleep(0.5)
     s2 = _read_diskstats()
 
-    result = []
-    for dev in s1:
-        if dev not in s2:
-            continue
-        d1, d2 = s1[dev], s2[dev]
-        result.append({
-            "ts":          now_str,
-            "device":      dev,
-            "read_bytes":  (d2["read_sects"]  - d1["read_sects"])  * 512,
-            "write_bytes": (d2["write_sects"] - d1["write_sects"]) * 512,
-            "read_iops":   d2["reads"]  - d1["reads"],
-            "write_iops":  d2["writes"] - d1["writes"],
-        })
-    return result
+    return _sys_formes("diskstats_delta", s1=s1, s2=s2, now=now_str)
 
 
 def collect_fp_net_stat(period_hours: int = 24) -> list:
@@ -2356,135 +2317,26 @@ def collect_disk_smart():
 
 def collect_phpfpm_pools():
     """Les pools PHP-FPM RÉELS (08-10) : processus vivants par pool, plafond pm.max_children, et la saturation
-    (« reached pm.max_children » dans le journal du jour). Le relevé posait 0 partout."""
-    pools = {}
+    (« reached pm.max_children » dans le journal du jour). Le relevé posait 0 partout. Les LECTURES restent ici ;
+    la forme est un POINT D'ÉVOLUTION (points/EC_sys_formes.py)."""
     now = datetime.now().isoformat()
     confs = list(Path("/etc/php").glob("*/fpm/pool.d/*.conf")) + list(Path("/opt").glob("php*/etc/php-fpm.d/*.conf")) + \
         list(Path("/etc").glob("php-fpm.d/*.conf")) + list(Path("/etc/opt").glob("remi/php*/php-fpm.d/*.conf"))
+    lus = []
     for pool_conf in confs:
         try:
-            content = pool_conf.read_text(errors="replace")
+            lus.append([str(pool_conf), pool_conf.read_text(errors="replace")])
         except Exception:
             continue
-        nom = None
-        for l in content.splitlines():
-            t = l.strip()
-            m = re.match(r"^\[([^\]]+)\]$", t)
-            if m and m.group(1) != "global":
-                nom = m.group(1)
-                pools.setdefault(nom, {"pool": nom, "socket": "", "max_children": None, "conf": str(pool_conf)})
-            elif nom and t.startswith("listen") and "=" in t and not t.startswith("listen."):
-                pools[nom]["socket"] = t.split("=", 1)[1].strip()
-            elif nom and t.startswith("pm.max_children") and "=" in t:
-                try:
-                    pools[nom]["max_children"] = int(t.split("=", 1)[1].strip())
-                except ValueError:
-                    pass
-    vivants = {}
-    for l in (run_cmd(["ps", "-eo", "stat=,args="], timeout=10) or "").splitlines():
-        m = re.search(r"php-fpm: pool (\S+)", l)
-        if m:
-            v = vivants.setdefault(m.group(1), [0, 0])
-            v[0] += 1
-            if l.strip().startswith("R"):
-                v[1] += 1
-    satures = {}
+    ps = run_cmd(["ps", "-eo", "stat=,args="], timeout=10) or ""
     jour = datetime.now().strftime("%d-%b-%Y")
+    journaux = []
     for f in list(Path("/var/log").glob("php*fpm*.log")) + list(Path("/var/log").glob("php-fpm/*.log")):
         try:
-            for l in f.read_text(errors="replace").splitlines()[-3000:]:
-                m = re.search(r"\[pool (\S+)\] server reached pm.max_children", l)
-                if m and jour in l:
-                    satures[m.group(1)] = satures.get(m.group(1), 0) + 1
+            journaux.append(f.read_text(errors="replace"))
         except Exception:
             pass
-    out = []
-    for nom in sorted(set(pools) | set(vivants)):
-        p = pools.get(nom, {"pool": nom, "socket": "", "max_children": None})
-        n, actifs = vivants.get(nom, [0, 0])
-        out.append({"pool": nom, "socket": p.get("socket", ""), "total_processes": n, "active_processes": actifs,
-                    "idle_processes": max(0, n - actifs), "max_children": p.get("max_children"),
-                    "slow_requests": satures.get(nom, 0), "last_check": now})
-    return out
-
-
-def collect_redis_stats():
-    out = run_cmd("redis-cli INFO stats")
-    if out:
-        hits   = re.search(r'keyspace_hits:(\d+)', out)
-        misses = re.search(r'keyspace_misses:(\d+)', out)
-        if hits and misses:
-            total = int(hits.group(1)) + int(misses.group(1))
-            hit_rate = round(100.0 * int(hits.group(1)) / total, 1) if total > 0 else 0
-            return {"ts": datetime.now().isoformat(), "hit_rate": hit_rate,
-                    "total_keys": 0, "last_check": datetime.now().isoformat()}
-    return None
-
-
-def collect_dns_servers():
-    servers = []
-    now = datetime.now().isoformat()
-    if Path("/etc/bind/named.conf").exists():
-        out = run_cmd("named -v")
-        version = re.search(r'BIND ([\d.]+)', out)
-        servers.append({"server_type": "bind",
-                        "version": version.group(1) if version else "unknown",
-                        "running": 1 if "active" in run_cmd("systemctl is-active bind9") else 0,
-                        "last_check": now})
-    if Path("/etc/powerdns/pdns.conf").exists():
-        servers.append({"server_type": "powerdns", "version": "unknown",
-                        "running": 1 if "active" in run_cmd("systemctl is-active pdns") else 0,
-                        "last_check": now})
-    return servers, []
-
-
-def collect_backup_runs():
-    runs = []
-    now = datetime.now().isoformat()
-    conf_candidates = [
-        Path("/root/.config/rclone/rclone.conf"),
-        Path("/etc/rclone/rclone.conf"),
-        Path("/home/rclone/.config/rclone/rclone.conf"),
-    ]
-    for conf in conf_candidates:
-        if not conf.exists():
-            continue
-        try:
-            config = configparser.ConfigParser()
-            config.read(conf)
-            for section in config.sections():
-                log_status = "unknown"
-                log_path = Path(f"/var/log/rclone/{section}.log")
-                if log_path.exists():
-                    last_line = run_cmd(f"tail -1 {shlex.quote(str(log_path))}")
-                    if "Transferred" in last_line:
-                        log_status = "success"
-                    elif "ERROR" in last_line:
-                        log_status = "error"
-                runs.append({"remote": section, "ts": now, "status": log_status,
-                             "size_gb": 0, "files_count": 0, "last_check": now})
-        except Exception:
-            pass
-    return runs
-
-
-def collect_vpn_connections():
-    vpns = []
-    now = datetime.now().isoformat()
-    out = run_cmd("wg show")
-    if out:
-        vpns.append({"type": "wireguard", "name": "wg0", "status": "active", "last_check": now})
-    ts_out = run_cmd("tailscale status --json")
-    if ts_out:
-        try:
-            data = json.loads(ts_out)
-            self_data = data.get("Self", {})
-            vpns.append({"type": "tailscale",
-                         "name": self_data.get("DNSName", "").split(".")[0],
-                         "status": "connected", "last_check": now})
-        except Exception:
-            pass
-    return vpns
+    return _sys_formes("pools_php", confs=lus, ps=ps, journaux=journaux, jour=jour, now=now)
 
 
 def collect_cron_jobs():
@@ -2492,17 +2344,8 @@ def collect_cron_jobs():
     now  = datetime.now().isoformat()
 
     def parse_cron_lines(text, user="root"):
-        for line in text.splitlines():
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            parts = line.split()
-            if len(parts) >= 7 and re.match(r"[a-zA-Z_][a-zA-Z0-9_-]*$", parts[5]):
-                jobs.append({"user": parts[5], "schedule": " ".join(parts[:5]),
-                             "command": " ".join(parts[6:])[:200], "last_check": now})
-            elif len(parts) >= 6:
-                jobs.append({"user": user, "schedule": " ".join(parts[:5]),
-                             "command": " ".join(parts[5:])[:200], "last_check": now})
+        # La forme d'une ligne de crontab est un POINT D'ÉVOLUTION (points/EC_sys_formes.py) ; les lectures restent ici.
+        jobs.extend(_sys_formes("cron_lignes", texte=text, utilisateur=user, now=now))
 
     out = run_cmd("crontab -l 2>/dev/null")
     if out and "no crontab" not in out.lower():
@@ -3307,8 +3150,7 @@ def collect_backups() -> list:
 # des changements (dpkg, dnf), et toute entité qui PASSE en alerte cherche les changements des 30 minutes
 # précédentes. On dit « cause probable », jamais « cause » : une coïncidence reste possible.
 CAUSES_FENETRE_MIN = 30
-_PAQUETS_JOURNAUX = (("dpkg", "/var/log/dpkg.log", re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (install|upgrade|remove|purge) (\S+) (\S+) (\S+)")),
-                     ("dnf", "/var/log/dnf.rpm.log", re.compile(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\S* SUBDEBUG (Upgrade|Installed|Erase|Upgraded|Install): (\S+)")))
+_PAQUETS_JOURNAUX = (("dpkg", "/var/log/dpkg.log"), ("dnf", "/var/log/dnf.rpm.log"))   # la forme des lignes : POINT D'ÉVOLUTION (points/EC_sys_formes.py)
 
 
 def collect_paquets_mouvements() -> int:
@@ -3316,7 +3158,7 @@ def collect_paquets_mouvements() -> int:
     n = 0
     conn = get_conn()
     try:
-        for source, chemin, rx in _PAQUETS_JOURNAUX:
+        for source, chemin in _PAQUETS_JOURNAUX:
             try:
                 st = os.stat(chemin)
             except OSError:
@@ -3334,20 +3176,9 @@ def collect_paquets_mouvements() -> int:
                 if fin >= 0:
                     lignes = bloc[:fin + 1].decode("utf-8", "replace").splitlines()
                     pos += fin + 1
-            for l in lignes:
-                m = rx.match(l)
-                if not m:
-                    continue
-                if source == "dpkg":
-                    ts, act, pq, avant, apres = m.groups()
-                    verbe = {"install": "installé", "upgrade": "mis à jour", "remove": "retiré", "purge": "purgé"}[act]
-                    txt = "%s %s" % (pq.split(":")[0], verbe) + ((" (%s → %s)" % (avant, apres)) if act == "upgrade" else "")
-                else:
-                    ts, act, pq = m.groups()
-                    verbe = {"Upgrade": "mis à jour", "Upgraded": "remplacé", "Installed": "installé", "Install": "installé", "Erase": "retiré"}.get(act, act)
-                    txt = "%s %s" % (pq, verbe)
+            for ts, nom, txt in _sys_formes("paquets_lignes", source=source, lignes=lignes):
                 conn.execute("INSERT INTO changelog (ts, entity_type, entity_name, change_type, old_value, new_value, severity) "
-                             "VALUES (?,?,?,?,?,?,?)", (ts.replace(" ", "T"), "paquet", pq.split(":")[0][:80], "modified", None, txt[:300], "info"))
+                             "VALUES (?,?,?,?,?,?,?)", (ts, "paquet", nom, "modified", None, txt, "info"))
                 n += 1
             conn.execute("INSERT INTO paquets_curseur (source, inode, position) VALUES (?,?,?) "
                          "ON CONFLICT(source) DO UPDATE SET inode=excluded.inode, position=excluded.position", (source, st.st_ino, pos))
