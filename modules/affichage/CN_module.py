@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.1.1  #2efd78
+# VERSION CN : 0.2.0  #0265d6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=2efd78 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=0265d6 ▼▼▼
 """Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 
 Un module ne dit jamais comment il s'affiche. Il déclare des écrans (avec un gabarit), des tuiles (avec un composant et une source de données) et
@@ -21,13 +21,18 @@ accent, le désactiver les retire, sans toucher à l'interface.
 
   - le catalogue (écrans, tuiles, accents) est un objet du registre, rebâti par un moteur quand un module est branché ou débranché ;
   - un second moteur lit les sources des tuiles à leur rythme : l'interface lit une donnée prête, elle n'appelle jamais les modules ;
-  - le thème est résolu ici : jetons du noyau, accent choisi, touches des modules ; un accent sans contraste suffisant est refusé.
+  - le thème est résolu ici : jetons du noyau, accent choisi, touches des modules ; un accent sans contraste suffisant est refusé ;
+  - la DISPOSITION des menus (groupes de la barre du haut, entrées et sous-entrées de la colonne, menu de l'avatar) : le nexus lit l'arbre des menus pour le compte,
+    appelle le point d'évolution `disposition` (qui range, sans rien décider d'accès), puis retire lui-même ce que le rôle ou le droit ne permet pas ;
+  - les IDÉES du panneau conversationnel (point `idees`), les pages épinglées, l'organisation (nom, logo), les fils du panneau liés à une page.
 """
+import base64
 import copy
 import hashlib
 import json
 import re
 import time
+import zoneinfo
 from pathlib import Path
 
 BASES = {
@@ -44,6 +49,24 @@ ZONES = ("entete", "principal", "lateral")
 TAILLES = ("s", "m", "l")
 CATALOGUE = ("affichage_catalogue", "global")
 _COULEUR = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+VERSION_AFFICHEE = "19.0"
+INTERLOCUTEURS = ("itare", "cassandra", "inv")
+RANG_NIVEAU = {"": 0, "alerte": 1, "danger": 2}
+PERSONNELS = ("tache", "rappel", "event", "decision", "mandat", "note", "mail")      # ce qu'Itare voit : le poste de travail du compte, jamais l'état du parc
+MAX_EPINGLES = 12
+ORG_DEFAUT = {"nom": "Cassandra", "forme": "", "identifiant": "", "adresse": "", "fuseau": "Europe/Paris", "langue": "fr", "logo": ""}
+ORG_LONGUEURS = {"nom": 60, "forme": 60, "identifiant": 40, "adresse": 160}
+LOGO_MAX = 180000
+_LOGO = re.compile(r"^data:image/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$")
+_FUSEAU = re.compile(r"^[A-Za-z]+(/[A-Za-z0-9_+-]+){1,2}$|^UTC$")
+_CLE_EPINGLE = re.compile(r"^[a-z0-9_:.|-]{1,120}$", re.I)
+# Les gestes que le panneau a le droit de PROPOSER : une table fermée du nexus. Proposer n'est pas faire : l'exécution passe par l'exécuteur, qui refait toute vérification de droit.
+ACTES = {
+    "relire_cert": {"capacite": "certificats.relire_expiration", "arg": "hote", "nat": "ssl", "qui": "cassandra", "admin": True, "risque": "lecture",
+                    "titre": "Relire l’expiration du certificat", "perimetre": "un hôte, en lecture seule",
+                    "preuve": "l’expiration est relue sur le certificat réellement servi", "retour": "aucun : c’est une lecture"},
+}
 
 
 # ------------------------------------------------------------------ contraste (WCAG)
@@ -324,9 +347,279 @@ def brancher(ctx):
         else:
             ctx.poser(res["type"], res["id"], res["libelle"], etat="perso", donnees=res["avant"], compte=res["compte"])
 
+
+    # ---------------------------------------------------------------- la disposition des menus
+    def _aplatir(arbre):
+        """L'arbre des menus (familles, entrées, enfants) en une liste d'entrées, avec leur famille : c'est ce que le point d'évolution range."""
+        plat = []
+
+        def marcher(e, famille):
+            plat.append({"id": e["id"], "module": e.get("module", ""), "libelle": e["libelle"], "ecran": e.get("ecran", ""), "ordre": e.get("ordre", 100),
+                         "role": e.get("role", "utilisateur"), "icone": e.get("icone", ""), "parent": e.get("parent", ""), "droit": e.get("droit", ""),
+                         "famille": famille, "groupe": e.get("groupe", ""), "zone": e.get("zone", "principal")})
+            for f in e.get("enfants", []):
+                marcher(f, famille)
+        for fam in arbre or []:
+            for e in fam.get("enfants", []):
+                marcher(e, fam.get("famille", ""))
+        return plat
+
+    def _alertes_du_jour(ctx):
+        """Les alertes du compte (jour.aujourdhui, pour LUI) comptées par origine : {ou: {brule: n, regarder: n}}. Une source muette ne dit rien."""
+        try:
+            j = ctx.executer_lecture("jour.aujourdhui")
+        except (PermissionError, KeyError, ValueError):
+            return [], {}
+        items = [x for b in (j or {}).get("bandes", []) for x in b.get("items", [])]
+        comptes = {}
+        for x in items:
+            cle = x.get("ou") or x.get("quoi") or ""
+            if x.get("bande") in ("brule", "regarder") and cle:
+                comptes.setdefault(cle, {"brule": 0, "regarder": 0})[x["bande"]] += 1
+        return items, comptes
+
+    def _droits_du(ctx, compte):
+        if not compte:
+            return None
+        try:
+            d = ctx.executer_lecture("droits.mes_droits", compte=compte)
+        except (PermissionError, KeyError, ValueError):
+            d = None
+        return set(d["droits"]) if d else set()
+
+    def _permis(e, admin, detenus):
+        return not ((e.get("role") == "admin" and not admin) or (e.get("droit") and detenus is not None and e["droit"] not in detenus))
+
+    def _niveau_de(entrees):
+        niv = ""
+        for e in entrees:
+            for x in [e] + e.get("enfants", []):
+                if RANG_NIVEAU[x["badge"]["niveau"]] > RANG_NIVEAU[niv]:
+                    niv = x["badge"]["niveau"]
+        return niv
+
+    def _filtrer(sortie, admin, detenus):
+        """Le nexus retire ce que le rôle ou le droit ne permet pas, puis recalcule lui-même les niveaux : le point d'évolution ne décide d'aucun accès."""
+        groupes = []
+        for g in sortie["groupes"]:
+            xs = []
+            for e in g["entrees"]:
+                if not _permis(e, admin, detenus):
+                    continue
+                e = dict(e, enfants=[f for f in e["enfants"] if _permis(f, admin, detenus)])
+                xs.append(e)
+            if xs:
+                niv = _niveau_de(xs)
+                groupes.append(dict(g, entrees=xs, niveau=niv, interlocuteur=g["interlocuteur"] if admin else "itare"))
+        avatar = [e for e in sortie["avatar"] if _permis(e, admin, detenus)]
+        niveau = ""
+        for g in groupes:
+            if RANG_NIVEAU[g["niveau"]] > RANG_NIVEAU[niveau]:
+                niveau = g["niveau"]
+        niveau = niveau or "ok"
+        return {"groupes": groupes, "avatar": avatar, "orphelines": sortie["orphelines"], "niveau": niveau}
+
+    def _epingles_de(ctx, compte):
+        xs = [o["donnees"] for o in ctx.lister(portee=ctx.TOUT, type="epingle") if o["compte"] == compte]
+        return sorted(xs, key=lambda d: (d.get("ts", 0), d.get("cle", "")))
+
+    def _organisation(ctx):
+        o = ctx.lire("organisation", "global", portee=ctx.TOUT)
+        return dict(ORG_DEFAUT, **{k: v for k, v in ((o or {}).get("donnees") or {}).items() if k in ORG_DEFAUT})
+
+    def lire_disposition(ctx, role="utilisateur", compte=""):
+        role, compte = _moi(ctx, role, compte)
+        admin = role == "admin"
+        m = ctx.executer_lecture("menus.lire_menu", role=role, compte=compte) or {"arbre": [], "badges": {}}
+        detenus = _droits_du(ctx, compte)
+        _, alertes = _alertes_du_jour(ctx)
+        entree = {"entrees": _aplatir(m["arbre"]), "modules": sorted(x.id for x in ctx.manifestes_actifs()), "badges": m.get("badges", {}), "signaux": alertes}
+        sortie = _filtrer(ctx.point("disposition", entree)["valeur"], admin, detenus)
+        return {"etag": _empreinte([m.get("etag", ""), sortie]), "groupes": sortie["groupes"], "avatar": sortie["avatar"], "orphelines": sortie["orphelines"],
+                "niveau": sortie["niveau"], "cassandra_ok": admin, "organisation": _organisation(ctx), "epingles": _epingles_de(ctx, compte),
+                "version": VERSION_AFFICHEE}
+
+    def lire_organisation(ctx):
+        return _organisation(ctx)
+
+    def modifier_organisation(ctx, nom=None, forme=None, identifiant=None, adresse=None, fuseau=None, langue=None, logo=None, reinitialiser=False):
+        if not ctx.est_admin(ctx.compte or ""):
+            raise PermissionError("l'organisation se règle par un administrateur")
+        existant = ctx.lire("organisation", "global", portee=ctx.TOUT)
+        avant = copy.deepcopy(existant["donnees"]) if existant else None
+        if reinitialiser:
+            ctx.retirer("organisation", "global")
+            return {"avant": avant, "attendu": None}
+        nouveau = dict(avant or {})
+        for champ, v in (("nom", nom), ("forme", forme), ("identifiant", identifiant), ("adresse", adresse)):
+            if v is None:
+                continue
+            v = str(v).strip()
+            if len(v) > ORG_LONGUEURS[champ] or (champ == "nom" and not v):
+                raise ValueError("%s : %s" % (champ, "un texte de 1 à %d caractères" % ORG_LONGUEURS[champ] if champ == "nom" else "au plus %d caractères" % ORG_LONGUEURS[champ]))
+            nouveau[champ] = v
+        if fuseau is not None:
+            connus = zoneinfo.available_timezones()            # vide sur une machine sans base des fuseaux : on ne juge alors que la forme
+            if not _FUSEAU.match(str(fuseau)) or (connus and str(fuseau) not in connus):
+                raise ValueError("fuseau horaire inconnu : %s" % fuseau)
+            nouveau["fuseau"] = str(fuseau)
+        if langue is not None:
+            if langue not in ("fr", "en"):
+                raise ValueError("langue : fr | en")
+            nouveau["langue"] = langue
+        if logo is not None:
+            if logo != "":
+                if len(logo) > LOGO_MAX or not _LOGO.match(logo):
+                    raise ValueError("logo : une image png, jpeg, webp ou gif de %d Ko au plus (en data:image/…;base64)" % (LOGO_MAX // 1000))
+                try:
+                    base64.b64decode(logo.split(",", 1)[1], validate=True)
+                except ValueError:
+                    raise ValueError("logo : image illisible")
+            nouveau["logo"] = logo
+        ctx.poser("organisation", "global", "Organisation", etat="perso", donnees=nouveau)
+        return {"avant": avant, "attendu": nouveau}
+
+    def prouver_org(ctx, res):
+        o = ctx.lire("organisation", "global", portee=ctx.TOUT)
+        return (o is None) if res["attendu"] is None else (o is not None and o["donnees"] == res["attendu"])
+
+    def defaire_org(ctx, res):
+        if res["avant"] is None:
+            ctx.retirer("organisation", "global")
+        else:
+            ctx.poser("organisation", "global", "Organisation", etat="perso", donnees=res["avant"])
+
+    # ---------------------------------------------------------------- les pages épinglées (par compte)
+    def epingler(ctx, cle, groupe, entree, vue="", libelle=""):
+        compte = ctx.compte or ""
+        if not compte:
+            raise ValueError("une épingle appartient à un compte")
+        if not _CLE_EPINGLE.match(str(cle or "")) or not _CLE_EPINGLE.match(str(groupe or "")) or not _CLE_EPINGLE.match(str(entree or "")):
+            raise ValueError("épingle : clé, groupe et entrée invalides")
+        libelle = str(libelle or "").strip()[:80] or str(cle)
+        oid = "%s|%s" % (compte, cle)
+        existant = ctx.lire("epingle", oid, portee=ctx.TOUT)
+        avant = copy.deepcopy(existant["donnees"]) if existant else None
+        if not existant and len(_epingles_de(ctx, compte)) >= MAX_EPINGLES:
+            raise ValueError("au plus %d pages épinglées" % MAX_EPINGLES)
+        nouveau = {"cle": str(cle), "groupe": str(groupe), "entree": str(entree), "vue": str(vue or "")[:60], "libelle": libelle, "ts": (avant or {}).get("ts") or int(time.time())}
+        ctx.poser("epingle", oid, libelle, etat="perso", donnees=nouveau, compte=compte)
+        return {"id": oid, "compte": compte, "avant": avant, "attendu": nouveau}
+
+    def desepingler(ctx, cle):
+        compte = ctx.compte or ""
+        oid = "%s|%s" % (compte, cle)
+        existant = ctx.lire("epingle", oid, portee=ctx.TOUT)
+        if not existant:
+            raise ValueError("cette page n'est pas épinglée")
+        ctx.retirer("epingle", oid)
+        return {"id": oid, "compte": compte, "avant": copy.deepcopy(existant["donnees"]), "attendu": None}
+
+    def prouver_ep(ctx, res):
+        o = ctx.lire("epingle", res["id"], portee=ctx.TOUT)
+        return (o is None) if res["attendu"] is None else (o is not None and o["donnees"] == res["attendu"])
+
+    def defaire_ep(ctx, res):
+        if res["avant"] is None:
+            ctx.retirer("epingle", res["id"])
+        else:
+            ctx.poser("epingle", res["id"], res["avant"]["libelle"], etat="perso", donnees=res["avant"], compte=res["compte"])
+
+    # ---------------------------------------------------------------- les idées du panneau
+    def lire_idees(ctx, mode="", groupe="", entree="", sous="", page="", heure=-1, faits=None, refuses=None, nombre=4):
+        role, compte = _moi(ctx, "utilisateur", "")
+        admin = role == "admin"
+        mode = mode if mode in ("itare", "cassandra") else ("itare" if groupe in ("", "desk") else "cassandra")
+        if mode == "cassandra" and not admin:                    # Cassandra ne répond qu'à un administrateur : le nexus tranche, pas la page
+            mode = "itare"
+        items, _ = _alertes_du_jour(ctx)
+        if mode == "itare":
+            items = [x for x in items if x.get("quoi") in PERSONNELS]
+        faits = {k for k in (faits or []) if k in ACTES}
+        refuses = {k for k in (refuses or []) if k in ACTES}
+        actes = [{"id": k, "titre": a["titre"], "nat": a["nat"], "qui": a["qui"], "risque": a["risque"],
+                  "etat": "fait" if k in faits else ("refuse" if k in refuses else "")}
+                 for k, a in sorted(ACTES.items()) if admin or not a["admin"]]
+        h = int(heure) if isinstance(heure, int) and 0 <= heure < 24 else time.localtime().tm_hour
+        entree_pt = {"contexte": {"groupe": str(groupe)[:30], "entree": str(entree)[:40], "sous": str(sous)[:40], "mode": mode, "heure": h, "page": str(page)[:80]},
+                     "items": items, "actes": actes, "max": nombre if isinstance(nombre, int) and not isinstance(nombre, bool) else 4}
+        sortie = ctx.point("idees", entree_pt)["valeur"]
+        proposes = {i["acte"] for i in sortie["idees"] if i.get("acte")}
+        return {"mode": mode, "idees": sortie["idees"], "urgent": sortie["urgent"],
+                "actes": {k: {x: ACTES[k][x] for x in ("capacite", "arg", "titre", "risque", "perimetre", "preuve", "retour")} for k in sorted(proposes)}}
+
+    # ---------------------------------------------------------------- la session
+    def lire_session(ctx, ip_session=""):
+        role, compte = _moi(ctx, "utilisateur", "")
+        sessions = []
+        try:
+            r = ctx.executer_lecture("comptes.mes_sessions")
+            sessions = [{"cree": s.get("created"), "derniere": s.get("last_used"), "ip": s.get("ip", ""), "agent": s.get("agent", "")} for s in (r or {}).get("sessions", [])][:5]
+        except (PermissionError, KeyError, ValueError):
+            pass
+        org = _organisation(ctx)
+        return {"compte": compte, "role": role, "ip": ip_session, "organisation": org["nom"], "fuseau": org["fuseau"], "langue": org["langue"],
+                "version": VERSION_AFFICHEE, "modules": len(ctx.manifestes_actifs()), "sessions": sessions}
+
+    # ---------------------------------------------------------------- les fils du panneau, liés à une page
+    def _fils_du_salon(ctx):
+        try:
+            r = ctx.executer_lecture("salon.fils")
+        except (PermissionError, KeyError, ValueError):
+            return {}
+        return {f["id"]: f for f in (r or {}).get("fils", [])}
+
+    def lire_fils(ctx, agent="itare"):
+        if agent not in INTERLOCUTEURS:
+            raise ValueError("agent : %s" % " | ".join(INTERLOCUTEURS))
+        compte = ctx.compte or ""
+        salon = _fils_du_salon(ctx)
+        out = []
+        for o in ctx.lister(portee=ctx.TOUT, type="fil_page"):
+            d = o["donnees"]
+            if o["compte"] == compte and d.get("agent") == agent and d.get("fil") in salon:
+                f = salon[d["fil"]]
+                out.append({"fil": d["fil"], "titre": f.get("titre", ""), "dernier": f.get("dernier", 0), "n": f.get("n", 0), "page": d.get("page", "")})
+        return {"fils": sorted(out, key=lambda x: -(x["dernier"] or 0))}
+
+    def lier_fil(ctx, fil, agent, page=""):
+        compte = ctx.compte or ""
+        if not compte:
+            raise ValueError("un fil du panneau appartient à un compte")
+        if agent not in INTERLOCUTEURS:
+            raise ValueError("agent : %s" % " | ".join(INTERLOCUTEURS))
+        if not isinstance(fil, int) or isinstance(fil, bool) or fil <= 0 or fil not in _fils_du_salon(ctx):
+            raise ValueError("fil inconnu, ou qui n'est pas à ce compte")
+        oid = "%s|%s|%d" % (compte, agent, fil)
+        existant = ctx.lire("fil_page", oid, portee=ctx.TOUT)
+        avant = copy.deepcopy(existant["donnees"]) if existant else None
+        nouveau = {"fil": fil, "agent": agent, "page": str(page or "")[:120]}
+        ctx.poser("fil_page", oid, "Fil %d du panneau" % fil, etat=agent, donnees=nouveau, compte=compte)
+        return {"id": oid, "compte": compte, "avant": avant, "attendu": nouveau}
+
+    def prouver_fp(ctx, res):
+        o = ctx.lire("fil_page", res["id"], portee=ctx.TOUT)
+        return (o is None) if res["attendu"] is None else (o is not None and o["donnees"] == res["attendu"])
+
+    def defaire_fp(ctx, res):
+        if res["avant"] is None:
+            ctx.retirer("fil_page", res["id"])
+        else:
+            ctx.poser("fil_page", res["id"], "Fil %d du panneau" % res["avant"]["fil"], etat=res["avant"]["agent"], donnees=res["avant"], compte=res["compte"])
+
     ctx.moteur("reconstruire", reconstruire)
     ctx.moteur("reconstruire_regulierement", reconstruire)
     ctx.moteur("donnees_widgets", donnees_widgets)
+    ctx.implementer("lire_disposition", lire_disposition)
+    ctx.implementer("lire_organisation", lire_organisation)
+    ctx.implementer("lire_idees", lire_idees)
+    ctx.implementer("lire_session", lire_session)
+    ctx.implementer("lire_fils", lire_fils)
+    ctx.implementer("modifier_organisation", modifier_organisation, prouver_org, defaire_org,
+                    simuler=lambda ctx, **_: "modifierait l'organisation")
+    ctx.implementer("epingler", epingler, prouver_ep, defaire_ep, simuler=lambda ctx, cle="", **_: "épinglerait %s" % cle)
+    ctx.implementer("desepingler", desepingler, prouver_ep, defaire_ep, simuler=lambda ctx, cle="", **_: "retirerait l'épingle %s" % cle)
+    ctx.implementer("lier_fil", lier_fil, prouver_fp, defaire_fp, simuler=lambda ctx, fil=0, **_: "lierait le fil %s à une page" % fil)
     ctx.implementer("lire_theme", lire_theme)
     ctx.implementer("lire_ecran", lire_ecran)
     ctx.implementer("lire_onglets", lire_onglets)
@@ -338,6 +631,6 @@ def brancher(ctx):
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
-# CN : tout ce fichier est du nexus : _rgb, _luminance, contraste, meilleur_texte, accent_ok, _rgba, _empreinte, lire_habillage …
-# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# CN : tout ce fichier est du nexus : _rgb, _luminance, contraste, meilleur_texte, accent_ok, _rgba, _empreinte, lire_habillage, et la façade des menus (lire_disposition, lire_idees, épingles, organisation, fils) …
+# EC : deux points d'évolution, `disposition` (points/EC_disposition.py) et `idees` (points/EC_idees.py), appelés par ctx.point ; ils rangent et classent, ils ne décident d'aucun accès.
 # LIEN : à compléter (contrat, fichiers voisins)

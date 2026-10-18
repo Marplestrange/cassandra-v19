@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : menus
 # ZONE       : CN
-# VERSION CN : 0.2.0  #9e1b6e
+# VERSION CN : 0.3.0  #653eed
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module de menus : assemble l'arbre de navigation à partir de ce que les modules actifs DÉCLARENT.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=9e1b6e ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=653eed ▼▼▼
 """Le module de menus : assemble l'arbre de navigation à partir de ce que les modules actifs DÉCLARENT.
 
 Un module ne touche jamais à l'interface pour s'y inscrire : il déclare ses entrées dans son manifeste ([[menus]]), et ce module les
@@ -50,7 +50,7 @@ def construire_plat(manifestes):
                 parent = mn.parent if ":" in mn.parent else "%s:%s" % (m.id, mn.parent)
             plat[qid] = {"id": qid, "module": m.id, "libelle": mn.libelle, "ecran": ("%s:%s" % (m.id, mn.ecran)) if mn.ecran else "",
                          "ordre": mn.ordre, "role": mn.role, "icone": mn.icone, "badge": mn.badge, "parent": parent, "droit": mn.droit,
-                         "famille": m.famille or "autres"}
+                         "famille": m.famille or "autres", "groupe": mn.groupe, "zone": mn.zone}
     return _corriger(plat)
 
 

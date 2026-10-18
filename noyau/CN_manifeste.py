@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b7c2e0
+# VERSION CN : 0.1.0  #84e2aa
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b7c2e0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=84e2aa ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -46,6 +46,7 @@ COMPOSANTS = ("nombre", "jauge", "liste", "etat", "serie", "texte")   # ce que l
 _COULEUR = re.compile(r"^#[0-9a-fA-F]{6}$")
 _VALEUR_THEME = re.compile(r"^(#[0-9a-fA-F]{3,8}|rgba?\([0-9., %]+\)|\d+(\.\d+)?(px|rem|em|%))$")
 BADGES_MENU = ("", "constats", "moteurs")
+ZONES_MENU = ("principal", "avatar")
 # Les événements du noyau lui-même : un module peut les écouter sans qu'aucun module ne les « émette ».
 EVENEMENTS_DU_NOYAU = ("noyau.", "module.", "capacite.", "constat.", "objet.", "moteur.", "savoir.", "humain.")
 TYPES_RESERVES = ("noyau", "module", "capacite", "constat", "objet", "moteur", "savoir", "humain")
@@ -155,6 +156,8 @@ class Menu:
     icone: str = ""
     badge: str = ""            # compteur affiché : constats (ouverts du module) | moteurs (à surveiller)
     droit: str = ""            # le droit qu'un compte doit détenir pour voir cette entrée
+    groupe: str = ""           # le groupe d'affichage (barre du haut) où l'entrée se range : vide, le module d'affichage range selon la famille
+    zone: str = "principal"    # principal : la barre et la colonne ; avatar : le menu de l'avatar (paramètres, compte, coffre…)
 
 
 @dataclass(frozen=True)
@@ -642,6 +645,11 @@ def valider(brut: dict) -> list:
         o = mn.get("ordre", 100)
         if not isinstance(o, int) or isinstance(o, bool) or not 0 <= o <= 9999:
             e.append("%s.ordre : entier entre 0 et 9999" % nom)
+        if mn.get("zone", "principal") not in ZONES_MENU:
+            e.append("%s.zone : %s" % (nom, " | ".join(ZONES_MENU)))
+        g = mn.get("groupe", "")
+        if g and not re.match(r"^[a-z][a-z0-9_]*$", str(g)):
+            e.append("%s.groupe : un identifiant (minuscules, chiffres, _), ou vide pour laisser l'affichage ranger" % nom)
         p = mn.get("parent", "")
         if p and not re.match(r"^[a-z][a-z0-9_]*(:[a-z][a-z0-9_]*)?$", str(p)):
             e.append("%s.parent : un menu de ce module, ou « module:menu »" % nom)
@@ -856,7 +864,8 @@ def construire(brut: dict, source="") -> Manifeste:
                              tuple([m["sur"]] if isinstance(m.get("sur"), str) else (m.get("sur") or ())), m.get("duree_max_s", 60), bool(m.get("asynchrone", False)))
                       for m in brut.get("moteurs", []) or []),
         menus=tuple(Menu(x["id"], x["libelle"], x.get("ecran", ""), x.get("parent", ""), x.get("ordre", 100), x.get("role", "utilisateur"),
-                         x.get("icone", ""), x.get("badge", ""), _qualifier(m["id"], x.get("droit"))) for x in brut.get("menus", []) or []),
+                         x.get("icone", ""), x.get("badge", ""), _qualifier(m["id"], x.get("droit")),
+                         x.get("groupe", ""), x.get("zone", "principal")) for x in brut.get("menus", []) or []),
         onglets=tuple(Onglet(x["id"], x["libelle"], x["objet"], x.get("ecran", ""), x.get("ordre", 100), x.get("role", "utilisateur"), x.get("icone", ""), _qualifier(m["id"], x.get("droit")))
                       for x in brut.get("onglets", []) or []),
         mesures=tuple(Mesure(x["id"], x["libelle"], x["capacite"], x.get("genre", "jauge"), x.get("unite", ""), x.get("famille", ""), x.get("agregat", "moy"), bool(x.get("groupee", False)),

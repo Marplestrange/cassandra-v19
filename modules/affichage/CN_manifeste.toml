@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.1.1  #79cc21
+# VERSION CN : 0.2.0  #142fe6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=79cc21 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=142fe6 ▼▼▼
 [module]
 id = "affichage"
 nom = "Affichage"
-version = "0.1.1"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte."
 confiance = "interne"
@@ -34,6 +34,18 @@ libelle = "La dernière donnée d'une tuile (lue par un moteur, servie à l'inte
 [[objets]]
 type = "theme_perso"
 libelle = "Le choix de thème, de densité et d'accent, global ou d'un compte"
+
+[[objets]]
+type = "organisation"
+libelle = "L'organisation : nom, logo, forme juridique, identifiant légal, adresse, fuseau et langue par défaut"
+
+[[objets]]
+type = "epingle"
+libelle = "Une page épinglée par un compte en tête de sa colonne de gauche"
+
+[[objets]]
+type = "fil_page"
+libelle = "Un fil du panneau conversationnel (un fil du salon), lié à un interlocuteur et, s'il y a lieu, à une page"
 
 [[objets]]
 type = "widget_perso"
@@ -104,6 +116,100 @@ retour = "restaurer la personnalisation précédente, ou la retirer s'il n'y en 
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte", "cassandra", "itare"]
 
+[[points_evolution]]
+id = "disposition"
+libelle = "La disposition des menus : les entrées visibles par le compte en entrée, les groupes, entrées, sous-entrées, menu de l'avatar et niveaux d'alerte en sortie"
+contrat = "1.0"
+reference = "points/EC_disposition"
+fonction = "point_disposition"
+runtime = "python"
+
+[[points_evolution]]
+id = "idees"
+libelle = "Les idées du panneau : les alertes du compte, le contexte (page, interlocuteur, heure) et les gestes proposables en entrée, au plus quelques idées classées avec leur raison en sortie"
+contrat = "1.0"
+reference = "points/EC_idees"
+fonction = "point_idees"
+runtime = "python"
+
+[[capacites]]
+id = "lire_disposition"
+libelle = "Lire la disposition des menus pour le compte : groupes, entrées, sous-entrées, menu de l'avatar, pages épinglées, organisation et niveau d'alerte"
+risque = "lecture"
+
+[[capacites]]
+id = "lire_idees"
+libelle = "Lire les idées du panneau conversationnel pour la page et l'interlocuteur, avec leur raison"
+risque = "lecture"
+
+[[capacites]]
+id = "lire_session"
+libelle = "Lire ce que le serveur sait de la session en cours : compte, rôle, adresse de la connexion, organisation, dernières sessions"
+risque = "lecture"
+masque = ["ip_session"]
+
+[[capacites]]
+id = "lire_organisation"
+libelle = "Lire l'organisation : nom, logo, forme juridique, identifiant légal, adresse, fuseau et langue par défaut"
+risque = "lecture"
+
+[[capacites]]
+id = "lire_fils"
+libelle = "Lire les fils du panneau d'un interlocuteur (Itare, Cassandra, invités), avec la page à laquelle chacun est lié"
+risque = "lecture"
+
+[[capacites]]
+id = "modifier_organisation"
+libelle = "Régler l'organisation (nom, logo, forme juridique, identifiant légal, adresse, fuseau, langue) : un administrateur seulement"
+risque = "faible"
+perimetre = ["l'objet organisation"]
+preuve = "relire l'organisation écrite"
+retour = "restaurer l'organisation précédente, ou le réglage par défaut s'il n'y en avait pas"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "epingler"
+libelle = "Épingler une page en tête de la colonne de gauche du compte"
+risque = "faible"
+perimetre = ["les objets epingle du compte"]
+preuve = "relire l'épingle écrite"
+retour = "retirer l'épingle, ou restaurer la précédente"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "desepingler"
+libelle = "Retirer une page épinglée du compte"
+risque = "faible"
+perimetre = ["les objets epingle du compte"]
+preuve = "relire que l'épingle a disparu"
+retour = "remettre l'épingle retirée"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "lier_fil"
+libelle = "Lier un fil du salon à un interlocuteur du panneau et à une page"
+risque = "faible"
+perimetre = ["les objets fil_page du compte"]
+preuve = "relire le lien écrit"
+retour = "retirer le lien, ou restaurer le précédent"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[ecrans]]
+id = "vue_info"
+libelle = "Info Cassandra"
+domaine = "socle"
+gabarit = "libre"
+
+[[ecrans]]
+id = "vue_societe"
+libelle = "Société / Organisation"
+domaine = "socle"
+gabarit = "libre"
+
 [[ecrans]]
 id = "vue_affichage"
 libelle = "Affichage"
@@ -117,6 +223,25 @@ ecran = "vue_affichage"
 ordre = 30
 role = "admin"
 icone = "palette"
+zone = "avatar"
+
+[[menus]]
+id = "societe"
+libelle = "Société / Organisation"
+ecran = "vue_societe"
+ordre = 20
+role = "admin"
+icone = "building"
+zone = "avatar"
+
+[[menus]]
+id = "info"
+libelle = "Info Cassandra"
+ecran = "vue_info"
+ordre = 90
+role = "utilisateur"
+icone = "info"
+zone = "avatar"
 
 [permissions]
 introspection = true

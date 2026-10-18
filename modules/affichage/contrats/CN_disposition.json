@@ -1,0 +1,25 @@
+{
+ "point": "affichage.disposition",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "entrees"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "une entrée reçue paraît au plus une fois ; elle ne cède sa place que si le pont de l'ancienne interface couvre son module",
+  "un groupe sans entrée n'existe pas ; les groupes suivent l'ordre de la table, jamais plus de sept",
+  "une famille ou un groupe inconnus retombent sur le groupe de repli et l'entrée est dite orpheline : jamais perdue",
+  "le pire niveau d'alerte remonte de l'entrée à son groupe et à l'ensemble ; une source inconnue ne crée rien",
+  "les entrées du menu de l'avatar ne paraissent dans aucun groupe",
+  "les mêmes entrées reçues, dans n'importe quel ordre, donnent la même disposition"
+ ]
+}

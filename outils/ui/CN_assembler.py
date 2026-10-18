@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d3c321
+# VERSION CN : 0.1.0  #0f4975
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble l'interface V19 à partir de l'extraction brute de l'interface V18.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d3c321 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0f4975 ▼▼▼
 """Assemble l'interface V19 à partir de l'extraction brute de l'interface V18.
 
 usage : python outils/ui/CN_assembler.py [docs/v18/CN_interface_v18.html] [interface/]
@@ -99,13 +99,13 @@ def assembler(src, sortie):
             '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
             d["liens"]]
     html += d["scripts_cdn"]
-    html += ['<link rel="stylesheet" href="/style.css">', '<link rel="stylesheet" href="/shell.css">', "</head>", "<body>"]
+    html += ['<link rel="stylesheet" href="/style.css">', '<link rel="stylesheet" href="/shell.css">', '<link rel="stylesheet" href="/disposition.css">', "</head>", "<body>"]
     html.append(versionner(d["corps"], build))
     html.append('<script src="/compat.js"></script>')
     rdir = os.path.join(sortie, "routes")
     if os.path.isdir(rdir):
         html += ['<script src="/routes/%s"></script>' % (f[3:] if f.startswith("CN_") else f) for f in sorted(os.listdir(rdir)) if f.endswith(".js")]      # l'URL perd le préfixe : le serveur le retrouve
-    html += ['<script src="/app.js"></script>', '<script src="/shell.js"></script>', '<script src="/modules-ui.js"></script>', '<script src="/console-module.js"></script>', '<script src="/evolution-ecran.js"></script>', "</body>", "</html>"]
+    html += ['<script src="/app.js"></script>', '<script src="/shell.js"></script>', '<script src="/modules-ui.js"></script>', '<script src="/console-module.js"></script>', '<script src="/evolution-ecran.js"></script>', '<script src="/disposition.js"></script>', "</body>", "</html>"]
     open(os.path.join(sortie, "CN_index.html"), "w", encoding="utf-8", newline="\n").write("\n".join(html))
     poser_entetes(sortie)
     return {k: len(v) for k, v in d.items() if isinstance(v, str)}

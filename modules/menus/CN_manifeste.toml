@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : menus
 # ZONE       : CN
-# VERSION CN : 0.2.0  #2dcc8b
+# VERSION CN : 0.3.0  #53eb2c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble, à chaud, l'arbre de navigation que les modules actifs déclarent : familles, ordre, rôles, compteurs, personnalisation par compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=2dcc8b ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=53eb2c ▼▼▼
 [module]
 id = "menus"
 nom = "Menus"
-version = "0.2.0"
+version = "0.3.0"
 noyau_min = "0.1.0"
 description = "Assemble, à chaud, l'arbre de navigation que les modules actifs déclarent : familles, ordre, rôles, compteurs, personnalisation par compte."
 confiance = "interne"
@@ -79,6 +79,7 @@ ecran = "vue_modules"
 ordre = 10
 role = "admin"
 icone = "puzzle"
+zone = "avatar"
 
 [[menus]]
 id = "menus"
@@ -87,6 +88,7 @@ ecran = "vue_menus"
 ordre = 20
 role = "admin"
 icone = "menu"
+zone = "avatar"
 
 [[ecrans]]
 id = "vue_modules"

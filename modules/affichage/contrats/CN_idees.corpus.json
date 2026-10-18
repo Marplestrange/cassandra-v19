@@ -1,0 +1,727 @@
+{
+ "point": "affichage.idees",
+ "contrat": "1.0",
+ "origine": "sorties de la référence, entrées synthétiques",
+ "cas": [
+  {
+   "cas": "rien, le matin, Itare",
+   "entree": {
+    "contexte": {
+     "groupe": "desk",
+     "entree": "accueil",
+     "sous": "jour",
+     "mode": "itare",
+     "heure": 9,
+     "page": "Desk › Accueil › Aujourd’hui"
+    },
+    "items": [],
+    "actes": [],
+    "max": 4
+   },
+   "sortie": {
+    "valeur": {
+     "idees": [
+      {
+       "id": "h:matin",
+       "titre": "Résumer ma journée",
+       "raison": "ce matin",
+       "score": 45,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "p:page",
+       "titre": "Résume cette page",
+       "raison": "Desk › Accueil › Aujourd’hui",
+       "score": 8,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      }
+     ],
+     "urgent": false
+    }
+   }
+  },
+  {
+   "cas": "rien, le soir, Itare",
+   "entree": {
+    "contexte": {
+     "groupe": "desk",
+     "entree": "accueil",
+     "sous": "jour",
+     "mode": "itare",
+     "heure": 18,
+     "page": "Desk › Accueil › Aujourd’hui"
+    },
+    "items": [],
+    "actes": [],
+    "max": 4
+   },
+   "sortie": {
+    "valeur": {
+     "idees": [
+      {
+       "id": "h:soir",
+       "titre": "Qu’est-ce qui reste à faire avant demain ?",
+       "raison": "fin de journée",
+       "score": 45,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "p:page",
+       "titre": "Résume cette page",
+       "raison": "Desk › Accueil › Aujourd’hui",
+       "score": 8,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      }
+     ],
+     "urgent": false
+    }
+   }
+  },
+  {
+   "cas": "ce qui brûle passe devant, avec sa raison",
+   "entree": {
+    "contexte": {
+     "groupe": "secu",
+     "entree": "securite",
+     "sous": "",
+     "mode": "cassandra",
+     "heure": 15,
+     "page": "Sécurité"
+    },
+    "items": [
+     {
+      "bande": "jour",
+      "quoi": "tache",
+      "titre": "Valider le correctif",
+      "detail": "",
+      "nat": "",
+      "ref": "t1",
+      "poids": 5,
+      "ou": "",
+      "geste": null
+     },
+     {
+      "bande": "brule",
+      "quoi": "ssl",
+      "titre": "Certificat : 6 jour(s).",
+      "detail": "Certificat : 6 jour(s).",
+      "nat": "ssl",
+      "ref": "shop.exemple.fr",
+      "poids": 194,
+      "ou": "sites",
+      "geste": [
+       "Voir le site",
+       "ouvrir"
+      ]
+     }
+    ],
+    "actes": [],
+    "max": 4
+   },
+   "sortie": {
+    "valeur": {
+     "idees": [
+      {
+       "id": "q:ssl:shop.exemple.fr",
+       "titre": "Que faire de : Certificat : 6 jour(s).",
+       "raison": "Certificat : 6 jour(s).",
+       "score": 119,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "q:tache:t1",
+       "titre": "Que faire de : Valider le correctif",
+       "raison": "Valider le correctif",
+       "score": 45,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "h:parc",
+       "titre": "Où en est le parc ?",
+       "raison": "",
+       "score": 25,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "p:page",
+       "titre": "Résume cette page",
+       "raison": "Sécurité",
+       "score": 8,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      }
+     ],
+     "urgent": true
+    }
+   }
+  },
+  {
+   "cas": "un geste proposé pour une alerte qui le permet",
+   "entree": {
+    "contexte": {
+     "groupe": "secu",
+     "entree": "securite",
+     "sous": "",
+     "mode": "cassandra",
+     "heure": 15,
+     "page": "Sécurité"
+    },
+    "items": [
+     {
+      "bande": "brule",
+      "quoi": "ssl",
+      "titre": "Certificat : 6 jour(s).",
+      "detail": "Certificat : 6 jour(s).",
+      "nat": "ssl",
+      "ref": "shop.exemple.fr",
+      "poids": 194,
+      "ou": "sites",
+      "geste": [
+       "Voir le site",
+       "ouvrir"
+      ]
+     }
+    ],
+    "actes": [
+     {
+      "id": "relire_cert",
+      "titre": "Relire le certificat",
+      "nat": "ssl",
+      "qui": "cassandra",
+      "risque": "lecture",
+      "etat": ""
+     }
+    ],
+    "max": 4
+   },
+   "sortie": {
+    "valeur": {
+     "idees": [
+      {
+       "id": "a:relire_cert:shop.exemple.fr",
+       "titre": "Relire le certificat : shop.exemple.fr",
+       "raison": "Certificat : 6 jour(s).",
+       "score": 121,
+       "genre": "acte",
+       "acte": "relire_cert",
+       "cible": "shop.exemple.fr",
+       "risque": "lecture"
+      },
+      {
+       "id": "h:parc",
+       "titre": "Où en est le parc ?",
+       "raison": "",
+       "score": 25,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "p:page",
+       "titre": "Résume cette page",
+       "raison": "Sécurité",
+       "score": 8,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      }
+     ],
+     "urgent": true
+    }
+   }
+  },
+  {
+   "cas": "un geste fait : une idée de suivi, plus le geste",
+   "entree": {
+    "contexte": {
+     "groupe": "secu",
+     "entree": "securite",
+     "sous": "",
+     "mode": "cassandra",
+     "heure": 15,
+     "page": "Sécurité"
+    },
+    "items": [
+     {
+      "bande": "brule",
+      "quoi": "ssl",
+      "titre": "Certificat : 6 jour(s).",
+      "detail": "Certificat : 6 jour(s).",
+      "nat": "ssl",
+      "ref": "shop.exemple.fr",
+      "poids": 194,
+      "ou": "sites",
+      "geste": [
+       "Voir le site",
+       "ouvrir"
+      ]
+     }
+    ],
+    "actes": [
+     {
+      "id": "relire_cert",
+      "titre": "Relire le certificat",
+      "nat": "ssl",
+      "qui": "cassandra",
+      "risque": "lecture",
+      "etat": "fait"
+     }
+    ],
+    "max": 4
+   },
+   "sortie": {
+    "valeur": {
+     "idees": [
+      {
+       "id": "s:relire_cert:shop.exemple.fr",
+       "titre": "Le geste « Relire le certificat » a-t-il pris effet ?",
+       "raison": "geste fait à l’instant",
+       "score": 66,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "h:parc",
+       "titre": "Où en est le parc ?",
+       "raison": "",
+       "score": 25,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "p:page",
+       "titre": "Résume cette page",
+       "raison": "Sécurité",
+       "score": 8,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      }
+     ],
+     "urgent": false
+    }
+   }
+  },
+  {
+   "cas": "un geste refusé n'est pas reproposé",
+   "entree": {
+    "contexte": {
+     "groupe": "secu",
+     "entree": "securite",
+     "sous": "",
+     "mode": "cassandra",
+     "heure": 15,
+     "page": "Sécurité"
+    },
+    "items": [
+     {
+      "bande": "brule",
+      "quoi": "ssl",
+      "titre": "Certificat : 6 jour(s).",
+      "detail": "Certificat : 6 jour(s).",
+      "nat": "ssl",
+      "ref": "shop.exemple.fr",
+      "poids": 194,
+      "ou": "sites",
+      "geste": [
+       "Voir le site",
+       "ouvrir"
+      ]
+     }
+    ],
+    "actes": [
+     {
+      "id": "relire_cert",
+      "titre": "Relire le certificat",
+      "nat": "ssl",
+      "qui": "cassandra",
+      "risque": "lecture",
+      "etat": "refuse"
+     }
+    ],
+    "max": 4
+   },
+   "sortie": {
+    "valeur": {
+     "idees": [
+      {
+       "id": "q:ssl:shop.exemple.fr",
+       "titre": "Que faire de : Certificat : 6 jour(s).",
+       "raison": "Certificat : 6 jour(s).",
+       "score": 119,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "h:parc",
+       "titre": "Où en est le parc ?",
+       "raison": "",
+       "score": 25,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "p:page",
+       "titre": "Résume cette page",
+       "raison": "Sécurité",
+       "score": 8,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      }
+     ],
+     "urgent": true
+    }
+   }
+  },
+  {
+   "cas": "un geste d'un autre interlocuteur n'est pas proposé",
+   "entree": {
+    "contexte": {
+     "groupe": "desk",
+     "entree": "accueil",
+     "sous": "jour",
+     "mode": "itare",
+     "heure": 9,
+     "page": "Desk › Accueil › Aujourd’hui"
+    },
+    "items": [
+     {
+      "bande": "brule",
+      "quoi": "ssl",
+      "titre": "Certificat : 6 jour(s).",
+      "detail": "Certificat : 6 jour(s).",
+      "nat": "ssl",
+      "ref": "shop.exemple.fr",
+      "poids": 194,
+      "ou": "sites",
+      "geste": [
+       "Voir le site",
+       "ouvrir"
+      ]
+     }
+    ],
+    "actes": [
+     {
+      "id": "relire_cert",
+      "titre": "Relire le certificat",
+      "nat": "ssl",
+      "qui": "cassandra",
+      "risque": "lecture",
+      "etat": ""
+     }
+    ],
+    "max": 4
+   },
+   "sortie": {
+    "valeur": {
+     "idees": [
+      {
+       "id": "q:ssl:shop.exemple.fr",
+       "titre": "Que faire de : Certificat : 6 jour(s).",
+       "raison": "Certificat : 6 jour(s).",
+       "score": 119,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "h:matin",
+       "titre": "Résumer ma journée",
+       "raison": "ce matin",
+       "score": 45,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "p:page",
+       "titre": "Résume cette page",
+       "raison": "Desk › Accueil › Aujourd’hui",
+       "score": 8,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      }
+     ],
+     "urgent": true
+    }
+   }
+  },
+  {
+   "cas": "l'idée qui touche la page passe devant une idée de même bande",
+   "entree": {
+    "contexte": {
+     "groupe": "desk",
+     "entree": "accueil",
+     "sous": "jour",
+     "mode": "itare",
+     "heure": 9,
+     "page": "Desk › Accueil › Aujourd’hui"
+    },
+    "items": [
+     {
+      "bande": "regarder",
+      "quoi": "mail",
+      "titre": "3 messages non lus",
+      "detail": "3 non lus",
+      "nat": "",
+      "ref": "",
+      "poids": 30,
+      "ou": "mail",
+      "geste": [
+       "Ouvrir",
+       "ouvrir"
+      ]
+     },
+     {
+      "bande": "regarder",
+      "quoi": "note",
+      "titre": "Une note à relire",
+      "detail": "3 non lus",
+      "nat": "",
+      "ref": "n1",
+      "poids": 30,
+      "ou": "",
+      "geste": [
+       "Ouvrir",
+       "ouvrir"
+      ]
+     }
+    ],
+    "actes": [],
+    "max": 4
+   },
+   "sortie": {
+    "valeur": {
+     "idees": [
+      {
+       "id": "q:mail:3 messages non lus",
+       "titre": "Que faire de : 3 messages non lus",
+       "raison": "3 non lus",
+       "score": 75,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "q:note:n1",
+       "titre": "Que faire de : Une note à relire",
+       "raison": "3 non lus",
+       "score": 75,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "h:matin",
+       "titre": "Résumer ma journée",
+       "raison": "ce matin",
+       "score": 45,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "p:page",
+       "titre": "Résume cette page",
+       "raison": "Desk › Accueil › Aujourd’hui",
+       "score": 8,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      }
+     ],
+     "urgent": false
+    }
+   }
+  },
+  {
+   "cas": "au plus le nombre demandé",
+   "entree": {
+    "contexte": {
+     "groupe": "secu",
+     "entree": "securite",
+     "sous": "",
+     "mode": "cassandra",
+     "heure": 15,
+     "page": "Sécurité"
+    },
+    "items": [
+     {
+      "bande": "jour",
+      "quoi": "tache",
+      "titre": "Valider le correctif",
+      "detail": "",
+      "nat": "",
+      "ref": "t1",
+      "poids": 5,
+      "ou": "",
+      "geste": null
+     },
+     {
+      "bande": "brule",
+      "quoi": "ssl",
+      "titre": "Certificat : 6 jour(s).",
+      "detail": "Certificat : 6 jour(s).",
+      "nat": "ssl",
+      "ref": "shop.exemple.fr",
+      "poids": 194,
+      "ou": "sites",
+      "geste": [
+       "Voir le site",
+       "ouvrir"
+      ]
+     },
+     {
+      "bande": "regarder",
+      "quoi": "mail",
+      "titre": "3 messages non lus",
+      "detail": "3 non lus",
+      "nat": "",
+      "ref": "",
+      "poids": 30,
+      "ou": "mail",
+      "geste": [
+       "Ouvrir",
+       "ouvrir"
+      ]
+     }
+    ],
+    "actes": [],
+    "max": 2
+   },
+   "sortie": {
+    "valeur": {
+     "idees": [
+      {
+       "id": "q:ssl:shop.exemple.fr",
+       "titre": "Que faire de : Certificat : 6 jour(s).",
+       "raison": "Certificat : 6 jour(s).",
+       "score": 119,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "q:mail:3 messages non lus",
+       "titre": "Que faire de : 3 messages non lus",
+       "raison": "3 non lus",
+       "score": 63,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      }
+     ],
+     "urgent": true
+    }
+   }
+  },
+  {
+   "cas": "Cassandra, le matin",
+   "entree": {
+    "contexte": {
+     "groupe": "secu",
+     "entree": "securite",
+     "sous": "",
+     "mode": "cassandra",
+     "heure": 8,
+     "page": "Sécurité"
+    },
+    "items": [],
+    "actes": [],
+    "max": 4
+   },
+   "sortie": {
+    "valeur": {
+     "idees": [
+      {
+       "id": "h:nuit",
+       "titre": "Qu’est-ce qui a changé cette nuit ?",
+       "raison": "ce matin",
+       "score": 45,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "p:page",
+       "titre": "Résume cette page",
+       "raison": "Sécurité",
+       "score": 8,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      }
+     ],
+     "urgent": false
+    }
+   }
+  },
+  {
+   "cas": "un item sans bande valide est ignoré",
+   "entree": {
+    "contexte": {
+     "groupe": "secu",
+     "entree": "securite",
+     "sous": "",
+     "mode": "cassandra",
+     "heure": 15,
+     "page": "Sécurité"
+    },
+    "items": [
+     {
+      "bande": "zzz",
+      "titre": "x"
+     }
+    ],
+    "actes": [],
+    "max": 4
+   },
+   "sortie": {
+    "valeur": {
+     "idees": [
+      {
+       "id": "h:parc",
+       "titre": "Où en est le parc ?",
+       "raison": "",
+       "score": 25,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      },
+      {
+       "id": "p:page",
+       "titre": "Résume cette page",
+       "raison": "Sécurité",
+       "score": 8,
+       "genre": "question",
+       "acte": "",
+       "cible": ""
+      }
+     ],
+     "urgent": false
+    }
+   }
+  }
+ ]
+}

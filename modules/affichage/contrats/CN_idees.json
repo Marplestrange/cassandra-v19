@@ -1,0 +1,26 @@
+{
+ "point": "affichage.idees",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "contexte",
+   "items"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "une idée a toujours un titre, un score et un genre (question, acte) ; une idée née d'une alerte dit sa raison",
+  "un geste n'est proposé que s'il figure dans la liste reçue, pour l'interlocuteur du panneau, et ni fait ni refusé",
+  "un geste fait appelle une idée de suivi ; un geste refusé n'est pas reproposé",
+  "ce qui brûle passe devant ce qui est à regarder, qui passe devant ce qui tombe dans la journée ; l'idée qui touche la page passe devant une idée de même bande",
+  "au plus le nombre demandé (huit au plus) ; un id n'apparaît qu'une fois",
+  "les mêmes entrées donnent les mêmes idées, dans le même ordre"
+ ]
+}

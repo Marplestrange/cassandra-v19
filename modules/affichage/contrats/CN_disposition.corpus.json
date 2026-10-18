@@ -1,0 +1,2421 @@
+{
+ "point": "affichage.disposition",
+ "contrat": "1.0",
+ "origine": "sorties de la référence, entrées synthétiques",
+ "cas": [
+  {
+   "cas": "rien",
+   "entree": {
+    "entrees": [],
+    "modules": [],
+    "badges": {},
+    "signaux": {}
+   },
+   "sortie": {
+    "valeur": {
+     "groupes": [
+      {
+       "id": "desk",
+       "libelle": "Desk",
+       "icone": "desk",
+       "ordre": 10,
+       "interlocuteur": "itare",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "accueil",
+         "libelle": "Accueil",
+         "icone": "home",
+         "module": "",
+         "ecran": "",
+         "onglet": "bureau",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "accueil.jour",
+           "libelle": "Aujourd’hui",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "jour",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.suivre",
+           "libelle": "Suivre",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "suivre",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.courrier",
+           "libelle": "Courrier",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "courrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.repertoire",
+           "libelle": "Répertoire",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "repertoire",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.documents",
+           "libelle": "Documents",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "documents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "avatar": [],
+     "orphelines": [],
+     "niveau": "ok"
+    }
+   }
+  },
+  {
+   "cas": "le pont : les onglets de l'ancienne interface",
+   "entree": {
+    "entrees": [],
+    "modules": [
+     "vue",
+     "securite",
+     "sensorium",
+     "journal",
+     "mesures",
+     "memoire"
+    ],
+    "badges": {},
+    "signaux": {}
+   },
+   "sortie": {
+    "valeur": {
+     "groupes": [
+      {
+       "id": "desk",
+       "libelle": "Desk",
+       "icone": "desk",
+       "ordre": 10,
+       "interlocuteur": "itare",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "accueil",
+         "libelle": "Accueil",
+         "icone": "home",
+         "module": "",
+         "ecran": "",
+         "onglet": "bureau",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "accueil.jour",
+           "libelle": "Aujourd’hui",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "jour",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.suivre",
+           "libelle": "Suivre",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "suivre",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.courrier",
+           "libelle": "Courrier",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "courrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.repertoire",
+           "libelle": "Répertoire",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "repertoire",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.documents",
+           "libelle": "Documents",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "documents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "parc",
+       "libelle": "Parc",
+       "icone": "fleet",
+       "ordre": 30,
+       "interlocuteur": "cassandra",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "panorama",
+         "libelle": "Panorama",
+         "icone": "panorama",
+         "module": "vue",
+         "ecran": "",
+         "onglet": "overview",
+         "vue": "",
+         "role": "admin",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": []
+        }
+       ]
+      },
+      {
+       "id": "secu",
+       "libelle": "Sécurité",
+       "icone": "shield",
+       "ordre": 40,
+       "interlocuteur": "cassandra",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "securite",
+         "libelle": "Sécurité",
+         "icone": "shield",
+         "module": "securite",
+         "ecran": "",
+         "onglet": "securite",
+         "vue": "",
+         "role": "admin",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": []
+        }
+       ]
+      },
+      {
+       "id": "obs",
+       "libelle": "Observatoire",
+       "icone": "eye",
+       "ordre": 50,
+       "interlocuteur": "cassandra",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "sensorium",
+         "libelle": "Sensorium",
+         "icone": "health",
+         "module": "sensorium",
+         "ecran": "",
+         "onglet": "sensorium",
+         "vue": "",
+         "role": "admin",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": []
+        },
+        {
+         "id": "historique",
+         "libelle": "Historique",
+         "icone": "clock",
+         "module": "mesures",
+         "ecran": "",
+         "onglet": "history",
+         "vue": "",
+         "role": "admin",
+         "droit": "",
+         "ordre": 20,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": []
+        },
+        {
+         "id": "journaux",
+         "libelle": "Journaux",
+         "icone": "scroll",
+         "module": "journal",
+         "ecran": "",
+         "onglet": "journal",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 30,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": []
+        }
+       ]
+      },
+      {
+       "id": "auto",
+       "libelle": "Autonomie",
+       "icone": "spark",
+       "ordre": 60,
+       "interlocuteur": "cassandra",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "memoire",
+         "libelle": "Mémoire",
+         "icone": "brain",
+         "module": "memoire",
+         "ecran": "",
+         "onglet": "memory",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 30,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": []
+        }
+       ]
+      }
+     ],
+     "avatar": [],
+     "orphelines": [],
+     "niveau": "ok"
+    }
+   }
+  },
+  {
+   "cas": "un module qui dit son groupe",
+   "entree": {
+    "entrees": [
+     {
+      "id": "certificats:certificats",
+      "module": "certificats",
+      "libelle": "Certificats",
+      "ecran": "certificats:vue",
+      "ordre": 20,
+      "role": "admin",
+      "icone": "cert",
+      "parent": "",
+      "famille": "securite",
+      "groupe": "secu",
+      "zone": "principal",
+      "droit": ""
+     }
+    ],
+    "modules": [
+     "certificats"
+    ],
+    "badges": {
+     "certificats:certificats": 2
+    },
+    "signaux": {}
+   },
+   "sortie": {
+    "valeur": {
+     "groupes": [
+      {
+       "id": "desk",
+       "libelle": "Desk",
+       "icone": "desk",
+       "ordre": 10,
+       "interlocuteur": "itare",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "accueil",
+         "libelle": "Accueil",
+         "icone": "home",
+         "module": "",
+         "ecran": "",
+         "onglet": "bureau",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "accueil.jour",
+           "libelle": "Aujourd’hui",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "jour",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.suivre",
+           "libelle": "Suivre",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "suivre",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.courrier",
+           "libelle": "Courrier",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "courrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.repertoire",
+           "libelle": "Répertoire",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "repertoire",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.documents",
+           "libelle": "Documents",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "documents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "secu",
+       "libelle": "Sécurité",
+       "icone": "shield",
+       "ordre": 40,
+       "interlocuteur": "cassandra",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "certificats:certificats",
+         "libelle": "Certificats",
+         "icone": "cert",
+         "module": "certificats",
+         "ecran": "certificats:vue",
+         "onglet": "",
+         "vue": "",
+         "role": "admin",
+         "droit": "",
+         "ordre": 20,
+         "badge": {
+          "n": 2,
+          "niveau": ""
+         },
+         "enfants": []
+        }
+       ]
+      }
+     ],
+     "avatar": [],
+     "orphelines": [],
+     "niveau": "ok"
+    }
+   }
+  },
+  {
+   "cas": "une famille connue range sans que le module dise son groupe",
+   "entree": {
+    "entrees": [
+     {
+      "id": "dns:domaines",
+      "module": "dns",
+      "libelle": "Domaines",
+      "ecran": "dns:vue",
+      "ordre": 10,
+      "role": "admin",
+      "icone": "",
+      "parent": "",
+      "famille": "reseau",
+      "groupe": "",
+      "zone": "principal",
+      "droit": ""
+     }
+    ],
+    "modules": [
+     "dns"
+    ],
+    "badges": {},
+    "signaux": {}
+   },
+   "sortie": {
+    "valeur": {
+     "groupes": [
+      {
+       "id": "desk",
+       "libelle": "Desk",
+       "icone": "desk",
+       "ordre": 10,
+       "interlocuteur": "itare",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "accueil",
+         "libelle": "Accueil",
+         "icone": "home",
+         "module": "",
+         "ecran": "",
+         "onglet": "bureau",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "accueil.jour",
+           "libelle": "Aujourd’hui",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "jour",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.suivre",
+           "libelle": "Suivre",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "suivre",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.courrier",
+           "libelle": "Courrier",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "courrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.repertoire",
+           "libelle": "Répertoire",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "repertoire",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.documents",
+           "libelle": "Documents",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "documents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "parc",
+       "libelle": "Parc",
+       "icone": "fleet",
+       "ordre": 30,
+       "interlocuteur": "cassandra",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "dns:domaines",
+         "libelle": "Domaines",
+         "icone": "",
+         "module": "dns",
+         "ecran": "dns:vue",
+         "onglet": "",
+         "vue": "",
+         "role": "admin",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": []
+        }
+       ]
+      }
+     ],
+     "avatar": [],
+     "orphelines": [],
+     "niveau": "ok"
+    }
+   }
+  },
+  {
+   "cas": "une famille inconnue va au groupe de repli et se dit orpheline",
+   "entree": {
+    "entrees": [
+     {
+      "id": "x:x",
+      "module": "x",
+      "libelle": "Exotique",
+      "ecran": "x:vue",
+      "ordre": 10,
+      "role": "utilisateur",
+      "icone": "",
+      "parent": "",
+      "famille": "inconnue",
+      "groupe": "",
+      "zone": "principal",
+      "droit": ""
+     }
+    ],
+    "modules": [
+     "x"
+    ],
+    "badges": {},
+    "signaux": {}
+   },
+   "sortie": {
+    "valeur": {
+     "groupes": [
+      {
+       "id": "desk",
+       "libelle": "Desk",
+       "icone": "desk",
+       "ordre": 10,
+       "interlocuteur": "itare",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "accueil",
+         "libelle": "Accueil",
+         "icone": "home",
+         "module": "",
+         "ecran": "",
+         "onglet": "bureau",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "accueil.jour",
+           "libelle": "Aujourd’hui",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "jour",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.suivre",
+           "libelle": "Suivre",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "suivre",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.courrier",
+           "libelle": "Courrier",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "courrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.repertoire",
+           "libelle": "Répertoire",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "repertoire",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.documents",
+           "libelle": "Documents",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "documents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "modules",
+       "libelle": "Modules",
+       "icone": "puzzle",
+       "ordre": 90,
+       "interlocuteur": "cassandra",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "x:x",
+         "libelle": "Exotique",
+         "icone": "",
+         "module": "x",
+         "ecran": "x:vue",
+         "onglet": "",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": []
+        }
+       ]
+      }
+     ],
+     "avatar": [],
+     "orphelines": [
+      "x:x"
+     ],
+     "niveau": "ok"
+    }
+   }
+  },
+  {
+   "cas": "un groupe inconnu déclaré par un module retombe sur la famille",
+   "entree": {
+    "entrees": [
+     {
+      "id": "dolibarr:dolibarr",
+      "module": "dolibarr",
+      "libelle": "Dolibarr",
+      "ecran": "dolibarr:vue",
+      "ordre": 10,
+      "role": "admin",
+      "icone": "",
+      "parent": "",
+      "famille": "gestion",
+      "groupe": "zzz",
+      "zone": "principal",
+      "droit": ""
+     }
+    ],
+    "modules": [
+     "dolibarr"
+    ],
+    "badges": {},
+    "signaux": {}
+   },
+   "sortie": {
+    "valeur": {
+     "groupes": [
+      {
+       "id": "desk",
+       "libelle": "Desk",
+       "icone": "desk",
+       "ordre": 10,
+       "interlocuteur": "itare",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "accueil",
+         "libelle": "Accueil",
+         "icone": "home",
+         "module": "",
+         "ecran": "",
+         "onglet": "bureau",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "accueil.jour",
+           "libelle": "Aujourd’hui",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "jour",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.suivre",
+           "libelle": "Suivre",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "suivre",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.courrier",
+           "libelle": "Courrier",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "courrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.repertoire",
+           "libelle": "Répertoire",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "repertoire",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.documents",
+           "libelle": "Documents",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "documents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "metier",
+       "libelle": "Métier",
+       "icone": "chart",
+       "ordre": 20,
+       "interlocuteur": "cassandra",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "dolibarr:dolibarr",
+         "libelle": "Dolibarr",
+         "icone": "",
+         "module": "dolibarr",
+         "ecran": "dolibarr:vue",
+         "onglet": "",
+         "vue": "",
+         "role": "admin",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": []
+        }
+       ]
+      }
+     ],
+     "avatar": [],
+     "orphelines": [],
+     "niveau": "ok"
+    }
+   }
+  },
+  {
+   "cas": "le salon n'est plus une entrée",
+   "entree": {
+    "entrees": [
+     {
+      "id": "salon:salon",
+      "module": "salon",
+      "libelle": "Le Salon",
+      "ecran": "salon:vue",
+      "ordre": 10,
+      "role": "utilisateur",
+      "icone": "",
+      "parent": "",
+      "famille": "echanges",
+      "groupe": "",
+      "zone": "principal",
+      "droit": ""
+     }
+    ],
+    "modules": [
+     "salon"
+    ],
+    "badges": {},
+    "signaux": {}
+   },
+   "sortie": {
+    "valeur": {
+     "groupes": [
+      {
+       "id": "desk",
+       "libelle": "Desk",
+       "icone": "desk",
+       "ordre": 10,
+       "interlocuteur": "itare",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "accueil",
+         "libelle": "Accueil",
+         "icone": "home",
+         "module": "",
+         "ecran": "",
+         "onglet": "bureau",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "accueil.jour",
+           "libelle": "Aujourd’hui",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "jour",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.suivre",
+           "libelle": "Suivre",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "suivre",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.courrier",
+           "libelle": "Courrier",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "courrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.repertoire",
+           "libelle": "Répertoire",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "repertoire",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.documents",
+           "libelle": "Documents",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "documents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "avatar": [],
+     "orphelines": [],
+     "niveau": "ok"
+    }
+   }
+  },
+  {
+   "cas": "l'entrée d'un module couvert par le pont cède la place",
+   "entree": {
+    "entrees": [
+     {
+      "id": "journal:journal",
+      "module": "journal",
+      "libelle": "Journal",
+      "ecran": "journal:vue",
+      "ordre": 10,
+      "role": "utilisateur",
+      "icone": "",
+      "parent": "",
+      "famille": "supervision",
+      "groupe": "",
+      "zone": "principal",
+      "droit": ""
+     }
+    ],
+    "modules": [
+     "journal"
+    ],
+    "badges": {},
+    "signaux": {}
+   },
+   "sortie": {
+    "valeur": {
+     "groupes": [
+      {
+       "id": "desk",
+       "libelle": "Desk",
+       "icone": "desk",
+       "ordre": 10,
+       "interlocuteur": "itare",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "accueil",
+         "libelle": "Accueil",
+         "icone": "home",
+         "module": "",
+         "ecran": "",
+         "onglet": "bureau",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "accueil.jour",
+           "libelle": "Aujourd’hui",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "jour",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.suivre",
+           "libelle": "Suivre",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "suivre",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.courrier",
+           "libelle": "Courrier",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "courrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.repertoire",
+           "libelle": "Répertoire",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "repertoire",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.documents",
+           "libelle": "Documents",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "documents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "obs",
+       "libelle": "Observatoire",
+       "icone": "eye",
+       "ordre": 50,
+       "interlocuteur": "cassandra",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "journaux",
+         "libelle": "Journaux",
+         "icone": "scroll",
+         "module": "journal",
+         "ecran": "",
+         "onglet": "journal",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 30,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": []
+        }
+       ]
+      }
+     ],
+     "avatar": [],
+     "orphelines": [],
+     "niveau": "ok"
+    }
+   }
+  },
+  {
+   "cas": "le menu de l'avatar",
+   "entree": {
+    "entrees": [
+     {
+      "id": "modules:modules",
+      "module": "modules",
+      "libelle": "Modules",
+      "ecran": "modules:vue",
+      "ordre": 10,
+      "role": "admin",
+      "icone": "puzzle",
+      "parent": "",
+      "famille": "socle",
+      "groupe": "",
+      "zone": "avatar",
+      "droit": ""
+     }
+    ],
+    "modules": [
+     "modules"
+    ],
+    "badges": {},
+    "signaux": {}
+   },
+   "sortie": {
+    "valeur": {
+     "groupes": [
+      {
+       "id": "desk",
+       "libelle": "Desk",
+       "icone": "desk",
+       "ordre": 10,
+       "interlocuteur": "itare",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "accueil",
+         "libelle": "Accueil",
+         "icone": "home",
+         "module": "",
+         "ecran": "",
+         "onglet": "bureau",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "accueil.jour",
+           "libelle": "Aujourd’hui",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "jour",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.suivre",
+           "libelle": "Suivre",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "suivre",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.courrier",
+           "libelle": "Courrier",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "courrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.repertoire",
+           "libelle": "Répertoire",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "repertoire",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.documents",
+           "libelle": "Documents",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "documents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "avatar": [
+      {
+       "id": "modules:modules",
+       "libelle": "Modules",
+       "icone": "puzzle",
+       "module": "modules",
+       "ecran": "modules:vue",
+       "onglet": "",
+       "vue": "",
+       "role": "admin",
+       "droit": "",
+       "ordre": 10,
+       "badge": {
+        "n": 0,
+        "niveau": ""
+       },
+       "enfants": []
+      }
+     ],
+     "orphelines": [],
+     "niveau": "ok"
+    }
+   }
+  },
+  {
+   "cas": "une sous-entrée vient sous son parent",
+   "entree": {
+    "entrees": [
+     {
+      "id": "billetterie:billetterie",
+      "module": "billetterie",
+      "libelle": "Billetterie",
+      "ecran": "billetterie:vue",
+      "ordre": 10,
+      "role": "utilisateur",
+      "icone": "",
+      "parent": "",
+      "famille": "gestion",
+      "groupe": "metier",
+      "zone": "principal",
+      "droit": ""
+     },
+     {
+      "id": "billetterie:commandes",
+      "module": "billetterie",
+      "libelle": "Commandes",
+      "ecran": "billetterie:vue",
+      "ordre": 20,
+      "role": "utilisateur",
+      "icone": "",
+      "parent": "billetterie:billetterie",
+      "famille": "gestion",
+      "groupe": "metier",
+      "zone": "principal",
+      "droit": ""
+     },
+     {
+      "id": "billetterie:clients",
+      "module": "billetterie",
+      "libelle": "Clients",
+      "ecran": "billetterie:vue",
+      "ordre": 10,
+      "role": "utilisateur",
+      "icone": "",
+      "parent": "billetterie:billetterie",
+      "famille": "gestion",
+      "groupe": "metier",
+      "zone": "principal",
+      "droit": ""
+     }
+    ],
+    "modules": [
+     "billetterie"
+    ],
+    "badges": {
+     "billetterie:commandes": 12
+    },
+    "signaux": {}
+   },
+   "sortie": {
+    "valeur": {
+     "groupes": [
+      {
+       "id": "desk",
+       "libelle": "Desk",
+       "icone": "desk",
+       "ordre": 10,
+       "interlocuteur": "itare",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "accueil",
+         "libelle": "Accueil",
+         "icone": "home",
+         "module": "",
+         "ecran": "",
+         "onglet": "bureau",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "accueil.jour",
+           "libelle": "Aujourd’hui",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "jour",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.suivre",
+           "libelle": "Suivre",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "suivre",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.courrier",
+           "libelle": "Courrier",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "courrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.repertoire",
+           "libelle": "Répertoire",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "repertoire",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.documents",
+           "libelle": "Documents",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "documents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "metier",
+       "libelle": "Métier",
+       "icone": "chart",
+       "ordre": 20,
+       "interlocuteur": "cassandra",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "billetterie:billetterie",
+         "libelle": "Billetterie",
+         "icone": "",
+         "module": "billetterie",
+         "ecran": "billetterie:vue",
+         "onglet": "",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "billetterie:clients",
+           "libelle": "Clients",
+           "icone": "",
+           "module": "billetterie",
+           "ecran": "billetterie:vue",
+           "onglet": "",
+           "vue": "",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "billetterie:commandes",
+           "libelle": "Commandes",
+           "icone": "",
+           "module": "billetterie",
+           "ecran": "billetterie:vue",
+           "onglet": "",
+           "vue": "",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 12,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "avatar": [],
+     "orphelines": [],
+     "niveau": "ok"
+    }
+   }
+  },
+  {
+   "cas": "le pire niveau remonte de l'entrée au groupe et au tout",
+   "entree": {
+    "entrees": [],
+    "modules": [
+     "sites",
+     "securite"
+    ],
+    "badges": {},
+    "signaux": {
+     "sites": {
+      "brule": 1,
+      "regarder": 2
+     },
+     "ssl": {
+      "regarder": 1
+     },
+     "securite": {
+      "regarder": 1
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "groupes": [
+      {
+       "id": "desk",
+       "libelle": "Desk",
+       "icone": "desk",
+       "ordre": 10,
+       "interlocuteur": "itare",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "accueil",
+         "libelle": "Accueil",
+         "icone": "home",
+         "module": "",
+         "ecran": "",
+         "onglet": "bureau",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "accueil.jour",
+           "libelle": "Aujourd’hui",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "jour",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.suivre",
+           "libelle": "Suivre",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "suivre",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.courrier",
+           "libelle": "Courrier",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "courrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.repertoire",
+           "libelle": "Répertoire",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "repertoire",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.documents",
+           "libelle": "Documents",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "documents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "parc",
+       "libelle": "Parc",
+       "icone": "fleet",
+       "ordre": 30,
+       "interlocuteur": "cassandra",
+       "niveau": "danger",
+       "entrees": [
+        {
+         "id": "sites",
+         "libelle": "Sites",
+         "icone": "globe",
+         "module": "sites",
+         "ecran": "",
+         "onglet": "mysites",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 30,
+         "badge": {
+          "n": 0,
+          "niveau": "danger"
+         },
+         "enfants": []
+        }
+       ]
+      },
+      {
+       "id": "secu",
+       "libelle": "Sécurité",
+       "icone": "shield",
+       "ordre": 40,
+       "interlocuteur": "cassandra",
+       "niveau": "alerte",
+       "entrees": [
+        {
+         "id": "securite",
+         "libelle": "Sécurité",
+         "icone": "shield",
+         "module": "securite",
+         "ecran": "",
+         "onglet": "securite",
+         "vue": "",
+         "role": "admin",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": "alerte"
+         },
+         "enfants": []
+        }
+       ]
+      }
+     ],
+     "avatar": [],
+     "orphelines": [],
+     "niveau": "danger"
+    }
+   }
+  },
+  {
+   "cas": "un signal inconnu ne crée rien",
+   "entree": {
+    "entrees": [],
+    "modules": [
+     "sites"
+    ],
+    "badges": {},
+    "signaux": {
+     "nimporte": {
+      "brule": 5
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "groupes": [
+      {
+       "id": "desk",
+       "libelle": "Desk",
+       "icone": "desk",
+       "ordre": 10,
+       "interlocuteur": "itare",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "accueil",
+         "libelle": "Accueil",
+         "icone": "home",
+         "module": "",
+         "ecran": "",
+         "onglet": "bureau",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "accueil.jour",
+           "libelle": "Aujourd’hui",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "jour",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.suivre",
+           "libelle": "Suivre",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "suivre",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.courrier",
+           "libelle": "Courrier",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "courrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.repertoire",
+           "libelle": "Répertoire",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "repertoire",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.documents",
+           "libelle": "Documents",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "documents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "parc",
+       "libelle": "Parc",
+       "icone": "fleet",
+       "ordre": 30,
+       "interlocuteur": "cassandra",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "sites",
+         "libelle": "Sites",
+         "icone": "globe",
+         "module": "sites",
+         "ecran": "",
+         "onglet": "mysites",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 30,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": []
+        }
+       ]
+      }
+     ],
+     "avatar": [],
+     "orphelines": [],
+     "niveau": "ok"
+    }
+   }
+  },
+  {
+   "cas": "l'ordre des entrées reçues ne change rien",
+   "entree": {
+    "entrees": [
+     {
+      "id": "b:b",
+      "module": "b",
+      "libelle": "B",
+      "ecran": "b:vue",
+      "ordre": 10,
+      "role": "utilisateur",
+      "icone": "",
+      "parent": "",
+      "famille": "supervision",
+      "groupe": "",
+      "zone": "principal",
+      "droit": ""
+     },
+     {
+      "id": "a:a",
+      "module": "a",
+      "libelle": "A",
+      "ecran": "a:vue",
+      "ordre": 10,
+      "role": "utilisateur",
+      "icone": "",
+      "parent": "",
+      "famille": "supervision",
+      "groupe": "",
+      "zone": "principal",
+      "droit": ""
+     }
+    ],
+    "modules": [
+     "a",
+     "b"
+    ],
+    "badges": {},
+    "signaux": {}
+   },
+   "sortie": {
+    "valeur": {
+     "groupes": [
+      {
+       "id": "desk",
+       "libelle": "Desk",
+       "icone": "desk",
+       "ordre": 10,
+       "interlocuteur": "itare",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "accueil",
+         "libelle": "Accueil",
+         "icone": "home",
+         "module": "",
+         "ecran": "",
+         "onglet": "bureau",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": [
+          {
+           "id": "accueil.jour",
+           "libelle": "Aujourd’hui",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "jour",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 10,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.suivre",
+           "libelle": "Suivre",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "suivre",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 20,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.courrier",
+           "libelle": "Courrier",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "courrier",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 30,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.repertoire",
+           "libelle": "Répertoire",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "repertoire",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 40,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          },
+          {
+           "id": "accueil.documents",
+           "libelle": "Documents",
+           "icone": "",
+           "module": "",
+           "ecran": "",
+           "onglet": "bureau",
+           "vue": "documents",
+           "role": "utilisateur",
+           "droit": "",
+           "ordre": 50,
+           "badge": {
+            "n": 0,
+            "niveau": ""
+           },
+           "enfants": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "obs",
+       "libelle": "Observatoire",
+       "icone": "eye",
+       "ordre": 50,
+       "interlocuteur": "cassandra",
+       "niveau": "",
+       "entrees": [
+        {
+         "id": "a:a",
+         "libelle": "A",
+         "icone": "",
+         "module": "a",
+         "ecran": "a:vue",
+         "onglet": "",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": []
+        },
+        {
+         "id": "b:b",
+         "libelle": "B",
+         "icone": "",
+         "module": "b",
+         "ecran": "b:vue",
+         "onglet": "",
+         "vue": "",
+         "role": "utilisateur",
+         "droit": "",
+         "ordre": 10,
+         "badge": {
+          "n": 0,
+          "niveau": ""
+         },
+         "enfants": []
+        }
+       ]
+      }
+     ],
+     "avatar": [],
+     "orphelines": [],
+     "niveau": "ok"
+    }
+   }
+  }
+ ]
+}
