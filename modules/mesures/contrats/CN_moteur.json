@@ -1,0 +1,44 @@
+{
+ "point": "mesures.moteur",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "op",
+   "args"
+  ],
+  "properties": {
+   "op": {
+    "enum": [
+     "serie",
+     "fiche_source",
+     "etat_source",
+     "par_tranche",
+     "profil",
+     "prevision",
+     "verdict"
+    ]
+   },
+   "args": {
+    "type": "object"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "une source muette n'est jamais « stable » : le verdict dit « je ne peux pas dire que tout va bien »",
+  "une habitude n'existe qu'après trois occurrences du créneau : en deçà, aucun écart n'est affiché",
+  "moins de 24 heures de mesures : aucune tendance fiable, jamais une date de saturation",
+  "un point illisible est ignoré, jamais une erreur",
+  "les pires sont les plus hauts, ou les plus bas quand « pire » est bas",
+  "un compteur sans valeur compte un",
+  "le même instant et les mêmes relevés donnent toujours le même verdict",
+  "les pannes passent avant ce qui est à regarder, puis les sources muettes, puis l'habitude inconnue"
+ ]
+}

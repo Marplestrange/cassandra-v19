@@ -71,3 +71,11 @@ lectures = true
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "moteur"
+libelle = "Le moteur de mesures : courbes, état des sources, habitude (écart au créneau), tendance (saturation) et verdict d'ouverture ; l'opération et ses arguments en entrée, sa valeur en sortie ; l'instant est une entrée"
+contrat = "1.0"
+reference = "points/EC_moteur"
+fonction = "point_moteur"
+runtime = "python"

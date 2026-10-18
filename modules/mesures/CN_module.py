@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : mesures
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f01fc4
+# VERSION CN : 0.1.0  #23fce1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des mesures : lit ce que les modules déclarent ([[mesures]]) et le met en courbes, habitudes, écarts, tendance et verdict (CN_moteur.py).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f01fc4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=23fce1 ▼▼▼
 """Le module des mesures : lit ce que les modules déclarent ([[mesures]]) et le met en courbes, habitudes, écarts, tendance et verdict (CN_moteur.py).
 
 Chaque module répond à sa propre capacité de lecture, {mesure, depuis, jusqu_a} -> {"series": [...]}. Ici on ne sait rien de la source : un module qui se tait
@@ -23,6 +23,7 @@ from . import CN_moteur as mo
 
 
 def brancher(ctx):
+    mo._point = ctx.point
     def declarees():
         """Les mesures de tous les modules actifs : {clé: déclaration}. Une clé en double est qualifiée par son module."""
         sortie = {}

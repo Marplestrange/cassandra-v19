@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #448c18
+# VERSION CN : 0.1.0  #d4cbaf
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des mesures : le moteur (pur), la déclaration [[mesures]] des modules, et le module qui les assemble.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=448c18 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d4cbaf ▼▼▼
 """Bancs des mesures : le moteur (pur), la déclaration [[mesures]] des modules, et le module qui les assemble."""
 import shutil
 import sys
@@ -26,6 +26,15 @@ sys.path.insert(0, str(RACINE))
 import CN_main as moteur_noyau                  # noqa: E402
 from noyau import CN_manifeste as manifeste                  # noqa: E402
 from modules.mesures import CN_moteur as mo     # noqa: E402
+
+# le moteur sans noyau : son point d'évolution `moteur` est branché sur sa référence, comme le ferait brancher()
+import tempfile                              # noqa: E402
+from pathlib import Path as _Path            # noqa: E402
+from noyau import CN_manifeste as _M, CN_points as _P          # noqa: E402
+_dossier = RACINE / "modules" / "mesures"
+_svc = _P.ServicePoints(_Path(tempfile.mkdtemp()) / "ec")
+_svc.declarer(_M.charger(_dossier / "CN_manifeste.toml"), _dossier)
+mo._point = lambda nom, entree: _svc.appeler("mesures", nom, entree)
 
 MAINTENANT = datetime(2026, 10, 14, 15, 30, 0)          # un mercredi
 
