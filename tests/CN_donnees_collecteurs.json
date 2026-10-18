@@ -764,5 +764,472 @@
    "fs": {}
   },
   "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_backups",
+  "scenario": {
+   "mogwai_json": "[{\"id\": 7, \"name\": \"nuit\", \"enabled\": true, \"hour\": \"*/6\", \"VirtualHostBackupPlans\": [1, 2], \"DatabasePlans\": [1], \"last_run_time\": \" 2026-10-17 03:00:00 \", \"owner_id\": 3}, {\"id\": 8, \"name\": \"jour\", \"enabled\": false, \"hour\": \"3\"}, {\"name\": \"sans id\", \"owner_id\": 5}]",
+   "mogwai": "ID  NAME  OWNER\n7  nuit  alice\n8  jour  \n",
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "type": "nuit · 2 sites · 1 bases",
+    "status": "actif · toutes les 6h",
+    "size_mb": 0,
+    "created_at": "2026-10-17 03:00:00",
+    "error": "",
+    "user": "alice",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "type": "jour · 0 sites · 0 bases",
+    "status": "désactivé",
+    "size_mb": 0,
+    "created_at": "—",
+    "error": "",
+    "user": "#",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "type": "sans id · 0 sites · 0 bases",
+    "status": "désactivé",
+    "size_mb": 0,
+    "created_at": "—",
+    "error": "",
+    "user": "#5",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_backups",
+  "scenario": {
+   "mogwai_json": "[{\"id\": 7, \"name\": \"nuit\", \"enabled\": true, \"hour\": \"*/6\", \"VirtualHostBackupPlans\": [1, 2], \"DatabasePlans\": [1], \"last_run_time\": \" 2026-10-17 03:00:00 \", \"owner_id\": 3}, {\"id\": 8, \"name\": \"jour\", \"enabled\": false, \"hour\": \"3\"}, {\"name\": \"sans id\", \"owner_id\": 5}]",
+   "mogwai": "",
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "type": "nuit · 2 sites · 1 bases",
+    "status": "actif · toutes les 6h",
+    "size_mb": 0,
+    "created_at": "2026-10-17 03:00:00",
+    "error": "",
+    "user": "#3",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "type": "jour · 0 sites · 0 bases",
+    "status": "désactivé",
+    "size_mb": 0,
+    "created_at": "—",
+    "error": "",
+    "user": "#",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "type": "sans id · 0 sites · 0 bases",
+    "status": "désactivé",
+    "size_mb": 0,
+    "created_at": "—",
+    "error": "",
+    "user": "#5",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_backups",
+  "scenario": {
+   "mogwai_json": "pas du json",
+   "api": [
+    {
+     "type": "inc",
+     "status": "ok",
+     "size_mb": 3.5,
+     "created_at": "2026-10-01",
+     "owner": {
+      "username": "alice"
+     }
+    },
+    {
+     "size": "2"
+    }
+   ],
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "type": "inc",
+    "status": "ok",
+    "size_mb": 3.5,
+    "created_at": "2026-10-01",
+    "error": "",
+    "user": "alice",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "type": "full",
+    "status": "unknown",
+    "size_mb": 2.0,
+    "created_at": "2026-10-17T12:00:00.000001",
+    "error": "",
+    "user": "",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_backups",
+  "scenario": {
+   "mogwai_json": "[]",
+   "api": [],
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_backups",
+  "scenario": {
+   "mogwai_json": "{}",
+   "api": [],
+   "dirs": [
+    "/var/backups/fastpanel2"
+   ],
+   "stats": {
+    "/var/backups/fastpanel2/alice/a.tar.gz": [
+     104857600,
+     1760000000
+    ],
+    "/var/backups/fastpanel2/bob/b.tar.gz": [
+     1572864,
+     1760100000
+    ]
+   },
+   "fs": {
+    "/var/backups/fastpanel2/alice/a.tar.gz": "x",
+    "/var/backups/fastpanel2/bob/b.tar.gz": "x",
+    "/var/backups/fastpanel2/bob/notes.txt": "x"
+   }
+  },
+  "attendu": [
+   {
+    "type": "full",
+    "status": "success",
+    "size_mb": 1.5,
+    "created_at": "T1760100000",
+    "error": "",
+    "user": "bob",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "type": "full",
+    "status": "success",
+    "size_mb": 100.0,
+    "created_at": "T1760000000",
+    "error": "",
+    "user": "alice",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_backups",
+  "scenario": {
+   "mogwai_json": "",
+   "api": [],
+   "dirs": [
+    "/var/backups/fastpanel"
+   ],
+   "stats": {
+    "/var/backups/fastpanel/z.tar.gz": [
+     0,
+     1750000000
+    ]
+   },
+   "fs": {
+    "/var/backups/fastpanel/z.tar.gz": "x"
+   }
+  },
+  "attendu": [
+   {
+    "type": "full",
+    "status": "success",
+    "size_mb": 0.0,
+    "created_at": "T1750000000",
+    "error": "",
+    "user": "fastpanel",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_backups",
+  "scenario": {
+   "mogwai_json": "",
+   "api": [],
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_backups",
+  "scenario": {
+   "mogwai_json": "[{\"id\": 7, \"name\": \"nuit\", \"enabled\": true, \"hour\": \"*/6\", \"VirtualHostBackupPlans\": [1, 2], \"DatabasePlans\": [1], \"last_run_time\": \" 2026-10-17 03:00:00 \", \"owner_id\": 3}, {\"id\": 8, \"name\": \"jour\", \"enabled\": false, \"hour\": \"3\"}, {\"name\": \"sans id\", \"owner_id\": 5}]",
+   "mogwai": "ID  NAME  OWNER\n7  nuit  alice\n8  jour  \n",
+   "api": [
+    {
+     "type": "ignoré"
+    }
+   ],
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "type": "nuit · 2 sites · 1 bases",
+    "status": "actif · toutes les 6h",
+    "size_mb": 0,
+    "created_at": "2026-10-17 03:00:00",
+    "error": "",
+    "user": "alice",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "type": "jour · 0 sites · 0 bases",
+    "status": "désactivé",
+    "size_mb": 0,
+    "created_at": "—",
+    "error": "",
+    "user": "#",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "type": "sans id · 0 sites · 0 bases",
+    "status": "désactivé",
+    "size_mb": 0,
+    "created_at": "—",
+    "error": "",
+    "user": "#5",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_crons",
+  "scenario": {
+   "dispo": false,
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_crons",
+  "scenario": {
+   "users": [
+    "alice"
+   ],
+   "runs": {
+    "alice|/usr/bin/php /var/www/a/cron.php": "2026-10-17T03:00:00",
+    "root|/bin/true": "2026-10-17T02:30:00"
+   },
+   "fs": {
+    "/var/spool/cron/crontabs/alice": "# crontab\nSHELL=/bin/sh\n\n*/5 * * * * /usr/bin/php /var/www/a/cron.php\n0 3 * * 1 /usr/bin/backup.sh --all --verbose\ntrop court\n@daily /bin/x",
+    "/var/spool/cron/crontabs/root": "30 2 * * * /bin/true\n"
+   }
+  },
+  "attendu": [
+   {
+    "user": "alice",
+    "schedule": "*/5 * * * *",
+    "command": "/usr/bin/php /var/www/a/cron.php",
+    "enabled": 1,
+    "last_run": "2026-10-17T03:00:00",
+    "last_status": "ran",
+    "source": "fastpanel2",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "alice",
+    "schedule": "0 3 * * 1",
+    "command": "/usr/bin/backup.sh --all --verbose",
+    "enabled": 1,
+    "last_run": "",
+    "last_status": "",
+    "source": "fastpanel2",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "root",
+    "schedule": "30 2 * * *",
+    "command": "/bin/true",
+    "enabled": 1,
+    "last_run": "2026-10-17T02:30:00",
+    "last_status": "ran",
+    "source": "fastpanel2",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_crons",
+  "scenario": {
+   "users": [],
+   "runs": {},
+   "fs": {
+    "/var/spool/cron/crontabs/fastuser": "0 0 * * * /bin/y"
+   }
+  },
+  "attendu": [
+   {
+    "user": "fastuser",
+    "schedule": "0 0 * * *",
+    "command": "/bin/y",
+    "enabled": 1,
+    "last_run": "",
+    "last_status": "",
+    "source": "fastpanel2",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_crons",
+  "scenario": {
+   "users": [
+    "alice"
+   ],
+   "api": [
+    {
+     "owner": {
+      "username": "alice"
+     },
+     "schedule": "0 3 * * *",
+     "command": "/usr/bin/php /var/www/a/cron.php",
+     "enabled": true
+    },
+    {
+     "owner": "x",
+     "schedule": "* * * * *",
+     "command": "/bin/x",
+     "enabled": false,
+     "last_run": "2026-01-01",
+     "last_status": "ok"
+    },
+    {}
+   ],
+   "runs": {
+    "alice|/usr/bin/php /var/www/a/cron.php": "2026-10-17T03:00:00"
+   },
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "user": "alice",
+    "schedule": "0 3 * * *",
+    "command": "/usr/bin/php /var/www/a/cron.php",
+    "enabled": 1,
+    "last_run": "2026-10-17T03:00:00",
+    "last_status": "ran",
+    "source": "fastpanel2_api",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "root",
+    "schedule": "* * * * *",
+    "command": "/bin/x",
+    "enabled": 0,
+    "last_run": "2026-01-01",
+    "last_status": "ok",
+    "source": "fastpanel2_api",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "root",
+    "schedule": "",
+    "command": "",
+    "enabled": 1,
+    "last_run": "",
+    "last_status": "",
+    "source": "fastpanel2_api",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "collect_fastpanel_crons",
+  "scenario": {
+   "users": [
+    "root"
+   ],
+   "api": [],
+   "fs": {
+    "/var/spool/cron/crontabs/root": {
+     "__erreur__": "illisible"
+    }
+   }
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_crons",
+  "scenario": {
+   "users": [],
+   "runs": {},
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "collect_fastpanel_crons",
+  "scenario": {
+   "users": [
+    "alice",
+    "root"
+   ],
+   "api": [
+    {
+     "command": "/bin/true"
+    }
+   ],
+   "runs": {
+    "root|/bin/true": "2026-10-17T02:30:00"
+   },
+   "fs": {
+    "/var/spool/cron/crontabs/alice": "# crontab\nSHELL=/bin/sh\n\n*/5 * * * * /usr/bin/php /var/www/a/cron.php\n0 3 * * 1 /usr/bin/backup.sh --all --verbose\ntrop court\n@daily /bin/x"
+   }
+  },
+  "attendu": [
+   {
+    "user": "alice",
+    "schedule": "*/5 * * * *",
+    "command": "/usr/bin/php /var/www/a/cron.php",
+    "enabled": 1,
+    "last_run": "",
+    "last_status": "",
+    "source": "fastpanel2",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "alice",
+    "schedule": "0 3 * * 1",
+    "command": "/usr/bin/backup.sh --all --verbose",
+    "enabled": 1,
+    "last_run": "",
+    "last_status": "",
+    "source": "fastpanel2",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "user": "root",
+    "schedule": "",
+    "command": "/bin/true",
+    "enabled": 1,
+    "last_run": "2026-10-17T02:30:00",
+    "last_status": "ran",
+    "source": "fastpanel2_api",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
  }
 ]

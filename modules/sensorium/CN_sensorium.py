@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.4  #9734d2
+# VERSION CN : 0.1.4  #dbd049
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.4 empreinte=9734d2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=dbd049 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -1049,9 +1049,9 @@ def collect_fastpanel_backups() -> list:
     """Backups FastPanel2 via mogwai (CLI officiel). mogwai n'expose que les PLANS de
     sauvegarde (pas l'historique des fichiers — ceux-ci partent sur le compte distant, ex.
     un NAS distant en FTP). On remonte donc l'état de chaque plan : nom, planification, périmètre
-    (sites/bases), activé ?, dernière exécution. Un plan activé jamais exécuté est signalé."""
+    (sites/bases), activé ?, dernière exécution. Un plan activé jamais exécuté est signalé.
+    La forme de chaque source est un POINT D'ÉVOLUTION (points/EC_fp_formes.py)."""
     now = datetime.now().isoformat()
-    backups = []
 
     # [FP1] mogwai backup list --json : la source fiable des plans de sauvegarde
     raw = _mogwai(["backup", "list", "--json"], timeout=15)
@@ -1070,48 +1070,20 @@ def collect_fastpanel_backups() -> list:
                 owners[str(oid)] = r.get("OWNER") or r.get("owner") or ""
     except Exception:
         pass
-    for p in plans if isinstance(plans, list) else []:
-        try:
-            name    = p.get("name", "plan")
-            enabled = bool(p.get("enabled", False))
-            sites   = len(p.get("VirtualHostBackupPlans") or [])
-            dbs     = len(p.get("DatabasePlans") or [])
-            hour    = str(p.get("hour", "*"))
-            sched   = ("toutes les %sh" % hour[2:]) if hour.startswith("*/") else ("planifié" if hour != "*" else "horaire")
-            last    = (p.get("last_run_time") or "").strip()
-            # NB : mogwai ne renseigne pas toujours last_run_time/executed_at même quand les
-            # sauvegardes tournent (elles partent sur le compte distant, ex. un NAS distant en FTP).
-            # On ne crie donc PAS au loup : un plan activé = "actif", point.
-            backups.append({
-                "type":       "%s · %d sites · %d bases" % (name, sites, dbs),
-                "status":     ("actif · %s" % sched) if enabled else "désactivé",
-                "size_mb":    0,
-                "created_at": last or "—",
-                "error":      "",
-                "user":       owners.get(str(p.get("id")), "") or ("#%s" % p.get("owner_id", "")),
-                "last_check": now,
-            })
-        except Exception:
-            continue
+    # NB : mogwai ne renseigne pas toujours last_run_time/executed_at même quand les
+    # sauvegardes tournent (elles partent sur le compte distant, ex. un NAS distant en FTP).
+    # On ne crie donc PAS au loup : un plan activé = "actif", point.
+    backups = _fp_formes({"op": "backups_plans", "plans": plans, "owners": owners, "now": now})
     if backups:
         return backups
 
     # [FP2] Repli API (si un jour exposée)
-    api_backups = _fp_api_get_list("/api/backup/list?filter[limit]=100")
-    for b in api_backups:
-        backups.append({
-            "type":       b.get("type", "full"),
-            "status":     b.get("status", "unknown"),
-            "size_mb":    float(b.get("size_mb", b.get("size", 0)) or 0),
-            "created_at": b.get("created_at", now),
-            "error":      b.get("error_message", b.get("error", "")),
-            "user":       (b.get("owner") or {}).get("username", "") if isinstance(b.get("owner"), dict) else "",
-            "last_check": now,
-        })
+    backups = _fp_formes({"op": "backups_api", "api_backups": _fp_api_get_list("/api/backup/list?filter[limit]=100"), "now": now})
     if backups:
         return backups
 
     # [FS] Repli : scan répertoire backups FP2 (cas backups locaux)
+    fichiers = []
     for bdir in ["/var/backups/fastpanel2", "/var/backups/fastpanel",
                  "/var/www/fastuser/data/backups"]:
         bd = Path(bdir)
@@ -1120,18 +1092,10 @@ def collect_fastpanel_backups() -> list:
         for f in sorted(bd.rglob("*.tar.gz"), key=lambda x: x.stat().st_mtime, reverse=True)[:20]:
             try:
                 stat = f.stat()
-                backups.append({
-                    "type":       "full",
-                    "status":     "success",
-                    "size_mb":    round(stat.st_size / 1024 / 1024, 1),
-                    "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                    "error":      "",
-                    "user":       f.parts[-2] if len(f.parts) > 1 else "",
-                    "last_check": now,
-                })
+                fichiers.append([list(f.parts), stat.st_size, datetime.fromtimestamp(stat.st_mtime).isoformat()])
             except Exception:
                 pass
-    return backups
+    return _fp_formes({"op": "backups_fichiers", "fichiers": fichiers, "now": now})
 
 
 def collect_fastpanel_dns() -> list:
@@ -1262,8 +1226,9 @@ def _cron_last_runs() -> dict:
 
 def collect_fastpanel_crons() -> list:
     """[FP7] Crons FP2 : /var/spool/cron/crontabs/<user> pour chaque user FP2,
-    enrichis de leur DERNIÈRE EXÉCUTION réelle lue dans le journal système."""
-    now  = datetime.now().isoformat()
+    enrichis de leur DERNIÈRE EXÉCUTION réelle lue dans le journal système.
+    La forme (lecture d'une crontab, rattachement à la dernière exécution) est un POINT D'ÉVOLUTION (points/EC_fp_formes.py)."""
+    now = datetime.now().isoformat()
     jobs = []
     if not _fp_available():
         return []
@@ -1272,6 +1237,7 @@ def collect_fastpanel_crons() -> list:
     except Exception as e:
         print("[FP7] lecture des exécutions cron impossible : %s" % e, file=sys.stderr)
         runs = {}
+    runs_liste = [[u, c, ts] for (u, c), ts in runs.items()]          # un dictionnaire à clés couples voyage en liste
 
     fp_users = _fp_get_fp2_usernames()
     # Toujours inclure root et fastuser
@@ -1279,61 +1245,18 @@ def collect_fastpanel_crons() -> list:
         if special not in fp_users:
             fp_users.append(special)
 
-    def parse_crontab(text: str, user: str):
-        for line in text.splitlines():
-            line = line.strip()
-            if not line or line.startswith("#") or line.startswith("SHELL=") \
-               or line.startswith("PATH=") or line.startswith("MAILTO="):
-                continue
-            parts = line.split(None, 5)
-            if len(parts) < 6:
-                continue
-            # Format standard cron : min heure jour mois dow commande
-            schedule = " ".join(parts[:5])
-            command  = parts[5][:300]
-            last     = _cron_run_lookup(runs, user, command)
-            jobs.append({
-                "user":        user,
-                "schedule":    schedule,
-                "command":     command,
-                "enabled":     1,
-                "last_run":    last,
-                # Le journal cron n'enregistre pas le code de sortie : une ligne
-                # CMD prouve le lancement, pas la réussite. On ne prétend donc
-                # pas connaître le statut, seulement l'exécution.
-                "last_status": "ran" if last else "",
-                "source":      "fastpanel2",
-                "last_check":  now,
-            })
-
     # [FP7] Lecture des crontabs par utilisateur
     spool = Path("/var/spool/cron/crontabs")
     for user in fp_users:
         cron_file = spool / user
         if cron_file.exists():
             try:
-                parse_crontab(cron_file.read_text(errors="replace"), user)
+                jobs.extend(_fp_formes({"op": "crons_crontab", "user": user, "texte": cron_file.read_text(errors="replace"), "runs": runs_liste, "now": now}))
             except Exception:
                 pass
 
     # [FP2] API tentative pour les crons gérés par FP2
-    api_crons = _fp_api_get_list("/api/cron/list?filter[limit]=500")
-    for c in api_crons:
-        owner = (c.get("owner") or {})
-        user  = owner.get("username", "root") if isinstance(owner, dict) else "root"
-        jobs.append({
-            "user":        user,
-            "schedule":    c.get("schedule", ""),
-            "command":     (c.get("command", "") or "")[:300],
-            "enabled":     1 if c.get("enabled", True) else 0,
-            "last_run":    c.get("last_run", "") or _cron_run_lookup(
-                               runs, user, c.get("command", "") or ""),
-            "last_status": c.get("last_status", "") or (
-                               "ran" if _cron_run_lookup(
-                                   runs, user, c.get("command", "") or "") else ""),
-            "source":      "fastpanel2_api",
-            "last_check":  now,
-        })
+    jobs.extend(_fp_formes({"op": "crons_api", "api_crons": _fp_api_get_list("/api/cron/list?filter[limit]=500"), "runs": runs_liste, "now": now}))
 
     return jobs
 

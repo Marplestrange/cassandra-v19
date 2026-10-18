@@ -22,7 +22,12 @@
      "users_dossiers",
      "dbs_base",
      "dbs_api",
-     "dbs_mysql"
+     "dbs_mysql",
+     "backups_plans",
+     "backups_api",
+     "backups_fichiers",
+     "crons_crontab",
+     "crons_api"
     ]
    }
   }

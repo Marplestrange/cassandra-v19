@@ -1820,6 +1820,999 @@
      }
     ]
    }
+  },
+  {
+   "cas": "plans vide",
+   "entree": {
+    "op": "backups_plans",
+    "plans": [],
+    "owners": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "plans un plan actif",
+   "entree": {
+    "op": "backups_plans",
+    "plans": [
+     {
+      "id": 7,
+      "name": "nuit",
+      "enabled": true,
+      "hour": "*/6",
+      "VirtualHostBackupPlans": [
+       1,
+       2
+      ],
+      "DatabasePlans": [
+       1
+      ],
+      "last_run_time": " 2026-10-17 03:00:00 ",
+      "owner_id": 3
+     }
+    ],
+    "owners": {
+     "7": "alice"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "type": "nuit · 2 sites · 1 bases",
+      "status": "actif · toutes les 6h",
+      "size_mb": 0,
+      "created_at": "2026-10-17 03:00:00",
+      "error": "",
+      "user": "alice",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plans propriétaire inconnu",
+   "entree": {
+    "op": "backups_plans",
+    "plans": [
+     {
+      "id": 7,
+      "name": "nuit",
+      "enabled": true,
+      "hour": "*/6",
+      "VirtualHostBackupPlans": [
+       1,
+       2
+      ],
+      "DatabasePlans": [
+       1
+      ],
+      "last_run_time": " 2026-10-17 03:00:00 ",
+      "owner_id": 3
+     }
+    ],
+    "owners": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "type": "nuit · 2 sites · 1 bases",
+      "status": "actif · toutes les 6h",
+      "size_mb": 0,
+      "created_at": "2026-10-17 03:00:00",
+      "error": "",
+      "user": "#3",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plans planifié",
+   "entree": {
+    "op": "backups_plans",
+    "plans": [
+     {
+      "id": 7,
+      "name": "nuit",
+      "enabled": true,
+      "hour": "3",
+      "VirtualHostBackupPlans": [
+       1,
+       2
+      ],
+      "DatabasePlans": [
+       1
+      ],
+      "last_run_time": " 2026-10-17 03:00:00 ",
+      "owner_id": 3
+     }
+    ],
+    "owners": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "type": "nuit · 2 sites · 1 bases",
+      "status": "actif · planifié",
+      "size_mb": 0,
+      "created_at": "2026-10-17 03:00:00",
+      "error": "",
+      "user": "#3",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plans horaire",
+   "entree": {
+    "op": "backups_plans",
+    "plans": [
+     {
+      "id": 7,
+      "name": "nuit",
+      "enabled": true,
+      "hour": "*",
+      "VirtualHostBackupPlans": [
+       1,
+       2
+      ],
+      "DatabasePlans": [
+       1
+      ],
+      "last_run_time": " 2026-10-17 03:00:00 ",
+      "owner_id": 3
+     }
+    ],
+    "owners": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "type": "nuit · 2 sites · 1 bases",
+      "status": "actif · horaire",
+      "size_mb": 0,
+      "created_at": "2026-10-17 03:00:00",
+      "error": "",
+      "user": "#3",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plans désactivé",
+   "entree": {
+    "op": "backups_plans",
+    "plans": [
+     {
+      "id": 7,
+      "name": "nuit",
+      "enabled": false,
+      "hour": "*/6",
+      "VirtualHostBackupPlans": [
+       1,
+       2
+      ],
+      "DatabasePlans": [
+       1
+      ],
+      "last_run_time": " 2026-10-17 03:00:00 ",
+      "owner_id": 3
+     }
+    ],
+    "owners": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "type": "nuit · 2 sites · 1 bases",
+      "status": "désactivé",
+      "size_mb": 0,
+      "created_at": "2026-10-17 03:00:00",
+      "error": "",
+      "user": "#3",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plans sans dernière exécution",
+   "entree": {
+    "op": "backups_plans",
+    "plans": [
+     {
+      "id": 7,
+      "name": "nuit",
+      "enabled": true,
+      "hour": "*/6",
+      "VirtualHostBackupPlans": [
+       1,
+       2
+      ],
+      "DatabasePlans": [
+       1
+      ],
+      "last_run_time": null,
+      "owner_id": 3
+     }
+    ],
+    "owners": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "type": "nuit · 2 sites · 1 bases",
+      "status": "actif · toutes les 6h",
+      "size_mb": 0,
+      "created_at": "—",
+      "error": "",
+      "user": "#3",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plans vides de périmètre",
+   "entree": {
+    "op": "backups_plans",
+    "plans": [
+     {
+      "id": 1
+     }
+    ],
+    "owners": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "type": "plan · 0 sites · 0 bases",
+      "status": "désactivé",
+      "size_mb": 0,
+      "created_at": "—",
+      "error": "",
+      "user": "#",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plans sans id",
+   "entree": {
+    "op": "backups_plans",
+    "plans": [
+     {
+      "name": "x",
+      "owner_id": 9
+     }
+    ],
+    "owners": {
+     "None": "zed"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "type": "x · 0 sites · 0 bases",
+      "status": "désactivé",
+      "size_mb": 0,
+      "created_at": "—",
+      "error": "",
+      "user": "zed",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plans pas une liste",
+   "entree": {
+    "op": "backups_plans",
+    "plans": {
+     "data": []
+    },
+    "owners": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "plans élément cassé ignoré",
+   "entree": {
+    "op": "backups_plans",
+    "plans": [
+     null,
+     {
+      "id": 7,
+      "name": "nuit",
+      "enabled": true,
+      "hour": "*/6",
+      "VirtualHostBackupPlans": [
+       1,
+       2
+      ],
+      "DatabasePlans": [
+       1
+      ],
+      "last_run_time": " 2026-10-17 03:00:00 ",
+      "owner_id": 3
+     },
+     3
+    ],
+    "owners": {
+     "7": "a"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "type": "nuit · 2 sites · 1 bases",
+      "status": "actif · toutes les 6h",
+      "size_mb": 0,
+      "created_at": "2026-10-17 03:00:00",
+      "error": "",
+      "user": "a",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "plans enabled texte",
+   "entree": {
+    "op": "backups_plans",
+    "plans": [
+     {
+      "id": 7,
+      "name": "nuit",
+      "enabled": "",
+      "hour": "*/6",
+      "VirtualHostBackupPlans": [
+       1,
+       2
+      ],
+      "DatabasePlans": [
+       1
+      ],
+      "last_run_time": " 2026-10-17 03:00:00 ",
+      "owner_id": 3
+     }
+    ],
+    "owners": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "type": "nuit · 2 sites · 1 bases",
+      "status": "désactivé",
+      "size_mb": 0,
+      "created_at": "2026-10-17 03:00:00",
+      "error": "",
+      "user": "#3",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "api sauvegardes vide",
+   "entree": {
+    "op": "backups_api",
+    "api_backups": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "api sauvegardes",
+   "entree": {
+    "op": "backups_api",
+    "api_backups": [
+     {
+      "type": "inc",
+      "status": "ok",
+      "size_mb": 12.5,
+      "created_at": "2026-10-01",
+      "error_message": "e",
+      "owner": {
+       "username": "alice"
+      }
+     },
+     {
+      "size": "3"
+     },
+     {
+      "owner": "x"
+     }
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "type": "inc",
+      "status": "ok",
+      "size_mb": 12.5,
+      "created_at": "2026-10-01",
+      "error": "e",
+      "user": "alice",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "type": "full",
+      "status": "unknown",
+      "size_mb": 3.0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "error": "",
+      "user": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "type": "full",
+      "status": "unknown",
+      "size_mb": 0.0,
+      "created_at": "2026-10-17T12:00:00.123456",
+      "error": "",
+      "user": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "fichiers de sauvegarde vide",
+   "entree": {
+    "op": "backups_fichiers",
+    "fichiers": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "fichiers de sauvegarde",
+   "entree": {
+    "op": "backups_fichiers",
+    "fichiers": [
+     [
+      [
+       "/",
+       "var",
+       "backups",
+       "fastpanel2",
+       "alice",
+       "a.tar.gz"
+      ],
+      104857600,
+      "2026-10-16T01:02:03"
+     ],
+     [
+      [
+       "a.tar.gz"
+      ],
+      1572864,
+      "2026-10-15T00:00:00.5"
+     ],
+     [
+      [
+       "x",
+       "b.tar.gz"
+      ],
+      0,
+      "2026-01-01T00:00:00"
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "type": "full",
+      "status": "success",
+      "size_mb": 100.0,
+      "created_at": "2026-10-16T01:02:03",
+      "error": "",
+      "user": "alice",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "type": "full",
+      "status": "success",
+      "size_mb": 1.5,
+      "created_at": "2026-10-15T00:00:00.5",
+      "error": "",
+      "user": "",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "type": "full",
+      "status": "success",
+      "size_mb": 0.0,
+      "created_at": "2026-01-01T00:00:00",
+      "error": "",
+      "user": "x",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "crontab vide",
+   "entree": {
+    "op": "crons_crontab",
+    "user": "alice",
+    "texte": "",
+    "runs": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "crontab complet",
+   "entree": {
+    "op": "crons_crontab",
+    "user": "alice",
+    "texte": "# crontab\nSHELL=/bin/sh\nPATH=/usr/bin\nMAILTO=x\n\n*/5 * * * * /usr/bin/php /var/www/a/cron.php\n0 3 * * 1 /usr/bin/backup.sh --all --verbose\ntrop court\n30 2 * * * /bin/true\n  # indenté  \n@daily /bin/x",
+    "runs": [
+     [
+      "alice",
+      "/usr/bin/php /var/www/a/cron.php",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/backup.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "alice",
+      "/usr/bin/php /var/www/a/autre.php",
+      "2026-10-10T00:00:00"
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "alice",
+      "schedule": "*/5 * * * *",
+      "command": "/usr/bin/php /var/www/a/cron.php",
+      "enabled": 1,
+      "last_run": "2026-10-17T03:00:00",
+      "last_status": "ran",
+      "source": "fastpanel2",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "alice",
+      "schedule": "0 3 * * 1",
+      "command": "/usr/bin/backup.sh --all --verbose",
+      "enabled": 1,
+      "last_run": "",
+      "last_status": "",
+      "source": "fastpanel2",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "alice",
+      "schedule": "30 2 * * *",
+      "command": "/bin/true",
+      "enabled": 1,
+      "last_run": "",
+      "last_status": "",
+      "source": "fastpanel2",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "crontab root",
+   "entree": {
+    "op": "crons_crontab",
+    "user": "root",
+    "texte": "# crontab\nSHELL=/bin/sh\nPATH=/usr/bin\nMAILTO=x\n\n*/5 * * * * /usr/bin/php /var/www/a/cron.php\n0 3 * * 1 /usr/bin/backup.sh --all --verbose\ntrop court\n30 2 * * * /bin/true\n  # indenté  \n@daily /bin/x",
+    "runs": [
+     [
+      "alice",
+      "/usr/bin/php /var/www/a/cron.php",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/backup.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "alice",
+      "/usr/bin/php /var/www/a/autre.php",
+      "2026-10-10T00:00:00"
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "root",
+      "schedule": "*/5 * * * *",
+      "command": "/usr/bin/php /var/www/a/cron.php",
+      "enabled": 1,
+      "last_run": "",
+      "last_status": "",
+      "source": "fastpanel2",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "root",
+      "schedule": "0 3 * * 1",
+      "command": "/usr/bin/backup.sh --all --verbose",
+      "enabled": 1,
+      "last_run": "2026-10-17T04:00:00",
+      "last_status": "ran",
+      "source": "fastpanel2",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "root",
+      "schedule": "30 2 * * *",
+      "command": "/bin/true",
+      "enabled": 1,
+      "last_run": "",
+      "last_status": "",
+      "source": "fastpanel2",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "crontab sans exécutions",
+   "entree": {
+    "op": "crons_crontab",
+    "user": "alice",
+    "texte": "# crontab\nSHELL=/bin/sh\nPATH=/usr/bin\nMAILTO=x\n\n*/5 * * * * /usr/bin/php /var/www/a/cron.php\n0 3 * * 1 /usr/bin/backup.sh --all --verbose\ntrop court\n30 2 * * * /bin/true\n  # indenté  \n@daily /bin/x",
+    "runs": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "alice",
+      "schedule": "*/5 * * * *",
+      "command": "/usr/bin/php /var/www/a/cron.php",
+      "enabled": 1,
+      "last_run": "",
+      "last_status": "",
+      "source": "fastpanel2",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "alice",
+      "schedule": "0 3 * * 1",
+      "command": "/usr/bin/backup.sh --all --verbose",
+      "enabled": 1,
+      "last_run": "",
+      "last_status": "",
+      "source": "fastpanel2",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "alice",
+      "schedule": "30 2 * * *",
+      "command": "/bin/true",
+      "enabled": 1,
+      "last_run": "",
+      "last_status": "",
+      "source": "fastpanel2",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "crontab commande longue",
+   "entree": {
+    "op": "crons_crontab",
+    "user": "alice",
+    "texte": "0 0 * * * xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "runs": [
+     [
+      "alice",
+      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "2026-10-17T00:00:00"
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "alice",
+      "schedule": "0 0 * * *",
+      "command": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "enabled": 1,
+      "last_run": "2026-10-17T00:00:00",
+      "last_status": "ran",
+      "source": "fastpanel2",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "crontab espaces multiples",
+   "entree": {
+    "op": "crons_crontab",
+    "user": "alice",
+    "texte": "0   0   *   *   *    /bin/ls -l   -a",
+    "runs": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "alice",
+      "schedule": "0 0 * * *",
+      "command": "/bin/ls -l   -a",
+      "enabled": 1,
+      "last_run": "",
+      "last_status": "",
+      "source": "fastpanel2",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "api crons vide",
+   "entree": {
+    "op": "crons_api",
+    "api_crons": [],
+    "runs": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "api crons",
+   "entree": {
+    "op": "crons_api",
+    "api_crons": [
+     {
+      "owner": {
+       "username": "alice"
+      },
+      "schedule": "0 3 * * *",
+      "command": "/usr/bin/php /var/www/a/cron.php",
+      "enabled": true
+     },
+     {
+      "owner": "texte",
+      "schedule": "* * * * *",
+      "command": "/bin/x",
+      "enabled": false,
+      "last_run": "2026-01-01",
+      "last_status": "ok"
+     },
+     {}
+    ],
+    "runs": [
+     [
+      "alice",
+      "/usr/bin/php /var/www/a/cron.php",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/backup.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "alice",
+      "/usr/bin/php /var/www/a/autre.php",
+      "2026-10-10T00:00:00"
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "alice",
+      "schedule": "0 3 * * *",
+      "command": "/usr/bin/php /var/www/a/cron.php",
+      "enabled": 1,
+      "last_run": "2026-10-17T03:00:00",
+      "last_status": "ran",
+      "source": "fastpanel2_api",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "root",
+      "schedule": "* * * * *",
+      "command": "/bin/x",
+      "enabled": 0,
+      "last_run": "2026-01-01",
+      "last_status": "ok",
+      "source": "fastpanel2_api",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "user": "root",
+      "schedule": "",
+      "command": "",
+      "enabled": 1,
+      "last_run": "2026-10-17T04:00:00",
+      "last_status": "ran",
+      "source": "fastpanel2_api",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "api crons propriétaire absent",
+   "entree": {
+    "op": "crons_api",
+    "api_crons": [
+     {
+      "command": "/usr/bin/backup.sh --all"
+     }
+    ],
+    "runs": [
+     [
+      "alice",
+      "/usr/bin/php /var/www/a/cron.php",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/backup.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "alice",
+      "/usr/bin/php /var/www/a/autre.php",
+      "2026-10-10T00:00:00"
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "root",
+      "schedule": "",
+      "command": "/usr/bin/backup.sh --all",
+      "enabled": 1,
+      "last_run": "2026-10-17T04:00:00",
+      "last_status": "ran",
+      "source": "fastpanel2_api",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "api crons dernière exécution fournie",
+   "entree": {
+    "op": "crons_api",
+    "api_crons": [
+     {
+      "owner": {
+       "username": "alice"
+      },
+      "command": "/usr/bin/php /var/www/a/cron.php",
+      "last_run": "X",
+      "last_status": ""
+     }
+    ],
+    "runs": [
+     [
+      "alice",
+      "/usr/bin/php /var/www/a/cron.php",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/backup.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "alice",
+      "/usr/bin/php /var/www/a/autre.php",
+      "2026-10-10T00:00:00"
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "alice",
+      "schedule": "",
+      "command": "/usr/bin/php /var/www/a/cron.php",
+      "enabled": 1,
+      "last_run": "X",
+      "last_status": "ran",
+      "source": "fastpanel2_api",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "api crons commande None",
+   "entree": {
+    "op": "crons_api",
+    "api_crons": [
+     {
+      "owner": {
+       "username": "alice"
+      },
+      "command": null
+     }
+    ],
+    "runs": [
+     [
+      "alice",
+      "/usr/bin/php /var/www/a/cron.php",
+      "2026-10-17T03:00:00"
+     ],
+     [
+      "root",
+      "/usr/bin/backup.sh --all",
+      "2026-10-17T04:00:00"
+     ],
+     [
+      "alice",
+      "/usr/bin/php /var/www/a/autre.php",
+      "2026-10-10T00:00:00"
+     ]
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "user": "alice",
+      "schedule": "",
+      "command": "",
+      "enabled": 1,
+      "last_run": "2026-10-17T03:00:00",
+      "last_status": "ran",
+      "source": "fastpanel2_api",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
   }
  ]
 }

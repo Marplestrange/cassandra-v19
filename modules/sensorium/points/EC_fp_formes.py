@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #ab16c5
+# VERSION EC : EC0 (référence 0.3.0)  #19a836
 # HÔTE CN    : CN_module.py · fp_formes @1.0
 # RÔLE       : transforme ce que le Sensorium lit de FastPanel (par sa ligne de commande, son API ou les fichiers des serveurs) en comptes mail et FTP, source par source.
 # MÉTHODE    : fonctions pures, une par source ; le nexus essaie les sources dans l'ordre (la plus fiable d'abord) et s'arrête à la première qui donne des comptes ; l'EC ne lit jamais de fichier.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=fp_formes contrat=@1.0 version=EC0 empreinte=ab16c5 ▼▼▼
+# ▼▼▼ BORNE EC point=fp_formes contrat=@1.0 version=EC0 empreinte=19a836 ▼▼▼
 import re
 
 def mail_mogwai(rows, now):
@@ -233,6 +233,121 @@ def dbs_mysql(texte, now):
                 pass
     return dbs
 
+def backups_plans(plans, owners, now):
+    """Les plans de sauvegarde de FastPanel (mogwai backup list --json) : l'état de chaque plan, jamais l'historique des fichiers (ils partent sur le compte distant)."""
+    backups = []
+    for p in plans if isinstance(plans, list) else []:
+        try:
+            name = p.get("name", "plan")
+            enabled = bool(p.get("enabled", False))
+            sites = len(p.get("VirtualHostBackupPlans") or [])
+            dbs = len(p.get("DatabasePlans") or [])
+            hour = str(p.get("hour", "*"))
+            sched = ("toutes les %sh" % hour[2:]) if hour.startswith("*/") else ("planifié" if hour != "*" else "horaire")
+            last = (p.get("last_run_time") or "").strip()
+            backups.append({
+                "type": "%s · %d sites · %d bases" % (name, sites, dbs),
+                "status": ("actif · %s" % sched) if enabled else "désactivé",
+                "size_mb": 0,
+                "created_at": last or "—",
+                "error": "",
+                "user": owners.get(str(p.get("id")), "") or ("#%s" % p.get("owner_id", "")),
+                "last_check": now,
+            })
+        except Exception:
+            continue
+    return backups
+
+def backups_api(api_backups, now):
+    """Les sauvegardes d'après l'API du panneau (si un jour exposée)."""
+    backups = []
+    for b in api_backups:
+        backups.append({
+            "type": b.get("type", "full"),
+            "status": b.get("status", "unknown"),
+            "size_mb": float(b.get("size_mb", b.get("size", 0)) or 0),
+            "created_at": b.get("created_at", now),
+            "error": b.get("error_message", b.get("error", "")),
+            "user": (b.get("owner") or {}).get("username", "") if isinstance(b.get("owner"), dict) else "",
+            "last_check": now,
+        })
+    return backups
+
+def backups_fichiers(fichiers, now):
+    """Les sauvegardes locales d'après les archives trouvées : [[morceaux du chemin, taille en octets, date de modification ISO]]."""
+    backups = []
+    for parts, taille, mtime in fichiers:
+        backups.append({
+            "type": "full",
+            "status": "success",
+            "size_mb": round(taille / 1024 / 1024, 1),
+            "created_at": mtime,
+            "error": "",
+            "user": parts[-2] if len(parts) > 1 else "",
+            "last_check": now,
+        })
+    return backups
+
+def _derniere(runs, user, command):
+    """Dernière exécution d'une commande de crontab (égalité stricte, puis inclusion) ; runs : [[compte, commande, date]]."""
+    d = {(u, c): ts for u, c, ts in runs}
+    cmd = (command or "").strip()[:300]
+    exact = d.get((user, cmd))
+    if exact:
+        return exact
+    best = ""
+    for (u, c), ts in d.items():
+        if u != user:
+            continue
+        if c.startswith(cmd[:120]) or cmd.startswith(c[:120]):
+            if ts > best:
+                best = ts
+    return best
+
+def crons_crontab(user, texte, runs, now):
+    """Les tâches d'une crontab d'utilisateur, enrichies de leur dernière exécution réelle."""
+    jobs = []
+    for line in texte.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or line.startswith("SHELL=") \
+           or line.startswith("PATH=") or line.startswith("MAILTO="):
+            continue
+        parts = line.split(None, 5)
+        if len(parts) < 6:
+            continue
+        schedule = " ".join(parts[:5])
+        command = parts[5][:300]
+        last = _derniere(runs, user, command)
+        jobs.append({
+            "user": user,
+            "schedule": schedule,
+            "command": command,
+            "enabled": 1,
+            "last_run": last,
+            "last_status": "ran" if last else "",
+            "source": "fastpanel2",
+            "last_check": now,
+        })
+    return jobs
+
+def crons_api(api_crons, runs, now):
+    """Les tâches planifiées gérées par le panneau (API), enrichies de leur dernière exécution réelle."""
+    jobs = []
+    for c in api_crons:
+        owner = (c.get("owner") or {})
+        user = owner.get("username", "root") if isinstance(owner, dict) else "root"
+        jobs.append({
+            "user": user,
+            "schedule": c.get("schedule", ""),
+            "command": (c.get("command", "") or "")[:300],
+            "enabled": 1 if c.get("enabled", True) else 0,
+            "last_run": c.get("last_run", "") or _derniere(runs, user, c.get("command", "") or ""),
+            "last_status": c.get("last_status", "") or ("ran" if _derniere(runs, user, c.get("command", "") or "") else ""),
+            "source": "fastpanel2_api",
+            "last_check": now,
+        })
+    return jobs
+
 def forme(op, entree):
     if op == "mail_mogwai":
         return mail_mogwai(entree["rows"], entree["now"])
@@ -258,10 +373,20 @@ def forme(op, entree):
         return dbs_api(entree["api_dbs"], entree["now"])
     if op == "dbs_mysql":
         return dbs_mysql(entree["texte"], entree["now"])
+    if op == "backups_plans":
+        return backups_plans(entree["plans"], entree["owners"], entree["now"])
+    if op == "backups_api":
+        return backups_api(entree["api_backups"], entree["now"])
+    if op == "backups_fichiers":
+        return backups_fichiers(entree["fichiers"], entree["now"])
+    if op == "crons_crontab":
+        return crons_crontab(entree["user"], entree["texte"], entree["runs"], entree["now"])
+    if op == "crons_api":
+        return crons_api(entree["api_crons"], entree["runs"], entree["now"])
     raise ValueError("opération inconnue : %s" % op)
 
 def point_fp_formes(entree):
-    """Le point d'évolution `fp_formes` (contrat 1.0) : ce que le Sensorium lit de FastPanel, mis en forme : comptes mail (mogwai, API, postfix), comptes FTP (base, fichiers des serveurs, dossiers), comptes du panneau et bases de données (base, API, dossiers, MySQL). Le nexus lit les sources ; l'EC ne fait que la forme."""
+    """Le point d'évolution `fp_formes` (contrat 1.0) : ce que le Sensorium lit de FastPanel, mis en forme : comptes mail (mogwai, API, postfix), comptes FTP (base, fichiers des serveurs, dossiers), comptes du panneau et bases de données (base, API, dossiers, MySQL), sauvegardes et tâches planifiées. Le nexus lit les sources ; l'EC ne fait que la forme."""
     return {"valeur": forme(entree["op"], entree)}
 
 # ▲▲▲ FIN BORNE EC ▲▲▲

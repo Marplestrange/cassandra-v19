@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #62bc65
+# VERSION CN : 0.1.0  #4fd5dd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le démon du Sensorium, seul et sans noyau, appelle ses points d'évolution ; que ses appels nourrissent le rejeu que le noyau absorbe ; et qu'une panne du service ne perd jamais une mesure.
 # MÉTHODE    : charge CN_sensorium.py comme module, un dossier de données temporaire, puis appelle les fonctions façades.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=62bc65 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4fd5dd ▼▼▼
 import importlib.util
 import json
 import os
@@ -113,6 +113,9 @@ class DemonEtPoints(unittest.TestCase):
         self.assertEqual(r["breakdown"], {"cpu": -20})
 
 
+STATS = {}
+
+
 class FauxFichier:
     """Un système de fichiers de poche : ce que le collecteur lirait sur une machine, sans toucher la vraie."""
     def __init__(self, chemin, fs, dirs):
@@ -142,6 +145,19 @@ class FauxFichier:
     def __str__(self):
         return self.chemin
 
+    def rglob(self, motif):
+        pref = self.chemin.rstrip("/") + "/"
+        fin = motif.lstrip("*")
+        return [FauxFichier(k, self.fs, self.dirs) for k in sorted(self.fs) if k.startswith(pref) and k.endswith(fin)]
+
+    def stat(self):
+        taille, mtime = STATS[self.chemin]
+        return type("St", (), {"st_size": taille, "st_mtime": mtime})()
+
+    @property
+    def parts(self):
+        return tuple(["/"] + [x for x in self.chemin.split("/") if x])
+
     def __truediv__(self, x):
         return FauxFichier(self.chemin.rstrip("/") + "/" + x, self.fs, self.dirs)
 
@@ -151,7 +167,7 @@ class FauxFichier:
 
 
 class Collecteurs(unittest.TestCase):
-    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (33 scénarios : mail, FTP, comptes, bases ; aucun écart)."""
+    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (48 scénarios : mail, FTP, comptes, bases, sauvegardes, crons ; aucun écart)."""
 
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
@@ -168,9 +184,13 @@ class Collecteurs(unittest.TestCase):
         m = self.m
         fs, dirs = dict(sc.get("fs", {})), set(sc.get("dirs", []))
         m.Path = lambda chemin: FauxFichier(chemin, fs, dirs)
-        m.datetime = type("DT", (), {"now": staticmethod(lambda tz=None: type("N", (), {"isoformat": staticmethod(lambda: "2026-10-17T12:00:00.000001")})())})
+        m.datetime = type("DT", (), {"now": staticmethod(lambda tz=None: type("N", (), {"isoformat": staticmethod(lambda: "2026-10-17T12:00:00.000001")})()),
+                                     "fromtimestamp": staticmethod(lambda t: type("N", (), {"isoformat": staticmethod(lambda: "T%s" % t)})())})
         m._fp_available = lambda: sc.get("dispo", True)
-        m._mogwai = lambda args, timeout=15: sc.get("mogwai", "")
+        m._mogwai = lambda args, timeout=15: (sc.get("mogwai_json", "") if "--json" in args else sc.get("mogwai", ""))
+        m._cron_last_runs = lambda: {tuple(k.split("|", 1)): v for k, v in sc.get("runs", {}).items()}
+        STATS.clear()
+        STATS.update({k: tuple(v) for k, v in sc.get("stats", {}).items()})
         m._fp_api_get_list = lambda ep: list(sc.get("api", []))
         m._fp_sqlite_ftp = lambda: [dict(x) for x in sc.get("base_ftp", [])]
         m._fp_get_fp2_usernames = lambda: list(sc.get("users", []))
