@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #106fca
+// VERSION CN : 0.1.0  #9dc14a
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=106fca ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=9dc14a ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -148,7 +148,7 @@
   function rendreHaut() {
     if (!E.d) return;
     const lg = $("#d19-logo"), o = E.d.organisation || {};
-    lg.className = "d19-logo" + (E.d.niveau === "danger" ? " s-danger" : E.d.niveau === "alerte" ? " s-alerte" : "");
+    lg.className = "d19-logo" + (o.logo ? " img" : "") + (E.d.niveau === "danger" ? " s-danger" : E.d.niveau === "alerte" ? " s-alerte" : "");
     lg.title = (o.nom || "Cassandra") + " · " + (E.d.niveau === "danger" ? "un point urgent à regarder" : E.d.niveau === "alerte" ? "des points à regarder" : "tout est en ordre");
     lg.style.backgroundImage = o.logo ? "url(" + o.logo + ")" : "";
     lg.textContent = o.logo ? "" : (o.nom || "C").trim().charAt(0).toUpperCase();
