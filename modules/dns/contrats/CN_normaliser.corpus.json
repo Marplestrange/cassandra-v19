@@ -1,0 +1,386 @@
+{
+ "point": "dns.normaliser",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de dns, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "typ": "A",
+    "val": "104.21.5.5"
+   },
+   "sortie": {
+    "valeur": "<cloudflare>"
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "typ": "A",
+    "val": "192.0.2.1"
+   },
+   "sortie": {
+    "valeur": "192.0.2.1"
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "typ": "MX",
+    "val": "10 MX.E.fr"
+   },
+   "sortie": {
+    "valeur": "10 mx.e.fr"
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "typ": 2,
+    "val": 0.0
+   },
+   "sortie": {
+    "valeur": 0.0
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "typ": "abc",
+    "val": "  espaces  "
+   },
+   "sortie": {
+    "valeur": "  espaces  "
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "typ": {},
+    "val": {}
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "typ": 1.5,
+    "val": [
+     {
+      "a": 1
+     },
+     {
+      "a": 2
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "a": 1
+     },
+     {
+      "a": 2
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "typ": 1.5,
+    "val": [
+     1,
+     2,
+     3
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     1,
+     2,
+     3
+    ]
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "typ": "a,b;c",
+    "val": "ligne1\nligne2\n"
+   },
+   "sortie": {
+    "valeur": "ligne1\nligne2\n"
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "typ": 1,
+    "val": 2
+   },
+   "sortie": {
+    "valeur": 2
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "typ": -1,
+    "val": [
+     "a",
+     "b"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "a",
+     "b"
+    ]
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "typ": 0,
+    "val": 1
+   },
+   "sortie": {
+    "valeur": 1
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "typ": {
+     "nom": "n",
+     "valeur": 3
+    },
+    "val": "Bonjour le monde"
+   },
+   "sortie": {
+    "valeur": "Bonjour le monde"
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "typ": 0.5,
+    "val": [
+     "a",
+     "b",
+     "a"
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     "a",
+     "b",
+     "a"
+    ]
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "typ": false,
+    "val": false
+   },
+   "sortie": {
+    "valeur": false
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "typ": true,
+    "val": ""
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "cas 17",
+   "entree": {
+    "typ": "a",
+    "val": null
+   },
+   "sortie": {
+    "valeur": null
+   }
+  },
+  {
+   "cas": "cas 18",
+   "entree": {
+    "typ": {
+     "nom": "n",
+     "valeur": 3
+    },
+    "val": 3
+   },
+   "sortie": {
+    "valeur": 3
+   }
+  },
+  {
+   "cas": "cas 19",
+   "entree": {
+    "typ": true,
+    "val": {
+     "a": 1,
+     "b": "x"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1,
+     "b": "x"
+    }
+   }
+  },
+  {
+   "cas": "cas 20",
+   "entree": {
+    "typ": {
+     "nom": "n",
+     "valeur": 3
+    },
+    "val": -1
+   },
+   "sortie": {
+    "valeur": -1
+   }
+  },
+  {
+   "cas": "cas 21",
+   "entree": {
+    "typ": 1.5,
+    "val": []
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 22",
+   "entree": {
+    "typ": "  espaces  ",
+    "val": "a"
+   },
+   "sortie": {
+    "valeur": "a"
+   }
+  },
+  {
+   "cas": "cas 23",
+   "entree": {
+    "typ": true,
+    "val": 0
+   },
+   "sortie": {
+    "valeur": 0
+   }
+  },
+  {
+   "cas": "cas 24",
+   "entree": {
+    "typ": "",
+    "val": "a,b;c"
+   },
+   "sortie": {
+    "valeur": "a,b;c"
+   }
+  },
+  {
+   "cas": "cas 25",
+   "entree": {
+    "typ": 3,
+    "val": " "
+   },
+   "sortie": {
+    "valeur": " "
+   }
+  },
+  {
+   "cas": "cas 26",
+   "entree": {
+    "typ": [
+     "a",
+     "b"
+    ],
+    "val": 1.5
+   },
+   "sortie": {
+    "valeur": 1.5
+   }
+  },
+  {
+   "cas": "cas 27",
+   "entree": {
+    "typ": {
+     "nom": "n",
+     "valeur": 3
+    },
+    "val": "abc"
+   },
+   "sortie": {
+    "valeur": "abc"
+   }
+  },
+  {
+   "cas": "cas 28",
+   "entree": {
+    "typ": "ligne1\nligne2\n",
+    "val": 0.5
+   },
+   "sortie": {
+    "valeur": 0.5
+   }
+  },
+  {
+   "cas": "cas 29",
+   "entree": {
+    "typ": 3,
+    "val": {
+     "a": 1
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1
+    }
+   }
+  },
+  {
+   "cas": "cas 30",
+   "entree": {
+    "typ": {
+     "a": 1
+    },
+    "val": {
+     "nom": "n",
+     "valeur": 3
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "nom": "n",
+     "valeur": 3
+    }
+   }
+  },
+  {
+   "cas": "cas 31",
+   "entree": {
+    "typ": "Bonjour le monde",
+    "val": true
+   },
+   "sortie": {
+    "valeur": true
+   }
+  }
+ ]
+}

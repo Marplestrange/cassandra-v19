@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dns
 # ZONE       : CN
-# VERSION CN : 0.2.0  #acbaea
+# VERSION CN : 0.2.1  #acbaea
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : derives.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

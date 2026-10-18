@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : dns -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.2.0  #000000 -->
+<!-- VERSION CN : 0.2.1  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : dns — domaines et DNS -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.2.0 empreinte=bf8cf0 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.2.1 empreinte=bf8cf0 ▼▼▼ -->
 # dns — domaines et DNS
 
 Porté de la V18 (`_dns_*`, `_detect_dns`, `_aut_dns_corriger`, `_dom_expiration`). Plus de `dig` : un client DNS en Python pur (UDP, puis TCP si tronqué).

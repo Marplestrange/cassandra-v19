@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dns
 # ZONE       : CN
-# VERSION CN : 0.2.0  #10a6d6
+# VERSION CN : 0.2.1  #93c20d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Domaines et DNS.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=10a6d6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.1 empreinte=93c20d ▼▼▼
 """Domaines et DNS.
 
 Porté de la V18 (`_dns_*`, `_detect_dns`, `_aut_dns_corriger`, `_dom_expiration`), avec ses leçons :
@@ -54,6 +54,24 @@ ETIQUETTES_COURRIER = ("mail", "smtp", "imap", "pop", "pop3", "mx", "webmail", "
 PORT_DNS = 53
 ATTENTE_PREUVE_S = 30
 PAS_PREUVE_S = 5
+
+
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
 
 
 # ------------------------------------------------------------------ un client DNS en Python pur
@@ -120,14 +138,8 @@ def dom_enregistre(domaine):
 
 
 def normaliser(typ, val):
-    if typ in ("A", "AAAA"):
-        try:
-            ip = ipaddress.ip_address(val)
-            if any(ip in ipaddress.ip_network(r) for r in CLOUDFLARE):
-                return "<cloudflare>"
-        except ValueError:
-            pass
-    return val.lower() if typ in ("MX", "CNAME", "NS") else val
+    """normaliser. Le calcul est un POINT D'ÉVOLUTION : points/EC_normaliser.py."""
+    return _appeler_point("normaliser", {"typ": typ, "val": val})["valeur"]
 
 
 def ip_publique():

@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dns
 # ZONE       : CN
-# VERSION CN : 0.2.0  #238d64
+# VERSION CN : 0.2.1  #238d64
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : analyser.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

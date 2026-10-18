@@ -1,0 +1,23 @@
+{
+ "point": "dns.normaliser",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "typ",
+   "val"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "la sortie est identique à celle de l'ancien code sur chaque cas du corpus",
+  "aucune entrée n'est modifiée",
+  "la sortie survit exactement au tour JSON"
+ ]
+}

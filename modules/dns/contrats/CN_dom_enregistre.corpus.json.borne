@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dns
 # ZONE       : CN
-# VERSION CN : 0.2.0  #91f69b
+# VERSION CN : 0.2.1  #91f69b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : dom_enregistre.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)
