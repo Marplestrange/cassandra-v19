@@ -241,7 +241,7 @@ Ce que cette expérience a appris :
 
 ### 7 ter. Les points d'évolution réels (17-10-2026)
 
-Dix-neuf points sont déclarés, chacun avec sa référence EC, son contrat, son corpus doré (sorties de l'ancien code, données synthétiques) et un plancher de score mesuré (`tests/CN_test_points_reels.py`) :
+Cinquante-deux points sont déclarés (les dix-neuf premiers sont listés ci-dessous ; les suivants viennent de la même méthode : courrier, mesures, fastpanel, mémoire, notes, dns, modeles, projets, planifie, sauvegardes, flotte, journal), chacun avec sa référence EC, son contrat, son corpus doré (sorties de l'ancien code, données synthétiques) et un plancher de score mesuré (`tests/CN_test_points_reels.py`) :
 
 | Module | Points |
 |---|---|
@@ -267,3 +267,18 @@ Dix-neuf points sont déclarés, chacun avec sa référence EC, son contrat, son
 - L'évaluateur interrompt un candidat qui boucle sans fin (`appel_borne`, délai du contrat) : une mutation de condition d'arrêt figeait l'évaluation.
 
 **Outil** : `outils/CN_extraire_point.py` (voir son en-tête) écrit la référence, le contrat, le corpus, la déclaration au manifeste, la façade et la ligne de test.
+
+
+### 8. Ce qui n'est PAS encore construit : les points de politique et de prompt (17-10-2026)
+
+Les cinquante-deux points actuels sont tous **à équivalence** : une variante est acceptée si elle rend les mêmes sorties que la référence, plus vite. C'est le seul critère que l'évaluateur sache juger.
+
+Les prompts (`PROMPT_DISTILLATION`, `PROMPT_VETO`, `PROMPT_EPISODE`, `REGLES` des agents, `prompt_systeme`) et les politiques (seuils du Sensorium, `_etat` des sauvegardes, `FIN_SUPPORT_PHP`, seuils de la mesure) ne s'évaluent pas ainsi : une meilleure variante rend une sortie DIFFÉRENTE. Il faut un second protocole :
+
+1. des signaux réels étiquetés (acquittements sans geste, corrections de l'utilisateur, relances) captés au fil de l'eau par le noyau, jamais par le module évolué ;
+2. une mesure déclarée au manifeste (« part des alertes acquittées sans geste ») ;
+3. un corpus d'entrées avec leur étiquette, partitionné comme le rejeu (un cinquième réservé) ;
+4. une variante est meilleure si son score dépasse celui de la référence sur le jeu réservé ET qu'elle ne dégrade aucun cas protégé ;
+5. une mise en service par ombre, où les deux sorties sont gardées et l'écart n'est plus une faute mais une mesure, jusqu'à ce que l'étiquette réelle arrive.
+
+Rien de cela n'existe : ni la capture des signaux, ni le score étiqueté, ni l'ombre à écart toléré. Ces points ne sont donc pas déclarés, pour ne pas simuler un moteur qui n'existe pas.
