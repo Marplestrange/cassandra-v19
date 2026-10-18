@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=362b23 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=a07f54 ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -384,6 +384,13 @@ body.d19 .card,body.d19 .sh-tuile{
 body.d19 .sh-tuile:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(16,24,40,.06),0 18px 38px -14px rgba(15,110,100,.34)}
 :root[data-theme="dark"] body.d19 .card,:root[data-theme="dark"] body.d19 .sh-tuile{background:radial-gradient(120% 70% at 0% 0%,rgba(45,212,191,.08),transparent 60%),linear-gradient(165deg,rgba(255,255,255,.08),rgba(255,255,255,.03));border-color:rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 14px 32px -16px rgba(0,0,0,.6)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body.d19 .card,:root:not([data-theme="light"]) body.d19 .sh-tuile{background:radial-gradient(120% 70% at 0% 0%,rgba(45,212,191,.08),transparent 60%),linear-gradient(165deg,rgba(255,255,255,.08),rgba(255,255,255,.03));border-color:rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 14px 32px -16px rgba(0,0,0,.6)}}
+/* ---------- les titres de page : même famille que le reste (Inter), plus grands, un trait de lumière dessous ---------- */
+body.d19 .tab-content h1,body.d19 .sh-scene h1,body.d19 .mx-head h1{
+  font:700 26px/1.15 'Inter',system-ui,sans-serif;letter-spacing:-.022em;color:var(--txt-strong);margin:0;
+  display:inline-block;padding-bottom:10px;position:relative;
+}
+body.d19 .tab-content h1::after,body.d19 .sh-scene h1::after,body.d19 .mx-head h1::after{content:"";position:absolute;left:0;bottom:0;width:44px;height:3px;border-radius:3px;background:linear-gradient(90deg,#2dd4bf,var(--accent));box-shadow:0 0 12px rgba(45,212,191,.55)}
+body.d19 .mx-lede,body.d19 .tab-content h1+p{font:400 13.5px/1.5 'Inter',system-ui,sans-serif;color:var(--txt-soft);max-width:70ch}
 /* ▲▲▲ FIN BORNE CN ▲▲▲ */
 
 /* ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ */
