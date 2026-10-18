@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.4  #dbd049
+# VERSION CN : 0.1.4  #8449c6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.4 empreinte=dbd049 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=8449c6 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -685,60 +685,28 @@ def collect_fastpanel_domains() -> list:
     return [d for d in (_collect_fastpanel_domains_brut() or []) if not isinstance(d, dict) or _nom_de_site_valide(d.get("domain"))]
 
 
+def _fp_certs(noms) -> dict:
+    """Pour chaque nom de site : la sortie d'openssl sur son certificat Let's Encrypt (la date d'expiration), ou None si le certificat n'existe pas. Les LECTURES restent ici."""
+    certs = {}
+    for n in noms:
+        cert_path = f"/etc/letsencrypt/live/{n}/cert.pem"
+        if Path(cert_path).exists():
+            certs[n] = run_cmd(f"openssl x509 -in {shlex.quote(cert_path)} -noout -enddate 2>/dev/null")
+        else:
+            certs[n] = None
+    return certs
+
+
 def _collect_fastpanel_domains_brut() -> list:
-    """[FP1→FP2→FS] Sites/domaines FP2 : mogwai → API /api/sites/list → nginx scan."""
+    """[FP1→FP2→FS] Sites/domaines FP2 : mogwai → API /api/sites/list → nginx scan. La forme de chaque source est un POINT D'ÉVOLUTION (points/EC_fp_formes.py)."""
     now = datetime.now().isoformat()
-    domains, seen = [], set()
     if not _fp_available():
         return []
 
     # [FP1] mogwai sites list — sortie tabulaire officielle
-    mogwai_out = _mogwai(["sites", "list"])
-    mogwai_rows = _mogwai_parse_table(mogwai_out)
-    for row in mogwai_rows:
-        server_name = row.get("server_name", "")
-        if not server_name or server_name in seen:
-            continue
-        seen.add(server_name)
-        php_ver = row.get("php_version", row.get("mode", ""))
-        # Normaliser la version PHP (82 → 8.2)
-        if php_ver and php_ver.isdigit() and len(php_ver) == 2:
-            php_ver = f"{php_ver[0]}.{php_ver[1]}"
-        docroot = row.get("document_root", "")
-        owner   = row.get("owner", "")
-        # Déduire user depuis document_root si owner manquant
-        if not owner and docroot:
-            m = re.search(r"/var/www/([^/]+)/", docroot)
-            if m:
-                owner = m.group(1)
-        # Détection SSL depuis nginx config
-        ssl_enabled = 0
-        ssl_days    = 0
-        cert_path   = f"/etc/letsencrypt/live/{server_name}/cert.pem"
-        if Path(cert_path).exists():
-            ssl_enabled = 1
-            out_ssl = run_cmd(
-                f"openssl x509 -in {cert_path} -noout -enddate 2>/dev/null"
-            )
-            dm = re.search(r"notAfter=(.+)", out_ssl)
-            if dm:
-                try:
-                    exp = datetime.strptime(dm.group(1).strip(), "%b %d %H:%M:%S %Y %Z")
-                    ssl_days = (exp - datetime.now()).days
-                except Exception:
-                    pass
-        domains.append({
-            "domain":        server_name,
-            "aliases":       row.get("aliases", ""),
-            "user":          owner,
-            "php_version":   php_ver or "unknown",
-            "ssl_enabled":   ssl_enabled,
-            "ssl_days_left": ssl_days,
-            "document_root": docroot,
-            "status":        "active",
-            "created_at":    now,
-            "last_check":    now,
-        })
+    rows = _mogwai_parse_table(_mogwai(["sites", "list"]))
+    noms = [r.get("server_name", "") for r in rows if r.get("server_name", "")]
+    domains = _fp_formes({"op": "domains_mogwai", "rows": rows, "certs": _fp_certs(noms), "now": now})
     if domains:
         return domains
 
@@ -746,41 +714,8 @@ def _collect_fastpanel_domains_brut() -> list:
     api_sites = _fp_api_get_list(
         "/api/sites/list?filter[limit]=1000&filter[type]=all&filter[offset]=0"
     )
-    for site in api_sites:
-        # FP2 retourne {id, server_name, aliases:[...], owner:{username}, handler, handler_version}
-        name = site.get("server_name", site.get("name", ""))
-        if not name or name in seen:
-            continue
-        seen.add(name)
-        owner_obj = site.get("owner", {})
-        owner = (owner_obj.get("username") or owner_obj.get("login")
-                 if isinstance(owner_obj, dict) else str(owner_obj))
-        handler_ver = site.get("handler_version", site.get("php_version", ""))
-        # Détection SSL
-        ssl_enabled = 1 if site.get("ssl") or site.get("ssl_enabled") else 0
-        ssl_days    = 0
-        cert = f"/etc/letsencrypt/live/{name}/cert.pem"
-        if ssl_enabled and Path(cert).exists():
-            out_ssl = run_cmd(f"openssl x509 -in {shlex.quote(str(cert))} -noout -enddate 2>/dev/null")
-            dm = re.search(r"notAfter=(.+)", out_ssl)
-            if dm:
-                try:
-                    exp = datetime.strptime(dm.group(1).strip(), "%b %d %H:%M:%S %Y %Z")
-                    ssl_days = (exp - datetime.now()).days
-                except Exception:
-                    pass
-        domains.append({
-            "domain":        name,
-            "aliases":       ",".join(site.get("aliases", [])),
-            "user":          owner or "",
-            "php_version":   str(handler_ver) if handler_ver else "unknown",
-            "ssl_enabled":   ssl_enabled,
-            "ssl_days_left": ssl_days,
-            "document_root": site.get("document_root", ""),
-            "status":        "active" if site.get("enabled", True) else "suspended",
-            "created_at":    site.get("created_at", now),
-            "last_check":    now,
-        })
+    noms = [x.get("server_name", x.get("name", "")) for x in api_sites if x.get("server_name", x.get("name", ""))]
+    domains = _fp_formes({"op": "domains_api", "api_sites": api_sites, "certs": _fp_certs(noms), "now": now})
     if domains:
         return domains
 
@@ -789,55 +724,18 @@ def _collect_fastpanel_domains_brut() -> list:
         "/etc/nginx/sites-enabled", "/etc/nginx/conf.d",
         "/etc/nginx/fastpanel2", "/etc/nginx/vhosts.d",
     ]
+    contenus = []
     for ndir in nginx_dirs:
         nd = Path(ndir)
         if not nd.exists():
             continue
         for conf in nd.rglob("*.conf"):
             try:
-                content = conf.read_text(errors="replace")
-                if "server_name" not in content:
-                    continue
-                ssl = bool(re.search(r"ssl_certificate", content))
-                root_m = re.search(r"root\s+([^;]+);", content)
-                php_m  = re.search(r"(?:fastcgi_pass[^;]*php|handler_version\s+)(\d+\.?\d*)", content)
-                docroot = root_m.group(1).strip() if root_m else ""
-                user = ""
-                user_m = re.search(r"/var/www/([^/]+)/", docroot)
-                if user_m:
-                    user = user_m.group(1)
-                for sn_block in re.findall(r"server_name\s+([^;]+);", content):
-                    for domain in sn_block.strip().split():
-                        domain = domain.strip().rstrip(".")
-                        if (domain and len(domain) > 3
-                                and not domain.startswith(("_","*","#","localhost"))
-                                and "." in domain and domain not in seen):
-                            seen.add(domain)
-                            ssl_days = 0
-                            if ssl:
-                                cert_path = f"/etc/letsencrypt/live/{domain}/cert.pem"
-                                if Path(cert_path).exists():
-                                    out_ssl = run_cmd(
-                                        f"openssl x509 -in {cert_path} -noout -enddate 2>/dev/null"
-                                    )
-                                    dm = re.search(r"notAfter=(.+)", out_ssl)
-                                    if dm:
-                                        try:
-                                            exp = datetime.strptime(dm.group(1).strip(), "%b %d %H:%M:%S %Y %Z")
-                                            ssl_days = (exp - datetime.now()).days
-                                        except Exception:
-                                            pass
-                            domains.append({
-                                "domain": domain, "aliases": "", "user": user,
-                                "php_version": php_m.group(1) if php_m else "unknown",
-                                "ssl_enabled": 1 if ssl else 0,
-                                "ssl_days_left": ssl_days,
-                                "document_root": docroot, "status": "active",
-                                "created_at": now, "last_check": now,
-                            })
+                contenus.append(conf.read_text(errors="replace"))
             except Exception:
                 pass
-    return domains
+    noms = _fp_formes({"op": "domains_nginx_noms", "contenus": contenus, "now": now})
+    return _fp_formes({"op": "domains_nginx", "contenus": contenus, "certs": _fp_certs(noms), "now": now})
 
 
 _FP_SQLITE_PATHS = ("/usr/local/fastpanel2/app/db/fastpanel2.db",

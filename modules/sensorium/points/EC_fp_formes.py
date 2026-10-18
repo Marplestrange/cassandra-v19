@@ -8,12 +8,13 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #19a836
+# VERSION EC : EC0 (référence 0.3.0)  #81ba1c
 # HÔTE CN    : CN_module.py · fp_formes @1.0
 # RÔLE       : transforme ce que le Sensorium lit de FastPanel (par sa ligne de commande, son API ou les fichiers des serveurs) en comptes mail et FTP, source par source.
 # MÉTHODE    : fonctions pures, une par source ; le nexus essaie les sources dans l'ordre (la plus fiable d'abord) et s'arrête à la première qui donne des comptes ; l'EC ne lit jamais de fichier.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=fp_formes contrat=@1.0 version=EC0 empreinte=19a836 ▼▼▼
+# ▼▼▼ BORNE EC point=fp_formes contrat=@1.0 version=EC0 empreinte=81ba1c ▼▼▼
+from datetime import datetime
 import re
 
 def mail_mogwai(rows, now):
@@ -348,6 +349,133 @@ def crons_api(api_crons, runs, now):
         })
     return jobs
 
+def _jours_ssl(out_ssl, now):
+    """Jours avant l'expiration d'un certificat d'après la sortie d'openssl (notAfter=…) ; zéro quand elle est illisible. `now` : l'instant reçu, en ISO."""
+    ssl_days = 0
+    dm = re.search(r"notAfter=(.+)", out_ssl or "")
+    if dm:
+        try:
+            exp = datetime.strptime(dm.group(1).strip(), "%b %d %H:%M:%S %Y %Z")
+            ssl_days = (exp - datetime.fromisoformat(now)).days
+        except Exception:
+            pass
+    return ssl_days
+
+def domains_mogwai(rows, certs, now):
+    """Les sites d'après la table de mogwai. certs : {nom: sortie d'openssl, ou None si le certificat n'existe pas}."""
+    domains, seen = [], set()
+    for row in rows:
+        server_name = row.get("server_name", "")
+        if not server_name or server_name in seen:
+            continue
+        seen.add(server_name)
+        php_ver = row.get("php_version", row.get("mode", ""))
+        if php_ver and php_ver.isdigit() and len(php_ver) == 2:
+            php_ver = f"{php_ver[0]}.{php_ver[1]}"
+        docroot = row.get("document_root", "")
+        owner = row.get("owner", "")
+        if not owner and docroot:
+            m = re.search(r"/var/www/([^/]+)/", docroot)
+            if m:
+                owner = m.group(1)
+        ssl_enabled = 0
+        ssl_days = 0
+        out_ssl = certs.get(server_name)
+        if out_ssl is not None:
+            ssl_enabled = 1
+            ssl_days = _jours_ssl(out_ssl, now)
+        domains.append({
+            "domain": server_name,
+            "aliases": row.get("aliases", ""),
+            "user": owner,
+            "php_version": php_ver or "unknown",
+            "ssl_enabled": ssl_enabled,
+            "ssl_days_left": ssl_days,
+            "document_root": docroot,
+            "status": "active",
+            "created_at": now,
+            "last_check": now,
+        })
+    return domains
+
+def domains_api(api_sites, certs, now):
+    """Les sites d'après l'API du panneau (GET /api/sites/list)."""
+    domains, seen = [], set()
+    for site in api_sites:
+        name = site.get("server_name", site.get("name", ""))
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        owner_obj = site.get("owner", {})
+        owner = (owner_obj.get("username") or owner_obj.get("login")
+                 if isinstance(owner_obj, dict) else str(owner_obj))
+        handler_ver = site.get("handler_version", site.get("php_version", ""))
+        ssl_enabled = 1 if site.get("ssl") or site.get("ssl_enabled") else 0
+        ssl_days = 0
+        out_ssl = certs.get(name)
+        if ssl_enabled and out_ssl is not None:
+            ssl_days = _jours_ssl(out_ssl, now)
+        domains.append({
+            "domain": name,
+            "aliases": ",".join(site.get("aliases", [])),
+            "user": owner or "",
+            "php_version": str(handler_ver) if handler_ver else "unknown",
+            "ssl_enabled": ssl_enabled,
+            "ssl_days_left": ssl_days,
+            "document_root": site.get("document_root", ""),
+            "status": "active" if site.get("enabled", True) else "suspended",
+            "created_at": site.get("created_at", now),
+            "last_check": now,
+        })
+    return domains
+
+def _nginx_domaines(contenus):
+    """Les noms de site que les fichiers nginx déclarent, dans l'ordre, sans doublon : [(domaine, contenu)]."""
+    vus, trouves = set(), []
+    for content in contenus:
+        if "server_name" not in content:
+            continue
+        for sn_block in re.findall(r"server_name\s+([^;]+);", content):
+            for domain in sn_block.strip().split():
+                domain = domain.strip().rstrip(".")
+                if (domain and len(domain) > 3
+                        and not domain.startswith(("_", "*", "#", "localhost"))
+                        and "." in domain and domain not in vus):
+                    vus.add(domain)
+                    trouves.append((domain, content))
+    return trouves
+
+def domains_nginx_noms(contenus):
+    """Les noms de site à interroger (certificat) pour les fichiers nginx donnés."""
+    return [d for d, _ in _nginx_domaines(contenus)]
+
+def domains_nginx(contenus, certs, now):
+    """Les sites d'après les fichiers de configuration nginx de FastPanel (repli) : le texte de chaque fichier qui déclare un server_name."""
+    domains = []
+    for domain, content in _nginx_domaines(contenus):
+        ssl = bool(re.search(r"ssl_certificate", content))
+        root_m = re.search(r"root\s+([^;]+);", content)
+        php_m = re.search(r"(?:fastcgi_pass[^;]*php|handler_version\s+)(\d+\.?\d*)", content)
+        docroot = root_m.group(1).strip() if root_m else ""
+        user = ""
+        user_m = re.search(r"/var/www/([^/]+)/", docroot)
+        if user_m:
+            user = user_m.group(1)
+        ssl_days = 0
+        if ssl:
+            out_ssl = certs.get(domain)
+            if out_ssl is not None:
+                ssl_days = _jours_ssl(out_ssl, now)
+        domains.append({
+            "domain": domain, "aliases": "", "user": user,
+            "php_version": php_m.group(1) if php_m else "unknown",
+            "ssl_enabled": 1 if ssl else 0,
+            "ssl_days_left": ssl_days,
+            "document_root": docroot, "status": "active",
+            "created_at": now, "last_check": now,
+        })
+    return domains
+
 def forme(op, entree):
     if op == "mail_mogwai":
         return mail_mogwai(entree["rows"], entree["now"])
@@ -383,10 +511,18 @@ def forme(op, entree):
         return crons_crontab(entree["user"], entree["texte"], entree["runs"], entree["now"])
     if op == "crons_api":
         return crons_api(entree["api_crons"], entree["runs"], entree["now"])
+    if op == "domains_mogwai":
+        return domains_mogwai(entree["rows"], entree["certs"], entree["now"])
+    if op == "domains_api":
+        return domains_api(entree["api_sites"], entree["certs"], entree["now"])
+    if op == "domains_nginx_noms":
+        return domains_nginx_noms(entree["contenus"])
+    if op == "domains_nginx":
+        return domains_nginx(entree["contenus"], entree["certs"], entree["now"])
     raise ValueError("opération inconnue : %s" % op)
 
 def point_fp_formes(entree):
-    """Le point d'évolution `fp_formes` (contrat 1.0) : ce que le Sensorium lit de FastPanel, mis en forme : comptes mail (mogwai, API, postfix), comptes FTP (base, fichiers des serveurs, dossiers), comptes du panneau et bases de données (base, API, dossiers, MySQL), sauvegardes et tâches planifiées. Le nexus lit les sources ; l'EC ne fait que la forme."""
+    """Le point d'évolution `fp_formes` (contrat 1.0) : ce que le Sensorium lit de FastPanel, mis en forme : comptes mail (mogwai, API, postfix), comptes FTP (base, fichiers des serveurs, dossiers), comptes du panneau et bases de données (base, API, dossiers, MySQL), sauvegardes, tâches planifiées et sites. Le nexus lit les sources ; l'EC ne fait que la forme."""
     return {"valeur": forme(entree["op"], entree)}
 
 # ▲▲▲ FIN BORNE EC ▲▲▲

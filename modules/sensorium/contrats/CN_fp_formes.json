@@ -27,7 +27,11 @@
      "backups_api",
      "backups_fichiers",
      "crons_crontab",
-     "crons_api"
+     "crons_api",
+     "domains_mogwai",
+     "domains_api",
+     "domains_nginx_noms",
+     "domains_nginx"
     ]
    }
   }

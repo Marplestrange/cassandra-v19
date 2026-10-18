@@ -1231,5 +1231,298 @@
     "last_check": "2026-10-17T12:00:00.000001"
    }
   ]
+ },
+ {
+  "fonction": "_collect_fastpanel_domains_brut",
+  "scenario": {
+   "dispo": false,
+   "fs": {}
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "_collect_fastpanel_domains_brut",
+  "scenario": {
+   "mogwai": "SERVER_NAME  ALIASES  OWNER  PHP_VERSION  DOCUMENT_ROOT\na.test  www.a.test  alice  82  /var/www/alice/data/www/a.test\nb.test    81  /var/www/bob/data/www/b.test\na.test  x  y  z  w\n",
+   "openssl": {
+    "a.test": "notAfter=Dec 25 12:00:00 2026 GMT"
+   },
+   "fs": {
+    "/etc/letsencrypt/live/a.test/cert.pem": "x"
+   }
+  },
+  "attendu": [
+   {
+    "domain": "a.test",
+    "aliases": "www.a.test",
+    "user": "alice",
+    "php_version": "8.2",
+    "ssl_enabled": 1,
+    "ssl_days_left": 68,
+    "document_root": "/var/www/alice/data/www/a.test",
+    "status": "active",
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "domain": "b.test",
+    "aliases": "81",
+    "user": "/var/www/bob/data/www/b.test",
+    "php_version": "unknown",
+    "ssl_enabled": 0,
+    "ssl_days_left": 0,
+    "document_root": "",
+    "status": "active",
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "_collect_fastpanel_domains_brut",
+  "scenario": {
+   "mogwai": "SERVER_NAME  ALIASES  OWNER  PHP_VERSION  DOCUMENT_ROOT\na.test  www.a.test  alice  82  /var/www/alice/data/www/a.test\nb.test    81  /var/www/bob/data/www/b.test\na.test  x  y  z  w\n",
+   "fs": {}
+  },
+  "attendu": [
+   {
+    "domain": "a.test",
+    "aliases": "www.a.test",
+    "user": "alice",
+    "php_version": "8.2",
+    "ssl_enabled": 0,
+    "ssl_days_left": 0,
+    "document_root": "/var/www/alice/data/www/a.test",
+    "status": "active",
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "domain": "b.test",
+    "aliases": "81",
+    "user": "/var/www/bob/data/www/b.test",
+    "php_version": "unknown",
+    "ssl_enabled": 0,
+    "ssl_days_left": 0,
+    "document_root": "",
+    "status": "active",
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "_collect_fastpanel_domains_brut",
+  "scenario": {
+   "mogwai": "SERVER_NAME  ALIASES  OWNER  PHP_VERSION  DOCUMENT_ROOT\na.test  www.a.test  alice  82  /var/www/alice/data/www/a.test\nb.test    81  /var/www/bob/data/www/b.test\na.test  x  y  z  w\n",
+   "openssl": {
+    "a.test": "n importe quoi",
+    "b.test": "notAfter=Oct 17 18:00:00 2026 GMT"
+   },
+   "fs": {
+    "/etc/letsencrypt/live/a.test/cert.pem": "x",
+    "/etc/letsencrypt/live/b.test/cert.pem": "x"
+   }
+  },
+  "attendu": [
+   {
+    "domain": "a.test",
+    "aliases": "www.a.test",
+    "user": "alice",
+    "php_version": "8.2",
+    "ssl_enabled": 1,
+    "ssl_days_left": 0,
+    "document_root": "/var/www/alice/data/www/a.test",
+    "status": "active",
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "domain": "b.test",
+    "aliases": "81",
+    "user": "/var/www/bob/data/www/b.test",
+    "php_version": "unknown",
+    "ssl_enabled": 1,
+    "ssl_days_left": 0,
+    "document_root": "",
+    "status": "active",
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "_collect_fastpanel_domains_brut",
+  "scenario": {
+   "mogwai": "",
+   "api": [
+    {
+     "server_name": "a.test",
+     "aliases": [
+      "w.a.test"
+     ],
+     "owner": {
+      "username": "alice"
+     },
+     "handler_version": "8.2",
+     "ssl": true,
+     "enabled": true
+    },
+    {
+     "name": "b.test",
+     "owner": "bob",
+     "enabled": false
+    },
+    {
+     "name": "a.test"
+    },
+    {}
+   ],
+   "openssl": {
+    "a.test": "notAfter=Dec 25 12:00:00 2026 GMT",
+    "b.test": "notAfter=Dec 25 12:00:00 2026 GMT"
+   },
+   "fs": {
+    "/etc/letsencrypt/live/a.test/cert.pem": "x",
+    "/etc/letsencrypt/live/b.test/cert.pem": "x"
+   }
+  },
+  "attendu": [
+   {
+    "domain": "a.test",
+    "aliases": "w.a.test",
+    "user": "alice",
+    "php_version": "8.2",
+    "ssl_enabled": 1,
+    "ssl_days_left": 68,
+    "document_root": "",
+    "status": "active",
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "domain": "b.test",
+    "aliases": "",
+    "user": "bob",
+    "php_version": "unknown",
+    "ssl_enabled": 0,
+    "ssl_days_left": 0,
+    "document_root": "",
+    "status": "suspended",
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "_collect_fastpanel_domains_brut",
+  "scenario": {
+   "mogwai": "",
+   "api": [],
+   "dirs": [
+    "/etc/nginx/conf.d"
+   ],
+   "openssl": {
+    "exemple.test": "notAfter=Dec 25 12:00:00 2026 GMT"
+   },
+   "fs": {
+    "/etc/nginx/conf.d/a.conf": "server {\n  server_name exemple.test www.exemple.test _ x.y;\n  root /var/www/alice/data/www/exemple.test;\n  ssl_certificate /etc/x.pem;\n  fastcgi_pass unix:/run/php/php8.2-fpm.sock;\n}\n",
+    "/etc/nginx/conf.d/b.conf": "server { server_name autre.test; root /srv/autre; handler_version 7.4; }",
+    "/etc/nginx/conf.d/c.txt": "server_name nope.test;",
+    "/etc/letsencrypt/live/exemple.test/cert.pem": "x"
+   }
+  },
+  "attendu": [
+   {
+    "domain": "exemple.test",
+    "aliases": "",
+    "user": "alice",
+    "php_version": "8.2",
+    "ssl_enabled": 1,
+    "ssl_days_left": 68,
+    "document_root": "/var/www/alice/data/www/exemple.test",
+    "status": "active",
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "domain": "www.exemple.test",
+    "aliases": "",
+    "user": "alice",
+    "php_version": "8.2",
+    "ssl_enabled": 1,
+    "ssl_days_left": 0,
+    "document_root": "/var/www/alice/data/www/exemple.test",
+    "status": "active",
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   },
+   {
+    "domain": "autre.test",
+    "aliases": "",
+    "user": "",
+    "php_version": "7.4",
+    "ssl_enabled": 0,
+    "ssl_days_left": 0,
+    "document_root": "/srv/autre",
+    "status": "active",
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "_collect_fastpanel_domains_brut",
+  "scenario": {
+   "mogwai": "",
+   "api": [],
+   "dirs": [
+    "/etc/nginx/sites-enabled",
+    "/etc/nginx/fastpanel2"
+   ],
+   "fs": {
+    "/etc/nginx/sites-enabled/s.conf": "pas de nom ici",
+    "/etc/nginx/fastpanel2/f.conf": "server_name f.test;"
+   }
+  },
+  "attendu": [
+   {
+    "domain": "f.test",
+    "aliases": "",
+    "user": "",
+    "php_version": "unknown",
+    "ssl_enabled": 0,
+    "ssl_days_left": 0,
+    "document_root": "",
+    "status": "active",
+    "created_at": "2026-10-17T12:00:00.000001",
+    "last_check": "2026-10-17T12:00:00.000001"
+   }
+  ]
+ },
+ {
+  "fonction": "_collect_fastpanel_domains_brut",
+  "scenario": {
+   "mogwai": "",
+   "api": [],
+   "dirs": [
+    "/etc/nginx/conf.d"
+   ],
+   "fs": {
+    "/etc/nginx/conf.d/a.conf": {
+     "__erreur__": "illisible"
+    }
+   }
+  },
+  "attendu": []
+ },
+ {
+  "fonction": "_collect_fastpanel_domains_brut",
+  "scenario": {
+   "mogwai": "",
+   "api": [],
+   "fs": {}
+  },
+  "attendu": []
  }
 ]

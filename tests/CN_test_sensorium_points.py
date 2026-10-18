@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4fd5dd
+# VERSION CN : 0.1.0  #62299d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le démon du Sensorium, seul et sans noyau, appelle ses points d'évolution ; que ses appels nourrissent le rejeu que le noyau absorbe ; et qu'une panne du service ne perd jamais une mesure.
 # MÉTHODE    : charge CN_sensorium.py comme module, un dossier de données temporaire, puis appelle les fonctions façades.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4fd5dd ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=62299d ▼▼▼
 import importlib.util
 import json
 import os
@@ -116,6 +116,17 @@ class DemonEtPoints(unittest.TestCase):
 STATS = {}
 
 
+class FauxDT(__import__("datetime").datetime):
+    """L'horloge figée : « maintenant » est le 17 octobre 2026 à midi, pour que les jours avant expiration d'un certificat soient les mêmes à chaque rejeu."""
+    @classmethod
+    def now(cls, tz=None):
+        return __import__("datetime").datetime(2026, 10, 17, 12, 0, 0, 1)
+
+    @classmethod
+    def fromtimestamp(cls, t):
+        return type("N", (), {"isoformat": staticmethod(lambda: "T%s" % t)})()
+
+
 class FauxFichier:
     """Un système de fichiers de poche : ce que le collecteur lirait sur une machine, sans toucher la vraie."""
     def __init__(self, chemin, fs, dirs):
@@ -167,7 +178,7 @@ class FauxFichier:
 
 
 class Collecteurs(unittest.TestCase):
-    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (48 scénarios : mail, FTP, comptes, bases, sauvegardes, crons ; aucun écart)."""
+    """Les collecteurs mail et FTP de FastPanel : les LECTURES restent dans le démon, la FORME passe par le point `fp_formes`. Les attendus viennent de l'ANCIEN code, rejoué sur les mêmes scénarios (57 scénarios : mail, FTP, comptes, bases, sauvegardes, crons, sites ; aucun écart)."""
 
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
@@ -184,8 +195,7 @@ class Collecteurs(unittest.TestCase):
         m = self.m
         fs, dirs = dict(sc.get("fs", {})), set(sc.get("dirs", []))
         m.Path = lambda chemin: FauxFichier(chemin, fs, dirs)
-        m.datetime = type("DT", (), {"now": staticmethod(lambda tz=None: type("N", (), {"isoformat": staticmethod(lambda: "2026-10-17T12:00:00.000001")})()),
-                                     "fromtimestamp": staticmethod(lambda t: type("N", (), {"isoformat": staticmethod(lambda: "T%s" % t)})())})
+        m.datetime = FauxDT
         m._fp_available = lambda: sc.get("dispo", True)
         m._mogwai = lambda args, timeout=15: (sc.get("mogwai_json", "") if "--json" in args else sc.get("mogwai", ""))
         m._cron_last_runs = lambda: {tuple(k.split("|", 1)): v for k, v in sc.get("runs", {}).items()}
@@ -198,6 +208,9 @@ class Collecteurs(unittest.TestCase):
         m._fp_sqlite_databases = lambda: [dict(x) for x in sc.get("base_dbs", [])]
 
         def run_cmd(cmd, *a, **k):
+            if cmd.startswith("openssl x509 -in"):
+                chemin = cmd.split("-in ", 1)[1].split(" -noout", 1)[0].strip("'")
+                return sc.get("openssl", {}).get(chemin.split("/")[-2], "")
             if cmd.startswith("du -sb"):
                 return sc.get("du", {}).get(cmd.split()[2].strip("'"), "")
             return sc.get("mysql", "")

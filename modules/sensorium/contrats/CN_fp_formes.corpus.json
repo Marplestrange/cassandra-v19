@@ -2813,6 +2813,957 @@
      }
     ]
    }
+  },
+  {
+   "cas": "sites mogwai vide",
+   "entree": {
+    "op": "domains_mogwai",
+    "rows": [],
+    "certs": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "sites mogwai complet",
+   "entree": {
+    "op": "domains_mogwai",
+    "rows": [
+     {
+      "server_name": "a.test",
+      "aliases": "www.a.test",
+      "owner": "alice",
+      "php_version": "82",
+      "document_root": "/var/www/alice/data/www/a.test"
+     }
+    ],
+    "certs": {
+     "a.test": "notAfter=Dec 25 12:00:00 2026 GMT"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "a.test",
+      "aliases": "www.a.test",
+      "user": "alice",
+      "php_version": "8.2",
+      "ssl_enabled": 1,
+      "ssl_days_left": 68,
+      "document_root": "/var/www/alice/data/www/a.test",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites mogwai sans certificat",
+   "entree": {
+    "op": "domains_mogwai",
+    "rows": [
+     {
+      "server_name": "a.test"
+     }
+    ],
+    "certs": {
+     "a.test": null
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "a.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites mogwai certificat illisible",
+   "entree": {
+    "op": "domains_mogwai",
+    "rows": [
+     {
+      "server_name": "a.test"
+     }
+    ],
+    "certs": {
+     "a.test": "rien"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "a.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 1,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites mogwai date invalide",
+   "entree": {
+    "op": "domains_mogwai",
+    "rows": [
+     {
+      "server_name": "a.test"
+     }
+    ],
+    "certs": {
+     "a.test": "notAfter=pas une date"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "a.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 1,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites mogwai propriétaire déduit",
+   "entree": {
+    "op": "domains_mogwai",
+    "rows": [
+     {
+      "server_name": "b.test",
+      "document_root": "/var/www/bob/data/www/b.test",
+      "mode": "8.1"
+     }
+    ],
+    "certs": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "b.test",
+      "aliases": "",
+      "user": "bob",
+      "php_version": "8.1",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "/var/www/bob/data/www/b.test",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites mogwai version à un chiffre",
+   "entree": {
+    "op": "domains_mogwai",
+    "rows": [
+     {
+      "server_name": "c.test",
+      "php_version": "8"
+     },
+     {
+      "server_name": "d.test",
+      "php_version": "801"
+     },
+     {
+      "server_name": "e.test",
+      "php_version": ""
+     }
+    ],
+    "certs": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "c.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "8",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "domain": "d.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "801",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "domain": "e.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites mogwai doublons et vides",
+   "entree": {
+    "op": "domains_mogwai",
+    "rows": [
+     {
+      "server_name": "a.test"
+     },
+     {
+      "server_name": "a.test",
+      "owner": "z"
+     },
+     {
+      "server_name": ""
+     },
+     {}
+    ],
+    "certs": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "a.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites mogwai expiré",
+   "entree": {
+    "op": "domains_mogwai",
+    "rows": [
+     {
+      "server_name": "a.test"
+     }
+    ],
+    "certs": {
+     "a.test": "notAfter=Jan  1 00:00:00 2026 GMT"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "a.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 1,
+      "ssl_days_left": -290,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites mogwai le jour même",
+   "entree": {
+    "op": "domains_mogwai",
+    "rows": [
+     {
+      "server_name": "a.test"
+     }
+    ],
+    "certs": {
+     "a.test": "notAfter=Oct 17 18:00:00 2026 GMT"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "a.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 1,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites mogwai lendemain",
+   "entree": {
+    "op": "domains_mogwai",
+    "rows": [
+     {
+      "server_name": "a.test"
+     }
+    ],
+    "certs": {
+     "a.test": "notAfter=Oct 18 11:59:59 2026 GMT"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "a.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 1,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites api vide",
+   "entree": {
+    "op": "domains_api",
+    "api_sites": [],
+    "certs": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "sites api complet",
+   "entree": {
+    "op": "domains_api",
+    "api_sites": [
+     {
+      "server_name": "a.test",
+      "aliases": [
+       "www.a.test",
+       "b.a.test"
+      ],
+      "owner": {
+       "username": "alice"
+      },
+      "handler_version": "8.2",
+      "ssl": true,
+      "document_root": "/x",
+      "enabled": true,
+      "created_at": "2025-01-01"
+     }
+    ],
+    "certs": {
+     "a.test": "notAfter=Dec 25 12:00:00 2026 GMT"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "a.test",
+      "aliases": "www.a.test,b.a.test",
+      "user": "alice",
+      "php_version": "8.2",
+      "ssl_enabled": 1,
+      "ssl_days_left": 68,
+      "document_root": "/x",
+      "status": "active",
+      "created_at": "2025-01-01",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites api ssl sans certificat",
+   "entree": {
+    "op": "domains_api",
+    "api_sites": [
+     {
+      "name": "n.test",
+      "ssl_enabled": 1
+     }
+    ],
+    "certs": {
+     "n.test": null
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "n.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 1,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites api certificat sans ssl déclaré",
+   "entree": {
+    "op": "domains_api",
+    "api_sites": [
+     {
+      "name": "n.test"
+     }
+    ],
+    "certs": {
+     "n.test": "notAfter=Dec 25 12:00:00 2026 GMT"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "n.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites api propriétaire texte",
+   "entree": {
+    "op": "domains_api",
+    "api_sites": [
+     {
+      "name": "o.test",
+      "owner": "bob"
+     },
+     {
+      "name": "p.test",
+      "owner": {
+       "login": "carl"
+      }
+     },
+     {
+      "name": "q.test",
+      "owner": {}
+     },
+     {
+      "name": "r.test",
+      "owner": null
+     }
+    ],
+    "certs": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "o.test",
+      "aliases": "",
+      "user": "bob",
+      "php_version": "unknown",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "domain": "p.test",
+      "aliases": "",
+      "user": "carl",
+      "php_version": "unknown",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "domain": "q.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "domain": "r.test",
+      "aliases": "",
+      "user": "None",
+      "php_version": "unknown",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites api suspendu",
+   "entree": {
+    "op": "domains_api",
+    "api_sites": [
+     {
+      "name": "s.test",
+      "enabled": false,
+      "php_version": 81
+     }
+    ],
+    "certs": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "s.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "81",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "suspended",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites api doublons",
+   "entree": {
+    "op": "domains_api",
+    "api_sites": [
+     {
+      "name": "a.test"
+     },
+     {
+      "server_name": "a.test"
+     },
+     {
+      "name": ""
+     },
+     {}
+    ],
+    "certs": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "a.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "noms nginx vide",
+   "entree": {
+    "op": "domains_nginx_noms",
+    "contenus": [],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "noms nginx",
+   "entree": {
+    "op": "domains_nginx_noms",
+    "contenus": [
+     "server {\n  server_name exemple.test www.exemple.test _ localhost x.y;\n  root /var/www/alice/data/www/exemple.test;\n  ssl_certificate /etc/x.pem;\n  fastcgi_pass unix:/run/php/php8.2-fpm.sock;\n}\n",
+     "server { server_name autre.test; root /srv/autre; handler_version 7.4; }",
+     "pas de serveur ici",
+     "server { server_name exemple.test api.exemple.test; }"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "exemple.test",
+     "www.exemple.test",
+     "autre.test",
+     "api.exemple.test"
+    ]
+   }
+  },
+  {
+   "cas": "noms nginx filtrés",
+   "entree": {
+    "op": "domains_nginx_noms",
+    "contenus": [
+     "server_name _ * localhost abc a.b exemple.test. #x ;"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "exemple.test"
+    ]
+   }
+  },
+  {
+   "cas": "noms nginx plusieurs blocs",
+   "entree": {
+    "op": "domains_nginx_noms",
+    "contenus": [
+     "server_name a.test; server_name b.test c.test;"
+    ],
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     "a.test",
+     "b.test",
+     "c.test"
+    ]
+   }
+  },
+  {
+   "cas": "sites nginx vide",
+   "entree": {
+    "op": "domains_nginx",
+    "contenus": [],
+    "certs": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "sites nginx complet",
+   "entree": {
+    "op": "domains_nginx",
+    "contenus": [
+     "server {\n  server_name exemple.test www.exemple.test _ localhost x.y;\n  root /var/www/alice/data/www/exemple.test;\n  ssl_certificate /etc/x.pem;\n  fastcgi_pass unix:/run/php/php8.2-fpm.sock;\n}\n",
+     "server { server_name autre.test; root /srv/autre; handler_version 7.4; }",
+     "server { server_name exemple.test api.exemple.test; }"
+    ],
+    "certs": {
+     "exemple.test": "notAfter=Dec 25 12:00:00 2026 GMT",
+     "www.exemple.test": "notAfter=Dec 25 12:00:00 2026 GMT",
+     "autre.test": "notAfter=Dec 25 12:00:00 2026 GMT",
+     "api.exemple.test": null
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "exemple.test",
+      "aliases": "",
+      "user": "alice",
+      "php_version": "8.2",
+      "ssl_enabled": 1,
+      "ssl_days_left": 68,
+      "document_root": "/var/www/alice/data/www/exemple.test",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "domain": "www.exemple.test",
+      "aliases": "",
+      "user": "alice",
+      "php_version": "8.2",
+      "ssl_enabled": 1,
+      "ssl_days_left": 68,
+      "document_root": "/var/www/alice/data/www/exemple.test",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "domain": "autre.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "7.4",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "/srv/autre",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "domain": "api.exemple.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites nginx sans certificat",
+   "entree": {
+    "op": "domains_nginx",
+    "contenus": [
+     "server {\n  server_name exemple.test www.exemple.test _ localhost x.y;\n  root /var/www/alice/data/www/exemple.test;\n  ssl_certificate /etc/x.pem;\n  fastcgi_pass unix:/run/php/php8.2-fpm.sock;\n}\n"
+    ],
+    "certs": {
+     "exemple.test": null,
+     "www.exemple.test": null
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "exemple.test",
+      "aliases": "",
+      "user": "alice",
+      "php_version": "8.2",
+      "ssl_enabled": 1,
+      "ssl_days_left": 0,
+      "document_root": "/var/www/alice/data/www/exemple.test",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "domain": "www.exemple.test",
+      "aliases": "",
+      "user": "alice",
+      "php_version": "8.2",
+      "ssl_enabled": 1,
+      "ssl_days_left": 0,
+      "document_root": "/var/www/alice/data/www/exemple.test",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites nginx ssl sans info",
+   "entree": {
+    "op": "domains_nginx",
+    "contenus": [
+     "server {\n  server_name exemple.test www.exemple.test _ localhost x.y;\n  root /var/www/alice/data/www/exemple.test;\n  ssl_certificate /etc/x.pem;\n  fastcgi_pass unix:/run/php/php8.2-fpm.sock;\n}\n"
+    ],
+    "certs": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "exemple.test",
+      "aliases": "",
+      "user": "alice",
+      "php_version": "8.2",
+      "ssl_enabled": 1,
+      "ssl_days_left": 0,
+      "document_root": "/var/www/alice/data/www/exemple.test",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "domain": "www.exemple.test",
+      "aliases": "",
+      "user": "alice",
+      "php_version": "8.2",
+      "ssl_enabled": 1,
+      "ssl_days_left": 0,
+      "document_root": "/var/www/alice/data/www/exemple.test",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites nginx sans ssl mais certificat connu",
+   "entree": {
+    "op": "domains_nginx",
+    "contenus": [
+     "server { server_name autre.test; root /srv/autre; handler_version 7.4; }"
+    ],
+    "certs": {
+     "autre.test": "notAfter=Dec 25 12:00:00 2026 GMT"
+    },
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "autre.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "7.4",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "/srv/autre",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites nginx version de php",
+   "entree": {
+    "op": "domains_nginx",
+    "contenus": [
+     "server_name v.test; fastcgi_pass unix:/run/php/php8.3-fpm.sock;",
+     "server_name w.test; handler_version 8;"
+    ],
+    "certs": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "v.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "8.3",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     },
+     {
+      "domain": "w.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "8",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "sites nginx racine hors var/www",
+   "entree": {
+    "op": "domains_nginx",
+    "contenus": [
+     "server_name x.test; root /srv/x ;"
+    ],
+    "certs": {},
+    "now": "2026-10-17T12:00:00.123456"
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "domain": "x.test",
+      "aliases": "",
+      "user": "",
+      "php_version": "unknown",
+      "ssl_enabled": 0,
+      "ssl_days_left": 0,
+      "document_root": "/srv/x",
+      "status": "active",
+      "created_at": "2026-10-17T12:00:00.123456",
+      "last_check": "2026-10-17T12:00:00.123456"
+     }
+    ]
+   }
   }
  ]
 }
