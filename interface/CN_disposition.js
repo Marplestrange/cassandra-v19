@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ddbe42
+// VERSION CN : 0.1.0  #96ecf3
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ddbe42 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=96ecf3 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -475,7 +475,7 @@
     if (ecran === "vue_societe") {
       const o = await agir("affichage.lire_organisation", {});
       let logo = o.logo || "";
-      corps.innerHTML = '<div class="d19-page"><h1>Société / Organisation</h1><p class="sous">Ce que Cassandra affiche pour ton organisation : son nom et son logo, en haut à gauche de chaque écran. Par défaut, ceux de Cassandra.</p><div class="d19-carte"><div class="d19-form">'
+      corps.innerHTML = '<div class="d19-page"><p class="sous">Ce que Cassandra affiche pour ton organisation : son nom et son logo, en haut à gauche de chaque écran. Par défaut, ceux de Cassandra.</p><div class="d19-carte"><div class="d19-form">'
         + '<label for="o-nom">Nom</label><input type="text" id="o-nom" value="' + esc(o.nom) + '" autocomplete="off">'
         + '<label>Logo</label><div class="d19-logozone"><span class="d19-apercu" id="o-ap"></span><label class="d19-btn sec" for="o-logo" style="cursor:pointer">Choisir une image…</label><input type="file" id="o-logo" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button type="button" class="d19-btn sec" id="o-rst">Logo de Cassandra</button></div>'
         + '<label for="o-forme">Forme juridique</label><input type="text" id="o-forme" value="' + esc(o.forme) + '" autocomplete="off">'
@@ -497,12 +497,13 @@
       let s = {}; try { s = await agir("affichage.lire_session", {}); } catch (e) {}
       const nav = (navigator.userAgent.match(/(Firefox|Edg|Chrome|Safari)\/[\d.]+/) || ["—"])[0];
       const th = document.documentElement.getAttribute("data-habillage") || document.documentElement.getAttribute("data-theme") || "clair";
+      const texteDe = (id) => { const e = document.getElementById(id); return (e && e.textContent.trim()) || "—"; };
       const sess = s.sessions || [], f = (t) => (t ? new Date(t * 1000).toLocaleString("fr-FR") : "—");
       const L = [["Version actuelle", s.version || (E.d && E.d.version) || "—"], ["Dernière version stable en dépôt", "—"], ["Version d’installation initiale", "—"], 0,
-        ["Session de", s.compte], ["Rôle", s.role], ["Adresse IP", s.ip || "—"], ["Organisation", s.organisation || "—"], ["Connecté depuis", f(sess[0] && sess[0].cree)], ["Connexion précédente", f(sess[1] && sess[1].cree)],
+        ["Session de", s.compte], ["Rôle", s.role], ["Adresse IP", s.ip || "—"], ["Navigateur et adresse", texteDe("um-ou")], ["Sites gérés", texteDe("um-sites")], ["FastPanel", texteDe("um-fp")], ["Organisation", s.organisation || "—"], ["Connecté depuis", f(sess[0] && sess[0].cree)], ["Connexion précédente", f(sess[1] && sess[1].cree)],
         ["Thème courant", th], ["Gestionnaire de menu", "Barre à groupes + colonne (affichage)"], ["Langue", s.langue || "fr"], ["Fuseau horaire", Intl.DateTimeFormat().resolvedOptions().timeZone], ["Navigateur", nav],
         ["Présentation", document.body.classList.contains("allege") ? "Allégée" : "Complète"], ["Écran", screen.width + " × " + screen.height]];
-      corps.innerHTML = '<div class="d19-page"><h1>Info Cassandra</h1><p class="sous">Version du logiciel, puis détail de la session en cours.</p><dl class="d19-info">' + L.map((r) => r ? "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd>" : '<dt></dt><dd><hr class="d19-sep" style="margin:6px 0"></dd>').join("") + "</dl></div>";
+      corps.innerHTML = '<div class="d19-page"><p class="sous">Version du logiciel, puis détail de la session en cours.</p><dl class="d19-info">' + L.map((r) => r ? "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd>" : '<dt></dt><dd><hr class="d19-sep" style="margin:6px 0"></dd>').join("") + "</dl></div>";
     } else if (CASS.console) { corps.innerHTML = '<div class="sh-console"></div>'; CASS.console("affichage", corps.querySelector(".sh-console")); }
   };
 
