@@ -133,3 +133,19 @@
 /* CN : tout ce fichier est du nexus : à compléter */
 /* EC : néant (aucun point d'évolution déclaré pour l'instant) */
 /* LIEN : à compléter (contrat, fichiers voisins) */
+
+/* l'aiguille et la trotteuse tournent ; la durée de concentration se choisit */
+.aj-tourne{transform-origin:170px 170px;transition:transform 1s linear}
+.aj-trot circle{fill:var(--accent);filter:drop-shadow(0 0 4px var(--accent))}
+.aj-centre .t sup{font-size:.36em;vertical-align:.95em;margin-left:3px;color:var(--txt-faint);font-weight:600;letter-spacing:0}
+.aj-duree{display:inline-flex;align-items:center;gap:4px;padding:3px;border-radius:12px;background:rgba(127,140,150,.12)}
+.aj-pre{padding:5px 9px;border-radius:9px;border:0;background:none;font:600 12px 'JetBrains Mono',monospace;color:var(--txt-soft)}
+.aj-pre:hover{color:var(--accent)}.aj-pre.on{background:var(--accent);color:#fff}
+.aj-lib{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 4px;border-radius:9px;color:var(--txt-faint);font:500 11.5px 'JetBrains Mono',monospace}
+.aj-lib.on{background:var(--acc-10);color:var(--accent)}
+.aj-lib input{width:46px;border:0;background:none;text-align:right;font:600 12px 'JetBrains Mono',monospace;color:inherit;outline:0;-moz-appearance:textfield}
+.aj-lib input::-webkit-outer-spin-button,.aj-lib input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.aj-sup{opacity:0;border:0;background:none;color:var(--txt-faint);font-size:15px;line-height:1;padding:0 2px;flex:none;transition:opacity .15s,color .15s}
+.aj-puce:hover .aj-sup,.aj-sup.on{opacity:1}.aj-sup:hover{color:var(--danger)}
+.aj-sup.on{font:700 11.5px 'Inter',system-ui,sans-serif;color:#fff;background:var(--danger);border-radius:8px;padding:3px 8px}
+@media (max-width:560px){.aj-puce .aj-sup{opacity:1}}

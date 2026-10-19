@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #4700c9
+// VERSION CN : 0.1.0  #5b82ff
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=4700c9 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=5b82ff ▼▼▼
 /* La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
    (la suite), et la journée se range à la main ou toute seule (la frise, les tâches à placer). Les données sont celles de l'ancienne
    interface (agenda, tâches, rappels, état du jour) ; seul le PLAN — où l'on a posé quoi — est écrit, par le module affichage
@@ -32,12 +32,14 @@
   const COULEURS = { event: "var(--info)", etape: "var(--accent)", task: "var(--violet)", reminder: "var(--warn)", ssl: "var(--danger)" };
   const DUREE_DEFAUT = 30;
 
-  const A = { d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, glisse: null, h0: 8, h1: 20, charge: false, sauvegarde: null };
+  const A = { d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, h0: 8, h1: 20, charge: false, sauvegarde: null };
 
   // ── les durées retenues pour les tâches (le serveur ne connaît que la charge, qui est un poids) ────────────────
   const durees = () => { try { return JSON.parse(localStorage.getItem("aj_durees") || "{}"); } catch (e) { return {}; } };
   const retenirDuree = (id, m) => { try { const d = durees(); d[id] = m; localStorage.setItem("aj_durees", JSON.stringify(d)); } catch (e) {} };
 
+  const dureeFocus = () => { try { const v = +localStorage.getItem("aj_focus"); return v >= 1 && v <= 240 ? v : 25; } catch (e) { return 25; } };
+  const retenirFocus = (v) => { try { localStorage.setItem("aj_focus", String(v)); } catch (e) {} };
   const minutes = (s) => { const x = String(s || "").slice(11, 16); return x.length === 5 ? (+x.slice(0, 2)) * 60 + (+x.slice(3, 5)) : null; };
 
   // ── lecture ─────────────────────────────────────────────────────────────────────────────────────────────────
@@ -128,8 +130,10 @@
     if (n > A.h0 * 60 + 1) s += '<path class="aj-passe-arc" d="' + arc(cx, cy, R, ang(A.h0 * 60), ang(n) - .01) + '"/>';
     const tot = A.plan.length, fait = A.plan.filter((p) => p.fait).length, r2 = 96, circ = 2 * Math.PI * r2, part = tot ? fait / tot : 0;
     s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r2 + '" class="aj-fond2"/><circle class="aj-prog" cx="' + cx + '" cy="' + cy + '" r="' + r2 + '" stroke-dasharray="' + (circ * part).toFixed(1) + " " + circ.toFixed(1) + '" transform="rotate(-90 ' + cx + " " + cy + ')"/>';
-    const a = ang(n) * Math.PI / 180, ex = cx + (R + 12) * Math.cos(a), ey = cy + (R + 12) * Math.sin(a);
-    s += '<line class="aj-main" x1="' + (cx + 60 * Math.cos(a)) + '" y1="' + (cy + 60 * Math.sin(a)) + '" x2="' + ex + '" y2="' + ey + '"/><circle class="aj-main-pt" cx="' + ex + '" cy="' + ey + '" r="6"/>';
+    // l'aiguille : tracée vers le haut, puis tournée — ce qui la laisse glisser d'un cran à l'autre au lieu de sauter
+    s += '<g id="aj-aig" class="aj-tourne" style="transform:rotate(' + (ang(n) + 90).toFixed(3) + 'deg)"><line class="aj-main" x1="' + cx + '" y1="' + (cy - 60) + '" x2="' + cx + '" y2="' + (cy - R - 12) + '"/><circle class="aj-main-pt" cx="' + cx + '" cy="' + (cy - R - 12) + '" r="6"/></g>';
+    // la trotteuse : un point qui fait le tour du cadran en une minute
+    s += '<g id="aj-trot" class="aj-tourne aj-trot" style="transform:rotate(' + angTrot() + 'deg)"><circle cx="' + cx + '" cy="' + (cy - 112) + '" r="3"/></g>';
     return s;
   }
 
@@ -154,7 +158,7 @@
   function squelette(r) {
     r.innerHTML =
       '<div class="aj-tete"><span class="aj-salut" id="aj-salut"></span><span class="aj-sp"></span>' +
-      '<button class="aj-btn" id="aj-focus" type="button">◔ Se concentrer 25 min</button><button class="aj-btn pri" id="aj-org" type="button">✦ Organiser ma journée</button></div>' +
+      '<span class="aj-duree" id="aj-duree" role="group" aria-label="Durée de concentration"></span><button class="aj-btn" id="aj-focus" type="button">◔ Se concentrer</button><button class="aj-btn pri" id="aj-org" type="button">✦ Organiser ma journée</button></div>' +
       '<div class="aj-ruban" id="aj-ruban" hidden></div><div class="aj-chips" id="aj-chips"></div>' +
       '<div class="aj-haut"><section class="aj-verre aj-cadran"><div class="aj-disque"><svg viewBox="0 0 340 340" role="img" aria-label="Cadran de la journée"><g id="aj-svg"></g></svg>' +
       '<div class="aj-centre"><div class="t" id="aj-c-heure"></div><div class="s" id="aj-c-sous"></div><div class="p" id="aj-c-pro"></div></div></div>' +
@@ -169,13 +173,13 @@
       '<div class="aj-plateau" id="aj-plateau"></div><p class="aj-aide">Glissez une tâche sur la voie « À faire », ou laissez Itare la poser dans vos temps libres. Cliquez un bloc pour le cocher.</p></section>' +
       '<section class="aj-verre aj-carte aj-courrier"><header><h3>Courrier non lu</h3><span class="aj-sp"></span><button class="aj-btn sm" type="button" data-seg="mail">Ouvrir</button></header>' +
       '<div class="bu-rows" id="bu-mail-apercu"><div class="empty-state" style="padding:20px">Lecture…</div></div></section></div>';
-    r.dataset.pret = "1";
+    r.dataset.pret = "1"; A.focusMin = dureeFocus(); dessinerDuree();
     pose(r);
   }
   function rendre() {
     const r = racine(); if (!r) return;
     if (!r.dataset.pret) { squelette(r); if (typeof window.buApercuMail === "function") window.buApercuMail(); }
-    A.now = (() => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); })();
+    A.now = minutesNow();
     lireAgenda();
     $("#aj-salut").textContent = salut();
     // l'alerte : un ruban, pas un mur
@@ -190,7 +194,7 @@
     $("#aj-chips").innerHTML = defs.filter((x) => Number(t[x[0]] || 0) > 0 && x[0] !== "a_faire").map((x) => '<button class="aj-chip" type="button" data-seg="' + esc(x[2]) + '" style="--c:' + x[3] + '"><b>' + Number(t[x[0]]) + "</b> " + esc(x[1]) + "</button>").join("");
     $("#aj-svg").innerHTML = cadran();
     const suiv = prochain(), n0 = suiv[0];
-    $("#aj-c-heure").textContent = A.focus ? A.focus.affiche : hm(A.now);
+    $("#aj-c-heure").innerHTML = A.focus ? A.focus.affiche : hm(Math.floor(A.now)) + "<sup>" + p2(A.secondes) + "</sup>";
     $("#aj-c-sous").textContent = A.focus ? "concentration" : (n0 ? (n0.d <= A.now ? "en cours" : "prochain") : "rien de prévu");
     $("#aj-c-pro").textContent = A.focus ? "pas de notification" : (n0 ? (n0.d > A.now ? "dans " + dur(n0.d - A.now) : "jusqu’à " + hm(n0.f)) : "");
     const libre = libres(A.now).reduce((s, x) => s + (x[1] - x[0]), 0), reste = Math.max(A.h1 * 60 - A.now, 0), pl = aPlacer();
@@ -208,7 +212,7 @@
     $("#aj-entier").innerHTML = A.jourEntier.length ? '<span class="aj-lab">Toute la journée</span>' + A.jourEntier.map((e) => '<button class="aj-ad" type="button" data-ref="' + esc(JSON.stringify(e.ref)) + '" style="--c:' + e.c + '">' + esc(e.titre) + "</button>").join("") : "";
     $("#aj-bilan").textContent = A.plan.length + " placée" + (A.plan.length > 1 ? "s" : "") + " · " + pl.length + " à placer";
     $("#aj-n-pl").textContent = pl.length ? pl.length + " en attente" : "";
-    $("#aj-plateau").innerHTML = pl.length ? pl.map((p) => '<div class="aj-puce' + (p.retard ? " retard" : "") + '" draggable="true" data-tid="' + p.id + '"><span class="aj-t">' + esc(p.titre) + "</span><small>" + dur(p.duree) + '</small><button class="aj-go" type="button" data-go="' + p.id + '">placer →</button></div>').join("") : '<span class="aj-n" style="padding:10px 4px">' + (A.taches.length || A.plan.length ? "Tout est placé. Rien ne traîne." : "Aucune tâche pour aujourd’hui.") + "</span>";
+    $("#aj-plateau").innerHTML = pl.length ? pl.map((p) => '<div class="aj-puce' + (p.retard ? " retard" : "") + '" draggable="true" data-tid="' + p.id + '"><span class="aj-t">' + esc(p.titre) + "</span><small>" + dur(p.duree) + '</small><button class="aj-go" type="button" data-go="' + p.id + '">placer →</button>' + (A.suppr === p.id ? '<button class="aj-sup on" type="button" data-sup="' + p.id + '">Supprimer ?</button>' : '<button class="aj-sup" type="button" data-sup="' + p.id + '" aria-label="Supprimer cette tâche" title="Supprimer cette tâche">×</button>') + "</div>").join("") : '<span class="aj-n" style="padding:10px 4px">' + (A.taches.length || A.plan.length ? "Tout est placé. Rien ne traîne." : "Aucune tâche pour aujourd’hui.") + "</span>";
     pose(r);
   }
   // la frise se cale sur la largeur réelle : le curseur et le passé, une fois les pistes en place
@@ -248,12 +252,32 @@
       if (typeof window.calLoad === "function") await window.calLoad(); else rendre();
     } catch (e) { if (typeof window.toast === "function") window.toast("Tâche non créée : " + e.message, "err"); }
   }
+  async function supprimer(id) {
+    if (A.suppr !== id) { A.suppr = id; rendre(); clearTimeout(A.supprT); A.supprT = setTimeout(() => { if (A.suppr === id) { A.suppr = null; rendre(); } }, 3500); return; }
+    A.suppr = null; clearTimeout(A.supprT);
+    try {
+      await window.apiPost("/api/itare/task/delete", { id });
+      A.plan = A.plan.filter((b) => b.tache !== id); sauver();
+      if (typeof window.calLoad === "function") await window.calLoad(); else rendre();
+    } catch (e) { if (typeof window.toast === "function") window.toast("Suppression refusée : " + e.message, "err"); rendre(); }
+  }
+  function dessinerDuree() {
+    const z = $("#aj-duree"); if (!z) return;
+    if (A.focus) { z.innerHTML = '<button class="aj-btn sm" type="button" data-plus="5">+ 5 min</button>'; return; }
+    const v = A.focusMin;
+    z.innerHTML = [15, 25, 45, 60, 90].map((m) => '<button type="button" class="aj-pre' + (m === v ? " on" : "") + '" data-min="' + m + '">' + m + "</button>").join("") +
+      '<label class="aj-lib' + ([15, 25, 45, 60, 90].indexOf(v) < 0 ? " on" : "") + '"><input type="number" id="aj-min" min="1" max="240" value="' + v + '" aria-label="Minutes de concentration"><span>min</span></label>';
+  }
   function basculerFocus() {
     const b = $("#aj-focus");
-    if (A.focus) { clearInterval(A.focus.i); A.focus = null; b.textContent = "◔ Se concentrer 25 min"; b.classList.remove("pri"); rendre(); return; }
-    let reste = 25 * 60; b.classList.add("pri");
-    A.focus = { affiche: "25:00", i: setInterval(() => { reste--; if (reste <= 0) { basculerFocus(); if (typeof window.toast === "function") window.toast("Concentration terminée."); return; } A.focus.affiche = p2(Math.floor(reste / 60)) + ":" + p2(reste % 60); const c = $("#aj-c-heure"); if (c) c.textContent = A.focus.affiche; b.textContent = "■ Arrêter (" + Math.ceil(reste / 60) + " min)"; }, 1000) };
-    rendre();
+    if (A.focus) { clearInterval(A.focus.i); A.focus = null; b.textContent = "◔ Se concentrer"; b.classList.remove("pri"); dessinerDuree(); rendre(); return; }
+    const min = Math.max(1, Math.min(240, Math.round(+($("#aj-min") || {}).value || A.focusMin)));
+    A.focusMin = min; retenirFocus(min);
+    A.focus = { reste: min * 60, affiche: p2(min) + ":00" };
+    b.classList.add("pri"); dessinerDuree();
+    const maj = () => { const r = A.focus.reste; A.focus.affiche = p2(Math.floor(r / 60)) + ":" + p2(r % 60); const c = $("#aj-c-heure"); if (c) c.textContent = A.focus.affiche; b.textContent = "■ Arrêter (" + Math.ceil(r / 60) + " min)"; };
+    A.focus.i = setInterval(() => { A.focus.reste--; if (A.focus.reste <= 0) { basculerFocus(); if (typeof window.toast === "function") window.toast("Concentration terminée."); return; } maj(); }, 1000);
+    rendre(); maj();
   }
   function ouvrirRef(txt) { try { const r = JSON.parse(txt); if (typeof window.buOuvrir === "function") window.buOuvrir(r.k, r.id, r.w, r.t); } catch (e) {} }
 
@@ -262,12 +286,15 @@
       const r = $("#aj-racine"); if (!r || !r.contains(ev.target)) return;
       let x;
       if ((x = ev.target.closest("[data-x]"))) { A.plan = A.plan.filter((b) => b.id !== x.dataset.x); sauver(); rendre(); return; }
+      if ((x = ev.target.closest("[data-sup]"))) { supprimer(+x.dataset.sup); return; }
       if ((x = ev.target.closest("[data-go]"))) { const t = aPlacer().find((q) => q.id === +x.dataset.go), z = t && premierLibre(t.duree); if (z) placer(t, arrondi5(z[0])); else if (typeof window.toast === "function") window.toast("Aucun temps libre assez long."); return; }
       if ((x = ev.target.closest(".aj-tache"))) { const b = A.plan.find((q) => q.id === x.dataset.id); if (b) cocher(b, x); return; }
       if ((x = ev.target.closest("[data-ref]"))) { ouvrirRef(x.dataset.ref); return; }
       if (ev.target.closest("#aj-org")) { organiser(); return; }
       if (ev.target.closest("#aj-vider")) { A.plan = []; sauver(); rendre(); return; }
       if (ev.target.closest("#aj-focus")) { basculerFocus(); return; }
+      if ((x = ev.target.closest("[data-min]"))) { A.focusMin = +x.dataset.min; retenirFocus(A.focusMin); dessinerDuree(); return; }
+      if ((x = ev.target.closest("[data-plus]")) && A.focus) { A.focus.reste += 5 * 60; return; }
       if ((x = ev.target.closest("[data-seg]"))) { if (x.dataset.seg === "mandats" && typeof window.buAllerMandats === "function") window.buAllerMandats("attente"); else if (typeof window.buSeg === "function") window.buSeg(x.dataset.seg); return; }
       if (ev.target.closest("[data-geste]")) { if (A.alerte) ouvrirSignal(A.alerte); return; }
     });
@@ -288,7 +315,8 @@
     });
     window.addEventListener("resize", () => { const r = $("#aj-racine"); if (r && r.dataset.pret) pose(r); });
     // l'heure avance : on redessine chaque 30 s tant que la page est ouverte
-    setInterval(() => { const v = $("#bu-v-today"); if (v && v.classList.contains("on") && !document.hidden && !A.focus) rendre(); }, 30000);
+    setInterval(tic, 1000);
+    setInterval(() => { const v = $("#bu-v-today"); if (v && v.classList.contains("on") && !document.hidden && !A.focus) rendre(); }, 60000);
   }
   function ouvrirSignal(a) {
     const BJ = (typeof BJ_OU !== "undefined" ? BJ_OU : {}), d = BJ[a.quoi] || BJ[a.nat]; if (!d) return;
@@ -296,6 +324,23 @@
     else if (d.fn && typeof window[d.fn] === "function") window[d.fn](d.arg);
     else if (d.tab && typeof window.switchTab === "function") window.switchTab(d.tab);
     else if (d.seg && typeof window.buSeg === "function") window.buSeg(d.seg);
+  }
+
+  // la trotteuse ne revient jamais en arrière : l'angle croît sans fin (un tour par minute), il ne repasse pas par zéro
+  const T0 = Date.now() - (new Date().getSeconds() * 1000);
+  const angTrot = () => (((Date.now() - T0) / 1000) * 6).toFixed(1);
+  function minutesNow() { const d = new Date(); A.secondes = d.getSeconds(); return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; }
+  function tic() {
+    const v = $("#bu-v-today"); if (!v || !v.classList.contains("on") || document.hidden || !$("#aj-aig")) return;
+    const m = minutesNow(), avant = Math.floor(A.now);
+    A.now = m;
+    const n = Math.min(Math.max(m, A.h0 * 60), A.h1 * 60);
+    $("#aj-aig").style.transform = "rotate(" + (ang(n) + 90).toFixed(3) + "deg)";
+    const tr = $("#aj-trot"); if (tr) tr.style.transform = "rotate(" + angTrot() + "deg)";
+    const pa = $(".aj-passe-arc"); if (pa && n > A.h0 * 60 + 1) pa.setAttribute("d", arc(170, 170, 128, ang(A.h0 * 60), ang(n) - .01));
+    const plan = $("#aj-plan"); if (plan) { const larg = plan.clientWidth - 74, x = pos(n); $("#aj-curseur").style.left = (74 + larg * x / 100) + "px"; $("#aj-cur-h").textContent = hm(Math.floor(m)); $("#aj-passe").style.width = (larg * x / 100) + "px"; }
+    if (!A.focus) { const c = $("#aj-c-heure"); if (c) c.innerHTML = hm(Math.floor(m)) + "<sup>" + p2(A.secondes) + "</sup>"; }
+    if (Math.floor(m) !== avant) rendre();                        // la minute change : la suite, les temps libres et les chiffres se recalculent
   }
 
   // ── le branchement sur l'ancienne interface : ses fonctions d'ouverture de la vue deviennent les nôtres ─────────
