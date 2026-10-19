@@ -12,7 +12,7 @@
 /* RÔLE       : tous les styles de l'interface extraits de la V18, versionnés. */
 /* MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=96912a ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=d2e6d9 ▼▼▼ */
 
 /* ═══════════════════════════════════════════════════════════════════════
    CASSANDRA — SYSTÈME DE COULEURS
@@ -962,71 +962,16 @@ button, .s-btn, .fp-btn {
 /* ── LE RAIL DE MON BUREAU ───────────────────────────────────────────────── */
 /* Repris de la maquette, elle-même reprise des Paramètres généraux. Les
    valeurs sont celles de la maquette : 232 px déplié, 56 px replié. */
-.bu-corps{display:grid;grid-template-columns:232px minmax(0,1fr);gap:20px;
+.bu-corps{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;
   align-items:start}
-.bu-corps.bu-replie{grid-template-columns:56px minmax(0,1fr)}
 @media (max-width:900px){
-  .bu-corps,.bu-corps.bu-replie{grid-template-columns:minmax(0,1fr)} }
+  .bu-corps{grid-template-columns:minmax(0,1fr)} }
 .bu-vues{min-width:0}
-
-.bu-rail{display:flex;flex-direction:column;gap:3px;align-self:start;
-  position:sticky;top:16px;max-height:calc(100vh - 40px);overflow-y:auto}
-.bu-plier{align-self:flex-end;border:0;background:transparent;
-  color:var(--txt-ghost);cursor:pointer;font:inherit;font-size:15px;
-  line-height:1;padding:4px 8px;border-radius:8px;margin-bottom:4px}
-.bu-plier:hover{background:var(--ov-05);color:var(--txt-strong)}
-.bu-plier:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.bu-corps.bu-replie .bu-plier{align-self:center}
-
-.bu-e{display:inline-flex;align-items:center;gap:9px;width:100%;
-  padding:9px 12px;border-radius:9px;border:1px solid transparent;
-  background:transparent;color:var(--txt-soft);cursor:pointer;
-  font-family:inherit;font-size:13.5px;text-align:left;white-space:normal}
-.bu-e:hover{background:var(--ov-05);color:var(--txt-strong)}
-.bu-e[aria-selected="true"]{background:var(--acc-10);border-color:var(--acc-15);
-  color:var(--accent)}
-.bu-e[aria-selected="true"] b{color:var(--accent)}
-.bu-e:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.bu-e b{font-weight:600}
-.bu-e .ico{display:inline-flex;align-items:center;justify-content:center;
-  width:18px;height:18px;flex:none;opacity:.75}
-.bu-e .ico svg{width:18px;height:18px;display:block}
-.bu-e[aria-selected="true"] .ico{opacity:1}
-.bu-e .n{margin-left:auto;font-family:'JetBrains Mono',ui-monospace,monospace;
-  font-size:10.5px;color:var(--txt-faint);font-variant-numeric:tabular-nums}
-.bu-e[aria-selected="true"] .n{color:var(--accent)}
-.bu-corps.bu-replie .bu-e{justify-content:center;padding:10px 0}
-.bu-corps.bu-replie .bu-e > span:not(.ico){display:none}
-.bu-corps.bu-replie .bu-e .n{display:none}
-.bu-rsep{height:1px;background:var(--line);margin:5px 6px}
-
-/* Le rail groupé. Une étiquette de groupe n'est pas décorative : quatorze
-   entrées à plat se lisent une par une, quatre paquets se lisent d'un coup.
-   Repliées, les étiquettes disparaissent — il ne reste que les icônes. */
-.bu-rgrp{display:flex;flex-direction:column;gap:2px;margin-bottom:9px}
-.bu-rlbl{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9px;
-  letter-spacing:.17em;text-transform:uppercase;color:var(--txt-ghost);
-  padding:0 9px 5px}
-.bu-corps.bu-replie .bu-rlbl{display:none}
-.bu-corps.bu-replie .bu-rgrp{margin-bottom:6px;padding-bottom:6px;
-  border-bottom:1px solid var(--line)}
-.bu-corps.bu-replie .bu-rgrp:last-of-type{border-bottom:0}
-/* Replié, le groupe garde son filet du bas et le séparateur du renvoi en
-   ajoutait un second juste dessous — deux traits au-dessus de Mes sites.
-   `last-of-type` ne voit pas le groupe comme dernier : le séparateur est un
-   div lui aussi. Replié, il s'efface ; le filet du groupe suffit. */
-.bu-corps.bu-replie .bu-rsep{display:none}
 
 /* La légende de l'entrée active : sous l'en-tête, jamais dans le rail —
    c'est ce qui garde les entrées à une seule ligne. */
 .bu-legende{margin:0 0 12px;font-size:12.5px;color:var(--txt-faint);
   min-height:19px}
-@media (max-width:900px){
-  .bu-rail{flex-direction:row;flex-wrap:wrap;position:static;max-height:none}
-  .bu-e{width:auto}
-  .bu-rgrp{flex-direction:row;flex-wrap:wrap;margin-bottom:0}
-  .bu-rlbl,.bu-plier,.bu-rsep{display:none}
-}
 
 /* Les trois bandes vivent DANS une seule carte, comme dans la maquette : sur
    la page, chacune était une carte à part, et l'écran se lisait comme trois
@@ -1227,18 +1172,11 @@ button, .s-btn, .fp-btn {
   /* LOT 7 : Mon Bureau sur téléphone — une colonne ; le rail devient une barre horizontale
      qui défile, sous la légende (la barre basse est déjà celle des onglets) ; les fiches et
      les voiles prennent tout l'écran ; le bandeau de vérité sur deux colonnes (déjà). */
-  .bu-corps,.bu-corps.bu-replie{grid-template-columns:minmax(0,1fr);gap:10px}
+  .bu-corps{grid-template-columns:minmax(0,1fr);gap:10px}
   #bu-rail{flex-direction:row;overflow-x:auto;gap:2px;padding:2px 0 6px;align-self:stretch;
     position:sticky;top:0;z-index:5;background:var(--surface-2);border-bottom:1px solid var(--line);
     scrollbar-width:none}
   #bu-rail::-webkit-scrollbar{display:none}
-  .bu-rgrp{flex-direction:row;margin:0;gap:2px;flex-shrink:0}
-  .bu-rlbl,.bu-rsep,.bu-plier{display:none!important}
-  .bu-e,.bu-corps.bu-replie .bu-e{flex-direction:column;justify-content:center;gap:2px;width:auto;min-width:62px;
-    padding:6px 8px;font-size:10px;flex-shrink:0}
-  .bu-e b{font-weight:500;font-size:10px}
-  .bu-corps.bu-replie .bu-e > span:not(.ico){display:inline}
-  .bu-e .n,.bu-corps.bu-replie .bu-e .n{display:inline;margin-left:0;font-size:9px}
   .bu-fiche,.rp-fiche{width:100vw;max-width:100vw}
   .bu-2col{grid-template-columns:1fr}
   #tab-bureau .tab-content,#tab-bureau{overflow-y:auto}
@@ -2036,31 +1974,6 @@ body{font-family:'Inter',sans-serif;color:var(--txt);height:100vh;overflow:hidde
 /* Le bandeau d'identité : la boîte et l'agenda en pastilles à diode. */
 .bu-etat .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;flex:none}
 .bu-etat .dot.off{background:transparent;border:1.5px solid var(--txt-ghost);width:5px;height:5px}
-/* Le rail : une carte, un en-tête, des entrées à pastille de compte, un renvoi. */
-.bu-rail{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
-  padding:10px;box-shadow:var(--shadow-glass);
-  backdrop-filter:blur(var(--blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--blur)) saturate(160%)}
-.bu-rh{display:flex;flex-direction:column;gap:1px;padding:4px 10px 10px}
-.bu-rh b{font-size:12.5px;font-weight:600;color:var(--txt-strong)}
-.bu-rh span{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;color:var(--txt-ghost)}
-.bu-e{font-size:13px;padding:8px 10px}
-.bu-e .n{font-size:10px;padding:1px 7px;border-radius:999px;background:var(--surface-2);
-  border:1px solid var(--line);color:var(--txt-faint)}
-.bu-e .n.hot{background:rgba(190,18,60,.09);border-color:rgba(190,18,60,.25);color:var(--danger)}
-.bu-e[aria-selected="true"] .n{background:var(--surface-solid)}
-.bu-renvoi{display:flex;align-items:center;gap:6px;width:100%;border:0;background:transparent;
-  color:var(--txt-faint);cursor:pointer;font-family:inherit;font-size:12.5px;text-align:left;
-  padding:8px 10px;border-radius:9px}
-.bu-renvoi span{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;color:var(--txt-ghost)}
-.bu-renvoi span.l{font-family:inherit;font-size:12.5px;color:inherit}
-.bu-renvoi .ico{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:none;opacity:.75}
-.bu-renvoi .ico svg{width:18px;height:18px;display:block}
-.bu-renvoi:hover{background:var(--ov-05);color:var(--accent)}
-.bu-renvoi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.bu-corps.bu-replie .bu-rail{padding:6px}
-.bu-corps.bu-replie .bu-rh,.bu-corps.bu-replie .bu-renvoi span{display:none}
-.bu-corps.bu-replie .bu-renvoi .ico{display:inline-flex}
-.bu-corps.bu-replie .bu-renvoi{justify-content:center;padding:8px 0;font-size:11px}
 /* Les tuiles du bandeau de vérité : une carte chacune, le nombre dans sa
    couleur, un › qui dit qu'on peut y aller. */
 .bj-tuiles{margin-bottom:0}
@@ -2077,8 +1990,6 @@ body{font-family:'Inter',sans-serif;color:var(--txt);height:100vh;overflow:hidde
 @media (max-width:768px){
   .bu-tete{align-items:flex-start;flex-direction:column}
   .bu-tete .bu-h1{font-size:19px}
-  .bu-rh,.bu-renvoi{display:none}
-  .bu-rail{padding:6px;border-radius:12px}
 }
 
 /* CONVERSATIONS DANS LE BUREAU, MESURÉE SUR LE BUREAU. Les replis de l'écran suivent la
@@ -6992,14 +6903,14 @@ a.sl-rail-filtre{margin-left:auto}
 .scroll-bottom-btn:hover{border-color:var(--acc-30);color:var(--txt-strong)}
 
 /* second passage : les orphelins du relevé rejoignent leur rôle */
-.bu-pill-a,.msg-copy-btn,.hdr-ic,.sb-toggle,button.x,.bu-plier,.set-plier{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+.bu-pill-a,.msg-copy-btn,.hdr-ic,.sb-toggle,button.x,.set-plier{display:inline-flex;align-items:center;justify-content:center;gap:6px;
   border:1px solid var(--line-strong);background:var(--surface-2);color:var(--txt-soft);
   padding:6px 13px;border-radius:9px;font-family:inherit;font-size:11.5px;font-weight:500;line-height:1.25;
   letter-spacing:0;text-transform:none;text-decoration:none;cursor:pointer;transition:var(--transition);
   white-space:nowrap;box-shadow:none;filter:none;transform:none}
-.bu-pill-a:hover,.msg-copy-btn:hover,.hdr-ic:hover,.sb-toggle:hover,button.x:hover,.bu-plier:hover,.set-plier:hover{border-color:var(--acc-30);color:var(--txt-strong);background:var(--surface-solid);box-shadow:none;transform:none}
+.bu-pill-a:hover,.msg-copy-btn:hover,.hdr-ic:hover,.sb-toggle:hover,button.x:hover,.set-plier:hover{border-color:var(--acc-30);color:var(--txt-strong);background:var(--surface-solid);box-shadow:none;transform:none}
 .bu-pill-a,.msg-copy-btn{padding:3px 9px;font-size:10.5px;border-radius:7px}
-.hdr-ic,.sb-toggle,button.x,.bu-plier,.set-plier{padding:0;width:28px;height:28px;border-radius:8px;font-size:14px}
+.hdr-ic,.sb-toggle,button.x,.set-plier{padding:0;width:28px;height:28px;border-radius:8px;font-size:14px}
 .bu-lg,.ca-f{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;
   border:1px solid var(--line-strong);background:var(--surface-2);color:var(--txt-soft);
   font-family:inherit;font-size:11px;font-weight:500;line-height:1.3;letter-spacing:0;text-transform:none;
@@ -7053,12 +6964,12 @@ select,select.bu-inp,select.s-select,.s-select,select.mx-select{padding:6px 28px
 /* LE TITRE d'une carte ou d'une section */
 .bu-ct,.card-title,.sec-title,.settings-section-title,.sys-drawer>header h3,.pj-h2,.cs-phase,.mx-eyebrow,#bu-pleinecran .bu-pbar .ti,.tk-col>h3,.bu-sec>h3,.gd-sec>h3,.mx-scenes-lab{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-strong)}
 /* L'ÉTIQUETTE : toute légende, tout en-tête de colonne, tout libellé */
-.mx-fam,.um-h,.sl-lbl,.sl-fam,.sl-jour,.jr-day,.ev-jour,.pl-n,.s-label,.sinfo-lbl,.stat-lbl,.bu-scenes .lab,.cr-lbl,.cr-sec .h,.nt-prismes .lab,.ca-sect,.ca-mes dt,.cv-sect,.cv-reg label,.cv-cadre .t,.cv-carte .h,.cv-et,.pal-g,.cn-g,.bu-dow span,.cr-dosl-h,.cr-dosl-s,.cr-rg-r .k,.cr-prop-h,.tk-grp,.gd-grp,.gd-hd,.gd-tbl th,.pf-e .src,.nt-i .sr,.nt-prov b,.nt-pol th,.nt-srcs th,.rd-fld > label,.rd-sel .l,.rd-as .h .q,.rd-grp,.md-non .h,.md-blk .lg .k,.md-ac .r .q,.md-tbl th,.sv-tbl th,.mms-lbl,.gu-t .gu-o,.cva-r b,.cn-sep,.rep-sep,.rep-it-q,.rep-fl .k,.rep-ch .k,.rep-s,.rep-tg .t,.rp-c label,.bu-rlbl,.bj-t,.bj-bt,.usermenu dt,.ov-ev .tg,.vital h5,.cf-st h5,.ac-kv dt,.nte-pk-g,.it-qui .nm,.it-duel .q,.sl-voix .et,.sl-resume b,.sl-aide-b b,.sl-tip-b b,.jr-env span,.mv-liste th,.fl-env span,.fleet-field label,.fp2-lbl,.fp2-liste th,.fp-table th,.fp2-vide b,.fp2-hs b,.fp2-repli b,.fp-sc-label,.fleet-agg-label,.att-tip-title,.ses-kv dt,.sl-fil .m .st,.sl-m .qui .dest{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--txt-faint)}
+.mx-fam,.um-h,.sl-lbl,.sl-fam,.sl-jour,.jr-day,.ev-jour,.pl-n,.s-label,.sinfo-lbl,.stat-lbl,.bu-scenes .lab,.cr-lbl,.cr-sec .h,.nt-prismes .lab,.ca-sect,.ca-mes dt,.cv-sect,.cv-reg label,.cv-cadre .t,.cv-carte .h,.cv-et,.pal-g,.cn-g,.bu-dow span,.cr-dosl-h,.cr-dosl-s,.cr-rg-r .k,.cr-prop-h,.tk-grp,.gd-grp,.gd-hd,.gd-tbl th,.pf-e .src,.nt-i .sr,.nt-prov b,.nt-pol th,.nt-srcs th,.rd-fld > label,.rd-sel .l,.rd-as .h .q,.rd-grp,.md-non .h,.md-blk .lg .k,.md-ac .r .q,.md-tbl th,.sv-tbl th,.mms-lbl,.gu-t .gu-o,.cva-r b,.cn-sep,.rep-sep,.rep-it-q,.rep-fl .k,.rep-ch .k,.rep-s,.rep-tg .t,.rp-c label,.bj-t,.bj-bt,.usermenu dt,.ov-ev .tg,.vital h5,.cf-st h5,.ac-kv dt,.nte-pk-g,.it-qui .nm,.it-duel .q,.sl-voix .et,.sl-resume b,.sl-aide-b b,.sl-tip-b b,.jr-env span,.mv-liste th,.fl-env span,.fleet-field label,.fp2-lbl,.fp2-liste th,.fp-table th,.fp2-vide b,.fp2-hs b,.fp2-repli b,.fp-sc-label,.fleet-agg-label,.att-tip-title,.ses-kv dt,.sl-fil .m .st,.sl-m .qui .dest{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--txt-faint)}
 /* LA MARQUE : une pilule d'état ; ses couleurs restent les siennes */
 .cn-n,.rep-niv,.ov-chip,.ac-tag,.bu-tag,.nte-e,.ca-pl,.cr-tag,.bu-lnk .st,.tk-tag,.tk-subn,.gd-tag,.gd-dry,.status-pill,.ses-p,.sl-statut,.sl-mode,.logo-badge,.bu-fiche header .top .src,.badge,.s-current .s-tag,.rep-ln .ro,.bj-r,.fp2-panneau,.sl-pulse,.bu-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;border-width:1px;border-style:solid;
   font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;line-height:1.4;white-space:nowrap}
 /* LE COMPTEUR : la même pilule, sans capitales */
-.bu-seg .n,.bu-e .n,.bu-ct .n2,.sl-lbl .n,.sl-fil .un,.nt-i .cnt,.cb .n,.mv-et .n,.nt-bh .n,.nt-sec .sh .n,.mv-moteur h3 .n{display:inline-flex;align-items:center;justify-content:center;padding:1px 7px;border-radius:999px;
+.bu-seg .n,.bu-ct .n2,.sl-lbl .n,.sl-fil .un,.nt-i .cnt,.cb .n,.mv-et .n,.nt-bh .n,.nt-sec .sh .n,.mv-moteur h3 .n{display:inline-flex;align-items:center;justify-content:center;padding:1px 7px;border-radius:999px;
   font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9.5px;font-weight:600;letter-spacing:0;line-height:1.4}
 /* LA CARTE : le verre dépoli, le bord fin, le rayon 16 — l'ombre de chacune reste, les accents de gauche restent */
 .card,.stat-card,.sl-card,.sl-fil,.sl-cadre,.sl-neuf,.bj-tu,.pj-c,.tk-card,.mx-kpi,.fl-carte{background:var(--surface);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);
@@ -7082,7 +6993,7 @@ select,select.bu-inp,select.s-select,.s-select,select.mx-select{padding:6px 28px
   border:1px solid var(--line-strong);border-radius:16px;box-shadow:var(--shadow-lift);color:var(--txt)}
 .att-tooltip .att-tip-name,.att-tooltip .att-tip-lim,.att-tooltip .att-tip-exts{color:var(--txt-soft)}
 /* LE RAIL : le volet de gauche, partout — un panneau de verre, des entrées à plat */
-.bu-rail,.mx-rail,#tab-settings.mx-app .set-nav,#tab-salon .sl-gauche{background:var(--surface);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);
+.mx-rail,#tab-settings.mx-app .set-nav,#tab-salon .sl-gauche{background:var(--surface);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);
   border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-glass);padding:10px}
 #tab-salon .sl-gauche{gap:6px;overflow:hidden}
 #tab-salon.sl-rail-replie .sl-gauche{padding:8px 3px}

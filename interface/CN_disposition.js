@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #0e4fbb
+// VERSION CN : 0.1.0  #28e547
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=0e4fbb ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=28e547 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -72,7 +72,12 @@
     lock: '<rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>', key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/>',
     plus: '<path d="M12 5v14M5 12h14"/>', dots: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
     refresh: '<path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/>',
+    tasks: '<rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M8.5 12l2.5 2.5 4.5-5"/>', mail: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6 8.5-6"/>',
+    contacts: '<rect x="4" y="3.5" width="15" height="17" rx="2"/><path d="M4 8H2M4 12H2M4 16H2"/><circle cx="11.5" cy="10.5" r="2.3"/><path d="M7.8 16.6c.8-1.7 2.1-2.5 3.7-2.5s2.9.8 3.7 2.5"/>',
+    folder: '<path d="M4 7.5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>',
   };
+  // les icônes des vues de l'accueil : celles que portait l'ancienne pastille « Mon bureau », reportées au menu de gauche
+  const VUE_IC = { jour: "clock", suivre: "tasks", courrier: "mail", repertoire: "contacts", documents: "folder" };
   // le logo de Cassandra : le toit (celui de l'ancienne interface) ; il tient lieu de logo tant que l'organisation n'a pas le sien
   const TOIT = '<svg class="d-i toit" viewBox="0 0 24 24"><path d="M4 11.5l8-7 8 7"/><path d="M6.5 20h11"/><circle cx="12" cy="14.5" r="2.4" fill="currentColor" stroke="none"/></svg>';
   let faviconOrigine = null;
@@ -104,12 +109,11 @@
   const tactile = () => { try { return !!(window.matchMedia && matchMedia("(pointer:coarse)").matches); } catch (e) { return false; } };
 
   // ── le pont vers les onglets de l'ancienne interface ───────────────────────
-  const VUES_BUREAU = { jour: "today", suivre: "proj", courrier: "mail", repertoire: "rep" };
+  const VUES_BUREAU = { jour: "today", suivre: "proj", courrier: "mail", repertoire: "rep", documents: "doc" };
   function pontVue(entreeId, vue) {
     if (entreeId !== "accueil" || !vue) return;
     setTimeout(function () {
-      if (vue === "documents" && typeof window.buAllerDocuments === "function") window.buAllerDocuments();
-      else if (VUES_BUREAU[vue] && typeof window.buSeg === "function") window.buSeg(VUES_BUREAU[vue]);
+      if (VUES_BUREAU[vue] && typeof window.buSeg === "function") window.buSeg(VUES_BUREAU[vue]);
     }, 80);
   }
   function ouvrirNoeud(n, vue) {
@@ -155,7 +159,7 @@
       else for (const f of e.enfants) if (f.ecran && CASS.nomOnglet && CASS.nomOnglet(f.ecran) === nom) trouve = { g: g.id, e: e.id, vue: f.vue || f.id };
     }
     if (trouve && !trouve.vue) { const ee = E.d.groupes.find((g) => g.id === trouve.g).entrees.find((e) => e.id === trouve.e); if (ee && ee.enfants.length && ee.onglet === nom) trouve.vue = ee.enfants[0].vue || ee.enfants[0].id; }   // sans vue dite : la première (Aujourd'hui)
-    if (trouve) { E.g = trouve.g; E.e = trouve.e; E.vue = trouve.vue; E.actif = trouve; E.hors = ""; }
+    if (trouve) { E.g = trouve.g; E.e = trouve.e; E.vue = trouve.vue; E.actif = trouve; E.hors = ""; E.ouv.add(trouve.e); }
     else { E.actif = null; E.hors = nom; }
     rendre();
   }
@@ -228,7 +232,7 @@
     for (const e of g.entrees) {
       const ouv = E.ouv.has(e.id) && e.enfants.length, actif = E.actif && E.e === e.id && E.g === g.id;
       h += '<button class="d19-si ent' + (actif && (!ouv || rail) ? " on" : "") + '" data-tip="' + esc(e.libelle) + '" data-e="' + esc(e.id) + '">' + ico(e.icone) + "<span>" + esc(e.libelle) + "</span>" + (!ouv ? nbDe(e) : "") + (e.enfants.length ? chev(ouv) : "") + "</button>";
-      if (ouv) h += e.enfants.map((f) => '<button class="d19-si sub' + (actif && E.vue === (f.vue || f.id) ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(f.vue || f.id) + '"><span class="pt"></span>' + esc(f.libelle) + nbDe(f) + "</button>").join("");
+      if (ouv) h += e.enfants.map((f) => '<button class="d19-si sub' + (VUE_IC[f.vue || f.id] ? " ic" : "") + (actif && E.vue === (f.vue || f.id) ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(f.vue || f.id) + '">' + (VUE_IC[f.vue || f.id] ? ico(VUE_IC[f.vue || f.id]) : '<span class="pt"></span>') + '<span>' + esc(f.libelle) + "</span>" + nbDe(f) + "</button>").join("");
     }
     sd.innerHTML = h;
   }

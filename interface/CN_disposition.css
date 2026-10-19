@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=daeb9e ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=bdc7af ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -400,6 +400,8 @@ body.d19 #d19-side.ferme ~ #d19-cap{display:none!important}
 #app-container[data-w="s"] #d19-cap,#app-container[data-w="xs"] #d19-cap{display:none!important}
 :root[data-theme="dark"] #d19-cap{background:linear-gradient(165deg,rgba(255,255,255,.1),rgba(255,255,255,.04));border-color:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 28px -14px rgba(0,0,0,.6)}
 :root[data-theme="dark"] #d19-cap .pt{border-color:#1e2632}
+.d19-si.sub.ic{padding-left:24px}.d19-si.sub.ic>svg.d-i{width:16px;height:16px;color:var(--txt-faint)}
+.d19-si.sub.ic.on>svg.d-i{color:var(--accent)}
 /* ▲▲▲ FIN BORNE CN ▲▲▲ */
 
 /* ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ */

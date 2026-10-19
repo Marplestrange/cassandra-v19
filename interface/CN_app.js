@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #268b80
+// VERSION CN : 0.1.0  #80500d
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=268b80 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=80500d ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -3019,18 +3019,6 @@ document.addEventListener('keydown', function(e){
         if(v){ v.click(); return; }
         const f = document.querySelector('.bu-fiche.on');
         if(f){ const x = f.querySelector('header .x, .x'); if(x){ x.click(); return; } }
-    }
-    const r = document.getElementById('bu-rail');
-    if(r && r.contains(document.activeElement) && ['ArrowDown','ArrowUp','ArrowLeft','ArrowRight','Home','End'].indexOf(e.key) >= 0){
-        const l = Array.prototype.slice.call(r.querySelectorAll('.bu-e'));
-        if(!l.length) return;
-        let i = l.indexOf(document.activeElement);
-        if(i < 0) i = l.findIndex(function(b){ return b.getAttribute('aria-selected') === 'true'; });
-        if(e.key === 'Home') i = 0;
-        else if(e.key === 'End') i = l.length - 1;
-        else if(e.key === 'ArrowDown' || e.key === 'ArrowRight') i = (i + 1) % l.length;
-        else i = (i - 1 + l.length) % l.length;
-        e.preventDefault(); l[i].focus(); buSeg(l[i].dataset.seg);
     }
 });
 function ntLigne(id){
@@ -12799,11 +12787,6 @@ function buSeg(v){
 
     // L'entrée allumée est celle qui PORTE le nom : un attribut ne se décale
     // pas, une liste de rangs oui.
-    if(!document.querySelector('#bu-rail .bu-e')){ buRailRendu(); buRailReprendre(); }
-    document.querySelectorAll('#bu-rail .bu-e').forEach(function(b){
-        b.setAttribute('aria-selected', String(b.dataset.seg === _lum));
-        b.tabIndex = (b.dataset.seg === _lum) ? 0 : -1;
-    });
     buRailLegende(_lum, v, _sous);
     // Les chargeurs des vues qui n'en ont pas dans la chaîne du bas : sans
     // eux, l'entrée s'allume sur un écran que personne n'a rempli.
@@ -23259,7 +23242,7 @@ function lnAdresse(){
         // déclencherait des appels refusés, et l'écran voulu serait vide au
         // moment où la personne entre enfin.
         if(typeof sessionId === 'undefined' || !sessionId) return false;
-        if(typeof buSeg !== 'function' || !document.getElementById('bu-rail')) return false;
+        if(typeof buSeg !== 'function' || !document.getElementById('bu-vues')) return false;
         /* LE MEME GESTE QUE LE CLIC. L'adresse et le renvoi posaient la meme
            question — ou vit cette piece — et y repondaient par deux tables
            differentes, l'une de trois natures, l'autre de sept. */
@@ -23325,57 +23308,6 @@ function buOp(cible, op){
     else e.dispatchEvent(new Event('change'));
 }
 
-
-function buRailRendu(){
-    const r = document.getElementById('bu-rail');
-    if(!r) return;
-    const plier = document.getElementById('bu-plier');
-    r.innerHTML = '';
-    if(plier) r.appendChild(plier);
-    // L'en-tête du rail, comme dans la maquette.
-    const h = document.createElement('div');
-    h.className = 'bu-rh';
-    h.innerHTML = '<b>Mon bureau</b><span>dans l\'ordre d\'usage</span>';
-    r.appendChild(h);
-    const lum = BU_LUM[ETAT.bureau._buView] || ETAT.bureau._buView;
-    BU_RAIL.forEach(function(g){
-        const box = document.createElement('div');
-        box.className = 'bu-rgrp';
-        g[1].forEach(function(e){
-            const b = document.createElement('button');
-            b.className = 'bu-e';
-            b.type = 'button';
-            b.setAttribute('role', 'tab');
-            // `data-seg` plutôt qu'un rang : la barre d'avant était indexée par
-            // la POSITION du bouton, si bien qu'insérer une entrée au milieu
-            // allumait la pastille voisine. Un attribut ne se décale pas.
-            b.dataset.seg = e[0];
-            b.setAttribute('aria-selected', String(lum === e[0]));
-            b.setAttribute('aria-controls', 'bu-v-' + (BU_SCENES[e[0]] ? BU_SCENES[e[0]][0][0] : (BU_SECT[e[0]] || e[0])));
-            b.tabIndex = (lum === e[0]) ? 0 : -1;
-            b.title = e[1];
-            b.onclick = function(){ buSeg(e[0]); };
-            // La pastille du Courrier est CHAUDE : des non-lus, pas un simple compte.
-            b.innerHTML = _I(e[2]) + '<span><b>' + escapeHtml(e[1]) + '</b></span>' +
-                (e[3] ? '<span class="n' + (e[0] === 'mail' ? ' hot' : '') + '" id="' + e[3] + '" style="display:none"></span>' : '');
-            box.appendChild(b);
-        });
-        r.appendChild(box);
-    });
-    // LE RENVOI : Mes sites est un onglet (D3, lot 8) — le rail le dit, sans l'héberger.
-    const sep = document.createElement('div');
-    sep.className = 'bu-rsep';
-    r.appendChild(sep);
-    const a = document.createElement('button');
-    a.type = 'button';
-    a.className = 'bu-renvoi';
-    a.title = 'Ouvrir l\'onglet Sites';
-    a.onclick = function(){ switchTab('mysites'); };
-    // Un globe, dans le même trait que les six entrées : le renvoi se lit comme elles.
-    a.innerHTML = _I('<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.6 3.9 5.4 3.9 8.5s-1.3 5.9-3.9 8.5c-2.6-2.6-3.9-5.4-3.9-8.5S9.4 6.1 12 3.5z"/>') +
-        '<span class="l">Sites</span><span>ouvrir l\'onglet ›</span>';
-    r.appendChild(a);
-}
 
 // L'EN-TÊTE DE L'ÉCRAN : son nom, sa légende, ses scènes. `v` est l'entrée
 // allumée, `vue` la vue ouverte, `sous` la vue montrée.
@@ -23451,26 +23383,6 @@ function buGuide(v){
     buSeg('guide');
     setTimeout(function(){ if(typeof guFam === 'function'){ try{ guFam(f); }catch(e){} } }, 60);
 }
-
-function buRailPlier(){
-    const c = document.getElementById('bu-corps');
-    if(!c) return;
-    const plie = !c.classList.contains('bu-replie');
-    c.classList.toggle('bu-replie', plie);
-    const b = document.getElementById('bu-plier');
-    if(b){ b.textContent = plie ? '›' : '‹';
-           b.title = plie ? 'Déplier le menu' : 'Replier le menu';
-           b.setAttribute('aria-label', b.title); }
-    // Un menu qu'on replie à chaque visite est un menu qu'on ne replie pas.
-    try{ localStorage.setItem('cass_bu_rail', plie ? '1' : '0'); }catch(e){}
-}
-
-function buRailReprendre(){
-    let p = '0';
-    try{ p = localStorage.getItem('cass_bu_rail') || '0'; }catch(e){}
-    if(p === '1') buRailPlier();
-}
-
 
 /* ── LE PLEIN ÉCRAN D'UNE CARTE ──────────────────────────────────────────── */
 // Le Canvas et le Carnet en avaient chacun une version à eux, avec leur propre
