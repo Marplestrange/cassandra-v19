@@ -222,3 +222,22 @@
 #aj-min::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid var(--accent);box-shadow:0 2px 6px rgba(16,24,40,.25)}
 #aj-min::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid var(--accent)}
 #aj-min-o{font:600 12px 'JetBrains Mono',monospace;color:var(--txt-soft);min-width:52px;text-align:right}
+
+/* naviguer entre les jours */
+.aj-nav{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:13px;background:rgba(127,140,150,.12);margin-right:8px}
+.aj-nb{border:0;background:none;border-radius:10px;padding:5px 11px;font:600 13px 'Inter',system-ui,sans-serif;color:var(--txt-soft)}
+.aj-nb:hover{background:var(--acc-10);color:var(--accent)}.aj-auj.on{background:var(--accent);color:#fff}
+.aj-cal{position:relative;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:9px;color:var(--txt-soft);cursor:pointer}.aj-cal:hover{background:var(--acc-10);color:var(--accent)}
+.aj-cal input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+/* reporter à demain */
+.aj-annul{display:flex;align-items:center;gap:12px;padding:8px 12px;margin:-4px 0 12px;border-radius:12px;background:color-mix(in srgb,var(--ok) 14%,transparent);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent);font:500 13px 'Inter',system-ui,sans-serif}
+.aj-annul[hidden]{display:none}.aj-annul span{flex:1}
+.aj-rp{font-size:13px}
+.aj-rep{position:absolute;right:20px;top:3px;border:0;background:none;color:var(--txt-faint);font-size:12px;line-height:1;padding:0 3px;opacity:0}.aj-blk:hover .aj-rep{opacity:1}.aj-rep:hover{color:var(--accent)}
+/* déplacer et redimensionner */
+.aj-tache,.aj-mob{cursor:grab;touch-action:none}
+.aj-blk.conflit{outline:2px dashed var(--danger);outline-offset:1px;background:color-mix(in srgb,var(--danger) 14%,var(--surface-solid,#fff))}
+.aj-rz{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize;touch-action:none}.aj-rz.g{left:0}.aj-rz.d{right:0}
+.aj-rz:hover{background:color-mix(in srgb,var(--c) 35%,transparent)}
+.aj-tir{position:fixed;z-index:500;pointer-events:none;background:var(--txt-strong,#101828);color:#fff;font:700 11.5px 'JetBrains Mono',monospace;padding:4px 9px;border-radius:8px;white-space:nowrap}
+@media (max-width:560px){.aj-nav{margin-right:0}.aj-salut{flex-basis:100%;order:3}.aj-rep{opacity:1}}
