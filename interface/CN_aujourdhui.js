@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #acfd21
+// VERSION CN : 0.1.0  #610142
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=acfd21 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=610142 ▼▼▼
 /* La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
    (la suite), et la journée se range à la main ou toute seule (la frise, les tâches à placer). Les données sont celles de l'ancienne
    interface (agenda, tâches, rappels, état du jour) ; seul le PLAN — où l'on a posé quoi — est écrit, par le module affichage
@@ -195,7 +195,7 @@
     const libresHtml = libres(A.now).filter((x) => x[1] - x[0] >= 30).map((x) => '<div class="aj-libre" style="left:' + pos(x[0]) + "%;width:" + (pos(x[1]) - pos(x[0])) + '%">' + dur(x[1] - x[0]) + " libres</div>").join("");
     const ag = libresHtml + A.evts.map((e) => '<div class="aj-blk" data-ref="' + esc(JSON.stringify(e.ref)) + '" style="--c:' + e.c + ";left:" + pos(e.d) + "%;width:" + (pos(e.f) - pos(e.d)) + '%"><b>' + esc(e.titre) + "</b><small>" + hm(e.d) + " – " + hm(e.f) + "</small></div>").join("");
     const ta = A.plan.filter((p) => p.deb + p.duree > A.h0 * 60 && p.deb < A.h1 * 60).map((p) => '<div class="aj-blk aj-tache' + (p.fait ? " fait" : "") + (p.neuf ? " arrive" : "") + '" data-id="' + esc(p.id) + '" style="--c:' + (p.couleur || "var(--violet)") + ";left:" + pos(p.deb) + "%;width:" + Math.max(pos(p.deb + p.duree) - pos(p.deb), 4.5) + '%"><b>' + (p.fait ? "✓ " : "") + esc(p.titre) + "</b><small>" + hm(p.deb) + " · " + dur(p.duree) + '</small><button class="aj-x" data-x="' + esc(p.id) + '" aria-label="Remettre à placer" title="Remettre à placer">×</button></div>').join("");
-    const ec = A.echs.map((e) => '<div class="aj-pin' + (pos(e.h) > 70 ? " g" : "") + '" data-ref="' + esc(JSON.stringify(e.ref)) + '" style="left:' + pos(e.h) + "%;--c:" + e.c + '"><i></i><em>' + hm(e.h) + " · " + esc(e.titre) + "</em></div>").join("");
+    const ec = A.echs.map((e) => '<div class="aj-pin' + (pos(e.h) > 70 ? " g" : "") + '" title="Échéance à ' + hm(e.h) + ' — clic pour ouvrir" data-ref="' + esc(JSON.stringify(e.ref)) + '" style="left:' + pos(e.h) + "%;--c:" + e.c + '"><i></i><em>' + hm(e.h) + " · " + esc(e.titre) + "</em></div>").join("");
     return { heures, ag, ta, ec };
   }
 
@@ -209,7 +209,7 @@
   function squelette(r) {
     r.innerHTML =
       '<div class="aj-tete"><span class="aj-salut" id="aj-salut"></span><span class="aj-sp"></span>' +
-      '<span class="aj-jr-w"><button class="aj-btn sm" id="aj-jr" type="button" aria-haspopup="true"></button><div class="aj-pop" id="aj-pop" hidden></div></span><span class="aj-duree" id="aj-duree" role="group" aria-label="Durée de concentration"></span><button class="aj-btn" id="aj-focus" type="button">◔ Se concentrer</button><button class="aj-btn pri" id="aj-org" type="button">✦ Organiser ma journée</button></div>' +
+      '<span class="aj-jr-w"><button class="aj-btn sm" id="aj-jr" type="button" aria-haspopup="true"></button><div class="aj-pop" id="aj-pop" hidden></div></span><span class="aj-duree" id="aj-duree" role="group" aria-label="Durée de concentration"></span><button class="aj-btn" id="aj-focus" type="button">◔ Se concentrer</button></div>' +
       '<div class="aj-ruban" id="aj-ruban" hidden></div><div class="aj-chips" id="aj-chips"></div>' +
       '<div class="aj-haut"><section class="aj-verre aj-cadran"><div class="aj-disque"><svg viewBox="0 0 340 340" role="img" aria-label="Cadran de la journée"><g id="aj-svg"></g></svg>' +
       '<div class="aj-centre"><div class="t" id="aj-c-heure"></div><div class="s" id="aj-c-sous"></div><div class="p" id="aj-c-pro"></div></div></div>' +
@@ -218,10 +218,10 @@
       '<section class="aj-verre aj-frise"><header><h3>Ma journée</h3><span class="aj-bilan" id="aj-bilan"></span><span class="aj-sp"></span><button class="aj-btn sm" id="aj-vider" type="button">Tout remettre à placer</button></header>' +
       '<div class="aj-entier" id="aj-entier"></div>' +
       '<div class="aj-plan" id="aj-plan"><div class="aj-heures" id="aj-heures"></div><div class="aj-passe" id="aj-passe"></div><div class="aj-curseur" id="aj-curseur"><span id="aj-cur-h"></span></div>' +
-      '<div class="aj-voie"><div class="aj-nom">Agenda</div><div class="aj-piste" id="aj-p-ag"></div></div><div class="aj-voie"><div class="aj-nom">À faire</div><div class="aj-piste" id="aj-p-ta"></div></div><div class="aj-voie"><div class="aj-nom">Échéances</div><div class="aj-piste" id="aj-p-ec"></div></div></div></section>' +
+      '<div class="aj-voie"><div class="aj-nom" title="Tes rendez-vous du jour, tels que ton agenda les donne. Un clic sur un bloc l’ouvre.">Agenda</div><div class="aj-piste" id="aj-p-ag"></div></div><div class="aj-voie"><div class="aj-nom" title="Tes tâches posées sur la journée. Glisse-y une tâche de « À placer », clique un bloc pour le cocher.">À faire</div><div class="aj-piste" id="aj-p-ta"></div></div><div class="aj-voie"><div class="aj-nom" title="Les instants qui ne se déplacent pas : tes rappels et les échéances d’infrastructure (certificats…) qui tombent aujourd’hui à une heure précise. Rien à placer, un clic ouvre l’élément.">Échéances</div><div class="aj-piste" id="aj-p-ec"></div></div></div></section>' +
       '<div class="aj-bas"><section class="aj-verre aj-carte"><header><h3>À placer</h3><span class="aj-n" id="aj-n-pl"></span></header>' +
       '<form class="aj-saisie" id="aj-f"><input id="aj-q" placeholder="Nouvelle tâche… « relire le contrat 40 min »" autocomplete="off"><button class="aj-btn pri" type="submit">Ajouter</button></form>' +
-      '<div class="aj-plateau" id="aj-plateau"></div><p class="aj-aide">Glissez une tâche sur la voie « À faire », ou laissez Itare la poser dans vos temps libres. Cliquez un bloc pour le cocher.</p></section>' +
+      '<div class="aj-plateau" id="aj-plateau"></div><p class="aj-aide">Glissez une tâche sur la voie « À faire », ou cliquez « placer → » : elle se pose dans le prochain temps libre. Cliquez un bloc pour le cocher.</p></section>' +
       '<section class="aj-verre aj-carte aj-courrier"><header><h3>Courrier non lu</h3><span class="aj-sp"></span><button class="aj-btn sm" type="button" data-seg="mail">Ouvrir</button></header>' +
       '<div class="bu-rows" id="bu-mail-apercu"><div class="empty-state" style="padding:20px">Lecture…</div></div></section></div>';
     r.dataset.pret = "1"; A.focusMin = dureeFocus(); dessinerDuree(); dessinerReglage();
@@ -258,7 +258,7 @@
     $("#aj-suite").innerHTML = suiv.length ? suiv.slice(0, 4).map((x, i) => { const en = x.d <= A.now; return '<div class="aj-r' + (i === 0 && en ? " now" : "") + '"><div class="aj-quand">' + hm(x.d) + '</div><div class="aj-tx"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><div class="aj-dans">' + (en ? "en cours" : "dans " + dur(x.d - A.now)) + "</div></div>"; }).join("")
       : '<div class="aj-r"><div class="aj-tx"><b>Plus rien de prévu aujourd’hui</b><small>' + (pl.length ? "Il reste " + pl.length + " tâche" + (pl.length > 1 ? "s" : "") + " à placer." : "Bonne fin de journée.") + "</small></div></div>";
     const f = frise();
-    $("#aj-heures").innerHTML = f.heures; $("#aj-p-ag").innerHTML = f.ag; $("#aj-p-ta").innerHTML = f.ta || '<div class="aj-vide-voie">Déposez ici une tâche, ou cliquez « Organiser ma journée »</div>'; $("#aj-p-ec").innerHTML = f.ec || '<div class="aj-vide-voie">Aucune échéance aujourd’hui</div>';
+    $("#aj-heures").innerHTML = f.heures; $("#aj-p-ag").innerHTML = f.ag; $("#aj-p-ta").innerHTML = f.ta || '<div class="aj-vide-voie">Déposez ici une tâche, ou cliquez « placer → » sur une tâche</div>'; $("#aj-p-ec").innerHTML = f.ec || '<div class="aj-vide-voie">Aucune échéance aujourd’hui</div>';
     A.plan.forEach((p) => { delete p.neuf; });
     $("#aj-entier").innerHTML = A.jourEntier.length ? '<span class="aj-lab">Toute la journée</span>' + A.jourEntier.map((e) => '<button class="aj-ad" type="button" data-ref="' + esc(JSON.stringify(e.ref)) + '" style="--c:' + e.c + '">' + esc(e.titre) + "</button>").join("") : "";
     $("#aj-bilan").textContent = A.plan.length + " placée" + (A.plan.length > 1 ? "s" : "") + " · " + pl.length + " à placer";
@@ -284,11 +284,6 @@
   function premierLibre(d, apres) { return libres(Math.max(A.now, apres || 0)).find((x) => x[1] - x[0] >= d); }
   const arrondi5 = (m) => Math.ceil(m / 5) * 5;
   function placer(t, deb) { A.plan.push(bloc(t, deb)); A.plan.sort((a, b) => a.deb - b.deb); sauver(); rendre(); }
-  function organiser() {
-    const l = aPlacer(); let k = 0;
-    l.forEach((t) => { const z = premierLibre(t.duree + 5); if (z) { setTimeout(() => { if (!premierLibre(t.duree + 5)) return; A.plan.push(bloc(t, arrondi5(premierLibre(t.duree + 5)[0]))); A.plan.sort((a, b) => a.deb - b.deb); sauver(); rendre(); }, k * 260); k++; } });
-    if (!k && typeof window.toast === "function") window.toast(l.length ? "Aucun temps libre assez long." : "Rien à placer.");
-  }
   function confetti(x, y) { const couleurs = ["#2dd4bf", "#fbbf24", "#7c5cd6", "#d02a50", "#2b78b5"]; for (let i = 0; i < 18; i++) { const e = document.createElement("i"); e.className = "aj-confetti"; e.style.left = x + "px"; e.style.top = y + "px"; e.style.background = couleurs[i % 5]; e.style.setProperty("--dx", (Math.random() * 160 - 80) + "px"); e.style.setProperty("--dy", (Math.random() * -120 - 20) + "px"); e.style.setProperty("--r", Math.random() * 540 + "deg"); document.body.appendChild(e); setTimeout(() => e.remove(), 1000); } }
   async function cocher(b, el) {
     b.fait = !b.fait; sauver();
@@ -384,7 +379,6 @@
       if ((x = ev.target.closest("[data-go]"))) { const t = aPlacer().find((q) => q.id === +x.dataset.go), z = t && premierLibre(t.duree); if (z) placer(t, arrondi5(z[0])); else if (typeof window.toast === "function") window.toast("Aucun temps libre assez long."); return; }
       if ((x = ev.target.closest(".aj-tache"))) { const b = A.plan.find((q) => q.id === x.dataset.id); if (b) cocher(b, x); return; }
       if ((x = ev.target.closest("[data-ref]"))) { ouvrirRef(x.dataset.ref); return; }
-      if (ev.target.closest("#aj-org")) { organiser(); return; }
       if (ev.target.closest("#aj-vider")) { A.plan = []; sauver(); rendre(); return; }
       if (ev.target.closest("#aj-focus")) { basculerFocus(); return; }
       if (ev.target.closest("#aj-jr")) { A.pop = !A.pop; dessinerReglage(); return; }
