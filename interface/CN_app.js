@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #80500d
+// VERSION CN : 0.1.0  #b1672c
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=80500d ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=b1672c ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -23323,7 +23323,7 @@ function buRailLegende(v, vue, sous){
         '<button class="btn-x mini" onclick="buSeg(ETAT.bureau._avantGuide || \'today\')" title="Revenir à l\'écran ouvert avant l\'aide">‹ Revenir</button>' :
         '<button class="btn-x mini" onclick="buGuide(\'' + escapeAttr(vue) + '\')" title="Le guide, ouvert sur cet écran">? Aide</button>');
     const h = document.getElementById('bu-h1');
-    if(h) h.innerHTML = '<span>' + escapeHtml((v === 'today') ? 'Mon bureau' : (nom || 'Mon bureau')) + '</span>' + aide;
+    if(h) h.innerHTML = '<span>' + escapeHtml(nom || "Aujourd'hui") + '</span>' + aide;
     const z = document.getElementById('bu-legende');
     if(z) z.textContent = t;
     buScenes(v, vue, sous);
