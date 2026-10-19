@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #e39568
+// VERSION CN : 0.1.0  #0e4fbb
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=e39568 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=0e4fbb ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -154,6 +154,7 @@
       else if (e.ecran && CASS.nomOnglet && CASS.nomOnglet(e.ecran) === nom) trouve = { g: g.id, e: e.id, vue: "" };
       else for (const f of e.enfants) if (f.ecran && CASS.nomOnglet && CASS.nomOnglet(f.ecran) === nom) trouve = { g: g.id, e: e.id, vue: f.vue || f.id };
     }
+    if (trouve && !trouve.vue) { const ee = E.d.groupes.find((g) => g.id === trouve.g).entrees.find((e) => e.id === trouve.e); if (ee && ee.enfants.length && ee.onglet === nom) trouve.vue = ee.enfants[0].vue || ee.enfants[0].id; }   // sans vue dite : la première (Aujourd'hui)
     if (trouve) { E.g = trouve.g; E.e = trouve.e; E.vue = trouve.vue; E.actif = trouve; E.hors = ""; }
     else { E.actif = null; E.hors = nom; }
     rendre();
