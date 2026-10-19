@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #610142
+// VERSION CN : 0.1.0  #d7fd7a
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=610142 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=d7fd7a ▼▼▼
 /* La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
    (la suite), et la journée se range à la main ou toute seule (la frise, les tâches à placer). Les données sont celles de l'ancienne
    interface (agenda, tâches, rappels, état du jour) ; seul le PLAN — où l'on a posé quoi — est écrit, par le module affichage
@@ -32,7 +32,7 @@
   const COULEURS = { event: "var(--info)", etape: "var(--accent)", task: "var(--violet)", reminder: "var(--warn)", ssl: "var(--danger)" };
   const DUREE_DEFAUT = 30;
 
-  const A = { reg: { debut: null, fin: null, focus: null, durees: {} }, d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, edit: null, h0: 8, h1: 20, decal: 0, perso: false, pop: false, charge: false, sauvegarde: null };
+  const A = { reg: { debut: null, fin: null, focus: null, durees: {} }, d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, edit: null, nv: null, h0: 8, h1: 20, decal: 0, perso: false, pop: false, charge: false, sauvegarde: null };
 
   // ── les durées retenues pour les tâches (le serveur ne connaît que la charge, qui est un poids) ────────────────
   // ── le réglage du compte (heures de la journée, concentration, durée des tâches) : écrit par le serveur, une fois par compte ──
@@ -218,7 +218,7 @@
       '<section class="aj-verre aj-frise"><header><h3>Ma journée</h3><span class="aj-bilan" id="aj-bilan"></span><span class="aj-sp"></span><button class="aj-btn sm" id="aj-vider" type="button">Tout remettre à placer</button></header>' +
       '<div class="aj-entier" id="aj-entier"></div>' +
       '<div class="aj-plan" id="aj-plan"><div class="aj-heures" id="aj-heures"></div><div class="aj-passe" id="aj-passe"></div><div class="aj-curseur" id="aj-curseur"><span id="aj-cur-h"></span></div>' +
-      '<div class="aj-voie"><div class="aj-nom" title="Tes rendez-vous du jour, tels que ton agenda les donne. Un clic sur un bloc l’ouvre.">Agenda</div><div class="aj-piste" id="aj-p-ag"></div></div><div class="aj-voie"><div class="aj-nom" title="Tes tâches posées sur la journée. Glisse-y une tâche de « À placer », clique un bloc pour le cocher.">À faire</div><div class="aj-piste" id="aj-p-ta"></div></div><div class="aj-voie"><div class="aj-nom" title="Les instants qui ne se déplacent pas : tes rappels et les échéances d’infrastructure (certificats…) qui tombent aujourd’hui à une heure précise. Rien à placer, un clic ouvre l’élément.">Échéances</div><div class="aj-piste" id="aj-p-ec"></div></div></div></section>' +
+      '<div class="aj-voie"><div class="aj-nom" title="Tes rendez-vous du jour, tels que ton agenda les donne. Un clic sur un bloc l’ouvre ; un clic dans le vide crée un rendez-vous à cette heure.">Agenda</div><div class="aj-piste" id="aj-p-ag"></div></div><div class="aj-voie"><div class="aj-nom" title="Tes tâches posées sur la journée. Glisse-y une tâche de « À placer », clique un bloc pour le cocher.">À faire</div><div class="aj-piste" id="aj-p-ta"></div></div><div class="aj-voie"><div class="aj-nom" title="Les instants qui ne se déplacent pas : tes rappels et les échéances d’infrastructure (certificats…) qui tombent aujourd’hui à une heure précise. Rien à placer, un clic sur un point l’ouvre ; un clic dans le vide crée un rappel à cette heure.">Échéances</div><div class="aj-piste" id="aj-p-ec"></div></div></div></section>' +
       '<div class="aj-bas"><section class="aj-verre aj-carte"><header><h3>À placer</h3><span class="aj-n" id="aj-n-pl"></span></header>' +
       '<form class="aj-saisie" id="aj-f"><input id="aj-q" placeholder="Nouvelle tâche… « relire le contrat 40 min »" autocomplete="off"><button class="aj-btn pri" type="submit">Ajouter</button></form>' +
       '<div class="aj-plateau" id="aj-plateau"></div><p class="aj-aide">Glissez une tâche sur la voie « À faire », ou cliquez « placer → » : elle se pose dans le prochain temps libre. Cliquez un bloc pour le cocher.</p></section>' +
@@ -302,6 +302,52 @@
       if (typeof window.calLoad === "function") await window.calLoad(); else rendre();
     } catch (e) { if (typeof window.toast === "function") window.toast("Tâche non créée : " + e.message, "err"); }
   }
+  // ── créer un rendez-vous ou un rappel directement sur la frise : un clic dans la voie, à l'heure voulue ─────────────
+  const jourDe = (m) => { const d = new Date(A.d0 + "T12:00:00"); d.setDate(d.getDate() + Math.floor(m / 1440)); return iso(d); };
+  const quand = (m) => jourDe(m) + " " + p2(Math.floor(m / 60) % 24) + ":" + p2(Math.floor(m) % 60);
+  const minuteDuClic = (e, piste) => { const r = piste.getBoundingClientRect(); return Math.round((A.h0 * 60 + ((e.clientX - r.left) / r.width) * SPAN()) / 5) * 5; };
+  const videDeVoie = (t) => t.classList.contains("aj-piste") || t.classList.contains("aj-libre") || t.classList.contains("aj-vide-voie");
+  function fermerNv() { const n = $("#aj-nv"); if (n) n.remove(); A.nv = null; }
+  function ouvrirNv(type, m, e) {
+    fermerNv(); A.nv = { type, m };
+    const ev = type === "event", n = document.createElement("form");
+    n.id = "aj-nv"; n.className = "aj-nv aj-verre";
+    n.innerHTML = '<div class="aj-nv-t">' + (ev ? "Nouveau rendez-vous" : "Nouveau rappel") + " · <b>" + hm(m) + "</b></div>" +
+      '<input name="t" class="aj-nv-i" placeholder="' + (ev ? "Titre du rendez-vous" : "Quoi rappeler ?") + '" maxlength="200" autocomplete="off" aria-label="Titre">' +
+      (ev ? '<div class="aj-nv-d"><span>Durée</span>' + [15, 30, 45, 60, 90, 120].map((d) => '<button type="button" class="aj-pre' + (d === 60 ? " on" : "") + '" data-nv-d="' + d + '">' + d + "</button>").join("") + '<input type="hidden" name="d" value="60"></div>' : "") +
+      '<div class="aj-nv-b"><button type="button" class="aj-an" data-nv-fin="1">Annuler</button><button type="submit" class="aj-ok">Créer</button></div>';
+    document.body.appendChild(n);
+    const w = n.offsetWidth, h = n.offsetHeight;
+    n.style.left = Math.max(8, Math.min(e.clientX - 20, innerWidth - w - 8)) + "px";
+    n.style.top = Math.max(8, Math.min(e.clientY + 14, innerHeight - h - 8)) + "px";
+    n.querySelector(".aj-nv-i").focus();
+  }
+  async function creerNv(f) {
+    const nv = A.nv; if (!nv) return;
+    const titre = f.t.value.trim(); if (!titre) { f.t.focus(); return; }
+    try {
+      if (nv.type === "event") {
+        const d = Math.max(5, +f.d.value || 60);
+        await window.apiPost("/api/itare/event/save", { summary: titre, start_at: quand(nv.m), end_at: quand(nv.m + d) });
+      } else {
+        await window.apiPost("/api/rappel/creer", { text: titre, due: quand(nv.m) });
+      }
+      fermerNv();
+      if (typeof window.calLoad === "function") await window.calLoad(); else rendre();
+      if (typeof window.toast === "function") window.toast((nv.type === "event" ? "Rendez-vous" : "Rappel") + " créé à " + hm(nv.m) + ".");
+    } catch (e) { if (typeof window.toast === "function") window.toast("Création refusée : " + e.message, "err"); }
+  }
+  // le fantôme : au survol d'une voie vide, l'heure où un clic créerait quelque chose
+  function fantome(e) {
+    const piste = e.target.closest && e.target.closest("#aj-p-ag, #aj-p-ec");
+    let f = $("#aj-fant");
+    if (!piste || !videDeVoie(e.target) || A.glisse != null || A.nv) { if (f) f.hidden = true; return; }
+    if (!f) { f = document.createElement("div"); f.id = "aj-fant"; f.className = "aj-fant"; }
+    if (f.parentNode !== piste) piste.appendChild(f);
+    const m = minuteDuClic(e, piste);
+    f.hidden = false; f.style.left = pos(m) + "%"; f.textContent = "+ " + hm(m);
+  }
+
   function editer(id) {
     const p = aPlacer().find((q) => q.id === id), z = $("#aj-plateau"); if (!p || !z) return;
     A.edit = id;
@@ -368,9 +414,13 @@
 
   function brancher() {
     document.addEventListener("click", (ev) => {
-      const r = $("#aj-racine"); if (!r || !r.contains(ev.target)) return;
       let x;
+      if ((x = ev.target.closest("[data-nv-d]"))) { const f = x.closest("form"); f.d.value = x.dataset.nvD; f.querySelectorAll("[data-nv-d]").forEach((b) => b.classList.toggle("on", b === x)); return; }
+      if (ev.target.closest("[data-nv-fin]")) { fermerNv(); return; }
+      if (A.nv && !ev.target.closest("#aj-nv") && !ev.target.closest("#aj-p-ag, #aj-p-ec")) fermerNv();
+      const r = $("#aj-racine"); if (!r || !r.contains(ev.target)) return;
       if ((x = ev.target.closest("[data-x]"))) { A.plan = A.plan.filter((b) => b.id !== x.dataset.x); sauver(); rendre(); return; }
+      if ((x = ev.target.closest("#aj-p-ag, #aj-p-ec")) && videDeVoie(ev.target)) { ouvrirNv(x.id === "aj-p-ag" ? "event" : "reminder", minuteDuClic(ev, x), ev); return; }
       if ((x = ev.target.closest("[data-edit-go]"))) { if (A.edit != null) finEdition(); editer(+x.dataset.editGo); return; }
       if (ev.target.closest("[data-edit-fin]")) { finEdition(); return; }
       if ((x = ev.target.closest("[data-e-min]"))) { const f = x.closest("form"); f.m.value = x.dataset.eMin; f.m.focus(); return; }
@@ -390,8 +440,9 @@
     });
     document.addEventListener("change", (ev) => { if (ev.target.id === "aj-jr-d" || ev.target.id === "aj-jr-f") appliquerReglage(+$("#aj-jr-d").value, +$("#aj-jr-f").value); });
     document.addEventListener("click", (ev) => { if (A.pop && !ev.target.closest(".aj-jr-w")) { A.pop = false; dessinerReglage(); } });
-    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && A.edit != null) { finEdition(); return; } if (ev.key === "Escape" && A.pop) { A.pop = false; dessinerReglage(); } });
-    document.addEventListener("submit", (ev) => { if (ev.target.classList && ev.target.classList.contains("aj-edit")) { ev.preventDefault(); enregistrerEdition(ev.target); return; } if (ev.target.id === "aj-f") { ev.preventDefault(); const i = $("#aj-q"); const v = i.value; i.value = ""; ajouter(v); } });
+    document.addEventListener("mousemove", fantome, { passive: true });
+    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && A.nv) { fermerNv(); return; } if (ev.key === "Escape" && A.edit != null) { finEdition(); return; } if (ev.key === "Escape" && A.pop) { A.pop = false; dessinerReglage(); } });
+    document.addEventListener("submit", (ev) => { if (ev.target.id === "aj-nv") { ev.preventDefault(); creerNv(ev.target); return; } if (ev.target.classList && ev.target.classList.contains("aj-edit")) { ev.preventDefault(); enregistrerEdition(ev.target); return; } if (ev.target.id === "aj-f") { ev.preventDefault(); const i = $("#aj-q"); const v = i.value; i.value = ""; ajouter(v); } });
     // glisser-déposer d'une tâche vers la voie « À faire »
     document.addEventListener("dragstart", (e) => { const p = e.target.closest && e.target.closest(".aj-puce"); if (!p) return; A.glisse = +p.dataset.tid; p.classList.add("glisse"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(A.glisse)); });
     document.addEventListener("dragend", () => { const g = $("#aj-guide"); if (g) g.remove(); document.querySelectorAll(".aj-puce.glisse").forEach((x) => x.classList.remove("glisse")); const p = $("#aj-p-ta"); if (p) p.classList.remove("cible"); A.glisse = null; });

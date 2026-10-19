@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #b1672c
+// VERSION CN : 0.1.0  #8e06a0
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=b1672c ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=8e06a0 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -9709,8 +9709,11 @@ function suAller(k){
     buSeg(k);
 }
 function suNav(){
+    // La rangée de Suivre se retire : le menu de gauche porte maintenant Agenda (Calendrier, Tâches, Rappels), Projets et Notes. Ne restent
+    // que les pastilles propres à une page : Portefeuille / Projet pour les projets, Notes / Ranger pour les notes.
     const vue=ETAT.bureau._buView, on=(vue==='proj')?(ETAT.projets._pjVue==='modeles'?'porte':(ETAT.projets._pjVue||'porte')):(SU_NOTES[vue]?'notes':vue);
-    const h=SU_NAV.map(function(v){
+    const liste=(vue==='proj')?['porte','fiche']:((SU_NOTES[vue]||vue==='ranger')?['notes','ranger']:[]);
+    const h=SU_NAV.filter(function(v){ return liste.indexOf(v[0])>=0; }).map(function(v){
         const n=(v[0]==='porte')?((ETAT.projets._pjListe||[]).length||''):((v[0]==='notes'&&ETAT.bureau._aRelire)?ETAT.bureau._aRelire:
                 ((v[0]==='ranger'&&ETAT.bureau._nRanger)?ETAT.bureau._nRanger:''));
         return '<button aria-selected="'+(on===v[0])+'" onclick="suAller(\''+v[0]+'\')">'+v[1]+(n!==''?'<span class="n">'+n+'</span>':'')+'</button>';

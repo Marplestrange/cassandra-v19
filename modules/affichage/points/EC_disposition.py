@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.5.0)  #f99e8c
+# VERSION EC : EC0 (référence 0.5.0)  #67de74
 # HÔTE CN    : CN_module.py · disposition @1.0
 # RÔLE       : range les entrées de menu que les modules déclarent en groupes (barre du haut), entrées et sous-entrées (colonne de gauche), et en entrées du menu de l'avatar ; dit le pire niveau d'alerte de chaque entrée, de chaque groupe et du tout.
 # MÉTHODE    : fonction pure : une table de groupes, un repli par famille, un pont vers les onglets de l'ancienne interface ; chaque entrée reçue paraît une seule fois, rien n'est inventé, un groupe sans entrée n'existe pas.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=f99e8c ▼▼▼
+# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=67de74 ▼▼▼
 
 # Les groupes de la barre du haut : (id, libellé, icône, ordre, interlocuteur par défaut du panneau).
 GROUPES = (
@@ -39,8 +39,14 @@ MASQUES = ("salon",)
 # Le pont vers l'ancienne interface : ce que ses onglets offrent déjà. Une entrée du pont paraît si les modules dont elle dépend sont actifs,
 # et elle remplace l'entrée qu'un module déclarerait pour le même module (l'écran de l'ancienne interface existe, il fait foi).
 PONT = (
-    {"id": "accueil", "libelle": "Accueil", "groupe": "desk", "icone": "home", "onglet": "bureau", "modules": (), "ordre": 10, "role": "utilisateur",
-     "vues": (("jour", "Aujourd’hui"), ("suivre", "Suivre"), ("courrier", "Courrier"), ("repertoire", "Répertoire"), ("documents", "Documents"))},
+    {"id": "accueil", "libelle": "Aujourd’hui", "groupe": "desk", "icone": "clock", "onglet": "bureau", "modules": (), "ordre": 10, "role": "utilisateur", "vues": ()},
+    {"id": "agenda", "libelle": "Agenda", "groupe": "desk", "icone": "calendar", "onglet": "bureau", "modules": (), "ordre": 20, "role": "utilisateur",
+     "vues": (("calendrier", "Calendrier"), ("taches", "Tâches"), ("rappels", "Rappels"))},
+    {"id": "projets", "libelle": "Projets", "groupe": "desk", "icone": "panorama", "onglet": "bureau", "modules": (), "ordre": 30, "role": "utilisateur", "vues": ()},
+    {"id": "notes", "libelle": "Notes", "groupe": "desk", "icone": "scroll", "onglet": "bureau", "modules": (), "ordre": 40, "role": "utilisateur", "vues": ()},
+    {"id": "courrier", "libelle": "Courrier", "groupe": "desk", "icone": "mail", "onglet": "bureau", "modules": (), "ordre": 50, "role": "utilisateur", "vues": ()},
+    {"id": "repertoire", "libelle": "Répertoire", "groupe": "desk", "icone": "contacts", "onglet": "bureau", "modules": (), "ordre": 60, "role": "utilisateur", "vues": ()},
+    {"id": "documents", "libelle": "Documents", "groupe": "desk", "icone": "folder", "onglet": "bureau", "modules": (), "ordre": 70, "role": "utilisateur", "vues": ()},
     {"id": "panorama", "libelle": "Panorama", "groupe": "parc", "icone": "panorama", "onglet": "overview", "modules": ("vue",), "ordre": 10, "role": "admin", "vues": ()},
     {"id": "flotte", "libelle": "Flotte", "groupe": "parc", "icone": "fleet", "onglet": "fleet", "modules": ("flotte",), "ordre": 20, "role": "admin", "vues": ()},
     {"id": "sites", "libelle": "Sites", "groupe": "parc", "icone": "globe", "onglet": "mysites", "modules": ("sites",), "ordre": 30, "role": "utilisateur", "vues": ()},
@@ -56,10 +62,10 @@ PONT = (
 )
 
 # D'où vient une alerte du jour : le champ « ou » de l'item, ou à défaut son genre, rangé vers l'entrée qui la porte.
-OU_VERS = {"sites": "sites", "ssl": "sites", "bureau": "accueil", "mail": "accueil", "cloche": "accueil", "proj": "accueil", "securite": "securite",
+OU_VERS = {"sites": "sites", "ssl": "sites", "bureau": "accueil", "mail": "courrier", "cloche": "accueil", "proj": "projets", "securite": "securite",
            "evolution": "evolution", "flotte": "flotte", "fleet": "flotte", "sensorium": "sensorium", "journal": "journaux", "crons": "automatismes",
            "planifie": "automatismes", "memoire": "memoire", "proactif": "proactivite", "fastpanel": "hebergement", "vue": "panorama",
-           "tache": "accueil", "rappel": "accueil", "event": "accueil", "decision": "accueil", "mandat": "accueil", "note": "accueil"}
+           "tache": "agenda", "rappel": "agenda", "event": "agenda", "decision": "projets", "mandat": "accueil", "note": "notes"}
 NIVEAUX = {"brule": "danger", "regarder": "alerte"}
 RANG = {"": 0, "alerte": 1, "danger": 2}
 

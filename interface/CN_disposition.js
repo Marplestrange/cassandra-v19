@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #28e547
+// VERSION CN : 0.1.0  #63609b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=28e547 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=63609b ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -74,10 +74,11 @@
     refresh: '<path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/>',
     tasks: '<rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M8.5 12l2.5 2.5 4.5-5"/>', mail: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6 8.5-6"/>',
     contacts: '<rect x="4" y="3.5" width="15" height="17" rx="2"/><path d="M4 8H2M4 12H2M4 16H2"/><circle cx="11.5" cy="10.5" r="2.3"/><path d="M7.8 16.6c.8-1.7 2.1-2.5 3.7-2.5s2.9.8 3.7 2.5"/>',
+    bell: '<path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 8H4c0-1 2-2 2-8M10 20a2 2 0 0 0 4 0"/>',
     folder: '<path d="M4 7.5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>',
   };
   // les icônes des vues de l'accueil : celles que portait l'ancienne pastille « Mon bureau », reportées au menu de gauche
-  const VUE_IC = { jour: "clock", suivre: "tasks", courrier: "mail", repertoire: "contacts", documents: "folder" };
+  const VUE_IC = { calendrier: "calendar", taches: "tasks", rappels: "bell" };
   // le logo de Cassandra : le toit (celui de l'ancienne interface) ; il tient lieu de logo tant que l'organisation n'a pas le sien
   const TOIT = '<svg class="d-i toit" viewBox="0 0 24 24"><path d="M4 11.5l8-7 8 7"/><path d="M6.5 20h11"/><circle cx="12" cy="14.5" r="2.4" fill="currentColor" stroke="none"/></svg>';
   let faviconOrigine = null;
@@ -109,15 +110,24 @@
   const tactile = () => { try { return !!(window.matchMedia && matchMedia("(pointer:coarse)").matches); } catch (e) { return false; } };
 
   // ── le pont vers les onglets de l'ancienne interface ───────────────────────
-  const VUES_BUREAU = { jour: "today", suivre: "proj", courrier: "mail", repertoire: "rep", documents: "doc" };
+  // les pages du bureau de l'ancienne interface : une entrée (ou une sous-page de l'Agenda) ouvre son segment
+  const SEG_ENTREE = { accueil: "today", projets: "proj", notes: "notes", courrier: "mail", repertoire: "rep", documents: "doc" };
+  const SEG_VUE = { calendrier: "cal", taches: "tk", rappels: "rem" };
+  // et l'inverse : quand on navigue DANS le bureau (une pastille, un lien), le menu de gauche suit
+  const VERS_MENU = { today: ["accueil", ""], cal: ["agenda", "calendrier"], tk: ["agenda", "taches"], rem: ["agenda", "rappels"], proj: ["projets", ""], notes: ["notes", ""], carnet: ["notes", ""],
+    canvas: ["notes", ""], liens: ["notes", ""], fusion: ["notes", ""], menage: ["notes", ""], ranger: ["notes", ""], mail: ["courrier", ""], rep: ["repertoire", ""], doc: ["documents", ""] };
   function pontVue(entreeId, vue) {
-    if (entreeId !== "accueil" || !vue) return;
-    setTimeout(function () {
-      if (VUES_BUREAU[vue] && typeof window.buSeg === "function") window.buSeg(VUES_BUREAU[vue]);
-    }, 80);
+    const seg = vue ? SEG_VUE[vue] : SEG_ENTREE[entreeId];
+    if (seg) setTimeout(function () { if (typeof window.buSeg === "function") window.buSeg(seg); }, 80);
+  }
+  function suivreSegment(seg) {
+    const v = VERS_MENU[seg]; if (!v || !E.d) return;
+    const g = E.d.groupes.find((x) => x.id === "desk"); if (!g || !g.entrees.some((e) => e.id === v[0])) return;
+    if (E.actif && E.g === "desk" && E.e === v[0] && (E.vue || "") === v[1]) return;
+    aller("desk", v[0], v[1], true);
   }
   function ouvrirNoeud(n, vue) {
-    if (n.onglet) { window.switchTab(n.onglet); pontVue(n.id.split(".")[0], vue || n.vue); }
+    if (n.onglet) { window.switchTab(n.onglet); pontVue(n.id.split(".")[0], vue || n.vue || ""); }
     else if (n.ecran === "menus:vue_modules") ouvrirModules(E.famModules || "tous");
     else if (n.ecran && CASS.ouvrirEcran) CASS.ouvrirEcran(n.ecran, n.libelle);
   }
@@ -154,7 +164,7 @@
     if (nom !== E.pageNom) { E.fil = null; E.lateral = null; E.pageNom = ""; }
     let trouve = null;
     for (const g of E.d.groupes) for (const e of g.entrees) {
-      if (e.onglet === nom) trouve = { g: g.id, e: e.id, vue: E.actif && E.actif.e === e.id ? E.actif.vue : "" };
+      if (e.onglet === nom && !trouve) trouve = { g: g.id, e: e.id, vue: E.actif && E.actif.e === e.id ? E.actif.vue : "" };
       else if (e.ecran && CASS.nomOnglet && CASS.nomOnglet(e.ecran) === nom) trouve = { g: g.id, e: e.id, vue: "" };
       else for (const f of e.enfants) if (f.ecran && CASS.nomOnglet && CASS.nomOnglet(f.ecran) === nom) trouve = { g: g.id, e: e.id, vue: f.vue || f.id };
     }
@@ -916,6 +926,8 @@
       setInterval(pouls, 15000); document.addEventListener("visibilitychange", pouls);
       setInterval(function () { if (token() && !document.hidden && E.d) idees(); }, 60000);
       const sw = window.switchTab;
+      const bs = window.buSeg;
+      if (typeof bs === "function") window.buSeg = function (v) { const r = bs.apply(this, arguments); try { suivreSegment(v); } catch (e) {} return r; };
       window.switchTab = function (name) { const r = sw.apply(this, arguments); window.__d19Onglet = name; try { suivre(name); } catch (e) {} return r; };
     }
   }
