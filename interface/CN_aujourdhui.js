@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #f7c2f5
+// VERSION CN : 0.1.0  #b09692
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=f7c2f5 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=b09692 ▼▼▼
 /* La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
    (la suite), et la journée se range à la main ou toute seule (la frise, les tâches à placer). Les données sont celles de l'ancienne
    interface (agenda, tâches, rappels, état du jour) ; seul le PLAN — où l'on a posé quoi — est écrit, par le module affichage
@@ -32,19 +32,45 @@
   const COULEURS = { event: "var(--info)", etape: "var(--accent)", task: "var(--violet)", reminder: "var(--warn)", ssl: "var(--danger)" };
   const DUREE_DEFAUT = 30;
 
-  const A = { d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, h0: 8, h1: 20, decal: 0, perso: false, pop: false, charge: false, sauvegarde: null };
+  const A = { reg: { debut: null, fin: null, focus: null, durees: {} }, d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, h0: 8, h1: 20, decal: 0, perso: false, pop: false, charge: false, sauvegarde: null };
 
   // ── les durées retenues pour les tâches (le serveur ne connaît que la charge, qui est un poids) ────────────────
-  const durees = () => { try { return JSON.parse(localStorage.getItem("aj_durees") || "{}"); } catch (e) { return {}; } };
-  const retenirDuree = (id, m) => { try { const d = durees(); d[id] = m; localStorage.setItem("aj_durees", JSON.stringify(d)); } catch (e) {} };
+  // ── le réglage du compte (heures de la journée, concentration, durée des tâches) : écrit par le serveur, une fois par compte ──
+  // ce que ce navigateur avait retenu avant (localStorage) passe au compte la première fois, puis n'est plus lu
+  const ancien = (cle) => { try { return JSON.parse(localStorage.getItem(cle) || "null"); } catch (e) { return null; } };
+  const durees = () => A.reg.durees || {};
+  const retenirDuree = (id, m) => { A.reg.durees = Object.assign({}, A.reg.durees, { [id]: m }); ecrireReglage({ durees: { [id]: m } }); };
+  function ecrireReglage(parties) {
+    A.regAttente = Object.assign(A.regAttente || {}, parties, parties.durees ? { durees: Object.assign({}, (A.regAttente || {}).durees, parties.durees) } : {});
+    clearTimeout(A.regT);
+    A.regT = setTimeout(async () => {
+      const x = A.regAttente; A.regAttente = null;
+      try { await CASS.agir("affichage.modifier_reglage_jour", x); }
+      catch (e) { if (typeof window.toast === "function") window.toast("Réglage non enregistré : " + e.message, "err"); }
+    }, 400);
+  }
+  async function chargerReglage() {
+    try { A.reg = await CASS.agir("affichage.lire_reglage_jour", {}); } catch (e) { A.reg = A.reg || {}; }
+    A.reg = Object.assign({ debut: null, fin: null, focus: null, durees: {} }, A.reg);
+    if (!A.regMigre) {
+      A.regMigre = true;
+      const j = ancien("aj_journee"), f = +localStorage.getItem("aj_focus") || null, d = ancien("aj_durees");
+      const m = {};
+      if (A.reg.debut == null && j && Number.isInteger(j.debut) && Number.isInteger(j.fin)) { m.debut = j.debut; m.fin = j.fin; A.reg.debut = j.debut; A.reg.fin = j.fin; }
+      if (A.reg.focus == null && f >= 1 && f <= 240) { m.focus = f; A.reg.focus = f; }
+      if (d && typeof d === "object" && !Object.keys(A.reg.durees).length && Object.keys(d).length) { m.durees = d; A.reg.durees = d; }
+      if (Object.keys(m).length) ecrireReglage(m);
+      ["aj_journee", "aj_focus", "aj_durees"].forEach((c) => { try { localStorage.removeItem(c); } catch (e) {} });
+    }
+  }
 
-  const dureeFocus = () => { try { const v = +localStorage.getItem("aj_focus"); return v >= 1 && v <= 240 ? v : 25; } catch (e) { return 25; } };
-  const retenirFocus = (v) => { try { localStorage.setItem("aj_focus", String(v)); } catch (e) {} };
+  const dureeFocus = () => (A.reg.focus >= 1 && A.reg.focus <= 240 ? A.reg.focus : 25);
+  const retenirFocus = (v) => { A.reg.focus = v; ecrireReglage({ focus: v }); };
   // ── « ma journée » : de quelle heure à quelle heure se lit le cadran (une nuit à cheval sur minuit se règle comme le reste) ──
   const PAR_DEFAUT = { debut: 0, fin: 0 };                       // 24 h : un cadran universel, minuit en haut
   const PRESETS = [["24 h", 0, 0], ["Journée", 8, 20], ["Matin", 6, 14], ["Après-midi", 12, 22], ["Soirée", 18, 2], ["Nuit", 22, 6]];
-  const reglage = () => { try { const j = JSON.parse(localStorage.getItem("aj_journee") || "null"); if (j && Number.isInteger(j.debut) && Number.isInteger(j.fin) && j.debut >= 0 && j.debut < 24 && j.fin >= 0 && j.fin < 24) return j; } catch (e) {} return null; };
-  const retenirReglage = (debut, fin) => { try { localStorage.setItem("aj_journee", JSON.stringify({ debut, fin })); } catch (e) {} };
+  const reglage = () => (A.reg.debut != null && A.reg.fin != null ? { debut: A.reg.debut, fin: A.reg.fin } : null);
+  const retenirReglage = (debut, fin) => { A.reg.debut = debut; A.reg.fin = fin; ecrireReglage({ debut, fin }); };
   const jourSuivant = (j) => { const d = new Date(j + "T12:00:00"); d.setDate(d.getDate() + 1); return iso(d); };
   // la fenêtre du moment : si la nuit réglée a commencé hier et dure encore, c'est elle qu'on lit ; l'axe est en minutes depuis minuit du jour où elle commence
   function fenetre() {
@@ -294,7 +320,7 @@
     const opt = (v) => Array.from({ length: 24 }, (_, h) => '<option value="' + h + '"' + (h === v ? " selected" : "") + ">" + p2(h) + " h</option>").join("");
     pop.innerHTML = '<div class="aj-pop-t">Ma journée sur le cadran</div><div class="aj-pre-l">' + PRESETS.map((x) => '<button type="button" class="aj-pre' + (x[1] === g.debut && x[2] === g.fin ? " on" : "") + '" data-jr="' + x[1] + "," + x[2] + '">' + x[0] + " <small>" + p2(x[1]) + "→" + p2(x[2]) + "</small></button>").join("") + "</div>" +
       '<div class="aj-pop-c"><label>De <select id="aj-jr-d">' + opt(g.debut) + '</select></label><label>à <select id="aj-jr-f">' + opt(g.fin) + "</select></label></div>" +
-      '<p class="aj-aide" style="margin:8px 0 0">Une fin avant le début passe minuit (18 → 02 : la soirée et le début de nuit). Réglage propre à ce navigateur.</p>';
+      '<p class="aj-aide" style="margin:8px 0 0">Une fin avant le début passe minuit (18 → 02 : la soirée et le début de nuit). Réglage propre à ton compte.</p>';
   }
   function appliquerReglage(d, f) { retenirReglage(d, f); A.pop = false; A.centrer = true; dessinerReglage(); chargerPlan().then(() => rendre()); }
   function dessinerDuree() {
@@ -385,7 +411,7 @@
   }
 
   // ── le branchement sur l'ancienne interface : ses fonctions d'ouverture de la vue deviennent les nôtres ─────────
-  async function ouvrir() { A.centrer = true; if (!A.charge) { A.charge = true; await chargerPlan(); } else await chargerPlan(); rendre(); chargerEtat(); }
+  async function ouvrir() { A.centrer = true; await chargerReglage(); const r = $("#aj-racine"); if (r && r.dataset.pret) { A.focusMin = dureeFocus(); dessinerDuree(); dessinerReglage(); } await chargerPlan(); rendre(); chargerEtat(); }
   window.buAujourdhui = function () { rendre(); };               // calLoad l'appelle quand l'agenda est lu
   window.bjJour = function () { return ouvrir(); };              // buSeg('today') l'appelle à l'ouverture
   window.bjRecevoir = function (msg) { if (!msg || !msg.jour) return; if (msg.jour.ok) recevoir(msg.jour); };

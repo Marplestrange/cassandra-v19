@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2cd2db
+# VERSION CN : 0.1.0  #a43ba1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation, les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit q
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2cd2db ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a43ba1 ▼▼▼
 """L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation,
 les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit quoi, qui peut régler l'organisation) se vérifie ici : le point d'évolution ne décide d'aucun accès."""
 import base64
@@ -454,6 +454,32 @@ class Affichage(unittest.TestCase):
         self.assertNotEqual(self.plan([dict(bon, id="b%d" % i) for i in range(61)])["statut"], "faite")
         self.assertNotEqual(self.plan([bon], jour="demain")["statut"], "faite")
         self.assertEqual(self.ok("affichage.lire_plan", BEA, jour=self.JOUR)["blocs"], [])
+
+    # ---- le réglage d'Aujourd'hui
+    def reg(self, qui=BEA, **args):
+        return self.ex("affichage.modifier_reglage_jour", qui, **args)
+
+    def test_le_reglage_d_un_compte_est_a_lui(self):
+        self.addCleanup(lambda: self.reg(debut=0, fin=0, durees={"7": 0}))
+        self.assertEqual(self.ok("affichage.lire_reglage_jour", BEA), {"debut": None, "fin": None, "focus": None, "durees": {}})
+        self.assertEqual(self.reg(debut=22, fin=6, focus=45, durees={"7": 30})["statut"], "faite")
+        r = self.ok("affichage.lire_reglage_jour", BEA)
+        self.assertEqual((r["debut"], r["fin"], r["focus"], r["durees"]), (22, 6, 45, {"7": 30}))
+        self.assertEqual(self.ok("affichage.lire_reglage_jour", ROOT)["debut"], None)
+
+    def test_le_reglage_se_complete_sans_rien_effacer(self):
+        self.addCleanup(lambda: self.reg(debut=0, fin=0, durees={"7": 0, "8": 0}))
+        self.reg(debut=8, fin=20, durees={"7": 30})
+        self.reg(focus=25, durees={"8": 15})                                                   # ni la journée ni la durée de 7 ne bougent
+        r = self.ok("affichage.lire_reglage_jour", BEA)
+        self.assertEqual((r["debut"], r["fin"], r["focus"], r["durees"]), (8, 20, 25, {"7": 30, "8": 15}))
+        self.reg(durees={"7": 0})
+        self.assertEqual(self.ok("affichage.lire_reglage_jour", BEA)["durees"], {"8": 15})    # 0 retire
+
+    def test_un_reglage_invalide_est_refuse(self):
+        for mauvais in ({"debut": 24, "fin": 6}, {"debut": -1, "fin": 6}, {"debut": "8", "fin": 6}, {"debut": 8}, {"fin": 8}, {"focus": 0}, {"focus": 241},
+                        {"durees": {"x": 30}}, {"durees": {"7": 4}}, {"durees": {"7": 481}}, {"durees": [1]}):
+            self.assertNotEqual(self.reg(**mauvais)["statut"], "faite", mauvais)
 
     # ---- les fils du panneau
     def test_un_fil_du_salon_se_lie_a_un_interlocuteur_et_a_une_page(self):

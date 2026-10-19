@@ -203,3 +203,7 @@ Seul le **plan** s'écrit : deux capacités du module `affichage`, pour le compt
 - `affichage.modifier_plan(jour, blocs)` — remplace les blocs : `id`, `titre`, `deb` (minutes depuis minuit), `duree` (5 à 480), `tache` (numéro de tâche, facultatif), `fait`, `couleur`. Au plus 60 blocs ; un plan vidé se retire ; les plans de plus de 30 jours s'effacent. Palier « faible », retour = restaurer le plan précédent.
 
 Les agendas, tâches, rappels et alertes restent ceux de l'ancienne interface. La durée d'une tâche (sa « charge » serveur est un poids, pas des minutes) est retenue par le navigateur ; le plan, lui, est au serveur. Le placement automatique est côté page pour l'instant ; il deviendra un point d'évolution (EC) quand son classement s'apprendra.
+
+## Le réglage d'Aujourd'hui (0.5.0)
+
+Par compte, pas par navigateur : `affichage.lire_reglage_jour` et `affichage.modifier_reglage_jour` (objet `reglage_jour`). Il porte l'heure où la journée commence et finit (`debut`, `fin`, 0 à 23 ; une fin avant le début passe minuit ; 0 → 0 est le cadran de 24 h par défaut), la durée de concentration (`focus`, 1 à 240 min) et la durée des tâches (`durees`, {numéro: 5 à 480 min}, 0 retire). Ce qui n'est pas dit ne change pas. Ce qu'un navigateur avait retenu avant (localStorage) passe au compte à la première ouverture, puis n'est plus lu.

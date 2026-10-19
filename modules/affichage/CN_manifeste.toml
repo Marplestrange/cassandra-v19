@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.4.0  #3bf925
+# VERSION CN : 0.5.0  #3c7de1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=3bf925 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=3c7de1 ▼▼▼
 [module]
 id = "affichage"
 nom = "Affichage"
-version = "0.4.0"
+version = "0.5.0"
 noyau_min = "0.1.0"
 description = "Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte."
 confiance = "interne"
@@ -46,6 +46,10 @@ libelle = "Une page épinglée par un compte en tête de sa colonne de gauche"
 [[objets]]
 type = "plan_jour"
 libelle = "Le plan d'un jour pour un compte : les blocs (tâche ou libre) posés sur la journée, avec heure de début et durée"
+
+[[objets]]
+type = "reglage_jour"
+libelle = "Le réglage de la page Aujourd'hui d'un compte : heures de début et de fin de sa journée, durée de concentration, durée de ses tâches"
 
 [[objets]]
 type = "fil_page"
@@ -184,6 +188,21 @@ risque = "faible"
 perimetre = ["les objets plan_jour du compte"]
 preuve = "relire le plan écrit"
 retour = "restaurer le plan précédent, ou le retirer s'il n'y en avait pas"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "lire_reglage_jour"
+libelle = "Lire le réglage de la page Aujourd'hui du compte (le sien seulement)"
+risque = "lecture"
+
+[[capacites]]
+id = "modifier_reglage_jour"
+libelle = "Régler la page Aujourd'hui du compte : début et fin de la journée, durée de concentration, durée des tâches"
+risque = "faible"
+perimetre = ["l'objet reglage_jour du compte"]
+preuve = "relire le réglage écrit"
+retour = "restaurer le réglage précédent, ou le retirer s'il n'y en avait pas"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
 

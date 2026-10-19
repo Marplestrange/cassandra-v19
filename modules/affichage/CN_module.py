@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.4.0  #c10efa
+# VERSION CN : 0.5.0  #e76d44
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=c10efa ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=e76d44 ▼▼▼
 """Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 
 Un module ne dit jamais comment il s'affiche. Il déclare des écrans (avec un gabarit), des tuiles (avec un composant et une source de données) et
@@ -72,6 +72,7 @@ LOGO_MAX = 180000
 _LOGO = re.compile(r"^data:image/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$")
 _CLE_EPINGLE = re.compile(r"^[a-z0-9_:.|-]{1,120}$", re.I)
 MAX_BLOCS = 60
+MAX_DUREES = 300
 _JOUR = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _CLE_BLOC = re.compile(r"^[a-z0-9_:.-]{1,60}$", re.I)
 # Les gestes que le panneau a le droit de PROPOSER : une table fermée du nexus. Proposer n'est pas faire : l'exécution passe par l'exécuteur, qui refait toute vérification de droit.
@@ -677,6 +678,67 @@ def brancher(ctx):
         else:
             ctx.poser("plan_jour", res["id"], "Plan du %s" % res["avant"]["jour"], etat="perso", donnees=res["avant"], compte=res["compte"])
 
+    # ---------------------------------------------------------------- le réglage de « Aujourd'hui » (par compte)
+    def _reglage_jour_de(ctx, compte):
+        o = ctx.lire("reglage_jour", compte, portee=ctx.TOUT)
+        d = (o or {}).get("donnees") or {}
+        return {"debut": d.get("debut"), "fin": d.get("fin"), "focus": d.get("focus"), "durees": dict(d.get("durees") or {})}
+
+    def lire_reglage_jour(ctx):
+        """Ce que CE compte a réglé pour sa page Aujourd'hui : l'heure où sa journée commence et finit, la durée de concentration, la durée de ses tâches. Vide tant qu'il n'a rien réglé."""
+        compte = ctx.compte or ""
+        if not compte:
+            raise ValueError("un réglage appartient à un compte")
+        return _reglage_jour_de(ctx, compte)
+
+    def _heure(nom, v):
+        if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 23:
+            raise ValueError("%s : une heure entière de 0 à 23" % nom)
+        return v
+
+    def modifier_reglage_jour(ctx, debut=None, fin=None, focus=None, durees=None):
+        """Règle la page Aujourd'hui du compte. Ce qui n'est pas dit ne change pas ; `durees` fusionne (une durée à 0 retire la tâche)."""
+        compte = ctx.compte or ""
+        if not compte:
+            raise ValueError("un réglage appartient à un compte")
+        existant = ctx.lire("reglage_jour", compte, portee=ctx.TOUT)
+        avant = copy.deepcopy(existant["donnees"]) if existant else None
+        cur = _reglage_jour_de(ctx, compte)
+        if (debut is None) != (fin is None):
+            raise ValueError("la journée se règle par son début ET sa fin")
+        if debut is not None:
+            cur["debut"], cur["fin"] = _heure("début", debut), _heure("fin", fin)
+        if focus is not None:
+            if isinstance(focus, bool) or not isinstance(focus, int) or not 1 <= focus <= 240:
+                raise ValueError("focus : de 1 à 240 minutes")
+            cur["focus"] = focus
+        if durees is not None:
+            if not isinstance(durees, dict):
+                raise ValueError("durees : un dictionnaire {tâche: minutes}")
+            for k, v in durees.items():
+                if not re.match(r"^\d{1,9}$", str(k)) or isinstance(v, bool) or not isinstance(v, int) or not (v == 0 or 5 <= v <= 480):
+                    raise ValueError("durees : numéro de tâche et de 5 à 480 minutes (0 pour retirer)")
+                if v == 0:
+                    cur["durees"].pop(str(k), None)
+                else:
+                    cur["durees"][str(k)] = v
+            if len(cur["durees"]) > MAX_DUREES:                                   # les plus anciennes (plus petits numéros) s'effacent
+                for k in sorted(cur["durees"], key=int)[:len(cur["durees"]) - MAX_DUREES]:
+                    cur["durees"].pop(k)
+        nouveau = {k: v for k, v in cur.items() if v not in (None, {})}
+        ctx.poser("reglage_jour", compte, "Réglage d'Aujourd'hui", etat="perso", donnees=nouveau, compte=compte)
+        return {"id": compte, "compte": compte, "avant": avant, "attendu": nouveau}
+
+    def prouver_reg(ctx, res):
+        o = ctx.lire("reglage_jour", res["id"], portee=ctx.TOUT)
+        return o is not None and o["donnees"] == res["attendu"]
+
+    def defaire_reg(ctx, res):
+        if res["avant"] is None:
+            ctx.retirer("reglage_jour", res["id"])
+        else:
+            ctx.poser("reglage_jour", res["id"], "Réglage d'Aujourd'hui", etat="perso", donnees=res["avant"], compte=res["compte"])
+
     # ---------------------------------------------------------------- les idées du panneau
     def lire_idees(ctx, mode="", groupe="", entree="", sous="", page="", heure=-1, faits=None, refuses=None, nombre=4):
         role, compte = _moi(ctx, "utilisateur", "")
@@ -772,6 +834,8 @@ def brancher(ctx):
     ctx.implementer("epingler", epingler, prouver_ep, defaire_ep, simuler=lambda ctx, cle="", **_: "épinglerait %s" % cle)
     ctx.implementer("desepingler", desepingler, prouver_ep, defaire_ep, simuler=lambda ctx, cle="", **_: "retirerait l'épingle %s" % cle)
     ctx.implementer("lire_plan", lire_plan)
+    ctx.implementer("lire_reglage_jour", lire_reglage_jour)
+    ctx.implementer("modifier_reglage_jour", modifier_reglage_jour, prouver_reg, defaire_reg, simuler=lambda ctx, **_: "réglerait la page Aujourd'hui")
     ctx.implementer("modifier_plan", modifier_plan, prouver_plan, defaire_plan, simuler=lambda ctx, jour="", **_: "réécrirait le plan du %s" % (jour or "jour"))
     ctx.implementer("lier_fil", lier_fil, prouver_fp, defaire_fp, simuler=lambda ctx, fil=0, **_: "lierait le fil %s à une page" % fil)
     ctx.implementer("lire_theme", lire_theme)
