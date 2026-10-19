@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.4.0  #697dd5
+# VERSION CN : 0.4.0  #c10efa
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=697dd5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=c10efa ▼▼▼
 """Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 
 Un module ne dit jamais comment il s'affiche. Il déclare des écrans (avec un gabarit), des tuiles (avec un composant et une source de données) et
@@ -624,8 +624,8 @@ def brancher(ctx):
         if not 1 <= len(titre) <= 120:
             raise ValueError("bloc : un titre de 1 à 120 caractères")
         deb, duree = b.get("deb"), b.get("duree")
-        if isinstance(deb, bool) or not isinstance(deb, int) or not 0 <= deb <= 1439:
-            raise ValueError("bloc : début en minutes depuis minuit (0 à 1439)")
+        if isinstance(deb, bool) or not isinstance(deb, int) or not 0 <= deb <= 2879:
+            raise ValueError("bloc : début en minutes depuis minuit du jour du plan (0 à 2879 : une nuit passe minuit)")
         if isinstance(duree, bool) or not isinstance(duree, int) or not 5 <= duree <= 480:
             raise ValueError("bloc : durée de 5 à 480 minutes")
         tache = b.get("tache")

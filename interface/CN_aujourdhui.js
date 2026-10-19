@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #588eb4
+// VERSION CN : 0.1.0  #f7c2f5
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=588eb4 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f7c2f5 ▼▼▼
 /* La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
    (la suite), et la journée se range à la main ou toute seule (la frise, les tâches à placer). Les données sont celles de l'ancienne
    interface (agenda, tâches, rappels, état du jour) ; seul le PLAN — où l'on a posé quoi — est écrit, par le module affichage
@@ -23,7 +23,7 @@
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const p2 = (n) => String(n).padStart(2, "0");
-  const hm = (m) => { m = Math.floor(m + 1e-9); return p2(Math.floor(m / 60)) + ":" + p2(m % 60); };
+  const hm = (m) => { m = Math.floor(m + 1e-9); return p2(Math.floor(m / 60) % 24) + ":" + p2(m % 60); };
   const dur = (m) => (m = Math.max(0, Math.round(m)), m < 60 ? m + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + p2(m % 60) : ""));
   const iso = (d) => d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
   const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
@@ -32,7 +32,7 @@
   const COULEURS = { event: "var(--info)", etape: "var(--accent)", task: "var(--violet)", reminder: "var(--warn)", ssl: "var(--danger)" };
   const DUREE_DEFAUT = 30;
 
-  const A = { d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, h0: 8, h1: 20, charge: false, sauvegarde: null };
+  const A = { d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, h0: 8, h1: 20, decal: 0, perso: false, pop: false, charge: false, sauvegarde: null };
 
   // ── les durées retenues pour les tâches (le serveur ne connaît que la charge, qui est un poids) ────────────────
   const durees = () => { try { return JSON.parse(localStorage.getItem("aj_durees") || "{}"); } catch (e) { return {}; } };
@@ -40,11 +40,26 @@
 
   const dureeFocus = () => { try { const v = +localStorage.getItem("aj_focus"); return v >= 1 && v <= 240 ? v : 25; } catch (e) { return 25; } };
   const retenirFocus = (v) => { try { localStorage.setItem("aj_focus", String(v)); } catch (e) {} };
+  // ── « ma journée » : de quelle heure à quelle heure se lit le cadran (une nuit à cheval sur minuit se règle comme le reste) ──
+  const PAR_DEFAUT = { debut: 0, fin: 0 };                       // 24 h : un cadran universel, minuit en haut
+  const PRESETS = [["24 h", 0, 0], ["Journée", 8, 20], ["Matin", 6, 14], ["Après-midi", 12, 22], ["Soirée", 18, 2], ["Nuit", 22, 6]];
+  const reglage = () => { try { const j = JSON.parse(localStorage.getItem("aj_journee") || "null"); if (j && Number.isInteger(j.debut) && Number.isInteger(j.fin) && j.debut >= 0 && j.debut < 24 && j.fin >= 0 && j.fin < 24) return j; } catch (e) {} return null; };
+  const retenirReglage = (debut, fin) => { try { localStorage.setItem("aj_journee", JSON.stringify({ debut, fin })); } catch (e) {} };
+  const jourSuivant = (j) => { const d = new Date(j + "T12:00:00"); d.setDate(d.getDate() + 1); return iso(d); };
+  // la fenêtre du moment : si la nuit réglée a commencé hier et dure encore, c'est elle qu'on lit ; l'axe est en minutes depuis minuit du jour où elle commence
+  function fenetre() {
+    const g = reglage() || PAR_DEFAUT, span = ((g.fin - g.debut + 24) % 24) || 24, d = new Date();
+    const brut = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+    let base = new Date(d), decal = 0;
+    if (g.debut + span > 24 && brut < (g.debut + span - 24) * 60 && brut < g.debut * 60) { base.setDate(base.getDate() - 1); decal = 1440; }
+    A.d0 = iso(base); A.h0 = g.debut; A.h1 = g.debut + span; A.decal = decal; A.perso = !!reglage();
+    return brut + decal;
+  }
   const minutes = (s) => { const x = String(s || "").slice(11, 16); return x.length === 5 ? (+x.slice(0, 2)) * 60 + (+x.slice(3, 5)) : null; };
 
   // ── lecture ─────────────────────────────────────────────────────────────────────────────────────────────────
   function lireAgenda() {
-    const E = (typeof ETAT !== "undefined" ? ETAT : { carnet: {} }), jour = iso(new Date());
+    const E = (typeof ETAT !== "undefined" ? ETAT : { carnet: {} }), jour = iso(new Date()), lendemain = jourSuivant(A.d0);
     const tout = (E.carnet._calUpcoming || []).concat(E.carnet._calItems || []), vus = {};
     A.evts = []; A.echs = []; A.jourEntier = []; A.taches = []; A.faitesVeille = 0;
     tout.forEach((e) => {
@@ -56,23 +71,29 @@
         if (d && d <= jour) A.taches.push({ id: +e.id, titre: e.summary || "", fait, retard: d < jour, projet: e.project_name || "", kind: k });
         return;
       }
-      if (d !== jour || k === "cron") return;
-      const deb = minutes(quand), ref = { k, id: e.ref || e.id || "", w: quand, t: e.summary || "" };
+      if ((d !== A.d0 && d !== lendemain) || k === "cron") return;
+      const plus = d === lendemain ? 1440 : 0, deb0 = minutes(quand), deb = deb0 == null ? null : deb0 + plus, ref = { k, id: e.ref || e.id || "", w: quand, t: e.summary || "" };
       if (e.all_day || deb == null) { A.jourEntier.push({ titre: e.summary || "", c: COULEURS[k] || COULEURS.event, ref }); return; }
       if (k === "reminder" || k === "ssl") { A.echs.push({ h: deb, titre: e.summary || "", c: COULEURS[k], ref }); return; }
-      let fin = minutes(e.end_at); if (fin == null || fin <= deb) fin = deb + 60;
+      let fin = minutes(e.end_at); fin = fin == null ? null : fin + plus; if (fin == null || fin <= deb) fin = deb + 60;
       A.evts.push({ d: deb, f: fin, titre: e.summary || "", c: COULEURS[k] || COULEURS.event, ref });
     });
     A.evts.sort((a, b) => a.d - b.d); A.echs.sort((a, b) => a.h - b.h);
-    // l'amplitude se cale sur le contenu : un rendez-vous de 7 h ou de 21 h ne sort pas du cadre
-    let h0 = 8, h1 = 20;
-    A.evts.forEach((e) => { h0 = Math.min(h0, Math.floor(e.d / 60)); h1 = Math.max(h1, Math.ceil(e.f / 60)); });
-    A.echs.forEach((e) => { h0 = Math.min(h0, Math.floor(e.h / 60)); h1 = Math.max(h1, Math.ceil((e.h + 1) / 60)); });
-    A.plan.forEach((b) => { h0 = Math.min(h0, Math.floor(b.deb / 60)); h1 = Math.max(h1, Math.ceil((b.deb + b.duree) / 60)); });
-    A.h0 = Math.max(0, h0); A.h1 = Math.min(24, Math.max(h1, A.h0 + 6));
+    if (!A.perso) {
+      // la journée par défaut se cale sur le contenu : un rendez-vous de 7 h ou de 21 h ne sort pas du cadre
+      let h0 = A.h0, h1 = A.h1;
+      A.evts.forEach((e) => { h0 = Math.min(h0, Math.floor(e.d / 60)); h1 = Math.max(h1, Math.ceil(e.f / 60)); });
+      A.echs.forEach((e) => { h0 = Math.min(h0, Math.floor(e.h / 60)); h1 = Math.max(h1, Math.ceil((e.h + 1) / 60)); });
+      A.plan.forEach((b) => { h0 = Math.min(h0, Math.floor(b.deb / 60)); h1 = Math.max(h1, Math.ceil((b.deb + b.duree) / 60)); });
+      A.h0 = Math.max(0, h0); A.h1 = Math.min(24, Math.max(h1, A.h0 + 6));
+    }
+    // ce qui sort de la fenêtre choisie ne se dessine pas
+    A.evts = A.evts.filter((e) => e.f > A.h0 * 60 && e.d < A.h1 * 60);
+    A.echs = A.echs.filter((e) => e.h >= A.h0 * 60 && e.h < A.h1 * 60);
   }
   async function chargerPlan() {
-    const jour = iso(new Date());
+    fenetre();
+    const jour = A.d0;
     try { const r = await CASS.agir("affichage.lire_plan", { jour }); A.plan = r.blocs || []; A.planJour = jour; } catch (e) { A.plan = A.plan || []; }
   }
   async function chargerEtat() {
@@ -92,7 +113,7 @@
   function sauver() {
     clearTimeout(A.sauvegarde);
     A.sauvegarde = setTimeout(async () => {
-      try { await CASS.agir("affichage.modifier_plan", { jour: A.planJour || iso(new Date()), blocs: A.plan.map((b) => ({ id: b.id, titre: b.titre, deb: b.deb, duree: b.duree, tache: b.tache == null ? null : b.tache, fait: !!b.fait, couleur: b.couleur || "" })) }); }
+      try { await CASS.agir("affichage.modifier_plan", { jour: A.planJour || A.d0 || iso(new Date()), blocs: A.plan.map((b) => ({ id: b.id, titre: b.titre, deb: b.deb, duree: b.duree, tache: b.tache == null ? null : b.tache, fait: !!b.fait, couleur: b.couleur || "" })) }); }
       catch (e) { if (typeof window.toast === "function") window.toast("Plan non enregistré : " + e.message, "err"); }
     }, 350);
   }
@@ -122,10 +143,11 @@
     for (let h = A.h0; h <= A.h1; h++) {
       const a = ang(h * 60) * Math.PI / 180, L = (h - A.h0) % pas ? 6 : 11;
       s += '<line class="aj-tic" x1="' + (cx + (R + 14) * Math.cos(a)) + '" y1="' + (cy + (R + 14) * Math.sin(a)) + '" x2="' + (cx + (R + 14 + L) * Math.cos(a)) + '" y2="' + (cy + (R + 14 + L) * Math.sin(a)) + '"/>';
-      if ((h - A.h0) % pas === 0 && h < A.h1) s += '<text class="aj-hl" x="' + (cx + (R + 36) * Math.cos(a)) + '" y="' + (cy + (R + 36) * Math.sin(a)) + '">' + h + "</text>";
+      if ((h - A.h0) % pas === 0 && h < A.h1) s += '<text class="aj-hl" x="' + (cx + (R + 36) * Math.cos(a)) + '" y="' + (cy + (R + 36) * Math.sin(a)) + '">' + (h % 24) + "</text>";
     }
-    A.evts.forEach((e) => { s += '<path class="aj-arc" d="' + arc(cx, cy, R, ang(e.d), ang(e.f) - .4) + '" style="stroke:' + e.c + '"/>'; });
-    A.plan.forEach((p) => { s += '<path class="aj-arc" d="' + arc(cx, cy, R, ang(p.deb), ang(p.deb + p.duree) - .4) + '" style="stroke:' + (p.fait ? "var(--ok)" : (p.couleur || "var(--violet)")) + '"/>'; });
+    const bornes = (d, f) => { const a = Math.max(d, A.h0 * 60), b = Math.min(f, A.h1 * 60); return b > a ? [a, b] : null; };
+    A.evts.forEach((e) => { const q = bornes(e.d, e.f); if (q) s += '<path class="aj-arc" d="' + arc(cx, cy, R, ang(q[0]), ang(q[1]) - .4) + '" style="stroke:' + e.c + '"/>'; });
+    A.plan.forEach((p) => { const q = bornes(p.deb, p.deb + p.duree); if (q) s += '<path class="aj-arc" d="' + arc(cx, cy, R, ang(q[0]), ang(q[1]) - .4) + '" style="stroke:' + (p.fait ? "var(--ok)" : (p.couleur || "var(--violet)")) + '"/>'; });
     const n = Math.min(Math.max(A.now, A.h0 * 60), A.h1 * 60);
     if (n > A.h0 * 60 + 1) s += '<path class="aj-passe-arc" d="' + arc(cx, cy, R, ang(A.h0 * 60), ang(n) - .01) + '"/>';
     const tot = A.plan.length, fait = A.plan.filter((p) => p.fait).length, r2 = 96, circ = 2 * Math.PI * r2, part = tot ? fait / tot : 0;
@@ -140,16 +162,16 @@
   // ── la frise ─────────────────────────────────────────────────────────────────────────────────────────────────
   function frise() {
     let heures = "";
-    for (let h = A.h0; h <= A.h1; h += (A.h1 - A.h0) > 14 ? 3 : 2) heures += "<span>" + h + "h</span>";
+    for (let h = A.h0; h <= A.h1; h += (A.h1 - A.h0) > 14 ? 3 : 2) heures += "<span>" + (h % 24) + "h</span>";
     const libresHtml = libres(A.now).filter((x) => x[1] - x[0] >= 30).map((x) => '<div class="aj-libre" style="left:' + pos(x[0]) + "%;width:" + (pos(x[1]) - pos(x[0])) + '%">' + dur(x[1] - x[0]) + " libres</div>").join("");
     const ag = libresHtml + A.evts.map((e) => '<div class="aj-blk" data-ref="' + esc(JSON.stringify(e.ref)) + '" style="--c:' + e.c + ";left:" + pos(e.d) + "%;width:" + (pos(e.f) - pos(e.d)) + '%"><b>' + esc(e.titre) + "</b><small>" + hm(e.d) + " – " + hm(e.f) + "</small></div>").join("");
-    const ta = A.plan.map((p) => '<div class="aj-blk aj-tache' + (p.fait ? " fait" : "") + (p.neuf ? " arrive" : "") + '" data-id="' + esc(p.id) + '" style="--c:' + (p.couleur || "var(--violet)") + ";left:" + pos(p.deb) + "%;width:" + Math.max(pos(p.deb + p.duree) - pos(p.deb), 4.5) + '%"><b>' + (p.fait ? "✓ " : "") + esc(p.titre) + "</b><small>" + hm(p.deb) + " · " + dur(p.duree) + '</small><button class="aj-x" data-x="' + esc(p.id) + '" aria-label="Remettre à placer" title="Remettre à placer">×</button></div>').join("");
+    const ta = A.plan.filter((p) => p.deb + p.duree > A.h0 * 60 && p.deb < A.h1 * 60).map((p) => '<div class="aj-blk aj-tache' + (p.fait ? " fait" : "") + (p.neuf ? " arrive" : "") + '" data-id="' + esc(p.id) + '" style="--c:' + (p.couleur || "var(--violet)") + ";left:" + pos(p.deb) + "%;width:" + Math.max(pos(p.deb + p.duree) - pos(p.deb), 4.5) + '%"><b>' + (p.fait ? "✓ " : "") + esc(p.titre) + "</b><small>" + hm(p.deb) + " · " + dur(p.duree) + '</small><button class="aj-x" data-x="' + esc(p.id) + '" aria-label="Remettre à placer" title="Remettre à placer">×</button></div>').join("");
     const ec = A.echs.map((e) => '<div class="aj-pin' + (pos(e.h) > 70 ? " g" : "") + '" data-ref="' + esc(JSON.stringify(e.ref)) + '" style="left:' + pos(e.h) + "%;--c:" + e.c + '"><i></i><em>' + hm(e.h) + " · " + esc(e.titre) + "</em></div>").join("");
     return { heures, ag, ta, ec };
   }
 
   // ── le dessin d'ensemble ─────────────────────────────────────────────────────────────────────────────────────
-  function salut() { const h = Math.floor(A.now / 60), d = new Date(); return (h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir") + " · " + JOURS[d.getDay()] + " " + d.getDate() + " " + MOIS[d.getMonth()]; }
+  function salut() { const d = new Date(), h = d.getHours(); return (h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir") + " · " + JOURS[d.getDay()] + " " + d.getDate() + " " + MOIS[d.getMonth()]; }
   function racine() {
     let r = $("#aj-racine");
     if (!r) { const v = $("#bu-v-today"); if (!v) return null; r = document.createElement("div"); r.id = "aj-racine"; v.insertBefore(r, v.firstChild); }
@@ -158,7 +180,7 @@
   function squelette(r) {
     r.innerHTML =
       '<div class="aj-tete"><span class="aj-salut" id="aj-salut"></span><span class="aj-sp"></span>' +
-      '<span class="aj-duree" id="aj-duree" role="group" aria-label="Durée de concentration"></span><button class="aj-btn" id="aj-focus" type="button">◔ Se concentrer</button><button class="aj-btn pri" id="aj-org" type="button">✦ Organiser ma journée</button></div>' +
+      '<span class="aj-jr-w"><button class="aj-btn sm" id="aj-jr" type="button" aria-haspopup="true"></button><div class="aj-pop" id="aj-pop" hidden></div></span><span class="aj-duree" id="aj-duree" role="group" aria-label="Durée de concentration"></span><button class="aj-btn" id="aj-focus" type="button">◔ Se concentrer</button><button class="aj-btn pri" id="aj-org" type="button">✦ Organiser ma journée</button></div>' +
       '<div class="aj-ruban" id="aj-ruban" hidden></div><div class="aj-chips" id="aj-chips"></div>' +
       '<div class="aj-haut"><section class="aj-verre aj-cadran"><div class="aj-disque"><svg viewBox="0 0 340 340" role="img" aria-label="Cadran de la journée"><g id="aj-svg"></g></svg>' +
       '<div class="aj-centre"><div class="t" id="aj-c-heure"></div><div class="s" id="aj-c-sous"></div><div class="p" id="aj-c-pro"></div></div></div>' +
@@ -173,13 +195,13 @@
       '<div class="aj-plateau" id="aj-plateau"></div><p class="aj-aide">Glissez une tâche sur la voie « À faire », ou laissez Itare la poser dans vos temps libres. Cliquez un bloc pour le cocher.</p></section>' +
       '<section class="aj-verre aj-carte aj-courrier"><header><h3>Courrier non lu</h3><span class="aj-sp"></span><button class="aj-btn sm" type="button" data-seg="mail">Ouvrir</button></header>' +
       '<div class="bu-rows" id="bu-mail-apercu"><div class="empty-state" style="padding:20px">Lecture…</div></div></section></div>';
-    r.dataset.pret = "1"; A.focusMin = dureeFocus(); dessinerDuree();
+    r.dataset.pret = "1"; A.focusMin = dureeFocus(); dessinerDuree(); dessinerReglage();
     pose(r);
   }
   function rendre() {
     const r = racine(); if (!r) return;
     if (!r.dataset.pret) { squelette(r); if (typeof window.buApercuMail === "function") window.buApercuMail(); }
-    A.now = minutesNow();
+    A.now = fenetre(); A.secondes = new Date().getSeconds();
     lireAgenda();
     $("#aj-salut").textContent = salut();
     // l'alerte : un ruban, pas un mur
@@ -201,9 +223,9 @@
     const faites = A.plan.filter((p) => p.fait).length + A.taches.filter((x) => x.fait && !A.plan.some((b) => b.tache === x.id)).length, total = A.plan.length + A.taches.filter((x) => (x.fait && !A.plan.some((b) => b.tache === x.id)) || (!x.fait && !A.plan.some((b) => b.tache === x.id))).length;
     const pc = Math.round(Math.min(Math.max((A.now - A.h0 * 60) / SPAN(), 0), 1) * 100);
     const k = (b, l, s, w, c) => '<div class="aj-chiffre aj-verre"><b>' + b + "</b><span>" + l + "</span><small>" + s + '</small><div class="aj-bar"><i style="width:' + w + "%;background:" + c + '"></i></div></div>';
-    $("#aj-chiffres").innerHTML = k(dur(libre), "de temps libre", "jusqu’à " + A.h1 + " h", reste ? Math.min(100, libre / reste * 100) : 0, "var(--accent)") +
+    $("#aj-chiffres").innerHTML = k(dur(libre), "de temps libre", "jusqu’à " + (A.h1 % 24) + " h", reste ? Math.min(100, libre / reste * 100) : 0, "var(--accent)") +
       k(faites + " / " + total, "tâches faites", pl.length ? pl.length + " encore à placer" : (total ? "tout est placé" : "rien à faire"), total ? faites / total * 100 : 0, "var(--ok)") +
-      k(pc + " %", "de la journée passée", hm(A.now) + " sur " + A.h0 + " h – " + A.h1 + " h", pc, "var(--info)");
+      k(pc + " %", "de la journée passée", hm(A.now) + " sur " + (A.h0 % 24) + " h – " + (A.h1 % 24) + " h", pc, "var(--info)");
     $("#aj-suite").innerHTML = suiv.length ? suiv.slice(0, 4).map((x, i) => { const en = x.d <= A.now; return '<div class="aj-r' + (i === 0 && en ? " now" : "") + '"><div class="aj-quand">' + hm(x.d) + '</div><div class="aj-tx"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><div class="aj-dans">' + (en ? "en cours" : "dans " + dur(x.d - A.now)) + "</div></div>"; }).join("")
       : '<div class="aj-r"><div class="aj-tx"><b>Plus rien de prévu aujourd’hui</b><small>' + (pl.length ? "Il reste " + pl.length + " tâche" + (pl.length > 1 ? "s" : "") + " à placer." : "Bonne fin de journée.") + "</small></div></div>";
     const f = frise();
@@ -218,9 +240,12 @@
   // la frise se cale sur la largeur réelle : le curseur et le passé, une fois les pistes en place
   function pose(r) {
     const plan = $("#aj-plan"); if (!plan) return;
+    plan.style.minWidth = Math.max(760, 74 + (A.h1 - A.h0) * 58) + "px";
     const larg = plan.clientWidth - 74, x = pos(Math.min(Math.max(A.now, A.h0 * 60), A.h1 * 60));
     $("#aj-curseur").style.left = (74 + larg * x / 100) + "px"; $("#aj-cur-h").textContent = hm(A.now);
     $("#aj-passe").style.width = (larg * x / 100) + "px";
+    const fr = plan.closest(".aj-frise");
+    if (A.centrer && fr && fr.scrollWidth > fr.clientWidth) { fr.scrollLeft = Math.max(0, 74 + larg * x / 100 - fr.clientWidth * .3); A.centrer = false; }
     plan.querySelectorAll(".aj-blk").forEach((b) => b.classList.toggle("etroit", b.getBoundingClientRect().width < 96));
   }
 
@@ -261,6 +286,17 @@
       if (typeof window.calLoad === "function") await window.calLoad(); else rendre();
     } catch (e) { if (typeof window.toast === "function") window.toast("Suppression refusée : " + e.message, "err"); rendre(); }
   }
+  function dessinerReglage() {
+    const g = reglage() || PAR_DEFAUT, b = $("#aj-jr"); if (!b) return;
+    const span = ((g.fin - g.debut + 24) % 24) || 24;
+    b.textContent = span === 24 && g.debut === 0 ? "◷ 24 h" : "◷ " + p2(g.debut) + " h → " + p2(g.fin) + " h" + (g.debut + span > 24 ? " (+1)" : "");
+    const pop = $("#aj-pop"); pop.hidden = !A.pop; if (!A.pop) return;
+    const opt = (v) => Array.from({ length: 24 }, (_, h) => '<option value="' + h + '"' + (h === v ? " selected" : "") + ">" + p2(h) + " h</option>").join("");
+    pop.innerHTML = '<div class="aj-pop-t">Ma journée sur le cadran</div><div class="aj-pre-l">' + PRESETS.map((x) => '<button type="button" class="aj-pre' + (x[1] === g.debut && x[2] === g.fin ? " on" : "") + '" data-jr="' + x[1] + "," + x[2] + '">' + x[0] + " <small>" + p2(x[1]) + "→" + p2(x[2]) + "</small></button>").join("") + "</div>" +
+      '<div class="aj-pop-c"><label>De <select id="aj-jr-d">' + opt(g.debut) + '</select></label><label>à <select id="aj-jr-f">' + opt(g.fin) + "</select></label></div>" +
+      '<p class="aj-aide" style="margin:8px 0 0">Une fin avant le début passe minuit (18 → 02 : la soirée et le début de nuit). Réglage propre à ce navigateur.</p>';
+  }
+  function appliquerReglage(d, f) { retenirReglage(d, f); A.pop = false; A.centrer = true; dessinerReglage(); chargerPlan().then(() => rendre()); }
   function dessinerDuree() {
     const z = $("#aj-duree"); if (!z) return;
     if (A.focus) { z.innerHTML = '<button class="aj-btn sm" type="button" data-plus="5">+ 5 min</button>'; return; }
@@ -293,11 +329,16 @@
       if (ev.target.closest("#aj-org")) { organiser(); return; }
       if (ev.target.closest("#aj-vider")) { A.plan = []; sauver(); rendre(); return; }
       if (ev.target.closest("#aj-focus")) { basculerFocus(); return; }
+      if (ev.target.closest("#aj-jr")) { A.pop = !A.pop; dessinerReglage(); return; }
+      if ((x = ev.target.closest("[data-jr]"))) { const q = x.dataset.jr.split(",").map(Number); appliquerReglage(q[0], q[1]); return; }
       if ((x = ev.target.closest("[data-min]"))) { A.focusMin = +x.dataset.min; retenirFocus(A.focusMin); dessinerDuree(); return; }
       if ((x = ev.target.closest("[data-plus]")) && A.focus) { A.focus.reste += 5 * 60; return; }
       if ((x = ev.target.closest("[data-seg]"))) { if (x.dataset.seg === "mandats" && typeof window.buAllerMandats === "function") window.buAllerMandats("attente"); else if (typeof window.buSeg === "function") window.buSeg(x.dataset.seg); return; }
       if (ev.target.closest("[data-geste]")) { if (A.alerte) ouvrirSignal(A.alerte); return; }
     });
+    document.addEventListener("change", (ev) => { if (ev.target.id === "aj-jr-d" || ev.target.id === "aj-jr-f") appliquerReglage(+$("#aj-jr-d").value, +$("#aj-jr-f").value); });
+    document.addEventListener("click", (ev) => { if (A.pop && !ev.target.closest(".aj-jr-w")) { A.pop = false; dessinerReglage(); } });
+    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && A.pop) { A.pop = false; dessinerReglage(); } });
     document.addEventListener("submit", (ev) => { if (ev.target.id === "aj-f") { ev.preventDefault(); const i = $("#aj-q"); const v = i.value; i.value = ""; ajouter(v); } });
     // glisser-déposer d'une tâche vers la voie « À faire »
     document.addEventListener("dragstart", (e) => { const p = e.target.closest && e.target.closest(".aj-puce"); if (!p) return; A.glisse = +p.dataset.tid; p.classList.add("glisse"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(A.glisse)); });
@@ -329,7 +370,7 @@
   // la trotteuse ne revient jamais en arrière : l'angle croît sans fin (un tour par minute), il ne repasse pas par zéro
   const T0 = Date.now() - (new Date().getSeconds() * 1000);
   const angTrot = () => (((Date.now() - T0) / 1000) * 6).toFixed(1);
-  function minutesNow() { const d = new Date(); A.secondes = d.getSeconds(); return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; }
+  function minutesNow() { const d = new Date(); A.secondes = d.getSeconds(); return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60 + A.decal; }
   function tic() {
     const v = $("#bu-v-today"); if (!v || !v.classList.contains("on") || document.hidden || !$("#aj-aig")) return;
     const m = minutesNow(), avant = Math.floor(A.now);
@@ -344,7 +385,7 @@
   }
 
   // ── le branchement sur l'ancienne interface : ses fonctions d'ouverture de la vue deviennent les nôtres ─────────
-  async function ouvrir() { if (!A.charge) { A.charge = true; await chargerPlan(); } else await chargerPlan(); rendre(); chargerEtat(); }
+  async function ouvrir() { A.centrer = true; if (!A.charge) { A.charge = true; await chargerPlan(); } else await chargerPlan(); rendre(); chargerEtat(); }
   window.buAujourdhui = function () { rendre(); };               // calLoad l'appelle quand l'agenda est lu
   window.bjJour = function () { return ouvrir(); };              // buSeg('today') l'appelle à l'ouverture
   window.bjRecevoir = function (msg) { if (!msg || !msg.jour) return; if (msg.jour.ok) recevoir(msg.jour); };

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ecc87e
+# VERSION CN : 0.1.0  #2cd2db
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation, les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit q
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ecc87e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2cd2db ▼▼▼
 """L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation,
 les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit quoi, qui peut régler l'organisation) se vérifie ici : le point d'évolution ne décide d'aucun accès."""
 import base64
@@ -433,6 +433,11 @@ class Affichage(unittest.TestCase):
         self.plan([{"id": "t1", "titre": "Privé", "deb": 600, "duree": 30}])
         self.assertEqual(self.ok("affichage.lire_plan", ROOT, jour=self.JOUR)["blocs"], [])
 
+    def test_un_bloc_peut_passer_minuit(self):
+        self.addCleanup(lambda: self.plan([]))
+        self.assertEqual(self.plan([{"id": "n1", "titre": "Sauvegarde de nuit", "deb": 1500, "duree": 60}])["statut"], "faite")
+        self.assertEqual(self.ok("affichage.lire_plan", BEA, jour=self.JOUR)["blocs"][0]["deb"], 1500)
+
     def test_un_plan_vide_se_retire(self):
         self.plan([{"id": "t1", "titre": "A", "deb": 600, "duree": 30}])
         self.assertEqual(self.plan([])["statut"], "faite")
@@ -441,7 +446,7 @@ class Affichage(unittest.TestCase):
     def test_un_plan_invalide_est_refuse(self):
         self.addCleanup(lambda: self.plan([]))
         bon = {"id": "t1", "titre": "A", "deb": 600, "duree": 30}
-        mauvais = [dict(bon, titre=""), dict(bon, titre="x" * 121), dict(bon, deb=-1), dict(bon, deb=1440), dict(bon, deb="10h"), dict(bon, duree=4), dict(bon, duree=481),
+        mauvais = [dict(bon, titre=""), dict(bon, titre="x" * 121), dict(bon, deb=-1), dict(bon, deb=2880), dict(bon, deb="10h"), dict(bon, duree=4), dict(bon, duree=481),
                    dict(bon, id="a b"), dict(bon, tache=-3), dict(bon, couleur="rouge"), dict(bon, inconnu=1)]
         for m in mauvais:
             self.assertNotEqual(self.plan([m])["statut"], "faite", m)

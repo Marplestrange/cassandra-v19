@@ -149,3 +149,15 @@
 .aj-puce:hover .aj-sup,.aj-sup.on{opacity:1}.aj-sup:hover{color:var(--danger)}
 .aj-sup.on{font:700 11.5px 'Inter',system-ui,sans-serif;color:#fff;background:var(--danger);border-radius:8px;padding:3px 8px}
 @media (max-width:560px){.aj-puce .aj-sup{opacity:1}}
+
+/* le réglage « ma journée » */
+.aj-jr-w{position:relative;display:inline-block}
+.aj-pop{position:absolute;top:calc(100% + 8px);left:0;z-index:60;width:min(340px,86vw);padding:14px;border-radius:18px;background:var(--surface-solid,#fff);border:1px solid var(--line);box-shadow:0 18px 40px rgba(16,24,40,.22)}
+.aj-pop[hidden]{display:none}
+.aj-pop-t{font:650 13.5px 'Inter',system-ui,sans-serif;margin-bottom:10px}
+.aj-pre-l{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.aj-pre-l .aj-pre{border:1px solid var(--line);border-radius:10px;padding:5px 10px;font:600 12px 'Inter',system-ui,sans-serif}
+.aj-pre-l .aj-pre small{font:500 10.5px 'JetBrains Mono',monospace;opacity:.75;margin-left:3px}
+.aj-pop-c{display:flex;gap:14px;align-items:center}
+.aj-pop-c label{display:flex;align-items:center;gap:8px;font:500 13px 'Inter',system-ui,sans-serif;color:var(--txt-soft)}
+.aj-pop-c select{padding:6px 8px;border-radius:9px;border:1px solid var(--line);background:var(--surface-solid,#fff);color:var(--txt);font:600 13px 'JetBrains Mono',monospace}
