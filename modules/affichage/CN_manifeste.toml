@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.3.0  #4f6e07
+# VERSION CN : 0.4.0  #3bf925
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=4f6e07 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=3bf925 ▼▼▼
 [module]
 id = "affichage"
 nom = "Affichage"
-version = "0.3.0"
+version = "0.4.0"
 noyau_min = "0.1.0"
 description = "Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte."
 confiance = "interne"
@@ -42,6 +42,10 @@ libelle = "L'organisation : nom, logo, forme juridique, identifiant légal, adre
 [[objets]]
 type = "epingle"
 libelle = "Une page épinglée par un compte en tête de sa colonne de gauche"
+
+[[objets]]
+type = "plan_jour"
+libelle = "Le plan d'un jour pour un compte : les blocs (tâche ou libre) posés sur la journée, avec heure de début et durée"
 
 [[objets]]
 type = "fil_page"
@@ -166,6 +170,21 @@ perimetre = ["l'objet organisation"]
 preuve = "relire l'organisation écrite"
 retour = "restaurer l'organisation précédente, ou le réglage par défaut s'il n'y en avait pas"
 paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "lire_plan"
+libelle = "Lire les blocs que le compte a posés sur sa journée (le sien seulement)"
+risque = "lecture"
+
+[[capacites]]
+id = "modifier_plan"
+libelle = "Remplacer les blocs du plan d'un jour pour le compte : tâche ou bloc libre, début, durée, fait"
+risque = "faible"
+perimetre = ["les objets plan_jour du compte"]
+preuve = "relire le plan écrit"
+retour = "restaurer le plan précédent, ou le retirer s'il n'y en avait pas"
+paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
 
 [[capacites]]

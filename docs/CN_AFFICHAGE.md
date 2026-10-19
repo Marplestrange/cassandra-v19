@@ -192,3 +192,14 @@ Décision 18-10 : plus d'entrée « Salon ». Le bouton ✦ de la barre haute ou
 <!-- CN : tout ce fichier est du nexus : à compléter -->
 <!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
 <!-- LIEN : à compléter (contrat, fichiers voisins) -->
+
+## Le plan du jour (0.4.0)
+
+La page **Aujourd'hui** (`interface/CN_aujourdhui.js`) est un cadran : un anneau de la journée (agenda, tâches placées, heure présente), la suite, trois chiffres (temps libre, tâches faites, journée passée), une frise à trois voies (Agenda, À faire, Échéances) et les tâches **à placer**.
+
+Seul le **plan** s'écrit : deux capacités du module `affichage`, pour le compte qui agit et nul autre.
+
+- `affichage.lire_plan(jour)` — les blocs posés sur la journée (lecture).
+- `affichage.modifier_plan(jour, blocs)` — remplace les blocs : `id`, `titre`, `deb` (minutes depuis minuit), `duree` (5 à 480), `tache` (numéro de tâche, facultatif), `fait`, `couleur`. Au plus 60 blocs ; un plan vidé se retire ; les plans de plus de 30 jours s'effacent. Palier « faible », retour = restaurer le plan précédent.
+
+Les agendas, tâches, rappels et alertes restent ceux de l'ancienne interface. La durée d'une tâche (sa « charge » serveur est un poids, pas des minutes) est retenue par le navigateur ; le plan, lui, est au serveur. Le placement automatique est côté page pour l'instant ; il deviendra un point d'évolution (EC) quand son classement s'apprendra.

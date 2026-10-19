@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #d007c4
+# VERSION EC : EC0 (référence 0.4.0)  #d007c4
 # HÔTE CN    : CN_module.py · idees @1.0
 # RÔLE       : classe, pour la page où l'on est et l'interlocuteur du panneau, au plus quelques idées : ce qui brûle d'abord, ce qui touche la page ensuite, chacune avec sa raison.
 # MÉTHODE    : fonction pure : les alertes du jour reçues en entrée, l'heure, ce qui vient d'être fait ou refusé ; un geste n'est proposé que s'il figure dans la liste que le nexus transmet, jamais inventé.

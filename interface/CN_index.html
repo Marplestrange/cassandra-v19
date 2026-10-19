@@ -13,7 +13,7 @@
 <!-- RÔLE       : la page unique de l'interface : le corps de la V18 et la liste des scripts. -->
 <!-- MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=57b6b2 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=146d1f ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -34,6 +34,7 @@
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/shell.css">
 <link rel="stylesheet" href="/disposition.css">
+<link rel="stylesheet" href="/aujourdhui.css">
 </head>
 <body>
 
@@ -1734,54 +1735,9 @@
         <div class="bu-vues" id="bu-vues">
 
       <!-- ─────────── AUJOURD'HUI ─────────── -->
+      <!-- AUJOURD'HUI : le cadran du jour, dessiné par interface/CN_aujourdhui.js dans #aj-racine -->
       <section class="bu-view on" id="bu-v-today">
-        <div class="bj-tuiles" id="bj-tuiles" aria-label="Bandeau de vérité"></div>
-        <!-- Mêmes pastilles que l'agenda, et MÊME état : masquer une source ici
-             la masque là-bas. Deux préférences à tenir en divergeraient. -->
-        <!-- LES TROIS BANDES — par urgence, pas par nature. On n'ouvre pas
-             cet écran en se demandant « qu'y a-t-il dans mes rappels ? » mais
-             « qu'est-ce qui me tombe dessus ? ». Un certificat qui expire
-             demain et une tâche en retard vont donc au même endroit. -->
-        <!-- UNE SEULE CARTE pour les trois bandes, comme dans la maquette :
-             en trois cartes séparées, l'écran se lisait comme trois objets
-             sans rapport, au lieu d'une réponse à « qu'est-ce qui me tombe
-             dessus ? ». -->
-        <div class="card bu-flush" id="bj-carte" style="margin-bottom:14px">
-          <!-- Pas de bouton plein écran écrit ici : `_plPoser` en greffe un sur
-               CHAQUE carte de l'application, à côté de `+` et `−`. En poser un
-               à la main en ferait deux sur cette carte, et un seul sur les
-               cent autres. -->
-          <div class="bu-ct">Ce qui vous attend
-            <span class="n2" id="bj-quand">—</span></div>
-          <div class="bu-cc">
-            <div class="bj-g" id="bj-bandes"></div>
-
-          </div>
-        </div>
-
-        <div class="bu-legend" id="bu-legend-jour"></div>
-        <div class="bu-2col">
-          <div class="card bu-flush">
-            <div class="bu-ct"><span id="bu-jour">Aujourd'hui</span>
-              <div class="bu-sp"></div>
-              <span class="bu-note-i" id="bu-jour-n"></span></div>
-            <div class="bu-cc">
-              <div class="bu-allday" id="bu-allday"></div>
-              <div class="bu-fil" id="bu-fil"></div>
-            </div>
-          </div>
-
-          <div class="bu-stack">
-            <div class="card bu-flush">
-              <div class="bu-ct">Courrier non lu<div class="bu-sp"></div>
-                <button class="btn-x mini" onclick="buSeg('mail')">Ouvrir</button></div>
-              <div class="bu-rows" id="bu-mail-apercu"><div class="empty-state" style="padding:22px">Lecture…</div></div>
-              <p class="bu-note">Ces messages arrivent de <b>votre</b> boîte. Cassandra ne les
-                lit qu'avec votre session.</p>
-            </div>
-
-          </div>
-        </div>
+        <div id="aj-racine"></div>
       </section>
 
       <!-- ─────────── AGENDA ─────────── -->
@@ -4804,6 +4760,7 @@
 <script src="/console-module.js"></script>
 <script src="/evolution-ecran.js"></script>
 <script src="/disposition.js"></script>
+<script src="/aujourdhui.js"></script>
 </body>
 </html>
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->

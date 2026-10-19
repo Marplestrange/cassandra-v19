@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.3.0  #658ebf
+# VERSION CN : 0.4.0  #697dd5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=658ebf ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=697dd5 ▼▼▼
 """Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 
 Un module ne dit jamais comment il s'affiche. Il déclare des écrans (avec un gabarit), des tuiles (avec un composant et une source de données) et
@@ -71,6 +71,9 @@ _DEVISE = re.compile(r"^[A-Z]{3}$")
 LOGO_MAX = 180000
 _LOGO = re.compile(r"^data:image/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$")
 _CLE_EPINGLE = re.compile(r"^[a-z0-9_:.|-]{1,120}$", re.I)
+MAX_BLOCS = 60
+_JOUR = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_CLE_BLOC = re.compile(r"^[a-z0-9_:.-]{1,60}$", re.I)
 # Les gestes que le panneau a le droit de PROPOSER : une table fermée du nexus. Proposer n'est pas faire : l'exécution passe par l'exécuteur, qui refait toute vérification de droit.
 ACTES = {
     "relire_cert": {"capacite": "certificats.relire_expiration", "arg": "hote", "nat": "ssl", "qui": "cassandra", "admin": True, "risque": "lecture",
@@ -595,6 +598,85 @@ def brancher(ctx):
         else:
             ctx.poser("epingle", res["id"], res["avant"]["libelle"], etat="perso", donnees=res["avant"], compte=res["compte"])
 
+    # ---------------------------------------------------------------- le plan du jour (par compte)
+    def _jour_ok(jour):
+        jour = str(jour or "").strip() or time.strftime("%Y-%m-%d")
+        if not _JOUR.match(jour):
+            raise ValueError("jour : AAAA-MM-JJ")
+        return jour
+
+    def lire_plan(ctx, jour=""):
+        """Les blocs que CE compte a posés sur sa journée (tâche ou libre, avec heure de début et durée). Un compte ne lit que le sien."""
+        compte = ctx.compte or ""
+        if not compte:
+            raise ValueError("un plan appartient à un compte")
+        jour = _jour_ok(jour)
+        o = ctx.lire("plan_jour", "%s|%s" % (compte, jour), portee=ctx.TOUT)
+        return {"jour": jour, "blocs": copy.deepcopy((o or {}).get("donnees", {}).get("blocs", []))}
+
+    def _bloc(b):
+        if not isinstance(b, dict) or set(b) - {"id", "titre", "deb", "duree", "tache", "fait", "couleur"}:
+            raise ValueError("bloc mal formé")
+        bid = str(b.get("id", ""))
+        if not _CLE_BLOC.match(bid):
+            raise ValueError("bloc : identifiant invalide")
+        titre = str(b.get("titre", "")).strip()
+        if not 1 <= len(titre) <= 120:
+            raise ValueError("bloc : un titre de 1 à 120 caractères")
+        deb, duree = b.get("deb"), b.get("duree")
+        if isinstance(deb, bool) or not isinstance(deb, int) or not 0 <= deb <= 1439:
+            raise ValueError("bloc : début en minutes depuis minuit (0 à 1439)")
+        if isinstance(duree, bool) or not isinstance(duree, int) or not 5 <= duree <= 480:
+            raise ValueError("bloc : durée de 5 à 480 minutes")
+        tache = b.get("tache")
+        if tache is not None and (isinstance(tache, bool) or not isinstance(tache, int) or tache < 0):
+            raise ValueError("bloc : numéro de tâche invalide")
+        couleur = str(b.get("couleur", ""))
+        if couleur and not _COULEUR.match(couleur):
+            raise ValueError("bloc : couleur #rrggbb")
+        return {"id": bid, "titre": titre, "deb": deb, "duree": duree, "tache": tache, "fait": bool(b.get("fait", False)), "couleur": couleur}
+
+    def modifier_plan(ctx, jour="", blocs=None):
+        """Remplace les blocs du jour pour CE compte. Au plus MAX_BLOCS ; un plan vidé se retire ; les plans de plus de 30 jours s'effacent."""
+        compte = ctx.compte or ""
+        if not compte:
+            raise ValueError("un plan appartient à un compte")
+        jour = _jour_ok(jour)
+        if not isinstance(blocs, list) or len(blocs) > MAX_BLOCS:
+            raise ValueError("blocs : une liste de %d blocs au plus" % MAX_BLOCS)
+        propres, vus = [], set()
+        for b in blocs:
+            x = _bloc(b)
+            if x["id"] in vus:
+                raise ValueError("bloc : identifiant en double")
+            vus.add(x["id"]); propres.append(x)
+        propres.sort(key=lambda x: (x["deb"], x["id"]))
+        oid = "%s|%s" % (compte, jour)
+        existant = ctx.lire("plan_jour", oid, portee=ctx.TOUT)
+        avant = copy.deepcopy(existant["donnees"]) if existant else None
+        limite = time.strftime("%Y-%m-%d", time.localtime(time.time() - 30 * 86400))
+        for o in ctx.lister(portee=ctx.TOUT, type="plan_jour"):
+            if o["compte"] == compte and str(o["donnees"].get("jour", "")) < limite:
+                ctx.retirer("plan_jour", o["id"])
+        if propres:
+            nouveau = {"jour": jour, "blocs": propres}
+            ctx.poser("plan_jour", oid, "Plan du %s" % jour, etat="perso", donnees=nouveau, compte=compte)
+        else:
+            nouveau = None
+            if existant:
+                ctx.retirer("plan_jour", oid)
+        return {"id": oid, "compte": compte, "avant": avant, "attendu": nouveau}
+
+    def prouver_plan(ctx, res):
+        o = ctx.lire("plan_jour", res["id"], portee=ctx.TOUT)
+        return (o is None) if res["attendu"] is None else (o is not None and o["donnees"] == res["attendu"])
+
+    def defaire_plan(ctx, res):
+        if res["avant"] is None:
+            ctx.retirer("plan_jour", res["id"])
+        else:
+            ctx.poser("plan_jour", res["id"], "Plan du %s" % res["avant"]["jour"], etat="perso", donnees=res["avant"], compte=res["compte"])
+
     # ---------------------------------------------------------------- les idées du panneau
     def lire_idees(ctx, mode="", groupe="", entree="", sous="", page="", heure=-1, faits=None, refuses=None, nombre=4):
         role, compte = _moi(ctx, "utilisateur", "")
@@ -689,6 +771,8 @@ def brancher(ctx):
                     simuler=lambda ctx, **_: "modifierait l'organisation")
     ctx.implementer("epingler", epingler, prouver_ep, defaire_ep, simuler=lambda ctx, cle="", **_: "épinglerait %s" % cle)
     ctx.implementer("desepingler", desepingler, prouver_ep, defaire_ep, simuler=lambda ctx, cle="", **_: "retirerait l'épingle %s" % cle)
+    ctx.implementer("lire_plan", lire_plan)
+    ctx.implementer("modifier_plan", modifier_plan, prouver_plan, defaire_plan, simuler=lambda ctx, jour="", **_: "réécrirait le plan du %s" % (jour or "jour"))
     ctx.implementer("lier_fil", lier_fil, prouver_fp, defaire_fp, simuler=lambda ctx, fil=0, **_: "lierait le fil %s à une page" % fil)
     ctx.implementer("lire_theme", lire_theme)
     ctx.implementer("lire_ecran", lire_ecran)

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a0ae21
+# VERSION CN : 0.1.0  #ecc87e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation, les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit q
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a0ae21 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ecc87e ▼▼▼
 """L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation,
 les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit quoi, qui peut régler l'organisation) se vérifie ici : le point d'évolution ne décide d'aucun accès."""
 import base64
@@ -413,6 +413,42 @@ class Affichage(unittest.TestCase):
         s = self.ok("affichage.lire_session", ROOT)
         self.assertEqual((s["compte"], s["role"]), (ROOT, "admin"))
         self.assertEqual(self.ok("affichage.lire_session", BEA)["role"], "utilisateur")
+
+    # ---- le plan du jour
+    JOUR = "2026-10-19"
+
+    def plan(self, blocs, qui=BEA, jour=JOUR):
+        return self.ex("affichage.modifier_plan", qui, jour=jour, blocs=blocs)
+
+    def test_un_compte_pose_des_blocs_sur_sa_journee_et_les_relit(self):
+        self.addCleanup(lambda: self.plan([]))
+        b = [{"id": "t12", "titre": "Relire le chapitre 4", "deb": 600, "duree": 45, "tache": 12},
+             {"id": "libre-a", "titre": "Appeler le notaire", "deb": 540, "duree": 15, "fait": True, "couleur": "#7c5cd6"}]
+        self.assertEqual(self.plan(b)["statut"], "faite")
+        p = self.ok("affichage.lire_plan", BEA, jour=self.JOUR)
+        self.assertEqual([(x["id"], x["deb"], x["duree"], x["fait"]) for x in p["blocs"]], [("libre-a", 540, 15, True), ("t12", 600, 45, False)])   # triés par heure
+
+    def test_le_plan_est_a_soi(self):
+        self.addCleanup(lambda: self.plan([]))
+        self.plan([{"id": "t1", "titre": "Privé", "deb": 600, "duree": 30}])
+        self.assertEqual(self.ok("affichage.lire_plan", ROOT, jour=self.JOUR)["blocs"], [])
+
+    def test_un_plan_vide_se_retire(self):
+        self.plan([{"id": "t1", "titre": "A", "deb": 600, "duree": 30}])
+        self.assertEqual(self.plan([])["statut"], "faite")
+        self.assertEqual(self.ok("affichage.lire_plan", BEA, jour=self.JOUR)["blocs"], [])
+
+    def test_un_plan_invalide_est_refuse(self):
+        self.addCleanup(lambda: self.plan([]))
+        bon = {"id": "t1", "titre": "A", "deb": 600, "duree": 30}
+        mauvais = [dict(bon, titre=""), dict(bon, titre="x" * 121), dict(bon, deb=-1), dict(bon, deb=1440), dict(bon, deb="10h"), dict(bon, duree=4), dict(bon, duree=481),
+                   dict(bon, id="a b"), dict(bon, tache=-3), dict(bon, couleur="rouge"), dict(bon, inconnu=1)]
+        for m in mauvais:
+            self.assertNotEqual(self.plan([m])["statut"], "faite", m)
+        self.assertNotEqual(self.plan([bon, dict(bon)])["statut"], "faite")                       # identifiant en double
+        self.assertNotEqual(self.plan([dict(bon, id="b%d" % i) for i in range(61)])["statut"], "faite")
+        self.assertNotEqual(self.plan([bon], jour="demain")["statut"], "faite")
+        self.assertEqual(self.ok("affichage.lire_plan", BEA, jour=self.JOUR)["blocs"], [])
 
     # ---- les fils du panneau
     def test_un_fil_du_salon_se_lie_a_un_interlocuteur_et_a_une_page(self):
