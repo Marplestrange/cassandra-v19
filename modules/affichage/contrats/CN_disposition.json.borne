@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.5.0  #78f834
+# VERSION CN : 0.6.0  #78f834
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : disposition.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

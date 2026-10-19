@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.5.0  #e76d44
+# VERSION CN : 0.6.0  #dccebb
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=e76d44 ▼▼▼
+# ▼▼▼ BORNE CN version=0.6.0 empreinte=dccebb ▼▼▼
 """Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 
 Un module ne dit jamais comment il s'affiche. Il déclare des écrans (avec un gabarit), des tuiles (avec un composant et une source de données) et
@@ -682,7 +682,7 @@ def brancher(ctx):
     def _reglage_jour_de(ctx, compte):
         o = ctx.lire("reglage_jour", compte, portee=ctx.TOUT)
         d = (o or {}).get("donnees") or {}
-        return {"debut": d.get("debut"), "fin": d.get("fin"), "focus": d.get("focus"), "durees": dict(d.get("durees") or {})}
+        return {"debut": d.get("debut"), "fin": d.get("fin"), "focus": d.get("focus"), "durees": dict(d.get("durees") or {}), "alarmes": dict(d["alarmes"]) if d.get("alarmes") else None}
 
     def lire_reglage_jour(ctx):
         """Ce que CE compte a réglé pour sa page Aujourd'hui : l'heure où sa journée commence et finit, la durée de concentration, la durée de ses tâches. Vide tant qu'il n'a rien réglé."""
@@ -696,7 +696,7 @@ def brancher(ctx):
             raise ValueError("%s : une heure entière de 0 à 23" % nom)
         return v
 
-    def modifier_reglage_jour(ctx, debut=None, fin=None, focus=None, durees=None):
+    def modifier_reglage_jour(ctx, debut=None, fin=None, focus=None, durees=None, alarmes=None):
         """Règle la page Aujourd'hui du compte. Ce qui n'est pas dit ne change pas ; `durees` fusionne (une durée à 0 retire la tâche)."""
         compte = ctx.compte or ""
         if not compte:
@@ -712,6 +712,21 @@ def brancher(ctx):
             if isinstance(focus, bool) or not isinstance(focus, int) or not 1 <= focus <= 240:
                 raise ValueError("focus : de 1 à 240 minutes")
             cur["focus"] = focus
+        if alarmes is not None:
+            if not isinstance(alarmes, dict) or set(alarmes) - {"actif", "avant", "son", "systeme"}:
+                raise ValueError("alarmes : actif, avant (minutes), son, systeme")
+            a = dict(cur["alarmes"] or {"actif": True, "avant": 5, "son": False, "systeme": False})
+            for k in ("actif", "son", "systeme"):
+                if k in alarmes:
+                    if not isinstance(alarmes[k], bool):
+                        raise ValueError("alarmes.%s : vrai ou faux" % k)
+                    a[k] = alarmes[k]
+            if "avant" in alarmes:
+                v = alarmes["avant"]
+                if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 120:
+                    raise ValueError("alarmes.avant : de 0 à 120 minutes")
+                a["avant"] = v
+            cur["alarmes"] = a
         if durees is not None:
             if not isinstance(durees, dict):
                 raise ValueError("durees : un dictionnaire {tâche: minutes}")

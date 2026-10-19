@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a43ba1
+# VERSION CN : 0.1.0  #cd51de
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation, les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit q
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a43ba1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cd51de ▼▼▼
 """L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation,
 les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit quoi, qui peut régler l'organisation) se vérifie ici : le point d'évolution ne décide d'aucun accès."""
 import base64
@@ -461,7 +461,7 @@ class Affichage(unittest.TestCase):
 
     def test_le_reglage_d_un_compte_est_a_lui(self):
         self.addCleanup(lambda: self.reg(debut=0, fin=0, durees={"7": 0}))
-        self.assertEqual(self.ok("affichage.lire_reglage_jour", BEA), {"debut": None, "fin": None, "focus": None, "durees": {}})
+        self.assertEqual(self.ok("affichage.lire_reglage_jour", BEA), {"debut": None, "fin": None, "focus": None, "durees": {}, "alarmes": None})
         self.assertEqual(self.reg(debut=22, fin=6, focus=45, durees={"7": 30})["statut"], "faite")
         r = self.ok("affichage.lire_reglage_jour", BEA)
         self.assertEqual((r["debut"], r["fin"], r["focus"], r["durees"]), (22, 6, 45, {"7": 30}))
@@ -475,6 +475,21 @@ class Affichage(unittest.TestCase):
         self.assertEqual((r["debut"], r["fin"], r["focus"], r["durees"]), (8, 20, 25, {"7": 30, "8": 15}))
         self.reg(durees={"7": 0})
         self.assertEqual(self.ok("affichage.lire_reglage_jour", BEA)["durees"], {"8": 15})    # 0 retire
+
+    def test_les_alarmes_se_reglent_par_compte(self):
+        self.addCleanup(lambda: self.reg(alarmes={"actif": True, "avant": 5, "son": False, "systeme": False}))
+        self.assertIsNone(self.ok("affichage.lire_reglage_jour", BEA)["alarmes"])
+        self.assertEqual(self.reg(alarmes={"avant": 15, "son": True})["statut"], "faite")
+        a = self.ok("affichage.lire_reglage_jour", BEA)["alarmes"]
+        self.assertEqual(a, {"actif": True, "avant": 15, "son": True, "systeme": False})          # ce qui n'est pas dit garde son défaut
+        self.reg(alarmes={"actif": False})
+        self.assertEqual(self.ok("affichage.lire_reglage_jour", BEA)["alarmes"], {"actif": False, "avant": 15, "son": True, "systeme": False})
+        self.assertIsNone(self.ok("affichage.lire_reglage_jour", ROOT)["alarmes"])
+
+    def test_des_alarmes_invalides_sont_refusees(self):
+        for mauvais in ({"avant": -1}, {"avant": 121}, {"avant": "5"}, {"actif": "oui"}, {"inconnu": 1}, {"son": 1}):
+            self.assertNotEqual(self.reg(alarmes=mauvais)["statut"], "faite", mauvais)
+        self.assertNotEqual(self.reg(alarmes=[1])["statut"], "faite")
 
     def test_un_reglage_invalide_est_refuse(self):
         for mauvais in ({"debut": 24, "fin": 6}, {"debut": -1, "fin": 6}, {"debut": "8", "fin": 6}, {"debut": 8}, {"fin": 8}, {"focus": 0}, {"focus": 241},

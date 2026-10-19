@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #8e06a0
+// VERSION CN : 0.1.0  #4be4ce
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=8e06a0 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=4be4ce ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -14262,7 +14262,9 @@ async function tkOpen(id){
     document.getElementById('tk-f-prio').value=String(t.priority==null?1:t.priority);
     document.getElementById('tk-f-recur').value=t.recurrence||'';
     document.getElementById('tk-f-alarm').value=t.alarm||'';
-    document.getElementById('tk-f-charge').value=String(t.charge||0);
+    { const sc=document.getElementById('tk-f-charge'), v=String(t.charge||0);   // une durée hors liste (posée depuis Aujourd'hui) reste affichée
+      if(v!=='0' && !Array.prototype.some.call(sc.options,function(o){ return o.value===v; })){ const o=document.createElement('option'); o.value=v; o.textContent=v+' min'; sc.appendChild(o); }
+      sc.value=v; }
     _tkStates(t.status||'todo');
     _tkProjets(t.project_id);
     const pp=document.getElementById('tk-f-proj');
@@ -27175,12 +27177,12 @@ function _plAppliquer(carte){
     if(!t) return;
     const b = t.querySelector(':scope > .pl-b');
     if(b){
-        b.textContent = plie ? '▸' : '▾';
+        { const v = plie ? '▸' : '▾'; if(b.textContent !== v) b.textContent = v; }     // ne réécrire que ce qui change : chaque écriture relançait l'observateur, donc ce moteur tournait sans fin
         b.setAttribute('aria-expanded', String(!plie));
         b.title = plie ? 'Déplier cette carte' : 'Replier cette carte';
     }
     const m = t.querySelector(':scope > .pl-cmd > .pl-n');
-    if(m) m.textContent = '×' + lg;
+    if(m && m.textContent !== '×' + lg) m.textContent = '×' + lg;
     const mo = t.querySelector(':scope > .pl-cmd > [data-pl="-"]');
     if(mo) mo.disabled = (lg <= 1);
     const pl = t.querySelector(':scope > .pl-cmd > [data-pl="+"]');

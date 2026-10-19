@@ -207,3 +207,9 @@ Les agendas, tâches, rappels et alertes restent ceux de l'ancienne interface. L
 ## Le réglage d'Aujourd'hui (0.5.0)
 
 Par compte, pas par navigateur : `affichage.lire_reglage_jour` et `affichage.modifier_reglage_jour` (objet `reglage_jour`). Il porte l'heure où la journée commence et finit (`debut`, `fin`, 0 à 23 ; une fin avant le début passe minuit ; 0 → 0 est le cadran de 24 h par défaut), la durée de concentration (`focus`, 1 à 240 min) et la durée des tâches (`durees`, {numéro: 5 à 480 min}, 0 retire). Ce qui n'est pas dit ne change pas. Ce qu'un navigateur avait retenu avant (localStorage) passe au compte à la première ouverture, puis n'est plus lu.
+
+## Alarmes, durée des tâches, courrier (0.6.0)
+
+- **Alarmes** (`alarmes` du réglage du compte : `actif`, `avant` 0 à 120 min, `son`, `systeme`) : la page prévient à l'heure, où que l'on soit dans l'application, d'un rendez-vous (`avant` minutes avant), d'un rappel (à l'heure) et d'une tâche posée sur la frise (à son début). Un message déjà signalé ne se répète pas (mémoire du navigateur, deux jours). La notification du navigateur demande sa permission au moment où on la coche.
+- **Durée d'une tâche** : c'est sa « charge estimée » (minutes), un champ de la tâche que la page Tâches montre aussi. L'ancienne durée retenue dans le réglage passe à la tâche à la première lecture.
+- **Courrier** : chaque ligne de message porte « ＋ Tâche » (tâche « Répondre à : … », rattachée au message, déjà faite → « déjà dans vos tâches ») et « ＋ RDV » (rendez-vous au prochain créneau libre, rattaché au message).

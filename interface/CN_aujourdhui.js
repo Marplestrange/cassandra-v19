@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #f9f060
+// VERSION CN : 0.1.0  #e03831
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=f9f060 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=e03831 ▼▼▼
 /* La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
    (la suite), et la journée se range à la main ou toute seule (la frise, les tâches à placer). Les données sont celles de l'ancienne
    interface (agenda, tâches, rappels, état du jour) ; seul le PLAN — où l'on a posé quoi — est écrit, par le module affichage
@@ -22,6 +22,8 @@
   const CASS = window.CASS = window.CASS || {};
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // un refus du serveur (ok:false) se lève comme une erreur : sans cela, l'ancienne couche répond « sans erreur » à une tâche refusée
+  const api = async (route, corps) => { const x = await window.apiPost(route, corps); if (x && x.ok === false) throw new Error(x.error || x.reason || "refusé"); return x; };
   const p2 = (n) => String(n).padStart(2, "0");
   const hm = (m) => { m = Math.floor(m + 1e-9); return p2(Math.floor(m / 60) % 24) + ":" + p2(m % 60); };
   const dur = (m) => (m = Math.max(0, Math.round(m)), m < 60 ? m + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + p2(m % 60) : ""));
@@ -32,14 +34,35 @@
   const COULEURS = { event: "var(--info)", etape: "var(--accent)", task: "var(--violet)", reminder: "var(--warn)", ssl: "var(--danger)" };
   const DUREE_DEFAUT = 30;
 
-  const A = { reg: { debut: null, fin: null, focus: null, durees: {} }, d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, edit: null, nv: null, liens: {}, decalJour: 0, autre: false, agendaAutre: [], annul: null, bougeT: 0, h0: 8, h1: 20, decal: 0, perso: false, pop: false, charge: false, sauvegarde: null };
+  const A = { reg: { debut: null, fin: null, focus: null, durees: {} }, d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, edit: null, nv: null, liens: {}, chargeSrv: {}, decalJour: 0, autre: false, agendaAutre: [], annul: null, bougeT: 0, h0: 8, h1: 20, decal: 0, perso: false, pop: false, charge: false, sauvegarde: null };
 
   // ── les durées retenues pour les tâches (le serveur ne connaît que la charge, qui est un poids) ────────────────
   // ── le réglage du compte (heures de la journée, concentration, durée des tâches) : écrit par le serveur, une fois par compte ──
   // ce que ce navigateur avait retenu avant (localStorage) passe au compte la première fois, puis n'est plus lu
   const ancien = (cle) => { try { return JSON.parse(localStorage.getItem(cle) || "null"); } catch (e) { return null; } };
-  const durees = () => A.reg.durees || {};
-  const retenirDuree = (id, m) => { A.reg.durees = Object.assign({}, A.reg.durees, { [id]: m }); ecrireReglage({ durees: { [id]: m } }); };
+  // La durée d'une tâche est sa « charge estimée » : un champ de la tâche, en minutes, que la page Tâches montre aussi.
+  // (Ce que ce compte avait retenu avant, dans son réglage, passe à la tâche à la première lecture.)
+  const dureeDe = (id) => A.chargeSrv[id] || (A.reg.durees || {})[id] || 0;
+  const retenirDuree = (id, m) => {
+    A.chargeSrv[id] = m;
+    api("/api/itare/task/save", { id, charge: m }).catch((e) => { if (typeof window.toast === "function") window.toast("Durée non enregistrée : " + e.message, "err"); });
+    if ((A.reg.durees || {})[id]) { delete A.reg.durees[id]; ecrireReglage({ durees: { [id]: 0 } }); }
+  };
+  async function chargerCharges() {
+    let d; try { d = await api("/api/itare/tasks", { limit: 500 }); } catch (e) { return false; }
+    const avant = JSON.stringify(A.chargeSrv), n = {};
+    ((d && d.tasks) || []).forEach((t) => { if (t.charge > 0) n[t.id] = +t.charge; });
+    A.chargeSrv = n;
+    // reprise de l'ancien réglage : une durée retenue sur le compte et pas encore sur la tâche s'y inscrit
+    const vieux = A.reg.durees || {}, ids = new Set(((d && d.tasks) || []).map((t) => t.id)), purge = {};
+    for (const k of Object.keys(vieux)) {
+      if (!ids.has(+k)) { purge[k] = 0; continue; }
+      if (!n[k]) { try { await api("/api/itare/task/save", { id: +k, charge: vieux[k] }); A.chargeSrv[k] = vieux[k]; } catch (e) { continue; } }
+      purge[k] = 0;
+    }
+    if (Object.keys(purge).length) { Object.keys(purge).forEach((k) => delete A.reg.durees[k]); ecrireReglage({ durees: purge }); }
+    return JSON.stringify(A.chargeSrv) !== avant;
+  }
   function ecrireReglage(parties) {
     A.regAttente = Object.assign(A.regAttente || {}, parties, parties.durees ? { durees: Object.assign({}, (A.regAttente || {}).durees, parties.durees) } : {});
     clearTimeout(A.regT);
@@ -127,7 +150,7 @@
   async function chargerJour() {
     if (A.decalJour === 0) return;
     fenetre();
-    try { const d = await window.apiPost("/api/itare/events", { from: A.d0, to: jourSuivant(A.d0) }); A.agendaAutre = (d && d.items) || []; } catch (e) { A.agendaAutre = []; }
+    try { const d = await api("/api/itare/events", { from: A.d0, to: jourSuivant(A.d0) }); A.agendaAutre = (d && d.items) || []; } catch (e) { A.agendaAutre = []; }
   }
   async function rafraichir() {
     if (A.decalJour !== 0) { await chargerJour(); rendre(); return; }
@@ -144,7 +167,7 @@
     try { const r = await CASS.agir("affichage.lire_plan", { jour }); A.plan = r.blocs || []; A.planJour = jour; } catch (e) { A.plan = A.plan || []; }
   }
   async function chargerEtat() {
-    try { const r = await window.apiPost("/api/bureau/jour", {}); recevoir(r); } catch (e) {}
+    try { const r = await api("/api/bureau/jour", {}); recevoir(r); } catch (e) {}
   }
   function recevoir(r) {
     if (!r || !r.ok) return;
@@ -176,7 +199,7 @@
   const SPAN = () => (A.h1 - A.h0) * 60;
   const pos = (m) => ((m - A.h0 * 60) / SPAN()) * 100;
   const ang = (m) => ((m - A.h0 * 60) / SPAN()) * 360 - 90;
-  const aPlacer = () => { const d = durees(), ids = new Set(A.plan.map((b) => b.tache)); return A.taches.filter((t) => !t.fait && !ids.has(t.id)).map((t) => Object.assign({ duree: d[t.id] || DUREE_DEFAUT }, t)); };
+  const aPlacer = () => { const ids = new Set(A.plan.map((b) => b.tache)); return A.taches.filter((t) => !t.fait && !ids.has(t.id)).map((t) => Object.assign({ duree: dureeDe(t.id) || DUREE_DEFAUT }, t)); };
   function prochain() {
     const tout = A.evts.map((e) => ({ d: e.d, f: e.f, t: e.titre, s: "agenda", k: "ev" })).concat(A.plan.filter((p) => !p.fait).map((p) => ({ d: p.deb, f: p.deb + p.duree, t: p.titre, s: "tâche · " + dur(p.duree), k: "ta" }))).filter((x) => x.f > A.now).sort((a, b) => a.d - b.d);
     return tout;
@@ -237,7 +260,7 @@
     r.innerHTML =
       '<div class="aj-tete"><span class="aj-nav" role="group" aria-label="Changer de jour"><button type="button" class="aj-nb" data-jour="-1" title="Jour précédent" aria-label="Jour précédent">‹</button><button type="button" class="aj-nb aj-auj" data-jour="0" id="aj-auj" title="Revenir à aujourd’hui">Aujourd’hui</button><button type="button" class="aj-nb" data-jour="1" title="Jour suivant" aria-label="Jour suivant">›</button>' +
       '<label class="aj-cal" title="Choisir une date"><span aria-hidden="true">▾</span><input type="date" id="aj-date" aria-label="Choisir une date"></label></span><span class="aj-salut" id="aj-salut"></span><span class="aj-sp"></span>' +
-      '<span class="aj-jr-w"><button class="aj-btn sm" id="aj-jr" type="button" aria-haspopup="true"></button><div class="aj-pop" id="aj-pop" hidden></div></span><span class="aj-duree" id="aj-duree" role="group" aria-label="Durée de concentration"></span><button class="aj-btn" id="aj-focus" type="button">◔ Se concentrer</button></div>' +
+      '<span class="aj-jr-w"><button class="aj-btn sm" id="aj-jr" type="button" aria-haspopup="true"></button><div class="aj-pop" id="aj-pop" hidden></div></span><span class="aj-jr-w"><button class="aj-btn sm aj-cloche" id="aj-al" type="button" aria-haspopup="true" aria-label="Alarmes">🔔</button><div class="aj-pop" id="aj-al-pop" hidden></div></span><span class="aj-duree" id="aj-duree" role="group" aria-label="Durée de concentration"></span><button class="aj-btn" id="aj-focus" type="button">◔ Se concentrer</button></div>' +
       '<div class="aj-ruban" id="aj-ruban" hidden></div><div class="aj-chips" id="aj-chips"></div>' +
       '<div class="aj-haut"><section class="aj-verre aj-cadran"><div class="aj-disque"><svg viewBox="0 0 340 340" role="img" aria-label="Cadran de la journée"><g id="aj-svg"></g></svg>' +
       '<div class="aj-centre"><div class="t" id="aj-c-heure"></div><div class="s" id="aj-c-sous"></div><div class="p" id="aj-c-pro"></div></div></div>' +
@@ -252,7 +275,7 @@
       '<div class="aj-plateau" id="aj-plateau"></div><p class="aj-aide">Glissez une tâche sur la voie « À faire », ou cliquez « placer → » : elle se pose dans le prochain temps libre. Cliquez un bloc pour le cocher.</p></section>' +
       '<section class="aj-verre aj-carte aj-courrier"><header><h3>Courrier non lu</h3><span class="aj-sp"></span><button class="aj-btn sm" type="button" data-seg="mail">Ouvrir</button></header>' +
       '<div class="bu-rows" id="bu-mail-apercu"><div class="empty-state" style="padding:20px">Lecture…</div></div></section></div>';
-    r.dataset.pret = "1"; A.focusMin = dureeFocus(); dessinerDuree(); dessinerReglage();
+    r.dataset.pret = "1"; A.focusMin = dureeFocus(); dessinerDuree(); dessinerReglage(); dessinerAlarmes();
     pose(r);
   }
   function rendre() {
@@ -327,7 +350,7 @@
   function confetti(x, y) { const couleurs = ["#2dd4bf", "#fbbf24", "#7c5cd6", "#d02a50", "#2b78b5"]; for (let i = 0; i < 18; i++) { const e = document.createElement("i"); e.className = "aj-confetti"; e.style.left = x + "px"; e.style.top = y + "px"; e.style.background = couleurs[i % 5]; e.style.setProperty("--dx", (Math.random() * 160 - 80) + "px"); e.style.setProperty("--dy", (Math.random() * -120 - 20) + "px"); e.style.setProperty("--r", Math.random() * 540 + "deg"); document.body.appendChild(e); setTimeout(() => e.remove(), 1000); } }
   async function cocher(b, el) {
     b.fait = !b.fait; sauver();
-    if (b.tache != null && typeof window.apiPost === "function") { try { await window.apiPost("/api/itare/task/save", { id: b.tache, status: b.fait ? "fait" : "todo" }); const t = A.taches.find((x) => x.id === b.tache); if (t) t.fait = b.fait; await rafraichir(); } catch (e) {} }
+    if (b.tache != null && typeof window.apiPost === "function") { try { await api("/api/itare/task/save", { id: b.tache, status: b.fait ? "fait" : "todo" }); const t = A.taches.find((x) => x.id === b.tache); if (t) t.fait = b.fait; await rafraichir(); } catch (e) {} }
     rendre();
     if (b.fait && el) { const r = el.getBoundingClientRect(); confetti(r.left + r.width / 2, r.top); }
   }
@@ -336,9 +359,9 @@
     const m = v.match(/(\d+)\s*(min|h)\b/i); let d = DUREE_DEFAUT; if (m) { d = m[2].toLowerCase() === "h" ? +m[1] * 60 : +m[1]; v = v.replace(m[0], "").replace(/\s+/g, " ").trim() || v; }
     d = Math.max(5, Math.min(480, d));
     try {
-      const r = await window.apiPost("/api/itare/task/save", { text: v, due: A.decalJour === 0 ? iso(new Date()) : A.d0 });
+      const r = await api("/api/itare/task/save", { text: v, due: A.decalJour === 0 ? iso(new Date()) : A.d0, charge: d });
       const id = r && (r.id || (r.task && r.task.id));
-      if (id) retenirDuree(id, d);
+      if (id) A.chargeSrv[id] = d;
       await rafraichir();
     } catch (e) { if (typeof window.toast === "function") window.toast("Tâche non créée : " + e.message, "err"); }
   }
@@ -350,7 +373,7 @@
   const LIEN_NOM = { note: "Note", mail: "Courrier", project: "Projet", contact: "Contact", event: "Rendez-vous", reminder: "Rappel", document: "Document" };
   async function infosTache(id) {
     try {
-      const c = await window.apiPost("/api/itare/task/context", { id });
+      const c = await api("/api/itare/task/context", { id });
       const t = (c && c.task) || {};
       A.liens[id] = { charge: true, pid: t.project_id == null ? "" : String(t.project_id), pnom: t.project_name || "", links: ((c && c.links) || []).filter((l) => !l.inverse).map((l) => ({ kind: l.kind, ref: String(l.ref), nom: String(l.nom || l.label || l.ref) })) };
     } catch (e) { A.liens[id] = { charge: true, pid: "", pnom: "", links: [] }; }
@@ -376,7 +399,7 @@
     setTimeout(() => { if (typeof window.tkOpen === "function") window.tkOpen(id); }, 500);
   }
   // la liste des projets se relit à l'ouverture de l'éditeur : celle de l'agenda ne se remplit qu'une fois
-  async function chargerProjets() { try { const d = await window.apiPost("/api/itare/projects", {}); A.projets = (d && d.projects) || []; } catch (e) { A.projets = A.projets || []; } }
+  async function chargerProjets() { try { const d = await api("/api/itare/projects", {}); A.projets = (d && d.projects) || []; } catch (e) { A.projets = A.projets || []; } }
   function dessinerAssoc(id) {
     const z = document.querySelector('.aj-assoc[data-assoc="' + id + '"]'); if (!z) return;
     const x = A.liens[id] || { pid: "", links: [] };
@@ -399,7 +422,7 @@
   async function lierPiece(id, nature, ref, titre) {
     const kind = NATURE_VERS_LIEN[nature]; if (!kind) return;
     try {
-      const d = await window.apiPost("/api/itare/task/link", { id, kind, ref: String(ref), label: titre });
+      const d = await api("/api/itare/task/link", { id, kind, ref: String(ref), label: titre });
       if (d && d.ok === false) throw new Error(d.reason || "refusé");
       const x = A.liens[id] || (A.liens[id] = { charge: true, pid: "", pnom: "", links: [] });
       if (!x.links.some((k) => k.kind === kind && k.ref === String(ref))) x.links.push({ kind, ref: String(ref), nom: titre });
@@ -408,7 +431,7 @@
     } catch (e) { if (typeof window.toast === "function") window.toast("Rattachement refusé : " + e.message, "err"); }
   }
   async function delierPiece(id, kind, ref) {
-    try { await window.apiPost("/api/itare/task/unlink", { id, kind, ref }); const x = A.liens[id]; if (x) x.links = x.links.filter((k) => !(k.kind === kind && k.ref === ref)); dessinerAssoc(id); }
+    try { await api("/api/itare/task/unlink", { id, kind, ref }); const x = A.liens[id]; if (x) x.links = x.links.filter((k) => !(k.kind === kind && k.ref === ref)); dessinerAssoc(id); }
     catch (e) { if (typeof window.toast === "function") window.toast("Détachement refusé : " + e.message, "err"); }
   }
 
@@ -418,8 +441,8 @@
   const minuteDuClic = (e, piste) => { const r = piste.getBoundingClientRect(); return Math.round((A.h0 * 60 + ((e.clientX - r.left) / r.width) * SPAN()) / 5) * 5; };
   const videDeVoie = (t) => t.classList.contains("aj-piste") || t.classList.contains("aj-libre") || t.classList.contains("aj-vide-voie");
   function fermerNv() { const n = $("#aj-nv"); if (n) n.remove(); A.nv = null; }
-  function ouvrirNv(type, m, e) {
-    fermerNv(); A.nv = { type, m };
+  function ouvrirNv(type, m, e, plus) {
+    fermerNv(); A.nv = { type, m, mail: plus && plus.mail };
     const ev = type === "event", n = document.createElement("form");
     n.id = "aj-nv"; n.className = "aj-nv aj-verre";
     n.innerHTML = '<div class="aj-nv-t">' + (ev ? "Nouveau rendez-vous" : "Nouveau rappel") + " · <b>" + hm(m) + "</b></div>" +
@@ -430,7 +453,8 @@
     const w = n.offsetWidth, h = n.offsetHeight;
     n.style.left = Math.max(8, Math.min(e.clientX - 20, innerWidth - w - 8)) + "px";
     n.style.top = Math.max(8, Math.min(e.clientY + 14, innerHeight - h - 8)) + "px";
-    n.querySelector(".aj-nv-i").focus();
+    const champ = n.querySelector(".aj-nv-i"); if (plus && plus.titre) champ.value = plus.titre;
+    champ.focus(); champ.select();
   }
   async function creerNv(f) {
     const nv = A.nv; if (!nv) return;
@@ -438,9 +462,10 @@
     try {
       if (nv.type === "event") {
         const d = Math.max(5, +f.d.value || 60);
-        await window.apiPost("/api/itare/event/save", { summary: titre, start_at: quand(nv.m), end_at: quand(nv.m + d) });
+        const c = await api("/api/itare/event/save", { summary: titre, start_at: quand(nv.m), end_at: quand(nv.m + d) });
+        if (nv.mail && c && c.id) { try { await api("/api/itare/event/link", { id: c.id, kind: "mail", ref: nv.mail.uid, label: nv.mail.sujet.slice(0, 120) }); } catch (x) {} }
       } else {
-        await window.apiPost("/api/rappel/creer", { text: titre, due: quand(nv.m) });
+        await api("/api/rappel/creer", { text: titre, due: quand(nv.m) });
       }
       fermerNv();
       await rafraichir();
@@ -479,12 +504,12 @@
     A.edit = null;
     const pid = f.p ? f.p.value : null, cur = (A.liens[id] || {}).pid || "";
     if (pid !== null && pid !== cur) {
-      try { await window.apiPost("/api/itare/task/save", { id, project_id: pid ? +pid : null }); } catch (e) { if (typeof window.toast === "function") window.toast("Projet non modifié : " + e.message, "err"); }
+      try { await api("/api/itare/task/save", { id, project_id: pid ? +pid : null }); } catch (e) { if (typeof window.toast === "function") window.toast("Projet non modifié : " + e.message, "err"); }
       delete A.liens[id];                                          // on relira le projet et ses rattachements
     }
-    if (m !== (durees()[id] || DUREE_DEFAUT)) retenirDuree(id, m);
+    if (m !== (dureeDe(id) || DUREE_DEFAUT)) retenirDuree(id, m);
     if (p && titre !== p.titre) {
-      try { await window.apiPost("/api/itare/task/save", { id, text: titre }); p.titre = titre; A.plan.forEach((b) => { if (b.tache === id) b.titre = titre; }); sauver(); await rafraichir(); }
+      try { await api("/api/itare/task/save", { id, text: titre }); p.titre = titre; A.plan.forEach((b) => { if (b.tache === id) b.titre = titre; }); sauver(); await rafraichir(); }
       catch (e) { if (typeof window.toast === "function") window.toast("Modification refusée : " + e.message, "err"); }
     }
     rendre();
@@ -500,7 +525,7 @@
     if (!taches.length) return;
     const cible = demain(), memo = taches.map((t) => ({ id: t.id, due: t.due || "", bloc: A.plan.find((b) => b.tache === t.id) || null }));
     try {
-      for (const t of taches) await window.apiPost("/api/itare/task/save", { id: t.id, due: cible });
+      for (const t of taches) await api("/api/itare/task/save", { id: t.id, due: cible });
     } catch (e) { if (typeof window.toast === "function") window.toast("Report refusé : " + e.message, "err"); await rafraichir(); return; }
     const ids = new Set(taches.map((t) => t.id));
     A.plan = A.plan.filter((b) => !(b.tache != null && ids.has(b.tache))); sauver();
@@ -516,7 +541,7 @@
   async function annulerReport() {
     const a = A.annul; if (!a) return; A.annul = null; clearTimeout(A.annulT);
     try {
-      for (const m of a.memo) { await window.apiPost("/api/itare/task/save", { id: m.id, due: m.due || iso(new Date()) }); if (m.bloc && !A.plan.some((b) => b.id === m.bloc.id)) A.plan.push(m.bloc); }
+      for (const m of a.memo) { await api("/api/itare/task/save", { id: m.id, due: m.due || iso(new Date()) }); if (m.bloc && !A.plan.some((b) => b.id === m.bloc.id)) A.plan.push(m.bloc); }
       A.plan.sort((x, y) => x.deb - y.deb); sauver();
     } catch (e) { if (typeof window.toast === "function") window.toast("Annulation refusée : " + e.message, "err"); }
     await rafraichir(); majAnnul();
@@ -525,7 +550,7 @@
     if (A.suppr !== id) { A.suppr = id; rendre(); clearTimeout(A.supprT); A.supprT = setTimeout(() => { if (A.suppr === id) { A.suppr = null; rendre(); } }, 3500); return; }
     A.suppr = null; clearTimeout(A.supprT);
     try {
-      await window.apiPost("/api/itare/task/delete", { id });
+      await api("/api/itare/task/delete", { id });
       A.plan = A.plan.filter((b) => b.tache !== id); sauver();
       await rafraichir();
     } catch (e) { if (typeof window.toast === "function") window.toast("Suppression refusée : " + e.message, "err"); rendre(); }
@@ -556,7 +581,7 @@
     A.focus = { reste: min * 60, affiche: p2(min) + ":00" };
     b.classList.add("pri"); dessinerDuree();
     const maj = () => { const r = A.focus.reste; A.focus.affiche = p2(Math.floor(r / 60)) + ":" + p2(r % 60); const c = $("#aj-c-heure"); if (c) c.textContent = A.focus.affiche; b.textContent = "■ Arrêter (" + Math.ceil(r / 60) + " min)"; };
-    A.focus.i = setInterval(() => { A.focus.reste--; if (A.focus.reste <= 0) { basculerFocus(); if (typeof window.toast === "function") window.toast("Concentration terminée."); return; } maj(); }, 1000);
+    A.focus.i = setInterval(() => { A.focus.reste--; if (A.focus.reste <= 0) { basculerFocus(); signaler("Concentration terminée.", "focus"); return; } maj(); }, 1000);
     rendre(); maj();
   }
   // ── déplacer et redimensionner : un bloc de tâche, ou un rendez-vous de l'agenda, se tire à la souris ou au doigt ──
@@ -597,7 +622,7 @@
     if (!t.libre || (t.deb === t.src.deb && t.duree === t.src.duree)) { if (!t.libre && typeof window.toast === "function") window.toast("Ce créneau est occupé."); rendre(); return; }
     if (t.src.bloc) { t.src.bloc.deb = t.deb; t.src.bloc.duree = t.duree; A.plan.sort((a, b) => a.deb - b.deb); sauver(); rendre(); return; }
     const ev = t.src.evt;
-    try { await window.apiPost("/api/itare/event/save", { id: ev.ref.id, summary: ev.titre, start_at: quand(t.deb), end_at: quand(t.deb + t.duree) }); await rafraichir(); if (typeof window.toast === "function") window.toast("Rendez-vous " + hm(t.deb) + " → " + hm(t.deb + t.duree) + "."); }
+    try { await api("/api/itare/event/save", { id: ev.ref.id, summary: ev.titre, start_at: quand(t.deb), end_at: quand(t.deb + t.duree) }); await rafraichir(); if (typeof window.toast === "function") window.toast("Rendez-vous " + hm(t.deb) + " → " + hm(t.deb + t.duree) + "."); }
     catch (x) { if (typeof window.toast === "function") window.toast("Rendez-vous non modifié : " + x.message, "err"); rendre(); }
   }
   function ouvrirRef(txt) { try { const r = JSON.parse(txt); if (typeof window.buOuvrir === "function") window.buOuvrir(r.k, r.id, r.w, r.t); } catch (e) {} }
@@ -631,6 +656,8 @@
       if ((x = ev.target.closest("[data-ref]"))) { ouvrirRef(x.dataset.ref); return; }
       if (ev.target.closest("#aj-vider")) { A.plan = []; sauver(); rendre(); return; }
       if (ev.target.closest("#aj-focus")) { basculerFocus(); return; }
+      if (ev.target.closest("#aj-al")) { A.alPop = !A.alPop; dessinerAlarmes(); return; }
+      if (ev.target.closest("[data-al-test]")) { signaler("Voici une alarme d’essai.", "essai"); return; }
       if (ev.target.closest("#aj-jr")) { A.pop = !A.pop; dessinerReglage(); return; }
       if ((x = ev.target.closest("[data-jr]"))) { const q = x.dataset.jr.split(",").map(Number); appliquerReglage(q[0], q[1]); return; }
       if ((x = ev.target.closest("[data-plus]")) && A.focus) { A.focus.reste += 5 * 60; return; }
@@ -638,8 +665,22 @@
       if (ev.target.closest("[data-geste]")) { if (A.alerte) ouvrirSignal(A.alerte); return; }
     });
     document.addEventListener("change", (ev) => { if (ev.target.id === "aj-jr-d" || ev.target.id === "aj-jr-f") appliquerReglage(+$("#aj-jr-d").value, +$("#aj-jr-f").value); });
-    document.addEventListener("click", (ev) => { if (A.pop && !ev.target.closest(".aj-jr-w")) { A.pop = false; dessinerReglage(); } });
+    document.addEventListener("click", (ev) => { if (A.pop && !ev.target.closest(".aj-jr-w")) { A.pop = false; dessinerReglage(); } if (A.alPop && !ev.target.closest(".aj-jr-w")) { A.alPop = false; dessinerAlarmes(); } });
+    document.addEventListener("change", (ev) => {
+      const k = ev.target.dataset && ev.target.dataset.al; if (!k) return;
+      if (k === "systeme") activerSysteme(ev.target.checked); else if (k === "avant") reglerAlarme("avant", +ev.target.value); else reglerAlarme(k, ev.target.checked);
+    });
+    document.addEventListener("input", (ev) => { if (ev.target.dataset && ev.target.dataset.al === "avant") { const o = ev.target.nextElementSibling; if (o) o.textContent = +ev.target.value ? ev.target.value + " min" : "à l’heure"; } });
     document.addEventListener("mousemove", fantome, { passive: true });
+    document.addEventListener("click", (ev) => {
+      const b = ev.target.closest && ev.target.closest("[data-mt], [data-mr]"); if (!b) return;
+      const r = b.closest(".bu-row[data-uid]"); if (!r) return;
+      ev.stopPropagation(); ev.preventDefault();
+      if (b.hasAttribute("data-mt")) mailVersTache(r.dataset.uid, sujetDe(r)); else mailVersRdv(r.dataset.uid, sujetDe(r), ev);
+    }, true);
+    // l'interface s'assemble après la connexion : on regarde tout le document, et le travail est borné (deux conteneurs, une garde par ligne)
+    if (!window.__sansObsCourrier) { let t = null; new MutationObserver(() => { if (t) return; t = setTimeout(() => { t = null; actionsCourrier(); }, 250); }).observe(document.body, { childList: true, subtree: true }); }
+    setInterval(pouls, 15000); setTimeout(pouls, 4000);
     document.addEventListener("pointerdown", debutTir);
     document.addEventListener("pointermove", pendantTir, { passive: false });
     document.addEventListener("pointerup", finTir);
@@ -648,7 +689,7 @@
     document.addEventListener("input", (ev) => { if (ev.target.id === "aj-min") { const v = +ev.target.value; A.focusMin = v; const o = $("#aj-min-o"); if (o) o.textContent = v + " min"; ev.target.style.setProperty("--p", ((v - 5) / 235 * 100).toFixed(1) + "%"); } });
     document.addEventListener("change", (ev) => { if (ev.target.id === "aj-min") retenirFocus(+ev.target.value); });
     document.addEventListener("input", (ev) => { if (ev.target.classList && ev.target.classList.contains("aj-lier-q")) chercherPieces(ev.target.value); });
-    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && A.nv) { fermerNv(); return; } if (ev.key === "Escape" && A.edit != null) { finEdition(); return; } if (ev.key === "Escape" && A.pop) { A.pop = false; dessinerReglage(); } });
+    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && A.alPop) { A.alPop = false; dessinerAlarmes(); return; } if (ev.key === "Escape" && A.nv) { fermerNv(); return; } if (ev.key === "Escape" && A.edit != null) { finEdition(); return; } if (ev.key === "Escape" && A.pop) { A.pop = false; dessinerReglage(); } });
     document.addEventListener("submit", (ev) => { if (ev.target.id === "aj-nv") { ev.preventDefault(); creerNv(ev.target); return; } if (ev.target.classList && ev.target.classList.contains("aj-edit")) { ev.preventDefault(); enregistrerEdition(ev.target); return; } if (ev.target.id === "aj-f") { ev.preventDefault(); const i = $("#aj-q"); const v = i.value; i.value = ""; ajouter(v); } });
     // glisser-déposer d'une tâche vers la voie « À faire »
     document.addEventListener("dragstart", (e) => { const p = e.target.closest && e.target.closest(".aj-puce"); if (!p) return; A.glisse = +p.dataset.tid; p.classList.add("glisse"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(A.glisse)); });
@@ -709,12 +750,122 @@
     if (Math.floor(m) !== avant) rendre();                        // la minute change : la suite, les temps libres et les chiffres se recalculent
   }
 
+  // ── les alarmes : un rendez-vous, un rappel ou une tâche posée se signale à l'heure, où que l'on soit dans l'application ──────
+  const ALM_DEFAUT = { actif: true, avant: 5, son: false, systeme: false };
+  const alm = () => Object.assign({}, ALM_DEFAUT, A.reg.alarmes || {});
+  const Z = { items: [], lu: 0, charge: false };
+  const dejaSonne = () => { try { return JSON.parse(localStorage.getItem("aj_alarmes") || "{}"); } catch (e) { return {}; } };
+  function noterSonne(cle) {
+    try { const m = dejaSonne(), lim = Date.now() - 2 * 86400000; m[cle] = Date.now(); Object.keys(m).forEach((c) => { if (m[c] < lim) delete m[c]; }); localStorage.setItem("aj_alarmes", JSON.stringify(m)); } catch (e) {}
+  }
+  function bip() {
+    try {
+      const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+      const c = new C(), t = c.currentTime;
+      [880, 1175].forEach((f, i) => { const o = c.createOscillator(), g = c.createGain(); o.frequency.value = f; o.connect(g); g.connect(c.destination); g.gain.setValueAtTime(0.0001, t + i * 0.18); g.gain.exponentialRampToValueAtTime(0.18, t + i * 0.18 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.18 + 0.16); o.start(t + i * 0.18); o.stop(t + i * 0.18 + 0.18); });
+      setTimeout(() => c.close && c.close(), 800);
+    } catch (e) {}
+  }
+  function signaler(message, cle) {
+    const a = alm();
+    if (typeof window.toast === "function") window.toast("⏰ " + message, "info", 20000);
+    if (a.son) bip();
+    if (a.systeme && "Notification" in window && Notification.permission === "granted") { try { const n = new Notification("Cassandra", { body: message, tag: cle || "aj" }); n.onclick = () => { window.focus(); n.close(); }; } catch (e) {} }
+  }
+  const msDe = (jour, minutes) => new Date(jour + "T00:00:00").getTime() + minutes * 60000;
+  async function lireAlarmes() {
+    const d0 = iso(new Date()), d1 = jourSuivant(d0), out = [];
+    try {
+      const d = await api("/api/itare/events", { from: d0, to: d1 });
+      ((d && d.items) || []).forEach((e) => {
+        const k = e.kind || "event", q = String(e.when || e.start_at || ""), mn = minutes(q);
+        if (e.all_day || mn == null || e.status === "done" || e.status === "fait") return;
+        if (k === "event" || k === "etape") out.push({ cle: k + ":" + (e.id || "") + ":" + q, t: new Date(q.slice(0, 10) + "T00:00:00").getTime() + mn * 60000, titre: e.summary || "", genre: "rdv" });
+        else if (k === "reminder") out.push({ cle: "rappel:" + (e.id || "") + ":" + q, t: new Date(q.slice(0, 10) + "T00:00:00").getTime() + mn * 60000, titre: e.summary || "", genre: "rappel" });
+      });
+    } catch (e) {}
+    try { const p = await CASS.agir("affichage.lire_plan", { jour: d0 }); ((p && p.blocs) || []).forEach((b) => { if (!b.fait) out.push({ cle: "plan:" + d0 + ":" + b.id + ":" + b.deb, t: msDe(d0, b.deb), titre: b.titre, genre: "tache" }); }); } catch (e) {}
+    Z.items = out; Z.lu = Date.now();
+  }
+  function verifierAlarmes() {
+    const a = alm(); if (!a.actif) return;
+    const maintenant = Date.now(), faites = dejaSonne();
+    Z.items.forEach((it) => {
+      if (faites[it.cle]) return;
+      const decl = it.t - (it.genre === "rdv" ? a.avant * 60000 : 0);
+      if (maintenant < decl || maintenant > it.t + 5 * 60000) return;
+      noterSonne(it.cle);
+      const reste = Math.round((it.t - maintenant) / 60000), h = hm(new Date(it.t).getHours() * 60 + new Date(it.t).getMinutes());
+      if (it.genre === "rdv") signaler((reste > 0 ? "Dans " + reste + " min" : "C’est l’heure") + " · " + it.titre + " (" + h + ")", it.cle);
+      else if (it.genre === "rappel") signaler("Rappel · " + it.titre + " (" + h + ")", it.cle);
+      else signaler("À commencer · " + it.titre + " (" + h + ")", it.cle);
+    });
+  }
+  async function pouls() {
+    let jeton = ""; try { jeton = sessionStorage.getItem("cassandra_session") || ""; } catch (e) {}
+    if (!jeton) { Z.charge = false; return; }
+    if (!Z.charge) { Z.charge = true; await chargerReglage(); }
+    if (Date.now() - Z.lu > 60000) await lireAlarmes();
+    verifierAlarmes();
+  }
+  function dessinerAlarmes() {
+    const b = $("#aj-al"), pop = $("#aj-al-pop"); if (!b || !pop) return;
+    const a = alm();
+    b.textContent = a.actif ? "🔔" : "🔕"; b.title = a.actif ? "Alarmes : " + a.avant + " min avant les rendez-vous" : "Alarmes désactivées";
+    pop.hidden = !A.alPop; if (!A.alPop) return;
+    const perm = "Notification" in window ? Notification.permission : "denied";
+    pop.innerHTML = '<div class="aj-pop-t">Alarmes</div>' +
+      '<label class="aj-al-l"><input type="checkbox" data-al="actif"' + (a.actif ? " checked" : "") + '> Prévenir à l’heure (rendez-vous, rappels, tâches posées)</label>' +
+      '<div class="aj-al-r"><span>Avant un rendez-vous</span><input type="range" min="0" max="60" step="5" value="' + a.avant + '" data-al="avant" aria-label="Minutes avant"><output>' + (a.avant ? a.avant + " min" : "à l’heure") + "</output></div>" +
+      '<label class="aj-al-l"><input type="checkbox" data-al="son"' + (a.son ? " checked" : "") + '> Son</label>' +
+      '<label class="aj-al-l"><input type="checkbox" data-al="systeme"' + (a.systeme && perm === "granted" ? " checked" : "") + (perm === "denied" ? " disabled" : "") + '> Notification du navigateur' + (perm === "denied" ? " <small>(refusée dans le navigateur)</small>" : "") + "</label>" +
+      '<div class="aj-nv-b"><button type="button" class="aj-btn sm" data-al-test="1">Tester</button></div>';
+  }
+  function reglerAlarme(cle, valeur) {
+    const a = alm(); a[cle] = valeur; A.reg.alarmes = a; ecrireReglage({ alarmes: { [cle]: valeur } }); dessinerAlarmes();
+    if (cle === "actif" || cle === "avant") { Z.lu = 0; }
+  }
+  async function activerSysteme(coche) {
+    if (!coche) { reglerAlarme("systeme", false); return; }
+    if (!("Notification" in window)) { if (typeof window.toast === "function") window.toast("Ce navigateur ne sait pas notifier."); dessinerAlarmes(); return; }
+    let p = Notification.permission; if (p === "default") { try { p = await Notification.requestPermission(); } catch (e) {} }
+    if (p === "granted") reglerAlarme("systeme", true); else { if (typeof window.toast === "function") window.toast("Notifications refusées : à réactiver dans le navigateur."); dessinerAlarmes(); }
+  }
+
+  // ── le courrier : un message devient une tâche ou un rendez-vous d'un clic ────────────────────────────────────
+  function actionsCourrier() {
+    document.querySelectorAll("#bu-mail-apercu .bu-row[data-uid], #mail-list .bu-row[data-uid]").forEach((r) => {
+      if (r.querySelector(".aj-mact")) return;
+      const z = document.createElement("span"); z.className = "aj-mact";
+      z.innerHTML = '<button type="button" data-mt="1" title="Créer une tâche à partir de ce message">＋ Tâche</button><button type="button" data-mr="1" title="Créer un rendez-vous à partir de ce message">＋ RDV</button>';
+      r.appendChild(z);
+    });
+  }
+  const sujetDe = (r) => { const t = r.querySelector(".tx > span"); return (t ? t.textContent : "").trim() || "(sans objet)"; };
+  async function mailVersTache(uid, sujet) {
+    const texte = ("Répondre à : " + sujet).slice(0, 300);
+    try {
+      const r = await api("/api/itare/task/save", { text: texte, due: iso(new Date()), source: "mail", origine: uid });
+      const id = r && r.id;
+      if (id) { try { await api("/api/itare/task/link", { id, kind: "mail", ref: uid, label: sujet.slice(0, 120) }); } catch (e) {} }
+      if (typeof window.toast === "function") window.toast("Tâche créée : « " + sujet.slice(0, 50) + " »");
+      await rafraichir();
+    } catch (e) {
+      const dejaFaite = /d[ée]j[àa]/i.test(String(e.message || e));
+      if (typeof window.toast === "function") window.toast(dejaFaite ? "Ce message est déjà dans vos tâches." : "Tâche non créée : " + e.message, dejaFaite ? "info" : "err");
+    }
+  }
+  function mailVersRdv(uid, sujet, ev) {
+    const z = premierLibre(30), m = z ? arrondi5(z[0]) : arrondi5(Math.max(A.now, A.h0 * 60));
+    ouvrirNv("event", m, ev, { mail: { uid, sujet }, titre: sujet.replace(/^(re|tr|fwd?)\s*:\s*/i, "").slice(0, 200) });
+  }
+
   // ── le branchement sur l'ancienne interface : ses fonctions d'ouverture de la vue deviennent les nôtres ─────────
-  async function ouvrir() { if (A.decalJour !== 0) { A.decalJour = 0; } A.centrer = true; await chargerReglage(); const r = $("#aj-racine"); if (r && r.dataset.pret) { A.focusMin = dureeFocus(); dessinerDuree(); dessinerReglage(); } await chargerPlan(); rendre(); chargerEtat(); }
-  window.buAujourdhui = function () { rendre(); };               // calLoad l'appelle quand l'agenda est lu
+  async function ouvrir() { if (A.decalJour !== 0) { A.decalJour = 0; } A.centrer = true; await chargerReglage(); await chargerCharges(); const r = $("#aj-racine"); if (r && r.dataset.pret) { A.focusMin = dureeFocus(); dessinerDuree(); dessinerReglage(); } await chargerPlan(); rendre(); chargerEtat(); }
+  window.buAujourdhui = function () { rendre(); chargerCharges().then((ch) => { if (ch && A.edit == null) rendre(); }); };               // calLoad l'appelle quand l'agenda est lu
   window.bjJour = function () { return ouvrir(); };              // buSeg('today') l'appelle à l'ouverture
   window.bjRecevoir = function (msg) { if (!msg || !msg.jour) return; if (msg.jour.ok) recevoir(msg.jour); };
-  CASS.aujourdhui = { rendre, ouvrir, etat: A };
+  CASS.aujourdhui = { rendre, ouvrir, etat: A, courrier: actionsCourrier, alarmes: { lire: lireAlarmes, verifier: verifierAlarmes, items: () => Z.items } };
   brancher();
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲

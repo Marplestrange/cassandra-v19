@@ -241,3 +241,14 @@
 .aj-rz:hover{background:color-mix(in srgb,var(--c) 35%,transparent)}
 .aj-tir{position:fixed;z-index:500;pointer-events:none;background:var(--txt-strong,#101828);color:#fff;font:700 11.5px 'JetBrains Mono',monospace;padding:4px 9px;border-radius:8px;white-space:nowrap}
 @media (max-width:560px){.aj-nav{margin-right:0}.aj-salut{flex-basis:100%;order:3}.aj-rep{opacity:1}}
+
+/* alarmes */
+.aj-cloche{padding:5px 9px;font-size:14px}
+.aj-al-l{display:flex;align-items:center;gap:9px;margin:8px 0;font:500 13px 'Inter',system-ui,sans-serif;color:var(--txt)}.aj-al-l small{color:var(--txt-faint)}
+.aj-al-r{display:flex;align-items:center;gap:10px;margin:10px 0;font:500 12px 'JetBrains Mono',monospace;color:var(--txt-soft)}.aj-al-r input{flex:1;min-width:0;accent-color:var(--accent)}.aj-al-r output{min-width:64px;text-align:right;font-weight:600}
+/* du courrier à la tâche ou au rendez-vous */
+.aj-mact{display:none;gap:4px;margin-left:8px;flex:none}
+.bu-row:hover .aj-mact{display:inline-flex}
+.aj-mact button{border:1px solid var(--line);background:var(--surface-solid,#fff);color:var(--accent);border-radius:8px;padding:3px 8px;font:600 11px 'Inter',system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.aj-mact button:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+@media (hover:none){.aj-mact{display:inline-flex}}
