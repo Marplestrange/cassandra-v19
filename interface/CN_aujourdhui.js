@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #d7fd7a
+// VERSION CN : 0.1.0  #e4d602
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=d7fd7a ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=e4d602 ▼▼▼
 /* La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
    (la suite), et la journée se range à la main ou toute seule (la frise, les tâches à placer). Les données sont celles de l'ancienne
    interface (agenda, tâches, rappels, état du jour) ; seul le PLAN — où l'on a posé quoi — est écrit, par le module affichage
@@ -32,7 +32,7 @@
   const COULEURS = { event: "var(--info)", etape: "var(--accent)", task: "var(--violet)", reminder: "var(--warn)", ssl: "var(--danger)" };
   const DUREE_DEFAUT = 30;
 
-  const A = { reg: { debut: null, fin: null, focus: null, durees: {} }, d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, edit: null, nv: null, h0: 8, h1: 20, decal: 0, perso: false, pop: false, charge: false, sauvegarde: null };
+  const A = { reg: { debut: null, fin: null, focus: null, durees: {} }, d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, edit: null, nv: null, liens: {}, h0: 8, h1: 20, decal: 0, perso: false, pop: false, charge: false, sauvegarde: null };
 
   // ── les durées retenues pour les tâches (le serveur ne connaît que la charge, qui est un poids) ────────────────
   // ── le réglage du compte (heures de la journée, concentration, durée des tâches) : écrit par le serveur, une fois par compte ──
@@ -260,11 +260,12 @@
     const f = frise();
     $("#aj-heures").innerHTML = f.heures; $("#aj-p-ag").innerHTML = f.ag; $("#aj-p-ta").innerHTML = f.ta || '<div class="aj-vide-voie">Déposez ici une tâche, ou cliquez « placer → » sur une tâche</div>'; $("#aj-p-ec").innerHTML = f.ec || '<div class="aj-vide-voie">Aucune échéance aujourd’hui</div>';
     A.plan.forEach((p) => { delete p.neuf; });
+    chargerLiens();
     $("#aj-entier").innerHTML = A.jourEntier.length ? '<span class="aj-lab">Toute la journée</span>' + A.jourEntier.map((e) => '<button class="aj-ad" type="button" data-ref="' + esc(JSON.stringify(e.ref)) + '" style="--c:' + e.c + '">' + esc(e.titre) + "</button>").join("") : "";
     $("#aj-bilan").textContent = A.plan.length + " placée" + (A.plan.length > 1 ? "s" : "") + " · " + pl.length + " à placer";
     $("#aj-n-pl").textContent = pl.length ? pl.length + " en attente" : "";
     if (A.edit != null && !pl.some((q) => q.id === A.edit)) A.edit = null;                // la tâche en cours de modification a disparu : on referme l'éditeur
-    if (A.edit == null) $("#aj-plateau").innerHTML = pl.length ? pl.map((p) => '<div class="aj-puce' + (p.retard ? " retard" : "") + '" draggable="true" data-tid="' + p.id + '"><span class="aj-t" data-edit-go="' + p.id + '" title="Modifier">' + esc(p.titre) + "</span><small data-edit-go=\"" + p.id + '" title="Modifier la durée">' + dur(p.duree) + '</small><button class="aj-go" type="button" data-go="' + p.id + '">placer →</button><button class="aj-ed" type="button" data-edit-go="' + p.id + '" aria-label="Modifier cette tâche" title="Modifier">✎</button>' + (A.suppr === p.id ? '<button class="aj-sup on" type="button" data-sup="' + p.id + '">Supprimer ?</button>' : '<button class="aj-sup" type="button" data-sup="' + p.id + '" aria-label="Supprimer cette tâche" title="Supprimer cette tâche">×</button>') + "</div>").join("") : '<span class="aj-n" style="padding:10px 4px">' + (A.taches.length || A.plan.length ? "Tout est placé. Rien ne traîne." : "Aucune tâche pour aujourd’hui.") + "</span>";
+    if (A.edit == null) $("#aj-plateau").innerHTML = pl.length ? pl.map((p) => '<div class="aj-puce' + (p.retard ? " retard" : "") + '" draggable="true" data-tid="' + p.id + '"><span class="aj-t" data-edit-go="' + p.id + '" title="Modifier">' + esc(p.titre) + "</span>" + pastillesLiens(p.id) + "<small data-edit-go=\"" + p.id + '" title="Modifier la durée">' + dur(p.duree) + '</small><button class="aj-go" type="button" data-go="' + p.id + '">placer →</button><button class="aj-ed" type="button" data-edit-go="' + p.id + '" aria-label="Modifier cette tâche" title="Modifier">✎</button><button class="aj-ed" type="button" data-voir="' + p.id + '" aria-label="Voir dans Tâches" title="Voir dans Agenda › Tâches">↗</button>' + (A.suppr === p.id ? '<button class="aj-sup on" type="button" data-sup="' + p.id + '">Supprimer ?</button>' : '<button class="aj-sup" type="button" data-sup="' + p.id + '" aria-label="Supprimer cette tâche" title="Supprimer cette tâche">×</button>') + "</div>").join("") : '<span class="aj-n" style="padding:10px 4px">' + (A.taches.length || A.plan.length ? "Tout est placé. Rien ne traîne." : "Aucune tâche pour aujourd’hui.") + "</span>";
     pose(r);
   }
   // la frise se cale sur la largeur réelle : le curseur et le passé, une fois les pistes en place
@@ -302,6 +303,76 @@
       if (typeof window.calLoad === "function") await window.calLoad(); else rendre();
     } catch (e) { if (typeof window.toast === "function") window.toast("Tâche non créée : " + e.message, "err"); }
   }
+  // ── les rattachements d'une tâche : un projet, et des pièces (note, rappel, courrier, contact, rendez-vous, document) ─────
+  // Le sélecteur de pièces est celui des notes (« [[ ») ; les natures qu'il propose se rangent sous les types de lien de la tâche.
+  const NATURE_VERS_LIEN = { note: "note", fil: "mail", projet: "project", contact: "contact", agenda: "event", rappel: "reminder", doc: "document" };
+  const LIEN_VERS_NATURE = { note: "note", mail: "fil", project: "projet", contact: "contact", event: "agenda", reminder: "rappel", document: "doc" };
+  const LIEN_ICONE = { note: "📝", mail: "📧", project: "🗂", contact: "👤", event: "📅", reminder: "⏰", document: "📄", url: "🔗", domain: "🌐", server: "🖥", certificate: "🔒", finding: "⚠️" };
+  const LIEN_NOM = { note: "Note", mail: "Courrier", project: "Projet", contact: "Contact", event: "Rendez-vous", reminder: "Rappel", document: "Document" };
+  async function infosTache(id) {
+    try {
+      const c = await window.apiPost("/api/itare/task/context", { id });
+      const t = (c && c.task) || {};
+      A.liens[id] = { charge: true, pid: t.project_id == null ? "" : String(t.project_id), pnom: t.project_name || "", links: ((c && c.links) || []).filter((l) => !l.inverse).map((l) => ({ kind: l.kind, ref: String(l.ref), nom: String(l.nom || l.label || l.ref) })) };
+    } catch (e) { A.liens[id] = { charge: true, pid: "", pnom: "", links: [] }; }
+  }
+  function chargerLiens() {
+    const ids = aPlacer().map((t) => t.id).filter((id) => !A.liens[id]);
+    if (!ids.length) return;
+    ids.forEach((id) => { A.liens[id] = { charge: false, pid: "", pnom: "", links: [] }; });
+    Promise.all(ids.map(infosTache)).then(() => { if (A.edit == null) rendre(); });
+  }
+  function pastillesLiens(id) {
+    const x = A.liens[id]; if (!x || !x.charge) return "";
+    const l = x.links.slice(0, 3).map((k) => '<button type="button" class="aj-lk" data-lk="' + esc(k.kind + "|" + k.ref) + '" title="' + esc((LIEN_NOM[k.kind] || k.kind) + " · " + k.nom) + '">' + (LIEN_ICONE[k.kind] || "•") + "</button>").join("");
+    return (x.pnom ? '<span class="aj-pj" title="Projet : ' + esc(x.pnom) + '">🗂 ' + esc(x.pnom.slice(0, 18)) + "</span>" : "") + l + (x.links.length > 3 ? '<span class="aj-lk-p">+' + (x.links.length - 3) + "</span>" : "");
+  }
+  function ouvrirLien(kind, ref) {
+    const nature = LIEN_VERS_NATURE[kind];
+    if (nature && typeof window.ntAllerEco === "function") { window.ntAllerEco(nature, ref); return; }
+    if (typeof window.toast === "function") window.toast("Ce type de rattachement n'a pas de page à ouvrir.");
+  }
+  function voirDansTaches(id) {
+    if (typeof window.buSeg === "function") window.buSeg("tk");
+    setTimeout(() => { if (typeof window.tkOpen === "function") window.tkOpen(id); }, 500);
+  }
+  // la liste des projets se relit à l'ouverture de l'éditeur : celle de l'agenda ne se remplit qu'une fois
+  async function chargerProjets() { try { const d = await window.apiPost("/api/itare/projects", {}); A.projets = (d && d.projects) || []; } catch (e) { A.projets = A.projets || []; } }
+  function dessinerAssoc(id) {
+    const z = document.querySelector('.aj-assoc[data-assoc="' + id + '"]'); if (!z) return;
+    const x = A.liens[id] || { pid: "", links: [] };
+    const projets = A.projets || [];
+    const q = z.querySelector(".aj-lier-q"), garde = q ? q.value : "";
+    const ps = z.querySelector("select"), choisi = ps ? ps.value : x.pid;                      // le projet choisi survit à un rattachement qui redessine la zone
+    z.innerHTML = '<label class="aj-as-p"><span>Projet</span><select name="p"><option value="">— aucun —</option>' + projets.map((p) => '<option value="' + esc(p.id) + '"' + (String(p.id) === choisi ? " selected" : "") + ">" + esc(p.name || "") + "</option>").join("") + "</select></label>" +
+      '<div class="aj-lk-l">' + (x.links.length ? x.links.map((k) => '<span class="aj-lk-c">' + (LIEN_ICONE[k.kind] || "•") + " " + esc(k.nom.slice(0, 32)) + '<button type="button" data-unlk="' + esc(k.kind + "|" + k.ref) + '" title="Détacher" aria-label="Détacher">×</button></span>').join("") : '<span class="aj-aide" style="margin:0">Aucune pièce rattachée.</span>') + "</div>" +
+      '<div class="aj-lier"><input class="aj-lier-q" placeholder="Lier à une note, un rappel, un courrier, un projet…" autocomplete="off" value="' + esc(garde) + '"><div class="aj-lier-r" hidden></div></div>';
+  }
+  async function chercherPieces(texte) {
+    const z = document.querySelector(".aj-lier-r"); if (!z) return;
+    const q = texte.trim().toLowerCase();
+    if (!q) { z.hidden = true; z.innerHTML = ""; return; }
+    let tous = []; try { tous = typeof window.ntCiblesCharger === "function" ? await window.ntCiblesCharger() : []; } catch (e) {}
+    const L = tous.filter((c) => NATURE_VERS_LIEN[c.kind] && ((c.titre || "").toLowerCase().indexOf(q) >= 0 || (c.kind || "").indexOf(q) >= 0 || String(c.ref || "").toLowerCase().indexOf(q) >= 0)).slice(0, 8);
+    z.hidden = false;
+    z.innerHTML = L.length ? L.map((c) => '<button type="button" data-pick="' + esc(c.kind + "|" + c.ref) + '" data-titre="' + esc(c.titre || c.ref) + '"><span>' + (c.ic || LIEN_ICONE[NATURE_VERS_LIEN[c.kind]] || "🔗") + "</span><b>" + esc(c.titre || c.ref) + "</b><small>" + esc(c.n || c.kind) + "</small></button>").join("") : '<div class="aj-lier-v">Rien de ce nom (notes, rappels, courriers, projets, contacts, rendez-vous, documents).</div>';
+  }
+  async function lierPiece(id, nature, ref, titre) {
+    const kind = NATURE_VERS_LIEN[nature]; if (!kind) return;
+    try {
+      const d = await window.apiPost("/api/itare/task/link", { id, kind, ref: String(ref), label: titre });
+      if (d && d.ok === false) throw new Error(d.reason || "refusé");
+      const x = A.liens[id] || (A.liens[id] = { charge: true, pid: "", pnom: "", links: [] });
+      if (!x.links.some((k) => k.kind === kind && k.ref === String(ref))) x.links.push({ kind, ref: String(ref), nom: titre });
+      const q = document.querySelector(".aj-lier-q"); if (q) q.value = "";
+      dessinerAssoc(id); const r = document.querySelector(".aj-lier-r"); if (r) { r.hidden = true; r.innerHTML = ""; }
+    } catch (e) { if (typeof window.toast === "function") window.toast("Rattachement refusé : " + e.message, "err"); }
+  }
+  async function delierPiece(id, kind, ref) {
+    try { await window.apiPost("/api/itare/task/unlink", { id, kind, ref }); const x = A.liens[id]; if (x) x.links = x.links.filter((k) => !(k.kind === kind && k.ref === ref)); dessinerAssoc(id); }
+    catch (e) { if (typeof window.toast === "function") window.toast("Détachement refusé : " + e.message, "err"); }
+  }
+
   // ── créer un rendez-vous ou un rappel directement sur la frise : un clic dans la voie, à l'heure voulue ─────────────
   const jourDe = (m) => { const d = new Date(A.d0 + "T12:00:00"); d.setDate(d.getDate() + Math.floor(m / 1440)); return iso(d); };
   const quand = (m) => jourDe(m) + " " + p2(Math.floor(m / 60) % 24) + ":" + p2(Math.floor(m) % 60);
@@ -356,7 +427,9 @@
     puce.innerHTML = '<form class="aj-edit" data-edit="' + id + '"><input class="aj-e-t" name="t" value="' + esc(p.titre) + '" maxlength="200" aria-label="Titre de la tâche">' +
       '<span class="aj-e-d"><input class="aj-e-m" name="m" type="number" min="5" max="480" step="5" value="' + p.duree + '" aria-label="Durée en minutes"> min</span>' +
       '<span class="aj-e-p">' + [5, 15, 30, 45, 60, 90].map((m) => '<button type="button" data-e-min="' + m + '">' + m + "</button>").join("") + "</span>" +
-      '<button class="aj-ok" type="submit" title="Enregistrer">✓</button><button class="aj-an" type="button" data-edit-fin="1" title="Annuler">✕</button></form>';
+      '<button class="aj-ok" type="submit" title="Enregistrer">✓</button><button class="aj-an" type="button" data-edit-fin="1" title="Annuler">✕</button><div class="aj-assoc" data-assoc="' + id + '"></div></form>';
+    Promise.all([chargerProjets(), A.liens[id] && A.liens[id].charge ? 0 : infosTache(id)]).then(() => dessinerAssoc(id));
+    dessinerAssoc(id);
     const t = puce.querySelector(".aj-e-t"); t.focus(); t.select();
   }
   function finEdition() { A.edit = null; rendre(); }
@@ -365,6 +438,11 @@
     const titre = f.t.value.trim().slice(0, 200), m = Math.max(5, Math.min(480, Math.round(+f.m.value || DUREE_DEFAUT / 1)));
     if (!titre) { f.t.focus(); return; }
     A.edit = null;
+    const pid = f.p ? f.p.value : null, cur = (A.liens[id] || {}).pid || "";
+    if (pid !== null && pid !== cur) {
+      try { await window.apiPost("/api/itare/task/save", { id, project_id: pid ? +pid : null }); } catch (e) { if (typeof window.toast === "function") window.toast("Projet non modifié : " + e.message, "err"); }
+      delete A.liens[id];                                          // on relira le projet et ses rattachements
+    }
     if (m !== (durees()[id] || DUREE_DEFAUT)) retenirDuree(id, m);
     if (p && titre !== p.titre) {
       try { await window.apiPost("/api/itare/task/save", { id, text: titre }); p.titre = titre; A.plan.forEach((b) => { if (b.tache === id) b.titre = titre; }); sauver(); if (typeof window.calLoad === "function") await window.calLoad(); }
@@ -417,6 +495,10 @@
       let x;
       if ((x = ev.target.closest("[data-nv-d]"))) { const f = x.closest("form"); f.d.value = x.dataset.nvD; f.querySelectorAll("[data-nv-d]").forEach((b) => b.classList.toggle("on", b === x)); return; }
       if (ev.target.closest("[data-nv-fin]")) { fermerNv(); return; }
+      if ((x = ev.target.closest("[data-pick]"))) { const id = +x.closest(".aj-puce").dataset.tid, pr = x.dataset.pick.split("|"); lierPiece(id, pr[0], pr.slice(1).join("|"), x.dataset.titre); return; }
+      if ((x = ev.target.closest("[data-unlk]"))) { const id = +x.closest(".aj-puce").dataset.tid, pr = x.dataset.unlk.split("|"); delierPiece(id, pr[0], pr.slice(1).join("|")); return; }
+      if ((x = ev.target.closest("[data-lk]"))) { const pr = x.dataset.lk.split("|"); ouvrirLien(pr[0], pr.slice(1).join("|")); return; }
+      if ((x = ev.target.closest("[data-voir]"))) { voirDansTaches(+x.dataset.voir); return; }
       if (A.nv && !ev.target.closest("#aj-nv") && !ev.target.closest("#aj-p-ag, #aj-p-ec")) fermerNv();
       const r = $("#aj-racine"); if (!r || !r.contains(ev.target)) return;
       if ((x = ev.target.closest("[data-x]"))) { A.plan = A.plan.filter((b) => b.id !== x.dataset.x); sauver(); rendre(); return; }
@@ -441,6 +523,7 @@
     document.addEventListener("change", (ev) => { if (ev.target.id === "aj-jr-d" || ev.target.id === "aj-jr-f") appliquerReglage(+$("#aj-jr-d").value, +$("#aj-jr-f").value); });
     document.addEventListener("click", (ev) => { if (A.pop && !ev.target.closest(".aj-jr-w")) { A.pop = false; dessinerReglage(); } });
     document.addEventListener("mousemove", fantome, { passive: true });
+    document.addEventListener("input", (ev) => { if (ev.target.classList && ev.target.classList.contains("aj-lier-q")) chercherPieces(ev.target.value); });
     document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && A.nv) { fermerNv(); return; } if (ev.key === "Escape" && A.edit != null) { finEdition(); return; } if (ev.key === "Escape" && A.pop) { A.pop = false; dessinerReglage(); } });
     document.addEventListener("submit", (ev) => { if (ev.target.id === "aj-nv") { ev.preventDefault(); creerNv(ev.target); return; } if (ev.target.classList && ev.target.classList.contains("aj-edit")) { ev.preventDefault(); enregistrerEdition(ev.target); return; } if (ev.target.id === "aj-f") { ev.preventDefault(); const i = $("#aj-q"); const v = i.value; i.value = ""; ajouter(v); } });
     // glisser-déposer d'une tâche vers la voie « À faire »

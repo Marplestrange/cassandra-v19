@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #58a9eb
+# VERSION CN : 0.1.0  #90a7a6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module taches, avec le vrai module des projets pour les rôles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=58a9eb ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=90a7a6 ▼▼▼
 """Bancs du module taches, avec le vrai module des projets pour les rôles."""
 import shutil
 import sys
@@ -213,6 +213,12 @@ class SousTachesEtLiens(Monde):
         self.assertEqual(self.fiche(t)["liens"], [])
         for args in (dict(kind="inconnu", ref="x"), dict(kind="url", ref="")):
             self.assertEqual(self.ex("lier", id=t, **args)["statut"], "echec", args)
+
+    def test_une_tache_se_rattache_a_un_rappel_et_a_un_document(self):
+        t = self.tache()
+        self.ok("lier", id=t, kind="reminder", ref="7", label="Appeler le notaire")
+        self.ok("lier", id=t, kind="document", ref="contrats/bail.pdf", label="Le bail")
+        self.assertEqual(sorted((l["kind"], l["ref"]) for l in self.fiche(t)["liens"]), [("document", "contrats/bail.pdf"), ("reminder", "7")])
 
     def test_delier_et_son_retour(self):
         t = self.tache()

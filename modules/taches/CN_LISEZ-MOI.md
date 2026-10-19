@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : taches -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION CN : 0.2.0  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : Tâches -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=53631b ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.2.0 empreinte=53631b ▼▼▼ -->
 # Tâches
 
 Les tâches d'un compte : statut, échéance, priorité, sous-tâches, récurrence, avancement, responsable (soi, un membre du projet, ou Itare), liens, journal, provenance.

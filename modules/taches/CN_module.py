@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : taches
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5d174c
+# VERSION CN : 0.2.0  #1cbff5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les tâches.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5d174c ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=1cbff5 ▼▼▼
 """Les tâches.
 
 Porté de la V18 (`itare_task_*`, `itare_task_from_source`), avec ses leçons :
@@ -38,7 +38,7 @@ from datetime import datetime, timedelta
 STATUTS = ("todo", "en cours", "en attente", "fait", "abandonnee")
 FERMES = ("fait", "abandonnee")
 PRIORITES = ("basse", "normale", "haute", "urgente")
-LIENS = ("note", "mail", "url", "project", "contact", "event", "domain", "server", "certificate", "finding")
+LIENS = ("note", "mail", "url", "project", "contact", "event", "domain", "server", "certificate", "finding", "reminder", "document")
 RECURRENCES = {"weekly": 7, "biweekly": 14, "monthly": 30, "quarterly": 91, "yearly": 365}
 DIT_STATUT = {"todo": "à faire", "en cours": "en cours", "en attente": "en attente", "fait": "faite", "abandonnee": "abandonnée"}
 SYSTEME = ("cassandra", "itare", "noyau", "operateur")
