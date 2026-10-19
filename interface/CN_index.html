@@ -13,7 +13,7 @@
 <!-- RÔLE       : la page unique de l'interface : le corps de la V18 et la liste des scripts. -->
 <!-- MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=8dba27 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d277fe ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -1729,17 +1729,13 @@
       </div>
 
 
-      <!-- LE BANDEAU DE VÉRITÉ, sur CHAQUE écran : cinq nombres qu'on peut
-           lire sans ouvrir Aujourd'hui, et un › sur chacun pour y aller.
-           Rempli par `bjTuiles()` — depuis l'état du jour, servi du cache de
-           la passe, et poussé par sa trame. -->
-      <div class="bj-tuiles" id="bj-tuiles" aria-label="Bandeau de vérité"></div>
 
       <div class="bu-corps" id="bu-corps">
         <div class="bu-vues" id="bu-vues">
 
       <!-- ─────────── AUJOURD'HUI ─────────── -->
       <section class="bu-view on" id="bu-v-today">
+        <div class="bj-tuiles" id="bj-tuiles" aria-label="Bandeau de vérité"></div>
         <!-- Mêmes pastilles que l'agenda, et MÊME état : masquer une source ici
              la masque là-bas. Deux préférences à tenir en divergeraient. -->
         <!-- LES TROIS BANDES — par urgence, pas par nature. On n'ouvre pas
