@@ -12,7 +12,7 @@
 /* RÔLE       : aujourdhui.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=ccce1e ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=b5856a ▼▼▼ */
 /* La page « Aujourd'hui » : le cadran du jour. Mêmes jetons que le reste de l'application ; le verre est celui des cartes. */
 #aj-racine{--aj-line:var(--line);display:block;min-width:0}
 .aj-verre{background:radial-gradient(120% 70% at 0% 0%,rgba(20,184,166,.06),transparent 60%),linear-gradient(165deg,rgba(255,255,255,.8),rgba(255,255,255,.5));-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);border:1px solid rgba(255,255,255,.7);border-radius:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(16,24,40,.05),0 14px 32px -16px rgba(15,70,66,.25)}
@@ -81,11 +81,9 @@
 .aj-lab{font:600 10.5px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.07em;color:var(--txt-faint)}
 .aj-ad{padding:4px 11px;border-radius:999px;font:500 12px 'Inter',system-ui,sans-serif;border:1px solid color-mix(in srgb,var(--c) 40%,transparent);background:color-mix(in srgb,var(--c) 10%,transparent)}
 .aj-plan{position:relative;min-width:760px}
-.aj-heures{display:flex;justify-content:space-between;font:500 10.5px 'JetBrains Mono',monospace;color:var(--txt-faint);padding:0 0 6px 74px}
-.aj-heures span{width:0;text-align:center;white-space:nowrap}
 .aj-voie{position:relative;display:flex;align-items:stretch;height:58px;margin-bottom:8px}
 .aj-nom{width:74px;flex:none;font:600 10.5px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.07em;color:var(--txt-faint);display:flex;align-items:center}
-.aj-piste{position:relative;flex:1;border-radius:14px;background:rgba(127,140,150,.08)}
+.aj-piste{position:relative;flex:1;border-radius:14px;background-color:rgba(127,140,150,.08);background-image:repeating-linear-gradient(90deg,rgba(127,140,150,.30) 0 1px,transparent 1px var(--hs,8.3%)),repeating-linear-gradient(90deg,rgba(127,140,150,.14) 0 1px,transparent 1px calc(var(--hs,8.3%) / 2))}
 .aj-piste.cible{outline:2px dashed var(--accent);outline-offset:2px;background:var(--acc-10)}
 .aj-vide-voie{position:absolute;inset:0;display:grid;place-items:center;font:500 12px 'Inter',system-ui,sans-serif;color:var(--txt-faint);pointer-events:none;text-align:center;padding:0 10px}
 .aj-blk{position:absolute;top:5px;bottom:5px;border-radius:11px;padding:6px 10px;overflow:hidden;line-height:1.25;border-left:4px solid var(--c);background:color-mix(in srgb,var(--c) 14%,var(--surface-solid,#fff) 70%);color:var(--txt);cursor:pointer;transition:left .5s cubic-bezier(.2,.8,.2,1),width .5s,transform .2s,opacity .3s}
@@ -161,3 +159,30 @@
 .aj-pop-c{display:flex;gap:14px;align-items:center}
 .aj-pop-c label{display:flex;align-items:center;gap:8px;font:500 13px 'Inter',system-ui,sans-serif;color:var(--txt-soft)}
 .aj-pop-c select{padding:6px 8px;border-radius:9px;border:1px solid var(--line);background:var(--surface-solid,#fff);color:var(--txt);font:600 13px 'JetBrains Mono',monospace}
+
+/* la règle graduée de la frise : quart d'heure, demi-heure, heure */
+.aj-heures{position:relative;height:26px;margin-left:74px;font:600 10.5px 'JetBrains Mono',monospace;color:var(--txt-faint)}
+.aj-g{position:absolute;bottom:0;width:0;border-left:1px solid rgba(127,140,150,.5);font-style:normal}
+.aj-g.q{height:5px}.aj-g.d{height:9px}.aj-g.h{height:15px;border-left-color:rgba(127,140,150,.85)}
+.aj-g b{position:absolute;bottom:17px;left:0;transform:translateX(-50%);font-weight:600;color:var(--txt-soft)}
+@media (max-width:900px){.aj-heures{margin-left:48px}}
+/* le guide de dépôt */
+.aj-guide{position:absolute;top:3px;bottom:3px;z-index:6;border-radius:11px;background:color-mix(in srgb,var(--violet) 22%,transparent);border:2px solid var(--violet);pointer-events:none;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:visible;min-width:24px}
+.aj-guide.deplace{border-style:dashed;border-color:var(--warn);background:color-mix(in srgb,var(--warn) 18%,transparent)}
+.aj-guide[hidden]{display:none}
+.aj-guide b{position:absolute;top:-24px;left:0;background:var(--violet);color:#fff;font:700 11px 'JetBrains Mono',monospace;padding:2px 8px;border-radius:7px;white-space:nowrap}
+.aj-guide.deplace b{background:var(--warn)}
+.aj-guide small{position:absolute;bottom:-20px;left:0;font:500 10.5px 'Inter',system-ui,sans-serif;color:var(--warn);white-space:nowrap}
+/* la tâche s'édite sur place */
+.aj-ed{opacity:0;border:0;background:none;color:var(--txt-faint);font-size:13px;line-height:1;padding:0 2px;flex:none;transition:opacity .15s,color .15s}
+.aj-puce:hover .aj-ed{opacity:1}.aj-ed:hover,.aj-t[data-edit-go]:hover{color:var(--accent)}
+.aj-t[data-edit-go],.aj-puce small[data-edit-go]{cursor:text}
+.aj-puce.edit{cursor:default;flex-wrap:wrap;width:100%;border-left-color:var(--accent)}
+.aj-edit{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%}
+.aj-e-t{flex:1 1 180px;min-width:0;padding:6px 10px;border-radius:9px;border:1px solid var(--accent);background:var(--surface-solid,#fff);color:var(--txt);font:600 13px 'Inter',system-ui,sans-serif;outline:0;box-shadow:0 0 0 3px var(--acc-10)}
+.aj-e-d{display:inline-flex;align-items:center;gap:4px;font:500 11.5px 'JetBrains Mono',monospace;color:var(--txt-faint)}
+.aj-e-m{width:58px;padding:6px 6px;border-radius:9px;border:1px solid var(--line);background:var(--surface-solid,#fff);color:var(--txt);font:600 12.5px 'JetBrains Mono',monospace;text-align:right}
+.aj-e-p{display:inline-flex;gap:3px}.aj-e-p button{border:0;background:rgba(127,140,150,.14);border-radius:7px;padding:4px 7px;font:600 11px 'JetBrains Mono',monospace;color:var(--txt-soft)}.aj-e-p button:hover{background:var(--accent);color:#fff}
+.aj-ok,.aj-an{border:0;border-radius:9px;padding:6px 10px;font:700 12.5px 'Inter',system-ui,sans-serif}
+.aj-ok{background:var(--accent);color:#fff}.aj-an{background:rgba(127,140,150,.14);color:var(--txt-soft)}
+@media (max-width:560px){.aj-puce .aj-ed{opacity:1}}

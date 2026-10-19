@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #b09692
+// VERSION CN : 0.1.0  #acfd21
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=b09692 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=acfd21 ▼▼▼
 /* La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
    (la suite), et la journée se range à la main ou toute seule (la frise, les tâches à placer). Les données sont celles de l'ancienne
    interface (agenda, tâches, rappels, état du jour) ; seul le PLAN — où l'on a posé quoi — est écrit, par le module affichage
@@ -32,7 +32,7 @@
   const COULEURS = { event: "var(--info)", etape: "var(--accent)", task: "var(--violet)", reminder: "var(--warn)", ssl: "var(--danger)" };
   const DUREE_DEFAUT = 30;
 
-  const A = { reg: { debut: null, fin: null, focus: null, durees: {} }, d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, h0: 8, h1: 20, decal: 0, perso: false, pop: false, charge: false, sauvegarde: null };
+  const A = { reg: { debut: null, fin: null, focus: null, durees: {} }, d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, edit: null, h0: 8, h1: 20, decal: 0, perso: false, pop: false, charge: false, sauvegarde: null };
 
   // ── les durées retenues pour les tâches (le serveur ne connaît que la charge, qui est un poids) ────────────────
   // ── le réglage du compte (heures de la journée, concentration, durée des tâches) : écrit par le serveur, une fois par compte ──
@@ -188,7 +188,10 @@
   // ── la frise ─────────────────────────────────────────────────────────────────────────────────────────────────
   function frise() {
     let heures = "";
-    for (let h = A.h0; h <= A.h1; h += (A.h1 - A.h0) > 14 ? 3 : 2) heures += "<span>" + (h % 24) + "h</span>";
+    for (let m = A.h0 * 60; m <= A.h1 * 60; m += 15) {
+      const h = m % 60 === 0, d = m % 60 === 30;
+      heures += '<i class="aj-g ' + (h ? "h" : d ? "d" : "q") + '" style="left:' + pos(m) + '%">' + (h && m < A.h1 * 60 ? "<b>" + (Math.floor(m / 60) % 24) + "</b>" : "") + "</i>";
+    }
     const libresHtml = libres(A.now).filter((x) => x[1] - x[0] >= 30).map((x) => '<div class="aj-libre" style="left:' + pos(x[0]) + "%;width:" + (pos(x[1]) - pos(x[0])) + '%">' + dur(x[1] - x[0]) + " libres</div>").join("");
     const ag = libresHtml + A.evts.map((e) => '<div class="aj-blk" data-ref="' + esc(JSON.stringify(e.ref)) + '" style="--c:' + e.c + ";left:" + pos(e.d) + "%;width:" + (pos(e.f) - pos(e.d)) + '%"><b>' + esc(e.titre) + "</b><small>" + hm(e.d) + " – " + hm(e.f) + "</small></div>").join("");
     const ta = A.plan.filter((p) => p.deb + p.duree > A.h0 * 60 && p.deb < A.h1 * 60).map((p) => '<div class="aj-blk aj-tache' + (p.fait ? " fait" : "") + (p.neuf ? " arrive" : "") + '" data-id="' + esc(p.id) + '" style="--c:' + (p.couleur || "var(--violet)") + ";left:" + pos(p.deb) + "%;width:" + Math.max(pos(p.deb + p.duree) - pos(p.deb), 4.5) + '%"><b>' + (p.fait ? "✓ " : "") + esc(p.titre) + "</b><small>" + hm(p.deb) + " · " + dur(p.duree) + '</small><button class="aj-x" data-x="' + esc(p.id) + '" aria-label="Remettre à placer" title="Remettre à placer">×</button></div>').join("");
@@ -260,13 +263,14 @@
     $("#aj-entier").innerHTML = A.jourEntier.length ? '<span class="aj-lab">Toute la journée</span>' + A.jourEntier.map((e) => '<button class="aj-ad" type="button" data-ref="' + esc(JSON.stringify(e.ref)) + '" style="--c:' + e.c + '">' + esc(e.titre) + "</button>").join("") : "";
     $("#aj-bilan").textContent = A.plan.length + " placée" + (A.plan.length > 1 ? "s" : "") + " · " + pl.length + " à placer";
     $("#aj-n-pl").textContent = pl.length ? pl.length + " en attente" : "";
-    $("#aj-plateau").innerHTML = pl.length ? pl.map((p) => '<div class="aj-puce' + (p.retard ? " retard" : "") + '" draggable="true" data-tid="' + p.id + '"><span class="aj-t">' + esc(p.titre) + "</span><small>" + dur(p.duree) + '</small><button class="aj-go" type="button" data-go="' + p.id + '">placer →</button>' + (A.suppr === p.id ? '<button class="aj-sup on" type="button" data-sup="' + p.id + '">Supprimer ?</button>' : '<button class="aj-sup" type="button" data-sup="' + p.id + '" aria-label="Supprimer cette tâche" title="Supprimer cette tâche">×</button>') + "</div>").join("") : '<span class="aj-n" style="padding:10px 4px">' + (A.taches.length || A.plan.length ? "Tout est placé. Rien ne traîne." : "Aucune tâche pour aujourd’hui.") + "</span>";
+    if (A.edit != null && !pl.some((q) => q.id === A.edit)) A.edit = null;                // la tâche en cours de modification a disparu : on referme l'éditeur
+    if (A.edit == null) $("#aj-plateau").innerHTML = pl.length ? pl.map((p) => '<div class="aj-puce' + (p.retard ? " retard" : "") + '" draggable="true" data-tid="' + p.id + '"><span class="aj-t" data-edit-go="' + p.id + '" title="Modifier">' + esc(p.titre) + "</span><small data-edit-go=\"" + p.id + '" title="Modifier la durée">' + dur(p.duree) + '</small><button class="aj-go" type="button" data-go="' + p.id + '">placer →</button><button class="aj-ed" type="button" data-edit-go="' + p.id + '" aria-label="Modifier cette tâche" title="Modifier">✎</button>' + (A.suppr === p.id ? '<button class="aj-sup on" type="button" data-sup="' + p.id + '">Supprimer ?</button>' : '<button class="aj-sup" type="button" data-sup="' + p.id + '" aria-label="Supprimer cette tâche" title="Supprimer cette tâche">×</button>') + "</div>").join("") : '<span class="aj-n" style="padding:10px 4px">' + (A.taches.length || A.plan.length ? "Tout est placé. Rien ne traîne." : "Aucune tâche pour aujourd’hui.") + "</span>";
     pose(r);
   }
   // la frise se cale sur la largeur réelle : le curseur et le passé, une fois les pistes en place
   function pose(r) {
     const plan = $("#aj-plan"); if (!plan) return;
-    plan.style.minWidth = Math.max(760, 74 + (A.h1 - A.h0) * 58) + "px";
+    plan.style.minWidth = Math.max(760, 74 + (A.h1 - A.h0) * 58) + "px"; plan.style.setProperty("--hs", (100 / (A.h1 - A.h0)).toFixed(4) + "%");
     const larg = plan.clientWidth - 74, x = pos(Math.min(Math.max(A.now, A.h0 * 60), A.h1 * 60));
     $("#aj-curseur").style.left = (74 + larg * x / 100) + "px"; $("#aj-cur-h").textContent = hm(A.now);
     $("#aj-passe").style.width = (larg * x / 100) + "px";
@@ -302,6 +306,30 @@
       if (id) retenirDuree(id, d);
       if (typeof window.calLoad === "function") await window.calLoad(); else rendre();
     } catch (e) { if (typeof window.toast === "function") window.toast("Tâche non créée : " + e.message, "err"); }
+  }
+  function editer(id) {
+    const p = aPlacer().find((q) => q.id === id), z = $("#aj-plateau"); if (!p || !z) return;
+    A.edit = id;
+    const puce = z.querySelector('.aj-puce[data-tid="' + id + '"]'); if (!puce) return;
+    puce.classList.add("edit"); puce.draggable = false;
+    puce.innerHTML = '<form class="aj-edit" data-edit="' + id + '"><input class="aj-e-t" name="t" value="' + esc(p.titre) + '" maxlength="200" aria-label="Titre de la tâche">' +
+      '<span class="aj-e-d"><input class="aj-e-m" name="m" type="number" min="5" max="480" step="5" value="' + p.duree + '" aria-label="Durée en minutes"> min</span>' +
+      '<span class="aj-e-p">' + [5, 15, 30, 45, 60, 90].map((m) => '<button type="button" data-e-min="' + m + '">' + m + "</button>").join("") + "</span>" +
+      '<button class="aj-ok" type="submit" title="Enregistrer">✓</button><button class="aj-an" type="button" data-edit-fin="1" title="Annuler">✕</button></form>';
+    const t = puce.querySelector(".aj-e-t"); t.focus(); t.select();
+  }
+  function finEdition() { A.edit = null; rendre(); }
+  async function enregistrerEdition(f) {
+    const id = +f.dataset.edit, p = A.taches.find((q) => q.id === id);
+    const titre = f.t.value.trim().slice(0, 200), m = Math.max(5, Math.min(480, Math.round(+f.m.value || DUREE_DEFAUT / 1)));
+    if (!titre) { f.t.focus(); return; }
+    A.edit = null;
+    if (m !== (durees()[id] || DUREE_DEFAUT)) retenirDuree(id, m);
+    if (p && titre !== p.titre) {
+      try { await window.apiPost("/api/itare/task/save", { id, text: titre }); p.titre = titre; A.plan.forEach((b) => { if (b.tache === id) b.titre = titre; }); sauver(); if (typeof window.calLoad === "function") await window.calLoad(); }
+      catch (e) { if (typeof window.toast === "function") window.toast("Modification refusée : " + e.message, "err"); }
+    }
+    rendre();
   }
   async function supprimer(id) {
     if (A.suppr !== id) { A.suppr = id; rendre(); clearTimeout(A.supprT); A.supprT = setTimeout(() => { if (A.suppr === id) { A.suppr = null; rendre(); } }, 3500); return; }
@@ -348,6 +376,10 @@
       const r = $("#aj-racine"); if (!r || !r.contains(ev.target)) return;
       let x;
       if ((x = ev.target.closest("[data-x]"))) { A.plan = A.plan.filter((b) => b.id !== x.dataset.x); sauver(); rendre(); return; }
+      if ((x = ev.target.closest("[data-edit-go]"))) { if (A.edit != null) finEdition(); editer(+x.dataset.editGo); return; }
+      if (ev.target.closest("[data-edit-fin]")) { finEdition(); return; }
+      if ((x = ev.target.closest("[data-e-min]"))) { const f = x.closest("form"); f.m.value = x.dataset.eMin; f.m.focus(); return; }
+      if (ev.target.closest(".aj-puce.edit")) return;
       if ((x = ev.target.closest("[data-sup]"))) { supprimer(+x.dataset.sup); return; }
       if ((x = ev.target.closest("[data-go]"))) { const t = aPlacer().find((q) => q.id === +x.dataset.go), z = t && premierLibre(t.duree); if (z) placer(t, arrondi5(z[0])); else if (typeof window.toast === "function") window.toast("Aucun temps libre assez long."); return; }
       if ((x = ev.target.closest(".aj-tache"))) { const b = A.plan.find((q) => q.id === x.dataset.id); if (b) cocher(b, x); return; }
@@ -364,16 +396,31 @@
     });
     document.addEventListener("change", (ev) => { if (ev.target.id === "aj-jr-d" || ev.target.id === "aj-jr-f") appliquerReglage(+$("#aj-jr-d").value, +$("#aj-jr-f").value); });
     document.addEventListener("click", (ev) => { if (A.pop && !ev.target.closest(".aj-jr-w")) { A.pop = false; dessinerReglage(); } });
-    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && A.pop) { A.pop = false; dessinerReglage(); } });
-    document.addEventListener("submit", (ev) => { if (ev.target.id === "aj-f") { ev.preventDefault(); const i = $("#aj-q"); const v = i.value; i.value = ""; ajouter(v); } });
+    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && A.edit != null) { finEdition(); return; } if (ev.key === "Escape" && A.pop) { A.pop = false; dessinerReglage(); } });
+    document.addEventListener("submit", (ev) => { if (ev.target.classList && ev.target.classList.contains("aj-edit")) { ev.preventDefault(); enregistrerEdition(ev.target); return; } if (ev.target.id === "aj-f") { ev.preventDefault(); const i = $("#aj-q"); const v = i.value; i.value = ""; ajouter(v); } });
     // glisser-déposer d'une tâche vers la voie « À faire »
     document.addEventListener("dragstart", (e) => { const p = e.target.closest && e.target.closest(".aj-puce"); if (!p) return; A.glisse = +p.dataset.tid; p.classList.add("glisse"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(A.glisse)); });
-    document.addEventListener("dragend", () => { document.querySelectorAll(".aj-puce.glisse").forEach((x) => x.classList.remove("glisse")); const p = $("#aj-p-ta"); if (p) p.classList.remove("cible"); A.glisse = null; });
-    document.addEventListener("dragover", (e) => { const p = e.target.closest && e.target.closest("#aj-p-ta"); if (p && A.glisse != null) { e.preventDefault(); p.classList.add("cible"); } });
-    document.addEventListener("dragleave", (e) => { const p = e.target.closest && e.target.closest("#aj-p-ta"); if (p && !p.contains(e.relatedTarget)) p.classList.remove("cible"); });
+    document.addEventListener("dragend", () => { const g = $("#aj-guide"); if (g) g.remove(); document.querySelectorAll(".aj-puce.glisse").forEach((x) => x.classList.remove("glisse")); const p = $("#aj-p-ta"); if (p) p.classList.remove("cible"); A.glisse = null; });
+    const cible = (e, p) => {
+      const t = aPlacer().find((q) => q.id === A.glisse); if (!t) return null;
+      const r = p.getBoundingClientRect(); let m = Math.round((A.h0 * 60 + ((e.clientX - r.left) / r.width) * SPAN()) / 5) * 5;
+      m = Math.max(m, arrondi5(A.now)); let ok = true;
+      if (!occupes().every(([a, b]) => m + t.duree <= a || m >= b)) { ok = false; const z = premierLibre(t.duree, m); if (z) m = arrondi5(z[0]); else return { t, m: null }; }
+      return { t, m, ok };
+    };
+    document.addEventListener("dragover", (e) => {
+      const p = e.target.closest && e.target.closest("#aj-p-ta"); if (!p || A.glisse == null) return;
+      e.preventDefault(); p.classList.add("cible");
+      const c = cible(e, p); let g = $("#aj-guide");
+      if (!g) { g = document.createElement("div"); g.id = "aj-guide"; g.className = "aj-guide"; p.appendChild(g); }
+      if (!c || c.m == null) { g.hidden = true; return; }
+      g.hidden = false; g.classList.toggle("deplace", !c.ok);
+      g.style.left = pos(c.m) + "%"; g.style.width = Math.max(pos(c.m + c.t.duree) - pos(c.m), 2) + "%";
+      g.innerHTML = "<b>" + hm(c.m) + " → " + hm(c.m + c.t.duree) + "</b>" + (c.ok ? "" : "<small>créneau libre le plus proche</small>");
+    });
     document.addEventListener("drop", (e) => {
       const p = e.target.closest && e.target.closest("#aj-p-ta"); if (!p || A.glisse == null) return;
-      e.preventDefault(); p.classList.remove("cible");
+      e.preventDefault(); p.classList.remove("cible"); const gd = $("#aj-guide"); if (gd) gd.remove();
       const t = aPlacer().find((q) => q.id === A.glisse); if (!t) return;
       const r = p.getBoundingClientRect(); let m = Math.round((A.h0 * 60 + ((e.clientX - r.left) / r.width) * SPAN()) / 5) * 5;
       m = Math.max(m, arrondi5(A.now));
