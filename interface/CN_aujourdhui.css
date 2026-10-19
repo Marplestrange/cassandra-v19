@@ -215,3 +215,10 @@
 .aj-lier-r button{display:flex;align-items:center;gap:9px;width:100%;padding:7px 9px;border:0;background:none;border-radius:8px;text-align:left;color:var(--txt)}
 .aj-lier-r button:hover{background:var(--acc-10)}.aj-lier-r b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 12.5px 'Inter',system-ui,sans-serif}.aj-lier-r small{font:500 10.5px 'JetBrains Mono',monospace;color:var(--txt-faint)}
 .aj-lier-v{padding:8px 10px;font-size:12px;color:var(--txt-faint)}
+
+/* la durée de concentration : un curseur, pas une rangée de boutons */
+.aj-duree{padding:4px 10px 4px 12px;gap:8px}
+#aj-min{-webkit-appearance:none;appearance:none;width:110px;height:5px;border-radius:5px;background:linear-gradient(90deg,var(--accent) var(--p,10%),rgba(127,140,150,.28) var(--p,10%));outline:0;cursor:pointer;margin:0}
+#aj-min::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid var(--accent);box-shadow:0 2px 6px rgba(16,24,40,.25)}
+#aj-min::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid var(--accent)}
+#aj-min-o{font:600 12px 'JetBrains Mono',monospace;color:var(--txt-soft);min-width:52px;text-align:right}

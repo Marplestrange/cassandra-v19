@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #e4d602
+// VERSION CN : 0.1.0  #374b81
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=e4d602 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=374b81 ▼▼▼
 /* La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
    (la suite), et la journée se range à la main ou toute seule (la frise, les tâches à placer). Les données sont celles de l'ancienne
    interface (agenda, tâches, rappels, état du jour) ; seul le PLAN — où l'on a posé quoi — est écrit, par le module affichage
@@ -474,8 +474,8 @@
     const z = $("#aj-duree"); if (!z) return;
     if (A.focus) { z.innerHTML = '<button class="aj-btn sm" type="button" data-plus="5">+ 5 min</button>'; return; }
     const v = A.focusMin;
-    z.innerHTML = [15, 25, 45, 60, 90].map((m) => '<button type="button" class="aj-pre' + (m === v ? " on" : "") + '" data-min="' + m + '">' + m + "</button>").join("") +
-      '<label class="aj-lib' + ([15, 25, 45, 60, 90].indexOf(v) < 0 ? " on" : "") + '"><input type="number" id="aj-min" min="1" max="240" value="' + v + '" aria-label="Minutes de concentration"><span>min</span></label>';
+    z.innerHTML = '<input type="range" id="aj-min" min="5" max="180" step="5" value="' + v + '" aria-label="Durée de concentration en minutes" title="Durée de concentration"><output id="aj-min-o" for="aj-min">' + v + " min</output>";
+    const r = $("#aj-min"); if (r) r.style.setProperty("--p", ((Math.min(Math.max(v, 5), 180) - 5) / 175 * 100).toFixed(1) + "%");
   }
   function basculerFocus() {
     const b = $("#aj-focus");
@@ -515,7 +515,6 @@
       if (ev.target.closest("#aj-focus")) { basculerFocus(); return; }
       if (ev.target.closest("#aj-jr")) { A.pop = !A.pop; dessinerReglage(); return; }
       if ((x = ev.target.closest("[data-jr]"))) { const q = x.dataset.jr.split(",").map(Number); appliquerReglage(q[0], q[1]); return; }
-      if ((x = ev.target.closest("[data-min]"))) { A.focusMin = +x.dataset.min; retenirFocus(A.focusMin); dessinerDuree(); return; }
       if ((x = ev.target.closest("[data-plus]")) && A.focus) { A.focus.reste += 5 * 60; return; }
       if ((x = ev.target.closest("[data-seg]"))) { if (x.dataset.seg === "mandats" && typeof window.buAllerMandats === "function") window.buAllerMandats("attente"); else if (typeof window.buSeg === "function") window.buSeg(x.dataset.seg); return; }
       if (ev.target.closest("[data-geste]")) { if (A.alerte) ouvrirSignal(A.alerte); return; }
@@ -523,6 +522,8 @@
     document.addEventListener("change", (ev) => { if (ev.target.id === "aj-jr-d" || ev.target.id === "aj-jr-f") appliquerReglage(+$("#aj-jr-d").value, +$("#aj-jr-f").value); });
     document.addEventListener("click", (ev) => { if (A.pop && !ev.target.closest(".aj-jr-w")) { A.pop = false; dessinerReglage(); } });
     document.addEventListener("mousemove", fantome, { passive: true });
+    document.addEventListener("input", (ev) => { if (ev.target.id === "aj-min") { const v = +ev.target.value; A.focusMin = v; const o = $("#aj-min-o"); if (o) o.textContent = v + " min"; ev.target.style.setProperty("--p", ((v - 5) / 175 * 100).toFixed(1) + "%"); } });
+    document.addEventListener("change", (ev) => { if (ev.target.id === "aj-min") retenirFocus(+ev.target.value); });
     document.addEventListener("input", (ev) => { if (ev.target.classList && ev.target.classList.contains("aj-lier-q")) chercherPieces(ev.target.value); });
     document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && A.nv) { fermerNv(); return; } if (ev.key === "Escape" && A.edit != null) { finEdition(); return; } if (ev.key === "Escape" && A.pop) { A.pop = false; dessinerReglage(); } });
     document.addEventListener("submit", (ev) => { if (ev.target.id === "aj-nv") { ev.preventDefault(); creerNv(ev.target); return; } if (ev.target.classList && ev.target.classList.contains("aj-edit")) { ev.preventDefault(); enregistrerEdition(ev.target); return; } if (ev.target.id === "aj-f") { ev.preventDefault(); const i = $("#aj-q"); const v = i.value; i.value = ""; ajouter(v); } });
