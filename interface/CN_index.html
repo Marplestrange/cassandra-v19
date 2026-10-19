@@ -13,7 +13,7 @@
 <!-- RÔLE       : la page unique de l'interface : le corps de la V18 et la liste des scripts. -->
 <!-- MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9bcea8 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=8dba27 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -1728,36 +1728,6 @@
         <div class="bu-scenes" id="bu-scenes"></div>
       </div>
 
-      <!-- Bandeau d'identité : renseigné par /api/me et /api/me/mailbox. -->
-      <div class="bu-id">
-        <div class="bu-av" id="bu-av">··</div>
-        <div class="bu-who">
-          <b id="bu-nom">—</b>
-          <span id="bu-mail">—</span>
-          <!-- Ce que la passe garde de la boîte, et quand elle l'a relue :
-               rempli par `buCourrierRendre()`. -->
-          <span id="bu-boite-l"></span>
-        </div>
-        <!-- Deux diodes, comme dans la maquette : la boîte et l'agenda. Elles
-             disent l'état, la pastille « Mes paramètres » conduit où il se règle. -->
-        <span class="bu-pill bu-etat" id="bu-etat-boite" title="La boîte que le bureau garde"><i class="dot off"></i>boîte ?</span>
-        <span class="bu-pill bu-etat" id="bu-etat-agenda" title="L'agenda distant du compte"><i class="dot off"></i>agenda ?</span>
-        <div class="bu-sp"></div>
-        <!-- Deux liens, pas deux étiquettes : ce que la pastille annonce se
-             règle ailleurs, autant y conduire d'un clic. -->
-        <!-- Une pastille de navigation porte le nom de sa DESTINATION, pas
-             l'état de ce qu'on y règle : « Boîte du serveur, partagée » décrivait
-             un champ, pas un lien. L'état passe dans la diode et l'infobulle. -->
-        <!-- ACTUALISER TOUT L'ONGLET. Chaque carte a son propre ↻ ; celui-ci
-             rejoue le chargeur de la vue OUVERTE, quelle qu'elle soit, et le
-             bandeau ci-contre — qui ne se recharge nulle part ailleurs. -->
-        <button class="bu-pill bu-pill-a" id="bu-refr" onclick="buActualiser(this)"
-                title="Relire cette vue et le bandeau">↻ Actualiser</button>
-        <button class="bu-pill bu-pill-a" id="bu-boite" onclick="switchTab('settings');setVision('moi');setFam('moi-identite')"
-                title="Ouvrir mes paramètres">Mes paramètres</button>
-        <button class="bu-pill bu-pill-a bu-hide-s" onclick="switchTab('vault')"
-                title="Ouvrir mon coffre-fort">Mon coffre</button>
-      </div>
 
       <!-- LE BANDEAU DE VÉRITÉ, sur CHAQUE écran : cinq nombres qu'on peut
            lire sans ouvrir Aujourd'hui, et un › sur chacun pour y aller.
@@ -1790,27 +1760,6 @@
           <div class="bu-cc">
             <div class="bj-g" id="bj-bandes"></div>
 
-            <!-- Demander à Itare, AVEC l'écran comme contexte : sans lui, la
-                 question part sans ce qu'on a sous les yeux, et la réponse
-                 tourne à côté. -->
-            <div class="bj-bloc">
-              <div class="bj-bt">Demander à Itare<span class="bj-sp"></span>
-                <em id="bj-ctx">avec ce que vous avez sous les yeux</em></div>
-              <div class="bu-legend" id="bj-amorces"></div>
-              <div style="display:flex;gap:8px;align-items:flex-start">
-                <input id="bj-q" class="bu-inp" style="flex:1 1 220px"
-                       placeholder="« prépare la réponse à… »  ·  « fais le point sur… »"
-                       onkeydown="if(event.key==='Enter')bjDemander()">
-                <button class="btn-x pri" onclick="bjDemander()">Demander</button>
-              </div>
-              <p class="bj-bn">Itare reçoit <b>le contexte de l'écran</b> — les
-                alertes du jour, les sites concernés, les rappels échus. C'est
-                le même mécanisme de sources composables que le Canvas ; il n'y
-                a rien à ressaisir.</p>
-              <p class="bj-bn">Elle <b>propose</b>. Renouveler un certificat,
-                redémarrer un site : c'est vous qui appuyez.</p>
-              <div id="bj-rep" class="bu-note bu-note-b"></div>
-            </div>
           </div>
         </div>
 
@@ -1835,21 +1784,6 @@
                 lit qu'avec votre session.</p>
             </div>
 
-            <div class="card bu-flush">
-              <div class="bu-ct">À faire aujourd'hui<div class="bu-sp"></div>
-                <button class="btn-x mini" onclick="buSeg('tk')">Toutes</button></div>
-              <div class="bu-rows" id="bu-taches"></div>
-            </div>
-
-            <!-- Le radar : une échéance à 60 jours n'apparaît dans aucune vue
-                 par défaut. Celle-ci ne dépend pas du mois affiché. -->
-            <div class="card bu-flush">
-              <div class="bu-ct">Radar — 60 jours<div class="bu-sp"></div>
-                <span class="bu-note-i">infrastructure</span></div>
-              <div class="bu-rows" id="bu-radar"></div>
-              <p class="bu-note">Certificats, sauvegardes et renouvellements que Cassandra lit
-                <b>sur le serveur</b>, projetés dans le temps. Rien à saisir.</p>
-            </div>
           </div>
         </div>
       </section>
