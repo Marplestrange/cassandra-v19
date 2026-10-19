@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #264c19
+// VERSION CN : 0.1.0  #e39568
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=264c19 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=e39568 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -170,7 +170,7 @@
     lg.style.backgroundImage = logoBarre ? "url(" + logoBarre + ")" : "";
     lg.innerHTML = logoBarre ? "" : TOIT;
     favicon(o.logo_carre || o.logo);
-    $("#d19-groupes").innerHTML = E.d.groupes.map((g, i) => '<button class="d19-gr' + (g.id === E.g && E.actif ? " on" : "") + '" data-g="' + esc(g.id) + '" data-tip="' + esc(g.libelle) + " · Alt+" + (i + 1) + '" aria-label="' + esc(g.libelle) + '">' + ico(g.icone) + pastille(g) + "</button>").join("");
+    $("#d19-groupes").innerHTML = E.d.groupes.map((g, i) => '<button class="d19-gr' + (g.id === E.g && E.actif ? " on" : "") + '" data-g="' + esc(g.id) + '" title="' + esc(g.libelle) + " · Alt+" + (i + 1) + '" aria-label="' + esc(g.libelle) + '">' + ico(g.icone) + pastille(g) + "</button>").join("");
     const urg = !!(E.idees && E.idees.urgent);
     $("#d19-btn-cass").classList.toggle("d19-idee", urg);
     $("#d19-btn-cass").classList.toggle("actif", E.panel);
@@ -292,20 +292,6 @@
   }
   function ouvrirMs(v) { E.ms = v === undefined ? !E.ms : v; if (E.ms) { $("#d19-plus").classList.remove("ouvert"); rendreMs(); } $("#d19-ms").classList.toggle("ouvert", E.ms); }
 
-  // ── l'aperçu au survol d'une dalle ─────────────────────────────────────────
-  let flyT = null;
-  function flyOuvrir(btn) {
-    const g = E.d.groupes.find((x) => x.id === btn.dataset.g); if (!g) return;
-    const f = $("#d19-fly");
-    f.innerHTML = "<h3>" + esc(g.libelle) + '</h3><div class="col">' + g.entrees.map((e) => '<div class="en"><b>' + ico(e.icone) + esc(e.libelle) + "</b>"
-      + (e.enfants.length ? e.enfants.slice(0, 6).map((x) => '<button data-fg="' + esc(g.id) + '" data-fe="' + esc(e.id) + '" data-fv="' + esc(x.vue || x.id) + '">' + esc(x.libelle) + nbDe(x) + "</button>").join("") + (e.enfants.length > 6 ? '<button class="plus" data-fg="' + esc(g.id) + '" data-fe="' + esc(e.id) + '" data-fv="">Tout voir (' + e.enfants.length + ")</button>" : "")
-        : '<button data-fg="' + esc(g.id) + '" data-fe="' + esc(e.id) + '" data-fv="">Ouvrir' + nbDe(e) + "</button>") + "</div>").join("") + "</div>";
-    f.classList.add("ouvert");
-    const a = $("#app-container").getBoundingClientRect(), r = btn.getBoundingClientRect();
-    f.style.left = Math.max(8, Math.min(r.left - a.left - 6, a.width - f.offsetWidth - 8)) + "px";
-  }
-  const flyFermer = () => $("#d19-fly").classList.remove("ouvert");
-  const peutSurvoler = () => !isPetit() && !tactile() && window.matchMedia && matchMedia("(hover:hover)").matches;
 
   // ── l'interlocuteur du panneau ─────────────────────────────────────────────
   const NOMS = { itare: "Itare", cassandra: "Cassandra", inv: "Invités" };
@@ -432,7 +418,7 @@
     if (E.panel) {
       E.sideAvant = E.side; E.sideTouche = false;
       if (!isPetit() && E.w !== "xl") { E.side = "rail"; rendreGauche(); }
-      ouvrirMs(false); flyFermer(); rendrePanel();
+      ouvrirMs(false); rendrePanel();
       const m = mode(); await chargerFils(m); const f = filCourant(m); if (f) await chargerMessages(f.fil); rendrePanel(); idees(true); sonder();
     } else if (!isPetit() && !E.sideTouche && E.w !== "xl") { E.side = E.sideAvant; rendreGauche(); }
     rendreHaut();
@@ -780,7 +766,7 @@
     const cap = document.createElement("button"); cap.id = "d19-cap"; cap.type = "button"; cap.setAttribute("aria-label", "Où je suis, et l'état"); corps.appendChild(cap);
     const strip = document.createElement("div"); strip.id = "d19-strip"; main.insertBefore(strip, main.firstChild);
     const cass = document.createElement("aside"); cass.id = "d19-cass"; cass.setAttribute("aria-label", "Itare et Cassandra"); cass.innerHTML = '<div class="in"></div>'; corps.appendChild(cass);
-    const autres = '<div id="d19-fly"></div><div class="d19-tip" id="d19-tip"></div><div id="d19-plus"></div><div id="d19-ms"><div class="back" data-msback="1"></div><div class="box"></div></div>'
+    const autres = '<div class="d19-tip" id="d19-tip"></div><div id="d19-plus"></div><div id="d19-ms"><div class="back" data-msback="1"></div><div class="box"></div></div>'
       + '<div id="d19-pal"><div><input id="d19-pal-in" placeholder="Aller à… (groupe, entrée, page)" autocomplete="off"><div class="res"></div></div></div><div id="d19-toast" role="status"></div>';
     const bas = document.createElement("nav"); bas.id = "d19-bas"; bas.setAttribute("aria-label", "Groupes"); app.appendChild(bas);
     const reste = document.createElement("div"); reste.innerHTML = autres; while (reste.firstChild) app.appendChild(reste.firstChild);
@@ -795,7 +781,6 @@
     const avant = E.w; E.w = k; app.setAttribute("data-w", k);
     if (avant !== k) { const petit = k === "s" || k === "xs", pp = avant === "s" || avant === "xs"; if (!avant || petit !== pp) E.side = petit ? false : (E.panel && k !== "xl" ? "rail" : "full"); if (E.d) rendre(); }
     if (k !== "xs") app.classList.remove("d19-haut-masque");
-    if (k === "s" || k === "xs") flyFermer();
     appliquerPrefs();
   }
 
@@ -811,7 +796,7 @@
       if ((x = c("#d19-btn-cass")) || (x = c("[data-cbas]"))) { $("#d19-plus").classList.remove("ouvert"); ouvrirPanel(); return; }
       if ((x = c("[data-cclose]"))) { ouvrirPanel(false); return; }
       if ((x = c("#d19-groupes .d19-gr")) || (x = c("#d19-bas [data-g]"))) {
-        flyFermer(); fermerPops();
+        fermerPops();
         if (isXs() && x.dataset.bas && E.g === x.dataset.g && E.actif) { ouvrirMs(true); return; }
         aller(x.dataset.g, ""); if (isPetit() && !isXs()) { E.side = "full"; rendreGauche(); } return;
       }
@@ -839,7 +824,6 @@
         if (e.enfants.length && E.ouv.has(id) && E.e === id && E.actif) { E.ouv.delete(id); rendreGauche(); } else { E.ouv.add(id); aller(E.g, id); }
         return;
       }
-      if ((x = c("#d19-fly [data-fg]"))) { flyFermer(); aller(x.dataset.fg, x.dataset.fe, x.dataset.fv); return; }
       if (c("#d19-scrim")) { fermerSide(); return; }
       // panneau
       if ((x = c("#d19-cass [data-mode]"))) { if (!x.disabled) changerMode(x.dataset.mode); return; }
@@ -873,21 +857,17 @@
     app.addEventListener("submit", function (ev) { if (ev.target.id === "d19-f") { ev.preventDefault(); const i = $("#d19-in"), v = i.value; i.value = ""; E.brouillon = ""; envoyer(v); } });
     app.addEventListener("input", function (ev) { if (ev.target.id === "d19-gen-long") { genererMdp(); return; } if (ev.target.id === "d19-pal-in") { palSel = 0; palRender(); } else if (ev.target.id === "d19-in") E.brouillon = ev.target.value; });
     app.addEventListener("mouseover", function (ev) {
-      const b = ev.target.closest("#d19-groupes .d19-gr");
-      if (b && peutSurvoler()) { clearTimeout(flyT); flyT = setTimeout(() => flyOuvrir(b), $("#d19-fly").classList.contains("ouvert") ? 60 : 280); return; }
-      if (ev.target.closest("#d19-fly")) clearTimeout(flyT);
       const it = ev.target.closest("#d19-side.rail [data-tip]"), tp = $("#d19-tip");
       if (!it) { tp.classList.remove("v"); return; }
       const r = it.getBoundingClientRect(); tp.textContent = it.dataset.tip; tp.style.left = (r.right + 8) + "px"; tp.style.top = (r.top + r.height / 2 - 14) + "px"; tp.classList.add("v");
     });
-    app.addEventListener("mouseout", function (ev) { if (ev.target.closest("#d19-groupes .d19-gr") || ev.target.closest("#d19-fly")) { clearTimeout(flyT); flyT = setTimeout(flyFermer, 240); } });
     document.addEventListener("keydown", function (ev) {
       if (!$("#d19-top") || $("#app-container").classList.contains("hidden")) return;
       const typ = /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || "");
       if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "k") { ev.preventDefault(); palOuvrir(); return; }
       if (ev.key === "Escape" && E.crMenu != null) { E.crMenu = null; rendreStrip(); return; }
       if (ev.altKey && ev.key === "ArrowUp") { ev.preventDefault(); remonter(); return; }
-      if (ev.key === "Escape") { if (E.fmenu) { E.fmenu = false; rendrePanel(); return; } if (E.sug) { E.sug = false; rendrePanel(); return; } palFermer(); flyFermer(); if (E.panel) ouvrirPanel(false); return; }
+      if (ev.key === "Escape") { if (E.fmenu) { E.fmenu = false; rendrePanel(); return; } if (E.sug) { E.sug = false; rendrePanel(); return; } palFermer(); if (E.panel) ouvrirPanel(false); return; }
       if ($("#d19-pal").classList.contains("ouvert")) { if (ev.key === "ArrowDown") { ev.preventDefault(); palSel = Math.min(palSel + 1, palRes.length - 1); palRender(); } else if (ev.key === "ArrowUp") { ev.preventDefault(); palSel = Math.max(palSel - 1, 0); palRender(); } else if (ev.key === "Enter") { ev.preventDefault(); palChoisir(palSel); } return; }
       if (ev.altKey && /^[1-9]$/.test(ev.key) && E.d && E.d.groupes[+ev.key - 1]) { ev.preventDefault(); aller(E.d.groupes[+ev.key - 1].id, ""); return; }
       if (ev.key === "[" && !typ) { E.sideTouche = true; E.side = E.side === "rail" ? "full" : !E.side ? "full" : false; rendreGauche(); }

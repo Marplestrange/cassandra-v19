@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=888722 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=daeb9e ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -157,16 +157,6 @@ body.d19 .app-body{position:relative}
 #d19-strip .cr-menu button.on{background:var(--acc-10);color:var(--accent);font-weight:600}
 #d19-strip .pin{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);padding:0}
 #d19-strip .pin svg.d-i{width:16px;height:16px}
-/* ---------- aperçu au survol d'une dalle ---------- */
-#d19-fly{position:absolute;top:60px;z-index:45;display:none;min-width:320px;max-width:calc(100% - 16px);max-height:calc(100% - 90px);overflow:auto;background:var(--d-pop);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:0 0 16px 16px;box-shadow:var(--shadow-glass),0 18px 40px rgba(16,24,40,.16);padding:12px 14px 14px}
-#d19-fly.ouvert{display:block}
-#d19-fly h3{font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--txt-faint);margin:0 0 8px}
-#d19-fly .col{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px 18px}
-#d19-fly .en>b{display:flex;align-items:center;gap:7px;font-size:13px;margin-bottom:3px;color:var(--txt-strong)}
-#d19-fly .en>b svg.d-i{width:16px;height:16px;color:var(--txt-faint)}
-#d19-fly .en button{display:flex;width:100%;align-items:center;gap:8px;padding:3px 8px;border-radius:7px;font-size:12.5px;color:var(--txt-soft);text-align:left;background:none;border:0;cursor:pointer}
-#d19-fly .en button:hover{background:var(--acc-10);color:var(--accent)}
-#d19-fly .en .plus{color:var(--accent);font-weight:600}
 
 /* ---------- panneau conversationnel ---------- */
 #d19-cass{display:flex;flex-direction:column;flex:none;width:0;overflow:hidden;background:var(--d-pop);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-left:0 solid var(--line);transition:width .22s ease;position:relative;z-index:25}
