@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aujourd’hui — proposition de refonte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e9eef1; --txt:#0f1b24; --soft:#4b5b68; --faint:#7d8b97; --line:rgba(15,40,50,.10);
+  --acc:#0f8f84; --acc2:#2dd4bf; --acc10:rgba(15,143,132,.10);
+  --rouge:#c8264a; --rouge-bg:rgba(225,29,72,.08); --ambre:#b45309; --ambre-bg:rgba(245,158,11,.10); --bleu:#1d6fa5; --bleu-bg:rgba(29,111,165,.08);
+  --verre:linear-gradient(165deg,rgba(255,255,255,.82),rgba(255,255,255,.5));
+  --ombre:inset 0 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(16,24,40,.05),0 14px 32px -16px rgba(15,70,66,.25);
+}
+*{box-sizing:border-box}
+body{margin:0;font:400 14px/1.45 'Inter',system-ui,sans-serif;color:var(--txt);
+  background:radial-gradient(900px 420px at 12% -5%,rgba(45,212,191,.22),transparent 60%),radial-gradient(700px 400px at 100% 0%,rgba(29,111,165,.14),transparent 60%),var(--bg);min-height:100vh}
+.page{max-width:1120px;margin:0 auto;padding:28px max(20px,env(safe-area-inset-right)) 60px max(20px,env(safe-area-inset-left))}
+.verre{background:var(--verre);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);border:1px solid rgba(255,255,255,.72);border-radius:20px;box-shadow:var(--ombre)}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* ───────── en-tête : le titre, la date, et un seul champ pour tout saisir ───────── */
+.tete{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;margin-bottom:18px}
+h1{margin:0;font:700 30px/1.1 'Inter';letter-spacing:-.025em;position:relative;padding-bottom:12px}
+h1::after{content:"";position:absolute;left:0;bottom:0;width:46px;height:3px;border-radius:3px;background:linear-gradient(90deg,var(--acc2),var(--acc));box-shadow:0 0 12px rgba(45,212,191,.55)}
+.date{font:500 12.5px 'JetBrains Mono';color:var(--faint);padding-bottom:14px}
+.sp{flex:1}
+.etat{display:flex;gap:6px;padding-bottom:10px}
+.etat button{padding:6px 12px;border-radius:999px;font:500 12px 'Inter';color:var(--soft);background:rgba(255,255,255,.6);border:1px solid var(--line)}
+.etat button.on{background:var(--acc);color:#fff;border-color:var(--acc);box-shadow:0 6px 14px -6px rgba(15,143,132,.6)}
+
+.saisie{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 18px;margin-bottom:18px}
+.saisie svg{width:18px;height:18px;stroke:var(--faint);fill:none;stroke-width:1.8;flex:none}
+.saisie input{flex:1;border:0;background:none;font:500 15px 'Inter';color:var(--txt);outline:0;min-width:0}
+.saisie input::placeholder{color:var(--faint);font-weight:400}
+.saisie .types{display:flex;gap:6px}
+.saisie .types button{padding:6px 11px;border-radius:10px;font:500 12px 'Inter';color:var(--soft);background:rgba(15,143,132,.06)}
+.saisie .types button:hover,.saisie .types button.on{background:var(--acc10);color:var(--acc)}
+.saisie kbd{font:500 11px 'JetBrains Mono';color:var(--faint);border:1px solid var(--line);border-radius:6px;padding:2px 6px;background:#fff8}
+
+/* ───────── « Maintenant » : la seule chose à regarder d'abord ───────── */
+.maint{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+.hero{padding:22px 24px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:linear-gradient(180deg,var(--acc2),var(--acc))}
+.hero.brule::before{background:linear-gradient(180deg,#fb7185,var(--rouge))}
+.hero .lab{font:600 10.5px 'JetBrains Mono';letter-spacing:.09em;text-transform:uppercase;color:var(--acc);display:flex;gap:8px;align-items:center}
+.hero.brule .lab{color:var(--rouge)}
+.hero .lab i{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor;animation:p 1.8s ease-in-out infinite}
+@keyframes p{50%{opacity:.35}}
+.hero h2{margin:10px 0 4px;font:650 22px/1.25 'Inter';letter-spacing:-.015em}
+.hero p{margin:0;color:var(--soft)}
+.hero .acts{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.btn{padding:8px 15px;border-radius:11px;font:600 13px 'Inter';border:1px solid var(--line);background:rgba(255,255,255,.7)}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+.btn.pri{background:linear-gradient(135deg,var(--acc),#0b7a71);color:#fff;border-color:transparent;box-shadow:0 8px 18px -8px rgba(15,143,132,.7)}
+.btn.pri:hover{color:#fff;filter:brightness(1.06)}
+.hero.calme{display:flex;gap:18px;align-items:center}
+.hero.calme .ok{width:54px;height:54px;border-radius:18px;display:grid;place-items:center;background:var(--acc10);color:var(--acc);flex:none}
+.hero.calme .ok svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:2.2}
+
+/* les chiffres : une ligne, et ce qui vaut zéro s'efface */
+.chiffres{padding:14px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px;align-content:start}
+.chiffres .c{padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.55);border:1px solid var(--line);text-align:left;position:relative;transition:transform .15s,box-shadow .15s}
+.chiffres .c:hover{transform:translateY(-1px);box-shadow:0 10px 20px -12px rgba(15,70,66,.4)}
+.chiffres b{display:block;font:700 24px/1 'Inter';letter-spacing:-.02em}
+.chiffres span{font-size:12px;color:var(--soft)}
+.chiffres .c:last-child:nth-child(odd){grid-column:1/-1}
+.chiffres .c.zero b{color:#b3bcc4}.chiffres .c.zero{opacity:.75}
+.chiffres .c.rouge b{color:var(--rouge)}.chiffres .c.ambre b{color:var(--ambre)}
+.chiffres .c::after{content:"›";position:absolute;right:12px;top:10px;color:var(--faint)}
+
+/* ───────── deux colonnes : ce qui attend / la journée ───────── */
+.cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+.carte{padding:18px 20px}
+.carte>header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.carte h3{margin:0;font:650 15px 'Inter';letter-spacing:-.01em}
+.carte header .n{font:500 11.5px 'JetBrains Mono';color:var(--faint)}
+.carte header .btn-m{margin-left:auto;font:500 12px 'Inter';color:var(--acc);padding:4px 9px;border-radius:8px}
+.carte header .btn-m:hover{background:var(--acc10)}
+
+.lot{margin-top:14px}.lot:first-of-type{margin-top:0}
+.lot .t{display:flex;align-items:center;gap:8px;font:600 10.5px 'JetBrains Mono';letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.lot .t::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.lot.brule .t{color:var(--rouge)}.lot.regarder .t{color:var(--ambre)}.lot.jour .t{color:var(--bleu)}
+.item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:13px;transition:background .15s;position:relative}
+.item:hover{background:rgba(255,255,255,.75)}
+.item .pt{width:9px;height:9px;border-radius:50%;flex:none}
+.brule .pt{background:var(--rouge);box-shadow:0 0 8px rgba(225,29,72,.6)}.regarder .pt{background:#f59e0b}.jour .pt{background:var(--bleu)}
+.item .tx{flex:1;min-width:0}
+.item .tx b{display:block;font:600 13.5px 'Inter';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .tx small{color:var(--faint);font-size:12px}
+.item .src{font:500 10.5px 'JetBrains Mono';color:var(--faint);padding:2px 7px;border-radius:6px;background:rgba(15,40,50,.05);flex:none}
+.item .go{opacity:0;transition:opacity .15s;display:flex;gap:4px}
+.item:hover .go{opacity:1}
+.item .go button{padding:4px 10px;border-radius:8px;font:600 12px 'Inter';background:var(--acc10);color:var(--acc)}
+.item .go button:hover{background:var(--acc);color:#fff}
+.item.fait{opacity:.45}.item.fait .tx b{text-decoration:line-through}
+.vide{padding:12px 14px;border-radius:13px;background:rgba(15,143,132,.06);color:var(--soft);font-size:13px;display:flex;gap:10px;align-items:center}
+.vide svg{width:16px;height:16px;stroke:var(--acc);fill:none;stroke-width:2.4}
+
+/* la journée : une frise verticale, avec l'instant présent */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chip{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:999px;font:500 11.5px 'Inter';border:1px solid var(--line);background:rgba(255,255,255,.55);color:var(--soft)}
+.chip i{width:8px;height:8px;border-radius:50%}
+.chip.off{opacity:.4;text-decoration:line-through}
+.frise{position:relative;padding-left:56px}
+.frise::before{content:"";position:absolute;left:46px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,var(--line),var(--line))}
+.h{position:relative;min-height:46px;display:flex;align-items:flex-start;gap:10px}
+.h>time{position:absolute;left:-56px;width:38px;text-align:right;font:500 11.5px 'JetBrains Mono';color:var(--faint);top:2px}
+.h .ev{margin:0 0 6px;padding:8px 12px;border-radius:12px;border-left:3px solid var(--c);background:color-mix(in srgb,var(--c) 9%,white 60%);flex:1;min-width:0}
+.h .ev b{font:600 13px 'Inter';display:block}.h .ev small{color:var(--soft);font-size:12px}
+.h .ev.tache{display:flex;gap:10px;align-items:center;cursor:pointer}
+.h .ev .coche{width:18px;height:18px;border-radius:6px;border:2px solid var(--c);flex:none;display:grid;place-items:center}
+.h .ev.fait .coche{background:var(--c)}.h .ev.fait .coche::after{content:"✓";color:#fff;font-size:11px}
+.h .ev.fait b{text-decoration:line-through;opacity:.55}
+.maintenant{position:relative;height:0;margin:2px 0 8px}
+.maintenant::before{content:"";position:absolute;left:-14px;right:0;top:-1px;height:2px;background:linear-gradient(90deg,var(--rouge),transparent);border-radius:2px}
+.maintenant::after{content:"";position:absolute;left:-19px;top:-6px;width:10px;height:10px;border-radius:50%;background:var(--rouge);box-shadow:0 0 0 4px rgba(225,29,72,.18)}
+.maintenant span{position:absolute;left:-60px;top:-9px;width:36px;font-size:10.5px;text-align:right;font:600 11px 'JetBrains Mono';color:var(--rouge)}
+
+.courrier .m{display:flex;gap:11px;align-items:center;padding:9px 6px;border-radius:12px}
+.courrier .m:hover{background:rgba(255,255,255,.7)}
+.courrier .av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font:600 12px 'Inter';color:#fff;flex:none}
+.courrier .m b{font:600 13px 'Inter'}.courrier .m small{display:block;color:var(--faint);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px}
+.courrier .m time{margin-left:auto;font:500 11px 'JetBrains Mono';color:var(--faint);flex:none}
+.pile{display:flex;flex-direction:column;gap:16px}
+
+.note{margin-top:26px;padding:14px 18px;border-radius:14px;background:rgba(15,143,132,.07);border:1px dashed rgba(15,143,132,.35);color:var(--soft);font-size:13px}
+.note b{color:var(--acc)}
+@media (max-width:860px){.maint,.cols{grid-template-columns:minmax(0,1fr)}.saisie .types{display:none}h1{font-size:26px}.item .go{opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="tete">
+    <h1>Aujourd’hui</h1>
+    <span class="date" id="date"></span>
+    <span class="sp"></span>
+    <div class="etat" role="group" aria-label="État de démonstration">
+      <button data-e="charge" class="on">Journée chargée</button>
+      <button data-e="calme">Journée calme</button>
+    </div>
+  </div>
+
+  <label class="saisie verre">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    <input id="q" placeholder="Ajouter une tâche, un rappel, une note… ou demander à Itare" autocomplete="off">
+    <span class="types"><button class="on">Tâche</button><button>Rappel</button><button>Note</button><button>Événement</button></span>
+    <kbd>N</kbd>
+  </label>
+
+  <div class="maint">
+    <section class="hero verre" id="hero"></section>
+    <section class="chiffres verre" id="chiffres" aria-label="Les chiffres du jour"></section>
+  </div>
+
+  <div class="cols">
+    <section class="carte verre">
+      <header><h3>Ce qui vous attend</h3><span class="n" id="n-att"></span><button class="btn-m">Tout voir</button></header>
+      <div id="att"></div>
+    </section>
+
+    <div class="pile">
+      <section class="carte verre">
+        <header><h3>La journée</h3><span class="n">de 8 h à 19 h</span></header>
+        <div class="chips" id="chips"></div>
+        <div class="frise" id="frise"></div>
+      </section>
+
+      <section class="carte verre courrier">
+        <header><h3>Courrier non lu</h3><span class="n" id="n-mail"></span><button class="btn-m">Ouvrir</button></header>
+        <div id="mails"></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="note"><b>Ce qui change.</b> Le titre devient <b>Aujourd’hui</b> et la page ne répète plus rien. <b>Maintenant</b> dit la seule chose à regarder d’abord ; les chiffres tiennent dans un coin et s’effacent à zéro ; les trois bandes vides (« Rien ici » ×3) se replient en une ligne ; la journée est une vraie frise avec l’heure présente ; une seule ligne de saisie remplace les boutons éparpillés.</div>
+</div>
+
+<script>
+const JOURS=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"],MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+const d=new Date(2026,9,19,10,42);
+document.getElementById("date").textContent=JOURS[d.getDay()].replace(/^./,m=>m.toUpperCase())+" "+d.getDate()+" "+MOIS[d.getMonth()]+" · 10 h 42";
+
+const ICON={ok:'<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'};
+const DATA={
+ charge:{
+  hero:{brule:true,lab:"Ce qui brûle · échu depuis 2 jours",titre:"Le certificat de queenphone.fr expire demain à 06 h 48",txt:"Renouvellement automatique en échec : le DNS de validation ne répond pas.",acts:[["Renouveler maintenant",1],["Voir le site"],["Reporter"]]},
+  chiffres:[["non lus",3,""],["à faire aujourd’hui",4,""],["en retard",2,"rouge"],["en attente d’accord",1,"ambre"],["à relire",0,""]],
+  att:{brule:[["Certificat de queenphone.fr","expire demain 06 h 48","infrastructure"],["Sauvegarde de claude-cloud muette","depuis le 08/10","infrastructure"]],
+       regarder:[["Valider le brouillon de réponse à Sandrine","Itare attend votre accord","accord"]],
+       jour:[["Relire le chapitre 4","tâche datée · aujourd’hui","tâche"],["Facture hébergement à payer","échéance 17 h","rappel"]]},
+  frise:[["08",null],["09",{t:"Point hebdo — équipe",s:"09 h – 09 h 30 · visio",c:"#1d6fa5",k:"ev"}],["10",{t:"Relire le chapitre 4",s:"avant midi",c:"#7c5cd6",k:"tache"}],"NOW",["11",null],["12",{t:"Déjeuner avec Drisse",s:"12 h 30 · Le Zinc",c:"#1d6fa5",k:"ev"}],["14",{t:"Étape projet « Apogée » — jalon 3",s:"14 h",c:"#0f8f84",k:"ev"}],["17",{t:"Facture hébergement à payer",s:"rappel · 17 h",c:"#d97706",k:"tache"}]],
+  chips:[["Événements","#1d6fa5"],["Infrastructure","#c8264a"],["Tâches datées","#7c5cd6"],["Rappels","#d97706"],["Étapes de projet","#0f8f84"]],
+  mails:[["SB","Sandrine B.","Re : coffre Pouky — la suite","09:58","#0f8f84"],["OV","OVH","Votre facture est disponible","08:12","#7c5cd6"],["GH","GitHub","[cassandra-v19] PR #12 fusionnée","hier","#334155"]]
+ },
+ calme:{
+  hero:{brule:false,lab:"Tout est en ordre",titre:"Rien ne brûle, rien n’attend votre accord",txt:"La prochaine chose : « Point hebdo — équipe » à 14 h.",acts:[["Ouvrir l’agenda"],["Ajouter une tâche",1]]},
+  chiffres:[["non lus",0,""],["à faire aujourd’hui",0,""],["en retard",0,""],["en attente d’accord",0,""],["à relire",0,""]],
+  att:{brule:[],regarder:[],jour:[]},
+  frise:[["08",null],["10",null],["14",{t:"Point hebdo — équipe",s:"14 h – 14 h 30 · visio",c:"#1d6fa5",k:"ev"}],["16",null]],
+  chips:[["Événements","#1d6fa5"],["Infrastructure","#c8264a"],["Tâches datées","#7c5cd6"],["Rappels","#d97706"],["Étapes de projet","#0f8f84"]],
+  mails:[]
+ }
+};
+const $=s=>document.querySelector(s), esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function rendre(e){
+  const D=DATA[e];
+  $("#hero").className="hero verre "+(D.hero.brule?"brule":"calme");
+  $("#hero").innerHTML=D.hero.brule
+   ? `<div class="lab"><i></i>${esc(D.hero.lab)}</div><h2>${esc(D.hero.titre)}</h2><p>${esc(D.hero.txt)}</p><div class="acts">${D.hero.acts.map(a=>`<button class="btn${a[1]?" pri":""}">${esc(a[0])}</button>`).join("")}</div>`
+   : `<div class="ok">${ICON.ok}</div><div><div class="lab" style="margin:0">${esc(D.hero.lab)}</div><h2>${esc(D.hero.titre)}</h2><p>${esc(D.hero.txt)}</p><div class="acts">${D.hero.acts.map(a=>`<button class="btn${a[1]?" pri":""}">${esc(a[0])}</button>`).join("")}</div></div>`;
+  $("#chiffres").innerHTML=D.chiffres.map(c=>`<button class="c ${c[1]?c[2]:"zero"}"><b>${c[1]}</b><span>${esc(c[0])}</span></button>`).join("");
+
+  const A=D.att, tot=A.brule.length+A.regarder.length+A.jour.length;
+  $("#n-att").textContent=tot?tot+" point"+(tot>1?"s":""):"";
+  const lot=(k,l,xs,go)=>xs.length?`<div class="lot ${k}"><div class="t">${l}</div>${xs.map(x=>`<div class="item"><span class="pt"></span><div class="tx"><b>${esc(x[0])}</b><small>${esc(x[1])}</small></div><span class="src">${esc(x[2])}</span><span class="go"><button>${go}</button></span></div>`).join("")}</div>`:"";
+  let h=lot("brule","Ce qui brûle",A.brule,"Traiter")+lot("regarder","À regarder",A.regarder,"Ouvrir")+lot("jour","Aujourd’hui",A.jour,"Faire");
+  if(!tot) h=`<div class="vide">${ICON.ok}Rien ne brûle, rien à regarder, rien de prévu. Profitez-en.</div>`;
+  else if(!A.brule.length) h=`<div class="vide" style="margin-bottom:12px">${ICON.ok}Rien ne brûle.</div>`+h;
+  $("#att").innerHTML=h;
+
+  $("#chips").innerHTML=D.chips.map(c=>`<button class="chip" data-c="${c[1]}"><i style="background:${c[1]}"></i>${esc(c[0])}</button>`).join("");
+  $("#frise").innerHTML=D.frise.map(r=>{
+    if(r==="NOW") return `<div class="maintenant"><span>10:42</span></div>`;
+    const [hh,ev]=r;
+    return `<div class="h"><time>${hh} h</time>${ev?`<div class="ev ${ev.k==="tache"?"tache":""}" style="--c:${ev.c}">${ev.k==="tache"?`<span class="coche"></span><div><b>${esc(ev.t)}</b><small>${esc(ev.s)}</small></div>`:`<b>${esc(ev.t)}</b><small>${esc(ev.s)}</small>`}</div>`:""}</div>`}).join("");
+  $("#n-mail").textContent=D.mails.length?D.mails.length+" message"+(D.mails.length>1?"s":""):"";
+  $("#mails").innerHTML=D.mails.length?D.mails.map(m=>`<div class="m"><span class="av" style="background:${m[4]}">${m[0]}</span><div style="min-width:0"><b>${esc(m[1])}</b><small>${esc(m[2])}</small></div><time>${m[3]}</time></div>`).join(""):`<div class="vide">${ICON.ok}Boîte à jour.</div>`;
+}
+document.addEventListener("click",ev=>{
+  const b=ev.target.closest(".etat button"); if(b){document.querySelectorAll(".etat button").forEach(x=>x.classList.toggle("on",x===b));rendre(b.dataset.e);return}
+  const c=ev.target.closest(".chip"); if(c){c.classList.toggle("off");const on=[...document.querySelectorAll(".chip:not(.off)")].map(x=>x.dataset.c);document.querySelectorAll(".h .ev").forEach(e=>{e.style.display=on.includes(getComputedStyle(e).getPropertyValue("--c").trim())||!getComputedStyle(e).getPropertyValue("--c")?"":"none"});return}
+  const t=ev.target.closest(".ev.tache"); if(t){t.classList.toggle("fait");return}
+  const ty=ev.target.closest(".types button"); if(ty){document.querySelectorAll(".types button").forEach(x=>x.classList.toggle("on",x===ty))}
+});
+document.addEventListener("keydown",e=>{if(e.key==="n"&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();$("#q").focus()}});
+rendre("charge");
+</script>
+</body>
+</html>

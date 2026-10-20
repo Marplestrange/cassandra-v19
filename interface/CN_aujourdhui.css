@@ -120,6 +120,12 @@
 .aj-puce small{font:600 11px 'JetBrains Mono',monospace;color:var(--txt-faint);padding:2px 7px;border-radius:7px;background:rgba(127,140,150,.14);flex:none}
 .aj-go{opacity:0;font-size:11.5px;color:var(--accent);background:none;border:0;padding:0;flex:none}.aj-puce:hover .aj-go{opacity:1}
 .aj-aide{margin:12px 0 0;font-size:12.5px;color:var(--txt-faint)}
+.aj-vide-onboard{width:100%;padding:24px;text-align:center;border:1px dashed var(--line);border-radius:16px;background:rgba(127,140,150,.05);color:var(--txt-soft)}
+.aj-vide-onboard b{display:block;font:650 14px 'Inter',system-ui,sans-serif;color:var(--txt);margin-bottom:8px}
+.aj-vide-onboard p{font-size:13px;margin:0 0 12px}
+.aj-vide-onboard ol{margin:0;padding:0;list-style:none;text-align:left;display:inline-block;font-size:12.5px;counter-reset:list}
+.aj-vide-onboard li{position:relative;padding-left:24px;margin-bottom:8px}
+.aj-vide-onboard li::before{content:counter(list) ".";counter-increment:list;position:absolute;left:0;color:var(--accent);font-weight:bold;font-family:'JetBrains Mono',monospace}
 .aj-confetti{position:fixed;width:8px;height:8px;border-radius:2px;pointer-events:none;z-index:300;animation:aj-cf 1s ease-out forwards}
 @keyframes aj-cf{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
 @media (max-width:900px){.aj-haut,.aj-bas{grid-template-columns:minmax(0,1fr)}.aj-nom{width:48px;font-size:9px}.aj-heures{padding-left:48px}.aj-passe{left:48px}}

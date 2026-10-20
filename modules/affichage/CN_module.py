@@ -777,6 +777,50 @@ def brancher(ctx):
         return {"mode": mode, "idees": sortie["idees"], "urgent": sortie["urgent"],
                 "actes": {k: {x: ACTES[k][x] for x in ("capacite", "arg", "titre", "risque", "perimetre", "preuve", "retour")} for k in sorted(proposes)}}
 
+    def lire_suggestions_plan(ctx, jour="", max_sug=5):
+        """Propose des placements optimaux de tâches dans les créneaux libres du jour pour CE compte."""
+        compte = ctx.compte or ""
+        if not compte:
+            raise ValueError("les suggestions appartiennent à un compte")
+        jour = _jour_ok(jour)
+        reg = _reglage_jour_de(ctx, compte)
+        debut = reg.get("debut") if reg.get("debut") is not None else 8
+        fin = reg.get("fin") if reg.get("fin") is not None else 20
+        plan_data = lire_plan(ctx, jour)
+        plan = plan_data.get("blocs", [])
+        taches = []
+        try:
+            r = ctx.executer_lecture("taches.lister_taches", filtres={"actives": True})
+            taches = r.get("taches", []) if isinstance(r, dict) else []
+        except (PermissionError, KeyError, ValueError):
+            pass
+        ids_planifies = {b.get("tache") for b in plan if b.get("tache")}
+        taches_libres = [t for t in taches if t.get("id") not in ids_planifies]
+        events = []
+        try:
+            r = ctx.executer_lecture("agenda.lister_evenements", jour_debut=jour, jour_fin=jour)
+            events = r.get("evenements", []) if isinstance(r, dict) else []
+        except (PermissionError, KeyError, ValueError):
+            pass
+        projets_actifs = []
+        try:
+            r = ctx.executer_lecture("projets.lister_projets", filtres={"actifs": True})
+            projets_actifs = [p.get("id") for p in (r.get("projets", []) if isinstance(r, dict) else [])]
+        except (PermissionError, KeyError, ValueError):
+            pass
+        entree_pt = {
+            "jours": jour,
+            "taches": taches_libres,
+            "plan": plan,
+            "events": events,
+            "debut": debut,
+            "fin": fin,
+            "projets": projets_actifs,
+            "max": int(max_sug) if isinstance(max_sug, (int, float)) and not isinstance(max_sug, bool) else 5
+        }
+        sortie = ctx.point("suggestions_plan", entree_pt)["valeur"]
+        return sortie
+
     # ---------------------------------------------------------------- la session
     def lire_session(ctx, ip_session=""):
         role, compte = _moi(ctx, "utilisateur", "")
@@ -842,6 +886,7 @@ def brancher(ctx):
     ctx.implementer("lire_disposition", lire_disposition)
     ctx.implementer("lire_organisation", lire_organisation)
     ctx.implementer("lire_idees", lire_idees)
+    ctx.implementer("lire_suggestions_plan", lire_suggestions_plan)
     ctx.implementer("lire_session", lire_session)
     ctx.implementer("lire_fils", lire_fils)
     ctx.implementer("modifier_organisation", modifier_organisation, prouver_org, defaire_org,

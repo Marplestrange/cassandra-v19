@@ -326,7 +326,15 @@
     { const r = restants(), b = $("#aj-tout-rep"); if (b) { b.hidden = !r.length; b.textContent = "Reporter à demain" + (r.length > 1 ? " (" + r.length + ")" : ""); } majAnnul(); }
     $("#aj-n-pl").textContent = pl.length ? pl.length + " en attente" : "";
     if (A.edit != null && !pl.some((q) => q.id === A.edit)) A.edit = null;                // la tâche en cours de modification a disparu : on referme l'éditeur
-    if (A.edit == null) $("#aj-plateau").innerHTML = pl.length ? pl.map((p) => '<div class="aj-puce' + (p.retard ? " retard" : "") + '" draggable="true" data-tid="' + p.id + '"><span class="aj-t" data-edit-go="' + p.id + '" title="Modifier">' + esc(p.titre) + "</span>" + pastillesLiens(p.id) + "<small data-edit-go=\"" + p.id + '" title="Modifier la durée">' + dur(p.duree) + '</small><button class="aj-go" type="button" data-go="' + p.id + '">placer →</button><button class="aj-ed" type="button" data-edit-go="' + p.id + '" aria-label="Modifier cette tâche" title="Modifier">✎</button><button class="aj-ed" type="button" data-voir="' + p.id + '" aria-label="Voir dans Tâches" title="Voir dans Agenda › Tâches">↗</button><button class="aj-ed aj-rp" type="button" data-rep="' + p.id + '" aria-label="Reporter à demain" title="Reporter à demain">⇥</button>' + (A.suppr === p.id ? '<button class="aj-sup on" type="button" data-sup="' + p.id + '">Supprimer ?</button>' : '<button class="aj-sup" type="button" data-sup="' + p.id + '" aria-label="Supprimer cette tâche" title="Supprimer cette tâche">×</button>') + "</div>").join("") : '<span class="aj-n" style="padding:10px 4px">' + (A.taches.length || A.plan.length ? "Tout est placé. Rien ne traîne." : "Aucune tâche pour aujourd’hui.") + "</span>";
+    if (A.edit == null) {
+      if (pl.length) {
+        $("#aj-plateau").innerHTML = pl.map((p) => '<div class="aj-puce' + (p.retard ? " retard" : "") + '" draggable="true" data-tid="' + p.id + '"><span class="aj-t" data-edit-go="' + p.id + '" title="Modifier">' + esc(p.titre) + "</span>" + pastillesLiens(p.id) + "<small data-edit-go=\"" + p.id + '" title="Modifier la durée">' + dur(p.duree) + '</small><button class="aj-go" type="button" data-go="' + p.id + '">placer →</button><button class="aj-ed" type="button" data-edit-go="' + p.id + '" aria-label="Modifier cette tâche" title="Modifier">✎</button><button class="aj-ed" type="button" data-voir="' + p.id + '" aria-label="Voir dans Tâches" title="Voir dans Agenda › Tâches">↗</button><button class="aj-ed aj-rp" type="button" data-rep="' + p.id + '" aria-label="Reporter à demain" title="Reporter à demain">⇥</button>' + (A.suppr === p.id ? '<button class="aj-sup on" type="button" data-sup="' + p.id + '">Supprimer ?</button>' : '<button class="aj-sup" type="button" data-sup="' + p.id + '" aria-label="Supprimer cette tâche" title="Supprimer cette tâche">×</button>') + "</div>").join("");
+      } else if (A.taches.length || A.plan.length) {
+        $("#aj-plateau").innerHTML = '<div class="aj-vide-onboard"><span class="aj-n">🎉 Tout est placé. Rien ne traîne pour aujourd’hui.</span></div>';
+      } else {
+        $("#aj-plateau").innerHTML = '<div class="aj-vide-onboard"><b>Votre journée est vierge.</b><p>Prenez le contrôle de votre temps :</p><ol><li>Ajoutez vos tâches dans le champ ci-dessus.</li><li>Glissez-les sur la frise pour leur réserver un créneau.</li><li>Cochez-les une fois terminées pour visualiser votre avancée.</li></ol></div>';
+      }
+    }
     pose(r);
   }
   // la frise se cale sur la largeur réelle : le curseur et le passé, une fois les pistes en place
@@ -720,6 +728,53 @@
       if (!occupes().every(([a, b]) => m + t.duree <= a || m >= b)) { const z = premierLibre(t.duree, m); if (!z) { if (typeof window.toast === "function") window.toast("Pas de place à cet endroit."); return; } m = arrondi5(z[0]); }
       placer(t, m);
     });
+    // ── support tactile complet : tap-long puis glisser vers la frise ──
+    (function tactilePuces() {
+      let puceTactile = null, debutTactile = null, timerTactile = null, guideTactile = null, aBouge = false;
+      const demarrerTactile = (e) => {
+        const p = e.target.closest && e.target.closest(".aj-puce"); if (!p || p.classList.contains("edit")) return;
+        const tid = +p.dataset.tid; if (!tid) return;
+        puceTactile = p; debutTactile = { x: e.touches[0].clientX, y: e.touches[0].clientY, tid };
+        aBouge = false;
+        timerTactile = setTimeout(() => {
+          if (puceTactile) { puceTactile.classList.add("glisse"); A.glisse = tid; vibrer(15); }
+        }, 400);
+      };
+      const vibrer = (d) => { try { if (navigator.vibrate) navigator.vibrate(d); } catch (e) {} };
+      const annulerTactile = () => { clearTimeout(timerTactile); if (puceTactile) { puceTactile.classList.remove("glisse"); } puceTactile = debutTactile = null; A.glisse = null; if (guideTactile) { guideTactile.remove(); guideTactile = null; } const p = $("#aj-p-ta"); if (p) p.classList.remove("cible"); };
+      const bougerTactile = (e) => {
+        if (!puceTactile || !debutTactile) return;
+        const t = e.touches[0], dx = t.clientX - debutTactile.x, dy = t.clientY - debutTactile.y;
+        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+          clearTimeout(timerTactile);
+          if (A.glisse == null) { puceTactile.classList.remove("glisse"); puceTactile = null; return; }
+          aBouge = true; e.preventDefault();
+          if (!guideTactile) {
+            guideTactile = document.createElement("div"); guideTactile.className = "aj-puce glisse"; guideTactile.style.position = "fixed"; guideTactile.style.zIndex = 9999; guideTactile.style.pointerEvents = "none";
+            guideTactile.innerHTML = puceTactile.innerHTML; document.body.appendChild(guideTactile);
+            const g = $("#aj-guide"); if (g) g.remove();
+          }
+          guideTactile.style.left = (t.clientX - 50) + "px"; guideTactile.style.top = (t.clientY - 20) + "px";
+          const pistes = document.elementsFromPoint(t.clientX, t.clientY), p = pistes.find((el) => el.id === "aj-p-ta"); if (p) { p.classList.add("cible"); const ev = { clientX: t.clientX, preventDefault: () => {} }; $("#aj-p-ta").dispatchEvent(new DragEvent("dragover", { bubbles: true, clientX: t.clientX, clientY: t.clientY })); }
+        }
+      };
+      const lacherTactile = (e) => {
+        clearTimeout(timerTactile); if (!puceTactile) return;
+        const t = e.changedTouches[0];
+        const pistes = document.elementsFromPoint(t.clientX, t.clientY), destination = pistes.find((el) => el.id === "aj-p-ta" || el.closest("#aj-p-ta"));
+        puceTactile.classList.remove("glisse"); if (guideTactile) { guideTactile.remove(); guideTactile = null; }
+        if (destination && A.glisse != null) {
+          const ev = new DragEvent("drop", { bubbles: true, clientX: t.clientX, clientY: t.clientY });
+          Object.defineProperty(ev, "target", { value: destination }); destination.dispatchEvent(ev);
+        }
+        puceTactile = debutTactile = null; A.glisse = null;
+        const p = $("#aj-p-ta"); if (p) p.classList.remove("cible"); const g = $("#aj-guide"); if (g) g.remove();
+      };
+      document.addEventListener("touchstart", demarrerTactile, { passive: true });
+      document.addEventListener("touchmove", bougerTactile, { passive: false });
+      document.addEventListener("touchend", lacherTactile);
+      document.addEventListener("touchcancel", annulerTactile);
+    })();
     window.addEventListener("resize", () => { const r = $("#aj-racine"); if (r && r.dataset.pret) pose(r); });
     // l'heure avance : on redessine chaque 30 s tant que la page est ouverte
     setInterval(tic, 1000);

@@ -1,0 +1,28 @@
+{
+  "name": "cassandra-v19",
+  "version": "1.0.0",
+  "description": "Le noyau de Cassandra et d'Itare. `cassandra.py` (V18, plus de 150 000 lignes) est découpé en **modules** qui se branchent sur ce noyau par un **manifeste**. Rien ici ne dépend de la V18 : on **porte** la logique module par module, on ne la réécrit pas.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test:ui": "playwright test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Marplestrange/cassandra-v19.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Marplestrange/cassandra-v19/issues"
+  },
+  "homepage": "https://github.com/Marplestrange/cassandra-v19#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  }
+}

@@ -150,6 +150,19 @@ id = "lire_idees"
 libelle = "Lire les idées du panneau conversationnel pour la page et l'interlocuteur, avec leur raison"
 risque = "lecture"
 
+[[points_evolution]]
+id = "suggestions_plan"
+libelle = "Suggestions proactives de planification de la journée : analyse les tâches non planifiées, les créneaux libres, et suggère les meilleures places"
+contrat = "1.0"
+reference = "points/EC_suggestions"
+fonction = "point_suggestions_plan"
+runtime = "python"
+
+[[capacites]]
+id = "lire_suggestions_plan"
+libelle = "Lire les suggestions proactives de planification de tâches dans la journée"
+risque = "lecture"
+
 [[capacites]]
 id = "lire_session"
 libelle = "Lire ce que le serveur sait de la session en cours : compte, rôle, adresse de la connexion, organisation, dernières sessions"
