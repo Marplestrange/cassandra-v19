@@ -1,0 +1,26 @@
+{
+ "point": "affichage.suggestions_plan",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "fenetre",
+   "taches"
+  ]
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ]
+ },
+ "invariants": [
+  "une suggestion porte toujours une tâche reçue, une heure au multiple de cinq minutes, sa durée et sa raison ; une tâche n'est proposée qu'une fois",
+  "une suggestion reste dans la fenêtre, à partir de maintenant, et n'empiète ni sur un intervalle occupé ni sur une autre suggestion (une marge les sépare)",
+  "les tâches pressantes passent devant : en retard, puis échéance du jour, priorité, projet en cours ; à score égal, la plus longue, puis l'identifiant",
+  "une tâche qui ne trouve aucun temps libre assez long est dite non placée, avec sa raison, jamais perdue en silence",
+  "au plus le nombre demandé (dix au plus) ; une fenêtre sans plage ne propose rien ; la fenêtre peut passer minuit (la fin dépasse 1 440)",
+  "les mêmes entrées, dans n'importe quel ordre de tâches, donnent les mêmes suggestions"
+ ]
+}

@@ -6,16 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #cd51de
+# VERSION CN : 0.1.0  #484a64
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation, les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit q
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=cd51de ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=484a64 ▼▼▼
 """L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation,
 les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit quoi, qui peut régler l'organisation) se vérifie ici : le point d'évolution ne décide d'aucun accès."""
 import base64
+import json
 import importlib.util
 import shutil
 import sys
@@ -513,6 +514,148 @@ class Affichage(unittest.TestCase):
         fil = f.get("id") or f.get("fil")
         self.assertNotEqual(self.ex("affichage.lier_fil", ROOT, fil=fil, agent="itare")["statut"], "faite")
         self.assertNotEqual(self.ex("affichage.lier_fil", "fil2@x.fr", fil=fil, agent="inconnu")["statut"], "faite")
+
+
+class SuggestionsPur(unittest.TestCase):
+    """Le point `suggestions_plan` (EC), seul : pur, borné, sans chevauchement."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.S = charger_ec("suggestions")
+
+    def entree(self, **kw):
+        base = {"jour": "2026-10-21", "fenetre": {"debut": 480, "fin": 1200}, "maintenant": None, "occupes": [], "taches": [], "marge": 5, "max": 5}
+        base.update(kw)
+        return base
+
+    def tache(self, i, duree=30, **kw):
+        return dict({"id": i, "titre": "T%d" % i, "duree": duree, "retard": 0, "priorite": 1, "echeance_jour": False, "projet": False}, **kw)
+
+    def sortie(self, **kw):
+        return self.S.point_suggestions_plan(self.entree(**kw))["valeur"]
+
+    def test_le_corpus_dore_se_rejoue_a_l_identique(self):
+        corpus = json.loads((RACINE / "modules" / "affichage" / "contrats" / "CN_suggestions_plan.corpus.json").read_text(encoding="utf-8"))
+        self.assertGreaterEqual(len(corpus["cas"]), 20)
+        for c in corpus["cas"]:
+            self.assertEqual(self.S.point_suggestions_plan(c["entree"]), c["sortie"], c["cas"])
+
+    def test_la_journee_de_24_heures_et_la_nuit_donnent_des_temps_libres(self):
+        v = self.sortie(fenetre={"debut": 0, "fin": 1440}, taches=[self.tache(1, 45)])
+        self.assertEqual((v["suggestions"][0]["deb"], v["creneaux_libres"]), (0, [[0, 1440]]))
+        v = self.sortie(fenetre={"debut": 1320, "fin": 1800}, maintenant=1500, taches=[self.tache(1, 60)])
+        self.assertEqual(v["suggestions"][0]["deb"], 1500)                                           # une fenêtre qui passe minuit : la fin dépasse 1 440
+
+    def test_un_rendez_vous_n_est_jamais_recouvert(self):
+        v = self.sortie(occupes=[[480, 600]], taches=[self.tache(1, 45)])
+        self.assertEqual(v["suggestions"][0]["deb"], 600)
+        v = self.sortie(occupes=[[480, 1200]], taches=[self.tache(1, 45)])
+        self.assertEqual((v["suggestions"], [x["tache"] for x in v["non_places"]]), ([], [1]))
+
+    def test_les_pressantes_passent_devant_et_ne_se_chevauchent_pas(self):
+        v = self.sortie(fenetre={"debut": 480, "fin": 600}, taches=[self.tache(1, 60), self.tache(2, 60, retard=2), self.tache(3, 30, priorite=3)])
+        premiers = [x["tache"] for x in sorted(v["suggestions"], key=lambda x: x["deb"])]
+        self.assertEqual(premiers[0], 2)                                                           # le retard d'abord
+        blocs = sorted((x["deb"], x["deb"] + x["duree"]) for x in v["suggestions"])
+        self.assertTrue(all(blocs[i][1] <= blocs[i + 1][0] for i in range(len(blocs) - 1)), blocs)
+
+    def test_une_entree_mal_formee_ne_leve_rien(self):
+        for mauvais in (None, [], "x", {"fenetre": "x"}, {"fenetre": {"debut": "a", "fin": None}, "taches": "x"}, {"fenetre": {"debut": 0, "fin": 60}, "taches": [None, 3, {"id": True}, {"id": 1, "duree": "x"}]}):
+            self.assertIn("suggestions", self.S.point_suggestions_plan(mauvais)["valeur"])
+
+    def test_au_hasard_jamais_de_chevauchement_ni_de_sortie_de_fenetre(self):
+        import random
+        alea = random.Random(2026)
+        for _ in range(300):
+            debut = alea.choice([0, 360, 480, 1320])
+            fin = debut + alea.choice([240, 720, 1440])
+            occupes = [[alea.randint(debut - 60, fin), 0] for _ in range(alea.randint(0, 6))]
+            for o in occupes:
+                o[1] = o[0] + alea.randint(5, 180)
+            taches = [self.tache(i, alea.choice([5, 15, 30, 45, 90, 240]), retard=alea.choice([0, 0, 2]), priorite=alea.randint(0, 3), projet=alea.random() < .3) for i in range(1, alea.randint(1, 9))]
+            v = self.sortie(fenetre={"debut": debut, "fin": fin}, occupes=occupes, maintenant=alea.choice([None, debut + 37]), taches=taches, max=alea.randint(1, 10))
+            blocs = sorted((x["deb"], x["deb"] + x["duree"]) for x in v["suggestions"])
+            for a, b in blocs:
+                self.assertTrue(debut <= a and b <= fin and a % 5 == 0, (a, b))
+                self.assertTrue(all(b <= x or a >= y for x, y in occupes), (a, b, occupes))
+            self.assertTrue(all(blocs[i][1] <= blocs[i + 1][0] for i in range(len(blocs) - 1)), blocs)
+            self.assertEqual(len({x["tache"] for x in v["suggestions"]}), len(v["suggestions"]))
+
+
+class SuggestionsDansUnNoyau(unittest.TestCase):
+    """La capacité `lire_suggestions_plan` : elle lit les tâches, l'agenda et le plan DU COMPTE qui agit, puis laisse le point décider."""
+    JOUR = "2099-01-05"                                      # un jour à venir : « maintenant » n'entre pas dans le calcul
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        base = Path(cls.tmp.name)
+        mods = base / "modules"
+        ig = shutil.ignore_patterns("__pycache__")
+        mn = ("droits", "comptes", "menus", "affichage", "jour", "salon", "taches", "agenda", "projets")
+        for m in mn:
+            shutil.copytree(RACINE / "modules" / m, mods / m, ignore=ig)
+        cls.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
+        cls.n.brancher()
+        for m in mn:
+            assert cls.n.activer(m)["ok"], m
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.n.arreter()
+        cls.tmp.cleanup()
+
+    def ex(self, cap, qui=BEA, **args):
+        return self.n.executeur.executer(cap, "humain", args, compte=qui)
+
+    def ok(self, cap, qui=BEA, **args):
+        r = self.ex(cap, qui, **args)
+        self.assertEqual(r["statut"], "faite", r)
+        return r["resultat"]
+
+    def setUp(self):
+        self.ok("affichage.modifier_reglage_jour", debut=0, fin=0)
+        self.ok("taches.creer", texte="Relire le contrat", echeance=self.JOUR, charge=45)
+        self.ok("taches.creer", texte="Appeler le notaire", echeance=self.JOUR, charge=15, priorite="haute")
+        self.ok("agenda.evenement_enregistrer", titre="Réunion", debut=self.JOUR + " 09:00", fin=self.JOUR + " 10:00")
+        self.addCleanup(self.nettoyer)
+
+    def nettoyer(self):
+        for t in self.ok("taches.lister", limite=500)["taches"]:
+            self.ex("taches.supprimer", id=t["id"])
+        for e in self.ok("agenda.evenements", du=self.JOUR, au=self.JOUR)["evenements"]:
+            self.ex("agenda.evenement_supprimer", id=e["id"])
+        self.ex("affichage.modifier_plan", jour=self.JOUR, blocs=[])
+
+    def sug(self, qui=BEA):
+        return self.ok("affichage.lire_suggestions_plan", qui, jour=self.JOUR)
+
+    def test_les_taches_du_jour_sont_proposees_hors_des_rendez_vous(self):
+        v = self.sug()
+        self.assertEqual(sorted(s["titre"] for s in v["suggestions"]), ["Appeler le notaire", "Relire le contrat"])
+        for s in v["suggestions"]:
+            self.assertTrue(s["deb"] + s["duree"] <= 540 or s["deb"] >= 600, s)               # la réunion de 9 h à 10 h n'est pas recouverte
+        self.assertEqual(v["fenetre"], {"debut": 0, "fin": 1440})                              # la journée de 24 h par défaut
+
+    def test_la_fenetre_du_compte_se_respecte_y_compris_la_nuit(self):
+        self.ok("affichage.modifier_reglage_jour", debut=22, fin=6)
+        v = self.sug()
+        self.assertEqual(v["fenetre"], {"debut": 1320, "fin": 1800})
+        for s in v["suggestions"]:
+            self.assertTrue(1320 <= s["deb"] and s["deb"] + s["duree"] <= 1800, s)
+
+    def test_une_tache_deja_posee_n_est_plus_proposee(self):
+        t = [x for x in self.ok("taches.lister", limite=500)["taches"] if x["texte"] == "Relire le contrat"][0]
+        self.ok("affichage.modifier_plan", jour=self.JOUR, blocs=[{"id": "t%d" % t["id"], "titre": t["texte"], "deb": 600, "duree": 45, "tache": t["id"]}])
+        v = self.sug()
+        self.assertEqual([s["titre"] for s in v["suggestions"]], ["Appeler le notaire"])
+        self.assertTrue(all(s["deb"] + s["duree"] <= 600 or s["deb"] >= 645 for s in v["suggestions"]))     # le bloc posé n'est pas recouvert non plus
+
+    def test_les_taches_d_un_autre_compte_ne_sont_pas_lues(self):
+        self.assertEqual(self.sug("autre@x.fr")["suggestions"], [])
+
+    def test_un_jour_invalide_est_refuse(self):
+        self.assertNotEqual(self.ex("affichage.lire_suggestions_plan", BEA, jour="demain")["statut"], "faite")
 
 
 if __name__ == "__main__":

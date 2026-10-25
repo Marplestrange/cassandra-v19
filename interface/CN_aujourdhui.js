@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #e03831
+// VERSION CN : 0.1.0  #6a0273
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=e03831 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=6a0273 ▼▼▼
 /* La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
    (la suite), et la journée se range à la main ou toute seule (la frise, les tâches à placer). Les données sont celles de l'ancienne
    interface (agenda, tâches, rappels, état du jour) ; seul le PLAN — où l'on a posé quoi — est écrit, par le module affichage
@@ -34,7 +34,7 @@
   const COULEURS = { event: "var(--info)", etape: "var(--accent)", task: "var(--violet)", reminder: "var(--warn)", ssl: "var(--danger)" };
   const DUREE_DEFAUT = 30;
 
-  const A = { reg: { debut: null, fin: null, focus: null, durees: {} }, d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, edit: null, nv: null, liens: {}, chargeSrv: {}, decalJour: 0, autre: false, agendaAutre: [], annul: null, bougeT: 0, h0: 8, h1: 20, decal: 0, perso: false, pop: false, charge: false, sauvegarde: null };
+  const A = { reg: { debut: null, fin: null, focus: null, durees: {} }, d0: null, evts: [], echs: [], jourEntier: [], taches: [], faitesVeille: 0, plan: [], planJour: "", alerte: null, tuiles: null, now: 0, focus: null, focusMin: 25, glisse: null, secondes: 0, suppr: null, edit: null, nv: null, liens: {}, chargeSrv: {}, sug: null, sugCle: "", sugIgnore: {}, decalJour: 0, autre: false, agendaAutre: [], annul: null, bougeT: 0, h0: 8, h1: 20, decal: 0, perso: false, pop: false, charge: false, sauvegarde: null };
 
   // ── les durées retenues pour les tâches (le serveur ne connaît que la charge, qui est un poids) ────────────────
   // ── le réglage du compte (heures de la journée, concentration, durée des tâches) : écrit par le serveur, une fois par compte ──
@@ -185,7 +185,43 @@
     A.sauvegarde = setTimeout(async () => {
       try { await CASS.agir("affichage.modifier_plan", { jour: A.planJour || A.d0 || iso(new Date()), blocs: A.plan.map((b) => ({ id: b.id, titre: b.titre, deb: b.deb, duree: b.duree, tache: b.tache == null ? null : b.tache, fait: !!b.fait, couleur: b.couleur || "" })) }); }
       catch (e) { if (typeof window.toast === "function") window.toast("Plan non enregistré : " + e.message, "err"); }
+      A.sugCle = ""; chargerSuggestions();
     }, 350);
+  }
+
+  // ── les suggestions d'Itare : une heure proposée pour chaque tâche à placer (le point `suggestions_plan` décide, le compte accepte) ──────
+  async function chargerSuggestions() {
+    const pl = aPlacer();
+    if (!A.d0 || (A.autre && A.decalJour < 0) || !pl.length || A.sugIgnore[A.d0] || A.edit != null) { if (!pl.length || A.sugIgnore[A.d0]) { A.sug = null; majSuggestions(); } return; }
+    const cle = [A.d0, pl.map((t) => t.id + ":" + t.duree).join(","), A.plan.map((b) => b.id + ":" + b.deb + ":" + b.duree).join(","), A.evts.map((e) => e.d + "-" + e.f).join(","), A.autre ? 0 : Math.floor(A.now / 15)].join("|");
+    if (cle === A.sugCle) return;
+    A.sugCle = cle;
+    try { A.sug = await CASS.agir("affichage.lire_suggestions_plan", { jour: A.d0, max_sug: 8 }); } catch (e) { A.sug = null; }
+    if (A.sugCle === cle) majSuggestions();
+  }
+  function majSuggestions() {
+    const z = $("#aj-sug"), piste = $("#aj-p-ta"); if (!z) return;
+    document.querySelectorAll(".aj-fant-sug").forEach((x) => x.remove());
+    const l = ((A.sug && A.sug.suggestions) || []).filter((x) => A.taches.some((t) => t.id === x.tache && !t.fait) && !A.plan.some((b) => b.tache === x.tache));
+    if (!l.length || A.sugIgnore[A.d0]) { z.hidden = true; z.innerHTML = ""; return; }
+    const non = ((A.sug && A.sug.non_places) || []).length;
+    z.hidden = false;
+    z.innerHTML = '<span class="aj-sug-i">✦</span><div class="aj-sug-t"><b>Itare propose</b> de placer ' + l.length + " tâche" + (l.length > 1 ? "s" : "") + " : " +
+      l.slice(0, 3).map((x) => "« " + esc(String(x.titre).slice(0, 28)) + " » à " + hm(x.deb)).join(", ") + (l.length > 3 ? " …" : "") + (non ? ' <small>(' + non + " sans temps libre assez long)</small>" : "") + "</div>" +
+      '<button type="button" class="aj-btn sm pri" data-sug-tout="1">Tout accepter</button><button type="button" class="aj-btn sm" data-sug-non="1">Ignorer</button>';
+    if (piste) l.forEach((x) => {
+      const d = document.createElement("div"); d.className = "aj-fant-sug"; d.dataset.sugId = x.tache;
+      d.style.left = pos(x.deb) + "%"; d.style.width = Math.max(pos(x.deb + x.duree) - pos(x.deb), 4.5) + "%";
+      d.title = "Itare propose : " + x.titre + " à " + hm(x.deb) + " (" + x.raison + ") — cliquer pour accepter";
+      d.innerHTML = "<b>✦ " + esc(x.titre) + "</b><small>" + hm(x.deb) + " · " + dur(x.duree) + "</small>";
+      piste.appendChild(d);
+    });
+  }
+  function accepterSuggestions(ids) {
+    const l = ((A.sug && A.sug.suggestions) || []).filter((x) => (ids == null || ids.includes(x.tache)) && !A.plan.some((b) => b.tache === x.tache));
+    l.forEach((x) => { const t = A.taches.find((q) => q.id === x.tache); if (t) A.plan.push({ id: "t" + t.id, titre: t.titre, deb: x.deb, duree: x.duree, tache: t.id, fait: false, couleur: "", neuf: 1 }); });
+    if (!l.length) return;
+    A.plan.sort((a, b) => a.deb - b.deb); A.sug = null; A.sugCle = ""; sauver(); rendre();
   }
 
   // ── calculs ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -272,7 +308,7 @@
       '<div class="aj-voie"><div class="aj-nom" title="Tes rendez-vous du jour, tels que ton agenda les donne. Un clic sur un bloc l’ouvre ; un clic dans le vide crée un rendez-vous à cette heure.">Agenda</div><div class="aj-piste" id="aj-p-ag"></div></div><div class="aj-voie"><div class="aj-nom" title="Tes tâches posées sur la journée. Glisse-y une tâche de « À placer », clique un bloc pour le cocher.">À faire</div><div class="aj-piste" id="aj-p-ta"></div></div><div class="aj-voie"><div class="aj-nom" title="Les instants qui ne se déplacent pas : tes rappels et les échéances d’infrastructure (certificats…) qui tombent aujourd’hui à une heure précise. Rien à placer, un clic sur un point l’ouvre ; un clic dans le vide crée un rappel à cette heure.">Échéances</div><div class="aj-piste" id="aj-p-ec"></div></div></div></section>' +
       '<div class="aj-bas"><section class="aj-verre aj-carte"><header><h3>À placer</h3><span class="aj-n" id="aj-n-pl"></span><span class="aj-sp"></span><button type="button" class="aj-btn sm" id="aj-tout-rep" data-rep-tout="1" title="Reporte à demain tout ce qui n’est pas fait : les tâches à placer et celles déjà posées" hidden>Tout reporter à demain</button></header><div class="aj-annul" id="aj-annul" hidden></div>' +
       '<form class="aj-saisie" id="aj-f"><input id="aj-q" placeholder="Nouvelle tâche… « relire le contrat 40 min »" autocomplete="off"><button class="aj-btn pri" type="submit">Ajouter</button></form>' +
-      '<div class="aj-plateau" id="aj-plateau"></div><p class="aj-aide">Glissez une tâche sur la voie « À faire », ou cliquez « placer → » : elle se pose dans le prochain temps libre. Cliquez un bloc pour le cocher.</p></section>' +
+      '<div class="aj-sug" id="aj-sug" hidden></div><div class="aj-plateau" id="aj-plateau"></div><p class="aj-aide">Glissez une tâche sur la voie « À faire », ou cliquez « placer → » : elle se pose dans le prochain temps libre. Cliquez un bloc pour le cocher.</p></section>' +
       '<section class="aj-verre aj-carte aj-courrier"><header><h3>Courrier non lu</h3><span class="aj-sp"></span><button class="aj-btn sm" type="button" data-seg="mail">Ouvrir</button></header>' +
       '<div class="bu-rows" id="bu-mail-apercu"><div class="empty-state" style="padding:20px">Lecture…</div></div></section></div>';
     r.dataset.pret = "1"; A.focusMin = dureeFocus(); dessinerDuree(); dessinerReglage(); dessinerAlarmes();
@@ -335,6 +371,7 @@
         $("#aj-plateau").innerHTML = '<div class="aj-vide-onboard"><b>Votre journée est vierge.</b><p>Prenez le contrôle de votre temps :</p><ol><li>Ajoutez vos tâches dans le champ ci-dessus.</li><li>Glissez-les sur la frise pour leur réserver un créneau.</li><li>Cochez-les une fois terminées pour visualiser votre avancée.</li></ol></div>';
       }
     }
+    majSuggestions(); chargerSuggestions();
     pose(r);
   }
   // la frise se cale sur la largeur réelle : le curseur et le passé, une fois les pistes en place
@@ -658,6 +695,9 @@
       if ((x = ev.target.closest("[data-rep]"))) { const t = A.taches.find((q) => q.id === +x.dataset.rep); if (t) reporter([t]); return; }
       if ((x = ev.target.closest("[data-repb]"))) { const b = A.plan.find((q) => q.id === x.dataset.repb), t = b && A.taches.find((q) => q.id === b.tache); if (t) reporter([t]); return; }
       if ((x = ev.target.closest("[data-annul]"))) { annulerReport(); return; }
+      if (ev.target.closest("[data-sug-tout]")) { accepterSuggestions(null); return; }
+      if (ev.target.closest("[data-sug-non]")) { A.sugIgnore[A.d0] = true; A.sug = null; majSuggestions(); return; }
+      if ((x = ev.target.closest(".aj-fant-sug"))) { accepterSuggestions([+x.dataset.sugId]); return; }
       if ((x = ev.target.closest("[data-sup]"))) { supprimer(+x.dataset.sup); return; }
       if ((x = ev.target.closest("[data-go]"))) { const t = aPlacer().find((q) => q.id === +x.dataset.go), z = t && premierLibre(t.duree); if (z) placer(t, arrondi5(z[0])); else if (typeof window.toast === "function") window.toast("Aucun temps libre assez long."); return; }
       if ((x = ev.target.closest(".aj-tache"))) { const b = A.plan.find((q) => q.id === x.dataset.id); if (b) cocher(b, x); return; }

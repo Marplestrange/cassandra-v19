@@ -12,7 +12,7 @@
 /* RÔLE       : aujourdhui.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=b5856a ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=4f986a ▼▼▼ */
 /* La page « Aujourd'hui » : le cadran du jour. Mêmes jetons que le reste de l'application ; le verre est celui des cartes. */
 #aj-racine{--aj-line:var(--line);display:block;min-width:0}
 .aj-verre{background:radial-gradient(120% 70% at 0% 0%,rgba(20,184,166,.06),transparent 60%),linear-gradient(165deg,rgba(255,255,255,.8),rgba(255,255,255,.5));-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);border:1px solid rgba(255,255,255,.7);border-radius:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(16,24,40,.05),0 14px 32px -16px rgba(15,70,66,.25)}
@@ -258,3 +258,13 @@
 .aj-mact button{border:1px solid var(--line);background:var(--surface-solid,#fff);color:var(--accent);border-radius:8px;padding:3px 8px;font:600 11px 'Inter',system-ui,sans-serif;cursor:pointer;white-space:nowrap}
 .aj-mact button:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 @media (hover:none){.aj-mact{display:inline-flex}}
+
+/* les suggestions d'Itare : un bandeau, et des cases fantômes sur la voie « À faire » */
+.aj-sug{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;margin:0 0 12px;border-radius:14px;background:linear-gradient(90deg,var(--acc-10),transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+.aj-sug[hidden]{display:none}
+.aj-sug-i{font-size:16px;color:var(--accent)}
+.aj-sug-t{flex:1;min-width:200px;font:500 13px/1.4 'Inter',system-ui,sans-serif;color:var(--txt)}.aj-sug-t b{font-weight:650}.aj-sug-t small{color:var(--txt-faint)}
+.aj-fant-sug{position:absolute;top:5px;bottom:5px;border-radius:11px;padding:6px 10px;overflow:hidden;border:2px dashed var(--accent);background:color-mix(in srgb,var(--accent) 9%,transparent);color:var(--txt);cursor:pointer;z-index:2;transition:background .15s}
+.aj-fant-sug:hover{background:color-mix(in srgb,var(--accent) 20%,transparent)}
+.aj-fant-sug b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:650 12px/1.2 'Inter',system-ui,sans-serif;color:var(--accent)}
+.aj-fant-sug small{display:block;font-size:10.5px;color:var(--txt-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

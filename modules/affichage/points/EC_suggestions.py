@@ -1,5 +1,5 @@
-# ══════════════════════════════════════════════════════════════════════════
-# TITRE      : Suggestions proactives de planification (référence)
+# ═════════════════════════════════════════════════
+# TITRE      : Affichage : les suggestions de placement de la journée (référence)
 # LICENCE    : AGPL-3.0
 # AUTEUR     : Atek Drisse
 # GIT        : github.com/Marplestrange
@@ -8,156 +8,124 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.1.0)  #suggestions
+# VERSION EC : EC0 (référence 0.7.0)  #0c5588
 # HÔTE CN    : CN_module.py · suggestions_plan @1.0
-# RÔLE       : Propose des placements optimaux de tâches dans les créneaux libres de la journée.
-# MÉTHODE    : fonction pure : analyse les tâches non planifiées, les créneaux libres, et suggère les meilleures places.
-# ══════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=suggestions_plan contrat=@1.0 version=EC0 empreinte=suggestions ▼▼▼
+# RÔLE       : propose, pour les tâches encore à placer, une heure dans les temps libres de la journée : les plus pressantes d'abord, sans jamais empiéter ni sur un rendez-vous, ni sur un bloc déjà posé, ni sur une autre suggestion.
+# MÉTHODE    : fonction pure en minutes depuis minuit du jour (la fenêtre peut passer minuit : la fin dépasse alors 1 440) ; les temps libres sont la fenêtre moins ce qui est occupé, à partir de maintenant ; chaque tâche reçoit un score (retard, échéance du jour, priorité, projet) puis, dans l'ordre du score, le premier temps libre assez long ; chaque suggestion consomme son créneau plus une marge.
+# ═════════════════════════════════════════════════
+# ▼▼▼ BORNE EC point=suggestions_plan contrat=@1.0 version=EC0 empreinte=0c5588 ▼▼▼
 
-# Score de base pour une suggestion
-SCORE_BASE = 50
-# Bonus quand la tâche correspond à un projet en cours
-BONUS_PROJET = 15
-# Bonus pour une tâche urgente (échéance proche)
-BONUS_URGENT = 20
-# Pénalité pour une tâche longue dans un petit créneau
-PENALITE_LONGUE = -10
+PAS = 5                                   # les heures se posent au multiple de cinq minutes
+MARGE = 5                                 # le souffle laissé après chaque tâche posée
+DUREE_MIN, DUREE_MAX, DUREE_DEFAUT = 5, 480, 30
+MAX_SUGGESTIONS = 10
+BASE = 50
+BONUS_PRIORITE = (0, 8, 16, 26)           # basse, normale, haute, urgente
+BONUS_RETARD = 40                         # une tâche en retard passe devant
+BONUS_RETARD_PAR_JOUR, JOURS_RETARD_MAX = 4, 5
+BONUS_ECHEANCE_JOUR = 18
+BONUS_PROJET = 6
 
 
-def _trouver_libres(plan,events,debut,fin):
-    """Retourne la liste des intervalles libres [(debut, fin), ...] entre debut et fin."""
-    ocupes = []
-    # les blocs du plan
-    for b in (plan or []):
-        d = max(b.get("deb", 0), debut)
-        f = min(b.get("deb", 0) + b.get("duree", 30), fin)
-        if d < f:
-            ocupes.append((d, f))
-    # les événements de l'agenda
-    for e in (events or []):
-        d = max(e.get("d", 0), debut)
-        f = min(e.get("f", d + 30), fin)
-        if d < f:
-            ocupes.append((d, f))
-    if not ocupes:
-        return [(debut, fin)]
-    # fusionner et trier
-    ocupes.sort()
-    fusion = [ocupes[0]]
-    for d, f in ocupes[1:]:
-        if d <= fusion[-1][1]:
-            fusion[-1] = (fusion[-1][0], max(fusion[-1][1], f))
-        else:
-            fusion.append((d, f))
-    # extraire les libres
+def _entier(v, defaut=0):
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return defaut
+    return int(v)
+
+
+def _arrondi(m):
+    """Le prochain multiple de cinq minutes, jamais en deçà."""
+    return -(-int(m) // PAS) * PAS
+
+
+def _libres(fenetre, maintenant, occupes):
+    """Les temps libres [(début, fin)] de la fenêtre, à partir de maintenant, sans les intervalles occupés ; un temps libre de moins de cinq minutes ne compte pas."""
+    debut, fin = fenetre
+    cur = max(debut, _arrondi(maintenant)) if maintenant is not None else debut
     libres = []
-    courant = debut
-    for d, f in fusion:
-        if courant < d:
-            libres.append((courant, d))
-        courant = max(courant, f)
-    if courant < fin:
-        libres.append((courant, fin))
-    return libres
+    for a, b in sorted((max(a, debut), min(b, fin)) for a, b in occupes if a < b):
+        if b <= cur or a >= fin:
+            continue
+        if a > cur:
+            libres.append((cur, a))
+        cur = max(cur, b)
+    if cur < fin:
+        libres.append((cur, fin))
+    return [(a, b) for a, b in libres if b - a >= PAS]
 
 
-def _score_tache(tache, creneau, projet_en_cours):
-    """Calcule le score d'une tâche dans un créneau donné."""
-    score = SCORE_BASE
-    duree = tache.get("duree", 30)
-    taille_cr = creneau[1] - creneau[0]
-    # pénalité si la tâche est plus longue que le créneau
-    if duree > taille_cr:
+def _score(t):
+    s = BASE + BONUS_PRIORITE[max(0, min(3, t["priorite"]))]
+    if t["retard"] > 0:
+        s += BONUS_RETARD + BONUS_RETARD_PAR_JOUR * min(t["retard"], JOURS_RETARD_MAX)
+    if t["echeance_jour"]:
+        s += BONUS_ECHEANCE_JOUR
+    if t["projet"]:
+        s += BONUS_PROJET
+    return s
+
+
+def _raison(t, creneau):
+    r = []
+    if t["retard"] > 0:
+        r.append("en retard de %d j" % t["retard"])
+    elif t["echeance_jour"]:
+        r.append("échéance aujourd'hui")
+    if t["priorite"] >= 2:
+        r.append("priorité " + ("urgente" if t["priorite"] >= 3 else "haute"))
+    if t["projet"]:
+        r.append("projet en cours")
+    r.append("premier temps libre assez long (%d min)" % (creneau[1] - creneau[0]))
+    return ", ".join(r)
+
+
+def _tache(x):
+    if not isinstance(x, dict) or isinstance(x.get("id"), bool) or not isinstance(x.get("id"), int):
         return None
-    # bonus projet en cours
-    if projet_en_cours and tache.get("projet"):
-        score += BONUS_PROJET
-    # bonus urgence (échéance proche)
-    if tache.get("echeance"):
-        score += BONUS_URGENT
-    # pénalité tâche longue dans petit créneau
-    if duree > 60 and taille_cr < 90:
-        score += PENALITE_LONGUE
-    # préférer le matin pour les tâches importantes
-    if creneau[0] < 720:  # avant 12h
-        score += 5
-    return score
+    return {"id": x["id"], "titre": str(x.get("titre") or "Sans titre")[:120],
+            "duree": max(DUREE_MIN, min(DUREE_MAX, _entier(x.get("duree"), DUREE_DEFAUT) or DUREE_DEFAUT)),
+            "retard": max(0, _entier(x.get("retard"))), "priorite": max(0, min(3, _entier(x.get("priorite"), 1))),
+            "echeance_jour": bool(x.get("echeance_jour")), "projet": bool(x.get("projet"))}
 
 
 def suggestions_plan(entree):
-    """Le point d'évolution `suggestions_plan` (contrat 1.0).
-
-    Entrée :
-        {
-            "jours": "YYYY-MM-DD",
-            "taches": [...],  # tâches non planifiées avec id, titre, duree, projet, echeance
-            "plan": [...],    # blocs déjà planifiés {deb, duree, ...}
-            "events": [...],  # événements Agenda {d, f, ...}
-            "debut": 8,       # heure de début de la journée de travail
-            "fin": 20,        # heure de fin
-            "projets": [...], # ids des projets en cours
-            "max": 5          # nombre max de suggestions
-        }
-
-    Sortie :
-        {
-            "suggestions": [
-                {"tache": id, "titre": "...", "debut": minute, "duree": minute, "score": nombre, "raison": "..."},
-                ...
-            ],
-            "creneaux_libres": [(debut, fin), ...]
-        }
-    """
-    jour = entree.get("jours", "")
-    taches = entree.get("taches", [])
-    plan = entree.get("plan", [])
-    events = entree.get("events", [])
-    debut = int(entree.get("debut", 8) * 60)  # convertir en minutes
-    fin = int(entree.get("fin", 20) * 60)
-    projets = set(entree.get("projets", []))
-    max_sug = max(1, min(int(entree.get("max", 5)), 10))
-
-    # trouver les créneaux libres
-    libres = _trouver_libres(plan, events, debut, fin)
-
-    # calculer les suggestions
-    suggestions = []
-    for t in taches:
-        for cr in libres:
-            score = _score_tache(t, cr, t.get("projet") in projets)
-            if score is not None:
-                suggestions.append({
-                    "tache": t.get("id"),
-                    "titre": t.get("titre", "Sans titre"),
-                    "debut": cr[0],
-                    "duree": t.get("duree", 30),
-                    "score": score,
-                    "raison": _raison(t, cr, score)
-                })
-                break  # une suggestion par tâche (la meilleure position)
-
-    # trier par score décroissant
-    suggestions.sort(key=lambda x: -x["score"])
-
-    return {
-        "suggestions": suggestions[:max_sug],
-        "creneaux_libres": libres
-    }
-
-
-def _raison(tache, creneau, score):
-    """Génère une raison lisible pour la suggestion."""
-    raisons = []
-    if creneau[0] < 720:
-        raisons.append("matin")
-    if tache.get("projet"):
-        raisons.append("projet en cours")
-    if tache.get("echeance"):
-        raisons.append("échéance proche")
-    if not raisons:
-        raisons.append("créneau libre")
-    return ", ".join(raisons)
+    e = entree if isinstance(entree, dict) else {}
+    f = e.get("fenetre") if isinstance(e.get("fenetre"), dict) else {}
+    fenetre = (_entier(f.get("debut")), _entier(f.get("fin")))
+    maintenant = e.get("maintenant")
+    maintenant = None if isinstance(maintenant, bool) or not isinstance(maintenant, (int, float)) else int(maintenant)
+    occupes = []
+    for o in (e.get("occupes") or []):
+        if isinstance(o, (list, tuple)) and len(o) == 2 and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in o):
+            occupes.append((int(o[0]), int(o[1])))
+    marge = max(0, min(30, _entier(e.get("marge"), MARGE)))
+    maxi = max(1, min(MAX_SUGGESTIONS, _entier(e.get("max"), 5)))
+    taches, vus = [], set()
+    for x in (e.get("taches") or []):
+        t = _tache(x)
+        if t and t["id"] not in vus:
+            vus.add(t["id"])
+            taches.append(t)
+    if fenetre[1] <= fenetre[0]:
+        return {"suggestions": [], "non_places": [{"tache": t["id"], "raison": "journée sans plage"} for t in taches], "creneaux_libres": []}
+    libres = _libres(fenetre, maintenant, occupes)
+    restant = list(libres)
+    suggestions, non_places = [], []
+    for t in sorted(taches, key=lambda t: (-_score(t), -t["duree"], t["id"])):
+        if len(suggestions) >= maxi:
+            non_places.append({"tache": t["id"], "raison": "au-delà des %d propositions" % maxi})
+            continue
+        place = next(((i, c) for i, c in enumerate(restant) if _arrondi(c[0]) + t["duree"] <= c[1]), None)      # l'heure se pose au multiple de cinq minutes
+        if place is None:
+            non_places.append({"tache": t["id"], "raison": "aucun temps libre assez long (%d min)" % t["duree"]})
+            continue
+        i, (a, b) = place
+        deb = _arrondi(a)
+        suite = deb + t["duree"] + marge
+        restant[i:i + 1] = [(suite, b)] if b - suite >= PAS else []
+        suggestions.append({"tache": t["id"], "titre": t["titre"], "deb": deb, "duree": t["duree"], "score": _score(t), "raison": _raison(t, (a, b))})
+    suggestions.sort(key=lambda s: (s["deb"], s["tache"]))
+    return {"suggestions": suggestions, "non_places": non_places, "creneaux_libres": [list(c) for c in libres]}
 
 
 def point_suggestions_plan(entree):
@@ -167,8 +135,8 @@ def point_suggestions_plan(entree):
 # ▲▲▲ FIN BORNE EC ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
-# EC : `point_suggestions_plan(entree)` est le point d'évolution. Il analyse les tâches non planifiées,
-#      calcule les créneaux libres de la journée, et suggère les meilleurs placements.
-# CN : appelé par la façade `suggestions_plan` du module (CN_module.py) via ctx.point ;
-#      le nexus fournit les tâches du compte, les événements, le plan existant et les projets en cours.
-# LIEN : à définir (contrat, corpus).
+# EC : `point_suggestions_plan(entree)` est le point d'évolution. Il décide de l'ordre et de l'heure des suggestions ; il ne peut ni changer la forme de la sortie, ni proposer une tâche absente de la liste reçue,
+#      ni empiéter sur ce qui est occupé, ni sur une autre suggestion, ni sortir de la fenêtre.
+# CN : appelé par la façade `lire_suggestions_plan` du module (CN_module.py) par ctx.point ; le nexus lit pour le compte qui agit (jamais un autre) ses tâches, son agenda, son plan et sa fenêtre de journée,
+#      et ne rend que ce que le point propose : placer une suggestion reste un geste du compte (modifier_plan).
+# LIEN : contrat dans contrats/CN_suggestions_plan.json ; corpus doré dans contrats/CN_suggestions_plan.corpus.json.

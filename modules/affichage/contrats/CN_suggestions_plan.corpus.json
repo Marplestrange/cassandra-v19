@@ -1,0 +1,1417 @@
+{
+ "point": "affichage.suggestions_plan",
+ "contrat": "1.0",
+ "origine": "sorties de la référence, entrées synthétiques",
+ "cas": [
+  {
+   "cas": "rien à placer",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "une tâche, la journée libre : au début de la fenêtre",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Relire",
+      "duree": 45,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "Relire",
+       "deb": 480,
+       "duree": 45,
+       "score": 58,
+       "raison": "premier temps libre assez long (720 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "à partir de maintenant, au multiple de cinq minutes",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": 543,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Relire",
+      "duree": 45,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "Relire",
+       "deb": 545,
+       "duree": 45,
+       "score": 58,
+       "raison": "premier temps libre assez long (655 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       545,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "un rendez-vous occupe le début : la tâche passe après",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [
+     [
+      480,
+      600
+     ]
+    ],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Relire",
+      "duree": 45,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "Relire",
+       "deb": 600,
+       "duree": 45,
+       "score": 58,
+       "raison": "premier temps libre assez long (600 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       600,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "la tâche trop longue pour le premier temps libre va dans le suivant",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [
+     [
+      540,
+      600
+     ]
+    ],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Long",
+      "duree": 90,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "Long",
+       "deb": 600,
+       "duree": 90,
+       "score": 58,
+       "raison": "premier temps libre assez long (600 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       540
+      ],
+      [
+       600,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "aucun temps libre assez long : non placée, avec sa raison",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [
+     [
+      480,
+      1200
+     ]
+    ],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Relire",
+      "duree": 45,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [],
+     "non_places": [
+      {
+       "tache": 1,
+       "raison": "aucun temps libre assez long (45 min)"
+      }
+     ],
+     "creneaux_libres": []
+    }
+   }
+  },
+  {
+   "cas": "deux tâches ne se chevauchent pas",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "A",
+      "duree": 60,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 2,
+      "titre": "B",
+      "duree": 60,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "A",
+       "deb": 480,
+       "duree": 60,
+       "score": 58,
+       "raison": "premier temps libre assez long (720 min)"
+      },
+      {
+       "tache": 2,
+       "titre": "B",
+       "deb": 545,
+       "duree": 60,
+       "score": 58,
+       "raison": "premier temps libre assez long (655 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "chaque suggestion laisse une marge",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 600
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "A",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 2,
+      "titre": "B",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "A",
+       "deb": 480,
+       "duree": 30,
+       "score": 58,
+       "raison": "premier temps libre assez long (120 min)"
+      },
+      {
+       "tache": 2,
+       "titre": "B",
+       "deb": 515,
+       "duree": 30,
+       "score": 58,
+       "raison": "premier temps libre assez long (85 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       600
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "la tâche en retard passe devant",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Normale",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 2,
+      "titre": "En retard",
+      "duree": 30,
+      "retard": 3,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 2,
+       "titre": "En retard",
+       "deb": 480,
+       "duree": 30,
+       "score": 110,
+       "raison": "en retard de 3 j, premier temps libre assez long (720 min)"
+      },
+      {
+       "tache": 1,
+       "titre": "Normale",
+       "deb": 515,
+       "duree": 30,
+       "score": 58,
+       "raison": "premier temps libre assez long (685 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "l'échéance du jour passe devant une tâche sans échéance",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Sans",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 2,
+      "titre": "Du jour",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": true,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 2,
+       "titre": "Du jour",
+       "deb": 480,
+       "duree": 30,
+       "score": 76,
+       "raison": "échéance aujourd'hui, premier temps libre assez long (720 min)"
+      },
+      {
+       "tache": 1,
+       "titre": "Sans",
+       "deb": 515,
+       "duree": 30,
+       "score": 58,
+       "raison": "premier temps libre assez long (685 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "la priorité urgente passe devant la haute",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Haute",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 2,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 2,
+      "titre": "Urgente",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 3,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 2,
+       "titre": "Urgente",
+       "deb": 480,
+       "duree": 30,
+       "score": 76,
+       "raison": "priorité urgente, premier temps libre assez long (720 min)"
+      },
+      {
+       "tache": 1,
+       "titre": "Haute",
+       "deb": 515,
+       "duree": 30,
+       "score": 66,
+       "raison": "priorité haute, premier temps libre assez long (685 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "le projet en cours départage deux tâches pareilles",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Seule",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 2,
+      "titre": "Du projet",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": true
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 2,
+       "titre": "Du projet",
+       "deb": 480,
+       "duree": 30,
+       "score": 64,
+       "raison": "projet en cours, premier temps libre assez long (720 min)"
+      },
+      {
+       "tache": 1,
+       "titre": "Seule",
+       "deb": 515,
+       "duree": 30,
+       "score": 58,
+       "raison": "premier temps libre assez long (685 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "à égalité de score la plus longue passe d'abord",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Courte",
+      "duree": 15,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 2,
+      "titre": "Longue",
+      "duree": 60,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 2,
+       "titre": "Longue",
+       "deb": 480,
+       "duree": 60,
+       "score": 58,
+       "raison": "premier temps libre assez long (720 min)"
+      },
+      {
+       "tache": 1,
+       "titre": "Courte",
+       "deb": 545,
+       "duree": 15,
+       "score": 58,
+       "raison": "premier temps libre assez long (655 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "au plus le nombre demandé",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "T1",
+      "duree": 20,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 2,
+      "titre": "T2",
+      "duree": 20,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 3,
+      "titre": "T3",
+      "duree": 20,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 4,
+      "titre": "T4",
+      "duree": 20,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 5,
+      "titre": "T5",
+      "duree": 20,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 2
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "T1",
+       "deb": 480,
+       "duree": 20,
+       "score": 58,
+       "raison": "premier temps libre assez long (720 min)"
+      },
+      {
+       "tache": 2,
+       "titre": "T2",
+       "deb": 505,
+       "duree": 20,
+       "score": 58,
+       "raison": "premier temps libre assez long (695 min)"
+      }
+     ],
+     "non_places": [
+      {
+       "tache": 3,
+       "raison": "au-delà des 2 propositions"
+      },
+      {
+       "tache": 4,
+       "raison": "au-delà des 2 propositions"
+      },
+      {
+       "tache": 5,
+       "raison": "au-delà des 2 propositions"
+      }
+     ],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "la fenêtre de 24 heures est celle d'une journée entière",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 0,
+     "fin": 1440
+    },
+    "maintenant": 900,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Relire",
+      "duree": 45,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "Relire",
+       "deb": 900,
+       "duree": 45,
+       "score": 58,
+       "raison": "premier temps libre assez long (540 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       900,
+       1440
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "une nuit qui passe minuit (22 h → 6 h) : la fenêtre dépasse 1 440",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 1320,
+     "fin": 1800
+    },
+    "maintenant": 1500,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Sauvegarde",
+      "duree": 60,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "Sauvegarde",
+       "deb": 1500,
+       "duree": 60,
+       "score": 58,
+       "raison": "premier temps libre assez long (300 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       1500,
+       1800
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "une fenêtre sans plage ne propose rien",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 600,
+     "fin": 600
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Relire",
+      "duree": 45,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [],
+     "non_places": [
+      {
+       "tache": 1,
+       "raison": "journée sans plage"
+      }
+     ],
+     "creneaux_libres": []
+    }
+   }
+  },
+  {
+   "cas": "un jour passé : plus rien à proposer",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": 1200,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Relire",
+      "duree": 45,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [],
+     "non_places": [
+      {
+       "tache": 1,
+       "raison": "aucun temps libre assez long (45 min)"
+      }
+     ],
+     "creneaux_libres": []
+    }
+   }
+  },
+  {
+   "cas": "un rendez-vous hors fenêtre ne gêne pas",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [
+     [
+      60,
+      120
+     ],
+     [
+      1300,
+      1400
+     ]
+    ],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Relire",
+      "duree": 45,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "Relire",
+       "deb": 480,
+       "duree": 45,
+       "score": 58,
+       "raison": "premier temps libre assez long (720 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "des rendez-vous qui se recouvrent se fusionnent",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [
+     [
+      480,
+      560
+     ],
+     [
+      540,
+      620
+     ]
+    ],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Relire",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "Relire",
+       "deb": 620,
+       "duree": 30,
+       "score": 58,
+       "raison": "premier temps libre assez long (580 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       620,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "une tâche sans durée reçoit la durée par défaut",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Sans durée",
+      "duree": 0,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "Sans durée",
+       "deb": 480,
+       "duree": 30,
+       "score": 58,
+       "raison": "premier temps libre assez long (720 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "une durée hors bornes est ramenée dans les bornes",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Énorme",
+      "duree": 9999,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 2,
+      "titre": "Minuscule",
+      "duree": 1,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "Énorme",
+       "deb": 480,
+       "duree": 480,
+       "score": 58,
+       "raison": "premier temps libre assez long (720 min)"
+      },
+      {
+       "tache": 2,
+       "titre": "Minuscule",
+       "deb": 965,
+       "duree": 5,
+       "score": 58,
+       "raison": "premier temps libre assez long (235 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "un identifiant en double n'est proposé qu'une fois",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "A",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 1,
+      "titre": "A bis",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "A",
+       "deb": 480,
+       "duree": 30,
+       "score": 58,
+       "raison": "premier temps libre assez long (720 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "une tâche mal formée est ignorée",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "titre": "sans id"
+     },
+     "x",
+     {
+      "id": 2,
+      "titre": "Bonne",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 2,
+       "titre": "Bonne",
+       "deb": 480,
+       "duree": 30,
+       "score": 58,
+       "raison": "premier temps libre assez long (720 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "la raison dit le retard et la priorité",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 1,
+      "titre": "Urgente et en retard",
+      "duree": 30,
+      "retard": 2,
+      "priorite": 3,
+      "echeance_jour": false,
+      "projet": true
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 1,
+       "titre": "Urgente et en retard",
+       "deb": 480,
+       "duree": 30,
+       "score": 130,
+       "raison": "en retard de 2 j, priorité urgente, projet en cours, premier temps libre assez long (720 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "cas": "l'ordre des tâches reçues ne change rien",
+   "entree": {
+    "jour": "2026-10-21",
+    "fenetre": {
+     "debut": 480,
+     "fin": 1200
+    },
+    "maintenant": null,
+    "occupes": [],
+    "taches": [
+     {
+      "id": 2,
+      "titre": "B",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 2,
+      "echeance_jour": false,
+      "projet": false
+     },
+     {
+      "id": 1,
+      "titre": "A",
+      "duree": 30,
+      "retard": 0,
+      "priorite": 1,
+      "echeance_jour": false,
+      "projet": false
+     }
+    ],
+    "marge": 5,
+    "max": 5
+   },
+   "sortie": {
+    "valeur": {
+     "suggestions": [
+      {
+       "tache": 2,
+       "titre": "B",
+       "deb": 480,
+       "duree": 30,
+       "score": 66,
+       "raison": "priorité haute, premier temps libre assez long (720 min)"
+      },
+      {
+       "tache": 1,
+       "titre": "A",
+       "deb": 515,
+       "duree": 30,
+       "score": 58,
+       "raison": "premier temps libre assez long (685 min)"
+      }
+     ],
+     "non_places": [],
+     "creneaux_libres": [
+      [
+       480,
+       1200
+      ]
+     ]
+    }
+   }
+  }
+ ]
+}

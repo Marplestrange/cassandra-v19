@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.6.0  #dccebb
+# VERSION CN : 0.7.0  #114c20
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.6.0 empreinte=dccebb ▼▼▼
+# ▼▼▼ BORNE CN version=0.7.0 empreinte=114c20 ▼▼▼
 """Le module d'affichage : thème et mise en page, assemblés à partir de ce que les modules DÉCLARENT.
 
 Un module ne dit jamais comment il s'affiche. Il déclare des écrans (avec un gabarit), des tuiles (avec un composant et une source de données) et
@@ -32,6 +32,7 @@ import hashlib
 import json
 import re
 import time
+from datetime import datetime, timedelta
 from pathlib import Path
 
 BASES = {
@@ -778,48 +779,59 @@ def brancher(ctx):
                 "actes": {k: {x: ACTES[k][x] for x in ("capacite", "arg", "titre", "risque", "perimetre", "preuve", "retour")} for k in sorted(proposes)}}
 
     def lire_suggestions_plan(ctx, jour="", max_sug=5):
-        """Propose des placements optimaux de tâches dans les créneaux libres du jour pour CE compte."""
+        """Propose une heure pour les tâches encore à placer ce jour-là, dans les temps libres du compte (le sien seulement). Rien n'est posé : placer reste un geste du compte."""
         compte = ctx.compte or ""
         if not compte:
             raise ValueError("les suggestions appartiennent à un compte")
         jour = _jour_ok(jour)
         reg = _reglage_jour_de(ctx, compte)
-        debut = reg.get("debut") if reg.get("debut") is not None else 8
-        fin = reg.get("fin") if reg.get("fin") is not None else 20
-        plan_data = lire_plan(ctx, jour)
-        plan = plan_data.get("blocs", [])
+        debut_h = reg["debut"] if reg.get("debut") is not None else 0
+        fin_h = reg["fin"] if reg.get("fin") is not None else 0
+        duree_h = ((fin_h - debut_h) % 24) or 24                              # 0 → 0 est le cadran de 24 h ; une fin avant le début passe minuit
+        fenetre = {"debut": debut_h * 60, "fin": (debut_h + duree_h) * 60}
+        d0 = datetime.strptime(jour, "%Y-%m-%d").date()
+        lendemain = (d0 + timedelta(days=1)).strftime("%Y-%m-%d")
+        maintenant_reel = datetime.now()
+        ecart = (maintenant_reel.date() - d0).days
+        if ecart < 0:
+            maintenant = None                                                  # un jour à venir : toute la fenêtre est devant soi
+        elif ecart > 1:
+            maintenant = fenetre["fin"]                                        # un jour passé : plus rien à proposer
+        else:
+            maintenant = maintenant_reel.hour * 60 + maintenant_reel.minute + 1440 * ecart
+        minutes_de = lambda s: (int(s[11:13]) * 60 + int(s[14:16]) + (1440 if s[:10] == lendemain else 0)) if len(s) >= 16 and s[:10] in (jour, lendemain) else None
+        occupes = []
+        try:
+            r = ctx.executer_lecture("agenda.calendrier", du=jour, au=lendemain)
+            for e in (r or {}).get("elements", []):
+                if e.get("kind") not in ("event", "etape") or e.get("journee"):
+                    continue
+                deb, fin = minutes_de(str(e.get("debut") or "")), minutes_de(str(e.get("fin") or ""))
+                if deb is not None:
+                    occupes.append([deb, fin if fin is not None and fin > deb else deb + 60])
+        except (PermissionError, KeyError, ValueError):
+            pass
+        blocs = lire_plan(ctx, jour).get("blocs", [])
+        occupes += [[b["deb"], b["deb"] + b["duree"]] for b in blocs]
+        posees = {b.get("tache") for b in blocs if b.get("tache") is not None}
         taches = []
         try:
-            r = ctx.executer_lecture("taches.lister_taches", filtres={"actives": True})
-            taches = r.get("taches", []) if isinstance(r, dict) else []
+            r = ctx.executer_lecture("taches.lister", limite=500)
+            for t in (r or {}).get("taches", []):
+                due = str(t.get("echeance") or "")[:10]
+                if t.get("statut") in ("fait", "abandonnee") or t.get("id") in posees or not due:
+                    continue
+                if not (due <= jour if ecart >= 0 else due == jour):
+                    continue
+                jours_retard = max(0, (d0 - datetime.strptime(due, "%Y-%m-%d").date()).days)
+                taches.append({"id": t["id"], "titre": t.get("texte", ""), "duree": t.get("charge") or 0, "retard": jours_retard, "priorite": t.get("priorite", 1),
+                               "echeance_jour": due == jour, "projet": bool(t.get("projet_id"))})
         except (PermissionError, KeyError, ValueError):
             pass
-        ids_planifies = {b.get("tache") for b in plan if b.get("tache")}
-        taches_libres = [t for t in taches if t.get("id") not in ids_planifies]
-        events = []
-        try:
-            r = ctx.executer_lecture("agenda.lister_evenements", jour_debut=jour, jour_fin=jour)
-            events = r.get("evenements", []) if isinstance(r, dict) else []
-        except (PermissionError, KeyError, ValueError):
-            pass
-        projets_actifs = []
-        try:
-            r = ctx.executer_lecture("projets.lister_projets", filtres={"actifs": True})
-            projets_actifs = [p.get("id") for p in (r.get("projets", []) if isinstance(r, dict) else [])]
-        except (PermissionError, KeyError, ValueError):
-            pass
-        entree_pt = {
-            "jours": jour,
-            "taches": taches_libres,
-            "plan": plan,
-            "events": events,
-            "debut": debut,
-            "fin": fin,
-            "projets": projets_actifs,
-            "max": int(max_sug) if isinstance(max_sug, (int, float)) and not isinstance(max_sug, bool) else 5
-        }
+        maxi = max_sug if isinstance(max_sug, int) and not isinstance(max_sug, bool) else 5
+        entree_pt = {"jour": jour, "fenetre": fenetre, "maintenant": maintenant, "occupes": occupes, "taches": taches, "marge": 5, "max": maxi}
         sortie = ctx.point("suggestions_plan", entree_pt)["valeur"]
-        return sortie
+        return dict(sortie, jour=jour, fenetre=fenetre)
 
     # ---------------------------------------------------------------- la session
     def lire_session(ctx, ip_session=""):
