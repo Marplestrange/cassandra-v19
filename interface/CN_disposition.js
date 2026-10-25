@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #63609b
+// VERSION CN : 0.1.0  #36c70e
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=63609b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=36c70e ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -119,6 +119,51 @@
   function pontVue(entreeId, vue) {
     const seg = vue ? SEG_VUE[vue] : SEG_ENTREE[entreeId];
     if (seg) setTimeout(function () { if (typeof window.buSeg === "function") window.buSeg(seg); }, 80);
+    if (entreeId === "panorama") {
+      if (vue === "systeme") {
+        if (typeof window.ouvrirSysteme === "function") window.ouvrirSysteme();
+      } else if (typeof window.vuAller === "function" && vue) {
+        setTimeout(function() { window.vuAller(vue); }, 80);
+      }
+    }
+    if (entreeId === "flotte" && typeof window.flVue === "function" && vue) {
+      setTimeout(function() { window.flVue(vue); }, 80);
+    }
+  }
+
+  // ── rendu dynamique du rail Flotte dans le menu de gauche ───────────────
+  // `FL2` est déclaré par « const » dans l'ancienne interface : il n'est pas sur window, on le lit par son nom (typeof protège de son absence).
+  const parcFlotte = () => (typeof FL2 !== "undefined" && FL2 && FL2.parc ? FL2 : null);
+  function rendreFlotteRail() {
+    const F = parcFlotte();
+    if (!F) return '<div class="d19-fl-att">Lecture du parc…</div>';
+    const M = F.parc.machines || [];
+    if (!M.length) return "";
+    const groupes = ["Serveurs", "Postes", "Mobiles", "Retirées", "Disparues"];
+    let h = "";
+    for (const g of groupes) {
+      const ms = M.filter((m) => m.groupe === g);
+      if (!ms.length) continue;
+      h += '<div class="d19-fl-grp">' + esc(g) + "</div>";
+      for (const m of ms) {
+        const on = F.vue === "machine" && F.sel === m.nom;
+        const st = m.etat === "erreur" ? "hors ligne" : (m.statut === "retiree" ? "retirée" : (m.niveau === "agent" ? "agent" : m.niveau === "ssh" ? "ssh" : ""));
+        const dot = m.etat === "erreur" ? "danger" : (m.etat === "avert" ? "warn" : (m.etat === "ok" ? "ok" : "ghost"));
+        h += '<button class="d19-si sub d19-fl-m' + (on ? " on" : "") + '" type="button" data-fm="' + esc(m.nom) + '" title="' + esc(m.libelle || "") + '"><span class="mx-dot ' + dot + '"></span><span>' + esc(m.nom) + "</span>" + (st ? '<span class="d19-fl-st' + (m.etat === "erreur" ? " off" : "") + '">' + esc(st) + "</span>" : "") + "</button>";
+      }
+    }
+    h += '<button class="d19-si sub d19-fl-act" type="button" data-fa="ajouter">' + ico("plus") + "<span>Déclarer une machine</span></button>";
+    h += '<button class="d19-si sub d19-fl-act" type="button" data-fa="relever" title="Relire le parc">' + ico("refresh") + "<span>Relever</span></button>";
+    return h;
+  }
+  // l'état de chaque section de la Vue d'ensemble (« panne », « 7 att. »…) : l'ancienne interface l'écrit dans ses éléments d'origine, on le recopie dans le menu
+  const SECTIONS_ETAT = ["verdict", "gestes", "cass", "sites", "flotte", "fil", "machine"];
+  function recopierEtatPanorama() {
+    SECTIONS_ETAT.forEach((id) => {
+      const st = document.getElementById("vust-" + id), dot = document.getElementById("vudot-" + id);
+      document.querySelectorAll('#d19-side [data-mst="' + id + '"]').forEach((x) => { x.textContent = st ? st.textContent : ""; });
+      document.querySelectorAll('#d19-side [data-mdot="' + id + '"]').forEach((x) => { x.className = "mx-dot " + (dot ? dot.className.replace(/^mx-dot\s*/, "") : ""); });
+    });
   }
   function suivreSegment(seg) {
     const v = VERS_MENU[seg]; if (!v || !E.d) return;
@@ -240,11 +285,22 @@
     if (ep.length) h += ep.map((p) => '<button class="d19-si pinned" data-tip="' + esc(p.libelle) + '" data-pg="' + esc(p.groupe) + '" data-pe="' + esc(p.entree) + '" data-pv="' + esc(p.vue || "") + '">' + ico("star") + "<span>" + esc(p.libelle) + "</span></button>").join("") + '<hr class="d19-sep">';
     const chev = (o) => ico("right", "car" + (o ? " ouv" : ""));
     for (const e of g.entrees) {
-      const ouv = E.ouv.has(e.id) && e.enfants.length, actif = E.actif && E.e === e.id && E.g === g.id;
-      h += '<button class="d19-si ent' + (actif && (!ouv || rail) ? " on" : "") + '" data-tip="' + esc(e.libelle) + '" data-e="' + esc(e.id) + '">' + ico(e.icone) + "<span>" + esc(e.libelle) + "</span>" + (!ouv ? nbDe(e) : "") + (e.enfants.length ? chev(ouv) : "") + "</button>";
-      if (ouv) h += e.enfants.map((f) => '<button class="d19-si sub' + (VUE_IC[f.vue || f.id] ? " ic" : "") + (actif && E.vue === (f.vue || f.id) ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(f.vue || f.id) + '">' + (VUE_IC[f.vue || f.id] ? ico(VUE_IC[f.vue || f.id]) : '<span class="pt"></span>') + '<span>' + esc(f.libelle) + "</span>" + nbDe(f) + "</button>").join("");
+      const aEnfants = e.enfants.length > 0 || e.id === "flotte";
+      const ouv = E.ouv.has(e.id) && aEnfants, actif = E.actif && E.e === e.id && E.g === g.id;
+      h += '<button class="d19-si ent' + (actif && (!ouv || rail) ? " on" : "") + '" data-tip="' + esc(e.libelle) + '" data-e="' + esc(e.id) + '">' + ico(e.icone) + "<span>" + esc(e.libelle) + "</span>" + (!ouv ? nbDe(e) : "") + (aEnfants ? chev(ouv) : "") + "</button>";
+      if (ouv) {
+        if (e.id === "flotte") {
+          h += rendreFlotteRail();
+        } else {
+          h += e.enfants.map((f) => {
+            const vid = f.vue || f.id, etat = e.id === "panorama" && SECTIONS_ETAT.indexOf(vid) >= 0;
+            return '<button class="d19-si sub' + (VUE_IC[vid] ? " ic" : "") + (actif && E.vue === vid ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(vid) + '">' + (VUE_IC[vid] ? ico(VUE_IC[vid]) : etat ? '<span class="mx-dot" data-mdot="' + vid + '"></span>' : '<span class="pt"></span>') + "<span>" + esc(f.libelle) + "</span>" + (etat ? '<span class="mx-st" data-mst="' + vid + '"></span>' : "") + nbDe(f) + "</button>";
+          }).join("");
+        }
+      }
     }
     sd.innerHTML = h;
+    recopierEtatPanorama();
   }
   function fermerSide() { E.side = false; rendreGauche(); }
 
@@ -832,11 +888,23 @@
       if ((x = c("[data-lat]"))) { if (E.pageAction) E.pageAction(x.dataset.lat); return; }
       if (c("#d19-cap")) { capsuleAller(); return; }
       if ((x = c("#d19-side .pinned"))) { aller(x.dataset.pg, x.dataset.pe, x.dataset.pv); return; }
-      if ((x = c("#d19-side .sub"))) { aller(E.g, x.dataset.e, x.dataset.v); return; }
+      if ((x = c("#d19-side [data-fm]"))) {
+        const nom = x.dataset.fm;
+        if (!(E.actif && E.e === "flotte")) { if (typeof window.switchTab === "function") window.switchTab("fleet"); }
+        if (typeof window.fl2Ouvrir === "function") window.fl2Ouvrir(nom);
+        return;
+      }
+      if ((x = c("#d19-side [data-fa]"))) {
+        if (x.dataset.fa === "ajouter" && typeof window.openFleetAdd === "function") window.openFleetAdd();
+        else if (x.dataset.fa === "relever" && typeof window.fl2Charger === "function") window.fl2Charger();
+        return;
+      }
+      if ((x = c("#d19-side .sub"))) { if (x.dataset.e) aller(E.g, x.dataset.e, x.dataset.v); return; }
       if ((x = c("#d19-side .ent"))) {
         const id = x.dataset.e, e = ent().entrees.find((y) => y.id === id);
         if (E.side === "rail") { aller(E.g, id); return; }
-        if (e.enfants.length && E.ouv.has(id) && E.e === id && E.actif) { E.ouv.delete(id); rendreGauche(); } else { E.ouv.add(id); aller(E.g, id); }
+        const aEnfants = e.enfants.length > 0 || id === "flotte";
+        if (aEnfants && E.ouv.has(id) && E.e === id && E.actif) { E.ouv.delete(id); rendreGauche(); } else { E.ouv.add(id); aller(E.g, id); }
         return;
       }
       if (c("#d19-scrim")) { fermerSide(); return; }
@@ -929,6 +997,14 @@
       const bs = window.buSeg;
       if (typeof bs === "function") window.buSeg = function (v) { const r = bs.apply(this, arguments); try { suivreSegment(v); } catch (e) {} return r; };
       window.switchTab = function (name) { const r = sw.apply(this, arguments); window.__d19Onglet = name; try { suivre(name); } catch (e) {} return r; };
+      if (typeof window.vuRendre === "function") {
+        const vr = window.vuRendre;
+        window.vuRendre = function () { const r = vr.apply(this, arguments); try { recopierEtatPanorama(); } catch (e) {} return r; };
+      }
+      if (typeof window.flRail === "function") {
+        const fr = window.flRail;
+        window.flRail = function () { const r = fr.apply(this, arguments); try { if (E.e === "flotte") rendreGauche(); } catch (e) {} return r; };
+      }
     }
   }
   CASS.disposition = { rafraichir: charger, aller: aller, ouvrirPanel: ouvrirPanel };

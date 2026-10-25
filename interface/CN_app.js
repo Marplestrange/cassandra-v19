@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #4be4ce
+// VERSION CN : 0.1.0  #5fb245
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=4be4ce ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=5fb245 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -7100,7 +7100,6 @@ function vuGeste(g){
 }
 function vuAller(sec){
     const el=document.getElementById('vu-'+sec); if(!el) return;
-    document.querySelectorAll('#vu-rail .mx-item').forEach(b=>{ const on=b.id==='vunav-'+sec; b.classList.toggle('on',on); if(on) b.setAttribute('aria-current','true'); else b.removeAttribute('aria-current'); });
     // Sans « smooth » : dans le navigateur de l'application le défilement doux ne partait jamais (mesuré :
     // scrollTop restait à 0 après 1,5 s, alors que le défilement immédiat arrive).
     el.scrollIntoView({block:'start'});

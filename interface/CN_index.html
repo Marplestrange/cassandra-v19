@@ -13,7 +13,7 @@
 <!-- RÔLE       : la page unique de l'interface : le corps de la V18 et la liste des scripts. -->
 <!-- MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d1c1e7 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=0e2a06 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -374,6 +374,14 @@
       <div class="sb-head" onclick="sbToggle(this)">Supervision <span class="sb-caret">▸</span></div>
       <div class="sb-sub">
         <div class="sb-item" data-tab="overview" onclick="switchTab('overview')"><span class="sb-dot"></span>Vue d'ensemble</div>
+        <div class="sb-item" onclick="switchTab('overview'); setTimeout(()=>vuAller('verdict'), 10)"><span class="mx-dot" id="vudot-verdict"></span>Le verdict<span class="mx-st" id="vust-verdict">—</span></div>
+        <div class="sb-item" onclick="switchTab('overview'); setTimeout(()=>vuAller('gestes'), 10)"><span class="mx-dot" id="vudot-gestes"></span>Ce qui demande un geste<span class="mx-st" id="vust-gestes">—</span></div>
+        <div class="sb-item" onclick="switchTab('overview'); setTimeout(()=>vuAller('cass'), 10)"><span class="mx-dot" id="vudot-cass"></span>Cassandra, maintenant<span class="mx-st" id="vust-cass">—</span></div>
+        <div class="sb-item" onclick="switchTab('overview'); setTimeout(()=>vuAller('sites'), 10)"><span class="mx-dot" id="vudot-sites"></span>Les sites<span class="mx-st" id="vust-sites">—</span></div>
+        <div class="sb-item" onclick="switchTab('overview'); setTimeout(()=>vuAller('flotte'), 10)"><span class="mx-dot" id="vudot-flotte"></span>La flotte<span class="mx-st" id="vust-flotte">—</span></div>
+        <div class="sb-item" onclick="switchTab('overview'); setTimeout(()=>vuAller('fil'), 10)"><span class="mx-dot" id="vudot-fil"></span>Ce qui a changé<span class="mx-st" id="vust-fil">—</span></div>
+        <div class="sb-item" onclick="switchTab('overview'); setTimeout(()=>vuAller('machine'), 10)"><span class="mx-dot" id="vudot-machine"></span>La machine<span class="mx-st" id="vust-machine">—</span></div>
+        <div class="sb-item" onclick="ouvrirSysteme()"><span class="mx-dot"></span>Détails système<span class="mx-st">13 cartes</span></div>
         <!-- L'entrée d'origine du chat : cachée pour tout le monde (applyRoleGating), le chat vit dans Le Salon. -->
         <div class="sb-item" data-tab="dashboard" onclick="switchTab('dashboard')"><span class="sb-dot"></span>Cassandra</div>
         <div class="sb-item" data-tab="history" onclick="switchTab('history')"><span class="sb-dot"></span>Historique</div>
@@ -1290,21 +1298,6 @@
       </div>
     </header>
     <div class="mx-body">
-      <aside class="mx-rail" id="vu-rail" aria-label="Vue d'ensemble">
-        <div class="mx-rail-h"><b>Ce matin</b><span>une section, un clic</span></div>
-        <div class="mx-fam">Ce matin</div>
-        <button class="mx-item on" id="vunav-verdict" aria-current="true" onclick="vuAller('verdict')"><span class="mx-dot" id="vudot-verdict"></span><span class="nm">Le verdict</span><span class="mx-st" id="vust-verdict">—</span></button>
-        <button class="mx-item" id="vunav-gestes" onclick="vuAller('gestes')"><span class="mx-dot" id="vudot-gestes"></span><span class="nm">Ce qui demande un geste</span><span class="mx-st" id="vust-gestes">—</span></button>
-        <button class="mx-item" id="vunav-cass" onclick="vuAller('cass')"><span class="mx-dot" id="vudot-cass"></span><span class="nm">Cassandra, maintenant</span><span class="mx-st" id="vust-cass">—</span></button>
-        <div class="mx-fam">Le parc</div>
-        <button class="mx-item" id="vunav-sites" onclick="vuAller('sites')"><span class="mx-dot" id="vudot-sites"></span><span class="nm">Les sites</span><span class="mx-st" id="vust-sites">—</span></button>
-        <button class="mx-item" id="vunav-flotte" onclick="vuAller('flotte')"><span class="mx-dot" id="vudot-flotte"></span><span class="nm">La flotte</span><span class="mx-st" id="vust-flotte">—</span></button>
-        <button class="mx-item" id="vunav-fil" onclick="vuAller('fil')"><span class="mx-dot"></span><span class="nm">Ce qui a changé</span><span class="mx-st" id="vust-fil">—</span></button>
-        <button class="mx-item" id="vunav-machine" onclick="vuAller('machine')"><span class="mx-dot" id="vudot-machine"></span><span class="nm">La machine</span><span class="mx-st" id="vust-machine">—</span></button>
-        <div class="mx-fam">Au fond</div>
-        <button class="mx-item" onclick="ouvrirSysteme()"><span class="mx-dot"></span><span class="nm">Détails système</span><span class="mx-st">13 cartes</span></button>
-        <div class="mx-rail-foot">Portée<br><code class="mono">administrateur</code><br>machine, sites, flotte, Cassandra · une relecture par minute</div>
-      </aside>
       <main class="mx-main" id="vu-main">
         <section class="mx-sec" id="vu-verdict" aria-label="Verdict"><div class="mx-attente">Lecture de la vue…</div></section>
         <section class="mx-sec" id="vu-kpis" hidden></section>

@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=bdc7af ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=dda634 ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -402,6 +402,16 @@ body.d19 #d19-side.ferme ~ #d19-cap{display:none!important}
 :root[data-theme="dark"] #d19-cap .pt{border-color:#1e2632}
 .d19-si.sub.ic{padding-left:24px}.d19-si.sub.ic>svg.d-i{width:16px;height:16px;color:var(--txt-faint)}
 .d19-si.sub.ic.on>svg.d-i{color:var(--accent)}
+/* ---------- la Flotte et le Panorama dans le menu de gauche : leur rail d'origine disparaît de la page ---------- */
+body.d19 #tab-fleet .mx-rail{display:none!important}
+.d19-fl-att{padding:6px 10px 6px 38px;font-style:italic;color:var(--txt-faint);font-size:12.5px}
+.d19-fl-grp{padding:12px 10px 4px 38px;font:600 11px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-faint);pointer-events:none}
+.d19-si.d19-fl-m{padding-left:20px}
+.d19-si.d19-fl-m .mx-dot{width:6px;height:6px;margin-right:6px}
+.d19-fl-st{margin-left:auto;font-size:10px;padding:2px 5px;border-radius:4px;background:var(--surface);color:var(--txt-faint)}.d19-fl-st.off{color:var(--warn)}
+.d19-si.d19-fl-act{margin-top:2px;padding-left:38px}.d19-si.d19-fl-act:first-of-type{margin-top:8px}
+.d19-si.sub .mx-dot{width:6px;height:6px;flex:none}
+.d19-si.sub .mx-st{margin-left:auto;font:500 10px 'JetBrains Mono',monospace;color:var(--txt-ghost,var(--txt-faint));white-space:nowrap}
 /* ▲▲▲ FIN BORNE CN ▲▲▲ */
 
 /* ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ */

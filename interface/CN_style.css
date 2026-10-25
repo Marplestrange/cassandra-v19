@@ -12,7 +12,7 @@
 /* RÔLE       : tous les styles de l'interface extraits de la V18, versionnés. */
 /* MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=d2e6d9 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=886920 ▼▼▼ */
 
 /* ═══════════════════════════════════════════════════════════════════════
    CASSANDRA — SYSTÈME DE COULEURS
@@ -1447,12 +1447,15 @@ body{font-family:'Inter',sans-serif;color:var(--txt);height:100vh;overflow:hidde
 .sb-group.open .sb-caret{transform:rotate(90deg)}
 .sb-sub{display:none;flex-direction:column;gap:1px}
 .sb-group.open .sb-sub{display:flex}
-.sb-sub .sb-item{font-size:12.5px}
+.sb-sub .sb-item{font-size:12.5px; padding-left: 20px;}
 /* Le point marque la position sans raconter d'histoire. Douze pictogrammes
    différents dans une colonne, c'est douze objets à interpréter avant de lire
    douze mots. */
 .sb-dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.35;flex:none}
 .sb-item.active .sb-dot{opacity:1}
+.sb-item .mx-dot{margin-left:0; background:currentColor}
+.sb-item.active .mx-dot.ok{background:var(--ok)} .sb-item.active .mx-dot.warn{background:var(--warn)} .sb-item.active .mx-dot.danger{background:var(--danger)}
+.sb-item .mx-st{margin-left:auto}
 .sb-toggle{background:var(--surface-solid);border:1px solid var(--line-strong);border-radius:9px;
   color:var(--txt-soft);cursor:pointer;font-size:14px;width:32px;height:30px;display:flex;
   align-items:center;justify-content:center;margin-right:8px;transition:var(--transition)}
@@ -5565,7 +5568,7 @@ button.logo:focus-visible{outline:2px solid var(--accent);outline-offset:3px;
 .mx-item:hover{background:var(--ov-04)} .mx-item.on{background:var(--acc-15);color:var(--txt-strong);font-weight:500}
 .mx-item .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mx-dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--line-strong)}
-.mx-dot.ok{background:var(--ok)} .mx-dot.warn{background:var(--warn)} .mx-dot.danger{background:var(--danger)}
+.mx-dot.ok{background:var(--ok)} .mx-dot.warn, .mx-dot.regarder{background:var(--warn)} .mx-dot.danger, .mx-dot.panne{background:var(--danger)}
 .mx-st{font:500 10px 'JetBrains Mono',monospace;color:var(--txt-ghost);white-space:nowrap} .mx-st.young{color:var(--info)} .mx-st.off{color:var(--warn)}
 .mx-main{flex:1;min-width:0;overflow-y:auto;min-height:0;padding:0 4px 4px 0;display:flex;flex-direction:column;gap:14px}
 .mx-sec{background:var(--surface);backdrop-filter:blur(var(--blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
