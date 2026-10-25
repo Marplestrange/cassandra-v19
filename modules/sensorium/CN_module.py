@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.10  #0019f3
+# VERSION CN : 0.1.10  #d68a86
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.10 empreinte=0019f3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.10 empreinte=d68a86 ▼▼▼
 """Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 
 Le collecteur mesure la machine et son monde. Ce module ne mesure rien : il le questionne par son socket (une requête texte, une réponse
@@ -33,6 +33,8 @@ MACHINE = ("machine", "hote")
 
 def demander(requete, delai=DELAI):
     """Une requête, une réponse : le protocole du collecteur. Rend le texte reçu."""
+    if not hasattr(socket, "AF_UNIX"):
+        raise OSError("pas de socket Unix sur ce système : le collecteur n'est joignable que sous Linux")
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     s.settimeout(delai)
     try:

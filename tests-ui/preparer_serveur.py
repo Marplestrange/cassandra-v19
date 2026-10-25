@@ -37,6 +37,9 @@ def main():
     n.arreter()
     env = dict(os.environ, CASSANDRA_DONNEES=str(DONNEES), CASSANDRA_ECOUTE="127.0.0.1:" + PORT)
     os.chdir(RACINE)
+    if os.name == "nt":                                  # execve y lance un enfant puis quitte : Playwright ne saurait plus l'arrêter (serveur orphelin sur le port)
+        import subprocess
+        sys.exit(subprocess.call([sys.executable, "CN_main.py", "demarrer"], env=env))
     os.execve(sys.executable, [sys.executable, "CN_main.py", "demarrer"], env)
 
 

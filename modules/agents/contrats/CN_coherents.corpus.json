@@ -168,6 +168,697 @@
    "sortie": {
     "valeur": []
    }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "msgs": [
+     {
+      "role": "user",
+      "content": "salut"
+     },
+     {
+      "role": "assistant",
+      "content": "bonjour"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "user",
+      "content": "salut"
+     },
+     {
+      "role": "assistant",
+      "content": "bonjour"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "msgs": [
+     {
+      "role": "tool",
+      "tool_call_id": "z",
+      "content": "r"
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "y",
+      "content": "r"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "msgs": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "r"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "r"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "msgs": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "(résultat perdu : l'appel n'a pas abouti)"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "msgs": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       },
+       {
+        "id": "2",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       },
+       {
+        "id": "3",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "3",
+      "content": "r"
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "r"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       },
+       {
+        "id": "2",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       },
+       {
+        "id": "3",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "3",
+      "content": "r"
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "r"
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "2",
+      "content": "(résultat perdu : l'appel n'a pas abouti)"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "msgs": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "a"
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "b"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "a"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "msgs": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "9",
+      "content": "r"
+     },
+     {
+      "role": "assistant",
+      "content": "fin"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "(résultat perdu : l'appel n'a pas abouti)"
+     },
+     {
+      "role": "assistant",
+      "content": "fin"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "msgs": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "r"
+     },
+     {
+      "role": "user",
+      "content": "encore"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "2",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "2",
+      "content": "r"
+     },
+     {
+      "role": "assistant",
+      "content": "ok"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "r"
+     },
+     {
+      "role": "user",
+      "content": "encore"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "2",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "2",
+      "content": "r"
+     },
+     {
+      "role": "assistant",
+      "content": "ok"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "msgs": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": "x",
+      "tool_calls": [
+       {
+        "type": "function"
+       }
+      ]
+     },
+     {
+      "role": "user",
+      "content": "suite"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": "x",
+      "tool_calls": [
+       {
+        "type": "function"
+       }
+      ]
+     },
+     {
+      "role": "user",
+      "content": "suite"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "msgs": [
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "user",
+      "content": "intrus"
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "r"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "(résultat perdu : l'appel n'a pas abouti)"
+     },
+     {
+      "role": "user",
+      "content": "intrus"
+     }
+    ]
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "msgs": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       },
+       {
+        "id": "2",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "2",
+      "content": "r"
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "7",
+      "content": "r"
+     },
+     {
+      "role": "assistant",
+      "content": "fin"
+     }
+    ]
+   },
+   "sortie": {
+    "valeur": [
+     {
+      "role": "user",
+      "content": "q"
+     },
+     {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+       {
+        "id": "1",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       },
+       {
+        "id": "2",
+        "type": "function",
+        "function": {
+         "name": "x",
+         "arguments": "{}"
+        }
+       }
+      ]
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "2",
+      "content": "r"
+     },
+     {
+      "role": "tool",
+      "tool_call_id": "1",
+      "content": "(résultat perdu : l'appel n'a pas abouti)"
+     },
+     {
+      "role": "assistant",
+      "content": "fin"
+     }
+    ]
+   }
   }
  ]
 }
