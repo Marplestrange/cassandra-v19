@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #12edf6
+# VERSION CN : 0.1.0  #67db12
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=12edf6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=67db12 ▼▼▼
 """La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 
 Un module n'écrit aucune route. Il déclare des capacités, et la passerelle les rend toutes joignables par la même URL :
@@ -107,9 +107,38 @@ class Passerelle:
             self.serveur = None
 
     # ---- une requête ----
+    def _vider(self, h):
+        """Le corps d'une requête qu'on n'a pas lu (une réponse d'erreur partie avant de le lire) reste dans la connexion : en HTTP/1.1 persistant, la requête
+        suivante le trouverait devant elle (« Unsupported method ('{"args":{}}POST') ») et un refus passerait pour une autre erreur. On le lit pour le jeter ;
+        s'il est trop grand, ou d'une forme qu'on ne sait pas lire (morcelé), on ferme la connexion plutôt que de la laisser désynchronisée."""
+        if getattr(h, "_corps_lu", False):
+            return
+        h._corps_lu = True
+        if "chunked" in (h.headers.get("Transfer-Encoding") or "").lower():
+            h.close_connection = True
+            return
+        try:
+            n = int(h.headers.get("Content-Length") or 0)
+        except ValueError:
+            h.close_connection = True
+            return
+        if n <= 0:
+            return
+        if n > TAILLE_MAX:
+            h.close_connection = True
+            return
+        try:
+            h.rfile.read(n)
+        except Exception:
+            h.close_connection = True
+
     def _repondre(self, h, code, corps, cookie=None):
+        if h.command == "POST":
+            self._vider(h)
         donnees = json.dumps(corps, ensure_ascii=False, default=str).encode("utf-8")
         h.send_response(code)
+        if h.close_connection:
+            h.send_header("Connection", "close")
         h.send_header("Content-Type", "application/json; charset=utf-8")
         h.send_header("Content-Length", str(len(donnees)))
         h.send_header("Cache-Control", "no-store")
@@ -158,13 +187,15 @@ class Passerelle:
     def _corps(self, h):
         n = int(h.headers.get("Content-Length") or 0)
         if n > TAILLE_MAX:
-            raise ValueError("corps trop grand (1 Mo au plus)")
+            raise ValueError("corps trop grand (1 Mo au plus)")        # _repondre fermera la connexion : ce corps-là n'est pas lu
         h._brut = b""
         if n == 0:
+            h._corps_lu = True
             return {}
         if "json" not in (h.headers.get("Content-Type") or ""):
-            raise ValueError("Content-Type : application/json attendu")
+            raise ValueError("Content-Type : application/json attendu")     # idem : _repondre le lit pour le jeter
         brut = h.rfile.read(n)
+        h._corps_lu = True
         h._brut = brut                                              # les octets exacts : un webhook SIGNÉ (Stripe) ne se vérifie que sur eux, jamais sur un JSON relu
         try:
             d = json.loads(brut.decode("utf-8"))
@@ -175,6 +206,7 @@ class Passerelle:
         return d
 
     def _traiter(self, h, methode):
+        h._corps_lu = False                       # le gestionnaire vit autant que la connexion : l'état « corps lu » se remet à zéro à CHAQUE requête
         try:
             url = urlparse(h.path)
             chemin = unquote(url.path)

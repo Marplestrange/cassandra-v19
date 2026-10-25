@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ca8604
+# VERSION CN : 0.1.0  #1013db
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ca8604 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1013db ▼▼▼
 """Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v"""
 import os
 import sys
@@ -3769,6 +3769,32 @@ class PasserelleHttp(unittest.TestCase):
     def connexion(self, compte="chef@x.fr", mdp=MDP):
         st, corps, cookie, _ = self.req("POST", "/api/connexion", {"compte": compte, "mot_de_passe": mdp})
         return st, corps, cookie
+
+    def test_un_refus_ne_laisse_pas_le_corps_dans_la_connexion(self):
+        """Une réponse d'erreur partie avant la lecture du corps (401, 403, 404, 405) ne doit pas désynchroniser une connexion persistante : la requête suivante, sur la même connexion, répond normalement."""
+        import http.client
+        import json
+        c = http.client.HTTPConnection("127.0.0.1", self.g.port, timeout=10)
+        corps = json.dumps({"args": {"x": "y" * 500}}).encode()
+        for chemin, attendu in (("/api/agir/comptes.moi", 401), ("/api/inconnu", 401), ("/api/public/rien.rien", 404)):
+            c.request("POST", chemin, body=corps, headers={"Content-Type": "application/json"})
+            r = c.getresponse()
+            r.read()
+            self.assertEqual(r.status, attendu, chemin)
+            c.request("GET", "/api/sante")
+            r = c.getresponse()
+            self.assertEqual((r.status, json.loads(r.read().decode())["ok"]), (200, True), "la connexion est restée désynchronisée après " + chemin)
+        # un corps annoncé énorme : on ne le lit pas, on le dit (Connection: close) et on ferme — la connexion suivante, neuve, répond
+        c.putrequest("POST", "/api/agir/comptes.moi")
+        c.putheader("Content-Type", "application/json")
+        c.putheader("Content-Length", str(1024 * 1024 + 10))
+        c.endheaders()
+        r = c.getresponse()
+        r.read()
+        self.assertEqual(r.status, 401)
+        self.assertEqual((r.getheader("Connection") or "").lower(), "close")
+        c.close()
+        self.assertEqual(self.req("GET", "/api/sante")[0], 200)
 
     def test_interface_servie_sans_sortir_du_dossier(self):
         d = Path(self.tmp.name) / "interface"
