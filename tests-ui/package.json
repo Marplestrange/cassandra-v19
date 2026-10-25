@@ -1,0 +1,20 @@
+{
+  "name": "cassandra-v19-tests-ui",
+  "version": "1.0.0",
+  "description": "Tests d'interface (Playwright) de Cassandra V19 : un serveur isolé, des données jetables.",
+  "scripts": {
+    "test": "playwright test --config playwright.config.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Marplestrange/cassandra-v19.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  },
+  "private": true
+}
