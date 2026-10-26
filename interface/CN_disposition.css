@@ -12,7 +12,11 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=5aee7f ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=f8fd27 ▼▼▼ */
+/* L'ancienne interface (V18) est dans la page dès le départ : tant que la disposition V19 n'a pas pris la main (body.d19), on la cache, pour qu'elle ne se montre pas quelques instants.
+   Filet : si la disposition ne démarre jamais (script en erreur), l'ancienne interface réapparaît au bout de 6 secondes plutôt que de laisser une page vide. */
+body:not(.d19) #app-container{visibility:hidden;animation:d19-filet 0s 6s forwards}
+@keyframes d19-filet{to{visibility:visible}}
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
