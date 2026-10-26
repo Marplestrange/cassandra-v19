@@ -21,6 +21,8 @@ test("App Store : l'examen dit tout, l'installation exige le consentement, un re
       window.__appels.push([c, a]);
       if (c === 'reglages.lire') return { reglages: [{ cle: 'modules.politique_confiance', valeur: 'signes' }, { cle: 'modules.registre_url', valeur: '' }] };
       if (c === 'modules.registre') return window.__registre;
+      if (c === 'modules.telecharger') return window.__exam;
+      if (c === 'modules.activer') return {};
       if (c === 'modules.installer') return { id: 'sentinelle', version: '0.2.0' };
       if (c === 'modules.abandonner') return {};
       if (c === 'modules.lister') return { modules: [{ id: 'sentinelle', nom: 'Sentinelle du disque', version: '0.2.0', etat: 'inactif', extension: true, description: 'Mesure le disque.' }, { id: 'droits', nom: 'Droits', version: '0.2.0', etat: 'actif', extension: false }] };
@@ -53,6 +55,8 @@ test("App Store : l'examen dit tout, l'installation exige le consentement, un re
   await expect(as.locator('#as-installer')).toBeDisabled();
   await as.locator('#as-consent').check();
   await expect(as.locator('#as-installer')).toBeEnabled();
+  await expect(as.locator('#as-activer')).toBeChecked();                                   // activer aussitôt : coché par défaut
+  await as.locator('#as-activer').uncheck();
   await as.locator('#as-installer').click();
   await expect(as).toContainText('installé');
   await expect(as).toContainText('inactif');
@@ -92,6 +96,31 @@ test("App Store : l'examen dit tout, l'installation exige le consentement, un re
   await expect(dangereux.locator('[data-a="telecharger"]')).toBeDisabled();
   await expect(as).toContainText('Des modules installés ont été révoqués');                  // ce qui est déjà installé et révoqué est signalé
   await expect(as).toContainText('Autre registre (non officiel)');
+  await expect(as.locator('.mod').filter({ hasText: 'Officiel_un' }).locator('[data-a="telecharger"]')).toHaveText('Installer');
+
+  // la recherche et les filtres réduisent la liste, avec leurs comptes
+  await expect(as.locator('.chip.on')).toContainText('Tous');
+  await as.locator('#as-q').fill('chez');
+  await expect(as.locator('.mod')).toHaveCount(1);
+  await as.locator('#as-q').fill('zzz');
+  await expect(as.locator('#as-grille')).toContainText('Aucun module ne correspond');
+  await as.locator('#as-q').fill('');
+  await as.locator('[data-f="nouveau"]').click();
+  await expect(as.locator('.mod')).toHaveCount(3);
+  await as.locator('[data-f="installe"]').click();
+  await expect(as.locator('.mod')).toHaveCount(0);
+  await as.locator('[data-f="tous"]').click();
+
+  // installer depuis le registre : l'onglet Registre reste actif, l'examen s'y affiche, et l'activation suit si elle est cochée
+  await page.evaluate(() => { window.__exam = Object.assign({}, window.__exam, { autorise: true, signe: true, niveau: 'officiel', editeur: 'cassandra-principale', raisons: [], permissions_elargies: [], statut: 'nouveau' }); window.__appels.length = 0; });
+  await as.locator('.mod').filter({ hasText: 'Officiel_un' }).locator('[data-a="telecharger"]').click();
+  await expect(as.locator('[data-o="registre"]')).toHaveClass(/on/);
+  await expect(as.locator('.exam h2')).toHaveText('Sentinelle du disque');
+  await as.locator('#as-consent').check();
+  await as.locator('#as-activer').check();
+  await as.locator('#as-installer').click();
+  await expect.poll(() => page.evaluate(() => window.__appels.map((a) => a[0]).filter((c) => c === 'modules.installer' || c === 'modules.activer'))).toEqual(['modules.installer', 'modules.activer']);
+  await as.locator('[data-o="registre"]').click();
   await expect(as).not.toContainText('Aucun registre configuré');
 
   // un registre officiel muet ou invalide : on le dit, rien ne s'installe
