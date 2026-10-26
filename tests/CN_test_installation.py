@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #707196
+# VERSION CN : 0.1.0  #769672
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'installation d'un module par archive, de bout en bout : le téléversement HTTP, les capacités du module modules, les droits, le catalogue.
 # MÉTHODE    : un vrai noyau, une vraie passerelle HTTP, une vraie archive signée du module d'exemple
 # ═══════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=707196 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=769672 ▼▼▼
 """Le chemin que prend l'administrateur depuis la page App Store : il dépose une archive (POST d'octets), lit l'examen, consent aux permissions montrées, installe, puis désinstalle.
 Un compte sans le droit d'installer, ou sans session, n'obtient rien ; une capacité qui ne reçoit pas de fichier refuse d'en recevoir."""
 import http.client
@@ -148,6 +148,45 @@ class Installation(unittest.TestCase):
         self.assertEqual((st, rep["statut"]), (200, "faite"), rep)
         self.assertFalse((self.base / "ext" / "sentinelle").exists())
         self.assertTrue(list((self.base / "d" / "modules_sauvegardes" / "sentinelle").iterdir()))
+
+    def depose(self, mid, corps):
+        d = self.base / "ext" / mid
+        d.mkdir(parents=True, exist_ok=True)
+        entete = '[module]\nid = "%s"\nnom = "%s"\nversion = "0.1.0"\nnoyau_min = "0.1.0"\ndescription = "essai"\nconfiance = "local"\nimportance = "optionnel"\nsans = "rien"\n' % (mid, mid.capitalize())
+        (d / "CN_manifeste.toml").write_text(entete + corps, encoding="utf-8")
+        (d / "CN_module.py").write_text("def brancher(ctx):\n    pass\n", encoding="utf-8")
+
+    def test_un_module_lit_ce_que_les_autres_branchent_chez_lui_sans_les_connaitre(self):
+        self.depose("hote", '[[points_extension]]\nid = "colonne"\nlibelle = "Une colonne"\nattend = ["titre"]\n')
+        self.depose("invite", '[[contributions]]\npoint = "hote:colonne"\nid = "prix"\nlibelle = "Prix"\n[contributions.donnees]\ntitre = "Prix"\n')
+
+        def lire():
+            return self.n.executeur.executer("modules.contributions", "humain", {}, compte=ADMIN)["resultat"]
+        self.assertEqual(lire()["points"], [])                                               # rien n'est actif : rien ne se branche
+        for m in ("hote", "invite"):
+            self.assertTrue(self.n.activer(m)["ok"], m)
+        r = lire()
+        self.assertEqual([p["point"] for p in r["points"]], ["hote:colonne"])
+        self.assertEqual([(c["module"], c["id"], c["donnees"]) for c in r["points"][0]["contributions"]], [("invite", "prix", {"titre": "Prix"})])
+        self.assertTrue(self.n.desactiver("invite")["ok"])
+        self.assertEqual(lire()["points"][0]["contributions"], [])                           # un module désactivé ne contribue plus
+
+    def test_la_sante_d_un_module_se_lit_avec_un_verdict(self):
+        r = self.n.executeur.executer("modules.sante", "humain", {"module": "droits"}, compte=ADMIN)
+        self.assertEqual(r["statut"], "faite", r)
+        sante = r["resultat"]
+        self.assertIn(sante["verdict"], ("sain", "a_surveiller", "en_echec"))
+        self.assertEqual((sante["module"], sante["extension"]), ("droits", False))
+        for cle in ("moteurs", "detecteurs_coupes", "capacites_24h", "constats_ouverts", "mode_sur"):
+            self.assertIn(cle, sante)
+        r = self.n.executeur.executer("modules.sante", "humain", {"module": "inconnu"}, compte=ADMIN)
+        self.assertNotEqual(r["statut"], "faite")
+
+    def test_le_mode_sur_ignore_les_extensions(self):
+        with mock.patch.dict(os.environ, {"CASSANDRA_MODE_SUR": "1"}):
+            self.assertIsNone(moteur._extensions())
+        with mock.patch.dict(os.environ, {"CASSANDRA_MODE_SUR": "0", "CASSANDRA_EXTENSIONS": "/tmp/x"}):
+            self.assertEqual(moteur._extensions(), "/tmp/x")
 
     def test_les_agents_ne_peuvent_pas_installer(self):
         r = self.n.executeur.executer("modules.installer", "cassandra", {"jeton": "abc", "consentement": "x"}, compte=ADMIN)

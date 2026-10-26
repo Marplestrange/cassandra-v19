@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5a2a3a
+# VERSION CN : 0.1.0  #c1f2dc
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5a2a3a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c1f2dc ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -158,7 +158,7 @@ class Noyau:
                        {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
                         "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine, "point": self.points.appeler, "evolution": self.evolution,
                         "urgence": types.SimpleNamespace(freins=self.freins, freiner=self.freiner, en_crise=self.en_crise, crise=self.crise),
-                        "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, cycle=self.cycle, extensions=lambda: self.extensions, capacites=self.capacites_de, catalogue=self.catalogue_modules, activer=self.activer, desactiver=self.desactiver)})
+                        "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, cycle=self.cycle, sante=self.sante_module, contributions=self.contributions, extensions=lambda: self.extensions, capacites=self.capacites_de, catalogue=self.catalogue_modules, activer=self.activer, desactiver=self.desactiver)})
         self.executeur.contextes[m.id] = ctx
         return ctx
 
@@ -432,7 +432,8 @@ class Noyau:
                 "permissions": {"espace_utilisateur": m.permissions.espace_utilisateur, "reseau": list(m.permissions.reseau),
                                 "ecritures": list(m.permissions.ecritures), "privileges": list(m.permissions.privileges)},
                 "confiance": m.confiance, "essentiel": m.essentiel, "importance": m.importance, "sans": m.sans, "conflits": list(m.conflits), "suggere": list(m.suggere), "fournit": list(m.fournit),
-                "contraintes": [list(c) for c in m.contraintes], "extension": ext, "etat": etat,
+                "contraintes": [list(c) for c in m.contraintes], "points_extension": [px.id for px in m.points_extension],
+                "contributions": [{"point": c.point, "id": c.id} for c in m.contributions], "extension": ext, "etat": etat,
                 "remplace": (getattr(self, "_remplaces", {}).get(mid).version if getattr(self, "_remplaces", {}).get(mid) else ""),
                 "requiert": list(m.requiert), "requis_par": sorted(requis_par.get(mid, [])),
                 "objets": len(m.objets), "capacites": len(m.capacites), "implementees": sum(1 for x in mine if x.implementee) if etat == "actif" else None,
@@ -647,6 +648,43 @@ class Noyau:
                            "echecs": e.get("echecs", 0), "derniere": e.get("derniere"), "duree": e.get("duree"), "erreur": e.get("erreur", ""),
                            "etat": "suspendu" if (module, mo.id) in self._moteurs_suspendus else ("fige" if (module, mo.id) in self._figes else "actif")})
         return sortie
+
+    def contributions(self, point: str = "") -> dict:
+        """Les points d'extension offerts par les modules ACTIFS et ce que les modules actifs y branchent. `point` (« module:point ») ne rend que celui-là."""
+        connus, _ = self._connus()
+        actifs = self._ids_actifs()
+        offerts, contribs = [], []
+        for mid, (m, _) in connus.items():
+            if mid not in actifs:
+                continue
+            for px in m.points_extension:
+                offerts.append({"point": "%s:%s" % (mid, px.id), "libelle": px.libelle, "attend": list(px.attend), "module": mid})
+            for ct in m.contributions:
+                contribs.append({"point": ct.point, "id": ct.id, "libelle": ct.libelle, "donnees": dict(ct.donnees), "module": mid})
+        if point:
+            offerts = [x for x in offerts if x["point"] == point]
+            contribs = [x for x in contribs if x["point"] == point]
+        for x in offerts:
+            x["contributions"] = [c for c in contribs if c["point"] == x["point"]]
+        return {"points": sorted(offerts, key=lambda x: x["point"]), "contributions": sorted(contribs, key=lambda c: (c["point"], c["module"], c["id"]))}
+
+    def sante_module(self, mid: str) -> dict:
+        """La santé d'UN module, rassemblée de ce que le noyau mesure déjà : ses moteurs (exécutions, échecs, durée, suspension par le disjoncteur), ses détecteurs suspendus,
+        et ce que ses capacités ont fait ou refusé depuis vingt-quatre heures. Le verdict : « sain », « a_surveiller » (un échec récent, un refus d'autorisation), « en_echec » (un moteur suspendu ou figé)."""
+        moteurs = [m for m in self.etat_moteurs() if m["cle"].startswith(mid + ".")]
+        detecteurs_coupes = sorted("%s.%s" % k for k in self._suspendus if k[0] == mid)
+        depuis = time.time() - 86400
+        types = {r["type"]: r["n"] for r in self.base.lire(
+            "SELECT type, COUNT(*) AS n FROM evenements WHERE source=? AND objet_type='capacite' AND ts>? GROUP BY type", (mid, depuis))}
+        refus = types.get("capacite.refusee", 0)
+        en_echec = [m["cle"] for m in moteurs if m["etat"] != "actif"] + detecteurs_coupes
+        a_surveiller = [m["cle"] for m in moteurs if m["etat"] == "actif" and m["echecs"] and m["erreur"]]
+        verdict = "en_echec" if en_echec else ("a_surveiller" if a_surveiller or refus else "sain")
+        connus, _ = self._connus()
+        ext = bool(connus.get(mid) and connus[mid][1])
+        return {"module": mid, "verdict": verdict, "moteurs": moteurs, "detecteurs_coupes": detecteurs_coupes, "en_echec": en_echec, "a_surveiller": a_surveiller,
+                "capacites_24h": {k.split(".", 1)[1]: v for k, v in types.items()}, "constats_ouverts": self._compteurs(mid)["constats"],
+                "extension": ext, "mode_sur": os.environ.get("CASSANDRA_MODE_SUR") == "1"}
 
     # ---------- résilience ----------
     def reprendre(self) -> list:

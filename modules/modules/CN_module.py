@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f5d8b5
+# VERSION CN : 0.1.0  #38c85d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f5d8b5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=38c85d ▼▼▼
 """Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 
 Le travail (plan d'activation avec dépendances, refus d'un essentiel, branchement à chaud) est celui du noyau ; ce module en fait des
@@ -143,6 +143,16 @@ def brancher(ctx):
     ctx.implementer("desinstaller", desinstaller, prouver_desinstalle, defaire_desinstalle)
     ctx.implementer("abandonner", abandonner, prouver_abandonne, defaire_abandonne)
     ctx.implementer("versions", versions)
+    def sante(ctx, module=""):
+        if entree(str(module)) is None:
+            raise ValueError("module inconnu : « %s »" % module)
+        return g.sante(str(module))
+
+    ctx.implementer("sante", sante)
+    def contributions(ctx, point=""):
+        return g.contributions(str(point))
+
+    ctx.implementer("contributions", contributions)
     ctx.implementer("lister", lister)
     ctx.implementer("fiche", fiche)
     ctx.implementer("activer", activer, prouver_activer, defaire_activer)

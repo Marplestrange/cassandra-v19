@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ea0772
+# VERSION CN : 0.1.0  #62d7b5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les dépendances versionnées des modules : plages de version, conflits, modules suggérés, services fournis.
 # MÉTHODE    : fabrique des manifestes d'essai en mémoire et éprouve l'ordre, les refus et les messages
 # ═══════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ea0772 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=62d7b5 ▼▼▼
 """Un module requiert « dns >=0.2, <1 » : la version installée doit y répondre. Il peut refuser la compagnie d'un autre (`conflits`), en suggérer un (`suggere`) et
 fournir un nom de service (`fournit = ["courrier"]`) qu'un autre requiert sans savoir QUEL module le rend."""
 import sys
@@ -88,6 +88,34 @@ class Validation(unittest.TestCase):
         self.assertEqual(m.requiert, ("dns", "droits"))
         self.assertEqual(m.contraintes, (("dns", ">=0.2"),))
         self.assertEqual((m.conflits, m.suggere, m.fournit), (("xx",), ("yy",), ("tls",)))
+
+
+class PointsExtension(unittest.TestCase):
+    def brut(self, **extra):
+        d = {"module": {"id": "essai", "nom": "Essai", "version": "1.0.0", "noyau_min": "0.1.0", "description": "x", "confiance": "interne"}}
+        d.update(extra)
+        return d
+
+    def test_la_declaration_se_valide(self):
+        ok = self.brut(points_extension=[{"id": "colonne", "libelle": "Une colonne", "attend": ["titre"]}],
+                       contributions=[{"point": "autre:liste", "id": "ma_colonne", "libelle": "Ma colonne", "donnees": {"titre": "Prix", "largeur": 80, "gras": True}}])
+        self.assertEqual(M.valider(ok), [])
+        mauvais = self.brut(points_extension=[{"id": "Mal Ecrit", "libelle": "x"}], contributions=[{"point": "pasbon", "id": "cc", "libelle": "x", "donnees": {"k": [1, 2]}}])
+        e = " | ".join(M.valider(mauvais))
+        self.assertIn("identifiant invalide", e)
+        self.assertIn("« module:point » attendu", e)
+        self.assertIn("valeurs simples", e)
+
+    def test_une_contribution_vers_un_point_inexistant_ou_incomplete_est_un_defaut(self):
+        hote = M.construire(self.brut(points_extension=[{"id": "colonne", "libelle": "Une colonne", "attend": ["titre"]}]), "essai")
+        hote = M.construire({"module": dict(self.brut()["module"], id="hote"), "points_extension": [{"id": "colonne", "libelle": "Une colonne", "attend": ["titre"]}]}, "essai")
+
+        def invite(point, donnees):
+            return M.construire({"module": dict(self.brut()["module"], id="invite"), "contributions": [{"point": point, "id": "cc", "libelle": "C", "donnees": donnees}]}, "essai")
+        self.assertEqual(M.verifier_ensemble([hote, invite("hote:colonne", {"titre": "Prix"})]), [])
+        self.assertTrue(any("n'offre pas ce point" in x for x in M.verifier_ensemble([hote, invite("hote:inconnu", {})])))
+        self.assertTrue(any("doit porter : titre" in x for x in M.verifier_ensemble([hote, invite("hote:colonne", {})])))
+        self.assertEqual(M.verifier_ensemble([invite("absent:colonne", {})]), [])           # le module visé n'est pas installé : la contribution dort
 
 
 if __name__ == "__main__":

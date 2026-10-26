@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #83ccfa
+# VERSION CN : 0.1.0  #43b098
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=83ccfa ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=43b098 ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -216,6 +216,24 @@ class Theme:
 
 
 @dataclass(frozen=True)
+class PointExtension:
+    """Un endroit où D'AUTRES modules peuvent brancher quelque chose (à la façon des hooks de Dolibarr) : une colonne dans une liste, une tuile dans une fiche, une règle dans un contrôle.
+    Le module qui l'offre dit ce qu'il attend (`attend` : les clés des données d'une contribution) ; il lit les contributions des modules ACTIFS (`modules.contributions`) sans les connaître."""
+    id: str
+    libelle: str
+    attend: tuple = ()         # les clés que chaque contribution doit porter dans `donnees`
+
+
+@dataclass(frozen=True)
+class Contribution:
+    """Ce qu'un module branche sur le point d'extension d'un module (le sien ou un autre) : « module:point », un identifiant, un libellé et des données simples (texte, nombre, booléen)."""
+    point: str                 # « module:point »
+    id: str
+    libelle: str
+    donnees: tuple = ()        # ((clé, valeur), ...)
+
+
+@dataclass(frozen=True)
 class Onglet:
     """Un onglet qu'un module ajoute à la fiche d'un OBJET, que cet objet soit le sien ou celui d'un autre module (à la façon des onglets de fiche de Dolibarr).
     Le module de l'objet ne sait rien de l'onglet : l'interface demande « quels onglets pour cet objet ? » et ouvre l'écran du module qui l'a déclaré, avec la référence."""
@@ -365,6 +383,8 @@ class Manifeste:
     detecteurs: tuple = ()
     moteurs: tuple = ()
     menus: tuple = ()
+    points_extension: tuple = ()   # les points où d'autres modules branchent quelque chose
+    contributions: tuple = ()      # ce que ce module branche chez d'autres (ou chez lui)
     onglets: tuple = ()
     habillages: tuple = ()
     signaux: tuple = ()
@@ -727,6 +747,35 @@ def valider(brut: dict) -> list:
             vu.add(cur)
             cur = parents[cur]
 
+    pe_ids = []
+    for i, px in enumerate(brut.get("points_extension", []) or []):
+        nom = "points_extension[%d]" % i
+        if not isinstance(px, dict) or not _ID.match(str(px.get("id", ""))):
+            e.append("%s.id : identifiant invalide" % nom)
+            continue
+        if px["id"] in pe_ids:
+            e.append("%s.id : « %s » est déclaré deux fois" % (nom, px["id"]))
+        pe_ids.append(px["id"])
+        if not str(px.get("libelle", "")).strip():
+            e.append("point d'extension « %s » : libellé obligatoire" % px["id"])
+        _liste_de_textes(px.get("attend", []), "point d'extension « %s ».attend" % px["id"], e, _ID)
+    contrib_ids = []
+    for i, ct in enumerate(brut.get("contributions", []) or []):
+        nom = "contributions[%d]" % i
+        if not isinstance(ct, dict) or not _ID.match(str(ct.get("id", ""))):
+            e.append("%s.id : identifiant invalide" % nom)
+            continue
+        cle = (str(ct.get("point", "")), ct["id"])
+        if cle in contrib_ids:
+            e.append("%s : « %s » est déclarée deux fois sur « %s »" % (nom, ct["id"], cle[0]))
+        contrib_ids.append(cle)
+        if not re.match(r"^[a-z][a-z0-9_]{1,40}:[a-z][a-z0-9_]{1,40}$", cle[0]):
+            e.append("%s.point : « module:point » attendu" % nom)
+        if not str(ct.get("libelle", "")).strip():
+            e.append("contribution « %s » : libellé obligatoire" % ct["id"])
+        d = ct.get("donnees", {})
+        if not isinstance(d, dict) or any(not isinstance(v, (str, int, float, bool)) for v in d.values()):
+            e.append("contribution « %s ».donnees : des clés et des valeurs simples (texte, nombre, booléen)" % ct["id"])
     onglet_ids = []
     for i, og in enumerate(brut.get("onglets", []) or []):
         nom = "onglets[%d]" % i
@@ -930,6 +979,8 @@ def construire(brut: dict, source="") -> Manifeste:
         menus=tuple(Menu(x["id"], x["libelle"], x.get("ecran", ""), x.get("parent", ""), x.get("ordre", 100), x.get("role", "utilisateur"),
                          x.get("icone", ""), x.get("badge", ""), _qualifier(m["id"], x.get("droit")),
                          x.get("groupe", ""), x.get("zone", "principal")) for x in brut.get("menus", []) or []),
+        points_extension=tuple(PointExtension(x["id"], x["libelle"], tuple(x.get("attend", ()))) for x in brut.get("points_extension", []) or []),
+        contributions=tuple(Contribution(x["point"], x["id"], x["libelle"], tuple(sorted((x.get("donnees") or {}).items()))) for x in brut.get("contributions", []) or []),
         onglets=tuple(Onglet(x["id"], x["libelle"], x["objet"], x.get("ecran", ""), x.get("ordre", 100), x.get("role", "utilisateur"), x.get("icone", ""), _qualifier(m["id"], x.get("droit")))
                       for x in brut.get("onglets", []) or []),
         mesures=tuple(Mesure(x["id"], x["libelle"], x["capacite"], x.get("genre", "jauge"), x.get("unite", ""), x.get("famille", ""), x.get("agregat", "moy"), bool(x.get("groupee", False)),
@@ -1016,6 +1067,18 @@ def verifier_ensemble(manifestes) -> list:
             proprietaire[o.type] = m.id
     emis = {x for m in manifestes for x in m.emet}
     four = fournisseurs(manifestes)
+    for m in manifestes:
+        for ct in m.contributions:
+            cible, _, point = ct.point.partition(":")
+            if cible in par_id:
+                px = next((x for x in par_id[cible].points_extension if x.id == point), None)
+                if px is None:
+                    e.append("« %s » contribue à « %s », qui n'offre pas ce point d'extension" % (m.id, ct.point))
+                else:
+                    cles = {k for k, _ in ct.donnees}
+                    manque = [k for k in px.attend if k not in cles]
+                    if manque:
+                        e.append("« %s » : la contribution « %s » à « %s » doit porter : %s" % (m.id, ct.id, ct.point, ", ".join(manque)))
     for m in manifestes:
         for r in m.requiert:
             if r not in par_id and r not in four:

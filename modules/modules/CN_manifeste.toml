@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #dfc0ae
+# VERSION CN : 0.1.0  #f69c02
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La gestion des modules : ce qui est installé, actif ou à installer, ce qui dépend de quoi, et le geste d'activer ou de désactiver. Le noyau fait le travail (dépendances, essentiels, branchement à chaud) ; ce module en fait des capacités, donc des droits, une preuve, un retour et une trace.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=dfc0ae ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f69c02 ▼▼▼
 [module]
 id = "modules"
 nom = "Modules"
@@ -146,6 +146,17 @@ id = "versions"
 libelle = "Les versions d'un module installé par archive : ce qu'on peut remettre (sauvegardes) et ce qui s'est passé (installations, retours, désinstallations)"
 risque = "lecture"
 droit = "installer"
+
+[[capacites]]
+id = "sante"
+libelle = "La santé d'un module : ses moteurs (exécutions, échecs, durée, suspension par le disjoncteur), ses détecteurs coupés, ce que ses capacités ont fait ou refusé depuis vingt-quatre heures, et un verdict : sain, à surveiller, en échec"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "contributions"
+libelle = "Les points d'extension offerts par les modules actifs, et ce que les modules actifs y branchent (colonnes, tuiles, règles) : un module lit ce qu'on branche chez lui sans connaître ceux qui l'ont fait"
+risque = "lecture"
 
 [permissions]
 modules = true
