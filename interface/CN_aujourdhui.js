@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #6a0273
+// VERSION CN : 0.1.0  #d8324e
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=6a0273 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=d8324e ▼▼▼
 /* La page « Aujourd'hui » : le cadran du jour. Un coup d'œil dit où l'on en est (cadran, temps libre, tâches faites), ce qui vient
    (la suite), et la journée se range à la main ou toute seule (la frise, les tâches à placer). Les données sont celles de l'ancienne
    interface (agenda, tâches, rappels, état du jour) ; seul le PLAN — où l'on a posé quoi — est écrit, par le module affichage
@@ -721,10 +721,10 @@
     document.addEventListener("input", (ev) => { if (ev.target.dataset && ev.target.dataset.al === "avant") { const o = ev.target.nextElementSibling; if (o) o.textContent = +ev.target.value ? ev.target.value + " min" : "à l’heure"; } });
     document.addEventListener("mousemove", fantome, { passive: true });
     document.addEventListener("click", (ev) => {
-      const b = ev.target.closest && ev.target.closest("[data-mt], [data-mr]"); if (!b) return;
+      const b = ev.target.closest && ev.target.closest("[data-mt], [data-mr], [data-mp]"); if (!b) return;
       const r = b.closest(".bu-row[data-uid]"); if (!r) return;
       ev.stopPropagation(); ev.preventDefault();
-      if (b.hasAttribute("data-mt")) mailVersTache(r.dataset.uid, sujetDe(r)); else mailVersRdv(r.dataset.uid, sujetDe(r), ev);
+      if (b.hasAttribute("data-mt")) mailVersTache(r.dataset.uid, sujetDe(r)); else if (b.hasAttribute("data-mp")) mailVersBrouillon(r.dataset.uid, sujetDe(r), b); else mailVersRdv(r.dataset.uid, sujetDe(r), ev);
     }, true);
     // l'interface s'assemble après la connexion : on regarde tout le document, et le travail est borné (deux conteneurs, une garde par ligne)
     if (!window.__sansObsCourrier) { let t = null; new MutationObserver(() => { if (t) return; t = setTimeout(() => { t = null; actionsCourrier(); }, 250); }).observe(document.body, { childList: true, subtree: true }); }
@@ -932,7 +932,7 @@
     document.querySelectorAll("#bu-mail-apercu .bu-row[data-uid], #mail-list .bu-row[data-uid]").forEach((r) => {
       if (r.querySelector(".aj-mact")) return;
       const z = document.createElement("span"); z.className = "aj-mact";
-      z.innerHTML = '<button type="button" data-mt="1" title="Créer une tâche à partir de ce message">＋ Tâche</button><button type="button" data-mr="1" title="Créer un rendez-vous à partir de ce message">＋ RDV</button>';
+      z.innerHTML = '<button type="button" data-mt="1" title="Créer une tâche à partir de ce message">＋ Tâche</button><button type="button" data-mr="1" title="Créer un rendez-vous à partir de ce message">＋ RDV</button><button type="button" data-mp="1" title="Itare prépare un brouillon de réponse (rien ne part : vous le relisez dans vos brouillons)">✎ Réponse</button>';
       r.appendChild(z);
     });
   }
@@ -949,6 +949,25 @@
       const dejaFaite = /d[ée]j[àa]/i.test(String(e.message || e));
       if (typeof window.toast === "function") window.toast(dejaFaite ? "Ce message est déjà dans vos tâches." : "Tâche non créée : " + e.message, dejaFaite ? "info" : "err");
     }
+  }
+  // un message devient un BROUILLON de réponse : le modèle du compte rédige, le brouillon se pose dans la boîte, rien ne part (l'envoi reste un geste du compte)
+  async function mailVersBrouillon(uid, sujet, bouton) {
+    const dire = (t, k) => { if (typeof window.toast === "function") window.toast(t, k); };
+    if (bouton.disabled) return;
+    const libelle = bouton.textContent; bouton.disabled = true; bouton.textContent = "…";
+    try {
+      const m = await CASS.agir("courrier.lire", { uid: +uid });
+      const consigne = "Tu rédiges, au nom du titulaire de la boîte, un brouillon de réponse au courriel ci-dessous. Réponds dans la langue du message reçu, sobrement et poliment, sans inventer de fait, de date, de montant ni d'engagement : " +
+        "si une information manque, formule une question ou laisse un passage entre crochets à compléter. N'écris que le corps de la réponse, sans objet ni formule de signature inventée.";
+      const q = await CASS.agir("modeles.completer", { systeme: consigne, max_tokens: 900, messages: [{ role: "user", content: "De : " + (m.de || "") + "\nObjet : " + (m.objet || sujet) + "\n\n" + String(m.texte || "").slice(0, 6000) }] });
+      const texte = q && q.ok !== false && q.reponse ? String(q.reponse).trim() : "";
+      if (!texte) throw new Error((q && q.erreur) || "le modèle n'a rien rédigé");
+      const objet = /^\s*(re|réf)\s*:/i.test(m.objet || sujet) ? (m.objet || sujet) : "Re: " + (m.objet || sujet);
+      await CASS.agir("courrier.brouillon_creer", { a: m.repondre_a || m.de, objet, texte, repond_a_message: m.message_id || "", references: m.references ? m.references + " " + (m.message_id || "") : (m.message_id || "") });
+      dire("Brouillon de réponse prêt dans vos brouillons : « " + sujet.slice(0, 50) + " »");
+    } catch (e) {
+      dire("Brouillon non préparé : " + (e && e.message ? e.message : e), "err");
+    } finally { bouton.disabled = false; bouton.textContent = libelle; }
   }
   function mailVersRdv(uid, sujet, ev) {
     const z = premierLibre(30), m = z ? arrondi5(z[0]) : arrondi5(Math.max(A.now, A.h0 * 60));
