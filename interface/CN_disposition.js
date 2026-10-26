@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #160101
+// VERSION CN : 0.1.0  #0848b4
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=160101 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=0848b4 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -802,10 +802,30 @@
     }
     rendre();
   }
+  // « Logithèque » : où se gèrent les modules, leurs sources, leur sécurité et l'autonomie de Cassandra sur eux. Sa colonne de gauche liste ses sections.
+  const ICONES_LOGITHEQUE = { vue: "panorama", inst: "puzzle", maj: "refresh", shop: "star", src: "globe", sec: "shield", sante: "health", jour: "scroll", dev: "bolt", reg: "menu" };
+  async function pageLogitheque(corps, sec) {
+    if (!CASS.pageLogitheque) { corps.innerHTML = '<div class="empty-state">Écran indisponible.</div>'; return; }
+    const L = (CASS.logitheque && CASS.logitheque.sections) || [];
+    sec = sec || E.secLogitheque || "vue"; if (!L.some((x) => x[0] === sec)) sec = "vue"; E.secLogitheque = sec;
+    E.lateral = { titre: "Logithèque", actif: sec, items: L.map((x) => ({ id: x[0], libelle: x[1], icone: ICONES_LOGITHEQUE[x[0]] || "puzzle" })) };
+    const libelle = (L.find((x) => x[0] === sec) || [0, "Logithèque"])[1];
+    E.pageNom = CASS.nomOnglet("menus:vue_logitheque"); E.fil = ["Paramètres", "Logithèque", libelle];
+    const sc = corps.closest(".sh-scene"), t = sc && sc.querySelector(".sh-titre");
+    if (t) {
+      t.textContent = "Logithèque";
+      let l = sc.querySelector(".sh-legende"); if (!l) { l = document.createElement("p"); l.className = "sh-legende"; t.after(l); }
+      l.textContent = "Les modules, leurs sources et leur sécurité : Cassandra s’en occupe, tu vois ce qu’elle fait et tu peux tout défaire.";
+    }
+    E.pageAction = (id) => pageLogitheque(corps, id);
+    await CASS.pageLogitheque(corps, sec, { aller: (id) => pageLogitheque(corps, id), ouvrirModules: () => ouvrirModules("tous") });
+    rendre();
+  }
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};
   CASS.sceneSurMesure.menus = async function (corps, ctx) {
     const ecran = String(ctx.ecran).split(":")[1] || "";
-    if (ecran === "vue_modules") await pageModules(corps);
+    if (ecran === "vue_logitheque") await pageLogitheque(corps);
+    else if (ecran === "vue_modules") await pageModules(corps);
     else if (ecran === "vue_store" && CASS.pageAppStore) CASS.pageAppStore(corps);
     else if (CASS.console) { corps.innerHTML = '<div class="sh-console"></div>'; CASS.console("menus", corps.querySelector(".sh-console")); }
   };
@@ -1047,7 +1067,9 @@
       }
     }
   }
-  CASS.disposition = { rafraichir: charger, aller: aller, ouvrirPanel: ouvrirPanel };
+  // « Demander à Cassandra » depuis une page : le panneau s'ouvre sur l'interlocuteur de la page (Cassandra sur une page propre) et le message part.
+  async function demander(texte) { await ouvrirPanel(true); await envoyer(texte); }
+  CASS.disposition = { rafraichir: charger, aller: aller, ouvrirPanel: ouvrirPanel, demander: demander };
   const surConnexion = CASS.surConnexion;
   CASS.surConnexion = function () { if (surConnexion) surConnexion.apply(this, arguments); lancer(); };
   if (token()) setTimeout(lancer, 400);

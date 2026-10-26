@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #74aae6
+# VERSION CN : 0.1.0  #7c240e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=74aae6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7c240e ▼▼▼
 """Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v"""
 import os
 import sys
@@ -1307,7 +1307,7 @@ class MenusAssembles(unittest.TestCase):
     def test_les_modules_actifs_composent_l_arbre_par_famille(self):
         a = self.menu("admin")["arbre"]
         self.assertEqual([f["famille"] for f in a], ["socle", "reseau", "travail"])      # l'ordre des familles est celui du noyau
-        self.assertEqual(noms(a), ["Socle(Modules et Applications,App Store)", "Réseau(Réservé,Premier(Sous-page,Enfant d'Alpha))", "Travail(Autonome)"])
+        self.assertEqual(noms(a), ["Socle(Logithèque,Modules et Applications,App Store)", "Réseau(Réservé,Premier(Sous-page,Enfant d'Alpha))", "Travail(Autonome)"])
 
     def test_le_menu_se_filtre_par_role(self):
         self.assertEqual(noms(self.menu("utilisateur")["arbre"]), ["Réseau(Premier(Sous-page,Enfant d'Alpha))", "Travail(Autonome)"])
@@ -1320,14 +1320,14 @@ class MenusAssembles(unittest.TestCase):
         self.n.desactiver("beta")
         m = self.menu("admin")
         self.assertNotEqual(m["etag"], etag)
-        self.assertEqual(noms(m["arbre"]), ["Socle(Modules et Applications,App Store)", "Réseau(Réservé,Premier(Sous-page))"])
+        self.assertEqual(noms(m["arbre"]), ["Socle(Logithèque,Modules et Applications,App Store)", "Réseau(Réservé,Premier(Sous-page))"])
         self.assertGreaterEqual(len(self.evts("menu_arbre.change")), 2)
 
     def test_un_enfant_dont_le_parent_disparait_remonte_au_premier_niveau(self):
         self.n.desactiver("alpha", cascade=True)                    # beta part avec alpha
         self.n.activer("beta", avec_dependances=True)               # revient avec alpha
         self.n.desactiver("alpha", cascade=True)
-        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Modules et Applications,App Store)"])
+        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Logithèque,Modules et Applications,App Store)"])
 
     def test_activer_un_module_ajoute_ses_entrees_sans_redemarrer(self):
         self.n.desactiver("alpha", cascade=True)
@@ -1339,7 +1339,7 @@ class MenusAssembles(unittest.TestCase):
 
     def test_masquer_une_entree_masque_aussi_ses_enfants(self):
         self.assertEqual(self.perso("alpha:a1", masque=True)["statut"], "faite")
-        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Modules et Applications,App Store)", "Réseau(Réservé)", "Travail(Autonome)"])
+        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Logithèque,Modules et Applications,App Store)", "Réseau(Réservé)", "Travail(Autonome)"])
 
     def test_la_personnalisation_d_un_compte_ne_touche_pas_les_autres(self):
         self.perso("alpha:a1", compte="sandrine@x.fr", libelle="Mon réseau", ordre=0)
@@ -1403,7 +1403,7 @@ class MenusAssembles(unittest.TestCase):
         cli = moteur.Noyau(Path(self.tmp.name) / "d", Path(self.tmp.name) / "modules", {}, gerer_modules=True)
         cli.desactiver("beta", appliquer=False)                     # comme `CN_main.py module desactiver`
         self.n._surveiller()                                        # une passe de la boucle du service
-        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Modules et Applications,App Store)", "Réseau(Réservé,Premier(Sous-page))"])
+        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Logithèque,Modules et Applications,App Store)", "Réseau(Réservé,Premier(Sous-page))"])
 
 
 class ContratDesMenus(unittest.TestCase):
