@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5ad0b8
+# VERSION CN : 0.1.0  #ec8897
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation, les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit q
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5ad0b8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ec8897 ▼▼▼
 """L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation,
 les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit quoi, qui peut régler l'organisation) se vérifie ici : le point d'évolution ne décide d'aucun accès."""
 import base64
@@ -33,9 +33,9 @@ from noyau import CN_manifeste as manifeste   # noqa: E402
 BEA, ROOT = "bea@x.fr", "root@x.fr"
 PNG = "data:image/png;base64," + base64.b64encode(b"\x89PNG\r\n\x1a\n" + b"x" * 40).decode()
 
-FLOTTE_TOML = """
+SECURITE_TOML = """
 [module]
-id = "flotte"
+id = "securite"
 nom = "Flotte d'essai"
 version = "0.1.0"
 noyau_min = "0.1.0"
@@ -59,15 +59,15 @@ libelle = "Flotte"
 gabarit = "libre"
 
 [[menus]]
-id = "flotte"
+id = "securite"
 libelle = "Flotte"
 ecran = "vue"
 role = "admin"
 """
-FLOTTE_PY = """
+SECURITE_PY = """
 def brancher(ctx):
     def signal(c):
-        return {"items": [{"bande": "brule", "quoi": "alerte", "titre": "Disque plein", "detail": "Disque plein", "nat": "", "ref": "", "poids": 100, "ou": "flotte"}]}
+        return {"items": [{"bande": "brule", "quoi": "alerte", "titre": "Disque plein", "detail": "Disque plein", "nat": "", "ref": "", "poids": 100, "ou": "securite"}]}
     ctx.implementer("signal", signal)
 """
 CRM_TOML = """
@@ -192,21 +192,21 @@ class Points(unittest.TestCase):
         self.assertEqual(v["orphelines"], ["x:x"])
 
     def test_le_pont_couvre_le_module_de_l_ancienne_interface(self):
-        v = self.disp([entree("flotte:flotte", "flotte", "Flotte", 10, "parc")], ["flotte"])
-        self.assertEqual(self.ids(v).count("flotte:flotte"), 0)
-        self.assertIn("flotte", self.ids(v))
-        sans = self.disp([entree("flotte:flotte", "flotte", "Flotte", 10, "parc")], [])
-        self.assertIn("flotte:flotte", self.ids(sans))              # sans le pont (module absent des actifs), l'entrée déclarée reste
+        v = self.disp([entree("sites:sites", "sites", "Sites", 10, "parc")], ["sites"])
+        self.assertEqual(self.ids(v).count("sites:sites"), 0)
+        self.assertIn("sites", self.ids(v))
+        sans = self.disp([entree("sites:sites", "sites", "Sites", 10, "parc")], [])
+        self.assertIn("sites:sites", self.ids(sans))                # sans le pont (module absent des actifs), l'entrée déclarée reste
 
     def test_le_salon_n_est_plus_une_entree(self):
         v = self.disp([entree("salon:salon", "salon", "Le Salon", 10, "echanges")], ["salon"])
         self.assertNotIn("salon:salon", self.ids(v))
 
     def test_le_pire_niveau_remonte(self):
-        v = self.disp([], ["flotte", "memoire"], signaux={"flotte": {"brule": 1}, "memoire": {"regarder": 3}, "inconnu": {"brule": 9}})
+        v = self.disp([], ["securite", "memoire"], signaux={"securite": {"brule": 1}, "memoire": {"regarder": 3}, "inconnu": {"brule": 9}})
         niveaux = {g["id"]: g["niveau"] for g in v["groupes"]}
-        self.assertEqual((niveaux["parc"], niveaux["auto"], v["niveau"]), ("danger", "alerte", "danger"))
-        self.assertEqual(self.disp([], ["flotte"])["niveau"], "ok")
+        self.assertEqual((niveaux["secu"], niveaux["auto"], v["niveau"]), ("danger", "alerte", "danger"))
+        self.assertEqual(self.disp([], ["securite"])["niveau"], "ok")
 
     def test_les_idees_classent_ce_qui_brule_d_abord_avec_sa_raison(self):
         ssl = {"bande": "brule", "quoi": "ssl", "titre": "Certificat : 6 jour(s).", "detail": "6 jours", "nat": "ssl", "ref": "a.fr", "poids": 190, "ou": "sites"}
@@ -250,13 +250,13 @@ class Affichage(unittest.TestCase):
         ig = shutil.ignore_patterns("__pycache__")
         for m in ("droits", "comptes", "menus", "affichage", "jour", "salon"):
             shutil.copytree(RACINE / "modules" / m, mods / m, ignore=ig)
-        for nom, toml, py in (("flotte", FLOTTE_TOML, FLOTTE_PY), ("crm", CRM_TOML, PY_VIDE)):
+        for nom, toml, py in (("securite", SECURITE_TOML, SECURITE_PY), ("crm", CRM_TOML, PY_VIDE)):
             (mods / nom).mkdir()
             (mods / nom / "CN_manifeste.toml").write_text(toml, encoding="utf-8")
             (mods / nom / "CN_module.py").write_text(textwrap.dedent(py), encoding="utf-8")
         cls.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
         cls.n.brancher()
-        for m in ("droits", "comptes", "menus", "affichage", "jour", "salon", "flotte", "crm"):
+        for m in ("droits", "comptes", "menus", "affichage", "jour", "salon", "securite", "crm"):
             assert cls.n.activer(m)["ok"], m
         cls.n.droits.regler_admin(ROOT, True)
         r = cls.n.lancer("menus.reconstruire_regulierement")
@@ -287,8 +287,8 @@ class Affichage(unittest.TestCase):
         e = self.entrees(d)
         self.assertEqual(e["crm:clients"][0], "metier")                 # le module dit son groupe
         self.assertEqual([f["id"] for f in e["crm:clients"][1]["enfants"]], ["crm:fiches"])
-        self.assertEqual(e["flotte"][0], "parc")                        # le pont, pour l'ancienne interface
-        self.assertEqual(e["flotte"][1]["onglet"], "fleet")
+        self.assertEqual(e["securite"][0], "secu")                        # le pont, pour l'ancienne interface
+        self.assertEqual(e["securite"][1]["onglet"], "securite")
         self.assertIn("affichage:societe", [a["id"] for a in d["avatar"]])
         self.assertIn("crm:prefs", [a["id"] for a in d["avatar"]])
         self.assertTrue(d["cassandra_ok"])
@@ -297,7 +297,7 @@ class Affichage(unittest.TestCase):
         d = self.disposition(BEA)
         e = self.entrees(d)
         self.assertIn("crm:clients", e)
-        self.assertNotIn("flotte", e)
+        self.assertNotIn("securite", e)
         self.assertNotIn("crm:prefs", [a["id"] for a in d["avatar"]])
         self.assertNotIn("affichage:societe", [a["id"] for a in d["avatar"]])
         self.assertFalse(d["cassandra_ok"])
@@ -305,12 +305,12 @@ class Affichage(unittest.TestCase):
 
     def test_un_compte_ne_peut_pas_se_dire_administrateur(self):
         e = self.entrees(self.ok("affichage.lire_disposition", BEA, role="admin", compte=ROOT))
-        self.assertNotIn("flotte", e)
+        self.assertNotIn("securite", e)
 
     def test_l_alerte_de_la_machine_remonte_pour_l_administrateur_seulement(self):
         self.assertEqual(self.disposition(ROOT)["niveau"], "danger")
         grp = {g["id"]: g["niveau"] for g in self.disposition(ROOT)["groupes"]}
-        self.assertEqual(grp["parc"], "danger")
+        self.assertEqual(grp["secu"], "danger")
         self.assertEqual(self.disposition(BEA)["niveau"], "ok")
 
     def test_le_salon_n_a_plus_d_entree(self):
@@ -398,7 +398,7 @@ class Affichage(unittest.TestCase):
         self.assertEqual(v["idees"][0]["id"], "h:matin")
 
     def test_les_idees_de_cassandra_voient_le_parc_et_proposent_des_gestes(self):
-        v = self.ok("affichage.lire_idees", ROOT, mode="cassandra", groupe="parc", entree="flotte", heure=15)
+        v = self.ok("affichage.lire_idees", ROOT, mode="cassandra", groupe="secu", entree="securite", heure=15)
         self.assertTrue(any("Disque plein" in i["titre"] for i in v["idees"]))
         self.assertTrue(v["urgent"])
 
