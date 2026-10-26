@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #b21f77
+// VERSION CN : 0.1.0  #f2cbf3
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Le kit commun des écrans V19 : la feuille de style, les icônes, les petits composants (pastille, titre, « il y a »), la fenêtre de confirmation.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=b21f77 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f2cbf3 ▼▼▼
 // Le kit commun des écrans V19 : la feuille de style, les icônes, les petits composants (pastille, titre, « il y a »), la fenêtre de confirmation.
 // Chaque écran se met dans un <div class="kit"> ; la feuille s'injecte UNE fois (id kit-css). La Logithèque l'a inauguré ; les écrans suivants le réemploient.
 (function () {
@@ -76,10 +76,6 @@
     ".kit-m .btn{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:7px 14px;font:600 13px 'Inter',system-ui,sans-serif;cursor:pointer}.kit-m .btn.pri{background:var(--accent);color:var(--on-accent,#fff);border-color:transparent}.kit-m .btn.dng{color:var(--danger)}" +
     ".kit .choix{text-align:left;cursor:pointer;position:relative;font:inherit;color:inherit;gap:6px}.kit .choix .coche{position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:7px;border:2px solid var(--line-strong,var(--line));display:grid;place-items:center;color:transparent}.kit .choix .coche svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}" +
     ".kit .choix.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.kit .choix.on .coche{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff)}.kit .accueil{padding:20px}.kit .accueil h2{font:700 22px/1.2 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}" +
-    ".kit .courbe{width:100%;height:auto;display:block}.kit .courbe text{fill:var(--txt-faint);font:11px ui-monospace,Menlo,monospace}.kit .courbe .grille-l{stroke:var(--line);stroke-width:1}.kit .courbe path{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}" +
-    ".kit .legende{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12.5px;color:var(--txt-soft)}.kit .legende span{display:inline-flex;gap:6px;align-items:center}.kit .legende i{width:10px;height:10px;border-radius:3px;display:inline-block}" +
-    ".kit .onglets{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}.kit .onglets button{border:0;background:transparent;padding:9px 14px;font:600 13px 'Inter',sans-serif;color:var(--txt-soft);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}.kit .onglets button.on{color:var(--accent);border-bottom-color:var(--accent)}" +
-    ".kit .grille-m{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.kit .jauge{height:8px;border-radius:99px;background:var(--line);overflow:hidden}.kit .jauge i{display:block;height:100%;background:var(--accent);border-radius:99px}.kit .jauge.al i{background:var(--warn)}.kit .jauge.dg i{background:var(--danger)}" +
     ".kit-v{position:fixed;inset:0;background:rgba(5,20,18,.42);backdrop-filter:blur(3px);z-index:9998}" +
     ".kit-t{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--bg);border-left:1px solid var(--line-strong,var(--line));z-index:9999;display:flex;flex-direction:column;box-shadow:-20px 0 50px -20px rgba(0,0,0,.4);color:var(--txt);font-size:13.5px;line-height:1.5}" +
     ".kit-t *{box-sizing:border-box}.kit-t .tete{padding:18px 20px 0;display:flex;flex-direction:column;gap:12px}.kit-t .corps{padding:16px 20px 24px;overflow:auto;display:flex;flex-direction:column;gap:14px;flex:1}.kit-t h2{margin:0;font:650 19px 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}" +
@@ -92,26 +88,6 @@
   const depuis = (ts) => { const s = Math.max(0, Date.now() / 1000 - ts); if (s < 90) return "à l’instant"; if (s < 3600) return "il y a " + Math.round(s / 60) + " min"; if (s < 86400) return "il y a " + Math.round(s / 3600) + " h"; return new Date(ts * 1000).toLocaleDateString("fr-FR"); };
   const pill = (t, c, i) => '<span class="p ' + (c || "") + '">' + (i ? ic(i) : "") + esc(t) + "</span>";
   const titre = (t, d, act) => '<div class="barre"><div class="titre" style="flex:1 1 260px;min-width:0"><h1>' + esc(t) + "</h1><p>" + esc(d) + "</p></div>" + (act || "") + "</div>";
-  // Une courbe en SVG (sans bibliothèque) : une ou plusieurs séries de points {ts, v}, axe du temps réel, 4 repères en ordonnée. Rend aussi sa légende.
-  const PALETTE = ["#0f766e", "#2456a6", "#c2410c", "#7c3aed", "#be185d", "#4d7c0f", "#0891b2", "#a16207"];
-  const tms = (t) => { const s = String(t); const iso = s.length <= 10 ? s + "T00:00:00" : s.length <= 13 ? s.replace(" ", "T") + ":00:00" : s.replace(" ", "T"); const d = new Date(iso); return isNaN(d) ? NaN : d.getTime(); };
-  const nombre = (v) => (Math.abs(v) >= 100 ? Math.round(v) : Math.round(v * 10) / 10).toLocaleString("fr-FR");
-  function courbe(series, o) {
-    o = o || {};
-    const S = (series || []).map((s) => ({ name: s.name, pts: (s.points || []).map((p) => ({ t: tms(p.ts), v: p.v })).filter((p) => !isNaN(p.t) && p.v != null && isFinite(p.v)) })).filter((s) => s.pts.length);
-    if (!S.length) return '<div class="vide">Aucune donnée sur cette période.</div>';
-    const tous = S.flatMap((s) => s.pts), t0 = Math.min(...tous.map((p) => p.t)), t1 = Math.max(...tous.map((p) => p.t) .concat([t0 + 1]));
-    let v0 = Math.min(...tous.map((p) => p.v)), v1 = Math.max(...tous.map((p) => p.v));
-    if (o.unite === "%") { v0 = Math.min(v0, 0); v1 = Math.max(v1, 100); } else { v0 = Math.min(v0, 0); if (v1 === v0) v1 = v0 + 1; }
-    const W = 640, H = o.hauteur || 200, ml = 46, mr = 10, mt = 10, mb = 24, x = (t) => ml + (W - ml - mr) * (t - t0) / (t1 - t0), y = (v) => mt + (H - mt - mb) * (1 - (v - v0) / (v1 - v0));
-    let g = "";
-    for (let i = 0; i <= 3; i++) { const v = v0 + (v1 - v0) * i / 3; g += '<line class="grille-l" x1="' + ml + '" x2="' + (W - mr) + '" y1="' + y(v) + '" y2="' + y(v) + '"/><text x="' + (ml - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + esc(nombre(v)) + "</text>"; }
-    const long = t1 - t0 > 2 * 86400000;
-    for (let i = 0; i <= 3; i++) { const t = t0 + (t1 - t0) * i / 3, d = new Date(t); g += '<text x="' + x(t) + '" y="' + (H - 6) + '" text-anchor="' + (i === 0 ? "start" : i === 3 ? "end" : "middle") + '">' + esc(long ? d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) : d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })) + "</text>"; }
-    const chemins = S.map((s, i) => '<path d="' + s.pts.map((p, k) => (k ? "L" : "M") + x(p.t).toFixed(1) + " " + y(p.v).toFixed(1)).join("") + '" stroke="' + PALETTE[i % PALETTE.length] + '"/>').join("");
-    const leg = S.length > 1 || o.legende ? '<div class="legende">' + S.map((s, i) => '<span><i style="background:' + PALETTE[i % PALETTE.length] + '"></i>' + esc(s.name || "") + "</span>").join("") + "</div>" : "";
-    return '<svg class="courbe" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(o.titre || "Courbe") + '" preserveAspectRatio="xMidYMid meet">' + g + chemins + "</svg>" + leg;
-  }
   const injecter = () => { if (document.getElementById("kit-css")) return; const st = document.createElement("style"); st.id = "kit-css"; st.textContent = CSS; document.head.appendChild(st); };
   // « Es-tu sûr ? » : une fenêtre qui rend une promesse (vrai si on confirme). `corps` est du HTML déjà échappé par l'appelant.
   function confirmer(titreF, corps, oui, danger) {
@@ -127,7 +103,7 @@
   }
   const agir = (c, a) => CASS.agir(c, a || {});
   const dire = (t, k) => { if (typeof window.toast === "function") window.toast(t, k); };
-  CASS.kit = { courbe: courbe, nombre: nombre, PALETTE: PALETTE, esc: esc, I: I, ic: ic, pill: pill, depuis: depuis, titre: titre, injecter: injecter, confirmer: confirmer, agir: agir, dire: dire };
+  CASS.kit = { esc: esc, I: I, ic: ic, pill: pill, depuis: depuis, titre: titre, injecter: injecter, confirmer: confirmer, agir: agir, dire: dire };
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
 
