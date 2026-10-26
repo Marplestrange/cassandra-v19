@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #816c11
+// VERSION CN : 0.1.0  #719510
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=816c11 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=719510 ▼▼▼
 /* Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 
    Réglages a maintenant trois visions :
@@ -27,9 +27,11 @@
   "use strict";
   const CASS = window.CASS;
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const LIB = { socle: "Socle", moteurs: "Moteurs", reseau: "Réseau", securite: "Sécurité", sites: "Sites", communication: "Communication", travail: "Travail", gestion: "Gestion",
-                supervision: "Supervision", echanges: "Échanges", agents: "Agents", hebergement: "Hébergement", canaux: "Canaux", systeme: "Système", autres: "Autres", "refusés": "Refusés" };
-  const ORDRE = ["socle", "securite", "reseau", "hebergement", "sites", "communication", "echanges", "canaux", "gestion", "travail", "supervision", "agents", "moteurs", "systeme", "autres", "refusés"];
+  // des noms qui disent ce qu'on y trouve, sans jargon de la maison
+  const LIB = { socle: "Fondations", securite: "Sécurité et accès", reseau: "Réseau et domaines", hebergement: "Hébergement et sites", sites: "Sites web", communication: "Courrier et messagerie",
+                echanges: "Échanges et collaboration", canaux: "Canaux de contact", gestion: "Productivité et gestion", travail: "Travail", supervision: "Surveillance et journaux", agents: "Intelligence artificielle",
+                moteurs: "Moteurs", systeme: "Système et automatismes", evolution: "Auto-amélioration", autres: "Divers", "refusés": "Refusés" };
+  const ORDRE = ["socle", "securite", "reseau", "hebergement", "sites", "communication", "echanges", "canaux", "gestion", "travail", "supervision", "agents", "moteurs", "systeme", "evolution", "autres", "refusés"];
   const ETATS = { actif: ["Actif", "ok"], inactif: ["Inactif", ""], a_installer: ["À installer", "warn"], refuse: ["Refusé", "bad"] };
   const famLib = (f) => LIB[f] || (f ? f[0].toUpperCase() + f.slice(1) : "Autres");
 

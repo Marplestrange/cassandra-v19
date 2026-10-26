@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #17010a
+# VERSION CN : 0.1.0  #f37a7e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=17010a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f37a7e ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -668,6 +668,14 @@ class Noyau:
             x["contributions"] = [c for c in contribs if c["point"] == x["point"]]
         return {"points": sorted(offerts, key=lambda x: x["point"]), "contributions": sorted(contribs, key=lambda c: (c["point"], c["module"], c["id"]))}
 
+    def _nb_evenements(self) -> int:
+        """Le nombre d'événements, recompté au plus une fois par minute : sur une base de plusieurs centaines de Mo, COUNT(*) coûte des secondes, et /api/sante le demande à chaque appel."""
+        t, n = getattr(self, "_nb_ev", (0.0, 0))
+        if time.time() - t > 60:
+            n = self.base.lire("SELECT COUNT(*) AS n FROM evenements")[0]["n"]
+            self._nb_ev = (time.time(), n)
+        return n
+
     def sante_module(self, mid: str) -> dict:
         """La santé d'UN module, rassemblée de ce que le noyau mesure déjà : ses moteurs (exécutions, échecs, durée, suspension par le disjoncteur), ses détecteurs suspendus,
         et ce que ses capacités ont fait ou refusé depuis vingt-quatre heures. Le verdict : « sain », « a_surveiller » (un échec récent, un refus d'autorisation), « en_echec » (un moteur suspendu ou figé)."""
@@ -863,8 +871,9 @@ class Noyau:
     def etat(self) -> dict:
         caps = self.catalogue.lister()
         paliers = {}
+        connus = {r["capacite"]: r["palier"] for r in self.base.lire("SELECT capacite, palier FROM savoir")}      # UNE requête : une par capacité ouvrait 650 connexions (8 s sur une base de 450 Mo)
         for e in caps:
-            p = self.catalogue.savoir(e.cle)["palier"]
+            p = connus.get(e.cle, "raconter")
             paliers[p] = paliers.get(p, 0) + 1
         return {
             "version": manifeste.VERSION_NOYAU, "modules": sorted(self._branches),
@@ -872,7 +881,7 @@ class Noyau:
             "objets": self.registre.compter(portee=TOUT), "detecteurs": len(self.detecteurs), "moteurs": len(self.moteurs),
             "moteurs_a_surveiller": sorted(m["cle"] for m in self.etat_moteurs() if m["etat"] != "actif"), "suspendus": sorted("%s.%s" % k for k in self._suspendus),
             "constats_ouverts": self.base.lire("SELECT COUNT(*) AS n FROM constats WHERE etat='ouvert'")[0]["n"],
-            "evenements": self.base.lire("SELECT COUNT(*) AS n FROM evenements")[0]["n"],
+            "evenements": self._nb_evenements(),
             "crise": self.en_crise(),
         }
 

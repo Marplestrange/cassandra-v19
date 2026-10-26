@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #6ce7a3
+// VERSION CN : 0.1.0  #63f1a2
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=6ce7a3 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=63f1a2 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -76,6 +76,12 @@
     contacts: '<rect x="4" y="3.5" width="15" height="17" rx="2"/><path d="M4 8H2M4 12H2M4 16H2"/><circle cx="11.5" cy="10.5" r="2.3"/><path d="M7.8 16.6c.8-1.7 2.1-2.5 3.7-2.5s2.9.8 3.7 2.5"/>',
     bell: '<path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 8H4c0-1 2-2 2-8M10 20a2 2 0 0 0 4 0"/>',
     folder: '<path d="M4 7.5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>',
+    // les familles de modules (menu de gauche de « Modules et Applications »)
+    fam_socle: '<path d="M12 3l8 4v5c0 4.4-3.1 7.6-8 9-4.9-1.4-8-4.6-8-9V7z"/>',
+    fam_echanges: '<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
+    fam_canaux: '<path d="M4 5h16v11H9l-5 4z"/>',
+    fam_systeme: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
+    fam_refuses: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
     // les vues du Panorama
     pv_verdict: '<path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
     pv_gestes: '<path d="M7 3v13l3.5-3 2.5 6 2.3-1-2.5-5.8H17z"/>',
@@ -773,7 +779,8 @@
     if (fam !== "tous" && !cat.some((m) => (m.famille || "autres") === fam)) fam = "tous";
     E.famModules = fam;
     const nbDe = (f) => (f === "tous" ? cat.length : cat.filter((m) => (m.famille || "autres") === f).length);
-    E.lateral = { titre: "Modules", actif: fam, items: [{ id: "tous", libelle: "Tous les modules", n: cat.length, icone: "puzzle" }].concat(M.familles().map((f) => ({ id: f, libelle: M.famLib(f), n: nbDe(f), icone: "panorama" }))) };
+    const ICONE_FAM = { socle: "fam_socle", securite: "lock", reseau: "pv_sites", communication: "mail", echanges: "fam_echanges", canaux: "fam_canaux", agents: "bot", gestion: "tasks", supervision: "eye", hebergement: "pv_flotte", systeme: "fam_systeme", evolution: "spark", refusés: "fam_refuses", refuses: "fam_refuses" };
+    E.lateral = { titre: "Modules", actif: fam, items: [{ id: "tous", libelle: "Tous les modules", n: cat.length, icone: "puzzle" }].concat(M.familles().map((f) => ({ id: f, libelle: M.famLib(f), n: nbDe(f), icone: ICONE_FAM[f] || "puzzle" }))) };
     const tete = fam === "tous" ? "Tous les modules" : M.famLib(fam);
     E.pageNom = CASS.nomOnglet("menus:vue_modules"); E.fil = ["Paramètres", "Modules et Applications", tete];
     const sc = corps.closest(".sh-scene"), t = sc && sc.querySelector(".sh-titre");

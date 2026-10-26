@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #0860ae
+// VERSION CN : 0.2.0  #3252a3
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La console d'un module : l'écran que reçoit d'office tout module qui n'a pas d'écran sur mesure, tiré de ce que le module déclare.
 // MÉTHODE    : une fiche (modules.fiche, modules.lister) pour l'en-tête et l'aperçu ; les lectures et les gestes en cartes avec leurs paramètres, le résultat rendu en grille ou en tableau triable (ou en JSON) ; les réglages du module (reglages.lire/regler/reinitialiser/historique) avec leur état et leur histoire ; les points d'évolution du module (evolution.etat) ; tout texte dynamique est échappé
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=0860ae ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=3252a3 ▼▼▼
 /* La console d'un module : TIRÉE de ce que le module déclare, jamais écrite à la main. Un module neuf a un écran utilisable dès qu'il est branché ;
    un écran sur mesure le remplace quand il existe (CASS.sceneSurMesure). Cinq onglets :
      - Aperçu    : ce que le module est, ce qu'il compte, ce qu'il peut faire hors de lui (réseau, écritures), ses gestes sensibles ;
@@ -231,7 +231,7 @@
     const peutBasculer = gere && !m.essentiel && (actif ? (m.peut_desactiver || {}).ok : (m.peut_activer || {}).ok);
 
     hote.innerHTML = '<div class="cmx"><div class="carte"><div class="tete"><div class="l1"><h2>' + esc(m.nom || mid) + '</h2><span class="mono note">' + esc(mid) + "</span>" + (m.version ? pastille("v" + m.version, "ac") : "") +
-      pastille(gere ? (m.etat || "—") : "actif (développement)", gere ? eCls : "ok") + (m.famille ? pastille(FAMILLES[m.famille] || m.famille, "") : "") + (m.essentiel ? pastille("essentiel", "") : "") + (m.confiance ? pastille("confiance " + m.confiance, "") : "") +
+      pastille(gere ? (m.etat || "—") : "actif (développement)", gere ? eCls : "ok") + (m.famille ? pastille((CASS.modulesUi && CASS.modulesUi.famLib ? CASS.modulesUi.famLib(m.famille) : FAMILLES[m.famille]) || m.famille, "") : "") + (m.essentiel ? pastille("essentiel", "") : "") + (m.confiance ? pastille("confiance " + m.confiance, "") : "") +
       '<span style="flex:1"></span>' + (peutBasculer ? '<button class="btn ' + (actif ? "dng" : "pri") + '" data-bascule>' + (actif ? "Désactiver" : "Activer") + "</button>" : "") + "</div>" +
       (m.description ? '<p class="desc">' + esc(m.description) + "</p>" : "") +
       ((m.requiert || []).length || (m.requis_par || []).length ? '<div class="liens">' + ((m.requiert || []).length ? "<span>Requiert : " + m.requiert.map(lien).join(", ") + "</span>" : "") + ((m.requis_par || []).length ? "<span>Utilisé par : " + m.requis_par.map(lien).join(", ") + "</span>" : "") + "</div>" : "") +
