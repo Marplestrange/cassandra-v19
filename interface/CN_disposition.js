@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #36c70e
+// VERSION CN : 0.1.0  #103973
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=36c70e ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=103973 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -76,6 +76,15 @@
     contacts: '<rect x="4" y="3.5" width="15" height="17" rx="2"/><path d="M4 8H2M4 12H2M4 16H2"/><circle cx="11.5" cy="10.5" r="2.3"/><path d="M7.8 16.6c.8-1.7 2.1-2.5 3.7-2.5s2.9.8 3.7 2.5"/>',
     bell: '<path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 8H4c0-1 2-2 2-8M10 20a2 2 0 0 0 4 0"/>',
     folder: '<path d="M4 7.5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>',
+    // les vues du Panorama
+    pv_verdict: '<path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+    pv_gestes: '<path d="M7 3v13l3.5-3 2.5 6 2.3-1-2.5-5.8H17z"/>',
+    pv_cass: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    pv_sites: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18"/>',
+    pv_flotte: '<rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01"/>',
+    pv_fil: '<path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v4l3 2"/>',
+    pv_machine: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+    pv_systeme: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
   };
   // les icônes des vues de l'accueil : celles que portait l'ancienne pastille « Mon bureau », reportées au menu de gauche
   const VUE_IC = { calendrier: "calendar", taches: "tasks", rappels: "bell" };
@@ -158,11 +167,28 @@
   }
   // l'état de chaque section de la Vue d'ensemble (« panne », « 7 att. »…) : l'ancienne interface l'écrit dans ses éléments d'origine, on le recopie dans le menu
   const SECTIONS_ETAT = ["verdict", "gestes", "cass", "sites", "flotte", "fil", "machine"];
+  // une icône en trait par vue du Panorama (à la place du point) ; l'état, lui, s'écrit en mots dans une pastille de couleur
+  const EMO_PANORAMA = { verdict: "pv_verdict", gestes: "pv_gestes", cass: "pv_cass", sites: "pv_sites", flotte: "pv_flotte", fil: "pv_fil", machine: "pv_machine", systeme: "pv_systeme" };
+  const INFO_PANORAMA = { verdict: "Le verdict global de l'instance", gestes: "Les gestes que Cassandra attend de vous", cass: "L'état de Cassandra et son palier d'autonomie", sites: "Les sites hébergés : combien, et s'ils répondent",
+    flotte: "Les machines du parc et leur connexion", fil: "Ce qui a changé récemment", machine: "La machine qui héberge Cassandra", systeme: "Les détails techniques du système" };
+  function motsEtat(id, brut) {
+    const t = String(brut || "").trim(), n = parseInt(t, 10);
+    if (!t || t === "—") return "";
+    if (id === "gestes") return n === 0 ? "rien" : n + " à faire";
+    if (id === "sites") return n === 0 ? "aucun site" : n + (n > 1 ? " sites" : " site");
+    if (id === "flotte") return /att\./.test(t) ? n + (n > 1 ? " machines" : " machine") : t;
+    if (id === "fil") return n === 0 ? "rien de neuf" : n + (n > 1 ? " nouveautés" : " nouveauté");
+    if (id === "verdict") return t === "panne" ? "en panne" : t === "danger" ? "en danger" : t === "regarder" ? "à surveiller" : t;
+    if (id === "machine") return t === "muette" ? "muette" : "en ligne";
+    if (id === "cass") return t.replace(/^palier\s*/i, "");
+    return t;
+  }
   function recopierEtatPanorama() {
     SECTIONS_ETAT.forEach((id) => {
       const st = document.getElementById("vust-" + id), dot = document.getElementById("vudot-" + id);
-      document.querySelectorAll('#d19-side [data-mst="' + id + '"]').forEach((x) => { x.textContent = st ? st.textContent : ""; });
-      document.querySelectorAll('#d19-side [data-mdot="' + id + '"]').forEach((x) => { x.className = "mx-dot " + (dot ? dot.className.replace(/^mx-dot\s*/, "") : ""); });
+      const niv = dot ? (dot.className.replace(/^mx-dot\s*/, "").trim().split(/\s+/)[0] || "") : "";
+      const classe = niv === "ok" ? "ok" : niv === "warn" || niv === "regarder" ? "warn" : niv === "danger" || niv === "panne" ? "danger" : "";
+      document.querySelectorAll('#d19-side [data-mst="' + id + '"]').forEach((x) => { x.textContent = motsEtat(id, st ? st.textContent : ""); x.className = "mx-st" + (classe ? " " + classe : ""); x.hidden = !x.textContent; });
     });
   }
   function suivreSegment(seg) {
@@ -293,8 +319,8 @@
           h += rendreFlotteRail();
         } else {
           h += e.enfants.map((f) => {
-            const vid = f.vue || f.id, etat = e.id === "panorama" && SECTIONS_ETAT.indexOf(vid) >= 0;
-            return '<button class="d19-si sub' + (VUE_IC[vid] ? " ic" : "") + (actif && E.vue === vid ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(vid) + '">' + (VUE_IC[vid] ? ico(VUE_IC[vid]) : etat ? '<span class="mx-dot" data-mdot="' + vid + '"></span>' : '<span class="pt"></span>') + "<span>" + esc(f.libelle) + "</span>" + (etat ? '<span class="mx-st" data-mst="' + vid + '"></span>' : "") + nbDe(f) + "</button>";
+            const vid = f.vue || f.id, etat = e.id === "panorama" && SECTIONS_ETAT.indexOf(vid) >= 0, emo = e.id === "panorama" ? EMO_PANORAMA[vid] : "";
+            return '<button class="d19-si sub' + (VUE_IC[vid] || emo ? " ic" : "") + (emo ? " emo" : "") + (actif && E.vue === vid ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(vid) + '"' + (emo && INFO_PANORAMA[vid] ? ' title="' + esc(INFO_PANORAMA[vid]) + '"' : "") + '>' + (emo ? ico(emo) : VUE_IC[vid] ? ico(VUE_IC[vid]) : '<span class="pt"></span>') + "<span>" + esc(f.libelle) + "</span>" + (etat ? '<span class="mx-st" data-mst="' + vid + '" hidden></span>' : "") + nbDe(f) + "</button>";
           }).join("");
         }
       }

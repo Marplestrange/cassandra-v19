@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=dda634 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=11ab83 ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -411,7 +411,16 @@ body.d19 #tab-fleet .mx-rail{display:none!important}
 .d19-fl-st{margin-left:auto;font-size:10px;padding:2px 5px;border-radius:4px;background:var(--surface);color:var(--txt-faint)}.d19-fl-st.off{color:var(--warn)}
 .d19-si.d19-fl-act{margin-top:2px;padding-left:38px}.d19-si.d19-fl-act:first-of-type{margin-top:8px}
 .d19-si.sub .mx-dot{width:6px;height:6px;flex:none}
-.d19-si.sub .mx-st{margin-left:auto;font:500 10px 'JetBrains Mono',monospace;color:var(--txt-ghost,var(--txt-faint));white-space:nowrap}
+.d19-si.sub.emo{display:grid;grid-template-columns:16px minmax(0,1fr);column-gap:8px;row-gap:0;align-items:center;padding-top:5px;padding-bottom:5px;text-align:left}
+.d19-si.sub.emo>svg.d-i{grid-row:1/span 2;align-self:center}
+.d19-si.sub.emo>span:nth-of-type(1){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.d19-si.sub.emo .mx-st{grid-column:2;margin:0;justify-self:start;padding:0;border:0;background:none!important;font:600 11px 'Inter',system-ui,sans-serif}
+.d19-si.sub.emo .mx-st::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:5px;vertical-align:1px}
+.d19-si.sub .mx-st{margin-left:auto;flex:none;font:600 10.5px 'Inter',system-ui,sans-serif;padding:2px 8px;border-radius:999px;white-space:nowrap;background:var(--surface);color:var(--txt-soft,var(--txt-faint));border:1px solid var(--line)}
+.d19-si.sub .mx-st[hidden]{display:none}
+.d19-si.sub .mx-st.ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}
+.d19-si.sub .mx-st.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 32%,transparent)}
+.d19-si.sub .mx-st.danger{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger);border-color:color-mix(in srgb,var(--danger) 30%,transparent)}
 /* ▲▲▲ FIN BORNE CN ▲▲▲ */
 
 /* ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ */
