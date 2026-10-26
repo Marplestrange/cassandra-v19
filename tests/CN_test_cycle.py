@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c51989
+# VERSION CN : 0.1.0  #30297a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le cycle de vie d'un module venu d'une archive : examiner, installer avec consentement, mettre à jour, revenir en arrière, désinstaller.
 # MÉTHODE    : construit de vraies archives signées (openssl, Ed25519) du module d'exemple et déroule le cycle dans des dossiers jetables
 # ═══════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c51989 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=30297a ▼▼▼
 """Rien ne se pose sans examen, rien ne s'examine sans quarantaine, rien ne s'installe sans le consentement aux permissions telles que montrées ;
 ce qui part (ancienne version, module désinstallé, données purgées) part en sauvegarde et peut revenir."""
 import os
@@ -203,6 +203,95 @@ class Cycle(unittest.TestCase):
         self.assertEqual(self.cycle.purger_quarantaine(age_s=3600), 0)
         os.utime(f, (time.time() - 90000, time.time() - 90000))
         self.assertEqual(self.cycle.purger_quarantaine(age_s=3600), 1)
+
+
+class Registre(unittest.TestCase):
+    """Le registre : un index JSON et des archives servis par un hôte ; une archive n'a aucun passe-droit parce qu'elle vient de là."""
+
+    def setUp(self):
+        import hashlib
+        import http.server
+        import json
+        import threading
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        b = self.base = Path(self.tmp.name)
+        (b / "cles").mkdir()
+        priv = b / "e.pem"
+        subprocess.run(["openssl", "genpkey", "-algorithm", "ed25519", "-out", str(priv)], check=True, capture_output=True)
+        subprocess.run(["openssl", "pkey", "-in", str(priv), "-pubout", "-out", str(b / "cles" / "atek.pub")], check=True, capture_output=True)
+        src = b / "src" / "sentinelle"
+        shutil.copytree(RACINE / "exemples" / "sentinelle", src)
+        self.octets = paquets.construire(src, priv, b / "s.cmod").read_bytes()
+        self.sha = hashlib.sha256(self.octets).hexdigest()
+        self.fichiers = {"/archive/sentinelle.cmod": self.octets, "/faux.cmod": b"pas la bonne archive"}
+        parent = self
+
+        class H(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                if self.path == "/index.json":
+                    port = self.server.server_address[1]
+                    corps = json.dumps({"modules": [
+                        {"id": "sentinelle", "nom": "Sentinelle", "version": "0.1.2", "description": "Surveille", "url": "/archive/sentinelle.cmod", "sha256": parent.sha, "taille": len(parent.octets)},
+                        {"id": "truque", "nom": "Truqué", "version": "1.0.0", "url": "/faux.cmod", "sha256": "0" * 64},
+                        {"id": "ailleurs", "nom": "Ailleurs", "version": "1.0.0", "url": "http://exemple.invalid/x.cmod", "sha256": "1" * 64},
+                        {"id": "Mal Ecrit", "nom": "x", "version": "1", "url": "/x", "sha256": "2" * 64},
+                        {"id": "sanssha", "nom": "x", "version": "1", "url": "/x"}]}).encode()
+                elif self.path in parent.fichiers:
+                    corps = parent.fichiers[self.path]
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+                    return
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(corps)))
+                self.end_headers()
+                self.wfile.write(corps)
+
+            def log_message(self, *a):
+                pass
+
+        self.srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=self.srv.serve_forever, daemon=True).start()
+        self.addCleanup(self.srv.shutdown)
+        self.url = "http://127.0.0.1:%d/index.json" % self.srv.server_address[1]
+        self.ext = b / "ext"
+        self.ext.mkdir()
+        self.cycle = C.Cycle(self.ext, b / "donnees", b / "cles", lambda: [(mf.charger(f), True) for f in sorted(self.ext.glob("*/CN_manifeste.toml"))], lambda: set())
+
+    def test_l_index_ne_garde_que_les_entrees_saines_et_de_l_hote_du_registre(self):
+        ids = [e["id"] for e in self.cycle.registre_lire(self.url)]
+        self.assertEqual(ids, ["sentinelle", "truque"])                       # ni l'archive d'un autre hôte, ni l'id mal écrit, ni l'entrée sans empreinte
+
+    def test_l_etat_d_un_module_du_registre_se_dit(self):
+        self.assertEqual({e["id"]: e["etat"] for e in self.cycle.registre_lire(self.url)}["sentinelle"], "nouveau")
+        e = self.cycle.examiner(self.octets)
+        self.cycle.installer(e["jeton"], e["empreinte_permissions"])
+        self.assertEqual({e["id"]: e["etat"] for e in self.cycle.registre_lire(self.url)}["sentinelle"], "installe")
+
+    def test_telecharger_verifie_l_empreinte_puis_examine_comme_une_archive_deposee(self):
+        e = self.cycle.telecharger(self.url, "sentinelle")
+        self.assertEqual((e["id"], e["signe"], e["autorise"]), ("sentinelle", True, True))
+        self.assertFalse((self.ext / "sentinelle").exists())                  # télécharger n'installe pas
+        with self.assertRaisesRegex(C.CycleErreur, "empreinte"):
+            self.cycle.telecharger(self.url, "truque")
+        with self.assertRaisesRegex(C.CycleErreur, "pas dans le registre"):
+            self.cycle.telecharger(self.url, "inconnu")
+
+    def test_un_registre_muet_ou_mal_forme_est_dit(self):
+        with self.assertRaisesRegex(C.CycleErreur, "injoignable"):
+            self.cycle.registre_lire("http://127.0.0.1:9/index.json")
+        with self.assertRaisesRegex(C.CycleErreur, "http"):
+            self.cycle.registre_lire("file:///etc/passwd")
+        with self.assertRaisesRegex(C.CycleErreur, "JSON"):
+            C.lire_index(b"pas du json", "http://x/")
+        with self.assertRaisesRegex(C.CycleErreur, "liste"):
+            C.lire_index(b'{"modules": 3}', "http://x/")
+        self.assertEqual(self.cycle.registre_lire(""), [])                    # pas de registre : pas de liste, pas d'erreur
+
+    def test_une_reponse_demesuree_est_refusee_plutot_que_tronquee(self):
+        with self.assertRaisesRegex(C.CycleErreur, "démesurée"):
+            C._ouvrir(self.url.replace("index.json", "archive/sentinelle.cmod"), 5, 10)
 
 
 class Permissions(unittest.TestCase):

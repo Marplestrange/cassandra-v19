@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #38c85d
+# VERSION CN : 0.1.0  #607d48
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=38c85d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=607d48 ▼▼▼
 """Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 
 Le travail (plan d'activation avec dépendances, refus d'un essentiel, branchement à chaud) est celui du noyau ; ce module en fait des
@@ -153,6 +153,18 @@ def brancher(ctx):
         return g.contributions(str(point))
 
     ctx.implementer("contributions", contributions)
+    def registre(ctx):
+        url = str(ctx.reglage("registre_url", "") or "").strip()
+        return {"url": url, "politique": politique(), "modules": cy.registre_lire(url)}
+
+    def telecharger(ctx, module=""):
+        url = str(ctx.reglage("registre_url", "") or "").strip()
+        if not url:
+            raise ValueError("aucun registre : renseignez le réglage « Adresse du registre de modules »")
+        return cy.telecharger(url, str(module), politique())
+
+    ctx.implementer("registre", registre)
+    ctx.implementer("telecharger", telecharger, prouver_examiner, defaire_examiner)
     ctx.implementer("lister", lister)
     ctx.implementer("fiche", fiche)
     ctx.implementer("activer", activer, prouver_activer, defaire_activer)

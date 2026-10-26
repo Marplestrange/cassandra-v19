@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f69c02
+# VERSION CN : 0.1.0  #a384c8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La gestion des modules : ce qui est installé, actif ou à installer, ce qui dépend de quoi, et le geste d'activer ou de désactiver. Le noyau fait le travail (dépendances, essentiels, branchement à chaud) ; ce module en fait des capacités, donc des droits, une preuve, un retour et une trace.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f69c02 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a384c8 ▼▼▼
 [module]
 id = "modules"
 nom = "Modules"
@@ -158,7 +158,27 @@ id = "contributions"
 libelle = "Les points d'extension offerts par les modules actifs, et ce que les modules actifs y branchent (colonnes, tuiles, règles) : un module lit ce qu'on branche chez lui sans connaître ceux qui l'ont fait"
 risque = "lecture"
 
+[[capacites]]
+id = "registre"
+libelle = "Les modules que le registre (réglage registre_url) propose, avec leur état ici : nouveau, mise à jour, installé"
+risque = "lecture"
+droit = "installer"
+externe = true
+
+[[capacites]]
+id = "telecharger"
+libelle = "Télécharger un module du registre : l'archive vient chez le registre, son empreinte est vérifiée contre l'index, puis elle est EXAMINÉE comme une archive déposée (quarantaine, rien n'est installé)"
+risque = "faible"
+droit = "installer"
+externe = true
+perimetre = ["la quarantaine ; l'archive vient de l'hôte du registre et de lui seul"]
+preuve = "l'examen rend un jeton et l'archive est en quarantaine"
+retour = "abandonner l'archive : elle quitte la quarantaine"
+paliers = ["raconter"]
+qui = ["humain"]
+
 [permissions]
+reseau = ["le registre de modules (réglage registre_url) : son index et ses archives"]
 modules = true
 droits = true
 # ▲▲▲ FIN BORNE CN ▲▲▲

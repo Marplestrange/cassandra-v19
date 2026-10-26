@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3ecb0a
+# VERSION CN : 0.1.0  #14a640
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le cycle de vie d'un module venu d'une archive : examiner sans rien poser, installer avec consentement, mettre à jour, revenir en arrière, désinstaller (rien ne se perd : tout ce qui part va en sauvegarde).
 # MÉTHODE    : l'archive attend en quarantaine ; l'examen la vérifie (empreintes, signature, manifeste) et compare au module en place ; l'installation re-vérifie, exige le consentement aux permissions, sauvegarde l'ancienne version puis dépose le dossier dans celui des extensions que le noyau surveille
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3ecb0a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=14a640 ▼▼▼
 """Le cycle de vie d'un module installé, à la manière d'un module store.
 
     examiner(octets)       l'archive va en quarantaine ; on la vérifie (SOMMES, signature, manifeste) et on dit ce qu'elle ferait : nouveau, mise à jour, retour à une version
@@ -29,9 +29,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import tarfile
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 from . import CN_manifeste as mf
@@ -44,6 +48,50 @@ CATEGORIES = ("espace_utilisateur", "reseau", "ecritures", "privileges", "intros
 
 class CycleErreur(ValueError):
     pass
+
+
+TAILLE_INDEX = 2 * 2 ** 20           # l'index d'un registre : 2 Mo au plus
+_ID = re.compile(r"^[a-z][a-z0-9_]{1,40}$")
+_SHA = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _ouvrir(url: str, delai: float, plafond: int) -> bytes:
+    """Lit une adresse http(s), pas plus de `plafond` octets ; au-delà, c'est une erreur (jamais une lecture tronquée)."""
+    if urllib.parse.urlparse(url).scheme not in ("http", "https"):
+        raise CycleErreur("seules les adresses http et https sont permises")
+    req = urllib.request.Request(url, headers={"User-Agent": "Cassandra/19 (registre de modules)", "Accept": "*/*"})
+    try:
+        with urllib.request.urlopen(req, timeout=delai) as r:
+            donnees = r.read(plafond + 1)
+    except (urllib.error.URLError, OSError, ValueError) as ex:
+        raise CycleErreur("injoignable : %s" % str(getattr(ex, "reason", ex))[:120]) from ex
+    if len(donnees) > plafond:
+        raise CycleErreur("réponse démesurée (plus de %d Mo)" % (plafond // 2 ** 20))
+    return donnees
+
+
+def lire_index(octets: bytes, base_url: str) -> list:
+    """L'index d'un registre : {"modules": [{id, nom, version, description, url, sha256, ...}]}. Une entrée mal formée est écartée ; une adresse d'archive d'un AUTRE hôte que le registre l'est aussi."""
+    try:
+        brut = json.loads(octets.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as ex:
+        raise CycleErreur("l'index du registre n'est pas un JSON lisible") from ex
+    liste = brut.get("modules") if isinstance(brut, dict) else None
+    if not isinstance(liste, list):
+        raise CycleErreur("l'index du registre doit contenir une liste « modules »")
+    hote = urllib.parse.urlparse(base_url).netloc
+    sortie = []
+    for x in liste:
+        if not isinstance(x, dict) or not _ID.match(str(x.get("id", ""))) or not str(x.get("version", "")).strip() or not _SHA.match(str(x.get("sha256", ""))):
+            continue
+        url = urllib.parse.urljoin(base_url, str(x.get("url", "")))
+        if urllib.parse.urlparse(url).netloc != hote:
+            continue                                                  # l'archive vit chez le registre : un index ne renvoie pas vers un tiers
+        sortie.append({"id": x["id"], "nom": str(x.get("nom") or x["id"])[:80], "version": str(x["version"])[:30], "description": str(x.get("description", ""))[:500], "famille": str(x.get("famille", ""))[:40],
+                       "editeur": str(x.get("editeur", ""))[:60], "licence": str(x.get("licence", ""))[:40], "importance": x.get("importance") if x.get("importance") in mf.IMPORTANCES else "",
+                       "taille": int(x["taille"]) if isinstance(x.get("taille"), int) else 0, "url": url, "sha256": x["sha256"],
+                       "noyau_min": str(x.get("noyau_min", ""))[:20], "requiert": [str(r)[:60] for r in (x.get("requiert") or []) if isinstance(r, str)][:20]})
+    return sortie
 
 
 def permissions_de(m) -> dict:
@@ -108,6 +156,35 @@ class Cycle:
             if x.get("id") == mid and x.get("acte") in ("installe", "retour") and "permissions" in x:
                 return x["permissions"]
         return {}
+
+    # ------------------------------------------------------------------ le registre (l'index d'un magasin)
+    def registre_lire(self, url: str, ouvrir=None) -> list:
+        """Les modules que le registre propose, chacun avec son état ici : nouveau, mise_a_jour, installe, ou incompatible (le noyau est trop ancien)."""
+        if not url:
+            return []
+        ouvrir = ouvrir or _ouvrir
+        entrees = lire_index(ouvrir(url, 8, TAILLE_INDEX), url)
+        en_place = {x.id: x for x, _ in self.connus()}
+        for e in entrees:
+            m = en_place.get(e["id"])
+            if m is None:
+                e["etat"] = "nouveau"
+            else:
+                a, b = mf.version_de(m.version), mf.version_de(e["version"])
+                e["etat"] = "installe" if b <= a else "mise_a_jour"
+                e["version_en_place"] = m.version
+        return sorted(entrees, key=lambda e: (e["nom"].lower(), e["id"]))
+
+    def telecharger(self, url_registre: str, mid: str, politique: str = "signes", ouvrir=None) -> dict:
+        """Télécharge l'archive d'un module du registre, vérifie son empreinte contre l'index, puis l'EXAMINE comme n'importe quelle archive déposée : le registre n'a aucun passe-droit."""
+        ouvrir = ouvrir or _ouvrir
+        e = next((x for x in self.registre_lire(url_registre, ouvrir) if x["id"] == mid), None)
+        if e is None:
+            raise CycleErreur("« %s » n'est pas dans le registre" % mid)
+        octets = ouvrir(e["url"], 30, TAILLE_MAX)
+        if hashlib.sha256(octets).hexdigest() != e["sha256"]:
+            raise CycleErreur("l'archive téléchargée ne correspond pas à l'empreinte de l'index : refusée")
+        return self.examiner(octets, politique)
 
     # ------------------------------------------------------------------ examiner
     def examiner(self, octets: bytes, politique: str = "signes") -> dict:
