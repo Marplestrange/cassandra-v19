@@ -153,6 +153,9 @@ pre{margin:0;background:color-mix(in srgb,var(--strong) 6%,transparent);border-r
 .caps{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
 .vide-etat{display:flex;flex-direction:column;align-items:center;gap:4px;padding:26px 10px;text-align:center;color:var(--strong)}.vide-etat svg{width:30px;height:30px;fill:none;stroke:var(--ok);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .courriel{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--solid);display:flex;flex-direction:column;gap:2px;font-size:13px}
+.choix{text-align:left;cursor:pointer;position:relative;font:inherit;color:inherit;gap:6px}.choix .coche{position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:7px;border:2px solid var(--line2);display:grid;place-items:center;color:transparent}
+.choix .coche svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.choix.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.choix.on .coche{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}.choix:hover{border-color:var(--accent)}
 .reine{border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
 .demande{display:flex;gap:8px}.demande input{flex:1;min-width:0;border:1px solid var(--line2);background:var(--solid);color:var(--txt);border-radius:11px;padding:10px 13px;font:14px 'Inter',sans-serif}
 .demande input:focus{outline:2px solid color-mix(in srgb,var(--accent) 40%,transparent);outline-offset:1px}
@@ -319,7 +322,7 @@ const JOURNAL=[
 ];
 
 /* ───────── état ───────── */
-const S={sec:'vue',vue:'grille',q:'',fam:'toutes',etat:'tous',imp:'toutes',tiroir:null,onglet:'apercu',att:{},sel:new Set(),pol:'signes',boutFam:'toutes',annot:false,notif:'resume',sheet:false,sim:'normal',role:'admin',fong:'apercu',fiche:null,menu:new Set(['courrier','agenda-dav']),fenetre:0,jfil:'tout',avance:false,auto:'reine',gel:false,bconf:'toutes',betat:'tous',btri:'pert',rep:new Set(),ct:'apercu',pol2:'signes',hist:false};
+const S={sec:'vue',vue:'grille',q:'',fam:'toutes',etat:'tous',imp:'toutes',tiroir:null,onglet:'apercu',att:{},sel:new Set(),pol:'signes',boutFam:'toutes',annot:false,choix:new Set(),notif:'resume',sheet:false,sim:'normal',role:'admin',fong:'apercu',fiche:null,menu:new Set(['courrier','agenda-dav']),fenetre:0,jfil:'tout',avance:false,auto:'reine',gel:false,bconf:'toutes',betat:'tous',btri:'pert',rep:new Set(),ct:'apercu',pol2:'signes',hist:false};
 const SECS=[
  ['sep','Gérer'],['vue','vue','Vue d’ensemble'],['inst','inst','Installés',()=>M.length],['maj','maj','Mises à jour',()=>M.filter(m=>m.maj).length],
  ['sep','Trouver'],['shop','shop','Boutique'],['src','src','Sources'],
@@ -522,8 +525,10 @@ reg(){
 function accueil(){
   return tete('Bienvenue','Cette instance vient d’être installée. Cassandra a déjà mis en place les modules vitaux.')+
   conc('<b>Premier lancement.</b> Une instance neuve ne montre pas une page vide : elle propose un point de départ, ou laisse Cassandra décider. Aucune action n’est obligatoire.')+
-  `<div class="carte accueil"><h2>Que voulez-vous faire de cette instance ?</h2><p class="note" style="max-width:60ch">Choisis un point de départ, ou dis-moi simplement ce que tu veux. Rien n’est définitif : je peux tout ajouter, retirer ou défaire plus tard.</p>
-   <div class="g2" style="width:100%">${ENS.map(e=>`<div class="carte" style="box-shadow:none"><h4>${e.nom}</h4><p class="note">${e.d}</p><div class="chips">${e.mods.map(x=>`<span class="p">${x}</span>`).join('')}</div><button class="btn mini pri" data-sug="Mets en place : ${esc(e.nom)}" style="align-self:flex-start">Choisir</button></div>`).join('')}</div>
+  `<div class="carte accueil"><h2>Que veux-tu faire de cette instance ?</h2><p class="note" style="max-width:60ch">Choisis un ou plusieurs points de départ (ils se cumulent), ou dis-moi simplement ce que tu veux. Rien n’est définitif : je peux tout ajouter, retirer ou défaire plus tard.</p>
+   <div class="g2" style="width:100%">${ENS.map(e=>`<button class="carte choix ${S.choix.has(e.id)?'on':''}" data-ensch="${e.id}" aria-pressed="${S.choix.has(e.id)}"><span class="coche">${ic('check')}</span><h4>${e.nom}</h4><span class="note">${e.d}</span><span class="chips">${e.mods.map(x=>`<span class="p">${x}</span>`).join('')}</span></button>`).join('')}
+    <button class="carte choix ${S.choix.size===ENS.length?'on':''}" data-ensch="tout" aria-pressed="${S.choix.size===ENS.length}"><span class="coche">${ic('check')}</span><h4>Tout installer</h4><span class="note">Tous les ensembles ci-dessus, bureau compris. Les modules en commun ne sont installés qu’une fois.</span></button></div>
+   ${(()=>{const ids=[...new Set([...S.choix].flatMap(k=>ENS.find(e=>e.id===k).mods))];const vit=['droits','noyau-api'];const nouveaux=ids.filter(x=>!vit.includes(x));return S.choix.size?`<div class="alerte in" style="width:100%"><div class="sp"><b>${S.choix.size} ensemble${S.choix.size>1?'s':''} choisi${S.choix.size>1?'s':''} · ${nouveaux.length} module${nouveaux.length>1?'s':''} à installer</b><span class="note"> (les modules vitaux sont déjà là). Impact calculé : aucune dépendance cassée${nouveaux.length>6?', environ 400 Mo de mémoire au repos':''}. Tout se défait ensuite.</span></div><button class="btn pri" data-act="miseenplace">Mettre en place</button></div>`:'<p class="note">Coche un ou plusieurs ensembles : ils se cumulent.</p>'})()}
    <div class="demande" style="width:100%"><input id="dem" placeholder="Ou dis-moi : « je veux héberger mes sites et gérer mon courrier »" aria-label="Dire à Cassandra ce qu’on veut"><button class="btn pri" data-act="demande">Dire</button></div>
    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="demande">Laisse Cassandra décider</button><button class="btn" data-go="shop">Voir la boutique</button><button class="btn" data-act="plustard">Plus tard</button></div></div>
   <div class="carte"><h3>Jusqu’où Cassandra va seule</h3><p class="note">Tu pourras le changer à tout moment.</p><div style="display:flex;flex-direction:column;gap:8px">${[['observer','Observer','Je regarde et je raconte. Je ne touche à rien.'],['entretien','Entretien','Je retire ce qui est révoqué, je prends les mises à jour sans permission en plus, je mets en pause ce qui échoue.'],['reine','Reine','Je gère tout. Tu n’as rien à faire.']].map(([k,t,d])=>`<div class="radio ${S.auto===k?'on':''}" data-auto="${k}"><i></i><div><b style="color:var(--strong)">${t}${k==='reine'?' <span class="p ok">recommandé</span>':''}</b><span class="note" style="display:block">${d}</span></div></div>`).join('')}</div></div>`;
@@ -640,6 +645,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.menu){const k=t.dataset.menu;S.menu.has(k)?S.menu.delete(k):S.menu.add(k);rendre();toast(S.menu.has(k)?'Ajoutée à ton menu.':'Retirée de ton menu.');return}
   if(t.dataset.fong){ficheBout(S.fiche,t.dataset.fong);return}
   if(t.dataset.notif){S.notif=t.dataset.notif;rendre();toast('Notifications : '+t.textContent.trim().split('\n')[0]);return}
+  if(t.dataset.ensch){const k=t.dataset.ensch;if(k==='tout'){S.choix=S.choix.size===ENS.length?new Set():new Set(ENS.map(e=>e.id))}else{S.choix.has(k)?S.choix.delete(k):S.choix.add(k)}rendre();return}
   if(t.dataset.verrou){const m=byId(t.dataset.verrou);m.verrou=!m.verrou;fermer();rendre();ouvrir(m.id);toast(m.verrou?m.nom+' : Cassandra n’y touchera plus.':m.nom+' : Cassandra peut de nouveau s’en occuper.');return}
   if(t.dataset.jfil){S.jfil=t.dataset.jfil;rendre();return}
   if(t.dataset.auto){S.auto=t.dataset.auto;rendre();toast('Autonomie : '+t.dataset.auto);return}
@@ -662,6 +668,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.act){const a=t.dataset.act;
     if(a==='avance'){S.avance=!S.avance;if(S.avance)toast('Mode avancé : tes gestes sont connus de Cassandra, et chacun se défait.');rendre()}
     else if(a==='pascette'){toast('Cette version est écartée : Cassandra n’y reviendra pas.')}
+    else if(a==='miseenplace'){toast('Cassandra met en place '+S.choix.size+' ensemble(s) : elle te dit quand c’est prêt.');S.choix=new Set();S.sim='normal';$('#sim').value='normal';rendre()}
     else if(a==='plustard'){S.sim='normal';$('#sim').value='normal';rendre();toast('Quand tu veux : tout reste possible.')}
     else if(a==='demandeinst'){const b=BOUT.find(x=>x.id===S.fiche);installeDemande(b);fermer()}
     else if(a==='gel'){S.gel=!S.gel;rendre();toast(S.gel?'Cassandra est en pause : elle observe, elle n’agit plus.':'Cassandra reprend.')}
