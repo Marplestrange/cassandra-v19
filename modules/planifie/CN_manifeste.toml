@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : planifie
 # ZONE       : CN
-# VERSION CN : 0.1.4  #e2dd36
+# VERSION CN : 0.1.4  #2e7d49
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Tout ce qui tourne tout seul sur la machine, et est-ce que ça va : les tâches de Cassandra et celles du système (crontabs, cron.d) fusionnées, l'état de chacune (cassée, en échec, muette), les exécutions réelles consignées par un enrobage, le verrou et la fenêtre, l'enchaînement, la maintenance, les collisions. Réservé à l'administrateur ; privilégié par nature, il passe par le courtier.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.4 empreinte=e2dd36 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=2e7d49 ▼▼▼
 [module]
 id = "planifie"
 nom = "Tâches planifiées"
@@ -217,10 +217,9 @@ gabarit = "tableau"
 id = "taches"
 libelle = "Automatismes"
 ecran = "vue_taches"
-groupe = "parc"
 ordre = 50
 role = "admin"
-icone = "repeat"
+icone = "clock"
 badge = "constats"
 
 [[widgets]]
