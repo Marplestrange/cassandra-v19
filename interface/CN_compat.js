@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #1cda69
+// VERSION CN : 0.1.0  #0d1c7a
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Pont V18 -> noyau V19.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=1cda69 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=0d1c7a ▼▼▼
 /* Pont V18 -> noyau V19.
 
 L'interface V18 parle à ~615 routes (/api/...). Le noyau V19 n'en a qu'une porte : POST /api/agir/<module>.<capacité>.
@@ -156,6 +156,7 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
       return reponse(200, d);
     }
     if (chemin.indexOf("/api/agir/") === 0 || chemin === "/api/menu" || chemin === "/api/moi") return v19(methode, u.pathname + u.search, corps, init);
+    if (chemin.indexOf("/api/televerser/") === 0) return natif(entree, init);       // des octets (une archive de module) : le corps passe tel quel, jamais relu en JSON ; la page porte son jeton
     if (methode === "POST" && chemin === "/api/login") return login(corps);
     if (methode === "POST" && chemin === "/api/login/cle") return loginCle(corps);
     if (methode === "POST" && chemin === "/api/login/secours") return loginSecours(corps);

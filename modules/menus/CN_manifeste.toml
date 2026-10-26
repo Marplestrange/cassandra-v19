@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : menus
 # ZONE       : CN
-# VERSION CN : 0.3.2  #21b13a
+# VERSION CN : 0.3.2  #5ddd7f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble, à chaud, l'arbre de navigation que les modules actifs déclarent : familles, ordre, rôles, compteurs, personnalisation par compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=21b13a ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=5ddd7f ▼▼▼
 [module]
 id = "menus"
 nom = "Menus"
@@ -82,6 +82,21 @@ ordre = 10
 role = "admin"
 icone = "puzzle"
 zone = "avatar"
+
+[[menus]]
+id = "appstore"
+libelle = "App Store"
+ecran = "vue_store"
+ordre = 11
+role = "admin"
+icone = "puzzle"
+zone = "avatar"
+
+[[ecrans]]
+id = "vue_store"
+libelle = "App Store"
+domaine = "socle"
+gabarit = "liste_detail"
 
 [[ecrans]]
 id = "vue_modules"

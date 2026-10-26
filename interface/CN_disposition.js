@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #e0d588
+// VERSION CN : 0.1.0  #6ce7a3
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=e0d588 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=6ce7a3 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -796,6 +796,7 @@
   CASS.sceneSurMesure.menus = async function (corps, ctx) {
     const ecran = String(ctx.ecran).split(":")[1] || "";
     if (ecran === "vue_modules") await pageModules(corps);
+    else if (ecran === "vue_store" && CASS.pageAppStore) CASS.pageAppStore(corps);
     else if (CASS.console) { corps.innerHTML = '<div class="sh-console"></div>'; CASS.console("menus", corps.querySelector(".sh-console")); }
   };
   CASS.sceneSurMesure.affichage = async function (corps, ctx) {
