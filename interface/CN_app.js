@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #5fb245
+// VERSION CN : 0.1.0  #8975d7
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=5fb245 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=8975d7 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -7098,11 +7098,17 @@ function vuGeste(g){
     if(g.type==='site' && g.domain){ if(typeof siteAct==='function' && ['status','restart','ssl_renew','logs'].includes(g.action)) siteAct(g.domain, g.action, null); else if(typeof stGeste==='function') { switchTab('mysites'); setTimeout(()=>{ stOpen(g.domain); }, 200); } return; }
     if(g.type==='aller') vuAllerVers(g.aller);
 }
+// Une page par rubrique : la vue d'ensemble ne se parcourt plus, chaque entrée du menu en montre UNE page. Le jeu de données reste unique
+// (un seul appel /api/vue) ; ce qui change, c'est la page affichée (attribut data-vue, que le CSS lit) et son titre.
+const VU_PAGES={ verdict:'Vue d’ensemble', gestes:'Ce qui demande un geste', cass:'Cassandra, maintenant', sites:'Les sites', flotte:'La flotte', fil:'Ce qui a changé', machine:'La machine' };
 function vuAller(sec){
-    const el=document.getElementById('vu-'+sec); if(!el) return;
-    // Sans « smooth » : dans le navigateur de l'application le défilement doux ne partait jamais (mesuré :
-    // scrollTop restait à 0 après 1,5 s, alors que le défilement immédiat arrive).
-    el.scrollIntoView({block:'start'});
+    if(sec==='systeme'){ if(typeof ouvrirSysteme==='function') ouvrirSysteme(); return; }
+    if(!VU_PAGES[sec]) sec='verdict';
+    const t=document.getElementById('tab-overview'); if(!t) return;
+    t.dataset.vue=sec;
+    const h=t.querySelector('.mx-head h1'); if(h) h.textContent=VU_PAGES[sec];
+    const m=document.getElementById('vu-main'); if(m) m.scrollTop=0;
+    t.scrollTop=0;
 }
 async function vuCharger(force){
     const main=document.getElementById('vu-main'); if(!main) return;
@@ -7117,7 +7123,7 @@ function vuRendre(d){
     const r=document.getElementById('vu-releve'); if(r) r.textContent=vuHeure(d.releve);
     const p=document.getElementById('vu-portee'); if(p) p.textContent = d.admin ? 'administrateur' : ('compte · '+(d.n_sites||0)+' site'+((d.n_sites||0)>1?'s':''));
     vuVerdict(d); vuKpis(d); vuGestes(d);
-    if(d.admin){ vuCass(d); vuParc(d); vuFil(d); vuMachine(d); }
+    if(d.admin){ vuCass(d); vuParc(d); vuFil(d); vuMachine(d); try{ vuFiltres(); }catch(e){} }
     else { ['vu-cass','vu-parc','vu-fil','vu-machine'].forEach(id=>{ const e=document.getElementById(id); if(e) e.hidden=true; }); }
     const set=(id,txt,dot)=>{ const e=document.getElementById('vust-'+id); if(e) e.textContent=txt; const q=document.getElementById('vudot-'+id); if(q) q.className='mx-dot '+(dot||''); };
     set('verdict', d.niveau==='stable'?vuHeure(d.releve):d.niveau, vuNiv(d.niveau));
@@ -7127,6 +7133,29 @@ function vuRendre(d){
       const f=d.flotte||{}; set('flotte', (f.machines||[]).length+' att.', (f.hors_ligne||[]).length?'panne':'ok');
       set('fil', String((d.fil||[]).length), '');
       set('machine', d.machine&&d.machine.vivant?'1 s':'muette', d.machine&&d.machine.vivant?'ok':'panne'); }
+}
+// Les listes longues (sites, flotte, fil) se filtrent : un champ, et « problèmes seulement » ; les lignes en défaut passent devant.
+// La barre est refaite à chaque relevé, le filtre choisi est gardé (VU.f).
+const VU_LISTES=[['vu-sites','.mx-rows .mx-row','sites'],['vu-flotte','.mx-rows .mx-row','machines'],['vu-fil','.vu-jl .e','événements']];
+function vuProbleme(r){ return !!r.querySelector('.mx-dot.panne,.mx-dot.regarder,.mx-pill.panne,.mx-pill.regarder'); }
+function vuFiltres(){
+    VU.f=VU.f||{};
+    VU_LISTES.forEach(([id,sel,mot])=>{
+        const z=document.getElementById(id); if(!z) return;
+        const old=z.querySelector('.vu-filtre'); if(old) old.remove();
+        const rows=[...z.querySelectorAll(sel)]; if(rows.length<4) return;
+        const f=VU.f[id]=VU.f[id]||{q:'',pb:false};
+        if(id!=='vu-fil'){ const hote=rows[0].parentNode; rows.filter(vuProbleme).reverse().forEach(r=>hote.prepend(r)); }
+        const bar=document.createElement('div'); bar.className='vu-filtre';
+        bar.innerHTML=`<input type="search" placeholder="Filtrer les ${mot}…" aria-label="Filtrer" value="${vuA(f.q)}"><button type="button" class="mx-btn${f.pb?' primary':''}" aria-pressed="${f.pb}">Problèmes seulement</button><span class="mx-meta"></span>`;
+        z.querySelector('.mx-chart-h').after(bar);
+        const appliquer=()=>{ const q=f.q.trim().toLowerCase(); let n=0;
+            rows.forEach(r=>{ const ok=(!q||r.textContent.toLowerCase().includes(q))&&(!f.pb||vuProbleme(r)); r.hidden=!ok; if(ok) n++; });
+            bar.querySelector('.mx-meta').textContent=(n===rows.length?rows.length:n+' sur '+rows.length)+' '+mot; };
+        bar.querySelector('input').addEventListener('input',e=>{ f.q=e.target.value; appliquer(); });
+        bar.querySelector('button').addEventListener('click',e=>{ f.pb=!f.pb; e.currentTarget.classList.toggle('primary',f.pb); e.currentTarget.setAttribute('aria-pressed',f.pb); appliquer(); });
+        appliquer();
+    });
 }
 function vuVerdict(d){
     const z=document.getElementById('vu-verdict'); if(!z) return;

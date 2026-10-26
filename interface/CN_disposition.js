@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #103973
+// VERSION CN : 0.1.0  #7b664c
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=103973 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=7b664c ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -131,8 +131,8 @@
     if (entreeId === "panorama") {
       if (vue === "systeme") {
         if (typeof window.ouvrirSysteme === "function") window.ouvrirSysteme();
-      } else if (typeof window.vuAller === "function" && vue) {
-        setTimeout(function() { window.vuAller(vue); }, 80);
+      } else if (typeof window.vuAller === "function") {
+        setTimeout(function() { window.vuAller(vue || "verdict"); }, 80);         // l'entrée seule ouvre l'accueil de la rubrique
       }
     }
     if (entreeId === "flotte" && typeof window.flVue === "function" && vue) {

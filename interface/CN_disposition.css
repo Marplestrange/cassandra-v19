@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=11ab83 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=5aee7f ▼▼▼ */
 /* La disposition V19 : barre du haut à groupes en dalles de verre, colonne de gauche transparente, menu de l'avatar conservé, panneau conversationnel.
    Les largeurs se mesurent sur le cadre de l'application (data-w sur #app-container : xl > 1500, l > 1200, m > 900, s > 560, xs). Les jetons de l'interface V18 sont repris. */
 :root{
@@ -421,6 +421,21 @@ body.d19 #tab-fleet .mx-rail{display:none!important}
 .d19-si.sub .mx-st.ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}
 .d19-si.sub .mx-st.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 32%,transparent)}
 .d19-si.sub .mx-st.danger{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger);border-color:color-mix(in srgb,var(--danger) 30%,transparent)}
+/* ---------- la vue d'ensemble : une page par entrée du Panorama (data-vue pose la page, un seul appel serveur nourrit toutes) ---------- */
+#tab-overview[data-vue="verdict"] :is(#vu-cass,#vu-parc,#vu-fil,#vu-machine){display:none!important}
+#tab-overview[data-vue="verdict"] #vu-gestes .mx-row:nth-child(n+4){display:none}              /* l'accueil ne montre que les trois premiers gestes : la liste entière a sa page */
+#tab-overview[data-vue="gestes"] :is(#vu-verdict,#vu-kpis,#vu-cass,#vu-parc,#vu-fil,#vu-machine){display:none!important}
+#tab-overview[data-vue="cass"] :is(#vu-verdict,#vu-kpis,#vu-gestes,#vu-parc,#vu-fil,#vu-machine){display:none!important}
+#tab-overview[data-vue="sites"] :is(#vu-verdict,#vu-kpis,#vu-gestes,#vu-cass,#vu-flotte,#vu-fil,#vu-machine){display:none!important}
+#tab-overview[data-vue="flotte"] :is(#vu-verdict,#vu-kpis,#vu-gestes,#vu-cass,#vu-sites,#vu-fil,#vu-machine){display:none!important}
+#tab-overview[data-vue="fil"] :is(#vu-verdict,#vu-kpis,#vu-gestes,#vu-cass,#vu-parc,#vu-machine){display:none!important}
+#tab-overview[data-vue="machine"] :is(#vu-verdict,#vu-kpis,#vu-gestes,#vu-cass,#vu-parc,#vu-fil){display:none!important}
+#tab-overview[data-vue="sites"] #vu-parc,#tab-overview[data-vue="flotte"] #vu-parc{grid-template-columns:minmax(0,1fr)}
+/* la barre de filtre des listes longues de la vue d'ensemble */
+#tab-overview .vu-filtre{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:2px 0 10px}
+#tab-overview .vu-filtre input{flex:1 1 180px;min-width:0;border:1px solid var(--line);background:var(--surface-solid,#fff);color:var(--txt);border-radius:10px;padding:6px 10px;font:500 13px 'Inter',system-ui,sans-serif}
+#tab-overview .vu-filtre input:focus{outline:2px solid color-mix(in srgb,var(--accent) 40%,transparent);outline-offset:1px}
+#tab-overview .mx-row[hidden],#tab-overview .vu-jl .e[hidden]{display:none!important}
 /* ▲▲▲ FIN BORNE CN ▲▲▲ */
 
 /* ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ */
