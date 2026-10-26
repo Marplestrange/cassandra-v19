@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.7.0)  #71e2e3
+# VERSION EC : EC0 (référence 0.7.0)  #c5cfa2
 # HÔTE CN    : CN_module.py · disposition @1.0
 # RÔLE       : range les entrées de menu que les modules déclarent en groupes (barre du haut), entrées et sous-entrées (colonne de gauche), et en entrées du menu de l'avatar ; dit le pire niveau d'alerte de chaque entrée, de chaque groupe et du tout.
 # MÉTHODE    : fonction pure : une table de groupes, un repli par famille, un pont vers les onglets de l'ancienne interface ; chaque entrée reçue paraît une seule fois, rien n'est inventé, un groupe sans entrée n'existe pas.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=71e2e3 ▼▼▼
+# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=c5cfa2 ▼▼▼
 
 # Les groupes de la barre du haut : (id, libellé, icône, ordre, interlocuteur par défaut du panneau).
 GROUPES = (
@@ -57,6 +57,7 @@ PONT = (
         ("machine", "La machine"),
         ("systeme", "Détails système")
     )},
+    {"id": "sites", "libelle": "Sites", "groupe": "parc", "icone": "globe", "onglet": "mysites", "modules": ("sites",), "ordre": 30, "role": "utilisateur", "vues": ()},
     {"id": "hebergement", "libelle": "Hébergement", "groupe": "parc", "icone": "db", "onglet": "fastpanel", "modules": ("fastpanel",), "ordre": 40, "role": "admin", "vues": ()},
     {"id": "automatismes", "libelle": "Automatismes", "groupe": "parc", "icone": "repeat", "onglet": "crons", "modules": ("planifie",), "ordre": 50, "role": "admin", "vues": ()},
     {"id": "securite", "libelle": "Sécurité", "groupe": "secu", "icone": "shield", "onglet": "securite", "modules": ("securite",), "ordre": 10, "role": "admin", "vues": ()},
@@ -66,7 +67,7 @@ PONT = (
 )
 
 # D'où vient une alerte du jour : le champ « ou » de l'item, ou à défaut son genre, rangé vers l'entrée qui la porte.
-OU_VERS = {"sites": "sites:sites", "ssl": "sites:sites", "bureau": "accueil", "mail": "courrier", "cloche": "accueil", "proj": "projets", "securite": "securite",
+OU_VERS = {"sites": "sites", "ssl": "sites", "bureau": "accueil", "mail": "courrier", "cloche": "accueil", "proj": "projets", "securite": "securite",
            "evolution": "evolution", "flotte": "flotte:flotte", "fleet": "flotte:flotte", "sensorium": "sensorium:sensorium", "journal": "journal:journal", "crons": "automatismes",
            "planifie": "automatismes", "memoire": "memoire", "proactif": "proactivite", "fastpanel": "hebergement", "vue": "panorama",
            "tache": "agenda", "rappel": "agenda", "event": "agenda", "decision": "projets", "mandat": "accueil", "note": "notes"}

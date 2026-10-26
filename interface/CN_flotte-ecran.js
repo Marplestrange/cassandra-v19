@@ -1,18 +1,3 @@
-// ══════════════════════════════════════════════════════════════════════════════
-// TITRE      : ▼▼▼ BORNE CN version=0
-// LICENCE    : AGPL-3.0
-// AUTEUR     : Atek Drisse
-// GIT        : github.com/Marplestrange
-// MAIL       : marplestrange@cassandra.center
-// MODULE     : interface
-// ZONE       : CN
-// VERSION CN : 0.1.0  #1688c9
-// VERSION EC : néant
-// EC LIÉES   : néant
-// RÔLE       : ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
-// MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
-// ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=1688c9 ▼▼▼
 // ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
 // L'écran « Flotte » du module flotte : ce que dit le parc (verdict, machines par groupe), la fiche d'une machine (courbes, relevés, liens, diagnostics, services), la disponibilité, les événements, le registre et l'engagement.
 // Les données viennent des capacités du module (flotte.parc, verdict, machines, historique, disponibilite, evenements, actions, diagnostic, ping, engagement, machine_*, service_agir, oublier, lien_*).
@@ -166,9 +151,3 @@
   };
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
-// ▲▲▲ FIN BORNE CN ▲▲▲
-
-// ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
-// CN : tout ce fichier est du nexus : à compléter
-// EC : néant (aucun point d'évolution déclaré pour l'instant)
-// LIEN : à compléter (contrat, fichiers voisins)
