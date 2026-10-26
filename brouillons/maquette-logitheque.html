@@ -143,6 +143,16 @@ pre{margin:0;background:color-mix(in srgb,var(--strong) 6%,transparent);border-r
 .impact{position:sticky;bottom:12px;background:var(--strong);color:var(--bg);border-radius:14px;padding:11px 16px;display:none;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 14px 40px -12px rgba(0,0,0,.5);z-index:20}
 .impact.on{display:flex}.impact .sp{flex:1;min-width:200px}.impact .btn{border-color:transparent}
 .graphe{display:flex;flex-wrap:wrap;gap:8px 4px;align-items:center}.noeud{border:1px solid var(--line2);background:var(--solid);border-radius:9px;padding:4px 10px;font:600 12px var(--mono)}.noeud.v{border-color:var(--danger);color:var(--danger)}.fl{color:var(--faint)}
+.pourquoi{display:flex;gap:6px;align-items:flex-start;font-size:11.5px;color:var(--info);margin-top:2px}.pourquoi svg{width:13px;height:13px;flex:none;margin-top:2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.simul{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px dashed var(--line2);border-radius:12px;font-size:11.5px;color:var(--faint)}
+.simul label{font:600 10.5px 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase}.simul select{border:1px solid var(--line2);background:var(--solid);color:var(--txt);border-radius:8px;padding:5px 8px;font:12px 'Inter',sans-serif;width:100%}
+@media(max-width:860px){.simul{display:none}}
+.travail .bar{margin-top:6px}.etapes-l{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:12.5px;color:var(--soft)}.etapes-l .ok{color:var(--ok)}.etapes-l .now{color:var(--strong);font-weight:600}
+.accueil{display:flex;flex-direction:column;gap:14px;align-items:flex-start;padding:22px}.accueil h2{font:700 24px/1.2 'Inter',sans-serif;color:var(--strong);margin:0;text-wrap:balance}
+.cap{aspect-ratio:16/10;border:1px dashed var(--line2);border-radius:12px;display:grid;place-items:center;color:var(--faint);font-size:12px;background:color-mix(in srgb,var(--soft) 5%,transparent);text-align:center;padding:8px}
+.caps{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.vide-etat{display:flex;flex-direction:column;align-items:center;gap:4px;padding:26px 10px;text-align:center;color:var(--strong)}.vide-etat svg{width:30px;height:30px;fill:none;stroke:var(--ok);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.courriel{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--solid);display:flex;flex-direction:column;gap:2px;font-size:13px}
 .reine{border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
 .demande{display:flex;gap:8px}.demande input{flex:1;min-width:0;border:1px solid var(--line2);background:var(--solid);color:var(--txt);border-radius:11px;padding:10px 13px;font:14px 'Inter',sans-serif}
 .demande input:focus{outline:2px solid color-mix(in srgb,var(--accent) 40%,transparent);outline-offset:1px}
@@ -178,6 +188,26 @@ pre{margin:0;background:color-mix(in srgb,var(--strong) 6%,transparent);border-r
 .rub-t h3{font:650 15px 'Inter',sans-serif;color:var(--strong)}.rub-t .note{margin-left:2px}
 .rub-t .chev{margin-left:auto;width:18px;height:18px;color:var(--faint);transition:transform .15s}.rub-t .chev.ferme{transform:rotate(-90deg)}
 .rub-t:hover h3{color:var(--accent)}
+.mtop,.bas,.feuille{display:none}
+@media(max-width:860px){
+ body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px));padding-top:calc(54px + env(safe-area-inset-top,0px))}
+ .rail nav{display:none}.rail .marque{display:none}.rail{gap:0}
+ .app{padding-top:6px}
+ .mtop{display:flex;align-items:center;gap:10px;position:fixed;top:0;left:0;right:0;z-index:30;background:var(--bg);padding:10px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));padding-top:calc(10px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--line)}
+ .mtop b{font:700 16px 'Inter',sans-serif;color:var(--strong)}.mtop .st{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--soft);margin-left:auto}.mtop .pt{width:9px;height:9px;border-radius:50%;background:var(--ok)}.mtop.gel .pt{background:var(--warn)}
+ .bas{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--line2);padding:6px max(8px,env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px))}
+ .bas button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:12px;color:var(--soft);font:600 10.5px 'Inter',sans-serif;cursor:pointer;position:relative;min-width:0}
+ .bas button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.bas button.on{color:var(--accent)}
+ .bas .n{position:absolute;top:2px;right:calc(50% - 20px);font:700 9.5px var(--mono);background:var(--warn);color:#fff;border-radius:999px;padding:1px 5px}
+ .feuille.on{display:flex;flex-direction:column;position:fixed;left:0;right:0;bottom:0;z-index:55;background:var(--bg);border-radius:20px 20px 0 0;border:1px solid var(--line2);padding:14px 16px calc(80px + env(safe-area-inset-bottom,0px));gap:4px;box-shadow:0 -20px 50px -20px rgba(0,0,0,.4)}
+ .feuille .nv{padding:12px 10px;font-size:15px}
+ .tiroir{top:auto;height:88vh;width:100%;border-left:0;border-top:1px solid var(--line2);border-radius:20px 20px 0 0}
+ .modale{top:auto;bottom:0;left:0;transform:none;width:100%;border-radius:20px 20px 0 0;max-height:90vh;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+ .barre .sel{flex:1 1 150px}.top h1{font-size:22px}.grille,.g2,.heros{grid-template-columns:minmax(0,1fr)}
+ .impact{bottom:calc(76px + env(safe-area-inset-bottom,0px))}.toast{bottom:calc(86px + env(safe-area-inset-bottom,0px))}
+ .recherche{max-width:none}.demande{flex-direction:column}.demande .btn{width:100%}
+}
+.mono,.note.mono{overflow-wrap:anywhere}.li .sp{min-width:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style></head>
 <body>
@@ -187,10 +217,14 @@ pre{margin:0;background:color-mix(in srgb,var(--strong) 6%,transparent);border-r
     <nav id="nav"></nav>
     <button class="btn mini annot-btn" id="annot" aria-pressed="true" style="margin:0 6px">Annotations de conception : oui</button>
     <div class="etatc" id="etatc"></div>
+    <div class="simul"><label for="sim">Aperçu de l’état</label><select id="sim"><option value="normal">Normal</option><option value="travail">Cassandra travaille</option><option value="muet">Registre injoignable</option><option value="neuve">Instance neuve (premier lancement)</option><option value="vide">Tout est à jour, rien à signaler</option></select><label for="role">Vue de</label><select id="role"><option value="admin">Administrateur</option><option value="user">Utilisateur</option></select></div>
     <div class="id">Cassandra V19<br><span class="mono">noyau 0.1.0</span> · 11 modules</div>
   </aside>
   <main id="page"></main>
 </div>
+<div class="mtop" id="mtop"></div>
+<nav class="bas" id="bas" aria-label="Sections"></nav>
+<div class="feuille" id="feuille"></div>
 
 <div class="voile" id="voile"></div>
 <aside class="tiroir" id="tiroir" aria-label="Détail du module"></aside>
@@ -238,14 +272,14 @@ const IMP={vital:['Vital','vi','Cassandra ne tient pas sans lui.'],important:['I
 const M=[
  {id:'droits',nom:'Droits',v:'0.2.0',fam:'secu',imp:'vital',ic:'lock',on:true,req:[],desc:'Comptes, rôles, jetons et accès de Cassandra. Tout passe par lui.',src:'officiel',ed:'cassandra',ram:42,err:0,ms:11,perm:{res:0,ecr:2,priv:3},sans:'Plus personne ne peut se connecter ni être autorisé.'},
  {id:'noyau-api',nom:'Passerelle',v:'0.1.4',fam:'socle',imp:'vital',ic:'socle',on:true,req:['droits'],desc:'Le seul point d’entrée HTTP du noyau, avec ses routes déclarées.',src:'officiel',ed:'cassandra',ram:58,err:0,ms:6,perm:{res:1,ecr:0,priv:2},sans:'L’application ne répond plus.'},
- {id:'courrier',nom:'Courrier',v:'1.3.2',fam:'courrier',imp:'important',ic:'mail',on:true,req:['droits'],desc:'Boîtes, dossiers, réponses assistées et envoi par mandat.',src:'officiel',ed:'cassandra',ram:96,err:2,ms:84,perm:{res:3,ecr:2,priv:1},sans:'Plus de lecture ni d’envoi du courrier.'},
+ {id:'courrier',usr:true,nom:'Courrier',v:'1.3.2',fam:'courrier',imp:'important',ic:'mail',on:true,verrou:true,req:['droits'],desc:'Boîtes, dossiers, réponses assistées et envoi par mandat.',src:'officiel',ed:'cassandra',ram:96,err:2,ms:84,perm:{res:3,ecr:2,priv:1},sans:'Plus de lecture ni d’envoi du courrier.'},
  {id:'dns',nom:'Zones DNS',v:'0.9.1',fam:'reseau',imp:'important',ic:'globe',on:true,req:['droits'],desc:'Zones, enregistrements, référence et relevé recalculé à chaque changement.',src:'officiel',ed:'cassandra',ram:31,err:0,ms:22,perm:{res:2,ecr:1,priv:0},sans:'Les domaines ne sont plus gérés ici.'},
  {id:'sites',nom:'Sites',v:'1.1.0',fam:'heberg',imp:'important',ic:'server',on:true,req:['droits','dns'],desc:'Hébergement, certificats, sauvegardes par site.',src:'officiel',ed:'cassandra',ram:74,err:0,ms:38,perm:{res:2,ecr:3,priv:2},sans:'Les sites hébergés ne sont plus administrables.'},
- {id:'agents',nom:'Itare & agents',v:'0.8.0',fam:'gestion',imp:'optionnel',ic:'bot',on:true,req:['droits'],desc:'L’assistante, ses sources, son atelier et ses mandats.',src:'officiel',ed:'cassandra',ram:210,err:1,ms:140,perm:{res:4,ecr:2,priv:1},sans:'Plus d’assistante ni de réponses assistées.'},
+ {id:'agents',usr:true,nom:'Itare & agents',v:'0.8.0',fam:'gestion',imp:'optionnel',ic:'bot',on:true,req:['droits'],desc:'L’assistante, ses sources, son atelier et ses mandats.',src:'officiel',ed:'cassandra',ram:210,err:1,ms:140,perm:{res:4,ecr:2,priv:1},sans:'Plus d’assistante ni de réponses assistées.'},
  {id:'sauvegardes',nom:'Sauvegardes',v:'0.6.3',fam:'secu',imp:'important',ic:'disk',on:true,req:['droits'],desc:'Copies chiffrées, rotation, restauration testée.',src:'officiel',ed:'cassandra',ram:28,err:0,ms:17,perm:{res:1,ecr:3,priv:1},sans:'Plus de copie de secours automatique.'},
  {id:'sentinelle',nom:'Sentinelle du disque',v:'0.1.2',fam:'sup',imp:'optionnel',ic:'eye',on:false,req:['droits'],desc:'Mesure l’occupation du disque racine et ouvre un constat au-delà du seuil.',src:'officiel',ed:'cassandra',ram:0,err:0,ms:0,perm:{res:0,ecr:0,priv:0},sans:'Plus de mesure du disque.'},
- {id:'billetterie',nom:'Billetterie',v:'0.4.0',fam:'finance',imp:'optionnel',ic:'ticket',on:true,req:['droits'],desc:'Revendeurs, commissions, registre en écriture seule.',src:'officiel',ed:'cassandra',ram:48,err:0,ms:29,perm:{res:2,ecr:2,priv:1},maj:'0.5.0',majPerm:['+ réseau : api.stripe.com'],sans:'Plus de vente ni de commissions.'},
- {id:'agenda-dav',nom:'Agenda CalDAV',v:'1.0.3',fam:'gestion',imp:'optionnel',ic:'chat',on:true,req:['droits'],desc:'Synchronise l’agenda avec un serveur CalDAV externe.',src:'acme',ed:'acme',niv:'verifie',ram:36,err:0,ms:51,perm:{res:1,ecr:1,priv:0},maj:'1.0.4',majPerm:[],sans:'Plus de synchronisation d’agenda.'},
+ {id:'billetterie',usr:true,nom:'Billetterie',v:'0.4.0',fam:'finance',imp:'optionnel',ic:'ticket',on:true,req:['droits'],desc:'Revendeurs, commissions, registre en écriture seule.',src:'lagrange',ed:'lagrange',niv:'verifie',ram:48,err:0,ms:29,perm:{res:2,ecr:2,priv:1},maj:'0.5.0',majPerm:['+ réseau : api.stripe.com'],sans:'Plus de vente ni de commissions.'},
+ {id:'agenda-dav',usr:true,nom:'Agenda CalDAV',v:'1.0.3',fam:'gestion',imp:'optionnel',ic:'chat',on:true,req:['droits'],desc:'Synchronise l’agenda avec un serveur CalDAV externe.',src:'acme',ed:'acme',niv:'verifie',ram:36,err:0,ms:51,perm:{res:1,ecr:1,priv:0},maj:'1.0.4',majPerm:[],sans:'Plus de synchronisation d’agenda.'},
  {id:'vieux-flux',nom:'Vieux flux RSS',v:'0.9.0',fam:'gestion',imp:'optionnel',ic:'box',on:true,req:['droits'],desc:'Lit des flux RSS.',src:'local',ed:'—',niv:'local',ram:19,err:5,ms:240,perm:{res:1,ecr:0,priv:0},revoque:'faille connue : lecture de fichiers hors de son dossier',sans:'Plus de flux RSS.'}
 ];
 const byId=id=>M.find(m=>m.id===id);
@@ -267,12 +301,14 @@ const ENS=[
  {id:'minimal',nom:'Minimal sûr',d:'Seulement les modules vitaux : Cassandra démarre, rien d’autre.',mods:['droits','noyau-api']}
 ];
 const ACTES=[
- {q:'Cassandra',ts:'Il y a 12 min',v:'a mis en pause',m:'Vieux flux RSS',d:'Il échouait en boucle (5 erreurs sur 24 h).',inv:'Le réactiver',ok:true},
- {q:'Cassandra',ts:'Il y a 12 min',v:'a retiré',m:'Vieux flux RSS',d:'Le registre l’a déclaré révoqué : faille connue. Il est en corbeille 30 jours.',inv:'Le remettre',ok:true},
- {q:'Cassandra',ts:'Hier 21:04',v:'a mis à jour',m:'Zones DNS',d:'0.9.0 → 0.9.1, sans permission en plus. Surveillée 15 minutes : tout va bien.',inv:'Remettre 0.9.0',ok:true},
- {q:'Drisse',ts:'Hier 18:40',v:'a désactivé',m:'Sentinelle du disque',d:'',inv:'Le réactiver',ok:true},
- {q:'Cassandra',ts:'22/10',v:'a laissé de côté',m:'Billetterie 0.5.0',d:'Elle demande + réseau : api.stripe.com. Je ne prends seule que les mises à jour sans permission en plus. Elle attend si tu me le demandes.',inv:'',ok:false}
+ {q:'Cassandra',ts:'Il y a 12 min',v:'a mis en pause',m:'Vieux flux RSS',d:'Il échouait en boucle (5 erreurs sur 24 h).',r:'Un module qui échoue est mis en pause (niveau Entretien et au-dessus).',inv:'Le réactiver',ok:true,t:'auto'},
+ {q:'Cassandra',ts:'Il y a 12 min',v:'a retiré',m:'Vieux flux RSS',d:'Le registre l’a déclaré révoqué : faille connue. Il est en corbeille 30 jours.',r:'Un module révoqué est retiré dès le niveau Entretien.',inv:'Le remettre',ok:true,t:'auto'},
+ {q:'Cassandra',ts:'Hier 21:04',v:'a mis à jour',m:'Zones DNS',d:'0.9.0 → 0.9.1, sans permission en plus. Surveillée 15 minutes : tout va bien.',r:'Mise à jour sans permission en plus, registre officiel, dans la fenêtre 02:00–05:00.',inv:'Remettre 0.9.0',ok:true,t:'auto'},
+ {q:'Drisse',ts:'Hier 18:40',v:'a désactivé',m:'Sentinelle du disque',d:'',r:'Geste humain, par le Mode avancé. Cassandra en a pris note.',inv:'Le réactiver',ok:true,t:'humain'},
+ {q:'Cassandra',ts:'22/10',v:'a laissé de côté',m:'Billetterie 0.5.0',d:'Elle vient d’un éditeur vérifié (lagrange) et demande + réseau : api.stripe.com.',r:'Je ne prends jamais seule plus de permissions chez un éditeur tiers, à aucun niveau.',inv:'',ok:false,t:'ecarte'}
 ];
+const recitLi=(a,i)=>`<div class="li"><div class="ico sm ${a.ok?'':'al'}">${ic(a.ok?'check':'eye')}</div><div class="sp"><b>${a.q}</b> ${a.v} <b>${a.m}</b><span class="note">${a.d}</span><span class="pourquoi">${ic('eye')}${a.r}</span><span class="faint" style="font-size:11.5px">${a.ts}</span></div>${a.inv?`<button class="btn mini" data-defaire="${i}">${a.inv}</button>`:''}</div>`;
+const FENETRES=['Nuit, 02:00–05:00','Dimanche matin','Hors heures de bureau','À tout moment'];
 const JOURNAL=[
  ['Il y a 12 min','Sentinelle du disque','désactivé par admin','',''],
  ['Hier 21:04','Zones DNS','mis à jour 0.9.0 → 0.9.1','',''],
@@ -283,7 +319,7 @@ const JOURNAL=[
 ];
 
 /* ───────── état ───────── */
-const S={sec:'vue',vue:'grille',q:'',fam:'toutes',etat:'tous',imp:'toutes',tiroir:null,onglet:'apercu',att:{},sel:new Set(),pol:'signes',boutFam:'toutes',annot:false,avance:false,auto:'reine',gel:false,bconf:'toutes',betat:'tous',btri:'pert',rep:new Set(),ct:'apercu',pol2:'signes',hist:false};
+const S={sec:'vue',vue:'grille',q:'',fam:'toutes',etat:'tous',imp:'toutes',tiroir:null,onglet:'apercu',att:{},sel:new Set(),pol:'signes',boutFam:'toutes',annot:false,notif:'resume',sheet:false,sim:'normal',role:'admin',fong:'apercu',fiche:null,menu:new Set(['courrier','agenda-dav']),fenetre:0,jfil:'tout',avance:false,auto:'reine',gel:false,bconf:'toutes',betat:'tous',btri:'pert',rep:new Set(),ct:'apercu',pol2:'signes',hist:false};
 const SECS=[
  ['sep','Gérer'],['vue','vue','Vue d’ensemble'],['inst','inst','Installés',()=>M.length],['maj','maj','Mises à jour',()=>M.filter(m=>m.maj).length],
  ['sep','Trouver'],['shop','shop','Boutique'],['src','src','Sources'],
@@ -300,7 +336,7 @@ const conc=t=>`<div class="conception"><b>Conception.</b> ${t}</div>`;
 const tete=(t,d,act='')=>`<div class="top"><div class="t"><h1>${t}</h1><p>${d}</p></div>${act}</div>`;
 const imp_=m=>`<span class="faint" style="font:600 11px 'Inter',sans-serif">${IMP[m.imp][0]}</span>`;
 
-function filtres(){return M.filter(m=>(S.fam==='toutes'||m.fam===S.fam)&&(S.etat==='tous'||(S.etat==='actif'&&m.on)||(S.etat==='inactif'&&!m.on)||(S.etat==='maj'&&m.maj)||(S.etat==='alerte'&&(m.revoque||m.err>1)))&&(S.imp==='toutes'||m.imp===S.imp)&&(!S.q||(m.nom+m.id+m.desc).toLowerCase().includes(S.q.toLowerCase())))}
+function filtres(){return M.filter(m=>(S.sim!=='neuve'||m.imp==='vital')&&(S.fam==='toutes'||m.fam===S.fam)&&(S.etat==='tous'||(S.etat==='actif'&&m.on)||(S.etat==='inactif'&&!m.on)||(S.etat==='maj'&&m.maj)||(S.etat==='alerte'&&(m.revoque||m.err>1)))&&(S.imp==='toutes'||m.imp===S.imp)&&(!S.q||(m.nom+m.id+m.desc).toLowerCase().includes(S.q.toLowerCase())))}
 
 /* ───────── cartes ───────── */
 function carteMod(m){
@@ -309,7 +345,7 @@ function carteMod(m){
    <div class="l1"><div class="ico ${etat?'':'off'}">${ic(m.ic)}</div><div class="sp"><h3>${esc(m.nom)}</h3><div class="mono note">${m.id} · v${m.v}</div></div>
    ${S.avance?`<button class="sw ${etat?'on':''}" data-bascule="${m.id}" ${m.imp==='vital'?'disabled title="Vital : ne se désactive pas"':''} aria-label="Activer ${esc(m.nom)}"></button>`:pill(etat?'actif':'inactif',etat?'ok':'')}</div>
    <div class="desc">${esc(m.desc)}</div>
-   <div class="pied">${niveau(m)}${imp_(m)}${m.maj?pill('MAJ '+m.maj,'in','maj'):''}${m.err>1&&etat?pill(m.err+' erreurs','dg'):''}${att?pill('en attente','al'):''}</div></div>`;
+   <div class="pied">${niveau(m)}${imp_(m)}${m.verrou?pill('verrouillé','','lock'):''}${m.maj?pill('MAJ '+m.maj,'in','maj'):''}${m.err>1&&etat?pill(m.err+' erreurs','dg'):''}${att?pill('en attente','al'):''}</div></div>`;
 }
 function ligneMod(m){
   const att=S.att[m.id]!==undefined,etat=att?S.att[m.id]:m.on;
@@ -319,20 +355,21 @@ function ligneMod(m){
 /* ───────── sections ───────── */
 const PAGES={
 vue(){
+  if(S.sim==='neuve')return accueil();
   const act=M.filter(m=>m.on).length,maj=M.filter(m=>m.maj).length,err=M.reduce((a,m)=>a+m.err,0);
   const NIV={observer:['Observer','Je regarde et je te raconte ce que je ferais. Je ne touche à rien.'],entretien:['Entretien','Je retire ce qui est révoqué, je prends les mises à jour sans permission en plus, je mets en pause ce qui échoue.'],reine:['Reine','Je gère tout : j’ajoute, je mets à jour, je retire, j’active. Tu n’as rien à faire.']};
   return tete('Vue d’ensemble','Les modules de cette instance : Cassandra s’en occupe, tu vois ce qu’elle fait.')+
   conc('<b>Nouveau principe.</b> Cassandra gère les modules <b>seule</b> (elle n’attend aucune validation). Pour rassurer : tout ce qu’elle fait est raconté, chaque geste se <b>défait en un clic</b>, rien n’est effacé pour de bon, et il y a un bouton <b>Pause</b>. Les gestes risqués ne sont pas offerts par défaut à l’humain (voir « Mode avancé » dans Installés).')+
-  `<div class="carte reine"><div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap"><div class="ico" style="width:46px;height:46px;border-radius:14px;${S.gel?'background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)':''}">${ic(S.gel?'warn':'bot')}</div><div style="flex:1;min-width:240px"><h2 style="font:700 20px 'Inter',sans-serif;color:var(--strong);margin:0">${S.gel?'Cassandra est en pause':'Tout va bien'}</h2>
-   <p class="note" style="margin-top:3px;max-width:62ch">${S.gel?'Elle observe et raconte, elle n’agit plus. Reprends quand tu veux.':'Dernière passe il y a 2 h : 1 module mis en pause, 1 module révoqué retiré. Prochaine passe dans 4 h.'}</p></div>
+  `<div class="carte reine"><div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap"><div class="ico" style="width:46px;height:46px;border-radius:14px;${S.gel?'background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)':''}">${ic(S.gel?'warn':'bot')}</div><div style="flex:1;min-width:240px"><h2 style="font:700 20px 'Inter',sans-serif;color:var(--strong);margin:0">${S.gel?'Cassandra est en pause':S.sim==='travail'?'Cassandra travaille…':S.sim==='muet'?'Tout tourne, le registre est muet':'Tout va bien'}</h2>
+   ${S.sim==='travail'&&!S.gel?'<div class="etapes-l"><span class="ok">✓ J’ai lu le registre officiel</span><span class="ok">✓ J’ai téléchargé et vérifié Agenda CalDAV 1.0.4</span><span class="now">→ J’installe (étape 2 sur 3)</span><span>· Je surveille 15 minutes</span></div>':''}<p class="note" style="margin-top:3px;max-width:62ch">${S.gel?'Elle observe et raconte, elle n’agit plus. Reprends quand tu veux.':S.sim==='travail'?'Tu n’as rien à faire. Tu peux fermer cette page.':S.sim==='muet'?'Dernière lecture du registre : hier 10:00. Je réessaie toutes les 30 minutes.':'Dernière passe il y a 2 h : 1 module mis en pause, 1 module révoqué retiré. Prochaine passe dans 4 h.'}</p></div>
    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="passe">Lancer une passe</button><button class="btn ${S.gel?'pri':''}" data-act="gel">${S.gel?'Reprendre':'Mettre en pause'}</button></div></div>
    <div class="demande"><input id="dem" placeholder="Demander à Cassandra : « installe Sentinelle du disque », « qu’est-ce qui ne va pas ? »…" aria-label="Demander à Cassandra"><button class="btn pri" data-act="demande">Demander</button></div>
    <div class="chips"><button class="chip" data-sug="Installe le pare-feu CrowdSec">Installe le pare-feu CrowdSec</button><button class="chip" data-sug="Qu’est-ce qui consomme le plus ?">Qu’est-ce qui consomme le plus ?</button><button class="chip" data-sug="Mets tout à jour">Mets tout à jour</button></div></div>`+
   `<div class="stats"><div class="stat ok" data-go="inst"><b>${act}/${M.length}</b><span>modules actifs</span></div><div class="stat" data-go="maj"><b>${maj}</b><span>mises à jour en attente</span></div><div class="stat ${err>5?'al':'ok'}" data-go="sante"><b>${err}</b><span>erreurs sur 24 h</span></div><div class="stat" data-go="src"><b>59 j</b><span>validité de l’index officiel</span></div></div>`+
   `<div class="carte"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><h3>Ce que Cassandra a fait</h3><span class="note">Chaque ligne se défait en un clic. Rien n’est effacé pour de bon : un module retiré reste 30 jours en corbeille.</span></div>
-   <div class="liste">${ACTES.map((a,i)=>`<div class="li"><div class="ico sm ${a.ok?'':'al'}">${ic(a.ok?'check':'eye')}</div><div class="sp"><b>${a.q}</b> ${a.v} <b>${a.m}</b><span class="note">${a.d}</span><span class="faint" style="font-size:11.5px">${a.ts}</span></div>${a.inv?`<button class="btn mini" data-defaire="${i}">${a.inv}</button>`:''}</div>`).join('')}</div></div>`+
+   <div class="liste">${ACTES.slice(0,4).map((a,i)=>recitLi(a,i)).join('')}</div><button class="btn mini" data-go="jour" style="align-self:flex-start">Voir tout le journal</button></div>`+
   `<div class="g2"><div class="carte"><h3>Jusqu’où Cassandra va seule</h3><div style="display:flex;flex-direction:column;gap:8px">${Object.entries(NIV).map(([k,v])=>`<div class="radio ${S.auto===k?'on':''}" data-auto="${k}"><i></i><div><b style="color:var(--strong)">${v[0]}${k==='reine'?' <span class="p ok">actuel par défaut</span>':''}</b><span class="note" style="display:block">${v[1]}</span></div></div>`).join('')}</div><p class="note">Quel que soit le niveau : elle n’installe que le registre officiel et les éditeurs vérifiés, jamais un module révoqué, jamais un module vital désactivé.</p></div>
-   <div class="carte"><h3>Ce que je n’ai pas fait seule, et pourquoi</h3><div class="liste"><div class="li"><div class="sp"><b>Billetterie 0.5.0</b><span class="note">+ réseau : api.stripe.com. Je ne prends seule que les mises à jour sans permission en plus. Demande-le-moi, ou passe-moi en « Reine » pour les mises à jour officielles.</span></div><button class="btn mini" data-sug="Mets Billetterie à jour">Le lui demander</button></div></div>
+   <div class="carte"><h3>Ce que je n’ai pas fait seule, et pourquoi</h3><div class="liste"><div class="li"><div class="sp"><b>Billetterie 0.5.0</b><span class="note">Éditeur vérifié (lagrange) : + réseau : api.stripe.com. Je ne prends jamais seule plus de permissions chez un tiers. Dis-le-moi si tu veux qu'elle passe.</span></div><button class="btn mini" data-sug="Mets Billetterie à jour">Le lui demander</button></div></div>
    <p class="note">Ce n’est pas une file d’attente : je continue sans ton accord. Cette liste dit seulement ce que ma règle m’a fait laisser de côté.</p></div></div>`;
 },
 inst(){
@@ -348,18 +385,24 @@ inst(){
   (l.length?Object.entries(FAM).filter(([k])=>l.some(m=>m.fam===k)).map(([k,v])=>{const g=l.filter(m=>m.fam===k),ouv=!S.rep.has(k);return `<section class="rub"><button class="rub-t" data-rep="${k}" aria-expanded="${ouv}"><span class="ico sm">${ic(FIC[k])}</span><h3>${v}</h3><span class="p">${g.length}</span><span class="note">${g.filter(m=>m.on).length} actif(s)</span><svg class="chev ${ouv?'':'ferme'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>${ouv?(S.vue==='grille'?`<div class="grille">${g.map(carteMod).join('')}</div>`:`<div class="carte"><div class="liste">${g.map(ligneMod).join('')}</div></div>`):''}</section>`}).join(''):`<div class="carte note" style="text-align:center;padding:30px">Aucun module ne correspond.</div>`)+
   `<div class="impact" id="impact"></div>`;
 },
+mes(){
+  const l=M.filter(m=>m.usr&&m.on);
+  return tete('Mes applications','Les applications que Cassandra a mises à ta disposition. Tu choisis celles qui apparaissent dans ton menu.')+
+  conc('<b>Vue d’un compte non administrateur.</b> Il ne voit ni modules, ni registre, ni permissions : seulement ses applications. Pas de gestion, donc rien à casser. Il ne valide rien : s’il lui manque quelque chose, il le dit à Cassandra, qui décide.')+
+  `<div class="grille">${l.map(m=>`<div class="carte mod"><div class="l1"><div class="ico">${ic(m.ic)}</div><div class="sp"><h3>${esc(m.nom)}</h3></div></div><div class="desc">${esc(m.desc)}</div><div class="pied"><button class="btn mini pri">Ouvrir</button><label class="note" style="margin-left:auto;display:flex;gap:8px;align-items:center">Dans mon menu <button class="sw ${S.menu.has(m.id)?'on':''}" data-menu="${m.id}" aria-label="Dans mon menu"></button></label></div></div>`).join('')}</div>
+  <div class="carte"><h3>Il te manque quelque chose ?</h3><p class="note">Dis-le à Cassandra, avec tes mots. Elle décide et te répond : tu n’as rien à valider.</p><div class="demande"><input id="dem" placeholder="« Je voudrais gérer mes factures »" aria-label="Demander une application à Cassandra"><button class="btn pri" data-act="demande">Demander</button></div></div>`;
+},
 maj(){
-  const l=M.filter(m=>m.maj);
-  return tete('Mises à jour','Ce qui change, ce que ça demande en plus, et quand l’appliquer.',`<button class="btn pri" data-act="majok">Tout mettre à jour (sans permission en plus)</button>`)+
-  conc('Nouveau. Une mise à jour qui <b>élargit les permissions</b> n’est jamais appliquée seule : elle attend ton accord, comme à l’installation.')+
-  `<div class="carte"><div class="liste">${l.map(m=>`<div class="li"><div class="ico sm">${ic(m.ic)}</div><div class="sp"><b>${m.nom}</b><span class="note mono">${m.v} → ${m.maj}</span></div>${m.majPerm&&m.majPerm.length?m.majPerm.map(x=>pill(x,'dg','warn')).join(''):pill('aucune permission en plus','ok','check')}<button class="btn mini" data-ouvrir="${m.id}" data-onglet="versions">Changements</button><button class="btn mini ${m.majPerm&&m.majPerm.length?'':'pri'}" data-act="maj1" data-id="${m.id}">${m.majPerm&&m.majPerm.length?'Examiner et accepter':'Mettre à jour'}</button></div>`).join('')}</div></div>`+
-  `<div class="g2"><div class="carte"><h3>Politique de mise à jour</h3>
-    <div class="reglage"><div class="sp"><b>Correctifs automatiques</b><span class="note">Version 0.1.x → 0.1.y, sans permission en plus, modules officiels ou vérifiés.</span></div><button class="sw on" data-sw></button></div>
-    <div class="reglage"><div class="sp"><b>Versions mineures : demander</b><span class="note">0.1 → 0.2 : jamais sans ton accord.</span></div><button class="sw on" data-sw disabled></button></div>
-    <div class="reglage"><div class="sp"><b>Fenêtre d’application</b><span class="note">Pas pendant les heures de travail.</span></div><select class="btn"><option>Nuit, 02:00–05:00</option><option>Dimanche matin</option><option>Tout de suite</option></select></div></div>
-  <div class="carte"><h3>Retour arrière automatique</h3><p class="note">Après une mise à jour, la santé du module est surveillée 15 minutes. Si les erreurs montent, la version précédente est remise <b>toute seule</b>, et tu es prévenu.</p>
-    <div class="reglage"><div class="sp"><b>Surveiller après mise à jour</b></div><button class="sw on" data-sw></button></div>
-    <div class="reglage"><div class="sp"><b>Épingler une version</b><span class="note">Un module épinglé n’est jamais mis à jour. Aujourd’hui : <span class="mono">sentinelle</span>.</span></div><button class="btn mini">Gérer</button></div>
+  const l=S.sim==='vide'||S.sim==='neuve'?[]:M.filter(m=>m.maj);
+  const prise=m=>!(m.majPerm&&m.majPerm.length);
+  return tete('Mises à jour','Cassandra prend seule celles que sa règle permet, dans ta fenêtre de maintenance. Tu vois ce qui vient, et ce qu’elle laisse de côté.',`<button class="btn" data-act="passe">Lancer une passe maintenant</button>`)+
+  conc('<b>Réaligné sur l’autonomie.</b> Plus de « Tout mettre à jour » ni de « Accepter » : ce n’est pas à l’humain de valider. La page dit ce que Cassandra va faire, quand, et pourquoi elle laisse certaines de côté. L’humain garde la voie parallèle : « Maintenant » ou « Pas cette version ».')+
+  `<div class="carte"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><h3>Ce qui vient</h3><span class="note">Prochaine passe : cette nuit, ${FENETRES[S.fenetre]}.</span></div>${l.length?'':`<div class="vide-etat">${ic('check')}<b>Tout est à jour.</b><span class="note">Dernière vérification il y a 2 h. Prochaine passe cette nuit, ${FENETRES[S.fenetre]}.</span></div>`}<div class="liste">${l.map(m=>prise(m)?`<div class="li"><div class="ico sm">${ic(m.ic)}</div><div class="sp"><b>${m.nom}</b> <span class="mono note">${m.v} → ${m.maj}</span><span class="note">Cassandra la prend cette nuit.</span><span class="pourquoi">${ic('eye')}Sans permission en plus, source ${m.src==='officiel'?'officielle':'éditeur vérifié ('+m.ed+')'}. Surveillée 15 minutes, remise en arrière toute seule si elle tourne mal.</span></div>${pill('cette nuit','ok','check')}<button class="btn mini" data-act="maj1" data-id="${m.id}">Maintenant</button><button class="btn mini" data-act="pascette" data-id="${m.id}">Pas cette version</button></div>`:`<div class="li"><div class="ico sm al">${ic(m.ic)}</div><div class="sp"><b>${m.nom}</b> <span class="mono note">${m.v} → ${m.maj}</span><span class="note">Laissée de côté, ce n’est pas une attente.</span><span class="pourquoi">${ic('eye')}Éditeur vérifié (${m.ed}) : ${m.majPerm.join(', ')}. Je ne prends jamais seule plus de permissions chez un tiers, à aucun niveau.</span></div>${pill('laissée de côté','al','eye')}<button class="btn mini" data-sug="Mets ${esc(m.nom)} à jour">Le lui demander</button></div>`).join('')}</div></div>`+
+  `<div class="g2"><div class="carte"><h3>Quand</h3>
+    <div class="reglage"><div class="sp"><b>Fenêtre de maintenance</b><span class="note">Cassandra n’applique rien en dehors.</span></div><select class="sel" data-sel="fenetre">${FENETRES.map((f,i)=>`<option value="${i}" ${S.fenetre===i?'selected':''}>${f}</option>`).join('')}</select></div>
+    <div class="reglage"><div class="sp"><b>Une urgence passe tout de suite</b><span class="note">Un module révoqué est retiré sans attendre la fenêtre.</span></div><button class="sw on" data-sw></button></div></div>
+  <div class="carte"><h3>Filet de sécurité</h3><p class="note">Après chaque mise à jour, la santé du module est surveillée 15 minutes. Si les erreurs montent, la version précédente est remise <b>toute seule</b>, et la version fautive n’est jamais reprise.</p>
+    <div class="reglage"><div class="sp"><b>Versions épinglées</b><span class="note">Un module épinglé n’est jamais mis à jour. Aujourd’hui : <span class="mono">sentinelle</span>.</span></div><button class="btn mini">Gérer</button></div>
     <div class="reglage"><div class="sp"><b>Canal</b><span class="note">stable (défaut) · bêta pour les modules qui en publient</span></div><div class="seg"><button class="on">stable</button><button>bêta</button></div></div></div></div>`;
 },
 shop(){
@@ -379,7 +422,8 @@ shop(){
    ${fil?'<button class="btn mini" data-reset>Réinitialiser</button>':''}</div>
   <div class="seg segetat">${[['tous','Tous'],['nouveau','Nouveaux'],['installe','Installés']].map(c=>`<button class="${S.betat===c[0]?'on':''}" data-betat="${c[0]}">${c[1]} <span class="cnt">${c[0]==='tous'?nb('tous'):c[0]==='installe'?nb('installe'):BOUT.length-nb('installe')}</span></button>`).join('')}</div>`+
 
-  Object.entries(FAM).filter(([k])=>l.some(m=>m.fam===k)).map(([k,v])=>`<section class="rub"><div class="rub-t" style="cursor:default"><span class="ico sm">${ic(FIC[k])}</span><h3>${v}</h3><span class="p">${l.filter(m=>m.fam===k).length}</span></div><div class="grille">${l.filter(m=>m.fam===k).map(m=>{const inst=byId(m.id);return `<div class="carte mod clic" data-fiche="${m.id}"><div class="l1"><div class="ico">${ic(m.ic)}</div><div class="sp"><h3>${esc(m.nom)}</h3><div class="mono note">${m.id} · v${m.v}</div></div>${inst?pill('Installé','','check'):pill('Nouveau','ok')}</div><div class="desc">${esc(m.desc)}</div><div class="pied">${m.niv==='officiel'||m.src==='officiel'?pill('Officiel','ok','shield'):pill('Éditeur vérifié · '+m.ed,'ac','shield')}${permRes(m.perm)}<button class="btn mini pri" style="margin-left:auto" data-inst="${m.id}" ${inst?'disabled':''}>${inst?'Installé':'Installer'}</button></div></div>`}).join('')}</div></section>`).join('')+
+  (l.length?'':`<div class="carte vide-etat"><b>Aucun module ne correspond.</b><span class="note">Je peux le chercher ailleurs ou te dire s’il existe.</span><button class="btn mini pri" data-sug="Cherche un module : ${esc(S.q||'…')}">Demander à Cassandra de le chercher</button></div>`)+
+  Object.entries(FAM).filter(([k])=>l.some(m=>m.fam===k)).map(([k,v])=>`<section class="rub"><div class="rub-t" style="cursor:default"><span class="ico sm">${ic(FIC[k])}</span><h3>${v}</h3><span class="p">${l.filter(m=>m.fam===k).length}</span></div><div class="grille">${l.filter(m=>m.fam===k).map(m=>{const inst=byId(m.id);return `<div class="carte mod clic" data-fiche="${m.id}"><div class="l1"><div class="ico">${ic(m.ic)}</div><div class="sp"><h3>${esc(m.nom)}</h3><div class="mono note">${m.id} · v${m.v}</div></div>${inst?pill('Installé','','check'):pill('Nouveau','ok')}</div><div class="desc">${esc(m.desc)}</div><div class="pied">${m.niv==='officiel'||m.src==='officiel'?pill('Officiel','ok','shield'):pill('Éditeur vérifié · '+m.ed,'ac','shield')}${permRes(m.perm)}<button class="btn mini pri" style="margin-left:auto" data-inst="${m.id}" ${inst||S.sim==='muet'?'disabled':''}>${inst?'Installé':'Installer'}</button></div></div>`}).join('')}</div></section>`).join('')+
   `<div class="carte"><h3>Ensembles</h3><div class="g2">${ENS.map(e=>`<div class="carte" style="box-shadow:none"><h4>${e.nom}</h4><p class="note">${e.d}</p><div class="chips">${e.mods.map(x=>`<span class="p">${x}</span>`).join('')}</div><button class="btn mini" data-ens="${e.id}" style="align-self:flex-start">Voir l’impact</button></div>`).join('')}</div></div>`+
   `<div class="carte" style="border-style:dashed"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div class="sp" style="flex:1;min-width:220px"><b style="color:var(--strong)">Tu as une archive .cmod ?</b><span class="note" style="display:block">Dépose-la ici : elle est examinée en quarantaine, rien ne s’installe avant ton accord.</span></div><button class="btn" data-act="depot">Déposer une archive</button></div></div>`;
 },
@@ -409,18 +453,21 @@ sec(){
   `<div class="carte"><h3>Quarantaine ${pill('archives examinées, non installées','')}</h3><p class="note">Les archives déposées ou téléchargées attendent ici ton accord. Elles sont vidées après 7 jours.</p><div class="liste"><div class="li"><div class="ico sm">${ic('box')}</div><div class="sp"><b>compta-0.2.0.cmod</b><span class="note">examinée il y a 2 h · éditeur vérifié lagrange</span></div><button class="btn mini">Reprendre</button><button class="btn mini dng">Abandonner</button></div></div></div>`;
 },
 sante(){
-  return tete('Santé','Chaque module est sondé : erreurs, lenteur, mémoire. Une panne n’arrête pas Cassandra.',`<button class="btn" data-act="blanc">Test de démarrage à blanc</button><button class="btn" data-act="restaure">Créer un point de restauration</button>`)+
-  conc('Reprend la sonde de santé actuelle et la rend visible. Nouveau : <b>test à blanc</b> (on simule le démarrage sans rien lancer pour voir ce qui échouerait) et <b>mode sans échec</b> accessible d’ici.')+
-  `<div class="carte"><div class="tw"><table><thead><tr><th>Module</th><th>État</th><th>Erreurs 24 h</th><th>Latence</th><th>Mémoire</th><th>Dernier démarrage</th><th></th></tr></thead><tbody>${M.map(m=>{const bad=m.err>1;return `<tr><td><b style="color:var(--strong)">${m.nom}</b></td><td>${!m.on?pill('inactif'):bad?pill('dégradé','al','warn'):pill('sain','ok','check')}</td><td class="mono">${m.err}</td><td class="mono">${m.on?m.ms+' ms':'—'}</td><td class="mono">${m.on?m.ram+' Mo':'—'}</td><td class="note">${m.on?'il y a 3 j':'—'}</td><td>${m.on&&m.imp!=='vital'?`<button class="btn mini" data-act="pause" data-id="${m.id}">Pause</button>`:''}</td></tr>`}).join('')}</tbody></table></div></div>`+
-  `<div class="g2"><div class="carte"><h3>Mode sans échec</h3><p class="note">Redémarre Cassandra avec <b>seulement les modules vitaux</b>. À utiliser si un module empêche de démarrer : tu peux alors le désactiver ou le désinstaller depuis l’interface.</p><button class="btn dng" style="align-self:flex-start" data-act="sansechec">Redémarrer en mode sans échec</button><p class="note">En dehors de l’interface : <span class="mono">python CN_main.py demarrer --sans-extensions</span></p></div>
-  <div class="carte"><h3>Garde-fous</h3><div class="reglage"><div class="sp"><b>Désactiver seul un module qui plante en boucle</b><span class="note">Après 5 plantages en 10 minutes, il est mis en pause et tu es prévenu.</span></div><button class="sw on" data-sw></button></div><div class="reglage"><div class="sp"><b>Limite de mémoire par module</b><span class="note">Avertir au-delà de</span></div><select class="btn"><option>256 Mo</option><option>512 Mo</option><option>Aucune</option></select></div></div></div>`;
+  const suivi=M.some(m=>m.on&&m.err>1);
+  return tete('Santé','Chaque module est sondé : erreurs, lenteur, mémoire. Cassandra suit et agit ; une panne n’arrête pas Cassandra.',`<button class="btn" data-act="blanc">Test de démarrage à blanc</button>`)+
+  conc('<b>Réaligné.</b> Les boutons « Pause » ne sont plus offerts par défaut : Cassandra met seule en pause ce qui échoue et le dit. Ils apparaissent dans le « Mode avancé ». Le mode sans échec est rangé sous « Outils de secours ».')+
+  (suivi?`<div class="alerte al"><div class="ico sm al">${ic('eye')}</div><div class="sp"><b>Courrier a 2 erreurs en 24 h.</b> <span class="note">Cassandra le suit. S’il échoue en boucle, elle le met en pause et te le dit.</span></div></div>`:'')+
+  `<div class="carte"><div class="tw"><table><thead><tr><th>Module</th><th>État</th><th>Erreurs 24 h</th><th>Latence</th><th>Mémoire</th><th>Dernier démarrage</th><th></th></tr></thead><tbody>${M.map(m=>{const bad=m.err>1;return `<tr><td><b style="color:var(--strong)">${m.nom}</b></td><td>${!m.on?pill('inactif'):bad?pill('à surveiller','al','eye'):pill('sain','ok','check')}</td><td class="mono">${m.err}</td><td class="mono">${m.on?m.ms+' ms':'—'}</td><td class="mono">${m.on?m.ram+' Mo':'—'}</td><td class="note">${m.on?'il y a 3 j':'—'}</td><td>${m.on&&m.imp!=='vital'?(S.avance?`<button class="btn mini" data-act="pause" data-id="${m.id}">Pause</button>`:'<span class="note">suivi</span>'):''}</td></tr>`}).join('')}</tbody></table></div></div>`+
+  `<div class="g2"><div class="carte"><h3>Ce que Cassandra fait seule</h3><div class="reglage"><div class="sp"><b>Mettre en pause un module qui plante en boucle</b><span class="note">Après 5 plantages en 10 minutes. Le geste se défait en un clic.</span></div><button class="sw on" data-sw></button></div><div class="reglage"><div class="sp"><b>Limite de mémoire par module</b><span class="note">Me prévenir au-delà de</span></div><select class="sel"><option>256 Mo</option><option>512 Mo</option><option>Aucune</option></select></div></div>
+  <details class="carte"><summary style="cursor:pointer;font:650 15px 'Inter',sans-serif;color:var(--strong)">Outils de secours</summary><p class="note" style="margin-top:8px">À n’utiliser que si Cassandra elle-même ne répond plus : elle sait tout ce que tu fais ici.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="restaure">Créer un point de restauration</button><button class="btn dng" data-act="sansechec">Redémarrer en mode sans échec</button></div><p class="note">Hors interface : <span class="mono">python CN_main.py demarrer --sans-extensions</span></p></details></div>`;
 },
 jour(){
-  return tete('Journal et versions','Tout ce qui est arrivé aux modules, et tout ce qu’on peut remettre comme avant.',`<button class="btn">Exporter le journal</button>`)+
-  conc('Regroupe le journal d’actes, les versions sauvegardées et la corbeille, aujourd’hui dispersés. Nouveau : <b>profil de modules</b> exportable/importable pour reproduire la même configuration sur une autre machine.')+
-  `<div class="g2"><div class="carte"><h3>Journal</h3><div class="tl">${JOURNAL.map(j=>`<div class="ev ${j[3]}"><b style="color:var(--strong)">${j[1]}</b> <span class="note">${j[2]}</span><div class="faint" style="font-size:11.5px">${j[0]}</div></div>`).join('')}</div></div>
+  const f=S.jfil,l=(S.sim==='neuve'?[]:ACTES).map((a,i)=>[a,i]).filter(([a])=>f==='tout'||a.t===f);
+  return tete('Journal et versions','Tout ce qui est arrivé aux modules, qui l’a fait, pourquoi, et tout ce qu’on peut remettre comme avant.',`<button class="btn">Exporter le journal</button>`)+
+  conc('<b>Réaligné.</b> Le journal et le récit de la Vue d’ensemble sont <b>la même chose</b> (une seule source) : ici, en entier et filtrable. Chaque ligne dit qui, pourquoi, et porte son « Défaire ».')+
+  `<div class="g2"><div class="carte"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h3>Récit</h3><div class="seg segetat" style="margin-left:auto">${[['tout','Tout'],['auto','Cassandra'],['humain','Humains'],['ecarte','Laissés de côté']].map(c=>`<button class="${f===c[0]?'on':''}" data-jfil="${c[0]}">${c[1]}</button>`).join('')}</div></div><div class="liste">${l.length?l.map(([a,i])=>recitLi(a,i)).join(''):'<div class="vide-etat"><b>Rien pour l’instant.</b><span class="note">Ce que Cassandra fait ou laisse de côté apparaîtra ici.</span></div>'}</div></div>
   <div style="display:flex;flex-direction:column;gap:12px"><div class="carte"><h3>Versions restaurables</h3><div class="liste"><div class="li"><div class="sp"><b>Zones DNS</b><span class="note mono">0.9.0 · remplacée hier 21:04</span></div><button class="btn mini" data-act="retour">Remettre</button></div><div class="li"><div class="sp"><b>Courrier</b><span class="note mono">1.3.1 · remplacée le 18/10</span></div><button class="btn mini" data-act="retour">Remettre</button></div></div></div>
-  <div class="carte"><h3>Corbeille</h3><p class="note">Un module désinstallé est gardé 30 jours, avec ses réglages.</p><div class="liste"><div class="li"><div class="sp"><b>Annuaire LDAP</b><span class="note">désinstallé il y a 9 jours</span></div><button class="btn mini">Restaurer</button><button class="btn mini dng">Vider</button></div></div></div>
+  <div class="carte"><h3>Corbeille</h3><p class="note">Un module retiré est gardé 30 jours, avec ses réglages. Rien n’est effacé pour de bon sans toi.</p><div class="liste"><div class="li"><div class="sp"><b>Vieux flux RSS</b><span class="note">retiré par Cassandra il y a 12 min (révoqué)</span></div><button class="btn mini">Restaurer</button></div><div class="li"><div class="sp"><b>Annuaire LDAP</b><span class="note">désinstallé il y a 9 jours</span></div><button class="btn mini">Restaurer</button>${S.avance?'<button class="btn mini dng">Vider</button>':''}</div></div></div>
   <div class="carte"><h3>Profil de modules ${pill('nouveau','in')}</h3><p class="note">Un fichier qui décrit quels modules, quelles versions et quels réglages (sans secrets).</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn">Exporter mon profil</button><button class="btn">Importer un profil…</button></div></div></div></div>`;
 },
 dev(){
@@ -460,7 +507,11 @@ reg(){
   return tete('Réglages','Le comportement général du gestionnaire.')+
   conc('Reprend les réglages du module (<span class="mono">politique_confiance</span>, <span class="mono">registre_url</span>) et y met tout ce qui était absent.')+
   `<div class="g2"><div class="carte"><h3>Installation</h3>${sw('Toujours demander mon accord','Aucune installation silencieuse, même pour un module officiel.')}${sw('Activer aussitôt après l’installation','Décoché : le module reste installé mais inactif.')}${sw('Examiner les dépendances manquantes','Proposer d’installer ce qu’il faut avec le module.')}</div>
-  <div class="carte"><h3>Notifications</h3>${sw('Mise à jour disponible','')}${sw('Module révoqué','Toujours recommandé.')}${sw('Index du registre bientôt périmé','Avertir 14 jours avant.')}${sw('Module qui plante en boucle','')}</div></div>
+  <div class="carte"><h3>Comment Cassandra te prévient</h3><div style="display:flex;flex-direction:column;gap:8px">${[['silence','Silencieux','Rien, sauf un vrai problème (module retiré parce que révoqué, remise en arrière).'],['resume','Un résumé par jour','Chaque matin à 08:00 : ce que j’ai fait, ce que j’ai laissé de côté. Les urgences, tout de suite. Recommandé.'],['direct','Tout en direct','Une notification à chaque geste. Beaucoup de bruit.']].map(([k,t,d])=>`<div class="radio ${S.notif===k?'on':''}" data-notif="${k}"><i></i><div><b style="color:var(--strong)">${t}</b><span class="note" style="display:block">${d}</span></div></div>`).join('')}</div></div></div>
+  <div class="carte"><h3>Qui reçoit quoi, par où</h3><p class="note">Le centre de notifications de Cassandra reçoit tout ; ici tu choisis ce qui sort aussi par courriel ou Telegram.</p><div class="tw"><table><thead><tr><th>Événement</th><th>Cloche</th><th>Courriel</th><th>Telegram</th></tr></thead><tbody>
+   ${[['Un module révoqué retiré, une mise à jour remise en arrière (urgence)',1,1,1],['Un module qui échoue en boucle, mis en pause',1,0,1],['Ce que j’ai laissé de côté (permissions en plus chez un tiers)',1,0,0],['Le résumé du jour',0,1,0],['Registre muet depuis plus de 24 h, index bientôt périmé',1,1,0]].map(r=>`<tr><td>${r[0]}</td>${[1,2,3].map(i=>`<td><button class="sw ${r[i]?'on':''}" data-sw aria-label="activer"></button></td>`).join('')}</tr>`).join('')}</tbody></table></div></div>
+  <div class="g2"><div class="carte"><div class="lib">Aperçu · le résumé du jour (courriel)</div><div class="courriel"><div class="note">De : Cassandra · Lundi 08:00</div><b style="color:var(--strong)">Cette nuit : tout va bien</b><p style="margin:6px 0">J’ai mis à jour <b>Zones DNS</b> (0.9.0 → 0.9.1), surveillée 15 minutes, saine. J’ai laissé de côté <b>Billetterie 0.5.0</b> : elle demande + réseau chez un éditeur tiers.</p><div class="note">Tout se défait en un clic depuis la Logithèque.</div></div></div>
+  <div class="carte"><div class="lib">Aperçu · une urgence (notification)</div><div class="alerte dg" style="background:var(--solid)"><div class="ico sm dg">${ic('warn')}</div><div class="sp"><b>J’ai remis Courrier 1.3.1</b><span class="note"> La mise à jour 1.3.2 faisait échouer l’envoi. Tout fonctionne de nouveau. Je ne reprendrai pas cette version.</span></div></div></div></div>
   <div class="g2"><div class="carte"><h3>Réseau</h3><div class="champ"><label>Relire le registre officiel toutes les</label><select><option>6 heures</option><option>24 heures</option></select></div><div class="champ"><label>Proxy sortant (optionnel)</label><input class="mono" placeholder="http://proxy.local:3128"></div><div class="champ"><label>Taille maximale d’une archive</label><select><option>32 Mo</option><option>128 Mo</option></select></div></div>
   <div class="carte"><h3>Confidentialité</h3>${sw('Aucune télémétrie','Cassandra n’envoie rien sur ce que tu installes. Le registre est une page statique.')}${sw('Mémoriser les modules vus','Pour proposer « nouveau depuis ta dernière visite ».',false)}</div></div>
   <div class="carte"><h3>Nom des familles</h3><p class="note">Une famille est une étiquette de rangement, pas un module. Les modules tiers peuvent en apporter une avec leur propre icône ; ici tu peux les renommer pour cette instance.</p><div class="chips">${Object.values(FAM).map(f=>`<span class="p ac">${f}</span>`).join('')}<button class="btn mini">Renommer…</button></div></div>`;
@@ -468,13 +519,39 @@ reg(){
 };
 
 /* ───────── rendu ───────── */
+function accueil(){
+  return tete('Bienvenue','Cette instance vient d’être installée. Cassandra a déjà mis en place les modules vitaux.')+
+  conc('<b>Premier lancement.</b> Une instance neuve ne montre pas une page vide : elle propose un point de départ, ou laisse Cassandra décider. Aucune action n’est obligatoire.')+
+  `<div class="carte accueil"><h2>Que voulez-vous faire de cette instance ?</h2><p class="note" style="max-width:60ch">Choisis un point de départ, ou dis-moi simplement ce que tu veux. Rien n’est définitif : je peux tout ajouter, retirer ou défaire plus tard.</p>
+   <div class="g2" style="width:100%">${ENS.map(e=>`<div class="carte" style="box-shadow:none"><h4>${e.nom}</h4><p class="note">${e.d}</p><div class="chips">${e.mods.map(x=>`<span class="p">${x}</span>`).join('')}</div><button class="btn mini pri" data-sug="Mets en place : ${esc(e.nom)}" style="align-self:flex-start">Choisir</button></div>`).join('')}</div>
+   <div class="demande" style="width:100%"><input id="dem" placeholder="Ou dis-moi : « je veux héberger mes sites et gérer mon courrier »" aria-label="Dire à Cassandra ce qu’on veut"><button class="btn pri" data-act="demande">Dire</button></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="demande">Laisse Cassandra décider</button><button class="btn" data-go="shop">Voir la boutique</button><button class="btn" data-act="plustard">Plus tard</button></div></div>
+  <div class="carte"><h3>Jusqu’où Cassandra va seule</h3><p class="note">Tu pourras le changer à tout moment.</p><div style="display:flex;flex-direction:column;gap:8px">${[['observer','Observer','Je regarde et je raconte. Je ne touche à rien.'],['entretien','Entretien','Je retire ce qui est révoqué, je prends les mises à jour sans permission en plus, je mets en pause ce qui échoue.'],['reine','Reine','Je gère tout. Tu n’as rien à faire.']].map(([k,t,d])=>`<div class="radio ${S.auto===k?'on':''}" data-auto="${k}"><i></i><div><b style="color:var(--strong)">${t}${k==='reine'?' <span class="p ok">recommandé</span>':''}</b><span class="note" style="display:block">${d}</span></div></div>`).join('')}</div></div>`;
+}
+function banniere(){
+  if(S.sim==='travail')return `<div class="alerte in travail"><div class="ico sm">${ic('maj')}</div><div class="sp"><b>Cassandra travaille.</b> J’applique Agenda CalDAV 1.0.4 : étape 2 sur 3 (installation).<div class="bar"><i style="width:62%"></i></div></div><button class="btn mini" data-act="gel">Mettre en pause</button></div>`;
+  if(S.sim==='muet')return `<div class="alerte al"><div class="ico sm al">${ic('globe')}</div><div class="sp"><b>Le registre officiel ne répond pas depuis 3 h.</b> <span class="note">Rien n’est cassé : ce qui est installé tourne normalement. Je réessaie toutes les 30 minutes. La boutique montre sa dernière lecture (hier 10:00).</span></div><button class="btn mini" data-act="tester">Réessayer maintenant</button></div>`;
+  return '';
+}
 function etatc(){const e=$('#etatc');if(!e)return;e.className='etatc'+(S.gel?' gel':'');e.innerHTML=`<i class="pt"></i><span>Cassandra · <b>${S.gel?'en pause':{observer:'observe',entretien:'entretient',reine:'gère tout'}[S.auto]}</b></span><button data-act="gel">${S.gel?'Reprendre':'Pause'}</button>`}
-function nav(){etatc();
+function mobile(){
+  const m=$('#mtop'),b=$('#bas'),f=$('#feuille');
+  m.className='mtop'+(S.gel?' gel':'');m.innerHTML=`<b>Logithèque</b><span class="st"><i class="pt"></i>${S.gel?'en pause':{observer:'observe',entretien:'entretient',reine:'gère tout'}[S.auto]}</span><button class="btn mini" data-act="gel">${S.gel?'Reprendre':'Pause'}</button>`;
+  if(S.role==='user'){b.style.display='none';f.classList.remove('on');return}
+  b.style.display='';
+  const P=[['vue','vue','Vue'],['inst','inst','Installés'],['shop','shop','Boutique'],['maj','maj','Màj']];
+  const n=k=>(SECS.find(x=>x[0]===k)||[])[3];
+  b.innerHTML=P.map(([k,i,l])=>{const c=n(k)?n(k)():0;return `<button class="${S.sec===k?'on':''}" data-go="${k}">${ic(i)}<span>${l}</span>${k==='maj'&&c?`<span class="n">${c}</span>`:''}</button>`}).join('')+`<button class="${S.sheet?'on':''}" data-plus-sheet>${ic('reg')}<span>Plus</span></button>`;
+  f.className='feuille'+(S.sheet?' on':'');
+  f.innerHTML=SECS.filter(x=>x[0]!=='sep'&&!['vue','inst','shop','maj'].includes(x[0])).map(x=>`<button class="nv ${S.sec===x[0]?'on':''}" data-go="${x[0]}">${ic(x[1])}<span>${x[2]}</span></button>`).join('');
+}
+function nav(){etatc();mobile();
+  if(S.role==='user'){$('#nav').innerHTML=`<div class="sep">Moi</div><button class="nv on" data-go="mes">${ic('inst')}<span>Mes applications</span></button>`;return}
   $('#nav').innerHTML=SECS.map(s=>{if(s[0]==='sep')return `<div class="sep">${s[1]}</div>`;const n=s[3]?s[3]():0;return `<button class="nv ${S.sec===s[0]?'on':''}" data-go="${s[0]}">${ic(s[1])}<span>${s[2]}</span>${n?`<span class="n ${s[4]||''}">${n}</span>`:''}</button>`}).join('');
 }
 function rendre(){
   nav();
-  const p=$('#page');p.innerHTML=PAGES[S.sec]();
+  const p=$('#page');p.innerHTML=(S.role==='admin'&&['vue','inst','maj','shop','src'].includes(S.sec)?banniere():'')+PAGES[S.role==='user'?'mes':S.sec]();
   const q=$('#q');if(q){q.addEventListener('input',()=>{S.q=q.value;rendre();const n=$('#q');n.focus();n.setSelectionRange(99,99)})}
   majImpact();
 }
@@ -494,7 +571,8 @@ function ouvrir(id,onglet){
   const m=byId(id);if(!m)return;S.tiroir=id;S.onglet=onglet||'apercu';const t=$('#tiroir');
   const rec=requisPar(id),chain=rec.map(x=>x.nom);
   const corps={
-   apercu:`<div class="carte"><div class="lib">Sans lui</div><p><b style="color:var(--strong)">${esc(m.sans)}</b></p>${chain.length?`<p class="note">Cela touche aussi : ${chain.join(', ')}.</p>`:''}<p class="note">${IMP[m.imp][2]}</p></div>${m.revoque?`<div class="alerte dg"><div class="sp"><b>Révoqué par le registre.</b> ${esc(m.revoque)}</div></div>`:''}${m.maj?`<div class="alerte in"><div class="sp"><b>Version ${m.maj} disponible.</b>${m.majPerm&&m.majPerm.length?` Demande : ${m.majPerm.join(', ')}.`:' Aucune permission en plus.'}</div><button class="btn mini pri" data-act="maj1" data-id="${m.id}">Mettre à jour</button></div>`:''}<div class="g2"><div><div class="lib">Éditeur</div><div>${m.ed}</div></div><div><div class="lib">Source</div><div>${m.src==='officiel'?'Registre officiel':m.src}</div></div><div><div class="lib">Famille</div><div>${FAM[m.fam]}</div></div><div><div class="lib">Licence</div><div>AGPL-3.0</div></div></div>`,
+   apercu:`<div class="carte"><div class="lib">Sans lui</div><p><b style="color:var(--strong)">${esc(m.sans)}</b></p>${chain.length?`<p class="note">Cela touche aussi : ${chain.join(', ')}.</p>`:''}<p class="note">${IMP[m.imp][2]}</p></div>${m.revoque?`<div class="alerte dg"><div class="sp"><b>Révoqué par le registre.</b> ${esc(m.revoque)}</div></div>`:''}${m.maj?`<div class="alerte in"><div class="sp"><b>Version ${m.maj} disponible.</b>${m.majPerm&&m.majPerm.length?` Demande : ${m.majPerm.join(', ')}.`:' Aucune permission en plus.'}</div><button class="btn mini pri" data-act="maj1" data-id="${m.id}">Mettre à jour</button></div>`:''}<div class="g2"><div><div class="lib">Éditeur</div><div>${m.ed}</div></div><div><div class="lib">Source</div><div>${m.src==='officiel'?'Registre officiel':m.src}</div></div><div><div class="lib">Section</div><div>${FAM[m.fam]}</div></div><div><div class="lib">Licence</div><div>AGPL-3.0</div></div></div>
+   <div class="carte"><div class="reglage"><div class="sp"><b>Cassandra n’y touche pas</b><span class="note">Verrou : ni mise à jour, ni pause, ni retrait par elle. Utile pour un module que tu règles à la main.</span></div><button class="sw ${m.verrou?'on':''}" data-verrou="${m.id}" ${m.imp==='vital'?'disabled title="Un module vital est déjà hors de sa portée"':''}></button></div></div>`,
    dep:`<div class="carte"><div class="lib">Il a besoin de</div><div class="graphe">${m.req.length?m.req.map(x=>`<span class="noeud">${x}</span>`).join('<span class="fl">·</span>'):'<span class="note">rien</span>'}</div><div class="lib" style="margin-top:6px">Ont besoin de lui</div><div class="graphe">${rec.length?rec.map(x=>`<span class="noeud ${m.on?'':''}">${x.id}</span>`).join('<span class="fl">·</span>'):'<span class="note">personne</span>'}</div></div><div class="carte"><div class="lib">Conflits et suggestions</div><p class="note">Aucun conflit déclaré. Suggéré avec : <span class="mono">sauvegardes</span>.</p></div>`,
    perm:`<div class="carte"><div class="lib">Ce qu’il demande</div><div style="display:flex;gap:6px;flex-wrap:wrap">${permRes(m.perm)}</div><div class="liste" style="margin-top:6px"><div class="li"><div class="sp"><b>Réseau</b><span class="note mono">${m.perm.res?'api.exemple.org':'aucun'}</span></div></div><div class="li"><div class="sp"><b>Écritures</b><span class="note mono">${m.perm.ecr?'donnees/'+m.id:'aucune'}</span></div></div><div class="li"><div class="sp"><b>Privilèges</b><span class="note mono">${m.perm.priv?'installer, journal':'aucun'}</span></div></div></div></div><p class="note">Déclaratives aujourd’hui : le module tourne dans Cassandra. Elles servent à décider, pas encore à contenir.</p>`,
    regl:`<div class="carte"><div class="champ"><label>Délai d’attente (s)</label><input value="30"></div><div class="champ"><label>Niveau de journal</label><select><option>info</option><option>débogage</option></select></div><button class="btn pri" style="align-self:flex-start" data-act="ok">Enregistrer</button></div><button class="btn" data-act="reglmod">Ouvrir l’écran propre du module</button>`,
@@ -507,6 +585,29 @@ function ouvrir(id,onglet){
 }
 function fermer(){$('#tiroir').classList.remove('on');$('#modale').classList.remove('on');$('#voile').classList.remove('on');$('#pal').classList.remove('on')}
 
+/* fiche d'un module de la boutique */
+const ONGB=[['apercu','Aperçu'],['perm','Permissions'],['chg','Changements'],['ed','Éditeur']];
+function installeDemande(b){
+  const niv=b.niv==='officiel'?'officiel':'verifie';
+  M.push({id:b.id,nom:b.nom,v:b.v,fam:b.fam,imp:b.imp,ic:b.ic,on:true,req:['droits'],desc:b.desc,src:b.ed==='cassandra'?'officiel':b.ed,ed:b.ed,niv,ram:30,err:0,ms:20,perm:b.perm,sans:'Ce qu’il apporte ne fonctionne plus.'});
+  ACTES.unshift({q:'Cassandra',ts:'À l’instant',v:'a installé et activé',m:b.nom,d:'Sur ta demande. Téléchargé, signature vérifiée, installé, activé.',r:'Demande humaine ; source '+(niv==='officiel'?'officielle':'éditeur vérifié')+' ; permissions dans ma règle.',inv:'Le retirer',ok:true,t:'auto'});
+  toast('Cassandra s’en occupe : '+b.nom+' est installé et actif.');rendre();
+}
+function ficheBout(id,onglet){
+  const b=BOUT.find(x=>x.id===id);if(!b)return;S.fiche=id;S.fong=onglet||'apercu';const t=$('#tiroir');
+  const off=b.niv==='officiel'||b.src==='officiel',inst=!!byId(b.id);
+  const corps={
+   apercu:`<div class="carte"><div class="lib">Ce que ça change pour toi</div><p>Ajoute <b>${esc(b.nom)}</b> à ${FAM[b.fam]}. Il tire <b>droits</b> (déjà installé), pèse ${b.taille} et ne démarre qu’une fois activé.</p><p class="note">${esc(b.desc)} Cassandra le surveille et le met à jour selon sa règle ; tu peux le retirer à tout moment, il reste 30 jours en corbeille.</p></div>
+    <div><div class="lib" style="margin-bottom:6px">Captures</div><div class="caps"><div class="cap">Capture 1<br>(fournie par l’éditeur)</div><div class="cap">Capture 2</div><div class="cap">Capture 3</div></div></div>
+    <div class="g2"><div><div class="lib">Éditeur</div><div>${b.ed}</div></div><div><div class="lib">Version</div><div>${b.v}</div></div><div><div class="lib">Licence</div><div>AGPL-3.0</div></div><div><div class="lib">Poids</div><div>${b.taille}</div></div></div>`,
+   perm:`<div class="carte"><div class="lib">Ce qu’il demande</div><div style="display:flex;gap:6px;flex-wrap:wrap">${permRes(b.perm)}</div><div class="liste" style="margin-top:6px"><div class="li"><div class="sp"><b>Réseau</b><span class="note mono">${b.perm.res?'api.exemple.org':'aucun'}</span></div></div><div class="li"><div class="sp"><b>Écritures</b><span class="note mono">${b.perm.ecr?'donnees/'+b.id:'aucune'}</span></div></div><div class="li"><div class="sp"><b>Privilèges</b><span class="note mono">${b.perm.priv?'installer':'aucun'}</span></div></div></div></div><p class="note">Déclaratives aujourd’hui : le module tourne dans Cassandra. Cassandra les compare à sa règle avant d’installer.</p>`,
+   chg:`<div class="carte"><div class="lib">Version ${b.v}</div><ul style="margin:0;padding-left:18px"><li>Première version publiée au registre</li><li>Journal des gestes et retour arrière déclarés</li></ul></div><div class="alerte ok"><div class="sp"><b>Aucun incident connu</b> <span class="note">ni révocation sur cette version.</span></div></div>`,
+   ed:`<div class="carte"><div style="display:flex;gap:10px;align-items:center"><div class="ico">${ic('users')}</div><div><b style="color:var(--strong)">${b.ed}</b><div class="note">${off?'Cassandra (éditeur du registre officiel)':'Éditeur vérifié par le registre officiel'}</div></div></div><div class="lib" style="margin-top:6px">Ses autres modules</div><div class="chips"><span class="p">${b.id}</span></div></div>`
+  }[S.fong];
+  t.innerHTML=`<div class="tete"><div style="display:flex;gap:12px;align-items:center"><div class="ico">${ic(b.ic)}</div><div style="flex:1;min-width:0"><h2 style="font:650 19px 'Inter',sans-serif;color:var(--strong)">${esc(b.nom)}</h2><div class="mono note">${b.id} · v${b.v}</div></div><button class="btn mini" data-fermer>Fermer</button></div><div style="display:flex;gap:6px;flex-wrap:wrap">${off?pill('Officiel','ok','shield'):pill('Éditeur vérifié · '+b.ed,'ac','shield')}${pill(IMP[b.imp][0],IMP[b.imp][1])}${inst?pill('installé','ok','check'):pill('nouveau','ok')}</div><div class="onglets">${ONGB.map(o=>`<button class="${S.fong===o[0]?'on':''}" data-fong="${o[0]}">${o[1]}</button>`).join('')}</div></div><div class="corps">${corps}</div>
+  <div style="padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;background:var(--bg)">${inst?'<span class="note">Déjà installé.</span>':`<button class="btn pri" data-act="demandeinst" ${S.sim==='muet'?'disabled':''}>Demander à Cassandra de l’installer</button><button class="btn" data-inst-direct="${b.id}" ${S.sim==='muet'?'disabled':''}>Installer moi-même</button>`}</div>`;
+  t.classList.add('on');$('#voile').classList.add('on');
+}
 /* modale d’installation */
 function modInstall(id,etape=1){
   const m=BOUT.find(x=>x.id===id);const M_=$('#modale');
@@ -526,14 +627,21 @@ document.addEventListener('click',e=>{
   if(t.dataset.bascule){e.stopPropagation();const m=byId(t.dataset.bascule);if(m.imp==='vital')return;const cur=S.att[m.id]!==undefined?S.att[m.id]:m.on;const nv=!cur;if(nv===m.on)delete S.att[m.id];else S.att[m.id]=nv;if($('#tiroir').classList.contains('on')){fermer();}rendre();return}
   if(t.hasAttribute('data-sw')){t.classList.toggle('on');return}
   if(t.dataset.fermer!==undefined){if(t.dataset.toast)toast(t.dataset.toast);fermer();return}
-  if(t.dataset.go){fermer();go(t.dataset.go);return}
+  if(t.hasAttribute('data-plus-sheet')){S.sheet=!S.sheet;mobile();return}
+  if(t.dataset.go){S.sheet=false;fermer();go(t.dataset.go);return}
   if(t.dataset.ouvrir){ouvrir(t.dataset.ouvrir,t.dataset.onglet);return}
   if(t.dataset.ong){ouvrir(S.tiroir,t.dataset.ong);return}
-  if(t.dataset.fiche){modInstall(t.dataset.fiche,1);return}
-  if(t.dataset.inst){e.stopPropagation();modInstall(t.dataset.inst,1);return}
+  if(t.dataset.fiche){ficheBout(t.dataset.fiche);return}
+  if(t.dataset.inst){e.stopPropagation();ficheBout(t.dataset.inst);return}
+  if(t.dataset.instDirect){fermer();modInstall(t.dataset.instDirect,1);return}
   if(t.dataset.et){modInstall(t.dataset.id,+t.dataset.et);return}
   if(t.dataset.vue){S.vue=t.dataset.vue;rendre();return}
   if(t.dataset.betat){S.betat=t.dataset.betat;rendre();return}
+  if(t.dataset.menu){const k=t.dataset.menu;S.menu.has(k)?S.menu.delete(k):S.menu.add(k);rendre();toast(S.menu.has(k)?'Ajoutée à ton menu.':'Retirée de ton menu.');return}
+  if(t.dataset.fong){ficheBout(S.fiche,t.dataset.fong);return}
+  if(t.dataset.notif){S.notif=t.dataset.notif;rendre();toast('Notifications : '+t.textContent.trim().split('\n')[0]);return}
+  if(t.dataset.verrou){const m=byId(t.dataset.verrou);m.verrou=!m.verrou;fermer();rendre();ouvrir(m.id);toast(m.verrou?m.nom+' : Cassandra n’y touchera plus.':m.nom+' : Cassandra peut de nouveau s’en occuper.');return}
+  if(t.dataset.jfil){S.jfil=t.dataset.jfil;rendre();return}
   if(t.dataset.auto){S.auto=t.dataset.auto;rendre();toast('Autonomie : '+t.dataset.auto);return}
   if(t.dataset.defaire!==undefined){const a=ACTES[+t.dataset.defaire];toast(a.inv+' : fait. Cassandra en prend note.');a.inv='';rendre();return}
   if(t.dataset.sug){const d=$('#dem');if(d){d.value=t.dataset.sug;d.focus()}else{go('vue');setTimeout(()=>{const x=$('#dem');if(x){x.value=t.dataset.sug;x.focus()}},50)}return}
@@ -553,6 +661,9 @@ document.addEventListener('click',e=>{
   if(t.dataset.ens){const en=ENS.find(x=>x.id===t.dataset.ens);const mm=en.mods.map(id=>byId(id)||BOUT.find(b=>b.id===id));modale('Ensemble « '+en.nom+' »',`<p class="note">${en.d}</p><div class="liste">${mm.map(x=>`<div class="li"><div class="ico sm">${ic(x.ic)}</div><div class="sp"><b>${x.nom}</b><span class="note">${byId(x.id)&&byId(x.id).on?'déjà installé et actif':byId(x.id)?'installé, inactif':'à installer'}</span></div></div>`).join('')}</div><p class="note">Impact calculé : aucune dépendance cassée, 2 nouvelles permissions réseau (api.exemple.org).</p>`,'Installer les manquants','Ensemble installé');return}
   if(t.dataset.act){const a=t.dataset.act;
     if(a==='avance'){S.avance=!S.avance;if(S.avance)toast('Mode avancé : tes gestes sont connus de Cassandra, et chacun se défait.');rendre()}
+    else if(a==='pascette'){toast('Cette version est écartée : Cassandra n’y reviendra pas.')}
+    else if(a==='plustard'){S.sim='normal';$('#sim').value='normal';rendre();toast('Quand tu veux : tout reste possible.')}
+    else if(a==='demandeinst'){const b=BOUT.find(x=>x.id===S.fiche);installeDemande(b);fermer()}
     else if(a==='gel'){S.gel=!S.gel;rendre();toast(S.gel?'Cassandra est en pause : elle observe, elle n’agit plus.':'Cassandra reprend.')}
     else if(a==='passe')toast('Passe lancée : rien à faire pour l’instant.')
     else if(a==='demande'){const d=$('#dem');toast(d&&d.value?'Cassandra s’en occupe : « '+d.value+' »':'Dis-lui ce que tu veux.')}
@@ -572,7 +683,7 @@ document.addEventListener('click',e=>{
     return}
   if(t.dataset.desinst){const m=byId(t.dataset.desinst);const rec=requisPar(m.id).filter(x=>x.on);modale('Désinstaller '+m.nom+' ?',`<p class="note">${rec.length?'Cela arrêterait aussi : <b>'+rec.map(x=>x.nom).join(', ')+'</b>. ':''}Il est gardé 30 jours dans la corbeille avec ses réglages.</p>`,'Désinstaller','Désinstallé (corbeille 30 j)');return}
 });
-document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.sel;if(k){S[k]=e.target.value;rendre()}});
+document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.sel;if(k){S[k]=k==='fenetre'?+e.target.value:e.target.value;rendre()}});
 $('#voile').addEventListener('click',fermer);
 /* palette */
 const CMD=()=>[...SECS.filter(s=>s[0]!=='sep').map(s=>({t:'Aller à '+s[2],k:'section',f:()=>go(s[0])})),...M.map(m=>({t:m.nom,k:'module',f:()=>ouvrir(m.id)})),{t:'Mettre à jour tout ce qui est sûr',k:'action',f:()=>toast('Mise à jour appliquée')},{t:'Redémarrer en mode sans échec',k:'action',f:()=>go('sante')},{t:'Ajouter une source',k:'action',f:()=>{go('src')}}];
@@ -581,6 +692,8 @@ function palR(){const q=$('#pal-q').value.toLowerCase();const r=CMD().filter(c=>
 $('#pal-q').addEventListener('input',palR);
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();pal()}if(e.key==='Escape')fermer()});
 document.body.classList.add('annot');
+$('#sim').addEventListener('change',e=>{S.sim=e.target.value;if(S.sim==='travail'||S.sim==='muet'||S.sim==='neuve'||S.sim==='vide')go(S.sim==='neuve'?'vue':S.sec);rendre()});
+$('#role').addEventListener('change',e=>{S.role=e.target.value;S.sec=S.role==='user'?'mes':'vue';rendre()});
 $('#annot').addEventListener('click',e=>{const on=document.body.classList.toggle('annot');e.currentTarget.setAttribute('aria-pressed',on);e.currentTarget.textContent='Annotations de conception : '+(on?'oui':'non')});
 rendre();
 </script>
