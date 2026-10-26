@@ -1,0 +1,309 @@
+<title>Maquette Modules</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root{
+  --bg:#eef3f2;--surface:rgba(255,255,255,.72);--solid:#fff;--line:rgba(15,40,38,.11);--line2:rgba(15,40,38,.2);
+  --txt:#14302d;--strong:#0b211f;--soft:#4b6663;--faint:#7d9390;
+  --accent:#0f766e;--on-accent:#fff;--ok:#0e7a55;--warn:#a35f00;--danger:#b3261e;
+  --shadow:0 1px 0 rgba(255,255,255,.7) inset,0 8px 28px -12px rgba(15,60,56,.25);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1816;--surface:rgba(24,44,41,.7);--solid:#16302c;--line:rgba(190,240,230,.12);--line2:rgba(190,240,230,.24);
+  --txt:#d6ebe7;--strong:#f0fbf8;--soft:#9cbab5;--faint:#6f8f8a;--accent:#2dd4bf;--on-accent:#04201c;--ok:#4ade80;--warn:#f5b042;--danger:#ff7b72;
+  --shadow:0 8px 28px -12px rgba(0,0,0,.6);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1816;--surface:rgba(24,44,41,.7);--solid:#16302c;--line:rgba(190,240,230,.12);--line2:rgba(190,240,230,.24);
+  --txt:#d6ebe7;--strong:#f0fbf8;--soft:#9cbab5;--faint:#6f8f8a;--accent:#2dd4bf;--on-accent:#04201c;--ok:#4ade80;--warn:#f5b042;--danger:#ff7b72;
+  --shadow:0 8px 28px -12px rgba(0,0,0,.6);color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font:14px/1.5 'Inter',system-ui,sans-serif;padding-block:22px 110px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.page{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3,p{margin:0}
+.bandeau{font-size:12px;color:var(--soft);background:var(--surface);border:1px dashed var(--line2);border-radius:12px;padding:8px 12px}
+.tete{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:flex-end;justify-content:space-between}
+.tete h1{font:650 26px/1.15 'Inter',system-ui,sans-serif;color:var(--strong);text-wrap:balance}
+.tete p{color:var(--soft);max-width:60ch;margin-top:4px}
+.btn{border:1px solid var(--line2);background:var(--solid);color:var(--txt);border-radius:10px;padding:7px 14px;font:600 13px 'Inter',system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.btn:hover:not([disabled]){border-color:var(--accent);color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--on-accent);border-color:transparent}.btn.pri:hover:not([disabled]){color:var(--on-accent);filter:brightness(1.08)}
+.btn.dng{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,transparent)}.btn[disabled]{opacity:.45;cursor:not-allowed}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{text-align:left;background:var(--surface);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow)}
+.stat b{font:650 26px/1.1 ui-monospace,Menlo,Consolas,monospace;color:var(--strong)}.stat span{font-size:12.5px;color:var(--soft)}
+.stat.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.stat.al b{color:var(--warn)}.stat.ok b{color:var(--ok)}
+.barre{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.barre input{flex:1 1 240px;min-width:0;border:1px solid var(--line2);background:var(--solid);color:var(--txt);border-radius:10px;padding:8px 12px;font:14px 'Inter',system-ui,sans-serif}
+.barre input:focus{outline:2px solid color-mix(in srgb,var(--accent) 40%,transparent);outline-offset:1px}
+.fams{display:flex;gap:6px;flex-wrap:wrap}.niv{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--soft)}
+.sans{border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:var(--surface);display:flex;flex-direction:column;gap:6px}.sans.vital{border-color:color-mix(in srgb,var(--danger) 40%,transparent)}
+.fam{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font:600 12.5px 'Inter',system-ui,sans-serif;color:var(--soft);cursor:pointer}
+.fam.on{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.carte{background:var(--surface);backdrop-filter:blur(14px) saturate(150%);border:1px solid var(--line);border-radius:16px;padding:14px 15px;display:flex;flex-direction:column;gap:9px;box-shadow:var(--shadow);cursor:pointer;text-align:left;font:inherit;color:inherit;position:relative}
+.carte:hover{border-color:var(--accent)}
+.carte.en-attente{border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset}
+.carte .l1{display:flex;gap:11px;align-items:center}
+.ico{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent)}
+.ico svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.carte.inactif .ico{background:var(--line);color:var(--faint)}
+.carte h3{font:650 15px/1.25 'Inter',system-ui,sans-serif;color:var(--strong)}
+.carte .id{font:11.5px ui-monospace,Menlo,Consolas,monospace;color:var(--faint)}
+.carte .desc{font-size:12.5px;color:var(--soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
+.carte .pied{display:flex;gap:6px 8px;flex-wrap:wrap;align-items:center;margin-top:auto}
+.p{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 9px;font:600 11px 'Inter',system-ui,sans-serif;background:var(--solid);color:var(--soft);border:1px solid var(--line);white-space:nowrap}
+.p::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}.p.nu::before{display:none}
+.p.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent);border-color:color-mix(in srgb,var(--ok) 28%,transparent)}
+.p.al{color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent);border-color:color-mix(in srgb,var(--warn) 30%,transparent)}
+.p.dg{color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent);border-color:color-mix(in srgb,var(--danger) 28%,transparent)}
+.p.vi{background:var(--strong);color:var(--bg);border-color:transparent}.p.vi::before{background:var(--danger)}
+.p.ac{color:var(--accent);background:color-mix(in srgb,var(--accent) 11%,transparent);border-color:color-mix(in srgb,var(--accent) 26%,transparent)}
+.rgl{margin-left:auto;flex:none;width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--solid);color:var(--soft);display:grid;place-items:center;cursor:pointer;padding:0}
+.rgl svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.rgl:hover:not([disabled]){border-color:var(--accent);color:var(--accent)}.rgl[disabled]{opacity:.4;cursor:not-allowed}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+.inter{position:relative;display:inline-block;width:42px;height:24px;flex:none;margin-left:auto}
+.inter input{opacity:0;position:absolute;inset:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
+.inter i{position:absolute;inset:0;background:var(--line2);border-radius:99px;transition:.15s}.inter i::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.inter input:checked+i{background:var(--accent)}.inter input:checked+i::after{left:21px}
+.inter input:disabled{cursor:not-allowed}.inter input:disabled+i{opacity:.45}
+.inter.att i{outline:2px solid var(--warn);outline-offset:1px}
+.vide{padding:40px 10px;text-align:center;color:var(--soft)}
+/* tiroir */
+.voile{position:fixed;inset:0;background:rgba(5,20,18,.45);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:.18s;z-index:20}
+.voile.ouvert{opacity:1;pointer-events:auto}
+.tiroir{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--bg);border-left:1px solid var(--line2);transform:translateX(100%);transition:.22s;z-index:21;display:flex;flex-direction:column;box-shadow:-20px 0 50px -20px rgba(0,0,0,.4);padding-top:env(safe-area-inset-top,0px)}
+.tiroir.ouvert{transform:none}
+.tiroir .th{padding:18px 20px 12px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line)}
+.tiroir .th .l1{display:flex;gap:12px;align-items:center}.tiroir .th h2{font:650 19px 'Inter',sans-serif;color:var(--strong)}
+.x{margin-left:auto;border:0;background:var(--line);color:var(--txt);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;flex:none}
+.tc{flex:1;overflow:auto;padding:16px 20px 24px;display:flex;flex-direction:column;gap:18px}
+.lib{font:600 10.5px 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+.dep{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.dep .rang{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--soft)}
+.dep .fleche{text-align:center;color:var(--faint);line-height:1}
+.dep .centre{border:1.5px solid var(--accent);border-radius:12px;padding:8px 12px;text-align:center;font-weight:650;color:var(--strong);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.chip{border:1px solid var(--line2);background:var(--solid);border-radius:10px;padding:4px 10px;font:600 12px 'Inter',sans-serif;color:var(--txt);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--ok)}.chip.off i{background:var(--faint)}
+.perms{display:flex;flex-direction:column;gap:6px;font-size:13px}.perms div{display:flex;gap:9px;align-items:flex-start}
+.perms svg{width:16px;height:16px;flex:none;margin-top:3px;fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.cles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.cle{border:1px solid var(--line);border-radius:12px;padding:9px 11px;background:var(--surface)}.cle b{display:block;font:650 20px ui-monospace,Menlo,monospace;color:var(--strong)}.cle span{font-size:11.5px;color:var(--soft)}
+.tp{border-top:1px solid var(--line);padding:14px 20px calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;flex-wrap:wrap;background:var(--bg)}
+.tp .sp{flex:1}
+.note{font-size:12.5px;color:var(--soft)}
+/* plateau des changements */
+.plateau{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translate(-50%,160%);transition:.25s;z-index:15;width:min(720px,calc(100% - 32px));background:var(--solid);border:1px solid var(--warn);border-radius:16px;box-shadow:0 18px 50px -14px rgba(0,0,0,.45);padding:12px 14px;display:flex;gap:10px 14px;flex-wrap:wrap;align-items:center}
+.plateau.ouvert{transform:translate(-50%,0)}.plateau .t{flex:1 1 220px;min-width:0}.plateau b{color:var(--strong)}
+/* feuille d'impact */
+.feuille{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;transition:.18s;z-index:30;width:min(560px,calc(100% - 28px));max-height:calc(100% - 40px);overflow:auto;background:var(--bg);border:1px solid var(--line2);border-radius:18px;box-shadow:0 30px 80px -20px rgba(0,0,0,.55);padding:20px;display:flex;flex-direction:column;gap:14px}
+.feuille.ouvert{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+.feuille h2{font:650 19px 'Inter',sans-serif;color:var(--strong)}
+.ligne{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}.ligne:first-of-type{border-top:0}
+.signe{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:700 14px 'Inter',sans-serif;color:#fff}
+.signe.plus{background:var(--ok)}.signe.moins{background:var(--danger)}.signe.lie{background:var(--accent)}
+.toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-140%);background:var(--strong);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:40;transition:.25s;max-width:calc(100% - 32px)}
+.toast.ouvert{transform:translate(-50%,0)}
+@media (max-width:640px){.cles{grid-template-columns:repeat(3,1fr)}.tiroir{width:100%}.grille{grid-template-columns:1fr}}
+</style>
+
+<div class="page">
+  <div class="bandeau">
+    <b>Maquette interactive, données d'exemple.</b> Essayez : filtrer, ouvrir une carte, cliquer l'engrenage d'un module, basculer un interrupteur (le changement est mis en attente), voir l'impact, appliquer.
+    <div style="margin-top:6px"><label style="cursor:pointer"><input type="checkbox" id="b-dev"> <b>Outil de la maquette :</b> simuler une « instance de développement »</label>
+    <div class="note" style="margin-top:2px">Sur une instance de développement, tous les modules sont chargés d'office : on ne peut ni en activer ni en désactiver. Dans la vraie page, ce n'est pas un réglage : elle le détecte seule et affiche la note bleue ci-dessous. Cochez pour voir la différence (les interrupteurs se grisent).</div></div>
+  </div>
+
+  <div class="tete">
+    <div><h1>Modules et applications</h1><p>Ce qui est actif, ce qui dépend de quoi, et ce qu'un changement va entraîner, avant qu'il n'ait lieu.</p></div>
+  </div>
+  <div class="bandeau" id="note-dev" hidden style="border-style:solid;border-color:var(--accent);color:var(--txt)"><b>Instance de développement.</b> Tous les modules sont chargés : l'activation et la désactivation sont indisponibles ici. Les réglages et la console de chaque module restent accessibles.</div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="barre">
+    <input id="q" type="search" placeholder="Chercher un module, une capacité, un fournisseur…" aria-label="Chercher">
+    <div class="fams" id="fams"></div>
+  </div>
+
+  <div class="niv" id="niv"></div>
+
+  <div class="grille" id="grille"></div>
+</div>
+
+<div class="voile" id="voile"></div>
+<aside class="tiroir" id="tiroir" aria-label="Détail du module"></aside>
+<div class="plateau" id="plateau"></div>
+<div class="feuille" id="feuille" role="dialog" aria-modal="true"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const ICONES={
+  socle:'<path d="M12 3l8 4v5c0 4.4-3.1 7.6-8 9-4.9-1.4-8-4.6-8-9V7z"/>',
+  securite:'<rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 018 0v3"/>',
+  reseau:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18"/>',
+  comm:'<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 7l9 6 9-6"/>',
+  agents:'<rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 8V4M9 13h.01M15 13h.01"/>',
+  gestion:'<rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+  supervision:'<path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/>',
+  hebergement:'<rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01"/>'
+};
+const FAMILLES={socle:'Socle',securite:'Sécurité',reseau:'Réseau',comm:'Communication',agents:'Agents',gestion:'Gestion',supervision:'Supervision',hebergement:'Hébergement'};
+// etat : actif | inactif | a_installer | refuse ; essentiel : ne se désactive jamais
+let M=[
+ {id:'droits',nom:'Droits',fam:'socle',etat:'actif',v:'0.2.0',ess:true,requiert:[],d:'Qui a le droit de quoi : la base de tous les autres modules.',cap:9,det:0,mot:0,res:[],ecr:['la base des droits'],conf:'interne'},
+ {id:'notifications',nom:'Notifications',fam:'socle',etat:'actif',v:'0.2.0',ess:true,requiert:['droits'],d:'La cloche : transforme les constats en notifications à faire, avec leur geste.',cap:8,det:0,mot:1,res:[],ecr:['la base des notifications'],conf:'interne'},
+ {id:'modeles',nom:'Modèles',fam:'agents',etat:'actif',v:'0.1.0',requiert:['droits'],d:'Les modèles de langage déclarés, leurs clés et leurs rôles : un compte n\'utilise que les siens.',cap:15,det:0,mot:0,res:['les API des modèles déclarés'],ecr:['la base des modèles','le coffre des clés'],conf:'interne'},
+ {id:'memoire',nom:'Mémoire',fam:'agents',etat:'actif',v:'0.1.1',requiert:['modeles'],d:'Ce que Cassandra retient : faits, doutes, rappels, avec leur provenance.',cap:28,det:1,mot:2,res:[],ecr:['la base de la mémoire'],conf:'interne'},
+ {id:'agents',nom:'Agents',fam:'agents',etat:'actif',v:'0.1.2',requiert:['modeles','memoire'],d:'Cassandra et Itare : les conversations, les outils, la boucle de réflexion.',cap:8,det:0,mot:0,res:['les API des modèles'],ecr:['les conversations'],conf:'interne'},
+ {id:'courrier',nom:'Courrier',fam:'comm',etat:'actif',v:'0.1.2',requiert:['droits'],d:'Lire, classer et préparer le courrier de votre boîte ; rien ne part sans vous.',cap:17,det:1,mot:1,res:['votre serveur IMAP et SMTP'],ecr:['le cache du courrier'],conf:'interne'},
+ {id:'canaux',nom:'Canaux',fam:'comm',etat:'actif',v:'0.1.0',requiert:['droits'],d:'Les canaux par lesquels Cassandra vous parle : messages, alertes.',cap:4,det:0,mot:0,res:[],ecr:[],conf:'interne'},
+ {id:'telegram',nom:'Robot Telegram',fam:'comm',etat:'actif',v:'0.1.0',requiert:['canaux'],d:'Un robot Telegram pour parler à Cassandra et recevoir ses alertes.',cap:7,det:0,mot:1,res:['l\'API Telegram'],ecr:[],conf:'tiers'},
+ {id:'dns',nom:'Zones DNS',fam:'reseau',etat:'actif',v:'0.2.1',requiert:[],d:'Relève les zones suivies, garde une référence versionnée, signale la dérive et l\'expiration des domaines.',cap:5,det:2,mot:1,res:['les serveurs de noms (port 53)','rdap.org','l\'API Cloudflare'],ecr:['la base du module'],conf:'interne'},
+ {id:'certificats',nom:'Certificats',fam:'securite',etat:'inactif',v:'0.1.0',requiert:['dns'],d:'Suit les certificats TLS des sites, signale ceux qui expirent, propose le renouvellement.',cap:6,det:1,mot:1,res:['les sites suivis (port 443)'],ecr:['la base du module'],conf:'interne'},
+ {id:'sauvegardes',nom:'Sauvegardes',fam:'securite',etat:'actif',v:'0.1.0',requiert:['droits'],d:'État et âge des sauvegardes, alerte quand une copie vieillit.',cap:6,det:2,mot:1,res:[],ecr:[],conf:'interne'},
+ {id:'sensorium',nom:'Sensorium',fam:'supervision',etat:'actif',v:'0.3.0',requiert:['droits'],d:'Les sens de Cassandra : mesure la machine, les services, les sites.',cap:14,det:3,mot:2,res:['le collecteur local'],ecr:[],conf:'interne',alerte:'Le collecteur local est muet : ce module ne reçoit aucune mesure.'},
+ {id:'dolibarr',nom:'Dolibarr',fam:'gestion',etat:'inactif',v:'0.1.0',requiert:['droits'],d:'Relie un Dolibarr existant : factures, tiers, impayés.',cap:12,det:2,mot:1,res:['votre Dolibarr'],ecr:[],conf:'tiers'},
+ {id:'billetterie',nom:'Billetterie',fam:'gestion',etat:'a_installer',v:'0.1.0',requiert:['droits'],d:'Revendeurs, commissions et registre en écriture seule pour une billetterie.',cap:10,det:0,mot:0,res:[],ecr:['le registre'],conf:'interne',aInstaller:'Un script d\'installation du module est à lancer sur la machine, puis le module s\'active.'},
+ {id:'hebergement',nom:'Hébergement',fam:'hebergement',etat:'actif',v:'0.1.0',requiert:['droits'],d:'Les sites et bases du panneau d\'hébergement : état, gestes, sauvegardes.',cap:30,det:2,mot:1,res:['l\'API du panneau'],ecr:[],conf:'interne'}
+];
+const SANS={
+ droits:'Plus personne n\'a de droit sur rien : Cassandra ne peut plus rien autoriser. Il ne se désactive pas.',
+ notifications:'La cloche se tait : les constats ne deviennent plus des choses à faire, et rien ne vous alerte. Il ne se désactive pas.',
+ modeles:'Plus aucune conversation avec un modèle : Cassandra et Itare ne peuvent plus réfléchir ni répondre.',
+ memoire:'Cassandra n\'a plus de mémoire entre deux échanges : elle ne retient plus rien de nouveau (ce qui est déjà gardé reste).',
+ agents:'Cassandra et Itare ne répondent plus. Le reste de la maison continue de mesurer et d\'alerter.',
+ courrier:'Plus de lecture ni de brouillon de courrier. Rien d\'autre ne s\'arrête.',
+ sensorium:'La maison n\'a plus de mesures : plus de santé, plus de détection automatique de pannes.',
+ dns:'Plus de suivi des domaines ni de dérive d\'adresse.',
+ hebergement:'Plus de lecture ni de geste sur vos sites et bases.'};
+const par=Object.fromEntries(M.map(m=>[m.id,m]));
+M.forEach(m=>m.requisPar=M.filter(x=>x.requiert.includes(m.id)).map(x=>x.id));
+// l'importance se DÉDUIT : vital si le module est essentiel ; important si d'autres modules ACTIFS s'appuient sur lui ; optionnel sinon
+const actifsApres=id=>M.filter(x=>par[x.id].requiert.includes(id)&&x.etat==='actif').map(x=>x.id);
+function crit(m){ if(m.ess)return 'vital'; return actifsApres(m.id).length?'important':'optionnel' }
+const CRIT={vital:['Vital','vi','Cassandra ne fonctionne pas sans lui.'],important:['Important','al','D\'autres modules s\'appuient sur lui.'],optionnel:['Optionnel','nu','On peut s\'en passer sans rien casser.']};
+const E={actif:['Actif','ok'],inactif:['Inactif',''],a_installer:['À installer','al'],refuse:['Refusé','dg']};
+let dev=false, filtre='tous', fam='toutes', niv='tous', cherche='', ouvert=null; const attente=new Map(); // id -> true (activer) | false (désactiver)
+
+const $=s=>document.querySelector(s), esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const veut=id=>attente.has(id)?attente.get(id):par[id].etat==='actif';        // l'état voulu, après les changements en attente
+
+// l'impact d'un jeu de changements : ce qui sera activé, désactivé, et ce qui bloque
+function impact(){
+  const act=new Set(), des=new Set(), bloc=[];
+  const voulu=id=>attente.has(id)?attente.get(id):par[id].etat==='actif';
+  const visiter=(id,pile)=>{ par[id].requiert.forEach(r=>{ if(!voulu(r)&&!act.has(r)){ act.add(r); visiter(r) } }) };
+  attente.forEach((v,id)=>{ if(v){ act.add(id); visiter(id) } else { des.add(id); } });
+  des.forEach(id=>{ par[id].requisPar.forEach(r=>{ if(voulu(r)&&!des.has(r)) bloc.push([id,r]) }) });
+  return {act:[...act].filter(id=>par[id].etat!=='actif'),des:[...des],bloc,lies:[...act].filter(id=>!attente.has(id)&&par[id].etat!=='actif')};
+}
+
+function ico(f){return '<span class="ico"><svg viewBox="0 0 24 24">'+ICONES[f]+'</svg></span>'}
+function carte(m){
+  const [lib,cls]=E[m.etat], on=veut(m.id), att=attente.has(m.id);
+  const lock=dev||m.ess||m.etat==='a_installer'||m.etat==='refuse';
+  return `<div class="carte ${m.etat==='actif'?'':'inactif'} ${att?'en-attente':''}" data-id="${m.id}" role="button" tabindex="0">
+   <div class="l1">${ico(m.fam)}<div style="min-width:0"><h3>${esc(m.nom)}</h3><div class="id">${m.id} · v${m.v}</div></div>
+   <button class="rgl" data-reg="${m.id}" ${m.etat!=='actif'?'disabled':''} title="${m.etat==='actif'?'Réglages de '+esc(m.nom):'Activez le module pour accéder à ses réglages'}" aria-label="Réglages de ${esc(m.nom)}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
+   <label class="inter ${att?'att':''}" style="margin-left:0" title="${m.ess?'Module essentiel : toujours actif':dev?'Instance de développement : tout est chargé':m.etat==='a_installer'?'À installer d\'abord':on?'Désactiver':'Activer'}" onclick="event.stopPropagation()"><input type="checkbox" ${on?'checked':''} ${lock?'disabled':''} data-bas="${m.id}" aria-label="Activer ${esc(m.nom)}"><i></i></label></div>
+   <div class="desc">${esc(m.d)}</div>
+   <div class="pied"><span class="p ${cls||'nu'}">${lib}</span><span class="p ${CRIT[crit(m)][1]}" title="${CRIT[crit(m)][2]}">${CRIT[crit(m)][0]}</span>${m.conf==='tiers'?'<span class="p nu">fournisseur tiers</span>':''}${m.alerte?'<span class="p al">à surveiller</span>':''}${att?'<span class="p al">'+(attente.get(m.id)?'sera activé':'sera désactivé')+'</span>':''}<span class="note" style="margin-left:auto">${m.cap} capacités</span></div></div>`;
+}
+function visibles(){
+  return M.filter(m=>{
+    if(filtre==='actif'&&m.etat!=='actif')return false; if(filtre==='inactif'&&m.etat!=='inactif')return false;
+    if(filtre==='attention'&&!(m.etat==='a_installer'||m.etat==='refuse'||m.alerte))return false;
+    if(fam!=='toutes'&&m.fam!==fam)return false;
+    if(niv!=='tous'&&crit(m)!==niv)return false;
+    if(cherche){const t=(m.nom+' '+m.id+' '+m.d+' '+m.res.join(' ')).toLowerCase(); if(!t.includes(cherche))return false}
+    return true;
+  });
+}
+function dessiner(){
+  const n=k=>M.filter(m=>k(m)).length;
+  const S=[['tous','Modules',M.length,''],['actif','Actifs',n(m=>m.etat==='actif'),'ok'],['inactif','Inactifs',n(m=>m.etat==='inactif'),''],['attention','À regarder',n(m=>m.etat==='a_installer'||m.etat==='refuse'||m.alerte),'al']];
+  $('#stats').innerHTML=S.map(s=>`<button class="stat ${s[3]} ${filtre===s[0]?'on':''}" data-f="${s[0]}"><b>${s[2]}</b><span>${s[1]}</span></button>`).join('');
+  const fs=['toutes',...Object.keys(FAMILLES).filter(f=>M.some(m=>m.fam===f))];
+  $('#fams').innerHTML=fs.map(f=>`<button class="fam ${fam===f?'on':''}" data-fam="${f}">${f==='toutes'?'Toutes les familles':FAMILLES[f]}</button>`).join('');
+  $('#niv').innerHTML='<span>Importance :</span>'+['tous','vital','important','optionnel'].map(k=>`<button class="fam ${niv===k?'on':''}" data-niv="${k}">${k==='tous'?'Toutes':CRIT[k][0]+' ('+M.filter(m=>crit(m)===k).length+')'}</button>`).join('');
+  const v=visibles();
+  $('#grille').innerHTML=v.length?v.map(carte).join(''):'<div class="vide" style="grid-column:1/-1">Aucun module ne correspond.</div>';
+  plateau();
+  if(ouvert)tiroir(ouvert,true);
+}
+function plateau(){
+  const p=$('#plateau'); if(!attente.size){p.classList.remove('ouvert');return}
+  const i=impact();
+  p.innerHTML=`<div class="t"><b>${attente.size} changement${attente.size>1?'s':''} en attente</b><div class="note">${i.act.length?'+ '+i.act.map(id=>par[id].nom).join(', '):''}${i.act.length&&i.des.length?' · ':''}${i.des.length?'− '+i.des.map(id=>par[id].nom).join(', '):''}</div>${i.bloc.length?'<div class="note" style="color:var(--danger)">Bloqué : '+i.bloc.map(b=>par[b[0]].nom+' est requis par '+par[b[1]].nom).join(' ; ')+'</div>':''}</div>
+   <button class="btn" id="p-annuler">Annuler</button><button class="btn" id="p-impact">Voir l'impact</button><button class="btn pri" id="p-appliquer" ${i.bloc.length?'disabled':''}>Appliquer</button>`;
+  p.classList.add('ouvert');
+}
+function tiroir(id,silencieux){
+  ouvert=id; const m=par[id], [lib,cls]=E[m.etat], on=veut(id);
+  const chip=x=>`<button class="chip ${par[x].etat==='actif'?'':'off'}" data-ouvre="${x}"><i></i>${esc(par[x].nom)}</button>`;
+  const bas=(dev||m.ess||m.etat==='a_installer')?'':`<button class="btn ${on?'dng':'pri'}" data-bas2="${id}">${attente.has(id)?'Annuler le changement':on?'Désactiver':'Activer'}</button>`;
+  $('#tiroir').innerHTML=`<div class="th"><div class="l1">${ico(m.fam)}<div style="min-width:0"><h2>${esc(m.nom)}</h2><div class="note mono">${m.id} · v${m.v}</div></div><button class="x" data-ferme aria-label="Fermer">×</button></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="p ${cls||'nu'}">${lib}</span><span class="p nu">${FAMILLES[m.fam]}</span>${m.ess?'<span class="p nu">essentiel</span>':''}<span class="p nu">confiance ${m.conf}</span></div></div>
+  <div class="tc">
+    <p>${esc(m.d)}</p>
+    ${m.alerte?`<div class="bandeau" style="border-color:var(--warn);color:var(--warn)">${esc(m.alerte)}</div>`:''}
+    ${m.aInstaller?`<div class="bandeau">${esc(m.aInstaller)}</div>`:''}
+    <div><div class="lib">Et sans lui ?</div><div class="sans ${crit(m)}"><div><span class="p ${CRIT[crit(m)][1]}">${CRIT[crit(m)][0]}</span> <span class="note">${CRIT[crit(m)][2]}</span></div>
+      <div>${esc(SANS[m.id]||(crit(m)==='optionnel'?'Rien d\'autre ne s\'arrête : ses menus, ses capacités et ses moteurs disparaissent, ses données restent.':'Ce module sert à d\'autres : voir ci-dessous.'))}</div>
+      ${actifsApres(m.id).length?'<div class="note">S\'arrêteraient avec lui : <b>'+actifsApres(m.id).map(x=>esc(par[x].nom)).join(', ')+'</b>.</div>':''}</div></div>
+    <div><div class="lib">Il compte</div><div class="cles"><div class="cle"><b>${m.cap}</b><span>capacités</span></div><div class="cle"><b>${m.det}</b><span>détecteurs</span></div><div class="cle"><b>${m.mot}</b><span>moteurs</span></div></div></div>
+    <div><div class="lib">Dépendances</div><div class="dep">
+      <div class="rang">${m.requiert.length?'Il a besoin de : '+m.requiert.map(chip).join(''):'<span>Il ne dépend d\'aucun autre module.</span>'}</div><div class="fleche">↓</div>
+      <div class="centre">${esc(m.nom)}</div><div class="fleche">↓</div>
+      <div class="rang">${m.requisPar.length?'Utilisé par : '+m.requisPar.map(chip).join(''):'<span>Aucun autre module ne s\'appuie sur lui.</span>'}</div></div></div>
+    <div><div class="lib">Ce qu'il peut faire hors de lui</div><div class="perms">
+      ${m.res.length?m.res.map(r=>`<div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3.2 3 3.2 15 0 18"/></svg><span>Se connecte à : ${esc(r)}</span></div>`).join(''):''}
+      ${m.ecr.length?m.ecr.map(r=>`<div><svg viewBox="0 0 24 24"><path d="M5 4h10l4 4v12H5z"/><path d="M9 13h6M9 17h4"/></svg><span>Écrit dans ${esc(r)}</span></div>`).join(''):''}
+      ${!m.res.length&&!m.ecr.length?'<div class="note">Rien : ni réseau, ni écriture déclarés.</div>':''}</div></div>
+    <p class="note">Comment se décide l'importance : <b>vital</b> = le module est marqué essentiel ; <b>important</b> = au moins un module actif s'appuie sur lui ; <b>optionnel</b> = aucun. Elle se recalcule quand l'état des modules change.</p>
+    <p class="note">Désactiver un module retire ses menus, ses capacités et ses moteurs ; <b>ses données restent</b> et reviennent à la réactivation.</p>
+  </div>
+  <div class="tp"><button class="btn" data-cons="${id}" ${m.etat!=='actif'?'disabled':''}>Ouvrir la console</button><button class="btn" data-reg="${id}" ${m.etat!=='actif'?'disabled':''}>Réglages</button><span class="sp"></span>${bas}</div>`;
+  $('#tiroir').classList.add('ouvert'); $('#voile').classList.add('ouvert');
+}
+function fermer(){ouvert=null;$('#tiroir').classList.remove('ouvert');$('#voile').classList.remove('ouvert')}
+function bascule(id,v){ if(par[id].etat==='actif'===v)attente.delete(id); else attente.set(id,v); dessiner() }
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('ouvert');setTimeout(()=>e.classList.remove('ouvert'),2600)}
+function feuille(){
+  const i=impact(), f=$('#feuille');
+  const l=(s,cl,t,d)=>`<div class="ligne"><span class="signe ${cl}">${s}</span><div><b>${esc(t)}</b><div class="note">${d}</div></div></div>`;
+  f.innerHTML=`<h2>Ce que ces changements vont faire</h2>
+   <div>${i.act.map(id=>l('+','plus','Activer '+par[id].nom,attente.has(id)?'Demandé par vous. Branche '+par[id].cap+' capacités, '+par[id].det+' détecteur'+(par[id].det>1?'s':'')+' et '+par[id].mot+' moteur'+(par[id].mot>1?'s':'')+'.':'Activé aussi : '+esc(par[id].nom)+' est requis par un module que vous activez.')).join('')}
+   ${i.des.map(id=>l('−','moins','Désactiver '+par[id].nom,'Retire ses menus, capacités et moteurs. Ses données restent.')).join('')}</div>
+   ${i.bloc.length?`<div class="bandeau" style="border-color:var(--danger);color:var(--danger)">Impossible tel quel : ${i.bloc.map(b=>esc(par[b[0]].nom)+' est requis par '+esc(par[b[1]].nom)).join(' ; ')}. Désactivez aussi ces modules, ou annulez.</div>`:''}
+   <p class="note">Rien n'est appliqué avant votre accord. Chaque activation est prouvée (le module répond) et se défait d'un clic.</p>
+   <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" data-fermef>Retour</button><button class="btn pri" data-appliquerf ${i.bloc.length?'disabled':''}>Appliquer</button></div>`;
+  f.classList.add('ouvert'); $('#voile').classList.add('ouvert');
+}
+function appliquer(){
+  const i=impact(); i.act.forEach(id=>par[id].etat='actif'); i.des.forEach(id=>par[id].etat='inactif'); const n=attente.size; attente.clear();
+  M.forEach(m=>m.requisPar=M.filter(x=>x.requiert.includes(m.id)).map(x=>x.id));
+  $('#feuille').classList.remove('ouvert'); if(!ouvert)$('#voile').classList.remove('ouvert'); dessiner(); toast(n+' changement'+(n>1?'s appliqués':' appliqué')+(i.lies.length?' (+ '+i.lies.length+' module lié)':''));
+}
+document.addEventListener('click',e=>{
+  const t=e.target, c=s=>t.closest(s);
+  if(c('[data-f]')){filtre=c('[data-f]').dataset.f;dessiner();return}
+  if(c('[data-niv]')){niv=c('[data-niv]').dataset.niv;dessiner();return}
+  if(c('[data-fam]')){fam=c('[data-fam]').dataset.fam;dessiner();return}
+  if(c('[data-ouvre]')){tiroir(c('[data-ouvre]').dataset.ouvre);return}
+  if(c('[data-bas2]')){const id=c('[data-bas2]').dataset.bas2;bascule(id,!veut(id));return}
+  if(c('[data-ferme]')||t.id==='voile'){if($('#feuille').classList.contains('ouvert')){$('#feuille').classList.remove('ouvert');if(!ouvert)$('#voile').classList.remove('ouvert')}else fermer();return}
+  if(c('.carte')&&!c('.inter')&&!c('.rgl')){tiroir(c('.carte').dataset.id);return}
+  if(t.id==='p-annuler'){attente.clear();dessiner();return}
+  if(t.id==='p-impact'){feuille();return}
+  if(t.id==='p-appliquer'||c('[data-appliquerf]')){appliquer();return}
+  if(c('[data-fermef]')){$('#feuille').classList.remove('ouvert');if(!ouvert)$('#voile').classList.remove('ouvert');return}
+  if(t.id==='b-dev'){dev=t.checked;$('#note-dev').hidden=!dev;if(dev)attente.clear();dessiner();return}
+  if(c('[data-reg]')){const id=c('[data-reg]').dataset.reg;toast('Ouvre la console de « '+par[id].nom+' », sur l\'onglet Réglages');return}
+  if(c('[data-cons]')){const id=c('[data-cons]').dataset.cons;toast('Ouvre la console de « '+par[id].nom+' »');return}
+});
+document.addEventListener('change',e=>{const b=e.target.closest('[data-bas]');if(b)bascule(b.dataset.bas,b.checked)});
+$('#q').addEventListener('input',e=>{cherche=e.target.value.trim().toLowerCase();dessiner()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#feuille').classList.remove('ouvert');fermer()} if((e.key==='Enter')&&e.target.classList&&e.target.classList.contains('carte'))tiroir(e.target.dataset.id)});
+dessiner();
+</script>
