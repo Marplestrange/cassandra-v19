@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.7.0)  #c21edc
+# VERSION EC : EC0 (référence 0.7.0)  #6556ae
 # HÔTE CN    : CN_module.py · disposition @1.0
 # RÔLE       : range les entrées de menu que les modules déclarent en groupes (barre du haut), entrées et sous-entrées (colonne de gauche), et en entrées du menu de l'avatar ; dit le pire niveau d'alerte de chaque entrée, de chaque groupe et du tout.
 # MÉTHODE    : fonction pure : une table de groupes, un repli par famille, un pont vers les onglets de l'ancienne interface ; chaque entrée reçue paraît une seule fois, rien n'est inventé, un groupe sans entrée n'existe pas.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=c21edc ▼▼▼
+# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=6556ae ▼▼▼
 
 # Les groupes de la barre du haut : (id, libellé, icône, ordre, interlocuteur par défaut du panneau).
 GROUPES = (
@@ -31,7 +31,7 @@ MAX_GROUPES = 7
 # Un module qui ne dit pas son groupe est rangé selon sa famille ; une famille inconnue va au groupe de repli.
 REPLI_FAMILLE = {"securite": "secu", "supervision": "obs", "reseau": "parc", "hebergement": "parc", "sites": "parc", "systeme": "parc",
                  "flotte": "parc", "evolution": "auto", "agents": "auto", "echanges": "desk", "communication": "desk", "travail": "desk",
-                 "gestion": "metier"}
+                 "gestion": "metier", "finance": "metier"}
 
 # Les modules dont la page n'est plus une entrée : le salon vit dans le panneau conversationnel.
 MASQUES = ("salon",)

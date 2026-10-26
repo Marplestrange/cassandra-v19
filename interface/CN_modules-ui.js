@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #719510
+// VERSION CN : 0.1.0  #2e7f1f
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=719510 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=2e7f1f ▼▼▼
 /* Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 
    Réglages a maintenant trois visions :
@@ -31,9 +31,12 @@
   const LIB = { socle: "Fondations", securite: "Sécurité et accès", reseau: "Réseau et domaines", hebergement: "Hébergement et sites", sites: "Sites web", communication: "Courrier et messagerie",
                 echanges: "Échanges et collaboration", canaux: "Canaux de contact", gestion: "Productivité et gestion", travail: "Travail", supervision: "Surveillance et journaux", agents: "Intelligence artificielle",
                 moteurs: "Moteurs", systeme: "Système et automatismes", evolution: "Auto-amélioration", autres: "Divers", "refusés": "Refusés" };
-  const ORDRE = ["socle", "securite", "reseau", "hebergement", "sites", "communication", "echanges", "canaux", "gestion", "travail", "supervision", "agents", "moteurs", "systeme", "evolution", "autres", "refusés"];
+  const ORDRE = ["socle", "securite", "reseau", "hebergement", "sites", "communication", "echanges", "canaux", "gestion", "finance", "travail", "supervision", "agents", "moteurs", "systeme", "evolution", "autres", "refusés"];
   const ETATS = { actif: ["Actif", "ok"], inactif: ["Inactif", ""], a_installer: ["À installer", "warn"], refuse: ["Refusé", "bad"] };
-  const famLib = (f) => LIB[f] || (f ? f[0].toUpperCase() + f.slice(1) : "Autres");
+  // Une famille que personne n'a nommée ici : celle que le premier module qui la déclare a nommée (famille_libelle), sinon son identifiant rendu lisible.
+  const declaree = (f, champ) => { const m = catalogue.find((x) => (x.famille || "autres") === f && x[champ]); return m ? m[champ] : ""; };
+  const famLib = (f) => LIB[f] || declaree(f, "famille_libelle") || (f ? f.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()) : "Divers");
+  const famIcone = (f) => declaree(f, "famille_icone");
 
   let catalogue = [], reglages = [], gere = true;
 
@@ -134,7 +137,7 @@
   };
 
   // Ce que la page « Modules et Applications » (disposition.js) emprunte à cet écran : le catalogue, la fiche d'un module, ses gestes et ses champs.
-  CASS.modulesUi = { lire: lire, fiche: (m, p, c) => fiche(m, p, c), gestes: (r, a) => gestes(r, a), lierChamps: lierChamps, familles: familles, famLib: famLib, catalogue: () => catalogue, gere: () => gere, nomDe: nomDe };
+  CASS.modulesUi = { lire: lire, fiche: (m, p, c) => fiche(m, p, c), gestes: (r, a) => gestes(r, a), lierChamps: lierChamps, familles: familles, famLib: famLib, famIcone: famIcone, catalogue: () => catalogue, gere: () => gere, nomDe: nomDe };
 
   // ── la fiche d'un module ────────────────────────────────────────────
   function fiche(m, portee, compact) {

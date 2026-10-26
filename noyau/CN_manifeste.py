@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #43b098
+# VERSION CN : 0.1.0  #f139e0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=43b098 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f139e0 ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -372,6 +372,8 @@ class Manifeste:
     conflits: tuple = ()       # des modules qui ne peuvent pas être actifs en même temps que celui-ci
     suggere: tuple = ()        # des modules qui lui servent sans être requis
     fournit: tuple = ()        # des noms de service que ce module rend : un autre module peut requérir « courrier » sans dire QUEL module le fournit
+    famille_libelle: str = ""  # le nom lisible d'une famille NOUVELLE (celle du module n'existe pas encore au menu) : « Finance et ventes »
+    famille_icone: str = ""    # l'icône (une clé de l'interface, en trait) de cette famille ; vide : l'icône générique
     importance: str = ""       # ce que la maison perd sans ce module : « vital » (elle ne tient plus), « important » (une fonction s'arrête), « optionnel » (on s'en passe) ; vide = non déclaré
     sans: str = ""             # une phrase : ce qui s'arrête, concrètement, quand ce module est désactivé
     objets: tuple = ()
@@ -467,6 +469,10 @@ def valider(brut: dict) -> list:
         e.append("module.essentiel : vrai ou faux")
     if "famille" in m and (not isinstance(m["famille"], str) or len(m["famille"]) > 40):
         e.append("module.famille : un texte de 40 caractères au plus")
+    if "famille_libelle" in m and (not isinstance(m["famille_libelle"], str) or not m["famille_libelle"].strip() or len(m["famille_libelle"]) > 40):
+        e.append("module.famille_libelle : un nom de 40 caractères au plus")
+    if "famille_icone" in m and (not isinstance(m["famille_icone"], str) or not re.match(r"^[a-z][a-z0-9_]{1,30}$", m["famille_icone"])):
+        e.append("module.famille_icone : une clé d'icône (lettres minuscules, chiffres, _)")
     if "importance" in m and m["importance"] not in IMPORTANCES:
         e.append("module.importance : %s" % " ou ".join("« %s »" % x for x in IMPORTANCES))
     if "sans" in m and (not isinstance(m["sans"], str) or len(m["sans"]) > 300):
@@ -946,6 +952,7 @@ def construire(brut: dict, source="") -> Manifeste:
         contraintes=tuple(lire_requis(x) for x in m.get("requiert", ()) if lire_requis(x)[1]),
         conflits=tuple(m.get("conflits", ())), suggere=tuple(m.get("suggere", ())), fournit=tuple(m.get("fournit", ())),
         essentiel=bool(m.get("essentiel", False)), famille=str(m.get("famille", "")),
+        famille_libelle=str(m.get("famille_libelle", "")).strip(), famille_icone=str(m.get("famille_icone", "")),
         importance=str(m.get("importance", "vital" if m.get("essentiel") else "")), sans=str(m.get("sans", "")).strip(),
         auteur=str(m.get("auteur", "")), licence=str(m.get("licence", "")), site=str(m.get("site", "")), api=str(m.get("api", "1")),
         permissions=Permissions(bool((brut.get("permissions") or {}).get("espace_utilisateur", False)),

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #bc99c2
+# VERSION CN : 0.1.0  #c50913
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=bc99c2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c50913 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -20,7 +20,9 @@ version = "0.1.0"
 noyau_min = "0.1.0"
 description = "La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif."
 confiance = "interne"
-famille = "gestion"
+famille = "finance"
+famille_libelle = "Finance et ventes"
+famille_icone = "fam_finance"
 importance = "optionnel"
 sans = "Plus de billetterie : événements, billets et caisse ne sont plus accessibles ; les données restent."
 auteur = "Drisse ATEK"

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #740ea8
+# VERSION CN : 0.1.0  #435446
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'importance déclarée par chaque module : vital, important ou optionnel, et ce qui s'arrête sans lui.
 # MÉTHODE    : lit les manifestes des modules livrés et éprouve le validateur sur des manifestes d'essai
 # ═══════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=740ea8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=435446 ▼▼▼
 """Chaque module déclare ce que la maison perd sans lui (`importance`) et en une phrase ce qui s'arrête (`sans`). Un module essentiel est vital.
 La page des modules s'en sert pour dire, avant tout changement, ce qu'il va casser : une déclaration manquante la laisserait muette."""
 import copy
@@ -59,6 +59,22 @@ class ImportanceDeclaree(unittest.TestCase):
             self.assertTrue(any(ch in e for e in M.valider(mauvais)), ch)
         mauvais = copy.deepcopy(d); mauvais["module"]["essentiel"] = True; mauvais["module"]["importance"] = "optionnel"
         self.assertTrue(any("essentiel" in e and "vital" in e for e in M.valider(mauvais)))
+
+    def test_une_famille_nouvelle_se_nomme_et_choisit_son_icone(self):
+        f, d = next(iter(manifestes()))
+        ok = copy.deepcopy(d)
+        ok["module"]["famille_libelle"] = "Finance et ventes"
+        ok["module"]["famille_icone"] = "fam_finance"
+        self.assertEqual([e for e in M.valider(ok) if "famille" in e], [])
+        for champ, valeur in (("famille_libelle", "x" * 41), ("famille_libelle", "  "), ("famille_icone", "Pas Valide")):
+            mauvais = copy.deepcopy(d)
+            mauvais["module"][champ] = valeur
+            self.assertTrue(any(champ in e for e in M.valider(mauvais)), (champ, valeur))
+
+    def test_la_finance_est_une_famille_nommee_par_ses_modules(self):
+        familles = {d["module"]["id"]: d["module"] for f, d in manifestes()}
+        for mid in ("dolibarr", "billetterie"):
+            self.assertEqual((familles[mid]["famille"], familles[mid]["famille_libelle"]), ("finance", "Finance et ventes"), mid)
 
     def test_le_manifeste_charge_porte_les_deux_champs(self):
         for f, d in manifestes():
