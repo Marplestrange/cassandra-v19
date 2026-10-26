@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #67db12
+# VERSION CN : 0.1.0  #5acfe9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=67db12 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5acfe9 ▼▼▼
 """La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 
 Un module n'écrit aucune route. Il déclare des capacités, et la passerelle les rend toutes joignables par la même URL :
@@ -42,6 +42,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 log = logging.getLogger("noyau.CN_passerelle")
 
 TAILLE_MAX = 1024 * 1024
+TAILLE_TELEVERSE = 34 * 1024 * 1024      # une archive de module (32 Mo au plus) et son enveloppe ; seule une capacité qui DÉCLARE `corps_octets` reçoit un corps de cette taille
 # L'interface (V18 extraite) pose des gestionnaires en ligne et charge ses bibliothèques sur deux CDN ; tout le reste est fermé.
 CSP_PAGE = ("default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src https://fonts.gstatic.com data:; "
@@ -238,6 +239,8 @@ class Passerelle:
                 return self._repondre(h, 200, {"modules": [dict({k: m[k] for k in ("id", "nom", "famille", "etat", "version", "essentiel") if k in m}, actif=m["id"] in branches) for m in self.noyau.catalogue_modules()]})
             if chemin.startswith("/api/agir/"):
                 return self._agir(h, methode, chemin[len("/api/agir/"):], url.query, compte, acteur)
+            if methode == "POST" and chemin.startswith("/api/televerser/"):
+                return self._televerser(h, chemin[len("/api/televerser/"):], url.query, compte, acteur)
             return self._repondre(h, 404, {"erreur": "route inconnue"})
         except ValueError as ex:
             return self._repondre(h, 400, {"erreur": str(ex)})
@@ -326,6 +329,26 @@ class Passerelle:
             return e.faire.__code__.co_varnames[:e.faire.__code__.co_argcount]
         except AttributeError:
             return ()
+
+    def _televerser(self, h, cle, requete, compte, acteur):
+        """Des octets (une archive) pour une capacité qui les attend (`corps_octets`) : mêmes droits, même journal (l'argument est masqué par la capacité), mais une taille permise plus grande.
+        Le corps est brut (application/octet-stream) ; les autres arguments viennent de l'adresse (?nom=...)."""
+        if not RE_CAPACITE.match(cle):
+            return self._repondre(h, 404, {"erreur": "capacité inconnue"})
+        e = self.noyau.catalogue.get(cle)
+        if e is None or "corps_octets" not in self._noms_args(e):
+            return self._repondre(h, 404, {"erreur": "cette capacité ne reçoit pas de fichier"})
+        n = int(h.headers.get("Content-Length") or 0)
+        if n <= 0:
+            raise ValueError("fichier vide")
+        if n > TAILLE_TELEVERSE:
+            raise ValueError("fichier trop grand (%d Mo au plus)" % (TAILLE_TELEVERSE // 2 ** 20))
+        h._brut = h.rfile.read(n)
+        h._corps_lu = True
+        args = {k: _valeur(v[-1]) for k, v in parse_qs(requete, keep_blank_values=True).items() if k in self._noms_args(e) and k != "corps_octets"}
+        args["corps_octets"] = h._brut
+        r = self.noyau.executeur.executer(cle, acteur, args, compte=compte)
+        return self._repondre(h, STATUTS_HTTP.get(r["statut"], 200), r)
 
     def _agir(self, h, methode, cle, requete, compte, acteur):
         if not RE_CAPACITE.match(cle):

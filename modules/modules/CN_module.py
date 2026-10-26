@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #08c550
+# VERSION CN : 0.1.0  #f5d8b5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=08c550 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f5d8b5 ▼▼▼
 """Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 
 Le travail (plan d'activation avec dépendances, refus d'un essentiel, branchement à chaud) est celui du noyau ; ce module en fait des
@@ -34,7 +34,7 @@ def brancher(ctx):
         if m is None:
             raise ValueError("module inconnu : « %s »" % module)
         # une fiche n'expose ni permissions ni versions de plus que le catalogue public ; les capacités sont filtrées par les droits du compte
-        return {"module": {k: m[k] for k in ("id", "nom", "description", "version", "famille", "etat", "essentiel", "importance", "sans", "requiert", "requis_par") if k in m},
+        return {"module": {k: m[k] for k in ("id", "nom", "description", "version", "famille", "etat", "essentiel", "importance", "sans", "requiert", "requis_par", "conflits", "suggere", "fournit", "contraintes") if k in m},
                 "capacites": g.capacites(module, ctx.compte)}
 
     def activer(ctx, module="", avec_dependances=True):
@@ -71,6 +71,78 @@ def brancher(ctx):
         for x in reversed(res["desactives"]):
             g.activer(x, acteur=ctx.compte or "retour arrière", avec_dependances=False, appliquer=False)
 
+    # ---------------------------------------------------------------- le cycle de vie d'un module venu d'une archive (le travail est celui de noyau/CN_cycle.py)
+    cy = g.cycle
+
+    def politique():
+        v = str(ctx.reglage("politique_confiance", "signes") or "signes")
+        return v if v in ("signes", "tous") else "signes"
+
+    def examiner(ctx, corps_octets=b"", nom=""):
+        if not isinstance(corps_octets, (bytes, bytearray)):
+            raise ValueError("une archive (octets) est attendue : elle se téléverse par /api/televerser/modules.examiner")
+        return cy.examiner(bytes(corps_octets), politique())
+
+    def prouver_examiner(ctx, res):
+        return (cy.quarantaine / (res["jeton"] + ".cmod")).is_file()
+
+    def defaire_examiner(ctx, res):
+        cy.abandonner(res["jeton"])
+
+    def abandonner(ctx, jeton=""):
+        cy.abandonner(str(jeton))
+        return {"jeton": str(jeton)}
+
+    def prouver_abandonne(ctx, res):
+        return not (cy.quarantaine / (res["jeton"] + ".cmod")).exists()
+
+    def defaire_abandonne(ctx, res):
+        cy.restaurer(res["jeton"])
+
+    def installer(ctx, jeton="", consentement=""):
+        return cy.installer(str(jeton), str(consentement), politique(), par=ctx.compte or "humain")
+
+    def prouver_installe(ctx, res):
+        e = entree(res["id"])
+        return bool(e) and e.get("version") == res["version"]
+
+    def defaire_installe(ctx, res):
+        if res.get("ancienne"):
+            cy.retour_arriere(res["id"], par=ctx.compte or "retour arrière")
+        else:
+            cy.desinstaller(res["id"], par=ctx.compte or "retour arrière")
+
+    def retour_arriere(ctx, module="", cle=""):
+        return cy.retour_arriere(str(module), str(cle), par=ctx.compte or "humain")
+
+    def prouver_retour(ctx, res):
+        e = entree(res["id"])
+        return bool(e) and e.get("version") == res["version"]
+
+    def defaire_retour(ctx, res):
+        cy.retour_arriere(res["id"], par=ctx.compte or "retour arrière")
+
+    def desinstaller(ctx, module="", purger_donnees=False):
+        r = cy.desinstaller(str(module), par=ctx.compte or "humain")
+        if purger_donnees:
+            r["purge"] = cy.purger_donnees(str(module), par=ctx.compte or "humain")["purge"]
+        return r
+
+    def prouver_desinstalle(ctx, res):
+        return entree(res["id"]) is None
+
+    def defaire_desinstalle(ctx, res):
+        cy.retour_arriere(res["id"], par=ctx.compte or "retour arrière")
+
+    def versions(ctx, module=""):
+        return dict(cy.versions(str(module)), en_place=entree(str(module)))
+
+    ctx.implementer("examiner", examiner, prouver_examiner, defaire_examiner)
+    ctx.implementer("installer", installer, prouver_installe, defaire_installe)
+    ctx.implementer("retour_arriere", retour_arriere, prouver_retour, defaire_retour)
+    ctx.implementer("desinstaller", desinstaller, prouver_desinstalle, defaire_desinstalle)
+    ctx.implementer("abandonner", abandonner, prouver_abandonne, defaire_abandonne)
+    ctx.implementer("versions", versions)
     ctx.implementer("lister", lister)
     ctx.implementer("fiche", fiche)
     ctx.implementer("activer", activer, prouver_activer, defaire_activer)

@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #517ce9
+# VERSION CN : 0.1.0  #5a2a3a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=517ce9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5a2a3a ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -51,7 +51,7 @@ import threading
 import time
 from pathlib import Path
 
-from noyau import CN_chargeur as chargeur, CN_manifeste as manifeste, CN_paquets as paquets, CN_systemd as systemd
+from noyau import CN_chargeur as chargeur, CN_cycle as cycle, CN_manifeste as manifeste, CN_paquets as paquets, CN_systemd as systemd
 from noyau.CN_base import Base
 from noyau.CN_bus import TOUT, Bus
 from noyau.CN_catalogue import Catalogue
@@ -92,6 +92,7 @@ class Noyau:
         self.etat_modules = Modules(self.base)
         self.catalogue = Catalogue(self.base)
         self._donnees = Path(donnees)
+        self.cycle = cycle.Cycle(self.extensions, self._donnees, _cles(), lambda: list(self._connus()[0].values()), self._ids_actifs)
         self.points = ServicePoints(self._donnees / "ec", alerte=lambda gid, texte: self.bus.emettre("noyau.point_suspendu", source="noyau", donnees={"point": gid, "texte": texte}))
         rejeu_cfg = self.config.get("rejeu") or {}
         self.rejeu = Rejeu(self._donnees / "rejeu.db", max_par_point=int(rejeu_cfg.get("max_par_point", 2000)), actif=bool(rejeu_cfg.get("actif", True)))
@@ -157,7 +158,7 @@ class Noyau:
                        {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
                         "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine, "point": self.points.appeler, "evolution": self.evolution,
                         "urgence": types.SimpleNamespace(freins=self.freins, freiner=self.freiner, en_crise=self.en_crise, crise=self.crise),
-                        "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, capacites=self.capacites_de, catalogue=self.catalogue_modules, activer=self.activer, desactiver=self.desactiver)})
+                        "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, cycle=self.cycle, extensions=lambda: self.extensions, capacites=self.capacites_de, catalogue=self.catalogue_modules, activer=self.activer, desactiver=self.desactiver)})
         self.executeur.contextes[m.id] = ctx
         return ctx
 
@@ -269,6 +270,13 @@ class Noyau:
     def _compteurs(self, mid: str) -> dict:
         n = self.base.lire("SELECT COUNT(*) AS n FROM constats WHERE module=? AND etat='ouvert'", (mid,))[0]["n"]
         return {"constats": n, "moteurs": sum(1 for m in self.etat_moteurs() if m["cle"].startswith(mid + ".") and m["etat"] != "actif")}
+
+    def _ids_actifs(self) -> set:
+        """Les modules actifs : l'état en base (exploitation), la liste lue (greffe à chaud) ou, sans gestion, tous ceux qu'on connaît."""
+        if self.gerer:
+            return set(self.etat_modules.actifs())
+        liste = self.lire_actifs() if self.lire_actifs else self.actifs
+        return set(liste) if liste is not None else set(self._connus()[0])
 
     def _connus(self):
         fige = getattr(self, "_connus_fige", None)
@@ -837,9 +845,11 @@ def _donnees() -> Path:
 
 
 def _extensions():
-    """Le dossier des modules greffés après coup : $CASSANDRA_EXTENSIONS. Il est surveillé MÊME s'il n'existe pas
-    encore : une greffe déposée après le démarrage doit être vue."""
-    return os.environ.get("CASSANDRA_EXTENSIONS") or None
+    """Le dossier des modules greffés après coup : $CASSANDRA_EXTENSIONS, sinon <données>/extensions. Il est surveillé MÊME s'il n'existe pas
+    encore : une greffe déposée après le démarrage doit être vue. Le mode sûr ($CASSANDRA_MODE_SUR=1) l'ignore : la maison démarre avec ses seuls modules livrés."""
+    if os.environ.get("CASSANDRA_MODE_SUR") == "1":
+        return None
+    return os.environ.get("CASSANDRA_EXTENSIONS") or str(_donnees() / "extensions")
 
 
 def _actifs():

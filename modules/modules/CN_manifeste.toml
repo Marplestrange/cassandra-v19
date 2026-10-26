@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0ee27d
+# VERSION CN : 0.1.0  #dfc0ae
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La gestion des modules : ce qui est installé, actif ou à installer, ce qui dépend de quoi, et le geste d'activer ou de désactiver. Le noyau fait le travail (dépendances, essentiels, branchement à chaud) ; ce module en fait des capacités, donc des droits, une preuve, un retour et une trace.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0ee27d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=dfc0ae ▼▼▼
 [module]
 id = "modules"
 nom = "Modules"
@@ -30,6 +30,24 @@ requiert = ["droits"]
 id = "gerer"
 libelle = "Activer ou désactiver un module"
 sensible = true
+
+[[droits]]
+id = "installer"
+libelle = "Installer, mettre à jour, retirer un module venu d'une archive (il tourne ensuite dans Cassandra)"
+sensible = true
+
+[[reglages]]
+id = "politique_confiance"
+libelle = "Quels paquets de module s'installent"
+type = "choix"
+choix = ["signes", "tous"]
+defaut = "signes"
+aide = "« signes » : seulement les paquets signés par un éditeur dont vous avez posé la clé (config/cles/<éditeur>.pub). « tous » : un paquet non signé est permis, à vos risques : un module installé tourne DANS Cassandra, avec ses droits."
+
+[[reglages]]
+id = "registre_url"
+libelle = "Adresse du registre de modules (l'index d'un magasin)"
+aide = "Vide : pas de registre, on installe depuis une archive déposée. Un registre ne change pas la politique : chaque archive est examinée de la même façon."
 
 [evenements]
 emet = []
@@ -66,6 +84,68 @@ preuve = "le catalogue dit « inactif » pour chacun des modules visés"
 retour = "réactiver ceux que ce geste vient de désactiver"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
+
+[[capacites]]
+id = "examiner"
+libelle = "Examiner une archive de module (.cmod) SANS rien installer : elle attend en quarantaine, et on dit ce qu'elle ferait : nouveau ou mise à jour, éditeur et signature, permissions demandées (et en plus), dépendances et conflits"
+risque = "faible"
+droit = "installer"
+masque = ["corps_octets"]
+perimetre = ["la quarantaine (donnees/quarantaine) ; rien n'est posé, rien ne s'exécute"]
+preuve = "l'examen rend un jeton et l'archive est en quarantaine"
+retour = "abandonner l'archive : elle quitte la quarantaine"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "installer"
+libelle = "Installer une archive examinée : le consentement aux permissions montrées est exigé, l'ancienne version part en sauvegarde, le dossier est déposé (le module reste INACTIF jusqu'à son activation)"
+risque = "eleve"
+droit = "installer"
+perimetre = ["le dossier d'un module dans les extensions ; jamais un module livré avec le noyau"]
+preuve = "le catalogue montre le module dans la version installée"
+retour = "remettre la version d'avant, ou retirer le module s'il était nouveau"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "retour_arriere"
+libelle = "Remettre une version sauvegardée d'un module installé par archive (la version courante part elle-même en sauvegarde)"
+risque = "eleve"
+droit = "installer"
+perimetre = ["le dossier d'un module dans les extensions"]
+preuve = "le catalogue montre la version remise"
+retour = "refaire un retour arrière : la version remplacée est en sauvegarde"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "desinstaller"
+libelle = "Désinstaller un module installé par archive : son dossier part en sauvegarde ; ses données restent, sauf demande de purge (elles partent alors aussi en sauvegarde)"
+risque = "eleve"
+droit = "installer"
+perimetre = ["le dossier d'un module dans les extensions, et ses données seulement sur demande"]
+preuve = "le catalogue ne montre plus le module"
+retour = "remettre le dossier sauvegardé (les données purgées restent en sauvegarde)"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "abandonner"
+libelle = "Abandonner une archive examinée : elle quitte la quarantaine"
+risque = "faible"
+droit = "installer"
+perimetre = ["la quarantaine"]
+preuve = "l'archive n'y est plus"
+retour = "déposer l'archive de nouveau"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "versions"
+libelle = "Les versions d'un module installé par archive : ce qu'on peut remettre (sauvegardes) et ce qui s'est passé (installations, retours, désinstallations)"
+risque = "lecture"
+droit = "installer"
 
 [permissions]
 modules = true
