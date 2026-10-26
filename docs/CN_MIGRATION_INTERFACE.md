@@ -1,33 +1,34 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Remplacer l'ancienne interface (V18) par des écrans V19 -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Remplacer l'ancienne interface (V18) par des écrans V19 -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=2bb3b7 ▼▼▼ -->
 # Remplacer l'ancienne interface (V18) par des écrans V19
 
-Décision (26-10, Drisse) : l'interface V18 avait été **extraite** et réemployée comme socle (voir `docs/CN_AFFICHAGE.md`). C'était une erreur de méthode : on se retrouve avec deux codes (l'ancien qui rend 34 des 37 entrées de menu, et le nouveau), un ancien écran qui se montre un instant au chargement, et des écrans qui n'ont pas l'esprit de la V19 (Cassandra d'abord, le récit, le défaire, le téléphone). **On remplace tout, écran par écran, et on supprime l'ancien code au fur et à mesure.**
+Décision (26-10, Drisse, révisée) : **on ne refait pas les modules.** L'interface V18 reste le moteur des écrans de chaque module, avec toutes ses fonctions et ses pastilles ; la V19 apporte le cadre (disposition, menus, panneau de Cassandra, Logithèque, Mes applications) et surtout **un habillage universel** : un seul jeu de jetons (couleurs, rayons, ombres, verre dépoli, typographie, espacements) appliqué à tous les écrans, anciens compris.
 
-## Où on en est (mesuré)
-- `interface/CN_app.js` : 38 226 lignes (l'ancien JS), `CN_style.css` 7 631 lignes, `CN_index.html` 4 768 lignes dont **17 panneaux** (`tab-*`).
-- 33 tables de routes (`interface/routes/`, 2 191 lignes) et `CN_compat.js` : la couche qui fait croire à l'ancien JS que ses 615 routes existent.
-- Écrans V19 déjà là : Logithèque, Mes applications, Zones DNS, Certificats, Dolibarr, Évolution (écran), et les pages posées dans le panneau « bureau » (Aujourd'hui…).
-- Entrées de menu qui ouvrent encore un panneau V18 : 34 (table `ENTREES` de `modules/affichage/points/EC_disposition.py`).
+Essai abandonné : refaire écran par écran (Historique, Journaux, Sensorium, Flotte, Sites, Hébergement, Automatismes) retirait des fonctions et des pastilles sans rien apporter. Les cinq commits ont été défaits (revert) ; le Panorama, resté en brouillon, est rangé dans le stash `panorama-v19-abandonne`. Le kit commun (`CN_kit.js`) reste pour les écrans neufs seulement.
 
-## La méthode (la même pour chaque écran)
-1. Le module du domaine a déjà ses capacités (la V19 est portée côté serveur) : l'écran les appelle **directement**, sans passer par la couche de compatibilité.
-2. Un fichier `interface/CN_<x>-ecran.js` (crochet `CASS.sceneSurMesure.<module>`), bâti sur le **kit commun** (`CN_kit.js`) : mêmes cartes, mêmes pastilles, même tiroir, même gabarit téléphone, même accessibilité que la Logithèque.
-3. Le module déclare `[[ecrans]]` et `[[menus]]` dans son manifeste ; l'entrée disparaît de `ENTREES` (donc l'onglet V18 n'est plus joignable).
-4. Un test d'interface (réponses simulées) et, côté serveur, le banc existant du module.
-5. Quand plus aucune entrée ne mène à un panneau, le panneau (HTML) et ses routes de compatibilité sont **supprimés**. Le JS V18 qui ne sert plus à personne tombe avec la fin de `CN_app.js` (dernier lot).
-6. On **tranche ce qu'on garde** : un écran V18 qui avait dix scènes n'en garde pas forcément dix ; ce qui est abandonné est dit dans cette page.
+## Ce qu'on fait à la place
+1. **Habillage universel** : faire lire à la feuille V18 les jetons V19 (variables CSS) plutôt que ses propres valeurs ; retirer le CSS du menu V18 devenu inutile (la disposition V19 le remplace).
+2. **Aucune suppression de panneau ni de code V18** sans validation de Drisse écran par écran.
+3. Les écrans **neufs** (nouveaux modules) se bâtissent sur le kit commun.
 
-## Les lots, dans l'ordre
-| # | Lot | Panneaux V18 (lignes de HTML) | Module(s) | Remarque |
-|---|---|---|---|---|
-| 0 | Kit commun | — | — | extrait de la Logithèque |
-| 1 | Observatoire | history (25), sensorium (25), journal (33) | mesures, sensorium, journal | lectures, peu d'état : le plus sûr pour roder la méthode |
-| 2 | Parc | overview (134), fleet (25), mysites (29), fastpanel (48), crons (150) | vue, flotte, sites, fastpanel, planifie | Panorama = le verdict de la maison |
-| 3 | Sécurité | securite (321) | securite | pare-feu, outils, analyse |
-| 4 | Autonomie | evolution (47), proactive (172), memory (51) | evolution, proactif, memoire | Évolution a déjà un écran V19 |
-| 5 | Bureau | bureau (980) | courrier, agenda, taches, notes, contacts, ged, projets, jour | le plus gros : un écran par application |
-| 6 | Salon | salon (114) | salon | vit déjà dans le panneau de conversation |
-| 7 | Avatar | settings (1 936), vault (144) | reglages, coffre, comptes… | pages de l'avatar : à scinder en écrans par rubrique |
-| 8 | Le cœur | — | — | connexion, cloche, thème, toasts, session : ce que `CN_app.js` fournit encore au shell ; puis **suppression de `CN_app.js`, `CN_style.css` (V18), `CN_compat.js` et `routes/`** |
+## Ce qui reste hors du cadre
+Rien n'est retiré : tout écran V18 garde ses scènes, ses pastilles et ses gestes.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 
-## Ce qui est abandonné (au fil des lots)
-_À remplir lot par lot._
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->
