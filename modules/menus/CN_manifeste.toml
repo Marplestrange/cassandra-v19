@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : menus
 # ZONE       : CN
-# VERSION CN : 0.3.2  #a6b5a4
+# VERSION CN : 0.3.2  #941204
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble, à chaud, l'arbre de navigation que les modules actifs déclarent : familles, ordre, rôles, compteurs, personnalisation par compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=a6b5a4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=941204 ▼▼▼
 [module]
 id = "menus"
 nom = "Menus"
@@ -65,6 +65,11 @@ libelle = "Lire le menu pour un rôle et un compte"
 risque = "lecture"
 
 [[capacites]]
+id = "mes_entrees"
+libelle = "Les applications que ce compte peut voir, chacune avec son état dans SON menu (retirée ou non) : de quoi lui laisser choisir ce qui apparaît"
+risque = "lecture"
+
+[[capacites]]
 id = "personnaliser_entree"
 libelle = "Masquer, renommer, réordonner ou déplacer une entrée de menu, pour tous ou pour un compte"
 risque = "faible"
@@ -75,11 +80,11 @@ paliers = ["raconter", "auto"]
 qui = ["humain", "compte", "cassandra", "itare"]
 
 [[menus]]
-id = "modules"
-libelle = "Modules et Applications"
-ecran = "vue_modules"
-ordre = 10
-role = "admin"
+id = "mes_applications"
+libelle = "Mes applications"
+ecran = "vue_mes_applications"
+ordre = 8
+role = "utilisateur"
 icone = "puzzle"
 zone = "avatar"
 
@@ -92,30 +97,15 @@ role = "admin"
 icone = "puzzle"
 zone = "avatar"
 
-[[menus]]
-id = "appstore"
-libelle = "App Store"
-ecran = "vue_store"
-ordre = 11
-role = "admin"
-icone = "puzzle"
-zone = "avatar"
+[[ecrans]]
+id = "vue_mes_applications"
+libelle = "Mes applications"
+domaine = "socle"
+gabarit = "liste_detail"
 
 [[ecrans]]
 id = "vue_logitheque"
 libelle = "Logithèque"
-domaine = "socle"
-gabarit = "liste_detail"
-
-[[ecrans]]
-id = "vue_store"
-libelle = "App Store"
-domaine = "socle"
-gabarit = "liste_detail"
-
-[[ecrans]]
-id = "vue_modules"
-libelle = "Modules et Applications"
 domaine = "socle"
 gabarit = "liste_detail"
 

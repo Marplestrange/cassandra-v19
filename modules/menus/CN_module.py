@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : menus
 # ZONE       : CN
-# VERSION CN : 0.3.2  #653eed
+# VERSION CN : 0.3.2  #c03208
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module de menus : assemble l'arbre de navigation à partir de ce que les modules actifs DÉCLARENT.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=653eed ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=c03208 ▼▼▼
 """Le module de menus : assemble l'arbre de navigation à partir de ce que les modules actifs DÉCLARENT.
 
 Un module ne touche jamais à l'interface pour s'y inscrire : il déclare ses entrées dans son manifeste ([[menus]]), et ce module les
@@ -143,6 +143,15 @@ def _appliquer_perso(plat, persos):
     return _corriger({i: e for i, e in par_id.items() if not cache(e)})
 
 
+def cible_perso(ctx, compte: str) -> str:
+    """Pour QUI une personnalisation s'écrit. Un administrateur choisit (tous, ou un compte). Un autre compte ne règle QUE son menu : jamais celui des autres, jamais le menu de tous."""
+    if ctx.compte and not ctx.est_admin(ctx.compte):
+        if compte not in ("", ctx.compte):
+            raise PermissionError("un compte ne personnalise que son propre menu")
+        return ctx.compte
+    return compte
+
+
 def _aplatir(arbre):
     for n in arbre:
         yield n
@@ -191,11 +200,35 @@ def brancher(ctx):
         return {"etag": actuel["donnees"]["etag"], "arbre": assembler(plat, "admin" if role == "admin" else "utilisateur", detenus),
                 "badges": copy.deepcopy(bd["donnees"]) if bd else {}}
 
+    def mes_entrees(ctx, role="utilisateur", compte=""):
+        """Les applications (entrées qui ouvrent un écran) que CE compte peut voir, chacune avec « masque » : le compte l'a-t-il retirée de SON menu ? Un masque personnel ne cache
+        l'entrée que dans SON menu : il se lit ici pour pouvoir le lever, ce que lire_menu (qui ne rend que le visible) ne permet pas."""
+        if ctx.compte:
+            role, compte = ("admin" if ctx.est_admin(ctx.compte) else "utilisateur"), ctx.compte
+        actuel = ctx.lire(*ARBRE, portee=ctx.TOUT)
+        if not actuel:
+            return {"entrees": []}
+        tous = sorted(ctx.lister(portee=ctx.TOUT, type="menu_perso"), key=lambda o: (o["compte"] != "", o["id"]))
+        detenus = None
+        if compte:
+            try:
+                d = ctx.executer_lecture("droits.mes_droits", compte=compte)
+            except (PermissionError, KeyError):
+                d = None
+            detenus = set(d["droits"]) if d else set()
+        role = "admin" if role == "admin" else "utilisateur"
+        plat = actuel["donnees"]["plat"]
+        possibles = [e for e in _aplatir(assembler(_appliquer_perso(plat, [o["donnees"] for o in tous if o["compte"] == ""]), role, detenus)) if e.get("ecran")]
+        visibles = {e["id"] for e in _aplatir(assembler(_appliquer_perso(plat, [o["donnees"] for o in tous if o["compte"] in ("", compte)]), role, detenus))}
+        return {"entrees": [{"id": e["id"], "libelle": e["libelle"], "ecran": e["ecran"], "famille": e.get("famille", ""), "icone": e.get("icone", ""), "module": e.get("module", ""), "masque": e["id"] not in visibles}
+                            for e in possibles]}
+
     def _plat_courant(ctx):
         actuel = ctx.lire(*ARBRE, portee=ctx.TOUT)
         return {e["id"]: e for e in (actuel["donnees"]["plat"] if actuel else [])}
 
     def personnaliser(ctx, entree, masque=None, libelle=None, ordre=None, parent=None, reinitialiser=False, compte=""):
+        compte = cible_perso(ctx, compte)
         plat = _plat_courant(ctx)
         if entree not in plat:
             raise ValueError("entrée de menu inconnue : %s" % entree)
@@ -235,6 +268,7 @@ def brancher(ctx):
     ctx.moteur("reconstruire_regulierement", reconstruire)
     ctx.moteur("badges", badges)
     ctx.implementer("lire_menu", lire_menu)
+    ctx.implementer("mes_entrees", mes_entrees)
     ctx.implementer("personnaliser_entree", personnaliser, prouver, defaire,
                     simuler=lambda ctx, entree, **_: "personnaliserait l'entrée %s" % entree)
 # ▲▲▲ FIN BORNE CN ▲▲▲

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #958a75
+// VERSION CN : 0.1.0  #2193b4
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La Logithèque : où se gèrent les modules, leurs sources, leur sécurité et l'autonomie de Cassandra sur eux.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=958a75 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=2193b4 ▼▼▼
 // La Logithèque : où se gèrent les modules, leurs sources, leur sécurité et l'autonomie de Cassandra sur eux.
 // Une page, des sections (Vue d'ensemble, Installés, Mises à jour, Boutique, Sources, Sécurité, Santé, Journal, Développeur, Réglages).
 // Principe : Cassandra gère les modules SEULE ; l'utilisateur voit ce qu'elle fait (le récit, avec le pourquoi), peut tout défaire,
@@ -26,7 +26,6 @@
 
   const SECTIONS = [["vue", "Vue d’ensemble", "vue"], ["inst", "Installés", "inst"], ["maj", "Mises à jour", "maj"], ["shop", "Boutique", "shop"], ["src", "Sources", "src"],
     ["sec", "Sécurité et confiance", "sec"], ["sante", "Santé", "sante"], ["jour", "Journal et versions", "jour"], ["dev", "Développeur", "dev"], ["reg", "Réglages", "reg"]];
-  const PRETES = ["vue", "inst", "maj", "shop", "src", "sec", "sante", "jour", "dev", "reg"];                         // les sections portées ; les autres renvoient vers les pages qui existent déjà
 
   const I = {
     vue: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
@@ -90,6 +89,11 @@
     ".lg .radio.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.lg .radio i{flex:none;width:16px;height:16px;border-radius:50%;border:2px solid var(--line-strong,var(--line));margin-top:3px}.lg .radio.on i{border-color:var(--accent);background:radial-gradient(var(--accent) 45%,transparent 50%)}" +
     ".lg .vide{padding:28px 10px;text-align:center;color:var(--txt-soft)}.lg .titre h1{font:650 20px/1.2 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}.lg .titre p{color:var(--txt-soft);margin-top:3px;max-width:68ch}" +
     ".lg .avance{margin-bottom:0}.lg .carte.pret{align-items:flex-start}" +
+    ".lgm{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,calc(100% - 32px));max-height:calc(100vh - 40px);overflow:auto;background:var(--bg);border:1px solid var(--line-strong,var(--line));border-radius:18px;z-index:10000;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);padding:20px;display:flex;flex-direction:column;gap:14px;color:var(--txt);font-size:13.5px;line-height:1.5}" +
+    ".lgm h2{margin:0;font:650 19px 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}.lgm .note{font-size:12.5px;color:var(--txt-soft)}.lgm .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}.lgm .lst{margin:0;padding-left:18px}" +
+    ".lgm .btn{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:7px 14px;font:600 13px 'Inter',system-ui,sans-serif;cursor:pointer}.lgm .btn.pri{background:var(--accent);color:var(--on-accent,#fff);border-color:transparent}.lgm .btn.dng{color:var(--danger)}" +
+    ".lg .choix{text-align:left;cursor:pointer;position:relative;font:inherit;color:inherit;gap:6px}.lg .choix .coche{position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:7px;border:2px solid var(--line-strong,var(--line));display:grid;place-items:center;color:transparent}.lg .choix .coche svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}" +
+    ".lg .choix.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.lg .choix.on .coche{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff)}.lg .accueil{padding:20px}.lg .accueil h2{font:700 22px/1.2 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}" +
     ".lgv{position:fixed;inset:0;background:rgba(5,20,18,.42);backdrop-filter:blur(3px);z-index:9998}" +
     ".lgt{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--bg);border-left:1px solid var(--line-strong,var(--line));z-index:9999;display:flex;flex-direction:column;box-shadow:-20px 0 50px -20px rgba(0,0,0,.4);color:var(--txt);font-size:13.5px;line-height:1.5}" +
     ".lgt *{box-sizing:border-box}.lgt .tete{padding:18px 20px 0;display:flex;flex-direction:column;gap:12px}.lgt .corps{padding:16px 20px 24px;overflow:auto;display:flex;flex-direction:column;gap:14px;flex:1}.lgt h2{margin:0;font:650 19px 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}" +
@@ -100,7 +104,7 @@
     "@media(max-width:860px){.lgt{top:auto;height:88vh;width:100%;border-left:0;border-top:1px solid var(--line-strong,var(--line));border-radius:20px 20px 0 0}.lg .demande{flex-direction:column}.lg .demande .btn{width:100%}.lg .g2,.lg .grille{grid-template-columns:minmax(0,1fr)}}" +
     "@media (prefers-reduced-motion:reduce){.lg *,.lgt *{transition:none!important}}";
 
-  const S = { reg: null, regCharge: false, regErr: "", sante: {}, santeCharge: false, jfil: "tout", gere: true, cat: [], sections: [], act: { actes: [], verrous: [], autonomie: "reine", fenetre: "nuit", gel: false }, constats: null, rep: new Set(), q: "", fam: "toutes", etat: "tous", imp: "toutes", vue: "grille", ouvert: "", onglet: "apercu", occupe: false };
+  const S = { choix: new Set(), reg: null, regCharge: false, regErr: "", sante: {}, santeCharge: false, jfil: "tout", gere: true, cat: [], sections: [], act: { actes: [], verrous: [], autonomie: "reine", fenetre: "nuit", gel: false }, constats: null, rep: new Set(), q: "", fam: "toutes", etat: "tous", imp: "toutes", vue: "grille", ouvert: "", onglet: "apercu", occupe: false };
   let racine = null, corpsEl = null, sec = "vue", hooks = {}, escLie = false;
   const lire = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
   const ecrire = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -136,6 +140,31 @@
   const banDev = () => S.gere ? "" : '<div class="alerte in" role="status"><div class="sp"><b>Instance de développement.</b> <span class="note">Tous les modules sont chargés : activer ou désactiver ne change rien ici, et Cassandra n’a rien à entretenir.</span></div></div>';
   const banAvance = () => avance() ? '<div class="alerte al avance" role="status"><div class="ico sm al">' + ic("warn") + '</div><div class="sp"><b>Mode avancé.</b> <span class="note">Tu as les vrais boutons (interrupteurs, retrait). Cassandra voit tout ce que tu fais, et chaque geste se défait.</span></div><button class="btn mini" data-a="avance">Quitter</button></div>' : "";
 
+  // ── l'accueil d'une instance neuve : un point de départ à cocher (les ensembles se cumulent), ou Cassandra décide ───────
+  const ENSEMBLES = [
+    { id: "hebergeur", nom: "Hébergeur complet", d: "Sites, DNS, certificats, sauvegardes, sécurité, supervision.", mods: ["sites", "dns", "certificats", "sauvegardes", "securite", "sensorium", "fastpanel"] },
+    { id: "bureau", nom: "Bureau personnel", d: "Courrier, agenda, notes, tâches, contacts, assistante.", mods: ["courrier", "agenda", "notes", "taches", "contacts", "agents"] },
+  ];
+  const ensembles = () => ENSEMBLES.map((e) => Object.assign({}, e, { mods: e.mods.filter((id) => S.cat.some((m) => m.id === id)) })).filter((e) => e.mods.length);
+  const neuve = () => S.gere && lire("lg.accueil", "0") !== "1" && (S.act.actes || []).length === 0 && !S.cat.some((m) => m.etat === "actif" && m.importance !== "vital");
+  function aActiver() {
+    const ids = new Set(); ensembles().filter((e) => S.choix.has(e.id)).forEach((e) => e.mods.forEach((id) => { ids.add(id); atirer(id).forEach((d) => ids.add(d)); }));
+    return [...ids].filter((id) => { const m = S.cat.find((x) => x.id === id); return m && m.etat !== "actif"; });
+  }
+  function accueil() {
+    const E = ensembles(), tout = E.length && S.choix.size === E.length, vit = S.cat.filter((m) => m.importance === "vital" && m.etat === "actif").length;
+    const nb = aActiver().length;
+    return titre("Bienvenue", "Cette instance vient d’être installée. Cassandra a déjà mis en place les modules vitaux.") +
+      '<div class="carte accueil"><h2>Que veux-tu faire de cette instance ?</h2><p class="note" style="max-width:60ch">Choisis un ou plusieurs points de départ (ils se cumulent), ou dis-moi simplement ce que tu veux. Rien n’est définitif : tout se défait.</p>' +
+      '<div class="carte" style="flex-direction:row;gap:12px;align-items:center;box-shadow:none"><div class="ico sm">' + ic("check") + '</div><div><b>Déjà en place</b> <span class="note">' + vit + " modules vitaux : ils tiennent Cassandra debout, rien à choisir.</span></div></div>" +
+      '<div class="g2">' + E.map((e) => '<button class="carte choix' + (S.choix.has(e.id) ? " on" : "") + '" data-a="ensemble" data-id="' + e.id + '" aria-pressed="' + S.choix.has(e.id) + '"><span class="coche">' + ic("check") + "</span><h4>" + esc(e.nom) + '</h4><span class="note">' + esc(e.d) + '</span><span class="chips">' + e.mods.map((id) => '<span class="p">' + esc(nomDe(id)) + "</span>").join("") + "</span></button>").join("") +
+      (E.length > 1 ? '<button class="carte choix' + (tout ? " on" : "") + '" data-a="ensemble" data-id="tout" aria-pressed="' + !!tout + '"><span class="coche">' + ic("check") + '</span><h4>Tout installer</h4><span class="note">Tous les ensembles ci-dessus, bureau compris. Les modules en commun ne sont activés qu’une fois.</span></button>' : "") + "</div>" +
+      (S.choix.size ? '<div class="alerte in" style="width:100%"><div class="sp"><b>' + S.choix.size + " ensemble" + (S.choix.size > 1 ? "s" : "") + " choisi" + (S.choix.size > 1 ? "s" : "") + " · " + nb + " module" + (nb > 1 ? "s" : "") + ' à activer</b><span class="note"> (dépendances comprises). Tout se défait ensuite.</span></div><button class="btn pri" data-a="mise-en-place"' + (S.occupe || !nb ? " disabled" : "") + ">Mettre en place</button></div>" : '<p class="note">Coche un ou plusieurs ensembles : ils se cumulent.</p>') +
+      '<div class="demande" style="width:100%"><input id="lg-dem" placeholder="Ou dis-moi : « je veux héberger mes sites et gérer mon courrier »" aria-label="Dire à Cassandra ce qu’on veut"><button class="btn pri" data-a="demande">Dire</button></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-sug="Mets cette instance en place : choisis les modules utiles et active-les.">Laisse Cassandra décider</button><button class="btn" data-go="shop">Voir la boutique</button><button class="btn" data-a="plus-tard">Plus tard</button></div></div>' +
+      '<div class="carte"><h3>Jusqu’où Cassandra va seule</h3><p class="note">Tu pourras le changer à tout moment.</p><div style="display:flex;flex-direction:column;gap:8px">' + Object.entries(NIV).map(([k, v]) => '<button class="radio' + (S.act.autonomie === k ? " on" : "") + '" data-a="autonomie" data-k="' + k + '" role="radio" aria-checked="' + (S.act.autonomie === k) + '"><i></i><div><b>' + v[0] + (k === "reine" ? ' <span class="p ok">recommandé</span>' : "") + '</b><span class="note" style="display:block">' + v[1] + "</span></div></button>").join("") + "</div></div>";
+  }
+
   // ── la Vue d'ensemble ───────────────────────────────────────────────
   function recitLi(a, i) {
     const dep = a.detail && /^mise à jour/.test(a.detail), verbe = a.geste === "installe" && dep ? "a mis à jour" : (GESTES[a.geste] || a.geste);
@@ -144,6 +173,7 @@
       (a.defaire ? '<button class="btn mini" data-a="defaire" data-i="' + i + '">Défaire</button>' : "") + "</div>";
   }
   function vue() {
+    if (neuve()) return accueil();
     const A = S.act, actifs = S.cat.filter((m) => m.etat === "actif").length, n = S.cat.length;
     const gel = !!A.gel, laisses = S.constats && S.constats.liste || [];
     const hero = '<div class="carte hero"><div class="l1"><div class="ico" style="width:46px;height:46px;border-radius:14px">' + ic(gel ? "warn" : "bot") + '</div><div style="flex:1;min-width:240px"><h2>' + (gel ? "Cassandra est en pause" : "Tout va bien") + '</h2><p class="note" style="margin-top:3px;max-width:62ch">' +
@@ -168,7 +198,7 @@
     (S.imp === "toutes" || m.importance === S.imp) && (!S.q || (m.nom + " " + m.id + " " + (m.description || "")).toLowerCase().indexOf(S.q.toLowerCase()) >= 0));
   function carteMod(m) {
     const on = m.etat === "actif", av = avance();
-    const sw = av ? '<button class="sw' + (on ? " on" : "") + '" data-a="bascule" data-id="' + esc(m.id) + '"' + (m.importance === "vital" || m.etat === "refuse" || !S.gere ? " disabled" : "") + ' aria-label="Activer ' + esc(m.nom) + '" role="switch" aria-checked="' + on + '"></button>' : pill(on ? "actif" : m.etat === "a_installer" ? "à installer" : "inactif", on ? "ok" : "");
+    const sw = av ? '<button class="sw' + (on ? " on" : "") + '" data-a="bascule" data-id="' + esc(m.id) + '"' + (m.importance === "vital" || m.etat === "refuse" || m.etat === "a_installer" || !S.gere ? " disabled" : "") + ' aria-label="Activer ' + esc(m.nom) + '" role="switch" aria-checked="' + on + '"></button>' : pill(on ? "actif" : m.etat === "a_installer" ? "à installer" : "inactif", on ? "ok" : "");
     return '<div class="carte mod' + (on ? "" : " off") + '" data-ouvrir="' + esc(m.id) + '" role="button" tabindex="0"><div class="l1"><div class="ico' + (on ? "" : " off") + '">' + iconeMod(m) + '</div><div class="sp"><h3>' + esc(m.nom) + '</h3><div class="mono note">' + esc(m.id) + " · v" + esc(m.version) + "</div></div>" + sw + "</div>" +
       '<div class="desc">' + esc(m.description) + '</div><div class="pied">' + niveauMod(m) + (IMP[m.importance] ? '<span class="faint" style="font:600 11px Inter,sans-serif">' + IMP[m.importance][0] + "</span>" : "") + (m.verrou ? pill("verrouillé", "", "lock") : "") + "</div></div>";
   }
@@ -302,11 +332,6 @@
     catch (e) { z.innerHTML = '<div class="carte vide">Les réglages ne se lisent pas : ' + esc(e.message || e) + "</div>"; }
   }
 
-  // ── les sections pas encore portées : on renvoie vers ce qui existe ───────
-  function ailleurs(libelle) {
-    return titre(libelle, "Cette section arrive.") + '<div class="carte pret"><h3>En attendant</h3><p class="note">La gestion complète reste disponible dans le menu de l’avatar : « Modules et Applications » (états, réglages, dépendances) et « App Store » (registre, archives, versions).</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-a="ouvrir-modules">Modules et Applications</button><button class="btn" data-go="shop">Ouvrir la boutique</button></div></div>';
-  }
-
   // ── le tiroir d'un module ───────────────────────────────────────────
   function fermerTiroir() { ["lg-tiroir", "lg-voile"].forEach((i) => { const e = document.getElementById(i); if (e) e.remove(); }); S.ouvert = ""; }
   function ouvrir(id, onglet) {
@@ -350,9 +375,37 @@
     if (g === "demander") { fermerTiroir(); return demander((m.etat === "actif" ? "Désactive " : "Active ") + m.nom); }
     try {
       if (g === "verrou") { await agir("modules.verrouiller", { module: m.id, verrou: !m.verrou }); dire(m.verrou ? m.nom + " : Cassandra peut de nouveau s’en occuper." : m.nom + " : Cassandra n’y touchera plus.", "ok"); }
-      else if (g === "bascule") { await agir(m.etat === "actif" ? "modules.desactiver" : "modules.activer", { module: m.id }); dire(m.nom + (m.etat === "actif" ? " désactivé." : " activé."), "ok"); }
+      else if (g === "bascule") { if (!await basculer(m)) return; }
       await rafraichir(); const n = S.cat.find((x) => x.id === m.id); if (n) dessinerTiroir(n, null);
     } catch (e) { dire(e.message || String(e), "err"); }
+  }
+
+  // ── l'impact d'un geste direct (Mode avancé) : on le dit AVANT, avec ce qui s'arrêterait ou s'activerait aussi ───────
+  function dependants(id, vus) { vus = vus || new Set(); S.cat.forEach((x) => { if ((x.requiert || []).indexOf(id) >= 0 && x.etat === "actif" && !vus.has(x.id)) { vus.add(x.id); dependants(x.id, vus); } }); return vus; }
+  function atirer(id, vus) { vus = vus || new Set(); const m = S.cat.find((x) => x.id === id); ((m && m.requiert) || []).forEach((r) => { const d = S.cat.find((x) => x.id === r); if (d && d.etat !== "actif" && !vus.has(r)) { vus.add(r); atirer(r, vus); } }); return vus; }
+  function confirmer(titreF, corps, oui, danger) {
+    return new Promise((fin) => {
+      const v = document.createElement("div"); v.className = "lgv"; v.style.zIndex = 9999;
+      const m = document.createElement("div"); m.className = "lgm"; m.setAttribute("role", "dialog"); m.setAttribute("aria-modal", "true"); m.setAttribute("aria-label", titreF);
+      m.innerHTML = "<h2>" + esc(titreF) + "</h2>" + corps + '<div class="acts"><button class="btn" data-c="non">Annuler</button><button class="btn ' + (danger ? "dng" : "pri") + '" data-c="oui">' + esc(oui) + "</button></div>";
+      const clore = (r) => { v.remove(); m.remove(); fin(r); };
+      v.addEventListener("click", () => clore(false)); m.addEventListener("click", (e) => { const b = e.target.closest("[data-c]"); if (b) clore(b.dataset.c === "oui"); });
+      m.addEventListener("keydown", (e) => { if (e.key === "Escape") clore(false); });
+      document.body.appendChild(v); document.body.appendChild(m); const f = m.querySelector("[data-c=non]"); if (f) f.focus();
+    });
+  }
+  async function basculer(m) {
+    if (m.etat === "actif") {
+      const dep = [...dependants(m.id)].map(nomDe);
+      if (dep.length) { if (!await confirmer("Désactiver " + m.nom + " ?", '<p class="note">Cela arrêtera aussi, parce qu’ils en dépendent :</p><ul class="lst">' + dep.map((x) => "<li><b>" + esc(x) + "</b></li>").join("") + '</ul><p class="note">Leurs données restent.</p>', "Tout désactiver", true)) return false; await agir("modules.desactiver", { module: m.id, cascade: true }); }
+      else await agir("modules.desactiver", { module: m.id });
+      dire(m.nom + " désactivé.", "ok"); return true;
+    }
+    const tire = [...atirer(m.id)], bloque = tire.filter((id) => (S.cat.find((x) => x.id === id) || {}).etat === "a_installer");
+    if (m.etat === "a_installer" || bloque.length) { dire("Il faut d’abord l’installer" + (bloque.length ? " : " + bloque.map(nomDe).join(", ") : "") + ".", "err"); return false; }
+    if (tire.length) { if (!await confirmer("Activer " + m.nom + " ?", '<p class="note">Cela activera aussi, parce qu’il en a besoin :</p><ul class="lst">' + tire.map((x) => "<li><b>" + esc(nomDe(x)) + "</b></li>").join("") + "</ul>", "Tout activer", false)) return false; }
+    await agir("modules.activer", { module: m.id, avec_dependances: true });
+    dire(m.nom + " activé.", "ok"); return true;
   }
 
   // ── les gestes de la page ────────────────────────────────────────────
@@ -368,17 +421,25 @@
       if (a === "rep") { S.rep.has(b.dataset.id) ? S.rep.delete(b.dataset.id) : S.rep.add(b.dataset.id); dessiner(); return; }
       if (a === "reset") { S.fam = "toutes"; S.imp = "toutes"; S.etat = "tous"; S.q = ""; dessiner(); return; }
       if (a === "demande") { const d = racine.querySelector("#lg-dem"), v = d ? d.value.trim() : ""; if (d) d.value = ""; if (v) demander(v); else dire("Dis-lui ce que tu veux.", ""); return; }
-      if (a === "ouvrir-modules") { if (hooks.ouvrirModules) hooks.ouvrirModules(); return; }
       if (a === "gel") { await agir("urgence.geler", { actif: !S.act.gel }); dire(S.act.gel ? "Cassandra reprend." : "Cassandra est en pause : elle observe, elle n’agit plus.", "ok"); await rafraichir(); return; }
       if (a === "passe") { S.occupe = true; dessiner(); const r = await agir("modules.entretien", { forcer: true }); S.occupe = false; S.constats = null; dire((r.actions || []).length ? (r.actions.length + " geste(s) fait(s).") : "Passe faite : rien à faire pour l’instant.", "ok"); await rafraichir(); return; }
       if (a === "autonomie") { await agir("reglages.regler", { cle: "modules.autonomie", valeur: b.dataset.k }); dire("Autonomie : " + NIV[b.dataset.k][0] + ".", "ok"); S.constats = null; await rafraichir(); return; }
       if (a === "defaire") { const l = S.act.actes[+b.dataset.i]; if (!l) return; await agir("modules.annuler", { module: l.module, geste: l.geste }); dire("C’est défait. Cassandra en prend note.", "ok"); await rafraichir(); return; }
+      if (a === "ensemble") { const E = ensembles(); if (b.dataset.id === "tout") S.choix = S.choix.size === E.length ? new Set() : new Set(E.map((e) => e.id)); else S.choix.has(b.dataset.id) ? S.choix.delete(b.dataset.id) : S.choix.add(b.dataset.id); dessiner(); return; }
+      if (a === "plus-tard") { ecrire("lg.accueil", "1"); dessiner(); return; }
+      if (a === "mise-en-place") {
+        const ids = aActiver(); S.occupe = true; dessiner(); let fait = 0; const rates = [];
+        for (const id of ids) { const m = S.cat.find((x) => x.id === id); if (!m || m.etat === "actif") continue; if (m.etat === "a_installer") { rates.push(m.nom + " (à installer d’abord)"); continue; }
+          try { await agir("modules.activer", { module: id, avec_dependances: true, pourquoi: "Mise en place de l'instance : ensembles choisis à l'accueil." }); fait++; } catch (e) { rates.push(m.nom + " (" + (e.message || e) + ")"); } }
+        S.occupe = false; S.choix = new Set(); ecrire("lg.accueil", "1");
+        dire(fait + " module(s) activé(s)" + (rates.length ? ". Pas activés : " + rates.join(" ; ") : "."), rates.length ? "" : "ok"); await rafraichir(); return;
+      }
       if (a === "registre") { S.reg = null; await chargerRegistre(true); return; }
       if (a === "maintenant") { S.occupe = true; dessiner(); const r = await agir("modules.ajouter", { module: b.dataset.id, pourquoi: "Mise à jour demandée tout de suite par l'utilisateur." }); S.occupe = false; S.reg = null; S.constats = null; dire(r && r.refuse ? r.refuse : nomDe(b.dataset.id) + " est à jour.", r && r.refuse ? "" : "ok"); await rafraichir(); chargerRegistre(true); return; }
       if (a === "url") { const v = (racine.querySelector("#lg-url") || {}).value || ""; await agir("reglages.regler", { cle: "modules.registre_url", valeur: v.trim() }); dire(v.trim() ? "Autre registre enregistré." : "Autre registre retiré.", "ok"); S.reg = null; await chargerRegistre(true); return; }
       if (a === "politique") { await agir("reglages.regler", { cle: "modules.politique_confiance", valeur: b.dataset.k }); dire("Politique : " + (b.dataset.k === "signes" ? "paquets signés seulement." : "tout accepter."), "ok"); S.reg = null; await chargerRegistre(true); dessiner(); return; }
       if (a === "deverrouiller") { await agir("modules.verrouiller", { module: b.dataset.id, verrou: false }); dire(nomDe(b.dataset.id) + " : Cassandra peut de nouveau s’en occuper.", "ok"); await rafraichir(); return; }
-      if (a === "bascule") { const m = S.cat.find((x) => x.id === b.dataset.id); if (!m) return; await agir(m.etat === "actif" ? "modules.desactiver" : "modules.activer", { module: m.id }); await rafraichir(); return; }
+      if (a === "bascule") { const m = S.cat.find((x) => x.id === b.dataset.id); if (!m) return; await basculer(m); await rafraichir(); return; }
     } catch (e) { S.occupe = false; dire(e.message || String(e), "err"); dessiner(); }
   }
 
@@ -397,14 +458,35 @@
     else if (sec === "jour") h = jour_();
     else if (sec === "dev") h = dev();
     else if (sec === "reg") h = reg();
-    else h = ailleurs((SECTIONS.find((x) => x[0] === sec) || [0, "Logithèque"])[1]);
+    else h = vue();
     racine.innerHTML = h;
     if (sec === "shop" && CASS.pageAppStore) { const z = racine.querySelector("#lg-boutique"); CASS.pageAppStore(z); }
     if (focus === "lg-q") { const q = racine.querySelector("#lg-q"); if (q) { q.focus(); q.setSelectionRange(99, 99); } }
     if (sec === "vue") chargerConstats();
     if (sec === "reg") monterReglages();
   }
-  CASS.logitheque = { sections: SECTIONS, pretes: PRETES };
+  const compteCourant = async () => { if (CASS.moi && CASS.moi.compte) return CASS.moi.compte; try { const m = await (await fetch("/api/moi")).json(); return m.compte || ""; } catch (e) { return ""; } };
+  CASS.pageMesApplications = async function (corps, h) {
+    const anc = document.getElementById("lg-css"); if (anc) anc.remove();
+    const st = document.createElement("style"); st.id = "lg-css"; st.textContent = CSS; document.head.appendChild(st);
+    corps.innerHTML = ""; const z = document.createElement("div"); z.className = "lg"; corps.appendChild(z);
+    let liste = [];
+    const dessin = () => {
+      z.innerHTML = '<div class="grille">' + (liste.length ? liste.map((e) => '<div class="carte mod' + (e.masque ? " off" : "") + '"><div class="l1"><div class="ico' + (e.masque ? " off" : "") + '">' + ic("box") + '</div><div class="sp"><h3>' + esc(e.libelle) + '</h3></div></div><div class="pied"><button class="btn mini pri" data-ouvrir="' + esc(e.id) + '">Ouvrir</button><label class="note" style="margin-left:auto;display:flex;gap:8px;align-items:center">Dans mon menu <button class="sw' + (e.masque ? "" : " on") + '" data-menu="' + esc(e.id) + '" role="switch" aria-checked="' + !e.masque + '" aria-label="Dans mon menu : ' + esc(e.libelle) + '"></button></label></div></div>').join("") :
+        '<div class="carte vide">Aucune application pour l’instant.</div>') + "</div>" +
+        '<div class="carte"><h3>Il te manque quelque chose ?</h3><p class="note">Dis-le à Cassandra, avec tes mots. Elle décide et te répond : tu n’as rien à valider.</p><div class="demande"><input id="lg-dem" placeholder="« Je voudrais gérer mes factures »" aria-label="Demander une application à Cassandra"><button class="btn pri" data-a="demande">Demander</button></div></div>';
+    };
+    const lireTout = async () => { try { liste = (((await agir("menus.mes_entrees")) || {}).entrees || []).filter((e) => e.ecran !== "menus:vue_mes_applications"); } catch (e) { liste = []; } dessin(); };
+    z.addEventListener("click", async (e) => {
+      const o = e.target.closest("[data-ouvrir]"); if (o) { const x = liste.find((y) => y.id === o.dataset.ouvrir); if (x && CASS.ouvrirEcran) CASS.ouvrirEcran(x.ecran, x.libelle); return; }
+      const sw = e.target.closest("[data-menu]"); if (sw) { const x = liste.find((y) => y.id === sw.dataset.menu); if (!x) return;
+        try { await agir("menus.personnaliser_entree", { entree: x.id, masque: !x.masque, compte: await compteCourant() }); dire(x.masque ? "Remise dans ton menu." : "Retirée de ton menu.", "ok"); await lireTout(); if (h && h.rafraichir) h.rafraichir(); } catch (er) { dire(er.message || String(er), "err"); } return; }
+      const d = e.target.closest('[data-a="demande"]'); if (d) { const i = z.querySelector("#lg-dem"), v = i ? i.value.trim() : ""; if (i) i.value = ""; if (v && h && h.demander) h.demander(v); else if (!v) dire("Dis-lui ce que tu veux.", ""); }
+    });
+    z.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.id === "lg-dem") { e.preventDefault(); const v = e.target.value.trim(); e.target.value = ""; if (v && h && h.demander) h.demander(v); } });
+    z.innerHTML = '<div class="carte vide">Lecture…</div>'; await lireTout();
+  };
+  CASS.logitheque = { sections: SECTIONS };
   CASS.pageLogitheque = async function (corps, section, h) {
     hooks = h || {}; sec = SECTIONS.some((x) => x[0] === section) ? section : "vue";
     const anc = document.getElementById("lg-css"); if (anc) anc.remove();

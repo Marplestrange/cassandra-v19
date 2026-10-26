@@ -115,7 +115,7 @@ test("Logithèque : Cassandra d'abord, le récit se défait, le verrou et la pau
   await expect(lg.locator('.sw')).toHaveCount(3);
   await expect(lg.locator('.sw[data-id="droits"]')).toBeDisabled();                     // un module vital ne se désactive pas
   await lg.locator('.sw[data-id="sentinelle"]').click();
-  await expect.poll(() => page.evaluate(() => window.__appels.filter((a) => a[0] === 'modules.activer').map((a) => a[1]))).toEqual([{ module: 'sentinelle' }]);
+  await expect.poll(() => page.evaluate(() => window.__appels.filter((a) => a[0] === 'modules.activer').map((a) => a[1]))).toEqual([{ module: 'sentinelle', avec_dependances: true }]);
   await lg.locator('[data-a="avance"]').first().click();                                  // on en sort
   await expect(lg.locator('.sw')).toHaveCount(0);
 

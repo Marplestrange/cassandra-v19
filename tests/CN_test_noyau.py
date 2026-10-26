@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7c240e
+# VERSION CN : 0.1.0  #d71b94
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7c240e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d71b94 ▼▼▼
 """Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v"""
 import os
 import sys
@@ -1304,13 +1304,52 @@ class MenusAssembles(unittest.TestCase):
     def evts(self, t):
         return [e for e in self.n.bus.recents(portee=TOUT, limite=800) if e["type"] == t]
 
+    def mes_entrees(self, compte="bea@x.fr", role="utilisateur"):
+        r = self.n.executeur.executer("menus.mes_entrees", "humain", {"role": role, "compte": compte})
+        self.assertEqual(r["statut"], "faite", r)
+        return {e["id"]: e for e in r["resultat"]["entrees"]}
+
+    def test_mes_entrees_liste_ce_que_le_compte_voit_et_ce_qu_il_a_retire_de_son_menu(self):
+        e = self.mes_entrees()
+        self.assertTrue({"alpha:a1", "alpha:sous", "beta:b1", "beta:b2", "menus:mes_applications"} <= set(e), sorted(e))
+        self.assertNotIn("alpha:a2", e)                                               # réservé aux administrateurs
+        self.assertNotIn("menus:logitheque", e)
+        self.assertTrue(all(not x["masque"] for x in e.values()))
+        self.assertEqual(self.perso("alpha:a1", compte="bea@x.fr", masque=True)["statut"], "faite")
+        e = self.mes_entrees("bea@x.fr")
+        self.assertTrue(e["alpha:a1"]["masque"] and e["alpha:sous"]["masque"])         # retirer un parent retire ses enfants du menu
+        self.assertFalse(e["beta:b2"]["masque"])
+        self.assertFalse(self.mes_entrees("zoe@x.fr")["alpha:a1"]["masque"])           # le masque de Bea n'est que le sien
+        self.assertEqual(self.perso("alpha:a1", compte="bea@x.fr", masque=False)["statut"], "faite")
+        self.assertFalse(self.mes_entrees("bea@x.fr")["alpha:a1"]["masque"])           # et il se lève
+
+    def test_un_masque_pour_tous_retire_l_entree_de_la_liste_de_chacun(self):
+        self.assertEqual(self.perso("beta:b2", compte="", masque=True)["statut"], "faite")
+        self.assertNotIn("beta:b2", self.mes_entrees("bea@x.fr"))
+        self.assertNotIn("beta:b2", self.mes_entrees("zoe@x.fr"))
+
+    def test_un_compte_ordinaire_ne_personnalise_que_son_propre_menu(self):
+        import types
+        from importlib import import_module
+        mm = import_module("modules.menus.CN_module")
+        simple = types.SimpleNamespace(compte="bea@x.fr", est_admin=lambda c: False)
+        self.assertEqual(mm.cible_perso(simple, ""), "bea@x.fr")                       # « pour tous » devient « pour moi » : il ne casse pas le menu des autres
+        self.assertEqual(mm.cible_perso(simple, "bea@x.fr"), "bea@x.fr")
+        with self.assertRaises(PermissionError):
+            mm.cible_perso(simple, "zoe@x.fr")
+        admin = types.SimpleNamespace(compte="root@x.fr", est_admin=lambda c: True)
+        self.assertEqual(mm.cible_perso(admin, ""), "")
+        self.assertEqual(mm.cible_perso(admin, "zoe@x.fr"), "zoe@x.fr")
+        agent = types.SimpleNamespace(compte="", est_admin=lambda c: False)             # sans compte (le noyau, un agent) : comme avant
+        self.assertEqual(mm.cible_perso(agent, ""), "")
+
     def test_les_modules_actifs_composent_l_arbre_par_famille(self):
         a = self.menu("admin")["arbre"]
         self.assertEqual([f["famille"] for f in a], ["socle", "reseau", "travail"])      # l'ordre des familles est celui du noyau
-        self.assertEqual(noms(a), ["Socle(Logithèque,Modules et Applications,App Store)", "Réseau(Réservé,Premier(Sous-page,Enfant d'Alpha))", "Travail(Autonome)"])
+        self.assertEqual(noms(a), ["Socle(Mes applications,Logithèque)", "Réseau(Réservé,Premier(Sous-page,Enfant d'Alpha))", "Travail(Autonome)"])
 
     def test_le_menu_se_filtre_par_role(self):
-        self.assertEqual(noms(self.menu("utilisateur")["arbre"]), ["Réseau(Premier(Sous-page,Enfant d'Alpha))", "Travail(Autonome)"])
+        self.assertEqual(noms(self.menu("utilisateur")["arbre"]), ["Socle(Mes applications)", "Réseau(Premier(Sous-page,Enfant d'Alpha))", "Travail(Autonome)"])
 
     def test_une_entree_sans_page_ni_enfant_disparait(self):
         self.assertNotIn("Groupe vide", " ".join(noms(self.menu("admin")["arbre"])))
@@ -1320,14 +1359,14 @@ class MenusAssembles(unittest.TestCase):
         self.n.desactiver("beta")
         m = self.menu("admin")
         self.assertNotEqual(m["etag"], etag)
-        self.assertEqual(noms(m["arbre"]), ["Socle(Logithèque,Modules et Applications,App Store)", "Réseau(Réservé,Premier(Sous-page))"])
+        self.assertEqual(noms(m["arbre"]), ["Socle(Mes applications,Logithèque)", "Réseau(Réservé,Premier(Sous-page))"])
         self.assertGreaterEqual(len(self.evts("menu_arbre.change")), 2)
 
     def test_un_enfant_dont_le_parent_disparait_remonte_au_premier_niveau(self):
         self.n.desactiver("alpha", cascade=True)                    # beta part avec alpha
         self.n.activer("beta", avec_dependances=True)               # revient avec alpha
         self.n.desactiver("alpha", cascade=True)
-        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Logithèque,Modules et Applications,App Store)"])
+        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Mes applications,Logithèque)"])
 
     def test_activer_un_module_ajoute_ses_entrees_sans_redemarrer(self):
         self.n.desactiver("alpha", cascade=True)
@@ -1339,24 +1378,24 @@ class MenusAssembles(unittest.TestCase):
 
     def test_masquer_une_entree_masque_aussi_ses_enfants(self):
         self.assertEqual(self.perso("alpha:a1", masque=True)["statut"], "faite")
-        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Logithèque,Modules et Applications,App Store)", "Réseau(Réservé)", "Travail(Autonome)"])
+        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Mes applications,Logithèque)", "Réseau(Réservé)", "Travail(Autonome)"])
 
     def test_la_personnalisation_d_un_compte_ne_touche_pas_les_autres(self):
         self.perso("alpha:a1", compte="sandrine@x.fr", libelle="Mon réseau", ordre=0)
         sandrine = noms(self.menu("utilisateur", "sandrine@x.fr")["arbre"])
         drisse = noms(self.menu("utilisateur", "drisse@x.fr")["arbre"])
-        self.assertEqual(sandrine[0], "Réseau(Mon réseau(Sous-page,Enfant d'Alpha))")
-        self.assertEqual(drisse[0], "Réseau(Premier(Sous-page,Enfant d'Alpha))")
+        self.assertEqual(sandrine[1], "Réseau(Mon réseau(Sous-page,Enfant d'Alpha))")          # [0] : la famille Socle (Mes applications)
+        self.assertEqual(drisse[1], "Réseau(Premier(Sous-page,Enfant d'Alpha))")
 
     def test_la_personnalisation_globale_vaut_pour_tous_et_le_compte_l_emporte(self):
         self.perso("alpha:a1", libelle="Global")
         self.perso("alpha:a1", compte="sandrine@x.fr", libelle="Perso")
-        self.assertIn("Réseau(Global(", noms(self.menu("utilisateur", "drisse@x.fr")["arbre"])[0])
-        self.assertIn("Réseau(Perso(", noms(self.menu("utilisateur", "sandrine@x.fr")["arbre"])[0])
+        self.assertIn("Réseau(Global(", noms(self.menu("utilisateur", "drisse@x.fr")["arbre"])[1])
+        self.assertIn("Réseau(Perso(", noms(self.menu("utilisateur", "sandrine@x.fr")["arbre"])[1])
 
     def test_deplacer_une_entree(self):
         self.perso("beta:b2", parent="alpha:a1", ordre=0)
-        self.assertEqual(noms(self.menu("utilisateur")["arbre"]), ["Réseau(Premier(Autonome,Sous-page,Enfant d'Alpha))"])
+        self.assertEqual(noms(self.menu("utilisateur")["arbre"]), ["Socle(Mes applications)", "Réseau(Premier(Autonome,Sous-page,Enfant d'Alpha))"])
 
     def test_reinitialiser_rend_l_entree_d_origine(self):
         self.perso("alpha:a1", masque=True)
@@ -1403,7 +1442,7 @@ class MenusAssembles(unittest.TestCase):
         cli = moteur.Noyau(Path(self.tmp.name) / "d", Path(self.tmp.name) / "modules", {}, gerer_modules=True)
         cli.desactiver("beta", appliquer=False)                     # comme `CN_main.py module desactiver`
         self.n._surveiller()                                        # une passe de la boucle du service
-        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Logithèque,Modules et Applications,App Store)", "Réseau(Réservé,Premier(Sous-page))"])
+        self.assertEqual(noms(self.menu("admin")["arbre"]), ["Socle(Mes applications,Logithèque)", "Réseau(Réservé,Premier(Sous-page))"])
 
 
 class ContratDesMenus(unittest.TestCase):

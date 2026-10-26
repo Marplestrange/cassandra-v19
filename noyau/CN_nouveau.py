@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #25dd88
+# VERSION CN : 0.1.0  #79a366
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'assistant de création d'un module : un squelette valide, qui se charge, s'active et répond, que l'auteur n'a plus qu'à faire grandir.
 # MÉTHODE    : écrit un dossier (manifeste, code, mode d'emploi) puis le recharge avec le chargeur du noyau : un squelette que le noyau refuserait n'est jamais rendu
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=25dd88 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=79a366 ▼▼▼
 """Un module neuf, prêt à greffer : `python CN_main.py module nouveau mon_module --nom "Mon module"`.
 
 Le squelette déclare une capacité de lecture (`etat`), un réglage (`message`), son importance et ce qui s'arrête sans lui ; son code se branche et répond. Rien n'est écrit
@@ -56,7 +56,7 @@ libelle = "L'état de ce module : son message et sa version"
 risque = "lecture"
 
 [permissions]
-# Ce que le module DEMANDE, dit avant l'installation (la page App Store le montre). Il n'est pas encore cloisonné : n'écrivez que ce qui est vrai.
+# Ce que le module DEMANDE, dit avant l'installation (la Logithèque le montre). Il n'est pas encore cloisonné : n'écrivez que ce qui est vrai.
 # reseau = ["api.exemple.org"]
 # ecritures = ["/var/lib/mon_module"]
 '''
@@ -78,8 +78,8 @@ Un module de Cassandra, créé par `python CN_main.py module nouveau`.
 - `CN_manifeste.toml` : ce que le module est (importance, ce qui s'arrête sans lui, dépendances versionnées, réglages, capacités, permissions demandées).
 - `CN_module.py` : `brancher(ctx)` y relie les capacités déclarées.
 
-Pour l'essayer : déposez le dossier dans le dossier des extensions (`donnees/extensions`), activez-le dans « Modules et Applications ».
-Pour le distribuer : `python CN_main.py paquet construire {id} --cle editeur.pem` fabrique `{id}.cmod` (signé) que la page App Store examine et installe.
+Pour l'essayer : déposez le dossier dans le dossier des extensions (`donnees/extensions`), activez-le dans la Logithèque.
+Pour le distribuer : `python CN_main.py paquet construire {id} --cle editeur.pem` fabrique `{id}.cmod` (signé) que la Logithèque (Boutique) examine et installe.
 '''
 
 

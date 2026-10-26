@@ -12,7 +12,7 @@
 <!-- RÔLE       : Écrire, distribuer et installer un module : le manifeste (importance, dépendances versionnées, points d'extension), le cycle de vie, la page App Store, la santé, le mode sûr. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=690e54 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=1ecc17 ▼▼▼ -->
 # Écrire, distribuer et installer un module
 
 ## Créer
@@ -37,7 +37,7 @@ Le squelette est valide, se charge, s'active et répond (`mon_module.etat`). `py
 4. **Politique** (réglage `modules.politique_confiance`) : `signes` (défaut) n'accepte que les paquets signés par une clé posée dans `config/cles/<éditeur>.pub` ; `tous` admet un paquet non signé, à ses risques.
 5. **Registre** (réglage `modules.registre_url`) : l'index JSON d'un magasin ; une archive y est téléchargée chez l'hôte du registre et de lui seul, son empreinte est vérifiée contre l'index, puis elle est **examinée comme une archive déposée** : le registre n'a aucun passe-droit.
 
-La page **App Store** (menu avatar) fait tout cela : déposer une archive, parcourir le registre, gérer les modules installés (versions, retour arrière, désinstallation).
+La **Logithèque** (menu avatar, voir `docs/CN_LOGITHEQUE.md`) fait tout cela : déposer une archive, parcourir le registre, gérer les modules installés (versions, retour arrière, désinstallation).
 
 ## Santé et mode sûr
 - `modules.sante` rassemble ce que le noyau mesure déjà (moteurs et leur disjoncteur, détecteurs coupés, activité des capacités sur 24 h) en un verdict : sain, à surveiller, en échec.
@@ -52,4 +52,4 @@ La page **App Store** (menu avatar) fait tout cela : déposer une archive, parco
 <!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
 <!-- CN : tout ce fichier est du nexus : le mode d'emploi du module store -->
 <!-- EC : néant (aucun point d'évolution) -->
-<!-- LIEN : noyau/CN_cycle.py, noyau/CN_manifeste.py, noyau/CN_nouveau.py, interface/CN_appstore.js, interface/CN_modules-page.js, tests/CN_test_cycle.py, tests/CN_test_installation.py -->
+<!-- LIEN : noyau/CN_cycle.py, noyau/CN_manifeste.py, noyau/CN_nouveau.py, interface/CN_appstore.js, interface/CN_logitheque.js, tests/CN_test_cycle.py, tests/CN_test_installation.py -->

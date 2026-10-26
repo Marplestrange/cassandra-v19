@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #0848b4
+// VERSION CN : 0.1.0  #bcd076
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=0848b4 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=bcd076 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -113,7 +113,7 @@
     d: null, moi: null, compte: "", g: "", e: "", vue: "", actif: null, side: "full", sideAvant: "full", sideTouche: false, ouv: new Set(),
     panel: false, manual: null, sel: { itare: "page", cassandra: "page", inv: "page" }, fils: { itare: [], cassandra: [], inv: [] }, msgs: {}, dernier: {},
     invites: new Set(["itare"]), fmenu: false, sug: false, regOuvert: false, idees: { mode: "itare", idees: [], urgent: false, actes: {} }, actes: { itare: [], cassandra: [], inv: [] },
-    fil: null, lateral: null, pageNom: "", famModules: "tous", crMenu: null, crumbs: [],
+    fil: null, lateral: null, pageNom: "", crMenu: null, crumbs: [],
     faits: new Set(), refuses: new Set(), nouveau: { itare: false, cassandra: false, inv: false }, attente: 0, rec: [], ms: false, w: "l",
     prefs: { verre: true }, brouillon: "",
   };
@@ -206,7 +206,6 @@
   }
   function ouvrirNoeud(n, vue) {
     if (n.onglet) { window.switchTab(n.onglet); pontVue(n.id.split(".")[0], vue || n.vue || ""); }
-    else if (n.ecran === "menus:vue_modules") ouvrirModules(E.famModules || "tous");
     else if (n.ecran && CASS.ouvrirEcran) CASS.ouvrirEcran(n.ecran, n.libelle);
   }
   // Une page PROPRE (Modules et Applications, Société, Paramètres…) n'est pas une entrée de groupe : E.g / E.e gardent alors la dernière entrée visitée (« Aujourd'hui »), qu'il ne faut pas lire pour la page courante.
@@ -684,11 +683,7 @@
   // ── une page propre : son onglet, son fil d'Ariane ────────────────────────
   function marquerPage(a) {
     E.pageNom = a.ecran && CASS.nomOnglet ? CASS.nomOnglet(a.ecran) : "";
-    E.fil = ["Paramètres", a.id === "menus:modules" ? "Modules et Applications" : a.libelle]; E.lateral = null;
-  }
-  async function ouvrirModules(fam) {
-    E.famModules = fam || "tous"; marquerPage({ id: "menus:modules", ecran: "menus:vue_modules", libelle: "Modules et Applications" });
-    CASS.ouvrirEcran("menus:vue_modules", "Modules et Applications");
+    E.fil = ["Paramètres", a.libelle]; E.lateral = null;
   }
   // ── Société / Organisation : quatre rubriques, chacune un tableau ──────────
   const PAYS = "AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW".split(" ");
@@ -772,34 +767,17 @@
     }));
     rendre();
   }
-  // « Modules et Applications » : l'ancienne vision Modules de Réglages, devenue une page. Sa colonne de gauche classe les modules par famille.
-  async function pageModules(corps, fam) {
-    const M = CASS.modulesUi;
-    if (!M) { corps.innerHTML = '<div class="empty-state">Écran indisponible.</div>'; return; }
-    await M.lire();
-    const cat = M.catalogue();
-    fam = fam || E.famModules || "tous";
-    if (fam !== "tous" && !cat.some((m) => (m.famille || "autres") === fam)) fam = "tous";
-    E.famModules = fam;
-    const nbDe = (f) => (f === "tous" ? cat.length : cat.filter((m) => (m.famille || "autres") === f).length);
-    M.familles().forEach((f) => { const t = M.famTrace(f); if (t) IC["fam_t_" + f] = t; });          // l'icône qu'un module apporte pour sa famille nouvelle
-    E.lateral = { titre: "Modules", actif: fam, items: [{ id: "tous", libelle: "Tous les modules", n: cat.length, icone: "puzzle" }].concat(M.familles().map((f) => ({ id: f, libelle: M.famLib(f), n: nbDe(f), icone: IC["fam_t_" + f] ? "fam_t_" + f : (IC[M.famIcone(f)] ? M.famIcone(f) : "puzzle") }))) };
-    const tete = fam === "tous" ? "Tous les modules" : M.famLib(fam);
-    E.pageNom = CASS.nomOnglet("menus:vue_modules"); E.fil = ["Paramètres", "Modules et Applications", tete];
+  // « Mes applications » : ce qu'un compte voit dans son menu, et ce qu'il en retire ou y remet (ses applications à lui, rien de la gestion).
+  async function pageMesApplications(corps) {
+    if (!CASS.pageMesApplications) { corps.innerHTML = '<div class="empty-state">Écran indisponible.</div>'; return; }
+    E.lateral = null; E.pageNom = CASS.nomOnglet("menus:vue_mes_applications"); E.fil = ["Paramètres", "Mes applications"];
     const sc = corps.closest(".sh-scene"), t = sc && sc.querySelector(".sh-titre");
-    if (t) {                                                           // un titre et sa légende, comme les autres pages
-      t.textContent = "Modules et Applications";
+    if (t) {
+      t.textContent = "Mes applications";
       let l = sc.querySelector(".sh-legende"); if (!l) { l = document.createElement("p"); l.className = "sh-legende"; t.after(l); }
-      l.textContent = "La gestion des modules : ce qui est actif, ce qui dépend de quoi, et les réglages propres à chaque module. Un module neuf n’est jamais activé de lui-même.";
+      l.textContent = "Les applications que Cassandra a mises à ta disposition. Tu choisis celles qui apparaissent dans ton menu.";
     }
-    E.pageAction = (id) => pageModules(corps, id);
-    const relire = async () => { await pageModules(corps, E.famModules); };
-    if (CASS.pageModules) CASS.pageModules(corps, fam, { rendre: async () => { await relire(); CASS.disposition.rafraichir(); } });       // la page des modules (modules-page.js) : cartes, détail, changements en attente avec leur impact
-    else {
-      corps.innerHTML = '<div class="settings-section-title">' + esc(tete) + "</div>" + (fam === "tous" ? cat : cat.filter((m) => (m.famille || "autres") === fam)).map((m) => M.fiche(m, "global", fam === "tous")).join("");
-      M.gestes(corps, async () => { await relire(); CASS.disposition.rafraichir(); });
-      M.lierChamps(corps, relire);
-    }
+    await CASS.pageMesApplications(corps, { rafraichir: charger, demander: demander });
     rendre();
   }
   // « Logithèque » : où se gèrent les modules, leurs sources, leur sécurité et l'autonomie de Cassandra sur eux. Sa colonne de gauche liste ses sections.
@@ -818,15 +796,14 @@
       l.textContent = "Les modules, leurs sources et leur sécurité : Cassandra s’en occupe, tu vois ce qu’elle fait et tu peux tout défaire.";
     }
     E.pageAction = (id) => pageLogitheque(corps, id);
-    await CASS.pageLogitheque(corps, sec, { aller: (id) => pageLogitheque(corps, id), ouvrirModules: () => ouvrirModules("tous") });
+    await CASS.pageLogitheque(corps, sec, { aller: (id) => pageLogitheque(corps, id) });
     rendre();
   }
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};
   CASS.sceneSurMesure.menus = async function (corps, ctx) {
     const ecran = String(ctx.ecran).split(":")[1] || "";
     if (ecran === "vue_logitheque") await pageLogitheque(corps);
-    else if (ecran === "vue_modules") await pageModules(corps);
-    else if (ecran === "vue_store" && CASS.pageAppStore) CASS.pageAppStore(corps);
+    else if (ecran === "vue_mes_applications") await pageMesApplications(corps);
     else if (CASS.console) { corps.innerHTML = '<div class="sh-console"></div>'; CASS.console("menus", corps.querySelector(".sh-console")); }
   };
   CASS.sceneSurMesure.affichage = async function (corps, ctx) {

@@ -12,7 +12,7 @@
 <!-- RÔLE       : Le registre officiel de Cassandra : sa racine de confiance embarquée, son index signé, ses éditeurs vérifiés, ses révocations et ses niveaux de confiance. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=f17317 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=10fc12 ▼▼▼ -->
 # Le registre officiel de Cassandra
 
 Le magasin de modules officiel vit dans un dépôt à part, **`cassandra-registre`** (source de vérité : archives signées, éditeurs vérifiés, révocations, outil de publication), publié en page statique. L'application le connaît **en dur** : ce n'est pas un réglage.
@@ -36,7 +36,7 @@ Le magasin de modules officiel vit dans un dépôt à part, **`cassandra-registr
 Une clé posée à la main dont le nom commence par `cassandra-` ou `ed_` est **ignorée** : elle ne peut pas se faire passer pour l'officiel.
 
 ## Révocations
-Une entrée `{id, versions, raison}` de l'index signé : le client **refuse d'installer** une version révoquée et **signale**, sur la page App Store, les modules installés qui le sont. Il ne désinstalle rien seul : c'est un geste de l'administrateur (désinstaller, ou garder en connaissance de cause).
+Une entrée `{id, versions, raison}` de l'index signé : le client **refuse d'installer** une version révoquée et **signale**, dans la Logithèque, les modules installés qui le sont. Il ne désinstalle rien seul : c'est un geste de l'administrateur (désinstaller, ou garder en connaissance de cause).
 
 ## Autre registre
 Le réglage `modules.registre_url` ajoute un registre tiers, toujours affiché **non officiel** (son index n'est pas signé par la racine). Chaque archive reste examinée de la même façon.
