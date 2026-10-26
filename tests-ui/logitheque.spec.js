@@ -49,7 +49,7 @@ test("Logithèque : Cassandra d'abord, le récit se défait, le verrou et la pau
     window.__hote = hote;
     await window.CASS.pageLogitheque(hote, 'vue', { aller: (s) => window.CASS.pageLogitheque(hote, s, {}) });
   });
-  const lg = page.locator('#lg-essai .lg');
+  const lg = page.locator('#lg-essai .kit');
 
   // la Vue d'ensemble : Cassandra d'abord, le récit dit qui, quoi, POURQUOI
   await expect(lg).toContainText('Tout va bien');

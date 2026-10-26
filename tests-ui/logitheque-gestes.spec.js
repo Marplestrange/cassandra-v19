@@ -42,7 +42,7 @@ const catalogue = (mod) => [
 test("instance de développement : une note, des interrupteurs grisés", async ({ page }) => {
   await ouvrir(page, false, catalogue);
   await page.evaluate(async () => { localStorage.setItem('lg.avance', '1'); await window.CASS.pageLogitheque(window.__hote, 'inst', {}); });
-  const lg = page.locator('#lg-essai .lg');
+  const lg = page.locator('#lg-essai .kit');
   await expect(lg).toContainText('Instance de développement');
   await expect(lg.locator('.sw:not([disabled])')).toHaveCount(0);
 });
@@ -50,7 +50,7 @@ test("instance de développement : une note, des interrupteurs grisés", async (
 test("Mode avancé : l'impact se dit avant, un module vital ou à installer ne se bascule pas, l'annulation n'envoie rien", async ({ page }) => {
   await ouvrir(page, true, catalogue);
   await page.evaluate(async () => { localStorage.setItem('lg.avance', '1'); await window.CASS.pageLogitheque(window.__hote, 'inst', {}); });
-  const lg = page.locator('#lg-essai .lg');
+  const lg = page.locator('#lg-essai .kit');
   await expect(lg.locator('.sw[data-id="droits"]')).toBeDisabled();                         // un vital ne se bascule jamais
   await expect(lg.locator('.sw[data-id="billetterie"]')).toBeDisabled();                    // à installer d'abord : pas d'interrupteur
 
@@ -58,32 +58,32 @@ test("Mode avancé : l'impact se dit avant, un module vital ou à installer ne s
   await lg.locator('.sw[data-id="certificats"]').click();                                   // active Certificats : DNS est déjà actif, rien à tirer
   await expect.poll(() => page.evaluate(() => window.__appels.filter((a) => a[0] === 'modules.activer').map((a) => a[1]))).toEqual([{ module: 'certificats', avec_dependances: true }]);
   await lg.locator('.sw[data-id="dns"]').click();                                           // désactive DNS : Certificats en dépend et est actif → on le dit
-  const m = page.locator('.lgm');
+  const m = page.locator('.kit-m');
   await expect(m).toContainText('Désactiver Dns');
   await expect(m).toContainText('Certificats');
   await m.locator('[data-c="non"]').click();
   expect(await page.evaluate(() => window.__appels.filter((a) => a[0] === 'modules.desactiver').length)).toBe(0);     // refusé : rien n'est parti
   await lg.locator('.sw[data-id="dns"]').click();
-  await page.locator('.lgm [data-c="oui"]').click();
+  await page.locator('.kit-m [data-c="oui"]').click();
   await expect.poll(() => page.evaluate(() => window.__appels.filter((a) => a[0] === 'modules.desactiver').map((a) => a[1]))).toEqual([{ module: 'dns', cascade: true }]);
 });
 
 test("activer un module dit ce qu'il tire avec lui ; rien ne part avant l'accord", async ({ page }) => {
   await ouvrir(page, true, (mod) => [mod('droits', { importance: 'vital' }), mod('dns', { etat: 'inactif', requiert: ['droits'] }), mod('certificats', { etat: 'inactif', requiert: ['dns'] })]);
   await page.evaluate(async () => { localStorage.setItem('lg.avance', '1'); await window.CASS.pageLogitheque(window.__hote, 'inst', {}); });
-  const lg = page.locator('#lg-essai .lg');
+  const lg = page.locator('#lg-essai .kit');
   await lg.locator('.sw[data-id="certificats"]').click();
-  await expect(page.locator('.lgm')).toContainText('Activer Certificats');
-  await expect(page.locator('.lgm')).toContainText('Dns');                                  // la dépendance qui s'activera aussi
+  await expect(page.locator('.kit-m')).toContainText('Activer Certificats');
+  await expect(page.locator('.kit-m')).toContainText('Dns');                                  // la dépendance qui s'activera aussi
   expect(await page.evaluate(() => window.__appels.filter((a) => a[0] === 'modules.activer').length)).toBe(0);
-  await page.locator('.lgm [data-c="oui"]').click();
+  await page.locator('.kit-m [data-c="oui"]').click();
   await expect.poll(() => page.evaluate(() => window.__appels.filter((a) => a[0] === 'modules.activer').map((a) => a[1]))).toEqual([{ module: 'certificats', avec_dependances: true }]);
 });
 
 test("une icône apportée par un module est un tracé validé : celle d'un éditeur malveillant n'entre jamais dans la page", async ({ page }) => {
   await ouvrir(page, true, (mod) => [mod('dns', { icone_trace: 'M12 3l8 4v5c0 4.4-3.1 7.6-8 9z' }), mod('piege', { icone_trace: 'M0 0"/><script>window.__piege = 1</script><path d="M1 1' })]);
   await page.evaluate(() => window.CASS.pageLogitheque(window.__hote, 'inst', {}));
-  const lg = page.locator('#lg-essai .lg');
+  const lg = page.locator('#lg-essai .kit');
   await expect(lg.locator('.mod').filter({ hasText: 'Dns' }).locator('.ico path')).toHaveAttribute('d', 'M12 3l8 4v5c0 4.4-3.1 7.6-8 9z');
   const ds = await lg.locator('.mod').filter({ hasText: 'Piege' }).locator('.ico path').evaluateAll((n) => n.map((x) => x.getAttribute('d')));
   expect(ds.some((d) => /script/.test(d))).toBe(false);                                     // le piège est refusé : l'icône générique reste
@@ -95,7 +95,7 @@ test("instance neuve : un accueil, les ensembles se cumulent, « Tout installer 
   await ouvrir(page, true, (mod) => [mod('droits', { importance: 'vital' }), mod('sites', { etat: 'inactif', requiert: ['dns'] }), mod('dns', { etat: 'inactif', requiert: ['droits'] }), mod('sauvegardes', { etat: 'inactif', requiert: ['droits'] }),
     mod('courrier', { etat: 'inactif', requiert: ['droits'] }), mod('notes', { etat: 'inactif', requiert: ['droits'] })]);
   await page.evaluate(() => window.CASS.pageLogitheque(window.__hote, 'vue', {}));
-  const lg = page.locator('#lg-essai .lg');
+  const lg = page.locator('#lg-essai .kit');
   await expect(lg).toContainText('Bienvenue');
   await expect(lg).toContainText('Déjà en place');
   await expect(lg.locator('[data-a="ensemble"]')).toHaveCount(3);                          // Hébergeur, Bureau, Tout installer
@@ -114,7 +114,7 @@ test("instance neuve : un accueil, les ensembles se cumulent, « Tout installer 
 test("instance neuve : « Plus tard » ferme l'accueil sans rien faire", async ({ page }) => {
   await ouvrir(page, true, (mod) => [mod('droits', { importance: 'vital' }), mod('courrier', { etat: 'inactif', requiert: ['droits'] })]);
   await page.evaluate(() => window.CASS.pageLogitheque(window.__hote, 'vue', {}));
-  const lg = page.locator('#lg-essai .lg');
+  const lg = page.locator('#lg-essai .kit');
   await lg.locator('[data-a="plus-tard"]').click();
   await expect(lg).toContainText('Tout va bien');
   expect(await page.evaluate(() => window.__appels.filter((a) => a[0] === 'modules.activer').length)).toBe(0);
@@ -128,7 +128,7 @@ test("Mes applications : un compte ordinaire voit ses applications, retire et re
     window.__ecrans = []; window.CASS.ouvrirEcran = (e, l) => window.__ecrans.push([e, l]);
     await window.CASS.pageMesApplications(window.__hote, { rafraichir: () => window.__appels.push(['rafraichir']), demander: (t) => window.__demandes.push(t) });
   });
-  const lg = page.locator('#lg-essai .lg');
+  const lg = page.locator('#lg-essai .kit');
   await expect(lg.locator('.mod')).toHaveCount(2);
   await expect(lg.locator('.mod').filter({ hasText: 'Courrier' }).locator('.sw')).toHaveClass(/on/);
   await expect(lg.locator('.mod').filter({ hasText: 'Notes' }).locator('.sw')).not.toHaveClass(/on/);

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #2193b4
+// VERSION CN : 0.1.0  #eacc04
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La Logithèque : où se gèrent les modules, leurs sources, leur sécurité et l'autonomie de Cassandra sur eux.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=2193b4 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=eacc04 ▼▼▼
 // La Logithèque : où se gèrent les modules, leurs sources, leur sécurité et l'autonomie de Cassandra sur eux.
 // Une page, des sections (Vue d'ensemble, Installés, Mises à jour, Boutique, Sources, Sécurité, Santé, Journal, Développeur, Réglages).
 // Principe : Cassandra gère les modules SEULE ; l'utilisateur voit ce qu'elle fait (le récit, avec le pourquoi), peut tout défaire,
@@ -20,28 +20,11 @@
 (function () {
   "use strict";
   const CASS = window.CASS;
-  const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const agir = (c, a) => CASS.agir(c, a || {});
-  const dire = (t, k) => { if (typeof window.toast === "function") window.toast(t, k); };
+  const { esc, I, ic, pill, depuis, titre, agir, dire } = CASS.kit;                                   // le kit commun (CN_kit.js)
 
   const SECTIONS = [["vue", "Vue d’ensemble", "vue"], ["inst", "Installés", "inst"], ["maj", "Mises à jour", "maj"], ["shop", "Boutique", "shop"], ["src", "Sources", "src"],
     ["sec", "Sécurité et confiance", "sec"], ["sante", "Santé", "sante"], ["jour", "Journal et versions", "jour"], ["dev", "Développeur", "dev"], ["reg", "Réglages", "reg"]];
 
-  const I = {
-    vue: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
-    inst: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><path d="M16.5 13v7M13 16.5h7"/>',
-    shop: '<path d="M4 8h16l-1.2 11a2 2 0 01-2 1.8H7.2a2 2 0 01-2-1.8L4 8z"/><path d="M8 8V6a4 4 0 018 0v2"/>',
-    maj: '<path d="M20 12a8 8 0 10-2.4 5.7"/><path d="M20 5v7h-7"/>',
-    src: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18"/>',
-    sec: '<path d="M12 3l8 4v5c0 4.4-3.1 7.6-8 9-4.9-1.4-8-4.6-8-9V7z"/><path d="M9 12l2.2 2.2L15.5 10"/>',
-    sante: '<path d="M3 12h4l2.5-6 4 12 2.5-6H21"/>', jour: '<path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/>',
-    dev: '<path d="M8 8l-5 4 5 4M16 8l5 4-5 4M14 5l-4 14"/>', reg: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
-    bot: '<rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 8V4M9 13h.01M15 13h.01"/>', check: '<path d="M5 12l4.5 4.5L19 7"/>',
-    warn: '<path d="M12 3l10 18H2L12 3z"/><path d="M12 10v5M12 18v.01"/>', shield: '<path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z"/>',
-    lock: '<rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 018 0v3"/>', eye: '<path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/>',
-    box: '<path d="M3 7l9-4 9 4v10l-9 4-9-4V7z"/><path d="M3 7l9 4 9-4M12 11v10"/>', chev: '<path d="M6 9l6 6 6-6"/>', pause: '<path d="M9 6v12M15 6v12"/>',
-  };
-  const ic = (k, c) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"' + (c ? ' class="' + c + '"' : "") + ' aria-hidden="true">' + (I[k] || I.box) + "</svg>";
 
   const IMP = { vital: ["Vital", "vi"], important: ["Important", "al"], optionnel: ["Optionnel", ""] };
   const NIV = {
@@ -52,57 +35,6 @@
   const FENETRES = { nuit: "La nuit, 02:00–05:00", dimanche: "Dimanche matin", hors_bureau: "Hors heures de bureau", tout: "À tout moment" };
   const GESTES = { active: "a activé", desactive: "a désactivé", installe: "a installé", retour: "a remis une version précédente de", desinstalle: "a retiré" };
 
-  const CSS = ".lg{display:flex;flex-direction:column;gap:16px;color:var(--txt);font-size:13.5px;line-height:1.5}.lg *{box-sizing:border-box}.lg h1,.lg h2,.lg h3,.lg h4,.lg p{margin:0}" +
-    ".lg .note{font-size:12.5px;color:var(--txt-soft)}.lg .faint{color:var(--txt-faint)}.lg .mono{font-family:ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace;overflow-wrap:anywhere}" +
-    ".lg .btn,.lgt .btn{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:7px 14px;font:600 13px 'Inter',system-ui,sans-serif;cursor:pointer;white-space:nowrap}" +
-    ".lg .btn:hover:not([disabled]),.lgt .btn:hover:not([disabled]){border-color:var(--accent);color:var(--accent)}.lg .btn.pri,.lgt .btn.pri{background:var(--accent);color:var(--on-accent,#fff);border-color:transparent}" +
-    ".lg .btn.pri:hover:not([disabled]),.lgt .btn.pri:hover:not([disabled]){color:var(--on-accent,#fff);filter:brightness(1.08)}.lg .btn.dng,.lgt .btn.dng{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,transparent)}" +
-    ".lg .btn.mini,.lgt .btn.mini{padding:4px 10px;font-size:12px}.lg .btn[disabled],.lgt .btn[disabled]{opacity:.45;cursor:not-allowed}.lg :focus-visible,.lgt :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}" +
-    ".lg .carte{background:var(--surface);backdrop-filter:blur(14px) saturate(150%);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-glass);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}" +
-    ".lg .carte h3{font:650 15px/1.25 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}.lg .carte h4{font:650 13.5px 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}" +
-    ".lg .g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}.lg .grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}" +
-    ".lg .p{display:inline-flex;align-items:center;gap:5px;border-radius:7px;padding:3px 8px;font:600 11px/1.2 'Inter',sans-serif;background:color-mix(in srgb,var(--txt-soft) 10%,transparent);color:var(--txt-soft);white-space:nowrap}" +
-    ".lg .p svg,.lgt .p svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.lg .p.ok,.lgt .p.ok{background:color-mix(in srgb,var(--ok) 13%,transparent);color:var(--ok)}" +
-    ".lg .p.al,.lgt .p.al{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}.lg .p.dg,.lgt .p.dg{background:color-mix(in srgb,var(--danger) 13%,transparent);color:var(--danger)}" +
-    ".lg .p.ac{background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent)}.lg .p.vi,.lgt .p.vi{background:var(--txt-strong,#111);color:var(--bg,#fff)}" +
-    ".lg .ico,.lgt .ico{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent)}.lg .ico svg,.lgt .ico svg{width:20px;height:20px}" +
-    ".lg .ico.off{background:var(--line);color:var(--txt-faint)}.lg .ico.sm{width:30px;height:30px;border-radius:9px}.lg .ico.sm svg{width:16px;height:16px}.lg .ico.al{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}" +
-    ".lg .sw{position:relative;width:38px;height:22px;flex:none;border-radius:999px;border:0;background:var(--line-strong,var(--line));cursor:pointer;padding:0}.lg .sw::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}" +
-    ".lg .sw.on{background:var(--accent)}.lg .sw.on::after{transform:translateX(16px)}.lg .sw[disabled]{opacity:.45;cursor:not-allowed}" +
-    ".lg .barre{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}.lg .barre input[type=search]{flex:1 1 240px;min-width:0;border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:8px 12px;font:500 13px 'Inter',sans-serif}" +
-    ".lg .sel{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:8px 12px;font:600 13px 'Inter',sans-serif;cursor:pointer;min-width:0;max-width:100%}" +
-    ".lg .seg{display:inline-flex;border:1px solid var(--line-strong,var(--line));border-radius:10px;overflow:hidden;background:var(--surface-solid,var(--surface));max-width:100%;overflow-x:auto}.lg .seg button{border:0;background:transparent;padding:6px 12px;font:600 12.5px 'Inter',sans-serif;color:var(--txt-soft);cursor:pointer;white-space:nowrap}" +
-    ".lg .seg button.on{background:var(--accent);color:var(--on-accent,#fff)}.lg .seg .cnt{opacity:.65;margin-left:4px;font-size:11px}" +
-    ".lg .rub{display:flex;flex-direction:column;gap:10px}.lg .rub-t{display:flex;gap:10px;align-items:center;border:0;background:transparent;cursor:pointer;width:100%;text-align:left;padding:4px 2px 9px;border-bottom:1px solid var(--line);color:var(--txt)}" +
-    ".lg .rub-t h3{font:650 15px 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}.lg .rub-t .chev{margin-left:auto;width:18px;height:18px;color:var(--txt-faint);transition:transform .15s}.lg .rub-t .chev.ferme{transform:rotate(-90deg)}" +
-    ".lg .mod{cursor:pointer;gap:9px}.lg .mod.off{opacity:.82}.lg .mod .l1{display:flex;gap:11px;align-items:center}.lg .mod .sp{flex:1;min-width:0}.lg .mod h3{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
-    ".lg .mod .desc{font-size:12.5px;color:var(--txt-soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.lg .pied{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:auto;padding-top:9px;border-top:1px solid var(--line)}" +
-    ".lg .hero{padding:16px 18px;border-color:color-mix(in srgb,var(--accent) 30%,transparent)}.lg .hero .l1{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}.lg .hero h2{font:700 20px 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}" +
-    ".lg .demande{display:flex;gap:8px}.lg .demande input{flex:1;min-width:0;border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:11px;padding:10px 13px;font:14px 'Inter',sans-serif}" +
-    ".lg .chips{display:flex;gap:6px;flex-wrap:wrap}.lg .chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font:600 12.5px 'Inter',sans-serif;color:var(--txt-soft);cursor:pointer}" +
-    ".lg .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.lg .stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;text-align:left}" +
-    ".lg .stat b{font:650 26px/1.1 ui-monospace,Menlo,monospace;color:var(--txt-strong,var(--txt))}.lg .stat span{font-size:12.5px;color:var(--txt-soft)}.lg .stat.al b{color:var(--warn)}.lg .stat.ok b{color:var(--ok)}" +
-    ".lg .liste{display:flex;flex-direction:column}.lg .li{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}.lg .li:first-child{border-top:0}.lg .li .sp{flex:1;min-width:180px}.lg .li .sp b{color:var(--txt-strong,var(--txt))}.lg .li .note{display:block}" +
-    ".lg .pourquoi{display:flex;gap:6px;align-items:flex-start;font-size:11.5px;color:var(--info,var(--accent));margin-top:2px}.lg .pourquoi svg{width:13px;height:13px;flex:none;margin-top:2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}" +
-    ".lg .alerte{border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:10px 14px;background:var(--surface);display:flex;gap:12px;align-items:center;flex-wrap:wrap}.lg .alerte.al{border-left-color:var(--warn)}.lg .alerte.dg{border-left-color:var(--danger)}.lg .alerte.in{border-left-color:var(--accent)}" +
-    ".lg .alerte .sp{flex:1;min-width:220px}.lg .radio{display:flex;gap:11px;align-items:flex-start;padding:11px 13px;border:1px solid var(--line);border-radius:12px;cursor:pointer;background:var(--surface);text-align:left;color:var(--txt);font:inherit;width:100%}" +
-    ".lg .radio.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.lg .radio i{flex:none;width:16px;height:16px;border-radius:50%;border:2px solid var(--line-strong,var(--line));margin-top:3px}.lg .radio.on i{border-color:var(--accent);background:radial-gradient(var(--accent) 45%,transparent 50%)}" +
-    ".lg .vide{padding:28px 10px;text-align:center;color:var(--txt-soft)}.lg .titre h1{font:650 20px/1.2 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}.lg .titre p{color:var(--txt-soft);margin-top:3px;max-width:68ch}" +
-    ".lg .avance{margin-bottom:0}.lg .carte.pret{align-items:flex-start}" +
-    ".lgm{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,calc(100% - 32px));max-height:calc(100vh - 40px);overflow:auto;background:var(--bg);border:1px solid var(--line-strong,var(--line));border-radius:18px;z-index:10000;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);padding:20px;display:flex;flex-direction:column;gap:14px;color:var(--txt);font-size:13.5px;line-height:1.5}" +
-    ".lgm h2{margin:0;font:650 19px 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}.lgm .note{font-size:12.5px;color:var(--txt-soft)}.lgm .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}.lgm .lst{margin:0;padding-left:18px}" +
-    ".lgm .btn{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:7px 14px;font:600 13px 'Inter',system-ui,sans-serif;cursor:pointer}.lgm .btn.pri{background:var(--accent);color:var(--on-accent,#fff);border-color:transparent}.lgm .btn.dng{color:var(--danger)}" +
-    ".lg .choix{text-align:left;cursor:pointer;position:relative;font:inherit;color:inherit;gap:6px}.lg .choix .coche{position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:7px;border:2px solid var(--line-strong,var(--line));display:grid;place-items:center;color:transparent}.lg .choix .coche svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}" +
-    ".lg .choix.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.lg .choix.on .coche{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff)}.lg .accueil{padding:20px}.lg .accueil h2{font:700 22px/1.2 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}" +
-    ".lgv{position:fixed;inset:0;background:rgba(5,20,18,.42);backdrop-filter:blur(3px);z-index:9998}" +
-    ".lgt{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--bg);border-left:1px solid var(--line-strong,var(--line));z-index:9999;display:flex;flex-direction:column;box-shadow:-20px 0 50px -20px rgba(0,0,0,.4);color:var(--txt);font-size:13.5px;line-height:1.5}" +
-    ".lgt *{box-sizing:border-box}.lgt .tete{padding:18px 20px 0;display:flex;flex-direction:column;gap:12px}.lgt .corps{padding:16px 20px 24px;overflow:auto;display:flex;flex-direction:column;gap:14px;flex:1}.lgt h2{margin:0;font:650 19px 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}" +
-    ".lgt .onglets{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}.lgt .onglets button{border:0;background:transparent;padding:9px 12px;font:600 13px 'Inter',sans-serif;color:var(--txt-soft);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}.lgt .onglets button.on{color:var(--accent);border-bottom-color:var(--accent)}" +
-    ".lgt .pied{padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap}.lgt .carte{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}" +
-    ".lgt .lib{font:600 10.5px 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-faint)}.lgt .note{font-size:12.5px;color:var(--txt-soft)}.lgt .mono{font-family:ui-monospace,Menlo,monospace}.lgt .reglage{display:flex;gap:14px;align-items:center}.lgt .reglage .sp{flex:1}" +
-    ".lgt .sw{position:relative;width:38px;height:22px;flex:none;border-radius:999px;border:0;background:var(--line-strong,var(--line));cursor:pointer;padding:0}.lgt .sw::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}.lgt .sw.on{background:var(--accent)}.lgt .sw.on::after{transform:translateX(16px)}" +
-    "@media(max-width:860px){.lgt{top:auto;height:88vh;width:100%;border-left:0;border-top:1px solid var(--line-strong,var(--line));border-radius:20px 20px 0 0}.lg .demande{flex-direction:column}.lg .demande .btn{width:100%}.lg .g2,.lg .grille{grid-template-columns:minmax(0,1fr)}}" +
-    "@media (prefers-reduced-motion:reduce){.lg *,.lgt *{transition:none!important}}";
 
   const S = { choix: new Set(), reg: null, regCharge: false, regErr: "", sante: {}, santeCharge: false, jfil: "tout", gere: true, cat: [], sections: [], act: { actes: [], verrous: [], autonomie: "reine", fenetre: "nuit", gel: false }, constats: null, rep: new Set(), q: "", fam: "toutes", etat: "tous", imp: "toutes", vue: "grille", ouvert: "", onglet: "apercu", occupe: false };
   let racine = null, corpsEl = null, sec = "vue", hooks = {}, escLie = false;
@@ -110,10 +42,8 @@
   const ecrire = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
   const avance = () => lire("lg.avance", "0") === "1";
 
-  const depuis = (ts) => { const s = Math.max(0, Date.now() / 1000 - ts); if (s < 90) return "à l’instant"; if (s < 3600) return "il y a " + Math.round(s / 60) + " min"; if (s < 86400) return "il y a " + Math.round(s / 3600) + " h"; return new Date(ts * 1000).toLocaleDateString("fr-FR"); };
   const qui = (par) => { const p = String(par || ""); if (["cassandra", "itare"].includes(p)) return p.charAt(0).toUpperCase() + p.slice(1); if (p === "agent") return "Un agent"; if (p === "noyau") return "Le noyau"; if (!p || p === "utilisateur" || p === "humain") return "Un utilisateur"; return p.split("@")[0]; };
   const nomDe = (id) => { const m = S.cat.find((x) => x.id === id); return m ? m.nom : id; };
-  const pill = (t, c, i) => '<span class="p ' + (c || "") + '">' + (i ? ic(i) : "") + esc(t) + "</span>";
   const niveauMod = (m) => (m.etat === "refuse" ? pill("Refusé", "dg", "warn") : m.confiance === "interne" ? pill("Noyau", "ok", "shield") : m.confiance === "local" ? pill("Clé de l’administrateur", "") : pill("Installé", ""));
   const sectionDe = (id) => S.sections.find((s) => s.id === id) || { id: id, libelle: id, icone: "" };
   const famIcone = (id) => ((CASS.modulesUi && CASS.modulesUi.famIcone && CASS.modulesUi.famIcone(id)) || "box");
@@ -136,7 +66,6 @@
     if (sec === "vue") dessiner();
   }
 
-  const titre = (t, d, act) => '<div class="barre"><div class="titre" style="flex:1 1 260px;min-width:0"><h1>' + esc(t) + "</h1><p>" + esc(d) + "</p></div>" + (act || "") + "</div>";
   const banDev = () => S.gere ? "" : '<div class="alerte in" role="status"><div class="sp"><b>Instance de développement.</b> <span class="note">Tous les modules sont chargés : activer ou désactiver ne change rien ici, et Cassandra n’a rien à entretenir.</span></div></div>';
   const banAvance = () => avance() ? '<div class="alerte al avance" role="status"><div class="ico sm al">' + ic("warn") + '</div><div class="sp"><b>Mode avancé.</b> <span class="note">Tu as les vrais boutons (interrupteurs, retrait). Cassandra voit tout ce que tu fais, et chaque geste se défait.</span></div><button class="btn mini" data-a="avance">Quitter</button></div>' : "";
 
@@ -338,8 +267,8 @@
     const m = S.cat.find((x) => x.id === id); if (!m) return;
     S.ouvert = id; S.onglet = onglet || "apercu";
     fermerTiroir(); S.ouvert = id;
-    const v = document.createElement("div"); v.className = "lgv"; v.id = "lg-voile"; v.addEventListener("click", fermerTiroir);
-    const t = document.createElement("aside"); t.className = "lgt"; t.id = "lg-tiroir"; t.setAttribute("role", "dialog"); t.setAttribute("aria-modal", "true"); t.setAttribute("aria-label", "Détail du module " + m.nom);
+    const v = document.createElement("div"); v.className = "kit-v"; v.id = "lg-voile"; v.addEventListener("click", fermerTiroir);
+    const t = document.createElement("aside"); t.className = "kit-t"; t.id = "lg-tiroir"; t.setAttribute("role", "dialog"); t.setAttribute("aria-modal", "true"); t.setAttribute("aria-label", "Détail du module " + m.nom);
     document.body.appendChild(v); document.body.appendChild(t);
     t.addEventListener("click", (e) => { const b = e.target.closest("[data-t]"); if (b) gesteTiroir(b, m); });
     dessinerTiroir(m, null);
@@ -383,17 +312,7 @@
   // ── l'impact d'un geste direct (Mode avancé) : on le dit AVANT, avec ce qui s'arrêterait ou s'activerait aussi ───────
   function dependants(id, vus) { vus = vus || new Set(); S.cat.forEach((x) => { if ((x.requiert || []).indexOf(id) >= 0 && x.etat === "actif" && !vus.has(x.id)) { vus.add(x.id); dependants(x.id, vus); } }); return vus; }
   function atirer(id, vus) { vus = vus || new Set(); const m = S.cat.find((x) => x.id === id); ((m && m.requiert) || []).forEach((r) => { const d = S.cat.find((x) => x.id === r); if (d && d.etat !== "actif" && !vus.has(r)) { vus.add(r); atirer(r, vus); } }); return vus; }
-  function confirmer(titreF, corps, oui, danger) {
-    return new Promise((fin) => {
-      const v = document.createElement("div"); v.className = "lgv"; v.style.zIndex = 9999;
-      const m = document.createElement("div"); m.className = "lgm"; m.setAttribute("role", "dialog"); m.setAttribute("aria-modal", "true"); m.setAttribute("aria-label", titreF);
-      m.innerHTML = "<h2>" + esc(titreF) + "</h2>" + corps + '<div class="acts"><button class="btn" data-c="non">Annuler</button><button class="btn ' + (danger ? "dng" : "pri") + '" data-c="oui">' + esc(oui) + "</button></div>";
-      const clore = (r) => { v.remove(); m.remove(); fin(r); };
-      v.addEventListener("click", () => clore(false)); m.addEventListener("click", (e) => { const b = e.target.closest("[data-c]"); if (b) clore(b.dataset.c === "oui"); });
-      m.addEventListener("keydown", (e) => { if (e.key === "Escape") clore(false); });
-      document.body.appendChild(v); document.body.appendChild(m); const f = m.querySelector("[data-c=non]"); if (f) f.focus();
-    });
-  }
+  const confirmer = CASS.kit.confirmer;
   async function basculer(m) {
     if (m.etat === "actif") {
       const dep = [...dependants(m.id)].map(nomDe);
@@ -467,9 +386,8 @@
   }
   const compteCourant = async () => { if (CASS.moi && CASS.moi.compte) return CASS.moi.compte; try { const m = await (await fetch("/api/moi")).json(); return m.compte || ""; } catch (e) { return ""; } };
   CASS.pageMesApplications = async function (corps, h) {
-    const anc = document.getElementById("lg-css"); if (anc) anc.remove();
-    const st = document.createElement("style"); st.id = "lg-css"; st.textContent = CSS; document.head.appendChild(st);
-    corps.innerHTML = ""; const z = document.createElement("div"); z.className = "lg"; corps.appendChild(z);
+    CASS.kit.injecter();
+    corps.innerHTML = ""; const z = document.createElement("div"); z.className = "kit"; corps.appendChild(z);
     let liste = [];
     const dessin = () => {
       z.innerHTML = '<div class="grille">' + (liste.length ? liste.map((e) => '<div class="carte mod' + (e.masque ? " off" : "") + '"><div class="l1"><div class="ico' + (e.masque ? " off" : "") + '">' + ic("box") + '</div><div class="sp"><h3>' + esc(e.libelle) + '</h3></div></div><div class="pied"><button class="btn mini pri" data-ouvrir="' + esc(e.id) + '">Ouvrir</button><label class="note" style="margin-left:auto;display:flex;gap:8px;align-items:center">Dans mon menu <button class="sw' + (e.masque ? "" : " on") + '" data-menu="' + esc(e.id) + '" role="switch" aria-checked="' + !e.masque + '" aria-label="Dans mon menu : ' + esc(e.libelle) + '"></button></label></div></div>').join("") :
@@ -489,10 +407,9 @@
   CASS.logitheque = { sections: SECTIONS };
   CASS.pageLogitheque = async function (corps, section, h) {
     hooks = h || {}; sec = SECTIONS.some((x) => x[0] === section) ? section : "vue";
-    const anc = document.getElementById("lg-css"); if (anc) anc.remove();
-    const st = document.createElement("style"); st.id = "lg-css"; st.textContent = CSS; document.head.appendChild(st);
+    CASS.kit.injecter();
     fermerTiroir();
-    corps.innerHTML = ""; racine = document.createElement("div"); racine.className = "lg"; corps.appendChild(racine); corpsEl = corps;
+    corps.innerHTML = ""; racine = document.createElement("div"); racine.className = "kit"; corps.appendChild(racine); corpsEl = corps;
     racine.innerHTML = '<div class="carte vide">Lecture des modules…</div>';
     racine.addEventListener("click", (e) => {
       const go = e.target.closest("[data-go]"); if (go) { if (hooks.aller) hooks.aller(go.dataset.go); return; }
