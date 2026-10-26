@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #607d48
+# VERSION CN : 0.1.0  #944a34
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=607d48 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=944a34 ▼▼▼
 """Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 
 Le travail (plan d'activation avec dépendances, refus d'un essentiel, branchement à chaud) est celui du noyau ; ce module en fait des
@@ -154,13 +154,26 @@ def brancher(ctx):
 
     ctx.implementer("contributions", contributions)
     def registre(ctx):
+        """Le registre OFFICIEL (en dur : adresse et clé racine du noyau) toujours en premier ; un registre de l'administrateur (registre_url) en plus, marqué non officiel."""
+        try:
+            off = cy.registre_officiel()
+        except ValueError as ex:
+            off = {"url": cy.url_officielle, "officiel": True, "erreur": str(ex), "modules": [], "editeurs": [], "revocations": [], "installes_revoques": []}
         url = str(ctx.reglage("registre_url", "") or "").strip()
-        return {"url": url, "politique": politique(), "modules": cy.registre_lire(url)}
+        autre = {"url": url, "officiel": False, "modules": []}
+        if url:
+            try:
+                autre["modules"] = cy.registre_lire(url)
+            except ValueError as ex:
+                autre["erreur"] = str(ex)
+        return {"politique": politique(), "officiel": off, "autre": autre}
 
-    def telecharger(ctx, module=""):
+    def telecharger(ctx, module="", source="officiel"):
+        if str(source) == "officiel":
+            return cy.telecharger_officiel(str(module), politique())
         url = str(ctx.reglage("registre_url", "") or "").strip()
         if not url:
-            raise ValueError("aucun registre : renseignez le réglage « Adresse du registre de modules »")
+            raise ValueError("aucun autre registre : renseignez le réglage « Adresse d'un autre registre de modules »")
         return cy.telecharger(url, str(module), politique())
 
     ctx.implementer("registre", registre)

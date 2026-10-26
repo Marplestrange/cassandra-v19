@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #4df576
+// VERSION CN : 0.1.0  #ad75dd
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « App Store » : on dépose une archive de module (.cmod) ou on en prend une au registre ; l'examen dit ce qu'elle est, qui l'a signée, ce qu'elle demande et ce qu'elle casserait ; l'installation exige le consentement aux permissions montrées ; les modules installés se mettent à jour, reviennent en arrière ou se désinstallent.
 // MÉTHODE    : le téléversement part en octets bruts vers /api/televerser/modules.examiner (l'archive va en quarantaine, rien n'est posé) ; l'installation passe par modules.installer avec l'empreinte des permissions TELLES QUE MONTRÉES ; un module installé reste inactif jusqu'à son activation ; tout texte dynamique est échappé
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=4df576 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=ad75dd ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -31,6 +31,7 @@
     reglages: ["Écrit les réglages des autres modules", true], stockage: ["Garde ses données dans sa propre base", false], stockage_lecture: ["Lit la base d’autres modules", true],
     secrets: ["Chiffre et déchiffre des secrets", true], racine: ["Demande des commandes à l’administrateur système (root)", true], agir: ["Agit comme un agent", true]
   };
+  const NIVEAUX = { officiel: ["Officiel", "ok"], verifie: ["Éditeur vérifié", "ac"], local: ["Clé de l’administrateur", "nu"], "": ["Non signé", "dg"] };
   const STATUTS = { nouveau: ["Nouveau", "ok"], mise_a_jour: ["Mise à jour", "ac"], identique: ["Déjà installé", "nu"], retrograde: ["Version plus ancienne", "al"] };
   const CRIT = { vital: ["Vital", "vi"], important: ["Important", "al"], optionnel: ["Optionnel", "nu"] };
   const ICO = '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><path d="M16.5 13v7M13 16.5h7"/>';
@@ -56,7 +57,7 @@
     const anc = document.getElementById("as-css"); if (anc) anc.remove();
     const st = document.createElement("style"); st.id = "as-css"; st.textContent = CSS; document.head.appendChild(st);
     const racine = document.createElement("div"); racine.className = "as"; corps.innerHTML = ""; corps.appendChild(racine);
-    const S = { onglet: "depot", examen: null, installe: null, politique: "signes", registre: null, regErr: "", modules: null, versions: {}, sante: {}, occupe: false, hote: "" };
+    const S = { onglet: "depot", examen: null, installe: null, politique: "signes", off: null, autre: null, regChargement: false, modules: null, versions: {}, sante: {}, occupe: false, hote: "" };
 
     const lire = async () => {
       try { const l = await agir("reglages.lire", { module: "modules" }); const r = ((l && l.reglages) || []).find((x) => x.cle === "modules.politique_confiance"); if (r) S.politique = r.valeur || "signes"; const u = ((l && l.reglages) || []).find((x) => x.cle === "modules.registre_url"); S.hote = (u && u.valeur) || ""; } catch (e) { /* la politique par défaut est la plus stricte */ }
@@ -70,7 +71,7 @@
         "Un module installé tourne <b>dans Cassandra</b> : ses permissions sont déclaratives, pas encore cloisonnées. N’installez que ce que vous avez de bonnes raisons de croire.</div>" +
         '<div class="onglets" role="tablist">' + [["depot", "Déposer une archive"], ["registre", "Registre"], ["installes", "Installés"]].map((t) => '<button type="button" role="tab" data-o="' + t[0] + '" class="' + (o === t[0] ? "on" : "") + '">' + t[1] + "</button>").join("") + "</div>" +
         '<div id="as-corps">' + (o === "depot" ? depot() : o === "registre" ? registre() : installes()) + "</div>";
-      racine.querySelectorAll("[data-o]").forEach((b) => b.addEventListener("click", () => { S.onglet = b.dataset.o; S.examen = S.examen && o === b.dataset.o ? S.examen : null; if (S.onglet === "registre" && !S.registre) chargerRegistre(); if (S.onglet === "installes" && !S.modules) chargerInstalles(); dessiner(); }));
+      racine.querySelectorAll("[data-o]").forEach((b) => b.addEventListener("click", () => { S.onglet = b.dataset.o; S.examen = S.examen && o === b.dataset.o ? S.examen : null; if (S.onglet === "registre" && !S.off) chargerRegistre(); if (S.onglet === "installes" && !S.modules) chargerInstalles(); dessiner(); }));
       lier();
     }
 
@@ -92,7 +93,7 @@
       const tr = CASS.modulesUi && CASS.modulesUi.trace ? CASS.modulesUi.trace(e.icone_trace) : "";
       return '<div class="carte exam"><div class="tete">' + (tr ? '<svg viewBox="0 0 24 24" aria-hidden="true" style="width:34px;height:34px;fill:none;stroke:var(--accent);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round">' + tr + "</svg>" : "") + '<h2>' + esc(e.nom) + '</h2><span class="mono note">' + esc(e.id) + " v" + esc(e.version) + "</span>" +
         '<div class="tags"><span class="p ' + cls + '">' + esc(lib) + (e.version_en_place ? " (en place : " + esc(e.version_en_place) + ")" : "") + "</span>" +
-        (e.signe ? '<span class="p ok">signé par ' + esc(e.editeur || "?") + "</span>" : '<span class="p dg">non signé</span>') + (c ? '<span class="p ' + c[1] + '">' + c[0] + "</span>" : "") + '<span class="p nu">' + esc(Mo(e.taille)) + " · " + e.nb_fichiers + " fichiers</span></div></div>" +
+        '<span class="p ' + (NIVEAUX[e.niveau || ""] || NIVEAUX[""])[1] + '">' + (NIVEAUX[e.niveau || ""] || NIVEAUX[""])[0] + (e.signe && e.editeur ? " · " + esc(String(e.editeur).replace(/^(cassandra-|ed_)/, "")) : "") + "</span>" + (c ? '<span class="p ' + c[1] + '">' + c[0] + "</span>" : "") + '<span class="p nu">' + esc(Mo(e.taille)) + " · " + e.nb_fichiers + " fichiers</span></div></div>" +
         "<p>" + esc(e.description) + "</p>" + (e.sans ? '<p class="note">Sans lui : ' + esc(e.sans) + "</p>" : "") +
         ((e.raisons || []).length ? '<div class="bandeau dg"><b>Refusée.</b> ' + e.raisons.map(esc).join(" ; ") + "</div>" : "") +
         ((e.avertissements || []).map((a) => '<div class="bandeau al">' + esc(a) + "</div>").join("")) +
@@ -104,13 +105,31 @@
         '<div class="acts"><button class="btn pri" data-a="installer"' + (ok ? " disabled" : " disabled") + ' id="as-installer"' + (S.occupe ? " disabled" : "") + ">" + (e.statut === "mise_a_jour" ? "Mettre à jour" : "Installer") + '</button><button class="btn" data-a="abandonner"' + (S.occupe ? " disabled" : "") + ">Abandonner</button></div></div>";
     }
 
+    const jour = (ts) => new Date(ts * 1000).toLocaleDateString("fr-FR");
+    function carteRegistre(m, source) {
+      const [nl, nc] = source === "officiel" ? (NIVEAUX[m.niveau || ""] || NIVEAUX[""]) : ["Registre non officiel", "al"];
+      const bloque = !!m.revoque || m.etat === "installe" || S.occupe;
+      return '<div class="carte mod"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3>' + esc(m.nom) + '</h3><span class="p ' + (m.etat === "nouveau" ? "ok" : m.etat === "mise_a_jour" ? "ac" : "nu") + '">' + (m.etat === "nouveau" ? "Nouveau" : m.etat === "mise_a_jour" ? "Mise à jour" : "Installé") + "</span></div>" +
+        '<div class="tags"><span class="p ' + nc + '">' + nl + (source === "officiel" && m.niveau === "verifie" && m.editeur_id ? " · " + esc(m.editeur_id) : "") + "</span>" + (CRIT[m.importance] ? '<span class="p ' + CRIT[m.importance][1] + '">' + CRIT[m.importance][0] + "</span>" : "") + "</div>" +
+        '<div class="mono note">' + esc(m.id) + " v" + esc(m.version) + (m.version_en_place ? " (en place : " + esc(m.version_en_place) + ")" : "") + '</div><div class="desc">' + esc(m.description) + "</div>" +
+        (m.revoque ? '<div class="bandeau dg"><b>Révoqué.</b> ' + esc(m.revoque) + "</div>" : "") +
+        '<div class="acts" style="margin-top:auto"><span style="flex:1"></span><button class="btn mini pri" data-a="telecharger" data-source="' + source + '" data-id="' + esc(m.id) + '"' + (bloque ? " disabled" : "") + ">" + (m.etat === "mise_a_jour" ? "Examiner la mise à jour" : "Examiner") + "</button></div></div>";
+    }
     function registre() {
-      if (!S.hote) return '<div class="carte vide"><h2 style="font:650 17px Inter,sans-serif">Aucun registre configuré</h2><p class="note">Un registre est l’index d’un magasin de modules. Renseignez son adresse dans les réglages du module « Modules » : chaque archive qu’il propose est examinée comme une archive déposée.</p><div style="margin-top:10px"><button class="btn" data-a="reglages">Ouvrir les réglages</button></div></div>';
-      if (S.regErr) return '<div class="bandeau dg">Le registre ne répond pas : ' + esc(S.regErr) + '</div><div class="acts"><button class="btn" data-a="relire-reg">Réessayer</button></div>';
-      if (!S.registre) return '<div class="vide">Lecture du registre…</div>';
-      if (!S.registre.length) return '<div class="vide">Le registre ne propose aucun module.</div>';
-      return '<div class="grille">' + S.registre.map((m) => '<div class="carte mod"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3>' + esc(m.nom) + '</h3><span class="p ' + (m.etat === "nouveau" ? "ok" : m.etat === "mise_a_jour" ? "ac" : "nu") + '">' + (m.etat === "nouveau" ? "Nouveau" : m.etat === "mise_a_jour" ? "Mise à jour" : "Installé") + '</span></div><div class="mono note">' + esc(m.id) + " v" + esc(m.version) + (m.version_en_place ? " (en place : " + esc(m.version_en_place) + ")" : "") + '</div><div class="desc">' + esc(m.description) + '</div><div class="acts" style="margin-top:auto">' +
-        (m.editeur ? '<span class="note" style="align-self:center">' + esc(m.editeur) + "</span>" : "") + '<span style="flex:1"></span><button class="btn mini pri" data-a="telecharger" data-id="' + esc(m.id) + '"' + (m.etat === "installe" || S.occupe ? " disabled" : "") + ">" + (m.etat === "mise_a_jour" ? "Examiner la mise à jour" : "Examiner") + "</button></div></div>").join("") + "</div>";
+      if (S.regChargement || !S.off) return '<div class="vide">Lecture du registre officiel…</div>';
+      const o = S.off, a = S.autre;
+      let h = '<div class="carte" style="padding:14px 18px;display:flex;flex-direction:column;gap:4px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h2 style="font:650 17px Inter,sans-serif">Registre officiel de Cassandra</h2>' +
+        (o.erreur ? "" : '<span class="p ok">index signé</span>') + '</div><div class="note">' +
+        (o.erreur ? "" : "Signé par la clé racine de Cassandra (embarquée dans l’application). Émis le " + jour(o.emis) + ", valable jusqu’au " + jour(o.expire) + ". ") + 'Il est intégré à l’application : il ne se retire pas et ne se modifie pas.</div></div>';
+      if ((o.installes_revoques || []).length) h += '<div class="bandeau dg"><b>Des modules installés ont été révoqués par le registre :</b><div class="liste">' + o.installes_revoques.map((x) => "<div><span><b>" + esc(x.nom) + "</b> v" + esc(x.version) + " : " + esc(x.raison) + "</span></div>").join("") + '</div><div class="acts" style="margin-top:8px"><button class="btn mini dng" data-o2="installes">Voir les modules installés</button></div></div>';
+      if (o.erreur) h += '<div class="bandeau dg">Le registre officiel ne répond pas, ou son index n’est pas valide : ' + esc(o.erreur) + '. Rien n’est installé tant qu’il n’est pas lisible et signé.</div><div class="acts"><button class="btn" data-a="relire-reg">Réessayer</button></div>';
+      else if (!(o.modules || []).length) h += '<div class="vide">Le registre officiel ne propose aucun module pour l’instant.</div>';
+      else h += '<div class="grille">' + o.modules.map((m) => carteRegistre(m, "officiel")).join("") + "</div>";
+      h += '<div class="carte" style="padding:14px 18px;display:flex;flex-direction:column;gap:8px"><h2 style="font:650 15px Inter,sans-serif">Autre registre (non officiel)</h2>';
+      if (a && a.url) {
+        h += '<div class="note mono">' + esc(a.url) + "</div>" + (a.erreur ? '<div class="bandeau dg">' + esc(a.erreur) + "</div>" : '<div class="bandeau al">Son index n’est pas signé par la racine de Cassandra : chaque archive y est examinée comme une archive déposée, sans présomption de confiance.</div><div class="grille">' + (a.modules || []).map((m) => carteRegistre(m, "autre")).join("") + "</div>");
+      } else h += '<div class="note">Aucun. Vous pouvez en ajouter un (l’index d’un magasin tiers) dans les réglages du module Modules ; il sera toujours affiché comme non officiel.</div><div class="acts"><button class="btn mini" data-a="reglages">Ouvrir les réglages</button></div>';
+      return h + "</div>";
     }
 
     function installes() {
@@ -131,9 +150,10 @@
 
     // ── les données ───────────────────────────────────────────────────────────
     async function chargerRegistre() {
-      S.regErr = ""; S.registre = null;
-      try { const r = await agir("modules.registre"); S.hote = r.url || ""; S.registre = r.modules || []; } catch (e) { S.regErr = e.message || String(e); }
-      dessiner();
+      S.regChargement = true; S.off = null; S.autre = null; dessiner();
+      try { const r = await agir("modules.registre"); S.off = r.officiel || { erreur: "réponse vide", modules: [] }; S.autre = r.autre || null; if (r.politique) S.politique = r.politique; }
+      catch (e) { S.off = { erreur: e.message || String(e), modules: [], installes_revoques: [] }; }
+      S.regChargement = false; dessiner();
     }
     async function chargerInstalles() {
       try {
@@ -155,6 +175,7 @@
 
     function lier() {
       racine.querySelectorAll("[data-a]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); geste(b); }));
+      racine.querySelectorAll("[data-o2]").forEach((b) => b.addEventListener("click", () => { S.onglet = b.dataset.o2; if (S.onglet === "installes" && !S.modules) chargerInstalles(); dessiner(); }));
       const dep = racine.querySelector("#as-depot"), fic = racine.querySelector("#as-fichier");
       if (dep && fic) {
         dep.addEventListener("click", (e) => { if (e.target === dep || e.target.tagName === "H2" || e.target.tagName === "P" || e.target.tagName === "svg") fic.click(); });
@@ -183,7 +204,7 @@
         return;
       }
       if (a === "activer") { await occupe(async () => { await agir("modules.activer", { module: id, avec_dependances: true }); dire("Module activé : " + id, "ok"); S.installe = null; S.modules = null; S.onglet = "installes"; await chargerInstalles(); }); return; }
-      if (a === "telecharger") { await occupe(async () => { S.examen = await agir("modules.telecharger", { module: id }); S.onglet = "depot"; }); return; }
+      if (a === "telecharger") { await occupe(async () => { S.examen = await agir("modules.telecharger", { module: id, source: b.dataset.source || "officiel" }); S.onglet = "depot"; }); return; }
       if (a === "versions") { S.versions[id] = S.versions[id] ? null : await agir("modules.versions", { module: id }).catch((e) => { dire(e.message, "err"); return null; }); dessiner(); return; }
       if (a === "remettre") { await occupe(async () => { const r = await agir("modules.retour_arriere", { module: id, cle: b.dataset.cle }); dire("Version " + r.version + " remise.", "ok"); S.versions[id] = null; S.modules = null; await chargerInstalles(); }); return; }
       if (a === "desinstaller") {

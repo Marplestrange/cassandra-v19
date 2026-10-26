@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a384c8
+# VERSION CN : 0.1.0  #95c3ef
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La gestion des modules : ce qui est installé, actif ou à installer, ce qui dépend de quoi, et le geste d'activer ou de désactiver. Le noyau fait le travail (dépendances, essentiels, branchement à chaud) ; ce module en fait des capacités, donc des droits, une preuve, un retour et une trace.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a384c8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=95c3ef ▼▼▼
 [module]
 id = "modules"
 nom = "Modules"
@@ -46,8 +46,8 @@ aide = "« signes » : seulement les paquets signés par un éditeur dont vous a
 
 [[reglages]]
 id = "registre_url"
-libelle = "Adresse du registre de modules (l'index d'un magasin)"
-aide = "Vide : pas de registre, on installe depuis une archive déposée. Un registre ne change pas la politique : chaque archive est examinée de la même façon."
+libelle = "Adresse d'un AUTRE registre de modules (non officiel)"
+aide = "Le registre officiel de Cassandra est intégré à l'application : il n'est pas un réglage et ne se retire pas. Ce réglage en ajoute un second (l'index d'un magasin tiers), affiché comme NON officiel : son index n'est pas signé par la racine de Cassandra, chaque archive y reste examinée de la même façon."
 
 [evenements]
 emet = []
@@ -160,14 +160,14 @@ risque = "lecture"
 
 [[capacites]]
 id = "registre"
-libelle = "Les modules que le registre (réglage registre_url) propose, avec leur état ici : nouveau, mise à jour, installé"
+libelle = "Le registre officiel de Cassandra (index signé : modules, éditeurs vérifiés, révocations, niveaux de confiance) et, s'il y en a un, l'autre registre de l'administrateur (réglage registre_url, non officiel)"
 risque = "lecture"
 droit = "installer"
 externe = true
 
 [[capacites]]
 id = "telecharger"
-libelle = "Télécharger un module du registre : l'archive vient chez le registre, son empreinte est vérifiée contre l'index, puis elle est EXAMINÉE comme une archive déposée (quarantaine, rien n'est installé)"
+libelle = "Télécharger un module du registre officiel (ou de l'autre registre, source = \"autre\") : l'archive vient chez le registre, son empreinte est vérifiée contre l'index, une version révoquée est refusée, puis elle est EXAMINÉE comme une archive déposée (quarantaine, rien n'est installé)"
 risque = "faible"
 droit = "installer"
 externe = true
@@ -178,7 +178,7 @@ paliers = ["raconter"]
 qui = ["humain"]
 
 [permissions]
-reseau = ["le registre de modules (réglage registre_url) : son index et ses archives"]
+reseau = ["le registre officiel de Cassandra : son index signé et ses archives", "l'autre registre de l'administrateur (réglage registre_url), s'il y en a un"]
 modules = true
 droits = true
 # ▲▲▲ FIN BORNE CN ▲▲▲

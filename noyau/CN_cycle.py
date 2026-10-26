@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #44a183
+# VERSION CN : 0.1.0  #ded6e6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le cycle de vie d'un module venu d'une archive : examiner sans rien poser, installer avec consentement, mettre à jour, revenir en arrière, désinstaller (rien ne se perd : tout ce qui part va en sauvegarde).
 # MÉTHODE    : l'archive attend en quarantaine ; l'examen la vérifie (empreintes, signature, manifeste) et compare au module en place ; l'installation re-vérifie, exige le consentement aux permissions, sauvegarde l'ancienne version puis dépose le dossier dans celui des extensions que le noyau surveille
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=44a183 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ded6e6 ▼▼▼
 """Le cycle de vie d'un module installé, à la manière d'un module store.
 
     examiner(octets)       l'archive va en quarantaine ; on la vérifie (SOMMES, signature, manifeste) et on dit ce qu'elle ferait : nouveau, mise à jour, retour à une version
@@ -32,6 +32,7 @@ import json
 import re
 import shutil
 import tarfile
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -40,6 +41,7 @@ from pathlib import Path
 
 from . import CN_manifeste as mf
 from . import CN_paquets as paquets
+from . import CN_registre_officiel as officiel
 
 TAILLE_MAX = 32 * 2 ** 20            # une archive de plus de 32 Mo n'est pas un module
 POLITIQUES = ("signes", "tous")      # signes : seulement les paquets signés par une clé de confiance ; tous : un paquet non signé est permis (à ses risques, dit à l'écran)
@@ -126,7 +128,7 @@ def elargies(avant: dict, apres: dict) -> list:
 
 
 class Cycle:
-    def __init__(self, extensions, donnees, cles, connus, actifs=None):
+    def __init__(self, extensions, donnees, cles, connus, actifs=None, cles_racine=None, url_officielle=None):
         """`connus` : appelable qui rend [(manifeste, est_extension)] des modules en place ; `actifs` : appelable qui rend l'ensemble des ids actifs."""
         self.extensions = Path(extensions) if extensions else None
         self.donnees = Path(donnees)
@@ -136,6 +138,9 @@ class Cycle:
         self.quarantaine = self.donnees / "quarantaine"
         self.sauvegardes = self.donnees / "modules_sauvegardes"
         self.registre = self.donnees / "modules_installations.json"
+        self.cles_racine = dict(officiel.CLES_RACINE if cles_racine is None else cles_racine)       # la racine de confiance : EMBARQUÉE, jamais lue du disque
+        self.url_officielle = officiel.URL_OFFICIELLE if url_officielle is None else url_officielle
+        self.cache_officiel = self.donnees / "registre_officiel.json"
 
     # ------------------------------------------------------------------ le journal des installations
     def journal(self) -> list:
@@ -157,7 +162,80 @@ class Cycle:
                 return x["permissions"]
         return {}
 
-    # ------------------------------------------------------------------ le registre (l'index d'un magasin)
+    # ------------------------------------------------------------------ les clés de confiance
+    def _dossier_cles(self, editeurs=None):
+        """Un dossier jetable de clés publiques : celles de l'administrateur (config/cles/*.pub), les racines (cassandra-*), les éditeurs vérifiés (ed_*). Le NOM d'une clé donne le niveau de confiance."""
+        t = tempfile.TemporaryDirectory()
+        base = Path(t.name)
+        if self.cles and self.cles.is_dir():
+            for f in sorted(self.cles.glob("*.pub")):
+                if not f.stem.startswith(("cassandra-", "ed_")):                    # un nom réservé ne se prend pas : une clé posée à la main ne se fait pas passer pour l'officiel
+                    shutil.copy(f, base / f.name)
+        for nom, pem in self.cles_racine.items():
+            (base / ("cassandra-%s.pub" % nom)).write_text(pem, encoding="utf-8")
+        for eid, e in (editeurs if editeurs is not None else self._editeurs_en_cache()).items():
+            (base / ("ed_%s.pub" % eid)).write_text(e["cle"], encoding="utf-8")
+        return t
+
+    def _lire_cache(self):
+        try:
+            c = json.loads(self.cache_officiel.read_text(encoding="utf-8"))
+            return officiel.lire_index_signe(c["index"].encode("utf-8"), c["signature"].encode("ascii"), self.cles_racine)
+        except (OSError, ValueError, KeyError, officiel.RegistreErreur):
+            return None
+
+    def _editeurs_en_cache(self) -> dict:
+        i = self._lire_cache()
+        return officiel.lire_editeurs(i["brut"]) if i else {}
+
+    def revocations_en_cache(self) -> list:
+        i = self._lire_cache()
+        return officiel.lire_revocations(i["brut"]) if i else []
+
+    # ------------------------------------------------------------------ le registre OFFICIEL : un index signé
+    def registre_officiel(self, ouvrir=None, maintenant=None) -> dict:
+        """Lit l'index officiel et sa signature, les vérifie contre la racine EMBARQUÉE, garde l'index vérifié en cache (ses éditeurs et ses révocations servent à l'examen des archives
+        déposées à la main), et rend les modules proposés avec leur état ici, leur éditeur et leur niveau, les révocations, et les modules installés qui sont révoqués."""
+        ouvrir = ouvrir or _ouvrir
+        octets = ouvrir(self.url_officielle, 8, TAILLE_INDEX)
+        signature = ouvrir(self.url_officielle + ".sig", 8, 4096)
+        i = officiel.lire_index_signe(octets, signature, self.cles_racine, maintenant)
+        brut = i["brut"]
+        self.donnees.mkdir(parents=True, exist_ok=True)
+        self.cache_officiel.write_text(json.dumps({"index": octets.decode("utf-8"), "signature": signature.decode("ascii", "replace").strip()}), encoding="utf-8")
+        editeurs, revoc = officiel.lire_editeurs(brut), officiel.lire_revocations(brut)
+        entrees = lire_index(octets, self.url_officielle)
+        en_place = {x.id: x for x, _ in self.connus()}
+        for e in entrees:
+            m = en_place.get(e["id"])
+            e["etat"] = "nouveau" if m is None else ("installe" if mf.version_de(e["version"]) <= mf.version_de(m.version) else "mise_a_jour")
+            if m is not None:
+                e["version_en_place"] = m.version
+            sig = next((x for x in brut.get("modules", []) if isinstance(x, dict) and x.get("id") == e["id"]), {})
+            e["editeur_id"] = str(sig.get("editeur", ""))[:40]
+            e["niveau"] = "officiel" if e["editeur_id"] in ("", "cassandra") else ("verifie" if e["editeur_id"] in editeurs else "")
+            e["revoque"] = officiel.revocation_de(e["id"], e["version"], revoc)
+        installes_revoques = [{"id": x.id, "nom": x.nom, "version": x.version, "raison": r} for x, ext in self.connus() if ext
+                              for r in [officiel.revocation_de(x.id, x.version, revoc)] if r]
+        return {"url": self.url_officielle, "officiel": True, "emis": i["emis"], "expire": i["expire"], "signe_par": i["signe_par"],
+                "modules": sorted(entrees, key=lambda e: (e["nom"].lower(), e["id"])),
+                "editeurs": [{"id": k, "nom": v["nom"]} for k, v in sorted(editeurs.items())], "revocations": revoc, "installes_revoques": installes_revoques}
+
+    def telecharger_officiel(self, mid: str, politique: str = "signes", ouvrir=None, maintenant=None) -> dict:
+        """Télécharge une archive du registre officiel : l'index est vérifié, l'empreinte aussi, une version révoquée est refusée, puis l'archive est examinée avec les clés racine et les éditeurs vérifiés."""
+        ouvrir = ouvrir or _ouvrir
+        r = self.registre_officiel(ouvrir, maintenant)
+        e = next((x for x in r["modules"] if x["id"] == mid), None)
+        if e is None:
+            raise CycleErreur("« %s » n'est pas dans le registre officiel" % mid)
+        if e["revoque"]:
+            raise CycleErreur("« %s » %s est révoqué par le registre : %s" % (mid, e["version"], e["revoque"]))
+        octets = ouvrir(e["url"], 30, TAILLE_MAX)
+        if hashlib.sha256(octets).hexdigest() != e["sha256"]:
+            raise CycleErreur("l'archive téléchargée ne correspond pas à l'empreinte de l'index : refusée")
+        return self.examiner(octets, politique)
+
+    # ------------------------------------------------------------------ le registre (l'index d'un magasin NON officiel)
     def registre_lire(self, url: str, ouvrir=None) -> list:
         """Les modules que le registre propose, chacun avec son état ici : nouveau, mise_a_jour, installe, ou incompatible (le noyau est trop ancien)."""
         if not url:
@@ -200,17 +278,23 @@ class Cycle:
         self.quarantaine.mkdir(parents=True, exist_ok=True)
         chemin = self.quarantaine / (jeton + ".cmod")
         chemin.write_bytes(octets)
+        cles_tmp = self._dossier_cles()
         try:
-            v = paquets.verifier(chemin, self.cles)
+            v = paquets.verifier(chemin, Path(cles_tmp.name))
         except (paquets.PaquetInvalide, mf.ManifesteInvalide) as ex:
             chemin.unlink(missing_ok=True)
             raise CycleErreur("paquet refusé : %s" % (" ; ".join(ex.erreurs) if isinstance(ex, mf.ManifesteInvalide) else ex)) from ex
+        finally:
+            cles_tmp.cleanup()
         m = v["manifeste"]
         connus = self.connus()
         manifestes = [x for x, _ in connus]
         en_place = next(((x, ext) for x, ext in connus if x.id == m.id), None)
         perms = permissions_de(m)
         raisons = []
+        revoque = officiel.revocation_de(m.id, m.version, self.revocations_en_cache())
+        if revoque:
+            raisons.append("version révoquée par le registre officiel : %s" % revoque)
         if m.confiance == "interne":
             raisons.append("la confiance « interne » est réservée aux modules livrés avec le noyau")
         if politique == "signes" and not v["signe"]:
@@ -250,7 +334,7 @@ class Cycle:
             fichiers = []
         return {
             "jeton": jeton, "id": m.id, "nom": m.nom, "version": m.version, "description": m.description, "famille": m.famille or "autres", "icone_trace": m.icone_trace, "auteur": m.auteur, "licence": m.licence,
-            "confiance": m.confiance, "importance": m.importance, "sans": m.sans, "signe": bool(v["signe"]), "editeur": v["editeur"],
+            "confiance": m.confiance, "importance": m.importance, "sans": m.sans, "signe": bool(v["signe"]), "editeur": v["editeur"], "niveau": officiel.niveau_de(v["editeur"]),
             "taille": len(octets), "nb_fichiers": len(fichiers), "fichiers": fichiers[:40], "script_installation": bool(m.installation.script),
             "permissions": perms, "empreinte_permissions": empreinte_permissions(perms), "permissions_elargies": plus,
             "statut": statut, "version_en_place": ancienne, "requiert": list(m.requiert), "requiert_manquants": manque, "versions_insuffisantes": versions,
@@ -283,7 +367,11 @@ class Cycle:
         if cible.exists():
             sauve = self._sauvegarder(cible, mid, e["version_en_place"], "remplace")
         try:
-            v = paquets.extraire(chemin, self.extensions, self.cles, exiger_signature=(politique == "signes"))
+            cles_tmp = self._dossier_cles()
+            try:
+                v = paquets.extraire(chemin, self.extensions, Path(cles_tmp.name), exiger_signature=(politique == "signes"))
+            finally:
+                cles_tmp.cleanup()
         except Exception:
             if sauve:                                                  # l'extraction a échoué en route : l'ancienne version revient
                 shutil.rmtree(cible, ignore_errors=True)
