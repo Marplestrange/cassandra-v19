@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ad75dd
+// VERSION CN : 0.1.0  #61d6b4
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « App Store » : on dépose une archive de module (.cmod) ou on en prend une au registre ; l'examen dit ce qu'elle est, qui l'a signée, ce qu'elle demande et ce qu'elle casserait ; l'installation exige le consentement aux permissions montrées ; les modules installés se mettent à jour, reviennent en arrière ou se désinstallent.
 // MÉTHODE    : le téléversement part en octets bruts vers /api/televerser/modules.examiner (l'archive va en quarantaine, rien n'est posé) ; l'installation passe par modules.installer avec l'empreinte des permissions TELLES QUE MONTRÉES ; un module installé reste inactif jusqu'à son activation ; tout texte dynamique est échappé
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ad75dd ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=61d6b4 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -67,7 +67,7 @@
     // ── les trois onglets ─────────────────────────────────────────────────────
     function dessiner() {
       const o = S.onglet;
-      racine.innerHTML = '<div class="bandeau' + (S.politique === "tous" ? " al" : "") + '">' + (S.politique === "signes" ? "<b>Politique : paquets signés seulement.</b> Une archive n’est acceptée que si un éditeur dont vous avez posé la clé l’a signée. " : "<b>Politique ouverte.</b> Un paquet non signé est permis : à vos risques. ") +
+      racine.innerHTML = '<div class="bandeau' + (S.politique === "tous" ? " al" : "") + '">' + (S.politique === "signes" ? "<b>Politique : paquets signés seulement.</b> Une archive n’est acceptée que si elle est signée par la racine de Cassandra, par un éditeur que le registre officiel a vérifié, ou par une clé que vous avez posée vous-même. " : "<b>Politique ouverte.</b> Un paquet non signé est permis : à vos risques. ") +
         "Un module installé tourne <b>dans Cassandra</b> : ses permissions sont déclaratives, pas encore cloisonnées. N’installez que ce que vous avez de bonnes raisons de croire.</div>" +
         '<div class="onglets" role="tablist">' + [["depot", "Déposer une archive"], ["registre", "Registre"], ["installes", "Installés"]].map((t) => '<button type="button" role="tab" data-o="' + t[0] + '" class="' + (o === t[0] ? "on" : "") + '">' + t[1] + "</button>").join("") + "</div>" +
         '<div id="as-corps">' + (o === "depot" ? depot() : o === "registre" ? registre() : installes()) + "</div>";
