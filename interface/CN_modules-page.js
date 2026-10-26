@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #d8d8e9
+// VERSION CN : 0.1.0  #f004ac
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « Modules et applications » : une carte par module (état, importance déclarée, interrupteur, accès aux réglages), un tiroir de détail (ce qui s'arrête sans lui, dépendances, ce qu'il peut faire hors de lui) et les changements d'activation mis en attente, avec leur impact dit avant d'être appliqués.
 // MÉTHODE    : le catalogue de modules-ui.js (modules.lister) fournit tout ; l'impact d'un jeu de changements se calcule sur le graphe requiert / requis_par ; rien n'est appliqué avant l'accord : les désactivations d'abord (les dépendants avant leurs dépendances), puis les activations (modules.activer tire ses dépendances) ; tout texte dynamique est échappé
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=d8d8e9 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f004ac ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -175,7 +175,8 @@
     }
     function tiroir(id, silencieux) {
       const m = par(id); if (!m) return; S.sel = id;
-      const c = crit(m), chip = (x) => '<button class="chip' + ((par(x) || {}).etat === "actif" ? "" : " off") + '" data-ouvre="' + esc(x) + '"><i></i>' + esc(nom(x)) + "</button>";
+      const c = crit(m), contr = (x) => ((m.contraintes || []).find((k) => k[0] === x) || [])[1] || "";
+      const chip = (x) => '<button class="chip' + ((par(x) || {}).etat === "actif" ? "" : " off") + '" data-ouvre="' + esc(x) + '"><i></i>' + esc(nom(x)) + (contr(x) ? ' <span class="note mono">' + esc(contr(x)) + "</span>" : "") + "</button>";
       const dep = actifsApres(id), p = m.permissions || {}, lock = verrou(m) && !(m.etat === "actif" && !m.essentiel && gere() && (m.requis_par || []).length), on = voulu(id);
       const bas = lock ? "" : '<button class="btn ' + (on ? "dng" : "pri") + '" data-a="bas2" data-id="' + esc(id) + '">' + (S.att.has(id) ? "Annuler le changement" : on ? "Désactiver" : "Activer") + "</button>";
       const hors = ((p.reseau || []).map((r) => "<div><span>Se connecte à : " + esc(r) + "</span></div>").join("")) + ((p.ecritures || []).map((r) => "<div><span>Écrit dans : " + esc(r) + "</span></div>").join("")) + ((p.privileges || []).map((r) => "<div><span>Privilège : " + esc(r) + "</span></div>").join(""));
@@ -187,11 +188,24 @@
         (m.sans ? "<div>" + esc(m.sans) + "</div>" : "") + (dep.length ? '<div class="note">S’arrêteraient avec lui : <b>' + dep.map(nom).map(esc).join(", ") + "</b>.</div>" : "") + "</div></div>" +
         '<div><div class="lib">Il compte</div><div class="cles"><div class="cle"><b>' + (m.capacites != null ? m.capacites : "—") + "</b><span>capacités</span></div><div class=\"cle\"><b>" + (m.detecteurs || 0) + "</b><span>détecteurs</span></div><div class=\"cle\"><b>" + (m.moteurs || 0) + "</b><span>moteurs</span></div></div></div>" +
         '<div><div class="lib">Dépendances</div><div class="dep"><div class="rang">' + ((m.requiert || []).length ? "Il a besoin de : " + m.requiert.map(chip).join("") : "<span>Il ne dépend d’aucun autre module.</span>") + '</div><div class="fleche">↓</div><div class="centre">' + esc(m.nom) + '</div><div class="fleche">↓</div><div class="rang">' + ((m.requis_par || []).length ? "Utilisé par : " + m.requis_par.map(chip).join("") : "<span>Aucun autre module ne s’appuie sur lui.</span>") + "</div></div></div>" +
+        ((m.conflits || []).length || (m.suggere || []).length || (m.fournit || []).length ? '<div><div class="lib">Compagnie</div><div class="dep">' +
+          ((m.conflits || []).length ? '<div class="rang">Refuse la compagnie de : ' + m.conflits.map((x) => '<span class="p dg">' + esc(nom(x)) + "</span>").join(" ") + "</div>" : "") +
+          ((m.suggere || []).length ? '<div class="rang">Sert mieux avec : ' + m.suggere.map(chip).join("") + "</div>" : "") +
+          ((m.fournit || []).length ? '<div class="rang">Rend le service : ' + m.fournit.map((x) => '<span class="p ac">' + esc(x) + "</span>").join(" ") + "</div>" : "") + "</div></div>" : "") +
         '<div><div class="lib">Ce qu’il peut faire hors de lui</div><div class="perms">' + (hors || '<div class="note">Rien : ni réseau, ni écriture déclarés.</div>') + "</div></div>" +
         '<p class="note">Désactiver un module retire ses menus, ses capacités et ses moteurs ; <b>ses données restent</b> et reviennent à la réactivation.</p></div>' +
         '<div class="tp"><button class="btn" data-a="cons" data-id="' + esc(id) + '"' + (m.etat === "actif" ? "" : " disabled") + '>Ouvrir la console</button><button class="btn" data-a="reg" data-id="' + esc(id) + '"' + (m.etat === "actif" ? "" : " disabled") + '>Réglages</button><span class="sp"></span>' + bas + "</div>";
       Q(".tiroir").classList.add("o"); Q(".voile").classList.add("o");
+      if (m.etat === "actif" && !silencieux) {                                  // la santé se lit à l'ouverture : un verdict, et de quoi se plaindre
+        agir_sante(id).then((sa) => {
+          const tags = Q(".tiroir .th > div:last-child");
+          if (!sa || !tags || S.sel !== id) return;
+          const cls = sa.verdict === "sain" ? "ok" : sa.verdict === "en_echec" ? "dg" : "al";
+          tags.insertAdjacentHTML("beforeend", '<span class="p ' + cls + '" title="' + esc((sa.en_echec || []).concat(sa.a_surveiller || []).join(", ")) + '">' + (sa.verdict === "sain" ? "en bonne santé" : sa.verdict === "en_echec" ? "en échec" : "à surveiller") + "</span>");
+        });
+      }
     }
+    const agir_sante = (id) => CASS.agir("modules.sante", { module: id }).catch(() => null);
     function fermerTiroir() { S.sel = null; Q(".tiroir").classList.remove("o"); if (!Q(".feuille").classList.contains("o")) Q(".voile").classList.remove("o"); }
     function fermerFeuille() { Q(".feuille").classList.remove("o"); if (!Q(".tiroir").classList.contains("o")) Q(".voile").classList.remove("o"); }
     function fermerTout() { if (Q(".feuille").classList.contains("o")) fermerFeuille(); else fermerTiroir(); }

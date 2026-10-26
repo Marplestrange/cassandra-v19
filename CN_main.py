@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c1f2dc
+# VERSION CN : 0.1.0  #17010a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c1f2dc ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=17010a ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -51,7 +51,7 @@ import threading
 import time
 from pathlib import Path
 
-from noyau import CN_chargeur as chargeur, CN_cycle as cycle, CN_manifeste as manifeste, CN_paquets as paquets, CN_systemd as systemd
+from noyau import CN_chargeur as chargeur, CN_cycle as cycle, CN_manifeste as manifeste, CN_nouveau as nouveau, CN_paquets as paquets, CN_systemd as systemd
 from noyau.CN_base import Base
 from noyau.CN_bus import TOUT, Bus
 from noyau.CN_catalogue import Catalogue
@@ -935,10 +935,26 @@ def verifier() -> int:
 
 
 def commande_module(argv) -> int:
-    """python CN_main.py module liste | activer ID | desactiver ID | installe ID | oublier ID | actif ID
+    """python CN_main.py module liste | nouveau ID [--nom N] [--dest D] | activer ID | desactiver ID | installe ID | oublier ID | actif ID
     N'agit que sur l'ÉTAT : le noyau en marche le voit et branche ou débranche à chaud. C'est aussi ce que
     l'interface appellera pour son menu des modules."""
     sous = argv[2] if len(argv) > 2 else "liste"
+    if sous == "nouveau":                                          # python CN_main.py module nouveau ID [--nom N] [--famille F] [--importance I] [--dest DOSSIER]
+        autres = argv[3:]
+
+        def option(nom):
+            return autres[autres.index(nom) + 1] if nom in autres and autres.index(nom) + 1 < len(autres) else None
+        pos = [a for i, a in enumerate(autres) if not a.startswith("--") and (i == 0 or autres[i - 1] not in ("--nom", "--famille", "--importance", "--dest"))]
+        if not pos:
+            print("module nouveau : un identifiant est attendu (module nouveau mon_module --nom \"Mon module\")", file=sys.stderr)
+            return 2
+        try:
+            d = nouveau.creer(option("--dest") or ".", pos[0], option("--nom") or "", option("--famille") or "autres", option("--importance") or "optionnel")
+        except (ValueError, manifeste.ManifesteInvalide) as ex:
+            print("module nouveau : %s" % ex, file=sys.stderr)
+            return 1
+        print("module créé : %s" % d)
+        return 0
     n = Noyau(_donnees(), extensions=_extensions(), gerer_modules=True, amorce=_actifs, exiger_compte=True)
     n._amorcer()
     ids = [a for a in argv[3:] if not a.startswith("--")]
