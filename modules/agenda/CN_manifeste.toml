@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agenda
 # ZONE       : CN
-# VERSION CN : 0.1.2  #80c0ff
+# VERSION CN : 0.1.2  #6b9e42
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'agenda d'un compte : événements (récurrences, alarme, liens vers ce qu'ils concernent, journal, préparation), rappels, import et export iCalendar, lecture de son serveur CalDAV, et la vue temporelle unique qui rassemble événements, tâches datées, rappels et jalons des projets. Il est à la personne : l'administrateur ne le voit pas.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=80c0ff ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=6b9e42 ▼▼▼
 [module]
 id = "agenda"
 nom = "Agenda"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "L'agenda d'un compte : événements (récurrences, alarme, liens vers ce qu'ils concernent, journal, préparation), rappels, import et export iCalendar, lecture de son serveur CalDAV, et la vue temporelle unique qui rassemble événements, tâches datées, rappels et jalons des projets. Il est à la personne : l'administrateur ne le voit pas."
 confiance = "interne"
 famille = "gestion"
+importance = "important"
+sans = "Plus d'agenda : ni rendez-vous, ni rappels d'événements, ni alarmes."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
 

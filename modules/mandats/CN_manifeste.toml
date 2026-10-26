@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : mandats
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ce9b23
+# VERSION CN : 0.1.0  #8a28e0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les mandats d'envoi : l'autorisation d'envoyer, avec ses bornes (à qui, quand, combien, sous quel contrôle). La règle d'or : l'adresse ne vient JAMAIS de la demande. Différé : la résolution du destinataire et l'envoi réel (dépendent du courrier et des contacts).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ce9b23 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8a28e0 ▼▼▼
 [module]
 id = "mandats"
 nom = "Mandats"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Les mandats d'envoi : l'autorisation d'envoyer, avec ses bornes (à qui, quand, combien, sous quel contrôle). La règle d'or : l'adresse ne vient JAMAIS de la demande. Différé : la résolution du destinataire et l'envoi réel (dépendent du courrier et des contacts)."
 confiance = "interne"
 famille = "echanges"
+importance = "important"
+sans = "Les agents ne peuvent plus envoyer de messages : plus de mandat pour les y autoriser."
 
 [[objets]]
 type = "mandat"

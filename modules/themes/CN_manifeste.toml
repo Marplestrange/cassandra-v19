@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : themes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e52f98
+# VERSION CN : 0.1.0  #ac44b3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Deux thèmes complets pour l'interface, livrés comme n'importe quel module : Ardoise (sombre, bleu ardoise et cuivre) et Papier (clair chaud, encre indigo). Ils s'ajoutent au sélecteur d'apparence ; désactiver le module les retire.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e52f98 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ac44b3 ▼▼▼
 [module]
 id = "themes"
 nom = "Thèmes de la maison"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Deux thèmes complets pour l'interface, livrés comme n'importe quel module : Ardoise (sombre, bleu ardoise et cuivre) et Papier (clair chaud, encre indigo). Ils s'ajoutent au sélecteur d'apparence ; désactiver le module les retire."
 confiance = "interne"
 famille = "socle"
+importance = "optionnel"
+sans = "Les thèmes Ardoise et Crème disparaissent ; l'interface garde son thème de base."
 
 [[habillages]]
 id = "ardoise"

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dns
 # ZONE       : CN
-# VERSION CN : 0.2.1  #5110ea
+# VERSION CN : 0.2.1  #f51e11
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Relève les zones suivies auprès de leur serveur de noms faisant foi, garde une référence versionnée (rien n'est écrasé), signale la dérive, l'adresse publique qui a changé et les domaines proches de leur expiration (RDAP). Corrige un enregistrement A dérivé de l'adresse publique chez Cloudflare, et le prouve sur le serveur de noms. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.1 empreinte=5110ea ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.1 empreinte=f51e11 ▼▼▼
 [module]
 id = "dns"
 nom = "Zones DNS"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Relève les zones suivies auprès de leur serveur de noms faisant foi, garde une référence versionnée (rien n'est écrasé), signale la dérive, l'adresse publique qui a changé et les domaines proches de leur expiration (RDAP). Corrige un enregistrement A dérivé de l'adresse publique chez Cloudflare, et le prouve sur le serveur de noms. Le plafond d'autonomie est le choix de l'administrateur."
 confiance = "interne"
 famille = "reseau"
+importance = "optionnel"
+sans = "Plus de suivi des domaines : ni dérive d'adresse, ni alerte d'expiration."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
 

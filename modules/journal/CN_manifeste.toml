@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : journal
 # ZONE       : CN
-# VERSION CN : 0.1.1  #ff772e
+# VERSION CN : 0.1.1  #e570ba
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le journal des agents (les consultations entre les trois rôles — claude, itare, cassandra — inscrites avec la question et la réponse) et le lecteur unifié des journaux : les tables des modules, les fichiers du système, un flux fusionné, une ligne du temps, les anomalies jamais vues et les veilles sur motif. Cloisonné en lecture : on ne lit que ce qui existe.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=ff772e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=e570ba ▼▼▼
 [module]
 id = "journal"
 nom = "Le Journal"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Le journal des agents (les consultations entre les trois rôles — claude, itare, cassandra — inscrites avec la question et la réponse) et le lecteur unifié des journaux : les tables des modules, les fichiers du système, un flux fusionné, une ligne du temps, les anomalies jamais vues et les veilles sur motif. Cloisonné en lecture : on ne lit que ce qui existe."
 confiance = "interne"
 famille = "supervision"
+importance = "optionnel"
+sans = "Plus de journal des agents ni de lecteur unifié des journaux ; rien n'est perdu côté machine."
 
 [[objets]]
 type = "consultation"

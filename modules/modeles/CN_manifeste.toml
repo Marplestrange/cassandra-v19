@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f42136
+# VERSION CN : 0.1.0  #2cf7aa
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le registre des modèles de langage : un modèle se déclare une fois (fournisseur, nom, adresse, clé chiffrée), les rôles de la maison et les comptes y puisent. La clé ne sort jamais du module : tout passe par `completer` (OpenAI-compatible ou Ollama natif, réflexion des modèles raisonneurs bornée, jetons comptés). Un compte n'utilise que SES modèles, jamais la clé du serveur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f42136 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2cf7aa ▼▼▼
 [module]
 id = "modeles"
 nom = "Modèles"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Le registre des modèles de langage : un modèle se déclare une fois (fournisseur, nom, adresse, clé chiffrée), les rôles de la maison et les comptes y puisent. La clé ne sort jamais du module : tout passe par `completer` (OpenAI-compatible ou Ollama natif, réflexion des modèles raisonneurs bornée, jetons comptés). Un compte n'utilise que SES modèles, jamais la clé du serveur."
 confiance = "interne"
 famille = "agents"
+importance = "vital"
+sans = "Plus aucun modèle de langage : Cassandra et Itare ne peuvent ni réfléchir ni répondre."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
 

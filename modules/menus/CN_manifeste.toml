@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : menus
 # ZONE       : CN
-# VERSION CN : 0.3.2  #fdb521
+# VERSION CN : 0.3.2  #21b13a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble, à chaud, l'arbre de navigation que les modules actifs déclarent : familles, ordre, rôles, compteurs, personnalisation par compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=fdb521 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=21b13a ▼▼▼
 [module]
 id = "menus"
 nom = "Menus"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Assemble, à chaud, l'arbre de navigation que les modules actifs déclarent : familles, ordre, rôles, compteurs, personnalisation par compte."
 confiance = "interne"
 famille = "socle"
+importance = "vital"
+sans = "Plus d'arbre de navigation : on ne peut plus rejoindre aucun écran. Il ne se désactive pas."
 essentiel = true
 
 [[objets]]

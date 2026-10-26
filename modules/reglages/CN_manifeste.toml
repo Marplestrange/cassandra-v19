@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : reglages
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ca74af
+# VERSION CN : 0.1.0  #e2a1b4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les réglages des modules : chacun déclare les siens (type, défaut, portée), ils s'écrivent un par un avec leur historique, les secrets ne sortent jamais en clair. Remplace le config.json réécrit en entier de la V18.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ca74af ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e2a1b4 ▼▼▼
 [module]
 id = "reglages"
 nom = "Réglages"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Les réglages des modules : chacun déclare les siens (type, défaut, portée), ils s'écrivent un par un avec leur historique, les secrets ne sortent jamais en clair. Remplace le config.json réécrit en entier de la V18."
 confiance = "interne"
 famille = "socle"
+importance = "vital"
+sans = "Plus aucun réglage ne se lit ni ne s'écrit. Il ne se désactive pas."
 essentiel = true
 requiert = ["droits"]
 

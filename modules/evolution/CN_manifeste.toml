@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.2.0  #17887b
+# VERSION CN : 0.2.0  #a6908a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=17887b ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=a6908a ▼▼▼
 [module]
 id = "evolution"
 nom = "Évolution"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau."
 confiance = "interne"
 famille = "evolution"
+importance = "optionnel"
+sans = "Cassandra cesse d'améliorer ses propres fonctions ; tout continue de fonctionner à l'identique."
 requiert = ["droits", "comptes"]
 
 [permissions]

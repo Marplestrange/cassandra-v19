@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.2  #13ea32
+# VERSION CN : 0.3.2  #71da54
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=13ea32 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=71da54 ▼▼▼
 [module]
 id = "contacts"
 nom = "Carnet d'adresses"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi."
 confiance = "interne"
 famille = "gestion"
+importance = "optionnel"
+sans = "Plus de répertoire : fiches, adresses et favoris ne sont plus accessibles ; ils restent enregistrés."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
 

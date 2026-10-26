@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : certificats
 # ZONE       : CN
-# VERSION CN : 0.2.0  #1819aa
+# VERSION CN : 0.2.0  #2c95d6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Surveille l'expiration des certificats TLS réellement servis (port 443), garde le registre des émissions Let's Encrypt (cinq par semaine et par domaine) et signale les certificats échus ou proches de l'échéance, avec le quota restant. Le renouvellement lui-même se fait par le panneau (module fastpanel, ssl_renouveler) ; ce module en tient le compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=1819aa ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=2c95d6 ▼▼▼
 [module]
 id = "certificats"
 nom = "Certificats"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Surveille l'expiration des certificats TLS réellement servis (port 443), garde le registre des émissions Let's Encrypt (cinq par semaine et par domaine) et signale les certificats échus ou proches de l'échéance, avec le quota restant. Le renouvellement lui-même se fait par le panneau (module fastpanel, ssl_renouveler) ; ce module en tient le compte."
 confiance = "interne"
 famille = "securite"
+importance = "important"
+sans = "Plus de surveillance de l'expiration des certificats : un site peut tomber sans prévenir."
 requiert = ["dns"]
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"

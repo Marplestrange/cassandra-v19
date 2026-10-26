@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.2  #a4d9f7
+# VERSION CN : 0.1.2  #abef88
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La boîte mail de chaque compte, par IMAP : dossiers, messages (cache des en-têtes et du texte des trois derniers mois), lecture avec un HTML nettoyé par liste blanche (rien ne s'exécute, aucune image distante n'est chargée sans accord), gestes réversibles (lu, suivi, déplacer, archiver, corbeille, copier, dossiers), brouillons, et envoi par SMTP réservé à un humain. Les identifiants sont des réglages secrets PAR COMPTE, chiffrés : une boîte appartient à une personne, jamais au serveur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=a4d9f7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=abef88 ▼▼▼
 [module]
 id = "courrier"
 nom = "Courrier"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "La boîte mail de chaque compte, par IMAP : dossiers, messages (cache des en-têtes et du texte des trois derniers mois), lecture avec un HTML nettoyé par liste blanche (rien ne s'exécute, aucune image distante n'est chargée sans accord), gestes réversibles (lu, suivi, déplacer, archiver, corbeille, copier, dossiers), brouillons, et envoi par SMTP réservé à un humain. Les identifiants sont des réglages secrets PAR COMPTE, chiffrés : une boîte appartient à une personne, jamais au serveur."
 confiance = "interne"
 famille = "communication"
+importance = "important"
+sans = "Plus de lecture ni de brouillon de courrier, et les alertes de courrier s'arrêtent."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
 

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : notifications
 # ZONE       : CN
-# VERSION CN : 0.2.0  #71801d
+# VERSION CN : 0.2.0  #47d26a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le Centre de notifications : ce qui mérite l'attention de quelqu'un. Une notification ouverte par clé (elle se répète, elle ne s'empile pas), lue et prise en compte PAR PERSONNE, cloisonnée par compte, qui se referme seule quand la cause disparaît.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=71801d ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=47d26a ▼▼▼
 [module]
 id = "notifications"
 nom = "Notifications"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Le Centre de notifications : ce qui mérite l'attention de quelqu'un. Une notification ouverte par clé (elle se répète, elle ne s'empile pas), lue et prise en compte PAR PERSONNE, cloisonnée par compte, qui se referme seule quand la cause disparaît."
 confiance = "interne"
 famille = "communication"
+importance = "vital"
+sans = "La cloche se tait : les constats ne deviennent plus des choses à faire et rien ne vous alerte. Il ne se désactive pas."
 essentiel = true
 requiert = ["droits"]
 

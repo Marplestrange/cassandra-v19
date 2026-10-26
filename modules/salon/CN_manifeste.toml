@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : salon
 # ZONE       : CN
-# VERSION CN : 0.1.1  #aa4588
+# VERSION CN : 0.1.1  #70c112
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Des fils de travail où les personnes et les agents se parlent : un message a un auteur, des destinataires et un corps ; adresser un agent résident (Cassandra, Itare) le fait répondre dans le fil, un tour à la fois, avec un budget qui borne la conversation d'agents entre eux. Cloisonné : un compte ne voit que ses fils.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=aa4588 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=70c112 ▼▼▼
 [module]
 id = "salon"
 nom = "Le Salon"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Des fils de travail où les personnes et les agents se parlent : un message a un auteur, des destinataires et un corps ; adresser un agent résident (Cassandra, Itare) le fait répondre dans le fil, un tour à la fois, avec un budget qui borne la conversation d'agents entre eux. Cloisonné : un compte ne voit que ses fils."
 confiance = "interne"
 famille = "echanges"
+importance = "optionnel"
+sans = "Plus de fils de discussion entre les personnes et les agents."
 
 [[objets]]
 type = "fil"

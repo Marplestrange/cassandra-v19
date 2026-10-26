@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #84e2aa
+# VERSION CN : 0.1.0  #97a996
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=84e2aa ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=97a996 ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -49,6 +49,7 @@ BADGES_MENU = ("", "constats", "moteurs")
 ZONES_MENU = ("principal", "avatar")
 # Les événements du noyau lui-même : un module peut les écouter sans qu'aucun module ne les « émette ».
 EVENEMENTS_DU_NOYAU = ("noyau.", "module.", "capacite.", "constat.", "objet.", "moteur.", "savoir.", "humain.")
+IMPORTANCES = ("vital", "important", "optionnel")
 TYPES_RESERVES = ("noyau", "module", "capacite", "constat", "objet", "moteur", "savoir", "humain")
 CONFIANCES = ("interne", "signe", "tiers", "local")
 
@@ -318,6 +319,8 @@ class Manifeste:
     permissions: Permissions = field(default_factory=Permissions)
     essentiel: bool = False    # un module essentiel ne se désactive pas (comptes, coffre, notifications...)
     famille: str = ""          # regroupement dans le menu des modules (« securite », « reseau »...)
+    importance: str = ""       # ce que la maison perd sans ce module : « vital » (elle ne tient plus), « important » (une fonction s'arrête), « optionnel » (on s'en passe) ; vide = non déclaré
+    sans: str = ""             # une phrase : ce qui s'arrête, concrètement, quand ce module est désactivé
     objets: tuple = ()
     droits: tuple = ()         # les droits que ce module déclare ([[droits]])
     reglages: tuple = ()       # les réglages que ce module déclare ([[reglages]])
@@ -409,6 +412,12 @@ def valider(brut: dict) -> list:
         e.append("module.essentiel : vrai ou faux")
     if "famille" in m and (not isinstance(m["famille"], str) or len(m["famille"]) > 40):
         e.append("module.famille : un texte de 40 caractères au plus")
+    if "importance" in m and m["importance"] not in IMPORTANCES:
+        e.append("module.importance : %s" % " ou ".join("« %s »" % x for x in IMPORTANCES))
+    if "sans" in m and (not isinstance(m["sans"], str) or len(m["sans"]) > 300):
+        e.append("module.sans : une phrase de 300 caractères au plus (ce qui s'arrête quand le module est désactivé)")
+    if m.get("essentiel") is True and m.get("importance", "vital") != "vital":
+        e.append("module.importance : un module essentiel est « vital »")
     requiert = _liste_de_textes(m.get("requiert"), "module.requiert", e, _ID)
     if mid in requiert:
         e.append("module.requiert : un module ne peut pas se requérir lui-même")
@@ -834,6 +843,7 @@ def construire(brut: dict, source="") -> Manifeste:
         id=m["id"], nom=m["nom"], version=m["version"], noyau_min=m["noyau_min"], description=m["description"].strip(),
         confiance=m.get("confiance", "interne"), requiert=tuple(m.get("requiert", ())),
         essentiel=bool(m.get("essentiel", False)), famille=str(m.get("famille", "")),
+        importance=str(m.get("importance", "vital" if m.get("essentiel") else "")), sans=str(m.get("sans", "")).strip(),
         auteur=str(m.get("auteur", "")), licence=str(m.get("licence", "")), site=str(m.get("site", "")), api=str(m.get("api", "1")),
         permissions=Permissions(bool((brut.get("permissions") or {}).get("espace_utilisateur", False)),
                                 tuple((brut.get("permissions") or {}).get("reseau", ())),

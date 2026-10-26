@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.3.1  #d421d9
+# VERSION CN : 0.3.1  #27f325
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=d421d9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=27f325 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur."
 confiance = "interne"
 famille = "gestion"
+importance = "optionnel"
+sans = "Plus de lien avec Dolibarr : factures, tiers et impayés ne remontent plus."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
 

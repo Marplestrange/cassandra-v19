@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c2a6a0
+# VERSION CN : 0.1.0  #08c550
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c2a6a0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=08c550 ▼▼▼
 """Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 
 Le travail (plan d'activation avec dépendances, refus d'un essentiel, branchement à chaud) est celui du noyau ; ce module en fait des
@@ -34,7 +34,7 @@ def brancher(ctx):
         if m is None:
             raise ValueError("module inconnu : « %s »" % module)
         # une fiche n'expose ni permissions ni versions de plus que le catalogue public ; les capacités sont filtrées par les droits du compte
-        return {"module": {k: m[k] for k in ("id", "nom", "description", "version", "famille", "etat", "essentiel", "requiert", "requis_par") if k in m},
+        return {"module": {k: m[k] for k in ("id", "nom", "description", "version", "famille", "etat", "essentiel", "importance", "sans", "requiert", "requis_par") if k in m},
                 "capacites": g.capacites(module, ctx.compte)}
 
     def activer(ctx, module="", avec_dependances=True):

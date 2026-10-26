@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #649a22
+# VERSION CN : 0.1.0  #3c6d78
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=649a22 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3c6d78 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -411,7 +411,7 @@ class Noyau:
                 "auteur": m.auteur, "licence": m.licence, "api": m.api,
                 "permissions": {"espace_utilisateur": m.permissions.espace_utilisateur, "reseau": list(m.permissions.reseau),
                                 "ecritures": list(m.permissions.ecritures), "privileges": list(m.permissions.privileges)},
-                "confiance": m.confiance, "essentiel": m.essentiel, "extension": ext, "etat": etat,
+                "confiance": m.confiance, "essentiel": m.essentiel, "importance": m.importance, "sans": m.sans, "extension": ext, "etat": etat,
                 "remplace": (getattr(self, "_remplaces", {}).get(mid).version if getattr(self, "_remplaces", {}).get(mid) else ""),
                 "requiert": list(m.requiert), "requis_par": sorted(requis_par.get(mid, [])),
                 "objets": len(m.objets), "capacites": len(m.capacites), "implementees": sum(1 for x in mine if x.implementee) if etat == "actif" else None,

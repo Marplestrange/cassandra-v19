@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : canaux
 # ZONE       : CN
-# VERSION CN : 0.1.0  #845200
+# VERSION CN : 0.1.0  #10cf54
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les canaux Telegram : l'état du client et le miroir (porter ses conversations sur Telegram, par compte). Le miroir est ÉTEINT PAR DÉFAUT, délibérément : relier Telegram pour recevoir des alertes n'est pas consentir à y voir surgir ses conversations. Différé : la connexion MTProto/Telethon et la session (qui ne vit QUE dans le coffre), l'envoi et la réception.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=845200 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=10cf54 ▼▼▼
 [module]
 id = "canaux"
 nom = "Canaux"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Les canaux Telegram : l'état du client et le miroir (porter ses conversations sur Telegram, par compte). Le miroir est ÉTEINT PAR DÉFAUT, délibérément : relier Telegram pour recevoir des alertes n'est pas consentir à y voir surgir ses conversations. Différé : la connexion MTProto/Telethon et la session (qui ne vit QUE dans le coffre), l'envoi et la réception."
 confiance = "interne"
 famille = "canaux"
+importance = "optionnel"
+sans = "Plus de miroir des conversations sur Telegram ; l'état du client n'est plus suivi."
 
 [[objets]]
 type = "canal_pref"

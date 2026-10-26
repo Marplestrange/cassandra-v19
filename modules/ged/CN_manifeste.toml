@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : ged
 # ZONE       : CN
-# VERSION CN : 0.1.0  #dd4535
+# VERSION CN : 0.1.0  #c358a5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La GED : les documents d'un compte, classés par sources (locales, avec cloisonnement par propriétaire), un index, des règles de classement, le dépôt, la fiche, l'aperçu en ligne (liste blanche stricte), la corbeille par racine. Différé : distants rclone/OAuth, montages, OCR/vignettes, extraction des pièces jointes (dépend du courrier).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=dd4535 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c358a5 ▼▼▼
 [module]
 id = "ged"
 nom = "Documents"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "La GED : les documents d'un compte, classés par sources (locales, avec cloisonnement par propriétaire), un index, des règles de classement, le dépôt, la fiche, l'aperçu en ligne (liste blanche stricte), la corbeille par racine. Différé : distants rclone/OAuth, montages, OCR/vignettes, extraction des pièces jointes (dépend du courrier)."
 confiance = "interne"
 famille = "gestion"
+importance = "optionnel"
+sans = "Plus de gestion de documents : l'index et la recherche des documents ne sont plus disponibles."
 
 [[objets]]
 type = "document"

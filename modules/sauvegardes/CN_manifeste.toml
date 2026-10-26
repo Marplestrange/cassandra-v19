@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sauvegardes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2814ab
+# VERSION CN : 0.1.0  #7a3b1b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les plans de sauvegarde : une portée décide du moteur (un site ou une base passe par FastPanel, le reste par rclone), la rotation par dossiers datés, la vérification par échantillon. Ici : les plans, l'historique des copies, les destinations et la couverture. Différé : l'exécution rclone, la restauration, la vérification (par le courtier racine), et la planification.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2814ab ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7a3b1b ▼▼▼
 [module]
 id = "sauvegardes"
 nom = "Sauvegardes"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Les plans de sauvegarde : une portée décide du moteur (un site ou une base passe par FastPanel, le reste par rclone), la rotation par dossiers datés, la vérification par échantillon. Ici : les plans, l'historique des copies, les destinations et la couverture. Différé : l'exécution rclone, la restauration, la vérification (par le courtier racine), et la planification."
 confiance = "interne"
 famille = "supervision"
+importance = "important"
+sans = "Plus de suivi des sauvegardes : une copie qui vieillit ou échoue ne déclenche plus d'alerte."
 
 [[objets]]
 type = "plan_sauvegarde"

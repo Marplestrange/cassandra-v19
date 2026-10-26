@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7e40fa
+# VERSION CN : 0.1.0  #0ee27d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La gestion des modules : ce qui est installé, actif ou à installer, ce qui dépend de quoi, et le geste d'activer ou de désactiver. Le noyau fait le travail (dépendances, essentiels, branchement à chaud) ; ce module en fait des capacités, donc des droits, une preuve, un retour et une trace.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7e40fa ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0ee27d ▼▼▼
 [module]
 id = "modules"
 nom = "Modules"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "La gestion des modules : ce qui est installé, actif ou à installer, ce qui dépend de quoi, et le geste d'activer ou de désactiver. Le noyau fait le travail (dépendances, essentiels, branchement à chaud) ; ce module en fait des capacités, donc des droits, une preuve, un retour et une trace."
 confiance = "interne"
 famille = "socle"
+importance = "vital"
+sans = "On ne peut plus activer ni désactiver les modules. Il ne se désactive pas."
 essentiel = true
 requiert = ["droits"]
 

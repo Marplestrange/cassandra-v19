@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : coffre
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a1df6d
+# VERSION CN : 0.1.0  #e77099
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le coffre Vaultwarden : le magasin de secrets de Cassandra (statut, liste des noms sans jamais les valeurs, lecture, écriture réversible, retrait). Un compte Cassandra = un compte Vault natif (même identifiant). Différé : la fiche complète d'un secret (chiffrement fin), le provisionnement des comptes, les clés d'API personnelles, le TOTP.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a1df6d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e77099 ▼▼▼
 [module]
 id = "coffre"
 nom = "Coffre fort"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Le coffre Vaultwarden : le magasin de secrets de Cassandra (statut, liste des noms sans jamais les valeurs, lecture, écriture réversible, retrait). Un compte Cassandra = un compte Vault natif (même identifiant). Différé : la fiche complète d'un secret (chiffrement fin), le provisionnement des comptes, les clés d'API personnelles, le TOTP."
 confiance = "interne"
 famille = "securite"
+importance = "important"
+sans = "Plus d'accès aux secrets de Cassandra : tout ce qui a besoin d'une clé ou d'un mot de passe gardé cesse de fonctionner."
 
 [[objets]]
 type = "secret"

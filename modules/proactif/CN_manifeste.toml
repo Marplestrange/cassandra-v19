@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : proactif
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e8524d
+# VERSION CN : 0.1.0  #0441a5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La Proactivité : l'autonomie par palier (observer, proposer, maîtrise, raconter), le savoir-faire mesuré (un geste devient éprouvé à dix réussites, retombe à deux échecs d'affilée), l'ombre (ce qu'elle aurait fait, sans agir), les incidents (des anomalies corrélées en une histoire) et le fil (le récit). Le cycle — détecteurs, constats, paliers des capacités — vit déjà dans le noyau. Différé : la porte de décision par domaine/geste, les projections, et le moteur d'évolution (auto-modification).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e8524d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0441a5 ▼▼▼
 [module]
 id = "proactif"
 nom = "Proactivité"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "La Proactivité : l'autonomie par palier (observer, proposer, maîtrise, raconter), le savoir-faire mesuré (un geste devient éprouvé à dix réussites, retombe à deux échecs d'affilée), l'ombre (ce qu'elle aurait fait, sans agir), les incidents (des anomalies corrélées en une histoire) et le fil (le récit). Le cycle — détecteurs, constats, paliers des capacités — vit déjà dans le noyau. Différé : la porte de décision par domaine/geste, les projections, et le moteur d'évolution (auto-modification)."
 confiance = "interne"
 famille = "supervision"
+importance = "important"
+sans = "Cassandra n'agit plus d'elle-même : plus de paliers d'autonomie, plus de fil de proactivité."
 
 [[objets]]
 type = "savoir_faire"

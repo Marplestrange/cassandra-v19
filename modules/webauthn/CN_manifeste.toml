@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : webauthn
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f1c09e
+# VERSION CN : 0.1.0  #ccb842
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les clés de sécurité WebAuthn des comptes : enregistrer et retirer une clé, l'exiger pour entrer (second facteur, avec huit codes de secours), ou entrer sans mot de passe avec une clé d'accès (passkey, code PIN ou empreinte exigés). La signature est vérifiée ici (ES256 et RS256), le défi vit en mémoire et ne sert qu'une fois, l'origine doit être celle du domaine réglé.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f1c09e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ccb842 ▼▼▼
 [module]
 id = "webauthn"
 nom = "Clé de sécurité"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Les clés de sécurité WebAuthn des comptes : enregistrer et retirer une clé, l'exiger pour entrer (second facteur, avec huit codes de secours), ou entrer sans mot de passe avec une clé d'accès (passkey, code PIN ou empreinte exigés). La signature est vérifiée ici (ES256 et RS256), le défi vit en mémoire et ne sert qu'une fois, l'origine doit être celle du domaine réglé."
 confiance = "interne"
 famille = "securite"
+importance = "important"
+sans = "Les clés de sécurité ne sont plus acceptées : un compte qui l'exige pour entrer ne peut plus se connecter."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
 

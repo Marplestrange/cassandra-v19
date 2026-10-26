@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : canvas
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e1e4a1
+# VERSION CN : 0.1.0  #9355b2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le canvas de notes : les départs (des gabarits de note), les gestes de rédaction, et le plan (les cartes et les flèches d'une note). La règle : il propose, l'écran montre, la personne décide — rien n'écrit sans elle. Différé : les appels au modèle (amorcer, retoucher, cartes tirées des sources) et la section vivante.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e1e4a1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9355b2 ▼▼▼
 [module]
 id = "canvas"
 nom = "Canvas"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Le canvas de notes : les départs (des gabarits de note), les gestes de rédaction, et le plan (les cartes et les flèches d'une note). La règle : il propose, l'écran montre, la personne décide — rien n'écrit sans elle. Différé : les appels au modèle (amorcer, retoucher, cartes tirées des sources) et la section vivante."
 confiance = "interne"
 famille = "gestion"
+importance = "optionnel"
+sans = "Plus de canvas de notes : les départs et le plan des notes ne sont plus proposés ; les notes restent lisibles."
 
 [[objets]]
 type = "plan_canvas"
