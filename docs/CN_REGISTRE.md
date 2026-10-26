@@ -12,7 +12,7 @@
 <!-- RÔLE       : Le registre officiel de Cassandra : sa racine de confiance embarquée, son index signé, ses éditeurs vérifiés, ses révocations et ses niveaux de confiance. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=08c2bd ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=f17317 ▼▼▼ -->
 # Le registre officiel de Cassandra
 
 Le magasin de modules officiel vit dans un dépôt à part, **`cassandra-registre`** (source de vérité : archives signées, éditeurs vérifiés, révocations, outil de publication), publié en page statique. L'application le connaît **en dur** : ce n'est pas un réglage.
@@ -42,7 +42,7 @@ Une entrée `{id, versions, raison}` de l'index signé : le client **refuse d'in
 Le réglage `modules.registre_url` ajoute un registre tiers, toujours affiché **non officiel** (son index n'est pas signé par la racine). Chaque archive reste examinée de la même façon.
 
 ## Publier (côté dépôt `cassandra-registre`)
-`python outils/registre.py verifier` contrôle tout ; `python outils/registre.py publier --cle racine-principale.pem` signe l'index (60 jours) et écrit `docs/`. À renouveler avant l'expiration.
+`python outils/registre.py verifier` contrôle tout ; `python outils/registre.py publier --cle racine-principale.pem` signe l'index (60 jours) et écrit `docs/`. Le renouvellement est automatique : `outils/renouveler.py` (tâche planifiée quotidienne sur la machine qui garde la clé racine) republie l'index quand il reste moins de 30 jours et le pousse. Si cette machine reste éteinte plus de 30 jours, l'index expire et le magasin de TOUTES les instances se coupe : la clé doit rester disponible, et une sauvegarde chiffrée existe en deux endroits.
 
 ## Ce que cela ne fait pas
 Un module installé tourne dans Cassandra, avec ses droits ; ses permissions sont déclaratives. La signature dit **qui** a publié, pas que le code est inoffensif : la relecture et la révocation sont la protection.
