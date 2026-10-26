@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #48f96c
+# VERSION CN : 0.1.0  #250f20
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La gestion des modules : ce qui est installé, actif ou à installer, ce qui dépend de quoi, et le geste d'activer ou de désactiver. Le noyau fait le travail (dépendances, essentiels, branchement à chaud) ; ce module en fait des capacités, donc des droits, une preuve, un retour et une trace.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=48f96c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=250f20 ▼▼▼
 [module]
 id = "modules"
 nom = "Modules"
@@ -51,6 +51,14 @@ type = "choix"
 choix = ["observer", "entretien", "reine"]
 defaut = "reine"
 aide = "« reine » : Cassandra gère tout (elle ajoute, met à jour, retire, active, désactive). « entretien » : elle entretient seulement (module révoqué retiré, mise à jour sans permission en plus, module en échec mis en pause). « observer » : elle regarde et raconte ce qu'elle ferait. À tout niveau elle n'installe que le registre officiel et les éditeurs vérifiés, et chaque geste se défait en un clic."
+
+[[reglages]]
+id = "fenetre"
+libelle = "Fenêtre de maintenance de Cassandra"
+type = "choix"
+choix = ["nuit", "dimanche", "hors_bureau", "tout"]
+defaut = "nuit"
+aide = "Quand Cassandra applique une mise à jour ou un ajout : « nuit » (02:00–05:00), « dimanche » (matin), « hors_bureau » (en dehors du lundi–vendredi 08:00–19:00), « tout » (à tout moment). Une urgence (module révoqué, module qui échoue) n'attend pas la fenêtre."
 
 [[reglages]]
 id = "registre_url"
@@ -208,6 +216,17 @@ paliers = ["auto", "maitre", "raconter"]
 qui = ["humain", "compte", "cassandra", "itare", "agent"]
 
 [[capacites]]
+id = "verrouiller"
+libelle = "Verrouiller un module : Cassandra, Itare et les agents n'y touchent plus (ni mise à jour, ni pause, ni retrait). Un geste de l'utilisateur seul (Cassandra ne peut pas se déverrouiller elle-même)"
+risque = "faible"
+droit = "gerer"
+perimetre = ["la liste des modules verrouillés (donnees/modules_verrous.json)"]
+preuve = "le module est (ou n'est plus) dans la liste des verrous"
+retour = "remettre le verrou comme il était"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
 id = "activite"
 libelle = "Le récit de ce qui est arrivé aux modules (installés, mis à jour, retirés, activés, désactivés) : qui l'a fait, et le geste qui le défait"
 risque = "lecture"
@@ -226,16 +245,15 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 
 [[moteurs]]
 id = "entretien"
-libelle = "Fait la passe d'entretien de Cassandra sur les modules (toutes les six heures) : ce que son niveau d'autonomie lui permet, rien de plus"
+libelle = "Fait la passe d'entretien de Cassandra sur les modules (toutes les heures ; elle n'applique que dans sa fenêtre de maintenance) : ce que son niveau d'autonomie lui permet, rien de plus"
 mode = "periodique"
-toutes_les_s = 21600
+toutes_les_s = 3600
 duree_max_s = 300
 
 [permissions]
 reseau = ["le registre officiel de Cassandra : son index signé et ses archives", "l'autre registre de l'administrateur (réglage registre_url), s'il y en a un"]
 modules = true
 droits = true
-introspection = true
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ded6e6
+# VERSION CN : 0.1.0  #ec97f8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le cycle de vie d'un module venu d'une archive : examiner sans rien poser, installer avec consentement, mettre à jour, revenir en arrière, désinstaller (rien ne se perd : tout ce qui part va en sauvegarde).
 # MÉTHODE    : l'archive attend en quarantaine ; l'examen la vérifie (empreintes, signature, manifeste) et compare au module en place ; l'installation re-vérifie, exige le consentement aux permissions, sauvegarde l'ancienne version puis dépose le dossier dans celui des extensions que le noyau surveille
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ded6e6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ec97f8 ▼▼▼
 """Le cycle de vie d'un module installé, à la manière d'un module store.
 
     examiner(octets)       l'archive va en quarantaine ; on la vérifie (SOMMES, signature, manifeste) et on dit ce qu'elle ferait : nouveau, mise à jour, retour à une version
@@ -149,11 +149,42 @@ class Cycle:
         except (OSError, ValueError):
             return []
 
+    def _ecrire_journal(self, l: list) -> None:
+        self.donnees.mkdir(parents=True, exist_ok=True)
+        self.registre.write_text(json.dumps(l[-500:], ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+
     def _noter(self, **fait) -> None:
         l = self.journal()
         l.append(dict(fait, ts=time.time()))
+        self._ecrire_journal(l)
+
+    def noter_acte(self, acte: str, mid: str, par: str = "", **plus) -> None:
+        """Consigne un acte sur un module qui ne passe pas par l'archive (activé, désactivé) : le récit des modules n'a ainsi qu'un seul journal."""
+        self._noter(acte=acte, id=mid, par=par, **plus)
+
+    def annoter(self, mid: str, acte: str, pourquoi: str) -> None:
+        """Ajoute le POURQUOI au dernier acte de ce genre sur ce module (qui l'a fait ne dit pas toujours pourquoi : la règle appliquée, la demande reçue)."""
+        l = self.journal()
+        for x in reversed(l):
+            if x.get("id") == mid and x.get("acte") == acte and "pourquoi" not in x:
+                x["pourquoi"] = str(pourquoi)[:300]
+                self._ecrire_journal(l)
+                return
+
+    # ------------------------------------------------------------------ le verrou : un module auquel Cassandra ne touche pas
+    def verrous(self) -> set:
+        try:
+            return set(json.loads((self.donnees / "modules_verrous.json").read_text(encoding="utf-8")))
+        except (OSError, ValueError, TypeError):
+            return set()
+
+    def verrouiller(self, mid: str, oui: bool = True, par: str = "") -> set:
+        v = self.verrous()
+        v.add(mid) if oui else v.discard(mid)
         self.donnees.mkdir(parents=True, exist_ok=True)
-        self.registre.write_text(json.dumps(l[-500:], ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+        (self.donnees / "modules_verrous.json").write_text(json.dumps(sorted(v), ensure_ascii=False), encoding="utf-8")
+        self._noter(acte="verrou" if oui else "deverrouille", id=mid, par=par)
+        return v
 
     def permissions_acceptees(self, mid: str) -> dict:
         """Les permissions de la dernière installation consentie de ce module ({} si jamais installé par archive)."""
