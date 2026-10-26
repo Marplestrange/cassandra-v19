@@ -1,0 +1,75 @@
+/* ══════════════════════════════════════════════════════════════════════════════ */
+/* TITRE      : habillage.css */
+/* LICENCE    : AGPL-3.0 */
+/* AUTEUR     : Atek Drisse */
+/* GIT        : github.com/Marplestrange */
+/* MAIL       : marplestrange@cassandra.center */
+/* MODULE     : interface */
+/* ZONE       : CN */
+/* VERSION CN : 0.1.0  #000000 */
+/* VERSION EC : néant */
+/* EC LIÉES   : néant */
+/* RÔLE       : habillage.css */
+/* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
+/* ══════════════════════════════════════════════════════════════════════════════ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=e34544 ▼▼▼ */
+/* ═══ L'HABILLAGE UNIVERSEL ════════════════════════════════════════════════════════════
+   Les écrans de l'ancienne interface (classes mx-*) gardent TOUTES leurs fonctions, leurs scènes et leurs pastilles ; ici on ne change que leur tenue, pour qu'ils ressemblent
+   à la Logithèque et au reste de la V19 : même police (Inter, plus de chasse fixe sur les libellés), mêmes pastilles, mêmes boutons, mêmes puces de scènes, mêmes tuiles de chiffres.
+   Tout est sous « body.d19 » : sans la disposition V19, rien ne change. Pour tout défaire : retirer le lien de cette feuille (interface/CN_index.html et outils/ui/CN_assembler.py). */
+
+/* Les titres et les petits libellés : Inter, comme le kit */
+body.d19 .mx-head h1{font:650 20px/1.25 'Inter',system-ui,sans-serif;letter-spacing:0}
+body.d19 :is(.mx-fam,.mx-eyebrow,.mx-st,.mx-chart-h .mx-meta,.mx-kpi span,.mx-kpi small,.mx-meta){font-family:'Inter',system-ui,sans-serif;letter-spacing:.05em}
+body.d19 :is(.mx-fam,.mx-eyebrow){font-size:10.5px;font-weight:650;color:var(--txt-faint)}
+body.d19 .mx-st{font-size:11px;font-weight:600}
+body.d19 .mx-kpi span{font-size:12px;font-weight:600;letter-spacing:0;color:var(--txt-soft)}
+body.d19 .mx-kpi small{font-size:11px;letter-spacing:0}
+
+/* Les pastilles : la même que le kit (.p) */
+body.d19 .mx-app .mx-pill{font:600 11px/1.2 'Inter',system-ui,sans-serif;letter-spacing:0;border-radius:7px;padding:3px 8px;background:color-mix(in srgb,var(--txt-soft) 10%,transparent);color:var(--txt-soft)}
+body.d19 .mx-app .mx-pill.ok{background:color-mix(in srgb,var(--ok) 13%,transparent);color:var(--ok)}
+body.d19 .mx-app .mx-pill.regarder{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+body.d19 .mx-app .mx-pill.panne{background:color-mix(in srgb,var(--danger) 13%,transparent);color:var(--danger)}
+body.d19 .mx-app .mx-pill.pas_encore{background:color-mix(in srgb,var(--info) 12%,transparent);color:var(--info)}
+
+/* Les boutons : le même que le kit (.btn) */
+body.d19 .mx-btn{font:600 13px/1.2 'Inter',system-ui,sans-serif;padding:7px 14px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface-solid);color:var(--txt);transition:border-color .15s,color .15s,filter .15s}
+body.d19 .mx-btn:hover:not([disabled]){border-color:var(--accent);color:var(--accent)}
+body.d19 .mx-btn.primary{background:var(--accent);border-color:transparent;color:var(--on-accent)}
+body.d19 .mx-btn.primary:hover:not([disabled]){color:var(--on-accent);filter:brightness(1.08)}
+body.d19 .mx-btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* Les puces de scènes (« Vue : Maintenant · Une courbe… ») : les puces du kit */
+body.d19 .mx-scene{font:600 12.5px/1.2 'Inter',system-ui,sans-serif;padding:5px 12px;border:1px solid var(--line);background:var(--surface);color:var(--txt-soft)}
+body.d19 .mx-scene:hover{color:var(--accent);border-color:var(--accent)}
+body.d19 .mx-scene.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+
+/* Les tuiles de chiffres : la tuile « stat » du kit */
+body.d19 .mx-kpi{background:var(--surface);border-radius:14px;padding:12px 14px}
+body.d19 .mx-kpi b{font-size:22px;font-weight:650;letter-spacing:0}
+body.d19 .mx-kpi em{font-size:12.5px}
+
+/* Les lignes et les cartes : les rayons et l'air du kit */
+body.d19 .mx-sec{border-radius:16px}
+body.d19 .mx-rt b{font-weight:650}
+body.d19 .mx-dot{width:8px;height:8px}
+
+/* Le verdict : un trait plein, sans hachures (l'inconnu est un gris, pas un motif) */
+body.d19 .mx-vmark{width:6px;border-radius:4px}
+body.d19 .mx-vmark.inconnu{background:var(--txt-ghost)}
+body.d19 .mx-vtitle{font-weight:650}
+
+/* Un état vide : une ligne calme, pas un cadre en pointillés */
+body.d19 .mx-silence{border:1px solid var(--line);border-style:solid;border-radius:12px;background:color-mix(in srgb,var(--txt-soft) 5%,transparent);color:var(--txt-soft)}
+
+/* Les champs de recherche et les listes déroulantes */
+body.d19 .mx-app :is(input[type=search],input[type=text],select){font-family:'Inter',system-ui,sans-serif}
+
+@media (prefers-reduced-motion:reduce){body.d19 .mx-btn{transition:none}}
+/* ▲▲▲ FIN BORNE CN ▲▲▲ */
+
+/* ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ */
+/* CN : tout ce fichier est du nexus : à compléter */
+/* EC : néant (aucun point d'évolution déclaré pour l'instant) */
+/* LIEN : à compléter (contrat, fichiers voisins) */

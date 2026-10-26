@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9f0c91
+# VERSION CN : 0.1.0  #6f23e0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble l'interface V19 à partir de l'extraction brute de l'interface V18.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9f0c91 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6f23e0 ▼▼▼
 """Assemble l'interface V19 à partir de l'extraction brute de l'interface V18.
 
 usage : python outils/ui/CN_assembler.py [docs/v18/CN_interface_v18.html] [interface/]
@@ -99,7 +99,7 @@ def assembler(src, sortie):
             '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
             d["liens"]]
     html += d["scripts_cdn"]
-    html += ['<link rel="stylesheet" href="/style.css">', '<link rel="stylesheet" href="/shell.css">', '<link rel="stylesheet" href="/disposition.css">', '<link rel="stylesheet" href="/aujourdhui.css">', "</head>", "<body>"]
+    html += ['<link rel="stylesheet" href="/style.css">', '<link rel="stylesheet" href="/shell.css">', '<link rel="stylesheet" href="/disposition.css">', '<link rel="stylesheet" href="/aujourdhui.css">', '<link rel="stylesheet" href="/habillage.css">', "</head>", "<body>"]
     html.append(versionner(d["corps"], build))
     html.append('<script src="/compat.js"></script>')
     rdir = os.path.join(sortie, "routes")
