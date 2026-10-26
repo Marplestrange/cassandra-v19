@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #54fcef
+// VERSION CN : 0.1.0  #816c11
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=54fcef ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=816c11 ▼▼▼
 /* Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 
    Réglages a maintenant trois visions :
@@ -193,10 +193,9 @@
     } else if (fam.indexOf("mods-") === 0) {
       const el = document.getElementById("set-" + fam); if (!el) return;
       const f = fam.slice(5);
+      if (CASS.pageModules) { CASS.pageModules(el, f, { rendre: rendre }); return; }      // la page des modules (modules-page.js) : cartes, détail, changements en attente
       const mods = f === "tous" ? catalogue : catalogue.filter((m) => (m.famille || "autres") === f);
-      const tete = f === "tous" ? "Tous les modules" : famLib(f);
-      el.innerHTML = '<div class="settings-section-title">' + esc(tete) + '</div><div class="s-hint">Activer un module branche à chaud ses menus, ses capacités et ses moteurs ; le désactiver les retire, <b>ses données restent</b>. Un module essentiel, ou dont un autre dépend, ne se désactive pas sans cascade.</div>' +
-        mods.map((m) => fiche(m, "global", f === "tous")).join("");
+      el.innerHTML = '<div class="settings-section-title">' + esc(f === "tous" ? "Tous les modules" : famLib(f)) + "</div>" + mods.map((m) => fiche(m, "global", f === "tous")).join("");
       gestes(el); lierChamps(el, () => rendre(true));
     }
   }

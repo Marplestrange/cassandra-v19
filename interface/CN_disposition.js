@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #7b664c
+// VERSION CN : 0.1.0  #e0d588
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=7b664c ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=e0d588 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -782,11 +782,14 @@
       let l = sc.querySelector(".sh-legende"); if (!l) { l = document.createElement("p"); l.className = "sh-legende"; t.after(l); }
       l.textContent = "La gestion des modules : ce qui est actif, ce qui dépend de quoi, et les réglages propres à chaque module. Un module neuf n’est jamais activé de lui-même.";
     }
-    corps.innerHTML = '<div class="settings-section-title">' + esc(tete) + '</div><div class="s-hint">Activer un module branche à chaud ses menus, ses capacités et ses moteurs ; le désactiver les retire.</div>' + (fam === "tous" ? cat : cat.filter((m) => (m.famille || "autres") === fam)).map((m) => M.fiche(m, "global", fam === "tous")).join("");
     E.pageAction = (id) => pageModules(corps, id);
     const relire = async () => { await pageModules(corps, E.famModules); };
-    M.gestes(corps, async () => { await relire(); CASS.disposition.rafraichir(); });
-    M.lierChamps(corps, relire);
+    if (CASS.pageModules) CASS.pageModules(corps, fam, { rendre: async () => { await relire(); CASS.disposition.rafraichir(); } });       // la page des modules (modules-page.js) : cartes, détail, changements en attente avec leur impact
+    else {
+      corps.innerHTML = '<div class="settings-section-title">' + esc(tete) + "</div>" + (fam === "tous" ? cat : cat.filter((m) => (m.famille || "autres") === fam)).map((m) => M.fiche(m, "global", fam === "tous")).join("");
+      M.gestes(corps, async () => { await relire(); CASS.disposition.rafraichir(); });
+      M.lierChamps(corps, relire);
+    }
     rendre();
   }
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};

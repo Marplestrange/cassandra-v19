@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #d7c011
+// VERSION CN : 0.1.0  #8f7b93
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=d7c011 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=8f7b93 ▼▼▼
 /* Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 
    1. Les THÈMES : un module livre un thème complet ([[habillages]] : des variables CSS). Il apparaît dans le sélecteur d'apparence,
@@ -169,7 +169,8 @@
   CASS.nomOnglet = nomOnglet;
   CASS.ouvrirEcran = function (ecran, titre) { preparerScene(ecran, titre || ecran); window.switchTab(nomOnglet(ecran)); };
   // Ouvrir la console d'un module, de n'importe où (Réglages › Modules, par exemple).
-  CASS.ouvrirConsole = function (mid, nom) {
+  CASS.ouvrirConsole = function (mid, nom, onglet) {
+    CASS.ongletConsole = onglet || null;                       // l'onglet par lequel la console s'ouvre (« reglages » : l'engrenage d'une carte de module)
     const ecran = mid + ":console";
     preparerScene(ecran, nom || mid);
     window.switchTab(nomOnglet(ecran));
