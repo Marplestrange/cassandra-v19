@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #f004ac
+// VERSION CN : 0.1.0  #eeec2d
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « Modules et applications » : une carte par module (état, importance déclarée, interrupteur, accès aux réglages), un tiroir de détail (ce qui s'arrête sans lui, dépendances, ce qu'il peut faire hors de lui) et les changements d'activation mis en attente, avec leur impact dit avant d'être appliqués.
 // MÉTHODE    : le catalogue de modules-ui.js (modules.lister) fournit tout ; l'impact d'un jeu de changements se calcule sur le graphe requiert / requis_par ; rien n'est appliqué avant l'accord : les désactivations d'abord (les dépendants avant leurs dépendances), puis les activations (modules.activer tire ses dépendances) ; tout texte dynamique est échappé
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=f004ac ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=eeec2d ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -102,7 +102,7 @@
       return { act: [...act].filter((id) => par(id).etat !== "actif"), des: [...des], bloc };
     }
     const crit = (m) => (CRIT[m.importance] ? m.importance : "");
-    const ico = (f) => '<span class="ico"><svg viewBox="0 0 24 24">' + (ICONES[f] || ICONES.autres) + "</svg></span>";
+    const ico = (f, m) => '<span class="ico"><svg viewBox="0 0 24 24">' + ((m && U.trace && U.trace(m.icone_trace)) || (U.famTrace && U.famTrace(f)) || ICONES[f] || ICONES.autres) + "</svg></span>";
     const verrou = (m) => !gere() || m.essentiel || m.etat === "a_installer" || m.etat === "refuse" || (m.etat === "actif" ? !(m.peut_desactiver || {}).ok && !(m.requis_par || []).length : !(m.peut_activer || {}).ok);
     const raisonVerrou = (m) => (!gere() ? "Instance de développement : tout est chargé" : m.essentiel ? "Module essentiel : toujours actif" : m.etat === "a_installer" ? "À installer d'abord sur la machine" : m.etat === "refuse" ? "Extension écartée" : m.etat === "actif" ? "" : ((m.peut_activer || {}).raison || ""));
 
@@ -110,7 +110,7 @@
       const on = voulu(m.id), att = S.att.has(m.id), c = crit(m), lock = verrou(m);
       const bloque = lock && !(m.etat === "actif" && !m.essentiel && gere() && (m.requis_par || []).length);       // un module utilisé par d'autres reste basculable : l'impact le dira
       const pE = m.etat === "actif" ? '<span class="p ok">Actif</span>' : m.etat === "a_installer" ? '<span class="p al">À installer</span>' : m.etat === "refuse" ? '<span class="p dg">Refusé</span>' : '<span class="p nu">Inactif</span>';
-      return '<div class="carte' + (m.etat === "actif" ? "" : " off") + (att ? " att" : "") + '" data-id="' + esc(m.id) + '" role="button" tabindex="0"><div class="l1">' + ico(m.famille) + '<div style="min-width:0"><h3>' + esc(m.nom) + '</h3><div class="id">' + esc(m.id) + (m.version ? " · v" + esc(m.version) : "") + "</div></div>" +
+      return '<div class="carte' + (m.etat === "actif" ? "" : " off") + (att ? " att" : "") + '" data-id="' + esc(m.id) + '" role="button" tabindex="0"><div class="l1">' + ico(m.famille, m) + '<div style="min-width:0"><h3>' + esc(m.nom) + '</h3><div class="id">' + esc(m.id) + (m.version ? " · v" + esc(m.version) : "") + "</div></div>" +
         '<button class="rgl" data-reg="' + esc(m.id) + '"' + (m.etat === "actif" ? "" : " disabled") + ' title="' + (m.etat === "actif" ? "Réglages de " + esc(m.nom) : "Activez le module pour accéder à ses réglages") + '" aria-label="Réglages de ' + esc(m.nom) + '"><svg viewBox="0 0 24 24">' + ICO_GEAR + "</svg></button>" +
         '<label class="inter' + (att ? " att" : "") + '" title="' + esc(bloque ? raisonVerrou(m) : on ? "Désactiver" : "Activer") + '"><input type="checkbox" data-bas="' + esc(m.id) + '"' + (on ? " checked" : "") + (bloque ? " disabled" : "") + ' aria-label="Activer ' + esc(m.nom) + '"><i></i></label></div>' +
         '<div class="desc">' + esc(m.description || "") + '</div><div class="pied">' + pE + (c ? '<span class="p ' + CRIT[c][1] + '" title="' + esc(CRIT[c][2]) + '">' + CRIT[c][0] + "</span>" : "") + (m.confiance && m.confiance !== "interne" ? '<span class="p nu">' + esc(m.confiance) + "</span>" : "") +
@@ -180,7 +180,7 @@
       const dep = actifsApres(id), p = m.permissions || {}, lock = verrou(m) && !(m.etat === "actif" && !m.essentiel && gere() && (m.requis_par || []).length), on = voulu(id);
       const bas = lock ? "" : '<button class="btn ' + (on ? "dng" : "pri") + '" data-a="bas2" data-id="' + esc(id) + '">' + (S.att.has(id) ? "Annuler le changement" : on ? "Désactiver" : "Activer") + "</button>";
       const hors = ((p.reseau || []).map((r) => "<div><span>Se connecte à : " + esc(r) + "</span></div>").join("")) + ((p.ecritures || []).map((r) => "<div><span>Écrit dans : " + esc(r) + "</span></div>").join("")) + ((p.privileges || []).map((r) => "<div><span>Privilège : " + esc(r) + "</span></div>").join(""));
-      Q(".tiroir").innerHTML = '<div class="th"><div class="l1">' + ico(m.famille) + '<div style="min-width:0"><h2>' + esc(m.nom) + '</h2><div class="note mono">' + esc(m.id) + (m.version ? " · v" + esc(m.version) : "") + '</div></div><button class="x" data-a="ferme" aria-label="Fermer">×</button></div>' +
+      Q(".tiroir").innerHTML = '<div class="th"><div class="l1">' + ico(m.famille, m) + '<div style="min-width:0"><h2>' + esc(m.nom) + '</h2><div class="note mono">' + esc(m.id) + (m.version ? " · v" + esc(m.version) : "") + '</div></div><button class="x" data-a="ferme" aria-label="Fermer">×</button></div>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap"><span class="p ' + (m.etat === "actif" ? "ok" : m.etat === "refuse" ? "dg" : m.etat === "a_installer" ? "al" : "nu") + '">' + (m.etat === "actif" ? "Actif" : m.etat === "a_installer" ? "À installer" : m.etat === "refuse" ? "Refusé" : "Inactif") + '</span><span class="p nu">' + esc(U.famLib(m.famille || "autres")) + "</span>" + (m.confiance ? '<span class="p nu">confiance ' + esc(m.confiance) + "</span>" : "") + "</div></div>" +
         '<div class="tc"><p>' + esc(m.description || "") + "</p>" +
         (m.etat === "a_installer" ? '<div class="bandeau al">Un script d’installation du module est à lancer sur la machine, puis le module s’active.</div>' : "") +

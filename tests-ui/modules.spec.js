@@ -17,7 +17,8 @@ async function monter(page, gere) {
       mod('dns', { importance: 'important', requiert: ['droits'], requis_par: ['certificats'], famille: 'reseau' }),
       mod('certificats', { etat: 'inactif', requiert: ['dns'], famille: 'securite', importance: 'important' }),
       mod('billetterie', { etat: 'a_installer', famille: 'gestion' })];
-    window.CASS.modulesUi = { lire: async () => {}, catalogue: () => cat, gere: () => gere, famLib: (f) => f, familles: () => ['socle', 'reseau', 'securite', 'gestion'] };
+    const reel = window.CASS.modulesUi;                                                   // le VRAI validateur de tracés : c'est lui qu'on éprouve
+    window.CASS.modulesUi = { lire: async () => {}, catalogue: () => cat, gere: () => gere, famLib: (f) => f, familles: () => ['socle', 'reseau', 'securite', 'gestion'], trace: reel && reel.trace, famTrace: () => '' };
     window.CASS.ouvrirConsole = (id, nom, onglet) => window.__console.push([id, onglet || null]);
     window.CASS.agir = async (c, a) => {
       window.__appels.push([c, a]);
@@ -72,4 +73,19 @@ test('activer un module active ses dépendances ; rien ne part avant l’accord'
   await sur.locator('.plateau [data-a="annuler"]').click();
   await expect(sur.locator('.plateau')).not.toHaveClass(/o/);
   expect(await page.evaluate(() => window.__appels.filter((a) => a[0].indexOf('modules.') === 0 && a[0] !== 'modules.lister' && a[0] !== 'modules.fiche').length)).toBe(0);
+});
+
+test('une icône apportée par un module est un tracé validé : celle d’un éditeur malveillant n’entre jamais dans la page', async ({ page }) => {
+  await monter(page, true);
+  await page.evaluate(() => {
+    const cat = window.CASS.modulesUi.catalogue();
+    cat[1].icone_trace = 'M12 3l8 4v5c0 4.4-3.1 7.6-8 9z';                         // dns : un tracé honnête
+    cat[2].icone_trace = 'M0 0"/><script>window.__piege = 1</script><path d="M1 1';   // certificats : un piège
+    window.CASS.pageModules(document.getElementById('mp-essai'), 'tous', { rendre: async () => {} });
+  });
+  const mp = page.locator('#mp-essai .mp');
+  await expect(mp.locator('.carte[data-id="dns"] .ico path')).toHaveAttribute('d', 'M12 3l8 4v5c0 4.4-3.1 7.6-8 9z');
+  await expect(mp.locator('.carte[data-id="certificats"] .ico path')).not.toHaveAttribute('d', /script/);          // le piège est refusé : l'icône de sa famille reste
+  expect(await page.evaluate(() => window.__piege)).toBeUndefined();
+  expect(await mp.locator('script').count()).toBe(0);
 });

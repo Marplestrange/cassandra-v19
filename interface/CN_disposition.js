@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #abb453
+// VERSION CN : 0.1.0  #fd3fcb
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=abb453 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=fd3fcb ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -209,7 +209,8 @@
     else if (n.ecran === "menus:vue_modules") ouvrirModules(E.famModules || "tous");
     else if (n.ecran && CASS.ouvrirEcran) CASS.ouvrirEcran(n.ecran, n.libelle);
   }
-  function chemin() { const g = ent(), e = entree(); if (!g || !e) return ""; return g.libelle + " › " + e.libelle + (E.vue ? " › " + ((e.enfants.find((f) => (f.vue || f.id) === E.vue) || {}).libelle || E.vue) : ""); }
+  // Une page PROPRE (Modules et Applications, Société, Paramètres…) n'est pas une entrée de groupe : E.g / E.e gardent alors la dernière entrée visitée (« Aujourd'hui »), qu'il ne faut pas lire pour la page courante.
+  function chemin() { if (!E.actif) return E.fil ? E.fil.join(" › ") : (E.hors || ""); const g = ent(), e = entree(); if (!g || !e) return ""; return g.libelle + " › " + e.libelle + (E.vue ? " › " + ((e.enfants.find((f) => (f.vue || f.id) === E.vue) || {}).libelle || E.vue) : ""); }
   const cleDe = (g, e, v) => [g, e, v || ""].join("|");
   const pageCle = () => (E.actif ? cleDe(E.actif.g, E.actif.e, E.actif.vue) : "hors|" + (E.hors || ""));
 
@@ -399,7 +400,8 @@
 
   // ── l'interlocuteur du panneau ─────────────────────────────────────────────
   const NOMS = { itare: "Itare", cassandra: "Cassandra", inv: "Invités" };
-  const autoMode = () => { const g = ent(); if (!E.d.cassandra_ok) return "itare"; return (g && g.interlocuteur === "itare") || !E.actif ? "itare" : "cassandra"; };
+  // Cassandra (la machine) tient les pages de la maison : parc, sécurité, observation… et les pages propres (Modules, Paramètres, Société) ; Itare (le bureau) tient le poste de travail.
+  const autoMode = () => { const g = ent(); if (!E.d.cassandra_ok) return "itare"; if (!E.actif) return "cassandra"; return g && g.interlocuteur === "itare" ? "itare" : "cassandra"; };
   const mode = () => (E.manual && !(E.manual === "cassandra" && !E.d.cassandra_ok) ? E.manual : autoMode());
   const heure = () => new Date().getHours();
   function ficheFil(m) { const k = pageCle(); return E.fils[m].find((f) => f.page === k) || null; }
@@ -444,7 +446,7 @@
     E.sug = false; E.fmenu = false;
     try {
       const fil = await assurerFil(m, texte);
-      await agir("salon.dire", { fil: fil, destinataires: dest, corps: texte });
+      await agir("salon.dire", { fil: fil, destinataires: dest, corps: texte, sources: E.sel[m] === "page" && chemin() ? ["page : " + chemin()] : [] });          // l'agent sait de quelle page on lui parle
       E.attente = Date.now() + 90000;
       await chargerMessages(fil, true);
       chargerFils(m).then(rendrePanel);
@@ -781,7 +783,8 @@
     E.famModules = fam;
     const nbDe = (f) => (f === "tous" ? cat.length : cat.filter((m) => (m.famille || "autres") === f).length);
     const ICONE_FAM = { socle: "fam_socle", securite: "lock", reseau: "pv_sites", communication: "mail", echanges: "fam_echanges", canaux: "fam_canaux", agents: "bot", gestion: "tasks", supervision: "eye", hebergement: "pv_flotte", systeme: "fam_systeme", evolution: "spark", refusés: "fam_refuses", refuses: "fam_refuses" };
-    E.lateral = { titre: "Modules", actif: fam, items: [{ id: "tous", libelle: "Tous les modules", n: cat.length, icone: "puzzle" }].concat(M.familles().map((f) => ({ id: f, libelle: M.famLib(f), n: nbDe(f), icone: ICONE_FAM[f] || (IC[M.famIcone(f)] ? M.famIcone(f) : "puzzle") }))) };
+    M.familles().forEach((f) => { const t = M.famTrace(f); if (t) IC["fam_t_" + f] = t; });          // l'icône qu'un module apporte pour sa famille nouvelle
+    E.lateral = { titre: "Modules", actif: fam, items: [{ id: "tous", libelle: "Tous les modules", n: cat.length, icone: "puzzle" }].concat(M.familles().map((f) => ({ id: f, libelle: M.famLib(f), n: nbDe(f), icone: ICONE_FAM[f] || (IC["fam_t_" + f] ? "fam_t_" + f : (IC[M.famIcone(f)] ? M.famIcone(f) : "puzzle")) }))) };
     const tete = fam === "tous" ? "Tous les modules" : M.famLib(fam);
     E.pageNom = CASS.nomOnglet("menus:vue_modules"); E.fil = ["Paramètres", "Modules et Applications", tete];
     const sc = corps.closest(".sh-scene"), t = sc && sc.querySelector(".sh-titre");

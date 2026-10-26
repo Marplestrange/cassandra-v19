@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #435446
+# VERSION CN : 0.1.0  #6160d8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'importance déclarée par chaque module : vital, important ou optionnel, et ce qui s'arrête sans lui.
 # MÉTHODE    : lit les manifestes des modules livrés et éprouve le validateur sur des manifestes d'essai
 # ═══════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=435446 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6160d8 ▼▼▼
 """Chaque module déclare ce que la maison perd sans lui (`importance`) et en une phrase ce qui s'arrête (`sans`). Un module essentiel est vital.
 La page des modules s'en sert pour dire, avant tout changement, ce qu'il va casser : une déclaration manquante la laisserait muette."""
 import copy
@@ -70,6 +70,20 @@ class ImportanceDeclaree(unittest.TestCase):
             mauvais = copy.deepcopy(d)
             mauvais["module"][champ] = valeur
             self.assertTrue(any(champ in e for e in M.valider(mauvais)), (champ, valeur))
+
+    def test_une_icone_apportee_est_un_trace_jamais_du_svg_libre(self):
+        for bon in ("M12 3l8 4v5c0 4.4-3.1 7.6-8 9z", "M12 3 L 4 4 Z", "M1,1 a2 2 0 1 1 4 0", "m2 2h5"):
+            self.assertTrue(M.trace_valide(bon), bon)
+        for mauvais in ('M0 0"><script>alert(1)</script>', "javascript:alert(1)", "M1 1 <svg onload=x>", "L1 1", "M", "M" + "1" * 900, "", None, 12, "M1 1 'x'"):
+            self.assertFalse(M.trace_valide(mauvais), repr(mauvais)[:40])
+        f, d = next(iter(manifestes()))
+        for champ in ("icone_trace", "famille_icone_trace"):
+            ok = copy.deepcopy(d)
+            ok["module"][champ] = "M12 3l8 4v5z"
+            self.assertEqual([e for e in M.valider(ok) if champ in e], [])
+            mauvais = copy.deepcopy(d)
+            mauvais["module"][champ] = 'M0 0"/><script>alert(1)</script>'
+            self.assertTrue(any(champ in e for e in M.valider(mauvais)), champ)
 
     def test_la_finance_est_une_famille_nommee_par_ses_modules(self):
         familles = {d["module"]["id"]: d["module"] for f, d in manifestes()}

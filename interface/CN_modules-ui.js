@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #2e7f1f
+// VERSION CN : 0.1.0  #80a486
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=2e7f1f ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=80a486 ▼▼▼
 /* Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 
    Réglages a maintenant trois visions :
@@ -37,6 +37,10 @@
   const declaree = (f, champ) => { const m = catalogue.find((x) => (x.famille || "autres") === f && x[champ]); return m ? m[champ] : ""; };
   const famLib = (f) => LIB[f] || declaree(f, "famille_libelle") || (f ? f.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()) : "Divers");
   const famIcone = (f) => declaree(f, "famille_icone");
+  // Un tracé apporté par un module : revalidé ICI avant de devenir du SVG (le serveur l'a déjà vérifié ; on ne se fie pas à lui pour ce qui s'insère dans la page).
+  const TRACE = /^[Mm][MmLlHhVvCcSsQqTtAaZz0-9 .,\-]{3,799}$/;
+  const trace = (d) => (typeof d === "string" && TRACE.test(d) ? '<path d="' + d + '"/>' : "");
+  const famTrace = (f) => trace(declaree(f, "famille_icone_trace"));
 
   let catalogue = [], reglages = [], gere = true;
 
@@ -137,7 +141,7 @@
   };
 
   // Ce que la page « Modules et Applications » (disposition.js) emprunte à cet écran : le catalogue, la fiche d'un module, ses gestes et ses champs.
-  CASS.modulesUi = { lire: lire, fiche: (m, p, c) => fiche(m, p, c), gestes: (r, a) => gestes(r, a), lierChamps: lierChamps, familles: familles, famLib: famLib, famIcone: famIcone, catalogue: () => catalogue, gere: () => gere, nomDe: nomDe };
+  CASS.modulesUi = { lire: lire, fiche: (m, p, c) => fiche(m, p, c), gestes: (r, a) => gestes(r, a), lierChamps: lierChamps, familles: familles, famLib: famLib, famIcone: famIcone, famTrace: famTrace, trace: trace, catalogue: () => catalogue, gere: () => gere, nomDe: nomDe };
 
   // ── la fiche d'un module ────────────────────────────────────────────
   function fiche(m, portee, compact) {

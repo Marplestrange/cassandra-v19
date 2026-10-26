@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #055dec
+// VERSION CN : 0.1.0  #4df576
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La page « App Store » : on dépose une archive de module (.cmod) ou on en prend une au registre ; l'examen dit ce qu'elle est, qui l'a signée, ce qu'elle demande et ce qu'elle casserait ; l'installation exige le consentement aux permissions montrées ; les modules installés se mettent à jour, reviennent en arrière ou se désinstallent.
 // MÉTHODE    : le téléversement part en octets bruts vers /api/televerser/modules.examiner (l'archive va en quarantaine, rien n'est posé) ; l'installation passe par modules.installer avec l'empreinte des permissions TELLES QUE MONTRÉES ; un module installé reste inactif jusqu'à son activation ; tout texte dynamique est échappé
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=055dec ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=4df576 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -89,7 +89,8 @@
       const manque = (e.requiert_manquants || []).concat(e.versions_insuffisantes || []);
       const bloque = !e.autorise || e.statut === "identique" || manque.length || (e.conflits || []).length || (e.casserait || []).length;
       const ok = !bloque;
-      return '<div class="carte exam"><div class="tete"><h2>' + esc(e.nom) + '</h2><span class="mono note">' + esc(e.id) + " v" + esc(e.version) + "</span>" +
+      const tr = CASS.modulesUi && CASS.modulesUi.trace ? CASS.modulesUi.trace(e.icone_trace) : "";
+      return '<div class="carte exam"><div class="tete">' + (tr ? '<svg viewBox="0 0 24 24" aria-hidden="true" style="width:34px;height:34px;fill:none;stroke:var(--accent);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round">' + tr + "</svg>" : "") + '<h2>' + esc(e.nom) + '</h2><span class="mono note">' + esc(e.id) + " v" + esc(e.version) + "</span>" +
         '<div class="tags"><span class="p ' + cls + '">' + esc(lib) + (e.version_en_place ? " (en place : " + esc(e.version_en_place) + ")" : "") + "</span>" +
         (e.signe ? '<span class="p ok">signé par ' + esc(e.editeur || "?") + "</span>" : '<span class="p dg">non signé</span>') + (c ? '<span class="p ' + c[1] + '">' + c[0] + "</span>" : "") + '<span class="p nu">' + esc(Mo(e.taille)) + " · " + e.nb_fichiers + " fichiers</span></div></div>" +
         "<p>" + esc(e.description) + "</p>" + (e.sans ? '<p class="note">Sans lui : ' + esc(e.sans) + "</p>" : "") +

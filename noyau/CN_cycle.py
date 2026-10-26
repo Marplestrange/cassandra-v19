@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #14a640
+# VERSION CN : 0.1.0  #44a183
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le cycle de vie d'un module venu d'une archive : examiner sans rien poser, installer avec consentement, mettre à jour, revenir en arrière, désinstaller (rien ne se perd : tout ce qui part va en sauvegarde).
 # MÉTHODE    : l'archive attend en quarantaine ; l'examen la vérifie (empreintes, signature, manifeste) et compare au module en place ; l'installation re-vérifie, exige le consentement aux permissions, sauvegarde l'ancienne version puis dépose le dossier dans celui des extensions que le noyau surveille
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=14a640 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=44a183 ▼▼▼
 """Le cycle de vie d'un module installé, à la manière d'un module store.
 
     examiner(octets)       l'archive va en quarantaine ; on la vérifie (SOMMES, signature, manifeste) et on dit ce qu'elle ferait : nouveau, mise à jour, retour à une version
@@ -249,7 +249,7 @@ class Cycle:
         except (OSError, tarfile.TarError):
             fichiers = []
         return {
-            "jeton": jeton, "id": m.id, "nom": m.nom, "version": m.version, "description": m.description, "famille": m.famille or "autres", "auteur": m.auteur, "licence": m.licence,
+            "jeton": jeton, "id": m.id, "nom": m.nom, "version": m.version, "description": m.description, "famille": m.famille or "autres", "icone_trace": m.icone_trace, "auteur": m.auteur, "licence": m.licence,
             "confiance": m.confiance, "importance": m.importance, "sans": m.sans, "signe": bool(v["signe"]), "editeur": v["editeur"],
             "taille": len(octets), "nb_fichiers": len(fichiers), "fichiers": fichiers[:40], "script_installation": bool(m.installation.script),
             "permissions": perms, "empreinte_permissions": empreinte_permissions(perms), "permissions_elargies": plus,

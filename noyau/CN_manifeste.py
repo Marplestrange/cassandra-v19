@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f139e0
+# VERSION CN : 0.1.0  #bf718b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f139e0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=bf718b ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -54,6 +54,13 @@ TYPES_RESERVES = ("noyau", "module", "capacite", "constat", "objet", "moteur", "
 CONFIANCES = ("interne", "signe", "tiers", "local")
 
 _ID = re.compile(r"^[a-z][a-z0-9_]{1,40}$")
+# Une icône qu'un module APPORTE : le tracé d'un <path> (24 x 24, trait), rien d'autre. Seules les commandes de tracé, les nombres et leurs séparateurs : pas de balise, pas de guillemet, pas de lien.
+# Un SVG libre dans un manifeste d'éditeur tiers serait un script en puissance ; un tracé n'en peut pas être un.
+_TRACE = re.compile(r"^[Mm][MmLlHhVvCcSsQqTtAaZz0-9 .,\-]{3,799}$")
+
+
+def trace_valide(t) -> bool:
+    return isinstance(t, str) and bool(_TRACE.match(t))
 # une dépendance : « dns », ou « dns >=0.2, <1 » (opérateurs >= <= == > <, versions à points)
 _REQ = re.compile(r"^([a-z][a-z0-9_]{1,40})\s*((?:(?:>=|<=|==|>|<)\s*\d+(?:\.\d+){0,3}\s*,?\s*)*)$")
 _CLAUSE = re.compile(r"(>=|<=|==|>|<)\s*(\d+(?:\.\d+){0,3})")
@@ -373,6 +380,8 @@ class Manifeste:
     suggere: tuple = ()        # des modules qui lui servent sans être requis
     fournit: tuple = ()        # des noms de service que ce module rend : un autre module peut requérir « courrier » sans dire QUEL module le fournit
     famille_libelle: str = ""  # le nom lisible d'une famille NOUVELLE (celle du module n'existe pas encore au menu) : « Finance et ventes »
+    icone_trace: str = ""      # l'icône du module lui-même : un tracé de <path> (voir trace_valide)
+    famille_icone_trace: str = ""  # l'icône de sa famille nouvelle, de même forme
     famille_icone: str = ""    # l'icône (une clé de l'interface, en trait) de cette famille ; vide : l'icône générique
     importance: str = ""       # ce que la maison perd sans ce module : « vital » (elle ne tient plus), « important » (une fonction s'arrête), « optionnel » (on s'en passe) ; vide = non déclaré
     sans: str = ""             # une phrase : ce qui s'arrête, concrètement, quand ce module est désactivé
@@ -473,6 +482,9 @@ def valider(brut: dict) -> list:
         e.append("module.famille_libelle : un nom de 40 caractères au plus")
     if "famille_icone" in m and (not isinstance(m["famille_icone"], str) or not re.match(r"^[a-z][a-z0-9_]{1,30}$", m["famille_icone"])):
         e.append("module.famille_icone : une clé d'icône (lettres minuscules, chiffres, _)")
+    for champ in ("icone_trace", "famille_icone_trace"):
+        if champ in m and not trace_valide(m[champ]):
+            e.append("module.%s : un tracé de path seulement (commandes M L H V C S Q T A Z, nombres, espaces, virgules ; 800 caractères au plus)" % champ)
     if "importance" in m and m["importance"] not in IMPORTANCES:
         e.append("module.importance : %s" % " ou ".join("« %s »" % x for x in IMPORTANCES))
     if "sans" in m and (not isinstance(m["sans"], str) or len(m["sans"]) > 300):
@@ -953,6 +965,7 @@ def construire(brut: dict, source="") -> Manifeste:
         conflits=tuple(m.get("conflits", ())), suggere=tuple(m.get("suggere", ())), fournit=tuple(m.get("fournit", ())),
         essentiel=bool(m.get("essentiel", False)), famille=str(m.get("famille", "")),
         famille_libelle=str(m.get("famille_libelle", "")).strip(), famille_icone=str(m.get("famille_icone", "")),
+        icone_trace=str(m.get("icone_trace", "")), famille_icone_trace=str(m.get("famille_icone_trace", "")),
         importance=str(m.get("importance", "vital" if m.get("essentiel") else "")), sans=str(m.get("sans", "")).strip(),
         auteur=str(m.get("auteur", "")), licence=str(m.get("licence", "")), site=str(m.get("site", "")), api=str(m.get("api", "1")),
         permissions=Permissions(bool((brut.get("permissions") or {}).get("espace_utilisateur", False)),

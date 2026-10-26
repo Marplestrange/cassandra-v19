@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #be24b2
+# VERSION CN : 0.1.0  #2d557b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=be24b2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2d557b ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -431,7 +431,7 @@ class Noyau:
                 "auteur": m.auteur, "licence": m.licence, "api": m.api,
                 "permissions": {"espace_utilisateur": m.permissions.espace_utilisateur, "reseau": list(m.permissions.reseau),
                                 "ecritures": list(m.permissions.ecritures), "privileges": list(m.permissions.privileges)},
-                "confiance": m.confiance, "essentiel": m.essentiel, "importance": m.importance, "sans": m.sans, "famille_libelle": m.famille_libelle, "famille_icone": m.famille_icone, "conflits": list(m.conflits), "suggere": list(m.suggere), "fournit": list(m.fournit),
+                "confiance": m.confiance, "essentiel": m.essentiel, "importance": m.importance, "sans": m.sans, "famille_libelle": m.famille_libelle, "famille_icone": m.famille_icone, "icone_trace": m.icone_trace, "famille_icone_trace": m.famille_icone_trace, "conflits": list(m.conflits), "suggere": list(m.suggere), "fournit": list(m.fournit),
                 "contraintes": [list(c) for c in m.contraintes], "points_extension": [px.id for px in m.points_extension],
                 "contributions": [{"point": c.point, "id": c.id} for c in m.contributions], "extension": ext, "etat": etat,
                 "remplace": (getattr(self, "_remplaces", {}).get(mid).version if getattr(self, "_remplaces", {}).get(mid) else ""),
