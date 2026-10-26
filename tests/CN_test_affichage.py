@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #484a64
+# VERSION CN : 0.1.0  #5ad0b8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation, les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit q
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=484a64 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5ad0b8 ▼▼▼
 """L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation,
 les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit quoi, qui peut régler l'organisation) se vérifie ici : le point d'évolution ne décide d'aucun accès."""
 import base64
@@ -192,11 +192,11 @@ class Points(unittest.TestCase):
         self.assertEqual(v["orphelines"], ["x:x"])
 
     def test_le_pont_couvre_le_module_de_l_ancienne_interface(self):
-        v = self.disp([entree("journal:journal", "journal", "Journal", 10, "supervision")], ["journal"])
-        self.assertEqual(self.ids(v).count("journal:journal"), 0)
-        self.assertIn("journaux", self.ids(v))
-        sans = self.disp([entree("journal:journal", "journal", "Journal", 10, "supervision")], [])
-        self.assertIn("journal:journal", self.ids(sans))            # sans le pont (module absent des actifs), l'entrée déclarée reste
+        v = self.disp([entree("flotte:flotte", "flotte", "Flotte", 10, "parc")], ["flotte"])
+        self.assertEqual(self.ids(v).count("flotte:flotte"), 0)
+        self.assertIn("flotte", self.ids(v))
+        sans = self.disp([entree("flotte:flotte", "flotte", "Flotte", 10, "parc")], [])
+        self.assertIn("flotte:flotte", self.ids(sans))              # sans le pont (module absent des actifs), l'entrée déclarée reste
 
     def test_le_salon_n_est_plus_une_entree(self):
         v = self.disp([entree("salon:salon", "salon", "Le Salon", 10, "echanges")], ["salon"])

@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Remplacer l'ancienne interface (V18) par des écrans V19 -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Remplacer l'ancienne interface (V18) par des écrans V19 -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9c23e7 ▼▼▼ -->
 # Remplacer l'ancienne interface (V18) par des écrans V19
 
 Décision (26-10, Drisse) : l'interface V18 avait été **extraite** et réemployée comme socle (voir `docs/CN_AFFICHAGE.md`). C'était une erreur de méthode : on se retrouve avec deux codes (l'ancien qui rend 34 des 37 entrées de menu, et le nouveau), un ancien écran qui se montre un instant au chargement, et des écrans qui n'ont pas l'esprit de la V19 (Cassandra d'abord, le récit, le défaire, le téléphone). **On remplace tout, écran par écran, et on supprime l'ancien code au fur et à mesure.**
@@ -30,4 +45,12 @@ Décision (26-10, Drisse) : l'interface V18 avait été **extraite** et réemplo
 | 8 | Le cœur | — | — | connexion, cloche, thème, toasts, session : ce que `CN_app.js` fournit encore au shell ; puis **suppression de `CN_app.js`, `CN_style.css` (V18), `CN_compat.js` et `routes/`** |
 
 ## Ce qui est abandonné (au fil des lots)
-_À remplir lot par lot._
+- **Lot 1 — Observatoire** (Historique, Journaux, Sensorium : écrans V19 sur le kit, panneaux V18 plus joignables).
+  - Sensorium : ne sont pas repris pour l'instant les gestes « Accepter… » (se taire jusqu'à l'échéance), les gestes de réparation par le catalogue, « Relever la flotte » et l'installation du témoin extérieur : aucune capacité V19 ne les porte encore ; ils reviendront avec leurs capacités (écriture, derrière le palier d'autonomie), pas par la couche de compatibilité.
+  - Journaux : la timeline séparée du V18 est absorbée par le flux unifié.
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->
