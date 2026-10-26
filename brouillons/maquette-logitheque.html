@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Maquette Logithèque</title>
+<style>
+:root{
+  --bg:#eef3f2;--surface:rgba(255,255,255,.72);--solid:#fff;--line:rgba(15,40,38,.11);--line2:rgba(15,40,38,.2);
+  --txt:#14302d;--strong:#0b211f;--soft:#4b6663;--faint:#7d9390;
+  --accent:#0f766e;--on-accent:#fff;--ok:#0e7a55;--warn:#a35f00;--danger:#b3261e;--info:#2456a6;
+  --shadow:0 1px 0 rgba(255,255,255,.7) inset,0 8px 28px -14px rgba(15,60,56,.28);
+  --mono:ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1816;--surface:rgba(24,44,41,.7);--solid:#16302c;--line:rgba(190,240,230,.12);--line2:rgba(190,240,230,.24);
+  --txt:#d6ebe7;--strong:#f0fbf8;--soft:#9cbab5;--faint:#6f8f8a;--accent:#2dd4bf;--on-accent:#04201c;--ok:#4ade80;--warn:#f5b042;--danger:#ff7b72;--info:#7db4ff;
+  --shadow:0 8px 28px -14px rgba(0,0,0,.6);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1816;--surface:rgba(24,44,41,.7);--solid:#16302c;--line:rgba(190,240,230,.12);--line2:rgba(190,240,230,.24);
+  --txt:#d6ebe7;--strong:#f0fbf8;--soft:#9cbab5;--faint:#6f8f8a;--accent:#2dd4bf;--on-accent:#04201c;--ok:#4ade80;--warn:#f5b042;--danger:#ff7b72;--info:#7db4ff;
+  --shadow:0 8px 28px -14px rgba(0,0,0,.6);color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 'Inter',system-ui,sans-serif;padding-block:0 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3,h4,p{margin:0}
+button{font:inherit;color:inherit}
+.app{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:230px minmax(0,1fr);gap:22px;padding-top:18px}
+@media(max-width:860px){.app{grid-template-columns:minmax(0,1fr)}}
+/* ── rail ── */
+.rail{position:sticky;top:12px;align-self:start;display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 24px);overflow:auto}
+@media(max-width:860px){.rail{position:static;max-height:none}.rail nav{flex-direction:row;overflow-x:auto;padding-bottom:4px}.rail nav .sep{display:none}.rail .id{display:none}}
+.marque{display:flex;gap:10px;align-items:center;padding:4px 6px}
+.marque .logo{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--accent);color:var(--on-accent)}
+.marque .logo svg{width:22px;height:22px}
+.marque b{font:700 17px/1.1 'Inter',sans-serif;color:var(--strong);display:block}.marque small{color:var(--faint);font-size:11.5px}
+.rail nav{display:flex;flex-direction:column;gap:2px}
+.rail .sep{font:600 10.5px/1 'Inter',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:12px 10px 4px}
+.nv{display:flex;align-items:center;gap:10px;border:0;background:transparent;text-align:left;border-radius:10px;padding:8px 10px;cursor:pointer;color:var(--soft);font-weight:550;white-space:nowrap}
+.nv:hover{background:color-mix(in srgb,var(--accent) 8%,transparent);color:var(--txt)}
+.nv.on{background:var(--solid);color:var(--accent);box-shadow:var(--shadow)}
+.nv svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.nv .n{margin-left:auto;font:600 11px var(--mono);background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn);border-radius:999px;padding:1px 7px}
+.nv .n.dg{background:color-mix(in srgb,var(--danger) 15%,transparent);color:var(--danger)}
+.rail .id{font-size:11.5px;color:var(--faint);padding:8px 10px;border-top:1px solid var(--line)}
+/* ── page ── */
+main{min-width:0;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.top .t{flex:1 1 260px;min-width:0}
+.top h1{font:650 25px/1.15 'Inter',sans-serif;color:var(--strong);text-wrap:balance}
+.top p{color:var(--soft);margin-top:3px;max-width:68ch}
+.recherche{flex:1 1 240px;max-width:340px;display:flex;gap:8px;align-items:center;background:var(--solid);border:1px solid var(--line2);border-radius:11px;padding:0 10px;color:var(--faint)}
+.recherche svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.recherche input{flex:1;min-width:0;border:0;background:transparent;color:var(--txt);padding:9px 0;font:14px 'Inter',sans-serif;outline:0}
+.recherche kbd{font:600 10.5px var(--mono);border:1px solid var(--line2);border-radius:5px;padding:1px 5px}
+.btn{border:1px solid var(--line2);background:var(--solid);color:var(--txt);border-radius:10px;padding:7px 14px;font:600 13px 'Inter',sans-serif;cursor:pointer;white-space:nowrap}
+.btn:hover:not([disabled]){border-color:var(--accent);color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--on-accent);border-color:transparent}.btn.pri:hover:not([disabled]){color:var(--on-accent);filter:brightness(1.08)}
+.btn.dng{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
+.btn.mini{padding:4px 10px;font-size:12px}.btn[disabled]{opacity:.45;cursor:not-allowed}
+.carte{background:var(--surface);backdrop-filter:blur(14px) saturate(150%);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.carte.clic{cursor:pointer;transition:border-color .12s}.carte.clic:hover{border-color:var(--accent)}
+.carte h3{font:650 15px/1.25 'Inter',sans-serif;color:var(--strong)}
+.carte h4{font:650 13.5px 'Inter',sans-serif;color:var(--strong)}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.note{font-size:12.5px;color:var(--soft)}.mono{font-family:var(--mono)}.faint{color:var(--faint)}
+.p{display:inline-flex;align-items:center;gap:5px;border-radius:7px;padding:3px 8px;font:600 11px/1.2 'Inter',sans-serif;background:color-mix(in srgb,var(--soft) 10%,transparent);color:var(--soft);white-space:nowrap}
+.p svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.p.ok{background:color-mix(in srgb,var(--ok) 13%,transparent);color:var(--ok)}.p.al{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.p.dg{background:color-mix(in srgb,var(--danger) 13%,transparent);color:var(--danger)}.p.ac{background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent)}
+.p.in{background:color-mix(in srgb,var(--info) 13%,transparent);color:var(--info)}.p.vi{background:var(--strong);color:var(--bg)}
+.nouveau{font:700 9.5px/1 'Inter',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--on-accent);background:var(--accent);border-radius:5px;padding:3px 5px;vertical-align:2px;margin-left:6px}
+.conception{display:none;font-size:12.5px;color:var(--info);background:color-mix(in srgb,var(--info) 9%,transparent);border-left:3px solid var(--info);border-radius:4px 10px 10px 4px;padding:8px 12px}
+body.annot .conception{display:block}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--surface);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow);text-align:left;cursor:pointer}
+.stat:hover{border-color:var(--accent)}.stat b{font:650 26px/1.1 var(--mono);color:var(--strong)}.stat span{font-size:12.5px;color:var(--soft)}
+.stat.al b{color:var(--warn)}.stat.dg b{color:var(--danger)}.stat.ok b{color:var(--ok)}
+/* listes */
+.liste{display:flex;flex-direction:column}.liste>.li{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}.liste>.li:first-child{border-top:0}
+.li .sp{flex:1;min-width:180px}.li .sp b{color:var(--strong)}.li .sp .note{display:block}
+.ico{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent)}
+.ico svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.ico.off{background:var(--line);color:var(--faint)}.ico.sm{width:30px;height:30px;border-radius:9px}.ico.sm svg{width:16px;height:16px}
+.ico.dg{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}.ico.al{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.sw{position:relative;width:38px;height:22px;flex:none;border-radius:999px;border:0;background:var(--line2);cursor:pointer;transition:background .15s;padding:0}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw.on{background:var(--accent)}.sw.on::after{transform:translateX(16px)}.sw[disabled]{opacity:.45;cursor:not-allowed}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font:600 12.5px 'Inter',sans-serif;color:var(--soft);cursor:pointer}
+.chip.on{background:var(--accent);color:var(--on-accent);border-color:transparent}.chip span{opacity:.65;margin-left:3px}
+.barre{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden;background:var(--solid)}
+.seg button{border:0;background:transparent;padding:6px 12px;font:600 12.5px 'Inter',sans-serif;color:var(--soft);cursor:pointer}.seg button.on{background:var(--accent);color:var(--on-accent)}
+.mod .l1{display:flex;gap:11px;align-items:center}.mod .l1 .sp{flex:1;min-width:0}.mod h3{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mod .desc{font-size:12.5px;color:var(--soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mod .pied{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:auto;padding-top:9px;border-top:1px solid var(--line)}
+.mod.off{opacity:.82}
+.bar{height:7px;border-radius:99px;background:var(--line);overflow:hidden}.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}.bar.al i{background:var(--warn)}.bar.dg i{background:var(--danger)}
+.alerte{border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:10px 14px;background:var(--surface);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.alerte.dg{border-left-color:var(--danger)}.alerte.al{border-left-color:var(--warn)}.alerte.ok{border-left-color:var(--ok)}.alerte.in{border-left-color:var(--info)}
+.alerte .sp{flex:1;min-width:220px}.alerte b{color:var(--strong)}
+table{width:100%;border-collapse:collapse;font-size:13px}th{font:600 11px 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);text-align:left;padding:6px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}tr:last-child td{border-bottom:0}.tw{overflow-x:auto}
+.cell{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;font:700 12px var(--mono)}.cell.o{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}.cell.v{background:color-mix(in srgb,var(--danger) 16%,transparent);color:var(--danger)}.cell.z{color:var(--faint)}
+.champ{display:flex;flex-direction:column;gap:5px}.champ label{font:600 12px 'Inter',sans-serif;color:var(--soft)}
+.champ input,.champ select,.champ textarea{border:1px solid var(--line2);background:var(--solid);color:var(--txt);border-radius:10px;padding:8px 11px;font:14px 'Inter',sans-serif;min-width:0;width:100%}
+.champ input:focus,.champ select:focus{outline:2px solid color-mix(in srgb,var(--accent) 40%,transparent);outline-offset:1px}
+.reglage{display:flex;gap:14px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}.reglage:first-child{border-top:0}.reglage .sp{flex:1;min-width:0}.reglage .sp b{color:var(--strong);display:block}
+.radio{display:flex;gap:11px;align-items:flex-start;padding:11px 13px;border:1px solid var(--line);border-radius:12px;cursor:pointer;background:var(--surface)}
+.radio.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.radio i{flex:none;width:16px;height:16px;border-radius:50%;border:2px solid var(--line2);margin-top:3px}.radio.on i{border-color:var(--accent);background:radial-gradient(var(--accent) 45%,transparent 50%)}
+.radio.dgr.on{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger) inset}
+.tl{position:relative;padding-left:20px;display:flex;flex-direction:column;gap:12px}.tl::before{content:'';position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl .ev{position:relative}.tl .ev::before{content:'';position:absolute;left:-19px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.tl .ev.dg::before{background:var(--danger)}.tl .ev.al::before{background:var(--warn)}
+pre{margin:0;background:color-mix(in srgb,var(--strong) 6%,transparent);border-radius:10px;padding:11px 13px;font:12px/1.55 var(--mono);overflow-x:auto;color:var(--txt)}
+.heros{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.hero{border-radius:18px;padding:18px 20px;color:#fff;display:flex;flex-direction:column;gap:8px;min-height:140px;position:relative;overflow:hidden}
+.hero h3{font:700 20px/1.2 'Inter',sans-serif;color:#fff;text-wrap:balance}.hero p{opacity:.9;max-width:46ch;font-size:13px}.hero .btn{align-self:flex-start;margin-top:auto;border-color:transparent;color:#0b211f;background:#fff}
+.hero.h1{background:linear-gradient(135deg,#0f766e,#14532d)}.hero.h2{background:linear-gradient(135deg,#1e3a8a,#0f766e)}
+.hero svg.fond{position:absolute;right:-14px;bottom:-18px;width:150px;height:150px;fill:none;stroke:rgba(255,255,255,.16);stroke-width:1.4}
+/* tiroir + modale */
+.voile{position:fixed;inset:0;background:rgba(5,20,18,.42);backdrop-filter:blur(3px);z-index:50;display:none}
+.voile.on{display:block}
+.tiroir{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--bg);border-left:1px solid var(--line2);z-index:51;display:none;flex-direction:column;box-shadow:-20px 0 50px -20px rgba(0,0,0,.4)}
+.tiroir.on{display:flex}
+.tiroir .tete{padding:18px 20px 0;display:flex;flex-direction:column;gap:12px}
+.tiroir .corps{padding:16px 20px 24px;overflow:auto;display:flex;flex-direction:column;gap:14px;flex:1}
+.onglets{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}.onglets button{border:0;background:transparent;padding:9px 12px;font:600 13px 'Inter',sans-serif;color:var(--soft);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.onglets button.on{color:var(--accent);border-bottom-color:var(--accent)}
+.modale{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100% - 32px));max-height:calc(100vh - 40px);overflow:auto;background:var(--bg);border:1px solid var(--line2);border-radius:18px;z-index:52;display:none;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);padding:20px;flex-direction:column;gap:14px}
+.modale.on{display:flex}
+.etapes{display:flex;gap:6px}.etapes i{flex:1;height:4px;border-radius:99px;background:var(--line)}.etapes i.on{background:var(--accent)}
+.liste .li.lib{font:600 10.5px 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.lib{font:600 10.5px 'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.pal{position:fixed;left:50%;top:14vh;transform:translateX(-50%);width:min(560px,calc(100% - 32px));background:var(--bg);border:1px solid var(--line2);border-radius:16px;z-index:60;display:none;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);overflow:hidden}
+.pal.on{display:block}.pal input{width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;padding:14px 16px;font:15px 'Inter',sans-serif;color:var(--txt);outline:0}
+.pal .r{padding:8px 10px;display:flex;flex-direction:column}.pal .r button{border:0;background:transparent;text-align:left;padding:8px 10px;border-radius:9px;cursor:pointer;display:flex;gap:10px;align-items:center}.pal .r button:hover,.pal .r button:first-child{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.pal small{margin-left:auto;color:var(--faint)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--strong);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:70;opacity:0;transition:.25s;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.impact{position:sticky;bottom:12px;background:var(--strong);color:var(--bg);border-radius:14px;padding:11px 16px;display:none;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 14px 40px -12px rgba(0,0,0,.5);z-index:20}
+.impact.on{display:flex}.impact .sp{flex:1;min-width:200px}.impact .btn{border-color:transparent}
+.graphe{display:flex;flex-wrap:wrap;gap:8px 4px;align-items:center}.noeud{border:1px solid var(--line2);background:var(--solid);border-radius:9px;padding:4px 10px;font:600 12px var(--mono)}.noeud.v{border-color:var(--danger);color:var(--danger)}.fl{color:var(--faint)}
+.reine{border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.demande{display:flex;gap:8px}.demande input{flex:1;min-width:0;border:1px solid var(--line2);background:var(--solid);color:var(--txt);border-radius:11px;padding:10px 13px;font:14px 'Inter',sans-serif}
+.demande input:focus{outline:2px solid color-mix(in srgb,var(--accent) 40%,transparent);outline-offset:1px}
+.etatc{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-size:12px}
+.etatc .pt{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}.etatc.gel .pt{background:var(--warn)}.etatc b{color:var(--strong)}.etatc button{margin-left:auto;border:0;background:none;color:var(--accent);font:600 12px 'Inter',sans-serif;cursor:pointer;padding:0}
+@media(max-width:860px){.etatc{display:none}}
+.annot-btn[aria-pressed=true]{background:var(--info);color:#fff;border-color:transparent}
+
+.kv{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--soft)}.kv b{color:var(--faint);font-weight:600;margin-right:5px}
+.chipmini{display:inline-flex;gap:5px;align-items:center;font:600 11.5px 'Inter',sans-serif;color:var(--soft);border:1px solid var(--line);background:var(--solid);border-radius:7px;padding:2px 8px}
+.chipmini.lien{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);cursor:pointer}
+.rg{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,340px);gap:10px 28px;padding:16px 0;border-top:1px solid var(--line);align-items:start}
+@media(max-width:700px){.rg{grid-template-columns:minmax(0,1fr)}}
+.rg h4{font:650 14px 'Inter',sans-serif;color:var(--strong)}.rg .aide{font-size:12.5px;color:var(--soft);margin:3px 0 0;max-width:62ch}
+.rg .plus{border:0;background:none;color:var(--accent);font:600 12px 'Inter',sans-serif;cursor:pointer;padding:0;margin-top:2px;display:block}
+.rg .cle{font:11.5px var(--mono);color:var(--faint);margin-top:6px}
+.rg .ctl{display:flex;flex-direction:column;gap:7px}.rg .etat{display:flex;gap:12px;align-items:center;font-size:12px;color:var(--faint);min-height:18px;flex-wrap:wrap}
+.rg .etat button{border:0;background:none;color:var(--soft);font:600 12px 'Inter',sans-serif;cursor:pointer;padding:0;display:inline-flex;gap:4px;align-items:center}.rg .etat button:hover{color:var(--accent)}
+.rg .etat svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.modif{width:8px;height:8px;border-radius:50%;background:var(--warn);display:inline-block;margin-right:4px}
+.geste{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.geste:first-of-type{border-top:0}.geste .nm{font:600 13px var(--mono);color:var(--strong)}
+.risque{font:700 10px/1 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;border-radius:5px;padding:3px 6px;margin-left:6px}.risque.l{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}.risque.e{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}.risque.d{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+.sortie{grid-column:1/-1}.garanties{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.histo{background:var(--solid);border:1px solid var(--line2);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow);font-size:12.5px;display:flex;flex-direction:column;gap:6px}
+.champtxt{border:1px solid var(--line2);background:var(--solid);color:var(--txt);border-radius:10px;padding:8px 11px;font:13px var(--mono);width:100%}
+.sel{border:1px solid var(--line2);background:var(--solid);color:var(--txt);border-radius:10px;padding:8px 12px;font:600 13px 'Inter',sans-serif;cursor:pointer;min-width:0;max-width:100%}
+.sel:focus{outline:2px solid color-mix(in srgb,var(--accent) 40%,transparent);outline-offset:1px}
+.segetat{align-self:flex-start;max-width:100%;overflow-x:auto}.segetat button{display:inline-flex;gap:7px;align-items:center}
+.segetat .cnt{font:600 11px var(--mono);opacity:.6}.segetat button.on .cnt{opacity:.85}
+.rub{display:flex;flex-direction:column;gap:10px}
+.rub-t{display:flex;gap:10px;align-items:center;border:0;background:transparent;cursor:pointer;padding:4px 2px;text-align:left;width:100%;border-bottom:1px solid var(--line);padding-bottom:9px}
+.rub-t h3{font:650 15px 'Inter',sans-serif;color:var(--strong)}.rub-t .note{margin-left:2px}
+.rub-t .chev{margin-left:auto;width:18px;height:18px;color:var(--faint);transition:transform .15s}.rub-t .chev.ferme{transform:rotate(-90deg)}
+.rub-t:hover h3{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style></head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="marque"><div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4M3 17l9 4 9-4"/></svg></div><div><b>Logithèque</b><small>modules · apps · sources</small></div></div>
+    <nav id="nav"></nav>
+    <button class="btn mini annot-btn" id="annot" aria-pressed="true" style="margin:0 6px">Annotations de conception : oui</button>
+    <div class="etatc" id="etatc"></div>
+    <div class="id">Cassandra V19<br><span class="mono">noyau 0.1.0</span> · 11 modules</div>
+  </aside>
+  <main id="page"></main>
+</div>
+
+<div class="voile" id="voile"></div>
+<aside class="tiroir" id="tiroir" aria-label="Détail du module"></aside>
+<div class="modale" id="modale" role="dialog" aria-modal="true"></div>
+<div class="pal" id="pal"><input id="pal-q" placeholder="Aller à un module, une section, une action…" aria-label="Palette de commandes"><div class="r" id="pal-r"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const I={
+ vue:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+ inst:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><path d="M16.5 13v7M13 16.5h7"/>',
+ shop:'<path d="M4 8h16l-1.2 11a2 2 0 01-2 1.8H7.2a2 2 0 01-2-1.8L4 8z"/><path d="M8 8V6a4 4 0 018 0v2"/>',
+ maj:'<path d="M20 12a8 8 0 10-2.4 5.7"/><path d="M20 5v7h-7"/>',
+ src:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18"/>',
+ sec:'<path d="M12 3l8 4v5c0 4.4-3.1 7.6-8 9-4.9-1.4-8-4.6-8-9V7z"/><path d="M9 12l2.2 2.2L15.5 10"/>',
+ sante:'<path d="M3 12h4l2.5-6 4 12 2.5-6H21"/>',
+ jour:'<path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/>',
+ dev:'<path d="M8 8l-5 4 5 4M16 8l5 4-5 4M14 5l-4 14"/>',
+ reg:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>',
+ socle:'<path d="M12 3l8 4v5c0 4.4-3.1 7.6-8 9-4.9-1.4-8-4.6-8-9V7z"/>',
+ lock:'<rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 018 0v3"/>',
+ mail:'<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 7l9 6 9-6"/>',
+ globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18"/>',
+ server:'<rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01"/>',
+ eye:'<path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/>',
+ bot:'<rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 8V4M9 13h.01M15 13h.01"/>',
+ ticket:'<path d="M3 9a2 2 0 002-2h14a2 2 0 002 2v6a2 2 0 00-2 2H5a2 2 0 00-2-2z"/><path d="M13 7v10" stroke-dasharray="2 2"/>',
+ disk:'<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+ chat:'<path d="M4 5h16v11H9l-5 4z"/>',
+ warn:'<path d="M12 3l10 18H2L12 3z"/><path d="M12 10v5M12 18v.01"/>',
+ check:'<path d="M5 12l4.5 4.5L19 7"/>',
+ shield:'<path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z"/>',
+ key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/>',
+ box:'<path d="M3 7l9-4 9 4v10l-9 4-9-4V7z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
+ users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 5a3.5 3.5 0 010 6.5M18.5 14.5c2 .8 3 2.6 3 5.5"/>'
+};
+const ic=(k,c='')=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" ${c?`class="${c}"`:''} aria-hidden="true">${I[k]}</svg>`;
+
+/* ───────── données ───────── */
+const FIC={socle:'socle',secu:'lock',reseau:'globe',heberg:'server',courrier:'mail',gestion:'box',finance:'ticket',sup:'eye'};
+const FAM={socle:'Fondations',secu:'Sécurité et accès',reseau:'Réseau et domaines',heberg:'Hébergement et sites',courrier:'Courrier et messagerie',gestion:'Productivité et gestion',finance:'Finance et ventes',sup:'Supervision'};
+const IMP={vital:['Vital','vi','Cassandra ne tient pas sans lui.'],important:['Important','al','Une fonction de Cassandra s’arrête sans lui.'],optionnel:['Optionnel','','On peut s’en passer.']};
+const M=[
+ {id:'droits',nom:'Droits',v:'0.2.0',fam:'secu',imp:'vital',ic:'lock',on:true,req:[],desc:'Comptes, rôles, jetons et accès de Cassandra. Tout passe par lui.',src:'officiel',ed:'cassandra',ram:42,err:0,ms:11,perm:{res:0,ecr:2,priv:3},sans:'Plus personne ne peut se connecter ni être autorisé.'},
+ {id:'noyau-api',nom:'Passerelle',v:'0.1.4',fam:'socle',imp:'vital',ic:'socle',on:true,req:['droits'],desc:'Le seul point d’entrée HTTP du noyau, avec ses routes déclarées.',src:'officiel',ed:'cassandra',ram:58,err:0,ms:6,perm:{res:1,ecr:0,priv:2},sans:'L’application ne répond plus.'},
+ {id:'courrier',nom:'Courrier',v:'1.3.2',fam:'courrier',imp:'important',ic:'mail',on:true,req:['droits'],desc:'Boîtes, dossiers, réponses assistées et envoi par mandat.',src:'officiel',ed:'cassandra',ram:96,err:2,ms:84,perm:{res:3,ecr:2,priv:1},sans:'Plus de lecture ni d’envoi du courrier.'},
+ {id:'dns',nom:'Zones DNS',v:'0.9.1',fam:'reseau',imp:'important',ic:'globe',on:true,req:['droits'],desc:'Zones, enregistrements, référence et relevé recalculé à chaque changement.',src:'officiel',ed:'cassandra',ram:31,err:0,ms:22,perm:{res:2,ecr:1,priv:0},sans:'Les domaines ne sont plus gérés ici.'},
+ {id:'sites',nom:'Sites',v:'1.1.0',fam:'heberg',imp:'important',ic:'server',on:true,req:['droits','dns'],desc:'Hébergement, certificats, sauvegardes par site.',src:'officiel',ed:'cassandra',ram:74,err:0,ms:38,perm:{res:2,ecr:3,priv:2},sans:'Les sites hébergés ne sont plus administrables.'},
+ {id:'agents',nom:'Itare & agents',v:'0.8.0',fam:'gestion',imp:'optionnel',ic:'bot',on:true,req:['droits'],desc:'L’assistante, ses sources, son atelier et ses mandats.',src:'officiel',ed:'cassandra',ram:210,err:1,ms:140,perm:{res:4,ecr:2,priv:1},sans:'Plus d’assistante ni de réponses assistées.'},
+ {id:'sauvegardes',nom:'Sauvegardes',v:'0.6.3',fam:'secu',imp:'important',ic:'disk',on:true,req:['droits'],desc:'Copies chiffrées, rotation, restauration testée.',src:'officiel',ed:'cassandra',ram:28,err:0,ms:17,perm:{res:1,ecr:3,priv:1},sans:'Plus de copie de secours automatique.'},
+ {id:'sentinelle',nom:'Sentinelle du disque',v:'0.1.2',fam:'sup',imp:'optionnel',ic:'eye',on:false,req:['droits'],desc:'Mesure l’occupation du disque racine et ouvre un constat au-delà du seuil.',src:'officiel',ed:'cassandra',ram:0,err:0,ms:0,perm:{res:0,ecr:0,priv:0},sans:'Plus de mesure du disque.'},
+ {id:'billetterie',nom:'Billetterie',v:'0.4.0',fam:'finance',imp:'optionnel',ic:'ticket',on:true,req:['droits'],desc:'Revendeurs, commissions, registre en écriture seule.',src:'officiel',ed:'cassandra',ram:48,err:0,ms:29,perm:{res:2,ecr:2,priv:1},maj:'0.5.0',majPerm:['+ réseau : api.stripe.com'],sans:'Plus de vente ni de commissions.'},
+ {id:'agenda-dav',nom:'Agenda CalDAV',v:'1.0.3',fam:'gestion',imp:'optionnel',ic:'chat',on:true,req:['droits'],desc:'Synchronise l’agenda avec un serveur CalDAV externe.',src:'acme',ed:'acme',niv:'verifie',ram:36,err:0,ms:51,perm:{res:1,ecr:1,priv:0},maj:'1.0.4',majPerm:[],sans:'Plus de synchronisation d’agenda.'},
+ {id:'vieux-flux',nom:'Vieux flux RSS',v:'0.9.0',fam:'gestion',imp:'optionnel',ic:'box',on:true,req:['droits'],desc:'Lit des flux RSS.',src:'local',ed:'—',niv:'local',ram:19,err:5,ms:240,perm:{res:1,ecr:0,priv:0},revoque:'faille connue : lecture de fichiers hors de son dossier',sans:'Plus de flux RSS.'}
+];
+const byId=id=>M.find(m=>m.id===id);
+const requisPar=id=>M.filter(m=>m.req.includes(id));
+const BOUT=[
+ ...M.filter(m=>m.id==='sentinelle'),
+ {id:'cloud-s3',nom:'Stockage S3',v:'0.3.0',fam:'heberg',imp:'optionnel',ic:'disk',desc:'Sauvegardes et pièces jointes vers un stockage compatible S3.',niv:'officiel',ed:'cassandra',taille:'48 Ko',perm:{res:1,ecr:1,priv:0},note:null},
+ {id:'compta',nom:'Comptabilité',v:'0.2.0',fam:'finance',imp:'optionnel',ic:'ticket',desc:'Journal, TVA et rapprochement bancaire.',niv:'verifie',ed:'lagrange',taille:'212 Ko',perm:{res:1,ecr:2,priv:0}},
+ {id:'matrix',nom:'Canal Matrix',v:'0.5.1',fam:'courrier',imp:'optionnel',ic:'chat',desc:'Reçoit et envoie des messages Matrix, rattachés au Salon.',niv:'verifie',ed:'acme',taille:'96 Ko',perm:{res:2,ecr:1,priv:0}},
+ {id:'crowd',nom:'Pare-feu CrowdSec',v:'0.7.0',fam:'secu',imp:'important',ic:'shield',desc:'Décisions CrowdSec lues et appliquées au pare-feu réel.',niv:'officiel',ed:'cassandra',taille:'64 Ko',perm:{res:1,ecr:1,priv:2}}
+];
+const SRC=[
+ {id:'maison',nom:'Registre interne',url:'https://registre.exemple.fr/index.json',niv:'Non officiel',on:true,mods:6,ok:true,prio:1,cle:'Clé posée par l’administrateur'},
+ {id:'labo',nom:'Dépôt du labo',url:'https://labo.exemple.org/cassandra/index.json',niv:'Non officiel',on:false,mods:2,ok:false,prio:2,cle:'Aucune (archives non signées refusées)'}
+];
+const ENS=[
+ {id:'hebergeur',nom:'Hébergeur complet',d:'Sites, DNS, certificats, sauvegardes, supervision.',mods:['sites','dns','sauvegardes','sentinelle','crowd']},
+ {id:'bureau',nom:'Bureau personnel',d:'Courrier, agenda, notes, assistante.',mods:['courrier','agenda-dav','agents']},
+ {id:'minimal',nom:'Minimal sûr',d:'Seulement les modules vitaux : Cassandra démarre, rien d’autre.',mods:['droits','noyau-api']}
+];
+const ACTES=[
+ {q:'Cassandra',ts:'Il y a 12 min',v:'a mis en pause',m:'Vieux flux RSS',d:'Il échouait en boucle (5 erreurs sur 24 h).',inv:'Le réactiver',ok:true},
+ {q:'Cassandra',ts:'Il y a 12 min',v:'a retiré',m:'Vieux flux RSS',d:'Le registre l’a déclaré révoqué : faille connue. Il est en corbeille 30 jours.',inv:'Le remettre',ok:true},
+ {q:'Cassandra',ts:'Hier 21:04',v:'a mis à jour',m:'Zones DNS',d:'0.9.0 → 0.9.1, sans permission en plus. Surveillée 15 minutes : tout va bien.',inv:'Remettre 0.9.0',ok:true},
+ {q:'Drisse',ts:'Hier 18:40',v:'a désactivé',m:'Sentinelle du disque',d:'',inv:'Le réactiver',ok:true},
+ {q:'Cassandra',ts:'22/10',v:'a laissé de côté',m:'Billetterie 0.5.0',d:'Elle demande + réseau : api.stripe.com. Je ne prends seule que les mises à jour sans permission en plus. Elle attend si tu me le demandes.',inv:'',ok:false}
+];
+const JOURNAL=[
+ ['Il y a 12 min','Sentinelle du disque','désactivé par admin','',''],
+ ['Hier 21:04','Zones DNS','mis à jour 0.9.0 → 0.9.1','',''],
+ ['Hier 03:00','Index du registre officiel','renouvelé automatiquement (60 j)','',''],
+ ['24/10','Vieux flux RSS','signalé révoqué par le registre','dg',''],
+ ['22/10','Billetterie','mise à jour refusée : demandait +1 permission','al',''],
+ ['20/10','Canal Matrix','installé (éditeur vérifié acme)','','']
+];
+
+/* ───────── état ───────── */
+const S={sec:'vue',vue:'grille',q:'',fam:'toutes',etat:'tous',imp:'toutes',tiroir:null,onglet:'apercu',att:{},sel:new Set(),pol:'signes',boutFam:'toutes',annot:false,avance:false,auto:'reine',gel:false,bconf:'toutes',betat:'tous',btri:'pert',rep:new Set(),ct:'apercu',pol2:'signes',hist:false};
+const SECS=[
+ ['sep','Gérer'],['vue','vue','Vue d’ensemble'],['inst','inst','Installés',()=>M.length],['maj','maj','Mises à jour',()=>M.filter(m=>m.maj).length],
+ ['sep','Trouver'],['shop','shop','Boutique'],['src','src','Sources'],
+ ['sep','Protéger'],['sec','sec','Sécurité et confiance',()=>M.filter(m=>m.revoque).length,'dg'],['sante','sante','Santé'],['jour','jour','Journal et versions'],
+ ['sep','Construire'],['dev','dev','Développeur'],['console','vue','Console d’un module'],['reg','reg','Réglages']
+];
+
+/* ───────── utilitaires ───────── */
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2600)}
+const pill=(t,c='',i='')=>`<span class="p ${c}">${i?ic(i):''}${esc(t)}</span>`;
+const niveau=m=>m.revoque?pill('Révoqué','dg','warn'):m.src==='officiel'?pill('Officiel','ok','shield'):m.niv==='verifie'?pill('Éditeur vérifié · '+m.ed,'ac','shield'):pill('Clé de l’administrateur','');
+const permRes=p=>[['Réseau',p.res],['Écritures',p.ecr],['Privilèges',p.priv]].map(([n,v])=>`<span class="p ${v>=3?'al':''}">${n} ${v}</span>`).join('');
+const conc=t=>`<div class="conception"><b>Conception.</b> ${t}</div>`;
+const tete=(t,d,act='')=>`<div class="top"><div class="t"><h1>${t}</h1><p>${d}</p></div>${act}</div>`;
+const imp_=m=>`<span class="faint" style="font:600 11px 'Inter',sans-serif">${IMP[m.imp][0]}</span>`;
+
+function filtres(){return M.filter(m=>(S.fam==='toutes'||m.fam===S.fam)&&(S.etat==='tous'||(S.etat==='actif'&&m.on)||(S.etat==='inactif'&&!m.on)||(S.etat==='maj'&&m.maj)||(S.etat==='alerte'&&(m.revoque||m.err>1)))&&(S.imp==='toutes'||m.imp===S.imp)&&(!S.q||(m.nom+m.id+m.desc).toLowerCase().includes(S.q.toLowerCase())))}
+
+/* ───────── cartes ───────── */
+function carteMod(m){
+  const att=S.att[m.id]!==undefined,etat=att?S.att[m.id]:m.on;
+  return `<div class="carte mod clic ${etat?'':'off'}" data-ouvrir="${m.id}" style="${att?'border-color:var(--warn)':''}">
+   <div class="l1"><div class="ico ${etat?'':'off'}">${ic(m.ic)}</div><div class="sp"><h3>${esc(m.nom)}</h3><div class="mono note">${m.id} · v${m.v}</div></div>
+   ${S.avance?`<button class="sw ${etat?'on':''}" data-bascule="${m.id}" ${m.imp==='vital'?'disabled title="Vital : ne se désactive pas"':''} aria-label="Activer ${esc(m.nom)}"></button>`:pill(etat?'actif':'inactif',etat?'ok':'')}</div>
+   <div class="desc">${esc(m.desc)}</div>
+   <div class="pied">${niveau(m)}${imp_(m)}${m.maj?pill('MAJ '+m.maj,'in','maj'):''}${m.err>1&&etat?pill(m.err+' erreurs','dg'):''}${att?pill('en attente','al'):''}</div></div>`;
+}
+function ligneMod(m){
+  const att=S.att[m.id]!==undefined,etat=att?S.att[m.id]:m.on;
+  return `<div class="li" data-ouvrir="${m.id}" style="cursor:pointer"><div class="ico sm ${etat?'':'off'}">${ic(m.ic)}</div><div class="sp"><b>${esc(m.nom)}</b><span class="note">${esc(m.desc)}</span></div>${niveau(m)}${imp_(m)}<span class="mono note">v${m.v}</span>${S.avance?`<button class="sw ${etat?'on':''}" data-bascule="${m.id}" ${m.imp==='vital'?'disabled':''}></button>`:pill(etat?'actif':'inactif',etat?'ok':'')}</div>`;
+}
+
+/* ───────── sections ───────── */
+const PAGES={
+vue(){
+  const act=M.filter(m=>m.on).length,maj=M.filter(m=>m.maj).length,err=M.reduce((a,m)=>a+m.err,0);
+  const NIV={observer:['Observer','Je regarde et je te raconte ce que je ferais. Je ne touche à rien.'],entretien:['Entretien','Je retire ce qui est révoqué, je prends les mises à jour sans permission en plus, je mets en pause ce qui échoue.'],reine:['Reine','Je gère tout : j’ajoute, je mets à jour, je retire, j’active. Tu n’as rien à faire.']};
+  return tete('Vue d’ensemble','Les modules de cette instance : Cassandra s’en occupe, tu vois ce qu’elle fait.')+
+  conc('<b>Nouveau principe.</b> Cassandra gère les modules <b>seule</b> (elle n’attend aucune validation). Pour rassurer : tout ce qu’elle fait est raconté, chaque geste se <b>défait en un clic</b>, rien n’est effacé pour de bon, et il y a un bouton <b>Pause</b>. Les gestes risqués ne sont pas offerts par défaut à l’humain (voir « Mode avancé » dans Installés).')+
+  `<div class="carte reine"><div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap"><div class="ico" style="width:46px;height:46px;border-radius:14px;${S.gel?'background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)':''}">${ic(S.gel?'warn':'bot')}</div><div style="flex:1;min-width:240px"><h2 style="font:700 20px 'Inter',sans-serif;color:var(--strong);margin:0">${S.gel?'Cassandra est en pause':'Tout va bien'}</h2>
+   <p class="note" style="margin-top:3px;max-width:62ch">${S.gel?'Elle observe et raconte, elle n’agit plus. Reprends quand tu veux.':'Dernière passe il y a 2 h : 1 module mis en pause, 1 module révoqué retiré. Prochaine passe dans 4 h.'}</p></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="passe">Lancer une passe</button><button class="btn ${S.gel?'pri':''}" data-act="gel">${S.gel?'Reprendre':'Mettre en pause'}</button></div></div>
+   <div class="demande"><input id="dem" placeholder="Demander à Cassandra : « installe Sentinelle du disque », « qu’est-ce qui ne va pas ? »…" aria-label="Demander à Cassandra"><button class="btn pri" data-act="demande">Demander</button></div>
+   <div class="chips"><button class="chip" data-sug="Installe le pare-feu CrowdSec">Installe le pare-feu CrowdSec</button><button class="chip" data-sug="Qu’est-ce qui consomme le plus ?">Qu’est-ce qui consomme le plus ?</button><button class="chip" data-sug="Mets tout à jour">Mets tout à jour</button></div></div>`+
+  `<div class="stats"><div class="stat ok" data-go="inst"><b>${act}/${M.length}</b><span>modules actifs</span></div><div class="stat" data-go="maj"><b>${maj}</b><span>mises à jour en attente</span></div><div class="stat ${err>5?'al':'ok'}" data-go="sante"><b>${err}</b><span>erreurs sur 24 h</span></div><div class="stat" data-go="src"><b>59 j</b><span>validité de l’index officiel</span></div></div>`+
+  `<div class="carte"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><h3>Ce que Cassandra a fait</h3><span class="note">Chaque ligne se défait en un clic. Rien n’est effacé pour de bon : un module retiré reste 30 jours en corbeille.</span></div>
+   <div class="liste">${ACTES.map((a,i)=>`<div class="li"><div class="ico sm ${a.ok?'':'al'}">${ic(a.ok?'check':'eye')}</div><div class="sp"><b>${a.q}</b> ${a.v} <b>${a.m}</b><span class="note">${a.d}</span><span class="faint" style="font-size:11.5px">${a.ts}</span></div>${a.inv?`<button class="btn mini" data-defaire="${i}">${a.inv}</button>`:''}</div>`).join('')}</div></div>`+
+  `<div class="g2"><div class="carte"><h3>Jusqu’où Cassandra va seule</h3><div style="display:flex;flex-direction:column;gap:8px">${Object.entries(NIV).map(([k,v])=>`<div class="radio ${S.auto===k?'on':''}" data-auto="${k}"><i></i><div><b style="color:var(--strong)">${v[0]}${k==='reine'?' <span class="p ok">actuel par défaut</span>':''}</b><span class="note" style="display:block">${v[1]}</span></div></div>`).join('')}</div><p class="note">Quel que soit le niveau : elle n’installe que le registre officiel et les éditeurs vérifiés, jamais un module révoqué, jamais un module vital désactivé.</p></div>
+   <div class="carte"><h3>Ce que je n’ai pas fait seule, et pourquoi</h3><div class="liste"><div class="li"><div class="sp"><b>Billetterie 0.5.0</b><span class="note">+ réseau : api.stripe.com. Je ne prends seule que les mises à jour sans permission en plus. Demande-le-moi, ou passe-moi en « Reine » pour les mises à jour officielles.</span></div><button class="btn mini" data-sug="Mets Billetterie à jour">Le lui demander</button></div></div>
+   <p class="note">Ce n’est pas une file d’attente : je continue sans ton accord. Cette liste dit seulement ce que ma règle m’a fait laisser de côté.</p></div></div>`;
+},
+inst(){
+  const l=filtres(),n=k=>M.filter(m=>k(m)).length;
+  const fams=Object.entries(FAM).filter(([k])=>M.some(m=>m.fam===k));
+  return tete('Installés','Tout ce qui tourne sur cette instance, avec ce qui s’arrête si tu le coupes.',`<div class="seg"><button class="${S.vue==='grille'?'on':''}" data-vue="grille">Cartes</button><button class="${S.vue==='liste'?'on':''}" data-vue="liste">Liste</button></div><button class="btn ${S.avance?'pri':''}" data-act="avance" title="Affiche les interrupteurs et les boutons de retrait. Cassandra sait tout ce que tu fais.">Mode avancé : ${S.avance?'oui':'non'}</button>`)+
+  conc('Reprend la page « Modules et applications » actuelle. Nouveau : <b>rangés par famille</b> (sections repliables), vue liste dense, filtre « en alerte », impact des changements affiché dans une barre flottante avant d’appliquer.')+
+  `<div class="barre"><div class="recherche" style="flex:1 1 260px;max-width:none">${ic('eye')}<input id="q" placeholder="Rechercher parmi les modules installés…" value="${esc(S.q)}"></div>
+   <select class="sel" data-sel="fam" aria-label="Famille"><option value="toutes">Toutes les familles</option>${fams.map(([k,v])=>`<option value="${k}" ${S.fam===k?'selected':''}>${v}</option>`).join('')}</select>
+   <select class="sel" data-sel="imp" aria-label="Importance">${[['toutes','Toutes les importances'],['vital','Vital'],['important','Important'],['optionnel','Optionnel']].map(c=>`<option value="${c[0]}" ${S.imp===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select>
+   ${(S.fam!=='toutes'||S.imp!=='toutes'||S.etat!=='tous'||S.q)?'<button class="btn mini" data-reset>Réinitialiser</button>':''}</div>
+  <div class="seg segetat">${[['tous','Tous',M.length],['actif','Actifs',n(m=>m.on)],['inactif','Inactifs',n(m=>!m.on)],['maj','À mettre à jour',n(m=>m.maj)],['alerte','En alerte',n(m=>m.revoque||m.err>1)]].map(c=>`<button class="${S.etat===c[0]?'on':''}" data-etat="${c[0]}">${c[1]} <span class="cnt">${c[2]}</span></button>`).join('')}</div>`+
+  (l.length?Object.entries(FAM).filter(([k])=>l.some(m=>m.fam===k)).map(([k,v])=>{const g=l.filter(m=>m.fam===k),ouv=!S.rep.has(k);return `<section class="rub"><button class="rub-t" data-rep="${k}" aria-expanded="${ouv}"><span class="ico sm">${ic(FIC[k])}</span><h3>${v}</h3><span class="p">${g.length}</span><span class="note">${g.filter(m=>m.on).length} actif(s)</span><svg class="chev ${ouv?'':'ferme'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>${ouv?(S.vue==='grille'?`<div class="grille">${g.map(carteMod).join('')}</div>`:`<div class="carte"><div class="liste">${g.map(ligneMod).join('')}</div></div>`):''}</section>`}).join(''):`<div class="carte note" style="text-align:center;padding:30px">Aucun module ne correspond.</div>`)+
+  `<div class="impact" id="impact"></div>`;
+},
+maj(){
+  const l=M.filter(m=>m.maj);
+  return tete('Mises à jour','Ce qui change, ce que ça demande en plus, et quand l’appliquer.',`<button class="btn pri" data-act="majok">Tout mettre à jour (sans permission en plus)</button>`)+
+  conc('Nouveau. Une mise à jour qui <b>élargit les permissions</b> n’est jamais appliquée seule : elle attend ton accord, comme à l’installation.')+
+  `<div class="carte"><div class="liste">${l.map(m=>`<div class="li"><div class="ico sm">${ic(m.ic)}</div><div class="sp"><b>${m.nom}</b><span class="note mono">${m.v} → ${m.maj}</span></div>${m.majPerm&&m.majPerm.length?m.majPerm.map(x=>pill(x,'dg','warn')).join(''):pill('aucune permission en plus','ok','check')}<button class="btn mini" data-ouvrir="${m.id}" data-onglet="versions">Changements</button><button class="btn mini ${m.majPerm&&m.majPerm.length?'':'pri'}" data-act="maj1" data-id="${m.id}">${m.majPerm&&m.majPerm.length?'Examiner et accepter':'Mettre à jour'}</button></div>`).join('')}</div></div>`+
+  `<div class="g2"><div class="carte"><h3>Politique de mise à jour</h3>
+    <div class="reglage"><div class="sp"><b>Correctifs automatiques</b><span class="note">Version 0.1.x → 0.1.y, sans permission en plus, modules officiels ou vérifiés.</span></div><button class="sw on" data-sw></button></div>
+    <div class="reglage"><div class="sp"><b>Versions mineures : demander</b><span class="note">0.1 → 0.2 : jamais sans ton accord.</span></div><button class="sw on" data-sw disabled></button></div>
+    <div class="reglage"><div class="sp"><b>Fenêtre d’application</b><span class="note">Pas pendant les heures de travail.</span></div><select class="btn"><option>Nuit, 02:00–05:00</option><option>Dimanche matin</option><option>Tout de suite</option></select></div></div>
+  <div class="carte"><h3>Retour arrière automatique</h3><p class="note">Après une mise à jour, la santé du module est surveillée 15 minutes. Si les erreurs montent, la version précédente est remise <b>toute seule</b>, et tu es prévenu.</p>
+    <div class="reglage"><div class="sp"><b>Surveiller après mise à jour</b></div><button class="sw on" data-sw></button></div>
+    <div class="reglage"><div class="sp"><b>Épingler une version</b><span class="note">Un module épinglé n’est jamais mis à jour. Aujourd’hui : <span class="mono">sentinelle</span>.</span></div><button class="btn mini">Gérer</button></div>
+    <div class="reglage"><div class="sp"><b>Canal</b><span class="note">stable (défaut) · bêta pour les modules qui en publient</span></div><div class="seg"><button class="on">stable</button><button>bêta</button></div></div></div></div>`;
+},
+shop(){
+  const conf=m=>m.niv==='officiel'||m.src==='officiel'?'officiel':'verifie';
+  const l=BOUT.filter(m=>(S.boutFam==='toutes'||m.fam===S.boutFam)&&(S.bconf==='toutes'||conf(m)===S.bconf)&&(S.betat==='tous'||(S.betat==='installe')===!!byId(m.id))&&(!S.q||(m.nom+m.id+m.desc).toLowerCase().includes(S.q.toLowerCase())));
+  if(S.btri==='nom')l.sort((a,b)=>a.nom.localeCompare(b.nom));else if(S.btri==='perm')l.sort((a,b)=>(a.perm.res+a.perm.ecr+a.perm.priv)-(b.perm.res+b.perm.ecr+b.perm.priv));
+  const nb=k=>BOUT.filter(m=>k==='tous'||((k==='installe')===!!byId(m.id))).length;
+  const fil=S.boutFam!=='toutes'||S.bconf!=='toutes'||S.betat!=='tous'||S.q;
+  return tete('Boutique','Les modules du registre officiel et de tes autres sources, vérifiés avant d’être proposés.',`<button class="btn" data-act="depot">Déposer une archive</button>`)+
+  conc('Reprend l’onglet « Registre » de l’App Store actuel. La page « Déposer une archive » devient un bouton secondaire ; l’installation se fait en <b>3 étapes</b> (examen, consentement, activation) dans une modale, depuis n’importe où.')+
+  `<div class="heros"><div class="hero h1"><svg class="fond" viewBox="0 0 24 24">${I.shield}</svg><span class="p" style="background:rgba(255,255,255,.2);color:#fff;align-self:flex-start">Mis en avant</span><h3>Pare-feu CrowdSec</h3><p>Les décisions CrowdSec appliquées au pare-feu réel de la machine. Officiel.</p><button class="btn" data-inst="crowd">Installer</button></div>
+  <div class="hero h2"><svg class="fond" viewBox="0 0 24 24">${I.box}</svg><span class="p" style="background:rgba(255,255,255,.2);color:#fff;align-self:flex-start">Ensemble</span><h3>Hébergeur complet</h3><p>Sites, DNS, certificats, sauvegardes et supervision, installés ensemble.</p><button class="btn" data-ens="hebergeur">Voir l’ensemble</button></div></div>
+  <div class="barre"><div class="recherche" style="flex:1 1 260px;max-width:none">${ic('eye')}<input id="q" placeholder="Rechercher dans toutes les sources…" value="${esc(S.q)}"></div>
+   <select class="sel" data-sel="boutFam" aria-label="Section"><option value="toutes">Toutes les sections</option>${Object.entries(FAM).map(([k,v])=>`<option value="${k}" ${S.boutFam===k?'selected':''}>${v}</option>`).join('')}</select>
+   <select class="sel" data-sel="bconf" aria-label="Confiance">${[['toutes','Toutes les confiances'],['officiel','Officiel'],['verifie','Éditeur vérifié']].map(c=>`<option value="${c[0]}" ${S.bconf===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select>
+   <select class="sel" data-sel="btri" aria-label="Trier">${[['pert','Trier : pertinence'],['nom','Trier : nom'],['perm','Trier : moins de permissions']].map(c=>`<option value="${c[0]}" ${S.btri===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select>
+   ${fil?'<button class="btn mini" data-reset>Réinitialiser</button>':''}</div>
+  <div class="seg segetat">${[['tous','Tous'],['nouveau','Nouveaux'],['installe','Installés']].map(c=>`<button class="${S.betat===c[0]?'on':''}" data-betat="${c[0]}">${c[1]} <span class="cnt">${c[0]==='tous'?nb('tous'):c[0]==='installe'?nb('installe'):BOUT.length-nb('installe')}</span></button>`).join('')}</div>`+
+
+  Object.entries(FAM).filter(([k])=>l.some(m=>m.fam===k)).map(([k,v])=>`<section class="rub"><div class="rub-t" style="cursor:default"><span class="ico sm">${ic(FIC[k])}</span><h3>${v}</h3><span class="p">${l.filter(m=>m.fam===k).length}</span></div><div class="grille">${l.filter(m=>m.fam===k).map(m=>{const inst=byId(m.id);return `<div class="carte mod clic" data-fiche="${m.id}"><div class="l1"><div class="ico">${ic(m.ic)}</div><div class="sp"><h3>${esc(m.nom)}</h3><div class="mono note">${m.id} · v${m.v}</div></div>${inst?pill('Installé','','check'):pill('Nouveau','ok')}</div><div class="desc">${esc(m.desc)}</div><div class="pied">${m.niv==='officiel'||m.src==='officiel'?pill('Officiel','ok','shield'):pill('Éditeur vérifié · '+m.ed,'ac','shield')}${permRes(m.perm)}<button class="btn mini pri" style="margin-left:auto" data-inst="${m.id}" ${inst?'disabled':''}>${inst?'Installé':'Installer'}</button></div></div>`}).join('')}</div></section>`).join('')+
+  `<div class="carte"><h3>Ensembles</h3><div class="g2">${ENS.map(e=>`<div class="carte" style="box-shadow:none"><h4>${e.nom}</h4><p class="note">${e.d}</p><div class="chips">${e.mods.map(x=>`<span class="p">${x}</span>`).join('')}</div><button class="btn mini" data-ens="${e.id}" style="align-self:flex-start">Voir l’impact</button></div>`).join('')}</div></div>`+
+  `<div class="carte" style="border-style:dashed"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div class="sp" style="flex:1;min-width:220px"><b style="color:var(--strong)">Tu as une archive .cmod ?</b><span class="note" style="display:block">Dépose-la ici : elle est examinée en quarantaine, rien ne s’installe avant ton accord.</span></div><button class="btn" data-act="depot">Déposer une archive</button></div></div>`;
+},
+src(){
+  return tete('Sources','D’où viennent les modules : le registre officiel (fixe), tes autres registres, tes dossiers.',`<button class="btn pri" data-act="addsrc">+ Ajouter une source</button>`)+
+  conc('Tout ce que contenait « Autre registre » et le réglage <span class="mono">modules.registre_url</span> est ici, avec en plus : plusieurs registres, priorité, test de connexion, clé de confiance propre à chaque source, dossier surveillé et miroir hors ligne.')+
+  `<div class="carte" style="border-color:color-mix(in srgb,var(--ok) 35%,transparent)"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div class="ico">${ic('shield')}</div><div class="sp" style="flex:1;min-width:220px"><h3>Registre officiel de Cassandra ${pill('verrouillé','ok','lock')}</h3><div class="mono note">https://marplestrange.github.io/cassandra-registre/index.json</div></div><button class="btn mini" data-act="tester">Tester</button></div>
+   <div class="g2" style="margin-top:4px"><div><div class="lib">Signature</div><div>Clé racine « principale » <span class="faint">(2 clés embarquées : principale, secours)</span></div></div><div><div class="lib">Fraîcheur de l’index</div><div>Émis le 26/10/2026 · valable jusqu’au 25/12/2026 <span class="p ok">59 j</span></div></div><div><div class="lib">Contenu</div><div>1 module · 0 éditeur vérifié · 1 révocation</div></div><div><div class="lib">Renouvellement</div><div>Automatique, tous les jours à 10:00 <span class="p ok" >actif</span></div></div></div>
+   <p class="note">Intégré à l’application : il ne se retire pas et ne se modifie pas. C’est le seul dont la signature donne le niveau « Officiel ».</p></div>`+
+  `<div class="carte"><h3>Autres registres</h3><div class="note">Un registre tiers est toujours affiché <b>non officiel</b>. Chaque archive y est examinée comme une archive déposée.</div><div class="liste">${SRC.map(s=>`<div class="li"><div class="ico sm ${s.on?'':'off'}">${ic('globe')}</div><div class="sp"><b>${s.nom}</b><span class="note mono">${s.url}</span><span class="note">${s.cle}</span></div>${s.ok?pill(s.mods+' modules','ok'):pill('injoignable','dg','warn')}<span class="p">priorité ${s.prio}</span><button class="btn mini" data-act="tester">Tester</button><button class="btn mini">Modifier</button><button class="sw ${s.on?'on':''}" data-sw></button></div>`).join('')}</div></div>`+
+  `<div class="g2"><div class="carte"><h3>Éditeurs vérifiés ${pill('par le registre officiel','ac','shield')}</h3><div class="liste">
+     <div class="li"><div class="ico sm">${ic('users')}</div><div class="sp"><b>acme</b><span class="note">2 modules · clé ed_acme</span></div><span class="p ok">vérifié</span></div>
+     <div class="li"><div class="ico sm">${ic('users')}</div><div class="sp"><b>lagrange</b><span class="note">1 module · clé ed_lagrange</span></div><span class="p ok">vérifié</span></div></div><p class="note">La liste vient de l’index signé : tu ne peux pas en ajouter ici, seulement la lire.</p></div>
+   <div class="carte"><h3>Dossier surveillé</h3><p class="note">Un dossier de ton disque où tu déposes des archives .cmod ; elles apparaissent dans la boutique comme « locales ».</p><div class="champ"><label>Chemin</label><input value="/var/cassandra/depot-modules" class="mono"></div><div class="reglage"><div class="sp"><b>Surveiller</b></div><button class="sw on" data-sw></button></div></div></div>`+
+  `<div class="carte"><h3>Miroir hors ligne ${pill('nouveau','in')}</h3><p class="note">Pour une machine sans accès à Internet : importe un paquet (index signé + archives) apporté sur une clé USB. La signature est vérifiée comme d’habitude ; seule la fraîcheur de l’index est tolérée plus longtemps.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn">Importer un paquet…</button><button class="btn">Exporter un miroir de mes modules</button></div></div>`;
+},
+sec(){
+  return tete('Sécurité et confiance','Qui peut installer quoi, ce que chaque module a le droit de faire, et ce qui a été révoqué.')+
+  conc('Aujourd’hui la politique est un simple réglage et les permissions sont visibles seulement à l’installation. Ici elles sont <b>toutes dans une matrice</b>, relisibles à tout moment.')+
+  `<div class="alerte dg"><div class="ico sm dg">${ic('warn')}</div><div class="sp"><b>1 module installé est révoqué par le registre.</b><span class="note"> Vieux flux RSS : faille connue. Il continue de tourner tant que tu ne le désinstalles pas.</span></div><button class="btn mini dng" data-ouvrir="vieux-flux">Traiter</button></div>`+
+  `<div class="carte"><h3>Ce que Cassandra se refuse, quel que soit son niveau</h3><div class="liste"><div class="li"><div class="ico sm">${ic('shield')}</div><div class="sp"><b>Installer ce qui n’est pas signé</b><span class="note">Seuls le registre officiel et les éditeurs vérifiés comptent pour elle.</span></div></div><div class="li"><div class="ico sm">${ic('warn')}</div><div class="sp"><b>Installer ou garder un module révoqué</b><span class="note">Elle le retire, il reste 30 jours en corbeille.</span></div></div><div class="li"><div class="ico sm">${ic('lock')}</div><div class="sp"><b>Désactiver un module vital</b><span class="note">Droits, Passerelle… le noyau le refuse de toute façon.</span></div></div><div class="li"><div class="ico sm">${ic('key')}</div><div class="sp"><b>Prendre seule plus de permissions chez un tiers</b><span class="note">Une mise à jour d’un éditeur vérifié qui demande plus reste à l’écart, et elle te le dit.</span></div></div><div class="li"><div class="ico sm">${ic('disk')}</div><div class="sp"><b>Effacer des données pour de bon</b><span class="note">Purger les données d’un module reste un geste humain.</span></div></div></div></div>
+  <div class="carte"><h3>Politique de confiance</h3><div style="display:flex;flex-direction:column;gap:8px">
+   ${[['signes','Paquets signés seulement','Racine Cassandra, éditeur vérifié, ou clé que tu as posée. Recommandé.',''],['signesloc','Signés + ceux que je dépose moi-même','Les archives déposées à la main sont acceptées après examen.',''],['tous','Tout accepter','Archives non signées comprises. Réservé à un module que tu écris toi-même.','dgr']].map(r=>`<div class="radio ${r[3]} ${S.pol===r[0]?'on':''}" data-pol="${r[0]}"><i></i><div><b style="color:var(--strong)">${r[1]}</b><span class="note" style="display:block">${r[2]}</span></div></div>`).join('')}</div></div>`+
+  `<div class="carte"><h3>Matrice des permissions</h3><p class="note">Déclaratives aujourd’hui (le module tourne dans Cassandra) ; elles deviendront contraignantes avec la cage par provenance.</p><div class="tw"><table><thead><tr><th>Module</th><th>Niveau</th><th>Réseau</th><th>Écritures</th><th>Privilèges</th><th></th></tr></thead><tbody>${M.map(m=>`<tr><td><b style="color:var(--strong)">${m.nom}</b></td><td>${niveau(m)}</td>${['res','ecr','priv'].map(k=>`<td><span class="cell ${m.perm[k]>=3?'v':m.perm[k]?'o':'z'}">${m.perm[k]}</span></td>`).join('')}<td><button class="btn mini" data-ouvrir="${m.id}" data-onglet="perm">Détail</button></td></tr>`).join('')}</tbody></table></div></div>`+
+  `<div class="g2"><div class="carte"><h3>Clés de l’administrateur</h3><p class="note">Les clés publiques que tu as posées : une archive signée par l’une d’elles est « Clé de l’administrateur ».</p><div class="liste"><div class="li"><div class="ico sm">${ic('key')}</div><div class="sp"><b>cle-admin-2026</b><span class="note mono">ed25519 · SHA256:7f3a…c91e</span></div><button class="btn mini dng">Retirer</button></div></div><button class="btn" style="align-self:flex-start">+ Poser une clé publique</button><p class="note">Les noms « cassandra-… » et « ed_… » sont réservés : ils ne peuvent pas se faire passer pour l’officiel.</p></div>
+  <div class="carte"><h3>Révocations</h3><div class="liste"><div class="li"><div class="sp"><b>vieux-flux &lt; 1.0</b><span class="note">faille connue : lecture de fichiers hors de son dossier</span></div><span class="p dg">installé</span></div></div><div class="reglage"><div class="sp"><b>Me prévenir dès qu’un module installé est révoqué</b><span class="note">Notification dans le centre de notifications.</span></div><button class="sw on" data-sw></button></div></div></div>`+
+  `<div class="carte"><h3>Quarantaine ${pill('archives examinées, non installées','')}</h3><p class="note">Les archives déposées ou téléchargées attendent ici ton accord. Elles sont vidées après 7 jours.</p><div class="liste"><div class="li"><div class="ico sm">${ic('box')}</div><div class="sp"><b>compta-0.2.0.cmod</b><span class="note">examinée il y a 2 h · éditeur vérifié lagrange</span></div><button class="btn mini">Reprendre</button><button class="btn mini dng">Abandonner</button></div></div></div>`;
+},
+sante(){
+  return tete('Santé','Chaque module est sondé : erreurs, lenteur, mémoire. Une panne n’arrête pas Cassandra.',`<button class="btn" data-act="blanc">Test de démarrage à blanc</button><button class="btn" data-act="restaure">Créer un point de restauration</button>`)+
+  conc('Reprend la sonde de santé actuelle et la rend visible. Nouveau : <b>test à blanc</b> (on simule le démarrage sans rien lancer pour voir ce qui échouerait) et <b>mode sans échec</b> accessible d’ici.')+
+  `<div class="carte"><div class="tw"><table><thead><tr><th>Module</th><th>État</th><th>Erreurs 24 h</th><th>Latence</th><th>Mémoire</th><th>Dernier démarrage</th><th></th></tr></thead><tbody>${M.map(m=>{const bad=m.err>1;return `<tr><td><b style="color:var(--strong)">${m.nom}</b></td><td>${!m.on?pill('inactif'):bad?pill('dégradé','al','warn'):pill('sain','ok','check')}</td><td class="mono">${m.err}</td><td class="mono">${m.on?m.ms+' ms':'—'}</td><td class="mono">${m.on?m.ram+' Mo':'—'}</td><td class="note">${m.on?'il y a 3 j':'—'}</td><td>${m.on&&m.imp!=='vital'?`<button class="btn mini" data-act="pause" data-id="${m.id}">Pause</button>`:''}</td></tr>`}).join('')}</tbody></table></div></div>`+
+  `<div class="g2"><div class="carte"><h3>Mode sans échec</h3><p class="note">Redémarre Cassandra avec <b>seulement les modules vitaux</b>. À utiliser si un module empêche de démarrer : tu peux alors le désactiver ou le désinstaller depuis l’interface.</p><button class="btn dng" style="align-self:flex-start" data-act="sansechec">Redémarrer en mode sans échec</button><p class="note">En dehors de l’interface : <span class="mono">python CN_main.py demarrer --sans-extensions</span></p></div>
+  <div class="carte"><h3>Garde-fous</h3><div class="reglage"><div class="sp"><b>Désactiver seul un module qui plante en boucle</b><span class="note">Après 5 plantages en 10 minutes, il est mis en pause et tu es prévenu.</span></div><button class="sw on" data-sw></button></div><div class="reglage"><div class="sp"><b>Limite de mémoire par module</b><span class="note">Avertir au-delà de</span></div><select class="btn"><option>256 Mo</option><option>512 Mo</option><option>Aucune</option></select></div></div></div>`;
+},
+jour(){
+  return tete('Journal et versions','Tout ce qui est arrivé aux modules, et tout ce qu’on peut remettre comme avant.',`<button class="btn">Exporter le journal</button>`)+
+  conc('Regroupe le journal d’actes, les versions sauvegardées et la corbeille, aujourd’hui dispersés. Nouveau : <b>profil de modules</b> exportable/importable pour reproduire la même configuration sur une autre machine.')+
+  `<div class="g2"><div class="carte"><h3>Journal</h3><div class="tl">${JOURNAL.map(j=>`<div class="ev ${j[3]}"><b style="color:var(--strong)">${j[1]}</b> <span class="note">${j[2]}</span><div class="faint" style="font-size:11.5px">${j[0]}</div></div>`).join('')}</div></div>
+  <div style="display:flex;flex-direction:column;gap:12px"><div class="carte"><h3>Versions restaurables</h3><div class="liste"><div class="li"><div class="sp"><b>Zones DNS</b><span class="note mono">0.9.0 · remplacée hier 21:04</span></div><button class="btn mini" data-act="retour">Remettre</button></div><div class="li"><div class="sp"><b>Courrier</b><span class="note mono">1.3.1 · remplacée le 18/10</span></div><button class="btn mini" data-act="retour">Remettre</button></div></div></div>
+  <div class="carte"><h3>Corbeille</h3><p class="note">Un module désinstallé est gardé 30 jours, avec ses réglages.</p><div class="liste"><div class="li"><div class="sp"><b>Annuaire LDAP</b><span class="note">désinstallé il y a 9 jours</span></div><button class="btn mini">Restaurer</button><button class="btn mini dng">Vider</button></div></div></div>
+  <div class="carte"><h3>Profil de modules ${pill('nouveau','in')}</h3><p class="note">Un fichier qui décrit quels modules, quelles versions et quels réglages (sans secrets).</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn">Exporter mon profil</button><button class="btn">Importer un profil…</button></div></div></div></div>`;
+},
+dev(){
+  return tete('Développeur','Créer, tester et publier un module.',`<button class="btn pri" data-act="nouveau">+ Nouveau module</button>`)+
+  conc('Regroupe le générateur de squelette (<span class="mono">CN_nouveau</span>), la validation de manifeste et la publication. Nouveau : <b>mode développement</b> avec dossier surveillé et rechargement à chaud.')+
+  `<div class="g2"><div class="carte"><h3>Mode développement</h3><div class="reglage"><div class="sp"><b>Charger un module depuis un dossier</b><span class="note">Pas d’archive, pas de signature : réservé à la politique « tout accepter » du module.</span></div><button class="sw" data-sw></button></div><div class="champ"><label>Dossier</label><input class="mono" value="~/dev/mon-module"></div><div class="reglage"><div class="sp"><b>Rechargement à chaud</b><span class="note">Le module est rechargé quand un fichier change.</span></div><button class="sw on" data-sw></button></div></div>
+  <div class="carte"><h3>Valider un manifeste</h3><div class="liste"><div class="li"><div class="sp"><b>id, nom, version</b></div>${pill('ok','ok','check')}</div><div class="li"><div class="sp"><b>importance déclarée</b></div>${pill('ok','ok','check')}</div><div class="li"><div class="sp"><b>dépendances versionnées</b></div>${pill('droits ≥ 0.2','ok','check')}</div><div class="li"><div class="sp"><b>icône (tracé SVG)</b></div>${pill('invalide','dg','warn')}</div></div><button class="btn" style="align-self:flex-start">Choisir un manifeste…</button></div></div>`+
+  `<div class="g2"><div class="carte"><h3>Publier</h3><p class="note">1. Construis l’archive. 2. Signe-la avec ta clé d’éditeur. 3. Propose-la au registre officiel (demande d’ajout), ou publie-la sur ton propre registre.</p><pre>python outils/cmod.py construire mon-module/
+python outils/cmod.py signer --cle ed_moi.pem mon-module-0.1.0.cmod</pre><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn">Construire l’archive</button><button class="btn">Signer…</button><button class="btn">Proposer au registre</button></div></div>
+  <div class="carte"><h3>Points d’extension</h3><p class="note">Les endroits où un module peut en brancher un autre.</p><div class="liste"><div class="li"><div class="sp"><b class="mono">menus.entrees</b><span class="note">3 contributions</span></div></div><div class="li"><div class="sp"><b class="mono">supervision.sondes</b><span class="note">2 contributions</span></div></div><div class="li"><div class="sp"><b class="mono">courrier.regles</b><span class="note">0 contribution</span></div></div></div></div></div>`;
+},
+console(){
+  const T=[['apercu','Aperçu'],['lectures','Lectures',6],['gestes','Gestes',8],['reglages','Réglages',2]];
+  const L=[['lister','Le catalogue des modules : état, version, famille, dépendances.'],['fiche','La fiche d’un module, capacité par capacité.'],['versions','Les versions restaurables et ce qui s’est passé.'],['sante','Santé : exécutions, échecs, verdict.'],['contributions','Ce que les modules branchent aux points d’extension.'],['registre','Le registre officiel et, s’il y en a un, l’autre registre.']];
+  const G=[['activer','Activer un module et ses dépendances, à chaud.','e','preuve · retour · trace'],['desactiver','Désactiver un module ; ses données restent.','e','preuve · retour · trace'],['examiner','Examiner une archive .cmod sans rien installer.','l','trace'],['installer','Installer une archive examinée, avec ton consentement.','e','preuve · retour · trace'],['retour_arriere','Remettre une version sauvegardée.','e','preuve · retour · trace'],['desinstaller','Désinstaller un module installé par archive.','d','preuve · retour · trace'],['abandonner','Abandonner une archive examinée.','e','trace'],['telecharger','Télécharger un module d’un registre, puis l’examiner.','e','trace']];
+  const RL={l:'sans effet durable',e:'modifie',d:'supprime'};
+  let c='';
+  if(S.ct==='apercu')c=`<div class="g2"><div class="carte"><h4>Ce qu’il fait</h4><p class="note">La gestion des modules : ce qui est installé, actif ou à installer, ce qui dépend de quoi, et le geste d’activer ou de désactiver. Le noyau fait le travail ; ce module en fait des capacités avec droits, preuve, retour et trace.</p></div><div class="carte"><h4>En chiffres</h4><div class="kv"><span><b>Modules</b>11</span><span><b>Actifs</b>10</span><span><b>Gestes ce mois</b>23</span></div><div class="alerte ok" style="padding:7px 12px"><div class="sp"><b>Sain.</b> <span class="note">aucune erreur sur 24 h</span></div></div></div></div><div class="carte" style="flex-direction:row;gap:12px;align-items:center;flex-wrap:wrap"><div class="ico">${ic('inst')}</div><div class="sp" style="flex:1;min-width:200px"><b style="color:var(--strong)">Pour installer, parcourir ou gérer les sources, utilise la Logithèque.</b><span class="note" style="display:block">Cette console sert à voir ce que le module sait faire et à le régler.</span></div><button class="btn pri" data-go="inst">Ouvrir la Logithèque</button></div>`;
+  else if(S.ct==='lectures')c=`<div class="carte"><p class="note">Des lectures : elles ne changent rien. « Essayer » montre ce qu’elles rendent.</p>${L.map(l=>`<div class="geste"><div><div class="nm">${l[0]}</div><div class="note">${l[1]}</div></div><button class="btn mini" data-essai="${l[0]}">Essayer</button><div class="sortie" id="out-${l[0]}"></div></div>`).join('')}</div>`;
+  else if(S.ct==='gestes')c=`<div class="carte"><p class="note">Des gestes : ils changent quelque chose. Les plus lourds demandent confirmation, et chacun laisse une trace.</p>${G.map(g=>`<div class="geste"><div><div class="nm">${g[0]}<span class="risque ${g[2]}">${RL[g[2]]}</span></div><div class="note">${g[1]}</div><div class="garanties">${g[3].split(' · ').map(x=>`<span class="chipmini">${x}</span>`).join('')}</div></div><button class="btn mini ${g[2]==='d'?'dng':''}" data-geste="${g[0]}">Lancer…</button></div>`).join('')}</div>`;
+  else c=`<div class="carte"><div class="lib">Confiance</div>
+    <div class="rg"><div><h4>Quels paquets s’installent</h4><p class="aide">Seuls les paquets signés, ou tout ce qu’on dépose ?</p><button class="plus" data-plus>En savoir plus</button><p class="aide" hidden>« Signés » : par un éditeur dont tu as posé la clé. « Tous » : un paquet non signé est permis, à tes risques : un module installé tourne dans Cassandra, avec ses droits.</p><div class="cle">modules.politique_confiance</div></div>
+      <div class="ctl"><div class="seg" style="width:100%"><button class="${S.pol2==='signes'?'on':''}" data-p2="signes" style="flex:1">Signés</button><button class="${S.pol2==='tous'?'on':''}" data-p2="tous" style="flex:1">Tous</button></div>${S.pol2==='tous'?'<div class="alerte dg" style="padding:7px 11px"><div class="sp note"><b>À tes risques.</b> Une archive non signée sera acceptée.</div></div>':''}<div class="etat">${S.pol2==='signes'?'<span>Valeur par défaut</span>':'<span><i class="modif"></i>modifié</span><button data-p2="signes">'+ic('maj')+'Rétablir</button>'}<button data-histo>${ic('jour')}Historique</button></div>${S.hist?'<div class="histo"><div><b>Aujourd’hui 14:12</b> · signés → tous <span class="faint">par admin</span></div><div><b>20/10 09:30</b> · tous → signés <span class="faint">par admin</span></div></div>':''}</div></div></div>
+  <div class="carte"><div class="lib">Sources</div>
+    <div class="rg"><div><h4>Un autre registre</h4><p class="aide">Ajoute le magasin d’un tiers. Il restera toujours non officiel.</p><button class="plus" data-plus>En savoir plus</button><p class="aide" hidden>Le registre officiel est intégré à l’application : il n’est pas un réglage et ne se retire pas. Un second registre s’affiche comme non officiel : son index n’est pas signé par la racine de Cassandra, chaque archive y reste examinée de la même façon.</p><div class="cle">modules.registre_url</div></div>
+      <div class="ctl"><input class="champtxt" placeholder="https://…/index.json"><div class="etat"><span>Vide : aucun autre registre</span><button data-act="tester">${ic('check')}Tester</button></div><div class="note">Plusieurs registres, priorités et clés se gèrent dans <a href="#" data-go="src" style="color:var(--accent);font-weight:600">Logithèque › Sources</a>.</div></div></div></div>
+  <p class="note" style="display:flex;gap:6px;align-items:center">${ic('check')} Chaque réglage s’enregistre dès que tu le quittes. Rien à valider.</p>`;
+  return tete('Console d’un module','Le gabarit commun à tous les modules : ce qu’il fait, ce qu’il lit, ce qu’il change, comment le régler.')+
+   conc('<b>Remplace la console actuelle de chaque module</b> (celle de la capture). En-tête allégé : 3 pastilles au lieu de 6, méta en ligne discrète. Onglets avec compteurs. Aide longue repliée (« En savoir plus »). Contrôle adapté à la valeur (choix segmenté au lieu d’une liste). État parlant : « modifié » + « Rétablir » seulement si la valeur a changé ; historique en pop-over ; clé technique en petit. Lectures et gestes montrent leur risque et leurs garanties.')+
+   `<div class="carte" style="gap:14px"><div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap"><div class="ico" style="width:48px;height:48px;border-radius:14px">${ic('inst')}</div><div style="flex:1;min-width:220px"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><h2 style="font:700 22px 'Inter',sans-serif;color:var(--strong);margin:0">Logithèque</h2><span class="mono note">modules · v0.1.0</span></div><p class="note" style="margin-top:3px;max-width:70ch">Ce qui est installé, actif ou à installer, ce qui dépend de quoi, et le geste d’activer ou de désactiver.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" disabled title="Vital : ne se désactive pas">Désactiver</button><button class="btn pri" data-go="inst">Ouvrir</button></div></div>
+   <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${pill('actif','ok')}${pill('Vital','vi')}${pill('Interne au noyau','')}<span class="chipmini">Fondations</span></div>
+   <div class="kv"><span><b>Requiert</b><span class="chipmini lien" data-ouvrir="droits">droits</span></span><span><b>API</b>1</span><span><b>Fourni par</b>humain</span></div></div>
+   <div class="onglets">${T.map(t=>`<button class="${S.ct===t[0]?'on':''}" data-ct="${t[0]}">${t[1]}${t[2]?` <span class="p" style="margin-left:4px">${t[2]}</span>`:''}</button>`).join('')}</div>`+c;
+},
+reg(){
+  const sw=(t,d,on=true)=>`<div class="reglage"><div class="sp"><b>${t}</b><span class="note">${d}</span></div><button class="sw ${on?'on':''}" data-sw></button></div>`;
+  return tete('Réglages','Le comportement général du gestionnaire.')+
+  conc('Reprend les réglages du module (<span class="mono">politique_confiance</span>, <span class="mono">registre_url</span>) et y met tout ce qui était absent.')+
+  `<div class="g2"><div class="carte"><h3>Installation</h3>${sw('Toujours demander mon accord','Aucune installation silencieuse, même pour un module officiel.')}${sw('Activer aussitôt après l’installation','Décoché : le module reste installé mais inactif.')}${sw('Examiner les dépendances manquantes','Proposer d’installer ce qu’il faut avec le module.')}</div>
+  <div class="carte"><h3>Notifications</h3>${sw('Mise à jour disponible','')}${sw('Module révoqué','Toujours recommandé.')}${sw('Index du registre bientôt périmé','Avertir 14 jours avant.')}${sw('Module qui plante en boucle','')}</div></div>
+  <div class="g2"><div class="carte"><h3>Réseau</h3><div class="champ"><label>Relire le registre officiel toutes les</label><select><option>6 heures</option><option>24 heures</option></select></div><div class="champ"><label>Proxy sortant (optionnel)</label><input class="mono" placeholder="http://proxy.local:3128"></div><div class="champ"><label>Taille maximale d’une archive</label><select><option>32 Mo</option><option>128 Mo</option></select></div></div>
+  <div class="carte"><h3>Confidentialité</h3>${sw('Aucune télémétrie','Cassandra n’envoie rien sur ce que tu installes. Le registre est une page statique.')}${sw('Mémoriser les modules vus','Pour proposer « nouveau depuis ta dernière visite ».',false)}</div></div>
+  <div class="carte"><h3>Nom des familles</h3><p class="note">Une famille est une étiquette de rangement, pas un module. Les modules tiers peuvent en apporter une avec leur propre icône ; ici tu peux les renommer pour cette instance.</p><div class="chips">${Object.values(FAM).map(f=>`<span class="p ac">${f}</span>`).join('')}<button class="btn mini">Renommer…</button></div></div>`;
+}
+};
+
+/* ───────── rendu ───────── */
+function etatc(){const e=$('#etatc');if(!e)return;e.className='etatc'+(S.gel?' gel':'');e.innerHTML=`<i class="pt"></i><span>Cassandra · <b>${S.gel?'en pause':{observer:'observe',entretien:'entretient',reine:'gère tout'}[S.auto]}</b></span><button data-act="gel">${S.gel?'Reprendre':'Pause'}</button>`}
+function nav(){etatc();
+  $('#nav').innerHTML=SECS.map(s=>{if(s[0]==='sep')return `<div class="sep">${s[1]}</div>`;const n=s[3]?s[3]():0;return `<button class="nv ${S.sec===s[0]?'on':''}" data-go="${s[0]}">${ic(s[1])}<span>${s[2]}</span>${n?`<span class="n ${s[4]||''}">${n}</span>`:''}</button>`}).join('');
+}
+function rendre(){
+  nav();
+  const p=$('#page');p.innerHTML=PAGES[S.sec]();
+  const q=$('#q');if(q){q.addEventListener('input',()=>{S.q=q.value;rendre();const n=$('#q');n.focus();n.setSelectionRange(99,99)})}
+  majImpact();
+}
+function majImpact(){
+  const e=$('#impact');if(!e)return;
+  const ch=Object.entries(S.att);if(!ch.length){e.classList.remove('on');return}
+  const off=ch.filter(([id,v])=>!v).map(([id])=>id);
+  const casse=new Set();const rec=x=>requisPar(x).forEach(m=>{if(m.on&&!off.includes(m.id)&&!casse.has(m.id)){casse.add(m.id);rec(m.id)}});off.forEach(rec);
+  e.classList.add('on');
+  e.innerHTML=`<div class="sp"><b>${ch.length} changement(s) en attente.</b> ${casse.size?`Cela arrêterait aussi : ${[...casse].map(id=>byId(id).nom).join(', ')}.`:'Aucun autre module n’en dépend.'}</div><button class="btn" data-act="annule">Annuler</button><button class="btn pri" data-act="applique">Appliquer</button>`;
+}
+function go(s){if(S.sec!==s)S.q='';S.sec=s;rendre();window.scrollTo({top:0,behavior:'smooth'})}
+
+/* tiroir */
+const ONG=[['apercu','Aperçu'],['dep','Dépendances'],['perm','Permissions'],['regl','Réglages'],['sante','Santé'],['versions','Versions']];
+function ouvrir(id,onglet){
+  const m=byId(id);if(!m)return;S.tiroir=id;S.onglet=onglet||'apercu';const t=$('#tiroir');
+  const rec=requisPar(id),chain=rec.map(x=>x.nom);
+  const corps={
+   apercu:`<div class="carte"><div class="lib">Sans lui</div><p><b style="color:var(--strong)">${esc(m.sans)}</b></p>${chain.length?`<p class="note">Cela touche aussi : ${chain.join(', ')}.</p>`:''}<p class="note">${IMP[m.imp][2]}</p></div>${m.revoque?`<div class="alerte dg"><div class="sp"><b>Révoqué par le registre.</b> ${esc(m.revoque)}</div></div>`:''}${m.maj?`<div class="alerte in"><div class="sp"><b>Version ${m.maj} disponible.</b>${m.majPerm&&m.majPerm.length?` Demande : ${m.majPerm.join(', ')}.`:' Aucune permission en plus.'}</div><button class="btn mini pri" data-act="maj1" data-id="${m.id}">Mettre à jour</button></div>`:''}<div class="g2"><div><div class="lib">Éditeur</div><div>${m.ed}</div></div><div><div class="lib">Source</div><div>${m.src==='officiel'?'Registre officiel':m.src}</div></div><div><div class="lib">Famille</div><div>${FAM[m.fam]}</div></div><div><div class="lib">Licence</div><div>AGPL-3.0</div></div></div>`,
+   dep:`<div class="carte"><div class="lib">Il a besoin de</div><div class="graphe">${m.req.length?m.req.map(x=>`<span class="noeud">${x}</span>`).join('<span class="fl">·</span>'):'<span class="note">rien</span>'}</div><div class="lib" style="margin-top:6px">Ont besoin de lui</div><div class="graphe">${rec.length?rec.map(x=>`<span class="noeud ${m.on?'':''}">${x.id}</span>`).join('<span class="fl">·</span>'):'<span class="note">personne</span>'}</div></div><div class="carte"><div class="lib">Conflits et suggestions</div><p class="note">Aucun conflit déclaré. Suggéré avec : <span class="mono">sauvegardes</span>.</p></div>`,
+   perm:`<div class="carte"><div class="lib">Ce qu’il demande</div><div style="display:flex;gap:6px;flex-wrap:wrap">${permRes(m.perm)}</div><div class="liste" style="margin-top:6px"><div class="li"><div class="sp"><b>Réseau</b><span class="note mono">${m.perm.res?'api.exemple.org':'aucun'}</span></div></div><div class="li"><div class="sp"><b>Écritures</b><span class="note mono">${m.perm.ecr?'donnees/'+m.id:'aucune'}</span></div></div><div class="li"><div class="sp"><b>Privilèges</b><span class="note mono">${m.perm.priv?'installer, journal':'aucun'}</span></div></div></div></div><p class="note">Déclaratives aujourd’hui : le module tourne dans Cassandra. Elles servent à décider, pas encore à contenir.</p>`,
+   regl:`<div class="carte"><div class="champ"><label>Délai d’attente (s)</label><input value="30"></div><div class="champ"><label>Niveau de journal</label><select><option>info</option><option>débogage</option></select></div><button class="btn pri" style="align-self:flex-start" data-act="ok">Enregistrer</button></div><button class="btn" data-act="reglmod">Ouvrir l’écran propre du module</button>`,
+   sante:`<div class="carte"><div class="g2"><div><div class="lib">Erreurs 24 h</div><b class="mono" style="font-size:22px">${m.err}</b></div><div><div class="lib">Latence</div><b class="mono" style="font-size:22px">${m.ms} ms</b></div><div><div class="lib">Mémoire</div><b class="mono" style="font-size:22px">${m.ram} Mo</b></div></div></div><div class="carte"><div class="lib">Dernières erreurs</div><pre>${m.err?'14:02  timeout vers imap.exemple.org\n13:48  timeout vers imap.exemple.org':'aucune'}</pre></div>`,
+   versions:`<div class="carte"><div class="lib">Historique</div><div class="tl"><div class="ev"><b style="color:var(--strong)">${m.v}</b> <span class="note">en place</span></div><div class="ev"><b>${m.v.replace(/\d+$/,x=>x-1>=0?x-1:0)}</b> <span class="note">remplacée</span> <button class="btn mini" data-act="retour" style="margin-left:8px">Remettre</button></div></div></div>${m.maj?`<div class="carte"><div class="lib">Ce que ${m.maj} change</div><ul style="margin:0;padding-left:18px"><li>Correctif de synchronisation</li>${(m.majPerm||[]).map(x=>`<li style="color:var(--danger)"><b>${x}</b></li>`).join('')}</ul></div>`:''}<div class="carte"><label style="display:flex;gap:10px;align-items:center"><button class="sw" data-sw></button><span><b style="color:var(--strong)">Épingler cette version</b><span class="note" style="display:block">Ne plus jamais la mettre à jour.</span></span></label></div>`
+  }[S.onglet];
+  t.innerHTML=`<div class="tete"><div style="display:flex;gap:12px;align-items:center"><div class="ico">${ic(m.ic)}</div><div style="flex:1;min-width:0"><h2 style="font:650 19px 'Inter',sans-serif;color:var(--strong)">${esc(m.nom)}</h2><div class="mono note">${m.id} · v${m.v}</div></div><button class="btn mini" data-fermer>Fermer</button></div><div style="display:flex;gap:6px;flex-wrap:wrap">${niveau(m)}${pill(IMP[m.imp][0],IMP[m.imp][1])}${m.on?pill('actif','ok'):pill('inactif')}</div><div class="onglets">${ONG.map(o=>`<button class="${S.onglet===o[0]?'on':''}" data-ong="${o[0]}">${o[1]}</button>`).join('')}</div></div><div class="corps">${corps}</div>
+  <div style="padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;background:var(--bg)">${m.imp==='vital'?'<span class="note">Vital : ne se désactive ni ne se désinstalle.</span>':S.avance?`<button class="btn" data-bascule="${m.id}">${m.on?'Désactiver':'Activer'}</button><button class="btn dng" data-desinst="${m.id}">Désinstaller</button>`:`<button class="btn pri" data-sug="${m.on?'Désactive':'Active'} ${esc(m.nom)}">Demander à Cassandra de le ${m.on?'désactiver':'activer'}</button><span class="note">Les boutons directs sont dans le « Mode avancé ».</span>`}</div>`;
+  t.classList.add('on');$('#voile').classList.add('on');
+}
+function fermer(){$('#tiroir').classList.remove('on');$('#modale').classList.remove('on');$('#voile').classList.remove('on');$('#pal').classList.remove('on')}
+
+/* modale d’installation */
+function modInstall(id,etape=1){
+  const m=BOUT.find(x=>x.id===id);const M_=$('#modale');
+  const st=`<div class="etapes"><i class="on"></i><i class="${etape>1?'on':''}"></i><i class="${etape>2?'on':''}"></i></div>`;
+  let c;
+  if(etape===1)c=`${st}<h2 style="font:650 19px 'Inter',sans-serif;color:var(--strong)">Examen de ${m.nom}</h2><div class="g2"><div><div class="lib">Signature</div>${m.niv==='officiel'?pill('Officiel · principale','ok','shield'):pill('Éditeur vérifié · '+m.ed,'ac','shield')}</div><div><div class="lib">Taille</div>${m.taille}</div></div><div class="liste"><div class="li lib">Ce qu’il demande</div><div class="li"><div class="sp"><b>Réseau</b><span class="note mono">${m.perm.res?'api.exemple.org':'aucun'}</span></div></div><div class="li"><div class="sp"><b>Écritures</b><span class="note mono">${m.perm.ecr?'donnees/'+m.id:'aucune'}</span></div></div><div class="li"><div class="sp"><b>Privilèges</b><span class="note mono">${m.perm.priv?'installer':'aucun'}</span></div></div></div><p class="note">Dépendances : toutes présentes (droits).</p><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" data-fermer>Abandonner</button><button class="btn pri" data-et="2" data-id="${id}">Continuer</button></div>`;
+  else if(etape===2)c=`${st}<h2 style="font:650 19px 'Inter',sans-serif;color:var(--strong)">Ton accord</h2><label class="radio on" style="cursor:default"><input type="checkbox" id="cs" style="margin-top:3px"><span>Je comprends que ce module <b>s’exécutera dans Cassandra</b> avec les permissions ci-dessus, et je choisis de l’installer.</span></label><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" data-et="1" data-id="${id}">Retour</button><button class="btn pri" id="cs-ok" data-et="3" data-id="${id}" disabled>Installer</button></div>`;
+  else c=`${st}<h2 style="font:650 19px 'Inter',sans-serif;color:var(--strong)">${m.nom} est installé</h2><p class="note">Il est déposé mais <b>inactif</b> : rien de lui ne tourne tant que tu ne l’as pas activé.</p><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" data-fermer>Plus tard</button><button class="btn pri" data-fermer data-toast="${m.nom} activé">Activer ${m.nom}</button></div>`;
+  M_.innerHTML=c;M_.classList.add('on');$('#voile').classList.add('on');
+  const cs=$('#cs');if(cs)cs.addEventListener('change',()=>$('#cs-ok').disabled=!cs.checked);
+}
+function modale(titre,corps,ok='Valider',toastT){const M_=$('#modale');M_.innerHTML=`<h2 style="font:650 19px 'Inter',sans-serif;color:var(--strong)">${titre}</h2>${corps}<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" data-fermer>Annuler</button><button class="btn pri" data-fermer data-toast="${toastT||ok}">${ok}</button></div>`;M_.classList.add('on');$('#voile').classList.add('on')}
+
+/* ───────── événements ───────── */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button,[data-ouvrir],[data-fiche],.radio,.stat,[data-go]');if(!t)return;
+  if(t.dataset.bascule){e.stopPropagation();const m=byId(t.dataset.bascule);if(m.imp==='vital')return;const cur=S.att[m.id]!==undefined?S.att[m.id]:m.on;const nv=!cur;if(nv===m.on)delete S.att[m.id];else S.att[m.id]=nv;if($('#tiroir').classList.contains('on')){fermer();}rendre();return}
+  if(t.hasAttribute('data-sw')){t.classList.toggle('on');return}
+  if(t.dataset.fermer!==undefined){if(t.dataset.toast)toast(t.dataset.toast);fermer();return}
+  if(t.dataset.go){fermer();go(t.dataset.go);return}
+  if(t.dataset.ouvrir){ouvrir(t.dataset.ouvrir,t.dataset.onglet);return}
+  if(t.dataset.ong){ouvrir(S.tiroir,t.dataset.ong);return}
+  if(t.dataset.fiche){modInstall(t.dataset.fiche,1);return}
+  if(t.dataset.inst){e.stopPropagation();modInstall(t.dataset.inst,1);return}
+  if(t.dataset.et){modInstall(t.dataset.id,+t.dataset.et);return}
+  if(t.dataset.vue){S.vue=t.dataset.vue;rendre();return}
+  if(t.dataset.betat){S.betat=t.dataset.betat;rendre();return}
+  if(t.dataset.auto){S.auto=t.dataset.auto;rendre();toast('Autonomie : '+t.dataset.auto);return}
+  if(t.dataset.defaire!==undefined){const a=ACTES[+t.dataset.defaire];toast(a.inv+' : fait. Cassandra en prend note.');a.inv='';rendre();return}
+  if(t.dataset.sug){const d=$('#dem');if(d){d.value=t.dataset.sug;d.focus()}else{go('vue');setTimeout(()=>{const x=$('#dem');if(x){x.value=t.dataset.sug;x.focus()}},50)}return}
+  if(t.dataset.etat){S.etat=t.dataset.etat;rendre();return}
+  if(t.dataset.imp){S.imp=t.dataset.imp;rendre();return}
+  if(t.dataset.fam){S.fam=t.dataset.fam;rendre();return}
+  if(t.dataset.bfam){S.boutFam=t.dataset.bfam;rendre();return}
+  if(t.hasAttribute('data-reset')){S.fam='toutes';S.imp='toutes';S.etat='tous';S.q='';S.boutFam='toutes';S.bconf='toutes';S.betat='tous';rendre();return}
+  if(t.dataset.rep){const k=t.dataset.rep;S.rep.has(k)?S.rep.delete(k):S.rep.add(k);rendre();return}
+  if(t.dataset.ct){S.ct=t.dataset.ct;rendre();return}
+  if(t.dataset.p2){S.pol2=t.dataset.p2;rendre();toast('Enregistré');return}
+  if(t.hasAttribute('data-histo')){S.hist=!S.hist;rendre();return}
+  if(t.hasAttribute('data-plus')){const a=t.nextElementSibling;a.hidden=!a.hidden;t.textContent=a.hidden?'En savoir plus':'Réduire';return}
+  if(t.dataset.essai){const o=$('#out-'+t.dataset.essai);o.innerHTML=o.innerHTML?'':'<pre>{ "modules": 11, "actifs": 10, "verdict": "sain" }</pre>';return}
+  if(t.dataset.geste){modale('Lancer « '+t.dataset.geste+' » ?','<p class="note">Ce geste laisse une trace et, s’il modifie quelque chose, peut être défait.</p>','Lancer','Geste lancé');return}
+  if(t.dataset.pol){S.pol=t.dataset.pol;rendre();toast('Politique : '+t.textContent.trim().split('\n')[0]);return}
+  if(t.dataset.ens){const en=ENS.find(x=>x.id===t.dataset.ens);const mm=en.mods.map(id=>byId(id)||BOUT.find(b=>b.id===id));modale('Ensemble « '+en.nom+' »',`<p class="note">${en.d}</p><div class="liste">${mm.map(x=>`<div class="li"><div class="ico sm">${ic(x.ic)}</div><div class="sp"><b>${x.nom}</b><span class="note">${byId(x.id)&&byId(x.id).on?'déjà installé et actif':byId(x.id)?'installé, inactif':'à installer'}</span></div></div>`).join('')}</div><p class="note">Impact calculé : aucune dépendance cassée, 2 nouvelles permissions réseau (api.exemple.org).</p>`,'Installer les manquants','Ensemble installé');return}
+  if(t.dataset.act){const a=t.dataset.act;
+    if(a==='avance'){S.avance=!S.avance;if(S.avance)toast('Mode avancé : tes gestes sont connus de Cassandra, et chacun se défait.');rendre()}
+    else if(a==='gel'){S.gel=!S.gel;rendre();toast(S.gel?'Cassandra est en pause : elle observe, elle n’agit plus.':'Cassandra reprend.')}
+    else if(a==='passe')toast('Passe lancée : rien à faire pour l’instant.')
+    else if(a==='demande'){const d=$('#dem');toast(d&&d.value?'Cassandra s’en occupe : « '+d.value+' »':'Dis-lui ce que tu veux.')}
+    else if(a==='annule'){S.att={};rendre()}
+    else if(a==='applique'){Object.entries(S.att).forEach(([id,v])=>byId(id).on=v);S.att={};rendre();toast('Changements appliqués')}
+    else if(a==='majok'||a==='maj1'){toast('Mise à jour appliquée, santé surveillée 15 min')}
+    else if(a==='addsrc')modale('Ajouter une source',`<div class="champ"><label>Nom</label><input placeholder="Registre interne"></div><div class="champ"><label>Adresse de l’index</label><input class="mono" placeholder="https://…/index.json"></div><div class="champ"><label>Clé publique de signature (optionnel)</label><textarea rows="3" class="mono" placeholder="-----BEGIN PUBLIC KEY-----"></textarea></div><div class="alerte al"><div class="sp"><b>Toujours non officiel.</b> <span class="note">Cette source ne peut jamais donner le niveau « Officiel » ; ses archives sont examinées une à une.</span></div></div>`,'Tester puis ajouter','Source ajoutée');
+    else if(a==='tester')toast('Source joignable · index valide · signature vérifiée');
+    else if(a==='nouveau')modale('Nouveau module',`<div class="champ"><label>Identifiant</label><input class="mono" placeholder="mon-module"></div><div class="champ"><label>Nom</label><input placeholder="Mon module"></div><div class="champ"><label>Famille</label><select>${Object.values(FAM).map(f=>`<option>${f}</option>`).join('')}<option>Nouvelle famille…</option></select></div><div class="champ"><label>Importance</label><select><option>optionnel</option><option>important</option><option>vital</option></select></div><pre>mon-module/\n  CN_manifeste.toml\n  CN_module.py\n  tests/</pre>`,'Créer le squelette','Squelette créé');
+    else if(a==='depot')modale('Déposer une archive',`<div class="carte" style="border-style:dashed;align-items:center;padding:28px"><b style="color:var(--strong)">Glisse un fichier .cmod ici</b><span class="note">32 Mo au plus. Examiné en quarantaine : rien ne s’installe avant ton accord.</span></div>`,'Choisir un fichier','');
+    else if(a==='sansechec')modale('Redémarrer en mode sans échec ?',`<p class="note">Cassandra redémarre avec <b>seulement les modules vitaux</b> (Droits, Passerelle). Les autres reviennent au redémarrage normal.</p>`,'Redémarrer','Redémarrage en mode sans échec…');
+    else if(a==='blanc')toast('Test à blanc : 12 modules démarrent, 0 échec simulé');
+    else if(a==='restaure')toast('Point de restauration créé');
+    else if(a==='retour')toast('Version précédente remise');
+    else if(a==='pause')toast('Module mis en pause');
+    else toast('Fait');
+    return}
+  if(t.dataset.desinst){const m=byId(t.dataset.desinst);const rec=requisPar(m.id).filter(x=>x.on);modale('Désinstaller '+m.nom+' ?',`<p class="note">${rec.length?'Cela arrêterait aussi : <b>'+rec.map(x=>x.nom).join(', ')+'</b>. ':''}Il est gardé 30 jours dans la corbeille avec ses réglages.</p>`,'Désinstaller','Désinstallé (corbeille 30 j)');return}
+});
+document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.sel;if(k){S[k]=e.target.value;rendre()}});
+$('#voile').addEventListener('click',fermer);
+/* palette */
+const CMD=()=>[...SECS.filter(s=>s[0]!=='sep').map(s=>({t:'Aller à '+s[2],k:'section',f:()=>go(s[0])})),...M.map(m=>({t:m.nom,k:'module',f:()=>ouvrir(m.id)})),{t:'Mettre à jour tout ce qui est sûr',k:'action',f:()=>toast('Mise à jour appliquée')},{t:'Redémarrer en mode sans échec',k:'action',f:()=>go('sante')},{t:'Ajouter une source',k:'action',f:()=>{go('src')}}];
+function pal(){const p=$('#pal');p.classList.add('on');$('#voile').classList.add('on');const q=$('#pal-q');q.value='';q.focus();palR()}
+function palR(){const q=$('#pal-q').value.toLowerCase();const r=CMD().filter(c=>c.t.toLowerCase().includes(q)).slice(0,8);$('#pal-r').innerHTML=r.map((c,i)=>`<button data-p="${i}">${esc(c.t)}<small>${c.k}</small></button>`).join('')||'<div class="note" style="padding:10px">Rien ne correspond.</div>';$$('#pal-r button').forEach((b,i)=>b.onclick=ev=>{ev.stopPropagation();fermer();r[i].f()})}
+$('#pal-q').addEventListener('input',palR);
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();pal()}if(e.key==='Escape')fermer()});
+document.body.classList.add('annot');
+$('#annot').addEventListener('click',e=>{const on=document.body.classList.toggle('annot');e.currentTarget.setAttribute('aria-pressed',on);e.currentTarget.textContent='Annotations de conception : '+(on?'oui':'non')});
+rendre();
+</script>
+</body></html>

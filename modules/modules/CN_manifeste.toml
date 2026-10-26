@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #95c3ef
+# VERSION CN : 0.1.0  #48f96c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La gestion des modules : ce qui est installé, actif ou à installer, ce qui dépend de quoi, et le geste d'activer ou de désactiver. Le noyau fait le travail (dépendances, essentiels, branchement à chaud) ; ce module en fait des capacités, donc des droits, une preuve, un retour et une trace.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=95c3ef ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=48f96c ▼▼▼
 [module]
 id = "modules"
 nom = "Modules"
@@ -45,6 +45,14 @@ defaut = "signes"
 aide = "« signes » : seulement les paquets signés par un éditeur dont vous avez posé la clé (config/cles/<éditeur>.pub). « tous » : un paquet non signé est permis, à vos risques : un module installé tourne DANS Cassandra, avec ses droits."
 
 [[reglages]]
+id = "autonomie"
+libelle = "Jusqu'où Cassandra gère seule les modules"
+type = "choix"
+choix = ["observer", "entretien", "reine"]
+defaut = "reine"
+aide = "« reine » : Cassandra gère tout (elle ajoute, met à jour, retire, active, désactive). « entretien » : elle entretient seulement (module révoqué retiré, mise à jour sans permission en plus, module en échec mis en pause). « observer » : elle regarde et raconte ce qu'elle ferait. À tout niveau elle n'installe que le registre officiel et les éditeurs vérifiés, et chaque geste se défait en un clic."
+
+[[reglages]]
 id = "registre_url"
 libelle = "Adresse d'un AUTRE registre de modules (non officiel)"
 aide = "Le registre officiel de Cassandra est intégré à l'application : il n'est pas un réglage et ne se retire pas. Ce réglage en ajoute un second (l'index d'un magasin tiers), affiché comme NON officiel : son index n'est pas signé par la racine de Cassandra, chaque archive y reste examinée de la même façon."
@@ -71,8 +79,8 @@ droit = "gerer"
 perimetre = ["l'état d'un module et de ses dépendances (actif / inactif) ; aucune donnée n'est touchée"]
 preuve = "le catalogue dit « actif » pour chacun des modules visés"
 retour = "désactiver ceux que ce geste vient d'activer"
-paliers = ["raconter", "auto"]
-qui = ["humain", "compte"]
+paliers = ["auto", "maitre", "raconter"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
 
 [[capacites]]
 id = "desactiver"
@@ -82,8 +90,8 @@ droit = "gerer"
 perimetre = ["l'état d'un module (et, en cascade, de ceux qui en dépendent) ; aucune donnée n'est effacée"]
 preuve = "le catalogue dit « inactif » pour chacun des modules visés"
 retour = "réactiver ceux que ce geste vient de désactiver"
-paliers = ["raconter", "auto"]
-qui = ["humain", "compte"]
+paliers = ["auto", "maitre", "raconter"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
 
 [[capacites]]
 id = "examiner"
@@ -116,8 +124,8 @@ droit = "installer"
 perimetre = ["le dossier d'un module dans les extensions"]
 preuve = "le catalogue montre la version remise"
 retour = "refaire un retour arrière : la version remplacée est en sauvegarde"
-paliers = ["raconter"]
-qui = ["humain"]
+paliers = ["auto", "raconter"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
 
 [[capacites]]
 id = "desinstaller"
@@ -127,8 +135,8 @@ droit = "installer"
 perimetre = ["le dossier d'un module dans les extensions, et ses données seulement sur demande"]
 preuve = "le catalogue ne montre plus le module"
 retour = "remettre le dossier sauvegardé (les données purgées restent en sauvegarde)"
-paliers = ["raconter"]
-qui = ["humain"]
+paliers = ["auto", "raconter"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
 
 [[capacites]]
 id = "abandonner"
@@ -138,8 +146,8 @@ droit = "installer"
 perimetre = ["la quarantaine"]
 preuve = "l'archive n'y est plus"
 retour = "déposer l'archive de nouveau"
-paliers = ["raconter"]
-qui = ["humain"]
+paliers = ["auto", "raconter"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
 
 [[capacites]]
 id = "versions"
@@ -174,13 +182,60 @@ externe = true
 perimetre = ["la quarantaine ; l'archive vient de l'hôte du registre et de lui seul"]
 preuve = "l'examen rend un jeton et l'archive est en quarantaine"
 retour = "abandonner l'archive : elle quitte la quarantaine"
-paliers = ["raconter"]
-qui = ["humain"]
+paliers = ["auto", "raconter"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "ajouter"
+libelle = "Mettre un module du registre en service d'un seul tenant : télécharger, examiner, vérifier la règle d'autonomie, installer, activer (le geste de Cassandra ; un humain peut aussi s'en servir)"
+risque = "eleve"
+droit = "installer"
+perimetre = ["le dossier d'un module dans les extensions et son état actif ; jamais un module livré avec le noyau, jamais une archive qui ne vient pas du registre officiel ou d'un éditeur vérifié (pour un agent)"]
+preuve = "le catalogue montre le module dans la version installée, et actif si l'activation était demandée"
+retour = "désactiver ce que ce geste vient d'activer, puis remettre la version d'avant ou retirer le module s'il était nouveau"
+paliers = ["auto", "raconter"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "entretien"
+libelle = "Une passe d'entretien : retirer un module révoqué, prendre une mise à jour permise, remettre la version d'avant si elle tourne mal, mettre en pause un module qui échoue ; chaque geste est réversible (simuler = ne rien faire, seulement dire)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["l'état et les versions des modules installés par archive ; aucune donnée n'est effacée"]
+preuve = "chaque geste fait est consigné avec le geste qui le défait"
+retour = "défaire, dans l'ordre inverse, chacun des gestes de la passe"
+paliers = ["auto", "maitre", "raconter"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[capacites]]
+id = "activite"
+libelle = "Le récit de ce qui est arrivé aux modules (installés, mis à jour, retirés, activés, désactivés) : qui l'a fait, et le geste qui le défait"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "annuler"
+libelle = "Défaire un acte du récit : le geste inverse du sien (activer un module désactivé, remettre la version d'avant, ré-installer un module retiré)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["l'état et les versions d'un module ; rien n'est effacé pour de bon"]
+preuve = "le geste inverse s'est exécuté sans erreur"
+retour = "refaire le geste que l'annulation vient de défaire"
+paliers = ["auto", "raconter"]
+qui = ["humain", "compte", "cassandra", "itare", "agent"]
+
+[[moteurs]]
+id = "entretien"
+libelle = "Fait la passe d'entretien de Cassandra sur les modules (toutes les six heures) : ce que son niveau d'autonomie lui permet, rien de plus"
+mode = "periodique"
+toutes_les_s = 21600
+duree_max_s = 300
 
 [permissions]
 reseau = ["le registre officiel de Cassandra : son index signé et ses archives", "l'autre registre de l'administrateur (réglage registre_url), s'il y en a un"]
 modules = true
 droits = true
+introspection = true
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
