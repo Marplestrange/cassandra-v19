@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.1.1  #d3ff7f
+# VERSION CN : 0.1.1  #bb674c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sites web que Cassandra suit : ceux d'un compte (déclarés, attribués, ou inscrits dans sa fiche de compte), ceux du panneau qui appartiennent au compte du panneau lié à ce compte. Une sonde chronomètre chaque site (code, durée, certificat) et en garde l'historique ; une panne, un retour, une lenteur, un certificat court font des constats. Chaque compte ne voit que ses sites ; l'administrateur voit l'état de tous, jamais le contenu. Demande d'adossement au panneau, accord limité dans le temps donné par le propriétaire, liens vers projets et contacts, journal des gestes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=d3ff7f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=bb674c ▼▼▼
 [module]
 id = "sites"
 nom = "Sites"
@@ -283,6 +283,21 @@ unite = "/j"
 famille = "Sites"
 vide = "rien_a_signaler"
 description = "Sites tombés. Le compte que personne ne tenait."
+[[ecrans]]
+id = "vue_sites"
+libelle = "Sites"
+domaine = "reseau"
+gabarit = "liste_detail"
+
+[[menus]]
+id = "sites"
+libelle = "Sites"
+ecran = "vue_sites"
+groupe = "parc"
+ordre = 30
+role = "utilisateur"
+icone = "globe"
+
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
