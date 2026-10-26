@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c66974
+# VERSION CN : 0.1.0  #5d1ab4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble l'interface V19 à partir de l'extraction brute de l'interface V18.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c66974 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5d1ab4 ▼▼▼
 """Assemble l'interface V19 à partir de l'extraction brute de l'interface V18.
 
 usage : python outils/ui/CN_assembler.py [docs/v18/CN_interface_v18.html] [interface/]
@@ -105,7 +105,7 @@ def assembler(src, sortie):
     rdir = os.path.join(sortie, "routes")
     if os.path.isdir(rdir):
         html += ['<script src="/routes/%s"></script>' % (f[3:] if f.startswith("CN_") else f) for f in sorted(os.listdir(rdir)) if f.endswith(".js")]      # l'URL perd le préfixe : le serveur le retrouve
-    html += ['<script src="/app.js"></script>', '<script src="/shell.js"></script>', '<script src="/modules-ui.js"></script>', '<script src="/console-module.js"></script>', '<script src="/evolution-ecran.js"></script>', '<script src="/disposition.js"></script>', '<script src="/aujourdhui.js"></script>', "</body>", "</html>"]
+    html += ['<script src="/app.js"></script>', '<script src="/shell.js"></script>', '<script src="/modules-ui.js"></script>', '<script src="/console-module.js"></script>', '<script src="/evolution-ecran.js"></script>', '<script src="/dns-ecran.js"></script>', '<script src="/disposition.js"></script>', '<script src="/aujourdhui.js"></script>', "</body>", "</html>"]
     open(os.path.join(sortie, "CN_index.html"), "w", encoding="utf-8", newline="\n").write("\n".join(html))
     poser_entetes(sortie)
     return {k: len(v) for k, v in d.items() if isinstance(v, str)}
