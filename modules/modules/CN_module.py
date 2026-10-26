@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #944a34
+# VERSION CN : 0.1.0  #8acea6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=944a34 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8acea6 ▼▼▼
 """Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 
 Le travail (plan d'activation avec dépendances, refus d'un essentiel, branchement à chaud) est celui du noyau ; ce module en fait des
@@ -27,7 +27,7 @@ def brancher(ctx):
         return next((m for m in g.catalogue() if m["id"] == mid), None)
 
     def lister(ctx):
-        return {"modules": g.catalogue(), "gere": bool(g.gere())}      # gere=False : instance de développement, tous les modules sont branchés et l'état n'y change rien
+        return dict({"modules": g.catalogue(), "gere": bool(g.gere())}, **g.sections())      # gere=False : instance de développement, tous les modules sont branchés et l'état n'y change rien
 
     def fiche(ctx, module=""):
         m = entree(module)

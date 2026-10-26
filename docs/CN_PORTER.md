@@ -12,7 +12,7 @@
 <!-- RÔLE       : Porter un module de la V18 vers la V19 -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d5d3a8 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=5aca3c ▼▼▼ -->
 # Porter un module de la V18 vers la V19
 
 Ce guide est donné tel quel à qui porte (une personne, ou un Claude). Il dit CE QUE LE NOYAU FAIT DÉJÀ, pour ne pas le réécrire.
@@ -55,7 +55,7 @@ version = "0.1.0"
 noyau_min = "0.1.0"
 description = "..."
 confiance = "interne"
-famille = "securite"          # regroupement dans le menu des modules
+section = "securite"          # la rubrique où il se range (déclarée par le noyau ou par ce module : [[sections]]) ; « famille » est l'ancien nom, toujours lu
 requiert = ["droits"]         # modules dont celui-ci dépend (jamais d'import entre modules)
 
 [[droits]]                    # ce qu'un COMPTE doit détenir pour utiliser les capacités qui y renvoient

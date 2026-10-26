@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5acfe9
+# VERSION CN : 0.1.0  #f6ad38
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5acfe9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f6ad38 ▼▼▼
 """La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 
 Un module n'écrit aucune route. Il déclare des capacités, et la passerelle les rend toutes joignables par la même URL :
@@ -236,7 +236,8 @@ class Passerelle:
                 return self._repondre(h, STATUTS_HTTP.get(r["statut"], 200), r)
             if methode == "GET" and chemin == "/api/modules":
                 branches = set(self.noyau._branches)               # ce qui est réellement branché (en exploitation : les modules actifs ; sans gestion des modules : tous)
-                return self._repondre(h, 200, {"modules": [dict({k: m[k] for k in ("id", "nom", "famille", "etat", "version", "essentiel") if k in m}, actif=m["id"] in branches) for m in self.noyau.catalogue_modules()]})
+                return self._repondre(h, 200, {"modules": [dict({k: m[k] for k in ("id", "nom", "famille", "etat", "version", "essentiel") if k in m}, actif=m["id"] in branches) for m in self.noyau.catalogue_modules()],
+                                               "sections": self.noyau.sections_modules()["sections"]})
             if chemin.startswith("/api/agir/"):
                 return self._agir(h, methode, chemin[len("/api/agir/"):], url.query, compte, acteur)
             if methode == "POST" and chemin.startswith("/api/televerser/"):

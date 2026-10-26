@@ -12,7 +12,7 @@
 <!-- RÔLE       : Écrire, distribuer et installer un module : le manifeste (importance, dépendances versionnées, points d'extension), le cycle de vie, la page App Store, la santé, le mode sûr. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7b5a66 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=690e54 ▼▼▼ -->
 # Écrire, distribuer et installer un module
 
 ## Créer
@@ -27,6 +27,7 @@ Le squelette est valide, se charge, s'active et répond (`mon_module.etat`). `py
 - **`conflits = ["autre"]`** : refusé à l'activation si l'autre est actif (dans les deux sens). **`suggere = [...]`** : sert mieux avec, sans l'exiger.
 - **`fournit = ["courrier"]`** : un nom de service. Un autre module peut `requiert = ["courrier"]` sans savoir QUEL module le rend ; l'id exact d'un module l'emporte sur un fournisseur.
 - **Points d'extension** (à la façon des hooks de Dolibarr) : un module offre `[[points_extension]] id = "colonne", libelle = "…", attend = ["titre"]` ; un autre y branche `[[contributions]] point = "hote:colonne", id = "prix", libelle = "…", donnees = { titre = "Prix" }`. Le module hôte lit ce qu'on branche chez lui par `modules.contributions` (les modules ACTIFS seulement) sans connaître les contributeurs. Une contribution vers un point inexistant, ou sans les clés attendues, est un défaut ; vers un module absent, elle dort.
+- **`section = "securite"`** : la rubrique où le module se range (page Modules, boutique). Une section n'est **pas une entrée de menu** : c'est une déclaration. Le noyau en déclare un jeu (`noyau/CN_sections.toml`) ; un module peut en apporter une nouvelle : `[[sections]] id = "paye", libelle = "Paie et RH", icone = "fam_finance", ordre = 95` (icône : une clé de l'interface, ou `icone_trace` : un tracé de path ; ordre de 1 à 899, plus petit = plus haut ; cinq au plus). Il ne redéfinit jamais une section du noyau (une remarque le dit), et entre deux modules le premier par identifiant l'emporte. Une section que personne ne déclare existe quand même, avec un nom tiré de son identifiant. Anciens noms toujours lus : `famille`, `famille_libelle`, `famille_icone`, `famille_icone_trace`.
 - **`permissions`** : ce que le module DEMANDE (réseau, écritures, privilèges…).
 
 ## Le cycle de vie (noyau/CN_cycle.py, capacités du module `modules`)

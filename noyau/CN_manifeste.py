@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #bf718b
+# VERSION CN : 0.1.0  #54d8bb
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=bf718b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=54d8bb ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -29,6 +29,8 @@ import re
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from .CN_sections import Section, ID as SECTION_ID, ICONE as SECTION_ICONE
 
 VERSION_NOYAU = "0.1.0"
 API_NOYAU = "1.0"     # le contrat offert aux modules (ctx, manifeste). Sa version MAJEURE change quand on casse la compatibilité.
@@ -374,7 +376,8 @@ class Manifeste:
     api: str = "1"             # la version MAJEURE de l'API du noyau que ce module vise
     permissions: Permissions = field(default_factory=Permissions)
     essentiel: bool = False    # un module essentiel ne se désactive pas (comptes, coffre, notifications...)
-    famille: str = ""          # regroupement dans le menu des modules (« securite », « reseau »...)
+    famille: str = ""          # la SECTION où le module se range (« securite », « reseau »...) ; écrite section = "..." (famille, ancien nom, est lu aussi)
+    sections: tuple = ()       # les sections NOUVELLES que ce module apporte ([[sections]]) : voir CN_sections
     contraintes: tuple = ()    # ((id, « >=0.2, <1 »), ...) : les versions que les dépendances doivent avoir
     conflits: tuple = ()       # des modules qui ne peuvent pas être actifs en même temps que celui-ci
     suggere: tuple = ()        # des modules qui lui servent sans être requis
@@ -476,8 +479,10 @@ def valider(brut: dict) -> list:
             e.append("permissions.ecritures : « %s » doit être un chemin absolu sans « .. »" % chemin)
     if "essentiel" in m and not isinstance(m["essentiel"], bool):
         e.append("module.essentiel : vrai ou faux")
-    if "famille" in m and (not isinstance(m["famille"], str) or len(m["famille"]) > 40):
-        e.append("module.famille : un texte de 40 caractères au plus")
+    for champ in ("section", "famille"):
+        if champ in m and (not isinstance(m[champ], str) or len(m[champ]) > 40):
+            e.append("module.%s : un texte de 40 caractères au plus" % champ)
+    e.extend(_valider_sections(brut.get("sections", [])))
     if "famille_libelle" in m and (not isinstance(m["famille_libelle"], str) or not m["famille_libelle"].strip() or len(m["famille_libelle"]) > 40):
         e.append("module.famille_libelle : un nom de 40 caractères au plus")
     if "famille_icone" in m and (not isinstance(m["famille_icone"], str) or not re.match(r"^[a-z][a-z0-9_]{1,30}$", m["famille_icone"])):
@@ -938,6 +943,40 @@ def valider(brut: dict) -> list:
     return e
 
 
+def _valider_sections(bruts) -> list:
+    """Les [[sections]] qu'un module apporte : un identifiant, un nom lisible, une icône (clé ou tracé), un ordre."""
+    if not bruts:
+        return []
+    if not isinstance(bruts, list):
+        return ["sections : une liste de tables ([[sections]])"]
+    e, vus = [], set()
+    if len(bruts) > 5:
+        e.append("sections : cinq au plus par module")
+    for i, d in enumerate(bruts):
+        nom = "sections[%d]" % i
+        if not isinstance(d, dict):
+            e.append("%s : une table" % nom)
+            continue
+        ident = d.get("id", "")
+        if not isinstance(ident, str) or not SECTION_ID.match(ident):
+            e.append("%s.id : minuscules, chiffres et _ (2 à 31 caractères, commence par une lettre)" % nom)
+        elif ident in vus:
+            e.append("%s.id : « %s » déclarée deux fois" % (nom, ident))
+        vus.add(ident)
+        if not isinstance(d.get("libelle"), str) or not d["libelle"].strip() or len(d["libelle"]) > 40:
+            e.append("%s.libelle : un nom de 40 caractères au plus" % nom)
+        if "icone" in d and (not isinstance(d["icone"], str) or not SECTION_ICONE.match(d["icone"])):
+            e.append("%s.icone : une clé d'icône (lettres minuscules, chiffres, _)" % nom)
+        if "icone_trace" in d and not trace_valide(d["icone_trace"]):
+            e.append("%s.icone_trace : un tracé de path seulement (commandes M L H V C S Q T A Z, nombres, espaces, virgules ; 800 caractères au plus)" % nom)
+        if "ordre" in d and (isinstance(d["ordre"], bool) or not isinstance(d["ordre"], int) or not 1 <= d["ordre"] <= 899):
+            e.append("%s.ordre : un entier de 1 à 899" % nom)
+        for k in d:
+            if k not in ("id", "libelle", "icone", "icone_trace", "ordre"):
+                e.append("%s : champ inconnu « %s »" % (nom, k))
+    return e
+
+
 def _qualifier(module: str, droit) -> str:
     """« lire » dans le module « dns » devient « dns.lire » ; « autre.lire » reste tel quel ; vide reste vide."""
     if not droit:
@@ -963,7 +1002,8 @@ def construire(brut: dict, source="") -> Manifeste:
         confiance=m.get("confiance", "interne"), requiert=tuple(lire_requis(x)[0] for x in m.get("requiert", ())),
         contraintes=tuple(lire_requis(x) for x in m.get("requiert", ()) if lire_requis(x)[1]),
         conflits=tuple(m.get("conflits", ())), suggere=tuple(m.get("suggere", ())), fournit=tuple(m.get("fournit", ())),
-        essentiel=bool(m.get("essentiel", False)), famille=str(m.get("famille", "")),
+        essentiel=bool(m.get("essentiel", False)), famille=str(m.get("section") or m.get("famille", "")),
+        sections=tuple(Section(d["id"], d["libelle"].strip(), str(d.get("icone", "")), str(d.get("icone_trace", "")), int(d.get("ordre", 500)), m["id"]) for d in (brut.get("sections") or [])),
         famille_libelle=str(m.get("famille_libelle", "")).strip(), famille_icone=str(m.get("famille_icone", "")),
         icone_trace=str(m.get("icone_trace", "")), famille_icone_trace=str(m.get("famille_icone_trace", "")),
         importance=str(m.get("importance", "vital" if m.get("essentiel") else "")), sans=str(m.get("sans", "")).strip(),

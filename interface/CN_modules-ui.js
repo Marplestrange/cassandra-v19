@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #80a486
+// VERSION CN : 0.1.0  #8bc505
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=80a486 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=8bc505 ▼▼▼
 /* Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 
    Réglages a maintenant trois visions :
@@ -27,22 +27,17 @@
   "use strict";
   const CASS = window.CASS;
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  // des noms qui disent ce qu'on y trouve, sans jargon de la maison
-  const LIB = { socle: "Fondations", securite: "Sécurité et accès", reseau: "Réseau et domaines", hebergement: "Hébergement et sites", sites: "Sites web", communication: "Courrier et messagerie",
-                echanges: "Échanges et collaboration", canaux: "Canaux de contact", gestion: "Productivité et gestion", travail: "Travail", supervision: "Surveillance et journaux", agents: "Intelligence artificielle",
-                moteurs: "Moteurs", systeme: "Système et automatismes", evolution: "Auto-amélioration", autres: "Divers", "refusés": "Refusés" };
-  const ORDRE = ["socle", "securite", "reseau", "hebergement", "sites", "communication", "echanges", "canaux", "gestion", "finance", "travail", "supervision", "agents", "moteurs", "systeme", "evolution", "autres", "refusés"];
+  // Les SECTIONS (les rubriques où se rangent les modules) viennent du noyau : celles qu'il déclare, celles que les modules apportent ([[sections]]). Rien n'est écrit en dur ici.
   const ETATS = { actif: ["Actif", "ok"], inactif: ["Inactif", ""], a_installer: ["À installer", "warn"], refuse: ["Refusé", "bad"] };
-  // Une famille que personne n'a nommée ici : celle que le premier module qui la déclare a nommée (famille_libelle), sinon son identifiant rendu lisible.
-  const declaree = (f, champ) => { const m = catalogue.find((x) => (x.famille || "autres") === f && x[champ]); return m ? m[champ] : ""; };
-  const famLib = (f) => LIB[f] || declaree(f, "famille_libelle") || (f ? f.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()) : "Divers");
-  const famIcone = (f) => declaree(f, "famille_icone");
+  const sectionDe = (f) => sections.find((x) => x.id === f);
+  const famLib = (f) => { const x = sectionDe(f); return x ? x.libelle : (f ? f.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()) : "Divers"); };
+  const famIcone = (f) => { const x = sectionDe(f); return x ? x.icone || "" : ""; };
   // Un tracé apporté par un module : revalidé ICI avant de devenir du SVG (le serveur l'a déjà vérifié ; on ne se fie pas à lui pour ce qui s'insère dans la page).
   const TRACE = /^[Mm][MmLlHhVvCcSsQqTtAaZz0-9 .,\-]{3,799}$/;
   const trace = (d) => (typeof d === "string" && TRACE.test(d) ? '<path d="' + d + '"/>' : "");
-  const famTrace = (f) => trace(declaree(f, "famille_icone_trace"));
+  const famTrace = (f) => { const x = sectionDe(f); return x ? trace(x.icone_trace) : ""; };
 
-  let catalogue = [], reglages = [], gere = true;
+  let catalogue = [], sections = [], reglages = [], gere = true;
 
   function pret() { return typeof SET_VISIONS !== "undefined" && document.getElementById("set-corps"); }
   const admin = () => { try { return setEstAdmin(); } catch (e) { return false; } };
@@ -51,16 +46,18 @@
   // ── ce qu'on lit ────────────────────────────────────────────────────
   async function lire() {
     reglages = ((await CASS.agir("reglages.lire", {})) || {}).reglages || [];
-    catalogue = [];
-    if (admin()) { try { const l = (await CASS.agir("modules.lister", {})) || {}; catalogue = l.modules || []; gere = l.gere !== false; } catch (e) { catalogue = []; } }
+    catalogue = []; sections = [];
+    if (admin()) { try { const l = (await CASS.agir("modules.lister", {})) || {}; catalogue = l.modules || []; sections = l.sections || []; gere = l.gere !== false; } catch (e) { catalogue = []; } }
     if (!gere) catalogue.forEach((m) => { if (m.etat !== "refuse") m.etat = "actif"; });      // instance de développement : tout ce qui est chargé tourne
     if (!catalogue.length) {            // sans le droit : au moins les noms, depuis la porte publique du noyau
-      try { const d = await (await fetch("/api/modules")).json(); catalogue = (d.modules || []).map((m) => Object.assign({ requiert: [], requis_par: [], peut_activer: {}, peut_desactiver: {} }, m)); } catch (e) {}
+      try { const d = await (await fetch("/api/modules")).json(); catalogue = (d.modules || []).map((m) => Object.assign({ requiert: [], requis_par: [], peut_activer: {}, peut_desactiver: {} }, m)); sections = d.sections || []; } catch (e) {}
     }
   }
+  // les sections qui ont au moins un module, dans l'ordre que le noyau a résolu ; une section inconnue du noyau vient après
   const familles = () => {
-    const f = [...new Set(catalogue.map((m) => m.famille || "autres"))];
-    return f.sort((a, b) => (ORDRE.indexOf(a) < 0 ? 99 : ORDRE.indexOf(a)) - (ORDRE.indexOf(b) < 0 ? 99 : ORDRE.indexOf(b)) || a.localeCompare(b));
+    const utiles = [...new Set(catalogue.map((m) => m.famille || "autres"))];
+    const rang = (f) => { const i = sections.findIndex((x) => x.id === f); return i < 0 ? 9999 : i; };
+    return utiles.sort((a, b) => rang(a) - rang(b) || a.localeCompare(b));
   };
 
   // ── le rail et les sections, posés une fois ─────────────────────────

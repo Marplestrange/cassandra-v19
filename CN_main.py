@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2d557b
+# VERSION CN : 0.1.0  #f9d208
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2d557b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f9d208 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -51,7 +51,7 @@ import threading
 import time
 from pathlib import Path
 
-from noyau import CN_chargeur as chargeur, CN_cycle as cycle, CN_manifeste as manifeste, CN_nouveau as nouveau, CN_paquets as paquets, CN_systemd as systemd
+from noyau import CN_chargeur as chargeur, CN_cycle as cycle, CN_manifeste as manifeste, CN_nouveau as nouveau, CN_paquets as paquets, CN_sections as sections, CN_systemd as systemd
 from noyau.CN_base import Base
 from noyau.CN_bus import TOUT, Bus
 from noyau.CN_catalogue import Catalogue
@@ -158,7 +158,7 @@ class Noyau:
                        {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
                         "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine, "point": self.points.appeler, "evolution": self.evolution,
                         "urgence": types.SimpleNamespace(freins=self.freins, freiner=self.freiner, en_crise=self.en_crise, crise=self.crise),
-                        "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, cycle=self.cycle, sante=self.sante_module, contributions=self.contributions, extensions=lambda: self.extensions, capacites=self.capacites_de, catalogue=self.catalogue_modules, activer=self.activer, desactiver=self.desactiver)})
+                        "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, cycle=self.cycle, sante=self.sante_module, contributions=self.contributions, extensions=lambda: self.extensions, capacites=self.capacites_de, catalogue=self.catalogue_modules, sections=self.sections_modules, activer=self.activer, desactiver=self.desactiver)})
         self.executeur.contextes[m.id] = ctx
         return ctx
 
@@ -404,6 +404,15 @@ class Noyau:
             return self._catalogue_depuis(connus, refus)
         finally:
             self._connus_fige = None
+
+    def sections_modules(self) -> dict:
+        """Les sections où se rangent les modules (page Modules, boutique) : celles du noyau, celles que les modules déclarent, avec leur nombre de modules. Une remarque dit ce qu'une déclaration n'a pas pu faire."""
+        connus, refus = self._connus()
+        liste, remarques = sections.resoudre([m for m, _ in connus.values()], avec_refuses=bool(refus))
+        n = collections.Counter((m.famille or "autres") for m, _ in connus.values())
+        n[sections.REFUSES] = len(refus)
+        return {"sections": [{"id": s.id, "libelle": s.libelle, "icone": s.icone, "icone_trace": s.icone_trace, "ordre": s.ordre, "origine": s.origine, "modules": n.get(s.id, 0)} for s in liste],
+                "remarques": remarques}
 
     def _catalogue_depuis(self, connus, refus) -> list:
         etats = self.etat_modules.tous()

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #fd3fcb
+// VERSION CN : 0.1.0  #160101
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=fd3fcb ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=160101 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -782,9 +782,8 @@
     if (fam !== "tous" && !cat.some((m) => (m.famille || "autres") === fam)) fam = "tous";
     E.famModules = fam;
     const nbDe = (f) => (f === "tous" ? cat.length : cat.filter((m) => (m.famille || "autres") === f).length);
-    const ICONE_FAM = { socle: "fam_socle", securite: "lock", reseau: "pv_sites", communication: "mail", echanges: "fam_echanges", canaux: "fam_canaux", agents: "bot", gestion: "tasks", supervision: "eye", hebergement: "pv_flotte", systeme: "fam_systeme", evolution: "spark", refusés: "fam_refuses", refuses: "fam_refuses" };
     M.familles().forEach((f) => { const t = M.famTrace(f); if (t) IC["fam_t_" + f] = t; });          // l'icône qu'un module apporte pour sa famille nouvelle
-    E.lateral = { titre: "Modules", actif: fam, items: [{ id: "tous", libelle: "Tous les modules", n: cat.length, icone: "puzzle" }].concat(M.familles().map((f) => ({ id: f, libelle: M.famLib(f), n: nbDe(f), icone: ICONE_FAM[f] || (IC["fam_t_" + f] ? "fam_t_" + f : (IC[M.famIcone(f)] ? M.famIcone(f) : "puzzle")) }))) };
+    E.lateral = { titre: "Modules", actif: fam, items: [{ id: "tous", libelle: "Tous les modules", n: cat.length, icone: "puzzle" }].concat(M.familles().map((f) => ({ id: f, libelle: M.famLib(f), n: nbDe(f), icone: IC["fam_t_" + f] ? "fam_t_" + f : (IC[M.famIcone(f)] ? M.famIcone(f) : "puzzle") }))) };
     const tete = fam === "tous" ? "Tous les modules" : M.famLib(fam);
     E.pageNom = CASS.nomOnglet("menus:vue_modules"); E.fil = ["Paramètres", "Modules et Applications", tete];
     const sc = corps.closest(".sh-scene"), t = sc && sc.querySelector(".sh-titre");

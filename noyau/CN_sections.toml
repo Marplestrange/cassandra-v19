@@ -1,0 +1,127 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : sections.toml
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : noyau
+# ZONE       : CN
+# VERSION CN : 0.1.0  #6abe64
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : sections.toml
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6abe64 ▼▼▼
+# Les sections du noyau : la déclaration (en données) des rubriques où se rangent les modules.
+# Une section n'est pas une entrée de menu : c'est une rubrique de rangement (page Modules, boutique).
+# Un module peut en apporter de nouvelles avec [[sections]] dans son manifeste ; il ne peut pas redéfinir celles-ci.
+# icone : une clé d'icône de l'interface ; ordre : 1 à 899 (plus petit = plus haut dans la page).
+
+[[section]]
+id = "socle"
+libelle = "Fondations"
+icone = "fam_socle"
+ordre = 10
+
+[[section]]
+id = "securite"
+libelle = "Sécurité et accès"
+icone = "lock"
+ordre = 20
+
+[[section]]
+id = "reseau"
+libelle = "Réseau et domaines"
+icone = "pv_sites"
+ordre = 30
+
+[[section]]
+id = "hebergement"
+libelle = "Hébergement et sites"
+icone = "pv_flotte"
+ordre = 40
+
+[[section]]
+id = "sites"
+libelle = "Sites web"
+icone = "pv_sites"
+ordre = 45
+
+[[section]]
+id = "communication"
+libelle = "Courrier et messagerie"
+icone = "mail"
+ordre = 50
+
+[[section]]
+id = "echanges"
+libelle = "Échanges et collaboration"
+icone = "fam_echanges"
+ordre = 60
+
+[[section]]
+id = "canaux"
+libelle = "Canaux de contact"
+icone = "fam_canaux"
+ordre = 70
+
+[[section]]
+id = "gestion"
+libelle = "Productivité et gestion"
+icone = "tasks"
+ordre = 80
+
+[[section]]
+id = "finance"
+libelle = "Finance et ventes"
+icone = "fam_finance"
+ordre = 90
+
+[[section]]
+id = "travail"
+libelle = "Travail"
+icone = "tasks"
+ordre = 100
+
+[[section]]
+id = "supervision"
+libelle = "Surveillance et journaux"
+icone = "eye"
+ordre = 110
+
+[[section]]
+id = "agents"
+libelle = "Intelligence artificielle"
+icone = "bot"
+ordre = 120
+
+[[section]]
+id = "moteurs"
+libelle = "Moteurs"
+icone = "fam_systeme"
+ordre = 130
+
+[[section]]
+id = "systeme"
+libelle = "Système et automatismes"
+icone = "fam_systeme"
+ordre = 140
+
+[[section]]
+id = "evolution"
+libelle = "Auto-amélioration"
+icone = "spark"
+ordre = 150
+
+[[section]]
+id = "autres"
+libelle = "Divers"
+icone = ""
+ordre = 900
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

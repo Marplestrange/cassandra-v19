@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #251638
+# VERSION CN : 0.1.0  #25dd88
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'assistant de création d'un module : un squelette valide, qui se charge, s'active et répond, que l'auteur n'a plus qu'à faire grandir.
 # MÉTHODE    : écrit un dossier (manifeste, code, mode d'emploi) puis le recharge avec le chargeur du noyau : un squelette que le noyau refuserait n'est jamais rendu
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=251638 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=25dd88 ▼▼▼
 """Un module neuf, prêt à greffer : `python CN_main.py module nouveau mon_module --nom "Mon module"`.
 
 Le squelette déclare une capacité de lecture (`etat`), un réglage (`message`), son importance et ce qui s'arrête sans lui ; son code se branche et répond. Rien n'est écrit
@@ -34,7 +34,7 @@ version = "0.1.0"
 noyau_min = "0.1.0"
 description = "{description}"
 confiance = "local"
-famille = "{famille}"
+section = "{famille}"
 importance = "{importance}"
 sans = "{sans}"
 # Dépendances : un identifiant, ou une plage de version. Exemples :
