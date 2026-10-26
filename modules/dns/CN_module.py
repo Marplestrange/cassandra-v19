@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dns
 # ZONE       : CN
-# VERSION CN : 0.2.1  #93c20d
+# VERSION CN : 0.2.1  #ff8b5f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Domaines et DNS.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.1 empreinte=93c20d ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.1 empreinte=ff8b5f ▼▼▼
 """Domaines et DNS.
 
 Porté de la V18 (`_dns_*`, `_detect_dns`, `_aut_dns_corriger`, `_dom_expiration`), avec ses leçons :
@@ -355,7 +355,9 @@ def brancher(ctx):
             r = db.lire("SELECT ts, serveur, derives FROM releves WHERE domaine=?", (dom,))
             sortie.append({"domaine": dom, "releve": r[0]["ts"] if r else None, "serveur": r[0]["serveur"] if r else "", "derives": json.loads(r[0]["derives"]) if r else [],
                            "expiration": valeur_etat("expiration:" + dom) or None, "version": reference(dom)[1]})
-        return {"zones": sortie, "ip_publique": valeur_etat("ip_actuelle") or None, "ip_reference": valeur_etat("ip_reference") or None}
+        return {"zones": sortie, "ip_publique": valeur_etat("ip_actuelle") or None, "ip_reference": valeur_etat("ip_reference") or None,
+                "suivis": sorted(liste("domaines")), "jeton": bool(str(ctx.reglage("jeton_cloudflare", "") or "").strip()), "expire_jours": int(ctx.reglage("expire_jours", 45) or 45),
+                "reglages": {k: str(ctx.reglage(k, "") or "") for k in ("ne_pas_toucher", "courrier_libre", "serveur_noms", "api_cloudflare")}}
 
     # ------------------------------------------------------------------ accepter la référence
     def accepter_reference(c, domaine=""):

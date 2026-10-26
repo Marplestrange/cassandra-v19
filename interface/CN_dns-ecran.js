@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #d37a23
+// VERSION CN : 0.1.0  #d465b9
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran « Zones DNS » du module dns : l'adresse publique face à sa référence, une carte par zone, et pour la zone choisie ses enregistrements, ses dérives (avec les gestes), la santé de son courrier et l'historique de sa référence.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dns) ; données par dns.etat et dns.reference (lectures en base, jamais de réseau à l'ouverture), le relevé en direct (dns.relever_zone) ne part qu'au clic ; gestes par dns.accepter_reference et dns.corriger_enregistrement, après une confirmation sur place ; les domaines suivis s'écrivent dans le réglage dns.domaines ; tout texte dynamique est échappé
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=d37a23 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=d465b9 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -55,6 +55,8 @@
     ".dz .ajout{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%;max-width:520px}.dz input[type=text]{flex:1 1 220px;min-width:0;border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,#fff);color:var(--txt);border-radius:10px;padding:8px 12px;font:13px " + MONO + "}" +
     ".dz input[type=text]:focus{outline:2px solid color-mix(in srgb,var(--accent) 40%,transparent);outline-offset:1px}.dz .hist{display:flex;flex-direction:column}.dz .hist .v{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:9px 0;border-top:1px solid var(--line);font-size:12.5px}" +
     ".dz .attente{padding:30px;text-align:center;color:var(--txt-soft)}.dz .puces{display:flex;gap:6px;flex-wrap:wrap}.dz .confirme{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--txt-soft)}" +
+    ".dz .rgg{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px 22px}.dz .rgb{display:flex;flex-direction:column;gap:8px;min-width:0}.dz .rg{display:flex;flex-direction:column;gap:5px;min-width:0}.dz .rg .l{display:flex;flex-direction:column}" +
+    ".dz input.pw{flex:1 1 220px;min-width:0;border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,#fff);color:var(--txt);border-radius:10px;padding:8px 12px;font:13px " + MONO + "}.dz .pastille .x{border:0;background:transparent;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 2px}.dz .pastille .x:hover{color:var(--danger)}" +
     ".sh-scene:has(>.sh-corps>.dz)>.sh-titre{display:none}" +
     "@media (max-width:820px){.dz .corps{grid-template-columns:minmax(0,1fr)}.dz .rang{grid-template-columns:minmax(0,1fr) auto}.dz .rang .val{grid-column:1 / -1}.dz .hero>div{border-left:0;border-top:1px solid var(--line)}.dz .hero>div:first-child{border-top:0}}";
 
@@ -102,21 +104,20 @@
   const SVG_GLOBE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18"/></svg>';
 
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};
-  CASS.sceneSurMesure.dns = async function (corps) {
+  CASS.sceneSurMesure.dns = async function (corps, ctx) {
+    if (ctx && /:console$/.test(String(ctx.ecran || ""))) { if (CASS.console) CASS.console("dns", corps); return; }      // le crochet couvre tout le module : sa console (les réglages) reste celle du noyau
     const anc = document.getElementById("dz-css"); if (anc) anc.remove();
     const st = document.createElement("style"); st.id = "dz-css"; st.textContent = CSS; document.head.appendChild(st);
     const racine = document.createElement("div"); racine.className = "dz"; corps.appendChild(racine);
 
-    const S = { etat: null, domaines: [], jeton: false, seuil: 45, sel: null, onglet: "enreg", ref: {}, hist: {}, live: {}, confirme: null, occupe: false, ajout: false, erreur: "" };
+    const S = { etat: null, domaines: [], jeton: false, seuil: 45, sel: null, onglet: "enreg", ref: {}, hist: {}, live: {}, confirme: null, occupe: false, ajout: false, reg: false, rg: {}, erreur: "" };
     const zone = () => (S.etat.zones || []).find((z) => z.domaine === S.sel);
 
     async function charger() {
       try {
         S.etat = await agir("dns.etat");
-        let rg = []; try { rg = ((await agir("reglages.lire")) || {}).reglages || []; } catch (e) {}
-        const r = (k) => rg.find((x) => x.cle === k) || {};
-        S.domaines = String(r("dns.domaines").valeur || "").split(",").map((x) => x.trim()).filter(Boolean);
-        S.jeton = !!r("dns.jeton_cloudflare").pose; S.seuil = Number(r("dns.expire_jours").valeur) || 45;
+        S.domaines = (S.etat.suivis || []).map((x) => String(x).trim()).filter(Boolean);      // dns.etat dit aussi ce qu'il faut des réglages : reglages.lire (tous les modules) coûtait 4 s
+        S.jeton = !!S.etat.jeton; S.seuil = Number(S.etat.expire_jours) || 45; S.rg = S.etat.reglages || {};
         S.erreur = "";
         const zs = S.etat.zones || [];
         if (!zs.some((z) => z.domaine === S.sel)) S.sel = zs.length ? zs.slice().sort((a, b) => etatZone(a, S.seuil).ordre - etatZone(b, S.seuil).ordre)[0].domaine : null;
@@ -146,7 +147,8 @@
         '<div class="acts"><button class="btn pri" data-a="suivre">＋ Suivre un domaine</button><button class="btn" data-a="reglages">Réglages</button></div></div>';
       if (S.erreur) h += '<div class="carte" style="padding:14px 18px;color:var(--danger)">' + esc(S.erreur) + "</div>";
       h += hero(zs);
-      if (S.ajout || !zs.length) h += formulaire(!zs.length);
+      if (S.reg) h += panneauReglages();
+      if ((S.ajout || !zs.length) && !S.reg) h += formulaire(!zs.length);      // le panneau de réglages porte déjà son champ d'ajout
       if (zs.length) h += '<div class="corps"><div class="liste">' + zs.slice().sort((a, b) => etatZone(a, S.seuil).ordre - etatZone(b, S.seuil).ordre || a.domaine.localeCompare(b.domaine)).map(carteZone).join("") + "</div>" + detail() + "</div>";
       racine.innerHTML = h;
       lier();
@@ -165,6 +167,19 @@
         (zs.length ? (c("ok") ? '<span class="pastille ok">' + c("ok") + " conforme" + (c("ok") > 1 ? "s" : "") + "</span>" : "") + (c("al") ? '<span class="pastille al">' + c("al") + " à regarder</span>" : "") + (c("dg") ? '<span class="pastille dg">' + c("dg") + " à corriger</span>" : "") + (c("mu") ? '<span class="pastille mu">' + c("mu") + " sans relevé</span>" : "") : '<span class="note">Aucun domaine suivi pour l’instant.</span>') + "</span></div>" +
         '<div><span class="lib">Prochaine échéance</span>' + (ech ? '<span class="gros ' + (ech.j <= 14 ? "dg" : ech.j <= S.seuil ? "al" : "ok") + '">' + (ech.j < 0 ? "expiré" : "dans " + ech.j + " j") + '</span><span class="note mono">' + esc(ech.d) + "</span>"
           : '<span class="gros" style="color:var(--txt-faint)">—</span><span class="note">Aucune expiration lue (une lecture par jour et par domaine, auprès du registre).</span>') + "</div></div>";
+    }
+
+    function panneauReglages() {
+      const champ = (cle, lib, aide, val, ph) => '<label class="rg"><span class="l"><b>' + lib + '</b><span class="note">' + aide + '</span></span><input type="text" data-rg="' + cle + '" value="' + esc(val) + '" placeholder="' + esc(ph || "") + '" autocomplete="off" spellcheck="false"></label>';
+      return '<div class="carte pan"><div class="barre-out"><h2 style="font:650 15px Inter,system-ui,sans-serif">Réglages</h2><div class="acts"><button class="btn mini" data-a="console" title="La console technique du module">Console du module</button><button class="btn mini" data-a="reglages">Fermer</button></div></div>' +
+        '<div class="rgg"><div class="rgb"><span class="lib">Domaines suivis</span><div class="puces">' + (S.domaines.length ? S.domaines.map((d) => '<span class="pastille">' + esc(d) + ' <button type="button" class="x" data-a="retirer" data-d="' + esc(d) + '" aria-label="Ne plus suivre ' + esc(d) + '">×</button></span>').join("") : '<span class="note">Aucun pour l’instant.</span>') + '</div><span class="note">Les domaines de votre panneau d’hébergement sont suivis d’office et ne se retirent pas ici.</span>' +
+        '<div class="ajout" style="justify-content:flex-start;max-width:none"><input type="text" id="dz-nv" placeholder="exemple.org" autocomplete="off" spellcheck="false" aria-label="Ajouter un domaine"><button class="btn pri" data-a="ajouter">Suivre</button></div></div>' +
+        '<div class="rgb"><span class="lib">Corrections chez Cloudflare</span><div>' + (S.jeton ? '<span class="pastille ok">jeton enregistré</span>' : '<span class="pastille mu">pas de jeton</span>') + '</div><span class="note">Avec un jeton (droit d’éditer les enregistrements DNS), Cassandra peut corriger une adresse restée sur l’ancienne ; sans lui, elle vous dit quoi corriger.</span>' +
+        '<div class="ajout" style="justify-content:flex-start;max-width:none"><input type="password" id="dz-jeton" class="pw" placeholder="' + (S.jeton ? "remplacer le jeton…" : "coller le jeton d’API") + '" autocomplete="off" aria-label="Jeton Cloudflare"><button class="btn pri" data-a="jeton">Enregistrer</button>' + (S.jeton ? '<button class="btn dng" data-a="jeton-retirer">Retirer</button>' : "") + "</div></div></div>" +
+        '<div class="rgg">' + champ("expire_jours", "Alerter avant l’expiration", "nombre de jours sous lesquels un domaine est signalé", String(S.seuil), "45") +
+        champ("serveur_noms", "Résolveur", "adresse du résolveur DNS à utiliser (vide : celui du système)", S.rg.serveur_noms || "", "1.1.1.1") +
+        champ("ne_pas_toucher", "Noms jamais corrigés", "séparés par des virgules ; Cassandra n’y touche jamais", S.rg.ne_pas_toucher || "", "vpn.exemple.org, …") +
+        champ("courrier_libre", "Courrier corrigeable", "domaines dont les noms de courrier (mail, smtp, DMARC, DKIM) peuvent être corrigés", S.rg.courrier_libre || "", "exemple.org") + '</div><span class="note rg-etat" id="dz-rg-etat">Chaque champ s’enregistre dès que vous le quittez.</span></div>';
     }
 
     function formulaire(vide) {
@@ -244,13 +259,23 @@
       racine.querySelectorAll("[data-z]").forEach((b) => b.addEventListener("click", async () => { S.sel = b.dataset.z; S.confirme = null; if (!S.ref[S.sel]) await chargerZone(S.sel); dessiner(); }));
       racine.querySelectorAll("[data-o]").forEach((b) => b.addEventListener("click", () => { S.onglet = b.dataset.o; S.confirme = null; dessiner(); }));
       racine.querySelectorAll("[data-a]").forEach((b) => b.addEventListener("click", () => geste(b)));
+      racine.querySelectorAll("[data-rg]").forEach((i) => i.addEventListener("change", async () => {
+        const dis = (t, bad) => { const e = racine.querySelector("#dz-rg-etat"); if (e) { e.textContent = t; e.style.color = bad ? "var(--danger)" : ""; } };
+        const k = i.dataset.rg; dis("…");
+        try { await agir("reglages.regler", { cle: "dns." + k, valeur: k === "expire_jours" ? Number(i.value) : i.value.trim() }); dis("✓ enregistré"); const sel = S.sel; S.etat = await agir("dns.etat"); S.seuil = Number(S.etat.expire_jours) || 45; S.rg = S.etat.reglages || {}; S.sel = sel; }
+        catch (e) { dis(e.message || String(e), true); }
+      }));
       const nv = racine.querySelector("#dz-nv"); if (nv) { nv.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); geste({ dataset: { a: "ajouter" } }); } }); if (S.ajout) nv.focus(); }
     }
     async function geste(b) {
       const a = b.dataset.a, z = S.sel;
       if (a === "suivre") { S.ajout = true; dessiner(); return; }
       if (a === "annuler") { S.ajout = false; dessiner(); return; }
-      if (a === "reglages") { if (CASS.ouvrirConsole) CASS.ouvrirConsole("dns", "Zones DNS"); return; }
+      if (a === "reglages") { S.reg = !S.reg; dessiner(); return; }
+      if (a === "console") { if (CASS.ouvrirConsole) CASS.ouvrirConsole("dns", "Zones DNS"); return; }
+      if (a === "retirer") { const v = b.dataset.d; return occupe(() => agir("reglages.regler", { cle: "dns.domaines", valeur: S.domaines.filter((x) => x !== v).join(",") }), "Domaine retiré : " + v); }
+      if (a === "jeton") { const v = String((racine.querySelector("#dz-jeton") || {}).value || "").trim(); if (!v) { dire("Collez le jeton d’API Cloudflare.", "err"); return; } return occupe(() => agir("reglages.regler_secret", { cle: "dns.jeton_cloudflare", valeur: v }), "Jeton Cloudflare enregistré."); }
+      if (a === "jeton-retirer") return occupe(() => agir("reglages.reinitialiser", { cle: "dns.jeton_cloudflare" }), "Jeton Cloudflare retiré.");
       if (a === "non") { S.confirme = null; dessiner(); return; }
       if (a === "demander-a") { S.confirme = "a"; dessiner(); return; }
       if (a === "demander-c") { S.confirme = b.dataset.id; dessiner(); return; }

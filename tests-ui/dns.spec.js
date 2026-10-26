@@ -15,11 +15,12 @@ test('Zones DNS : zones, dérives, courrier, gestes confirmés', async ({ page }
     const ref = { 'exemple.org|A': ['198.51.100.8'], 'exemple.org|MX': ['10 mail.exemple.org'], 'exemple.org|TXT': ['v=spf1 -all'], '_dmarc.exemple.org|TXT': ['v=DMARC1; p=none'], 'app.exemple.org|A': ['198.51.100.7'] };
     window.CASS.agir = async (cap, a) => {
       window.__appels.push([cap, a]);
-      if (cap === 'dns.etat') return { ip_publique: '198.51.100.8', ip_reference: '198.51.100.7', zones: [
+      if (cap === 'dns.etat') return { suivis: ['exemple.org'], jeton: true, expire_jours: 45, ip_publique: '198.51.100.8', ip_reference: '198.51.100.7', zones: [
         { domaine: 'exemple.org', releve: ts(7200), serveur: 'ns1.exemple.org', expiration: jour(200), version: 3, derives: [{ cle: 'app.exemple.org|A', nom: 'app.exemple.org', type: 'A', attendu: ['198.51.100.7'], observe: ['198.51.100.7'], ip_derivee: true }] },
         { domaine: 'vieux.net', releve: ts(900), serveur: 'ns', expiration: jour(9), version: 1, derives: [] },
         { domaine: 'neuf.io', releve: null, serveur: '', expiration: null, version: 0, derives: [] }] };
       if (cap === 'dns.reference') return a.historique ? { versions: [{ id: 3, ts: ts(7200), auteur: 'admin', annulee: 0 }] } : { domaine: a.domaine, version: 3, contenu: a.domaine === 'exemple.org' ? ref : {} };
+      if (cap === 'reglages.regler' || cap === 'reglages.regler_secret') return { ok: true };
       if (cap === 'reglages.lire') return { reglages: [{ cle: 'dns.domaines', valeur: 'exemple.org', pose: true }, { cle: 'dns.jeton_cloudflare', pose: true }, { cle: 'dns.expire_jours', valeur: 45 }] };
       if (cap === 'dns.relever_zone') return { domaine: a.domaine, serveur: 'ns1', enregistrements: Object.assign({}, ref, { 'app.exemple.org|A': ['198.51.100.8'] }), non_lus: [] };
       return {};
@@ -43,6 +44,21 @@ test('Zones DNS : zones, dérives, courrier, gestes confirmés', async ({ page }
   expect(await page.evaluate(() => window.__appels.some((a) => a[0] === 'dns.corriger_enregistrement'))).toBe(false);
   await dz.locator('[data-a="corriger"]').click();
   await expect.poll(() => page.evaluate(() => window.__appels.filter((a) => a[0] === 'dns.corriger_enregistrement').map((a) => a[1]))).toEqual([{ nom: 'app.exemple.org', type: 'A', valeur: '198.51.100.8' }]);
+
+  await dz.locator('[data-a="reglages"]').first().click();                              // les réglages vivent dans la page : suivre, retirer, jeton, seuils
+  await expect(dz.locator('[data-rg]')).toHaveCount(4);
+  await dz.locator('#dz-nv').fill('nouveau.org');
+  await dz.locator('[data-a="ajouter"]').click();
+  await expect.poll(() => page.evaluate(() => window.__appels.filter((a) => a[0] === 'reglages.regler').map((a) => a[1]))).toContainEqual({ cle: 'dns.domaines', valeur: 'exemple.org,nouveau.org' });
+  await dz.locator('[data-a="retirer"][data-d="exemple.org"]').click();
+  await expect.poll(() => page.evaluate(() => window.__appels.filter((a) => a[0] === 'reglages.regler').map((a) => a[1].valeur))).toContain('');
+  await dz.locator('#dz-jeton').fill('jeton-d-essai');
+  await dz.locator('[data-a="jeton"]').click();
+  await expect.poll(() => page.evaluate(() => window.__appels.some((a) => a[0] === 'reglages.regler_secret' && a[1].cle === 'dns.jeton_cloudflare'))).toBe(true);
+  await dz.locator('[data-rg="expire_jours"]').fill('60');
+  await dz.locator('[data-rg="expire_jours"]').dispatchEvent('change');
+  await expect.poll(() => page.evaluate(() => window.__appels.filter((a) => a[0] === 'reglages.regler').map((a) => a[1]))).toContainEqual({ cle: 'dns.expire_jours', valeur: 60 });
+  await dz.locator('[data-a="reglages"]').first().click();                              // on referme le panneau
 
   await dz.locator('[data-o="enreg"]').click();
   await dz.locator('[data-a="relever"]').first().click();
