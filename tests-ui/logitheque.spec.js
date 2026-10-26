@@ -34,6 +34,12 @@ test("Logithèque : Cassandra d'abord, le récit se défait, le verrou et la pau
       if (c === 'modules.lister') return { modules: e.modules, sections: e.sections, autonomie: e.autonomie, gere: true };
       if (c === 'modules.activite') return { autonomie: e.autonomie, fenetre: 'nuit', gel: e.gel, verrous: e.modules.filter((m) => m.verrou).map((m) => m.id), actes: e.actes };
       if (c === 'modules.entretien') return { niveau: e.autonomie, actions: [], constats: ['Billetterie 0.5.0 : elle demande + réseau chez un éditeur tiers, je ne la prends pas seule.'], erreurs: [] };
+      if (c === 'modules.registre') return { politique: 'signes', officiel: { url: 'https://exemple.invalid/index.json', officiel: true, emis: maintenant - 86400, expire: maintenant + 86400 * 50, signe_par: 'principale',
+          modules: [{ id: 'agenda-dav', nom: 'Agenda CalDAV', version: '1.0.4', version_en_place: '1.0.3', etat: 'mise_a_jour', niveau: 'verifie', editeur_id: 'acme', revoque: '' }], editeurs: [{ id: 'acme', nom: 'Acme' }], revocations: [{ id: 'vieux', versions: '<1', raison: 'faille' }],
+          installes_revoques: [{ id: 'vieux', nom: 'Vieux flux RSS', version: '0.9.0', raison: 'faille connue' }] }, autre: { url: '', officiel: false, modules: [] } };
+      if (c === 'modules.sante' && !a.module) return { modules: Object.fromEntries(e.modules.map((m) => [m.id, { module: m.id, verdict: m.id === 'courrier' ? 'a_surveiller' : 'sain', moteurs: [{ cle: m.id + '.m' }], capacites_24h: { lister: 3 }, constats_ouverts: 1 }])) };
+      if (c === 'modules.sante') return { module: a.module, verdict: a.module === 'courrier' ? 'a_surveiller' : 'sain', moteurs: [{ cle: a.module + '.m' }], capacites_24h: { lister: 3 }, constats_ouverts: 1 };
+      if (c === 'modules.ajouter') return { id: a.module, version: '1.0.4', actives: [] };
       if (c === 'urgence.geler') { e.gel = !!a.actif; return {}; }
       if (c === 'reglages.regler') { e.autonomie = a.valeur; return {}; }
       if (c === 'modules.verrouiller') { e.modules.find((m) => m.id === a.module).verrou = a.verrou; return {}; }
@@ -116,6 +122,53 @@ test("Logithèque : Cassandra d'abord, le récit se défait, le verrou et la pau
   // la Boutique monte l'App Store existant ; une section pas encore portée renvoie vers ce qui existe
   await page.evaluate(() => window.CASS.pageLogitheque(window.__hote, 'shop', { aller: () => {} }));
   await expect(lg.locator('#appstore-monte')).toBeVisible();
+
+  // Mises à jour : ce qui vient, ce qu'elle laisse de côté et pourquoi, la fenêtre se règle, « Maintenant » force
+  await page.evaluate(() => window.CASS.pageLogitheque(window.__hote, 'maj', { aller: () => {} }));
+  await expect(lg).toContainText('Agenda CalDAV');
+  await expect(lg).toContainText('1.0.3 → 1.0.4');
+  await expect(lg).toContainText('Éditeur vérifié (acme)');
+  await expect(lg).toContainText('Billetterie 0.5.0');
+  await lg.locator('select[data-reglage="modules.fenetre"]').selectOption('dimanche');
+  await expect.poll(() => page.evaluate(() => window.__appels.filter((a) => a[0] === 'reglages.regler' && a[1].cle === 'modules.fenetre').map((a) => a[1].valeur))).toEqual(['dimanche']);
+  await lg.locator('[data-a="maintenant"]').click();
+  await expect.poll(() => page.evaluate(() => window.__appels.filter((a) => a[0] === 'modules.ajouter').map((a) => a[1].module))).toEqual(['agenda-dav']);
+
+  // Sources : le registre officiel est lu, verrouillé, daté ; un autre registre s'enregistre comme réglage
+  await page.evaluate(() => window.CASS.pageLogitheque(window.__hote, 'src', { aller: () => {} }));
+  await expect(lg).toContainText('Registre officiel de Cassandra');
+  await expect(lg).toContainText('Clé racine « principale »');
+  await expect(lg).toContainText('Acme');
+  await lg.locator('#lg-url').fill('https://tiers.exemple/index.json');
+  await lg.locator('[data-a="url"]').click();
+  await expect.poll(() => page.evaluate(() => window.__appels.filter((a) => a[0] === 'reglages.regler' && a[1].cle === 'modules.registre_url').map((a) => a[1].valeur))).toEqual(['https://tiers.exemple/index.json']);
+
+  // Sécurité : ce qu'elle se refuse, un module révoqué signalé, la politique se règle
   await page.evaluate(() => window.CASS.pageLogitheque(window.__hote, 'sec', { aller: () => {} }));
-  await expect(lg).toContainText('Cette section arrive');
+  await expect(lg).toContainText('Ce que Cassandra se refuse');
+  await expect(lg).toContainText('Vieux flux RSS 0.9.0 : faille connue');
+  await lg.locator('[data-a="politique"][data-k="tous"]').click();
+  await expect.poll(() => page.evaluate(() => window.__appels.filter((a) => a[0] === 'reglages.regler' && a[1].cle === 'modules.politique_confiance').map((a) => a[1].valeur))).toEqual(['tous']);
+
+  // Santé : chaque module actif est sondé, un à surveiller se dit
+  await page.evaluate(() => window.CASS.pageLogitheque(window.__hote, 'sante', { aller: () => {} }));
+  await expect(lg).toContainText('1 module(s) à surveiller');
+  await expect(lg.locator('tr').filter({ hasText: 'Courrier' })).toContainText('à surveiller');
+  await expect(lg.locator('tr').filter({ hasText: 'Droits' })).toContainText('sain');
+
+  // Journal : le même récit, filtrable
+  await page.evaluate(() => window.CASS.pageLogitheque(window.__hote, 'jour', { aller: () => {} }));
+  await expect(lg.locator('.li').filter({ hasText: 'a désactivé' })).toHaveCount(1);
+  await lg.locator('[data-jfil="utilisateur"]').click();
+  await expect(lg).toContainText('a activé');
+  await expect(lg.locator('.li').filter({ hasText: 'Cassandra a désactivé' })).toHaveCount(0);
+
+  // Développeur et Réglages
+  await page.evaluate(() => window.CASS.pageLogitheque(window.__hote, 'dev', { aller: () => {} }));
+  await expect(lg).toContainText('module nouveau');
+  await page.evaluate(() => {
+    window.CASS.modulesUi = { lire: async () => {}, catalogue: () => [{ id: 'modules' }], fiche: () => '<div id="fiche-modules">Autonomie de Cassandra</div>', lierChamps: () => {} };
+    return window.CASS.pageLogitheque(window.__hote, 'reg', { aller: () => {} });
+  });
+  await expect(lg.locator('#fiche-modules')).toBeVisible();
 });

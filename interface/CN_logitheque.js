@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #8ef991
+// VERSION CN : 0.1.0  #958a75
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La Logithèque : où se gèrent les modules, leurs sources, leur sécurité et l'autonomie de Cassandra sur eux.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=8ef991 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=958a75 ▼▼▼
 // La Logithèque : où se gèrent les modules, leurs sources, leur sécurité et l'autonomie de Cassandra sur eux.
 // Une page, des sections (Vue d'ensemble, Installés, Mises à jour, Boutique, Sources, Sécurité, Santé, Journal, Développeur, Réglages).
 // Principe : Cassandra gère les modules SEULE ; l'utilisateur voit ce qu'elle fait (le récit, avec le pourquoi), peut tout défaire,
@@ -26,7 +26,7 @@
 
   const SECTIONS = [["vue", "Vue d’ensemble", "vue"], ["inst", "Installés", "inst"], ["maj", "Mises à jour", "maj"], ["shop", "Boutique", "shop"], ["src", "Sources", "src"],
     ["sec", "Sécurité et confiance", "sec"], ["sante", "Santé", "sante"], ["jour", "Journal et versions", "jour"], ["dev", "Développeur", "dev"], ["reg", "Réglages", "reg"]];
-  const PRETES = ["vue", "inst", "shop"];                         // les sections portées ; les autres renvoient vers les pages qui existent déjà
+  const PRETES = ["vue", "inst", "maj", "shop", "src", "sec", "sante", "jour", "dev", "reg"];                         // les sections portées ; les autres renvoient vers les pages qui existent déjà
 
   const I = {
     vue: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
@@ -100,7 +100,7 @@
     "@media(max-width:860px){.lgt{top:auto;height:88vh;width:100%;border-left:0;border-top:1px solid var(--line-strong,var(--line));border-radius:20px 20px 0 0}.lg .demande{flex-direction:column}.lg .demande .btn{width:100%}.lg .g2,.lg .grille{grid-template-columns:minmax(0,1fr)}}" +
     "@media (prefers-reduced-motion:reduce){.lg *,.lgt *{transition:none!important}}";
 
-  const S = { gere: true, cat: [], sections: [], act: { actes: [], verrous: [], autonomie: "reine", fenetre: "nuit", gel: false }, constats: null, rep: new Set(), q: "", fam: "toutes", etat: "tous", imp: "toutes", vue: "grille", ouvert: "", onglet: "apercu", occupe: false };
+  const S = { reg: null, regCharge: false, regErr: "", sante: {}, santeCharge: false, jfil: "tout", gere: true, cat: [], sections: [], act: { actes: [], verrous: [], autonomie: "reine", fenetre: "nuit", gel: false }, constats: null, rep: new Set(), q: "", fam: "toutes", etat: "tous", imp: "toutes", vue: "grille", ouvert: "", onglet: "apercu", occupe: false };
   let racine = null, corpsEl = null, sec = "vue", hooks = {}, escLie = false;
   const lire = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
   const ecrire = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -188,6 +188,120 @@
       (bloc || '<div class="carte vide">Aucun module ne correspond.</div>');
   }
 
+  // ── le registre : lu à la demande (réseau), partagé par Mises à jour, Sources et Sécurité ───────
+  async function chargerRegistre(force) {
+    if ((S.reg || S.regErr) && !force) return;                               // une panne ne relance pas la lecture en boucle : « Réessayer » le fait
+    if (S.regCharge) return;
+    S.regCharge = true; S.regErr = "";
+    try { S.reg = await agir("modules.registre"); } catch (e) { S.reg = null; S.regErr = e.message || String(e); }
+    S.regCharge = false;
+    if (["maj", "src", "sec"].includes(sec)) dessiner();
+  }
+  const jour = (ts) => new Date(ts * 1000).toLocaleDateString("fr-FR");
+  const off = () => (S.reg && S.reg.officiel) || null;
+  const regMuet = () => '<div class="alerte al"><div class="ico sm al">' + ic("src") + '</div><div class="sp"><b>Le registre officiel ne répond pas.</b> <span class="note">' + esc(S.regErr || (off() && off().erreur) || "Aucune réponse") + ' Rien n’est cassé : ce qui est installé tourne normalement, et Cassandra réessaie.</span></div><button class="btn mini" data-a="registre">Réessayer</button></div>';
+
+  // ── Mises à jour ────────────────────────────────────────────────────
+  function maj() {
+    chargerRegistre(); chargerConstats();
+    const o = off(), fen = S.act.fenetre || "nuit";
+    const hors = !S.reg && !S.regCharge ? regMuet() : o && o.erreur ? regMuet() : "";
+    const l = o && !o.erreur ? (o.modules || []).filter((m) => m.etat === "mise_a_jour" && !m.revoque) : [];
+    const cote = (S.constats && S.constats.liste) || [];
+    return titre("Mises à jour", "Cassandra prend seule celles que sa règle permet, dans ta fenêtre de maintenance. Tu vois ce qui vient, et ce qu’elle laisse de côté.", '<button class="btn" data-a="passe"' + (S.occupe ? " disabled" : "") + ">Lancer une passe maintenant</button>") + banDev() + hors +
+      '<div class="carte"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><h3>Ce qui vient</h3><span class="note">Prochaine passe : ' + esc(FENETRES[fen] || fen).toLowerCase() + ".</span></div>" +
+      (S.regCharge || !S.reg ? '<p class="note">Je regarde le registre…</p>' : l.length ? '<div class="liste">' + l.map((m) => '<div class="li"><div class="ico sm">' + ic("maj") + '</div><div class="sp"><b>' + esc(m.nom) + '</b> <span class="mono note">' + esc(m.version_en_place || "?") + " → " + esc(m.version) + "</span>" +
+        '<span class="pourquoi">' + ic("eye") + esc(m.niveau === "officiel" ? "Registre officiel" : m.niveau === "verifie" ? "Éditeur vérifié (" + (m.editeur_id || "") + ")" : "Source non reconnue") + " : Cassandra la prend selon sa règle.</span></div>" +
+        '<button class="btn mini" data-a="maintenant" data-id="' + esc(m.id) + '"' + (S.occupe ? " disabled" : "") + ">Maintenant</button></div>").join("") + "</div>" :
+        '<div class="vide"><b>Tout est à jour.</b><br><span class="note">Dernière lecture du registre : à l’instant.</span></div>') + "</div>" +
+      '<div class="g2"><div class="carte"><h3>Ce que je laisse de côté</h3>' + (!S.constats || S.constats.chargement ? '<p class="note">Je regarde…</p>' : cote.length ? '<div class="liste">' + cote.map((c) => '<div class="li"><div class="sp"><span class="note" style="color:var(--txt)">' + esc(c) + "</span></div></div>").join("") + "</div>" : '<p class="note">Rien : tout ce que ma règle permet est fait.</p>') + "</div>" +
+      '<div class="carte"><h3>Quand</h3><div class="barre"><div style="flex:1;min-width:180px"><b>Fenêtre de maintenance</b><span class="note" style="display:block">Cassandra n’applique rien en dehors. Une urgence (module révoqué, module en échec) n’attend pas.</span></div><select class="sel" data-reglage="modules.fenetre" aria-label="Fenêtre de maintenance">' +
+      Object.entries(FENETRES).map(([k, v]) => '<option value="' + k + '"' + (k === fen ? " selected" : "") + ">" + esc(v) + "</option>").join("") + "</select></div>" +
+      '<p class="note">Après chaque mise à jour, la santé du module est surveillée ; si elle tourne mal, la version précédente est remise toute seule et la version fautive n’est jamais reprise.</p></div></div>';
+  }
+
+  // ── Sources ─────────────────────────────────────────────────────────
+  function src() {
+    chargerRegistre();
+    const o = off(), a = S.reg && S.reg.autre;
+    const jours = o && o.expire ? Math.floor((o.expire - Date.now() / 1000) / 86400) : null;
+    const carte = !S.reg && S.regCharge ? '<div class="carte"><p class="note">Lecture du registre officiel…</p></div>' : !o || o.erreur ? regMuet() :
+      '<div class="carte"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div class="ico">' + ic("shield") + '</div><div class="sp" style="flex:1;min-width:220px"><h3>Registre officiel de Cassandra ' + pill("verrouillé", "ok", "lock") + '</h3><div class="mono note">' + esc(o.url) + '</div></div><button class="btn mini" data-a="registre">Relire</button></div>' +
+        '<div class="g2"><div><div class="lib">Signature</div><div>Clé racine « ' + esc(o.signe_par || "") + ' »</div></div><div><div class="lib">Fraîcheur de l’index</div><div>Émis le ' + jour(o.emis) + ", valable jusqu’au " + jour(o.expire) + (jours !== null ? ' <span class="p ' + (jours < 14 ? "al" : "ok") + '">' + jours + " j</span>" : "") + '</div></div><div><div class="lib">Contenu</div><div>' + (o.modules || []).length + " module(s) · " + (o.editeurs || []).length + " éditeur(s) vérifié(s) · " + (o.revocations || []).length + ' révocation(s)</div></div></div>' +
+        '<p class="note">Intégré à l’application : il ne se retire pas et ne se modifie pas. C’est le seul dont la signature donne le niveau « Officiel ».</p></div>';
+    const editeurs = o && !o.erreur ? '<div class="carte"><h3>Éditeurs vérifiés ' + pill("par le registre officiel", "ac", "shield") + '</h3>' + ((o.editeurs || []).length ? '<div class="liste">' + o.editeurs.map((e) => '<div class="li"><div class="sp"><b>' + esc(e.nom || e.id) + '</b><span class="note mono">ed_' + esc(e.id) + "</span></div>" + pill("vérifié", "ok") + "</div>").join("") + "</div>" : '<p class="note">Aucun pour l’instant.</p>') + '<p class="note">La liste vient de l’index signé : on la lit, on ne l’édite pas ici.</p></div>' : "";
+    const autre = '<div class="carte"><h3>Un autre registre ' + pill("toujours non officiel", "al") + '</h3><p class="note">Le magasin d’un tiers. Chaque archive y est examinée comme une archive déposée ; il ne peut jamais donner le niveau « Officiel ».</p><div class="barre"><input type="text" id="lg-url" class="sel" style="flex:1 1 240px" placeholder="https://…/index.json" value="' + esc((a && a.url) || "") + '" aria-label="Adresse de l’autre registre"><button class="btn" data-a="url">Enregistrer</button></div>' +
+      (a && a.erreur ? '<div class="alerte dg"><div class="sp">' + esc(a.erreur) + "</div></div>" : a && a.url ? '<p class="note">' + (a.modules || []).length + " module(s) proposé(s).</p>" : '<p class="note">Aucun. Vide = pas d’autre registre.</p>') + "</div>";
+    return titre("Sources", "D’où viennent les modules : le registre officiel (fixe) et, si tu en ajoutes un, un autre registre.") + banDev() + carte + '<div class="g2">' + editeurs + autre + "</div>";
+  }
+
+  // ── Sécurité et confiance ───────────────────────────────────────────
+  function sec_() {
+    chargerRegistre();
+    const o = off(), pol = (S.reg && S.reg.politique) || "signes";
+    const rev = o && !o.erreur ? o.installes_revoques || [] : [];
+    const perms = S.cat.filter((m) => { const p = m.permissions || {}; return m.confiance !== "interne" || (p.reseau || []).length + (p.ecritures || []).length + (p.privileges || []).length > 0; }).sort((a, b) => a.nom.localeCompare(b.nom));
+    const verrous = S.cat.filter((m) => m.verrou);
+    return titre("Sécurité et confiance", "Qui peut installer quoi, ce que chaque module a le droit de faire, et ce qui a été révoqué.") + banDev() +
+      (rev.length ? '<div class="alerte dg"><div class="ico sm" style="background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)">' + ic("warn") + '</div><div class="sp"><b>' + rev.length + " module(s) installé(s) révoqué(s) par le registre.</b> <span class=\"note\">" + rev.map((x) => esc(x.nom + " " + x.version + " : " + x.raison)).join(" · ") + ' Cassandra le retire dès qu’elle passe (niveau Entretien et au-dessus).</span></div></div>' : "") +
+      '<div class="carte"><h3>Ce que Cassandra se refuse, quel que soit son niveau</h3><div class="liste">' + [["shield", "Installer ce qui n’est pas signé", "Seuls le registre officiel et les éditeurs vérifiés comptent pour elle."], ["warn", "Installer ou garder un module révoqué", "Elle le retire ; il reste 30 jours en corbeille."], ["lock", "Désactiver un module vital", "Le noyau le refuse de toute façon."], ["eye", "Prendre seule plus de permissions chez un éditeur tiers", "Une mise à jour qui demande plus reste à l’écart, et elle le dit."], ["lock", "Toucher à un module verrouillé", "Seul l’utilisateur pose et lève un verrou."]].map((x) => '<div class="li"><div class="ico sm">' + ic(x[0]) + '</div><div class="sp"><b>' + x[1] + "</b><span class=\"note\">" + x[2] + "</span></div></div>").join("") + "</div></div>" +
+      '<div class="carte"><h3>Politique de confiance</h3><div style="display:flex;flex-direction:column;gap:8px">' + [["signes", "Paquets signés seulement", "Racine Cassandra, éditeur vérifié, ou clé que tu as posée. Recommandé."], ["tous", "Tout accepter", "Archives non signées comprises. Réservé à un module que tu écris toi-même."]].map((r) => '<button class="radio' + (pol === r[0] ? " on" : "") + '" data-a="politique" data-k="' + r[0] + '" role="radio" aria-checked="' + (pol === r[0]) + '"><i></i><div><b>' + r[1] + '</b><span class="note" style="display:block">' + r[2] + "</span></div></button>").join("") + "</div></div>" +
+      '<div class="carte"><h3>Ce que chaque module demande</h3><p class="note">Déclaratives : le module tourne dans Cassandra. Les modules du noyau sans permission particulière ne sont pas listés.</p>' + (perms.length ? '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>' + ["Module", "Niveau", "Réseau", "Écritures", "Privilèges"].map((h) => '<th style="text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);font:600 11px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-faint)">' + h + "</th>").join("") + "</tr></thead><tbody>" +
+        perms.map((m) => { const p = m.permissions || {}; return '<tr><td style="padding:8px 10px;border-bottom:1px solid var(--line)"><b>' + esc(m.nom) + '</b></td><td style="padding:8px 10px;border-bottom:1px solid var(--line)">' + niveauMod(m) + "</td>" + [(p.reseau || []).length, (p.ecritures || []).length, (p.privileges || []).length].map((n) => '<td style="padding:8px 10px;border-bottom:1px solid var(--line)" class="mono">' + n + "</td>").join("") + "</tr>"; }).join("") + "</tbody></table></div>" : '<p class="note">Rien à signaler.</p>') + "</div>" +
+      '<div class="carte"><h3>Modules verrouillés</h3>' + (verrous.length ? '<div class="liste">' + verrous.map((m) => '<div class="li"><div class="sp"><b>' + esc(m.nom) + '</b><span class="note">Cassandra n’y touche pas.</span></div><button class="btn mini" data-a="deverrouiller" data-id="' + esc(m.id) + '">Déverrouiller</button></div>').join("") + "</div>" : '<p class="note">Aucun. Un verrou se pose depuis le tiroir d’un module.</p>') + "</div>";
+  }
+
+  // ── Santé ───────────────────────────────────────────────────────────
+  async function chargerSante() {
+    if (S.santeCharge) return;
+    S.santeCharge = true;
+    try { const r = await agir("modules.sante"); S.sante = r.modules || {}; }                       // tous les modules en une passe
+    catch (e) { S.sante = {}; S.cat.forEach((m) => { S.sante[m.id] = { erreur: e.message || String(e) }; }); }
+    S.santeCharge = false;
+    if (sec === "sante") dessiner();
+  }
+  function sante() {
+    if (!Object.keys(S.sante).length && !S.santeCharge) chargerSante();
+    const V = { sain: ["sain", "ok", "check"], a_surveiller: ["à surveiller", "al", "eye"], en_echec: ["en échec", "dg", "warn"] };
+    const lignes = S.cat.filter((m) => m.etat === "actif").map((m) => ({ m: m, s: S.sante[m.id] }));
+    const mal = lignes.filter((x) => x.s && x.s.verdict && x.s.verdict !== "sain");
+    const fait = lignes.filter((x) => x.s).length;
+    return titre("Santé", "Chaque module est sondé : moteurs, échecs, refus. Cassandra suit et agit ; une panne n’arrête pas Cassandra.") + banDev() + banAvance() +
+      (mal.length ? '<div class="alerte al"><div class="ico sm al">' + ic("eye") + '</div><div class="sp"><b>' + mal.length + " module(s) à surveiller.</b> <span class=\"note\">" + mal.map((x) => esc(x.m.nom)).join(", ") + ". Cassandra les suit ; s’ils échouent en boucle, elle les met en pause et te le dit.</span></div></div>" : "") +
+      '<div class="carte"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><h3>Modules actifs</h3><span class="note">' + (S.santeCharge ? "Lecture… " + fait + "/" + lignes.length : lignes.length + " lus") + "</span></div>" +
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>' + ["Module", "État", "Moteurs", "Actes 24 h", "Constats"].map((h) => '<th style="text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);font:600 11px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-faint)">' + h + "</th>").join("") + "</tr></thead><tbody>" +
+      lignes.map((x) => { const s = x.s, v = s && V[s.verdict]; const n24 = s && s.capacites_24h ? Object.values(s.capacites_24h).reduce((a, b) => a + b, 0) : 0; return '<tr><td style="padding:8px 10px;border-bottom:1px solid var(--line)"><b>' + esc(x.m.nom) + '</b></td><td style="padding:8px 10px;border-bottom:1px solid var(--line)">' + (s ? (s.erreur ? pill("illisible", "dg") : v ? pill(v[0], v[1], v[2]) : pill("—", "")) : '<span class="note">…</span>') + '</td><td class="mono" style="padding:8px 10px;border-bottom:1px solid var(--line)">' + (s && s.moteurs ? s.moteurs.length : "—") + '</td><td class="mono" style="padding:8px 10px;border-bottom:1px solid var(--line)">' + (s && !s.erreur ? n24 : "—") + '</td><td class="mono" style="padding:8px 10px;border-bottom:1px solid var(--line)">' + (s && s.constats_ouverts != null ? s.constats_ouverts : "—") + "</td></tr>"; }).join("") + "</tbody></table></div></div>" +
+      '<div class="carte"><h3>Ce que Cassandra fait seule</h3><p class="note">Un module qui échoue en boucle est mis en pause (niveau Entretien et au-dessus) ; une mise à jour qui tourne mal est remise en arrière. Chaque geste est dans le journal, avec son « Défaire ».</p></div>';
+  }
+
+  // ── Journal et versions ─────────────────────────────────────────────
+  function jour_() {
+    const f = S.jfil, A = S.act.actes || [];
+    const l = A.map((a, i) => [a, i]).filter(([a]) => f === "tout" || (f === "auto" && ["cassandra", "itare", "agent", "noyau"].includes(a.par)) || (f === "utilisateur" && !["cassandra", "itare", "agent", "noyau"].includes(a.par)));
+    return titre("Journal et versions", "Tout ce qui est arrivé aux modules : qui l’a fait, pourquoi, et le geste qui le défait.") + banDev() +
+      '<div class="carte"><div class="barre"><h3 style="flex:1">Récit</h3><div class="seg">' + [["tout", "Tout"], ["auto", "Cassandra"], ["utilisateur", "Utilisateurs"]].map((c) => '<button class="' + (f === c[0] ? "on" : "") + '" data-jfil="' + c[0] + '">' + c[1] + "</button>").join("") + '</div></div><div class="liste">' +
+      (l.length ? l.map(([a, i]) => recitLi(a, i)).join("") : '<div class="vide"><b>Rien pour l’instant.</b><br><span class="note">Ce que Cassandra fait ou laisse de côté apparaîtra ici.</span></div>') + "</div></div>" +
+      '<div class="carte"><h3>Versions</h3><p class="note">Les versions restaurables d’un module installé par archive se lisent dans son tiroir (onglet Versions) : la version courante part elle-même en sauvegarde à chaque remplacement.</p></div>';
+  }
+
+  // ── Développeur ─────────────────────────────────────────────────────
+  function dev() {
+    const code = (t) => '<pre style="margin:0;background:color-mix(in srgb,var(--txt-strong,#111) 6%,transparent);border-radius:10px;padding:11px 13px;font:12px/1.55 ui-monospace,Menlo,monospace;overflow-x:auto">' + esc(t) + "</pre>";
+    return titre("Développeur", "Créer, tester et publier un module.") +
+      '<div class="g2"><div class="carte"><h3>Nouveau module</h3><p class="note">Le générateur écrit un squelette valide : manifeste (section, importance, « sans »), module et banc.</p>' + code('python CN_main.py module nouveau mon_module --nom "Mon module" --famille gestion --importance optionnel --dest donnees/extensions') + '<p class="note">Une section nouvelle se déclare dans le manifeste : <span class="mono">[[sections]]</span> (nom, icône, ordre).</p></div>' +
+      '<div class="carte"><h3>Publier</h3><p class="note">Construis l’archive, signe-la avec ta clé d’éditeur, puis propose-la au registre officiel (ou publie-la sur ton propre registre).</p>' + code("python outils/CN_paquet.py construire mon_module/\npython outils/CN_paquet.py signer --cle ed_moi.pem mon_module-0.1.0.cmod") + "</div></div>" +
+      '<div class="carte"><h3>Documentation</h3><p class="note">Le contrat d’un module, son cycle de vie, la règle d’autonomie de Cassandra et le registre sont décrits dans <span class="mono">docs/CN_MODULES_DEVELOPPEUR.md</span>, <span class="mono">docs/CN_AUTONOMIE_MODULES.md</span> et <span class="mono">docs/CN_REGISTRE.md</span>.</p></div>';
+  }
+
+  // ── Réglages : ceux du module « modules » (autonomie, fenêtre, confiance, autre registre), avec l'enregistrement à la sortie du champ ───────
+  function reg() { return titre("Réglages", "Le comportement général de la gestion des modules.") + '<div id="lg-reglages"><div class="carte vide">Lecture…</div></div>'; }
+  async function monterReglages() {
+    const z = racine.querySelector("#lg-reglages"), M = CASS.modulesUi; if (!z) return;
+    if (!M) { z.innerHTML = '<div class="carte vide">Écran indisponible.</div>'; return; }
+    try { await M.lire(); const m = M.catalogue().find((x) => x.id === "modules"); if (!m) throw new Error("module introuvable"); z.innerHTML = '<div class="carte">' + M.fiche(m, "global", false) + "</div>"; M.lierChamps(z, async () => { await rafraichir(); }); }
+    catch (e) { z.innerHTML = '<div class="carte vide">Les réglages ne se lisent pas : ' + esc(e.message || e) + "</div>"; }
+  }
+
   // ── les sections pas encore portées : on renvoie vers ce qui existe ───────
   function ailleurs(libelle) {
     return titre(libelle, "Cette section arrive.") + '<div class="carte pret"><h3>En attendant</h3><p class="note">La gestion complète reste disponible dans le menu de l’avatar : « Modules et Applications » (états, réglages, dépendances) et « App Store » (registre, archives, versions).</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-a="ouvrir-modules">Modules et Applications</button><button class="btn" data-go="shop">Ouvrir la boutique</button></div></div>';
@@ -259,6 +373,11 @@
       if (a === "passe") { S.occupe = true; dessiner(); const r = await agir("modules.entretien", { forcer: true }); S.occupe = false; S.constats = null; dire((r.actions || []).length ? (r.actions.length + " geste(s) fait(s).") : "Passe faite : rien à faire pour l’instant.", "ok"); await rafraichir(); return; }
       if (a === "autonomie") { await agir("reglages.regler", { cle: "modules.autonomie", valeur: b.dataset.k }); dire("Autonomie : " + NIV[b.dataset.k][0] + ".", "ok"); S.constats = null; await rafraichir(); return; }
       if (a === "defaire") { const l = S.act.actes[+b.dataset.i]; if (!l) return; await agir("modules.annuler", { module: l.module, geste: l.geste }); dire("C’est défait. Cassandra en prend note.", "ok"); await rafraichir(); return; }
+      if (a === "registre") { S.reg = null; await chargerRegistre(true); return; }
+      if (a === "maintenant") { S.occupe = true; dessiner(); const r = await agir("modules.ajouter", { module: b.dataset.id, pourquoi: "Mise à jour demandée tout de suite par l'utilisateur." }); S.occupe = false; S.reg = null; S.constats = null; dire(r && r.refuse ? r.refuse : nomDe(b.dataset.id) + " est à jour.", r && r.refuse ? "" : "ok"); await rafraichir(); chargerRegistre(true); return; }
+      if (a === "url") { const v = (racine.querySelector("#lg-url") || {}).value || ""; await agir("reglages.regler", { cle: "modules.registre_url", valeur: v.trim() }); dire(v.trim() ? "Autre registre enregistré." : "Autre registre retiré.", "ok"); S.reg = null; await chargerRegistre(true); return; }
+      if (a === "politique") { await agir("reglages.regler", { cle: "modules.politique_confiance", valeur: b.dataset.k }); dire("Politique : " + (b.dataset.k === "signes" ? "paquets signés seulement." : "tout accepter."), "ok"); S.reg = null; await chargerRegistre(true); dessiner(); return; }
+      if (a === "deverrouiller") { await agir("modules.verrouiller", { module: b.dataset.id, verrou: false }); dire(nomDe(b.dataset.id) + " : Cassandra peut de nouveau s’en occuper.", "ok"); await rafraichir(); return; }
       if (a === "bascule") { const m = S.cat.find((x) => x.id === b.dataset.id); if (!m) return; await agir(m.etat === "actif" ? "modules.desactiver" : "modules.activer", { module: m.id }); await rafraichir(); return; }
     } catch (e) { S.occupe = false; dire(e.message || String(e), "err"); dessiner(); }
   }
@@ -271,11 +390,19 @@
     if (sec === "vue") h = vue();
     else if (sec === "inst") h = inst();
     else if (sec === "shop") h = '<div id="lg-boutique"></div>';
+    else if (sec === "maj") h = maj();
+    else if (sec === "src") h = src();
+    else if (sec === "sec") h = sec_();
+    else if (sec === "sante") h = sante();
+    else if (sec === "jour") h = jour_();
+    else if (sec === "dev") h = dev();
+    else if (sec === "reg") h = reg();
     else h = ailleurs((SECTIONS.find((x) => x[0] === sec) || [0, "Logithèque"])[1]);
     racine.innerHTML = h;
     if (sec === "shop" && CASS.pageAppStore) { const z = racine.querySelector("#lg-boutique"); CASS.pageAppStore(z); }
     if (focus === "lg-q") { const q = racine.querySelector("#lg-q"); if (q) { q.focus(); q.setSelectionRange(99, 99); } }
     if (sec === "vue") chargerConstats();
+    if (sec === "reg") monterReglages();
   }
   CASS.logitheque = { sections: SECTIONS, pretes: PRETES };
   CASS.pageLogitheque = async function (corps, section, h) {
@@ -288,13 +415,18 @@
     racine.addEventListener("click", (e) => {
       const go = e.target.closest("[data-go]"); if (go) { if (hooks.aller) hooks.aller(go.dataset.go); return; }
       const sug = e.target.closest("[data-sug]"); if (sug) { demander(sug.dataset.sug); return; }
+      const jf = e.target.closest("[data-jfil]"); if (jf) { S.jfil = jf.dataset.jfil; dessiner(); return; }
       const et = e.target.closest("[data-etat]"); if (et) { S.etat = et.dataset.etat; dessiner(); return; }
       const b = e.target.closest("[data-a]"); if (b) { e.stopPropagation(); geste(b); return; }
       const m = e.target.closest("[data-ouvrir]"); if (m) ouvrir(m.dataset.ouvrir);
     });
     racine.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-ouvrir]")) { e.preventDefault(); ouvrir(e.target.dataset.ouvrir); } if (e.key === "Enter" && e.target.id === "lg-dem") { e.preventDefault(); const v = e.target.value.trim(); e.target.value = ""; if (v) demander(v); } });
     racine.addEventListener("input", (e) => { if (e.target.id === "lg-q") { S.q = e.target.value; dessiner(); } });
-    racine.addEventListener("change", (e) => { const k = e.target.dataset && e.target.dataset.sel; if (k) { S[k] = e.target.value; dessiner(); } });
+    racine.addEventListener("change", (e) => {
+      const k = e.target.dataset && e.target.dataset.sel; if (k) { S[k] = e.target.value; dessiner(); return; }
+      const r = e.target.dataset && e.target.dataset.reglage;
+      if (r) agir("reglages.regler", { cle: r, valeur: e.target.value }).then(async () => { dire("Enregistré.", "ok"); await rafraichir(); }).catch((x) => dire(x.message || String(x), "err"));
+    });
     if (!escLie) { escLie = true; document.addEventListener("keydown", (e) => { if (e.key === "Escape" && document.getElementById("lg-tiroir")) fermerTiroir(); }); }
     try { await charger(); } catch (e) { racine.innerHTML = '<div class="carte vide">Les modules ne se lisent pas : ' + esc(e.message || e) + "</div>"; return; }
     dessiner();

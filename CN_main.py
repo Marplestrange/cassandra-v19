@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #041967
+# VERSION CN : 0.1.0  #a45de4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=041967 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a45de4 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -158,7 +158,7 @@ class Noyau:
                        {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "reglages": self.reglages,
                         "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine, "point": self.points.appeler, "evolution": self.evolution,
                         "urgence": types.SimpleNamespace(freins=self.freins, freiner=self.freiner, en_crise=self.en_crise, crise=self.crise),
-                        "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, cycle=self.cycle, sante=self.sante_module, contributions=self.contributions, extensions=lambda: self.extensions, capacites=self.capacites_de, catalogue=self.catalogue_modules, sections=self.sections_modules, gel=lambda: "gel" in self.freins(), activer=self.activer, desactiver=self.desactiver)})
+                        "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, cycle=self.cycle, sante=self.sante_module, sante_tous=self.sante_tous, contributions=self.contributions, extensions=lambda: self.extensions, capacites=self.capacites_de, catalogue=self.catalogue_modules, sections=self.sections_modules, gel=lambda: "gel" in self.freins(), activer=self.activer, desactiver=self.desactiver)})
         self.executeur.contextes[m.id] = ctx
         return ctx
 
@@ -688,19 +688,34 @@ class Noyau:
     def sante_module(self, mid: str) -> dict:
         """La santé d'UN module, rassemblée de ce que le noyau mesure déjà : ses moteurs (exécutions, échecs, durée, suspension par le disjoncteur), ses détecteurs suspendus,
         et ce que ses capacités ont fait ou refusé depuis vingt-quatre heures. Le verdict : « sain », « a_surveiller » (un échec récent, un refus d'autorisation), « en_echec » (un moteur suspendu ou figé)."""
-        moteurs = [m for m in self.etat_moteurs() if m["cle"].startswith(mid + ".")]
-        detecteurs_coupes = sorted("%s.%s" % k for k in self._suspendus if k[0] == mid)
         depuis = time.time() - 86400
         types = {r["type"]: r["n"] for r in self.base.lire(
             "SELECT type, COUNT(*) AS n FROM evenements WHERE source=? AND objet_type='capacite' AND ts>? GROUP BY type", (mid, depuis))}
+        connus, _ = self._connus()
+        return self._sante_de(mid, types, self.etat_moteurs(), connus, self._compteurs(mid)["constats"])
+
+    def sante_tous(self) -> dict:
+        """La santé de TOUS les modules connus en une passe : une requête sur les événements des vingt-quatre dernières heures, une sur les constats, au lieu d'une par module
+        (la table des événements est grosse : quarante modules lus un à un, c'était plus d'une minute)."""
+        depuis = time.time() - 86400
+        types = {}
+        for r in self.base.lire("SELECT source, type, COUNT(*) AS n FROM evenements WHERE objet_type='capacite' AND ts>? GROUP BY source, type", (depuis,)):
+            types.setdefault(r["source"], {})[r["type"]] = r["n"]
+        constats = {r["module"]: r["n"] for r in self.base.lire("SELECT module, COUNT(*) AS n FROM constats WHERE etat='ouvert' GROUP BY module")}
+        moteurs = self.etat_moteurs()
+        connus, _ = self._connus()
+        return {mid: self._sante_de(mid, types.get(mid, {}), moteurs, connus, constats.get(mid, 0)) for mid in connus}
+
+    def _sante_de(self, mid, types, moteurs_tous, connus, constats) -> dict:
+        moteurs = [m for m in moteurs_tous if m["cle"].startswith(mid + ".")]
+        detecteurs_coupes = sorted("%s.%s" % k for k in self._suspendus if k[0] == mid)
         refus = types.get("capacite.refusee", 0)
         en_echec = [m["cle"] for m in moteurs if m["etat"] != "actif"] + detecteurs_coupes
         a_surveiller = [m["cle"] for m in moteurs if m["etat"] == "actif" and m["echecs"] and m["erreur"]]
         verdict = "en_echec" if en_echec else ("a_surveiller" if a_surveiller or refus else "sain")
-        connus, _ = self._connus()
         ext = bool(connus.get(mid) and connus[mid][1])
         return {"module": mid, "verdict": verdict, "moteurs": moteurs, "detecteurs_coupes": detecteurs_coupes, "en_echec": en_echec, "a_surveiller": a_surveiller,
-                "capacites_24h": {k.split(".", 1)[1]: v for k, v in types.items()}, "constats_ouverts": self._compteurs(mid)["constats"],
+                "capacites_24h": {k.split(".", 1)[1]: v for k, v in types.items()}, "constats_ouverts": constats,
                 "extension": ext, "mode_sur": os.environ.get("CASSANDRA_MODE_SUR") == "1"}
 
     # ---------- résilience ----------

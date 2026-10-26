@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ae8443
+# VERSION CN : 0.1.0  #5dfd65
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ae8443 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5dfd65 ▼▼▼
 """Le module des modules : l'état de chacun, et le geste de l'activer ou de le désactiver.
 
 Le travail (plan d'activation avec dépendances, refus d'un essentiel, branchement à chaud) est celui du noyau ; ce module en fait des
@@ -204,6 +204,8 @@ def brancher(ctx):
     ctx.implementer("abandonner", abandonner, sauf_refus_p(prouver_abandonne), sauf_refus_d(defaire_abandonne))
     ctx.implementer("versions", versions)
     def sante(ctx, module=""):
+        if not str(module):                                                  # sans module : la santé de tous, en une passe
+            return {"modules": g.sante_tous()}
         if entree(str(module)) is None:
             raise ValueError("module inconnu : « %s »" % module)
         return g.sante(str(module))

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3fcdbb
+# VERSION CN : 0.1.0  #2a1cc7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'autonomie de Cassandra sur les modules : jusqu'où elle va seule, ce qu'elle se refuse, et que tout ce qu'elle fait se défait. La sûreté vient de la réversibilité, pas d'une permission : un refus de la règle n'est pas un échec (il ne rétro
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3fcdbb ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2a1cc7 ▼▼▼
 """L'autonomie de Cassandra sur les modules : jusqu'où elle va seule, ce qu'elle se refuse, et que tout ce qu'elle fait se défait.
 La sûreté vient de la réversibilité, pas d'une permission : un refus de la règle n'est pas un échec (il ne rétrograde pas sa capacité),
 et chaque acte du récit porte le geste qui le défait."""
@@ -402,6 +402,15 @@ class Monde(unittest.TestCase):
         self.assertEqual((a["autonomie"], a["fenetre"], a["gel"], a["verrous"]), ("reine", "nuit", False, []))
         self.n.freiner("gel", True, "essai", acteur="humain")
         self.assertTrue(self.ex("activite")["resultat"]["gel"])
+
+    def test_la_sante_de_tous_se_lit_en_une_passe_et_dit_la_meme_chose_que_celle_d_un_seul(self):
+        tous = self.ex("sante")
+        self.assertEqual(tous["statut"], "faite", tous)
+        m = tous["resultat"]["modules"]
+        self.assertIn("modules", m)
+        un = self.ex("sante", module="modules")["resultat"]
+        self.assertEqual({k: m["modules"][k] for k in ("verdict", "en_echec", "a_surveiller", "constats_ouverts")}, {k: un[k] for k in ("verdict", "en_echec", "a_surveiller", "constats_ouverts")})
+        self.assertTrue(all(set(v) >= {"module", "verdict", "moteurs", "capacites_24h"} for v in m.values()))
 
     def test_l_entretien_se_declenche_a_la_demande_et_sait_simuler(self):
         r = self.ex("entretien", acteur="humain", simuler=True)
