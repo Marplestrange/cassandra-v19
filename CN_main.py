@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3c6d78
+# VERSION CN : 0.1.0  #517ce9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3c6d78 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=517ce9 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -294,6 +294,14 @@ class Noyau:
             if manquants:
                 return {"ok": False, "raison": "dépend de : " + ", ".join(manquants), "dependances": manquants}
         a_activer = [x for x in chaine if not etats.get(x, {}).get("actif")]
+        actifs_apres = {x for x in connus if etats.get(x, {}).get("actif")} | set(a_activer)
+        for x in a_activer:                                          # un module qui refuse la compagnie d'un autre module actif ne s'active pas
+            for c in connus[x][0].conflits:
+                if c in actifs_apres and c != x:
+                    return {"ok": False, "raison": "« %s » est en conflit avec « %s », qui est actif" % (x, c), "conflit": [x, c]}
+            for autre in actifs_apres:
+                if autre != x and x in connus[autre][0].conflits:
+                    return {"ok": False, "raison": "« %s » refuse « %s » : il est en conflit avec lui" % (autre, x), "conflit": [autre, x]}
         for x in a_activer:
             if connus[x][0].installation.script and not etats.get(x, {}).get("installe"):
                 return {"ok": False, "a_installer": x,
@@ -303,10 +311,12 @@ class Noyau:
     def _dependants(self, mid: str, connus: dict, actifs: set) -> list:
         """Les modules ACTIFS qui requièrent `mid`, directement ou non, ceux qui dépendent le plus d'abord."""
         voulus, front = set(), [mid]
+        tous = [m for m, _ in connus.values()]
+        par_id, four = {m.id: m for m in tous}, manifeste.fournisseurs(tous)
         while front:
             cur = front.pop()
             for i in actifs:
-                if i in connus and cur in connus[i][0].requiert and i not in voulus:
+                if i in connus and cur in manifeste.requis_reels(connus[i][0], par_id, four) and i not in voulus:
                     voulus.add(i)
                     front.append(i)
         if not voulus:
@@ -390,8 +400,10 @@ class Noyau:
     def _catalogue_depuis(self, connus, refus) -> list:
         etats = self.etat_modules.tous()
         requis_par = {}
+        tous = [m for m, _ in connus.values()]
+        par_id, four = {m.id: m for m in tous}, manifeste.fournisseurs(tous)
         for m, _ in connus.values():
-            for r in m.requiert:
+            for r in manifeste.requis_reels(m, par_id, four):
                 requis_par.setdefault(r, []).append(m.id)
         entrees = self.catalogue.lister()
         sortie = []
@@ -411,7 +423,8 @@ class Noyau:
                 "auteur": m.auteur, "licence": m.licence, "api": m.api,
                 "permissions": {"espace_utilisateur": m.permissions.espace_utilisateur, "reseau": list(m.permissions.reseau),
                                 "ecritures": list(m.permissions.ecritures), "privileges": list(m.permissions.privileges)},
-                "confiance": m.confiance, "essentiel": m.essentiel, "importance": m.importance, "sans": m.sans, "extension": ext, "etat": etat,
+                "confiance": m.confiance, "essentiel": m.essentiel, "importance": m.importance, "sans": m.sans, "conflits": list(m.conflits), "suggere": list(m.suggere), "fournit": list(m.fournit),
+                "contraintes": [list(c) for c in m.contraintes], "extension": ext, "etat": etat,
                 "remplace": (getattr(self, "_remplaces", {}).get(mid).version if getattr(self, "_remplaces", {}).get(mid) else ""),
                 "requiert": list(m.requiert), "requis_par": sorted(requis_par.get(mid, [])),
                 "objets": len(m.objets), "capacites": len(m.capacites), "implementees": sum(1 for x in mine if x.implementee) if etat == "actif" else None,

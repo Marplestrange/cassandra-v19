@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #97a996
+# VERSION CN : 0.1.0  #83ccfa
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=97a996 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=83ccfa ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -54,6 +54,37 @@ TYPES_RESERVES = ("noyau", "module", "capacite", "constat", "objet", "moteur", "
 CONFIANCES = ("interne", "signe", "tiers", "local")
 
 _ID = re.compile(r"^[a-z][a-z0-9_]{1,40}$")
+# une dépendance : « dns », ou « dns >=0.2, <1 » (opérateurs >= <= == > <, versions à points)
+_REQ = re.compile(r"^([a-z][a-z0-9_]{1,40})\s*((?:(?:>=|<=|==|>|<)\s*\d+(?:\.\d+){0,3}\s*,?\s*)*)$")
+_CLAUSE = re.compile(r"(>=|<=|==|>|<)\s*(\d+(?:\.\d+){0,3})")
+
+
+def version_de(texte) -> tuple:
+    """« 0.2.1 » donne (0, 2, 1) ; ce qui n'est pas numérique (suffixe, build) est ignoré."""
+    nombres = []
+    for x in str(texte or "").split("+")[0].split("-")[0].split("."):
+        if not x.isdigit():
+            break
+        nombres.append(int(x))
+    return tuple(nombres) or (0,)
+
+
+def satisfait(version, contrainte: str) -> bool:
+    """La version répond-elle à « >=0.2, <1 » ? Une contrainte vide est toujours satisfaite ; les versions se comparent chiffre à chiffre."""
+    v = version_de(version)
+    for op, ref in _CLAUSE.findall(contrainte or ""):
+        r = version_de(ref)
+        n = max(len(v), len(r))
+        a, b = v + (0,) * (n - len(v)), r + (0,) * (n - len(r))
+        if not {">=": a >= b, "<=": a <= b, "==": a == b, ">": a > b, "<": a < b}[op]:
+            return False
+    return True
+
+
+def lire_requis(texte):
+    """(id, contrainte) d'une dépendance écrite, ou None si elle est mal écrite."""
+    m = _REQ.match(str(texte or "").strip())
+    return (m.group(1), m.group(2).strip().rstrip(",").strip()) if m else None
 _ID_POINT = re.compile(r"^[a-z][a-z0-9_]{1,40}(\.[a-z][a-z0-9_]{1,40})?$")      # un point d'évolution : « verdict.composer »
 _CONTRAT = re.compile(r"^\d+\.\d+$")                                           # la version d'un contrat : majeure.mineure
 _EVT = re.compile(r"^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$")
@@ -319,6 +350,10 @@ class Manifeste:
     permissions: Permissions = field(default_factory=Permissions)
     essentiel: bool = False    # un module essentiel ne se désactive pas (comptes, coffre, notifications...)
     famille: str = ""          # regroupement dans le menu des modules (« securite », « reseau »...)
+    contraintes: tuple = ()    # ((id, « >=0.2, <1 »), ...) : les versions que les dépendances doivent avoir
+    conflits: tuple = ()       # des modules qui ne peuvent pas être actifs en même temps que celui-ci
+    suggere: tuple = ()        # des modules qui lui servent sans être requis
+    fournit: tuple = ()        # des noms de service que ce module rend : un autre module peut requérir « courrier » sans dire QUEL module le fournit
     importance: str = ""       # ce que la maison perd sans ce module : « vital » (elle ne tient plus), « important » (une fonction s'arrête), « optionnel » (on s'en passe) ; vide = non déclaré
     sans: str = ""             # une phrase : ce qui s'arrête, concrètement, quand ce module est désactivé
     objets: tuple = ()
@@ -418,7 +453,24 @@ def valider(brut: dict) -> list:
         e.append("module.sans : une phrase de 300 caractères au plus (ce qui s'arrête quand le module est désactivé)")
     if m.get("essentiel") is True and m.get("importance", "vital") != "vital":
         e.append("module.importance : un module essentiel est « vital »")
-    requiert = _liste_de_textes(m.get("requiert"), "module.requiert", e, _ID)
+    requiert = []
+    brut_req = m.get("requiert", [])
+    if not isinstance(brut_req, list):
+        e.append("module.requiert : une liste")
+    else:
+        for x in brut_req:
+            lu = lire_requis(x)
+            if lu is None:
+                e.append("module.requiert : « %s » mal écrit (« dns » ou « dns >=0.2, <1 »)" % x)
+            else:
+                requiert.append(lu[0])
+    for champ in ("conflits", "suggere", "fournit"):
+        if champ in m:
+            l = _liste_de_textes(m.get(champ), "module.%s" % champ, e, _ID)
+            if mid in l and champ != "fournit":
+                e.append("module.%s : un module ne peut pas se citer lui-même" % champ)
+    if set(m.get("conflits", []) if isinstance(m.get("conflits"), list) else []) & set(requiert):
+        e.append("module.conflits : un module ne peut pas à la fois requérir et refuser le même module")
     if mid in requiert:
         e.append("module.requiert : un module ne peut pas se requérir lui-même")
 
@@ -841,7 +893,9 @@ def construire(brut: dict, source="") -> Manifeste:
     ) for c in brut.get("capacites", []) or [])
     return Manifeste(
         id=m["id"], nom=m["nom"], version=m["version"], noyau_min=m["noyau_min"], description=m["description"].strip(),
-        confiance=m.get("confiance", "interne"), requiert=tuple(m.get("requiert", ())),
+        confiance=m.get("confiance", "interne"), requiert=tuple(lire_requis(x)[0] for x in m.get("requiert", ())),
+        contraintes=tuple(lire_requis(x) for x in m.get("requiert", ()) if lire_requis(x)[1]),
+        conflits=tuple(m.get("conflits", ())), suggere=tuple(m.get("suggere", ())), fournit=tuple(m.get("fournit", ())),
         essentiel=bool(m.get("essentiel", False)), famille=str(m.get("famille", "")),
         importance=str(m.get("importance", "vital" if m.get("essentiel") else "")), sans=str(m.get("sans", "")).strip(),
         auteur=str(m.get("auteur", "")), licence=str(m.get("licence", "")), site=str(m.get("site", "")), api=str(m.get("api", "1")),
@@ -930,6 +984,22 @@ def decouvrir(dossier_modules) -> list:
     return sortie
 
 
+def fournisseurs(manifestes) -> dict:
+    """{nom de service : [modules qui le fournissent]}, triés."""
+    f = {}
+    for m in manifestes:
+        for nom in m.fournit:
+            f.setdefault(nom, []).append(m.id)
+    return {k: sorted(v) for k, v in f.items()}
+
+
+def requis_reels(m, par_id, four=None) -> list:
+    """Les modules CONCRETS dont `m` dépend : un requis qui est un id de module reste cet id ; sinon c'est un nom de service, rendu par le premier fournisseur (par ordre alphabétique) ;
+    sans fournisseur, le nom reste tel quel (il sera dit absent)."""
+    four = four if four is not None else {}
+    return [r if r in par_id else (four.get(r) or [r])[0] for r in m.requiert]
+
+
 def verifier_ensemble(manifestes) -> list:
     """Défauts qui ne se voient qu'à plusieurs : doublons, dépendances absentes, événements sans émetteur."""
     e = []
@@ -945,10 +1015,14 @@ def verifier_ensemble(manifestes) -> list:
                 e.append("le type d'objet « %s » est revendiqué par « %s » et « %s »" % (o.type, proprietaire[o.type], m.id))
             proprietaire[o.type] = m.id
     emis = {x for m in manifestes for x in m.emet}
+    four = fournisseurs(manifestes)
     for m in manifestes:
         for r in m.requiert:
-            if r not in par_id:
+            if r not in par_id and r not in four:
                 e.append("« %s » requiert « %s », qui n'est pas installé" % (m.id, r))
+        for r, contrainte in m.contraintes:
+            if r in par_id and not satisfait(par_id[r].version, contrainte):
+                e.append("« %s » requiert « %s %s » mais la version installée est %s" % (m.id, r, contrainte, par_id[r].version))
         for x in m.ecoute:
             if x not in emis and not x.startswith(EVENEMENTS_DU_NOYAU):
                 e.append("« %s » écoute « %s », qu'aucun module n'émet" % (m.id, x))
@@ -961,23 +1035,26 @@ def avec_dependances(manifestes, ids) -> list:
     inconnus = sorted(i for i in ids if i not in par_id)
     if inconnus:
         raise ManifesteInvalide(["module inconnu : " + ", ".join(inconnus)])
+    four = fournisseurs(manifestes)
     voulus, pile = set(), list(ids)
     while pile:
         i = pile.pop()
         if i in voulus:
             continue
         voulus.add(i)
-        pile.extend(par_id[i].requiert)
+        pile.extend(x for x in requis_reels(par_id[i], par_id, four) if x in par_id)
     return ordre_installation([m for m in manifestes if m.id in voulus])
 
 
 def ordre_installation(manifestes) -> list:
     """Ordre d'installation par dépendances (les requis d'abord), déterministe. Refuse un cycle."""
     par_id = {m.id: m for m in manifestes}
-    manque = sorted({"%s→%s" % (m.id, r) for m in manifestes for r in m.requiert if r not in par_id})
+    four = fournisseurs(manifestes)
+    reels = {m.id: requis_reels(m, par_id, four) for m in manifestes}
+    manque = sorted({"%s→%s" % (m.id, r) for m in manifestes for r in reels[m.id] if r not in par_id})
     if manque:
         raise ManifesteInvalide(["dépendance absente : " + x for x in manque])
-    restant = {m.id: set(m.requiert) for m in manifestes}
+    restant = {m.id: set(reels[m.id]) for m in manifestes}
     ordre = []
     while restant:
         prets = sorted(i for i, d in restant.items() if not d)
