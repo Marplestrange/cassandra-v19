@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #8975d7
+// VERSION CN : 0.1.0  #573f92
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=8975d7 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=573f92 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -32629,7 +32629,9 @@ function setVision(v){
     // Le commutateur disparaît quand il n'y a qu'une vision : proposer un choix
     // qu'on refusera ensuite est pire que ne rien proposer.
     const sw = document.getElementById('set-visions');
-    if (sw) sw.style.display = setEstAdmin() ? '' : 'none';
+    if (sw) sw.style.display = 'none';                       // « Mon compte » et « Paramètres généraux » sont deux entrées du menu de l'avatar : on ne choisit plus la vision ici
+    const h1 = document.querySelector('#tab-settings .mx-head h1');
+    if (h1) h1.textContent = (v === 'moi') ? 'Mon compte' : 'Paramètres généraux';
     const nt = document.getElementById('set-note');
     if (nt) nt.innerHTML = (v === 'moi')
         ? 'Ce qui vous appartient : votre identité, vos accès, la façon dont Itare '

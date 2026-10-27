@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #8d6ab4
+// VERSION CN : 0.1.0  #7878f2
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=8d6ab4 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=7878f2 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -599,6 +599,7 @@
   function completerAvatar() {
     const um = $("#usermenu"); if (!um) return;
     $$("[data-d19-av]", um).forEach((x) => x.remove());
+    const machine = $('[data-um="machine"]', um); if (machine) machine.style.display = (typeof setEstAdmin === "function" && !setEstAdmin()) ? "none" : "";
     const seg = $("#um-seg", um), ancien = seg && seg.closest(".um-sec");
     if (ancien) ancien.style.display = "none";                       // l'ancien sélecteur (initiales) cède la place
     const hote = $(".um-acts", um); if (!hote) return;
@@ -1027,6 +1028,7 @@
       if (!E.actif) { E.g = E.d.groupes[0].id; E.e = ""; rendre(); }
     }
     idees(true);
+    setTimeout(pouls, 2500);                                       // juste après une connexion, la disposition peut encore changer (entrées de l'avatar) : on la relit sans attendre 15 s
     if (!lance) {
       lance = true;
       setInterval(pouls, 15000); document.addEventListener("visibilitychange", pouls);
