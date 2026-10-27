@@ -46,7 +46,7 @@
 body{margin:0;background:radial-gradient(900px 420px at 15% -10%,var(--halo),transparent 70%),var(--bg);color:var(--txt);font:14px/1.45 var(--sans);padding-block:18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 button{font:inherit;color:inherit;cursor:pointer}
 svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.app{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:248px minmax(0,1fr);gap:16px;align-items:start}
+.app>*,.split>*{min-width:0}.app{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:248px minmax(0,1fr);gap:16px;align-items:start}
 .note{max-width:1280px;margin:0 auto 14px;font-size:12.5px;color:var(--txt2);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .note b{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
 .note .th{margin-left:auto;border:1px solid var(--line2);background:var(--glass);border-radius:999px;padding:5px 12px;font-size:12px}
@@ -152,166 +152,56 @@ tr.rowlink{cursor:pointer}tr.rowlink:hover td{background:var(--acc10)}
 .dot{display:inline-block;width:22px;height:22px;border-radius:7px;font:600 10.5px/22px var(--mono);text-align:center;background:var(--sunk);color:var(--txt3)}
 .dot.a{background:var(--ok10);color:var(--ok)}.dot.p{background:var(--warn10);color:var(--warn)}.dot.r{background:var(--danger10);color:var(--danger)}
 .tl{list-style:none;margin:0;padding:0}.tl li{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}.tl li:first-child{border-top:0}.tl time{font:500 11.5px var(--mono);color:var(--txt3);min-width:84px}
+.guide{max-width:1280px;margin:0 auto 14px;border:1px solid var(--line);background:var(--glass);border-radius:14px;padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;box-shadow:var(--shadow)}.guide b{font:600 10.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--accent);margin-right:4px}.guide button{border:1px solid var(--line2);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:500}.guide button:hover{border-color:var(--accent);color:var(--accent)}
+.modal{position:fixed;inset:0;background:rgba(10,18,24,.55);display:none;place-items:center;z-index:40;padding:16px}.modal.on{display:grid}.mbox{background:var(--glass2);backdrop-filter:blur(14px);border:1px solid var(--line2);border-radius:18px;box-shadow:var(--shadow);width:min(720px,100%);max-height:88vh;overflow:auto;padding:18px}
+.mbox h3{margin:0 0 4px;font-size:16px}.menu-sim{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:12px}.ms{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center;background:var(--surface)}.ms.no{opacity:.45;filter:grayscale(1)}.ms small{display:block;color:var(--txt3)}
+.lnk{color:var(--accent);cursor:pointer;font-weight:600;background:none;border:0;padding:0}.lnk:hover{text-decoration:underline}
+.req{color:var(--danger)}.bad{outline:2px solid var(--danger)!important}
 @media (max-width:980px){.app{grid-template-columns:1fr}.side{position:static}.split{grid-template-columns:1fr}.rt{grid-template-columns:1fr}.rt .eff{justify-content:flex-start}}
 </style>
 </head>
 <body>
-<div class="note"><b>Maquette</b><span>Données fictives. Cliquez les listes, ouvrez une fiche, réglez des droits : tout est manipulable.</span><button class="th" id="theme">Clair / sombre</button></div>
+<div class="note"><b>Maquette</b><span>Données fictives, mais tout fonctionne : créez, réglez, retirez, défaites. Les droits se recalculent en direct comme dans le moteur.</span><button class="th" id="theme">Clair / sombre</button></div>
+<div class="guide"><b>Essayez</b>
+  <button data-demo="refus">Refuser un droit à Julien</button>
+  <button data-demo="groupe">Accorder un droit à tout un groupe</button>
+  <button data-demo="creer">Créer un utilisateur</button>
+  <button data-demo="groupenew">Créer un groupe</button>
+  <button data-demo="comme">Voir comme Sarah</button>
+  <button data-demo="qui">Qui peut supprimer un site ?</button></div>
 <div class="app">
 <aside class="side">
   <div class="head"><div class="ic"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3 2.9-4.5 5.5-4.5s4.9 1.5 5.5 4.5"/><path d="M16 6.5a3.2 3.2 0 0 1 0 6M17.5 14.7c2 .6 3.3 2.1 3.7 4.3"/></svg></div><div><b>Paramètres</b><small>Utilisateurs et groupes</small></div></div>
   <h2>Personnel</h2>
-  <button class="si dim"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="3.5" width="15" height="17" rx="2"/><circle cx="11.5" cy="10.5" r="2.3"/></svg>Mon compte</button>
-  <button class="si dim"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Mon coffre-fort</button>
+  <button class="si dim" data-away="Mon compte"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="3.5" width="15" height="17" rx="2"/><circle cx="11.5" cy="10.5" r="2.3"/></svg>Mon compte</button>
+  <button class="si dim" data-away="Mon coffre-fort"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Mon coffre-fort</button>
   <h2>Institutionnel</h2>
-  <button class="si dim"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2"/></svg>Société / Organisation</button>
+  <button class="si dim" data-away="Société / Organisation"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2"/></svg>Société / Organisation</button>
   <button class="si open" data-open="u"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3 2.9-4.5 5.5-4.5s4.9 1.5 5.5 4.5"/></svg>Utilisateurs<svg class="i car" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
   <div id="g-u">
     <button class="si sub" data-go="u-new"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nouvel utilisateur</button>
-    <button class="si sub on" data-go="u-list"><svg class="i" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Liste des utilisateurs<span class="nb">6</span></button>
+    <button class="si sub on" data-go="u-list"><svg class="i" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Liste des utilisateurs<span class="nb" id="nb-u"></span></button>
   </div>
   <button class="si open" data-open="g"><svg class="i" viewBox="0 0 24 24"><circle cx="8" cy="9" r="2.6"/><circle cx="16.5" cy="9" r="2.6"/><path d="M2.5 18c.5-2.6 2.6-4 5.5-4M21.5 18c-.5-2.6-2.6-4-5.5-4M8 18c.6-3 2.3-4.2 4-4.2s3.4 1.2 4 4.2"/></svg>Groupes<svg class="i car" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
   <div id="g-g">
     <button class="si sub" data-go="g-new"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nouveau groupe</button>
-    <button class="si sub" data-go="g-list"><svg class="i" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Liste des groupes<span class="nb">4</span></button>
+    <button class="si sub" data-go="g-list"><svg class="i" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Liste des groupes<span class="nb" id="nb-g"></span></button>
     <button class="si sub" data-go="matrice"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Matrice des droits</button>
+    <button class="si sub" data-go="qui"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Qui peut… ?</button>
+    <button class="si sub" data-go="jrn"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Journal des droits<span class="nb" id="nb-j"></span></button>
   </div>
-  <button class="si dim"><svg class="i" viewBox="0 0 24 24"><path d="M10 4a2 2 0 1 1 4 0v2h4a1 1 0 0 1 1 1v4h-2a2 2 0 1 0 0 4h2v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4z"/></svg>Logithèque</button>
+  <button class="si dim" data-away="Logithèque"><svg class="i" viewBox="0 0 24 24"><path d="M10 4a2 2 0 1 1 4 0v2h4a1 1 0 0 1 1 1v4h-2a2 2 0 1 0 0 4h2v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4z"/></svg>Logithèque</button>
   <h2>Général</h2>
-  <button class="si dim"><svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>Maintenance</button>
-  <button class="si dim"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/></svg>Danger</button>
+  <button class="si dim" data-away="Maintenance"><svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>Maintenance</button>
+  <button class="si dim" data-away="Danger"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/></svg>Danger</button>
 </aside>
-<main>
-
-<!-- ───────── LISTE DES UTILISATEURS ───────── -->
-<section class="page on" id="u-list">
-  <div class="crumbs">Paramètres › Utilisateurs › <b>Liste des utilisateurs</b></div>
-  <h1>Liste des utilisateurs</h1><p class="lead">Les comptes qui entrent dans Cassandra, ce qu'ils peuvent y faire, et ce qu'ils ont fait récemment.</p>
-  <div class="bar"><input class="grow" type="text" id="u-q" placeholder="Rechercher un nom, une adresse, un groupe…" style="max-width:360px">
-    <div class="filters" id="u-f"><button class="fl on" data-f="tous">Tous</button><button class="fl" data-f="admin">Administrateurs</button><button class="fl" data-f="ext">Externes</button><button class="fl" data-f="agent">Agents</button><button class="fl" data-f="off">Désactivés</button></div>
-    <button class="btn pri" data-go="u-new"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nouvel utilisateur</button></div>
-  <div class="tw"><table><thead><tr><th>Utilisateur</th><th>Fonction</th><th>Groupes</th><th>Droits</th><th>Dernière connexion</th><th>État</th></tr></thead><tbody id="u-body"></tbody></table></div>
-</section>
-
-<!-- ───────── NOUVEL UTILISATEUR ───────── -->
-<section class="page" id="u-new">
-  <div class="crumbs">Paramètres › Utilisateurs › <b>Nouvel utilisateur</b></div>
-  <h1>Nouvel utilisateur</h1><p class="lead">Trois étapes : qui est-ce, à quoi a-t-il accès, comment entre-t-il. Les droits peuvent partir d'un modèle ou d'un groupe, et se retoucher ensuite.</p>
-  <div class="split"><div>
-    <div class="card"><h3>① Identité</h3><div class="grid2">
-      <div><label class="f">Identifiant de connexion</label><input type="text" placeholder="prenom.nom"></div>
-      <div><label class="f">Nom affiché</label><input type="text" placeholder="Prénom Nom"></div>
-      <div><label class="f">Fonction</label><input type="text" placeholder="Comptable, technicien…"></div>
-      <div><label class="f">Adresse e-mail</label><input type="email" placeholder="prenom@exemple.fr"></div>
-      <div><label class="f">Téléphone</label><input type="text"></div>
-      <div><label class="f">Langue</label><select><option>Français</option><option>English</option></select></div></div></div>
-    <div class="card"><h3>② Accès</h3><div class="grid2">
-      <div><label class="f">Type de compte</label><select id="nu-type"><option>Interne — fait partie de l'organisation</option><option>Externe — invité, périmètre réduit</option><option>Agent — une IA invitée</option></select></div>
-      <div><label class="f">Modèle de droits</label><select><option>— aucun, je règle à la main —</option><option>Lecteur : consulter seulement</option><option selected>Opérateur : travailler sans administrer</option><option>Comptable</option><option>Support</option><option>Administrateur délégué</option></select></div></div>
-      <div style="margin-top:12px"><label class="f">Groupes</label><div class="filters" id="nu-groupes"></div></div>
-      <div style="margin-top:12px" class="idea"><b>Aperçu des droits obtenus</b> — « Opérateur » + groupe Support : <span class="chip ok">38 accordés</span> <span class="chip info">29 hérités</span> <span class="chip warn">4 sensibles</span> · <a href="#" data-go="u-fiche" style="color:var(--accent)">voir le détail</a></div></div>
-    <div class="card"><h3>③ Entrée</h3>
-      <div class="grid2"><div><label class="f">Mot de passe provisoire</label><input type="password" value="••••••••••••"></div>
-      <div><label class="f">Première connexion</label><select><option>Doit changer son mot de passe</option><option>Garde ce mot de passe</option></select></div>
-      <div><label class="f">Compte valable jusqu'au</label><input type="text" placeholder="Sans limite (ou une date)"></div>
-      <div><label class="f">Sites accessibles</label><select><option>Aucun</option><option>Tous</option><option>Choisir…</option></select></div></div>
-      <div class="bar" style="margin:12px 0 0"><label style="display:flex;gap:8px;align-items:center"><button class="sw on" type="button" aria-label="Inviter par lien"></button>Envoyer un lien d'invitation par e-mail</label></div></div>
-    <div class="bar"><button class="btn pri" data-toast="Utilisateur créé — Défaire">Créer l'utilisateur</button><button class="btn" data-go="u-list">Annuler</button></div>
-  </div>
-  <div class="side-r"><div class="card"><h3>Ce qui se passe</h3><ul class="lst"><li><span class="chip acc">1</span>Le compte est créé, rien n'est jamais perdu : « Défaire » le retire.</li><li><span class="chip acc">2</span>Il hérite des groupes cochés, puis du modèle.</li><li><span class="chip acc">3</span>L'invitation expire au bout de 72 h.</li></ul></div>
-  <div class="idea"><b>Idée</b> — un compte <i>externe</i> n'a jamais plus de droits que celui qui l'a invité (comme les agents invités aujourd'hui).</div></div></div>
-</section>
-
-<!-- ───────── FICHE UTILISATEUR ───────── -->
-<section class="page" id="u-fiche">
-  <div class="crumbs">Paramètres › Utilisateurs › <a href="#" data-go="u-list" style="color:inherit">Liste</a> › <b id="f-crumb">Julien Roy</b></div>
-  <div class="hero"><div class="av big" id="f-av">JR</div><div class="meta"><h2 id="f-nom">Julien Roy</h2><p id="f-sub">Comptable · julien.roy@exemple.fr</p><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap" id="f-chips"></div></div>
-    <div class="bar" style="margin:0"><button class="btn" data-toast="Vous voyez maintenant Cassandra comme Julien Roy (lecture seule)"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Voir comme</button><button class="btn" data-toast="Lien de réinitialisation envoyé">Réinitialiser le mot de passe</button><button class="btn dng" data-toast="Compte désactivé — Défaire">Désactiver</button></div></div>
-  <div class="tabs" id="f-tabs"><button class="tab" data-t="fiche">Fiche</button><button class="tab on" data-t="droits">Droits</button><button class="tab" data-t="groupes">Groupes</button><button class="tab" data-t="secu">Sécurité</button><button class="tab" data-t="journal">Journal</button></div>
-
-  <div class="pane" data-p="fiche"><div class="card"><div class="grid2"><div><label class="f">Identifiant</label><input type="text" value="julien.roy"></div><div><label class="f">Nom affiché</label><input type="text" value="Julien Roy"></div><div><label class="f">Fonction</label><input type="text" value="Comptable"></div><div><label class="f">E-mail</label><input type="email" value="julien.roy@exemple.fr"></div><div><label class="f">Téléphone</label><input type="text" value="06 12 34 56 78"></div><div><label class="f">Langue</label><select><option>Français</option></select></div></div></div></div>
-
-  <div class="pane on" data-p="droits">
-    <div class="split"><div>
-      <div class="adm" id="adm"><div><b>Administrateur</b><br><span style="color:var(--txt2);font-size:12.5px">Un administrateur a tous les droits, sans exception : les réglages ci-dessous sont suspendus tant que ce commutateur est actif.</span></div><button class="sw" id="adm-sw" aria-label="Administrateur"></button></div>
-      <div class="kpis" id="kpis"></div>
-      <div class="bar"><input type="text" id="r-q" class="grow" placeholder="Chercher un droit : « supprimer », « pare-feu », « factures »…" style="max-width:380px">
-        <div class="filters" id="r-f"><button class="fl on" data-f="tous">Tous</button><button class="fl" data-f="accorde">Accordés</button><button class="fl" data-f="refuse">Refusés</button><button class="fl" data-f="sens">Sensibles</button><button class="fl" data-f="chg">Modifiés</button></div>
-        <button class="bulk" id="r-open">Tout dérouler</button><button class="bulk" id="r-close">Tout replier</button></div>
-      <div id="mods"></div>
-      <div class="savebar" id="savebar"><b id="sv-n">0 modification</b><span class="grow" style="opacity:.7;font-size:12.5px">Rien n'est appliqué tant que vous n'avez pas validé.</span><button class="btn sm" id="sv-diff">Voir le détail</button><button class="btn sm" id="sv-undo">Annuler</button><button class="btn sm pri" id="sv-go">Appliquer</button></div>
-    </div>
-    <div class="side-r">
-      <div class="card"><h3>Partir d'un modèle</h3><select id="tpl"><option>— choisir —</option><option>Lecteur</option><option>Opérateur</option><option>Comptable</option><option>Support</option><option>Administrateur délégué</option></select><p class="why" style="margin:8px 0 0">Applique un jeu de droits, que vous pouvez ensuite retoucher. <a href="#" style="color:var(--accent)">Enregistrer ces droits comme modèle</a></p></div>
-      <div class="card"><h3>Copier depuis…</h3><select><option>— un autre utilisateur —</option><option>Sarah Benali</option><option>Camille Martin</option></select></div>
-      <div class="card"><h3>Comment lire</h3><ul class="lst"><li><span class="seg"><button class="on" data-v="herite" style="pointer-events:none">Hérité</button></span>suit le groupe, sinon le défaut</li><li><span class="seg"><button class="on" data-v="accorde" style="pointer-events:none">Accordé</button></span>forcé pour ce compte</li><li><span class="seg"><button class="on" data-v="refuse" style="pointer-events:none">Refusé</button></span>forcé, même si un groupe l'accorde</li><li><svg class="i sens" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>droit sensible : journalisé, jamais accordé par un groupe</li></ul></div>
-      <div class="idea"><b>Idée</b> — chaque ligne dit <i>pourquoi</i> la décision est ce qu'elle est (« accordé par Comptabilité », « refusé au compte »). C'est ce que le moteur sait déjà dire ; ici il le montre.</div>
-    </div></div>
-  </div>
-
-  <div class="pane" data-p="groupes"><div class="card"><h3>Appartenance</h3><div class="filters" id="f-groupes"></div><p class="why">Cocher ajoute au groupe, décocher retire. Les droits du groupe s'appliquent aussitôt, sauf ceux refusés au compte.</p></div></div>
-  <div class="pane" data-p="secu"><div class="grid2"><div class="card"><h3>Sessions ouvertes</h3><ul class="lst"><li><span class="chip ok">En cours</span>Chrome · Windows · Lyon · il y a 4 min <button class="btn sm" style="margin-left:auto">Fermer</button></li><li><span class="chip">Hier</span>Téléphone · Android · il y a 1 j <button class="btn sm" style="margin-left:auto">Fermer</button></li></ul><div class="bar" style="margin:12px 0 0"><button class="btn dng sm">Fermer toutes les sessions</button></div></div><div class="card"><h3>Second facteur</h3><ul class="lst"><li><span class="chip ok">Actif</span>Clé de sécurité « Yubikey bleue »</li><li><span class="chip warn">Absent</span>Application d'authentification</li></ul><p class="why" style="margin:10px 0 0"><b class="sens">Idée</b> — exiger le second facteur pour tout droit sensible.</p></div></div></div>
-  <div class="pane" data-p="journal"><div class="card"><h3>Ce qui a changé pour ce compte</h3><ul class="tl" id="jrn"></ul></div></div>
-</section>
-
-<!-- ───────── NOUVEAU GROUPE ───────── -->
-<section class="page" id="g-new">
-  <div class="crumbs">Paramètres › Groupes › <b>Nouveau groupe</b></div>
-  <h1>Nouveau groupe</h1><p class="lead">Un groupe réunit des utilisateurs qui font le même travail : on règle les droits une fois, et chacun les reçoit.</p>
-  <div class="split"><div><div class="card"><div class="grid2"><div><label class="f">Nom du groupe</label><input type="text" placeholder="Comptabilité"></div><div><label class="f">Identifiant</label><input type="text" placeholder="comptabilite"></div></div>
-    <div style="margin-top:12px"><label class="f">Description</label><input type="text" placeholder="À quoi sert ce groupe"></div>
-    <div class="grid2" style="margin-top:12px"><div><label class="f">Partir d'un modèle</label><select><option>— vide —</option><option>Lecteur</option><option>Opérateur</option><option>Comptable</option><option>Support</option></select></div><div><label class="f">Ou copier un groupe</label><select><option>— aucun —</option><option>Direction</option><option>Comptabilité</option><option>Support</option></select></div></div>
-    <div style="margin-top:12px"><label class="f">Membres de départ</label><div class="filters" id="ng-membres"></div></div></div>
-    <div class="bar"><button class="btn pri" data-toast="Groupe créé — Défaire" data-go="g-fiche">Créer le groupe</button><button class="btn" data-go="g-list">Annuler</button></div></div>
-  <div class="side-r"><div class="idea"><b>Idée</b> — un groupe peut être <i>emboîté</i> dans un autre (Direction contient Comptabilité) : les droits se cumulent vers le haut, les refus l'emportent.</div></div></div>
-</section>
-
-<!-- ───────── LISTE DES GROUPES ───────── -->
-<section class="page" id="g-list">
-  <div class="crumbs">Paramètres › Groupes › <b>Liste des groupes</b></div>
-  <h1>Liste des groupes</h1><p class="lead">Chaque groupe porte ses droits ; ses membres les reçoivent, sauf refus posé sur leur compte.</p>
-  <div class="bar"><input class="grow" type="text" placeholder="Rechercher un groupe…" style="max-width:320px"><button class="btn" data-go="matrice">Matrice des droits</button><button class="btn pri" data-go="g-new"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nouveau groupe</button></div>
-  <div class="tw"><table><thead><tr><th>Groupe</th><th>Membres</th><th>Droits accordés</th><th>Droits sensibles</th><th>Modifié</th></tr></thead><tbody id="g-body"></tbody></table></div>
-</section>
-
-<!-- ───────── FICHE GROUPE ───────── -->
-<section class="page" id="g-fiche">
-  <div class="crumbs">Paramètres › Groupes › <a href="#" data-go="g-list" style="color:inherit">Liste</a> › <b id="gf-crumb">Comptabilité</b></div>
-  <div class="hero"><div class="av big" style="border-radius:18px">C</div><div class="meta"><h2 id="gf-nom">Comptabilité</h2><p>Factures, paiements, relances — 2 membres</p></div><div class="bar" style="margin:0"><button class="btn" data-toast="Groupe dupliqué — Défaire">Dupliquer</button><button class="btn dng" data-toast="Groupe supprimé — Défaire">Supprimer</button></div></div>
-  <div class="tabs" id="gf-tabs"><button class="tab on" data-t="membres">Membres</button><button class="tab" data-t="droits">Droits du groupe</button><button class="tab" data-t="journal">Journal</button></div>
-  <div class="pane on" data-p="membres"><div class="card"><h3>Membres</h3><div id="gf-membres" style="display:grid;gap:8px"></div><div class="bar" style="margin:12px 0 0"><select style="max-width:260px"><option>Ajouter un utilisateur…</option><option>Sarah Benali</option><option>Marc Dubois</option></select><button class="btn">Ajouter</button></div></div></div>
-  <div class="pane" data-p="droits"><div class="idea" style="margin-bottom:12px"><b>Même écran que pour un utilisateur</b> — mêmes modules, mêmes états (hérité / accordé / refusé), mais sans le « pourquoi » du groupe : à la place, chaque ligne indique <i>combien de membres</i> en bénéficient et si l'un d'eux a un refus personnel.</div>
-    <div class="card"><div class="bar"><input type="text" class="grow" placeholder="Chercher un droit…" style="max-width:340px"><button class="bulk">Tout dérouler</button></div>
-      <div class="mod open"><div class="modh"><span class="nm"><svg class="i car" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>Facturation</span><span class="cnt">5 / 6</span><span class="acts"><button class="bulk">Tout</button><button class="bulk">Aucun</button></span></div><div class="rights">
-        <div class="rt"><span class="seg"><button data-v="herite">Hérité</button><button class="on" data-v="accorde">Accordé</button><button data-v="refuse">Refusé</button></span><div class="lb"><b>Consulter les factures</b></div><div class="eff"><span class="chip ok">2 / 2 membres</span></div></div>
-        <div class="rt"><span class="seg"><button data-v="herite">Hérité</button><button class="on" data-v="accorde">Accordé</button><button data-v="refuse">Refusé</button></span><div class="lb"><b>Créer et modifier des factures</b></div><div class="eff"><span class="chip ok">2 / 2 membres</span></div></div>
-        <div class="rt"><span class="seg"><button data-v="herite">Hérité</button><button class="on" data-v="accorde">Accordé</button><button data-v="refuse">Refusé</button></span><div class="lb"><b>Valider les paiements</b></div><div class="eff"><span class="chip warn">1 refus personnel</span></div></div></div></div></div></div>
-  <div class="pane" data-p="journal"><div class="card"><ul class="tl"><li><time>il y a 2 j</time><span><b>Camille Martin</b> a accordé « Valider les paiements » au groupe</span></li><li><time>il y a 9 j</time><span><b>Camille Martin</b> a ajouté Julien Roy au groupe</span></li><li><time>il y a 21 j</time><span>Groupe créé à partir du modèle « Comptable »</span></li></ul></div></div>
-</section>
-
-<!-- ───────── MATRICE ───────── -->
-<section class="page" id="matrice">
-  <div class="crumbs">Paramètres › Groupes › <b>Matrice des droits</b></div>
-  <h1>Matrice des droits</h1><p class="lead">Qui peut quoi, d'un coup d'œil : les groupes en colonnes, les modules en lignes. Cliquez une case pour descendre au détail.</p>
-  <div class="bar"><div class="filters"><button class="fl on">Groupes</button><button class="fl">Utilisateurs</button></div><span class="why">Légende : <span class="dot a">8</span> tout accordé · <span class="dot p">3</span> en partie · <span class="dot">0</span> rien · <span class="dot r">!</span> refus posé</span></div>
-  <div class="tw"><table class="mx"><thead><tr><th>Module</th><th>Direction</th><th>Comptabilité</th><th>Support</th><th>Techniciens</th></tr></thead><tbody id="mx-body"></tbody></table></div>
-  <div class="idea" style="margin-top:12px"><b>Idée</b> — une ligne « Qui détient ce droit ? » : taper « supprimer un site » et voir tous les comptes qui peuvent le faire, avec le pourquoi pour chacun. C'est l'audit en une seule question.</div>
-</section>
-
-</main></div>
+<main id="main"></main></div>
 <div class="toast" id="toast"><span id="toast-t"></span><button id="toast-undo">Défaire</button></div>
+<div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
 
 <script>
-/* ── données fictives ── */
-const GROUPES=[{id:"direction",nom:"Direction",desc:"Pilotage",m:["camille"],acc:61,sens:9,mod:"il y a 3 j"},{id:"compta",nom:"Comptabilité",desc:"Factures, paiements",m:["julien","sarah"],acc:24,sens:2,mod:"il y a 2 j"},{id:"support",nom:"Support",desc:"Tickets, courrier",m:["sarah"],acc:31,sens:1,mod:"il y a 6 j"},{id:"tech",nom:"Techniciens",desc:"Sites, flotte",m:["marc"],acc:36,sens:5,mod:"il y a 12 j"}];
-const USERS=[
-{id:"camille",nom:"Camille Martin",fn:"Directrice",mail:"camille@exemple.fr",grp:["direction"],admin:true,type:"interne",co:"il y a 2 min",etat:"actif"},
-{id:"julien",nom:"Julien Roy",fn:"Comptable",mail:"julien.roy@exemple.fr",grp:["compta"],admin:false,type:"interne",co:"il y a 4 min",etat:"actif"},
-{id:"sarah",nom:"Sarah Benali",fn:"Support client",mail:"sarah@exemple.fr",grp:["support","compta"],admin:false,type:"interne",co:"il y a 1 h",etat:"actif"},
-{id:"marc",nom:"Marc Dubois",fn:"Prestataire — maintenance",mail:"marc@prestataire.fr",grp:["tech"],admin:false,type:"externe",co:"il y a 12 j",etat:"actif"},
-{id:"lea",nom:"Léa Fontaine",fn:"Stagiaire",mail:"lea@exemple.fr",grp:[],admin:false,type:"interne",co:"jamais",etat:"off"},
-{id:"itare",nom:"agent:itare",fn:"Itare — invité de Camille",mail:"—",grp:[],admin:false,type:"agent",co:"à l'instant",etat:"actif"}];
-/* module → droits : [id, libellé, sensible, note, défaut] */
+/* ═══ le modèle : le même ordre de décision que le moteur (noyau/CN_droits.py) ═══
+   administrateur → réglage propre au compte → agent invité : celui de l'invitant → groupes (un refus l'emporte sur un octroi) → défaut → non attribué */
 const MODS=[
 {id:"uti",nom:"Utilisateurs & Groupes",ic:"M9 9m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0M3.5 19c.6-3 2.9-4.5 5.5-4.5s4.9 1.5 5.5 4.5",d:[
  ["uti.lire","Consulter les autres utilisateurs",0,"",1],["uti.droits_lire","Consulter les permissions des autres utilisateurs",0,"Réservé aux administrateurs avancés",0],["uti.creer","Créer / modifier les utilisateurs et leurs permissions",1,"",0],["uti.mdp","Modifier le mot de passe des autres utilisateurs",1,"",0],["uti.suppr","Supprimer ou désactiver les autres utilisateurs",1,"",0],["uti.siens","Consulter ses propres permissions",0,"",1]]},
@@ -321,117 +211,278 @@ const MODS=[
 {id:"sit",nom:"Sites",ic:"M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18",d:[["sit.lire","Voir les sites",0,"",1],["sit.publier","Publier une modification",1,"Visible du public",0],["sit.suppr","Supprimer un site",1,"Avec corbeille",0]]},
 {id:"sec",nom:"Sécurité",ic:"M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z",d:[["sec.lire","Consulter l'état de sécurité",0,"",0],["sec.pare","Modifier le pare-feu",1,"Peut couper l'accès à la machine",0],["sec.cles","Gérer les clés et jetons",1,"",0]]},
 {id:"par",nom:"Paramètres",ic:"M12 9a3 3 0 1 0 0 6a3 3 0 0 0 0-6M12 3v3M12 18v3M3 12h3M18 12h3",d:[["par.lire","Consulter les réglages",0,"",0],["par.ecrire","Modifier les réglages",1,"",0],["par.sauv","Lancer et restaurer une sauvegarde",1,"",0]]}];
-/* ce que chaque groupe accorde (id droit → true) ; états propres au compte : id → 'accorde'|'refuse' */
-const GACC={direction:"uti.lire uti.siens cou.lire cou.ecrire cou.envoyer age.lire age.ecrire age.partage fac.lire fac.valider sit.lire sec.lire par.lire".split(" "),compta:"fac.lire fac.ecrire fac.valider fac.exporter cou.lire age.lire".split(" "),support:"cou.lire cou.ecrire cou.suppr age.lire age.ecrire uti.lire".split(" "),tech:"sit.lire sit.publier sec.lire par.lire".split(" ")};
-const PROPRE={julien:{"fac.valider":"refuse","cou.envoyer":"accorde"},sarah:{"uti.creer":"accorde"},marc:{"sit.suppr":"refuse"},camille:{},lea:{},itare:{"cou.lire":"accorde"}};
-let cur=null,draft={},base={},filtre="tous",q="";
-const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
-const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const ini=n=>n.replace(/agent:/,"").split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();
-const u=id=>USERS.find(x=>x.id===id),g=id=>GROUPES.find(x=>x.id===id);
-const ic=d=>'<svg class="i" viewBox="0 0 24 24"><path d="'+d+'"/></svg>';
-const SH='<svg class="i sens" viewBox="0 0 24 24" title="Droit sensible"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>';
+const DROITS=MODS.flatMap(m=>m.d.map(d=>({id:d[0],lib:d[1],sens:d[2],note:d[3],def:d[4],mod:m})));
+const DR=id=>DROITS.find(d=>d.id===id);
+const MODELES={"Lecteur":["uti.lire","cou.lire","age.lire","sit.lire","fac.lire","sec.lire","par.lire"],"Opérateur":["uti.lire","cou.lire","cou.ecrire","age.lire","age.ecrire","sit.lire","sit.publier"],"Comptable":["fac.lire","fac.ecrire","fac.valider","fac.exporter","cou.lire","age.lire"],"Support":["cou.lire","cou.ecrire","cou.suppr","age.lire","age.ecrire","uti.lire"],"Administrateur délégué":DROITS.map(d=>d.id)};
+const S={
+ users:[
+ {id:"camille",nom:"Camille Martin",fn:"Directrice",mail:"camille@exemple.fr",grp:["direction"],admin:true,type:"interne",co:"il y a 2 min",off:false,prop:{}},
+ {id:"julien",nom:"Julien Roy",fn:"Comptable",mail:"julien.roy@exemple.fr",grp:["compta"],admin:false,type:"interne",co:"il y a 4 min",off:false,prop:{"cou.envoyer":"accorde"}},
+ {id:"sarah",nom:"Sarah Benali",fn:"Support client",mail:"sarah@exemple.fr",grp:["support","compta"],admin:false,type:"interne",co:"il y a 1 h",off:false,prop:{"uti.creer":"accorde"}},
+ {id:"marc",nom:"Marc Dubois",fn:"Prestataire — maintenance",mail:"marc@prestataire.fr",grp:["tech"],admin:false,type:"externe",co:"il y a 12 j",off:false,prop:{"sit.suppr":"refuse"}},
+ {id:"lea",nom:"Léa Fontaine",fn:"Stagiaire",mail:"lea@exemple.fr",grp:[],admin:false,type:"interne",co:"jamais",off:true,prop:{}},
+ {id:"agent:itare",nom:"agent:itare",fn:"Itare — invité de Camille",mail:"—",grp:[],admin:false,type:"agent",inv:"camille",co:"à l'instant",off:false,prop:{}}],
+ groupes:[
+ {id:"direction",nom:"Direction",desc:"Pilotage",mod:"il y a 3 j",d:{}},{id:"compta",nom:"Comptabilité",desc:"Factures, paiements",mod:"il y a 2 j",d:{}},{id:"support",nom:"Support",desc:"Tickets, courrier",mod:"il y a 6 j",d:{}},{id:"tech",nom:"Techniciens",desc:"Sites, flotte",mod:"il y a 12 j",d:{}}],
+ log:[],pile:[]};
+"uti.lire uti.siens cou.lire cou.ecrire cou.envoyer age.lire age.ecrire age.partage fac.lire fac.valider sit.lire sec.lire par.lire".split(" ").forEach(k=>S.groupes[0].d[k]="accorde");
+"fac.lire fac.ecrire fac.valider fac.exporter cou.lire age.lire".split(" ").forEach(k=>S.groupes[1].d[k]="accorde");S.groupes[1].d["cou.suppr"]="refuse";
+"cou.lire cou.ecrire cou.suppr age.lire age.ecrire uti.lire".split(" ").forEach(k=>S.groupes[2].d[k]="accorde");
+"sit.lire sit.publier sec.lire par.lire".split(" ").forEach(k=>S.groupes[3].d[k]="accorde");
 
-/* décision : le même ordre que le moteur (admin → compte → groupes → défaut), avec son pourquoi */
-function decide(user,droit,defaut,sens,etatPropre,admin){
-  if(admin)return{ok:true,why:"administrateur"};
-  if(etatPropre==="accorde")return{ok:true,why:"accordé au compte"};
-  if(etatPropre==="refuse")return{ok:false,why:"refusé au compte"};
-  const gs=user.grp.filter(gr=>GACC[gr].includes(droit));
-  if(gs.length&&!sens)return{ok:true,why:"par "+gs.map(x=>g(x).nom).join(", ")};
-  if(gs.length&&sens)return{ok:false,why:"sensible : un groupe ne l'accorde pas ("+g(gs[0]).nom+")"};
-  return defaut?{ok:true,why:"défaut"}:{ok:false,why:"aucun accord"};
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=t=>String(t==null?"":t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ini=n=>n.replace(/agent:/,"").split(/\s+/).map(x=>x[0]||"").join("").slice(0,2).toUpperCase()||"?";
+const U=id=>S.users.find(x=>x.id===id),G=id=>S.groupes.find(x=>x.id===id);
+const slug=t=>t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,".").replace(/^\.|\.$/g,"");
+const ic=d=>'<svg class="i" viewBox="0 0 24 24"><path d="'+d+'"/></svg>';
+const SH='<svg class="i sens" viewBox="0 0 24 24"><title>Droit sensible : journalisé</title><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>';
+const clone=o=>JSON.parse(JSON.stringify(o));
+
+function decide(user,did,prop,adminForce,depth){
+  const d=DR(did);prop=prop||user.prop;const adm=adminForce==null?user.admin:adminForce;
+  if(adm)return{ok:true,why:"administrateur"};
+  if(prop[did]==="accorde")return{ok:true,why:"accordé au compte"};
+  if(prop[did]==="refuse")return{ok:false,why:"refusé au compte"};
+  if(user.type==="agent"&&user.inv&&!(depth>3)){const r=decide(U(user.inv),did,null,null,(depth||0)+1);return{ok:r.ok,why:"agent invité par "+U(user.inv).nom+" : "+r.why}}
+  const gs=user.grp.map(G).filter(Boolean);
+  const ref=gs.find(x=>x.d[did]==="refuse");if(ref)return{ok:false,why:"refusé par le groupe "+ref.nom};
+  const oct=gs.find(x=>x.d[did]==="accorde");if(oct)return{ok:true,why:"accordé par le groupe "+oct.nom};
+  return d.def?{ok:true,why:"accordé à tous par défaut"}:{ok:false,why:"non attribué"};
 }
-function etatDe(id){return id in draft?draft[id]:(base[id]||"herite")}
-function renderDroits(){
-  const user=cur,admin=$("#adm-sw").classList.contains("on");
-  let tot={ok:0,no:0,props:0,sens:0},html="";
-  MODS.forEach(m=>{
-    let n=0,rows="",nm=0;
-    m.d.forEach(([id,lib,sens,note,defaut])=>{
-      const e=etatDe(id),r=decide(user,id,defaut,sens,e==="herite"?null:e,admin);
-      if(r.ok)tot.ok++;else tot.no++; if(e!=="herite")tot.props++; if(sens&&r.ok)tot.sens++;
-      const chg=(id in draft)&&draft[id]!==(base[id]||"herite");
-      const txt=(lib+" "+note+" "+m.nom).toLowerCase();
-      if(q&&!txt.includes(q))return;
+const compte=u=>DROITS.filter(d=>decide(u,d.id).ok).length;
+function journal(txt,undo){S.log.unshift({t:new Date(),txt,undo:!!undo});if(undo)S.pile.push(undo);majNb()}
+function majNb(){$("#nb-u").textContent=S.users.length;$("#nb-g").textContent=S.groupes.length;$("#nb-j").textContent=S.log.length||""}
+function toast(t,undo){$("#toast-t").textContent=t;$("#toast-undo").style.display=undo?"":"none";$("#toast").classList.add("on");window.__undo=undo||null;clearTimeout(window.__tt);window.__tt=setTimeout(()=>$("#toast").classList.remove("on"),5200)}
+
+/* ═══ pages ═══ */
+let page="u-list",ctx={};
+const HASH={"u-list":"Liste des utilisateurs","u-new":"Nouvel utilisateur","g-list":"Liste des groupes","g-new":"Nouveau groupe","matrice":"Matrice des droits","qui":"Qui peut… ?","jrn":"Journal des droits"};
+function go(p,c){
+  if(dirty()&&!confirm_leave()){return}
+  page=p;ctx=c||{};render();scrollTo({top:0});
+  $$(".si.sub").forEach(b=>b.classList.toggle("on",b.dataset.go===p||(p==="u-fiche"&&b.dataset.go==="u-list")||(p==="g-fiche"&&b.dataset.go==="g-list")));
+}
+let draft={},drG={},filtre="tous",q="",admDraft=null,ouvert=null;
+const dirty=()=>Object.keys(draft).length||Object.keys(drG).length||admDraft!=null;
+function confirm_leave(){draft={};drG={};admDraft=null;return true}
+function render(){
+  majNb();
+  const f={"u-list":pUList,"u-new":pUNew,"u-fiche":pUFiche,"g-list":pGList,"g-new":pGNew,"g-fiche":pGFiche,"matrice":pMatrice,"qui":pQui,"jrn":pJournal}[page];
+  $("#main").innerHTML=f();if(page==="u-list")filtrerListe();
+}
+const crumb=(a,b)=>'<div class="crumbs">'+a+' › <b>'+b+'</b></div>';
+
+/* — liste des utilisateurs — */
+function pUList(){return crumb("Paramètres › Utilisateurs","Liste des utilisateurs")+'<h1>Liste des utilisateurs</h1><p class="lead">Les comptes qui entrent dans Cassandra, ce qu\'ils peuvent y faire, et ce qu\'ils ont fait récemment. Cliquez une ligne pour ouvrir la fiche.</p>'
+ +'<div class="bar"><input class="grow" type="text" id="u-q" placeholder="Rechercher un nom, une adresse, un groupe…" style="max-width:360px"><div class="filters" id="u-f">'+[["tous","Tous"],["admin","Administrateurs"],["ext","Externes"],["agent","Agents"],["off","Désactivés"]].map(([v,l],i)=>'<button class="fl'+(i?"":" on")+'" data-f="'+v+'">'+l+'</button>').join("")+'</div><button class="btn pri" data-go="u-new">'+ic("M12 5v14M5 12h14")+'Nouvel utilisateur</button></div>'
+ +'<div class="tw"><table><thead><tr><th>Utilisateur</th><th>Fonction</th><th>Groupes</th><th>Droits</th><th>Dernière connexion</th><th>État</th></tr></thead><tbody id="u-body"></tbody></table></div>'}
+function filtrerListe(){
+  const f=($("#u-f .on")||{dataset:{f:"tous"}}).dataset.f,qq=(($("#u-q")||{}).value||"").toLowerCase();
+  $("#u-body").innerHTML=S.users.filter(x=>(f==="tous"||(f==="admin"&&x.admin)||(f==="ext"&&x.type==="externe")||(f==="agent"&&x.type==="agent")||(f==="off"&&x.off))&&(x.nom+x.mail+x.fn+x.grp.map(y=>G(y).nom).join(" ")).toLowerCase().includes(qq)).map(x=>
+  '<tr class="rowlink" data-u="'+esc(x.id)+'"><td><div class="who"><span class="av">'+ini(x.nom)+'</span><div><b>'+esc(x.nom)+'</b><small>'+esc(x.mail)+'</small></div></div></td><td>'+esc(x.fn)+'</td><td>'+(x.grp.map(y=>'<span class="chip acc">'+esc(G(y).nom)+'</span>').join(" ")||'<span class="why">aucun</span>')+'</td><td>'+(x.admin?'<span class="chip warn">tous (admin)</span>':'<span class="chip ok">'+compte(x)+' / '+DROITS.length+'</span>')+'</td><td class="why">'+esc(x.co)+'</td><td>'+(x.off?'<span class="chip dng">désactivé</span>':'<span class="chip ok">actif</span>')+(x.type!=="interne"?' <span class="chip info">'+x.type+'</span>':"")+'</td></tr>').join("")||'<tr><td colspan="6" class="why" style="padding:18px">Aucun résultat.</td></tr>';
+}
+
+/* — nouvel utilisateur — */
+let nu={groupes:[],modele:"Opérateur",type:"interne"};
+function aperçuNu(){const tmp={prop:{},grp:nu.groupes,type:nu.type,admin:nu.modele==="Administrateur délégué"};MODELES[nu.modele]&&MODELES[nu.modele].forEach(k=>tmp.prop[k]="accorde");const ok=DROITS.filter(d=>decide(tmp,d.id).ok).length,sens=DROITS.filter(d=>d.sens&&decide(tmp,d.id).ok).length;return'<span class="chip ok">'+ok+' droits</span> <span class="chip warn">'+sens+' sensibles</span> <span class="chip">'+(DROITS.length-ok)+' refusés ou non attribués</span>'}
+function pUNew(){return crumb("Paramètres › Utilisateurs","Nouvel utilisateur")+'<h1>Nouvel utilisateur</h1><p class="lead">Trois étapes : qui est-ce, à quoi a-t-il accès, comment entre-t-il. Les droits partent d\'un modèle et d\'un groupe, et se retouchent ensuite sur la fiche.</p>'
+ +'<div class="split"><div><div class="card"><h3>① Identité</h3><div class="grid2"><div><label class="f">Identifiant de connexion <span class="req">*</span></label><input type="text" id="nu-id" placeholder="prenom.nom"></div><div><label class="f">Nom affiché <span class="req">*</span></label><input type="text" id="nu-nom" placeholder="Prénom Nom"></div><div><label class="f">Fonction</label><input type="text" id="nu-fn" placeholder="Comptable, technicien…"></div><div><label class="f">Adresse e-mail</label><input type="email" id="nu-mail" placeholder="prenom@exemple.fr"></div></div></div>'
+ +'<div class="card"><h3>② Accès</h3><div class="grid2"><div><label class="f">Type de compte</label><select id="nu-type">'+[["interne","Interne — fait partie de l\'organisation"],["externe","Externe — invité, périmètre réduit"]].map(([v,l])=>'<option value="'+v+'"'+(nu.type===v?" selected":"")+'>'+l+'</option>').join("")+'</select></div><div><label class="f">Modèle de droits</label><select id="nu-mod">'+Object.keys(MODELES).map(k=>'<option'+(nu.modele===k?" selected":"")+'>'+k+'</option>').join("")+'</select></div></div>'
+ +'<div style="margin-top:12px"><label class="f">Groupes</label><div class="filters" id="nu-g">'+S.groupes.map(x=>'<button class="fl'+(nu.groupes.includes(x.id)?" on":"")+'" data-ng="'+x.id+'">'+esc(x.nom)+'</button>').join("")+'</div></div>'
+ +'<div class="idea" style="margin-top:12px" id="nu-apercu"><b>Aperçu des droits obtenus</b> — '+aperçuNu()+'</div></div>'
+ +'<div class="card"><h3>③ Entrée</h3><div class="grid2"><div><label class="f">Mot de passe provisoire</label><input type="text" value="Bleu-Renard-2026"></div><div><label class="f">Première connexion</label><select><option>Doit changer son mot de passe</option><option>Garde ce mot de passe</option></select></div></div></div>'
+ +'<div class="bar"><button class="btn pri" id="nu-ok">Créer l\'utilisateur</button><button class="btn" data-go="u-list">Annuler</button></div></div>'
+ +'<div class="side-r"><div class="card"><h3>Ce qui se passe</h3><ul class="lst"><li><span class="chip acc">1</span>Le compte est créé : « Défaire » le retire.</li><li><span class="chip acc">2</span>Il reçoit le modèle, puis les droits des groupes cochés.</li><li><span class="chip acc">3</span>Vous arrivez sur sa fiche pour affiner ses droits.</li></ul></div><div class="idea"><b>Idée</b> — un compte <i>externe</i> n\'a jamais plus de droits que celui qui l\'a invité, comme les agents invités aujourd\'hui.</div></div></div>'}
+
+/* — fiche utilisateur — */
+function dEff(){return Object.assign({},U(ctx.id).prop,draft)}
+function pUFiche(){
+  const u=U(ctx.id),adm=admDraft==null?u.admin:admDraft,tab=ctx.tab||"droits";
+  const clean=Object.assign({},dEff());Object.keys(clean).forEach(k=>{if(clean[k]==="herite")delete clean[k]});
+  const ev=DROITS.map(d=>decide(u,d.id,clean,adm)),ok=ev.filter(r=>r.ok).length,props=Object.keys(clean).length,sens=DROITS.filter((d,i)=>d.sens&&ev[i].ok).length;
+  const nChg=Object.keys(draft).filter(k=>(draft[k]==="herite"?undefined:draft[k])!==u.prop[k]).length+(admDraft!=null&&admDraft!==u.admin?1:0);
+  let h=crumb('Paramètres › Utilisateurs › <button class="lnk" data-go="u-list">Liste</button>',esc(u.nom))
+  +'<div class="hero"><div class="av big">'+ini(u.nom)+'</div><div class="meta"><h2>'+esc(u.nom)+'</h2><p>'+esc(u.fn)+' · '+esc(u.mail)+'</p><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">'+(u.admin?'<span class="chip warn">Administrateur</span>':"")+'<span class="chip">'+u.type+'</span>'+u.grp.map(x=>'<span class="chip acc">'+esc(G(x).nom)+'</span>').join("")+(u.off?'<span class="chip dng">désactivé</span>':'<span class="chip ok">actif</span>')+'</div></div>'
+  +'<div class="bar" style="margin:0"><button class="btn" data-comme="'+esc(u.id)+'">'+ic("M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6a3 3 0 0 0 0-6")+'Voir comme</button><button class="btn" data-mdp="1">Réinitialiser le mot de passe</button><button class="btn '+(u.off?"":"dng")+'" data-off="1">'+(u.off?"Réactiver":"Désactiver")+'</button></div></div>'
+  +'<div class="tabs">'+[["fiche","Fiche"],["droits","Droits"],["groupes","Groupes"],["secu","Sécurité"],["jrn","Journal"]].map(([v,l])=>'<button class="tab'+(tab===v?" on":"")+'" data-tab="'+v+'">'+l+(v==="droits"&&nChg?' <span class="chip warn">'+nChg+'</span>':"")+'</button>').join("")+'</div>';
+  if(tab==="fiche")h+='<div class="card"><div class="grid2"><div><label class="f">Identifiant</label><input type="text" value="'+esc(u.id)+'"></div><div><label class="f">Nom affiché</label><input type="text" value="'+esc(u.nom)+'"></div><div><label class="f">Fonction</label><input type="text" value="'+esc(u.fn)+'"></div><div><label class="f">E-mail</label><input type="text" value="'+esc(u.mail)+'"></div></div></div>';
+  if(tab==="groupes")h+='<div class="card"><h3>Appartenance</h3><div class="filters">'+S.groupes.map(x=>'<button class="fl'+(u.grp.includes(x.id)?" on":"")+'" data-mg="'+x.id+'">'+esc(x.nom)+'</button>').join("")+'</div><p class="why" style="margin-top:10px">Cliquer ajoute ou retire le groupe, et les droits se recalculent aussitôt (voir l\'onglet Droits).</p></div>';
+  if(tab==="secu")h+='<div class="grid2"><div class="card"><h3>Sessions ouvertes</h3><ul class="lst"><li><span class="chip ok">En cours</span>Chrome · Windows · il y a 4 min <button class="btn sm" style="margin-left:auto" data-toast="Session fermée">Fermer</button></li><li><span class="chip">Hier</span>Téléphone · Android <button class="btn sm" style="margin-left:auto" data-toast="Session fermée">Fermer</button></li></ul></div><div class="card"><h3>Second facteur</h3><ul class="lst"><li><span class="chip ok">Actif</span>Clé de sécurité « Yubikey bleue »</li></ul></div></div>';
+  if(tab==="jrn")h+='<div class="card"><h3>Ce qui a changé pour ce compte</h3><ul class="tl">'+(S.log.filter(l=>l.txt.includes(u.nom)).map(l=>'<li><time>à l\'instant</time><span>'+l.txt+'</span></li>').join("")||'<li><span class="why">Rien encore dans cette session : réglez un droit et revenez ici.</span></li>')+'<li><time>il y a 21 j</time><span>Compte créé</span></li></ul></div>';
+  if(tab==="droits"){
+    h+='<div class="split"><div>'+(u.type==="agent"?'<div class="idea" style="margin-bottom:12px"><b>Agent invité</b> — il n\'a jamais plus que '+esc(U(u.inv).nom)+', qui l\'a invité : ses droits suivent ceux de son invitant.</div>':"")
+    +'<div class="adm"><div><b>Administrateur</b><br><span style="color:var(--txt2);font-size:12.5px">Un administrateur a tous les droits, sans exception : les réglages sont suspendus tant que ce commutateur est actif.</span></div><button class="sw'+(adm?" on":"")+'" id="adm-sw" aria-label="Administrateur"></button></div>'
+    +'<div class="kpis"><div class="kpi ok"><b>'+ok+'</b><span>autorisés</span></div><div class="kpi dng"><b>'+(DROITS.length-ok)+'</b><span>refusés ou non attribués</span></div><div class="kpi"><b>'+props+'</b><span>réglés sur ce compte</span></div><div class="kpi warn"><b>'+sens+'</b><span>sensibles autorisés</span></div></div>'
+    +filtresHtml()+listeDroits(u,clean,adm,false)
+    +'<div class="savebar'+(nChg?" on":"")+'"><b>'+nChg+' modification'+(nChg>1?"s":"")+' non appliquée'+(nChg>1?"s":"")+'</b><span class="grow" style="opacity:.7;font-size:12.5px">Rien n\'est appliqué tant que vous n\'avez pas validé.</span><button class="btn sm" id="sv-undo">Annuler</button><button class="btn sm pri" id="sv-go">Appliquer</button></div></div>'
+    +'<div class="side-r"><div class="card"><h3>Partir d\'un modèle</h3><select id="tpl"><option>— choisir —</option>'+Object.keys(MODELES).map(k=>'<option>'+k+'</option>').join("")+'</select><p class="why" style="margin:8px 0 0">Prépare un jeu de droits que vous pouvez retoucher avant d\'appliquer.</p></div>'
+    +'<div class="card"><h3>Copier depuis…</h3><select id="cpy"><option>— un autre utilisateur —</option>'+S.users.filter(x=>x.id!==u.id&&x.type!=="agent").map(x=>'<option value="'+esc(x.id)+'">'+esc(x.nom)+'</option>').join("")+'</select></div>'
+    +'<div class="card"><h3>Comment lire</h3><ul class="lst"><li><span class="seg"><button class="on" data-v="herite" style="pointer-events:none">Hérité</button></span>suit les groupes, sinon le défaut</li><li><span class="seg"><button class="on" data-v="accorde" style="pointer-events:none">Accordé</button></span>forcé pour ce compte</li><li><span class="seg"><button class="on" data-v="refuse" style="pointer-events:none">Refusé</button></span>forcé, même si un groupe l\'accorde</li><li>'+SH+'droit sensible : journalisé à chaque usage</li></ul></div>'
+    +'<div class="idea"><b>À essayer</b> — dans l\'onglet Groupes, retirez Julien de « Comptabilité » : ses droits de facturation tombent sur-le-champ.</div></div></div>';
+  }
+  return h;
+}
+function filtresHtml(){return'<div class="bar"><input type="text" id="r-q" class="grow" value="'+esc(q)+'" placeholder="Chercher un droit : « supprimer », « pare-feu », « factures »…" style="max-width:380px"><div class="filters" id="r-f">'+[["tous","Tous"],["accorde","Autorisés"],["refuse","Refusés"],["sens","Sensibles"],["chg","Modifiés"]].map(([v,l])=>'<button class="fl'+(filtre===v?" on":"")+'" data-rf="'+v+'">'+l+'</button>').join("")+'</div><button class="bulk" data-open-all="1">Tout dérouler</button><button class="bulk" data-open-all="0">Tout replier</button></div>'}
+/* la liste des droits, pour un compte (ou, si grp=true, pour un groupe) */
+function listeDroits(u,clean,adm,grp){
+  const ref=grp?drG:draft;let html="";
+  MODS.forEach((m,mi)=>{
+    let rows="",nm=0,ok=0;
+    m.d.forEach(([id,lib,sens,note])=>{
+      const e=grp?(id in drG?drG[id]:(G(ctx.id).d[id]||"herite")):(id in draft?draft[id]:(u.prop[id]||"herite"));
+      const r=grp?{ok:e==="accorde",why:""}:decide(u,id,clean,adm);
+      const base=grp?(G(ctx.id).d[id]||"herite"):(u.prop[id]||"herite"),chg=(id in ref)&&ref[id]!==base;
+      if(r.ok)ok++;
+      if(q&&!(lib+" "+note+" "+m.nom).toLowerCase().includes(q))return;
       if(filtre==="accorde"&&!r.ok)return;if(filtre==="refuse"&&r.ok)return;if(filtre==="sens"&&!sens)return;if(filtre==="chg"&&!chg)return;
-      if(r.ok)n++;nm++;
-      rows+='<div class="rt'+(chg?" chg":"")+'" data-id="'+id+'"><span class="seg'+(admin?" lock":"")+'">'+["herite:Hérité","accorde:Accordé","refuse:Refusé"].map(s=>{const[v,l]=s.split(":");return'<button data-v="'+v+'"'+(e===v?' class="on"':"")+'>'+l+'</button>'}).join("")+'</span>'
-       +'<div class="lb"><b>'+esc(lib)+'</b>'+(sens?" "+SH:"")+(note?'<small>'+esc(note)+'</small>':"")+'</div>'
-       +'<div class="eff"><span class="chip '+(r.ok?"ok":"dng")+'">'+(r.ok?"✓ Autorisé":"✕ Refusé")+'</span><span class="why">'+esc(r.why)+'</span></div></div>';
+      nm++;
+      let eff;
+      if(grp){const g=G(ctx.id),mem=S.users.filter(x=>x.grp.includes(g.id)),gain=mem.filter(x=>decide(x,id,null,null,0).ok).length,perso=mem.filter(x=>x.prop[id]==="refuse").length;
+        eff='<span class="chip '+(gain===mem.length&&mem.length?"ok":gain?"warn":"")+'">'+gain+' / '+mem.length+' membres</span>'+(perso?'<span class="why">'+perso+' refus personnel</span>':"")}
+      else eff='<span class="chip '+(r.ok?"ok":"dng")+'">'+(r.ok?"✓ Autorisé":"✕ Refusé")+'</span><span class="why">'+esc(r.why)+'</span>';
+      rows+='<div class="rt'+(chg?" chg":"")+'" data-id="'+id+'"><span class="seg'+(adm&&!grp?" lock":"")+'">'+[["herite","Hérité"],["accorde","Accordé"],["refuse","Refusé"]].map(([v,l])=>'<button data-v="'+v+'"'+(e===v?' class="on"':"")+'>'+l+'</button>').join("")+'</span><div class="lb"><b>'+esc(lib)+'</b>'+(sens?" "+SH:"")+(note?'<small>'+esc(note)+'</small>':"")+'</div><div class="eff">'+eff+'</div></div>';
     });
     if(!nm&&(q||filtre!=="tous"))return;
-    const ok=m.d.filter(([id,,s,,d])=>decide(user,id,d,s,etatDe(id)==="herite"?null:etatDe(id),admin).ok).length;
-    const pct=ok/m.d.length*100;
-    html+='<div class="mod'+(window.__open||q||filtre!=="tous"?" open":"")+'" data-m="'+m.id+'"><div class="modh"><span class="nm"><svg class="i car" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>'+ic(m.ic)+esc(m.nom)+'</span><span class="mbar"><i style="width:'+pct+'%"></i></span><span class="cnt">'+ok+' / '+m.d.length+'</span><span class="acts"><button class="bulk" data-b="accorde">Tout</button><button class="bulk" data-b="refuse">Aucun</button><button class="bulk" data-b="herite">Hériter</button></span></div><div class="rights">'+rows+'</div></div>';
+    const tot=m.d.length,pct=ok/tot*100;
+    html+='<div class="mod'+((ouvert===null?mi<2:ouvert)||q||filtre!=="tous"?" open":"")+'" data-m="'+m.id+'"><div class="modh"><span class="nm"><svg class="i car" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>'+ic(m.ic)+esc(m.nom)+'</span><span class="mbar"><i style="width:'+pct+'%"></i></span><span class="cnt">'+ok+' / '+tot+'</span><span class="acts"><button class="bulk" data-b="accorde">Tout</button><button class="bulk" data-b="refuse">Aucun</button><button class="bulk" data-b="herite">Hériter</button></span></div><div class="rights">'+rows+'</div></div>';
   });
-  $("#mods").innerHTML=html||'<div class="card why">Aucun droit ne correspond.</div>';
-  $("#kpis").innerHTML='<div class="kpi ok"><b>'+tot.ok+'</b><span>droits autorisés</span></div><div class="kpi dng"><b>'+tot.no+'</b><span>refusés</span></div><div class="kpi"><b>'+tot.props+'</b><span>réglés sur ce compte</span></div><div class="kpi warn"><b>'+tot.sens+'</b><span>sensibles autorisés</span></div>';
-  const n=Object.keys(draft).filter(k=>draft[k]!==(base[k]||"herite")).length;
-  $("#savebar").classList.toggle("on",n>0);$("#sv-n").textContent=n+" modification"+(n>1?"s":"")+" non appliquée"+(n>1?"s":"");
+  return html||'<div class="card why">Aucun droit ne correspond.</div>';
 }
-function ouvrirFiche(id){
-  cur=u(id);draft={};base=Object.assign({},PROPRE[id]||{});filtre="tous";q="";$("#r-q").value="";
-  $$("#r-f .fl").forEach(b=>b.classList.toggle("on",b.dataset.f==="tous"));
-  $("#f-nom").textContent=cur.nom;$("#f-crumb").textContent=cur.nom;$("#f-av").textContent=ini(cur.nom);$("#f-sub").textContent=cur.fn+" · "+cur.mail;
-  $("#f-chips").innerHTML=(cur.admin?'<span class="chip warn">Administrateur</span>':"")+'<span class="chip '+(cur.type==="externe"?"info":cur.type==="agent"?"acc":"")+'">'+cur.type+'</span>'+cur.grp.map(x=>'<span class="chip acc">'+esc(g(x).nom)+'</span>').join("")+(cur.etat==="off"?'<span class="chip dng">désactivé</span>':"");
-  $("#adm-sw").classList.toggle("on",cur.admin);
-  $("#f-groupes").innerHTML=GROUPES.map(x=>'<button class="fl'+(cur.grp.includes(x.id)?" on":"")+'">'+esc(x.nom)+'</button>').join("");
-  $("#jrn").innerHTML=['il y a 2 h|<b>Camille Martin</b> a refusé « Valider les paiements » à ce compte','il y a 9 j|Ajouté au groupe <b>Comptabilité</b>','il y a 21 j|Compte créé à partir du modèle « Comptable »','il y a 21 j|Invitation envoyée, acceptée 40 min plus tard'].map(x=>{const[a,b]=x.split("|");return'<li><time>'+a+'</time><span>'+b+'</span></li>'}).join("");
-  $$("#f-tabs .tab").forEach(t=>t.classList.toggle("on",t.dataset.t==="droits"));$$("#u-fiche .pane").forEach(p=>p.classList.toggle("on",p.dataset.p==="droits"));
-  go("u-fiche");renderDroits();
-}
-/* listes */
-function renderUsers(){
-  const f=$("#u-f .on").dataset.f,qq=$("#u-q").value.toLowerCase();
-  $("#u-body").innerHTML=USERS.filter(x=>(f==="tous"||(f==="admin"&&x.admin)||(f==="ext"&&x.type==="externe")||(f==="agent"&&x.type==="agent")||(f==="off"&&x.etat==="off"))&&(x.nom+x.mail+x.fn+x.grp.map(y=>g(y).nom).join(" ")).toLowerCase().includes(qq)).map(x=>{
-    let ok=0;MODS.forEach(m=>m.d.forEach(([id,,s,,d])=>{const e=(PROPRE[x.id]||{})[id];if(decide(x,id,d,s,e||null,x.admin).ok)ok++}));
-    return'<tr class="rowlink" data-u="'+x.id+'"><td><div class="who"><span class="av">'+ini(x.nom)+'</span><div><b>'+esc(x.nom)+'</b><small>'+esc(x.mail)+'</small></div></div></td><td>'+esc(x.fn)+'</td><td>'+(x.grp.map(y=>'<span class="chip acc">'+esc(g(y).nom)+'</span>').join(" ")||'<span class="why">aucun</span>')+'</td><td>'+(x.admin?'<span class="chip warn">tous (admin)</span>':'<span class="chip ok">'+ok+' droits</span>')+'</td><td class="why">'+x.co+'</td><td>'+(x.etat==="off"?'<span class="chip dng">désactivé</span>':'<span class="chip ok">actif</span>')+(x.type!=="interne"?' <span class="chip info">'+x.type+'</span>':"")+'</td></tr>'}).join("");
-}
-function renderGroupes(){
-  $("#g-body").innerHTML=GROUPES.map(x=>'<tr class="rowlink" data-g="'+x.id+'"><td><div class="who"><span class="av" style="border-radius:11px">'+x.nom[0]+'</span><div><b>'+esc(x.nom)+'</b><small>'+esc(x.desc)+'</small></div></div></td><td>'+x.m.map(y=>'<span class="av" style="width:26px;height:26px;font-size:10px;display:inline-grid;margin-right:-6px;border:2px solid var(--surface)">'+ini(u(y).nom)+'</span>').join("")+' <span class="why" style="margin-left:10px">'+x.m.length+'</span></td><td><span class="chip ok">'+x.acc+'</span></td><td><span class="chip warn">'+x.sens+'</span></td><td class="why">'+x.mod+'</td></tr>').join("");
-  $("#nu-groupes").innerHTML=GROUPES.map(x=>'<button class="fl">'+esc(x.nom)+'</button>').join("");
-  $("#ng-membres").innerHTML=USERS.filter(x=>x.type!=="agent").map(x=>'<button class="fl">'+esc(x.nom)+'</button>').join("");
-  $("#mx-body").innerHTML=MODS.map(m=>'<tr><td><b>'+esc(m.nom)+'</b></td>'+GROUPES.map(gr=>{const a=m.d.filter(d=>GACC[gr.id].includes(d[0])).length,n=m.d.length;return'<td><span class="dot '+(a===n?"a":a?"p":"")+'">'+a+'</span></td>'}).join("")+'</tr>').join("");
-}
-function ouvrirGroupe(id){
-  const x=g(id);$("#gf-nom").textContent=x.nom;$("#gf-crumb").textContent=x.nom;
-  $("#gf-membres").innerHTML=x.m.map(y=>'<div class="who" style="justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--surface)"><div class="who"><span class="av">'+ini(u(y).nom)+'</span><div><b>'+esc(u(y).nom)+'</b><small>'+esc(u(y).fn)+'</small></div></div><button class="btn sm">Retirer</button></div>').join("");
-  go("g-fiche");
-}
-function go(p){$$(".page").forEach(s=>s.classList.toggle("on",s.id===p));$$(".si.sub").forEach(b=>b.classList.toggle("on",b.dataset.go===p||(p==="u-fiche"&&b.dataset.go==="u-list")||(p==="g-fiche"&&b.dataset.go==="g-list")));scrollTo({top:0})}
-let undoCb=null;function toast(t){$("#toast-t").textContent=t.replace(/ — Défaire$/,"");$("#toast-undo").style.display=/Défaire$/.test(t)?"":"none";$("#toast").classList.add("on");clearTimeout(window.__tt);window.__tt=setTimeout(()=>$("#toast").classList.remove("on"),3600)}
 
-/* événements */
+/* — groupes — */
+function pGList(){return crumb("Paramètres › Groupes","Liste des groupes")+'<h1>Liste des groupes</h1><p class="lead">Chaque groupe porte ses droits ; ses membres les reçoivent, sauf refus posé sur leur compte. Un refus de groupe l\'emporte sur un octroi.</p>'
+ +'<div class="bar"><button class="btn" data-go="matrice">Matrice des droits</button><button class="btn pri" data-go="g-new">'+ic("M12 5v14M5 12h14")+'Nouveau groupe</button></div>'
+ +'<div class="tw"><table><thead><tr><th>Groupe</th><th>Membres</th><th>Droits accordés</th><th>Refus posés</th><th>Modifié</th></tr></thead><tbody>'+S.groupes.map(x=>{const m=S.users.filter(u=>u.grp.includes(x.id));return'<tr class="rowlink" data-g="'+x.id+'"><td><div class="who"><span class="av" style="border-radius:11px">'+esc(x.nom[0])+'</span><div><b>'+esc(x.nom)+'</b><small>'+esc(x.desc)+'</small></div></div></td><td>'+(m.map(y=>'<span class="av" style="width:26px;height:26px;font-size:10px;display:inline-grid;margin-right:-6px;border:2px solid var(--surface)">'+ini(y.nom)+'</span>').join("")||'<span class="why">vide</span>')+' <span class="why" style="margin-left:10px">'+m.length+'</span></td><td><span class="chip ok">'+Object.values(x.d).filter(v=>v==="accorde").length+'</span></td><td><span class="chip '+(Object.values(x.d).includes("refuse")?"dng":"")+'">'+Object.values(x.d).filter(v=>v==="refuse").length+'</span></td><td class="why">'+esc(x.mod)+'</td></tr>'}).join("")+'</tbody></table></div>'}
+let ng={membres:[],modele:"— vide —"};
+function pGNew(){return crumb("Paramètres › Groupes","Nouveau groupe")+'<h1>Nouveau groupe</h1><p class="lead">Un groupe réunit des utilisateurs qui font le même travail : on règle les droits une fois, et chacun les reçoit.</p>'
+ +'<div class="split"><div><div class="card"><div class="grid2"><div><label class="f">Nom du groupe <span class="req">*</span></label><input type="text" id="ng-nom" placeholder="Marketing"></div><div><label class="f">Description</label><input type="text" id="ng-desc" placeholder="À quoi sert ce groupe"></div></div>'
+ +'<div class="grid2" style="margin-top:12px"><div><label class="f">Partir d\'un modèle</label><select id="ng-mod"><option>— vide —</option>'+Object.keys(MODELES).map(k=>'<option>'+k+'</option>').join("")+'</select></div><div><label class="f">Ou copier un groupe</label><select id="ng-cp"><option value="">— aucun —</option>'+S.groupes.map(x=>'<option value="'+x.id+'">'+esc(x.nom)+'</option>').join("")+'</select></div></div>'
+ +'<div style="margin-top:12px"><label class="f">Membres de départ</label><div class="filters">'+S.users.filter(x=>x.type!=="agent").map(x=>'<button class="fl'+(ng.membres.includes(x.id)?" on":"")+'" data-nm="'+esc(x.id)+'">'+esc(x.nom)+'</button>').join("")+'</div></div></div>'
+ +'<div class="bar"><button class="btn pri" id="ng-ok">Créer le groupe</button><button class="btn" data-go="g-list">Annuler</button></div></div>'
+ +'<div class="side-r"><div class="idea"><b>Idée</b> — un groupe peut être <i>emboîté</i> dans un autre (Direction contient Comptabilité) : les droits se cumulent vers le haut, les refus l\'emportent.</div></div></div>'}
+function pGFiche(){
+  const g=G(ctx.id),tab=ctx.tab||"membres",mem=S.users.filter(u=>u.grp.includes(g.id));
+  const nChg=Object.keys(drG).filter(k=>(drG[k]==="herite"?undefined:drG[k])!==g.d[k]).length;
+  let h=crumb('Paramètres › Groupes › <button class="lnk" data-go="g-list">Liste</button>',esc(g.nom))
+  +'<div class="hero"><div class="av big" style="border-radius:18px">'+esc(g.nom[0])+'</div><div class="meta"><h2>'+esc(g.nom)+'</h2><p>'+esc(g.desc)+' — '+mem.length+' membre'+(mem.length>1?"s":"")+'</p></div><div class="bar" style="margin:0"><button class="btn" data-dup="1">Dupliquer</button><button class="btn dng" data-delg="1">Supprimer</button></div></div>'
+  +'<div class="tabs">'+[["membres","Membres"],["droits","Droits du groupe"],["jrn","Journal"]].map(([v,l])=>'<button class="tab'+(tab===v?" on":"")+'" data-tab="'+v+'">'+l+(v==="droits"&&nChg?' <span class="chip warn">'+nChg+'</span>':"")+'</button>').join("")+'</div>';
+  if(tab==="membres")h+='<div class="card"><h3>Membres</h3><div style="display:grid;gap:8px">'+(mem.map(y=>'<div class="who" style="justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--surface)"><div class="who"><span class="av">'+ini(y.nom)+'</span><div><button class="lnk" data-u="'+esc(y.id)+'">'+esc(y.nom)+'</button><small>'+esc(y.fn)+'</small></div></div><button class="btn sm" data-rm="'+esc(y.id)+'">Retirer</button></div>').join("")||'<span class="why">Aucun membre.</span>')+'</div><div class="bar" style="margin:12px 0 0"><select id="add-m" style="max-width:260px"><option value="">Ajouter un utilisateur…</option>'+S.users.filter(x=>!x.grp.includes(g.id)&&x.type!=="agent").map(x=>'<option value="'+esc(x.id)+'">'+esc(x.nom)+'</option>').join("")+'</select><button class="btn" id="add-ok">Ajouter</button></div></div>';
+  if(tab==="droits"){const clean=Object.assign({},g.d,drG);h+='<div class="kpis"><div class="kpi ok"><b>'+Object.values(clean).filter(v=>v==="accorde").length+'</b><span>accordés au groupe</span></div><div class="kpi dng"><b>'+Object.values(clean).filter(v=>v==="refuse").length+'</b><span>refus posés</span></div></div>'+filtresHtml()+listeDroits(null,null,false,true)+'<div class="savebar'+(nChg?" on":"")+'"><b>'+nChg+' modification'+(nChg>1?"s":"")+' non appliquée'+(nChg>1?"s":"")+'</b><span class="grow" style="opacity:.7;font-size:12.5px">Les '+mem.length+' membres sont concernés dès l\'application.</span><button class="btn sm" id="sv-undo">Annuler</button><button class="btn sm pri" id="sv-go">Appliquer</button></div>'}
+  if(tab==="jrn")h+='<div class="card"><ul class="tl">'+(S.log.filter(l=>l.txt.includes(g.nom)).map(l=>'<li><time>à l\'instant</time><span>'+l.txt+'</span></li>').join("")||'<li><span class="why">Rien encore dans cette session.</span></li>')+'</ul></div>';
+  return h;
+}
+
+/* — matrice — */
+function pMatrice(){
+  const mode=ctx.mode||"g",cols=mode==="g"?S.groupes:S.users.filter(x=>x.type!=="agent");
+  return crumb("Paramètres › Groupes","Matrice des droits")+'<h1>Matrice des droits</h1><p class="lead">Qui peut quoi, d\'un coup d\'œil. Cliquez un en-tête pour ouvrir la fiche, une case pour descendre au détail du module.</p>'
+  +'<div class="bar"><div class="filters"><button class="fl'+(mode==="g"?" on":"")+'" data-mx="g">Groupes</button><button class="fl'+(mode==="u"?" on":"")+'" data-mx="u">Utilisateurs</button></div><span class="why">Légende : <span class="dot a">3</span> tout · <span class="dot p">2</span> en partie · <span class="dot">0</span> rien · <span class="dot r">!</span> un refus posé</span></div>'
+  +'<div class="tw"><table class="mx"><thead><tr><th>Module</th>'+cols.map(c=>'<th><button class="lnk" data-'+(mode==="g"?"g":"u")+'="'+esc(c.id)+'">'+esc(c.nom)+'</button></th>').join("")+'</tr></thead><tbody>'+MODS.map(m=>'<tr><td><b>'+esc(m.nom)+'</b></td>'+cols.map(c=>{let a,rf;if(mode==="g"){a=m.d.filter(d=>c.d[d[0]]==="accorde").length;rf=m.d.some(d=>c.d[d[0]]==="refuse")}else{a=m.d.filter(d=>decide(c,d[0]).ok).length;rf=m.d.some(d=>c.prop[d[0]]==="refuse")}
+   return'<td><button class="dot '+(rf?"r":a===m.d.length?"a":a?"p":"")+'" style="border:0;cursor:pointer" data-cell="'+m.id+'|'+c.id+'|'+mode+'">'+(rf?"!":a)+'</button></td>'}).join("")+'</tr>').join("")+'</tbody></table></div>'}
+
+/* — qui peut — */
+function pQui(){
+  const id=ctx.droit||"sit.suppr",d=DR(id);
+  return crumb("Paramètres › Groupes","Qui peut… ?")+'<h1>Qui peut… ?</h1><p class="lead">Choisissez un droit : voici tous les comptes qui peuvent l\'exercer, et pourquoi. C\'est l\'audit en une question.</p>'
+  +'<div class="bar"><select id="qui-d" style="max-width:420px">'+MODS.map(m=>'<optgroup label="'+esc(m.nom)+'">'+m.d.map(x=>'<option value="'+x[0]+'"'+(x[0]===id?" selected":"")+'>'+esc(x[1])+'</option>').join("")+'</optgroup>').join("")+'</select></div>'
+  +'<div class="tw"><table><thead><tr><th>Compte</th><th>Peut ?</th><th>Pourquoi</th></tr></thead><tbody>'+S.users.map(u=>{const r=decide(u,id);return'<tr class="rowlink" data-u="'+esc(u.id)+'"><td><div class="who"><span class="av">'+ini(u.nom)+'</span><b>'+esc(u.nom)+'</b></div></td><td><span class="chip '+(r.ok?"ok":"dng")+'">'+(r.ok?"✓ Oui":"✕ Non")+'</span></td><td class="why">'+esc(r.why)+'</td></tr>'}).join("")+'</tbody></table></div>'
+  +(d.sens?'<p class="why" style="margin-top:10px">'+SH+' Droit sensible : chaque usage est inscrit au journal.</p>':"")}
+
+/* — journal — */
+function pJournal(){return crumb("Paramètres › Groupes","Journal des droits")+'<h1>Journal des droits</h1><p class="lead">Chaque changement est inscrit, avec de quoi le défaire. Ce que vous faites dans cette maquette apparaît ici.</p><div class="card"><ul class="tl">'+(S.log.map(l=>'<li><time>'+l.t.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})+'</time><span>'+l.txt+'</span></li>').join("")||'<li><span class="why">Rien encore : créez un utilisateur ou réglez un droit.</span></li>')+'</ul>'+(S.pile.length?'<div class="bar" style="margin:12px 0 0"><button class="btn" id="undo-last">Défaire le dernier changement</button></div>':"")+'</div>'}
+
+/* ═══ gestes ═══ */
+function appliquerUtilisateur(){
+  const u=U(ctx.id),n=[];
+  const av={prop:clone(u.prop),admin:u.admin};
+  Object.keys(draft).forEach(k=>{const was=u.prop[k]||"herite",now=draft[k];if(was===now)return;if(now==="herite")delete u.prop[k];else u.prop[k]=now;n.push(DR(k).lib+" → "+({accorde:"accordé",refuse:"refusé",herite:"hérité"})[now])});
+  if(admDraft!=null&&admDraft!==u.admin){u.admin=admDraft;n.push("administrateur : "+(admDraft?"oui":"non"))}
+  draft={};admDraft=null;
+  if(!n.length)return;
+  journal('<b>Vous</b> avez réglé <b>'+esc(u.nom)+'</b> : '+esc(n.slice(0,3).join(" ; "))+(n.length>3?" (+"+(n.length-3)+")":""),()=>{u.prop=av.prop;u.admin=av.admin});
+  toast(n.length+" droit(s) appliqué(s) à "+u.nom+", journalisé(s).",true);render();
+}
+function appliquerGroupe(){
+  const g=G(ctx.id),av=clone(g.d),n=[];
+  Object.keys(drG).forEach(k=>{const was=g.d[k]||"herite",now=drG[k];if(was===now)return;if(now==="herite")delete g.d[k];else g.d[k]=now;n.push(DR(k).lib+" → "+({accorde:"accordé",refuse:"refusé",herite:"hérité"})[now])});
+  drG={};if(!n.length)return;
+  journal('<b>Vous</b> avez réglé le groupe <b>'+esc(g.nom)+'</b> : '+esc(n.slice(0,3).join(" ; "))+(n.length>3?" (+"+(n.length-3)+")":""),()=>{g.d=av});
+  toast(n.length+" droit(s) accordé(s)/réglé(s) au groupe "+g.nom+".",true);render();
+}
+function voirComme(id){
+  const u=U(id);
+  $("#mbox").innerHTML='<h3>Vous voyez Cassandra comme '+esc(u.nom)+'</h3><p class="why">Lecture seule : voici les écrans que ce compte voit, et ce qu\'il peut y faire.</p><div class="menu-sim">'+MODS.map(m=>{const ok=m.d.filter(d=>decide(u,d[0]).ok).length;return'<div class="ms'+(ok?"":" no")+'">'+ic(m.ic)+'<div><b>'+esc(m.nom)+'</b><small>'+(ok?ok+" / "+m.d.length+" actions":"masqué")+'</small></div></div>'}).join("")+'</div><div class="bar" style="margin:14px 0 0"><button class="btn pri" data-close="1">Quitter ce mode</button></div>';
+  $("#modal").classList.add("on");
+}
 document.addEventListener("click",e=>{
-  const c=(s)=>e.target.closest(s);let x;
-  if(x=c("[data-go]")){e.preventDefault();go(x.dataset.go);if(x.dataset.toast)toast(x.dataset.toast);return}
+  const c=s=>e.target.closest(s);let x;
+  if(c("#modal")&&(!c("#mbox")||c("[data-close]"))){$("#modal").classList.remove("on");return}
+  if(x=c("[data-away]")){toast("« "+x.dataset.away+" » : autre page, hors de cette maquette.");return}
+  if(x=c("[data-demo]")){demo(x.dataset.demo);return}
+  if(x=c("[data-go]")){go(x.dataset.go);return}
   if(x=c("[data-toast]")){toast(x.dataset.toast);return}
   if(x=c("[data-open]")){x.classList.toggle("open");$("#g-"+x.dataset.open).style.display=x.classList.contains("open")?"":"none";return}
-  if(x=c("tr[data-u]")){ouvrirFiche(x.dataset.u);return}
-  if(x=c("tr[data-g]")){ouvrirGroupe(x.dataset.g);return}
-  if(x=c("#u-f .fl")){$$("#u-f .fl").forEach(b=>b.classList.remove("on"));x.classList.add("on");renderUsers();return}
-  if(x=c("#r-f .fl")){$$("#r-f .fl").forEach(b=>b.classList.remove("on"));x.classList.add("on");filtre=x.dataset.f;renderDroits();return}
-  if(x=c(".fl:not([data-f])")){x.classList.toggle("on");return}
-  if(x=c("#f-tabs .tab")){$$("#f-tabs .tab").forEach(b=>b.classList.toggle("on",b===x));$$("#u-fiche .pane").forEach(p=>p.classList.toggle("on",p.dataset.p===x.dataset.t));return}
-  if(x=c("#gf-tabs .tab")){$$("#gf-tabs .tab").forEach(b=>b.classList.toggle("on",b===x));$$("#g-fiche .pane").forEach(p=>p.classList.toggle("on",p.dataset.p===x.dataset.t));return}
-  if(x=c("#adm-sw")){x.classList.toggle("on");renderDroits();return}
-  if(x=c(".sw")){x.classList.toggle("on");return}
-  if(x=c("#mods .rt .seg button")){const id=x.closest(".rt").dataset.id;draft[id]=x.dataset.v;renderDroits();return}
-  if(x=c("#mods .bulk")){const m=MODS.find(k=>k.id===x.closest(".mod").dataset.m);m.d.forEach(d=>draft[d[0]]=x.dataset.b==="refuse"?"refuse":x.dataset.b);renderDroits();e.stopPropagation();return}
-  if(x=c("#mods .modh")){x.parentElement.classList.toggle("open");return}
-  if(c("#r-open")){window.__open=1;$$("#mods .mod").forEach(m=>m.classList.add("open"));return}
-  if(c("#r-close")){window.__open=0;$$("#mods .mod").forEach(m=>m.classList.remove("open"));return}
-  if(c("#sv-undo")){draft={};renderDroits();return}
-  if(c("#sv-diff")){const k=Object.keys(draft).filter(i=>draft[i]!==(base[i]||"herite"));toast(k.length+" changement(s) : "+k.slice(0,3).join(", ")+(k.length>3?"…":""));return}
-  if(c("#sv-go")){Object.keys(draft).forEach(k=>{if(draft[k]==="herite")delete base[k];else base[k]=draft[k]});PROPRE[cur.id]=base;draft={};renderDroits();toast("Droits appliqués, journalisés — Défaire");return}
+  if(x=c("tr[data-u],button[data-u]")){e.preventDefault();filtre="tous";q="";go("u-fiche",{id:x.dataset.u,tab:"droits"});return}
+  if(x=c("tr[data-g],button[data-g]")){filtre="tous";q="";go("g-fiche",{id:x.dataset.g,tab:"membres"});return}
+  if(x=c("#u-f .fl")){$$("#u-f .fl").forEach(b=>b.classList.remove("on"));x.classList.add("on");filtrerListe();return}
+  if(x=c("[data-tab]")){ctx.tab=x.dataset.tab;render();return}
+  if(x=c("[data-rf]")){filtre=x.dataset.rf;render();return}
+  if(x=c("[data-open-all]")){ouvert=x.dataset.openAll==="1";$$(".mod").forEach(m=>m.classList.toggle("open",ouvert));return}
+  if(x=c("#adm-sw")){const u=U(ctx.id);admDraft=!(admDraft==null?u.admin:admDraft);render();return}
+  if(x=c(".rt .seg button")){const id=x.closest(".rt").dataset.id;(page==="g-fiche"?drG:draft)[id]=x.dataset.v;render();return}
+  if(x=c(".modh .bulk")){const m=MODS.find(k=>k.id===x.closest(".mod").dataset.m);m.d.forEach(d=>(page==="g-fiche"?drG:draft)[d[0]]=x.dataset.b);render();e.stopPropagation();return}
+  if(x=c(".modh")){x.parentElement.classList.toggle("open");return}
+  if(c("#sv-undo")){draft={};drG={};admDraft=null;render();return}
+  if(c("#sv-go")){page==="g-fiche"?appliquerGroupe():appliquerUtilisateur();return}
+  if(x=c("[data-mg]")){const u=U(ctx.id),g=x.dataset.mg,was=u.grp.includes(g);u.grp=was?u.grp.filter(y=>y!==g):u.grp.concat(g);const n=compte(u);journal('<b>Vous</b> avez '+(was?"retiré":"ajouté")+' <b>'+esc(u.nom)+'</b> '+(was?"du":"au")+' groupe <b>'+esc(G(g).nom)+'</b>',()=>{u.grp=was?u.grp.concat(g):u.grp.filter(y=>y!==g)});toast(u.nom+" : "+n+" droits autorisés maintenant.",true);render();return}
+  if(c("[data-off]")){const u=U(ctx.id);u.off=!u.off;journal('<b>Vous</b> avez '+(u.off?"désactivé":"réactivé")+' <b>'+esc(u.nom)+'</b>',()=>{u.off=!u.off});toast(u.nom+(u.off?" est désactivé.":" est réactivé."),true);render();return}
+  if(c("[data-mdp]")){toast("Lien de réinitialisation envoyé à "+U(ctx.id).mail);return}
+  if(x=c("[data-comme]")){voirComme(x.dataset.comme);return}
+  if(x=c("[data-rm]")){const u=U(x.dataset.rm),g=ctx.id;u.grp=u.grp.filter(y=>y!==g);journal('<b>Vous</b> avez retiré <b>'+esc(u.nom)+'</b> du groupe <b>'+esc(G(g).nom)+'</b>',()=>{u.grp.push(g)});toast(u.nom+" retiré du groupe.",true);render();return}
+  if(c("#add-ok")){const v=$("#add-m").value;if(!v)return;const u=U(v),g=ctx.id;u.grp.push(g);journal('<b>Vous</b> avez ajouté <b>'+esc(u.nom)+'</b> au groupe <b>'+esc(G(g).nom)+'</b>',()=>{u.grp=u.grp.filter(y=>y!==g)});toast(u.nom+" reçoit désormais les droits du groupe : "+compte(u)+" droits.",true);render();return}
+  if(c("[data-dup]")){const g=G(ctx.id),n={id:g.id+"-2",nom:g.nom+" (copie)",desc:g.desc,mod:"à l'instant",d:clone(g.d)};S.groupes.push(n);journal('<b>Vous</b> avez dupliqué le groupe <b>'+esc(g.nom)+'</b>',()=>{S.groupes=S.groupes.filter(y=>y!==n)});go("g-fiche",{id:n.id,tab:"droits"});toast("Groupe dupliqué.");return}
+  if(c("[data-delg]")){const g=G(ctx.id),mem=S.users.filter(u=>u.grp.includes(g.id));S.groupes=S.groupes.filter(y=>y!==g);mem.forEach(u=>u.grp=u.grp.filter(y=>y!==g.id));journal('<b>Vous</b> avez supprimé le groupe <b>'+esc(g.nom)+'</b>',()=>{S.groupes.push(g);mem.forEach(u=>u.grp.push(g.id))});toast("Groupe supprimé ("+mem.length+" membre(s) en perdent les droits).",true);go("g-list");return}
+  if(x=c("[data-ng]")){const g=x.dataset.ng;nu.groupes=nu.groupes.includes(g)?nu.groupes.filter(y=>y!==g):nu.groupes.concat(g);x.classList.toggle("on");$("#nu-apercu").innerHTML="<b>Aperçu des droits obtenus</b> — "+aperçuNu();return}
+  if(x=c("[data-nm]")){const g=x.dataset.nm;ng.membres=ng.membres.includes(g)?ng.membres.filter(y=>y!==g):ng.membres.concat(g);x.classList.toggle("on");return}
+  if(c("#nu-ok")){const id=$("#nu-id").value.trim(),nom=$("#nu-nom").value.trim();$("#nu-id").classList.toggle("bad",!id);$("#nu-nom").classList.toggle("bad",!nom);if(!id||!nom){toast("L'identifiant et le nom sont obligatoires.");return}
+    if(S.users.some(u=>u.id===id)){toast("Cet identifiant existe déjà.");$("#nu-id").classList.add("bad");return}
+    const u={id,nom,fn:$("#nu-fn").value||"—",mail:$("#nu-mail").value||"—",grp:nu.groupes.slice(),admin:nu.modele==="Administrateur délégué",type:nu.type,co:"jamais",off:false,prop:{}};(MODELES[nu.modele]||[]).forEach(k=>u.prop[k]="accorde");
+    S.users.push(u);journal('<b>Vous</b> avez créé l\'utilisateur <b>'+esc(nom)+'</b> (modèle '+esc(nu.modele)+')',()=>{S.users=S.users.filter(y=>y!==u)});nu={groupes:[],modele:"Opérateur",type:"interne"};
+    go("u-fiche",{id:u.id,tab:"droits"});toast(nom+" est créé : "+compte(u)+" droits. Affinez-les ci-dessous.",true);return}
+  if(c("#ng-ok")){const nom=$("#ng-nom").value.trim();$("#ng-nom").classList.toggle("bad",!nom);if(!nom){toast("Le nom du groupe est obligatoire.");return}
+    const g={id:slug(nom)||"g"+Date.now(),nom,desc:$("#ng-desc").value||"Sans description",mod:"à l'instant",d:{}};const cp=$("#ng-cp").value,md=$("#ng-mod").value;
+    if(cp)g.d=clone(G(cp).d);else if(MODELES[md])MODELES[md].forEach(k=>g.d[k]="accorde");
+    S.groupes.push(g);ng.membres.forEach(i=>U(i).grp.push(g.id));const mem=ng.membres.slice();journal('<b>Vous</b> avez créé le groupe <b>'+esc(nom)+'</b> ('+mem.length+' membre(s))',()=>{S.groupes=S.groupes.filter(y=>y!==g);mem.forEach(i=>U(i).grp=U(i).grp.filter(y=>y!==g.id))});
+    ng={membres:[],modele:"— vide —"};go("g-fiche",{id:g.id,tab:"droits"});toast("Groupe « "+nom+" » créé. Réglez ses droits.",true);return}
+  if(x=c("[data-mx]")){ctx.mode=x.dataset.mx;render();return}
+  if(x=c("[data-cell]")){const[m,i,mode]=x.dataset.cell.split("|");q=MODS.find(k=>k.id===m).nom.toLowerCase();filtre="tous";ouvert=true;go(mode==="g"?"g-fiche":"u-fiche",{id:i,tab:"droits"});return}
+  if(c("#undo-last")){const f=S.pile.pop();f&&f();S.log.shift();toast("Dernier changement défait.");render();return}
+  if(c("#toast-undo")){const f=S.pile.pop();if(f){f();S.log.unshift({t:new Date(),txt:"<b>Vous</b> avez défait le dernier changement",undo:false});toast("Défait.");render()}return}
   if(c("#theme")){const r=document.documentElement;const d=getComputedStyle(r).colorScheme==="dark"||r.dataset.theme==="dark";r.dataset.theme=d?"light":"dark";return}
 });
-$("#r-q").addEventListener("input",e=>{q=e.target.value.toLowerCase();renderDroits()});
-$("#u-q").addEventListener("input",renderUsers);
-$("#tpl").addEventListener("change",e=>{if(e.target.selectedIndex<1)return;const r={Lecteur:["uti.lire","cou.lire","age.lire","sit.lire"],Opérateur:["uti.lire","cou.lire","cou.ecrire","age.lire","age.ecrire","sit.lire","sit.publier"],Comptable:GACC.compta,Support:GACC.support,"Administrateur délégué":MODS.flatMap(m=>m.d.map(d=>d[0]))}[e.target.value]||[];MODS.forEach(m=>m.d.forEach(d=>{draft[d[0]]=r.includes(d[0])?"accorde":"herite"}));renderDroits();toast("Modèle « "+e.target.value+" » préparé — rien n'est appliqué avant validation")});
-$("#toast-undo").addEventListener("click",()=>{$("#toast").classList.remove("on")});
-renderUsers();renderGroupes();
+document.addEventListener("input",e=>{
+  if(e.target.id==="r-q"){q=e.target.value.toLowerCase();const p=e.target.selectionStart;render();const n=$("#r-q");n.focus();n.setSelectionRange(p,p)}
+  if(e.target.id==="u-q")filtrerListe();
+});
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.id==="tpl"&&t.selectedIndex>0){const r=MODELES[t.value];DROITS.forEach(d=>draft[d.id]=r.includes(d.id)?"accorde":"herite");toast("Modèle « "+t.value+" » préparé : rien n'est appliqué avant validation.");render()}
+  if(t.id==="cpy"&&t.selectedIndex>0){const s=U(t.value);DROITS.forEach(d=>draft[d.id]=s.prop[d.id]||"herite");toast("Droits de "+s.nom+" préparés : rien n'est appliqué avant validation.");render()}
+  if(t.id==="nu-mod"){nu.modele=t.value;$("#nu-apercu").innerHTML="<b>Aperçu des droits obtenus</b> — "+aperçuNu()}
+  if(t.id==="nu-type"){nu.type=t.value;$("#nu-apercu").innerHTML="<b>Aperçu des droits obtenus</b> — "+aperçuNu()}
+  if(t.id==="qui-d"){ctx.droit=t.value;render()}
+});
+function demo(k){
+  draft={};drG={};admDraft=null;filtre="tous";q="";
+  if(k==="refus"){go("u-fiche",{id:"julien",tab:"droits"});draft["fac.valider"]="refuse";render();setTimeout(()=>{$(".mod[data-m=fac]").classList.add("open")},0);toast("Julien : « Valider les paiements » refusé, alors que Comptabilité l'accorde. Cliquez Appliquer.")}
+  if(k==="groupe"){go("g-fiche",{id:"support",tab:"droits"});drG["fac.lire"]="accorde";render();$(".mod[data-m=fac]").classList.add("open");toast("Support reçoit « Consulter les factures » : voyez combien de membres en profitent. Appliquez, puis ouvrez Sarah.")}
+  if(k==="creer"){go("u-new")}
+  if(k==="groupenew"){go("g-new")}
+  if(k==="comme")voirComme("sarah");
+  if(k==="qui")go("qui",{droit:"sit.suppr"});
+}
+render();
 </script>
 </body>
 </html>
