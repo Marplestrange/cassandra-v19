@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : webauthn
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ccb842
+# VERSION CN : 0.1.0  #7d6448
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les clés de sécurité WebAuthn des comptes : enregistrer et retirer une clé, l'exiger pour entrer (second facteur, avec huit codes de secours), ou entrer sans mot de passe avec une clé d'accès (passkey, code PIN ou empreinte exigés). La signature est vérifiée ici (ES256 et RS256), le défi vit en mémoire et ne sert qu'une fois, l'origine doit être celle du domaine réglé.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ccb842 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7d6448 ▼▼▼
 [module]
 id = "webauthn"
 nom = "Clé de sécurité"
@@ -25,6 +25,16 @@ importance = "important"
 sans = "Les clés de sécurité ne sont plus acceptées : un compte qui l'exige pour entrer ne peut plus se connecter."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Clé de sécurité : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Clé de sécurité : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "cle_de_securite"
@@ -50,16 +60,19 @@ emet = ["cle_de_securite.enregistree", "cle_de_securite.retiree", "cle_de_securi
 id = "etat"
 libelle = "Mes clés de sécurité : liste (sans clé publique), exigence, codes de secours restants, et si la vérification est possible ici"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "defi_creer"
 libelle = "Un défi à usage unique pour enregistrer une clé (garde en mémoire, cinq minutes)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "enregistrer"
 libelle = "Enregistrer une clé de sécurité après vérification de son attestation"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["le compte qui agit", "une clé créée pour le domaine réglé, présentée, en ES256 ou RS256"]
 preuve = "la clé figure dans la liste du compte"
 retour = "retirer la clé que cet acte vient d'enregistrer"
@@ -71,6 +84,7 @@ masque = ["client_data", "attestation"]
 id = "supprimer"
 libelle = "Retirer une de mes clés (désignée par les huit derniers caractères de son identifiant)"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["une clé du compte qui agit", "jamais la dernière tant que la clé est exigée"]
 preuve = "la clé n'est plus dans la liste"
 retour = "remettre la clé retirée, relevée juste avant"
@@ -81,6 +95,7 @@ qui = ["humain", "compte"]
 id = "exiger"
 libelle = "Exiger la clé pour entrer (ou cesser de l'exiger). À l'activation, huit codes de secours sont rendus, une seule fois"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["le compte qui agit", "il faut déjà une clé enregistrée"]
 preuve = "relire l'exigence du compte"
 retour = "remettre l'exigence et les codes de secours d'avant"
@@ -92,6 +107,7 @@ masque = ["secours", "avant_codes"]
 id = "secours_regenerer"
 libelle = "Remplacer mes codes de secours par huit nouveaux (rendus une seule fois)"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["le compte qui agit", "les anciens codes cessent de valoir"]
 preuve = "huit codes sont disponibles"
 retour = "remettre les anciens codes"

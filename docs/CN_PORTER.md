@@ -12,7 +12,7 @@
 <!-- RÔLE       : Porter un module de la V18 vers la V19 -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=5aca3c ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=530abc ▼▼▼ -->
 # Porter un module de la V18 vers la V19
 
 Ce guide est donné tel quel à qui porte (une personne, ou un Claude). Il dit CE QUE LE NOYAU FAIT DÉJÀ, pour ne pas le réécrire.
@@ -58,7 +58,8 @@ confiance = "interne"
 section = "securite"          # la rubrique où il se range (déclarée par le noyau ou par ce module : [[sections]]) ; « famille » est l'ancien nom, toujours lu
 requiert = ["droits"]         # modules dont celui-ci dépend (jamais d'import entre modules)
 
-[[droits]]                    # ce qu'un COMPTE doit détenir pour utiliser les capacités qui y renvoient
+[[droits]]                    # OBLIGATOIRE : un module sans droit déclaré est refusé (sans lui, ni compte ni groupe ne peut se voir accorder ou refuser le module).
+                              # Ce qu'un COMPTE doit détenir pour utiliser les capacités qui y renvoient. Le plus simple : « utiliser » (defaut = true) et « administrer » (sensible).
 id = "gerer"
 libelle = "..."
 sensible = true               # defaut = true : accordé à tous les comptes d'office
@@ -92,6 +93,16 @@ qui = ["humain", "compte", "cassandra", "itare"]    # acteurs permis (agent = ag
 [permissions]
 stockage = true               # sa base ; droits = true pour ctx.droits() ; lectures = true pour ctx.executer_lecture ; introspection = true pour ctx.evenements/manifestes
 ```
+
+## La société : une donnée qui appartient à une société la dit
+
+Tout compte appartient à une société (le noyau le garantit) et la société principale (`1`) existe toujours : on écrit donc comme s'il pouvait y en avoir plusieurs.
+
+- `ctx.societe` : la société dans laquelle l'acte s'exécute, par fil comme `ctx.compte`. **Une table qui garde des données d'une société porte une colonne `societe TEXT NOT NULL DEFAULT '1'`** et chaque lecture la filtre sur `ctx.societe` ; sans cela, le module multi-sociétés obligerait à migrer les données.
+- `ctx.espace_compte()` et `ctx.espace_societe()` ([permissions] `espace_utilisateur = true`) : les répertoires d'un utilisateur vivent dans le grand répertoire de SA société. Ne jamais construire un chemin à la main.
+- `societes.carte` : pour nommer la société (en-têtes, signatures, mentions légales). Ne jamais recopier ces valeurs ; jamais la banque ni les responsables.
+- Un droit se règle avec une portée : une « fonction » est un groupe attaché à une société, valable là seulement. Rien à faire de plus : `droit = "..."` sur la capacité suffit, l'exécuteur décide dans la société active.
+- Le coffre : un secret appartient à un espace (le sien, ou celui d'une société), jamais à « tout le monde ». Voir `docs/CN_SOCIETES.md`.
 
 ## `CN_module.py`
 

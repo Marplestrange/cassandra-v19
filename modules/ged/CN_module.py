@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : ged
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ec0b5b
+# VERSION CN : 0.1.0  #d3f62f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La GED : les documents d'un compte, par sources, avec un index et des règles de classement.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ec0b5b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d3f62f ▼▼▼
 """La GED : les documents d'un compte, par sources, avec un index et des règles de classement.
 
 Porté de la V18 (`ged_*`), avec ses leçons :
@@ -141,8 +141,39 @@ def brancher(ctx):
         except Exception:
             return defaut
 
-    def _base() -> str:
+    def _racine_docs() -> str:
         return reglage("docs_base", "") or str(Path(db.chemin).resolve().parent.parent / "documents")
+
+    migre = {}
+
+    def _migrer_ancien(racine: str) -> None:
+        """Avant les sociétés, les dossiers des comptes et l'espace partagé vivaient directement sous la racine : ils entrent dans la société principale, une seule fois."""
+        if migre.get(racine):
+            return
+        migre[racine] = True
+        try:
+            if not os.path.isdir(racine):
+                return
+            marque = os.path.join(racine, ".societes")
+            if os.path.exists(marque):
+                return
+            ids = set(ctx.societes())
+            cible = os.path.join(racine, "1")
+            for nom in os.listdir(racine):
+                if nom in ids or nom.startswith("."):
+                    continue
+                os.makedirs(cible, exist_ok=True)
+                os.replace(os.path.join(racine, nom), os.path.join(cible, nom))
+            with open(marque, "w", encoding="utf-8") as f:
+                f.write("les documents sont rangés par société\n")
+        except OSError:
+            pass
+
+    def _base() -> str:
+        """Le grand répertoire de la société dans laquelle on agit : les dossiers de ses utilisateurs et son espace partagé y vivent, jamais ailleurs."""
+        racine = _racine_docs()
+        _migrer_ancien(racine)
+        return os.path.join(racine, ctx.societe or "1")
 
     def _dossier_compte(compte: str) -> str:
         return os.path.join(_base(), _nt_dossier_compte(str(compte or "")))

@@ -12,7 +12,7 @@
 <!-- RÔLE       : Bilan de session — portage V18 → V19 (16 octobre 2026) -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=8db368 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=ccc07c ▼▼▼ -->
 # Bilan de session — portage V18 → V19 (16 octobre 2026)
 
 À lire en premier pour reprendre le chantier. Ce document est le point d'entrée ; la mémoire de l'agent
@@ -38,7 +38,8 @@ sur Amizo** (en « non activé » — voir plus bas) :
 | salon | 20 | echanges | fil, messages, résidents (Cassandra/Itare) |
 | journal | 18 | supervision | fil des agents + lecteur multi-sources |
 | ged | 27 | gestion | cœur local (fichiers, corbeille, règles) |
-| coffre | 7 | securite | magasin de secrets (Vaultwarden) |
+| coffre | 14 | securite | magasin de secrets (Vaultwarden) : un espace par compte et par société, rôles, auteur de chaque secret (27-10) |
+| societes | 18 | socle | la fiche de chaque société, ses fonctions (groupes attachés), l'identité publique ; tout compte a une société (27-10) |
 | proactif | 18 | supervision | autonomie + savoir + ombre + incidents + fil + automatisme (catalogue de gestes) |
 | sauvegardes | 7 | supervision | plans, copies, couverture |
 | securite | 6 | securite | gestes, journal, audits |

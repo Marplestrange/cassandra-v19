@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #54d8bb
+# VERSION CN : 0.1.0  #73b255
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=54d8bb ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=73b255 ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -554,6 +554,10 @@ def valider(brut: dict) -> list:
         for champ in ("defaut", "sensible"):
             if champ in d and not isinstance(d[champ], bool):
                 e.append("droit « %s ».%s : vrai ou faux" % (d["id"], champ))
+
+    # tout module déclare ses droits : sans eux, on ne pourrait ni lui refuser un compte, ni le confier à un groupe
+    if not droits_ids:
+        e.append("droits : un module déclare au moins un droit ([[droits]]) ; sans lui, aucun compte ni groupe ne peut se voir accorder ou refuser ce module")
 
     # réglages : déclarés par le module, qualifiés « module.reglage » ailleurs
     reglages_ids = []

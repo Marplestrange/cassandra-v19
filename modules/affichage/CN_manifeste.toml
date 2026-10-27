@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : affichage
 # ZONE       : CN
-# VERSION CN : 0.7.0  #94f83b
+# VERSION CN : 0.7.0  #5a4c27
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble le thème et la mise en page que les modules actifs déclarent : tuiles, gabarits, touches de couleur, contraste vérifié, personnalisation par compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.7.0 empreinte=94f83b ▼▼▼
+# ▼▼▼ BORNE CN version=0.7.0 empreinte=5a4c27 ▼▼▼
 [module]
 id = "affichage"
 nom = "Affichage"
@@ -24,6 +24,16 @@ famille = "socle"
 importance = "vital"
 sans = "Plus de thème ni de mise en page : l'interface perd son habillage et ses tuiles. Il ne se désactive pas."
 essentiel = true
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Affichage : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Affichage : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "affichage_catalogue"
@@ -258,25 +268,10 @@ domaine = "socle"
 gabarit = "libre"
 
 [[ecrans]]
-id = "vue_societe"
-libelle = "Société / Organisation"
-domaine = "socle"
-gabarit = "libre"
-
-[[ecrans]]
 id = "vue_affichage"
 libelle = "Affichage"
 domaine = "socle"
 gabarit = "liste_detail"
-
-[[menus]]
-id = "societe"
-libelle = "Société / Organisation"
-ecran = "vue_societe"
-ordre = 20
-role = "admin"
-icone = "building"
-zone = "avatar"
 
 [permissions]
 introspection = true

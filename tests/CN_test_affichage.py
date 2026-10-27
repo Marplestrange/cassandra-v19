@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #484a64
+# VERSION CN : 0.1.0  #713360
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation, les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit q
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=484a64 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=713360 ▼▼▼
 """L'affichage des menus : le contrat Menu (groupe, zone), la disposition rangée par le point d'évolution et filtrée par le nexus, les idées du panneau, l'organisation,
 les pages épinglées et les fils du panneau. Ce qui est décisif (qui voit quoi, qui peut régler l'organisation) se vérifie ici : le point d'évolution ne décide d'aucun accès."""
 import base64
@@ -41,6 +41,11 @@ version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Module d'essai : une entrée de menu et une alerte de la machine."
 famille = "reseau"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser la flotte d'essai"
+defaut = true
 
 [[capacites]]
 id = "signal"
@@ -78,6 +83,11 @@ version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Module d'essai : un menu qui dit son groupe, une sous-entrée, une entrée de l'avatar."
 famille = "gestion"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le CRM d'essai"
+defaut = true
 
 [[ecrans]]
 id = "liste"
@@ -130,6 +140,7 @@ class Contrat(unittest.TestCase):
 
     def brut(self, **menu):
         return {"module": {"id": "essai", "nom": "Essai", "version": "0.1.0", "noyau_min": "0.1.0", "description": "d"},
+                "droits": [{"id": "utiliser", "libelle": "Utiliser", "defaut": True}],
                 "ecrans": [{"id": "ecran1", "libelle": "E"}], "menus": [dict({"id": "menu1", "libelle": "X", "ecran": "ecran1"}, **menu)]}
 
     def test_un_menu_peut_dire_son_groupe_et_sa_zone(self):
@@ -289,7 +300,6 @@ class Affichage(unittest.TestCase):
         self.assertEqual([f["id"] for f in e["crm:clients"][1]["enfants"]], ["crm:fiches"])
         self.assertEqual(e["flotte"][0], "parc")                        # le pont, pour l'ancienne interface
         self.assertEqual(e["flotte"][1]["onglet"], "fleet")
-        self.assertIn("affichage:societe", [a["id"] for a in d["avatar"]])
         self.assertIn("crm:prefs", [a["id"] for a in d["avatar"]])
         self.assertTrue(d["cassandra_ok"])
 
@@ -299,7 +309,6 @@ class Affichage(unittest.TestCase):
         self.assertIn("crm:clients", e)
         self.assertNotIn("flotte", e)
         self.assertNotIn("crm:prefs", [a["id"] for a in d["avatar"]])
-        self.assertNotIn("affichage:societe", [a["id"] for a in d["avatar"]])
         self.assertFalse(d["cassandra_ok"])
         self.assertTrue(all(g["interlocuteur"] == "itare" for g in d["groupes"]))      # Cassandra ne répond pas à un compte : le nexus tranche
 

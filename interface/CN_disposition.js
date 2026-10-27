@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #873fc7
+// VERSION CN : 0.1.0  #536de6
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=873fc7 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=536de6 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -73,6 +73,7 @@
     plus: '<path d="M12 5v14M5 12h14"/>', dots: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
     refresh: '<path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/>',
     tasks: '<rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M8.5 12l2.5 2.5 4.5-5"/>', mail: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6 8.5-6"/>',
+    groupe: '<circle cx="8" cy="9" r="2.6"/><circle cx="16.5" cy="9" r="2.6"/><path d="M2.5 18c.5-2.6 2.6-4 5.5-4M21.5 18c-.5-2.6-2.6-4-5.5-4M8 18c.6-3 2.3-4.2 4-4.2s3.4 1.2 4 4.2"/>',
     contacts: '<rect x="4" y="3.5" width="15" height="17" rx="2"/><path d="M4 8H2M4 12H2M4 16H2"/><circle cx="11.5" cy="10.5" r="2.3"/><path d="M7.8 16.6c.8-1.7 2.1-2.5 3.7-2.5s2.9.8 3.7 2.5"/>',
     bell: '<path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 8H4c0-1 2-2 2-8M10 20a2 2 0 0 0 4 0"/>',
     folder: '<path d="M4 7.5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>',
@@ -99,7 +100,8 @@
   // le pictogramme d'une sous-entrée : celui des vues du Panorama, celui de la table ci-dessus, à défaut celui que son module déclare ; "" si aucun
   const icoSub = (e, f) => { const vid = f.vue || f.id; const k = e.id === "panorama" && EMO_PANORAMA[vid] ? EMO_PANORAMA[vid] : (VUE_IC[vid] || (f.icone && IC[f.icone] ? f.icone : "")); return k; };
   // le logo de Cassandra : le toit (celui de l'ancienne interface) ; il tient lieu de logo tant que l'organisation n'a pas le sien
-  const TOIT = '<svg class="d-i toit" viewBox="0 0 24 24"><path d="M4 11.5l8-7 8 7"/><path d="M6.5 20h11"/><circle cx="12" cy="14.5" r="2.4" fill="currentColor" stroke="none"/></svg>';
+  const INST_E_PLIABLES = ["coffre:mon_coffre", "societes:societe", "comptes:utilisateurs", "comptes:groupes"];     // entrées de Paramètres qu'un clic replie ou déplie
+  const TOIT ='<svg class="d-i toit" viewBox="0 0 24 24"><path d="M4 11.5l8-7 8 7"/><path d="M6.5 20h11"/><circle cx="12" cy="14.5" r="2.4" fill="currentColor" stroke="none"/></svg>';
   let faviconOrigine = null;
   function favicon(logo) {
     let l = document.querySelector('link[rel="icon"]');
@@ -334,23 +336,36 @@
     const pe = ((E.d.groupes.find((g) => g.id === "parametres") || {}).entrees) || [], av = E.d.avatar || [];
     const bouton = (att, actif, ic, lib) => '<button class="d19-si ent' + (actif ? " on" : "") + '" ' + att + ' data-tip="' + esc(lib) + '">' + ico(ic || "puzzle") + "<span>" + esc(lib) + "</span></button>";
     const surAvatar = (a) => !!(E.pageNom && a.ecran && CASS.nomOnglet && E.pageNom === CASS.nomOnglet(a.ecran));
-    const dAvatar = (a) => bouton('data-sw="av:' + esc(a.id) + '"', surAvatar(a), a.icone, a.libelle);
-    const dEntree = (e) => bouton('data-sw="e:' + esc(e.id) + '"', !!(E.actif && E.g === "parametres" && E.e === e.id), e.icone, e.libelle);
+    // les rubriques d'une page (Logithèque, Société, coffre) se déplient sous son entrée quand elle est ouverte
+    const sousPage = () => (E.lateral && E.lateral.items ? E.lateral.items.map((i) => '<button class="d19-si sub ic' + (i.id === E.lateral.actif ? " on" : "") + '" data-lat="' + esc(i.id) + '" data-tip="' + esc(i.libelle) + '">' + ico(i.icone || "puzzle") + "<span>" + esc(i.libelle) + "</span>" + (i.n == null ? "" : '<span class="d19-nb">' + i.n + "</span>") + "</button>").join("") : "");
+    const dAvatar = (a) => {      // la page ouverte déplie ses rubriques ; un second clic sur son entrée les replie
+      const sur = surAvatar(a), replie = sur && E.repliees && E.repliees.has(a.id);
+      const b = bouton('data-sw="av:' + esc(a.id) + '"', sur && !(E.lateral && E.lateral.items), a.icone, a.libelle);
+      return (sur && E.lateral && E.lateral.items ? b.replace("</button>", ico("right", "car" + (replie ? "" : " ouv")) + "</button>") : b) + (sur && !replie ? sousPage() : "");
+    };
+    // une entrée à sous-pages (Utilisateurs, Groupes) se déplie quand elle est la page courante
+    const dEntree = (e) => {
+      const actif = !!(E.actif && E.g === "parametres" && E.e === e.id), fils = e.enfants || [];
+      const deplie = (actif || (INST_E.indexOf(e.id) >= 0 && fils.length > 0)) && !(E.repliees && E.repliees.has(e.id));      // Utilisateurs et Groupes montrent leurs pages, sauf si on les replie
+      let h = '<button class="d19-si ent' + (actif && !fils.length ? " on" : "") + '" data-sw="e:' + esc(e.id) + '" data-tip="' + esc(e.libelle) + '">' + ico(e.icone || "puzzle") + "<span>" + esc(e.libelle) + "</span>" + (fils.length ? ico("right", "car" + (deplie ? " ouv" : "")) : "") + "</button>";
+      if (deplie) h += fils.map((f) => { const vid = f.vue || f.id; return '<button class="d19-si sub' + (icoSub(e, f) ? " ic" : "") + (E.vue === vid ? " on" : "") + '" data-sw="e:' + esc(e.id) + ":" + esc(vid) + '">' + (icoSub(e, f) ? ico(icoSub(e, f)) : '<span class="pt"></span>') + "<span>" + esc(f.libelle) + "</span></button>"; }).join("");
+      return h;
+    };
     // trois sections, dans l'ordre voulu ; ce qui n'est pas nommé ici (une page d'un autre module) rejoint la section qui lui ressemble
-    const PERSO_AV = ["menus:mes_applications"], INST_AV = ["affichage:societe", "menus:logitheque"], INST_E = ["comptes:utilisateurs"];
+    const PERSO_AV = ["menus:mes_applications"], PERSO_E = ["coffre:mon_coffre"], INST_AV = ["menus:logitheque"], INST_E = ["societes:societe", "comptes:utilisateurs", "comptes:groupes"];
     const GEN_E = ["reg-maintenance", "reg-donnees", "reg-tiers", "reg-canaux", "reg-veille", "reg-danger"];
     const avPar = (id) => av.find((a) => a.id === id), ePar = (id) => pe.find((e) => e.id === id);
     const titre = (t) => '<h2 class="d19-pgrp">' + esc(t) + "</h2>";          // le titre de section des autres colonnes (accent, filet) ; « Paramètres » est déjà dans l'en-tête
-    let h = titre("Personnel") + bouton('data-sw="moi"', reglages === "moi", "contacts", "Mon compte") + bouton('data-sw="vault"', E.pageNom === "vault" || E.hors === "vault", "lock", "Mon coffre-fort");
+    let h = titre("Personnel") + bouton('data-sw="moi"', reglages === "moi", "contacts", "Mon compte");
+    PERSO_E.forEach((id) => { if (ePar(id)) h += dEntree(ePar(id)); });
     PERSO_AV.forEach((id) => { if (avPar(id)) h += dAvatar(avPar(id)); });
     h += titre("Institutionnel");
-    if (avPar("affichage:societe")) h += dAvatar(avPar("affichage:societe"));
     INST_E.forEach((id) => { if (ePar(id)) h += dEntree(ePar(id)); });
     if (avPar("menus:logitheque")) h += dAvatar(avPar("menus:logitheque"));
     av.filter((a) => PERSO_AV.concat(INST_AV).indexOf(a.id) < 0).forEach((a) => { h += dAvatar(a); });
     h += titre("Général");
     GEN_E.forEach((id) => { if (ePar(id)) h += dEntree(ePar(id)); });
-    pe.filter((e) => GEN_E.concat(INST_E).indexOf(e.id) < 0).forEach((e) => { h += dEntree(e); });
+    pe.filter((e) => GEN_E.concat(INST_E, PERSO_E).indexOf(e.id) < 0).forEach((e) => { h += dEntree(e); });
     return h;
   }
   function rendreGauche() {
@@ -734,101 +749,20 @@
     pg.appliquer(rub); rendre();
   }
   // ── une page propre : son onglet, son fil d'Ariane ────────────────────────
+  // « Mon coffre-fort » : l'écran du module Coffre (espaces, rôles), ouvert depuis le menu de l'avatar comme depuis la colonne Paramètres
+  window.ouvrirMonCoffre = () => { E.silence = false; aller("parametres", "coffre:mon_coffre", "coffre:c_secrets"); };
   function marquerPage(a) {
     E.pageNom = a.ecran && CASS.nomOnglet ? CASS.nomOnglet(a.ecran) : "";
     E.fil = ["Paramètres", a.libelle]; E.lateral = null;
   }
   // ── Société / Organisation : quatre rubriques, chacune un tableau ──────────
-  const PAYS = "AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW".split(" ");
-  const DEPTS = "01 Ain|02 Aisne|03 Allier|04 Alpes-de-Haute-Provence|05 Hautes-Alpes|06 Alpes-Maritimes|07 Ardèche|08 Ardennes|09 Ariège|10 Aube|11 Aude|12 Aveyron|13 Bouches-du-Rhône|14 Calvados|15 Cantal|16 Charente|17 Charente-Maritime|18 Cher|19 Corrèze|2A Corse-du-Sud|2B Haute-Corse|21 Côte-d’Or|22 Côtes-d’Armor|23 Creuse|24 Dordogne|25 Doubs|26 Drôme|27 Eure|28 Eure-et-Loir|29 Finistère|30 Gard|31 Haute-Garonne|32 Gers|33 Gironde|34 Hérault|35 Ille-et-Vilaine|36 Indre|37 Indre-et-Loire|38 Isère|39 Jura|40 Landes|41 Loir-et-Cher|42 Loire|43 Haute-Loire|44 Loire-Atlantique|45 Loiret|46 Lot|47 Lot-et-Garonne|48 Lozère|49 Maine-et-Loire|50 Manche|51 Marne|52 Haute-Marne|53 Mayenne|54 Meurthe-et-Moselle|55 Meuse|56 Morbihan|57 Moselle|58 Nièvre|59 Nord|60 Oise|61 Orne|62 Pas-de-Calais|63 Puy-de-Dôme|64 Pyrénées-Atlantiques|65 Hautes-Pyrénées|66 Pyrénées-Orientales|67 Bas-Rhin|68 Haut-Rhin|69 Rhône|70 Haute-Saône|71 Saône-et-Loire|72 Sarthe|73 Savoie|74 Haute-Savoie|75 Paris|76 Seine-Maritime|77 Seine-et-Marne|78 Yvelines|79 Deux-Sèvres|80 Somme|81 Tarn|82 Tarn-et-Garonne|83 Var|84 Vaucluse|85 Vendée|86 Vienne|87 Haute-Vienne|88 Vosges|89 Yonne|90 Territoire de Belfort|91 Essonne|92 Hauts-de-Seine|93 Seine-Saint-Denis|94 Val-de-Marne|95 Val-d’Oise|971 Guadeloupe|972 Martinique|973 Guyane|974 La Réunion|976 Mayotte".split("|");
-  const nomPays = (c) => { try { return new Intl.DisplayNames(["fr"], { type: "region" }).of(c) || c; } catch (e) { return c; } };
-  const nomDevise = (c) => { try { return new Intl.DisplayNames(["fr"], { type: "currency" }).of(c) || c; } catch (e) { return c; } };
-  const devises = () => { let l = []; try { l = Intl.supportedValuesOf("currency"); } catch (e) {} return l.length ? l : ["EUR", "USD", "GBP", "CHF", "CAD", "JPY"]; };
-  const CH_ORG = [["raison_sociale", "Raison sociale", "text"], ["devise", "Devise principale", "devise"], ["pays", "Pays", "pays"], ["adresse", "Adresse", "area"], ["code_postal", "Code postal", "court"],
-    ["ville", "Ville", "text"], ["departement", "Département / Canton", "dept"], ["telephone", "Téléphone", "tel"], ["mobile", "Tél portable", "tel"], ["fax", "Fax", "tel"], ["email", "Email", "email"],
-    ["web", "Web", "url"], ["code_barres", "Code-barres", "text"], ["logo", "Logo", "image"], ["logo_carre", "Logo (carré)", "image"], ["note", "Note", "area"]];
-  const CH_ST = [["raison_sociale", "Raison sociale", "text"], ["adresse", "Adresse", "area"], ["code_postal", "Code postal", "court"], ["ville", "Ville", "text"], ["pays", "Pays", "pays"], ["departement", "Département / Canton", "dept"],
-    ["telephone", "Téléphone", "tel"], ["email", "Email", "email"], ["web", "Web", "url"], ["siren", "Id. prof. 1 (SIREN)", "text"], ["code_comptable", "Code comptable", "text"], ["note", "Note", "area"]];
-  const RESEAUX = [["facebook", "Facebook"], ["instagram", "Instagram"], ["linkedin", "Linkedin"], ["skype", "Skype"], ["snapchat", "Snapchat"], ["twitter", "Twitter"], ["whatsapp", "Whatsapp"], ["youtube", "Youtube"]];
-  const JOURS = [["lundi", "Lundi"], ["mardi", "Mardi"], ["mercredi", "Mercredi"], ["jeudi", "Jeudi"], ["vendredi", "Vendredi"], ["samedi", "Samedi"], ["dimanche", "Dimanche"]];
-  const ST = [["comptabilite", "Fournisseur du service de Comptabilité", "archive"], ["informatique", "Fournisseur informatique", "fleet"]];
-  const RUBRIQUES = [{ id: "organisation", libelle: "Mon organisation", icone: "building" }, { id: "reseaux", libelle: "Réseaux sociaux", icone: "globe" },
-    { id: "heures", libelle: "Heures d’ouverture", icone: "clock" }, { id: "soustraitants", libelle: "Sous-traitants", icone: "puzzle" }];
-  function controle(id, type, v) {
-    v = v == null ? "" : v;
-    if (type === "area") return '<textarea id="' + id + '" rows="3">' + esc(v) + "</textarea>";
-    if (type === "pays") return '<select id="' + id + '"><option value=""></option>' + PAYS.map((c) => [c, nomPays(c)]).sort((a, b) => a[1].localeCompare(b[1], "fr")).map((x) => '<option value="' + x[0] + '"' + (x[0] === v ? " selected" : "") + ">" + esc(x[1]) + "</option>").join("") + "</select>";
-    if (type === "devise") return '<select id="' + id + '"><option value=""></option>' + devises().map((c) => '<option value="' + c + '"' + (c === v ? " selected" : "") + ">" + c + " — " + esc(nomDevise(c)) + "</option>").join("") + "</select>";
-    if (type === "dept") return '<input type="text" id="' + id + '" value="' + esc(v) + '" list="' + id + '-l" autocomplete="off"><datalist id="' + id + '-l">' + DEPTS.map((d) => '<option value="' + esc(d.slice(d.indexOf(" ") + 1)) + '">' + esc(d) + "</option>").join("") + "</datalist>";
-    const t = type === "email" ? "email" : type === "url" ? "url" : "text";
-    return '<input type="' + t + '" id="' + id + '" value="' + esc(v) + '" autocomplete="off"' + (type === "court" ? ' class="court"' : "") + ">";
-  }
-  const tableau = (titre, lignes) => '<div class="d19-tbl"><table><thead><tr><th colspan="2">' + esc(titre) + "</th></tr></thead><tbody>" + lignes + "</tbody></table></div>";
-  const sauve = (cle) => '<p class="d19-sauve"><button type="button" class="d19-btn grand" data-sauve="' + cle + '">Enregistrer</button><span class="d19-msg" data-msg="' + cle + '"></span></p>';
-  async function pageSociete(corps, rub) {
-    rub = RUBRIQUES.some((r) => r.id === rub) ? rub : (E.rubSociete || "organisation");
-    E.rubSociete = rub;
-    const nom = RUBRIQUES.find((r) => r.id === rub).libelle;
-    E.pageNom = CASS.nomOnglet("affichage:vue_societe"); E.fil = ["Paramètres", "Société / Organisation", nom];
-    E.lateral = { titre: "Société / Organisation", actif: rub, items: RUBRIQUES.map((r) => ({ id: r.id, libelle: r.libelle, icone: r.icone })) };
-    E.pageAction = (id) => pageSociete(corps, id);
-    const sc = corps.closest(".sh-scene"), t = sc && sc.querySelector(".sh-titre");
-    if (t) {
-      t.textContent = "Société / Organisation";
-      let l = sc.querySelector(".sh-legende"); if (!l) { l = document.createElement("p"); l.className = "sh-legende"; t.after(l); }
-      l.textContent = "Modifiez les informations de votre société ou organisation. Cliquez sur « Enregistrer » en bas de la rubrique pour sauvegarder.";
-    }
-    let o; try { o = await agir("affichage.lire_organisation", {}); } catch (e) { corps.innerHTML = '<div class="empty-state">' + esc(e.message) + "</div>"; rendre(); return; }
-    if (!o.complet) { corps.innerHTML = '<div class="empty-state">Ces informations se règlent par un administrateur.</div>'; rendre(); return; }
-    const images = { logo: o.organisation.logo || "", logo_carre: o.organisation.logo_carre || "" };
-    let h = "";
-    if (rub === "organisation") {
-      h = tableau("Société / Organisation", CH_ORG.map(([c, lib, type]) => "<tr><td class=\"l\">" + esc(lib) + "</td><td>" + (type === "image"
-        ? '<div class="d19-logozone"><span class="d19-apercu' + (c === "logo_carre" ? " carre" : "") + '" id="o-ap-' + c + '"></span><label class="d19-btn sec" for="o-' + c + '" style="cursor:pointer">Choisir une image…</label><input type="file" id="o-' + c + '" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button type="button" class="d19-btn sec" data-retire="' + c + '">Retirer</button></div>'
-        : controle("o-" + c, type, o.organisation[c])) + "</td></tr>").join("")) + sauve("organisation");
-    } else if (rub === "reseaux") {
-      h = '<p class="d19-aide">Les identifiants et adresses de vos pages. Ils s’affichent ici ; les modules qui en ont besoin les reprennent.</p><div class="d19-tbl"><table><thead><tr><th>Réseaux sociaux</th><th>ID du réseau social</th><th>Url</th><th></th></tr></thead><tbody>'
-        + RESEAUX.map(([r, lib]) => { const d = o.reseaux[r] || { id: "", url: "" }; return '<tr><td class="l">' + esc(lib) + '</td><td><input type="text" id="r-' + r + '-id" value="' + esc(d.id) + '" autocomplete="off"></td><td><input type="url" id="r-' + r + '-url" value="' + esc(d.url) + '" autocomplete="off"></td><td class="lien">' + (d.url ? '<a href="' + esc(d.url) + '" target="_blank" rel="noopener noreferrer">' + esc(d.id || d.url) + "</a>" : esc(d.id)) + "</td></tr>"; }).join("")
-        + "</tbody></table></div>" + sauve("reseaux");
-    } else if (rub === "heures") {
-      h = '<p class="d19-aide">Entrez ici les heures d’ouverture régulières de votre organisation.</p><div class="d19-tbl"><table><thead><tr><th>Jour</th><th>Valeur</th></tr></thead><tbody>'
-        + JOURS.map(([j, lib]) => '<tr><td class="l">' + lib + ' <span class="d19-i" title="Par exemple : 9h-12h / 14h-18h, ou : fermé">i</span></td><td><input type="text" id="h-' + j + '" value="' + esc(o.heures[j]) + '" autocomplete="off" placeholder="ex. 9h-18h"></td></tr>').join("") + "</tbody></table></div>" + sauve("heures");
-    } else {
-      h = '<p class="d19-aide">Si la gestion de votre application est sous-traitée à des prestataires externes (un comptable ou expert-comptable, un prestataire informatique), saisissez ici leurs informations afin qu’elles ne soient pas perdues en cas de remplacement de l’administrateur.</p>'
-        + ST.map(([k, lib, ic]) => '<h3 class="d19-st">' + ico(ic) + esc(lib) + "</h3>" + tableau("Société / Organisation", CH_ST.map(([c, l, type]) => '<tr><td class="l">' + esc(l) + "</td><td>" + controle("s-" + k + "-" + c, type, o.soustraitants[k][c]) + "</td></tr>").join("")) + sauve("st:" + k)).join("");
-    }
-    corps.innerHTML = '<div class="d19-societe">' + h + "</div>";
-    const val = (id) => { const e = document.getElementById(id); return e ? e.value : ""; };
-    const aper = (c) => { const e = document.getElementById("o-ap-" + c); if (e) { e.style.backgroundImage = images[c] ? "url(" + images[c] + ")" : ""; e.innerHTML = images[c] ? "" : TOIT; } };
-    if (rub === "organisation") {
-      ["logo", "logo_carre"].forEach((c) => {
-        aper(c);
-        const f = document.getElementById("o-" + c);
-        f.addEventListener("change", (ev) => { const fi = ev.target.files && ev.target.files[0]; if (fi) redimensionner(fi, (u) => { if (!u) { toast("Image trop lourde ou illisible."); return; } images[c] = u; aper(c); }, c === "logo_carre"); });
-      });
-      $$("[data-retire]", corps).forEach((b) => b.addEventListener("click", () => { images[b.dataset.retire] = ""; aper(b.dataset.retire); }));
-    }
-    $$("[data-sauve]", corps).forEach((b) => b.addEventListener("click", async () => {
-      const cle = b.dataset.sauve; let section, valeurs = {};
-      if (cle === "organisation") { section = "organisation"; CH_ORG.forEach(([c, , type]) => { valeurs[c] = type === "image" ? images[c] : val("o-" + c); }); }
-      else if (cle === "reseaux") { section = "reseaux"; RESEAUX.forEach(([r]) => { valeurs[r] = { id: val("r-" + r + "-id"), url: val("r-" + r + "-url") }; }); }
-      else if (cle === "heures") { section = "heures"; JOURS.forEach(([j]) => { valeurs[j] = val("h-" + j); }); }
-      else { section = "soustraitants"; const k = cle.slice(3); valeurs[k] = {}; CH_ST.forEach(([c]) => { valeurs[k][c] = val("s-" + k + "-" + c); }); }
-      const msg = $('[data-msg="' + cle + '"]', corps);
-      try { await agir("affichage.modifier_organisation", { section: section, valeurs: valeurs }); if (msg) msg.textContent = "Enregistré."; toast("Enregistré."); await charger(); }
-      catch (e) { if (msg) msg.textContent = e.message; toast(e.message); }
-    }));
-    rendre();
-  }
-  // « Mes applications » : ce qu'un compte voit dans son menu, et ce qu'il en retire ou y remet (ses applications à lui, rien de la gestion).
   async function pageMesApplications(corps) {
     if (!CASS.pageMesApplications) { corps.innerHTML = '<div class="empty-state">Écran indisponible.</div>'; return; }
     E.lateral = null; E.pageNom = CASS.nomOnglet("menus:vue_mes_applications"); E.fil = ["Paramètres", "Mes applications"];
     const sc = corps.closest(".sh-scene"), t = sc && sc.querySelector(".sh-titre");
     if (t) {
       t.textContent = "Mes applications";
-      let l = sc.querySelector(".sh-legende"); if (!l) { l = document.createElement("p"); l.className = "sh-legende"; t.after(l); }
-      l.textContent = "Les applications que Cassandra a mises à ta disposition. Tu choisis celles qui apparaissent dans ton menu.";
+      t.title = "Les applications que Cassandra a mises à ta disposition. Tu choisis celles qui apparaissent dans ton menu."; t.classList.add("a-info");   // la légende vit en infobulle sur le titre
     }
     await CASS.pageMesApplications(corps, { rafraichir: charger, demander: demander });
     rendre();
@@ -845,8 +779,7 @@
     const sc = corps.closest(".sh-scene"), t = sc && sc.querySelector(".sh-titre");
     if (t) {
       t.textContent = "Logithèque";
-      let l = sc.querySelector(".sh-legende"); if (!l) { l = document.createElement("p"); l.className = "sh-legende"; t.after(l); }
-      l.textContent = "Les modules, leurs sources et leur sécurité : Cassandra s’en occupe, tu vois ce qu’elle fait et tu peux tout défaire.";
+      t.title = "Les modules, leurs sources et leur sécurité : Cassandra s’en occupe, tu vois ce qu’elle fait et tu peux tout défaire."; t.classList.add("a-info");   // la légende vit en infobulle sur le titre
     }
     E.pageAction = (id) => pageLogitheque(corps, id);
     await CASS.pageLogitheque(corps, sec, { aller: (id) => pageLogitheque(corps, id) });
@@ -861,9 +794,7 @@
   };
   CASS.sceneSurMesure.affichage = async function (corps, ctx) {
     const ecran = String(ctx.ecran).split(":")[1] || "";
-    if (ecran === "vue_societe") {
-      await pageSociete(corps);
-    } else if (ecran === "vue_info") {
+    if (ecran === "vue_info") {
       let s = {}; try { s = await agir("affichage.lire_session", {}); } catch (e) {}
       const nav = (navigator.userAgent.match(/(Firefox|Edg|Chrome|Safari)\/[\d.]+/) || ["—"])[0];
       const th = document.documentElement.getAttribute("data-habillage") || document.documentElement.getAttribute("data-theme") || "clair";
@@ -991,9 +922,15 @@
       if ((x = c("#d19-side [data-sw]"))) {
         const k = x.dataset.sw; if (typeof window.fermerCompte === "function") window.fermerCompte();
         if (k === "moi" || k === "machine") { E.silence = false; window.switchTab("settings"); if (typeof window.setVision === "function") window.setVision(k); rendreGauche(); }
-        else if (k === "vault") { E.silence = false; window.switchTab("vault"); }
-        else if (k.indexOf("e:") === 0) { E.silence = false; aller("parametres", k.slice(2), ""); }
-        else if (k.indexOf("av:") === 0) { const av = (E.d.avatar || []).find((y) => y.id === k.slice(3)); if (av) { E.silence = false; marquerPage(av); ouvrirNoeud(av); } }
+        else if (k === "vault") { E.silence = false; window.ouvrirMonCoffre(); }
+        else if (k.indexOf("e:") === 0 && INST_E_PLIABLES.indexOf(k.slice(2)) >= 0) { E.repliees = E.repliees || new Set(); const id = k.slice(2); if (E.repliees.has(id)) E.repliees.delete(id); else E.repliees.add(id); rendreGauche(); }
+        else if (k.indexOf("e:") === 0) { E.silence = false; const r = k.slice(2), pe = ((E.d.groupes.find((g) => g.id === "parametres") || {}).entrees) || [], en = pe.filter((e) => r === e.id || r.indexOf(e.id + ":") === 0).sort((a, b) => b.id.length - a.id.length)[0];    // l'identifiant d'une entrée contient lui-même des « : » (comptes:groupes)
+          aller("parametres", en ? en.id : r, en ? r.slice(en.id.length + 1) : ""); }
+        else if (k.indexOf("av:") === 0) { const av = (E.d.avatar || []).find((y) => y.id === k.slice(3)); if (av) {
+          E.repliees = E.repliees || new Set();
+          if (E.pageNom && av.ecran && CASS.nomOnglet && E.pageNom === CASS.nomOnglet(av.ecran) && E.lateral && E.lateral.items) { if (E.repliees.has(av.id)) E.repliees.delete(av.id); else E.repliees.add(av.id); rendreGauche(); return; }
+          E.repliees.delete(av.id); E.silence = false; marquerPage(av); ouvrirNoeud(av);
+        } }
         return;
       }
       if ((x = c("#d19-side .pinned"))) { aller(x.dataset.pg, x.dataset.pe, x.dataset.pv); return; }

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d71b94
+# VERSION CN : 0.1.0  #fc8540
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d71b94 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fc8540 ▼▼▼
 """Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v"""
 import os
 import sys
@@ -35,6 +35,11 @@ nom = "Labo"
 version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Module d'essai : des jouets qui cassent et qu'on répare."
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
 
 [[objets]]
 type = "jouet"
@@ -494,6 +499,11 @@ description = "Module d'essai : des moteurs de chaque mode."
 requiert = ["labo"]
 %(confiance)s
 
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
+
 [[objets]]
 type = "releve"
 libelle = "Un relevé"
@@ -771,6 +781,11 @@ noyau_min = "0.1.0"
 description = "Module essentiel d'essai."
 essentiel = true
 famille = "socle"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
 
 [[objets]]
 type = "pilier"
@@ -1182,6 +1197,11 @@ noyau_min = "0.1.0"
 description = "Module d'essai pour les menus."
 famille = "reseau"
 
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
+
 [[objets]]
 type = "alpha_o"
 libelle = "Un objet"
@@ -1241,6 +1261,11 @@ noyau_min = "0.1.0"
 description = "Module d'essai : un enfant d'une entrée d'un autre module."
 famille = "travail"
 requiert = ["alpha"]
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
 
 [[objets]]
 type = "beta_o"
@@ -1516,6 +1541,11 @@ noyau_min = "0.1.0"
 description = "Module d'essai pour l'affichage : tuiles, source de données, accent."
 famille = "reseau"
 
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
+
 [[objets]]
 type = "src_o"
 libelle = "Un objet"
@@ -1589,6 +1619,11 @@ noyau_min = "0.1.0"
 description = "Module d'essai : un accent lisible seulement en thème sombre."
 famille = "travail"
 
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
+
 [[objets]]
 type = "pale_o"
 libelle = "Un objet"
@@ -1628,6 +1663,11 @@ version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Module d'essai : un onglet sur l'objet d'un autre module et deux thèmes."
 famille = "reseau"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
 
 [[ecrans]]
 id = "vue_historique"
@@ -2875,6 +2915,7 @@ class ComptesEtSessions(unittest.TestCase):
     def test_le_superadmin_supprime_puis_restaure_reste_superadmin(self):
         self.creer("a@x.fr")
         self.creer("b@x.fr")
+        self.ex("droits.admin", compte="b@x.fr", admin=True)                                              # un second administrateur humain : sinon le dernier ne part pas
         r = self.ex("comptes.supprimer", compte="a@x.fr")
         self.ex("comptes.restaurer", corbeille=r["resultat"]["corbeille"])
         m = self.ex("comptes.lire", compte="a@x.fr")["resultat"]
@@ -3231,6 +3272,8 @@ class SuperadminSupplementaire(unittest.TestCase):
 
     def test_le_verrou_n_existe_que_si_fastpanel_est_la(self):
         self.ex("comptes.creer", compte="a@x.fr", mot_de_passe=MDP)
+        self.ex("comptes.creer", compte="b@x.fr", mot_de_passe=MDP)
+        self.ex("droits.admin", compte="b@x.fr", admin=True)                                              # un second administrateur humain : sinon le dernier ne part pas
         self.n.identite.fastpanel = lambda: True
         r = self.ex("comptes.supprimer", compte="a@x.fr")
         self.assertEqual(r["statut"], "echec")
@@ -3256,6 +3299,11 @@ nom = "Boutique"
 version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Module d'essai : des réglages de chaque type."
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
 
 [[reglages]]
 id = "nom"
@@ -3429,7 +3477,7 @@ class ReglagesDesModules(unittest.TestCase):
         self.assertEqual(self.ex("reglages.regler", cle="comptes.session_heures", valeur=0)["statut"], "echec")        # borné de 1 à 720
 
     def test_le_manifeste_valide_les_reglages(self):
-        base = {"module": {"id": "xx", "nom": "X", "version": "0.1.0", "noyau_min": "0.1.0", "description": "d"}}
+        base = {"module": {"id": "xx", "nom": "X", "version": "0.1.0", "noyau_min": "0.1.0", "description": "d"}, "droits": [{"id": "utiliser", "libelle": "Utiliser", "defaut": True}]}
         mauvais = [{"id": "a", "libelle": "A", "type": "inconnu"}, {"id": "a", "libelle": "A", "type": "choix"},
                    {"id": "a", "libelle": "A", "type": "choix", "choix": ["x"], "defaut": "y"}, {"id": "a", "libelle": "A", "type": "secret", "defaut": "mdp"},
                    {"id": "a", "libelle": "A", "type": "entier", "defaut": "5"}, {"id": "a", "libelle": "A", "portee": "partout"}, {"id": "a"}]
@@ -3444,6 +3492,11 @@ nom = "Autre"
 version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Un module sans rien."
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser"
+defaut = true
 '''
 
 
@@ -3569,6 +3622,11 @@ nom = "Veille"
 version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Module d'essai : un détecteur dont on commande les constats."
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
 
 [[objets]]
 type = "alerte"
@@ -3957,6 +4015,11 @@ nom = "Porte"
 version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Une capacité publique et une privée."
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser"
+defaut = true
 
 [[capacites]]
 id = "ouverte"

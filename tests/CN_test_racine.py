@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ab0fe0
+# VERSION CN : 0.1.0  #ea354a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la racine : ce que le noyau demande au courtier (root), et la politique du courtier. Le contrôle est pur ; l'exécution réelle n'a lieu que sous POSIX.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ab0fe0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ea354a ▼▼▼
 """Bancs de la racine : ce que le noyau demande au courtier (root), et la politique du courtier. Le contrôle est pur ; l'exécution réelle n'a lieu que sous POSIX."""
 import importlib.util
 import json
@@ -212,6 +212,11 @@ version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Module d'essai"
 famille = "reseau"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
 
 [[racine]]
 id = "lire_cron"

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.2  #52a76c
+# VERSION CN : 0.1.2  #ddade5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=52a76c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=ddade5 ▼▼▼
 [module]
 id = "agents"
 nom = "Agents"
@@ -25,6 +25,16 @@ importance = "vital"
 sans = "Cassandra et Itare ne répondent plus ; le reste de la maison continue de mesurer et d'alerter."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Agents : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Agents : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "conversation"
@@ -87,22 +97,26 @@ maximum = 200
 id = "conversations"
 libelle = "Mes conversations avec Cassandra et Itare, les plus récentes d'abord"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "conversation"
 libelle = "Une conversation : ses messages, appels d'outils et résultats compris"
 risque = "lecture"
+droit = "utiliser"
 masque = ["messages"]
 
 [[capacites]]
 id = "outils"
 libelle = "Les outils que mon agent a pour moi : chaque capacité que cet agent peut utiliser et que j'ai le droit d'utiliser, avec son risque et son palier"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "conversation_creer"
 libelle = "Ouvrir une conversation avec Cassandra (la machine) ou Itare (le bureau)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le compte qui agit en est le propriétaire", "un agent connu"]
 preuve = "relire la conversation"
 retour = "supprimer la conversation que cet acte vient de créer"
@@ -113,6 +127,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "conversation_renommer"
 libelle = "Renommer une conversation"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une conversation de mon compte"]
 preuve = "relire le titre"
 retour = "remettre l'ancien titre"
@@ -123,6 +138,7 @@ qui = ["humain", "compte"]
 id = "conversation_supprimer"
 libelle = "Supprimer une conversation avec ses messages"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["une conversation de mon compte"]
 preuve = "la conversation n'existe plus"
 retour = "recréer la conversation et ses messages depuis la copie gardée dans le résultat de l'acte"
@@ -134,6 +150,7 @@ masque = ["copie"]
 id = "arreter"
 libelle = "Demander l'arrêt du tour en cours : lu entre deux étapes, une action déjà lancée finit (son journal et son retour sont pris avant qu'elle parte)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une conversation de mon compte"]
 preuve = "la demande est posée"
 retour = "retirer la demande"
@@ -144,6 +161,7 @@ qui = ["humain", "compte"]
 id = "converser"
 libelle = "Un tour de conversation : l'agent lit la mémoire, raisonne, appelle des outils (chacun traverse l'exécuteur : droits du compte, palier, preuve, retour, journal) et conclut en clair. Après une lecture extérieure, ce qui sort ou engage fortement ne part pas seul"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le compte qui parle en est le propriétaire", "l'agent n'a que les outils que ce compte a le droit d'utiliser", "un tour à la fois par conversation", "une lecture extérieure dans le tour retient les actions qui sortent"]
 preuve = "le message de l'agent est gardé dans la conversation"
 retour = "retirer les messages que ce tour a gardés (les actions de l'agent ont chacune leur retour)"

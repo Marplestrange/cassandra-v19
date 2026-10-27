@@ -1,0 +1,551 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Sociétés
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : societes
+# ZONE       : CN
+# VERSION CN : 0.1.0  #000000
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les sociétés de l'instance et la fiche de chacune. Socle du multi-sociétés.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+[module]
+id = "societes"
+nom = "Sociétés"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Les sociétés de l'instance et la fiche de chacune (identité, siège, horaires, établissements, pièces, banque, conformité, habillage, responsables). Tout compte appartient à une société ; une société principale existe toujours. Seul le superadministrateur crée, archive et administre l'ensemble des sociétés ; l'administrateur d'une société ne gère que la sienne."
+confiance = "interne"
+famille = "socle"
+importance = "important"
+sans = "Plus de fiche société : les en-têtes, signatures et mentions légales perdent leur source ; le rattachement des comptes à une société reste garanti par le noyau."
+
+[permissions]
+stockage = true
+droits = true
+identite = true
+
+[[reglages]]
+id = "multi"
+libelle = "Autoriser plusieurs sociétés dans cette instance (posé par le module Multi-sociétés)"
+type = "booleen"
+defaut = false
+
+[[objets]]
+type = "societe"
+libelle = "Une société de l'instance"
+
+[evenements]
+emet = ["societe.creee", "societe.modifiee", "societe.archivee"]
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Sociétés : voir la liste de ses sociétés"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Sociétés : créer, archiver, rattacher (réservé au superadministrateur)"
+sensible = true
+
+[[droits]]
+id = "fiche_voir"
+libelle = "Voir la fiche (identité, siège, réglages régionaux, présence en ligne)"
+defaut = false
+[[droits]]
+id = "fiche_modifier"
+libelle = "Modifier la fiche (identité, siège, réglages régionaux, présence en ligne)"
+
+[[droits]]
+id = "fiche_gerer"
+libelle = "Gérer la fiche (identité, siège, réglages régionaux, présence en ligne) (niveau le plus haut)"
+
+[[droits]]
+id = "etablissements_voir"
+libelle = "Voir les établissements"
+defaut = false
+[[droits]]
+id = "etablissements_modifier"
+libelle = "Modifier les établissements"
+
+[[droits]]
+id = "etablissements_gerer"
+libelle = "Gérer les établissements (niveau le plus haut)"
+
+[[droits]]
+id = "horaires_voir"
+libelle = "Voir les horaires et le calendrier"
+defaut = false
+[[droits]]
+id = "horaires_modifier"
+libelle = "Modifier les horaires et le calendrier"
+
+[[droits]]
+id = "horaires_gerer"
+libelle = "Gérer les horaires et le calendrier (niveau le plus haut)"
+
+[[droits]]
+id = "pieces_voir"
+libelle = "Voir les pièces légales et les échéances"
+defaut = false
+[[droits]]
+id = "pieces_modifier"
+libelle = "Modifier les pièces légales et les échéances"
+
+[[droits]]
+id = "pieces_gerer"
+libelle = "Gérer les pièces légales et les échéances (niveau le plus haut)"
+
+[[droits]]
+id = "banque_voir"
+libelle = "Voir la banque et la facturation"
+defaut = false
+[[droits]]
+id = "banque_modifier"
+libelle = "Modifier la banque et la facturation"
+
+[[droits]]
+id = "banque_gerer"
+libelle = "Gérer la banque et la facturation (niveau le plus haut)"
+sensible = true
+
+[[droits]]
+id = "conformite_voir"
+libelle = "Voir la conformité"
+defaut = false
+[[droits]]
+id = "conformite_modifier"
+libelle = "Modifier la conformité"
+
+[[droits]]
+id = "conformite_gerer"
+libelle = "Gérer la conformité (niveau le plus haut)"
+
+[[droits]]
+id = "habillage_voir"
+libelle = "Voir l'habillage et les modèles"
+defaut = false
+[[droits]]
+id = "habillage_modifier"
+libelle = "Modifier l'habillage et les modèles"
+
+[[droits]]
+id = "habillage_gerer"
+libelle = "Gérer l'habillage et les modèles (niveau le plus haut)"
+
+[[droits]]
+id = "equipe_voir"
+libelle = "Voir les responsables et les fonctions"
+defaut = false
+[[droits]]
+id = "equipe_modifier"
+libelle = "Modifier les responsables et les fonctions"
+
+[[droits]]
+id = "equipe_gerer"
+libelle = "Gérer les responsables et les fonctions (niveau le plus haut)"
+sensible = true
+
+[[capacites]]
+id = "lister"
+libelle = "Les sociétés où ce compte peut agir (la sienne et celles où il a une fonction ; toutes pour le superadministrateur)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "lire"
+libelle = "Une société : son nom, son état, ses comptes (compte seulement)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "fiche_lire"
+libelle = "La fiche d'une société : les rubriques que ce compte a le droit de voir (l'IBAN reste masqué)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "iban_voir"
+libelle = "Afficher l'IBAN en clair (inscrit à l'historique)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "historique"
+libelle = "L'historique des changements de la fiche"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "echeances"
+libelle = "Les échéances à venir : pièces, certificats, clôture d'exercice"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "carte"
+libelle = "L'identité publique de la société, pour nommer (en-têtes, signatures, mentions) : jamais la banque ni les responsables"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "fonctions"
+libelle = "Les fonctions de la société (groupes attachés) : niveaux par domaine, membres"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "fonction_regler"
+libelle = "Régler le niveau d'une fonction sur un domaine (jamais au-dessus de son propre niveau)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["les droits d'un groupe attaché à une société"]
+preuve = "le niveau relu est celui demandé"
+retour = "remettre le niveau d'avant"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "fonction_creer"
+libelle = "Créer une fonction pour la société, en partant d'une existante"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["un groupe attaché à une société"]
+preuve = "la fonction existe"
+retour = "retirer la fonction neuve"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "affecter"
+libelle = "Donner une fonction à un utilisateur dans la société (une seule à la fois ; un seul titulaire)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["l'appartenance d'un compte aux fonctions d'une société"]
+preuve = "le compte est bien dans la fonction"
+retour = "remettre la fonction d'avant"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "membres"
+libelle = "Les comptes de la société (la leur ou une fonction) avec leur fonction"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "historique_defaire"
+libelle = "Défaire une ligne de l'historique : la rubrique revient comme elle était"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["une rubrique de la fiche d'une société"]
+preuve = "la rubrique relue est celle d'avant"
+retour = "remettre la rubrique modifiée"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "fiche_regler"
+libelle = "Modifier une rubrique de la fiche (réversible)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["une rubrique de la fiche d'une société"]
+preuve = "la rubrique relue est celle qu'on a posée"
+retour = "remettre la rubrique d'avant"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "creer"
+libelle = "Créer une société (superadministrateur ; l'instance doit avoir le module Multi-sociétés)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["une ligne dans la liste des sociétés"]
+preuve = "la société existe et n'est pas archivée"
+retour = "retirer la société neuve"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "renommer"
+libelle = "Renommer une société"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["le nom d'une société"]
+preuve = "le nom relu est celui demandé"
+retour = "remettre l'ancien nom"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "archiver"
+libelle = "Archiver une société sans comptes (superadministrateur) : rien n'est effacé"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["l'état d'une société"]
+preuve = "la société est archivée"
+retour = "la rouvrir"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "rouvrir"
+libelle = "Rouvrir une société archivée (superadministrateur)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["l'état d'une société"]
+preuve = "la société n'est plus archivée"
+retour = "la ré-archiver"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[ecrans]]
+id = "vue_societe"
+libelle = "Société / Organisation"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_identite"
+libelle = "Identité"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_etabs"
+libelle = "Établissements"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_horaires"
+libelle = "Horaires et calendrier"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_presence"
+libelle = "Présence en ligne"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_equipe"
+libelle = "Responsables"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_fonctions"
+libelle = "Fonctions et droits"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_pieces"
+libelle = "Pièces et échéances"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_banque"
+libelle = "Banque et facturation"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_conformite"
+libelle = "Conformité"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_habillage"
+libelle = "Habillage et modèles"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_coffre"
+libelle = "Coffre de la société"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_sert"
+libelle = "Où ça sert"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_multi"
+libelle = "Multi-sociétés"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_histo"
+libelle = "Historique"
+domaine = "socle"
+gabarit = "liste_detail"
+
+# Société / Organisation : un regroupement dans Paramètres, puis ses pages.
+[[menus]]
+id = "societe"
+libelle = "Société / Organisation"
+groupe = "parametres"
+ordre = 4
+role = "utilisateur"
+icone = "building"
+droit = "utiliser"
+
+[[menus]]
+id = "identite"
+libelle = "Identité"
+ecran = "s_identite"
+parent = "societe"
+ordre = 10
+role = "utilisateur"
+icone = "building"
+droit = "utiliser"
+
+[[menus]]
+id = "etabs"
+libelle = "Établissements"
+ecran = "s_etabs"
+parent = "societe"
+ordre = 20
+role = "utilisateur"
+icone = "home"
+droit = "utiliser"
+
+[[menus]]
+id = "horaires"
+libelle = "Horaires et calendrier"
+ecran = "s_horaires"
+parent = "societe"
+ordre = 30
+role = "utilisateur"
+icone = "clock"
+droit = "utiliser"
+
+[[menus]]
+id = "presence"
+libelle = "Présence en ligne"
+ecran = "s_presence"
+parent = "societe"
+ordre = 40
+role = "utilisateur"
+icone = "globe"
+droit = "utiliser"
+
+[[menus]]
+id = "equipe"
+libelle = "Responsables"
+ecran = "s_equipe"
+parent = "societe"
+ordre = 50
+role = "utilisateur"
+icone = "contacts"
+droit = "utiliser"
+
+[[menus]]
+id = "fonctions"
+libelle = "Fonctions et droits"
+ecran = "s_fonctions"
+parent = "societe"
+ordre = 60
+role = "utilisateur"
+icone = "shield"
+droit = "utiliser"
+
+[[menus]]
+id = "pieces"
+libelle = "Pièces et échéances"
+ecran = "s_pieces"
+parent = "societe"
+ordre = 70
+role = "utilisateur"
+icone = "scroll"
+droit = "utiliser"
+
+[[menus]]
+id = "banque"
+libelle = "Banque et facturation"
+ecran = "s_banque"
+parent = "societe"
+ordre = 80
+role = "utilisateur"
+icone = "fam_finance"
+droit = "utiliser"
+
+[[menus]]
+id = "conformite"
+libelle = "Conformité"
+ecran = "s_conformite"
+parent = "societe"
+ordre = 90
+role = "utilisateur"
+icone = "tasks"
+droit = "utiliser"
+
+[[menus]]
+id = "habillage"
+libelle = "Habillage et modèles"
+ecran = "s_habillage"
+parent = "societe"
+ordre = 100
+role = "utilisateur"
+icone = "palette"
+droit = "utiliser"
+
+[[menus]]
+id = "coffre"
+libelle = "Coffre de la société"
+ecran = "s_coffre"
+parent = "societe"
+ordre = 110
+role = "utilisateur"
+icone = "lock"
+droit = "utiliser"
+
+[[menus]]
+id = "sert"
+libelle = "Où ça sert"
+ecran = "s_sert"
+parent = "societe"
+ordre = 120
+role = "utilisateur"
+icone = "puzzle"
+droit = "utiliser"
+
+[[menus]]
+id = "multi"
+libelle = "Multi-sociétés"
+ecran = "s_multi"
+parent = "societe"
+ordre = 130
+role = "utilisateur"
+icone = "groupe"
+droit = "utiliser"
+
+[[menus]]
+id = "histo"
+libelle = "Historique"
+ecran = "s_histo"
+parent = "societe"
+ordre = 140
+role = "utilisateur"
+icone = "repeat"
+droit = "utiliser"
+
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

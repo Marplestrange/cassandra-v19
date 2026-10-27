@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #21cb29
+# VERSION CN : 0.1.0  #1f9539
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du bureau du jour : les signaux que les modules déclarent, assemblés pour le compte qui regarde.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=21cb29 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1f9539 ▼▼▼
 """Bancs du bureau du jour : les signaux que les modules déclarent, assemblés pour le compte qui regarde."""
 import shutil
 import sys
@@ -37,6 +37,11 @@ version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Module d'essai : des signaux qui répondent, qui cassent, qui sont réservés, qui sont lents."
 famille = "reseau"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
 
 [[capacites]]
 id = "ok"

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #dfb013
+// VERSION CN : 0.1.0  #10bcfc
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=dfb013 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=10bcfc ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -33188,7 +33188,7 @@ async function setVerdict(fam){
     if (seq !== _setVerdictSeq || ETAT.reglages._setFam !== fam) return;
     if (!v || !v.ok) { box.hidden = true; return; }
     // « Tout est réglé ici. » ne disait rien : quand rien n'est à régler, la bannière se tait.
-    if (v.niveau === 'stable') { box.hidden = true; return; }
+    if (v.niveau === 'stable' || !(v.lignes || []).length) { box.hidden = true; return; }
     box.hidden = false;
     box.innerHTML = '<div class="mx-verdict"><div class="mx-vmark ' + escapeHtml(v.niveau) + '"></div><div style="display:flex;flex-direction:column;gap:3px;min-width:0"><p class="mx-vtitle">' + escapeHtml(v.titre) + '</p><span class="mx-vsub">' + escapeHtml(v.sous_titre || '') + '</span></div></div>'
       + ((v.lignes || []).length ? '<div class="mx-rows">' + v.lignes.map(function(l){

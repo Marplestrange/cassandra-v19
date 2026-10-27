@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : notifications
 # ZONE       : CN
-# VERSION CN : 0.2.0  #9f84b2
+# VERSION CN : 0.2.0  #ae660f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le Centre de notifications, portée de la V18 (notif, notif_resoudre, notif_vu, notif_acquitter, _nt_filtre_dest, _nt_expiration).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=9f84b2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=ae660f ▼▼▼
 """Le Centre de notifications, portée de la V18 (notif, notif_resoudre, notif_vu, notif_acquitter, _nt_filtre_dest, _nt_expiration).
 
 Ce qui change, et pourquoi :
@@ -233,6 +233,18 @@ def brancher(ctx):
                          "%s:%s" % (ev["objet_type"], ev["objet_id"]), "etat", dests, "noyau", "constat")
         dire_emise(r, ev["source"], niveau, d.get("titre", cle), dests, "etat")
 
+    def droits_prevenus(ctx, ev):
+        d = ev["donnees"]
+        if not d.get("prevenir") or d.get("sujet_type") != "compte":
+            return
+        n = len(d.get("changes") or [])
+        corps = "%d droit(s) réglé(s) sur votre compte" % n if n else ""
+        if d.get("admin"):
+            corps += (" ; " if corps else "") + ("vous êtes désormais administrateur" if d["admin"][1] else "vous n'êtes plus administrateur")
+        r = ecrire_notif("droits", "avoir", "Vos droits ont changé", corps, "droits:%s:%s" % (d["sujet"], ev["id"]), "compte:%s" % d["sujet"],
+                         "evenement", [d["sujet"]], ev.get("compte") or "noyau", "evenement")
+        dire_emise(r, "droits", "avoir", "Vos droits ont changé", [d["sujet"]], "evenement")
+
     def constats_resolus(ctx, ev):
         cle = ev["donnees"].get("cle", "")
         r = db.lire("SELECT id FROM notifs WHERE cle=? AND resolue=0 AND supprimee=0", (cle,)) if cle else []
@@ -248,6 +260,7 @@ def brancher(ctx):
             db.ecrire("DELETE FROM notifs WHERE id=?", (nid,))
 
     ctx.moteur("constats_ouverts", constats_ouverts)
+    ctx.moteur("droits_prevenus", droits_prevenus)
     ctx.moteur("constats_resolus", constats_resolus)
     ctx.moteur("expirer", expirer)
     def jours_de(quand):

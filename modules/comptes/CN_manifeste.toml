@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : comptes
 # ZONE       : CN
-# VERSION CN : 0.5.0  #48458d
+# VERSION CN : 0.5.0  #709aa9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les comptes et la preuve qu'on en est : identifiant (une adresse e-mail), mot de passe (règles de la V18, scrypt salé), sessions, jetons de mise en place du mot de passe. Le rôle d'administrateur, lui, vit dans les droits.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=48458d ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=709aa9 ▼▼▼
 [module]
 id = "comptes"
 nom = "Comptes"
@@ -49,7 +49,7 @@ type = "session"
 libelle = "Une session ouverte par un compte"
 
 [evenements]
-emet = ["compte.cree", "compte.modifie", "compte.supprime", "compte.restaure", "compte.mdp_change", "session.ouverte", "session.fermee", "session.refusee"]
+emet = ["compte.cree", "compte.modifie", "compte.supprime", "compte.restaure", "compte.desactive", "compte.reactive", "compte.mdp_change", "session.ouverte", "session.fermee", "session.refusee"]
 
 # ---------- lectures ----------
 [[capacites]]
@@ -104,6 +104,17 @@ retour = "supprimer la ligne créée (et le statut d'administrateur qu'elle a pu
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
 masque = ["mot_de_passe"]
+
+[[capacites]]
+id = "transferer"
+libelle = "Rattacher un compte à une autre société (superadministrateur) : ses fonctions de l'ancienne société tombent"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la société d'un compte, et ses appartenances aux fonctions de l'ancienne société"]
+preuve = "relire la société du compte"
+retour = "remettre la société d'avant et les fonctions retirées"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
 
 [[capacites]]
 id = "inviter_agent"
@@ -204,6 +215,28 @@ paliers = ["raconter", "auto"]
 qui = ["humain", "compte", "cassandra", "itare"]
 
 [[capacites]]
+id = "desactiver"
+libelle = "Désactiver un compte : il n'entre plus, ses sessions se ferment, rien n'est supprimé. Ses sites peuvent passer à un autre compte, et ses agents invités être révoqués ou réattribués"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la ligne du compte (désactivé), ses sessions et ses jetons de mot de passe, les sites du compte destinataire, les agents invités par ce compte"]
+preuve = "le compte est désactivé et n'a plus de session"
+retour = "réactiver le compte et rendre les sites et les agents d'avant (les jetons d'agent révoqués ne reviennent pas : on réinvite)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "reactiver"
+libelle = "Réactiver un compte désactivé : il se reconnecte avec son mot de passe d'avant"
+risque = "faible"
+droit = "gerer"
+perimetre = ["la ligne du compte demandé"]
+preuve = "le compte n'est plus désactivé"
+retour = "le désactiver de nouveau"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
 id = "restaurer"
 libelle = "Restaurer un compte supprimé"
 risque = "moyen"
@@ -265,14 +298,127 @@ libelle = "Utilisateurs et groupes"
 domaine = "socle"
 gabarit = "liste_detail"
 
+[[ecrans]]
+id = "u_nouveau"
+libelle = "Nouvel utilisateur"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "u_liste"
+libelle = "Liste des utilisateurs"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "g_nouveau"
+libelle = "Nouveau groupe"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "g_liste"
+libelle = "Liste des groupes"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "matrice"
+libelle = "Matrice des droits"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "qui"
+libelle = "Qui peut… ?"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "journal"
+libelle = "Journal des droits"
+domaine = "socle"
+gabarit = "liste_detail"
+
+# Utilisateurs : un regroupement, puis ses pages. Groupes : idem (avec la matrice, « qui peut… ? » et le journal des droits).
 [[menus]]
 id = "utilisateurs"
-libelle = "Utilisateurs et groupes"
-ecran = "vue_utilisateurs"
+libelle = "Utilisateurs"
 groupe = "parametres"
 ordre = 5
 role = "admin"
 icone = "contacts"
+
+[[menus]]
+id = "u_nouveau"
+libelle = "Nouvel utilisateur"
+ecran = "u_nouveau"
+parent = "utilisateurs"
+ordre = 10
+role = "admin"
+icone = "plus"
+
+[[menus]]
+id = "u_liste"
+libelle = "Liste des utilisateurs"
+ecran = "u_liste"
+parent = "utilisateurs"
+ordre = 20
+role = "admin"
+icone = "menu"
+
+[[menus]]
+id = "groupes"
+libelle = "Groupes"
+groupe = "parametres"
+ordre = 6
+role = "admin"
+icone = "groupe"
+
+[[menus]]
+id = "g_nouveau"
+libelle = "Nouveau groupe"
+ecran = "g_nouveau"
+parent = "groupes"
+ordre = 10
+role = "admin"
+icone = "plus"
+
+[[menus]]
+id = "g_liste"
+libelle = "Liste des groupes"
+ecran = "g_liste"
+parent = "groupes"
+ordre = 20
+role = "admin"
+icone = "menu"
+
+[[menus]]
+id = "matrice"
+libelle = "Matrice des droits"
+ecran = "matrice"
+parent = "groupes"
+ordre = 30
+role = "admin"
+icone = "panorama"
+
+[[menus]]
+id = "qui"
+libelle = "Qui peut… ?"
+ecran = "qui"
+parent = "groupes"
+ordre = 40
+role = "admin"
+icone = "search"
+
+[[menus]]
+id = "journal"
+libelle = "Journal des droits"
+ecran = "journal"
+parent = "groupes"
+ordre = 50
+role = "admin"
+icone = "clock"
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

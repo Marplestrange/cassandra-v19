@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sauvegardes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7a3b1b
+# VERSION CN : 0.1.0  #56bccd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les plans de sauvegarde : une portée décide du moteur (un site ou une base passe par FastPanel, le reste par rclone), la rotation par dossiers datés, la vérification par échantillon. Ici : les plans, l'historique des copies, les destinations et la couverture. Différé : l'exécution rclone, la restauration, la vérification (par le courtier racine), et la planification.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7a3b1b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=56bccd ▼▼▼
 [module]
 id = "sauvegardes"
 nom = "Sauvegardes"
@@ -23,6 +23,16 @@ confiance = "interne"
 famille = "supervision"
 importance = "important"
 sans = "Plus de suivi des sauvegardes : une copie qui vieillit ou échoue ne déclenche plus d'alerte."
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Sauvegardes : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Sauvegardes : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "plan_sauvegarde"
@@ -53,26 +63,31 @@ retrait = "CN_retirer.sh"
 id = "plans"
 libelle = "Les plans de sauvegarde, avec l'âge de la dernière copie (vert/ambre/rouge selon l'âge, jamais selon l'existence)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "copies"
 libelle = "L'historique des copies d'un plan : résultat, fichiers, octets, durée, vérification"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "destinations"
 libelle = "Les destinations de sauvegarde connues (distants rclone et dossiers)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "couverture"
 libelle = "Ce qui est couvert et ce qui ne l'est pas : sites, bases, documents, par plan"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "plan_save"
 libelle = "Créer ou modifier un plan de sauvegarde (la portée décide du moteur ; une destination doit être un distant ou une racine déclarée)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un plan de sauvegarde"]
 preuve = "le plan relu"
 retour = "remettre le plan d'avant (ou le retirer si neuf)"
@@ -82,6 +97,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "plan_delete"
 libelle = "Supprimer un plan et son historique de copies (les sauvegardes déjà faites restent sur leur destination)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un plan de sauvegarde et ses copies"]
 preuve = "le plan n'existe plus"
 retour = "remettre le plan"
@@ -91,6 +107,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "plan_run"
 libelle = "Exécuter un plan (test à blanc par défaut) via rclone par le courtier, et inscrire la copie au journal"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une copie d'un plan de sauvegarde"]
 preuve = "la copie est inscrite"
 retour = "supprimer la ligne de copie"

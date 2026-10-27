@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : droits
 # ZONE       : CN
-# VERSION CN : 0.2.0  #ca3478
+# VERSION CN : 0.2.0  #8e78f0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Qui, parmi les comptes, peut utiliser quoi : les modules déclarent leurs droits, on les attribue à des comptes et à des groupes, l'exécuteur les vérifie. Modèle de Dolibarr.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=ca3478 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=8e78f0 ▼▼▼
 [module]
 id = "droits"
 nom = "Droits"
@@ -122,9 +122,45 @@ retour = "remettre le statut d'avant"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte", "cassandra", "itare"]
 
+[[capacites]]
+id = "decisions"
+libelle = "Chaque droit du catalogue pour un compte : la décision, son pourquoi, et ce qui est réglé sur le compte lui-même"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "qui_peut"
+libelle = "Tous les comptes, avec leur décision pour un droit et son pourquoi"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "voir_comme"
+libelle = "Ce qu'un compte voit : les modules qu'il ouvre et le nombre de droits qu'il y détient (la structure seulement, jamais un contenu)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "journal"
+libelle = "Les changements de droits et de comptes, avec leur auteur (un utilisateur ou un agent)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "appliquer"
+libelle = "Appliquer d'un coup les réglages de droits d'un compte ou d'un groupe (accordé, refusé, hérité), et son statut d'administrateur"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["droit_accords du sujet pour les droits demandés, et droit_admins du compte demandé"]
+preuve = "relire chaque accord écrit et le statut d'administrateur"
+retour = "remettre les accords et le statut d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
 [permissions]
 droits = true
 introspection = true
+identite = true
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

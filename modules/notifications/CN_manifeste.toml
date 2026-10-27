@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : notifications
 # ZONE       : CN
-# VERSION CN : 0.2.0  #47d26a
+# VERSION CN : 0.2.0  #d99cf5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le Centre de notifications : ce qui mérite l'attention de quelqu'un. Une notification ouverte par clé (elle se répète, elle ne s'empile pas), lue et prise en compte PAR PERSONNE, cloisonnée par compte, qui se referme seule quand la cause disparaît.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=47d26a ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=d99cf5 ▼▼▼
 [module]
 id = "notifications"
 nom = "Notifications"
@@ -44,7 +44,7 @@ libelle = "Une notification : source, niveau, destinataires, état par personne"
 # et applique la politique de chacun (calme, sourdines, urgence). Ce module-ci ne sait rien d'eux.
 [evenements]
 emet = ["notification.emise", "notification.resolue", "notification.supprimee"]
-ecoute = ["constat.ouvert", "constat.resolu"]
+ecoute = ["constat.ouvert", "constat.resolu", "droit.change"]
 
 # Un constat des détecteurs devient une notification (ouverte par la clé du constat) ; quand il est résolu, elle l'est aussi. C'est ce qui
 # remplace les « sondes » de la V18 (rejouer une vérification pour savoir si l'alerte tient encore) : ici le détecteur le dit lui-même.
@@ -53,6 +53,13 @@ id = "constats_ouverts"
 libelle = "Ouvre une notification pour chaque constat ouvert"
 mode = "evenement"
 sur = ["constat.ouvert"]
+duree_max_s = 20
+
+[[moteurs]]
+id = "droits_prevenus"
+libelle = "Prévient un compte quand ses droits changent (si l'administrateur l'a demandé)"
+mode = "evenement"
+sur = ["droit.change"]
 duree_max_s = 20
 
 [[moteurs]]

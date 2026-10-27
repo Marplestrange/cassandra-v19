@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : jour
 # ZONE       : CN
-# VERSION CN : 0.1.1  #e562a1
+# VERSION CN : 0.1.1  #dc42d9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le bureau du jour : ce qui brûle, ce qui est à regarder, ce qui tombe aujourd'hui. Chaque module déclare ses signaux ([[signaux]]) ; ce module les assemble pour le compte qui regarde, sans jamais cacher une source en panne.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=e562a1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=dc42d9 ▼▼▼
 [module]
 id = "jour"
 nom = "Aujourd'hui"
@@ -24,10 +24,21 @@ famille = "socle"
 importance = "important"
 sans = "Plus de bureau du jour : ce qui brûle et ce qui tombe aujourd'hui n'est plus rassemblé."
 
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Aujourd'hui : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Aujourd'hui : réglages et gestes sensibles"
+sensible = true
+
 [[capacites]]
 id = "aujourdhui"
 libelle = "Les trois bandes et les cinq tuiles du jour, pour le compte qui agit : chaque source déclarée par un module, une ligne de panne pour celle qui échoue"
 risque = "lecture"
+droit = "utiliser"
 
 [permissions]
 introspection = true

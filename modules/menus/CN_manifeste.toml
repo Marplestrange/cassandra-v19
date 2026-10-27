@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : menus
 # ZONE       : CN
-# VERSION CN : 0.3.2  #941204
+# VERSION CN : 0.3.2  #c83f64
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Assemble, à chaud, l'arbre de navigation que les modules actifs déclarent : familles, ordre, rôles, compteurs, personnalisation par compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=941204 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=c83f64 ▼▼▼
 [module]
 id = "menus"
 nom = "Menus"
@@ -24,6 +24,16 @@ famille = "socle"
 importance = "vital"
 sans = "Plus d'arbre de navigation : on ne peut plus rejoindre aucun écran. Il ne se désactive pas."
 essentiel = true
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Menus : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Menus : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "menu_arbre"

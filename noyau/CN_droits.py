@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #31ef7e
+# VERSION CN : 0.1.0  #7ca04d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les droits : qui, parmi les COMPTES, peut utiliser quoi. Le modèle est celui de Dolibarr, resserré.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=31ef7e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7ca04d ▼▼▼
 """Les droits : qui, parmi les COMPTES, peut utiliser quoi. Le modèle est celui de Dolibarr, resserré.
 
   - un module DÉCLARE ses droits dans son manifeste ([[droits]]) ; ils s'appellent « module.droit » ;
@@ -64,13 +64,50 @@ class Droits:
     def est_admin(self, compte: str) -> bool:
         return bool(self.base.lire("SELECT 1 FROM droit_admins WHERE compte=?", (compte,)))
 
-    def groupes_de(self, compte: str) -> list:
-        return [r["groupe"] for r in self.base.lire("SELECT groupe FROM droit_membres WHERE compte=? ORDER BY groupe", (compte,))]
+    def groupes_de(self, compte: str, societe: str = "") -> list:
+        """Les groupes qui comptent pour une décision : ceux sans société (valables partout) et, si on agit dans une société, ceux attachés à celle-là.
+        Une « fonction » (groupe attaché à la société B) ne donne jamais rien hors de B."""
+        lignes = self.base.lire("SELECT m.groupe, p.societe FROM droit_membres m LEFT JOIN droit_groupe_portee p ON p.groupe=m.groupe WHERE m.compte=? ORDER BY m.groupe", (compte,))
+        return [r["groupe"] for r in lignes if not r["societe"] or r["societe"] == societe]
 
-    def a(self, compte: str, droit: str) -> bool:
-        return self.raison(compte, droit)["accord"]
+    def tous_groupes_de(self, compte: str) -> list:
+        """Tous les groupes d'un compte, avec leur société le cas échéant : [{"groupe", "societe"}]."""
+        return [{"groupe": r["groupe"], "societe": r["societe"] or ""} for r in self.base.lire(
+            "SELECT m.groupe, p.societe FROM droit_membres m LEFT JOIN droit_groupe_portee p ON p.groupe=m.groupe WHERE m.compte=? ORDER BY m.groupe", (compte,))]
 
-    def raison(self, compte: str, droit: str, _profondeur: int = 0) -> dict:
+    def portee_du_groupe(self, groupe: str) -> str:
+        r = self.base.lire("SELECT societe FROM droit_groupe_portee WHERE groupe=?", (groupe,))
+        return r[0]["societe"] if r else ""
+
+    def attacher_groupe(self, groupe: str, societe: str) -> None:
+        """Attache un groupe à une société (vide : le rend valable partout)."""
+        if not self.groupe(groupe):
+            raise ValueError("groupe inconnu : %s" % groupe)
+        if not societe:
+            self.base.ecrire("DELETE FROM droit_groupe_portee WHERE groupe=?", (groupe,))
+            return
+        if not self.base.lire("SELECT 1 FROM societes WHERE id=?", (societe,)):
+            raise ValueError("société inconnue : %s" % societe)
+        self.base.ecrire("INSERT INTO droit_groupe_portee(groupe, societe) VALUES(?,?) ON CONFLICT(groupe) DO UPDATE SET societe=excluded.societe", (groupe, societe))
+
+    def societes_de(self, compte: str) -> list:
+        """Les sociétés où ce compte peut agir : la sienne (obligatoire), puis celles où il a une fonction. Un superadministrateur peut agir dans toutes."""
+        if not compte:
+            return []
+        r = self.base.lire("SELECT societe, superadmin FROM comptes WHERE compte=?", (compte,))
+        if r and r[0]["superadmin"]:
+            return [x["id"] for x in self.base.lire("SELECT id FROM societes WHERE archivee=0 ORDER BY principale DESC, id")]
+        ids = [r[0]["societe"] if r and r[0]["societe"] else "1"]
+        for x in self.base.lire("SELECT DISTINCT p.societe FROM droit_membres m JOIN droit_groupe_portee p ON p.groupe=m.groupe JOIN societes s ON s.id=p.societe "
+                                "WHERE m.compte=? AND s.archivee=0 ORDER BY p.societe", (compte,)):
+            if x["societe"] not in ids:
+                ids.append(x["societe"])
+        return ids
+
+    def a(self, compte: str, droit: str, societe: str = "") -> bool:
+        return self.raison(compte, droit, societe)["accord"]
+
+    def raison(self, compte: str, droit: str, societe: str = "", _profondeur: int = 0) -> dict:
         """La décision ET son pourquoi : une réponse « non » doit pouvoir s'expliquer à celui qui la reçoit."""
         if not compte:
             return {"accord": True, "parce": "infrastructure (aucun compte)"}
@@ -84,10 +121,10 @@ class Droits:
             # En direct : baisser les droits de l'invitant baisse ceux de ses invités, et l'invité d'un administrateur a tout.
             par = self.delegant(compte)
             if par and par != compte:
-                r = self.raison(par, droit, _profondeur + 1)
+                r = self.raison(par, droit, societe, _profondeur + 1)
                 return {"accord": r["accord"], "parce": "agent invité par %s : %s" % (par, r["parce"])}
             return {"accord": False, "parce": "agent invité sans invitant connu"}
-        groupes = self.groupes_de(compte)
+        groupes = self.groupes_de(compte, societe)
         if groupes:
             marques = ",".join("?" * len(groupes))
             lignes = self.base.lire("SELECT sujet, accord FROM droit_accords WHERE sujet_type='groupe' AND droit=? AND sujet IN (%s)" % marques,
@@ -103,11 +140,57 @@ class Droits:
             return {"accord": True, "parce": "accordé à tous par défaut"}
         return {"accord": False, "parce": "non attribué" if connu else "droit inconnu"}
 
-    def detenus(self, compte: str) -> dict:
+    def decisions_de(self, compte: str, societe: str = "", _profondeur: int = 0) -> dict:
+        """Toutes les décisions d'un compte pour tous les droits connus, en quatre lectures au lieu d'une par droit. Même ordre et mêmes motifs que `raison` :
+        {droit: {"accord": bool, "parce": str, "propre": 'accorde' | 'refuse' | None}}."""
+        with self._verrou:
+            connus = dict(self.connus)
+        if not compte:
+            return {k: {"accord": True, "parce": "infrastructure (aucun compte)", "propre": None} for k in connus}
+        propres = {r["droit"]: ("accorde" if r["accord"] else "refuse")
+                   for r in self.base.lire("SELECT droit, accord FROM droit_accords WHERE sujet_type='compte' AND sujet=?", (compte,))}
+        if self.est_admin(compte):
+            return {k: {"accord": True, "parce": "administrateur", "propre": propres.get(k)} for k in connus}
+        base = None
+        if compte.startswith("agent:") and _profondeur < 5:
+            par = self.delegant(compte)
+            base = self.decisions_de(par, societe, _profondeur + 1) if par and par != compte else {}
+            invitant = par
+        groupes = self.groupes_de(compte, societe)
+        lignes = []
+        if groupes and base is None:
+            marques = ",".join("?" * len(groupes))
+            lignes = self.base.lire("SELECT sujet, accord, droit FROM droit_accords WHERE sujet_type='groupe' AND sujet IN (%s)" % marques, tuple(groupes))
+        refus, octroi = {}, {}
+        for r in lignes:
+            (octroi if r["accord"] else refus).setdefault(r["droit"], r["sujet"])
+        out = {}
+        for k, (_, d) in connus.items():
+            p = propres.get(k)
+            if p == "accorde":
+                out[k] = {"accord": True, "parce": "accordé au compte", "propre": p}
+            elif p == "refuse":
+                out[k] = {"accord": False, "parce": "refusé au compte", "propre": p}
+            elif base is not None:
+                if base:
+                    out[k] = {"accord": base[k]["accord"], "parce": "agent invité par %s : %s" % (invitant, base[k]["parce"]), "propre": None}
+                else:
+                    out[k] = {"accord": False, "parce": "agent invité sans invitant connu", "propre": None}
+            elif k in refus:
+                out[k] = {"accord": False, "parce": "refusé par le groupe %s" % refus[k], "propre": None}
+            elif k in octroi:
+                out[k] = {"accord": True, "parce": "accordé par le groupe %s" % octroi[k], "propre": None}
+            elif d.defaut:
+                out[k] = {"accord": True, "parce": "accordé à tous par défaut", "propre": None}
+            else:
+                out[k] = {"accord": False, "parce": "non attribué", "propre": None}
+        return out
+
+    def detenus(self, compte: str, societe: str = "") -> dict:
         """Tout ce qu'un compte détient parmi les droits que les modules branchés déclarent (de quoi filtrer un menu d'un seul coup)."""
         admin = bool(compte) and self.est_admin(compte)
-        droits = sorted(k for k in self.connus if admin or self.a(compte, k)) if compte else sorted(self.connus)
-        return {"compte": compte, "admin": admin, "groupes": self.groupes_de(compte) if compte else [], "droits": droits}
+        droits = sorted(k for k, v in self.decisions_de(compte, societe).items() if v["accord"]) if compte else sorted(self.connus)
+        return {"compte": compte, "admin": admin, "groupes": self.groupes_de(compte, societe) if compte else [], "droits": droits, "societe": societe}
 
     # ---- les écritures (appelées par le module des droits, qui les rend réversibles) ----
     def accord(self, sujet_type: str, sujet: str, droit: str):
@@ -134,21 +217,26 @@ class Droits:
                          "ON CONFLICT(sujet_type, sujet, droit) DO UPDATE SET accord=excluded.accord", (sujet_type, sujet, droit, VALEURS[valeur]))
 
     def groupe(self, groupe: str):
-        r = self.base.lire("SELECT groupe, libelle FROM droit_groupes WHERE groupe=?", (groupe,))
+        r = self.base.lire("SELECT groupe, libelle, description FROM droit_groupes WHERE groupe=?", (groupe,))
         return r[0] if r else None
 
-    def regler_groupe(self, groupe: str, libelle) -> None:
-        """libelle None : supprime le groupe, ses membres et ses accords."""
+    def regler_groupe(self, groupe: str, libelle, description=None) -> None:
+        """libelle None : supprime le groupe, ses membres et ses accords. `description` None : on garde l'ancienne."""
         if not groupe or not str(groupe).strip():
             raise ValueError("groupe vide")
         with self.base.transaction() as c:
             if libelle is None:
                 c.execute("DELETE FROM droit_accords WHERE sujet_type='groupe' AND sujet=?", (groupe,))
                 c.execute("DELETE FROM droit_membres WHERE groupe=?", (groupe,))
+                c.execute("DELETE FROM droit_groupe_portee WHERE groupe=?", (groupe,))
                 c.execute("DELETE FROM droit_groupes WHERE groupe=?", (groupe,))
             else:
-                c.execute("INSERT INTO droit_groupes(groupe, libelle) VALUES(?,?) ON CONFLICT(groupe) DO UPDATE SET libelle=excluded.libelle",
-                          (groupe, libelle))
+                if description is None:
+                    c.execute("INSERT INTO droit_groupes(groupe, libelle) VALUES(?,?) ON CONFLICT(groupe) DO UPDATE SET libelle=excluded.libelle",
+                              (groupe, libelle))
+                else:
+                    c.execute("INSERT INTO droit_groupes(groupe, libelle, description) VALUES(?,?,?) ON CONFLICT(groupe) DO UPDATE SET libelle=excluded.libelle, description=excluded.description",
+                              (groupe, libelle, str(description).strip()))
 
     def membre(self, compte: str, groupe: str) -> bool:
         return bool(self.base.lire("SELECT 1 FROM droit_membres WHERE compte=? AND groupe=?", (compte, groupe)))
@@ -172,13 +260,24 @@ class Droits:
             raison = self.verrou(compte)
             if raison:
                 raise ValueError(raison)
+            if self.dernier_admin_humain(compte):
+                raise ValueError("« %s » est le dernier administrateur : nommez-en un autre d'abord" % compte)
             self.base.ecrire("DELETE FROM droit_admins WHERE compte=?", (compte,))
+
+    def dernier_admin_humain(self, compte: str) -> bool:
+        """Ce compte est-il le DERNIER administrateur humain actif ? Les comptes de l'infrastructure (cassandra, noyau, opérateur) et les agents ne comptent pas :
+        ils ne se connectent pas. Un administrateur sans ligne de compte (un droit réglé sans compte) n'est pas concerné."""
+        r = self.base.lire("SELECT type, desactive FROM comptes WHERE compte=?", (compte,))
+        if not r or r[0]["type"] != "humain" or r[0]["desactive"] or not self.est_admin(compte):
+            return False
+        return self.base.lire("SELECT COUNT(*) AS n FROM droit_admins a JOIN comptes c ON c.compte=a.compte WHERE c.type='humain' AND c.desactive=0")[0]["n"] <= 1
 
     def etat(self) -> dict:
         return {
             "admins": [r["compte"] for r in self.base.lire("SELECT compte FROM droit_admins ORDER BY compte")],
             "groupes": [dict(r, membres=[m["compte"] for m in self.base.lire("SELECT compte FROM droit_membres WHERE groupe=? ORDER BY compte", (r["groupe"],))])
-                        for r in self.base.lire("SELECT groupe, libelle FROM droit_groupes ORDER BY groupe")],
+                        for r in self.base.lire("SELECT g.groupe, g.libelle, g.description, COALESCE(p.societe, '') AS societe FROM droit_groupes g "
+                                                "LEFT JOIN droit_groupe_portee p ON p.groupe=g.groupe ORDER BY g.groupe")],
             "accords": self.base.lire("SELECT sujet_type, sujet, droit, accord FROM droit_accords ORDER BY sujet_type, sujet, droit"),
         }
 

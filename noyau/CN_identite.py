@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #cd1122
+# VERSION CN : 0.1.0  #86da97
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions, jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=cd1122 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=86da97 ▼▼▼
 """L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions,
 jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt salé.
 
@@ -247,6 +247,76 @@ class Identite:
         r["sites"] = json.loads(r.get("sites") or "[]")
         return r
 
+    # ---- la société d'un compte : obligatoire, comme dans Dolibarr ----
+    def societe_valide(self, societe: str = ""):
+        """L'identifiant d'une société où l'on peut ranger un compte (vide : la principale), ou None si elle n'existe pas ou est archivée."""
+        s = str(societe or "").strip() or "1"
+        r = self.base.lire("SELECT 1 FROM societes WHERE id=? AND archivee=0", (s,))
+        return s if r else None
+
+    def societe_de(self, compte: str) -> str:
+        """La société de rattachement d'un compte (la principale pour un compte système ou inconnu)."""
+        r = self.base.lire("SELECT societe FROM comptes WHERE compte=?", (compte,))
+        return r[0]["societe"] if r and r[0]["societe"] else "1"
+
+    # ---- les sociétés : seul le superadministrateur les administre toutes ----
+    def societes(self, tout: bool = False) -> list:
+        sql = "SELECT id, nom, principale, archivee, cree FROM societes" + ("" if tout else " WHERE archivee=0") + " ORDER BY principale DESC, nom, id"
+        return self.base.lire(sql)
+
+    def societe(self, societe: str):
+        r = self.base.lire("SELECT id, nom, principale, archivee, cree FROM societes WHERE id=?", (societe,))
+        return r[0] if r else None
+
+    def comptes_de_societe(self, societe: str) -> list:
+        return [r["compte"] for r in self.base.lire("SELECT compte FROM comptes WHERE societe=? AND desactive=0 ORDER BY compte", (societe,))]
+
+    def societe_creer(self, nom: str, identifiant: str = "") -> dict:
+        nom = (nom or "").strip()
+        if not nom or len(nom) > 120:
+            return {"ok": False, "error": "Le nom d'une société : de 1 à 120 caractères"}
+        ident = re.sub(r"[^a-z0-9]+", "-", (identifiant or nom).lower().encode("ascii", "ignore").decode()).strip("-")[:40] or "societe"
+        if ident == "1" or self.societe(ident):
+            base_id, n = ident, 2
+            while self.societe(ident) or ident == "1":
+                ident = "%s-%d" % (base_id[:36], n)
+                n += 1
+        self.base.ecrire("INSERT INTO societes(id, nom, principale, archivee, cree) VALUES(?,?,0,0,?)", (ident, nom, time.time()))
+        return {"ok": True, "societe": ident, "nom": nom}
+
+    def societe_renommer(self, societe: str, nom: str) -> dict:
+        nom = (nom or "").strip()
+        if not nom or len(nom) > 120:
+            return {"ok": False, "error": "Le nom d'une société : de 1 à 120 caractères"}
+        if not self.societe(societe):
+            return {"ok": False, "error": "Société inconnue"}
+        self.base.ecrire("UPDATE societes SET nom=? WHERE id=?", (nom, societe))
+        return {"ok": True, "societe": societe, "nom": nom}
+
+    def societe_archiver(self, societe: str, archiver: bool = True) -> dict:
+        s = self.societe(societe)
+        if not s:
+            return {"ok": False, "error": "Société inconnue"}
+        if archiver and s["principale"]:
+            return {"ok": False, "error": "La société principale ne s'archive pas"}
+        if archiver and self.comptes_de_societe(societe):
+            return {"ok": False, "error": "Des comptes appartiennent encore à cette société : transférez-les d'abord"}
+        self.base.ecrire("UPDATE societes SET archivee=? WHERE id=?", (1 if archiver else 0, societe))
+        return {"ok": True, "societe": societe, "archivee": bool(archiver)}
+
+    def societe_retirer(self, societe: str) -> None:
+        """Retrait sec d'une société tout juste créée (retour arrière d'une création) : jamais la principale, jamais avec des comptes."""
+        if societe != "1" and not self.comptes_de_societe(societe):
+            self.base.ecrire("DELETE FROM societes WHERE id=? AND principale=0", (societe,))
+
+    def est_superadmin(self, compte: str) -> bool:
+        r = self.base.lire("SELECT superadmin FROM comptes WHERE compte=?", (compte,))
+        return bool(r and r[0]["superadmin"])
+
+    def peut_agir_dans(self, compte: str, societe: str) -> bool:
+        """Un compte agit dans sa société, dans celles où il a une fonction ; le superadministrateur, dans toutes."""
+        return bool(compte) and societe in self.droits.societes_de(compte)
+
     def existe(self, compte: str) -> bool:
         return bool(self.base.lire("SELECT 1 FROM comptes WHERE compte=?", (compte,)))
 
@@ -270,8 +340,8 @@ class Identite:
         jeton = secrets.token_urlsafe(32)
         with self.base.transaction() as c:
             if not existant:
-                c.execute("INSERT INTO comptes(compte, hash, display_name, cree, maj, type, invite_par) VALUES(?,?,?,?,?,'agent',?)",
-                          (cid, "", (libelle or n).strip(), now, now, par))
+                c.execute("INSERT INTO comptes(compte, hash, display_name, cree, maj, type, invite_par, societe) VALUES(?,?,?,?,?,'agent',?,?)",
+                          (cid, "", (libelle or n).strip(), now, now, par, self.societe_de(par)))      # un agent est de la société de celui qui l'invite
             c.execute("UPDATE agents_jetons SET actif=0 WHERE compte=?", (cid,))
             c.execute("INSERT INTO agents_jetons(id, compte, cree, actif) VALUES(?,?,?,1)", (_empreinte(jeton), cid, now))
         return {"ok": True, "compte": cid, "jeton": jeton, "nouveau": not existant}
@@ -330,7 +400,7 @@ class Identite:
         return [dict(self._ligne(r), admin=r["compte"] in admins, superadmin=bool(r["superadmin"]), unix_etat=self.unix_etat(r["unix_user"]))
                 for r in self.base.lire("SELECT * FROM comptes ORDER BY compte")]
 
-    def creer(self, compte: str, mdp: str, sites=None, superadmin: bool = False, unix_user: str = "", **profil) -> dict:
+    def creer(self, compte: str, mdp: str, sites=None, superadmin: bool = False, unix_user: str = "", societe: str = "", **profil) -> dict:
         compte = (compte or "").strip().lower()
         if not EMAIL.match(compte):
             return {"ok": False, "error": "Adresse e-mail invalide (ex : prenom@exemple.com)"}
@@ -341,6 +411,9 @@ class Identite:
             return {"ok": False, "error": v["error"], "manque": v["manque"]}
         if self.existe(compte):
             return {"ok": False, "error": "Ce compte existe déjà"}
+        soc = self.societe_valide(societe)
+        if soc is None:
+            return {"ok": False, "error": "Société inconnue ou archivée : tout compte appartient à une société"}
         premier = not self.base.lire("SELECT 1 FROM comptes WHERE type='humain' LIMIT 1")
         # Comme FastPanel : le premier compte est le SUPERADMINISTRATEUR, adossé à l'utilisateur système « fastuser » avec bash. Il s'inscrit
         # tout de même par e-mail (c'est elle qui crée son coffre). Ce n'est pas un interdit : CN_install.sh et CN_deploy.sh créent fastuser et son bash ;
@@ -361,11 +434,11 @@ class Identite:
         now = time.time()
         champs = {k: str(profil.get(k) or "").strip() for k in CHAMPS_PROFIL}
         champs["lang"] = (champs["lang"].lower()[:5] or "fr")
-        self.base.ecrire("INSERT INTO comptes(compte, hash, display_name, role_label, contact_email, phone, lang, fp_account, sites, cree, maj, unix_user, superadmin) "
-                         "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        self.base.ecrire("INSERT INTO comptes(compte, hash, display_name, role_label, contact_email, phone, lang, fp_account, sites, cree, maj, unix_user, superadmin, societe) "
+                         "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                          (compte, hacher(mdp), champs["display_name"], champs["role_label"], champs["contact_email"], champs["phone"],
                           champs["lang"], champs["fp_account"] or unix, json.dumps(sorted({norm_domain(s) for s in (sites or []) if s})), now, now,
-                          unix, 1 if (premier or superadmin) else 0))
+                          unix, 1 if (premier or superadmin) else 0, soc))
         demande = False
         if superadmin and not premier:
             self.droits.regler_admin(compte, True)
@@ -426,6 +499,8 @@ class Identite:
         raison = self.verrou_superadmin(compte)
         if raison:
             return {"ok": False, "error": raison}
+        if self.droits.dernier_admin_humain(compte):
+            return {"ok": False, "error": "« %s » est le dernier administrateur : nommez-en un autre d'abord" % compte}
         instantane = dict(r[0]) | {"admin": self.droits.est_admin(compte), "groupes": self.droits.groupes_de(compte)}
         with self.base.transaction() as c:
             cur = c.execute("INSERT INTO comptes_corbeille(compte, instantane, ts) VALUES(?,?,?)", (compte, json.dumps(instantane), time.time()))
@@ -434,6 +509,69 @@ class Identite:
             c.execute("DELETE FROM jetons_mdp WHERE compte=?", (compte,))
         self.droits.regler_admin(compte, False)
         return {"ok": True, "corbeille": cur.lastrowid}
+
+    def desactive(self, compte: str) -> bool:
+        r = self.base.lire("SELECT desactive FROM comptes WHERE compte=?", ((compte or "").strip().lower(),))
+        return bool(r and r[0]["desactive"])
+
+    def desactiver(self, compte: str, vers: str = "", agents: str = "revoquer") -> dict:
+        """Coupe l'accès SANS rien supprimer : sessions et jetons fermés, mot de passe gardé (la réactivation rend le compte tel quel).
+        `vers` : le compte qui reçoit ses sites ; `agents` : « revoquer » (leurs jetons cessent d'ouvrir) ou « reattribuer » (à `vers`).
+        Rend de quoi se défaire : les sites d'avant, les agents touchés."""
+        compte = (compte or "").strip().lower()
+        r = self.base.lire("SELECT * FROM comptes WHERE compte=?", (compte,))
+        if not r:
+            return {"ok": False, "error": "Compte inconnu"}
+        if r[0]["type"] == "systeme":
+            return {"ok": False, "error": "Compte système : il fait partie du noyau, on ne le désactive pas"}
+        if r[0]["desactive"]:
+            return {"ok": False, "error": "Ce compte est déjà désactivé"}
+        raison = self.verrou_superadmin(compte)
+        if raison:
+            return {"ok": False, "error": raison}
+        if self.droits.dernier_admin_humain(compte):
+            return {"ok": False, "error": "« %s » est le dernier administrateur : nommez-en un autre d'abord" % compte}
+        vers = (vers or "").strip().lower()
+        if vers and (vers == compte or not self.existe(vers) or self.desactive(vers)):
+            return {"ok": False, "error": "Le compte destinataire doit exister, être actif et différer du compte qui part"}
+        if agents not in ("revoquer", "reattribuer"):
+            return {"ok": False, "error": "agents : revoquer | reattribuer"}
+        if agents == "reattribuer" and not vers:
+            return {"ok": False, "error": "Réattribuer les agents demande un compte destinataire"}
+        mes_agents = [a["compte"] for a in self.base.lire("SELECT compte FROM comptes WHERE type='agent' AND invite_par=?", (compte,))]
+        sites_avant = json.loads(r[0]["sites"] or "[]")
+        dest_avant = json.loads(self.base.lire("SELECT sites FROM comptes WHERE compte=?", (vers,))[0]["sites"] or "[]") if vers else None
+        with self.base.transaction() as c:
+            c.execute("UPDATE comptes SET desactive=1, maj=? WHERE compte=?", (time.time(), compte))
+            c.execute("DELETE FROM sessions WHERE compte=?", (compte,))
+            c.execute("DELETE FROM jetons_mdp WHERE compte=?", (compte,))
+            if vers and sites_avant:
+                c.execute("UPDATE comptes SET sites=?, maj=? WHERE compte=?", (json.dumps(sorted(set(dest_avant) | set(sites_avant))), time.time(), vers))
+                c.execute("UPDATE comptes SET sites='[]', maj=? WHERE compte=?", (time.time(), compte))
+            for a in mes_agents:
+                if agents == "reattribuer":
+                    c.execute("UPDATE comptes SET invite_par=?, maj=? WHERE compte=?", (vers, time.time(), a))
+                else:
+                    c.execute("UPDATE agents_jetons SET actif=0 WHERE compte=?", (a,))
+        return {"ok": True, "vers": vers, "agents": agents, "agents_touches": mes_agents, "sites_avant": sites_avant, "sites_dest_avant": dest_avant}
+
+    def reactiver(self, compte: str) -> dict:
+        compte = (compte or "").strip().lower()
+        if not self.existe(compte):
+            return {"ok": False, "error": "Compte inconnu"}
+        self.base.ecrire("UPDATE comptes SET desactive=0, maj=? WHERE compte=?", (time.time(), compte))
+        return {"ok": True}
+
+    def restituer_depart(self, compte: str, res: dict) -> None:
+        """Défait `desactiver` : le compte revient, ses sites aussi (et ceux du destinataire d'avant), ses agents retrouvent leur invitant. Les jetons révoqués restent révoqués : on réinvite."""
+        with self.base.transaction() as c:
+            c.execute("UPDATE comptes SET desactive=0, maj=? WHERE compte=?", (time.time(), compte))
+            if res.get("vers") and res.get("sites_dest_avant") is not None:
+                c.execute("UPDATE comptes SET sites=?, maj=? WHERE compte=?", (json.dumps(res["sites_dest_avant"]), time.time(), res["vers"]))
+                c.execute("UPDATE comptes SET sites=?, maj=? WHERE compte=?", (json.dumps(res["sites_avant"]), time.time(), compte))
+            if res.get("agents") == "reattribuer":
+                for a in res.get("agents_touches", []):
+                    c.execute("UPDATE comptes SET invite_par=?, maj=? WHERE compte=?", (compte, time.time(), a))
 
     def corbeille(self) -> list:
         return [{"id": r["id"], "compte": r["compte"], "ts": r["ts"]} for r in self.base.lire("SELECT id, compte, ts FROM comptes_corbeille ORDER BY id DESC")]
@@ -446,9 +584,10 @@ class Identite:
         if self.existe(s["compte"]):
             return {"ok": False, "error": "Un compte porte déjà cet identifiant"}
         with self.base.transaction() as c:
-            c.execute("INSERT INTO comptes(compte, hash, display_name, role_label, contact_email, phone, lang, fp_account, sites, cree, maj, unix_user, superadmin) "
-                      "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", (s["compte"], s["hash"], s["display_name"], s["role_label"], s["contact_email"], s["phone"],
-                                                            s["lang"], s["fp_account"], s["sites"], s["cree"], time.time(), s.get("unix_user", ""), s.get("superadmin", 0)))
+            c.execute("INSERT INTO comptes(compte, hash, display_name, role_label, contact_email, phone, lang, fp_account, sites, cree, maj, unix_user, superadmin, societe) "
+                      "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (s["compte"], s["hash"], s["display_name"], s["role_label"], s["contact_email"], s["phone"],
+                                                            s["lang"], s["fp_account"], s["sites"], s["cree"], time.time(), s.get("unix_user", ""), s.get("superadmin", 0),
+                                                            self.societe_valide(s.get("societe", "")) or "1"))
             if s.get("type", "humain") != "humain":
                 c.execute("UPDATE comptes SET type=? WHERE compte=?", (s["type"], s["compte"]))
             c.execute("DELETE FROM comptes_corbeille WHERE id=?", (corbeille,))
@@ -514,6 +653,8 @@ class Identite:
         if not bon:
             self._echec(compte, ip)
             return {"ok": False, "error": "Identifiant ou mot de passe incorrect"}
+        if self.desactive(compte):
+            return {"ok": False, "desactive": True, "error": "Ce compte est désactivé : demandez à un administrateur de le réactiver"}
         for module, f in list(self.seconds_facteurs.items()):
             try:
                 if not f.exige(compte):
@@ -533,6 +674,8 @@ class Identite:
         compte = (compte or "").strip().lower()
         if self.hash_de(compte) is None:
             return {"ok": False, "error": "compte inconnu"}
+        if self.desactive(compte):
+            return {"ok": False, "desactive": True, "error": "Ce compte est désactivé"}
         return self._session(compte, ip, agent)
 
     def valider(self, jeton: str) -> dict:
@@ -540,7 +683,8 @@ class Identite:
         if not jeton or len(jeton) != 64:
             return {"ok": False}
         now = time.time()
-        r = self.base.lire("SELECT compte, derniere FROM sessions WHERE id=? AND cree>?", (_empreinte(jeton), now - self.ttl))
+        r = self.base.lire("SELECT s.compte AS compte, s.derniere AS derniere FROM sessions s LEFT JOIN comptes c ON c.compte=s.compte "
+                           "WHERE s.id=? AND s.cree>? AND COALESCE(c.desactive,0)=0", (_empreinte(jeton), now - self.ttl))
         if not r:
             return {"ok": False}
         if now - r[0]["derniere"] >= 60:

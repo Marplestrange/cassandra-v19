@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : notes
 # ZONE       : CN
-# VERSION CN : 0.1.1  #0fa193
+# VERSION CN : 0.1.1  #8b31f6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet de notes d'un compte : numéros stables (N-0007, jamais réattribués), renvois [[N-0007]] et [[nature:ref]] avec rétro-liens, dossiers à deux niveaux, étiquettes, projet, état (brouillon, en cours, stabilisée, archivée), relecture, cases à cocher liées aux tâches, versions à chaque écriture, corbeille, fusion avec redirection, note du jour, liens de partage qui expirent, export et archive. Elles sont à la personne : l'administrateur ne les voit pas.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=0fa193 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=8b31f6 ▼▼▼
 [module]
 id = "notes"
 nom = "Notes"
@@ -25,6 +25,16 @@ importance = "optionnel"
 sans = "Plus de carnet de notes : les notes ne sont plus accessibles ; elles restent enregistrées."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Notes : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Notes : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "note"
@@ -42,96 +52,115 @@ frequence_s = 3600
 id = "lister"
 libelle = "Mes notes : recherche (#étiquette, projet:, lié:N-0007), tris, filtres, groupes (projet, étiquette, sans)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "fiche"
 libelle = "Une note entière : renvois, rétro-liens, sommaire, cases, santé, activité, versions"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "versions"
 libelle = "Les versions d'une note (la plus récente d'abord)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "version_lire"
 libelle = "Le contenu d'une ancienne version"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "corbeille"
 libelle = "Ma corbeille de notes"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "dossiers"
 libelle = "L'arborescence de mes dossiers (deux niveaux au plus), avec le nombre de notes de chacun"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "liens"
 libelle = "Tous les renvois de mes notes, avec leurs cibles mortes"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "resoudre"
 libelle = "Les cibles des renvois [[…]] d'un texte nu (sans le garder)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "cibles"
 libelle = "Tout ce vers quoi un renvoi peut pointer : mes notes, mes projets, mes tâches"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "de"
 libelle = "Quelles notes citent cette cible (le sens inverse du renvoi)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "mentions"
 libelle = "Les noms de mes notes écrits sans renvoi : proposés, jamais écrits"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "cases"
 libelle = "Toutes les cases à cocher de mes notes, avec la tâche liée"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "cases_etat"
 libelle = "Les cases d'une note face aux tâches liées : désaccords, cases sans tâche"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "menage"
 libelle = "Ce qui mérite d'être rangé, et pourquoi : proposé, jamais fait"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "jour"
 libelle = "La note du jour, si elle existe"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "exporter"
 libelle = "Une note en markdown, texte ou HTML"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "archive"
 libelle = "Une archive ZIP du corpus, d'un dossier ou d'une sélection (400 notes au plus)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "partages"
 libelle = "Mes liens de partage vivants"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "creer"
 libelle = "Créer une note (numéro attribué, jamais réattribué)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le compte qui agit en est le propriétaire", "un titre obligatoire", "un projet fait ranger la note dans son dossier"]
 preuve = "relire la note : titre et propriétaire conformes"
 retour = "supprimer la note que cet acte vient de créer, et elle seule (son numéro reste réservé)"
@@ -142,6 +171,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "ecrire"
 libelle = "Modifier une note en patch : corps, titre, étiquettes, projet, dossier, épingle, état, relecture, rattachements (chaque écriture laisse la version d'avant)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une note de mon compte", "un dossier doit exister", "l'état est brouillon|cours|stable|archive", "la relecture est une date ISO"]
 preuve = "relire la note et comparer chaque champ écrit"
 retour = "remettre la note telle qu'elle était et retirer la version laissée par cet acte"
@@ -152,6 +182,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "revenir"
 libelle = "Revenir à une version : l'état actuel devient à son tour une version"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une version de cette note"]
 preuve = "le corps de la note est celui de la version"
 retour = "remettre le corps d'avant le retour"
@@ -162,6 +193,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "supprimer"
 libelle = "Mettre une note à la corbeille (rien n'est effacé ; le numéro reste réservé)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une note de mon compte"]
 preuve = "la note est à la corbeille"
 retour = "la sortir de la corbeille"
@@ -172,6 +204,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "restaurer"
 libelle = "Sortir une note de la corbeille"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une note de ma corbeille"]
 preuve = "la note n'est plus à la corbeille"
 retour = "la remettre à la corbeille"
@@ -182,6 +215,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "vider_corbeille"
 libelle = "Effacer pour de bon ma corbeille (sans confirmation, rend ce qui partirait)"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["mes notes à la corbeille seulement", "les versions partent avec leur note"]
 preuve = "la corbeille est vide"
 retour = "recréer les notes, leurs versions et leur activité depuis la copie gardée dans le résultat de l'acte"
@@ -192,6 +226,7 @@ qui = ["humain", "compte"]
 id = "fusionner"
 libelle = "Fusionner des notes en une : les renvois sont réécrits, les absorbées vont à la corbeille et redirigent vers la fusion"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["au moins deux notes de mon compte", "un titre pour la fusion"]
 preuve = "la fusion existe, les absorbées sont à la corbeille"
 retour = "supprimer la fusion, sortir les absorbées de la corbeille et remettre les notes dont le renvoi a été réécrit"
@@ -202,6 +237,7 @@ qui = ["humain", "compte"]
 id = "importer"
 libelle = "Importer des fichiers markdown (avec ou sans en-tête) comme de nouvelles notes"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["des notes neuves : rien n'est écrasé"]
 preuve = "les notes importées existent"
 retour = "supprimer les notes que cet import vient de créer"
@@ -212,6 +248,7 @@ qui = ["humain", "compte"]
 id = "jour_ouvrir"
 libelle = "Ouvrir la note du jour (créée à la première frappe, jamais d'avance)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une seule note du jour par date"]
 preuve = "la note du jour existe"
 retour = "supprimer la note du jour si cet acte l'a créée"
@@ -222,6 +259,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "dossier_creer"
 libelle = "Créer un dossier"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["deux niveaux au plus", "pas de point de tête, pas de « .. »"]
 preuve = "le dossier existe"
 retour = "retirer le dossier s'il est vide"
@@ -232,6 +270,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "dossier_renommer"
 libelle = "Renommer un dossier : aucun renvoi ne casse, la référence est le numéro"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un dossier de mon compte"]
 preuve = "le dossier porte le nouveau nom"
 retour = "le renommer comme avant"
@@ -242,6 +281,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "dossier_supprimer"
 libelle = "Retirer un dossier : AUCUNE note ne disparaît, elles remontent d'un cran"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un dossier de mon compte"]
 preuve = "le dossier n'existe plus, ses notes sont au niveau du dessus"
 retour = "recréer le dossier et y remettre ses notes"
@@ -252,6 +292,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "case_basculer"
 libelle = "Cocher ou décocher une case d'une note"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une ligne qui est une case à cocher"]
 preuve = "la ligne porte l'état voulu"
 retour = "basculer la même ligne"
@@ -262,6 +303,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "case_lier"
 libelle = "Lier une case à une tâche (module taches) : un renvoi dans les deux sens, aucune copie"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une case existante", "une tâche de mon compte"]
 preuve = "le lien existe"
 retour = "retirer ce lien"
@@ -272,6 +314,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "case_delier"
 libelle = "Délier une case de sa tâche"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une case liée"]
 preuve = "le lien n'existe plus"
 retour = "remettre le lien"
@@ -282,6 +325,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "cases_reprendre"
 libelle = "Reporter l'état des tâches liées dans les cases de la note (une seule réécriture)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une note de mon compte", "seules les cases liées à une tâche sont touchées"]
 preuve = "chaque case liée dit ce que dit sa tâche"
 retour = "remettre le corps d'avant et retirer la version laissée"
@@ -292,6 +336,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "partage_creer"
 libelle = "Ouvrir un lien de partage : une adresse qu'on envoie, qui sert la note sans session (30 jours par défaut, mot de passe facultatif)"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["une note de mon compte", "200 liens vivants au plus"]
 preuve = "le lien existe et sert la note"
 retour = "retirer le lien (immédiatement)"
@@ -303,6 +348,7 @@ sortant = true
 id = "partage_retirer"
 libelle = "Retirer un lien de partage"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un lien de mon compte"]
 preuve = "le lien ne sert plus rien"
 retour = "remettre le lien tel qu'il était"
@@ -319,6 +365,7 @@ qui = ["anonyme"]
 id = "signal_jour"
 libelle = "Mes notes à relire, pour le bureau du jour"
 risque = "lecture"
+droit = "utiliser"
 
 [[signaux]]
 id = "relectures"

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : journal
 # ZONE       : CN
-# VERSION CN : 0.1.1  #e570ba
+# VERSION CN : 0.1.1  #b5392e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le journal des agents (les consultations entre les trois rôles — claude, itare, cassandra — inscrites avec la question et la réponse) et le lecteur unifié des journaux : les tables des modules, les fichiers du système, un flux fusionné, une ligne du temps, les anomalies jamais vues et les veilles sur motif. Cloisonné en lecture : on ne lit que ce qui existe.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=e570ba ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=b5392e ▼▼▼
 [module]
 id = "journal"
 nom = "Le Journal"
@@ -23,6 +23,16 @@ confiance = "interne"
 famille = "supervision"
 importance = "optionnel"
 sans = "Plus de journal des agents ni de lecteur unifié des journaux ; rien n'est perdu côté machine."
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Le Journal : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Le Journal : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "consultation"
@@ -42,71 +52,85 @@ defaut = true
 id = "sources"
 libelle = "Les journaux disponibles, avec leur volume et leur disponibilité (un journal absent est rendu comme tel : le silence d'une source est une information)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "lire"
 libelle = "Le contenu d'un journal, paginé et filtrable (par terme, depuis une date)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "chercher"
 libelle = "Chercher le même terme dans tous les journaux à la fois"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "flux"
 libelle = "Le flux unifié : les sources choisies, fusionnées et triées par date, filtrées par niveau, acteur ou terme, équilibrées par source"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "flux_recent"
 libelle = "Les derniers événements notables du flux, sans le bruit (pour la tuile du Journal)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "resume"
 libelle = "Ce qui s'est passé : une phrase et des comptes par niveau, sans ouvrir le flux brut"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "silences"
 libelle = "Les journaux qui se taisent : le rythme habituel est l'écart médian, un silence de plus de trois fois cet écart est signalé"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "timeline"
 libelle = "Tout ce qui s'est écrit autour d'un instant, tous journaux confondus"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "stats"
 libelle = "Le poids de chaque journal (lignes et octets) : un journal qui enfle finit par gêner le disque"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "veilles"
 libelle = "Les veilles sur motif posées sur les journaux"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "agents_lire"
 libelle = "Les dernières consultations du journal des agents, réponse rognée par défaut (entier pour une ligne précise)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "fil"
 libelle = "Le fil des agents, dans l'ordre où il s'est dit (du plus ancien au plus récent)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "prompt"
 libelle = "Le fil des agents en quelques lignes, pour un prompt système (court : de quoi reconnaître un sujet déjà traité)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "agents_ecrire"
 libelle = "Inscrire une consultation au journal des agents : la question AVEC la réponse, le dossier et le modèle qui a répondu"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une ligne du journal des agents de ce module"]
 preuve = "la ligne existe"
 retour = "supprimer la ligne"
@@ -117,6 +141,7 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "agents_dire"
 libelle = "Parler au fil commun : l'auteur n'est jamais un paramètre libre (chacun parle sous le sien, sinon « inconnu »)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une ligne du journal des agents de ce module"]
 preuve = "la ligne existe"
 retour = "supprimer la ligne"
@@ -127,6 +152,7 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "veille_poser"
 libelle = "Poser ou modifier une veille sur motif (une expression régulière cherchée dans les journaux)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["la table des veilles de ce module"]
 preuve = "la veille existe"
 retour = "retirer la veille"
@@ -136,6 +162,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "veille_retirer"
 libelle = "Retirer une veille sur motif"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["la table des veilles de ce module"]
 preuve = "la veille n'existe plus"
 retour = "remettre la veille"
@@ -145,6 +172,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "exporter"
 libelle = "Exporter un journal filtré (texte, CSV ou JSON)"
 risque = "lecture"
+droit = "utiliser"
 
 [[ecrans]]
 id = "vue_journal"
@@ -159,6 +187,7 @@ libelle = "Le Journal"
 ecran = "vue_journal"
 ordre = 6
 icone = "journal"
+droit = "utiliser"
 
 [[widgets]]
 id = "resume"

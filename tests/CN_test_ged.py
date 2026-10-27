@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #329060
+# VERSION CN : 0.1.0  #292f75
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la GED : cloisonnement des racines, dépôt, listage, fiche, corbeille réversible, règles de classement.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=329060 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=292f75 ▼▼▼
 """Bancs de la GED : cloisonnement des racines, dépôt, listage, fiche, corbeille réversible, règles de classement."""
 import importlib.util
 import os
@@ -122,6 +122,26 @@ class Monde(unittest.TestCase):
         # idempotent : le second appel ne re-déclare pas
         r2 = self.s("dossier_creer", compte=BEA)
         self.assertEqual(r2["declaree"], False)
+
+    # ── le grand répertoire de la société ────────────────────────────────────
+    def test_le_dossier_d_un_utilisateur_vit_dans_le_repertoire_de_sa_societe(self):
+        r = self.s("dossier_creer", compte=BEA)
+        self.assertEqual(Path(r["dossier"]).parent, self.docs / "1")                  # BEA est de la société principale
+        self.n.identite.societe_creer("Autre société", "autre")
+        self.n.identite.creer(LEO, "Essai-Local-1234", societe="autre")
+        r2 = self.s("dossier_creer", compte=LEO)
+        self.assertEqual(Path(r2["dossier"]).parent, self.docs / "autre")             # LEO, d'une autre : dans le grand répertoire de la sienne
+
+    def test_les_anciens_dossiers_entrent_dans_la_societe_principale_une_seule_fois(self):
+        (self.docs / "ancien-compte").mkdir(parents=True)
+        (self.docs / "ancien-compte" / "a.txt").write_text("avant les sociétés", encoding="utf-8")
+        (self.docs / "_public").mkdir()
+        self.s("sources", compte=BEA)                                                  # le premier accès range l'existant
+        self.assertTrue((self.docs / "1" / "ancien-compte" / "a.txt").is_file())
+        self.assertTrue((self.docs / "1" / "_public").is_dir())
+        self.assertFalse((self.docs / "ancien-compte").exists())
+        self.s("sources", compte=BEA)                                                  # et ne recommence pas
+        self.assertTrue((self.docs / "1" / "ancien-compte" / "a.txt").is_file())
 
     # ── dépôt, listage, fiche ────────────────────────────────────────────────
     def test_deposer_lister_et_fiche(self):

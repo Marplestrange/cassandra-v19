@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : canvas
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9355b2
+# VERSION CN : 0.1.0  #81a3f7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le canvas de notes : les départs (des gabarits de note), les gestes de rédaction, et le plan (les cartes et les flèches d'une note). La règle : il propose, l'écran montre, la personne décide — rien n'écrit sans elle. Différé : les appels au modèle (amorcer, retoucher, cartes tirées des sources) et la section vivante.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9355b2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=81a3f7 ▼▼▼
 [module]
 id = "canvas"
 nom = "Canvas"
@@ -23,6 +23,16 @@ confiance = "interne"
 famille = "gestion"
 importance = "optionnel"
 sans = "Plus de canvas de notes : les départs et le plan des notes ne sont plus proposés ; les notes restent lisibles."
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Canvas : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Canvas : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "plan_canvas"
@@ -35,21 +45,25 @@ stockage = true
 id = "departs"
 libelle = "Les départs : les gabarits de note, avec leur plan, leurs sources et ce qu'ils demandent"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "gestes"
 libelle = "Les gestes de rédaction : reformuler, resserrer, développer, continuer, résumer"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "plan_lire"
 libelle = "Le plan d'une note (cartes et flèches), ou un plan vide — l'absence n'est pas une erreur"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "plan_ecrire"
 libelle = "Ranger le plan d'une note : on garde ce qu'on ne comprend pas, ce qu'on jette est dit ; un plan vide efface"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le plan d'une note"]
 preuve = "le plan relu"
 retour = "remettre le plan d'avant"

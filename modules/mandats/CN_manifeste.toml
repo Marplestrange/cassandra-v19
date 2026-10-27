@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : mandats
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8a28e0
+# VERSION CN : 0.1.0  #38b621
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les mandats d'envoi : l'autorisation d'envoyer, avec ses bornes (à qui, quand, combien, sous quel contrôle). La règle d'or : l'adresse ne vient JAMAIS de la demande. Différé : la résolution du destinataire et l'envoi réel (dépendent du courrier et des contacts).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8a28e0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=38b621 ▼▼▼
 [module]
 id = "mandats"
 nom = "Mandats"
@@ -23,6 +23,16 @@ confiance = "interne"
 famille = "echanges"
 importance = "important"
 sans = "Les agents ne peuvent plus envoyer de messages : plus de mandat pour les y autoriser."
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Mandats : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Mandats : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "mandat"
@@ -35,21 +45,25 @@ stockage = true
 id = "mandats"
 libelle = "Les mandats d'envoi"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "plan"
 libelle = "Un mandat tel qu'il se lit à voix haute : quand, à qui, quoi, sous quel contrôle, dans quelles limites"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "envois"
 libelle = "Le journal des envois : ce qui est parti (ou pas), et pourquoi"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "save"
 libelle = "Créer ou modifier un mandat (au moins un déclencheur, une source de destinataire connue, des variables déclarées — une adresse libre impose l'accord requis)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un mandat d'envoi"]
 preuve = "le mandat relu"
 retour = "remettre le mandat d'avant (ou le retirer si neuf)"
@@ -59,6 +73,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "delete"
 libelle = "Supprimer un mandat (le journal des envois survit)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un mandat d'envoi"]
 preuve = "le mandat n'existe plus"
 retour = "remettre le mandat"
@@ -68,6 +83,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "suspendre"
 libelle = "Suspendre ou reprendre un mandat"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["la suspension d'un mandat"]
 preuve = "la suspension relue"
 retour = "remettre la suspension d'avant"

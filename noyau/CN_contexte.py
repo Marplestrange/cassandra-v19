@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #985a97
+# VERSION CN : 0.1.0  #056804
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=985a97 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=056804 ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire
@@ -42,6 +42,10 @@ class _Acteur(threading.local):
     valeur = ""
 
 
+class _Societe(threading.local):
+    valeur = ""
+
+
 class Contexte:
     def __init__(self, manifeste, bus, registre, catalogue, detecteurs, config=None, moteurs=None, introspection=None):
         self.manifeste = manifeste
@@ -54,8 +58,25 @@ class Contexte:
         self._cause = _Fil()
         self._compte = _Compte()
         self._acteur = _Acteur()
+        self._societe = _Societe()
 
     TOUT = "*"   # la portée des agents (voir CN_bus.py) : un module la passe explicitement, jamais par défaut
+
+    @property
+    def societe(self) -> str:
+        """La société dans laquelle la capacité en cours s'exécute : celle du compte, ou celle qu'il a choisie parmi les siennes ('' = infrastructure).
+        PAR FIL, comme le compte : jamais un global."""
+        return self._societe.valeur
+
+    def societe_de(self, compte: str) -> str:
+        """La société de rattachement d'un compte (la principale si on ne la connaît pas). Une métadonnée : aucune permission à demander."""
+        f = self._intro.get("societe_de")
+        return (f(compte) if f else "") or "1"
+
+    def societes(self) -> list:
+        """Les identifiants des sociétés de l'instance (archivées comprises)."""
+        f = self._intro.get("societes")
+        return list(f()) if f else ["1"]
 
     @property
     def compte(self) -> str:
@@ -210,6 +231,23 @@ class Contexte:
         if not self.manifeste.permissions.espace_utilisateur:
             raise PermissionError("le module « %s » n'a pas demandé l'espace des utilisateurs ([permissions] espace_utilisateur)" % self.module)
         return chemins.espace_utilisateur(utilisateur, self.module, creer=creer)
+
+    def espace_societe(self, societe: str = "", creer: bool = True):
+        """Ce que toute une société partage pour ce module : <sociétés>/<société>/commun/<module> (par défaut, la société active)."""
+        if not self.manifeste.permissions.espace_utilisateur:
+            raise PermissionError("le module « %s » n'a pas demandé l'espace des utilisateurs ([permissions] espace_utilisateur)" % self.module)
+        return chemins.espace_societe(societe or self.societe or "1", self.module, creer=creer)
+
+    def espace_compte(self, compte: str = "", creer: bool = True):
+        """L'espace d'un utilisateur POUR CE MODULE, dans le grand répertoire de sa société : <sociétés>/<société>/utilisateurs/<compte>/<module>.
+        Tout utilisateur a une société : ses répertoires et ses documents ne vivent jamais hors d'elle."""
+        if not self.manifeste.permissions.espace_utilisateur:
+            raise PermissionError("le module « %s » n'a pas demandé l'espace des utilisateurs ([permissions] espace_utilisateur)" % self.module)
+        c = (compte or self.compte or "").strip()
+        if not c:
+            raise ValueError("aucun compte : un espace est toujours celui de quelqu'un")
+        soc = self._intro["societe_de"](c) if "societe_de" in self._intro else (self.societe or "1")
+        return chemins.espace_compte(soc, c, self.module, creer=creer)
 
     # ---- événements ----
     def emettre(self, type: str, objet=None, donnees=None, cause=None, acteur: str = "module", compte=None) -> int:

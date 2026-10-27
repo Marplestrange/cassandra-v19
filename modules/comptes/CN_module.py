@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : comptes
 # ZONE       : CN
-# VERSION CN : 0.5.0  #49b542
+# VERSION CN : 0.5.0  #70ba52
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=49b542 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=70ba52 ▼▼▼
 """Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
 
 Règle de la V18 gardée : le compte d'une action de session n'est JAMAIS un paramètre libre. C'est `ctx.compte`, le compte au nom duquel
@@ -33,16 +33,32 @@ def brancher(ctx):
             raise ValueError(r.get("error", "refusé"))
         return r
 
+    # ---- le cloisonnement par société : seul le superadministrateur voit et administre les comptes de toutes les sociétés ----
+    def _large(ctx):
+        return not ctx.compte or ctx.compte == "operateur" or idt.est_superadmin(ctx.compte)
+
+    def _meme_societe(ctx, cible):
+        """Un administrateur de société n'agit que sur les comptes de SA société. Un refus ne dit pas si le compte existe."""
+        if _large(ctx):
+            return
+        if idt.societe_de(str(cible or "").strip().lower()) != (ctx.societe or idt.societe_de(ctx.compte)) or not idt.existe(str(cible or "").strip().lower()):
+            raise ValueError("Ce compte n'est pas dans votre société")
+
     # ---- lectures ----
     def moi(ctx):
         c = moi_ou_erreur(ctx)
         return idt.lire(c)
 
     def lire(ctx, compte=""):
+        _meme_societe(ctx, compte)
         return idt.lire(compte)
 
     def lister(ctx):
-        return {"comptes": idt.lister()}
+        tous = idt.lister()
+        if not _large(ctx):
+            soc = ctx.societe or idt.societe_de(ctx.compte)
+            tous = [c for c in tous if c.get("societe", "1") == soc]
+        return {"comptes": tous}
 
     def corbeille(ctx):
         return {"corbeille": idt.corbeille()}
@@ -58,12 +74,19 @@ def brancher(ctx):
         return {"sessions": idt.sessions(moi_ou_erreur(ctx), courant)}
 
     # ---- créer ----
-    def creer(ctx, compte="", mot_de_passe="", sites=None, superadmin=False, unix_user="", **profil):
+    def creer(ctx, compte="", mot_de_passe="", sites=None, superadmin=False, unix_user="", societe="", **profil):
+        # Tout compte appartient à une société. Sans précision : celle dans laquelle on agit (la principale sinon). Choisir une AUTRE société que la sienne
+        # est réservé au superadministrateur : l'administrateur d'une société n'ajoute des utilisateurs que chez lui.
+        societe = (societe or "").strip()
+        if societe and ctx.compte and societe != (ctx.societe or "1") and not idt.est_superadmin(ctx.compte) and ctx.compte != "operateur":
+            raise ValueError("Seul le superadministrateur range un compte dans une autre société que la sienne")
+        if not societe:
+            societe = ctx.societe or ""
         if superadmin:
             moi = idt.lire(ctx.compte) if ctx.compte else None
             if ctx.compte != "operateur" and not (moi and moi["superadmin"]):
                 raise ValueError("Seul un superadministrateur (ou l'opérateur local) crée un superadministrateur")
-        r = idt.creer(compte, mot_de_passe, sites, bool(superadmin), unix_user, **profil)
+        r = idt.creer(compte, mot_de_passe, sites, bool(superadmin), unix_user, societe=societe, **profil)
         ctx.emettre("compte.cree", objet=("compte", (compte or "").strip().lower()), donnees={"admin": r.get("admin"), "ok": r["ok"]}) if r["ok"] else None
         if not r["ok"]:
             raise ValueError(r["error"])
@@ -71,6 +94,35 @@ def brancher(ctx):
 
     def prouver_creer(ctx, res):
         return idt.existe(res["compte"])
+
+    def transferer(ctx, compte="", societe=""):
+        """Rattache un compte à une autre société. Réservé au superadministrateur. Les fonctions qu'il tenait dans son ancienne société tombent."""
+        if ctx.compte and ctx.compte != "operateur" and not idt.est_superadmin(ctx.compte):
+            raise ValueError("Seul le superadministrateur change un compte de société")
+        cible = str(compte or "").strip().lower()
+        if not idt.existe(cible):
+            raise ValueError("compte inconnu")
+        soc = idt.societe_valide(societe)
+        if soc is None:
+            raise ValueError("Société inconnue ou archivée : tout compte appartient à une société")
+        avant = idt.societe_de(cible)
+        if avant == soc:
+            raise ValueError("ce compte est déjà dans cette société")
+        retires = [g["groupe"] for g in idt.droits.tous_groupes_de(cible) if g["societe"] == avant]
+        for g in retires:
+            idt.droits.regler_membre(cible, g, False)
+        import time
+        idt.base.ecrire("UPDATE comptes SET societe=?, maj=? WHERE compte=?", (soc, time.time(), cible))
+        return {"compte": cible, "avant": avant, "apres": soc, "retires": retires}
+
+    def prouver_transferer(ctx, res):
+        return idt.societe_de(res["compte"]) == res["apres"]
+
+    def defaire_transferer(ctx, res):
+        idt.base.ecrire("UPDATE comptes SET societe=? WHERE compte=?", (res["avant"], res["compte"]))
+        for g in res.get("retires", []):
+            if idt.droits.groupe(g):
+                idt.droits.regler_membre(res["compte"], g, True)
 
     def defaire_creer(ctx, res):
         idt.base.ecrire("DELETE FROM comptes WHERE compte=?", (res["compte"],))
@@ -106,6 +158,7 @@ def brancher(ctx):
 
     # ---- modifier ----
     def modifier(ctx, compte="", sites=None, **profil):
+        _meme_societe(ctx, compte)
         r = ok_ou_erreur(idt.modifier(compte, sites, **profil))
         ctx.emettre("compte.modifie", objet=("compte", compte.strip().lower()), donnees={"champs": sorted(profil) + (["sites"] if sites is not None else [])})
         return {"compte": compte.strip().lower(), "avant": r["avant"], "apres": r["apres"]}
@@ -144,6 +197,7 @@ def brancher(ctx):
         idt.poser_hash(res["compte"], res["ancien_hash"])
 
     def creer_jeton(ctx, compte="", heures=72):
+        _meme_societe(ctx, compte)
         r = ok_ou_erreur(idt.jeton_creer(compte, int(heures)))
         return {"compte": r["compte"], "jeton": r["jeton"]}
 
@@ -161,6 +215,7 @@ def brancher(ctx):
 
     # ---- supprimer, restaurer ----
     def supprimer(ctx, compte=""):
+        _meme_societe(ctx, compte)
         r = ok_ou_erreur(idt.supprimer(compte))
         ctx.emettre("compte.supprime", objet=("compte", compte.strip().lower()), donnees={"corbeille": r["corbeille"]})
         return {"compte": compte.strip().lower(), "corbeille": r["corbeille"]}
@@ -170,6 +225,34 @@ def brancher(ctx):
 
     def defaire_supprimer(ctx, res):
         ok_ou_erreur(idt.restaurer(res["corbeille"]))
+
+    # ---- désactiver, réactiver : le départ d'un utilisateur, sans rien supprimer ----
+    def desactiver(ctx, compte="", vers="", agents="revoquer"):
+        _meme_societe(ctx, compte)
+        compte = compte.strip().lower()
+        r = ok_ou_erreur(idt.desactiver(compte, vers, agents))
+        ctx.emettre("compte.desactive", objet=("compte", compte),
+                    donnees={"vers": r["vers"], "agents": r["agents"], "agents_touches": len(r["agents_touches"]), "sites": len(r["sites_avant"])})
+        return dict(r, compte=compte)
+
+    def prouver_desactiver(ctx, res):
+        return idt.desactive(res["compte"])
+
+    def defaire_desactiver(ctx, res):
+        idt.restituer_depart(res["compte"], res)
+
+    def reactiver(ctx, compte=""):
+        _meme_societe(ctx, compte)
+        compte = compte.strip().lower()
+        ok_ou_erreur(idt.reactiver(compte))
+        ctx.emettre("compte.reactive", objet=("compte", compte), donnees={})
+        return {"compte": compte}
+
+    def prouver_reactiver(ctx, res):
+        return not idt.desactive(res["compte"])
+
+    def defaire_reactiver(ctx, res):
+        idt.desactiver(res["compte"])
 
     def restaurer(ctx, corbeille=0):
         r = ok_ou_erreur(idt.restaurer(int(corbeille)))
@@ -234,6 +317,7 @@ def brancher(ctx):
                    ("valider_session", valider_session), ("mes_sessions", mes_sessions)):
         ctx.implementer(nom, f)
     ctx.implementer("creer", creer, prouver_creer, defaire_creer)
+    ctx.implementer("transferer", transferer, prouver_transferer, defaire_transferer)
     ctx.implementer("inviter_agent", inviter_agent, prouver_invitation, defaire_invitation)
     ctx.implementer("revoquer_agent", revoquer_agent, prouver_revocation, lambda ctx, res: None)
     ctx.implementer("mes_agents", mes_agents)
@@ -244,6 +328,8 @@ def brancher(ctx):
     ctx.implementer("creer_jeton", creer_jeton, prouver_jeton, defaire_jeton)
     ctx.implementer("reinitialiser_mot_de_passe", reinitialiser, prouver_mdp, defaire_mdp)
     ctx.implementer("supprimer", supprimer, prouver_supprimer, defaire_supprimer)
+    ctx.implementer("desactiver", desactiver, prouver_desactiver, defaire_desactiver)
+    ctx.implementer("reactiver", reactiver, prouver_reactiver, defaire_reactiver)
     ctx.implementer("restaurer", restaurer, prouver_restaurer, defaire_restaurer)
     ctx.implementer("ouvrir_session", ouvrir_session, prouver_ouvrir, defaire_ouvrir)
     ctx.implementer("fermer_session", fermer_session, prouver_fermer, lambda ctx, res: None)

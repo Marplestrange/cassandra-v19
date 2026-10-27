@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : canaux
 # ZONE       : CN
-# VERSION CN : 0.1.0  #10cf54
+# VERSION CN : 0.1.0  #4892a6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les canaux Telegram : l'état du client et le miroir (porter ses conversations sur Telegram, par compte). Le miroir est ÉTEINT PAR DÉFAUT, délibérément : relier Telegram pour recevoir des alertes n'est pas consentir à y voir surgir ses conversations. Différé : la connexion MTProto/Telethon et la session (qui ne vit QUE dans le coffre), l'envoi et la réception.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=10cf54 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4892a6 ▼▼▼
 [module]
 id = "canaux"
 nom = "Canaux"
@@ -23,6 +23,16 @@ confiance = "interne"
 famille = "canaux"
 importance = "optionnel"
 sans = "Plus de miroir des conversations sur Telegram ; l'état du client n'est plus suivi."
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Canaux : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Canaux : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "canal_pref"
@@ -45,21 +55,25 @@ retrait = "CN_retirer.sh"
 id = "connecter"
 libelle = "Connecter le compte Telegram et rendre l'identifiant (la session ne vit que le temps de la connexion)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "etat"
 libelle = "L'état du canal : le client est-il connecté, et le miroir est-il allumé pour ce compte"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "miroir"
 libelle = "Le miroir de ce compte est-il allumé (éteint par défaut)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "miroir_ecrire"
 libelle = "Allumer ou éteindre le miroir pour ce compte"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le miroir du compte"]
 preuve = "le miroir relu"
 retour = "remettre le miroir d'avant"

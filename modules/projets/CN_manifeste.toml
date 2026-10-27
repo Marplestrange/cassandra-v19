@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : projets
 # ZONE       : CN
-# VERSION CN : 0.1.1  #abf761
+# VERSION CN : 0.1.1  #356458
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les projets d'un compte : fiche (objectif, périmètre, critères de réussite), phases, jalons, décisions, journal daté, plan de référence qui rend visible le glissement, équipe avec rôles (lecteur, auteur, co-propriétaire) et invitations, archive, corbeille. Un projet appartient à son propriétaire ; l'administrateur n'y a pas accès (administrer n'est pas voir). Les tâches, elles, restent à la personne (module des tâches) : un projet supprimé ne les emporte pas.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=abf761 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=356458 ▼▼▼
 [module]
 id = "projets"
 nom = "Projets"
@@ -25,6 +25,16 @@ importance = "optionnel"
 sans = "Plus de gestion de projets : fiches, phases et jalons ne sont plus accessibles ; ils restent enregistrés."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Projets : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Projets : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "projet"
@@ -43,42 +53,50 @@ frequence_s = 3600
 id = "modeles"
 libelle = "Les modèles de projet (phases posées à la création)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "lister"
 libelle = "Mes projets (les miens et ceux où je suis membre actif), avec leurs comptes de phases et de jalons"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "voir"
 libelle = "Un projet entier : fiche, phases, jalons, décisions, équipe, journal, avancement, glissement"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "trouver"
 libelle = "Retrouver un de mes projets par son nom (insensible à la casse, partiel toléré)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "equipe"
 libelle = "Le propriétaire et les membres d'un projet, avec mon rôle"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "invitations"
 libelle = "Les invitations en attente pour mon compte"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "corbeille"
 libelle = "Mes projets à la corbeille"
 risque = "lecture"
+droit = "utiliser"
 
 # ------------------------------------------------------------------ fiche
 [[capacites]]
 id = "creer"
 libelle = "Créer un projet (les phases du modèle sont posées, modifiables ensuite)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le compte qui agit en est propriétaire", "un nom obligatoire"]
 preuve = "relire le projet : nom et phases du modèle conformes"
 retour = "supprimer le projet que cet acte vient de créer, et lui seul"
@@ -89,6 +107,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "modifier"
 libelle = "Modifier la fiche d'un projet en patch (un champ non fourni n'est pas touché)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un projet où mon rôle permet de modifier la fiche (co-propriétaire au moins)"]
 preuve = "relire la fiche et comparer chaque champ écrit"
 retour = "remettre la fiche telle qu'elle était, relevée juste avant"
@@ -99,6 +118,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "noter"
 libelle = "Ajouter une ligne datée au journal du projet"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un projet où mon rôle permet d'écrire (auteur au moins), non archivé"]
 preuve = "la ligne figure en dernier au journal"
 retour = "remettre le journal tel qu'il était"
@@ -109,6 +129,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "archiver"
 libelle = "Archiver un projet, ou le rouvrir (un projet archivé n'accepte plus d'écriture)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un projet où mon rôle permet de modifier la fiche"]
 preuve = "l'état d'archive est celui demandé"
 retour = "remettre l'état d'archive d'avant"
@@ -119,6 +140,7 @@ qui = ["humain", "compte"]
 id = "supprimer"
 libelle = "Mettre un projet à la corbeille (phases, jalons, décisions et équipe restent ; les tâches ne sont pas touchées)"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["un projet dont je suis propriétaire"]
 preuve = "le projet est à la corbeille"
 retour = "sortir le projet de la corbeille"
@@ -129,6 +151,7 @@ qui = ["humain", "compte"]
 id = "restaurer"
 libelle = "Sortir un projet de la corbeille, sous son numéro, avec tout ce qu'il portait"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un projet de ma corbeille"]
 preuve = "le projet n'est plus à la corbeille"
 retour = "le remettre à la corbeille"
@@ -139,6 +162,7 @@ qui = ["humain", "compte"]
 id = "purger"
 libelle = "Effacer pour de bon un projet de ma corbeille"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["un projet de ma corbeille, propriétaire"]
 preuve = "le projet et ses lignes n'existent plus"
 retour = "recréer le projet et ses lignes depuis la copie gardée dans le résultat de l'acte"
@@ -150,6 +174,7 @@ qui = ["humain", "compte"]
 id = "phase_enregistrer"
 libelle = "Créer ou modifier une phase"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un projet où je peux écrire", "un état parmi À venir, En cours, Terminée, Suspendue"]
 preuve = "relire la phase"
 retour = "supprimer la phase créée, ou remettre l'ancienne"
@@ -160,6 +185,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "phase_supprimer"
 libelle = "Supprimer une phase"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un projet où je peux écrire"]
 preuve = "la phase n'existe plus"
 retour = "recréer la phase supprimée"
@@ -170,6 +196,7 @@ qui = ["humain", "compte"]
 id = "jalon_enregistrer"
 libelle = "Créer ou modifier un jalon (une date qui ne bouge pas)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un projet où je peux écrire", "une date AAAA-MM-JJ ou vide"]
 preuve = "relire le jalon"
 retour = "supprimer le jalon créé, ou remettre l'ancien"
@@ -180,6 +207,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "jalon_supprimer"
 libelle = "Supprimer un jalon"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un projet où je peux écrire"]
 preuve = "le jalon n'existe plus"
 retour = "recréer le jalon supprimé"
@@ -190,6 +218,7 @@ qui = ["humain", "compte"]
 id = "decision_enregistrer"
 libelle = "Poser une question à trancher, ou la modifier, ou la trancher"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un projet où je peux écrire"]
 preuve = "relire la décision"
 retour = "supprimer la décision créée, ou remettre l'ancienne"
@@ -200,6 +229,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "decision_supprimer"
 libelle = "Supprimer une décision"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un projet où je peux écrire"]
 preuve = "la décision n'existe plus"
 retour = "recréer la décision supprimée"
@@ -210,6 +240,7 @@ qui = ["humain", "compte"]
 id = "refiger"
 libelle = "Figer le plan de référence (l'ancien part au journal : sans cette trace, un projet qui glisse par petits décalages paraît toujours à l'heure)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un projet où mon rôle permet de modifier la fiche"]
 preuve = "les dates de référence égalent les dates courantes"
 retour = "remettre les anciennes dates de référence et l'ancien journal"
@@ -221,6 +252,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "inviter"
 libelle = "Inviter un compte dans le projet avec un rôle (lecteur, auteur, co-propriétaire), ou changer son rôle"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un projet où je gère l'équipe (co-propriétaire au moins)", "un compte existant"]
 preuve = "relire le membre : compte et rôle conformes"
 retour = "retirer l'invitation, ou remettre l'ancien rôle"
@@ -231,6 +263,7 @@ qui = ["humain", "compte"]
 id = "repondre_invitation"
 libelle = "Accepter ou décliner une invitation"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une invitation faite à mon compte"]
 preuve = "l'état du membre est celui demandé"
 retour = "remettre l'invitation en attente"
@@ -241,6 +274,7 @@ qui = ["humain", "compte"]
 id = "retirer_membre"
 libelle = "Retirer un membre (ou me retirer moi-même)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un projet où je gère l'équipe, ou moi-même"]
 preuve = "le compte n'est plus membre"
 retour = "remettre le membre avec son rôle d'avant"
@@ -251,11 +285,13 @@ qui = ["humain", "compte"]
 id = "contexte"
 libelle = "L'appel unique d'une fiche : en-tête, plan, étapes, décisions, tâches, rendez-vous, journal, santé (cinq signaux, les muets rendus tels quels), équipe"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "portefeuille"
 libelle = "Mes projets avec la santé et l'avancement de chacun, pour trier par ce qui réclame un geste"
 risque = "lecture"
+droit = "utiliser"
 
 [permissions]
 stockage = true

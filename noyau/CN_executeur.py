@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1cde56
+# VERSION CN : 0.1.0  #8ebd69
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1cde56 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ebd69 ▼▼▼
 """L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 
 Le contrat de souveraineté tient ici, en un seul endroit :
@@ -58,7 +58,7 @@ class Executeur:
     def _evt(self, type, e, acteur, cause, donnees=None, compte=""):
         return self.bus.emettre(type, source=e.module, acteur=acteur, objet=("capacite", e.cle), cause=cause, donnees=donnees or {}, compte=compte)
 
-    def executer(self, cle: str, acteur: str, args=None, cause=None, essai: bool = False, compte: str = "", interne: bool = False) -> dict:
+    def executer(self, cle: str, acteur: str, args=None, cause=None, essai: bool = False, compte: str = "", interne: bool = False, societe: str = "") -> dict:
         """`interne` : réservé au code du noyau lui-même (détecteurs, lectures d'un module pour un autre, reprise). Aucune entrée extérieure ne le pose."""
         args = dict(args or {})
         e = self.catalogue.get(cle)
@@ -83,9 +83,19 @@ class Executeur:
             return {"statut": "refuse", "raison": "le module « %s » est désactivé" % e.module}
         if not e.implementee:
             return {"statut": "refuse", "raison": "capacité déclarée mais pas encore portée : %s" % cle}
+        # La société dans laquelle on agit : celle du compte, ou celle qu'il demande si elle est bien l'une des siennes. Un compte ne passe jamais dans une société
+        # qui n'est pas la sienne ; le superadministrateur, lui, peut les administrer toutes.
+        soc = ""
+        if compte and self.identite is not None:
+            soc = self.identite.societe_de(compte)
+            if societe and societe != soc:
+                if not self.identite.peut_agir_dans(compte, societe):
+                    self._evt("capacite.refusee", e, acteur, cause, {"raison": "société non accessible", "societe": societe}, compte)
+                    return {"statut": "refuse", "raison": "le compte « %s » n'a pas accès à la société « %s »" % (compte, societe)}
+                soc = societe
         if compte and c.droit and self.droits is not None:
             # quel que soit l'acteur : Itare ou Cassandra qui agissent AU NOM d'un compte n'ont pas plus de droits que lui
-            d = self.droits.raison(compte, c.droit)
+            d = self.droits.raison(compte, c.droit, soc)
             if not d["accord"]:
                 self._evt("capacite.refusee", e, acteur, cause, {"raison": "droit manquant", "droit": c.droit, "parce": d["parce"]}, compte)
                 return {"statut": "refuse", "raison": "le compte « %s » n'a pas le droit « %s » (%s)" % (compte, c.droit, d["parce"]), "droit": c.droit}
@@ -105,7 +115,7 @@ class Executeur:
         demande = self._evt("capacite.demandee", e, acteur, cause, {"args": self._masquer(args, c.masque), "essai": essai}, compte)
         ctx = self.contextes.get(e.module)
         if ctx is not None:
-            ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur = demande, compte, acteur
+            ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur, ctx._societe.valeur = demande, compte, acteur, soc
         try:
             if not c.ecrit:
                 try:
@@ -130,7 +140,7 @@ class Executeur:
             return self._ecrire(e, acteur, args, demande, ctx, compte)
         finally:
             if ctx is not None:
-                ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur = None, "", ""
+                ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur, ctx._societe.valeur = None, "", "", ""
 
     def _ecrire(self, e, acteur, args, demande, ctx, compte) -> dict:
         humain = acteur == "humain"

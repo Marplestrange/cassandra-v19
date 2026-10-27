@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.2  #abef88
+# VERSION CN : 0.1.2  #4e5215
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La boîte mail de chaque compte, par IMAP : dossiers, messages (cache des en-têtes et du texte des trois derniers mois), lecture avec un HTML nettoyé par liste blanche (rien ne s'exécute, aucune image distante n'est chargée sans accord), gestes réversibles (lu, suivi, déplacer, archiver, corbeille, copier, dossiers), brouillons, et envoi par SMTP réservé à un humain. Les identifiants sont des réglages secrets PAR COMPTE, chiffrés : une boîte appartient à une personne, jamais au serveur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=abef88 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=4e5215 ▼▼▼
 [module]
 id = "courrier"
 nom = "Courrier"
@@ -25,6 +25,16 @@ importance = "important"
 sans = "Plus de lecture ni de brouillon de courrier, et les alertes de courrier s'arrêtent."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Courrier : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Courrier : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "courrier"
@@ -136,45 +146,53 @@ frequence_s = 300
 id = "etat"
 libelle = "Ma boîte sans toucher au serveur : compteurs par dossier, derniers non lus, dernière passe"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "tester_boite"
 libelle = "Éprouver la connexion à ma boîte"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "dossiers"
 libelle = "Mes dossiers, avec leur rôle (réception, envoyés, corbeille, brouillons, archive) et leurs compteurs"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "lister"
 libelle = "Les messages d'un dossier, par page, avec recherche par le serveur et classement (à traiter, en attente, technique)"
 risque = "lecture"
+droit = "utiliser"
 externe = true
 
 [[capacites]]
 id = "lire"
 libelle = "Lire un message (texte, HTML nettoyé, pièces jointes) sans le marquer lu"
 risque = "lecture"
+droit = "utiliser"
 externe = true
 
 [[capacites]]
 id = "piece"
 libelle = "Le contenu d'une pièce jointe (25 Mo au plus)"
 risque = "lecture"
+droit = "utiliser"
 externe = true
 
 [[capacites]]
 id = "envoyes"
 libelle = "Le journal de mes envois"
 risque = "lecture"
+droit = "utiliser"
 
 # ------------------------------------------------------------------ gestes
 [[capacites]]
 id = "drapeau"
 libelle = "Poser ou retirer un drapeau (lu, suivi, répondu) sur des messages"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["des messages de ma boîte, désignés par des UID numériques"]
 preuve = "relire les drapeaux sur le serveur"
 retour = "remettre chaque message dans l'état où il était"
@@ -185,6 +203,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "deplacer"
 libelle = "Déplacer des messages vers un autre dossier"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["des messages de ma boîte", "un dossier existant"]
 preuve = "les messages (retrouvés par leur Message-ID) sont dans le dossier de destination"
 retour = "ramener les messages dans leur dossier d'origine, retrouvés par leur Message-ID"
@@ -195,6 +214,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "supprimer"
 libelle = "Mettre des messages à la corbeille du serveur (jamais d'effacement définitif)"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["des messages de ma boîte", "la corbeille du serveur, qui doit exister"]
 preuve = "les messages sont dans la corbeille"
 retour = "ramener les messages dans leur dossier d'origine"
@@ -205,6 +225,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "archiver"
 libelle = "Ranger des messages dans l'archive du serveur (le dossier « Archive » est créé au besoin)"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["des messages de ma boîte"]
 preuve = "les messages sont dans l'archive"
 retour = "ramener les messages dans leur dossier d'origine"
@@ -215,6 +236,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "copier"
 libelle = "Copier des messages vers un dossier, sans les retirer de leur source"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["des messages de ma boîte", "un dossier existant"]
 preuve = "les copies sont dans le dossier de destination"
 retour = "retirer les copies de la destination, la source n'est pas touchée"
@@ -225,6 +247,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "dossier_creer"
 libelle = "Créer un dossier"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["ma boîte", "un nom de 120 caractères au plus"]
 preuve = "le dossier figure dans la liste du serveur"
 retour = "supprimer le dossier créé, qui est vide"
@@ -235,6 +258,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "dossier_renommer"
 libelle = "Renommer un dossier (sa sous-arborescence suit)"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["un dossier de ma boîte, hors réception"]
 preuve = "le nouveau nom figure dans la liste du serveur et l'ancien n'y est plus"
 retour = "remettre l'ancien nom"
@@ -245,6 +269,7 @@ qui = ["humain", "compte"]
 id = "brouillon_creer"
 libelle = "Préparer un brouillon dans le dossier des brouillons (rien ne part)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["ma boîte", "20 destinataires au plus"]
 preuve = "le brouillon (retrouvé par son Message-ID) est dans le dossier des brouillons"
 retour = "retirer ce brouillon"
@@ -255,6 +280,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "envoyer"
 libelle = "Envoyer un courriel par mon serveur d'envoi (réservé à un humain : un agent prépare un brouillon)"
 risque = "eleve"
+droit = "administrer"
 perimetre = ["mon propre serveur d'envoi", "20 destinataires au plus", "des adresses valides"]
 preuve = "l'envoi est consigné au journal des envois"
 retour = "aucun : un courriel parti ne se rappelle pas ; d'où le brouillon à relire avant"
@@ -266,6 +292,7 @@ sortant = true
 id = "signal_jour"
 libelle = "Mon courrier non lu, pour le bureau du jour"
 risque = "lecture"
+droit = "utiliser"
 
 [[signaux]]
 id = "courrier"

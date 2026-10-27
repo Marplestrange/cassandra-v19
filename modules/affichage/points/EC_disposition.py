@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.7.0)  #5c9ce6
+# VERSION EC : EC0 (référence 0.7.0)  #b9c64d
 # HÔTE CN    : CN_module.py · disposition @1.0
 # RÔLE       : range les entrées de menu que les modules déclarent en groupes (barre du haut), entrées et sous-entrées (colonne de gauche), et en entrées du menu de l'avatar ; dit le pire niveau d'alerte de chaque entrée, de chaque groupe et du tout.
 # MÉTHODE    : fonction pure : une table de groupes, un repli par famille, un pont vers les onglets de l'ancienne interface ; chaque entrée reçue paraît une seule fois, rien n'est inventé, un groupe sans entrée n'existe pas.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=5c9ce6 ▼▼▼
+# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=b9c64d ▼▼▼
 
 # Les groupes de la barre du haut : (id, libellé, icône, ordre, interlocuteur par défaut du panneau).
 GROUPES = (

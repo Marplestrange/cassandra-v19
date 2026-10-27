@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agenda
 # ZONE       : CN
-# VERSION CN : 0.1.2  #6b9e42
+# VERSION CN : 0.1.2  #bd5a9c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'agenda d'un compte : événements (récurrences, alarme, liens vers ce qu'ils concernent, journal, préparation), rappels, import et export iCalendar, lecture de son serveur CalDAV, et la vue temporelle unique qui rassemble événements, tâches datées, rappels et jalons des projets. Il est à la personne : l'administrateur ne le voit pas.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=6b9e42 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=bd5a9c ▼▼▼
 [module]
 id = "agenda"
 nom = "Agenda"
@@ -25,6 +25,16 @@ importance = "important"
 sans = "Plus d'agenda : ni rendez-vous, ni rappels d'événements, ni alarmes."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Agenda : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Agenda : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "evenement"
@@ -67,41 +77,49 @@ frequence_s = 60
 id = "evenements"
 libelle = "Mes événements sur une plage (récurrences développées ; sans bornes : aujourd'hui et 90 jours)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "evenement"
 libelle = "Un événement entier : liens avec leur état vivant, préparation, projet, journal"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "calendrier"
 libelle = "La vue temporelle unique : événements, tâches datées (celles en retard collées à aujourd'hui), rappels, jalons des projets"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "agenda"
 libelle = "Les prochains jours : mes événements, et ceux de mon serveur CalDAV s'il est réglé (une panne CalDAV ne fait pas disparaître l'agenda local)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "caldav_etat"
 libelle = "Mon serveur CalDAV est-il réglé (jamais le mot de passe)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "rappels"
 libelle = "Mes rappels"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "exporter_ics"
 libelle = "Mes événements en iCalendar (.ics), récurrences gardées"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "evenement_enregistrer"
 libelle = "Créer un événement, ou le modifier en patch (déplacé, renommé : le journal le dit)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le compte qui agit en est le propriétaire", "un titre et un début obligatoires", "la fin ne précède pas le début", "une récurrence que le moteur sait développer, sinon refusée"]
 preuve = "relire l'événement : titre et dates conformes"
 retour = "supprimer l'événement que cet acte vient de créer, ou remettre ses champs d'avant"
@@ -112,6 +130,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "evenement_supprimer"
 libelle = "Supprimer un événement avec ses liens et son journal"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["un événement de mon compte"]
 preuve = "l'événement n'existe plus"
 retour = "recréer l'événement, ses liens et son journal depuis la copie gardée dans le résultat de l'acte"
@@ -122,6 +141,7 @@ qui = ["humain", "compte"]
 id = "lien_ajouter"
 libelle = "Rattacher un événement à une note, un message, une URL, un projet, un contact, une tâche, un domaine, un serveur, un certificat, un constat"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un événement de mon compte"]
 preuve = "relire le lien"
 retour = "retirer le lien"
@@ -132,6 +152,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "lien_retirer"
 libelle = "Retirer le rattachement d'un événement"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un événement de mon compte"]
 preuve = "le lien n'existe plus"
 retour = "remettre le lien"
@@ -142,6 +163,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "rappel_enregistrer"
 libelle = "Créer un rappel, ou le modifier en patch"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le compte qui agit en est le propriétaire", "un texte obligatoire", "une échéance lisible (+30m, +2h, +3d, AAAA-MM-JJ[ HH:MM])"]
 preuve = "relire le rappel"
 retour = "supprimer le rappel créé, ou remettre ses champs d'avant"
@@ -152,6 +174,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "rappel_statut"
 libelle = "Marquer un rappel fait ou le remettre en attente"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un rappel de mon compte"]
 preuve = "relire le rappel"
 retour = "remettre l'ancien statut"
@@ -162,6 +185,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "rappel_supprimer"
 libelle = "Supprimer un rappel"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un rappel de mon compte"]
 preuve = "le rappel n'existe plus"
 retour = "recréer le rappel sous le même numéro"
@@ -172,6 +196,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "ical_importer"
 libelle = "Importer un fichier .ics : un réimport met à jour au lieu de dupliquer (par UID), une récurrence non gérée est dite, jamais perdue en silence"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["des événements de mon compte seulement", "un UID déjà connu est mis à jour, jamais dupliqué"]
 preuve = "les événements importés existent"
 retour = "supprimer les événements créés et remettre ceux qui ont été mis à jour"
@@ -182,11 +207,13 @@ qui = ["humain", "compte"]
 id = "signal_rappels"
 libelle = "Mes rappels en retard ou du jour, pour le bureau du jour"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "signal_agenda"
 libelle = "Mes rendez-vous du jour, pour le bureau du jour"
 risque = "lecture"
+droit = "utiliser"
 
 [[signaux]]
 id = "rappels"

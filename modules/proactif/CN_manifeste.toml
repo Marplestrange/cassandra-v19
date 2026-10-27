@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : proactif
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0441a5
+# VERSION CN : 0.1.0  #aea900
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La Proactivité : l'autonomie par palier (observer, proposer, maîtrise, raconter), le savoir-faire mesuré (un geste devient éprouvé à dix réussites, retombe à deux échecs d'affilée), l'ombre (ce qu'elle aurait fait, sans agir), les incidents (des anomalies corrélées en une histoire) et le fil (le récit). Le cycle — détecteurs, constats, paliers des capacités — vit déjà dans le noyau. Différé : la porte de décision par domaine/geste, les projections, et le moteur d'évolution (auto-modification).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0441a5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=aea900 ▼▼▼
 [module]
 id = "proactif"
 nom = "Proactivité"
@@ -23,6 +23,16 @@ confiance = "interne"
 famille = "supervision"
 importance = "important"
 sans = "Cassandra n'agit plus d'elle-même : plus de paliers d'autonomie, plus de fil de proactivité."
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Proactivité : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Proactivité : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "savoir_faire"
@@ -78,31 +88,37 @@ defaut = true
 id = "autonomie"
 libelle = "Le réglage d'autonomie : le palier, le budget, les heures de pause, la réversibilité"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "savoirs"
 libelle = "Les savoir-faire mesurés : réussites, échecs, état, propositions à relire"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "ombre"
 libelle = "Ce qu'elle aurait fait et pourquoi elle ne l'a pas fait (jamais exécuté)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "incidents"
 libelle = "Les incidents : une cause, sa chaîne de conséquences, sa fin prouvée"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "fil"
 libelle = "Le récit : les découvertes, les gestes, les incidents et les veilles, en une seule ligne de temps"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "autonomie_set"
 libelle = "Régler l'autonomie : palier, budget, pause, réversibilité, rétrogradation"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le réglage d'autonomie de ce module"]
 preuve = "le réglage relu"
 retour = "remettre le réglage d'avant"
@@ -112,6 +128,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "savoir_etat"
 libelle = "Confier ou retirer un savoir-faire (auto, proposition, manuel) ; confier exige dix réussites"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["l'état d'un savoir-faire"]
 preuve = "l'état relu"
 retour = "remettre l'état d'avant"
@@ -121,6 +138,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "savoir_accepter"
 libelle = "Accepter une proposition de savoir-faire (il entre en proposition, jamais exécuté d'office)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une proposition de savoir-faire"]
 preuve = "le savoir-faire existe"
 retour = "retirer le savoir-faire et rouvrir la proposition"
@@ -130,6 +148,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "savoir_ecarter"
 libelle = "Écarter une proposition de savoir-faire"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une proposition de savoir-faire"]
 preuve = "la proposition est écartée"
 retour = "rouvrir la proposition"
@@ -139,6 +158,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "ombre_avis"
 libelle = "Juger un geste de l'ombre : juste, discutable, ou sans avis"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["l'avis sur un geste de l'ombre"]
 preuve = "l'avis relu"
 retour = "remettre l'avis d'avant"
@@ -148,26 +168,31 @@ paliers = ["raconter", "auto", "maitre"]
 id = "catalogue"
 libelle = "Le catalogue des gestes autonomes : les domaines et leurs gestes, avec leur statut, leur réversibilité et leur garde"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "reglages"
 libelle = "Les réglages par domaine et par geste, et les choix possibles"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "disjoncteurs"
 libelle = "Les disjoncteurs déclenchés (un geste qui ne fait plus rien seul)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "gouvernance"
 libelle = "La gouvernance transverse : les intouchables, le repli du second avis, le point de restauration"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "regler"
 libelle = "Régler un domaine ou un geste (palier, fenêtre, périmètre, disjoncteur…) ; un geste en garde dure ne dépasse pas « proposer »"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le réglage d'un domaine ou d'un geste"]
 preuve = "le réglage relu"
 retour = "remettre le réglage d'avant"
@@ -177,6 +202,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "remettre"
 libelle = "Remettre un domaine ou un geste à ses valeurs par défaut"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le réglage d'un domaine ou d'un geste"]
 preuve = "le réglage n'existe plus"
 retour = "remettre le réglage"
@@ -186,6 +212,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "debloquer"
 libelle = "Débloquer un geste dont le disjoncteur s'est déclenché"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le disjoncteur d'un geste"]
 preuve = "le disjoncteur est réarmé"
 retour = "redéclencher le disjoncteur"
@@ -195,6 +222,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "gouverner"
 libelle = "Régler la gouvernance transverse : intouchables, repli du second avis, point de restauration"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["la gouvernance de l'autonomie"]
 preuve = "la gouvernance relue"
 retour = "remettre la gouvernance d'avant"

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.1  #709fb1
+# VERSION CN : 0.1.1  #feb69c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La mémoire de Cassandra : un souvenir est un fait daté, prouvé, propriétaire, corrigeable d'une phrase. Une seule porte d'écriture avec ses gardes (secret, consigne, données sensibles, sujet, quotas), des versions liées plutôt que des éditions, un veto pour les écritures critiques, des doutes posés à l'humain, des épisodes, des rappels conditionnés aux capteurs, un journal chaîné par empreintes. Un état se mesure, il ne se rappelle pas : « je ne sais pas » est une réponse de succès. Cloisonnée : on ne voit que sa portée.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=709fb1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=feb69c ▼▼▼
 [module]
 id = "memoire"
 nom = "Mémoire"
@@ -25,6 +25,16 @@ importance = "important"
 sans = "Cassandra n'a plus de mémoire entre deux échanges : elle ne retient plus rien de nouveau."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Mémoire : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Mémoire : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "souvenir"
@@ -77,72 +87,86 @@ frequence_s = 86400
 id = "rappeler"
 libelle = "Le rappel : le noyau (épinglés, personne) d'abord, puis le plein texte sur l'actif seul, dans ma portée, avec le seuil de pertinence ; rend un bloc de prompt, les souvenirs cités et les doutes à poser"
 risque = "lecture"
+droit = "utiliser"
 masque = ["bloc", "question"]
 
 [[capacites]]
 id = "lister"
 libelle = "Les souvenirs de ma portée, par statut et catégorie"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "chercher"
 libelle = "La recherche plein texte de l'écran, dans ma portée"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "lire"
 libelle = "La fiche d'un souvenir : versions, pièce, copies, journal (hors de ma portée : introuvable, jamais interdit)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "etat"
 libelle = "Les chiffres de l'écran : statuts, catégories, refus de la semaine, doutes ouverts, dernière vérification de la chaîne"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "journal"
 libelle = "Le journal borné à ma portée"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "exporter"
 libelle = "L'export JSON de ma portée avec l'empreinte de l'ensemble"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "doutes"
 libelle = "Les questions que la mémoire se pose, à moi"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "episodes"
 libelle = "Les épisodes de mes sessions, et la recherche « la dernière fois qu'on a parlé de… »"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "rappels"
 libelle = "Les rappels conditionnés aux capteurs"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "perception"
 libelle = "Ce que les capteurs disent MAINTENANT, avec l'âge de chaque relevé : un état se mesure, il ne se rappelle pas"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "chaine_verifier"
 libelle = "Recalcule toute la chaîne du journal : une altération se voit, elle ne s'empêche pas"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "moteurs"
 libelle = "La page « Les moteurs » : le chemin d'un fait et chaque moteur, avec les nombres LUS dans le code en service"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "ecrire"
 libelle = "LA porte d'écriture : catégorie, clé en mots-clés, nature (état courant avec sonde, ou constat), gardes (secret, consigne, données sensibles, sujet, quotas, plafond de confiance) ; un refus est un résultat, journalisé avec sa raison"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["dans ma portée seulement", "une catégorie du vocabulaire fermé", "la nature est exigée : un souvenir muet sur sa nature est refusé", "aucun secret, aucune consigne, aucune donnée sensible", "quotas par heure, par compte et par déclencheur", "la confiance est plafonnée par la provenance"]
 preuve = "relire le souvenir : valeur, statut et propriétaire conformes"
 retour = "faire expirer la version écrite et rendre la précédente à l'état actif"
@@ -154,6 +178,7 @@ masque = ["valeur", "piece"]
 id = "corriger"
 libelle = "Corriger : une version nouvelle liée à l'ancienne, jamais une édition en place"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un souvenir de ma portée"]
 preuve = "la nouvelle version est active (ou en quarantaine) et liée"
 retour = "faire expirer la correction et rendre la version d'avant"
@@ -165,6 +190,7 @@ masque = ["valeur"]
 id = "oublier"
 libelle = "Oublier : expirer avec la raison, jamais de suppression ; j'ai le dernier mot"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un souvenir de ma portée"]
 preuve = "le souvenir est expiré"
 retour = "le restaurer s'il ne s'est pas fait remplacer"
@@ -175,6 +201,7 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "restaurer"
 libelle = "Restaurer un souvenir expiré (sauf si une version plus neuve occupe la clé)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un souvenir de ma portée"]
 preuve = "le souvenir est actif"
 retour = "l'expirer de nouveau"
@@ -185,6 +212,7 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "forcer"
 libelle = "Épingler (force 1) ou relâcher : un réglage de rappel, la seule colonne qui se touche en place, et elle se journalise"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un souvenir de ma portée", "force entre 0 et 1"]
 preuve = "la force est celle demandée"
 retour = "remettre la force d'avant"
@@ -195,6 +223,7 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "donner"
 libelle = "Donner ou prêter un souvenir : une copie liée par la porte, jamais un transfert ; un compte ne donne qu'au partagé"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["un souvenir actif de ma portée", "un compte ne donne qu'au partagé", "un prêt dure 7 jours par défaut, 30 au plus"]
 preuve = "la copie existe chez le destinataire et porte « donné par »"
 retour = "expirer la copie"
@@ -205,6 +234,7 @@ qui = ["humain", "compte"]
 id = "don_retirer"
 libelle = "Retirer un don : la copie expire, tracé chez les deux"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une copie dont je vois l'original"]
 preuve = "la copie est expirée"
 retour = "réactiver la copie"
@@ -215,6 +245,7 @@ qui = ["humain", "compte"]
 id = "purger_secret"
 libelle = "Un secret entré par erreur : expiré tout de suite ET sa valeur retirée de la ligne, de la pièce et de l'index ; la seule réécriture en place que la mémoire admet"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["un souvenir de ma portée"]
 preuve = "la valeur n'est plus lisible nulle part, le geste reste au journal"
 retour = "aucun, voulu : la valeur d'un secret ne revient pas"
@@ -225,6 +256,7 @@ qui = ["humain", "compte"]
 id = "douter_resoudre"
 libelle = "Répondre à un doute : garder l'ancienne, prendre la nouvelle, c'est faux, plus d'actualité, toujours vrai, écrire (un report est admis une fois)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un doute de ma portée", "un choix parmi ceux que le doute propose"]
 preuve = "le doute est résolu et son effet appliqué"
 retour = "remettre les souvenirs et le doute dans leur état d'avant"
@@ -235,6 +267,7 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "doutes_depuis_reponse"
 libelle = "Résoudre les « doute N : choix » écrits dans la réponse d'un humain"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["des doutes de ma portée"]
 preuve = "chaque doute cité est résolu ou refusé avec sa raison"
 retour = "défaire chaque résolution, dans l'ordre inverse"
@@ -245,6 +278,7 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "veto_lever"
 libelle = "Lever la quarantaine ou le contesté d'un souvenir : il devient la version active, l'ancienne expire"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un souvenir en quarantaine ou contesté de ma portée"]
 preuve = "le souvenir est actif"
 retour = "remettre le souvenir et l'ancienne version dans leur état d'avant"
@@ -255,6 +289,7 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "rappel_poser"
 libelle = "Poser un rappel conditionné à une mesure (métrique, opérateur, seuil) : il rappelle, il n'exécute rien"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["une métrique connue", "un opérateur connu", "un message sans secret ni consigne"]
 preuve = "le rappel est actif"
 retour = "retirer le rappel posé, ou remettre l'ancien"
@@ -265,6 +300,7 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "rappel_oter"
 libelle = "Ôter un rappel (désactivé, la ligne reste lisible)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un rappel de ma portée"]
 preuve = "le rappel est inactif"
 retour = "le réactiver"
@@ -275,6 +311,7 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "tour_commencer"
 libelle = "À l'entrée d'un tour de chat : ce qu'un tour précédent a cité ne signe jamais la réponse d'un autre ; la question se range par compte"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le tour du compte qui agit"]
 preuve = "le tour est ouvert"
 retour = "remettre le tour d'avant"
@@ -285,6 +322,7 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "apres_echange"
 libelle = "À la fin d'un échange : l'épisode s'allonge, les messages sont gardés, et une distillation est mise en file SEULEMENT si un déclencheur a eu lieu"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["l'épisode du compte qui agit"]
 preuve = "l'épisode et la file portent l'échange"
 retour = "retirer le message gardé et la demande de distillation"

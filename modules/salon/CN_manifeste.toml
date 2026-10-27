@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : salon
 # ZONE       : CN
-# VERSION CN : 0.1.1  #70c112
+# VERSION CN : 0.1.1  #69f3fa
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Des fils de travail où les personnes et les agents se parlent : un message a un auteur, des destinataires et un corps ; adresser un agent résident (Cassandra, Itare) le fait répondre dans le fil, un tour à la fois, avec un budget qui borne la conversation d'agents entre eux. Cloisonné : un compte ne voit que ses fils.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=70c112 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=69f3fa ▼▼▼
 [module]
 id = "salon"
 nom = "Le Salon"
@@ -23,6 +23,16 @@ confiance = "interne"
 famille = "echanges"
 importance = "optionnel"
 sans = "Plus de fils de discussion entre les personnes et les agents."
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Le Salon : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Le Salon : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "fil"
@@ -49,46 +59,55 @@ asynchrone = true
 id = "fils"
 libelle = "Mes fils de travail (ceux dont je suis membre) : non-lus, voix, membres, rangement"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "lire"
 libelle = "Les messages d'un fil : les derniers, ceux qui suivent un id, ou la page qui précède"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "chercher"
 libelle = "Chercher dans les messages de mes fils, par l'index plein texte"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "etat"
 libelle = "Le panneau de présence : chaque résident (en tour ou en veille, son dernier mot), le budget de tours, les terrains"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "journal"
 libelle = "Les gestes que j'ai faits sur les fils (suppressions, statuts, terrains), avec ce qui disparaissait"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "resume"
 libelle = "Le résumé roulant du passé d'un fil long"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "membres"
 libelle = "Le propriétaire d'un fil et les comptes invités"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "attendre"
 libelle = "Attendre un nouveau message dans un fil (bloque, borné à 55 s) : pour un agent invité qui veille"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "fil_creer"
 libelle = "Ouvrir un fil de travail : titre, but, terrain"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un fil du compte"]
 preuve = "le fil existe"
 retour = "supprimer le fil et ses messages"
@@ -99,6 +118,7 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "fil_supprimer"
 libelle = "Supprimer un fil et ses messages (le propriétaire) : la trace est écrite avant le geste"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["un fil du compte, ses messages et ses membres"]
 preuve = "le fil n'existe plus"
 retour = "remettre le fil, ses membres et ses messages"
@@ -109,6 +129,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "fil_statut"
 libelle = "Passer un fil à ouvert, en attente, terminé ou archivé"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le statut d'un fil"]
 preuve = "le statut relu est celui posé"
 retour = "remettre le statut d'avant"
@@ -119,6 +140,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "fil_mode"
 libelle = "Passer un fil en mode « plan d'abord » (les agents proposent, n'exécutent rien) ou « agir »"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le mode d'un fil"]
 preuve = "le mode relu est celui posé"
 retour = "remettre le mode d'avant"
@@ -129,6 +151,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "fil_terrain"
 libelle = "Poser le terrain d'un fil (créatif, desk, citadelle, cherche) : un nom, jamais une permission"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le terrain d'un fil"]
 preuve = "le terrain relu est celui posé"
 retour = "remettre le terrain d'avant"
@@ -139,6 +162,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "dire"
 libelle = "Poster un message dans un fil, avec ses destinataires (un champ : le corps n'est jamais lu pour router) ; adresser un résident le réveille"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un message d'un fil du compte"]
 preuve = "le message existe"
 retour = "supprimer le message"
@@ -149,6 +173,7 @@ qui = ["humain", "compte", "cassandra", "itare", "agent"]
 id = "message_supprimer"
 libelle = "Supprimer un message (son auteur, ou le propriétaire du fil) : la trace est écrite avant le geste"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["un message d'un fil du compte"]
 preuve = "le message n'existe plus"
 retour = "remettre le message"
@@ -159,6 +184,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "membre_inviter"
 libelle = "Inviter un autre compte dans un fil (le propriétaire)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un fil du compte"]
 preuve = "le compte est membre"
 retour = "retirer le membre"
@@ -169,6 +195,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "membre_retirer"
 libelle = "Retirer un membre d'un fil (le propriétaire), ou quitter le fil"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un fil du compte"]
 preuve = "le compte n'est plus membre"
 retour = "remettre le membre"
@@ -179,6 +206,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "ranger"
 libelle = "Ranger un fil dans les archives de ce compte (ou l'en sortir) : le fil vit pour tous"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["le rangement d'un compte"]
 preuve = "le rangement relu est celui posé"
 retour = "remettre le rangement d'avant"
@@ -189,6 +217,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "vu"
 libelle = "Marquer un fil comme lu jusqu'ici"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["ce que ce compte a lu"]
 preuve = "le point de lecture relu est celui posé"
 retour = "remettre le point de lecture d'avant"
@@ -199,6 +228,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 id = "relancer"
 libelle = "Demander à un résident de répondre maintenant dans un fil (le budget de tours entre agents s'applique)"
 risque = "faible"
+droit = "utiliser"
 perimetre = ["un tour d'un agent résident"]
 preuve = "un tour s'est terminé"
 retour = "retirer le message que ce tour a posé"
@@ -217,6 +247,7 @@ libelle = "Le Salon"
 ecran = "vue_salon"
 ordre = 5
 icone = "chat"
+droit = "utiliser"
 
 [permissions]
 stockage = true

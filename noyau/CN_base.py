@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #25be0a
+# VERSION CN : 0.1.0  #f5b1f9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=25be0a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f5b1f9 ▼▼▼
 """La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
 
 Leçon de la V18 : un verrou SQLite vient presque toujours d'une connexion laissée ouverte.
@@ -75,6 +75,13 @@ CREATE INDEX IF NOT EXISTS sessions_compte ON sessions(compte);
 CREATE TABLE IF NOT EXISTS jetons_mdp(id TEXT PRIMARY KEY, compte TEXT NOT NULL, expire REAL NOT NULL, utilise INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS tentatives(cle TEXT NOT NULL, ts REAL NOT NULL);
 CREATE INDEX IF NOT EXISTS tentatives_cle ON tentatives(cle, ts);
+-- Les sociétés. Il y en a toujours au moins une : la principale (« 1 »), qui ne se supprime pas ; tout compte appartient à une société.
+CREATE TABLE IF NOT EXISTS societes(
+  id TEXT PRIMARY KEY, nom TEXT NOT NULL DEFAULT '', principale INTEGER NOT NULL DEFAULT 0,
+  archivee INTEGER NOT NULL DEFAULT 0, cree REAL NOT NULL DEFAULT 0);
+INSERT OR IGNORE INTO societes(id, nom, principale, cree) VALUES('1', 'Société principale', 1, 0);
+-- Un groupe de droits peut être attaché à UNE société : c'est une « fonction » (administrateur, comptable…) qui ne vaut que là.
+CREATE TABLE IF NOT EXISTS droit_groupe_portee(groupe TEXT PRIMARY KEY, societe TEXT NOT NULL);
 """
 
 
@@ -88,9 +95,11 @@ class Base:
         c = self._ouvrir()   # executescript valide d'office : il ne vit pas dans notre transaction
         try:
             c.executescript(SCHEMA if noyau else schema)
-            for col, defn in (() if not noyau else (("unix_user", "TEXT NOT NULL DEFAULT ''"), ("superadmin", "INTEGER NOT NULL DEFAULT 0"), ("type", "TEXT NOT NULL DEFAULT 'humain'"), ("invite_par", "TEXT NOT NULL DEFAULT ''"))):    # une base d'avant les colonnes
+            for col, defn in (() if not noyau else (("unix_user", "TEXT NOT NULL DEFAULT ''"), ("superadmin", "INTEGER NOT NULL DEFAULT 0"), ("type", "TEXT NOT NULL DEFAULT 'humain'"), ("invite_par", "TEXT NOT NULL DEFAULT ''"), ("desactive", "INTEGER NOT NULL DEFAULT 0"), ("societe", "TEXT NOT NULL DEFAULT '1'"))):    # une base d'avant les colonnes
                 if col not in [r[1] for r in c.execute("PRAGMA table_info(comptes)")]:
                     c.execute("ALTER TABLE comptes ADD COLUMN %s %s" % (col, defn))
+            if noyau and "description" not in [r[1] for r in c.execute("PRAGMA table_info(droit_groupes)")]:
+                c.execute("ALTER TABLE droit_groupes ADD COLUMN description TEXT NOT NULL DEFAULT ''")
         finally:
             c.close()
 

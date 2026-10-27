@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.3.1  #a3a288
+# VERSION CN : 0.3.1  #44fc62
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=a3a288 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=44fc62 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -27,6 +27,16 @@ importance = "optionnel"
 sans = "Plus de lien avec Dolibarr : factures, tiers et impayés ne remontent plus."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Dolibarr : consulter et travailler dans ce module"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Administrer Dolibarr : réglages et gestes sensibles"
+sensible = true
 
 [[objets]]
 type = "dolibarr"
@@ -78,41 +88,49 @@ frequence_s = 60
 id = "resume"
 libelle = "La dernière relève : version, comptes, factures impayées"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "statut"
 libelle = "L'état de Dolibarr à l'instant (version, latence)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "modules"
 libelle = "Les modules actifs de Dolibarr"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "compter"
 libelle = "Compter les objets d'un type (tiers, factures, devis, commandes, projets, produits, contacts)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "lister"
 libelle = "Lister des objets, par page, avec des champs bornés (pas de coordonnées personnelles)"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "lire"
 libelle = "Lire un objet par son identifiant, avec des champs bornés"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "impayees"
 libelle = "Les factures impayées : nombre, total TTC, la plus ancienne échéance"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "creer"
 libelle = "Créer un tiers, un contact, un produit ou un projet dans Dolibarr"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["tiers, contacts, produits, projets", "champs de la liste permise seulement"]
 preuve = "relire l'objet créé et comparer chaque champ écrit"
 retour = "supprimer l'objet que cet acte vient de créer, et lui seul"
@@ -123,6 +141,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "modifier"
 libelle = "Modifier des champs d'un tiers, d'un contact, d'un produit ou d'un projet"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["tiers, contacts, produits, projets", "champs de la liste permise seulement"]
 preuve = "relire l'objet et comparer les champs modifiés"
 retour = "remettre les valeurs d'avant, relevées juste avant l'écriture"
@@ -133,6 +152,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "creer_brouillon"
 libelle = "Créer un brouillon de facture, de devis ou de commande (jamais validé par cet acte)"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["factures, devis, commandes à l'état de brouillon"]
 preuve = "relire le document : statut brouillon, nombre de lignes et tiers conformes"
 retour = "supprimer ce brouillon, seulement s'il est encore un brouillon"
@@ -143,6 +163,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "supprimer"
 libelle = "Supprimer un tiers, un contact, un produit, un projet ou un brouillon de document, après en avoir gardé une copie entière dans la corbeille"
 risque = "eleve"
+droit = "administrer"
 perimetre = ["tiers, contacts, produits, projets, brouillons de documents", "Dolibarr refuse ce qui est référencé ailleurs"]
 preuve = "relire l'objet : Dolibarr répond qu'il n'existe plus"
 retour = "recréer l'objet depuis la copie de la corbeille (l'identifiant change)"
@@ -153,6 +174,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "restaurer"
 libelle = "Recréer un objet supprimé, depuis la corbeille"
 risque = "moyen"
+droit = "utiliser"
 perimetre = ["les objets de la corbeille à l'état supprimé"]
 preuve = "relire l'objet recréé"
 retour = "supprimer l'objet recréé, la copie restant dans la corbeille"
@@ -163,11 +185,13 @@ qui = ["humain", "cassandra", "itare"]
 id = "corbeille"
 libelle = "Lister la corbeille : ce qui a été supprimé et peut être recréé"
 risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "valider_facture"
 libelle = "Valider une facture brouillon : elle prend un numéro légal"
 risque = "eleve"
+droit = "administrer"
 perimetre = ["une facture à l'état de brouillon"]
 preuve = "relire la facture : statut validé"
 retour = "repasser la facture en brouillon (impossible si elle est payée ou comptabilisée)"
@@ -188,6 +212,7 @@ ordre = 10
 role = "admin"
 icone = "briefcase"
 badge = "constats"
+droit = "utiliser"
 
 [[widgets]]
 id = "etat"

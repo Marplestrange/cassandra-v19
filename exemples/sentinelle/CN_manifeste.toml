@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : exemples
 # ZONE       : CN
-# VERSION CN : 0.1.0  #216787
+# VERSION CN : 0.1.0  #33503d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Mesure l'occupation du disque racine et ouvre un constat au-delà du seuil. Exemple de greffe à chaud : un moteur, un détecteur, un type d'objet, des événements.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=216787 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=33503d ▼▼▼
 [module]
 id = "sentinelle"
 nom = "Sentinelle du disque"
@@ -81,6 +81,11 @@ ordre = 10
 role = "admin"
 icone = "hard-drive"
 badge = "constats"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser ce module"
+defaut = true
 
 [installation]
 script = "CN_installer.sh"
