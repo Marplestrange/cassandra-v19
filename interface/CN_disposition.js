@@ -340,15 +340,15 @@
     const PERSO_AV = ["menus:mes_applications"], INST_AV = ["affichage:societe", "menus:logitheque"], INST_E = ["comptes:utilisateurs"];
     const GEN_E = ["reg-maintenance", "reg-donnees", "reg-tiers", "reg-canaux", "reg-veille", "reg-danger"];
     const avPar = (id) => av.find((a) => a.id === id), ePar = (id) => pe.find((e) => e.id === id);
-    const titre = (t) => '<div class="d19-fl-grp">' + esc(t) + "</div>";
-    let h = titre("Paramètres personnels") + bouton('data-sw="moi"', reglages === "moi", "contacts", "Mon compte") + bouton('data-sw="vault"', E.pageNom === "vault" || E.hors === "vault", "lock", "Mon coffre-fort");
+    const titre = (t) => '<h2 class="d19-pgrp">' + esc(t) + "</h2>";          // le titre de section des autres colonnes (accent, filet) ; « Paramètres » est déjà dans l'en-tête
+    let h = titre("Personnel") + bouton('data-sw="moi"', reglages === "moi", "contacts", "Mon compte") + bouton('data-sw="vault"', E.pageNom === "vault" || E.hors === "vault", "lock", "Mon coffre-fort");
     PERSO_AV.forEach((id) => { if (avPar(id)) h += dAvatar(avPar(id)); });
-    h += titre("Paramètres institutionnels");
+    h += titre("Institutionnel");
     if (avPar("affichage:societe")) h += dAvatar(avPar("affichage:societe"));
     INST_E.forEach((id) => { if (ePar(id)) h += dEntree(ePar(id)); });
     if (avPar("menus:logitheque")) h += dAvatar(avPar("menus:logitheque"));
     av.filter((a) => PERSO_AV.concat(INST_AV).indexOf(a.id) < 0).forEach((a) => { h += dAvatar(a); });
-    h += titre("Paramètres généraux");
+    h += titre("Général");
     GEN_E.forEach((id) => { if (ePar(id)) h += dEntree(ePar(id)); });
     pe.filter((e) => GEN_E.concat(INST_E).indexOf(e.id) < 0).forEach((e) => { h += dEntree(e); });
     return h;

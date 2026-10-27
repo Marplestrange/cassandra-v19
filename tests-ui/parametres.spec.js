@@ -18,7 +18,7 @@ test("Paramètres : cinq entrées, chacune ouvre sa rubrique seule et quitte le 
   expect(await page.evaluate(() => [...document.querySelectorAll('#d19-groupes button')].map((b) => b.getAttribute('aria-label')))).not.toContain('Paramètres');
   await page.evaluate(() => window.CASS.disposition.aller('parametres', 'reg-donnees', ''));
   await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('#d19-side .d19-si')].map((b) => b.textContent.trim()))).toEqual(expect.arrayContaining(['Mon compte', 'Mon coffre-fort', 'Maintenance', 'Données', 'Services tiers', 'Canaux', 'Surveillances', 'Danger']));
-  expect(await page.evaluate(() => [...document.querySelectorAll('#d19-side .d19-fl-grp')].map((b) => b.textContent.trim()))).toEqual(['Paramètres personnels', 'Paramètres institutionnels', 'Paramètres généraux']);
+  expect(await page.evaluate(() => [...document.querySelectorAll('#d19-side h2.d19-pgrp')].map((b) => b.textContent.trim()))).toEqual(['Personnel', 'Institutionnel', 'Général']);
 
   const titres = { 'reg-maintenance': 'Maintenance', 'reg-donnees': 'Données', 'reg-tiers': 'Services tiers', 'reg-canaux': 'Canaux', 'reg-veille': 'Surveillances', 'reg-danger': 'Danger' };
   for (const id of ids) {

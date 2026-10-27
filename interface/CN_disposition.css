@@ -116,6 +116,7 @@ body.d19 .app-body{position:relative}
 #d19-side::-webkit-scrollbar{width:6px}#d19-side::-webkit-scrollbar-thumb{background:rgba(15,70,66,.18);border-radius:3px}
 #d19-side h2{color:var(--accent);opacity:.85;letter-spacing:.09em;display:flex;align-items:center;gap:8px}
 #d19-side h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+#d19-side h2.d19-pgrp{padding:14px 10px 6px}#d19-side h2.d19-pgrp:first-child{padding-top:2px}
 .d19-si{position:relative;transition:background .15s,color .15s,transform .15s,box-shadow .15s}
 .d19-si:hover{background:rgba(255,255,255,.65);transform:translateX(2px)}
 .d19-si.on{background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.7));color:var(--accent);box-shadow:0 1px 0 rgba(255,255,255,1) inset,0 6px 16px -6px rgba(15,110,100,.35),0 0 0 1px rgba(20,184,166,.18)}
