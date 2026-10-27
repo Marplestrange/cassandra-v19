@@ -10,6 +10,7 @@ test("avatar : Mon compte et Paramètres généraux ouvrent chacun leur vision",
     await page.waitForSelector('#login-modal', { state: 'hidden', timeout: 10000 });
   }
   await page.waitForSelector('body.d19', { timeout: 20000 });
+  await expect.poll(() => page.evaluate(() => document.querySelectorAll('#d19-groupes button').length)).toBeGreaterThan(0);        // la disposition est chargée
   const libelles = await page.evaluate(() => [...document.querySelectorAll('#usermenu .um-i')].map((b) => b.textContent.trim().replace(/\s+/g, ' ')));
   expect(libelles).toEqual(expect.arrayContaining(['Mon compte', 'Paramètres généraux']));
 
@@ -19,6 +20,5 @@ test("avatar : Mon compte et Paramètres généraux ouvrent chacun leur vision",
   expect(await page.evaluate(() => getComputedStyle(document.getElementById('set-visions')).display)).toBe('none');
 
   await page.evaluate(() => document.querySelector('#usermenu [data-um="machine"]').click());
-  await expect.poll(() => page.evaluate(() => document.querySelector('#tab-settings .mx-head h1').textContent)).toBe('Paramètres généraux');
-  expect(await page.evaluate(() => document.querySelector('#set-rail-titre').textContent)).toBe('La machine');
+  await expect.poll(() => page.evaluate(() => document.querySelector('#tab-settings .mx-head h1').textContent)).toBe('Maintenance');       // « Paramètres généraux » ouvre sa première rubrique
 });

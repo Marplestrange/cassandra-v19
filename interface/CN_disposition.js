@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #97de9b
+// VERSION CN : 0.1.0  #873fc7
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=97de9b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=873fc7 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -133,7 +133,7 @@
   const VERS_MENU = { today: ["accueil", ""], cal: ["agenda", "calendrier"], tk: ["agenda", "taches"], rem: ["agenda", "rappels"], proj: ["projets", ""], notes: ["notes", ""], carnet: ["notes", ""],
     canvas: ["notes", ""], liens: ["notes", ""], fusion: ["notes", ""], menage: ["notes", ""], ranger: ["notes", ""], mail: ["courrier", ""], rep: ["repertoire", ""], doc: ["documents", ""] };
   // Une rubrique de Paramètres généraux qui a son entrée de menu : elle s'ouvre seule, sans le rail des autres rubriques.
-  const RUBRIQUES_SEULES = { "agents-ia": ["agents", "machine", "Agents IA"], "reg-tiers": ["tiers", "machine", "Services tiers"], "reg-maintenance": ["maintenance", "machine", "Maintenance"], "reg-donnees": ["donnees", "machine", "Données"], "reg-veille": ["veille", "machine", "Surveillances"], "reg-canaux": ["canaux", "machine", "Canaux"] };
+  const RUBRIQUES_SEULES = { "agents-ia": ["agents", "machine", "Agents IA"], "reg-tiers": ["tiers", "machine", "Services tiers"], "reg-maintenance": ["maintenance", "machine", "Maintenance"], "reg-donnees": ["donnees", "machine", "Données"], "reg-veille": ["veille", "machine", "Surveillances"], "reg-canaux": ["canaux", "machine", "Canaux"], "reg-danger": ["danger", "machine", "Danger"] };
   function rubriqueSeule(r) {
     const t = document.getElementById("tab-settings"); if (!t) return;
     if (typeof window.setVision === "function") window.setVision(r[1]);
@@ -323,12 +323,26 @@
   }
   function colonneParametres() {
     const reglages = E.hors === "settings" && typeof ETAT !== "undefined" ? ETAT.reglages._setVision : "";
-    const pe = ((E.d.groupes.find((g) => g.id === "parametres") || {}).entrees) || [];
+    const pe = ((E.d.groupes.find((g) => g.id === "parametres") || {}).entrees) || [], av = E.d.avatar || [];
     const bouton = (att, actif, ic, lib) => '<button class="d19-si ent' + (actif ? " on" : "") + '" ' + att + ' data-tip="' + esc(lib) + '">' + ico(ic || "puzzle") + "<span>" + esc(lib) + "</span></button>";
-    let h = bouton('data-sw="moi"', reglages === "moi", "contacts", "Mon compte") + bouton('data-sw="vault"', E.pageNom === "vault" || E.hors === "vault", "lock", "Mon coffre-fort");
-    (E.d.avatar || []).forEach((a) => { h += bouton('data-sw="av:' + esc(a.id) + '"', !!(E.pageNom && a.ecran && CASS.nomOnglet && E.pageNom === CASS.nomOnglet(a.ecran)), a.icone, a.libelle); });
-    h += bouton('data-sw="machine"', reglages === "machine", "fam_systeme", "Paramètres généraux");
-    pe.forEach((e) => { h += bouton('data-sw="e:' + esc(e.id) + '"', !!(E.actif && E.g === "parametres" && E.e === e.id), e.icone, e.libelle); });
+    const surAvatar = (a) => !!(E.pageNom && a.ecran && CASS.nomOnglet && E.pageNom === CASS.nomOnglet(a.ecran));
+    const dAvatar = (a) => bouton('data-sw="av:' + esc(a.id) + '"', surAvatar(a), a.icone, a.libelle);
+    const dEntree = (e) => bouton('data-sw="e:' + esc(e.id) + '"', !!(E.actif && E.g === "parametres" && E.e === e.id), e.icone, e.libelle);
+    // trois sections, dans l'ordre voulu ; ce qui n'est pas nommé ici (une page d'un autre module) rejoint la section qui lui ressemble
+    const PERSO_AV = ["menus:mes_applications"], INST_AV = ["affichage:societe", "menus:logitheque"], INST_E = ["comptes:utilisateurs"];
+    const GEN_E = ["reg-maintenance", "reg-donnees", "reg-tiers", "reg-canaux", "reg-veille", "reg-danger"];
+    const avPar = (id) => av.find((a) => a.id === id), ePar = (id) => pe.find((e) => e.id === id);
+    const titre = (t) => '<div class="d19-fl-grp">' + esc(t) + "</div>";
+    let h = titre("Paramètres personnels") + bouton('data-sw="moi"', reglages === "moi", "contacts", "Mon compte") + bouton('data-sw="vault"', E.pageNom === "vault" || E.hors === "vault", "lock", "Mon coffre-fort");
+    PERSO_AV.forEach((id) => { if (avPar(id)) h += dAvatar(avPar(id)); });
+    h += titre("Paramètres institutionnels");
+    if (avPar("affichage:societe")) h += dAvatar(avPar("affichage:societe"));
+    INST_E.forEach((id) => { if (ePar(id)) h += dEntree(ePar(id)); });
+    if (avPar("menus:logitheque")) h += dAvatar(avPar("menus:logitheque"));
+    av.filter((a) => PERSO_AV.concat(INST_AV).indexOf(a.id) < 0).forEach((a) => { h += dAvatar(a); });
+    h += titre("Paramètres généraux");
+    GEN_E.forEach((id) => { if (ePar(id)) h += dEntree(ePar(id)); });
+    pe.filter((e) => GEN_E.concat(INST_E).indexOf(e.id) < 0).forEach((e) => { h += dEntree(e); });
     return h;
   }
   function rendreGauche() {
@@ -1097,7 +1111,9 @@
   }
   // « Demander à Cassandra » depuis une page : le panneau s'ouvre sur l'interlocuteur de la page (Cassandra sur une page propre) et le message part.
   async function demander(texte) { await ouvrirPanel(true); await envoyer(texte); }
-  CASS.disposition = { rafraichir: charger, aller: aller, ouvrirPanel: ouvrirPanel, demander: demander };
+  // Paramètres généraux : l'entrée de l'avatar ouvre la première rubrique du groupe (si la disposition n'est pas encore là, l'ancienne page des réglages).
+  function ouvrirParametres() { if (E.d && E.d.groupes.some((g) => g.id === "parametres")) aller("parametres", "reg-maintenance", ""); else { window.switchTab("settings"); if (typeof window.setVision === "function") window.setVision("machine"); } }
+  CASS.disposition = { rafraichir: charger, aller: aller, ouvrirParametres: ouvrirParametres, ouvrirPanel: ouvrirPanel, demander: demander };
   const surConnexion = CASS.surConnexion;
   CASS.surConnexion = function () { if (surConnexion) surConnexion.apply(this, arguments); lancer(); };
   if (token()) setTimeout(lancer, 400);

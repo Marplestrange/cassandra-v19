@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.7.0)  #e57de7
+# VERSION EC : EC0 (référence 0.7.0)  #5c9ce6
 # HÔTE CN    : CN_module.py · disposition @1.0
 # RÔLE       : range les entrées de menu que les modules déclarent en groupes (barre du haut), entrées et sous-entrées (colonne de gauche), et en entrées du menu de l'avatar ; dit le pire niveau d'alerte de chaque entrée, de chaque groupe et du tout.
 # MÉTHODE    : fonction pure : une table de groupes, un repli par famille, un pont vers les onglets de l'ancienne interface ; chaque entrée reçue paraît une seule fois, rien n'est inventé, un groupe sans entrée n'existe pas.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=e57de7 ▼▼▼
+# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=5c9ce6 ▼▼▼
 
 # Les groupes de la barre du haut : (id, libellé, icône, ordre, interlocuteur par défaut du panneau).
 GROUPES = (
@@ -76,6 +76,7 @@ PONT = (
     {"id": "reg-donnees", "libelle": "Données", "groupe": "parametres", "icone": "archive", "onglet": "settings", "modules": ("reglages",), "ordre": 20, "role": "admin", "vues": ()},
     {"id": "reg-veille", "libelle": "Surveillances", "groupe": "parametres", "icone": "eye", "onglet": "settings", "modules": ("sensorium",), "ordre": 50, "role": "admin", "vues": ()},
     {"id": "reg-canaux", "libelle": "Canaux", "groupe": "parametres", "icone": "bell", "onglet": "settings", "modules": ("canaux",), "ordre": 40, "role": "admin", "vues": ()},
+    {"id": "reg-danger", "libelle": "Danger", "groupe": "parametres", "icone": "alert", "onglet": "settings", "modules": ("reglages",), "ordre": 60, "role": "admin", "vues": ()},
     {"id": "agents-ia", "libelle": "Agents IA", "groupe": "auto", "icone": "bot", "onglet": "settings", "modules": ("agents",), "ordre": 5, "role": "admin", "vues": ()},
     {"id": "evolution", "libelle": "Évolution", "groupe": "auto", "icone": "evo", "onglet": "evolution", "modules": ("evolution",), "ordre": 10, "role": "admin", "vues": ()},
     {"id": "proactivite", "libelle": "Proactivité", "groupe": "auto", "icone": "bolt", "onglet": "proactive", "modules": ("proactif",), "ordre": 20, "role": "admin", "vues": ()},

@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=32d896 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=85917a ▼▼▼ */
 /* L'ancienne interface (V18) est dans la page dès le départ : tant que la disposition V19 n'a pas pris la main (body.d19), on la cache, pour qu'elle ne se montre pas quelques instants.
    Filet : si la disposition ne démarre jamais (script en erreur), l'ancienne interface réapparaît au bout de 6 secondes plutôt que de laisser une page vide. */
 body:not(.d19) #app-container{visibility:hidden;animation:d19-filet 0s 6s forwards}
@@ -450,6 +450,7 @@ body.d19.d19-rub-maintenance #tab-settings .set-nav-item[data-fam="maintenance"]
 body.d19.d19-rub-donnees #tab-settings .set-nav-item[data-fam="donnees"]{display:none!important}
 body.d19.d19-rub-veille #tab-settings .set-nav-item[data-fam="veille"]{display:none!important}
 body.d19.d19-rub-canaux #tab-settings .set-nav-item[data-fam="canaux"]{display:none!important}
+body.d19.d19-rub-danger #tab-settings .set-nav-item[data-fam="danger"]{display:none!important}
 
 /* ▲▲▲ FIN BORNE CN ▲▲▲ */
 

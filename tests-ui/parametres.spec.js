@@ -10,16 +10,17 @@ test("Paramètres : cinq entrées, chacune ouvre sa rubrique seule et quitte le 
     await page.waitForSelector('#login-modal', { state: 'hidden', timeout: 10000 });
   }
   await page.waitForSelector('body.d19', { timeout: 20000 });
-  const ids = ['reg-maintenance', 'reg-donnees', 'reg-tiers', 'reg-canaux', 'reg-veille'];
+  const ids = ['reg-maintenance', 'reg-donnees', 'reg-tiers', 'reg-canaux', 'reg-veille', 'reg-danger'];
   await expect.poll(() => page.evaluate(async (ids) => { const d = await window.CASS.agir('affichage.lire_disposition', {}); const g = d.groupes.find((x) => x.id === 'parametres'); return !!g && ids.every((i) => g.entrees.some((e) => e.id === i)); }, ids), { timeout: 40000 }).toBe(true);
   await page.evaluate(() => window.CASS.disposition.rafraichir());
 
   // pas de tuile « Paramètres » dans la barre du haut ; la colonne de gauche liste tout le menu
   expect(await page.evaluate(() => [...document.querySelectorAll('#d19-groupes button')].map((b) => b.getAttribute('aria-label')))).not.toContain('Paramètres');
   await page.evaluate(() => window.CASS.disposition.aller('parametres', 'reg-donnees', ''));
-  await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('#d19-side .d19-si')].map((b) => b.textContent.trim()))).toEqual(expect.arrayContaining(['Mon compte', 'Mon coffre-fort', 'Paramètres généraux', 'Maintenance', 'Données', 'Services tiers', 'Canaux', 'Surveillances']));
+  await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('#d19-side .d19-si')].map((b) => b.textContent.trim()))).toEqual(expect.arrayContaining(['Mon compte', 'Mon coffre-fort', 'Maintenance', 'Données', 'Services tiers', 'Canaux', 'Surveillances', 'Danger']));
+  expect(await page.evaluate(() => [...document.querySelectorAll('#d19-side .d19-fl-grp')].map((b) => b.textContent.trim()))).toEqual(['Paramètres personnels', 'Paramètres institutionnels', 'Paramètres généraux']);
 
-  const titres = { 'reg-maintenance': 'Maintenance', 'reg-donnees': 'Données', 'reg-tiers': 'Services tiers', 'reg-canaux': 'Canaux', 'reg-veille': 'Surveillances' };
+  const titres = { 'reg-maintenance': 'Maintenance', 'reg-donnees': 'Données', 'reg-tiers': 'Services tiers', 'reg-canaux': 'Canaux', 'reg-veille': 'Surveillances', 'reg-danger': 'Danger' };
   for (const id of ids) {
     await page.evaluate((id) => window.CASS.disposition.aller('parametres', id, ''), id);
     await expect.poll(() => page.evaluate(() => document.querySelector('#tab-settings .mx-head h1').textContent)).toBe(titres[id]);
@@ -28,8 +29,7 @@ test("Paramètres : cinq entrées, chacune ouvre sa rubrique seule et quitte le 
   }
   // le rail de Paramètres généraux ne porte plus leurs pastilles
   await page.evaluate(() => document.querySelector('#usermenu [data-um="machine"]').click());
-  await expect.poll(() => page.evaluate(() => document.getElementById('tab-settings').classList.contains('set-seule'))).toBe(false);
+  await expect.poll(() => page.evaluate(() => document.getElementById('tab-settings').classList.contains('set-seule'))).toBe(true);       // « Paramètres généraux » ouvre sa première rubrique
   const rail = await page.evaluate(() => [...document.querySelectorAll('#tab-settings .set-nav-item')].filter((b) => getComputedStyle(b).display !== 'none').map((b) => b.getAttribute('data-fam')));
-  for (const f of ['tiers', 'maintenance', 'donnees', 'veille', 'canaux']) expect(rail).not.toContain(f);
-  expect(rail).toContain('danger');
+  for (const f of ['tiers', 'maintenance', 'donnees', 'veille', 'canaux', 'danger']) expect(rail).not.toContain(f);
 });

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : comptes
 # ZONE       : CN
-# VERSION CN : 0.5.0  #826146
+# VERSION CN : 0.5.0  #48458d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les comptes et la preuve qu'on en est : identifiant (une adresse e-mail), mot de passe (règles de la V18, scrypt salé), sessions, jetons de mise en place du mot de passe. Le rôle d'administrateur, lui, vit dans les droits.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=826146 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=48458d ▼▼▼
 [module]
 id = "comptes"
 nom = "Comptes"
@@ -269,8 +269,8 @@ gabarit = "liste_detail"
 id = "utilisateurs"
 libelle = "Utilisateurs et groupes"
 ecran = "vue_utilisateurs"
-groupe = "secu"
-ordre = 20
+groupe = "parametres"
+ordre = 5
 role = "admin"
 icone = "contacts"
 
