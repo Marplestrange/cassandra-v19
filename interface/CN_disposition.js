@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #bcd076
+// VERSION CN : 0.1.0  #8d6ab4
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=bcd076 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=8d6ab4 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -851,6 +851,7 @@
         E.d = d;
         if (!E.d.groupes.some((g) => g.id === E.g)) { E.g = E.d.groupes[0] ? E.d.groupes[0].id : ""; E.e = ""; }
         rendreHaut(); rendreGauche();                                   // ni le fil, ni les menus ouverts, ni le panneau ne sont touchés
+        completerAvatar();                                              // les entrées du menu de l'avatar suivent la disposition (après une connexion, elles arrivaient avec le battement)
       }
     } catch (e) { /* un raté ne casse rien : le prochain battement refait */ }
     pouleEnCours = false;
