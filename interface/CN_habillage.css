@@ -73,3 +73,34 @@ body.d19 .mx-app :is(input[type=search],input[type=text],select){font-family:'In
 /* CN : tout ce fichier est du nexus : à compléter */
 /* EC : néant (aucun point d'évolution déclaré pour l'instant) */
 /* LIEN : à compléter (contrat, fichiers voisins) */
+
+/* ═══ SUITE : libellés, champs, tableaux ═══════════════════════════════════════════════ */
+
+/* Tous les petits libellés en majuscules de l'ancienne interface (une quarantaine de classes) : Inter, comme le kit, plus de chasse fixe */
+body.d19 .mx-fam,body.d19 .um-h,body.d19 .sl-lbl,body.d19 .sl-fam,body.d19 .sl-jour,body.d19 .jr-day,body.d19 .ev-jour,body.d19 .pl-n,body.d19 .s-label,body.d19 .sinfo-lbl,body.d19 .stat-lbl,body.d19 .bu-scenes .lab,body.d19 .cr-lbl,body.d19 .cr-sec .h,body.d19 .nt-prismes .lab,body.d19 .ca-sect,body.d19 .ca-mes dt,body.d19 .cv-sect,body.d19 .cv-reg label,body.d19 .cv-cadre .t,body.d19 .cv-carte .h,body.d19 .cv-et,body.d19 .pal-g,body.d19 .cn-g,body.d19 .bu-dow span,body.d19 .cr-dosl-h,body.d19 .cr-dosl-s,body.d19 .cr-rg-r .k,body.d19 .cr-prop-h,body.d19 .tk-grp,body.d19 .gd-grp,body.d19 .gd-hd,body.d19 .gd-tbl th,body.d19 .pf-e .src,body.d19 .nt-i .sr,body.d19 .nt-prov b,body.d19 .nt-pol th,body.d19 .nt-srcs th,body.d19 .rd-fld > label,body.d19 .rd-sel .l,body.d19 .rd-as .h .q,body.d19 .rd-grp,body.d19 .md-non .h,body.d19 .md-blk .lg .k,body.d19 .md-ac .r .q,body.d19 .md-tbl th,body.d19 .sv-tbl th,body.d19 .mms-lbl,body.d19 .gu-t .gu-o,body.d19 .cva-r b,body.d19 .cn-sep,body.d19 .rep-sep,body.d19 .rep-it-q,body.d19 .rep-fl .k,body.d19 .rep-ch .k,body.d19 .rep-s,body.d19 .rep-tg .t,body.d19 .rp-c label,body.d19 .bj-t,body.d19 .bj-bt,body.d19 .usermenu dt,body.d19 .ov-ev .tg,body.d19 .vital h5,body.d19 .cf-st h5,body.d19 .ac-kv dt,body.d19 .nte-pk-g,body.d19 .it-qui .nm,body.d19 .it-duel .q,body.d19 .sl-voix .et,body.d19 .sl-resume b,body.d19 .sl-aide-b b,body.d19 .sl-tip-b b,body.d19 .jr-env span,body.d19 .mv-liste th,body.d19 .fl-env span,body.d19 .fleet-field label,body.d19 .fp2-lbl,body.d19 .fp2-liste th,body.d19 .fp-table th,body.d19 .fp2-vide b,body.d19 .fp2-hs b,body.d19 .fp2-repli b,body.d19 .fp-sc-label,body.d19 .fleet-agg-label,body.d19 .att-tip-title,body.d19 .ses-kv dt,body.d19 .sl-fil .m .st,body.d19 .sl-m .qui .dest{font-family:'Inter',system-ui,sans-serif;font-size:10.5px;font-weight:650;letter-spacing:.07em}
+
+/* Les titres de rails et de cartes qui étaient en chasse fixe */
+body.d19 .mx-rail-h b,body.d19 .mx-body .mx-rail-h b{font:650 13.5px/1.3 'Inter',system-ui,sans-serif;letter-spacing:0;color:var(--txt-strong)}
+body.d19 .tab-content :is(h1,h2,h3,h4):not(.mono){font-family:'Inter',system-ui,sans-serif}
+
+/* Boutons, champs et listes : la police du kit partout (sauf ce qui se déclare « mono » : commandes, empreintes, expressions cron) */
+body.d19 .tab-content :is(button,input,select,textarea):not(.mono):not([class*="mono"]){font-family:'Inter',system-ui,sans-serif}
+
+/* Les champs : même rayon, même bordure, même anneau de focus que le kit */
+body.d19 .tab-content :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=hidden]),select,textarea){
+  border:1px solid var(--line-strong);background:var(--surface-solid);color:var(--txt);border-radius:10px;transition:border-color .15s,box-shadow .15s}
+body.d19 .tab-content :is(input,select,textarea):focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+body.d19 .tab-content :is(input,select,textarea)::placeholder{color:var(--txt-faint)}
+body.d19 .tab-content :is(input,select,textarea)[disabled]{opacity:.55}
+body.d19 .tab-content :is(input[type=checkbox],input[type=radio],input[type=range]){accent-color:var(--accent)}
+
+/* Les étiquettes de champ sans style propre : un libellé discret, d'une seule taille */
+body.d19 .tab-content label:not([class]){font:600 12.5px/1.3 'Inter',system-ui,sans-serif;color:var(--txt-soft)}
+
+/* Les tableaux : une ligne fine entre les rangées, un en-tête discret */
+body.d19 .tab-content table{border-collapse:collapse}
+body.d19 .tab-content table th{font-family:'Inter',system-ui,sans-serif;font-size:10.5px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--txt-faint);text-align:left;border-bottom:1px solid var(--line-strong)}
+body.d19 .tab-content table td{border-bottom:1px solid var(--line)}
+body.d19 .tab-content table tr:last-child td{border-bottom:0}
+body.d19 .tab-content table tbody tr:hover td{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+
