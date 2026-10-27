@@ -94,7 +94,10 @@
     pv_systeme: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
   };
   // les icônes des vues de l'accueil : celles que portait l'ancienne pastille « Mon bureau », reportées au menu de gauche
-  const VUE_IC = { calendrier: "calendar", taches: "tasks", rappels: "bell" };
+  const VUE_IC = { calendrier: "calendar", taches: "tasks", rappels: "bell", messages: "mail", reglage: "fam_systeme",
+    maintenant: "health", signaux: "bolt", dispo: "clock", engagement: "tasks" };
+  // le pictogramme d'une sous-entrée : celui des vues du Panorama, celui de la table ci-dessus, à défaut celui que son module déclare ; "" si aucun
+  const icoSub = (e, f) => { const vid = f.vue || f.id; const k = e.id === "panorama" && EMO_PANORAMA[vid] ? EMO_PANORAMA[vid] : (VUE_IC[vid] || (f.icone && IC[f.icone] ? f.icone : "")); return k; };
   // le logo de Cassandra : le toit (celui de l'ancienne interface) ; il tient lieu de logo tant que l'organisation n'a pas le sien
   const TOIT = '<svg class="d-i toit" viewBox="0 0 24 24"><path d="M4 11.5l8-7 8 7"/><path d="M6.5 20h11"/><circle cx="12" cy="14.5" r="2.4" fill="currentColor" stroke="none"/></svg>';
   let faviconOrigine = null;
@@ -375,8 +378,8 @@
           h += rendreFlotteRail();
         } else {
           h += e.enfants.map((f) => {
-            const vid = f.vue || f.id, etat = e.id === "panorama" && SECTIONS_ETAT.indexOf(vid) >= 0, emo = e.id === "panorama" ? EMO_PANORAMA[vid] : "";
-            return '<button class="d19-si sub' + (VUE_IC[vid] || emo ? " ic" : "") + (emo ? " emo" : "") + (actif && E.vue === vid ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(vid) + '"' + (emo && INFO_PANORAMA[vid] ? ' title="' + esc(INFO_PANORAMA[vid]) + '"' : "") + '>' + (emo ? ico(emo) : VUE_IC[vid] ? ico(VUE_IC[vid]) : '<span class="pt"></span>') + "<span>" + esc(f.libelle) + "</span>" + (etat ? '<span class="mx-st" data-mst="' + vid + '" hidden></span>' : "") + nbDe(f) + "</button>";
+            const vid = f.vue || f.id, etat = e.id === "panorama" && SECTIONS_ETAT.indexOf(vid) >= 0, emo = e.id === "panorama" ? EMO_PANORAMA[vid] : "", ik = icoSub(e, f);
+            return '<button class="d19-si sub' + (ik ? " ic" : "") + (emo ? " emo" : "") + (actif && E.vue === vid ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(vid) + '"' + (emo && INFO_PANORAMA[vid] ? ' title="' + esc(INFO_PANORAMA[vid]) + '"' : "") + '>' + (ik ? ico(ik) : '<span class="pt"></span>') + "<span>" + esc(f.libelle) + "</span>" + (etat ? '<span class="mx-st" data-mst="' + vid + '" hidden></span>' : "") + nbDe(f) + "</button>";
           }).join("");
         }
       }
@@ -432,7 +435,7 @@
     } else {
       el.innerHTML = fil + '<button class="pin' + (estPin() ? " on" : "") + '" data-pin="1" title="Épingler cette page" aria-label="Épingler cette page">' + ico("star") + "</button>"
         + '<button class="tit" data-ms="1" aria-label="Changer d’entrée">' + ico(e.icone) + "<span>" + esc(e.libelle) + "</span>" + ico("down") + "</button>"
-        + '<div class="pills" id="d19-pills">' + e.enfants.map((f) => '<button class="pl' + (E.vue === (f.vue || f.id) ? " on" : "") + '" data-sx="' + esc(f.vue || f.id) + '">' + esc(f.libelle) + "</button>").join("") + "</div>";
+        + '<div class="pills" id="d19-pills">' + e.enfants.map((f) => '<button class="pl' + (E.vue === (f.vue || f.id) ? " on" : "") + '" data-sx="' + esc(f.vue || f.id) + '">' + (icoSub(e, f) ? ico(icoSub(e, f)) : "") + esc(f.libelle) + "</button>").join("") + "</div>";
     }
     const on = $(".pl.on", el), pc = $("#d19-pills");
     if (on && pc) pc.scrollLeft = Math.max(0, on.offsetLeft - 70);

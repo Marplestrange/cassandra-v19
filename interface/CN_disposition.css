@@ -358,6 +358,7 @@ body.d19 #tab-vault .cf-back{display:none}
 #app-container[data-w="xs"] #d19-strip .pills::-webkit-scrollbar{display:none}
 #app-container[data-w="xs"] #d19-strip .pl{flex:none;padding:7px 13px;border-radius:999px;border:1px solid var(--line);font:500 12.5px 'JetBrains Mono',monospace;color:var(--txt-soft);white-space:nowrap;background:none;cursor:pointer}
 #app-container[data-w="xs"] #d19-strip .pl.on{background:var(--acc-10);color:var(--accent);border-color:var(--accent);font-weight:600}
+#app-container[data-w="xs"] #d19-strip .pl{display:inline-flex;align-items:center;gap:6px}#app-container[data-w="xs"] #d19-strip .pl>svg.d-i{width:14px;height:14px;flex:none}
 #app-container[data-w="xs"].d19-haut-masque #d19-top{transform:translateY(-100%);opacity:0;pointer-events:none;height:0}
 #app-container.d19-tactile .d19-si,#app-container.d19-tactile #d19-cass .fi{min-height:44px}
 #app-container.d19-tactile .d19-ib{width:44px;height:44px}
