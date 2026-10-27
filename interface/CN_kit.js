@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #f2cbf3
+// VERSION CN : 0.1.0  #8c33bc
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Le kit commun des écrans V19 : la feuille de style, les icônes, les petits composants (pastille, titre, « il y a »), la fenêtre de confirmation.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=f2cbf3 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=8c33bc ▼▼▼
 // Le kit commun des écrans V19 : la feuille de style, les icônes, les petits composants (pastille, titre, « il y a »), la fenêtre de confirmation.
 // Chaque écran se met dans un <div class="kit"> ; la feuille s'injecte UNE fois (id kit-css). La Logithèque l'a inauguré ; les écrans suivants le réemploient.
 (function () {
@@ -64,6 +64,8 @@
     ".kit .chips{display:flex;gap:6px;flex-wrap:wrap}.kit .chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font:600 12.5px 'Inter',sans-serif;color:var(--txt-soft);cursor:pointer}" +
     ".kit .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.kit .stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;text-align:left}" +
     ".kit .stat b{font:650 26px/1.1 ui-monospace,Menlo,monospace;color:var(--txt-strong,var(--txt))}.kit .stat span{font-size:12.5px;color:var(--txt-soft)}.kit .stat.al b{color:var(--warn)}.kit .stat.ok b{color:var(--ok)}" +
+    ".kit .onglets{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}.kit .onglets button{border:0;background:transparent;padding:9px 14px;font:600 13px 'Inter',sans-serif;color:var(--txt-soft);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}.kit .onglets button.on{color:var(--accent);border-bottom-color:var(--accent)}" +
+    ".kit .grille-m{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.kit .jauge{height:8px;border-radius:99px;background:var(--line);overflow:hidden}.kit .jauge i{display:block;height:100%;background:var(--accent);border-radius:99px}.kit .jauge.al i{background:var(--warn)}.kit .jauge.dg i{background:var(--danger)}" +
     ".kit .liste{display:flex;flex-direction:column}.kit .li{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}.kit .li:first-child{border-top:0}.kit .li .sp{flex:1;min-width:180px}.kit .li .sp b{color:var(--txt-strong,var(--txt))}.kit .li .note{display:block}" +
     ".kit .pourquoi{display:flex;gap:6px;align-items:flex-start;font-size:11.5px;color:var(--info,var(--accent));margin-top:2px}.kit .pourquoi svg{width:13px;height:13px;flex:none;margin-top:2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}" +
     ".kit .alerte{border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:10px 14px;background:var(--surface);display:flex;gap:12px;align-items:center;flex-wrap:wrap}.kit .alerte.al{border-left-color:var(--warn)}.kit .alerte.dg{border-left-color:var(--danger)}.kit .alerte.in{border-left-color:var(--accent)}" +
