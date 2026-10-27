@@ -1,0 +1,437 @@
+<!doctype html>
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : maquette-utilisateurs.html -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Maquette de « Utilisateurs et groupes » : listes, fiches, droits par utilisateur et par groupe. -->
+<!-- MÉTHODE    : page autonome, données fictives ; la logique des droits (accordé / refusé / hérité + le pourquoi) est celle du moteur noyau/CN_droits.py. -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼ -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Utilisateurs et groupes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+:root{
+--bg:#eef2f4;--halo:#dfeceb;--glass:rgba(255,255,255,.72);--glass2:rgba(255,255,255,.92);--surface:#fff;--sunk:#f4f7f8;
+--txt:#0f1b26;--txt2:#4a5866;--txt3:#8794a1;--line:rgba(15,27,38,.09);--line2:rgba(15,27,38,.16);
+--accent:#0b7c74;--acc10:rgba(11,124,116,.10);--acc20:rgba(11,124,116,.2);--on-accent:#fff;
+--ok:#047857;--ok10:rgba(4,120,87,.11);--warn:#b45309;--warn10:rgba(180,83,9,.12);--danger:#be123c;--danger10:rgba(190,18,60,.10);--info:#2f5fd0;--info10:rgba(47,95,208,.10);
+--shadow:0 1px 2px rgba(15,27,38,.05),0 10px 28px -10px rgba(15,27,38,.14);
+--sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+--bg:#0c1318;--halo:#0f2a2a;--glass:rgba(24,33,41,.74);--glass2:rgba(28,38,47,.94);--surface:#16212a;--sunk:#101a21;
+--txt:#e6edf2;--txt2:#a9b6c2;--txt3:#6f7d8b;--line:rgba(230,237,242,.09);--line2:rgba(230,237,242,.18);
+--accent:#38b9ae;--acc10:rgba(56,185,174,.13);--acc20:rgba(56,185,174,.26);--on-accent:#04201d;
+--ok:#3ecf9a;--ok10:rgba(62,207,154,.13);--warn:#e7a14c;--warn10:rgba(231,161,76,.14);--danger:#ff6b8b;--danger10:rgba(255,107,139,.13);--info:#7ea3ff;--info10:rgba(126,163,255,.13);
+--shadow:0 1px 2px rgba(0,0,0,.35),0 10px 28px -10px rgba(0,0,0,.55);color-scheme:dark}}
+:root[data-theme="dark"]{
+--bg:#0c1318;--halo:#0f2a2a;--glass:rgba(24,33,41,.74);--glass2:rgba(28,38,47,.94);--surface:#16212a;--sunk:#101a21;
+--txt:#e6edf2;--txt2:#a9b6c2;--txt3:#6f7d8b;--line:rgba(230,237,242,.09);--line2:rgba(230,237,242,.18);
+--accent:#38b9ae;--acc10:rgba(56,185,174,.13);--acc20:rgba(56,185,174,.26);--on-accent:#04201d;
+--ok:#3ecf9a;--ok10:rgba(62,207,154,.13);--warn:#e7a14c;--warn10:rgba(231,161,76,.14);--danger:#ff6b8b;--danger10:rgba(255,107,139,.13);--info:#7ea3ff;--info10:rgba(126,163,255,.13);
+--shadow:0 1px 2px rgba(0,0,0,.35),0 10px 28px -10px rgba(0,0,0,.55);color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(900px 420px at 15% -10%,var(--halo),transparent 70%),var(--bg);color:var(--txt);font:14px/1.45 var(--sans);padding-block:18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer}
+svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.app{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:248px minmax(0,1fr);gap:16px;align-items:start}
+.note{max-width:1280px;margin:0 auto 14px;font-size:12.5px;color:var(--txt2);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.note b{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.note .th{margin-left:auto;border:1px solid var(--line2);background:var(--glass);border-radius:999px;padding:5px 12px;font-size:12px}
+
+/* colonne */
+.side{background:var(--glass);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:12px 8px 14px;position:sticky;top:12px;backdrop-filter:blur(14px)}
+.side .head{display:flex;gap:10px;align-items:center;padding:6px 8px 12px}
+.side .head .ic{width:32px;height:32px;border-radius:10px;background:var(--acc10);color:var(--accent);display:grid;place-items:center}
+.side .head b{display:block;font-size:13.5px}.side .head small{color:var(--txt3);font-size:11.5px}
+.side h2{font:600 10.5px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--accent);opacity:.85;margin:0;padding:12px 10px 6px;display:flex;gap:8px;align-items:center}
+.side h2:after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.si{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;text-align:left;padding:7px 10px;border-radius:10px;color:var(--txt2);font-size:13.5px}
+.si:hover{background:var(--acc10)}.si.on{background:var(--surface);color:var(--txt);font-weight:600;box-shadow:var(--shadow)}
+.si.sub{padding-left:36px;font-size:13px}.si .car{margin-left:auto;transition:transform .15s}.si.open .car{transform:rotate(90deg)}
+.si.sep-top{margin-top:2px}
+.si .nb{margin-left:auto;font:600 10.5px var(--mono);color:var(--txt3)}
+.dim{opacity:.55}
+
+/* page */
+.page{display:none}.page.on{display:block}
+.crumbs{font-size:12px;color:var(--txt3);display:flex;gap:6px;align-items:center;margin-bottom:10px}
+.crumbs b{color:var(--txt2);font-weight:600}
+h1{font-size:24px;margin:0 0 4px;letter-spacing:-.01em}h1+.lead{color:var(--txt2);margin:0 0 16px;max-width:70ch}
+.card{background:var(--glass2);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.card h3{margin:0 0 10px;font-size:14px;display:flex;gap:8px;align-items:center}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.bar .grow{flex:1;min-width:120px}
+.btn{border:1px solid var(--line2);background:var(--surface);border-radius:10px;padding:7px 12px;font-size:13px;display:inline-flex;gap:7px;align-items:center;font-weight:500}
+.btn:hover{border-color:var(--accent)}.btn.pri{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+.btn.dng{color:var(--danger)}.btn.sm{padding:4px 9px;font-size:12px;border-radius:8px}
+input[type=text],input[type=email],input[type=password],select{font:inherit;color:var(--txt);background:var(--surface);border:1px solid var(--line2);border-radius:10px;padding:8px 11px;width:100%}
+input:focus,select:focus{outline:2px solid var(--acc20);border-color:var(--accent)}
+label.f{display:block;font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);margin:0 0 5px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 9px;background:var(--sunk);color:var(--txt2);border:1px solid var(--line);white-space:nowrap}
+.chip.ok{background:var(--ok10);color:var(--ok);border-color:transparent}.chip.warn{background:var(--warn10);color:var(--warn);border-color:transparent}
+.chip.dng{background:var(--danger10);color:var(--danger);border-color:transparent}.chip.acc{background:var(--acc10);color:var(--accent);border-color:transparent}.chip.info{background:var(--info10);color:var(--info);border-color:transparent}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:600 12px var(--mono);background:var(--acc10);color:var(--accent);flex:none}
+.av.big{width:64px;height:64px;font-size:20px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.2px}
+th{font:600 10.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);text-align:left;padding:10px 12px;background:var(--sunk);white-space:nowrap}
+td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:middle}
+tr.rowlink{cursor:pointer}tr.rowlink:hover td{background:var(--acc10)}
+.who{display:flex;gap:10px;align-items:center;min-width:0}.who b{display:block}.who small{color:var(--txt3)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 16px;overflow-x:auto}
+.tab{border:0;background:none;padding:9px 14px;color:var(--txt2);font-weight:500;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.pane{display:none}.pane.on{display:block}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+.hero{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.hero .meta{flex:1;min-width:200px}.hero h2{margin:0;font-size:20px}.hero p{margin:2px 0 0;color:var(--txt2)}
+
+/* droits */
+.kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.kpi{flex:1;min-width:104px;border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:var(--surface)}
+.kpi b{font:600 20px var(--mono);display:block}.kpi span{font-size:11.5px;color:var(--txt3)}
+.kpi.ok b{color:var(--ok)}.kpi.dng b{color:var(--danger)}.kpi.warn b{color:var(--warn)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden;background:var(--surface);flex:none}
+.seg button{border:0;background:none;padding:5px 10px;font-size:12px;font-weight:500;color:var(--txt2);border-left:1px solid var(--line)}
+.seg button:first-child{border-left:0}
+.seg button.on{background:var(--sunk);color:var(--txt);font-weight:600}
+.seg button.on[data-v=accorde]{background:var(--ok10);color:var(--ok)}
+.seg button.on[data-v=refuse]{background:var(--danger10);color:var(--danger)}
+.seg button.on[data-v=herite]{background:var(--info10);color:var(--info)}
+.seg.lock{opacity:.45;pointer-events:none}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.fl{border:1px solid var(--line2);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:12px;font-weight:500}
+.fl.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.mod{border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-bottom:10px;overflow:hidden}
+.modh{display:flex;gap:10px;align-items:center;padding:10px 12px;background:var(--sunk);cursor:pointer;flex-wrap:wrap}
+.modh .nm{display:flex;gap:8px;align-items:center;font-weight:600;min-width:200px}.modh .nm .car{transition:transform .15s}
+.mod.open .car{transform:rotate(90deg)}
+.modh .cnt{font:600 11px var(--mono);color:var(--txt3)}
+.modh .acts{margin-left:auto;display:flex;gap:6px}
+.bulk{border:0;background:none;color:var(--accent);font-size:12px;font-weight:600;padding:3px 6px;border-radius:6px}.bulk:hover{background:var(--acc10)}
+.mbar{height:5px;border-radius:99px;background:var(--line);width:90px;overflow:hidden;display:flex}
+.mbar i{display:block;height:100%;background:var(--ok)}.mbar i.d{background:var(--danger)}
+.rights{display:none}.mod.open .rights{display:block}
+.rt{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:9px 12px;border-top:1px solid var(--line)}
+.rt:hover{background:var(--acc10)}
+.rt.chg{background:var(--warn10)}
+.rt .lb b{font-weight:500}.rt .lb small{display:block;color:var(--txt3);font-size:11.8px}
+.rt .eff{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;min-width:0}
+.why{font-size:11.5px;color:var(--txt3)}
+.sens{color:var(--warn)}
+.savebar{position:sticky;bottom:12px;display:none;gap:12px;align-items:center;flex-wrap:wrap;background:var(--txt);color:var(--bg);border-radius:14px;padding:10px 14px;box-shadow:var(--shadow);margin-top:12px;z-index:5}
+.savebar.on{display:flex}.savebar b{font-weight:600}.savebar .grow{flex:1}
+.savebar .btn{color:var(--txt)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:10px 16px;border-radius:12px;box-shadow:var(--shadow);font-size:13px;display:none;gap:12px;align-items:center;z-index:30}
+.toast.on{display:flex}.toast button{background:none;border:0;color:var(--accent);font-weight:700;filter:brightness(1.6)}
+.adm{display:flex;gap:12px;align-items:center;justify-content:space-between;border:1px dashed var(--warn);background:var(--warn10);border-radius:12px;padding:10px 12px;margin-bottom:12px;flex-wrap:wrap}
+.sw{position:relative;width:38px;height:22px;border-radius:99px;background:var(--line2);border:0;flex:none;transition:background .15s}
+.sw:after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.sw.on{background:var(--accent)}.sw.on:after{left:19px}
+.side-r .card{margin-bottom:12px}.side-r .card h3{font-size:13px}
+.lst{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.lst li{display:flex;gap:8px;align-items:center;font-size:13px}
+.idea{border:1px dashed var(--line2);border-radius:12px;padding:10px 12px;font-size:12.5px;color:var(--txt2);background:var(--sunk)}
+.idea b{color:var(--accent)}
+/* matrice */
+.mx td,.mx th{text-align:center;padding:8px 6px}.mx td:first-child,.mx th:first-child{text-align:left;padding-left:12px;white-space:nowrap}
+.dot{display:inline-block;width:22px;height:22px;border-radius:7px;font:600 10.5px/22px var(--mono);text-align:center;background:var(--sunk);color:var(--txt3)}
+.dot.a{background:var(--ok10);color:var(--ok)}.dot.p{background:var(--warn10);color:var(--warn)}.dot.r{background:var(--danger10);color:var(--danger)}
+.tl{list-style:none;margin:0;padding:0}.tl li{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}.tl li:first-child{border-top:0}.tl time{font:500 11.5px var(--mono);color:var(--txt3);min-width:84px}
+@media (max-width:980px){.app{grid-template-columns:1fr}.side{position:static}.split{grid-template-columns:1fr}.rt{grid-template-columns:1fr}.rt .eff{justify-content:flex-start}}
+</style>
+</head>
+<body>
+<div class="note"><b>Maquette</b><span>Données fictives. Cliquez les listes, ouvrez une fiche, réglez des droits : tout est manipulable.</span><button class="th" id="theme">Clair / sombre</button></div>
+<div class="app">
+<aside class="side">
+  <div class="head"><div class="ic"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3 2.9-4.5 5.5-4.5s4.9 1.5 5.5 4.5"/><path d="M16 6.5a3.2 3.2 0 0 1 0 6M17.5 14.7c2 .6 3.3 2.1 3.7 4.3"/></svg></div><div><b>Paramètres</b><small>Utilisateurs et groupes</small></div></div>
+  <h2>Personnel</h2>
+  <button class="si dim"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="3.5" width="15" height="17" rx="2"/><circle cx="11.5" cy="10.5" r="2.3"/></svg>Mon compte</button>
+  <button class="si dim"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Mon coffre-fort</button>
+  <h2>Institutionnel</h2>
+  <button class="si dim"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2"/></svg>Société / Organisation</button>
+  <button class="si open" data-open="u"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3 2.9-4.5 5.5-4.5s4.9 1.5 5.5 4.5"/></svg>Utilisateurs<svg class="i car" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+  <div id="g-u">
+    <button class="si sub" data-go="u-new"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nouvel utilisateur</button>
+    <button class="si sub on" data-go="u-list"><svg class="i" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Liste des utilisateurs<span class="nb">6</span></button>
+  </div>
+  <button class="si open" data-open="g"><svg class="i" viewBox="0 0 24 24"><circle cx="8" cy="9" r="2.6"/><circle cx="16.5" cy="9" r="2.6"/><path d="M2.5 18c.5-2.6 2.6-4 5.5-4M21.5 18c-.5-2.6-2.6-4-5.5-4M8 18c.6-3 2.3-4.2 4-4.2s3.4 1.2 4 4.2"/></svg>Groupes<svg class="i car" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+  <div id="g-g">
+    <button class="si sub" data-go="g-new"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nouveau groupe</button>
+    <button class="si sub" data-go="g-list"><svg class="i" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Liste des groupes<span class="nb">4</span></button>
+    <button class="si sub" data-go="matrice"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Matrice des droits</button>
+  </div>
+  <button class="si dim"><svg class="i" viewBox="0 0 24 24"><path d="M10 4a2 2 0 1 1 4 0v2h4a1 1 0 0 1 1 1v4h-2a2 2 0 1 0 0 4h2v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4z"/></svg>Logithèque</button>
+  <h2>Général</h2>
+  <button class="si dim"><svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>Maintenance</button>
+  <button class="si dim"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/></svg>Danger</button>
+</aside>
+<main>
+
+<!-- ───────── LISTE DES UTILISATEURS ───────── -->
+<section class="page on" id="u-list">
+  <div class="crumbs">Paramètres › Utilisateurs › <b>Liste des utilisateurs</b></div>
+  <h1>Liste des utilisateurs</h1><p class="lead">Les comptes qui entrent dans Cassandra, ce qu'ils peuvent y faire, et ce qu'ils ont fait récemment.</p>
+  <div class="bar"><input class="grow" type="text" id="u-q" placeholder="Rechercher un nom, une adresse, un groupe…" style="max-width:360px">
+    <div class="filters" id="u-f"><button class="fl on" data-f="tous">Tous</button><button class="fl" data-f="admin">Administrateurs</button><button class="fl" data-f="ext">Externes</button><button class="fl" data-f="agent">Agents</button><button class="fl" data-f="off">Désactivés</button></div>
+    <button class="btn pri" data-go="u-new"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nouvel utilisateur</button></div>
+  <div class="tw"><table><thead><tr><th>Utilisateur</th><th>Fonction</th><th>Groupes</th><th>Droits</th><th>Dernière connexion</th><th>État</th></tr></thead><tbody id="u-body"></tbody></table></div>
+</section>
+
+<!-- ───────── NOUVEL UTILISATEUR ───────── -->
+<section class="page" id="u-new">
+  <div class="crumbs">Paramètres › Utilisateurs › <b>Nouvel utilisateur</b></div>
+  <h1>Nouvel utilisateur</h1><p class="lead">Trois étapes : qui est-ce, à quoi a-t-il accès, comment entre-t-il. Les droits peuvent partir d'un modèle ou d'un groupe, et se retoucher ensuite.</p>
+  <div class="split"><div>
+    <div class="card"><h3>① Identité</h3><div class="grid2">
+      <div><label class="f">Identifiant de connexion</label><input type="text" placeholder="prenom.nom"></div>
+      <div><label class="f">Nom affiché</label><input type="text" placeholder="Prénom Nom"></div>
+      <div><label class="f">Fonction</label><input type="text" placeholder="Comptable, technicien…"></div>
+      <div><label class="f">Adresse e-mail</label><input type="email" placeholder="prenom@exemple.fr"></div>
+      <div><label class="f">Téléphone</label><input type="text"></div>
+      <div><label class="f">Langue</label><select><option>Français</option><option>English</option></select></div></div></div>
+    <div class="card"><h3>② Accès</h3><div class="grid2">
+      <div><label class="f">Type de compte</label><select id="nu-type"><option>Interne — fait partie de l'organisation</option><option>Externe — invité, périmètre réduit</option><option>Agent — une IA invitée</option></select></div>
+      <div><label class="f">Modèle de droits</label><select><option>— aucun, je règle à la main —</option><option>Lecteur : consulter seulement</option><option selected>Opérateur : travailler sans administrer</option><option>Comptable</option><option>Support</option><option>Administrateur délégué</option></select></div></div>
+      <div style="margin-top:12px"><label class="f">Groupes</label><div class="filters" id="nu-groupes"></div></div>
+      <div style="margin-top:12px" class="idea"><b>Aperçu des droits obtenus</b> — « Opérateur » + groupe Support : <span class="chip ok">38 accordés</span> <span class="chip info">29 hérités</span> <span class="chip warn">4 sensibles</span> · <a href="#" data-go="u-fiche" style="color:var(--accent)">voir le détail</a></div></div>
+    <div class="card"><h3>③ Entrée</h3>
+      <div class="grid2"><div><label class="f">Mot de passe provisoire</label><input type="password" value="••••••••••••"></div>
+      <div><label class="f">Première connexion</label><select><option>Doit changer son mot de passe</option><option>Garde ce mot de passe</option></select></div>
+      <div><label class="f">Compte valable jusqu'au</label><input type="text" placeholder="Sans limite (ou une date)"></div>
+      <div><label class="f">Sites accessibles</label><select><option>Aucun</option><option>Tous</option><option>Choisir…</option></select></div></div>
+      <div class="bar" style="margin:12px 0 0"><label style="display:flex;gap:8px;align-items:center"><button class="sw on" type="button" aria-label="Inviter par lien"></button>Envoyer un lien d'invitation par e-mail</label></div></div>
+    <div class="bar"><button class="btn pri" data-toast="Utilisateur créé — Défaire">Créer l'utilisateur</button><button class="btn" data-go="u-list">Annuler</button></div>
+  </div>
+  <div class="side-r"><div class="card"><h3>Ce qui se passe</h3><ul class="lst"><li><span class="chip acc">1</span>Le compte est créé, rien n'est jamais perdu : « Défaire » le retire.</li><li><span class="chip acc">2</span>Il hérite des groupes cochés, puis du modèle.</li><li><span class="chip acc">3</span>L'invitation expire au bout de 72 h.</li></ul></div>
+  <div class="idea"><b>Idée</b> — un compte <i>externe</i> n'a jamais plus de droits que celui qui l'a invité (comme les agents invités aujourd'hui).</div></div></div>
+</section>
+
+<!-- ───────── FICHE UTILISATEUR ───────── -->
+<section class="page" id="u-fiche">
+  <div class="crumbs">Paramètres › Utilisateurs › <a href="#" data-go="u-list" style="color:inherit">Liste</a> › <b id="f-crumb">Julien Roy</b></div>
+  <div class="hero"><div class="av big" id="f-av">JR</div><div class="meta"><h2 id="f-nom">Julien Roy</h2><p id="f-sub">Comptable · julien.roy@exemple.fr</p><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap" id="f-chips"></div></div>
+    <div class="bar" style="margin:0"><button class="btn" data-toast="Vous voyez maintenant Cassandra comme Julien Roy (lecture seule)"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Voir comme</button><button class="btn" data-toast="Lien de réinitialisation envoyé">Réinitialiser le mot de passe</button><button class="btn dng" data-toast="Compte désactivé — Défaire">Désactiver</button></div></div>
+  <div class="tabs" id="f-tabs"><button class="tab" data-t="fiche">Fiche</button><button class="tab on" data-t="droits">Droits</button><button class="tab" data-t="groupes">Groupes</button><button class="tab" data-t="secu">Sécurité</button><button class="tab" data-t="journal">Journal</button></div>
+
+  <div class="pane" data-p="fiche"><div class="card"><div class="grid2"><div><label class="f">Identifiant</label><input type="text" value="julien.roy"></div><div><label class="f">Nom affiché</label><input type="text" value="Julien Roy"></div><div><label class="f">Fonction</label><input type="text" value="Comptable"></div><div><label class="f">E-mail</label><input type="email" value="julien.roy@exemple.fr"></div><div><label class="f">Téléphone</label><input type="text" value="06 12 34 56 78"></div><div><label class="f">Langue</label><select><option>Français</option></select></div></div></div></div>
+
+  <div class="pane on" data-p="droits">
+    <div class="split"><div>
+      <div class="adm" id="adm"><div><b>Administrateur</b><br><span style="color:var(--txt2);font-size:12.5px">Un administrateur a tous les droits, sans exception : les réglages ci-dessous sont suspendus tant que ce commutateur est actif.</span></div><button class="sw" id="adm-sw" aria-label="Administrateur"></button></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="bar"><input type="text" id="r-q" class="grow" placeholder="Chercher un droit : « supprimer », « pare-feu », « factures »…" style="max-width:380px">
+        <div class="filters" id="r-f"><button class="fl on" data-f="tous">Tous</button><button class="fl" data-f="accorde">Accordés</button><button class="fl" data-f="refuse">Refusés</button><button class="fl" data-f="sens">Sensibles</button><button class="fl" data-f="chg">Modifiés</button></div>
+        <button class="bulk" id="r-open">Tout dérouler</button><button class="bulk" id="r-close">Tout replier</button></div>
+      <div id="mods"></div>
+      <div class="savebar" id="savebar"><b id="sv-n">0 modification</b><span class="grow" style="opacity:.7;font-size:12.5px">Rien n'est appliqué tant que vous n'avez pas validé.</span><button class="btn sm" id="sv-diff">Voir le détail</button><button class="btn sm" id="sv-undo">Annuler</button><button class="btn sm pri" id="sv-go">Appliquer</button></div>
+    </div>
+    <div class="side-r">
+      <div class="card"><h3>Partir d'un modèle</h3><select id="tpl"><option>— choisir —</option><option>Lecteur</option><option>Opérateur</option><option>Comptable</option><option>Support</option><option>Administrateur délégué</option></select><p class="why" style="margin:8px 0 0">Applique un jeu de droits, que vous pouvez ensuite retoucher. <a href="#" style="color:var(--accent)">Enregistrer ces droits comme modèle</a></p></div>
+      <div class="card"><h3>Copier depuis…</h3><select><option>— un autre utilisateur —</option><option>Sarah Benali</option><option>Camille Martin</option></select></div>
+      <div class="card"><h3>Comment lire</h3><ul class="lst"><li><span class="seg"><button class="on" data-v="herite" style="pointer-events:none">Hérité</button></span>suit le groupe, sinon le défaut</li><li><span class="seg"><button class="on" data-v="accorde" style="pointer-events:none">Accordé</button></span>forcé pour ce compte</li><li><span class="seg"><button class="on" data-v="refuse" style="pointer-events:none">Refusé</button></span>forcé, même si un groupe l'accorde</li><li><svg class="i sens" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>droit sensible : journalisé, jamais accordé par un groupe</li></ul></div>
+      <div class="idea"><b>Idée</b> — chaque ligne dit <i>pourquoi</i> la décision est ce qu'elle est (« accordé par Comptabilité », « refusé au compte »). C'est ce que le moteur sait déjà dire ; ici il le montre.</div>
+    </div></div>
+  </div>
+
+  <div class="pane" data-p="groupes"><div class="card"><h3>Appartenance</h3><div class="filters" id="f-groupes"></div><p class="why">Cocher ajoute au groupe, décocher retire. Les droits du groupe s'appliquent aussitôt, sauf ceux refusés au compte.</p></div></div>
+  <div class="pane" data-p="secu"><div class="grid2"><div class="card"><h3>Sessions ouvertes</h3><ul class="lst"><li><span class="chip ok">En cours</span>Chrome · Windows · Lyon · il y a 4 min <button class="btn sm" style="margin-left:auto">Fermer</button></li><li><span class="chip">Hier</span>Téléphone · Android · il y a 1 j <button class="btn sm" style="margin-left:auto">Fermer</button></li></ul><div class="bar" style="margin:12px 0 0"><button class="btn dng sm">Fermer toutes les sessions</button></div></div><div class="card"><h3>Second facteur</h3><ul class="lst"><li><span class="chip ok">Actif</span>Clé de sécurité « Yubikey bleue »</li><li><span class="chip warn">Absent</span>Application d'authentification</li></ul><p class="why" style="margin:10px 0 0"><b class="sens">Idée</b> — exiger le second facteur pour tout droit sensible.</p></div></div></div>
+  <div class="pane" data-p="journal"><div class="card"><h3>Ce qui a changé pour ce compte</h3><ul class="tl" id="jrn"></ul></div></div>
+</section>
+
+<!-- ───────── NOUVEAU GROUPE ───────── -->
+<section class="page" id="g-new">
+  <div class="crumbs">Paramètres › Groupes › <b>Nouveau groupe</b></div>
+  <h1>Nouveau groupe</h1><p class="lead">Un groupe réunit des utilisateurs qui font le même travail : on règle les droits une fois, et chacun les reçoit.</p>
+  <div class="split"><div><div class="card"><div class="grid2"><div><label class="f">Nom du groupe</label><input type="text" placeholder="Comptabilité"></div><div><label class="f">Identifiant</label><input type="text" placeholder="comptabilite"></div></div>
+    <div style="margin-top:12px"><label class="f">Description</label><input type="text" placeholder="À quoi sert ce groupe"></div>
+    <div class="grid2" style="margin-top:12px"><div><label class="f">Partir d'un modèle</label><select><option>— vide —</option><option>Lecteur</option><option>Opérateur</option><option>Comptable</option><option>Support</option></select></div><div><label class="f">Ou copier un groupe</label><select><option>— aucun —</option><option>Direction</option><option>Comptabilité</option><option>Support</option></select></div></div>
+    <div style="margin-top:12px"><label class="f">Membres de départ</label><div class="filters" id="ng-membres"></div></div></div>
+    <div class="bar"><button class="btn pri" data-toast="Groupe créé — Défaire" data-go="g-fiche">Créer le groupe</button><button class="btn" data-go="g-list">Annuler</button></div></div>
+  <div class="side-r"><div class="idea"><b>Idée</b> — un groupe peut être <i>emboîté</i> dans un autre (Direction contient Comptabilité) : les droits se cumulent vers le haut, les refus l'emportent.</div></div></div>
+</section>
+
+<!-- ───────── LISTE DES GROUPES ───────── -->
+<section class="page" id="g-list">
+  <div class="crumbs">Paramètres › Groupes › <b>Liste des groupes</b></div>
+  <h1>Liste des groupes</h1><p class="lead">Chaque groupe porte ses droits ; ses membres les reçoivent, sauf refus posé sur leur compte.</p>
+  <div class="bar"><input class="grow" type="text" placeholder="Rechercher un groupe…" style="max-width:320px"><button class="btn" data-go="matrice">Matrice des droits</button><button class="btn pri" data-go="g-new"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nouveau groupe</button></div>
+  <div class="tw"><table><thead><tr><th>Groupe</th><th>Membres</th><th>Droits accordés</th><th>Droits sensibles</th><th>Modifié</th></tr></thead><tbody id="g-body"></tbody></table></div>
+</section>
+
+<!-- ───────── FICHE GROUPE ───────── -->
+<section class="page" id="g-fiche">
+  <div class="crumbs">Paramètres › Groupes › <a href="#" data-go="g-list" style="color:inherit">Liste</a> › <b id="gf-crumb">Comptabilité</b></div>
+  <div class="hero"><div class="av big" style="border-radius:18px">C</div><div class="meta"><h2 id="gf-nom">Comptabilité</h2><p>Factures, paiements, relances — 2 membres</p></div><div class="bar" style="margin:0"><button class="btn" data-toast="Groupe dupliqué — Défaire">Dupliquer</button><button class="btn dng" data-toast="Groupe supprimé — Défaire">Supprimer</button></div></div>
+  <div class="tabs" id="gf-tabs"><button class="tab on" data-t="membres">Membres</button><button class="tab" data-t="droits">Droits du groupe</button><button class="tab" data-t="journal">Journal</button></div>
+  <div class="pane on" data-p="membres"><div class="card"><h3>Membres</h3><div id="gf-membres" style="display:grid;gap:8px"></div><div class="bar" style="margin:12px 0 0"><select style="max-width:260px"><option>Ajouter un utilisateur…</option><option>Sarah Benali</option><option>Marc Dubois</option></select><button class="btn">Ajouter</button></div></div></div>
+  <div class="pane" data-p="droits"><div class="idea" style="margin-bottom:12px"><b>Même écran que pour un utilisateur</b> — mêmes modules, mêmes états (hérité / accordé / refusé), mais sans le « pourquoi » du groupe : à la place, chaque ligne indique <i>combien de membres</i> en bénéficient et si l'un d'eux a un refus personnel.</div>
+    <div class="card"><div class="bar"><input type="text" class="grow" placeholder="Chercher un droit…" style="max-width:340px"><button class="bulk">Tout dérouler</button></div>
+      <div class="mod open"><div class="modh"><span class="nm"><svg class="i car" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>Facturation</span><span class="cnt">5 / 6</span><span class="acts"><button class="bulk">Tout</button><button class="bulk">Aucun</button></span></div><div class="rights">
+        <div class="rt"><span class="seg"><button data-v="herite">Hérité</button><button class="on" data-v="accorde">Accordé</button><button data-v="refuse">Refusé</button></span><div class="lb"><b>Consulter les factures</b></div><div class="eff"><span class="chip ok">2 / 2 membres</span></div></div>
+        <div class="rt"><span class="seg"><button data-v="herite">Hérité</button><button class="on" data-v="accorde">Accordé</button><button data-v="refuse">Refusé</button></span><div class="lb"><b>Créer et modifier des factures</b></div><div class="eff"><span class="chip ok">2 / 2 membres</span></div></div>
+        <div class="rt"><span class="seg"><button data-v="herite">Hérité</button><button class="on" data-v="accorde">Accordé</button><button data-v="refuse">Refusé</button></span><div class="lb"><b>Valider les paiements</b></div><div class="eff"><span class="chip warn">1 refus personnel</span></div></div></div></div></div></div>
+  <div class="pane" data-p="journal"><div class="card"><ul class="tl"><li><time>il y a 2 j</time><span><b>Camille Martin</b> a accordé « Valider les paiements » au groupe</span></li><li><time>il y a 9 j</time><span><b>Camille Martin</b> a ajouté Julien Roy au groupe</span></li><li><time>il y a 21 j</time><span>Groupe créé à partir du modèle « Comptable »</span></li></ul></div></div>
+</section>
+
+<!-- ───────── MATRICE ───────── -->
+<section class="page" id="matrice">
+  <div class="crumbs">Paramètres › Groupes › <b>Matrice des droits</b></div>
+  <h1>Matrice des droits</h1><p class="lead">Qui peut quoi, d'un coup d'œil : les groupes en colonnes, les modules en lignes. Cliquez une case pour descendre au détail.</p>
+  <div class="bar"><div class="filters"><button class="fl on">Groupes</button><button class="fl">Utilisateurs</button></div><span class="why">Légende : <span class="dot a">8</span> tout accordé · <span class="dot p">3</span> en partie · <span class="dot">0</span> rien · <span class="dot r">!</span> refus posé</span></div>
+  <div class="tw"><table class="mx"><thead><tr><th>Module</th><th>Direction</th><th>Comptabilité</th><th>Support</th><th>Techniciens</th></tr></thead><tbody id="mx-body"></tbody></table></div>
+  <div class="idea" style="margin-top:12px"><b>Idée</b> — une ligne « Qui détient ce droit ? » : taper « supprimer un site » et voir tous les comptes qui peuvent le faire, avec le pourquoi pour chacun. C'est l'audit en une seule question.</div>
+</section>
+
+</main></div>
+<div class="toast" id="toast"><span id="toast-t"></span><button id="toast-undo">Défaire</button></div>
+
+<script>
+/* ── données fictives ── */
+const GROUPES=[{id:"direction",nom:"Direction",desc:"Pilotage",m:["camille"],acc:61,sens:9,mod:"il y a 3 j"},{id:"compta",nom:"Comptabilité",desc:"Factures, paiements",m:["julien","sarah"],acc:24,sens:2,mod:"il y a 2 j"},{id:"support",nom:"Support",desc:"Tickets, courrier",m:["sarah"],acc:31,sens:1,mod:"il y a 6 j"},{id:"tech",nom:"Techniciens",desc:"Sites, flotte",m:["marc"],acc:36,sens:5,mod:"il y a 12 j"}];
+const USERS=[
+{id:"camille",nom:"Camille Martin",fn:"Directrice",mail:"camille@exemple.fr",grp:["direction"],admin:true,type:"interne",co:"il y a 2 min",etat:"actif"},
+{id:"julien",nom:"Julien Roy",fn:"Comptable",mail:"julien.roy@exemple.fr",grp:["compta"],admin:false,type:"interne",co:"il y a 4 min",etat:"actif"},
+{id:"sarah",nom:"Sarah Benali",fn:"Support client",mail:"sarah@exemple.fr",grp:["support","compta"],admin:false,type:"interne",co:"il y a 1 h",etat:"actif"},
+{id:"marc",nom:"Marc Dubois",fn:"Prestataire — maintenance",mail:"marc@prestataire.fr",grp:["tech"],admin:false,type:"externe",co:"il y a 12 j",etat:"actif"},
+{id:"lea",nom:"Léa Fontaine",fn:"Stagiaire",mail:"lea@exemple.fr",grp:[],admin:false,type:"interne",co:"jamais",etat:"off"},
+{id:"itare",nom:"agent:itare",fn:"Itare — invité de Camille",mail:"—",grp:[],admin:false,type:"agent",co:"à l'instant",etat:"actif"}];
+/* module → droits : [id, libellé, sensible, note, défaut] */
+const MODS=[
+{id:"uti",nom:"Utilisateurs & Groupes",ic:"M9 9m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0M3.5 19c.6-3 2.9-4.5 5.5-4.5s4.9 1.5 5.5 4.5",d:[
+ ["uti.lire","Consulter les autres utilisateurs",0,"",1],["uti.droits_lire","Consulter les permissions des autres utilisateurs",0,"Réservé aux administrateurs avancés",0],["uti.creer","Créer / modifier les utilisateurs et leurs permissions",1,"",0],["uti.mdp","Modifier le mot de passe des autres utilisateurs",1,"",0],["uti.suppr","Supprimer ou désactiver les autres utilisateurs",1,"",0],["uti.siens","Consulter ses propres permissions",0,"",1]]},
+{id:"cou",nom:"Courrier",ic:"M3 6h18v12H3zM3.5 7l8.5 6 8.5-6",d:[["cou.lire","Lire le courrier",0,"",1],["cou.ecrire","Écrire et répondre",0,"",1],["cou.envoyer","Envoyer au nom de l'organisation",1,"Un envoi sort de la maison",0],["cou.suppr","Supprimer des messages",0,"",0]]},
+{id:"age",nom:"Agenda",ic:"M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",d:[["age.lire","Consulter l'agenda",0,"",1],["age.ecrire","Créer et modifier des événements",0,"",1],["age.partage","Voir l'agenda des autres",0,"",0]]},
+{id:"fac",nom:"Facturation",ic:"M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",d:[["fac.lire","Consulter les factures",0,"",0],["fac.ecrire","Créer et modifier des factures",0,"",0],["fac.valider","Valider les paiements",1,"Engage de l'argent",0],["fac.exporter","Exporter la comptabilité",0,"",0]]},
+{id:"sit",nom:"Sites",ic:"M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18",d:[["sit.lire","Voir les sites",0,"",1],["sit.publier","Publier une modification",1,"Visible du public",0],["sit.suppr","Supprimer un site",1,"Avec corbeille",0]]},
+{id:"sec",nom:"Sécurité",ic:"M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z",d:[["sec.lire","Consulter l'état de sécurité",0,"",0],["sec.pare","Modifier le pare-feu",1,"Peut couper l'accès à la machine",0],["sec.cles","Gérer les clés et jetons",1,"",0]]},
+{id:"par",nom:"Paramètres",ic:"M12 9a3 3 0 1 0 0 6a3 3 0 0 0 0-6M12 3v3M12 18v3M3 12h3M18 12h3",d:[["par.lire","Consulter les réglages",0,"",0],["par.ecrire","Modifier les réglages",1,"",0],["par.sauv","Lancer et restaurer une sauvegarde",1,"",0]]}];
+/* ce que chaque groupe accorde (id droit → true) ; états propres au compte : id → 'accorde'|'refuse' */
+const GACC={direction:"uti.lire uti.siens cou.lire cou.ecrire cou.envoyer age.lire age.ecrire age.partage fac.lire fac.valider sit.lire sec.lire par.lire".split(" "),compta:"fac.lire fac.ecrire fac.valider fac.exporter cou.lire age.lire".split(" "),support:"cou.lire cou.ecrire cou.suppr age.lire age.ecrire uti.lire".split(" "),tech:"sit.lire sit.publier sec.lire par.lire".split(" ")};
+const PROPRE={julien:{"fac.valider":"refuse","cou.envoyer":"accorde"},sarah:{"uti.creer":"accorde"},marc:{"sit.suppr":"refuse"},camille:{},lea:{},itare:{"cou.lire":"accorde"}};
+let cur=null,draft={},base={},filtre="tous",q="";
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ini=n=>n.replace(/agent:/,"").split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();
+const u=id=>USERS.find(x=>x.id===id),g=id=>GROUPES.find(x=>x.id===id);
+const ic=d=>'<svg class="i" viewBox="0 0 24 24"><path d="'+d+'"/></svg>';
+const SH='<svg class="i sens" viewBox="0 0 24 24" title="Droit sensible"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>';
+
+/* décision : le même ordre que le moteur (admin → compte → groupes → défaut), avec son pourquoi */
+function decide(user,droit,defaut,sens,etatPropre,admin){
+  if(admin)return{ok:true,why:"administrateur"};
+  if(etatPropre==="accorde")return{ok:true,why:"accordé au compte"};
+  if(etatPropre==="refuse")return{ok:false,why:"refusé au compte"};
+  const gs=user.grp.filter(gr=>GACC[gr].includes(droit));
+  if(gs.length&&!sens)return{ok:true,why:"par "+gs.map(x=>g(x).nom).join(", ")};
+  if(gs.length&&sens)return{ok:false,why:"sensible : un groupe ne l'accorde pas ("+g(gs[0]).nom+")"};
+  return defaut?{ok:true,why:"défaut"}:{ok:false,why:"aucun accord"};
+}
+function etatDe(id){return id in draft?draft[id]:(base[id]||"herite")}
+function renderDroits(){
+  const user=cur,admin=$("#adm-sw").classList.contains("on");
+  let tot={ok:0,no:0,props:0,sens:0},html="";
+  MODS.forEach(m=>{
+    let n=0,rows="",nm=0;
+    m.d.forEach(([id,lib,sens,note,defaut])=>{
+      const e=etatDe(id),r=decide(user,id,defaut,sens,e==="herite"?null:e,admin);
+      if(r.ok)tot.ok++;else tot.no++; if(e!=="herite")tot.props++; if(sens&&r.ok)tot.sens++;
+      const chg=(id in draft)&&draft[id]!==(base[id]||"herite");
+      const txt=(lib+" "+note+" "+m.nom).toLowerCase();
+      if(q&&!txt.includes(q))return;
+      if(filtre==="accorde"&&!r.ok)return;if(filtre==="refuse"&&r.ok)return;if(filtre==="sens"&&!sens)return;if(filtre==="chg"&&!chg)return;
+      if(r.ok)n++;nm++;
+      rows+='<div class="rt'+(chg?" chg":"")+'" data-id="'+id+'"><span class="seg'+(admin?" lock":"")+'">'+["herite:Hérité","accorde:Accordé","refuse:Refusé"].map(s=>{const[v,l]=s.split(":");return'<button data-v="'+v+'"'+(e===v?' class="on"':"")+'>'+l+'</button>'}).join("")+'</span>'
+       +'<div class="lb"><b>'+esc(lib)+'</b>'+(sens?" "+SH:"")+(note?'<small>'+esc(note)+'</small>':"")+'</div>'
+       +'<div class="eff"><span class="chip '+(r.ok?"ok":"dng")+'">'+(r.ok?"✓ Autorisé":"✕ Refusé")+'</span><span class="why">'+esc(r.why)+'</span></div></div>';
+    });
+    if(!nm&&(q||filtre!=="tous"))return;
+    const ok=m.d.filter(([id,,s,,d])=>decide(user,id,d,s,etatDe(id)==="herite"?null:etatDe(id),admin).ok).length;
+    const pct=ok/m.d.length*100;
+    html+='<div class="mod'+(window.__open||q||filtre!=="tous"?" open":"")+'" data-m="'+m.id+'"><div class="modh"><span class="nm"><svg class="i car" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>'+ic(m.ic)+esc(m.nom)+'</span><span class="mbar"><i style="width:'+pct+'%"></i></span><span class="cnt">'+ok+' / '+m.d.length+'</span><span class="acts"><button class="bulk" data-b="accorde">Tout</button><button class="bulk" data-b="refuse">Aucun</button><button class="bulk" data-b="herite">Hériter</button></span></div><div class="rights">'+rows+'</div></div>';
+  });
+  $("#mods").innerHTML=html||'<div class="card why">Aucun droit ne correspond.</div>';
+  $("#kpis").innerHTML='<div class="kpi ok"><b>'+tot.ok+'</b><span>droits autorisés</span></div><div class="kpi dng"><b>'+tot.no+'</b><span>refusés</span></div><div class="kpi"><b>'+tot.props+'</b><span>réglés sur ce compte</span></div><div class="kpi warn"><b>'+tot.sens+'</b><span>sensibles autorisés</span></div>';
+  const n=Object.keys(draft).filter(k=>draft[k]!==(base[k]||"herite")).length;
+  $("#savebar").classList.toggle("on",n>0);$("#sv-n").textContent=n+" modification"+(n>1?"s":"")+" non appliquée"+(n>1?"s":"");
+}
+function ouvrirFiche(id){
+  cur=u(id);draft={};base=Object.assign({},PROPRE[id]||{});filtre="tous";q="";$("#r-q").value="";
+  $$("#r-f .fl").forEach(b=>b.classList.toggle("on",b.dataset.f==="tous"));
+  $("#f-nom").textContent=cur.nom;$("#f-crumb").textContent=cur.nom;$("#f-av").textContent=ini(cur.nom);$("#f-sub").textContent=cur.fn+" · "+cur.mail;
+  $("#f-chips").innerHTML=(cur.admin?'<span class="chip warn">Administrateur</span>':"")+'<span class="chip '+(cur.type==="externe"?"info":cur.type==="agent"?"acc":"")+'">'+cur.type+'</span>'+cur.grp.map(x=>'<span class="chip acc">'+esc(g(x).nom)+'</span>').join("")+(cur.etat==="off"?'<span class="chip dng">désactivé</span>':"");
+  $("#adm-sw").classList.toggle("on",cur.admin);
+  $("#f-groupes").innerHTML=GROUPES.map(x=>'<button class="fl'+(cur.grp.includes(x.id)?" on":"")+'">'+esc(x.nom)+'</button>').join("");
+  $("#jrn").innerHTML=['il y a 2 h|<b>Camille Martin</b> a refusé « Valider les paiements » à ce compte','il y a 9 j|Ajouté au groupe <b>Comptabilité</b>','il y a 21 j|Compte créé à partir du modèle « Comptable »','il y a 21 j|Invitation envoyée, acceptée 40 min plus tard'].map(x=>{const[a,b]=x.split("|");return'<li><time>'+a+'</time><span>'+b+'</span></li>'}).join("");
+  $$("#f-tabs .tab").forEach(t=>t.classList.toggle("on",t.dataset.t==="droits"));$$("#u-fiche .pane").forEach(p=>p.classList.toggle("on",p.dataset.p==="droits"));
+  go("u-fiche");renderDroits();
+}
+/* listes */
+function renderUsers(){
+  const f=$("#u-f .on").dataset.f,qq=$("#u-q").value.toLowerCase();
+  $("#u-body").innerHTML=USERS.filter(x=>(f==="tous"||(f==="admin"&&x.admin)||(f==="ext"&&x.type==="externe")||(f==="agent"&&x.type==="agent")||(f==="off"&&x.etat==="off"))&&(x.nom+x.mail+x.fn+x.grp.map(y=>g(y).nom).join(" ")).toLowerCase().includes(qq)).map(x=>{
+    let ok=0;MODS.forEach(m=>m.d.forEach(([id,,s,,d])=>{const e=(PROPRE[x.id]||{})[id];if(decide(x,id,d,s,e||null,x.admin).ok)ok++}));
+    return'<tr class="rowlink" data-u="'+x.id+'"><td><div class="who"><span class="av">'+ini(x.nom)+'</span><div><b>'+esc(x.nom)+'</b><small>'+esc(x.mail)+'</small></div></div></td><td>'+esc(x.fn)+'</td><td>'+(x.grp.map(y=>'<span class="chip acc">'+esc(g(y).nom)+'</span>').join(" ")||'<span class="why">aucun</span>')+'</td><td>'+(x.admin?'<span class="chip warn">tous (admin)</span>':'<span class="chip ok">'+ok+' droits</span>')+'</td><td class="why">'+x.co+'</td><td>'+(x.etat==="off"?'<span class="chip dng">désactivé</span>':'<span class="chip ok">actif</span>')+(x.type!=="interne"?' <span class="chip info">'+x.type+'</span>':"")+'</td></tr>'}).join("");
+}
+function renderGroupes(){
+  $("#g-body").innerHTML=GROUPES.map(x=>'<tr class="rowlink" data-g="'+x.id+'"><td><div class="who"><span class="av" style="border-radius:11px">'+x.nom[0]+'</span><div><b>'+esc(x.nom)+'</b><small>'+esc(x.desc)+'</small></div></div></td><td>'+x.m.map(y=>'<span class="av" style="width:26px;height:26px;font-size:10px;display:inline-grid;margin-right:-6px;border:2px solid var(--surface)">'+ini(u(y).nom)+'</span>').join("")+' <span class="why" style="margin-left:10px">'+x.m.length+'</span></td><td><span class="chip ok">'+x.acc+'</span></td><td><span class="chip warn">'+x.sens+'</span></td><td class="why">'+x.mod+'</td></tr>').join("");
+  $("#nu-groupes").innerHTML=GROUPES.map(x=>'<button class="fl">'+esc(x.nom)+'</button>').join("");
+  $("#ng-membres").innerHTML=USERS.filter(x=>x.type!=="agent").map(x=>'<button class="fl">'+esc(x.nom)+'</button>').join("");
+  $("#mx-body").innerHTML=MODS.map(m=>'<tr><td><b>'+esc(m.nom)+'</b></td>'+GROUPES.map(gr=>{const a=m.d.filter(d=>GACC[gr.id].includes(d[0])).length,n=m.d.length;return'<td><span class="dot '+(a===n?"a":a?"p":"")+'">'+a+'</span></td>'}).join("")+'</tr>').join("");
+}
+function ouvrirGroupe(id){
+  const x=g(id);$("#gf-nom").textContent=x.nom;$("#gf-crumb").textContent=x.nom;
+  $("#gf-membres").innerHTML=x.m.map(y=>'<div class="who" style="justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--surface)"><div class="who"><span class="av">'+ini(u(y).nom)+'</span><div><b>'+esc(u(y).nom)+'</b><small>'+esc(u(y).fn)+'</small></div></div><button class="btn sm">Retirer</button></div>').join("");
+  go("g-fiche");
+}
+function go(p){$$(".page").forEach(s=>s.classList.toggle("on",s.id===p));$$(".si.sub").forEach(b=>b.classList.toggle("on",b.dataset.go===p||(p==="u-fiche"&&b.dataset.go==="u-list")||(p==="g-fiche"&&b.dataset.go==="g-list")));scrollTo({top:0})}
+let undoCb=null;function toast(t){$("#toast-t").textContent=t.replace(/ — Défaire$/,"");$("#toast-undo").style.display=/Défaire$/.test(t)?"":"none";$("#toast").classList.add("on");clearTimeout(window.__tt);window.__tt=setTimeout(()=>$("#toast").classList.remove("on"),3600)}
+
+/* événements */
+document.addEventListener("click",e=>{
+  const c=(s)=>e.target.closest(s);let x;
+  if(x=c("[data-go]")){e.preventDefault();go(x.dataset.go);if(x.dataset.toast)toast(x.dataset.toast);return}
+  if(x=c("[data-toast]")){toast(x.dataset.toast);return}
+  if(x=c("[data-open]")){x.classList.toggle("open");$("#g-"+x.dataset.open).style.display=x.classList.contains("open")?"":"none";return}
+  if(x=c("tr[data-u]")){ouvrirFiche(x.dataset.u);return}
+  if(x=c("tr[data-g]")){ouvrirGroupe(x.dataset.g);return}
+  if(x=c("#u-f .fl")){$$("#u-f .fl").forEach(b=>b.classList.remove("on"));x.classList.add("on");renderUsers();return}
+  if(x=c("#r-f .fl")){$$("#r-f .fl").forEach(b=>b.classList.remove("on"));x.classList.add("on");filtre=x.dataset.f;renderDroits();return}
+  if(x=c(".fl:not([data-f])")){x.classList.toggle("on");return}
+  if(x=c("#f-tabs .tab")){$$("#f-tabs .tab").forEach(b=>b.classList.toggle("on",b===x));$$("#u-fiche .pane").forEach(p=>p.classList.toggle("on",p.dataset.p===x.dataset.t));return}
+  if(x=c("#gf-tabs .tab")){$$("#gf-tabs .tab").forEach(b=>b.classList.toggle("on",b===x));$$("#g-fiche .pane").forEach(p=>p.classList.toggle("on",p.dataset.p===x.dataset.t));return}
+  if(x=c("#adm-sw")){x.classList.toggle("on");renderDroits();return}
+  if(x=c(".sw")){x.classList.toggle("on");return}
+  if(x=c("#mods .rt .seg button")){const id=x.closest(".rt").dataset.id;draft[id]=x.dataset.v;renderDroits();return}
+  if(x=c("#mods .bulk")){const m=MODS.find(k=>k.id===x.closest(".mod").dataset.m);m.d.forEach(d=>draft[d[0]]=x.dataset.b==="refuse"?"refuse":x.dataset.b);renderDroits();e.stopPropagation();return}
+  if(x=c("#mods .modh")){x.parentElement.classList.toggle("open");return}
+  if(c("#r-open")){window.__open=1;$$("#mods .mod").forEach(m=>m.classList.add("open"));return}
+  if(c("#r-close")){window.__open=0;$$("#mods .mod").forEach(m=>m.classList.remove("open"));return}
+  if(c("#sv-undo")){draft={};renderDroits();return}
+  if(c("#sv-diff")){const k=Object.keys(draft).filter(i=>draft[i]!==(base[i]||"herite"));toast(k.length+" changement(s) : "+k.slice(0,3).join(", ")+(k.length>3?"…":""));return}
+  if(c("#sv-go")){Object.keys(draft).forEach(k=>{if(draft[k]==="herite")delete base[k];else base[k]=draft[k]});PROPRE[cur.id]=base;draft={};renderDroits();toast("Droits appliqués, journalisés — Défaire");return}
+  if(c("#theme")){const r=document.documentElement;const d=getComputedStyle(r).colorScheme==="dark"||r.dataset.theme==="dark";r.dataset.theme=d?"light":"dark";return}
+});
+$("#r-q").addEventListener("input",e=>{q=e.target.value.toLowerCase();renderDroits()});
+$("#u-q").addEventListener("input",renderUsers);
+$("#tpl").addEventListener("change",e=>{if(e.target.selectedIndex<1)return;const r={Lecteur:["uti.lire","cou.lire","age.lire","sit.lire"],Opérateur:["uti.lire","cou.lire","cou.ecrire","age.lire","age.ecrire","sit.lire","sit.publier"],Comptable:GACC.compta,Support:GACC.support,"Administrateur délégué":MODS.flatMap(m=>m.d.map(d=>d[0]))}[e.target.value]||[];MODS.forEach(m=>m.d.forEach(d=>{draft[d[0]]=r.includes(d[0])?"accorde":"herite"}));renderDroits();toast("Modèle « "+e.target.value+" » préparé — rien n'est appliqué avant validation")});
+$("#toast-undo").addEventListener("click",()=>{$("#toast").classList.remove("on")});
+renderUsers();renderGroupes();
+</script>
+</body>
+</html>
