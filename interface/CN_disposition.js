@@ -134,7 +134,7 @@
     canvas: ["notes", ""], liens: ["notes", ""], fusion: ["notes", ""], menage: ["notes", ""], ranger: ["notes", ""], mail: ["courrier", ""], rep: ["repertoire", ""], doc: ["documents", ""] };
   // Une rubrique de Paramètres généraux qui a son entrée de menu : elle s'ouvre seule, sans le rail des autres rubriques.
   const RUBRIQUES_SEULES = { "agents-ia": ["agents", "machine", "Agents IA"], "reg-tiers": ["tiers", "machine", "Services tiers"], "reg-maintenance": ["maintenance", "machine", "Maintenance"], "reg-donnees": ["donnees", "machine", "Données"], "reg-veille": ["veille", "machine", "Surveillances"], "reg-canaux": ["canaux", "machine", "Canaux"], "reg-danger": ["danger", "machine", "Danger"],
-    "moi-agenda": ["moi-agenda", "moi", "Mon agenda"], "moi-boite": ["moi-boite", "moi", "Ma boîte mail"], "moi-itare": ["moi-itare", "moi", "Mon Itare"] };
+    "moi-boite": ["moi-boite", "moi", "Ma boîte mail"], "moi-itare": ["moi-itare", "moi", "Mon Itare"] };
   function rubriqueSeule(r) {
     const t = document.getElementById("tab-settings"); if (!t) return;
     if (typeof window.setVision === "function") window.setVision(r[1]);
@@ -215,7 +215,11 @@
     if (E.actif && E.g === "desk" && E.e === v[0] && (E.vue || "") === v[1]) return;
     aller("desk", v[0], v[1], true);
   }
+  // « Réglage agenda » est une vue de l'entrée Agenda qui ouvre la rubrique « Mon agenda » de Mon compte, seule.
+  const REGLAGE_AGENDA = ["moi-agenda", "moi", "Réglage agenda"];
+  const estReglageAgenda = () => !!(E.actif && E.actif.e === "agenda" && E.actif.vue === "reglage");
   function ouvrirNoeud(n, vue) {
+    if (n.id.split(".")[0] === "agenda" && vue === "reglage") { window.switchTab("settings"); setTimeout(function () { rubriqueSeule(REGLAGE_AGENDA); }, 80); return; }
     if (n.onglet) { window.switchTab(n.onglet); pontVue(n.id.split(".")[0], vue || n.vue || ""); }
     else if (n.ecran && CASS.ouvrirEcran) CASS.ouvrirEcran(n.ecran, n.libelle);
   }
@@ -252,7 +256,7 @@
     if (pg) { entrerPageV18(nom, pg); return; }                          // une page de l'ancienne interface qui a sa colonne (le coffre)
     if (nom !== E.pageNom) { E.fil = null; E.lateral = null; E.pageNom = ""; }
     // Une rubrique de Paramètres généraux ouverte depuis son entrée de menu reste l'entrée active ; et ces entrées, qui partagent l'onglet « settings », ne s'attrapent pas par lui (Mon compte et Paramètres généraux restent des pages à part).
-    if (nom === "settings" && E.actif && RUBRIQUES_SEULES[E.actif.e]) { rendre(); return; }
+    if (nom === "settings" && E.actif && (RUBRIQUES_SEULES[E.actif.e] || estReglageAgenda())) { rendre(); return; }
     let trouve = null;
     for (const g of E.d.groupes) for (const e of g.entrees) {
       if (e.onglet === nom && !trouve && !RUBRIQUES_SEULES[e.id]) trouve = { g: g.id, e: e.id, vue: E.actif && E.actif.e === e.id ? E.actif.vue : "" };
@@ -882,6 +886,7 @@
     // Une rubrique de Paramètres généraux qui a son entrée de menu quitte le rail (sa pastille) ; sans l'entrée (module absent), elle reste là
     Object.keys(RUBRIQUES_SEULES).forEach((id) => document.body.classList.toggle("d19-rub-" + RUBRIQUES_SEULES[id][0], a(id)));
     document.body.classList.toggle("d19-rub-users", a("comptes:utilisateurs"));
+    document.body.classList.toggle("d19-rub-moi-agenda", a("agenda"));
   }
   function rendre() { marquerRubriques(); E.crMenu = null; rendreHaut(); rendreGauche(); rendreStrip(); if (E.panel) rendrePanel(); }
   async function charger() {

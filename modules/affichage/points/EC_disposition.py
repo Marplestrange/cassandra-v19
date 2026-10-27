@@ -42,11 +42,10 @@ MASQUES = ("salon",)
 PONT = (
     {"id": "accueil", "libelle": "Aujourd’hui", "groupe": "desk", "icone": "clock", "onglet": "bureau", "modules": (), "ordre": 10, "role": "utilisateur", "vues": ()},
     {"id": "agenda", "libelle": "Agenda", "groupe": "desk", "icone": "calendar", "onglet": "bureau", "modules": (), "ordre": 20, "role": "utilisateur",
-     "vues": (("calendrier", "Calendrier"), ("taches", "Tâches"), ("rappels", "Rappels"))},
+     "vues": (("calendrier", "Calendrier"), ("taches", "Tâches"), ("rappels", "Rappels"), ("reglage", "Réglage agenda"))},
     {"id": "projets", "libelle": "Projets", "groupe": "desk", "icone": "panorama", "onglet": "bureau", "modules": (), "ordre": 30, "role": "utilisateur", "vues": ()},
     {"id": "notes", "libelle": "Notes", "groupe": "desk", "icone": "scroll", "onglet": "bureau", "modules": (), "ordre": 40, "role": "utilisateur", "vues": ()},
     {"id": "courrier", "libelle": "Courrier", "groupe": "desk", "icone": "mail", "onglet": "bureau", "modules": (), "ordre": 50, "role": "utilisateur", "vues": ()},
-    {"id": "moi-agenda", "libelle": "Mon agenda", "groupe": "desk", "icone": "calendar", "onglet": "settings", "modules": (), "ordre": 25, "role": "utilisateur", "vues": ()},
     {"id": "moi-boite", "libelle": "Ma boîte mail", "groupe": "desk", "icone": "mail", "onglet": "settings", "modules": (), "ordre": 55, "role": "utilisateur", "vues": ()},
     {"id": "moi-itare", "libelle": "Mon Itare", "groupe": "desk", "icone": "bot", "onglet": "settings", "modules": (), "ordre": 80, "role": "utilisateur", "vues": ()},
     {"id": "repertoire", "libelle": "Répertoire", "groupe": "desk", "icone": "contacts", "onglet": "bureau", "modules": (), "ordre": 60, "role": "utilisateur", "vues": ()},
