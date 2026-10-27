@@ -133,7 +133,8 @@
   const VERS_MENU = { today: ["accueil", ""], cal: ["agenda", "calendrier"], tk: ["agenda", "taches"], rem: ["agenda", "rappels"], proj: ["projets", ""], notes: ["notes", ""], carnet: ["notes", ""],
     canvas: ["notes", ""], liens: ["notes", ""], fusion: ["notes", ""], menage: ["notes", ""], ranger: ["notes", ""], mail: ["courrier", ""], rep: ["repertoire", ""], doc: ["documents", ""] };
   // Une rubrique de Paramètres généraux qui a son entrée de menu : elle s'ouvre seule, sans le rail des autres rubriques.
-  const RUBRIQUES_SEULES = { "agents-ia": ["agents", "machine", "Agents IA"], "reg-tiers": ["tiers", "machine", "Services tiers"], "reg-maintenance": ["maintenance", "machine", "Maintenance"], "reg-donnees": ["donnees", "machine", "Données"], "reg-veille": ["veille", "machine", "Surveillances"], "reg-canaux": ["canaux", "machine", "Canaux"], "reg-danger": ["danger", "machine", "Danger"] };
+  const RUBRIQUES_SEULES = { "agents-ia": ["agents", "machine", "Agents IA"], "reg-tiers": ["tiers", "machine", "Services tiers"], "reg-maintenance": ["maintenance", "machine", "Maintenance"], "reg-donnees": ["donnees", "machine", "Données"], "reg-veille": ["veille", "machine", "Surveillances"], "reg-canaux": ["canaux", "machine", "Canaux"], "reg-danger": ["danger", "machine", "Danger"],
+    "moi-agenda": ["moi-agenda", "moi", "Mon agenda"], "moi-boite": ["moi-boite", "moi", "Ma boîte mail"], "moi-itare": ["moi-itare", "moi", "Mon Itare"] };
   function rubriqueSeule(r) {
     const t = document.getElementById("tab-settings"); if (!t) return;
     if (typeof window.setVision === "function") window.setVision(r[1]);

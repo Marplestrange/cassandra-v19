@@ -46,6 +46,9 @@ PONT = (
     {"id": "projets", "libelle": "Projets", "groupe": "desk", "icone": "panorama", "onglet": "bureau", "modules": (), "ordre": 30, "role": "utilisateur", "vues": ()},
     {"id": "notes", "libelle": "Notes", "groupe": "desk", "icone": "scroll", "onglet": "bureau", "modules": (), "ordre": 40, "role": "utilisateur", "vues": ()},
     {"id": "courrier", "libelle": "Courrier", "groupe": "desk", "icone": "mail", "onglet": "bureau", "modules": (), "ordre": 50, "role": "utilisateur", "vues": ()},
+    {"id": "moi-agenda", "libelle": "Mon agenda", "groupe": "desk", "icone": "calendar", "onglet": "settings", "modules": (), "ordre": 25, "role": "utilisateur", "vues": ()},
+    {"id": "moi-boite", "libelle": "Ma boîte mail", "groupe": "desk", "icone": "mail", "onglet": "settings", "modules": (), "ordre": 55, "role": "utilisateur", "vues": ()},
+    {"id": "moi-itare", "libelle": "Mon Itare", "groupe": "desk", "icone": "bot", "onglet": "settings", "modules": (), "ordre": 80, "role": "utilisateur", "vues": ()},
     {"id": "repertoire", "libelle": "Répertoire", "groupe": "desk", "icone": "contacts", "onglet": "bureau", "modules": (), "ordre": 60, "role": "utilisateur", "vues": ()},
     {"id": "documents", "libelle": "Documents", "groupe": "desk", "icone": "folder", "onglet": "bureau", "modules": (), "ordre": 70, "role": "utilisateur", "vues": ()},
     {"id": "panorama", "libelle": "Panorama", "groupe": "parc", "icone": "panorama", "onglet": "overview", "modules": ("vue",), "ordre": 10, "role": "admin", "vues": (

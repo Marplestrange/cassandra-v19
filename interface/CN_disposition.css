@@ -451,6 +451,9 @@ body.d19.d19-rub-donnees #tab-settings .set-nav-item[data-fam="donnees"]{display
 body.d19.d19-rub-veille #tab-settings .set-nav-item[data-fam="veille"]{display:none!important}
 body.d19.d19-rub-canaux #tab-settings .set-nav-item[data-fam="canaux"]{display:none!important}
 body.d19.d19-rub-danger #tab-settings .set-nav-item[data-fam="danger"]{display:none!important}
+body.d19.d19-rub-moi-agenda #tab-settings .set-nav-item[data-fam="moi-agenda"]{display:none!important}
+body.d19.d19-rub-moi-boite #tab-settings .set-nav-item[data-fam="moi-boite"]{display:none!important}
+body.d19.d19-rub-moi-itare #tab-settings .set-nav-item[data-fam="moi-itare"]{display:none!important}
 
 /* ▲▲▲ FIN BORNE CN ▲▲▲ */
 
