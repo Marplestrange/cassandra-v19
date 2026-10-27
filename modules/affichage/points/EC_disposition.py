@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.7.0)  #72bac4
+# VERSION EC : EC0 (référence 0.7.0)  #e57de7
 # HÔTE CN    : CN_module.py · disposition @1.0
 # RÔLE       : range les entrées de menu que les modules déclarent en groupes (barre du haut), entrées et sous-entrées (colonne de gauche), et en entrées du menu de l'avatar ; dit le pire niveau d'alerte de chaque entrée, de chaque groupe et du tout.
 # MÉTHODE    : fonction pure : une table de groupes, un repli par famille, un pont vers les onglets de l'ancienne interface ; chaque entrée reçue paraît une seule fois, rien n'est inventé, un groupe sans entrée n'existe pas.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=72bac4 ▼▼▼
+# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=e57de7 ▼▼▼
 
 # Les groupes de la barre du haut : (id, libellé, icône, ordre, interlocuteur par défaut du panneau).
 GROUPES = (
@@ -23,10 +23,11 @@ GROUPES = (
     ("secu", "Sécurité", "shield", 40, "cassandra"),
     ("obs", "Observatoire", "eye", 50, "cassandra"),
     ("auto", "Autonomie", "spark", 60, "cassandra"),
+    ("parametres", "Paramètres", "fam_systeme", 70, "cassandra"),
     ("modules", "Modules", "puzzle", 90, "cassandra"),
 )
 GROUPE_REPLI = "modules"
-MAX_GROUPES = 7
+MAX_GROUPES = 8
 
 # Un module qui ne dit pas son groupe est rangé selon sa famille ; une famille inconnue va au groupe de repli.
 REPLI_FAMILLE = {"securite": "secu", "supervision": "obs", "reseau": "parc", "hebergement": "parc", "sites": "parc", "systeme": "parc",
@@ -70,6 +71,11 @@ PONT = (
     {"id": "sensorium", "libelle": "Sensorium", "groupe": "obs", "icone": "health", "onglet": "sensorium", "modules": ("sensorium",), "ordre": 10, "role": "admin", "vues": ()},
     {"id": "historique", "libelle": "Historique", "groupe": "obs", "icone": "clock", "onglet": "history", "modules": ("mesures",), "ordre": 20, "role": "admin", "vues": ()},
     {"id": "journaux", "libelle": "Journaux", "groupe": "obs", "icone": "scroll", "onglet": "journal", "modules": ("journal",), "ordre": 30, "role": "utilisateur", "vues": ()},
+    {"id": "reg-tiers", "libelle": "Services tiers", "groupe": "parametres", "icone": "puzzle", "onglet": "settings", "modules": ("reglages",), "ordre": 30, "role": "admin", "vues": ()},
+    {"id": "reg-maintenance", "libelle": "Maintenance", "groupe": "parametres", "icone": "tasks", "onglet": "settings", "modules": ("reglages",), "ordre": 10, "role": "admin", "vues": ()},
+    {"id": "reg-donnees", "libelle": "Données", "groupe": "parametres", "icone": "archive", "onglet": "settings", "modules": ("reglages",), "ordre": 20, "role": "admin", "vues": ()},
+    {"id": "reg-veille", "libelle": "Surveillances", "groupe": "parametres", "icone": "eye", "onglet": "settings", "modules": ("sensorium",), "ordre": 50, "role": "admin", "vues": ()},
+    {"id": "reg-canaux", "libelle": "Canaux", "groupe": "parametres", "icone": "bell", "onglet": "settings", "modules": ("canaux",), "ordre": 40, "role": "admin", "vues": ()},
     {"id": "agents-ia", "libelle": "Agents IA", "groupe": "auto", "icone": "bot", "onglet": "settings", "modules": ("agents",), "ordre": 5, "role": "admin", "vues": ()},
     {"id": "evolution", "libelle": "Évolution", "groupe": "auto", "icone": "evo", "onglet": "evolution", "modules": ("evolution",), "ordre": 10, "role": "admin", "vues": ()},
     {"id": "proactivite", "libelle": "Proactivité", "groupe": "auto", "icone": "bolt", "onglet": "proactive", "modules": ("proactif",), "ordre": 20, "role": "admin", "vues": ()},

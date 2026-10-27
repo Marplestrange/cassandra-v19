@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #54253a
+// VERSION CN : 0.1.0  #dfb013
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=54253a ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=dfb013 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -32656,7 +32656,9 @@ function setVision(v){
         if (t) b.title = t.textContent || '';
     });
     setRailReprendre();
-    if (setVisionDe(ETAT.reglages._setFam || '') !== v) setFam(SET_VISIONS[v][0]);
+    const _prem = SET_VISIONS[v].find(function(f){ const b = document.querySelector('#tab-settings .set-nav-item[data-fam="' + f + '"]'); return b && getComputedStyle(b).display !== 'none'; }) || SET_VISIONS[v][0];
+    const _cur = ETAT.reglages._setFam || '', _bc = document.querySelector('#tab-settings .set-nav-item[data-fam="' + _cur + '"]');
+    if (setVisionDe(_cur) !== v || !_bc || getComputedStyle(_bc).display === 'none') setFam(_prem);       // une rubrique déplacée dans le menu n'est plus dans le rail : on ouvre la première qui y reste
     try { localStorage.setItem('cass_set_vision', v); } catch(e) {}
 }
 

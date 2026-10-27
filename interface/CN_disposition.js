@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #30fb9a
+// VERSION CN : 0.1.0  #97de9b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=30fb9a ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=97de9b ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -133,7 +133,7 @@
   const VERS_MENU = { today: ["accueil", ""], cal: ["agenda", "calendrier"], tk: ["agenda", "taches"], rem: ["agenda", "rappels"], proj: ["projets", ""], notes: ["notes", ""], carnet: ["notes", ""],
     canvas: ["notes", ""], liens: ["notes", ""], fusion: ["notes", ""], menage: ["notes", ""], ranger: ["notes", ""], mail: ["courrier", ""], rep: ["repertoire", ""], doc: ["documents", ""] };
   // Une rubrique de Paramètres généraux qui a son entrée de menu : elle s'ouvre seule, sans le rail des autres rubriques.
-  const RUBRIQUES_SEULES = { "agents-ia": ["agents", "machine", "Agents IA"] };
+  const RUBRIQUES_SEULES = { "agents-ia": ["agents", "machine", "Agents IA"], "reg-tiers": ["tiers", "machine", "Services tiers"], "reg-maintenance": ["maintenance", "machine", "Maintenance"], "reg-donnees": ["donnees", "machine", "Données"], "reg-veille": ["veille", "machine", "Surveillances"], "reg-canaux": ["canaux", "machine", "Canaux"] };
   function rubriqueSeule(r) {
     const t = document.getElementById("tab-settings"); if (!t) return;
     if (typeof window.setVision === "function") window.setVision(r[1]);
@@ -250,9 +250,11 @@
     const pg = PAGES_V18[nom];
     if (pg) { entrerPageV18(nom, pg); return; }                          // une page de l'ancienne interface qui a sa colonne (le coffre)
     if (nom !== E.pageNom) { E.fil = null; E.lateral = null; E.pageNom = ""; }
+    // Une rubrique de Paramètres généraux ouverte depuis son entrée de menu reste l'entrée active ; et ces entrées, qui partagent l'onglet « settings », ne s'attrapent pas par lui (Mon compte et Paramètres généraux restent des pages à part).
+    if (nom === "settings" && E.actif && RUBRIQUES_SEULES[E.actif.e]) { rendre(); return; }
     let trouve = null;
     for (const g of E.d.groupes) for (const e of g.entrees) {
-      if (e.onglet === nom && !trouve) trouve = { g: g.id, e: e.id, vue: E.actif && E.actif.e === e.id ? E.actif.vue : "" };
+      if (e.onglet === nom && !trouve && !RUBRIQUES_SEULES[e.id]) trouve = { g: g.id, e: e.id, vue: E.actif && E.actif.e === e.id ? E.actif.vue : "" };
       else if (e.ecran && CASS.nomOnglet && CASS.nomOnglet(e.ecran) === nom) trouve = { g: g.id, e: e.id, vue: "" };
       else for (const f of e.enfants) if (f.ecran && CASS.nomOnglet && CASS.nomOnglet(f.ecran) === nom) trouve = { g: g.id, e: e.id, vue: f.vue || f.id };
     }
@@ -273,12 +275,12 @@
     lg.style.backgroundImage = logoBarre ? "url(" + logoBarre + ")" : "";
     lg.innerHTML = logoBarre ? "" : TOIT;
     favicon(o.logo_carre || o.logo);
-    $("#d19-groupes").innerHTML = E.d.groupes.map((g, i) => '<button class="d19-gr' + (g.id === E.g && E.actif ? " on" : "") + '" data-g="' + esc(g.id) + '" title="' + esc(g.libelle) + " · Alt+" + (i + 1) + '" aria-label="' + esc(g.libelle) + '">' + ico(g.icone) + pastille(g) + "</button>").join("");
+    $("#d19-groupes").innerHTML = groupesVisibles().map((g, i) => '<button class="d19-gr' + (g.id === E.g && E.actif ? " on" : "") + '" data-g="' + esc(g.id) + '" title="' + esc(g.libelle) + " · Alt+" + (i + 1) + '" aria-label="' + esc(g.libelle) + '">' + ico(g.icone) + pastille(g) + "</button>").join("");
     const urg = !!(E.idees && E.idees.urgent);
     $("#d19-btn-cass").classList.toggle("d19-idee", urg);
     $("#d19-btn-cass").classList.toggle("actif", E.panel);
     const vt = $("#d19-vtxt"); if (vt) vt.textContent = E.d.version || "19";
-    const pg = E.d.groupes, aff = pg.length > 4 ? pg.slice(0, 4) : pg;
+    const pg = groupesVisibles(), aff = pg.length > 4 ? pg.slice(0, 4) : pg;
     const bt = (g) => '<button class="' + (g.id === E.g && E.actif ? "on" : "") + '" data-g="' + esc(g.id) + '" data-bas="1">' + ico(g.icone) + "<span>" + esc(g.libelle) + "</span>" + pastille(g) + "</button>";
     $("#d19-bas").innerHTML = aff.slice(0, 2).map(bt).join("") + '<button class="cent' + (E.panel ? " on" : "") + (urg ? " d19-idee" : "") + '" data-cbas="1" aria-label="Itare et Cassandra">' + ico("spark") + "</button>" + aff.slice(2).map(bt).join("")
       + (pg.length > 4 ? '<button class="' + (pg.slice(4).some((g) => g.id === E.g) ? "on" : "") + '" data-plus="1">' + ico("dots") + "<span>Plus</span></button>" : "");
@@ -312,12 +314,30 @@
     const e = g.entrees.find((x) => x.badge && (x.badge.niveau === "danger" || x.badge.niveau === "alerte")) || g.entrees[0];
     aller(g.id, e.id, "");
   }
+  // Le grand menu « Paramètres » n'est pas une tuile : on y entre par le menu de l'avatar, et sa colonne de gauche liste tout ce qu'il contient.
+  const groupesVisibles = () => (E.d ? E.d.groupes.filter((g) => g.id !== "parametres") : []);
+  function estParametres() {
+    if (!E.d) return false;
+    if (E.actif) return E.g === "parametres";
+    return !!(E.fil && E.fil[0] === "Paramètres") || E.hors === "settings" || E.hors === "vault" || E.pageNom === "vault";
+  }
+  function colonneParametres() {
+    const reglages = E.hors === "settings" && typeof ETAT !== "undefined" ? ETAT.reglages._setVision : "";
+    const pe = ((E.d.groupes.find((g) => g.id === "parametres") || {}).entrees) || [];
+    const bouton = (att, actif, ic, lib) => '<button class="d19-si ent' + (actif ? " on" : "") + '" ' + att + ' data-tip="' + esc(lib) + '">' + ico(ic || "puzzle") + "<span>" + esc(lib) + "</span></button>";
+    let h = bouton('data-sw="moi"', reglages === "moi", "contacts", "Mon compte") + bouton('data-sw="vault"', E.pageNom === "vault" || E.hors === "vault", "lock", "Mon coffre-fort");
+    (E.d.avatar || []).forEach((a) => { h += bouton('data-sw="av:' + esc(a.id) + '"', !!(E.pageNom && a.ecran && CASS.nomOnglet && E.pageNom === CASS.nomOnglet(a.ecran)), a.icone, a.libelle); });
+    h += bouton('data-sw="machine"', reglages === "machine", "fam_systeme", "Paramètres généraux");
+    pe.forEach((e) => { h += bouton('data-sw="e:' + esc(e.id) + '"', !!(E.actif && E.g === "parametres" && E.e === e.id), e.icone, e.libelle); });
+    return h;
+  }
   function rendreGauche() {
     const g = ent(), sd = $("#d19-side"); rendreCapsule(E.side === "rail" && !isPetit()); if (!g) { sd.innerHTML = ""; return; }
     const rail = E.side === "rail" && !isPetit();
     sd.classList.toggle("ferme", !E.side);
     sd.classList.toggle("rail", rail);
     $("#d19-scrim").classList.toggle("on", !!E.side && E.side !== "rail" && isPetit());
+    if (estParametres()) { sd.innerHTML = colonneParametres(); return; }    // Paramètres : une seule colonne ; les rubriques d'une page (Société, Logithèque, coffre) restent en pastilles dans son bandeau
     if (E.lateral && E.pageNom) {                                       // la page a SA colonne (les familles de modules)
       const L = E.lateral;
       sd.innerHTML = L.items.map((i) => '<button class="d19-si ent' + (i.id === L.actif ? " on" : "") + '" data-lat="' + esc(i.id) + '" data-tip="' + esc(i.libelle) + '">' + ico(i.icone || "puzzle") + "<span>" + esc(i.libelle) + "</span>" + (i.n == null ? "" : '<span class="d19-nb">' + i.n + "</span>") + "</button>").join("");
@@ -844,8 +864,9 @@
   // La rubrique « Agents IA » ne figure plus dans le rail de Paramètres généraux tant que son entrée de menu existe.
   function marquerRubriques() {
     const a = (id) => !!(E.d && E.d.groupes.some((g) => g.entrees.some((x) => x.id === id)));
-    document.body.classList.toggle("d19-agents-ia", a("agents-ia"));
-    document.body.classList.toggle("d19-rub-users", a("comptes:utilisateurs"));          // « Utilisateurs » de Paramètres généraux : remplacée par l'entrée Utilisateurs et groupes
+    // Une rubrique de Paramètres généraux qui a son entrée de menu quitte le rail (sa pastille) ; sans l'entrée (module absent), elle reste là
+    Object.keys(RUBRIQUES_SEULES).forEach((id) => document.body.classList.toggle("d19-rub-" + RUBRIQUES_SEULES[id][0], a(id)));
+    document.body.classList.toggle("d19-rub-users", a("comptes:utilisateurs"));
   }
   function rendre() { marquerRubriques(); E.crMenu = null; rendreHaut(); rendreGauche(); rendreStrip(); if (E.panel) rendrePanel(); }
   async function charger() {
@@ -927,7 +948,7 @@
         if (isXs() && x.dataset.bas && E.g === x.dataset.g && E.actif) { ouvrirMs(true); return; }
         aller(x.dataset.g, ""); if (isPetit() && !isXs()) { E.side = "full"; rendreGauche(); } return;
       }
-      if ((x = c("[data-plus]"))) { const p = $("#d19-plus"); if (p.classList.contains("ouvert")) { p.classList.remove("ouvert"); return; } ouvrirMs(false); p.innerHTML = E.d.groupes.map((g) => '<button class="' + (g.id === E.g ? "on" : "") + '" data-pg2="' + esc(g.id) + '">' + ico(g.icone) + esc(g.libelle) + pastille(g) + "</button>").join(""); p.classList.add("ouvert"); return; }
+      if ((x = c("[data-plus]"))) { const p = $("#d19-plus"); if (p.classList.contains("ouvert")) { p.classList.remove("ouvert"); return; } ouvrirMs(false); p.innerHTML = groupesVisibles().map((g) => '<button class="' + (g.id === E.g ? "on" : "") + '" data-pg2="' + esc(g.id) + '">' + ico(g.icone) + esc(g.libelle) + pastille(g) + "</button>").join(""); p.classList.add("ouvert"); return; }
       if ((x = c("#d19-plus [data-pg2]"))) { $("#d19-plus").classList.remove("ouvert"); aller(x.dataset.pg2, ""); return; }
       if ((x = c("[data-ms]"))) { ouvrirMs(); return; }
       if ((x = c("[data-msback]"))) { ouvrirMs(false); return; }
@@ -943,6 +964,14 @@
       if (c("[data-gen-copier]")) { const v = document.getElementById("d19-gen-sortie").value; if (v && navigator.clipboard) navigator.clipboard.writeText(v).then(() => toast("Copié."), () => toast("Copie refusée par le navigateur.")); return; }
       if ((x = c("[data-lat]"))) { if (E.pageAction) E.pageAction(x.dataset.lat); return; }
       if (c("#d19-cap")) { capsuleAller(); return; }
+      if ((x = c("#d19-side [data-sw]"))) {
+        const k = x.dataset.sw; if (typeof window.fermerCompte === "function") window.fermerCompte();
+        if (k === "moi" || k === "machine") { E.silence = false; window.switchTab("settings"); if (typeof window.setVision === "function") window.setVision(k); rendreGauche(); }
+        else if (k === "vault") { E.silence = false; window.switchTab("vault"); }
+        else if (k.indexOf("e:") === 0) { E.silence = false; aller("parametres", k.slice(2), ""); }
+        else if (k.indexOf("av:") === 0) { const av = (E.d.avatar || []).find((y) => y.id === k.slice(3)); if (av) { E.silence = false; marquerPage(av); ouvrirNoeud(av); } }
+        return;
+      }
       if ((x = c("#d19-side .pinned"))) { aller(x.dataset.pg, x.dataset.pe, x.dataset.pv); return; }
       if ((x = c("#d19-side [data-fm]"))) {
         const nom = x.dataset.fm;
@@ -1053,6 +1082,8 @@
       const sw = window.switchTab;
       const bs = window.buSeg;
       if (typeof bs === "function") window.buSeg = function (v) { const r = bs.apply(this, arguments); try { suivreSegment(v); } catch (e) {} return r; };
+      const sv = window.setVision;
+      if (typeof sv === "function") window.setVision = function () { const r = sv.apply(this, arguments); try { if (estParametres()) rendreGauche(); } catch (e) {} return r; };     // la colonne Paramètres suit la vision (Mon compte / Paramètres généraux)
       window.switchTab = function (name) { const r = sw.apply(this, arguments); window.__d19Onglet = name; try { suivre(name); } catch (e) {} return r; };
       if (typeof window.vuRendre === "function") {
         const vr = window.vuRendre;

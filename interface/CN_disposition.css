@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=a98917 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=32d896 ▼▼▼ */
 /* L'ancienne interface (V18) est dans la page dès le départ : tant que la disposition V19 n'a pas pris la main (body.d19), on la cache, pour qu'elle ne se montre pas quelques instants.
    Filet : si la disposition ne démarre jamais (script en erreur), l'ancienne interface réapparaît au bout de 6 secondes plutôt que de laisser une page vide. */
 body:not(.d19) #app-container{visibility:hidden;animation:d19-filet 0s 6s forwards}
@@ -443,8 +443,13 @@ body.d19 #tab-fleet .mx-rail{display:none!important}
 /* Une rubrique de Paramètres généraux ouverte seule depuis le menu (Agents IA) : ni rail, ni recherche, ni note ; et la rubrique ne figure plus dans le rail tant que son entrée de menu existe */
 body.d19 #tab-settings.set-seule .settings-corps > .set-nav,body.d19 #tab-settings.set-seule .set-search,body.d19 #tab-settings.set-seule #set-note,body.d19 #tab-settings.set-seule #set-visions{display:none!important}
 body.d19 #tab-settings.mx-app.set-seule .settings-corps{grid-template-columns:minmax(0,1fr)}
-body.d19.d19-agents-ia #tab-settings .set-nav-item[data-fam="agents"]{display:none!important}
+body.d19.d19-rub-agents #tab-settings .set-nav-item[data-fam="agents"]{display:none!important}
 body.d19.d19-rub-users #tab-settings .set-nav-item[data-fam="users"]{display:none!important}
+body.d19.d19-rub-tiers #tab-settings .set-nav-item[data-fam="tiers"]{display:none!important}
+body.d19.d19-rub-maintenance #tab-settings .set-nav-item[data-fam="maintenance"]{display:none!important}
+body.d19.d19-rub-donnees #tab-settings .set-nav-item[data-fam="donnees"]{display:none!important}
+body.d19.d19-rub-veille #tab-settings .set-nav-item[data-fam="veille"]{display:none!important}
+body.d19.d19-rub-canaux #tab-settings .set-nav-item[data-fam="canaux"]{display:none!important}
 
 /* ▲▲▲ FIN BORNE CN ▲▲▲ */
 
