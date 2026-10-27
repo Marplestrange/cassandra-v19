@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #573f92
+// VERSION CN : 0.1.0  #54253a
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=573f92 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=54253a ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -32615,6 +32615,7 @@ function setVisionDe(fam){
 function setVision(v){
     if (v === 'machine' && !setEstAdmin()) v = 'moi';
     ETAT.reglages._setVision = v;
+    const _t = document.getElementById('tab-settings'); if (_t) _t.classList.remove('set-seule');          // une rubrique ouverte seule depuis le menu rend le rail
     document.querySelectorAll('#tab-settings .set-vis').forEach(function(b){
         const on = b.getAttribute('data-vis') === v;
         b.classList.toggle('active', on); b.classList.toggle('on', on);

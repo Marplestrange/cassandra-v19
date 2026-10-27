@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #7878f2
+// VERSION CN : 0.1.0  #f82b08
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=7878f2 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f82b08 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -132,7 +132,17 @@
   // et l'inverse : quand on navigue DANS le bureau (une pastille, un lien), le menu de gauche suit
   const VERS_MENU = { today: ["accueil", ""], cal: ["agenda", "calendrier"], tk: ["agenda", "taches"], rem: ["agenda", "rappels"], proj: ["projets", ""], notes: ["notes", ""], carnet: ["notes", ""],
     canvas: ["notes", ""], liens: ["notes", ""], fusion: ["notes", ""], menage: ["notes", ""], ranger: ["notes", ""], mail: ["courrier", ""], rep: ["repertoire", ""], doc: ["documents", ""] };
+  // Une rubrique de Paramètres généraux qui a son entrée de menu : elle s'ouvre seule, sans le rail des autres rubriques.
+  const RUBRIQUES_SEULES = { "agents-ia": ["agents", "machine", "Agents IA"] };
+  function rubriqueSeule(r) {
+    const t = document.getElementById("tab-settings"); if (!t) return;
+    if (typeof window.setVision === "function") window.setVision(r[1]);
+    if (typeof window.setFam === "function") window.setFam(r[0]);
+    t.classList.add("set-seule");
+    const h = t.querySelector(".mx-head h1"); if (h) h.textContent = r[2];
+  }
   function pontVue(entreeId, vue) {
+    if (RUBRIQUES_SEULES[entreeId]) setTimeout(function () { rubriqueSeule(RUBRIQUES_SEULES[entreeId]); }, 80);
     const seg = vue ? SEG_VUE[vue] : SEG_ENTREE[entreeId];
     if (seg) setTimeout(function () { if (typeof window.buSeg === "function") window.buSeg(seg); }, 80);
     if (entreeId === "panorama") {
@@ -831,7 +841,9 @@
   function fermerPops() { const u = $("#usermenu"); if (u && u.classList.contains("open") && typeof window.fermerCompte === "function") window.fermerCompte(); const a = $("#alert-dropdown"); if (a && a.classList.contains("open") && typeof window.toggleAlertDropdown === "function") window.toggleAlertDropdown(); }
 
   // ── le dessin d'ensemble ───────────────────────────────────────────────────
-  function rendre() { E.crMenu = null; rendreHaut(); rendreGauche(); rendreStrip(); if (E.panel) rendrePanel(); }
+  // La rubrique « Agents IA » ne figure plus dans le rail de Paramètres généraux tant que son entrée de menu existe.
+  function marquerRubriques() { document.body.classList.toggle("d19-agents-ia", !!(E.d && E.d.groupes.some((g) => g.entrees.some((x) => x.id === "agents-ia")))); }
+  function rendre() { marquerRubriques(); E.crMenu = null; rendreHaut(); rendreGauche(); rendreStrip(); if (E.panel) rendrePanel(); }
   async function charger() {
     try {
       E.d = await agir("affichage.lire_disposition", {});
@@ -852,6 +864,7 @@
         E.d = d;
         if (!E.d.groupes.some((g) => g.id === E.g)) { E.g = E.d.groupes[0] ? E.d.groupes[0].id : ""; E.e = ""; }
         rendreHaut(); rendreGauche();                                   // ni le fil, ni les menus ouverts, ni le panneau ne sont touchés
+        marquerRubriques();
         completerAvatar();                                              // les entrées du menu de l'avatar suivent la disposition (après une connexion, elles arrivaient avec le battement)
       }
     } catch (e) { /* un raté ne casse rien : le prochain battement refait */ }
