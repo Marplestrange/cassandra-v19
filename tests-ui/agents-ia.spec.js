@@ -25,5 +25,5 @@ test("Agents IA : entrée de menu, rubrique seule, rail de Paramètres générau
   await page.evaluate(() => document.querySelector('#usermenu [data-um="machine"]').click());
   await expect.poll(() => page.evaluate(() => document.getElementById('tab-settings').classList.contains('set-seule'))).toBe(false);
   expect(await page.evaluate(() => getComputedStyle(document.querySelector('#tab-settings .set-nav-item[data-fam="agents"]')).display)).toBe('none');
-  expect(await page.evaluate(() => getComputedStyle(document.querySelector('#tab-settings .set-nav-item[data-fam="users"]')).display)).not.toBe('none');
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('#tab-settings .set-nav-item[data-fam="donnees"]')).display)).not.toBe('none');
 });

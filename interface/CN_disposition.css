@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=4d4d47 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=a98917 ▼▼▼ */
 /* L'ancienne interface (V18) est dans la page dès le départ : tant que la disposition V19 n'a pas pris la main (body.d19), on la cache, pour qu'elle ne se montre pas quelques instants.
    Filet : si la disposition ne démarre jamais (script en erreur), l'ancienne interface réapparaît au bout de 6 secondes plutôt que de laisser une page vide. */
 body:not(.d19) #app-container{visibility:hidden;animation:d19-filet 0s 6s forwards}
@@ -444,6 +444,7 @@ body.d19 #tab-fleet .mx-rail{display:none!important}
 body.d19 #tab-settings.set-seule .settings-corps > .set-nav,body.d19 #tab-settings.set-seule .set-search,body.d19 #tab-settings.set-seule #set-note,body.d19 #tab-settings.set-seule #set-visions{display:none!important}
 body.d19 #tab-settings.mx-app.set-seule .settings-corps{grid-template-columns:minmax(0,1fr)}
 body.d19.d19-agents-ia #tab-settings .set-nav-item[data-fam="agents"]{display:none!important}
+body.d19.d19-rub-users #tab-settings .set-nav-item[data-fam="users"]{display:none!important}
 
 /* ▲▲▲ FIN BORNE CN ▲▲▲ */
 

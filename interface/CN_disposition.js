@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #f82b08
+// VERSION CN : 0.1.0  #30fb9a
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=f82b08 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=30fb9a ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -842,7 +842,11 @@
 
   // ── le dessin d'ensemble ───────────────────────────────────────────────────
   // La rubrique « Agents IA » ne figure plus dans le rail de Paramètres généraux tant que son entrée de menu existe.
-  function marquerRubriques() { document.body.classList.toggle("d19-agents-ia", !!(E.d && E.d.groupes.some((g) => g.entrees.some((x) => x.id === "agents-ia")))); }
+  function marquerRubriques() {
+    const a = (id) => !!(E.d && E.d.groupes.some((g) => g.entrees.some((x) => x.id === id)));
+    document.body.classList.toggle("d19-agents-ia", a("agents-ia"));
+    document.body.classList.toggle("d19-rub-users", a("comptes:utilisateurs"));          // « Utilisateurs » de Paramètres généraux : remplacée par l'entrée Utilisateurs et groupes
+  }
   function rendre() { marquerRubriques(); E.crMenu = null; rendreHaut(); rendreGauche(); rendreStrip(); if (E.panel) rendrePanel(); }
   async function charger() {
     try {
