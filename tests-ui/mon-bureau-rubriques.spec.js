@@ -11,19 +11,21 @@ test("Desk : Mon agenda, Ma boîte mail, Mon Itare ouvrent leur rubrique seule e
   }
   await page.waitForSelector('body.d19', { timeout: 20000 });
   const ids = ['moi-agenda', 'moi-boite', 'moi-itare'];
-  await expect.poll(() => page.evaluate(async () => { const d = await window.CASS.agir('affichage.lire_disposition', {}); const g = d.groupes.find((x) => x.id === 'desk'); return !!g && ['moi-boite', 'moi-itare'].every((i) => g.entrees.some((e) => e.id === i)) && g.entrees.some((e) => e.id === 'agenda'); }), { timeout: 40000 }).toBe(true);
+  await expect.poll(() => page.evaluate(async () => { const d = await window.CASS.agir('affichage.lire_disposition', {}); const g = d.groupes.find((x) => x.id === 'desk'); return !!g && g.entrees.some((e) => e.id === 'moi-itare') && g.entrees.some((e) => e.id === 'agenda') && g.entrees.some((e) => e.id === 'courrier'); }), { timeout: 40000 }).toBe(true);
   await page.evaluate(() => window.CASS.disposition.rafraichir());
 
   // « Réglage agenda » est une vue de l'entrée Agenda, pas une entrée de plus
-  expect(await page.evaluate(async () => { const d = await window.CASS.agir('affichage.lire_disposition', {}); const g = d.groupes.find((x) => x.id === 'desk'); return [g.entrees.some((e) => e.id === 'moi-agenda'), g.entrees.find((e) => e.id === 'agenda').enfants.map((f) => f.libelle).pop()]; })).toEqual([false, 'Réglage agenda']);
-  await page.evaluate(() => window.CASS.disposition.aller('desk', 'agenda', 'reglage'));
-  await expect.poll(() => page.evaluate(() => document.getElementById('tab-settings').classList.contains('set-seule'))).toBe(true);
-  expect(await page.evaluate(() => document.querySelector('#tab-settings .mx-head h1').textContent)).toBe('Réglage agenda');
-  expect(await page.evaluate(() => document.querySelector('#tab-settings .settings-section[data-fam="moi-agenda"]').offsetHeight)).toBeGreaterThan(0);
-  expect(await page.evaluate(() => [...document.querySelectorAll('#d19-side .d19-si.on')].map((b) => b.textContent.trim()).join('|'))).toContain('Réglage agenda');
+  expect(await page.evaluate(async () => { const d = await window.CASS.agir('affichage.lire_disposition', {}); const g = d.groupes.find((x) => x.id === 'desk'); const der = (id) => g.entrees.find((e) => e.id === id).enfants.map((f) => f.libelle).pop(); return [g.entrees.some((e) => e.id === 'moi-agenda' || e.id === 'moi-boite'), der('agenda'), der('courrier')]; })).toEqual([false, 'Réglage agenda', 'Réglage Mail']);
+  for (const [entree, fam, titre] of [['agenda', 'moi-agenda', 'Réglage agenda'], ['courrier', 'moi-boite', 'Réglage Mail']]) {
+    await page.evaluate((e) => window.CASS.disposition.aller('desk', e, 'reglage'), entree);
+    await expect.poll(() => page.evaluate(() => document.getElementById('tab-settings').classList.contains('set-seule'))).toBe(true);
+    expect(await page.evaluate(() => document.querySelector('#tab-settings .mx-head h1').textContent)).toBe(titre);
+    expect(await page.evaluate((f) => document.querySelector('#tab-settings .settings-section[data-fam="' + f + '"]').offsetHeight, fam)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => [...document.querySelectorAll('#d19-side .d19-si.on')].map((b) => b.textContent.trim()).join('|'))).toContain(titre);
+  }
 
-  const titres = { 'moi-boite': 'Ma boîte mail', 'moi-itare': 'Mon Itare' };
-  for (const id of ['moi-boite', 'moi-itare']) {
+  const titres = { 'moi-itare': 'Mon Itare' };
+  for (const id of ['moi-itare']) {
     await page.evaluate((id) => window.CASS.disposition.aller('desk', id, ''), id);
     await expect.poll(() => page.evaluate(() => document.getElementById('tab-settings').classList.contains('set-seule'))).toBe(true);
     expect(await page.evaluate(() => document.querySelector('#tab-settings .mx-head h1').textContent)).toBe(titres[id]);

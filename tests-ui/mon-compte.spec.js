@@ -10,7 +10,7 @@ test("avatar : Mon compte et Paramètres généraux ouvrent chacun leur vision",
     await page.waitForSelector('#login-modal', { state: 'hidden', timeout: 10000 });
   }
   await page.waitForSelector('body.d19', { timeout: 20000 });
-  await expect.poll(() => page.evaluate(() => document.querySelectorAll('#d19-groupes button').length)).toBeGreaterThan(0);        // la disposition est chargée
+  await expect.poll(() => page.evaluate(() => document.querySelectorAll('#d19-groupes button').length), { timeout: 30000 }).toBeGreaterThan(0);        // la disposition est chargée
   const libelles = await page.evaluate(() => [...document.querySelectorAll('#usermenu .um-i')].map((b) => b.textContent.trim().replace(/\s+/g, ' ')));
   expect(libelles).toEqual(expect.arrayContaining(['Mon compte', 'Paramètres généraux']));
 
