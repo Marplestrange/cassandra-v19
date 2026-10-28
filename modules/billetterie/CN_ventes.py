@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #050c00
+# VERSION CN : 0.1.0  #812eb8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=050c00 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=812eb8 ▼▼▼
 """Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
 
 Ce fichier DÉCIDE : qui peut acheter quoi, à quel prix, combien de places restent, quand une vente est acquise, ce qu'elle rapporte au revendeur et quand elle s'annule.
@@ -34,6 +34,7 @@ import time
 from datetime import date
 
 from . import CN_billets as bil
+from . import CN_file_dolibarr as fildol
 from . import CN_identifiants as ids
 from . import CN_regles as r
 from . import CN_recus as recus
@@ -334,6 +335,7 @@ def encaisser(ctx, tx, cmd, moyen, reference="", par="", numeros=None):
         tx.execute("UPDATE promos SET usages = usages + 1 WHERE code = ?", (cmd["promo_code"],))
     tx.execute("UPDATE commandes SET etat = 'payee', moyen = ?, payee_le = datetime('now'), reference_externe = ?, par = ? WHERE id = ?", (moyen or cmd["moyen"], reference or None, par, cmd["id"]))
     courriel_confirmation(ctx, tx, cmd, evt, numeros)
+    fildol.empiler(ctx, tx, "facture", cmd["id"])                         # la comptabilité vient APRÈS : une simple ligne à faire, jamais un appel à Dolibarr
     return {"deja": False, "numeros": numeros}
 
 
@@ -370,6 +372,7 @@ def rembourser(ctx, tx, cmd, motif=""):
     tx.execute("UPDATE billets SET etat = 'annule' WHERE commande_id = ?", (cmd["id"],))
     tx.execute("UPDATE commandes SET etat = 'remboursee', note = ? WHERE id = ?", (r.texte(motif, 200), cmd["id"]))
     recus.annuler_pour_commande(tx, cmd["id"], MOTIF_DON_REMBOURSE)
+    fildol.empiler(ctx, tx, "avoir", cmd["id"])
     return {"montant": cmd["total"], "chez_le_prestataire": cmd["moyen"] in MOYENS_PRESTATAIRE, "moyen": cmd["moyen"]}
 
 

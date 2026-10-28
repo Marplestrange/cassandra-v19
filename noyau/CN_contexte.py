@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fee05e
+# VERSION CN : 0.1.0  #4fed7e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fee05e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4fed7e ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire
@@ -185,6 +185,12 @@ class Contexte:
         if self.manifeste.permissions.stockage_par_societe:
             return StockageParSociete(lambda soc: self._intro["stockage"](self.module, soc), lambda: self._societe.valeur)
         return self._intro["stockage"](self.module)
+
+    def frein_actif(self, nom: str) -> bool:
+        """Un frein d'urgence est-il posé (« gel », « envois ») ? Lecture seule, sans permission : un moteur n'a pas de compte, l'exécuteur ne peut donc pas lui appliquer
+        le frein « envois » ; c'est à lui de le consulter avant de faire sortir quoi que ce soit de la maison."""
+        f = self._intro.get("frein_actif")
+        return bool(f and f(str(nom)))
 
     def stockage_partage(self, source: str, type: str):
         """La base de CE module dans la société `source`, à LIRE seulement : permis quand `source` partage ce `type` avec la société de l'acte (ou si c'est la même).

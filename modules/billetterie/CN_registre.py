@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8a44a5
+# VERSION CN : 0.1.0  #b11ed1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : le registre des mouvements (le « portefeuille » des revendeurs et des artistes) et les demandes de retrait.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8a44a5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b11ed1 ▼▼▼
 """Billetterie : le registre des mouvements (le « portefeuille » des revendeurs et des artistes) et les demandes de retrait.
 
 Règles d'or :
@@ -26,6 +26,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+from . import CN_file_dolibarr as fildol
 from . import CN_identifiants as ids
 from . import CN_regles as r
 
@@ -186,6 +187,7 @@ def brancher(ctx, db):
             if x["etat"] != "validee":
                 raise ValueError("on n'enregistre un versement que pour une demande validée (état : %s)" % x["etat"])
             tx.execute("UPDATE retraits SET etat = 'payee', reference_virement = ?, traite_le = datetime('now'), par = ? WHERE id = ?", (str(reference_virement)[:80], ctx.compte, x["id"]))
+            fildol.empiler(ctx, tx, "versement", x["id"])
         return {"id": x["id"], "ref": x["ref"]}
 
     def prouver_payer(c, res):

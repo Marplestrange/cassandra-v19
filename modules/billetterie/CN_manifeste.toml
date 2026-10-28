@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #cfa125
+# VERSION CN : 0.1.0  #be6198
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=cfa125 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=be6198 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -32,7 +32,7 @@ licence = "AGPL-3.0-or-later"
 stockage = true
 stockage_par_societe = true
 secrets = true
-reseau = ["l'API de Stripe (api.stripe.com), pour créer la page de paiement hébergée d'une commande", "les API de PayPal (api-m.paypal.com) et de HelloAsso (api.helloasso.com), pour créer la page de paiement et vérifier le paiement au retour de l'acheteur", "le serveur d'envoi de courrier (SMTP) réglé dans la billetterie, pour expédier les billets et les messages aux acheteurs"]
+reseau = ["l'API REST de Dolibarr réglée dans la billetterie (pont facultatif : tiers, factures, paiements, avoirs, commissions), jamais sur le chemin d'un paiement", "l'API de Stripe (api.stripe.com), pour créer la page de paiement hébergée d'une commande", "les API de PayPal (api-m.paypal.com) et de HelloAsso (api.helloasso.com), pour créer la page de paiement et vérifier le paiement au retour de l'acheteur", "le serveur d'envoi de courrier (SMTP) réglé dans la billetterie, pour expédier les billets et les messages aux acheteurs"]
 
 [[droits]]
 id = "gerer"
@@ -311,6 +311,96 @@ id = "helloasso_sandbox"
 libelle = "HelloAsso : utiliser le bac à sable (essais, sans argent réel)"
 type = "booleen"
 defaut = false
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_actif"
+libelle = "Relier Dolibarr (comptabilité) : les ventes, remboursements et versements y sont écrits en arrière-plan"
+type = "booleen"
+defaut = false
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_url"
+libelle = "Adresse de l'API de Dolibarr (par exemple https://dolibarr.exemple.fr/api/index.php)"
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_hote"
+libelle = "En-tête Host à présenter à Dolibarr (derrière un proxy ; vide en général)"
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_cle"
+libelle = "Clé d'API de Dolibarr (utilisateur dédié, droits limités)"
+type = "secret"
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_tiers"
+libelle = "Créer ou retrouver le tiers client de chaque vente (sinon : « Clients divers »)"
+type = "booleen"
+defaut = true
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_factures"
+libelle = "Écrire une facture validée par commande payée"
+type = "booleen"
+defaut = true
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_paiements"
+libelle = "Enregistrer le règlement de chaque facture sur le compte bancaire choisi"
+type = "booleen"
+defaut = true
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_avoirs"
+libelle = "Écrire un avoir quand une commande est remboursée (à valider sur une entité de recette)"
+type = "booleen"
+defaut = true
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_commissions"
+libelle = "Écrire la facture fournisseur et son règlement quand un retrait de commission est versé"
+type = "booleen"
+defaut = false
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_tva"
+libelle = "Taux de TVA des lignes de facture (0 pour une association non assujettie)"
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_banque_carte"
+libelle = "Numéro du compte bancaire Dolibarr des règlements par carte"
+type = "entier"
+defaut = 0
+minimum = 0
+maximum = 100000
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_banque_especes"
+libelle = "Numéro du compte bancaire (ou de caisse) Dolibarr des règlements en espèces"
+type = "entier"
+defaut = 0
+minimum = 0
+maximum = 100000
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_banque_virement"
+libelle = "Numéro du compte bancaire Dolibarr des règlements par virement"
+type = "entier"
+defaut = 0
+minimum = 0
+maximum = 100000
 portee = "societe"
 
 [[reglages]]
@@ -1110,6 +1200,13 @@ toutes_les_s = 60
 duree_max_s = 50
 
 [[moteurs]]
+id = "dolibarr"
+libelle = "Faire les écritures dues dans Dolibarr (factures, règlements, avoirs, versements) : file de rattrapage, réessais espacés"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 50
+
+[[moteurs]]
 id = "attente"
 libelle = "Proposer les places libérées à la liste d'attente, dans l'ordre d'inscription"
 mode = "periodique"
@@ -1556,6 +1653,45 @@ id = "commande_pdf"
 libelle = "Les billets d'une commande payée en PDF, pour les imprimer ou les envoyer (une page par billet valide)"
 risque = "lecture"
 droit = "gerer"
+
+[[capacites]]
+id = "dolibarr_etat"
+libelle = "Le pont Dolibarr : relié ou non, domaines actifs, écritures à faire, faites, ignorées, en échec, et les dernières raisons d'échec"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "dolibarr_tester"
+libelle = "Interroger Dolibarr (lecture seule) : version, société, comptes bancaires, modes de paiement, taux de TVA, et ce qui manque pour que le pont marche (chaque point dit quoi faire)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "dolibarr_file"
+libelle = "La file de rattrapage de Dolibarr : chaque écriture (facture, avoir, versement), son état, ses essais, sa raison d'échec"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "dolibarr_rattraper"
+libelle = "Faire maintenant les écritures dues dans Dolibarr (tiers, factures validées, règlements, avoirs, versements de commissions) ; chacune retrouve ce qui existe déjà avant de créer"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la comptabilité de Dolibarr : tiers, factures, règlements, avoirs, factures fournisseurs"]
+preuve = "chaque écriture relue faite, ignorée avec sa raison, ou reportée avec son erreur"
+retour = "aucun automatique : une écriture comptable se corrige dans Dolibarr (avoir, annulation) ; rien n'est jamais écrit deux fois"
+paliers = ["raconter", "auto"]
+sortant = true
+
+[[capacites]]
+id = "dolibarr_relancer"
+libelle = "Remettre une écriture en échec dans la file de Dolibarr pour qu'elle soit retentée"
+risque = "faible"
+droit = "gerer"
+perimetre = ["l'état d'une ligne de la file de rattrapage"]
+preuve = "la ligne relue à faire"
+retour = "la remettre en échec"
+paliers = ["raconter", "auto", "maitre"]
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

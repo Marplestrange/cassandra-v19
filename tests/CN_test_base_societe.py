@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9fc4ba
+# VERSION CN : 0.1.0  #8e184c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la base par société : un module « stockage_par_societe » garde ses données société par société, sans que son code change ; ses moteurs tournent pour chacune.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9fc4ba ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e184c ▼▼▼
 """Bancs de la base par société : un module « stockage_par_societe » garde ses données société par société, sans que son code change ; ses moteurs tournent pour chacune."""
 import shutil
 import sys
@@ -147,6 +147,15 @@ class Monde(unittest.TestCase):
         self.assertEqual(r.get("statut"), "fait", r)
         self.assertFalse((self.base / "d" / "modules" / ("carnet@%s.db" % FORM)).exists())
         self.ok("carnet.lire")
+
+    def test_un_module_lit_les_freins_d_urgence_sans_permission(self):
+        ctx = self.n.executeur.contextes["carnet"]                                        # un moteur n'a pas de compte : l'exécuteur ne lui applique pas « envois », il le consulte
+        self.assertFalse(ctx.frein_actif("envois"))
+        self.n.freiner("envois", True, "essai")
+        self.assertTrue(ctx.frein_actif("envois"))
+        self.assertFalse(ctx.frein_actif("gel"))
+        self.n.freiner("envois", False)
+        self.assertFalse(ctx.frein_actif("envois"))
 
 
 if __name__ == "__main__":
