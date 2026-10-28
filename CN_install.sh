@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #54532a
+# VERSION CN : 0.1.0  #da9473
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=54532a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=da9473 ▼▼▼
 # CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 #
 #   ./CN_install.sh                         le noyau seul, dans UN dossier : /var/cassandra
@@ -76,16 +76,58 @@ verifier_python() {
   echouer "Python 3.11 ou plus est nécessaire (tomllib, SQLite avec JSON)"
 }
 
-# Les dépendances du noyau : « cryptography » (les secrets, l'IBAN, WebAuthn) est INDISPENSABLE ; le reste sert aux gestes
-# (openssl : certificats ; sudo/cron : planifié ; iptables : urgence ; ssh : flotte). Installés par apt quand ils manquent.
+# Le gestionnaire de paquets de la machine : apt, dnf, yum, zypper, pacman ou apk. Les noms de paquets changent d'une famille à l'autre.
+detecter_paquets() {
+  for g in apt-get dnf yum zypper pacman apk; do command -v "$g" >/dev/null 2>&1 && { GEST="$g"; return 0; }; done
+  GEST=""
+}
+installer_paquets() { # paquets... ; non fatal : rend 1 si l'installation échoue
+  case "$GEST" in
+    apt-get) DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "$@" >/dev/null ;;
+    dnf)     dnf install -y -q "$@" >/dev/null ;;
+    yum)     yum install -y -q "$@" >/dev/null ;;
+    zypper)  zypper --non-interactive install "$@" >/dev/null ;;
+    pacman)  pacman -S --noconfirm --needed "$@" >/dev/null ;;
+    apk)     apk add -q "$@" ;;
+    *)       return 1 ;;
+  esac
+}
+paquets_systeme() { # noms selon la famille : cryptography, outils système
+  case "$GEST" in
+    apt-get) echo "python3-cryptography openssl sudo cron iptables openssh-client curl sshpass" ;;
+    dnf|yum) echo "python3-cryptography openssl sudo cronie iptables openssh-clients curl sshpass" ;;
+    zypper)  echo "python3-cryptography openssl sudo cron iptables openssh-clients curl sshpass" ;;
+    pacman)  echo "python-cryptography openssl sudo cronie iptables openssh curl sshpass" ;;
+    apk)     echo "py3-cryptography openssl sudo dcron iptables openssh-client curl sshpass" ;;
+  esac
+}
+
+# Les dépendances. INDISPENSABLE : « cryptography » (secrets, IBAN, WebAuthn). Utiles aux gestes : openssl (certificats),
+# sudo et cron (planifié), iptables (urgence), ssh et sshpass (flotte). Tailscale : le réseau privé du parc (non fatal).
 assurer_dependances() {
-  python3 -c 'import cryptography' 2>/dev/null && return 0
-  if command -v apt-get >/dev/null 2>&1; then
-    dire "dépendances : python3-cryptography et outils système (apt)"
-    DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1 || true
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-cryptography openssl sudo cron iptables openssh-client curl >/dev/null       || avertir "apt n'a pas tout installé : voir ci-dessus"
+  detecter_paquets
+  if [ -z "$GEST" ]; then
+    python3 -c 'import cryptography' 2>/dev/null || echouer "aucun gestionnaire de paquets connu (apt, dnf, yum, zypper, pacman, apk) : installez à la main python3 cryptography openssl sudo cron iptables openssh sshpass"
+    avertir "pas de gestionnaire de paquets connu : les outils système ne sont pas installés (python3 et cryptography sont présents)"
+    return 0
   fi
-  python3 -c 'import cryptography' 2>/dev/null || echouer "la bibliothèque Python « cryptography » manque (apt install python3-cryptography, ou pip install cryptography) : sans elle, aucun secret ne s'écrit"
+  dire "dépendances (par $GEST)"
+  case "$GEST" in apt-get) DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1 || true ;; esac
+  # un paquet à la fois : un nom absent de cette version ne bloque pas les autres
+  for pq in $(paquets_systeme); do
+    case "$pq" in *cryptography) python3 -c 'import cryptography' 2>/dev/null && continue ;; esac
+    installer_paquets "$pq" || avertir "paquet non installé : $pq"
+  done
+  python3 -c 'import cryptography' 2>/dev/null || echouer "la bibliothèque Python « cryptography » manque (pip install cryptography) : sans elle, aucun secret ne s'écrit"
+  if ! command -v tailscale >/dev/null 2>&1; then
+    dire "tailscale (installateur officiel ; la connexion au réseau reste à faire : tailscale up)"
+    curl -fsSL https://tailscale.com/install.sh | sh >/dev/null 2>&1 || avertir "tailscale non installé (facultatif) : https://tailscale.com/download"
+  fi
+  # Avec TAILSCALE_AUTHKEY (une clé d'authentification à usage unique, créée sur login.tailscale.com), la machine rejoint le réseau seule.
+  if [ -n "${TAILSCALE_AUTHKEY:-}" ] && command -v tailscale >/dev/null 2>&1; then
+    systemctl enable --now tailscaled >/dev/null 2>&1 || true
+    tailscale up --authkey "$TAILSCALE_AUTHKEY" >/dev/null 2>&1 && dire "tailscale : machine connectée au réseau" || avertir "tailscale up a échoué : à refaire à la main"
+  fi
 }
 
 # ---------------------------------------------------------------- un module

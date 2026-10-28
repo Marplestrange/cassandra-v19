@@ -1,5 +1,20 @@
 #!/usr/bin/env bash
-# Amorçage de Cassandra V19 en UNE commande, sur un serveur Debian ou Ubuntu neuf.
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Amorçage de Cassandra V19 en UNE commande, sur un serveur Linux neuf (Debian, Ubuntu, Fedo
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : (racine)
+# ZONE       : CN
+# VERSION CN : 0.1.0  #99bf62
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Amorçage de Cassandra V19 en UNE commande, sur un serveur Linux neuf (Debian, Ubuntu, Fedora, openSUSE, Arch, Alpine).
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=99bf62 ▼▼▼
+# Amorçage de Cassandra V19 en UNE commande, sur un serveur Linux neuf (Debian, Ubuntu, Fedora, openSUSE, Arch, Alpine).
 #
 #   curl -fsSL https://raw.githubusercontent.com/Marplestrange/cassandra-v19/main/CN_amorcer.sh | sudo bash
 #
@@ -28,12 +43,18 @@ manque=()
 command -v git >/dev/null 2>&1 || manque+=(git)
 command -v python3 >/dev/null 2>&1 || manque+=(python3)
 command -v curl >/dev/null 2>&1 || manque+=(curl)
-python3 -c 'import cryptography' 2>/dev/null || manque+=(python3-cryptography)
 if [ "${#manque[@]}" -gt 0 ]; then
-  command -v apt-get >/dev/null 2>&1 || echouer "installez d'abord : ${manque[*]} (apt-get n'existe pas ici)"
   dire "installation de : ${manque[*]}"
-  DEBIAN_FRONTEND=noninteractive apt-get update -qq
-  DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${manque[@]}"
+  if command -v apt-get >/dev/null 2>&1; then
+    DEBIAN_FRONTEND=noninteractive apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${manque[@]}"
+  elif command -v dnf >/dev/null 2>&1; then dnf install -y -q "${manque[@]}"
+  elif command -v yum >/dev/null 2>&1; then yum install -y -q "${manque[@]}"
+  elif command -v zypper >/dev/null 2>&1; then zypper --non-interactive install "${manque[@]}"
+  elif command -v pacman >/dev/null 2>&1; then pacman -S --noconfirm --needed "${manque[@]}"
+  elif command -v apk >/dev/null 2>&1; then apk add -q "${manque[@]}"
+  else echouer "installez d'abord : ${manque[*]} (aucun gestionnaire de paquets connu)"
+  fi
 fi
 
 dire "sources dans $SOURCES"
@@ -71,3 +92,9 @@ créez-le tout de suite, avec un mot de passe solide.
 Mises à jour : relancez la même commande (ou ./CN_deploy.sh dans /opt/cassandra-sources).
 ──────────────────────────────────────────────────────────────────────────────
 FIN
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)
