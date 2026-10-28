@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #0f596c
+// VERSION CN : 0.1.0  #a258c2
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : stockage refusé : on continue
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=0f596c ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=a258c2 ▼▼▼
 // La boutique publique : la programmation, la page d'un événement, la commande, le suivi d'une commande avec ses billets, la liste d'attente, le reçu de don.
 // Page statique et SANS session : tout passe par les capacités publiques billetterie.public_* (limitées par origine, protégées par jeton de suivi). La route est dans le fragment (#/e/..., #/c/..., #/a/...).
 (function () {
@@ -125,7 +125,7 @@
         const r = await api("public_commander", { evenement: e.ref, lignes: lignes(), nom: f.get("nom").trim(), mail: f.get("mail").trim(), moyen: f.get("moyen"), code_promo: (f.get("code_promo") || "").trim(), don: cts(f.get("don")),
           session: session, code_revendeur: revendeur, consentement: !!f.get("consentement") });
         memoire.ecrire("derniere", { commande: r.commande, suivi: r.suivi });
-        if (r.paiement && r.paiement.type === "stripe") { window.location.href = r.paiement.url; return; }
+        if (r.paiement && r.paiement.url) { window.location.href = r.paiement.url; return; }
         location.hash = "#/c/" + r.commande + "?s=" + encodeURIComponent(r.suivi);
       } catch (x) { msg.innerHTML = erreur(x.message); bouton.disabled = false; bouton.textContent = "Réserver et payer"; if (/session/.test(x.message)) { compteLocal.ecrire(null); majLien(); } else devis(); }
     });
@@ -165,6 +165,16 @@
   let suiviTimer = 0;
   async function commande(ref, suivi) {
     clearTimeout(suiviTimer);
+    const retour = memoire.lire("retour", null);
+    let info = "";
+    if (retour && retour.c === ref) {                                  // l'acheteur revient de chez le prestataire : on vérifie son paiement chez lui
+      memoire.ecrire("retour", null);
+      try {
+        const v = await api("public_paiement_verifier", { commande: ref, suivi: suivi, fournisseur: retour.p, ordre: retour.ordre });
+        if (v.etat === "attente") { info = '<div class="info alerte">' + esc(v.detail || "Votre paiement n’est pas encore confirmé.") + " Cette page se met à jour toute seule.</div>"; memoire.ecrire("retour", retour); }
+        else if (v.etat === "ecart" || v.etat === "a_rembourser") info = '<div class="info danger">' + esc(v.detail || "Un problème est survenu avec votre paiement.") + " Contactez l’organisateur en indiquant la référence " + esc(ref) + ".</div>";
+      } catch (x) { info = erreur(x.message); }
+    }
     const c = await api("public_suivre", { commande: ref, suivi: suivi });
     const e = c.evenement, ENT = { retenue: "Réservée : en attente de paiement", en_attente: "En attente de votre virement", payee: "Payée", remboursee: "Remboursée", annulee: "Annulée", expiree: "Réservation expirée" };
     titrePage("Commande " + c.commande);
@@ -180,7 +190,7 @@
         (c.paiement && c.paiement.type === "virement" ? '<div class="carte"><h2>Virement bancaire</h2><div class="prog"><span class="pale">IBAN</span><b style="word-break:break-all">' + esc(c.paiement.iban) + '</b><span></span><span class="pale">Montant</span><b>' + esc(eur(c.paiement.montant)) + '</b><span></span><span class="pale">Référence</span><b>' + esc(c.paiement.reference) + "</b><span></span></div><p class=\"pale\" style=\"margin-top:8px\">Indiquez la référence en libellé : vos billets sont émis dès la réception.</p></div>" : "") +
         '<div class="carte noprint" id="payer"><h2>Payer maintenant</h2><div id="moyens" class="ligne"><span class="doux">Chargement…</span></div><div id="msg"></div></div>';
     } else corps = '<div class="info danger">' + esc(ENT[c.etat] || c.etat) + (c.etat === "remboursee" ? " : le remboursement vous a été annoncé par courriel." : ".") + "</div>";
-    app.innerHTML = '<p class="ariane noprint"><a href="#/e/' + esc(e.ref) + '">← ' + esc(e.nom) + "</a></p><div><h1>Commande " + esc(c.commande) + "</h1><p class=\"doux\">" + esc(e.nom) + " — " + esc(jourLong(e.date)) + (e.lieu ? " — " + esc(e.lieu) : "") + "</p></div>" + corps;
+    app.innerHTML = '<p class="ariane noprint"><a href="#/e/' + esc(e.ref) + '">← ' + esc(e.nom) + "</a></p><div><h1>Commande " + esc(c.commande) + "</h1><p class=\"doux\">" + esc(e.nom) + " — " + esc(jourLong(e.date)) + (e.lieu ? " — " + esc(e.lieu) : "") + "</p></div>" + info + corps;
     const imp = document.getElementById("imprimer"); if (imp) imp.addEventListener("click", () => window.print());
     const ag = document.getElementById("agenda"); if (ag) ag.addEventListener("click", () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([ics(c)], { type: "text/calendar" })); a.download = "evenement.ics"; document.body.appendChild(a); a.click(); a.remove(); });
     const rf = document.getElementById("recuform");
@@ -190,7 +200,7 @@
       try {
         const ev = await api("public_evenement", { ref: e.ref }), z = document.getElementById("moyens");
         z.innerHTML = ev.paiements.map((m) => '<button type="button" class="principal" data-moyen="' + esc(m.id) + '">' + esc(m.libelle) + "</button>").join("") || '<span class="erreur">Aucun moyen de paiement n’est ouvert.</span>';
-        z.addEventListener("click", async (x) => { const b = x.target.closest("[data-moyen]"); if (!b) return; b.disabled = true; try { const r = await api("public_payer", { commande: ref, suivi: suivi, moyen: b.dataset.moyen }); if (r.paiement.type === "stripe") window.location.href = r.paiement.url; else commande(ref, suivi); } catch (err) { document.getElementById("msg").innerHTML = erreur(err.message); b.disabled = false; } });
+        z.addEventListener("click", async (x) => { const b = x.target.closest("[data-moyen]"); if (!b) return; b.disabled = true; try { const r = await api("public_payer", { commande: ref, suivi: suivi, moyen: b.dataset.moyen }); if (r.paiement.url) window.location.href = r.paiement.url; else commande(ref, suivi); } catch (err) { document.getElementById("msg").innerHTML = erreur(err.message); b.disabled = false; } });
       } catch (x) { /* l'événement n'est plus public : le paiement reste possible par virement déjà affiché */ }
       if (c.expire_le * 1000 > Date.now()) suiviTimer = setTimeout(() => { if (/^#\/c\//.test(location.hash)) commande(ref, suivi); }, 6000);       // au retour du prestataire, la confirmation arrive par son webhook : on relit
     }
@@ -229,6 +239,14 @@
   }
 
   // ── la route ─────────────────────────────────────────────────────────────
+  // Le retour de PayPal ou de HelloAsso arrive sur boutique.html?c=…&s=…&p=… (+ leurs paramètres) : on le range dans la route et on retire l'adresse de la barre.
+  function retourPrestataire() {
+    const q = new URLSearchParams(location.search), c = q.get("c"), s = q.get("s"), p = q.get("p");
+    if (!c || !s || !p) return false;
+    memoire.ecrire("retour", { c: c, s: s, p: p, ordre: q.get("token") || "" });
+    history.replaceState(null, "", location.pathname + "#/c/" + encodeURIComponent(c) + "?s=" + encodeURIComponent(s));
+    return true;
+  }
   async function router() {
     clearTimeout(suiviTimer);
     const h = location.hash.replace(/^#/, "") || "/", [chemin, requete] = h.split("?"), q = new URLSearchParams(requete || ""), m = chemin.split("/").filter(Boolean);
@@ -245,6 +263,7 @@
   }
   window.addEventListener("hashchange", router);
   majLien();
+  retourPrestataire();
   router();
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲

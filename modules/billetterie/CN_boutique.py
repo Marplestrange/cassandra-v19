@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5e6e3b
+# VERSION CN : 0.1.0  #a83b2f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : la boutique PUBLIQUE (calendrier, page d'un événement, panier, commande, suivi, webhook du prestataire).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5e6e3b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a83b2f ▼▼▼
 """Billetterie : la boutique PUBLIQUE (calendrier, page d'un événement, panier, commande, suivi, webhook du prestataire).
 
 Ces capacités se déclarent publiques (`qui = ["anonyme"]`) : elles s'exécutent avant toute connexion. Donc :
@@ -27,6 +27,7 @@ import hmac
 import json
 
 from . import CN_ventes as v
+from . import CN_prestataires as prest
 from . import CN_recus as recus
 from . import CN_regles as r
 from . import CN_stripe as stripe
@@ -88,6 +89,10 @@ def brancher(ctx, db):
         m = []
         if ctx.reglage("stripe_actif") and ctx.reglage("stripe_cle_secrete"):
             m.append({"id": "stripe", "libelle": "Carte bancaire"})
+        if prest.paypal_regle(ctx):
+            m.append({"id": "paypal", "libelle": "PayPal"})
+        if prest.helloasso_regle(ctx):
+            m.append({"id": "helloasso", "libelle": "Carte bancaire (HelloAsso)"})
         if ctx.reglage("virement_actif") and ctx.reglage("iban"):
             m.append({"id": "virement", "libelle": "Virement bancaire", "detail": "Places retenues 3 jours, billets émis à réception du virement"})
         return m
@@ -161,6 +166,18 @@ def brancher(ctx, db):
             with db.transaction() as tx:
                 tx.execute("UPDATE commandes SET moyen = 'virement', etat = 'en_attente', expire_le = MAX(expire_le, ?) WHERE id = ?", (v.horloge() + v.DUREE_VIREMENT_S, cmd["id"]))
             return {"type": "virement", "iban": ctx.reglage("iban"), "beneficiaire": ctx.reglage("virement_beneficiaire") or ctx.reglage("titulaire_nom"), "reference": cmd["ref"], "montant": cmd["total"], "delai_jours": 3}
+        if moyen in ("paypal", "helloasso"):
+            retour = v.url(ctx, "/boutique.html?c=%s&s=%s&p=%s" % (cmd["ref"], cmd["suivi"], moyen))            # le prestataire y ajoute ses propres paramètres ; la page les lit
+            try:
+                page = (prest.paypal_creer if moyen == "paypal" else prest.helloasso_creer)(ctx, cmd, e, retour, v.url(ctx, "/e/%s" % e["ref"]))
+            except RuntimeError as ex:
+                if abandonner_si_echec:
+                    with db.transaction() as tx:
+                        tx.execute("UPDATE commandes SET etat = 'annulee', note = ? WHERE id = ?", (str(ex)[:200], cmd["id"]))
+                raise ValueError("le paiement n'a pas pu être préparé : %s" % ex)
+            with db.transaction() as tx:
+                tx.execute("UPDATE commandes SET session_prestataire = ?, moyen = ? WHERE id = ?", (page["id"], moyen, cmd["id"]))
+            return {"type": moyen, "url": page["url"]}
         try:
             page = stripe.creer_page_de_paiement(ctx.reglage("stripe_cle_secrete"), cmd, e, v.url(ctx, "/c/%s?s=%s" % (cmd["ref"], cmd["suivi"])), v.url(ctx, "/e/%s" % e["ref"]), http=HTTP.get("stripe"))
         except RuntimeError as ex:
@@ -337,6 +354,63 @@ def brancher(ctx, db):
             tx.execute("UPDATE commandes SET etat = ?, moyen = ?, expire_le = ?, session_prestataire = ? WHERE id = ? AND etat IN ('retenue','en_attente')",
                        (a["etat"], a["moyen"], a["expire_le"], a["session_prestataire"], a["id"]))
 
+    # ── le retour d'un prestataire (PayPal, HelloAsso) : on vérifie chez lui, jamais sur la parole de l'acheteur ──
+    def verifier_paiement(c, commande="", suivi="", fournisseur="", ordre=""):
+        en_ligne()
+        if fournisseur not in ("paypal", "helloasso"):
+            raise ValueError("prestataire inconnu")
+        with db.transaction() as tx:
+            x = tx.execute("SELECT * FROM commandes WHERE ref = ?", (str(commande).strip().upper(),)).fetchone()
+            if not x or not x["suivi"] or not hmac.compare_digest(str(x["suivi"]), str(suivi)):
+                raise ValueError("commande introuvable")
+            x = dict(x)
+        if x["etat"] == "payee":
+            return {"etat": "payee", "deja": True, "commande": x["ref"], "detail": ""}
+        if x["moyen"] != fournisseur or not x["session_prestataire"]:
+            raise ValueError("cette commande n'a pas été payée par ce prestataire")
+        if x["etat"] not in ("retenue", "en_attente", "expiree"):
+            raise ValueError("cette commande n'attend plus de paiement")
+        cree = x["session_prestataire"]                         # l'ordre ou l'intention créés POUR cette commande
+        if fournisseur == "paypal":
+            if str(ordre) != cree:
+                raise ValueError("cet ordre PayPal n'est pas celui de cette commande")
+            ver = prest.paypal_capturer(ctx, cree, x)
+        else:
+            ver = prest.helloasso_verifier(ctx, cree, x)
+        if not ver["ok"]:
+            if any(mot in ver["detail"] for mot in ("montant", "pas celui", "pas celle")):
+                with db.transaction() as tx:
+                    tx.execute("UPDATE commandes SET note = ? WHERE id = ?", (ver["detail"][:200], x["id"]))
+                return {"etat": "ecart", "commande": x["ref"], "detail": ver["detail"]}
+            return {"etat": "attente", "commande": x["ref"], "detail": ver["detail"]}
+        with db.transaction() as tx:
+            if tx.execute("SELECT 1 FROM evenements_paiement WHERE fournisseur = ? AND ident = ?", (fournisseur, ver["reference"])).fetchone():
+                return {"etat": "payee", "deja": True, "commande": x["ref"], "detail": ""}
+            cmd = dict(tx.execute("SELECT * FROM commandes WHERE id = ?", (x["id"],)).fetchone())
+            try:
+                v.encaisser(ctx, tx, cmd, fournisseur, ver["reference"], fournisseur)
+                issue, detail = "paye", ""
+            except ValueError as ex:                            # payé chez eux, mais les places sont reparties (réservation expirée) : à rembourser chez le prestataire
+                issue, detail = "a_rembourser", str(ex)[:200]
+                tx.execute("UPDATE commandes SET note = ? WHERE id = ?", ("paiement %s reçu mais commande non livrée (%s) : à rembourser chez le prestataire" % (fournisseur, detail), cmd["id"]))
+            tx.execute("INSERT INTO evenements_paiement(fournisseur, ident, type, commande_ref, issue, detail) VALUES (?,?,?,?,?,?)", (fournisseur, ver["reference"], "retour", cmd["ref"], issue, detail))
+        return {"etat": "payee" if issue == "paye" else "a_rembourser", "commande": cmd["ref"], "detail": detail, "fournisseur": fournisseur}
+
+    def prouver_verifier(c, res):
+        if res.get("etat") in ("attente", "ecart", "a_rembourser"):
+            return True
+        x = db.lire("SELECT etat FROM commandes WHERE ref = ?", (res["commande"],))
+        return bool(x) and x[0]["etat"] == "payee"
+
+    def defaire_verifier(c, res):
+        if res.get("deja") or res.get("etat") != "payee":
+            return
+        with db.transaction() as tx:
+            cmd = tx.execute("SELECT * FROM commandes WHERE ref = ?", (res["commande"],)).fetchone()
+            if cmd and cmd["etat"] == "payee":
+                v.rembourser(ctx, tx, dict(cmd), "paiement défait")
+
+    ctx.implementer("public_paiement_verifier", verifier_paiement, prouver_verifier, defaire_verifier, simuler=lambda x, commande="", **_: "vérifierait chez le prestataire le paiement de la commande %s" % commande)
     ctx.implementer("public_payer", payer_commande, prouver_payer, defaire_payer, simuler=lambda x, commande="", **_: "préparerait le paiement de la commande %s" % commande)
     return {"payer": payer, "en_ligne": en_ligne, "evt_pub": evt_pub, "moyens": moyens}
 # ▲▲▲ FIN BORNE CN ▲▲▲

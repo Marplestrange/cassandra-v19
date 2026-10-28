@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #88f1f4
+# VERSION CN : 0.1.0  #a6fd6e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=88f1f4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a6fd6e ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -32,7 +32,7 @@ licence = "AGPL-3.0-or-later"
 stockage = true
 stockage_par_societe = true
 secrets = true
-reseau = ["l'API de Stripe (api.stripe.com), pour créer la page de paiement hébergée d'une commande", "le serveur d'envoi de courrier (SMTP) réglé dans la billetterie, pour expédier les billets et les messages aux acheteurs"]
+reseau = ["l'API de Stripe (api.stripe.com), pour créer la page de paiement hébergée d'une commande", "les API de PayPal (api-m.paypal.com) et de HelloAsso (api.helloasso.com), pour créer la page de paiement et vérifier le paiement au retour de l'acheteur", "le serveur d'envoi de courrier (SMTP) réglé dans la billetterie, pour expédier les billets et les messages aux acheteurs"]
 
 [[droits]]
 id = "gerer"
@@ -272,6 +272,47 @@ libelle = "Paiement par PayPal (adaptateur à venir)"
 type = "booleen"
 defaut = false
 portee = "societe"
+[[reglages]]
+id = "paypal_client_id"
+libelle = "Identifiant client de l'application PayPal"
+portee = "societe"
+
+[[reglages]]
+id = "paypal_secret"
+libelle = "Secret de l'application PayPal"
+type = "secret"
+portee = "societe"
+
+[[reglages]]
+id = "paypal_sandbox"
+libelle = "PayPal : utiliser le bac à sable (essais, sans argent réel)"
+type = "booleen"
+defaut = false
+portee = "societe"
+
+[[reglages]]
+id = "helloasso_client_id"
+libelle = "Identifiant client de l'API HelloAsso"
+portee = "societe"
+
+[[reglages]]
+id = "helloasso_secret"
+libelle = "Secret de l'API HelloAsso"
+type = "secret"
+portee = "societe"
+
+[[reglages]]
+id = "helloasso_organisation"
+libelle = "Identifiant (slug) de l'association chez HelloAsso"
+portee = "societe"
+
+[[reglages]]
+id = "helloasso_sandbox"
+libelle = "HelloAsso : utiliser le bac à sable (essais, sans argent réel)"
+type = "booleen"
+defaut = false
+portee = "societe"
+
 [[reglages]]
 id = "virement_actif"
 libelle = "Paiement par virement bancaire (places retenues 3 jours)"
@@ -1493,6 +1534,16 @@ id = "courriels_etat"
 libelle = "Où en est l'envoi des courriels : activé ou non, serveur réglé, nombre à envoyer, envoyés, en échec, frein « envois »"
 risque = "lecture"
 droit = "gerer"
+
+[[capacites]]
+id = "public_paiement_verifier"
+libelle = "Au retour de PayPal ou de HelloAsso : vérifier chez le prestataire, avec les identifiants de la billetterie, que le paiement de cette commande est terminé au bon montant, puis livrer les billets (public, par jeton de suivi ; jamais sur la parole de l'acheteur)"
+risque = "moyen"
+perimetre = ["la commande désignée par le jeton de suivi et son paiement"]
+preuve = "la commande relue payée, ou le refus expliqué"
+retour = "rembourser la commande (le remboursement chez le prestataire reste à faire)"
+paliers = ["auto", "raconter"]
+qui = ["anonyme"]
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
