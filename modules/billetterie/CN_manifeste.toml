@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7a326c
+# VERSION CN : 0.1.0  #7e8ba7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7a326c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7e8ba7 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -973,13 +973,6 @@ libelle = "Les courriels préparés par la billetterie (confirmations de command
 risque = "lecture"
 droit = "gerer"
 
-# ▲▲▲ FIN BORNE CN ▲▲▲
-
-# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
-# CN : tout ce fichier est du nexus : à compléter
-# EC : néant (aucun point d'évolution déclaré pour l'instant)
-# LIEN : à compléter (contrat, fichiers voisins)
-
 [[capacites]]
 id = "evenement_impact"
 libelle = "Les chiffres d'une annulation ou d'un report, avant de confirmer : commandes à rembourser par moyen, commissions à reprendre, artistes et revendeurs à prévenir, salle (rien n'est écrit)"
@@ -1157,3 +1150,160 @@ preuve = "la demande relue en attente"
 retour = "refuser la demande : la réserve revient par une ligne contraire"
 paliers = ["raconter", "auto"]
 
+[[ecrans]]
+id = "b_vue"
+libelle = "Vue d’ensemble"
+domaine = "finance"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "b_evenements"
+libelle = "Événements"
+domaine = "finance"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "b_ventes"
+libelle = "Ventes"
+domaine = "finance"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "b_personnes"
+libelle = "Revendeurs et artistes"
+domaine = "finance"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "b_argent"
+libelle = "Argent"
+domaine = "finance"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "b_caisse"
+libelle = "Caisse"
+domaine = "finance"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "b_controle"
+libelle = "Contrôle"
+domaine = "finance"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "b_revendeur"
+libelle = "Mon espace revendeur"
+domaine = "finance"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "b_artiste"
+libelle = "Mon espace artiste"
+domaine = "finance"
+gabarit = "liste_detail"
+
+[[menus]]
+id = "billetterie"
+libelle = "Billetterie"
+ordre = 30
+role = "utilisateur"
+icone = "ticket"
+
+[[menus]]
+id = "b_vue"
+libelle = "Vue d’ensemble"
+ecran = "b_vue"
+parent = "billetterie"
+ordre = 10
+role = "utilisateur"
+icone = "panorama"
+droit = "gerer"
+
+[[menus]]
+id = "b_evenements"
+libelle = "Événements"
+ecran = "b_evenements"
+parent = "billetterie"
+ordre = 20
+role = "utilisateur"
+icone = "calendar"
+droit = "gerer"
+
+[[menus]]
+id = "b_ventes"
+libelle = "Ventes"
+ecran = "b_ventes"
+parent = "billetterie"
+ordre = 30
+role = "utilisateur"
+icone = "ticket"
+droit = "gerer"
+
+[[menus]]
+id = "b_personnes"
+libelle = "Revendeurs et artistes"
+ecran = "b_personnes"
+parent = "billetterie"
+ordre = 40
+role = "utilisateur"
+icone = "contacts"
+droit = "gerer"
+
+[[menus]]
+id = "b_argent"
+libelle = "Argent"
+ecran = "b_argent"
+parent = "billetterie"
+ordre = 50
+role = "utilisateur"
+icone = "chart"
+droit = "gerer"
+
+[[menus]]
+id = "b_caisse"
+libelle = "Caisse"
+ecran = "b_caisse"
+parent = "billetterie"
+ordre = 60
+role = "utilisateur"
+icone = "bolt"
+droit = "vendre"
+
+[[menus]]
+id = "b_controle"
+libelle = "Contrôle"
+ecran = "b_controle"
+parent = "billetterie"
+ordre = 70
+role = "utilisateur"
+icone = "eye"
+droit = "controler"
+
+[[menus]]
+id = "b_revendeur"
+libelle = "Mon espace revendeur"
+ecran = "b_revendeur"
+parent = "billetterie"
+ordre = 80
+role = "utilisateur"
+icone = "groupe"
+droit = "revendeur"
+
+[[menus]]
+id = "b_artiste"
+libelle = "Mon espace artiste"
+ecran = "b_artiste"
+parent = "billetterie"
+ordre = 90
+role = "utilisateur"
+icone = "star"
+droit = "artiste"
+
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)
