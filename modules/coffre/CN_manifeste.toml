@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : coffre
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7b703d
+# VERSION CN : 0.1.0  #1f4cea
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le coffre Vaultwarden : le magasin de secrets de Cassandra (statut, liste des noms sans jamais les valeurs, lecture, écriture réversible, retrait). Un compte Cassandra = un compte Vault natif (même identifiant). Différé : la fiche complète d'un secret (chiffrement fin), le provisionnement des comptes, les clés d'API personnelles, le TOTP.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7b703d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1f4cea ▼▼▼
 [module]
 id = "coffre"
 nom = "Coffre fort"
@@ -22,7 +22,7 @@ description = "Le coffre Vaultwarden : le magasin de secrets de Cassandra (statu
 confiance = "interne"
 famille = "securite"
 importance = "vital"
-requiert = ["societes"]
+requiert = ["societes", "comptes"]
 sans = "Plus d'accès aux secrets de Cassandra : tout ce qui a besoin d'une clé ou d'un mot de passe gardé cesse de fonctionner."
 
 [[droits]]
@@ -45,13 +45,13 @@ libelle = "Un espace du coffre : le sien, ou celui d'une société"
 
 [evenements]
 emet = ["espace.cree", "espace.archive", "espace.acces_accorde", "espace.acces_retire"]
-ecoute = ["societe.creee", "societe.archivee"]
+ecoute = ["societe.creee", "societe.archivee", "compte.desactive", "compte.supprime"]
 
 [[moteurs]]
 id = "espaces_societes"
-libelle = "Ouvre l'espace de coffre d'une société quand elle naît, l'archive quand elle est archivée"
+libelle = "Ouvre l'espace de coffre d'une société quand elle naît, l'archive quand elle est archivée, et retire d'un espace de société le compte qui part (désactivé ou supprimé)"
 mode = "evenement"
-sur = ["societe.creee", "societe.archivee"]
+sur = ["societe.creee", "societe.archivee", "compte.desactive", "compte.supprime"]
 duree_max_s = 20
 
 [permissions]

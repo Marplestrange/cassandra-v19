@@ -12,7 +12,7 @@
 <!-- RÔLE       : Le socle société : tout compte appartient à une société, les fonctions sont des groupes attachés, le coffre isole chaque espace. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=33ab9f ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=6c12d6 ▼▼▼ -->
 # Sociétés et coffre
 
 Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/CN_societes-ecran.js` (Paramètres › Société / Organisation) et `interface/CN_coffre-ecran.js` (Mon coffre-fort). Moteur : `noyau/CN_base.py`, `noyau/CN_droits.py`, `noyau/CN_identite.py`, `noyau/CN_executeur.py`, modules `societes`, `coffre`, `comptes`.
@@ -55,12 +55,13 @@ Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/
 - **Un compte ne voit que ses espaces** : le sien, et ceux de société où on l'a fait entrer. Rien d'autre n'existe pour lui : ni le nom, ni le nombre de secrets. Ni l'administrateur de l'instance, ni Cassandra, ni l'administrateur d'une société ne lit un espace dont il n'est pas membre. Un refus ne dit jamais si l'espace existe.
 - **Rôles** dans un espace de société : administrateur du coffre (gère les accès, ne lit que les collections qu'on lui ouvre), membre, contributeur (écrit, ne relit que SES secrets), lecture seule. Collections par accès, date de fin facultative. Le dernier administrateur ne part pas et ne change pas de rôle.
 - **Chaque secret garde son auteur** (table `vault_secrets`) : c'est ce qui rend possible le rôle contributeur. Le serveur Vaultwarden n'a qu'une session : l'isolement est dans le module.
+- **Le départ d'un utilisateur** : un compte désactivé ou supprimé perd à l'instant tout accès aux espaces de société (événements `compte.desactive` et `compte.supprime`) ; son coffre personnel reste le sien. Le dernier administrateur d'un espace ne part pas : le journal du coffre dit « départ bloqué » et il faut en nommer un autre.
 - Un coffre peut être déclaré **externe** (adresse seulement) ; son branchement n'est pas encore disponible : tant qu'il ne l'est pas, rien n'y est lu ni écrit.
 
 ## À faire, si on le garde
 
 Les données propres à une société dans les modules d'entreprise (la billetterie en premier : une base par société est la piste la plus sûre, sans retoucher le code du module) ; 
-Brancher les modules consommateurs sur `societes.carte` ; une valeur « société » sur les données de chaque module (Courrier, Agenda, Billetterie…) ; le branchement d'un coffre externe ; le départ d'un utilisateur dans le coffre (retirer ses accès à l'événement `compte.desactive`) ; le module Multi-sociétés de l'App Store (sélecteur dans chaque écran, héritage du groupe, vue consolidée, opérations entre sociétés) ; la gestion des utilisateurs par l'administrateur de société (aujourd'hui l'instance seule crée les comptes d'une société).
+Brancher les modules consommateurs sur `societes.carte` ; une valeur « société » sur les données de chaque module (Courrier, Agenda, Billetterie…) ; le branchement d'un coffre externe ; le module Multi-sociétés de l'App Store (sélecteur dans chaque écran, héritage du groupe, vue consolidée, opérations entre sociétés) ; la gestion des utilisateurs par l'administrateur de société (aujourd'hui l'instance seule crée les comptes d'une société).
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 
 <!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->

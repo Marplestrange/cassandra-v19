@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : coffre
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c473e4
+# VERSION CN : 0.1.0  #9f314f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le coffre Vaultwarden : le magasin de secrets de Cassandra.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c473e4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9f314f ▼▼▼
 """Le coffre Vaultwarden : le magasin de secrets de Cassandra.
 
 Chaque compte ne voit QUE ses espaces : le sien (« u:<compte> »), puis ceux de société où on l'a fait entrer (« s:<société> »)
@@ -491,7 +491,24 @@ def brancher(ctx):
     def defaire_archiver(c, res):
         db.ecrire("UPDATE vault_espaces SET archive=? WHERE id=?", (res["avant"], res["espace"]))
 
+    def depart(compte):
+        """Un compte désactivé ou supprimé ne garde aucun accès aux espaces de société. Son coffre personnel reste intact. Le dernier administrateur d'un espace ne part pas
+        (l'espace resterait sans maître) : on le dit au journal du coffre, et un autre administrateur doit être nommé."""
+        compte = str(compte or "").strip().lower()
+        if not compte:
+            return
+        for m in db.lire("SELECT espace, role FROM vault_membres WHERE compte=? AND espace LIKE 's:%'", (compte,)):
+            if m["role"] == "admin" and _admins_actifs(m["espace"], sauf=compte) < 1:
+                _audit("depart_bloque:%s" % compte, "", m["espace"])
+                continue
+            db.ecrire("DELETE FROM vault_membres WHERE espace=? AND compte=?", (m["espace"], compte))
+            _audit("depart:%s" % compte, "", m["espace"])
+            _emettre("espace.acces_retire", m["espace"], {"compte": compte, "motif": "départ"})
+
     def espaces_societes(ctx2, ev):
+        if ev.get("type") in ("compte.desactive", "compte.supprime"):
+            depart(ev.get("objet_id") or (ev.get("donnees") or {}).get("compte"))
+            return
         d = ev.get("donnees") or {}
         soc = str(d.get("societe") or "").strip()
         if not soc:

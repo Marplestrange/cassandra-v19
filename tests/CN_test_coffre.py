@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #badd5b
+# VERSION CN : 0.1.0  #4efcab
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du coffre : le magasin de secrets, réversible, contre un faux serveur Vaultwarden.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=badd5b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4efcab ▼▼▼
 """Bancs du coffre : le magasin de secrets, réversible, contre un faux serveur Vaultwarden."""
 import json
 import shutil
@@ -218,6 +218,23 @@ class Monde(unittest.TestCase):
         # un étranger n'a rien : ni lecture, ni liste, ni écriture
         for cap, args in (("get", {"name": "k1"}), ("list", {}), ("set", {"name": "k9", "valeur": "x"})):
             self.refuse(cap, compte=FRED, espace=esp, **args)
+
+    def test_un_compte_qui_part_perd_l_acces_aux_espaces_de_societe_mais_garde_son_coffre(self):
+        esp = self.societe()
+        self.ex_accorder(BEA, esp, CAM, "membre")
+        self.s("set", compte=CAM, name="perso", valeur="a-cam")                                          # son coffre personnel
+        self.s("set", compte=CAM, espace=esp, name="partage", valeur="v")
+        r = self.n.executeur.executer("comptes.desactiver", "humain", {"compte": CAM}, compte=BEA)
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertFalse(self.db.lire("SELECT 1 FROM vault_membres WHERE espace=? AND compte=?", (esp, CAM)))   # plus aucun accès à l'espace de la société
+        self.assertTrue(self.db.lire("SELECT 1 FROM vault_audit WHERE action=? AND espace=?", ("depart:" + CAM, esp)))
+        self.assertTrue(self.db.lire("SELECT 1 FROM vault_secrets WHERE espace=? AND nom='perso'", ("u:" + CAM,)))   # son coffre personnel reste intact
+
+    def test_le_dernier_administrateur_d_un_espace_ne_part_pas_avec_son_compte(self):
+        esp = self.societe()                                                                            # BEA en est l'unique administrateur
+        self.n.bus.emettre("compte.desactive", source="comptes", objet=("compte", BEA))                   # le départ d'un compte, tel que le module des comptes l'annonce
+        self.assertTrue(self.db.lire("SELECT 1 FROM vault_membres WHERE espace=? AND compte=? AND role='admin'", (esp, BEA)))
+        self.assertTrue(self.db.lire("SELECT 1 FROM vault_audit WHERE action=? AND espace=?", ("depart_bloque:" + BEA, esp)))
 
     def ex_accorder(self, qui, esp, cible, role, **plus):
         r = self.ex("coffre.accorder", compte=qui, **dict({"espace": esp, "utilisateur": cible, "role": role}, **plus))
