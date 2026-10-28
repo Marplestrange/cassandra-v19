@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a6fd6e
+# VERSION CN : 0.1.0  #cfa125
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a6fd6e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cfa125 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -1544,6 +1544,18 @@ preuve = "la commande relue payée, ou le refus expliqué"
 retour = "rembourser la commande (le remboursement chez le prestataire reste à faire)"
 paliers = ["auto", "raconter"]
 qui = ["anonyme"]
+
+[[capacites]]
+id = "public_billets_pdf"
+libelle = "Télécharger SES billets en PDF (une page par billet : QR code, code de contrôle, lieu, heure) avec le jeton de suivi de sa commande payée (public)"
+risque = "lecture"
+qui = ["anonyme"]
+
+[[capacites]]
+id = "commande_pdf"
+libelle = "Les billets d'une commande payée en PDF, pour les imprimer ou les envoyer (une page par billet valide)"
+risque = "lecture"
+droit = "gerer"
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

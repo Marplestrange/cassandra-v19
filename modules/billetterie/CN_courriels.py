@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fc2796
+# VERSION CN : 0.1.0  #841c7d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : l'envoi réel des courriels (billets, annulations, offres de la liste d'attente, liens de connexion).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fc2796 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=841c7d ▼▼▼
 """Billetterie : l'envoi réel des courriels (billets, annulations, offres de la liste d'attente, liens de connexion).
 
 La billetterie PRÉPARE ses courriels dans une boîte d'envoi (jamais d'envoi au milieu d'une vente : un serveur de courrier en panne ne doit pas faire perdre une commande).
@@ -30,6 +30,8 @@ import ssl
 from email.message import EmailMessage
 from email.utils import formatdate, make_msgid
 
+from . import CN_billets as bil
+from . import CN_pdf as pdf
 from . import CN_ventes as v
 
 ESSAIS_MAX = 5
@@ -40,13 +42,15 @@ ENVOI = {}                      # les bancs y posent « smtp » : une fonction (
 BOUCLE_LOCALE = ("localhost", "127.0.0.1", "::1")
 
 
-def envoyer_smtp(hote, port, securite, identifiant, mot_de_passe, expediteur, a, objet, corps, delai=20):
+def envoyer_smtp(hote, port, securite, identifiant, mot_de_passe, expediteur, a, objet, corps, delai=20, pieces=None):
     if identifiant and securite not in ("starttls", "ssl") and hote not in BOUCLE_LOCALE:
         raise ValueError("jamais de mot de passe sans chiffrement : choisissez starttls ou ssl")
     msg = EmailMessage()
     msg["From"], msg["To"], msg["Subject"] = expediteur, a, objet
     msg["Date"], msg["Message-ID"] = formatdate(localtime=False), make_msgid()
     msg.set_content(corps)
+    for nom, type_, octets in pieces or []:
+        msg.add_attachment(octets, maintype=type_.split("/")[0], subtype=type_.split("/")[1], filename=nom)
     if securite == "ssl":
         srv = smtplib.SMTP_SSL(hote, int(port), timeout=delai, context=ssl.create_default_context())
     else:
@@ -71,6 +75,17 @@ def reglages(ctx):
             "mdp": str(ctx.reglage("smtp_mot_de_passe") or ""), "de": str(ctx.reglage("smtp_expediteur") or ctx.reglage("titulaire_mail") or "").strip()}
 
 
+def pieces_jointes(ctx, db, m):
+    """Les pièces d'un courriel : les billets de la commande en PDF, refaits maintenant depuis la base (seules les places encore valides)."""
+    if m.get("joindre") != "billets" or not m.get("commande_ref"):
+        return []
+    cle = bil.cle(ctx, db)
+    with db.transaction() as tx:
+        cmd = tx.execute("SELECT * FROM commandes WHERE ref = ?", (m["commande_ref"],)).fetchone()
+        billets = v.donnees_pdf(ctx, tx, cle, dict(cmd)) if cmd and cmd["etat"] == "payee" else []
+    return [("billets-%s.pdf" % m["commande_ref"], "application/pdf", pdf.billets_pdf(billets))] if billets else []
+
+
 def expedier_lot(ctx, db, maximum=20):
     """Envoie les courriels dus. Rend {envoyes, echecs, reportes, raison}."""
     g = reglages(ctx)
@@ -85,7 +100,7 @@ def expedier_lot(ctx, db, maximum=20):
     ok = ko = rep = 0
     for m in dus:
         try:
-            envoi(g["hote"], g["port"], g["securite"], g["identifiant"], g["mdp"], g["de"], m["a"], m["objet"], m["corps"])
+            envoi(g["hote"], g["port"], g["securite"], g["identifiant"], g["mdp"], g["de"], m["a"], m["objet"], m["corps"], pieces=pieces_jointes(ctx, db, m))
         except Exception as ex:                                            # un serveur qui refuse, une coupure, un délai : on retient la raison, sans le mot de passe
             raison = str(ex)
             for secret in (g["mdp"], g["identifiant"]):

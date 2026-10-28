@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #a258c2
+// VERSION CN : 0.1.0  #92d1c2
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : stockage refusé : on continue
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=a258c2 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=92d1c2 ▼▼▼
 // La boutique publique : la programmation, la page d'un événement, la commande, le suivi d'une commande avec ses billets, la liste d'attente, le reçu de don.
 // Page statique et SANS session : tout passe par les capacités publiques billetterie.public_* (limitées par origine, protégées par jeton de suivi). La route est dans le fragment (#/e/..., #/c/..., #/a/...).
 (function () {
@@ -182,7 +182,7 @@
     if (c.etat === "payee") {
       corps = '<div class="info"><b>Merci ! Votre commande est payée.</b> Voici vos billets : présentez le QR code à l’entrée (sur téléphone ou imprimé). Ils vous ont aussi été envoyés par courriel.</div><div class="tickets" id="billets">' +
         c.billets.map((b) => '<div class="ticket"><div>' + window.CASS.qr.svg(b.qr, { taille: 200 }) + '</div><span class="num">' + esc(b.numero) + "</span>" + (b.nom ? "<span>" + esc(b.nom) + "</span>" : "") + '<span class="code">Code de contrôle : ' + esc(b.code_controle) + "</span>" + (b.etat !== "valide" ? '<span class="puce danger">Annulé</span>' : "") + "</div>").join("") + "</div>" +
-        '<div class="ligne noprint"><button type="button" id="imprimer">Imprimer mes billets</button><button type="button" id="agenda">Ajouter à mon agenda</button></div>';
+        '<div class="ligne noprint"><button type="button" id="pdf" class="principal">Télécharger mes billets (PDF)</button><button type="button" id="imprimer">Imprimer cette page</button><button type="button" id="agenda">Ajouter à mon agenda</button></div>';
       if (c.recu_fiscal && c.recu_fiscal.possible) corps += '<div class="carte noprint" id="recu"><h2>Reçu fiscal de votre don</h2>' + (c.recu_fiscal.numero ? '<div id="recuvue"></div>' : '<p class="doux">Votre don de ' + esc(eur(c.don)) + ' ouvre droit à un reçu fiscal. Indiquez votre adresse postale pour l’obtenir.</p><form id="recuform" style="display:grid;gap:10px;margin-top:10px"><label>Nom du donateur<input type="text" name="nom" value="' + esc(c.nom || "") + '" required></label><label>Adresse postale complète<textarea name="adresse" required></textarea></label><div id="msg"></div><button type="submit">Obtenir mon reçu</button></form>') + "</div>";
     } else if (c.etat === "retenue" || c.etat === "en_attente") {
       const reste = Math.max(0, Math.round((c.expire_le * 1000 - Date.now()) / 60000));
@@ -191,6 +191,8 @@
         '<div class="carte noprint" id="payer"><h2>Payer maintenant</h2><div id="moyens" class="ligne"><span class="doux">Chargement…</span></div><div id="msg"></div></div>';
     } else corps = '<div class="info danger">' + esc(ENT[c.etat] || c.etat) + (c.etat === "remboursee" ? " : le remboursement vous a été annoncé par courriel." : ".") + "</div>";
     app.innerHTML = '<p class="ariane noprint"><a href="#/e/' + esc(e.ref) + '">← ' + esc(e.nom) + "</a></p><div><h1>Commande " + esc(c.commande) + "</h1><p class=\"doux\">" + esc(e.nom) + " — " + esc(jourLong(e.date)) + (e.lieu ? " — " + esc(e.lieu) : "") + "</p></div>" + info + corps;
+    const pdfb = document.getElementById("pdf");
+    if (pdfb) pdfb.addEventListener("click", async () => { pdfb.disabled = true; try { const r = await api("public_billets_pdf", { commande: ref, suivi: suivi }), bin = atob(r.pdf), oct = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) oct[i] = bin.charCodeAt(i); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([oct], { type: "application/pdf" })); a.download = r.nom; document.body.appendChild(a); a.click(); a.remove(); } catch (x) { alert(x.message); } pdfb.disabled = false; });
     const imp = document.getElementById("imprimer"); if (imp) imp.addEventListener("click", () => window.print());
     const ag = document.getElementById("agenda"); if (ag) ag.addEventListener("click", () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([ics(c)], { type: "text/calendar" })); a.download = "evenement.ics"; document.body.appendChild(a); a.click(); a.remove(); });
     const rf = document.getElementById("recuform");

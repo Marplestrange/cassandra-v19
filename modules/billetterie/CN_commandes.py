@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8e4f34
+# VERSION CN : 0.1.0  #608631
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : les capacités des ventes (commandes, billets, codes promo, invitations) offertes au titulaire, aux agents et, plus tard, à la caisse.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e4f34 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=608631 ▼▼▼
 """Billetterie : les capacités des ventes (commandes, billets, codes promo, invitations) offertes au titulaire, aux agents et, plus tard, à la caisse.
 
 Chaque écriture se prouve et se défait. Les règles sont dans CN_ventes.py ; ici on enchaîne : ouvrir UNE transaction, appeler la règle, rendre de quoi relire et défaire.
@@ -21,6 +21,7 @@ La boutique publique (lot suivant) appelle les MÊMES règles : une vente par la
 from __future__ import annotations
 
 from . import CN_billets as bil
+from . import CN_pdf as pdf
 from . import CN_crud as crud
 from . import CN_identifiants as ids
 from . import CN_regles as r
@@ -149,6 +150,18 @@ def brancher(ctx, db):
                 tx.execute("UPDATE commandes SET etat = 'annulee' WHERE id = ?", (cmd["id"],))
 
     # ── encaisser, rembourser, annuler ───────────────────────────────────────
+    def commande_pdf(c, ref=""):
+        k = bil.cle(ctx, db)
+        with db.transaction() as tx:
+            cmd = commande_de(tx, ref)
+            if cmd["etat"] != "payee":
+                raise ValueError("les billets existent une fois la commande payée")
+            billets = v.donnees_pdf(ctx, tx, k, cmd)
+        if not billets:
+            raise ValueError("aucun billet valide dans cette commande")
+        import base64
+        return {"nom": "billets-%s.pdf" % cmd["ref"], "pdf": base64.b64encode(pdf.billets_pdf(billets)).decode("ascii"), "billets": len(billets)}
+
     def encaisser(c, ref="", moyen="", reference_externe=""):
         if moyen not in v.MOYENS_IMMEDIATS + v.MOYENS_PRESTATAIRE + ("virement",):
             raise ValueError("moyen de paiement inconnu")
@@ -275,6 +288,7 @@ def brancher(ctx, db):
 
     for cid, f in (("stock", stock), ("panier_devis", panier_devis), ("commandes", commandes), ("commande", commande), ("billets", billets), ("billet", billet)):
         ctx.implementer(cid, f)
+    ctx.implementer("commande_pdf", commande_pdf)
     ctx.implementer("commande_creer", creer, prouver_creer, defaire_creer, simuler=lambda x, evenement_id=0, **_: "créerait une commande pour l'événement %s" % evenement_id)
     ctx.implementer("commande_encaisser", encaisser, prouver_encaisser, defaire_encaisser, simuler=lambda x, ref="", **_: "encaisserait la commande %s" % ref)
     ctx.implementer("commande_rembourser", rembourser, prouver_rembourser, defaire_rembourser, simuler=lambda x, ref="", **_: "rembourserait la commande %s" % ref)

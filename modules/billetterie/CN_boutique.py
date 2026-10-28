@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a83b2f
+# VERSION CN : 0.1.0  #023b39
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : la boutique PUBLIQUE (calendrier, page d'un événement, panier, commande, suivi, webhook du prestataire).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a83b2f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=023b39 ▼▼▼
 """Billetterie : la boutique PUBLIQUE (calendrier, page d'un événement, panier, commande, suivi, webhook du prestataire).
 
 Ces capacités se déclarent publiques (`qui = ["anonyme"]`) : elles s'exécutent avant toute connexion. Donc :
@@ -23,10 +23,13 @@ Ces capacités se déclarent publiques (`qui = ["anonyme"]`) : elles s'exécuten
 """
 from __future__ import annotations
 
+import base64
 import hmac
 import json
 
 from . import CN_ventes as v
+from . import CN_billets as bil
+from . import CN_pdf as pdf
 from . import CN_prestataires as prest
 from . import CN_recus as recus
 from . import CN_regles as r
@@ -396,6 +399,19 @@ def brancher(ctx, db):
             tx.execute("INSERT INTO evenements_paiement(fournisseur, ident, type, commande_ref, issue, detail) VALUES (?,?,?,?,?,?)", (fournisseur, ver["reference"], "retour", cmd["ref"], issue, detail))
         return {"etat": "payee" if issue == "paye" else "a_rembourser", "commande": cmd["ref"], "detail": detail, "fournisseur": fournisseur}
 
+    def billets_en_pdf(c, commande="", suivi=""):
+        cle = bil.cle(ctx, db)
+        with db.transaction() as tx:
+            x = tx.execute("SELECT * FROM commandes WHERE ref = ?", (str(commande).strip().upper(),)).fetchone()
+            if not x or not x["suivi"] or not hmac.compare_digest(str(x["suivi"]), str(suivi)):
+                raise ValueError("commande introuvable")
+            if x["etat"] != "payee":
+                raise ValueError("les billets existent une fois la commande payée")
+            billets = v.donnees_pdf(ctx, tx, cle, dict(x))
+        if not billets:
+            raise ValueError("aucun billet valide dans cette commande")
+        return {"nom": "billets-%s.pdf" % x["ref"], "pdf": base64.b64encode(pdf.billets_pdf(billets)).decode("ascii"), "billets": len(billets)}
+
     def prouver_verifier(c, res):
         if res.get("etat") in ("attente", "ecart", "a_rembourser"):
             return True
@@ -410,6 +426,7 @@ def brancher(ctx, db):
             if cmd and cmd["etat"] == "payee":
                 v.rembourser(ctx, tx, dict(cmd), "paiement défait")
 
+    ctx.implementer("public_billets_pdf", billets_en_pdf)
     ctx.implementer("public_paiement_verifier", verifier_paiement, prouver_verifier, defaire_verifier, simuler=lambda x, commande="", **_: "vérifierait chez le prestataire le paiement de la commande %s" % commande)
     ctx.implementer("public_payer", payer_commande, prouver_payer, defaire_payer, simuler=lambda x, commande="", **_: "préparerait le paiement de la commande %s" % commande)
     return {"payer": payer, "en_ligne": en_ligne, "evt_pub": evt_pub, "moyens": moyens}

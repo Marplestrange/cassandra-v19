@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #323d1e
+// VERSION CN : 0.1.0  #3cbe66
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=323d1e ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=3cbe66 ▼▼▼
 // Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 (function () {
   "use strict";
@@ -249,7 +249,7 @@
         detail = '<div class="carte"><div class="row"><h2>' + esc(c.ref) + "</h2>" + puceCmd(c.etat) + '<span class="sp"></span><button class="btn sm" data-a="fermer">Fermer</button></div>' +
           '<dl class="kv"><dt>Événement</dt><dd>' + esc(noms[c.evenement_id] || "") + "</dd><dt>Acheteur</dt><dd>" + esc(c.nom || "—") + " " + esc(c.mail || "") + "</dd><dt>Canal</dt><dd>" + esc(c.canal) + " · " + esc(MOYENS[c.moyen] || c.moyen || "—") + "</dd><dt>Total</dt><dd><b>" + eur(c.total) + "</b>" + (c.remise ? " (remise " + eur(c.remise) + ")" : "") + (c.don ? " dont don " + eur(c.don) : "") + (c.frais ? " dont frais " + eur(c.frais) : "") + "</dd>" + (c.attribution ? "<dt>Attribution</dt><dd>" + esc(c.attribution) + "</dd>" : "") + (c.note ? "<dt>Note</dt><dd>" + esc(c.note) + "</dd>" : "") + "</dl>" +
           tableau([["n", "Billet"], ["p", "Pour"], ["e", "État"], ["", ""]], mes.map((b) => "<tr><td><b>" + esc(b.numero) + "</b></td><td>" + esc(b.nom || "—") + "</td><td>" + puce(b.etat === "valide" ? (b.entrees_faites ? "entré" : "valide") : "annulé", b.etat === "valide" ? "ok" : "dg") + '</td><td class="n" style="white-space:nowrap">' + (b.etat === "valide" ? '<button class="btn sm" data-a="qr" data-n="' + esc(b.numero) + '">QR</button> <button class="btn sm" data-a="reemettre" data-n="' + esc(b.numero) + '">Réémettre</button> <button class="btn sm" data-a="transferer" data-n="' + esc(b.numero) + '">Transférer</button>' : "") + "</td></tr>"), "Pas encore de billet.") +
-          '<div class="row">' + (c.etat === "retenue" || c.etat === "en_attente" ? '<button class="btn pri" data-a="encaisser">Marquer payée…</button><button class="btn dng" data-a="annuler-cmd">Annuler la réservation</button>' : "") + (c.etat === "payee" ? '<button class="btn dng" data-a="rembourser">Rembourser…</button>' : "") + (c.etat === "payee" && c.don > 0 ? '<button class="btn" data-a="recu">Reçu fiscal du don…</button>' : "") + "</div></div>";
+          '<div class="row">' + (c.etat === "retenue" || c.etat === "en_attente" ? '<button class="btn pri" data-a="encaisser">Marquer payée…</button><button class="btn dng" data-a="annuler-cmd">Annuler la réservation</button>' : "") + (c.etat === "payee" ? '<button class="btn" data-a="pdf">Billets en PDF</button><button class="btn dng" data-a="rembourser">Rembourser…</button>' : "") + (c.etat === "payee" && c.don > 0 ? '<button class="btn" data-a="recu">Reçu fiscal du don…</button>' : "") + "</div></div>";
         S.commande = c;
       }
     }
@@ -271,6 +271,9 @@
       else if (k === "rembourser") {
         const v = await B.formulaire("Rembourser « " + c.ref + " »", [{ n: "n", t: "note", l: "<p>Les billets sont annulés, les places rendues, la commission du revendeur reprise.</p>" + (["stripe", "helloasso", "paypal"].indexOf(c.moyen) >= 0 ? "<p><b>Le remboursement chez le prestataire reste à faire</b> depuis son tableau de bord.</p>" : "<p>Le remboursement de " + eur(c.total) + " est à faire à la main.</p>") }, { n: "motif", l: "Motif", t: "textarea" }], {}, "Rembourser", true);
         if (v && await S.geste("commande_rembourser", { ref: c.ref, motif: v.motif }, "Commande remboursée.")) refaire();
+      } else if (k === "pdf") {
+        const r = await S.lire("commande_pdf", { ref: c.ref });
+        if (r) { const bin = atob(r.pdf), oct = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) oct[i] = bin.charCodeAt(i); const l = document.createElement("a"); l.href = URL.createObjectURL(new Blob([oct], { type: "application/pdf" })); l.download = r.nom; document.body.appendChild(l); l.click(); l.remove(); }
       } else if (k === "qr") {
         const x = await S.lire("billet", { numero: a.dataset.n }), bl = (S.billets || []).find((y) => y.numero === a.dataset.n) || {};
         if (x) await confirmer("Billet " + a.dataset.n, B.billetQr({ numero: a.dataset.n, qr: x.qr, code_controle: x.code_controle, nom: bl.nom }) + '<p class="hint">Ce QR code est celui que l’ouvreur scanne ; le code de contrôle se saisit à la main si le scan échoue.</p>', "Fermer");

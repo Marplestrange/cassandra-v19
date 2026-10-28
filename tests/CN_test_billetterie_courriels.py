@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #92db4f
+# VERSION CN : 0.1.0  #262e71
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 7 : l'envoi réel des courriels (activation, nouvelles tentatives, frein, transport SMTP vrai contre un petit serveur de banc).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=92db4f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=262e71 ▼▼▼
 """Bancs de la billetterie, lot 7 : l'envoi réel des courriels (activation, nouvelles tentatives, frein, transport SMTP vrai contre un petit serveur de banc)."""
 import socketserver
 import sys
@@ -38,7 +38,8 @@ class Courriels(Ventes):
         self.addCleanup(self.cc.ENVOI.clear)
         self.vendre(1)                                        # une confirmation part en boîte d'envoi
 
-    def faux(self, hote, port, securite, identifiant, mdp, de, a, objet, corps):
+    def faux(self, hote, port, securite, identifiant, mdp, de, a, objet, corps, pieces=None):
+        self.pieces = pieces or []
         if self.panne:
             raise RuntimeError(self.panne[0])
         self.envoyes.append((hote, port, securite, identifiant, de, a, objet))

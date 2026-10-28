@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #065f40
+# VERSION CN : 0.1.0  #050c00
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=065f40 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=050c00 ▼▼▼
 """Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
 
 Ce fichier DÉCIDE : qui peut acheter quoi, à quel prix, combien de places restent, quand une vente est acquise, ce qu'elle rapporte au revendeur et quand elle s'annule.
@@ -337,6 +337,19 @@ def encaisser(ctx, tx, cmd, moyen, reference="", par="", numeros=None):
     return {"deja": False, "numeros": numeros}
 
 
+def donnees_pdf(ctx, tx, cle, cmd):
+    """Tout ce qu'imprime le billet de chaque place VALIDE d'une commande : l'événement, le lieu, le nom, le type, le numéro, le QR et le code de contrôle (clé de signature obtenue AVANT la transaction)."""
+    evt = r.ligne(tx, "evenements", cmd["evenement_id"])
+    salle = r.ligne(tx, "salles", evt["salle_id"]) if evt["salle_id"] else None
+    out = []
+    for b in tx.execute("SELECT * FROM billets WHERE commande_id = ? AND etat = 'valide' ORDER BY id", (cmd["id"],)).fetchall():
+        t = tx.execute("SELECT nom FROM types_billets WHERE id = ?", (b["type_billet_id"],)).fetchone()
+        out.append({"organisateur": ctx.reglage("titulaire_nom"), "evenement": evt["nom"], "date": evt["date_iso"], "portes": evt["portes"], "debut": evt["debut"],
+                    "lieu": salle["nom"] if salle else "", "adresse": salle["adresse"] if salle else "", "nom": b["nom"], "type": t[0] if t else "", "numero": b["numero"],
+                    "code": bil.code_controle(cle, b["numero"], b["version"]), "qr": bil.contenu_qr(cle, b["numero"], b["version"]), "contact": ctx.reglage("titulaire_mail")})
+    return out
+
+
 def courriel_confirmation(ctx, tx, cmd, evt, numeros):
     """Le courriel de confirmation est PRÉPARÉ (table `courriels`) : c'est le courrier qui l'envoie. Un envoi qui échoue ne défait pas une vente."""
     if not cmd["mail"]:
@@ -344,7 +357,7 @@ def courriel_confirmation(ctx, tx, cmd, evt, numeros):
     corps = ("Bonjour %s,\n\nVotre commande %s pour « %s » (%s) est confirmée : %d billet(s), %s.\n\nNuméros : %s\n\nVos billets, avec leur QR code, sont ici : %s\n\n%s"
              % (cmd["nom"] or "", cmd["ref"], evt["nom"], evt["date_iso"] or "date à venir", len(numeros), ("%.2f €" % (cmd["total"] / 100)).replace(".", ","), ", ".join(numeros),
                 url(ctx, "/c/%s?s=%s" % (cmd["ref"], cmd["suivi"])), ctx.reglage("titulaire_nom")))
-    tx.execute("INSERT INTO courriels(a, objet, corps, commande_ref) VALUES (?,?,?,?)", (cmd["mail"], "Vos billets · %s" % evt["nom"], corps, cmd["ref"]))
+    tx.execute("INSERT INTO courriels(a, objet, corps, commande_ref, joindre) VALUES (?,?,?,?,?)", (cmd["mail"], "Vos billets · %s" % evt["nom"], corps, cmd["ref"], "billets"))
 
 
 def rembourser(ctx, tx, cmd, motif=""):
