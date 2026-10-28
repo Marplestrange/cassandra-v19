@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0016c6
+# VERSION CN : 0.1.0  #11747b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 10 : le pont facultatif vers Dolibarr (file de rattrapage, idempotence, factures, règlements, avoirs, versements, pannes, prérequis, vrai transport HTTP).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0016c6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=11747b ▼▼▼
 """Bancs de la billetterie, lot 10 : le pont facultatif vers Dolibarr (file de rattrapage, idempotence, factures, règlements, avoirs, versements, pannes, prérequis, vrai transport HTTP)."""
 import json
 import re
@@ -36,6 +36,7 @@ class FauxDolibarr:
         self.pe = pont_erreur
         self.appels, self.tiers, self.factures, self.fournisseurs, self.panne, self.refus = [], {}, {}, {}, False, None
         self.compteur = 0
+        self.types_membre, self.membres = {}, {}
 
     def id(self):
         self.compteur += 1
@@ -90,6 +91,18 @@ class FauxDolibarr:
                 if m.group(2) == "/payments":
                     return 200, f["paiements"] or (404, {})[1]
                 return 200, dict(f, id=int(m.group(1)))
+        if chemin == "/memberstypes" and methode == "GET":
+            return 200, [dict(x, id=i) for i, x in self.types_membre.items()] or (404, {})[1]
+        if chemin == "/memberstypes" and methode == "POST":
+            i = self.id()
+            self.types_membre[i] = d
+            return 200, i
+        if chemin == "/members" and methode == "GET":
+            return cherche(self.membres)
+        if chemin == "/members" and methode == "POST":
+            i = self.id()
+            self.membres[i] = d
+            return 200, i
         return 404, {"error": {"message": "route inconnue " + chemin}}
 
 
@@ -319,6 +332,69 @@ class Versement(Pont):
     def test_le_domaine_commissions_est_coupe_par_defaut(self):
         self.relier()
         self.assertFalse(self.mod.CN_file_dolibarr.relie(self.ctx) and self.ctx.reglage("dolibarr_commissions"))
+
+
+class Adherents(Pont):
+    def artiste(self, scene="Nova", **k):
+        d = dict(scene=scene, legal="Nova Quartet", statut="Association", mail="nova@exemple.org", ville="Nantes", adhesion_fin="2027-12-31")
+        d.update(k)
+        return self.ok("artiste_save", **d)
+
+    def test_domaine_coupe_ou_pont_non_relie_on_le_dit(self):
+        a = self.artiste()
+        self.assertIn("pas relié", self.echec("dolibarr_adherent", artiste_id=a["id"]))
+        self.relier()
+        self.assertIn("coupé", self.echec("dolibarr_adherent", artiste_id=a["id"]))
+
+    def test_l_artiste_devient_adherent_avec_son_type_son_tiers_et_ses_champs(self):
+        self.relier(dolibarr_adherents=True)
+        a = self.artiste()
+        self.ok("dolibarr_adherent", artiste_id=a["id"])
+        self.assertEqual(self.traiter()["faits"], 1)
+        m = list(self.dol.membres.values())[0]
+        t = [i for i, x in self.dol.tiers.items() if x.get("fournisseur") == 1][0]
+        self.assertEqual((m["login"], m["morphy"], m["lastname"], m["societe"], m["email"], m["zip"], m["fk_soc"], m["ref_ext"]), (a["ref"].lower(), "mor", "Quartet", "Nova", "nova@exemple.org", "", t, a["ref"]))
+        self.assertEqual(m["firstname"], "Nova")
+        self.assertEqual(m["typeid"], list(self.dol.types_membre)[0])
+        self.assertTrue(m["datefin"] and m["public"] == 0)
+        self.assertEqual(self.ctx.stockage.lire("SELECT dolibarr_adherent_id FROM artistes WHERE id = ?", (a["id"],))[0]["dolibarr_adherent_id"], list(self.dol.membres)[0])
+
+    def test_un_particulier_est_une_personne_physique(self):
+        self.relier(dolibarr_adherents=True)
+        a = self.artiste(scene="Solo", legal="Zoé Martin", statut="Particulier", adhesion_fin="")
+        self.ok("dolibarr_adherent", artiste_id=a["id"])
+        self.traiter()
+        m = list(self.dol.membres.values())[0]
+        self.assertEqual((m["morphy"], m["firstname"], m["lastname"], m["societe"], m["datefin"]), ("phy", "Zoé", "Martin", "", None))
+
+    def test_le_type_artiste_n_est_cree_qu_une_fois_et_l_ecriture_ne_double_rien(self):
+        self.relier(dolibarr_adherents=True)
+        a1, a2 = self.artiste("Nova"), self.artiste("Les Marées", legal="Les Marées")
+        for a in (a1, a2):
+            self.ok("dolibarr_adherent", artiste_id=a["id"])
+        self.traiter()
+        self.assertEqual((len(self.posts("/memberstypes")), len(self.dol.membres)), (1, 2))
+        self.assertTrue(self.ok("dolibarr_adherent", artiste_id=a1["id"])["deja"])
+        self.ctx.stockage.ecrire("UPDATE dolibarr_file SET etat = 'a_faire' WHERE objet = 'adherent'")
+        self.ctx.stockage.ecrire("UPDATE artistes SET dolibarr_adherent_id = NULL")
+        self.traiter()
+        self.assertEqual(len(self.dol.membres), 2)
+
+    def test_une_ecriture_en_echec_se_relance_par_la_meme_capacite(self):
+        self.relier(dolibarr_adherents=True)
+        a = self.artiste()
+        self.ok("dolibarr_adherent", artiste_id=a["id"])
+        self.ctx.stockage.ecrire("UPDATE dolibarr_file SET etat = 'echec' WHERE objet = 'adherent'")
+        r = self.ok("dolibarr_adherent", artiste_id=a["id"])
+        self.assertTrue(r["relance"])
+        self.assertEqual(self.file()[0]["etat"], "a_faire")
+
+    def test_defaire_retire_l_ecriture_pas_encore_tentee(self):
+        self.relier(dolibarr_adherents=True)
+        a = self.artiste()
+        r = self.ok("dolibarr_adherent", artiste_id=a["id"])
+        self.defaire("dolibarr_adherent", r)
+        self.assertEqual(self.file(), [])
 
 
 class Prerequis(Pont):

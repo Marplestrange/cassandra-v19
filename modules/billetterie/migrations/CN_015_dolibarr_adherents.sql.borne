@@ -1,0 +1,15 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Migration 015_dolibarr_adherents.sql
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : billetterie
+# ZONE       : CN
+# VERSION CN : 0.1.0  #7a9413
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Migration 015_dolibarr_adherents.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)
+# MÉTHODE    : à compléter par l'auteur
+# ══════════════════════════════════════════════════════════════════════════════
+# FICHIER    : CN_015_dolibarr_adherents.sql  (empreinte du contenu #7a9413)

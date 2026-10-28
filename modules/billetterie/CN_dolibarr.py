@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3c4867
+# VERSION CN : 0.1.0  #43a37c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : le pont facultatif vers Dolibarr (tiers, factures, paiements, avoirs, versements de commissions).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3c4867 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=43a37c ▼▼▼
 """Billetterie : le pont facultatif vers Dolibarr (tiers, factures, paiements, avoirs, versements de commissions).
 
 Règles qui tiennent tout (voir docs/CN_BILLETTERIE.md §5 ter) :
@@ -254,7 +254,29 @@ def ecrire_versement(ctx, db, cible):
     return "fait", json.dumps({"facture_fournisseur_id": fid, "facture_fournisseur": str(f.get("ref") or "")})
 
 
-OPERATIONS = {"facture": ecrire_facture, "avoir": ecrire_avoir, "versement": ecrire_versement}
+def type_membre(ctx):
+    """Le type de membre « Artiste » : retrouvé, ou créé la première fois (il n'existe pas dans une instance neuve)."""
+    for t in appel(ctx, "GET", "/memberstypes", params={"limit": 100}) or []:
+        if isinstance(t, dict) and str(t.get("label")).strip().lower() == "artiste":
+            return int(t["id"])
+    return int(appel(ctx, "POST", "/memberstypes", {"label": "Artiste", "subscription": 0, "vote": 0, "morphy": ""}))
+
+
+def ecrire_adherent(ctx, db, cible):
+    a = db.lire("SELECT * FROM artistes WHERE id = ?", (cible,))[0]
+    mid = a["dolibarr_adherent_id"] or _premier_id(appel(ctx, "GET", "/members", params={"sqlfilters": _filtre("ref_ext", a["ref"]), "limit": 1}))
+    if not mid:
+        socid, _ = tiers_fournisseur(ctx, db, "artiste", a["id"])
+        nom = (a["legal"] or a["scene"]).strip().split(" ", 1)
+        mid = int(appel(ctx, "POST", "/members", {"login": a["ref"].lower(), "morphy": "mor" if a["statut"] in ("Association", "Société") else "phy", "typeid": type_membre(ctx),
+                                                   "firstname": nom[0] if len(nom) > 1 else "", "lastname": nom[1] if len(nom) > 1 else nom[0], "societe": a["scene"] if a["statut"] != "Particulier" else "",
+                                                   "email": a["mail"], "phone": a["tel"], "address": a["adresse"], "zip": a["code_postal"], "town": a["ville"], "country_code": a["pays"] or "FR",
+                                                   "datefin": _date_ts(a["adhesion_fin"] + " 00:00:00") if a["adhesion_fin"] else None, "public": 0, "fk_soc": socid, "ref_ext": a["ref"]}))
+    db.ecrire("UPDATE artistes SET dolibarr_adherent_id = ? WHERE id = ?", (mid, a["id"]))
+    return "fait", json.dumps({"adherent_id": mid})
+
+
+OPERATIONS = {"facture": ecrire_facture, "avoir": ecrire_avoir, "versement": ecrire_versement, "adherent": ecrire_adherent}
 
 
 def traiter(ctx, db, maximum=10):
@@ -313,7 +335,7 @@ def tester(ctx):
 def brancher(ctx, db):
     def etat(c):
         cnt = {x["etat"]: x["n"] for x in db.lire("SELECT etat, COUNT(*) AS n FROM dolibarr_file GROUP BY etat")}
-        doms = {k: bool(ctx.reglage("dolibarr_" + k)) for k in ("tiers", "factures", "paiements", "avoirs", "commissions")}
+        doms = {k: bool(ctx.reglage("dolibarr_" + k)) for k in ("tiers", "factures", "paiements", "avoirs", "commissions", "adherents")}
         return {"relie": fil.relie(ctx), "domaines": doms, "a_faire": cnt.get("a_faire", 0), "faits": cnt.get("fait", 0), "echecs": cnt.get("echec", 0), "ignores": cnt.get("ignore", 0),
                 "derniers_echecs": db.lire("SELECT id, cle, essais, erreur FROM dolibarr_file WHERE etat IN ('echec','a_faire') AND erreur <> '' ORDER BY id DESC LIMIT 5")}
 
@@ -355,9 +377,36 @@ def brancher(ctx, db):
     def defaire_relancer(c, res):
         db.ecrire("UPDATE dolibarr_file SET etat = 'echec' WHERE id = ? AND etat = 'a_faire'", (res["id"],))
 
+    def adherent(c, artiste_id=0):
+        a = db.lire("SELECT id, ref, scene FROM artistes WHERE id = ?", (int(artiste_id),))
+        if not a:
+            raise ValueError("artiste introuvable")
+        with db.transaction() as tx:
+            if not fil.relie(ctx) or not ctx.reglage("dolibarr_adherents"):
+                raise ValueError("le pont Dolibarr n'est pas relié ou le domaine « artistes → adhérents » est coupé (réglages du pont)")
+            x = tx.execute("SELECT * FROM dolibarr_file WHERE cle = ?", ("adherent:%d" % a[0]["id"],)).fetchone()
+            if x:
+                if x["etat"] == "echec":
+                    tx.execute("UPDATE dolibarr_file SET etat = 'a_faire', essais = 0, prochain_essai = 0 WHERE id = ?", (x["id"],))
+                    return {"id": x["id"], "ref": a[0]["ref"], "deja": False, "relance": True}
+                return {"id": x["id"], "ref": a[0]["ref"], "deja": True, "relance": False}
+            fil.empiler(ctx, tx, "adherent", a[0]["id"])
+            x = tx.execute("SELECT id FROM dolibarr_file WHERE cle = ?", ("adherent:%d" % a[0]["id"],)).fetchone()
+        return {"id": x["id"], "ref": a[0]["ref"], "deja": False, "relance": False}
+
+    def prouver_adherent(c, res):
+        x = db.lire("SELECT etat FROM dolibarr_file WHERE id = ?", (res["id"],))
+        return bool(x) and x[0]["etat"] in ("a_faire", "fait")
+
+    def defaire_adherent(c, res):
+        if res.get("deja"):
+            return
+        db.ecrire("DELETE FROM dolibarr_file WHERE id = ? AND etat = 'a_faire' AND essais = 0", (res["id"],))
+
     def moteur(c):
         return traiter(ctx, db)
 
+    ctx.implementer("dolibarr_adherent", adherent, prouver_adherent, defaire_adherent, simuler=lambda x, artiste_id=0, **_: "empilerait l'écriture de l'artiste %s comme adhérent dans Dolibarr" % artiste_id)
     ctx.implementer("dolibarr_etat", etat)
     ctx.implementer("dolibarr_tester", tester_cap)
     ctx.implementer("dolibarr_file", file)

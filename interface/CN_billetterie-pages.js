@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #5bcb7e
+// VERSION CN : 0.1.0  #a56769
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=5bcb7e ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=a56769 ▼▼▼
 // Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 (function () {
   "use strict";
@@ -60,7 +60,7 @@
     const E = ENT[cle], r = await S.lire(E.pl) || {}, l = r[E.pl] || [];
     S.entites = S.entites || {}; S.entites[cle] = l;
     zone.innerHTML = '<div class="row" style="margin-bottom:10px"><span class="sp hint">' + l.length + " " + esc(l.length > 1 ? E.titre.toLowerCase() : E.un) + '</span><button class="btn pri" data-a="ent-nouveau" data-e="' + cle + '">+ ' + esc(E.nouv) + "</button></div>" +
-      tableau(E.cols.concat([["", ""]]), l.map((x) => "<tr>" + E.cols.map((c) => cellule(c, x)).join("") + '<td class="n" style="white-space:nowrap"><button class="btn sm" data-a="ent-modifier" data-e="' + cle + '" data-id="' + x.id + '">Modifier</button> <button class="btn sm dng" data-a="ent-supprimer" data-e="' + cle + '" data-id="' + x.id + '">Supprimer</button></td></tr>'), "Aucun élément.");
+      tableau(E.cols.concat([["", ""]]), l.map((x) => "<tr>" + E.cols.map((c) => cellule(c, x)).join("") + '<td class="n" style="white-space:nowrap">' + (cle === "artiste" ? '<button class="btn sm" data-a="adherent" data-id="' + x.id + '" title="Écrire cet artiste comme adhérent dans Dolibarr (si le pont est relié)">Adhérent Dolibarr</button> ' : "") + '<button class="btn sm" data-a="ent-modifier" data-e="' + cle + '" data-id="' + x.id + '">Modifier</button> <button class="btn sm dng" data-a="ent-supprimer" data-e="' + cle + '" data-id="' + x.id + '">Supprimer</button></td></tr>'), "Aucun élément.");
   }
   const clicEntite = async (S, a) => {
     const k = a.dataset.a, cle = a.dataset.e, ligne = ((S.entites || {})[cle] || []).find((x) => String(x.id) === a.dataset.id);
@@ -325,6 +325,7 @@
     if (S.onglet === "revendeur") R.querySelector("#bz").insertAdjacentHTML("beforeend", '<p class="hint" style="margin-top:8px">Un artiste qui vend lui-même apparaît aussi ici : il naît de sa fiche d’artiste (case « vend lui-même »).</p>');
     S.clic = async (k, a) => {
       if (k === "onglet") { S.onglet = a.dataset.o; return S.rendre(); }
+      if (k === "adherent") { const r = await S.geste("dolibarr_adherent", { artiste_id: Number(a.dataset.id) }); if (r) dire(r.deja ? "Déjà dans la file de Dolibarr." : "Écriture empilée : Dolibarr la fera en arrière-plan (onglet Argent › Comptabilité).", "ok"); return undefined; }
       if (k === "legal-modele") { const r = await S.lire("legal_modele", { cle: a.dataset.cle }); if (r) { const z = R.querySelector("#lg-" + a.dataset.cle); if (!z.value.trim() || confirm("Remplacer le texte par le squelette ?")) z.value = r.texte; } return undefined; }
       if (k === "legal-save") { if (await S.geste("legal_page_save", { cle: a.dataset.cle, texte: R.querySelector("#lg-" + a.dataset.cle).value }, "Texte enregistré.")) S.rendre(); return undefined; }
       if (await clicEntite(S, a)) S.rendre();

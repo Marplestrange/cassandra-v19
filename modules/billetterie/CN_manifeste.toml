@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e87426
+# VERSION CN : 0.1.0  #4da637
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e87426 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4da637 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -368,6 +368,13 @@ portee = "societe"
 [[reglages]]
 id = "dolibarr_commissions"
 libelle = "Écrire la facture fournisseur et son règlement quand un retrait de commission est versé"
+type = "booleen"
+defaut = false
+portee = "societe"
+
+[[reglages]]
+id = "dolibarr_adherents"
+libelle = "Écrire un artiste comme adhérent de Dolibarr (type « Artiste », créé la première fois) quand on le demande"
 type = "booleen"
 defaut = false
 portee = "societe"
@@ -1746,6 +1753,16 @@ id = "public_legal"
 libelle = "Lire un texte légal publié de la boutique (public)"
 risque = "lecture"
 qui = ["anonyme"]
+
+[[capacites]]
+id = "dolibarr_adherent"
+libelle = "Empiler l'écriture d'un artiste comme adhérent de Dolibarr (type de membre « Artiste » retrouvé ou créé, tiers fournisseur rattaché, courriel et adresse repris de sa fiche) ; relance une écriture en échec"
+risque = "faible"
+droit = "gerer"
+perimetre = ["une ligne de la file de rattrapage de Dolibarr"]
+preuve = "la ligne relue à faire ou faite"
+retour = "retirer la ligne tant qu'elle n'a pas été tentée"
+paliers = ["raconter", "auto", "maitre"]
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
