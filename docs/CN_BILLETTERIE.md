@@ -12,7 +12,7 @@
 <!-- RÔLE       : Billetterie : vente par revendeurs, portefeuille de commissions -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=ea0ddd ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=4ab1a2 ▼▼▼ -->
 <!-- TITRE : Module billetterie et réglage Titulaire de l'instance -->
 <!-- LICENCE : AGPL-3.0 · AUTEUR : Atek Drisse · MODULE : docs -->
 
@@ -616,7 +616,7 @@ L'en-tête du titulaire débordait sur téléphone (flèches, badge, thème, ava
 - les paiements : Stripe, PayPal et HelloAsso en pages hébergées, vérifiées chez le prestataire au retour (montant exact, ordre de CETTE commande), virement ;
 - l'annulation et le report d'un événement (chiffres annoncés avant, remboursements en masse, commissions reprises), la liste d'attente (offres qui retiennent les places), les reçus fiscaux de don (association éligible, numéro continu, contenu figé), la rentabilité et la date de décision ;
 - l'envoi réel des courriels (SMTP réglé, réessais, jamais sans activation) avec les billets en PDF joints ; le billet en PDF et son QR vectoriel (même dessin que l'écran, vérifié contre la bibliothèque de référence) ;
-- le pont Dolibarr facultatif (file de rattrapage idempotente : tiers, facture validée, règlement, avoir, versement de commission), le projet de l'événement dans le bureau (Projets, Tâches) ;
+- le pont Dolibarr facultatif (file de rattrapage idempotente : tiers, facture validée, règlement, avoir, versement de commission, artiste comme adhérent avec son type de membre « Artiste »), le projet de l'événement dans le bureau (Projets, Tâches) ;
 - l'interface V19 : dix menus, l'écran du titulaire, la caisse et le contrôle pour téléphone (avec file hors ligne), « Mon espace » du revendeur et de l'artiste.
 
 **Écarts avec ce qui était prévu plus haut**
@@ -629,7 +629,6 @@ L'en-tête du titulaire débordait sur téléphone (flèches, badge, thème, ava
 
 **Pas construit**
 - Apple Wallet et Google Wallet (les réglages existent, les passes ne sont pas générés : signature avec un certificat ou une clé de service à fournir) ;
-- les artistes comme adhérents Dolibarr (le tiers fournisseur d'un artiste se crée à son premier versement ; le type de membre « Artiste » et l'adhérent ne sont pas écrits) ;
 - le don dans Dolibarr (le module Dons n'a pas de route d'API : le reçu fiscal de la billetterie reste la voie) ;
 - le lien de l'événement avec l'agenda et le répertoire du bureau (le projet et ses tâches le sont) ;
 - les pages publiques de la boutique n'ont pas de sélecteur de langue ni de thème propre à l'organisateur (couleurs de la marque).
