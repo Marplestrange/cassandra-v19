@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1309db
+# VERSION CN : 0.1.0  #685af9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 5d : « Mon espace » du revendeur et de l'artiste (cloisonnement par compte, portefeuille, retrait, un compte pour une seule fiche).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1309db ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=685af9 ▼▼▼
 """Bancs de la billetterie, lot 5d : « Mon espace » du revendeur et de l'artiste (cloisonnement par compte, portefeuille, retrait, un compte pour une seule fiche)."""
 import sys
 import unittest
@@ -100,6 +100,7 @@ class Revendeur(Espaces):
     def test_il_demande_un_retrait_sur_son_propre_portefeuille(self):
         self.ok("evenement_save", id=self.e["id"], date_iso="2026-01-01")                # événement passé : la commission est retirable
         self.vendre(4, revendeur_code=self.code_lea)                                      # 3 x 3 € + 5 € + 10 € de fixe = 24 €
+        self.moi_ok("mon_profil_revendeur_save", LEA, iban="FR76 3000 6000 0112 3456 7890 189")
         du = self.moi_ok("mon_revendeur", LEA)["portefeuille"]["disponible"]
         self.assertEqual(du, 2400)
         r = self.moi_ok("mon_retrait_revendeur", LEA, montant=2000)
@@ -112,6 +113,7 @@ class Revendeur(Espaces):
     def test_un_retrait_sous_le_seuil_ou_au_dela_du_disponible_est_refuse(self):
         self.ok("evenement_save", id=self.e["id"], date_iso="2026-01-01")
         self.vendre(2, revendeur_code=self.code_lea)
+        self.moi_ok("mon_profil_revendeur_save", LEA, iban="FR76 3000 6000 0112 3456 7890 189")
         self.assertIn("minimal", self.moi("mon_retrait_revendeur", LEA, montant=100).get("erreur", ""))
         self.assertIn("retirables", self.moi("mon_retrait_revendeur", LEA, montant=10 ** 7).get("erreur", ""))
 
@@ -158,6 +160,79 @@ class Artiste(Espaces):
         self.assertTrue(m["vend"])
         self.assertEqual((m["vente"]["code"], len(m["vente"]["ventes"])), (code, 1))
         self.assertIsNotNone(v)
+
+
+class Profil(Espaces):
+    IBAN = "FR76 3000 6000 0112 3456 7890 189"
+
+    def test_un_profil_neuf_dit_ce_qui_manque(self):
+        p = self.moi_ok("mon_profil_revendeur", LEA)
+        self.assertFalse(p["complet"])
+        self.assertTrue([m for m in p["manque"] if m.startswith("IBAN")])
+        self.assertTrue([m for m in p["manque"] if m.startswith("courriel")])
+        self.assertEqual(p["mode_facturation"], "mandat")
+
+    def test_l_iban_est_verifie_normalise_chiffre_et_masque_pour_le_titulaire(self):
+        self.assertIn("clé de contrôle", self.moi("mon_profil_revendeur_save", LEA, iban="FR76 3000 6000 0112 3456 7890 180").get("erreur", ""))
+        self.assertIn("forme d'un IBAN", self.moi("mon_profil_revendeur_save", LEA, iban="n'importe quoi").get("erreur", ""))
+        r = self.moi_ok("mon_profil_revendeur_save", LEA, iban=self.IBAN.lower())
+        self.assertNotIn("iban", r["profil"])                                                 # le résultat d'une écriture va au journal : jamais en clair
+        self.assertEqual(self.moi_ok("mon_profil_revendeur", LEA)["iban"], self.IBAN.replace(" ", ""))
+        brut = self.ctx.stockage.lire("SELECT iban_chiffre FROM revendeurs WHERE compte = ?", (LEA,))[0]["iban_chiffre"]
+        self.assertTrue(brut and "3000" not in brut and "FR76" not in brut)                   # chiffré en base
+        v = self.ok("profil_vu", porteur="revendeur", id=self.lea["id"])
+        self.assertNotIn("iban", v)
+        self.assertEqual(v["iban_masque"], "FR76 •••• 0189")
+
+    def test_l_iban_n_entre_jamais_dans_le_journal(self):
+        self.moi_ok("mon_profil_revendeur_save", LEA, iban=self.IBAN)
+        self.moi_ok("mon_profil_revendeur", LEA)
+        tout = str(self.n.base.lire("SELECT * FROM evenements"))
+        self.assertNotIn("3000600001123456789", tout.replace(" ", ""))
+
+    def test_un_profil_complet_ne_manque_de_rien(self):
+        self.moi_ok("mon_profil_revendeur_save", LEA, mail="lea@exemple.org", iban=self.IBAN, adresse="3 rue des Lilas", code_postal="44000", ville="Nantes")
+        p = self.moi_ok("mon_profil_revendeur", LEA)
+        self.assertEqual((p["complet"], p["manque"]), (True, []))
+
+    def test_une_structure_professionnelle_doit_donner_son_siret(self):
+        self.ok("revendeur_save", id=self.lea["id"], statut="Société")
+        self.assertTrue([m for m in self.moi_ok("mon_profil_revendeur", LEA)["manque"] if m.startswith("SIRET")])
+        self.moi_ok("mon_profil_revendeur_save", LEA, siret="123 456 789 00012")
+        self.assertFalse([m for m in self.moi_ok("mon_profil_revendeur", LEA)["manque"] if m.startswith("SIRET")])
+
+    def test_la_facturation_propre_ne_demande_pas_l_adresse_complete(self):
+        self.moi_ok("mon_profil_revendeur_save", LEA, mode_facturation="propre")
+        self.assertFalse([m for m in self.moi_ok("mon_profil_revendeur", LEA)["manque"] if m.startswith("adresse")])
+        self.assertIn("mandat", self.moi("mon_profil_revendeur_save", LEA, mode_facturation="autre").get("erreur", ""))
+
+    def test_sans_iban_pas_de_retrait_meme_avec_de_l_argent(self):
+        self.ok("evenement_save", id=self.e["id"], date_iso="2026-01-01")
+        self.vendre(4, revendeur_code=self.code_lea)
+        self.assertIn("IBAN", self.moi("mon_retrait_revendeur", LEA, montant=2000).get("erreur", ""))
+        self.moi_ok("mon_profil_revendeur_save", LEA, iban=self.IBAN)
+        self.moi_ok("mon_retrait_revendeur", LEA, montant=2000)
+
+    def test_defaire_remet_le_profil_d_avant(self):
+        self.moi_ok("mon_profil_revendeur_save", LEA, mail="avant@exemple.org", iban=self.IBAN)
+        r = self.moi_ok("mon_profil_revendeur_save", LEA, mail="apres@exemple.org", iban="")
+        self.assertEqual(self.moi_ok("mon_profil_revendeur", LEA)["iban"], "")
+        self.defaire("mon_profil_revendeur_save", r)
+        p = self.moi_ok("mon_profil_revendeur", LEA)
+        self.assertEqual((p["mail"], p["iban"]), ("avant@exemple.org", self.IBAN.replace(" ", "")))
+
+    def test_l_artiste_a_le_meme_profil_et_la_meme_exigence(self):
+        fa = self.ok("formule_save", nom="A", role="artiste", forfait=8000, com=500)
+        self.lier("artiste_save", scene="Nova", formule_id=fa["id"], compte=ARTISTE)
+        self.assertTrue([m for m in self.moi_ok("mon_profil_artiste", ARTISTE)["manque"] if m.startswith("IBAN")])
+        self.assertIn("IBAN", self.moi("mon_retrait_artiste", ARTISTE, montant=2000).get("erreur", ""))
+        self.moi_ok("mon_profil_artiste_save", ARTISTE, iban=self.IBAN, mail="nova@exemple.org")
+        self.assertEqual(self.moi_ok("mon_profil_artiste", ARTISTE)["iban_masque"], "FR76 •••• 0189")
+
+    def test_on_ne_voit_pas_le_profil_d_un_autre(self):
+        self.moi_ok("mon_profil_revendeur_save", LEA, iban=self.IBAN)
+        self.assertEqual(self.moi_ok("mon_profil_revendeur", PAUL)["iban"], "")
+        self.assertEqual(self.moi("profil_vu", LEA, porteur="revendeur", id=self.paul["id"])["statut"], "refuse")
 
 
 class UnCompteUneFiche(Espaces):

@@ -15,7 +15,7 @@ from pathlib import Path
 
 ICI = Path(__file__).resolve().parent
 RACINE = ICI.parent
-DONNEES = ICI / ".donnees-test"
+DONNEES = ICI / os.environ.get("UI_DONNEES", ".donnees-test")        # UI_DONNEES=.donnees-test-autre : deux suites en même temps (deux sessions) ne se marchent pas dessus
 COMPTE = os.environ.get("UI_COMPTE", "ui@exemple.test")
 MDP = os.environ.get("UI_MDP", "Essai-UI-2026!")
 PORT = os.environ.get("UI_PORT", "9005")

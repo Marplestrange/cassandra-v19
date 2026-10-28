@@ -12,7 +12,7 @@
 <!-- RÔLE       : Billetterie : vente par revendeurs, portefeuille de commissions -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=4ab1a2 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=c2dd46 ▼▼▼ -->
 <!-- TITRE : Module billetterie et réglage Titulaire de l'instance -->
 <!-- LICENCE : AGPL-3.0 · AUTEUR : Atek Drisse · MODULE : docs -->
 
@@ -622,7 +622,7 @@ L'en-tête du titulaire débordait sur téléphone (flèches, badge, thème, ava
 **Écarts avec ce qui était prévu plus haut**
 - Le pont Dolibarr vit dans la billetterie (son propre client d'API et ses réglages), pas dans le module `dolibarr` : une écriture comptable automatique part d'un moteur, qui n'a pas de compte et ne peut donc pas passer par les capacités d'un autre module. Le module `dolibarr` n'a pas été modifié.
 - Les courriels partent d'un moteur, hors de l'exécuteur : le frein « envois » du noyau est consulté par `ctx.frein_actif`.
-- Le revendeur n'a pas d'onglet « Mon profil » (fiscalité, IBAN au coffre) ni de facturation de commission par mandat : seul son portefeuille et ses retraits.
+- Le profil du revendeur et de l'artiste (coordonnées, SIRET, IBAN vérifié par sa clé de contrôle et chiffré par le noyau, mode de facturation de la commission) vit dans la billetterie, pas dans le coffre ; sans IBAN, pas de retrait ; le titulaire ne voit que la fin de l'IBAN. L'auto-facture « par mandat » n'est qu'un choix enregistré : la facture fournisseur écrite dans Dolibarr au versement est la même dans les deux cas.
 - Un compte client n'a pas d'historique de dons ni de factures PDF téléchargeables (le reçu fiscal et les billets le sont).
 
 **Jamais éprouvé contre un service réel** (à essayer en bac à sable ou sur une entité de recette avant de s'y fier) : Stripe, PayPal, HelloAsso (le code suit leurs documentations publiques, les bancs utilisent des doublures), Dolibarr (en particulier l'avoir, et le mode de paiement par code), un vrai serveur SMTP, la lecture d'un QR par la caméra d'un vrai téléphone.

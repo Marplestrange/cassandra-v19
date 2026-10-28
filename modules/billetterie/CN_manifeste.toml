@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4da637
+# VERSION CN : 0.1.0  #89c16a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4da637 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=89c16a ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -1763,6 +1763,46 @@ perimetre = ["une ligne de la file de rattrapage de Dolibarr"]
 preuve = "la ligne relue à faire ou faite"
 retour = "retirer la ligne tant qu'elle n'a pas été tentée"
 paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "mon_profil_revendeur"
+libelle = "Mon profil de revendeur : coordonnées, SIRET, IBAN (en entier, pour moi seul), mode de facturation de ma commission, et ce qui manque pour être payé et facturé"
+risque = "lecture"
+droit = "revendeur"
+
+[[capacites]]
+id = "mon_profil_revendeur_save"
+libelle = "Modifier mon profil de revendeur (coordonnées, SIRET, TVA, IBAN vérifié et chiffré, facturation : mandat ou propre)"
+risque = "faible"
+droit = "revendeur"
+perimetre = ["ma propre fiche de revendeur"]
+preuve = "la fiche relue"
+retour = "remettre mon profil d'avant"
+paliers = ["raconter", "auto"]
+masque = ["iban"]
+
+[[capacites]]
+id = "mon_profil_artiste"
+libelle = "Mon profil d'artiste : coordonnées, SIRET, IBAN (en entier, pour moi seul), et ce qui manque pour être payé"
+risque = "lecture"
+droit = "artiste"
+
+[[capacites]]
+id = "mon_profil_artiste_save"
+libelle = "Modifier mon profil d'artiste (coordonnées, SIRET, TVA, IBAN vérifié et chiffré)"
+risque = "faible"
+droit = "artiste"
+perimetre = ["ma propre fiche d'artiste"]
+preuve = "la fiche relue"
+retour = "remettre mon profil d'avant"
+paliers = ["raconter", "auto"]
+masque = ["iban"]
+
+[[capacites]]
+id = "profil_vu"
+libelle = "Le profil d'un revendeur ou d'un artiste vu par le titulaire : complet ou ce qui manque, l'IBAN seulement par sa fin (jamais en entier)"
+risque = "lecture"
+droit = "gerer"
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

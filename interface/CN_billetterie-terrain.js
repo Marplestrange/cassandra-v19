@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #83b810
+// VERSION CN : 0.1.0  #091c2f
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : stockage plein ou interdit : on continue sans
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=83b810 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=091c2f ▼▼▼
 // Billetterie : les écrans du terrain, pensés pour le téléphone (la caisse, le contrôle à l'entrée) et « Mon espace » du revendeur et de l'artiste.
 (function () {
   "use strict";
@@ -222,30 +222,42 @@
   }
   const ventesTable = (l) => tableau([["d", "Date"], ["e", "Événement"], ["b", "Billets", "n"], ["t", "Total", "n"], ["c", "Ma commission", "n"]], l.map((v) => "<tr><td>" + esc(quand(v.date)) + "</td><td>" + esc(v.evenement) + (v.etat !== "payee" ? " " + puce(v.etat === "remboursee" ? "remboursée" : v.etat, "dg") : "") + "<div class=\"hint\">" + esc(v.acheteur || "") + '</div></td><td class="n">' + v.billets + '</td><td class="n">' + eur(v.total) + '</td><td class="n">' + eur(v.commission) + "</td></tr>"), "Pas encore de vente.");
 
+  const carteProfil = (p) => '<div class="carte"><div class="row"><h3 style="margin:0">Mon profil</h3>' + (p.complet ? puce("complet", "ok") : puce("incomplet", "al")) + '<span class="sp"></span><button class="btn sm pri" data-a="profil">Modifier</button></div>' +
+    (p.complet ? "" : '<p class="hint" style="margin-top:6px">Il manque : ' + p.manque.map(esc).join(" ; ") + ".</p>") + '<dl class="kv" style="margin-top:8px"><dt>Courriel</dt><dd>' + esc(p.mail || "—") + "</dd><dt>Adresse</dt><dd>" + esc([p.adresse, p.code_postal, p.ville].filter(Boolean).join(", ") || "—") + "</dd><dt>SIRET</dt><dd>" + esc(p.siret || "—") + "</dd><dt>IBAN</dt><dd>" + esc(p.iban_masque || "non renseigné") + "</dd>" + (p.mode_facturation ? "<dt>Commission</dt><dd>" + (p.mode_facturation === "mandat" ? "le titulaire établit l’auto-facture en mon nom" : "je facture moi-même") + "</dd>" : "") + "</dl></div>";
+  async function modifierProfil(S, p, cap) {
+    const champs = [{ n: "mail", l: "Courriel" }, { n: "tel", l: "Téléphone" }, { n: "adresse", l: "Adresse" }, { n: "code_postal", l: "Code postal" }, { n: "ville", l: "Ville" }, { n: "siret", l: "SIRET (structure professionnelle)" }, { n: "tva", l: "N° de TVA" },
+      { n: "iban", l: "IBAN (chiffré ; vous seul le voyez en entier)", aide: "Le versement de vos commissions s’y fait." }];
+    if (p.mode_facturation) champs.push({ n: "mode_facturation", l: "Facturation de ma commission", t: "select", opts: [["mandat", "Le titulaire établit l’auto-facture en mon nom"], ["propre", "Je facture moi-même"]] });
+    const v = await B.formulaire("Mon profil", champs, Object.assign({}, p), "Enregistrer");
+    if (!v) return false;
+    return !!(await S.geste(cap, v, "Profil enregistré."));
+  }
+
   P.revendeur = async (S) => {
-    const R = S.racine, m = await S.lire("mon_revendeur");
+    const R = S.racine, m = await S.lire("mon_revendeur"), pf = await S.lire("mon_profil_revendeur");
     if (!m) { R.innerHTML = S.entetes("Mon espace revendeur", "") + '<div class="carte vide">' + esc(S.erreur || "Indisponible.") + "</div>"; return; }
     const lien = location.origin + "/boutique.html" + m.lien_de_vente;
     R.innerHTML = S.entetes(m.nom, "Mon espace revendeur", m.actif ? puce("actif", "ok") : puce("suspendu", "dg")) + (m.actif ? "" : '<div class="alerte dg"><span class="sp">Ton compte est suspendu' + (m.motif_suspension ? " : " + esc(m.motif_suspension) : "") + ". Tes ventes passées restent visibles.</span></div>") +
       '<div class="carte"><h3>Mon code de vente</h3><p class="sub" style="margin:0 0 8px">Donne-le à tes acheteurs : leurs billets te sont attribués.</p><div class="row"><b style="font:700 22px ui-monospace,Menlo,monospace">' + esc(m.code) + '</b><button class="btn sm" data-a="copier" data-v="' + esc(m.code) + '">Copier le code</button><button class="btn sm" data-a="copier" data-v="' + esc(lien) + '">Copier le lien</button></div></div>' +
-      portefeuille(m.portefeuille, "revendeur") +
+      (pf ? carteProfil(pf) : "") + portefeuille(m.portefeuille, "revendeur") +
       "<h3>Mes événements</h3>" + tableau([["e", "Événement"], ["f", "Formule"], ["v", "Vendus", "n"], ["q", "Reste", "n"], ["c", "Commission", "n"]], m.affectations.map((a) => "<tr><td><b>" + esc(a.evenement) + '</b><div class="hint">' + esc(jour(a.date)) + "</div></td><td>" + esc(a.formule) + '</td><td class="n">' + a.vendus + '</td><td class="n">' + (a.restant == null ? "—" : a.restant) + '</td><td class="n">' + eur(a.commission) + "</td></tr>"), "Tu n’es affecté à aucun événement pour l’instant.") +
       "<h3>Mes ventes</h3>" + ventesTable(m.ventes);
     S.clic = async (k, a) => {
       if (k === "copier") { try { await navigator.clipboard.writeText(a.dataset.v); dire("Copié.", "ok"); } catch (e) { dire("Copie refusée par le navigateur.", "err"); } }
       else if (k === "retrait") { if (await demanderRetrait(S, "mon_retrait_revendeur", m.portefeuille)) S.rendre(); }
+      else if (k === "profil") { if (await modifierProfil(S, pf, "mon_profil_revendeur_save")) S.rendre(); }
     };
   };
 
   P.artiste = async (S) => {
-    const R = S.racine, m = await S.lire("mon_artiste");
+    const R = S.racine, m = await S.lire("mon_artiste"), pf = await S.lire("mon_profil_artiste");
     if (!m) { R.innerHTML = S.entetes("Mon espace artiste", "") + '<div class="carte vide">' + esc(S.erreur || "Indisponible.") + "</div>"; return; }
     R.innerHTML = S.entetes(m.scene, "Mon espace artiste" + (m.genre ? " · " + m.genre : "")) +
       "<h3>Mes passages</h3>" + (m.programme.length ? '<div class="grille" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">' + m.programme.map((p) => '<div class="carte"><b>' + esc(p.evenement) + "</b><div class=\"hint\">" + esc(jour(p.date)) + "</div><div class=\"row\" style=\"margin-top:8px\"><span style=\"font:700 24px ui-monospace,Menlo,monospace\">" + esc(p.heure || "—") + "</span><span class=\"sp\"></span><span>" + p.duree + " min</span></div><div class=\"hint\">Passage " + p.ordre + " sur " + p.sur + " · portes " + esc(p.portes) + "</div></div>").join("") + "</div>" : '<div class="carte vide">Aucun passage programmé pour l’instant.</div>') +
       (m.formule ? '<div class="carte"><h3>Ma formule · ' + esc(m.formule.nom) + "</h3><dl class=\"kv\">" + (m.formule.forfait ? "<dt>Forfait / cachet</dt><dd>" + eur(m.formule.forfait) + "</dd>" : "") + (m.formule.commission ? "<dt>Commission par place</dt><dd>" + eur(m.formule.commission) + "</dd>" : "") + (m.formule.fixe ? "<dt>Fixe</dt><dd>" + eur(m.formule.fixe) + "</dd>" : "") + "</dl></div>" : "") +
-      "<h3>Mon portefeuille</h3>" + portefeuille(m.portefeuille, "artiste") +
+      (pf ? carteProfil(pf) : "") + "<h3>Mon portefeuille</h3>" + portefeuille(m.portefeuille, "artiste") +
       (m.vente ? '<div class="carte"><h3>Mes ventes de billets</h3><p class="sub" style="margin:0 0 8px">Mon code : <b>' + esc(m.vente.code) + "</b></p>" + ventesTable(m.vente.ventes) + "</div>" : "");
-    S.clic = async (k, a) => { if (k === "retrait") { if (await demanderRetrait(S, "mon_retrait_artiste", m.portefeuille)) S.rendre(); } };
+    S.clic = async (k, a) => { if (k === "retrait") { if (await demanderRetrait(S, "mon_retrait_artiste", m.portefeuille)) S.rendre(); } else if (k === "profil") { if (await modifierProfil(S, pf, "mon_profil_artiste_save")) S.rendre(); } };
   };
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
