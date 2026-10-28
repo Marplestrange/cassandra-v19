@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #3cbe66
+// VERSION CN : 0.1.0  #9feaf8
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=3cbe66 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=9feaf8 ▼▼▼
 // Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 (function () {
   "use strict";
@@ -324,7 +324,7 @@
 
   // ═══ ARGENT ═══
   P.argent = async (S) => {
-    const R = S.racine, TABS = [["retraits", "Retraits"], ["portefeuilles", "Portefeuilles"], ["recus", "Reçus fiscaux"], ["courriels", "Courriels"]];
+    const R = S.racine, TABS = [["retraits", "Retraits"], ["portefeuilles", "Portefeuilles"], ["recus", "Reçus fiscaux"], ["compta", "Comptabilité"], ["courriels", "Courriels"]];
     S.onglet = TABS.some((t) => t[0] === S.onglet) ? S.onglet : "retraits";
     let corps = "";
     if (S.onglet === "retraits") {
@@ -343,9 +343,19 @@
       const r = await S.lire("recus_fiscaux"), l = (r && r.recus) || [];
       corps = '<div class="row" style="margin-bottom:10px"><span class="sp hint">' + (l.length ? "Total des reçus en vigueur : " + eur(r.total_emis) : "Aucun reçu émis.") + '</span><button class="btn" data-a="export">Exporter l’année (CSV)</button></div>' +
         tableau([["n", "Reçu"], ["d", "Donateur"], ["m", "Montant", "n"], ["e", "État"], ["", ""]], l.map((x) => "<tr><td><b>" + esc(x.numero) + '</b><div class="hint">' + esc(x.date_don) + "</div></td><td>" + esc(x.nom) + '</td><td class="n">' + eur(x.montant) + "</td><td>" + puce(x.etat === "emis" ? "en vigueur" : "annulé", x.etat === "emis" ? "ok" : "dg") + (x.motif ? '<div class="hint">' + esc(x.motif) + "</div>" : "") + '</td><td class="n">' + (x.etat === "emis" ? '<button class="btn sm dng" data-a="annuler-recu" data-n="' + esc(x.numero) + '">Annuler</button>' : "") + "</td></tr>"), "Aucun reçu.");
+    } else if (S.onglet === "compta") {
+      const e = await S.lire("dolibarr_etat") || {}, f = await S.lire("dolibarr_file", { limite: 50 }), l = (f && f.file) || [];
+      const ETAT = { a_faire: ["à faire", "al"], fait: ["fait", "ok"], echec: ["échec", "dg"], ignore: ["ignorée", ""] }, DOM = { tiers: "tiers clients", factures: "factures", paiements: "règlements", avoirs: "avoirs", commissions: "versements de commissions" };
+      corps = '<p class="sub">Le pont facultatif vers Dolibarr (comptabilité) : une écriture par vente, remboursement ou versement, faite en arrière-plan, jamais pendant un paiement. Sans Dolibarr, la billetterie fonctionne seule.</p>' +
+        '<div class="tuiles">' + tuile(e.relie ? "relié" : "non relié", "pont Dolibarr", e.relie ? "" : "al") + tuile(e.a_faire || 0, "écritures à faire", (e.a_faire ? "al" : "")) + tuile(e.faits || 0, "écritures faites", "") + tuile(e.echecs || 0, "en échec", (e.echecs ? "al" : "")) + "</div>" +
+        '<div class="row" style="margin:10px 0"><button class="btn" data-a="reglages-pont">Réglages du pont…</button><button class="btn" data-a="tester-pont">Tester la connexion</button><button class="btn pri" data-a="rattraper"' + (e.relie ? "" : " disabled") + ">Faire les écritures maintenant</button><span class=\"sp\"></span>" +
+        Object.keys(e.domaines || {}).map((k) => puce(DOM[k] || k, e.domaines[k] ? "ok" : "")).join(" ") + "</div>" +
+        tableau([["c", "Écriture"], ["e", "État"], ["x", "Essais", "n"], ["r", "Dernière raison"], ["", ""]], l.map((x) => "<tr><td><b>" + esc(x.cle) + '</b><div class="hint">' + esc(quand(x.cree_le)) + "</div></td><td>" + puce((ETAT[x.etat] || [x.etat])[0], (ETAT[x.etat] || [])[1]) + '</td><td class="n">' + x.essais + "</td><td>" + esc(x.erreur || x.resultat || "") + '</td><td class="n">' + (x.etat === "echec" ? '<button class="btn sm" data-a="relancer-dol" data-id="' + x.id + '">Relancer</button>' : "") + "</td></tr>"), e.relie ? "Aucune écriture pour l’instant." : "Pont non relié : rien n’est écrit.");
     } else {
-      const r = await S.lire("courriels", { limite: 100 }), l = (r && r.courriels) || [];
-      corps = '<p class="sub">Les courriels préparés par la billetterie (billets, annulations, offres de la liste d’attente). Le courrier les expédie ; un envoi qui échoue ne perd pas la commande.</p>' + tableau([["d", "Quand"], ["a", "À"], ["o", "Objet"], ["e", "État"]], l.map((x) => "<tr><td>" + esc(quand(x.cree_le)) + "</td><td>" + esc(x.a) + "</td><td>" + esc(x.objet) + "</td><td>" + puce({ a_envoyer: "à envoyer", envoye: "envoyé", echec: "échec" }[x.etat] || x.etat, x.etat === "echec" ? "dg" : x.etat === "envoye" ? "ok" : "al") + (x.erreur ? '<div class="hint">' + esc(x.erreur) + "</div>" : "") + "</td></tr>"), "Aucun courriel.");
+      const [r, es] = await Promise.all([S.lire("courriels", { limite: 100 }), S.lire("courriels_etat")]), l = (r && r.courriels) || [], e = es || {};
+      corps = '<p class="sub">Les courriels préparés par la billetterie (billets, annulations, offres de la liste d’attente, liens de connexion). Un envoi qui échoue est retenté plus tard et ne perd jamais la commande.</p>' +
+        '<div class="alerte' + (e.actif && e.serveur_regle ? "" : " dg") + '"><span class="sp">' + (e.actif ? (e.serveur_regle ? "Envoi activé : " + (e.a_envoyer || 0) + " à envoyer, " + (e.envoyes || 0) + " envoyés, " + (e.echecs || 0) + " en échec." : "Envoi activé mais le serveur n’est pas réglé : rien ne part.") : "Envoi désactivé : rien ne part. Renseignez le serveur d’envoi (SMTP) dans les réglages du module, puis activez-le.") + (e.frein_envois ? " Le frein « envois » est posé." : "") + '</span><button class="btn sm" data-a="reglages-pont">Réglages…</button><button class="btn sm pri" data-a="envoyer-courriels"' + (e.actif && e.serveur_regle ? "" : " disabled") + ">Envoyer maintenant</button></div>" +
+        tableau([["d", "Quand"], ["a", "À"], ["o", "Objet"], ["e", "État"], ["", ""]], l.map((x) => "<tr><td>" + esc(quand(x.cree_le)) + "</td><td>" + esc(x.a) + "</td><td>" + esc(x.objet) + (x.joindre ? ' <span class="hint">· billets en PDF joints</span>' : "") + "</td><td>" + puce({ a_envoyer: "à envoyer", envoye: "envoyé", echec: "échec" }[x.etat] || x.etat, x.etat === "echec" ? "dg" : x.etat === "envoye" ? "ok" : "al") + (x.erreur ? '<div class="hint">' + esc(x.erreur) + "</div>" : "") + '</td><td class="n">' + (x.etat === "echec" ? '<button class="btn sm" data-a="relancer-courriel" data-id="' + x.id + '">Relancer</button>' : "") + "</td></tr>"), "Aucun courriel.");
     }
     R.innerHTML = S.entetes("Argent", "Retraits, portefeuilles, reçus de dons, courriels.") + '<div class="onglets">' + TABS.map((t) => '<button class="' + (t[0] === S.onglet ? "on" : "") + '" data-a="onglet" data-o="' + t[0] + '">' + t[1] + "</button>").join("") + "</div>" + (S.erreur ? '<div class="carte" style="color:var(--danger)">' + esc(S.erreur) + "</div>" : "") + corps;
     S.clic = async (k, a) => {
@@ -358,6 +368,15 @@
         const v = await B.formulaire("Ajuster le portefeuille", [{ n: "nature", l: "Nature", t: "select", opts: [["ajustement", "Ajustement (peut être négatif)"], ["commission", "Commission"], ["forfait", "Forfait"], ["fixe", "Fixe"]] }, { n: "montant", l: "Montant (€, négatif pour reprendre)", t: "text" }, { n: "note", l: "Note" }], {}, "Enregistrer");
         if (v) { const m = Math.round(parseFloat(String(v.montant).replace(",", ".")) * 100); if (!m) { dire("Montant invalide.", "err"); return; } if (await S.geste("provision", { porteur: a.dataset.g, porteur_id: id, nature: v.nature, montant: m, note: v.note }, "Écriture ajoutée au registre.")) S.rendre(); }
       } else if (k === "annuler-recu") { const v = await B.formulaire("Annuler le reçu " + a.dataset.n, [{ n: "motif", l: "Motif" }], {}, "Annuler le reçu", true); if (v && await S.geste("recu_fiscal_annuler", { numero: a.dataset.n, motif: v.motif }, "Reçu annulé : son numéro est conservé.")) S.rendre(); }
+      else if (k === "reglages-pont") { if (CASS.ouvrirConsole) CASS.ouvrirConsole("billetterie", "Billetterie", "reglages"); }
+      else if (k === "tester-pont") {
+        const r = await S.lire("dolibarr_tester");
+        if (r) await confirmer("Test de Dolibarr · " + (r.ok ? "tout est prêt" : "il manque quelque chose"), '<p class="note">Version ' + esc(r.version || "?") + " — " + esc((r.societe || {}).name || "société non renseignée") + '</p><ul class="lst">' + r.points.map((p) => "<li>" + (p.ok ? "✓ " : "✗ <b>") + esc(p.libelle) + (p.ok ? "" : "</b>") + (p.detail ? " — " + esc(p.detail) : "") + "</li>").join("") + "</ul>", "Fermer");
+        else dire(S.erreur || "Dolibarr n’a pas répondu.", "err");
+      } else if (k === "rattraper") { const r = await S.geste("dolibarr_rattraper", {}); if (r) { dire(r.faits + " faite(s), " + r.reportes + " reportée(s), " + r.echecs + " en échec" + (r.raison ? " — " + r.raison : "") + ".", r.echecs || r.reportes ? "err" : "ok"); S.rendre(); } }
+      else if (k === "relancer-dol") { if (await S.geste("dolibarr_relancer", { id: id }, "Écriture remise dans la file.")) S.rendre(); }
+      else if (k === "envoyer-courriels") { const r = await S.geste("courriels_envoyer", {}); if (r) { dire(r.envoyes + " envoyé(s), " + r.reportes + " reporté(s), " + r.echecs + " en échec" + (r.raison ? " — " + r.raison : "") + ".", r.echecs || r.reportes ? "err" : "ok"); S.rendre(); } }
+      else if (k === "relancer-courriel") { if (await S.geste("courriel_relancer", { id: id }, "Courriel remis dans la boîte d’envoi.")) S.rendre(); }
       else if (k === "export") {
         const r = await S.lire("recus_export", { annee: String(new Date().getFullYear()) });
         if (r) { const lien = document.createElement("a"); lien.href = URL.createObjectURL(new Blob(["﻿" + r.csv], { type: "text/csv;charset=utf-8" })); lien.download = "recus-fiscaux-" + new Date().getFullYear() + ".csv"; document.body.appendChild(lien); lien.click(); lien.remove(); }

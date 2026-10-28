@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #92d1c2
+// VERSION CN : 0.1.0  #a6ad28
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : stockage refusé : on continue
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=92d1c2 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=a6ad28 ▼▼▼
 // La boutique publique : la programmation, la page d'un événement, la commande, le suivi d'une commande avec ses billets, la liste d'attente, le reçu de don.
 // Page statique et SANS session : tout passe par les capacités publiques billetterie.public_* (limitées par origine, protégées par jeton de suivi). La route est dans le fragment (#/e/..., #/c/..., #/a/...).
 (function () {
@@ -127,7 +127,7 @@
         memoire.ecrire("derniere", { commande: r.commande, suivi: r.suivi });
         if (r.paiement && r.paiement.url) { window.location.href = r.paiement.url; return; }
         location.hash = "#/c/" + r.commande + "?s=" + encodeURIComponent(r.suivi);
-      } catch (x) { msg.innerHTML = erreur(x.message); bouton.disabled = false; bouton.textContent = "Réserver et payer"; if (/session/.test(x.message)) { compteLocal.ecrire(null); majLien(); } else devis(); }
+      } catch (x) { bouton.disabled = false; bouton.textContent = "Réserver et payer"; if (/session/.test(x.message)) { compteLocal.ecrire(null); majLien(); } else await devis(); msg.innerHTML = erreur(x.message); }       // le message du refus s'écrit APRÈS le nouveau devis (qui efface la zone)
     });
   }
 

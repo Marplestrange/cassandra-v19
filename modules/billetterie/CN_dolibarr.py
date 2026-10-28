@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4b2cdd
+# VERSION CN : 0.1.0  #3c4867
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : le pont facultatif vers Dolibarr (tiers, factures, paiements, avoirs, versements de commissions).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4b2cdd ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3c4867 ▼▼▼
 """Billetterie : le pont facultatif vers Dolibarr (tiers, factures, paiements, avoirs, versements de commissions).
 
 Règles qui tiennent tout (voir docs/CN_BILLETTERIE.md §5 ter) :
