@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #eaf071
+# VERSION CN : 0.1.0  #cfff94
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune ; les fonctions (groupes attachés à une société).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ═══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=eaf071 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cfff94 ▼▼▼
 """Le module Sociétés : la fiche de chaque société et ses fonctions.
 
 Tout compte appartient à une société (le noyau le garantit) ; la société principale existe toujours. Seul le superadministrateur crée, archive et
@@ -653,7 +653,13 @@ def brancher(ctx):
         for dm, n in zip(DOMAINES, niveaux):
             _regler_domaine(gid, dm, n)
 
+    ECRIVENT_LE_CARNET = ("titulaire", "admin", "gestion")      # le carnet de la société : ces fonctions y écrivent (droit « contacts.societe_ecrire », valable dans la société seulement)
+
     def _garantir_gestion(soc):
+        for f in ECRIVENT_LE_CARNET:
+            gid = _gid(soc, f)
+            if d.groupe(gid) and "contacts.societe_ecrire" in d.connus and d.accord("groupe", gid, "contacts.societe_ecrire") is None:
+                d.regler("groupe", gid, "contacts.societe_ecrire", "accorde")
         for f in GERENT_LES_UTILISATEURS:
             gid = _gid(soc, f)
             if d.groupe(gid) and "comptes.gerer" in d.connus and d.accord("groupe", gid, "comptes.gerer") is None:

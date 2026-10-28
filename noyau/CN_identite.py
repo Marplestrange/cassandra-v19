@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8ab563
+# VERSION CN : 0.1.0  #d81076
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions, jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ab563 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d81076 ▼▼▼
 """L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions,
 jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt salé.
 
@@ -324,7 +324,7 @@ class Identite:
         return societe == "1"
 
     # ── les partages entre sociétés ──────────────────────────────────────────
-    TYPES_PARTAGE = ("utilisateurs",)
+    TYPES_PARTAGE = ("utilisateurs", "contacts")
 
     def partage_regler(self, source: str, destinataire: str, type: str, mode: str, elements, actif: bool, par: str = "") -> dict:
         """Crée ou remplace le partage `type` de `source` vers `destinataire` ; `elements` ne compte qu'en mode « choisis »."""
@@ -338,6 +338,8 @@ class Identite:
             x = self.societe(s)
             if not x or x["archivee"]:
                 raise ValueError("société inconnue ou archivée")
+        if type == "contacts":
+            mode, elements = "tous", []                    # le carnet de société se partage en entier, en lecture
         els = sorted({str(e).strip().lower() for e in (elements or []) if str(e).strip()}) if mode == "choisis" else []
         for e in els:
             if type == "utilisateurs" and self.societe_de(e) != source:
@@ -363,6 +365,10 @@ class Identite:
             return {"source": r["source"], "destinataire": r["destinataire"], "type": r["type"], "mode": r["mode"], "actif": bool(r["actif"]), "elements": els}
         return {"sortants": [ligne(r) for r in self.base.lire("SELECT * FROM societe_partages WHERE source=? ORDER BY destinataire, type", (societe,))],
                 "entrants": [ligne(r) for r in self.base.lire("SELECT * FROM societe_partages WHERE destinataire=? AND actif=1 ORDER BY source, type", (societe,))]}
+
+    def partage_actif(self, source: str, destinataire: str, type: str) -> bool:
+        """`source` partage-t-elle ce type d'objet avec `destinataire` (partage actif) ?"""
+        return bool(self.base.lire("SELECT 1 FROM societe_partages WHERE source=? AND destinataire=? AND type=? AND actif=1", (source, destinataire, type)))
 
     def utilisateur_partage(self, compte: str, destinataire: str) -> bool:
         """Ce compte, d'une autre société, est-il mis à la disposition de `destinataire` par un partage actif ?"""

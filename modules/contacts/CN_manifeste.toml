@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.2  #17205d
+# VERSION CN : 0.3.2  #cc974e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=17205d ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=cc974e ▼▼▼
 [module]
 id = "contacts"
 nom = "Carnet d'adresses"
@@ -34,6 +34,15 @@ defaut = true
 [[droits]]
 id = "administrer"
 libelle = "Administrer Carnet d'adresses : réglages et gestes sensibles"
+
+[[droits]]
+id = "societe_lire"
+libelle = "Lire le carnet de la société (clients, fournisseurs…)"
+defaut = true
+
+[[droits]]
+id = "societe_ecrire"
+libelle = "Écrire dans le carnet de la société : créer, modifier, archiver, supprimer des fiches"
 sensible = true
 
 [[objets]]
@@ -284,8 +293,133 @@ retour = "recréer les fiches purgées depuis la copie gardée dans le résultat
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
 
+[[capacites]]
+id = "societe_lister"
+libelle = "Carnet de la société : Les fiches du carnet (vivantes, archive ou corbeille), triées favoris d'abord, avec recherche"
+risque = "lecture"
+droit = "societe_lire"
+
+[[capacites]]
+id = "societe_voir"
+libelle = "Carnet de la société : Une fiche entière avec ses adresses et ses rattachements"
+risque = "lecture"
+droit = "societe_lire"
+
+[[capacites]]
+id = "societe_pour_adresse"
+libelle = "Carnet de la société : La fiche qui porte une adresse électronique, s'il y en a une"
+risque = "lecture"
+droit = "societe_lire"
+
+[[capacites]]
+id = "societe_dossiers"
+libelle = "Carnet de la société : Les dossiers, avec le nombre de fiches vivantes dans chacun (et ce que contiennent l'archive et la corbeille)"
+risque = "lecture"
+droit = "societe_lire"
+
+[[capacites]]
+id = "societe_creer"
+libelle = "Carnet de la société : Créer une fiche"
+risque = "faible"
+droit = "societe_ecrire"
+perimetre = ["le carnet de la société (jamais ceux des comptes)", "un nom ou une adresse au minimum", "une adresse n'appartient qu'à une fiche"]
+preuve = "relire la fiche : champs et adresses conformes"
+retour = "retirer la fiche que cet acte vient de créer"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "societe_modifier"
+libelle = "Carnet de la société : Modifier une fiche en patch : un champ non fourni n'est pas touché, une chaîne vide l'efface"
+risque = "faible"
+droit = "societe_ecrire"
+perimetre = ["le carnet de la société (jamais ceux des comptes)", "les adresses ne sont resynchronisées que si elles sont fournies"]
+preuve = "relire la fiche et comparer chaque champ écrit"
+retour = "remettre la fiche telle qu'elle était, relevée juste avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "societe_supprimer"
+libelle = "Carnet de la société : Mettre des fiches à la corbeille (rien n'est effacé : adresses et rattachements restent)"
+risque = "faible"
+droit = "societe_ecrire"
+perimetre = ["le carnet de la société (jamais ceux des comptes)"]
+preuve = "les fiches sont à la corbeille"
+retour = "sortir ces fiches de la corbeille"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "societe_restaurer"
+libelle = "Carnet de la société : Sortir des fiches de la corbeille, à leur dossier d'origine"
+risque = "faible"
+droit = "societe_ecrire"
+perimetre = ["le carnet de la société (jamais ceux des comptes)"]
+preuve = "les fiches ne sont plus à la corbeille"
+retour = "les remettre à la corbeille"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "societe_archiver"
+libelle = "Carnet de la société : Ranger des fiches à l'archive, ou les en sortir (la fiche reste entière, avec ses liens)"
+risque = "faible"
+droit = "societe_ecrire"
+perimetre = ["le carnet de la société (jamais ceux des comptes)"]
+preuve = "l'état d'archive est celui demandé"
+retour = "remettre l'état d'archive d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "societe_deplacer"
+libelle = "Carnet de la société : Déplacer des fiches vers un dossier (0 : sans dossier)"
+risque = "faible"
+droit = "societe_ecrire"
+perimetre = ["le carnet de la société (jamais ceux des comptes)"]
+preuve = "les fiches sont dans le dossier"
+retour = "remettre chaque fiche dans son dossier d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "societe_dossier_enregistrer"
+libelle = "Carnet de la société : Créer ou renommer un dossier (un seul niveau d'imbrication)"
+risque = "faible"
+droit = "societe_ecrire"
+perimetre = ["le carnet de la société (jamais ceux des comptes)"]
+preuve = "relire le dossier"
+retour = "supprimer le dossier créé, ou remettre l'ancien nom"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "societe_dossier_supprimer"
+libelle = "Carnet de la société : Supprimer un dossier SANS toucher à ses fiches (elles retournent « sans dossier »)"
+risque = "faible"
+droit = "societe_ecrire"
+perimetre = ["le carnet de la société (jamais ceux des comptes)"]
+preuve = "le dossier n'existe plus et ses fiches sont intactes"
+retour = "recréer le dossier et y remettre ses fiches et sous-dossiers"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "societe_partage_lister"
+libelle = "Les fiches du carnet qu'une autre société partage avec la nôtre (lecture seule, sans les notes)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "societe_partage_voir"
+libelle = "Une fiche du carnet qu'une autre société partage avec la nôtre (lecture seule, sans les notes)"
+risque = "lecture"
+droit = "utiliser"
+
 [permissions]
 stockage = true
+stockage_par_societe = true
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

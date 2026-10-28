@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6bcd9c
+# VERSION CN : 0.1.0  #8ac75c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune. Socle du multi-sociétés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6bcd9c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ac75c ▼▼▼
 [module]
 id = "societes"
 nom = "Sociétés"
@@ -440,6 +440,12 @@ domaine = "socle"
 gabarit = "liste_detail"
 
 [[ecrans]]
+id = "s_carnet"
+libelle = "Carnet de la société"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
 id = "s_reglages"
 libelle = "Réglages"
 domaine = "socle"
@@ -591,6 +597,16 @@ parent = "societe"
 ordre = 115
 role = "utilisateur"
 icone = "puzzle"
+droit = "utiliser"
+
+[[menus]]
+id = "carnet"
+libelle = "Carnet de la société"
+ecran = "s_carnet"
+parent = "societe"
+ordre = 116
+role = "utilisateur"
+icone = "users"
 droit = "utiliser"
 
 [[menus]]

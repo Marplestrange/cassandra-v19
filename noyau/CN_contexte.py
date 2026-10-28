@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7136de
+# VERSION CN : 0.1.0  #fee05e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7136de ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fee05e ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire
@@ -185,6 +185,16 @@ class Contexte:
         if self.manifeste.permissions.stockage_par_societe:
             return StockageParSociete(lambda soc: self._intro["stockage"](self.module, soc), lambda: self._societe.valeur)
         return self._intro["stockage"](self.module)
+
+    def stockage_partage(self, source: str, type: str):
+        """La base de CE module dans la société `source`, à LIRE seulement : permis quand `source` partage ce `type` avec la société de l'acte (ou si c'est la même).
+        [permissions] stockage_par_societe. Le module n'y écrit jamais."""
+        if not self.manifeste.permissions.stockage_par_societe:
+            raise PermissionError("le module « %s » n'a pas de base par société ([permissions] stockage_par_societe)" % self.module)
+        dest = self._societe.valeur or "1"
+        if source != dest and not self._intro["partage_actif"](source, dest, type):
+            raise PermissionError("cette société ne partage pas cela avec la vôtre")
+        return self._intro["stockage"](self.module, source)
 
     def stockage_lecture(self, module: str):
         """La base d'un AUTRE module, en lecture seule — pour le module du journal, qui lit les journaux des autres

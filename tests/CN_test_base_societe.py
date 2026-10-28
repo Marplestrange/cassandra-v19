@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs de la base par société
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #9fc4ba
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs de la base par société : un module « stockage_par_societe » garde ses données société par société, sans que son code change ; ses moteurs tournent pour chacune.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9fc4ba ▼▼▼
 """Bancs de la base par société : un module « stockage_par_societe » garde ses données société par société, sans que son code change ; ses moteurs tournent pour chacune."""
 import shutil
 import sys
@@ -136,3 +151,9 @@ class Monde(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Monde
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

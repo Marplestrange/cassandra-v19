@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4f32cf
+# VERSION CN : 0.1.0  #a66408
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du socle société : tout compte a une société, la fiche est cloisonnée, les fonctions ne valent que dans la leur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4f32cf ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a66408 ▼▼▼
 """Bancs du socle société : rattachement obligatoire des comptes, fiche cloisonnée, fonctions attachées à une société, superadministrateur seul maître de l'ensemble."""
 import shutil
 import sys
@@ -375,6 +375,34 @@ class Monde(unittest.TestCase):
         self.non("societes.affecter", compte=DAN, societe=FORM, utilisateur=CAM, fonction="membre")
         self.non("societes.partage_retirer", compte=BEA, source="1", destinataire=FORM)                               # il n'existe plus
         self.non("societes.partager", compte=BEA, source="1", destinataire="1", mode="tous")                          # pas avec soi-même
+
+    # ── le carnet de la société ─────────────────────────────────────────────
+    def test_le_carnet_de_la_societe_est_commun_et_les_carnets_personnels_restent_prives(self):
+        self.monde()
+        self.ok("contacts.societe_creer", compte=BEA, display_name="Client A", emails=["a@x.fr"], notes="note privée")
+        self.assertEqual([f["display_name"] for f in self.ok("contacts.societe_lister", compte=CAM)["contacts"]], ["Client A"])
+        self.assertEqual(self.ok("contacts.lister", compte=CAM)["contacts"], [])                                  # son carnet personnel est vide
+        self.assertEqual(self.ok("contacts.lister", compte=BEA)["contacts"], [])                                  # et celui de BEA ne contient pas la fiche de la société
+        self.non("contacts.societe_creer", compte=CAM, display_name="Client B")                                   # lire est ouvert, écrire demande une fonction
+        self.ok("societes.affecter", compte=BEA, societe="1", utilisateur=CAM, fonction="gestion")
+        self.ok("contacts.societe_creer", compte=CAM, display_name="Client B")
+        self.assertEqual(len(self.ok("contacts.societe_lister", compte=BEA)["contacts"]), 2)
+
+    def test_un_carnet_de_societe_partage_se_lit_sans_les_notes_et_jamais_sans_partage(self):
+        self.monde()
+        self.ok("societes.module_regler", compte=BEA, societe=FORM, module="contacts", ouvert=True)
+        self.ok("societes.affecter", compte=BEA, societe=FORM, utilisateur=DAN, fonction="admin")
+        self.ok("contacts.societe_creer", compte=BEA, display_name="Client A", emails=["a@x.fr"], notes="note privée")
+        self.non("contacts.societe_partage_lister", compte=DAN, dans=FORM, depuis="1")                              # pas de partage : rien
+        self.assertEqual(self.ok("contacts.societe_lister", compte=DAN, dans=FORM)["contacts"], [])               # le carnet de FORM est le sien, vide
+        self.ok("societes.partager", compte=BEA, source="1", destinataire=FORM, type="contacts", mode="choisis", elements=["x"])
+        liste = self.ok("contacts.societe_partage_lister", compte=DAN, dans=FORM, depuis="1")["contacts"]
+        self.assertEqual([f["display_name"] for f in liste], ["Client A"])
+        self.assertEqual(liste[0]["emails"], ["a@x.fr"])
+        self.assertNotIn("notes", liste[0])
+        self.assertEqual(self.ok("contacts.societe_partage_voir", compte=DAN, dans=FORM, depuis="1", id=liste[0]["id"])["contact"]["display_name"], "Client A")
+        self.assertEqual(self.ok("societes.partages", compte=DAN, societe=FORM)["entrants"][0]["mode"], "tous")  # un carnet se partage en entier
+        self.non("contacts.societe_partage_lister", compte=BEA, dans="1", depuis=FORM)                           # le partage va dans un seul sens
 
     def test_les_menus_et_les_droits_ne_montrent_que_les_modules_de_la_societe(self):
         self.monde()

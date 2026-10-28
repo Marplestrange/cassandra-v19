@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.2  #dda62d
+# VERSION CN : 0.3.2  #534613
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet d'adresses.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=dda62d ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=534613 ▼▼▼
 """Le carnet d'adresses.
 
 Porté de la V18 (`contact_*`, `contacts_*`, vCard, CSV), avec ses leçons :
@@ -38,6 +38,7 @@ import base64
 import csv
 import io
 import re
+import threading
 import time
 import unicodedata
 from datetime import datetime
@@ -57,6 +58,8 @@ LOCAL_VIDES = ("contact", "info", "bonjour", "hello", "accueil", "secretariat", 
                "commande", "commandes", "service", "support", "sav", "direction", "commercial", "commerciaux", "noreply", "no-reply", "nepasrepondre", "postmaster",
                "webmaster", "rh", "recrutement", "devis", "client", "clients")
 SYSTEME = ("cassandra", "itare", "noyau", "operateur")
+CARNET_SOCIETE = "@societe"          # le « compte » des fiches du carnet de la société (une base par société : il n'y en a qu'un par base)
+_carnet = threading.local()          # vrai le temps d'un geste « societe_* » : le geste travaille sur le carnet de la société, pas sur celui du compte
 PRIVES = ("emails", "addr", "phone", "mobile", "address")
 CSV_MAX = 6 * 1024 * 1024
 IMPORT_MAX = 5000
@@ -193,6 +196,8 @@ def brancher(ctx):
         c = ctx.compte
         if not c or c in SYSTEME:
             raise ValueError("un carnet est celui d'un compte : aucun compte n'agit")
+        if getattr(_carnet, "v", False):
+            return CARNET_SOCIETE
         return c
 
     def reglage_bool(nom, defaut):
@@ -875,6 +880,43 @@ def brancher(ctx):
         for snap in res["copies"]:
             remettre(res["compte"], snap)
 
+    # ------------------------------------------------------------------ le carnet de la société, et celui qu'une autre société partage
+    def en_societe(f):
+        def geste(c, *a, **k):
+            _carnet.v = True
+            try:
+                return f(c, *a, **k)
+            finally:
+                _carnet.v = False
+        return geste
+
+    def base_partagee(depuis):
+        soc = str(depuis or "").strip()
+        if not soc:
+            raise ValueError("de quelle société ?")
+        return ctx.stockage_partage(soc, "contacts")
+
+    def partage_lister(c, depuis="", query="", limite=200):
+        bd = base_partagee(depuis)
+        q = "%" + str(query or "").strip().lower() + "%"
+        rows = bd.lire("SELECT id, display_name, company, job_title, phone, mobile, address, website, tags FROM contacts WHERE compte=? AND supprime_at IS NULL AND archive=0 "
+                       "AND (lower(display_name) LIKE ? OR lower(company) LIKE ?) ORDER BY lower(display_name) LIMIT ?", (CARNET_SOCIETE, q, q, max(1, min(int(limite or 200), 1000))))
+        out = []
+        for r in rows:
+            r = dict(r)
+            r["emails"] = [x["addr"] for x in bd.lire("SELECT addr FROM emails WHERE contact_id=? ORDER BY is_primary DESC, addr", (r["id"],))]
+            out.append(r)
+        return {"depuis": str(depuis), "contacts": out}
+
+    def partage_voir(c, depuis="", id=0):
+        bd = base_partagee(depuis)
+        r = bd.lire("SELECT id, display_name, company, job_title, phone, mobile, address, website, tags FROM contacts WHERE id=? AND compte=? AND supprime_at IS NULL AND archive=0", (int(id), CARNET_SOCIETE))
+        if not r:
+            raise ValueError("fiche introuvable")
+        f = dict(r[0])
+        f["emails"] = [x["addr"] for x in bd.lire("SELECT addr FROM emails WHERE contact_id=? ORDER BY is_primary DESC, addr", (f["id"],))]
+        return {"depuis": str(depuis), "contact": f}
+
     # ------------------------------------------------------------------ inscription
     c = ctx
     for cid, f in (("lister", lister), ("voir", voir), ("pour_adresse", pour_adresse), ("dossiers", dossiers), ("pour_cible", pour_cible), ("doublons", doublons),
@@ -896,7 +938,22 @@ def brancher(ctx):
     c.implementer("vcard_importer", vcard_importer, prouver_import, defaire_import, simuler=lambda x, **_: "importerait un fichier vCard")
     c.implementer("csv_importer", csv_importer, prouver_import, defaire_import, simuler=lambda x, **_: "importerait un fichier CSV")
     c.implementer("purger_corbeille", purger_corbeille, prouver_purge, defaire_purge, simuler=lambda x, **_: "effacerait ce qui est à la corbeille depuis plus de trente jours")
+    # le carnet de la société : les mêmes gestes, sur les fiches de la société (droits « societe_lire » et « societe_ecrire »)
+    for cid, f in (("lister", lister), ("voir", voir), ("pour_adresse", pour_adresse), ("dossiers", dossiers)):
+        c.implementer("societe_" + cid, en_societe(f))
+    for cid, f, pr, df, sim in (("creer", creer, prouver_cree, defaire_cree, "créerait une fiche dans le carnet de la société"),
+                                ("modifier", modifier, prouver_modifie, defaire_modifie, "modifierait une fiche du carnet de la société"),
+                                ("supprimer", supprimer, prouver_supprime, retour_lot, "mettrait des fiches du carnet de la société à la corbeille"),
+                                ("restaurer", restaurer, prouver_restaure, retour_lot, "sortirait des fiches du carnet de la société de la corbeille"),
+                                ("archiver", archiver, prouver_archive, retour_lot, "archiverait des fiches du carnet de la société"),
+                                ("deplacer", deplacer, prouver_deplace, retour_lot, "déplacerait des fiches du carnet de la société"),
+                                ("dossier_enregistrer", dossier_enregistrer, prouver_dossier, defaire_dossier, "enregistrerait un dossier du carnet de la société"),
+                                ("dossier_supprimer", dossier_supprimer, prouver_dossier_supprime, defaire_dossier_supprime, "supprimerait un dossier du carnet de la société")):
+        c.implementer("societe_" + cid, en_societe(f), pr, df, simuler=lambda x, _s=sim, **_: _s)
+    c.implementer("societe_partage_lister", partage_lister)
+    c.implementer("societe_partage_voir", partage_voir)
 # ▲▲▲ FIN BORNE CN ▲▲▲
+
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
 # CN : tout ce fichier est du nexus : aplatir, norm_nom, initiales, norm_tel, norm_site, norm_domaine, remplissage, meilleure …
