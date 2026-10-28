@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #dee561
+# VERSION CN : 0.1.0  #b2795b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module courrier : un vrai noyau, de vrais imaplib et smtplib, un serveur IMAP et un serveur SMTP de poche.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=dee561 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b2795b ▼▼▼
 """Bancs du module courrier : un vrai noyau, de vrais imaplib et smtplib, un serveur IMAP et un serveur SMTP de poche."""
 import base64
 import json
@@ -384,6 +384,17 @@ class Ecrire(Monde):
         self.assertNotIn("SIREN", courte)                                                        # la courte : le nom et le site seulement
         self.assertIn("https://lumen.test", courte)
         self.assertNotIn("Atelier Lumen", self.envoyer_avec_carte({"nom": ""}))                  # une fiche sans nom : aucune signature
+
+    def test_la_signature_reprend_le_profil_de_la_personne_dans_la_societe(self):
+        self.n.reglages.poser("courrier.signature_societe", True, "")
+        profil = {"nom": "Cam Dupont", "fonction": "Comptable", "tel": "0607080910", "email": "cam@lumen.test"}
+        self.ctx.executer_lecture = lambda cap, **a: self.CARTE if cap == "societes.carte" else (profil if cap == "societes.profil_lire" else {"comptes": self.comptes})
+        r = self.ex("envoyer", a="zoe@exemple.fr", objet="Devis", texte="Voici le devis")
+        self.assertEqual(r["statut"], "faite", r)
+        txt = self.smtp.recus[-1]["raw"].decode()
+        self.assertIn("Cam Dupont, Comptable", txt)
+        self.assertIn("0607080910", txt)
+        self.assertLess(txt.index("Cam Dupont"), txt.index("Atelier Lumen"))                    # la personne d'abord, puis la société
 
     def test_envoyer_par_smtp_journalise_et_garde_une_copie(self):
         r = self.ex("envoyer", a="zoe@exemple.fr", cc="paul@exemple.fr", objet="Devis", texte="Voici le devis", repond_a_message="<orig@exemple.fr>")

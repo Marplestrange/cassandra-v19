@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e5b1c5
+# VERSION CN : 0.1.0  #4e8c77
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune ; les fonctions (groupes attachés à une société).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ═══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e5b1c5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4e8c77 ▼▼▼
 """Le module Sociétés : la fiche de chaque société et ses fonctions.
 
 Tout compte appartient à une société (le noyau le garantit) ; la société principale existe toujours. Seul le superadministrateur crée, archive et
@@ -573,6 +573,82 @@ def brancher(ctx):
             idt.module_regler(a["societe"], res["module"], None)
         db.ecrire("UPDATE demandes_module SET etat='demandee', module='', decide_par='', decide_ts=0, reponse='' WHERE id=?", (res["id"],))
 
+    # ── le profil d'une personne dans une société ──
+    def _lier(soc, compte):
+        if idt.societe_de(compte) != soc and soc not in d.societes_de(compte):
+            raise ValueError("ce compte n'a aucun lien avec cette société")
+
+    def _profil(soc, compte):
+        r = db.lire("SELECT nom, fonction, tel, email FROM profils WHERE societe=? AND compte=?", (soc, compte))
+        return dict(r[0]) if r else {"nom": "", "fonction": "", "tel": "", "email": ""}
+
+    def _cible_profil(societe, utilisateur):
+        soc = _cible(societe)
+        cible = str(utilisateur or "").strip().lower() or ctx.compte or ""
+        if not cible:
+            raise ValueError("de quel compte ?")
+        if cible != ctx.compte and not _superadmin(ctx.compte):
+            _exiger("equipe", "gerer", soc)            # le profil d'un autre : l'administrateur de la société
+        _lier(soc, cible)
+        return soc, cible
+
+    def profil_lire(c, societe="", utilisateur=""):
+        soc, cible = _cible_profil(societe, utilisateur)
+        return dict(_profil(soc, cible), societe=soc, compte=cible)
+
+    def profil_regler(c, societe="", utilisateur="", nom=None, fonction=None, tel=None, email=None):
+        soc, cible = _cible_profil(societe, utilisateur)
+        avant = _profil(soc, cible)
+        neuf = dict(avant)
+        for k, v, lim in (("nom", nom, 120), ("fonction", fonction, 120), ("tel", tel, 40), ("email", email, 190)):
+            if v is not None:
+                neuf[k] = str(v).strip()[:lim]
+        if neuf["email"] and not RE_EMAIL.match(neuf["email"]):
+            raise ValueError("email : adresse invalide")
+        db.ecrire("INSERT INTO profils(societe, compte, nom, fonction, tel, email, maj) VALUES(?,?,?,?,?,?,?) ON CONFLICT(societe, compte) DO UPDATE SET nom=excluded.nom, fonction=excluded.fonction, tel=excluded.tel, email=excluded.email, maj=excluded.maj",
+                  (soc, cible, neuf["nom"], neuf["fonction"], neuf["tel"], neuf["email"], time.time()))
+        _histoire(soc, "", "a modifié le profil de %s dans la société" % cible, None, None)
+        return {"societe": soc, "compte": cible, "avant": avant, "apres": neuf}
+
+    def prouver_profil(c, res):
+        return _profil(res["societe"], res["compte"]) == res["apres"]
+
+    def defaire_profil(c, res):
+        a = res["avant"]
+        db.ecrire("INSERT INTO profils(societe, compte, nom, fonction, tel, email, maj) VALUES(?,?,?,?,?,?,?) ON CONFLICT(societe, compte) DO UPDATE SET nom=excluded.nom, fonction=excluded.fonction, tel=excluded.tel, email=excluded.email, maj=excluded.maj",
+                  (res["societe"], res["compte"], a["nom"], a["fonction"], a["tel"], a["email"], time.time()))
+
+    # ── les modèles d'une société (son habillage et les préfixes de ses devis et factures), recopiés par une autre : jamais la banque ──
+    def _recopier_modeles(dest, source):
+        avant = {"habillage": _lire_rub(dest, "habillage"), "banque": _lire_rub(dest, "banque")}
+        _ecrire_rub(dest, "habillage", _lire_rub(source, "habillage"))
+        ban = _lire_rub(dest, "banque")
+        src = _lire_rub(source, "banque")
+        ban["pref_devis"], ban["pref_facture"] = src.get("pref_devis", ""), src.get("pref_facture", "")
+        _ecrire_rub(dest, "banque", ban)
+        return avant
+
+    def modeles_recopier(c, societe="", depuis=""):
+        soc = _cible(societe)
+        _exiger("habillage", "modifier", soc)
+        src = str(depuis or "").strip()
+        s = idt.societe(src)
+        if not s or s["archivee"] or src == soc:
+            raise ValueError("société à recopier inconnue")
+        if not _superadmin(ctx.compte) and ctx.compte and not idt.partage_actif(src, soc, "modeles"):
+            raise ValueError("cette société ne partage pas ses modèles avec la vôtre : seul le superadministrateur décide d'un partage")
+        avant = _recopier_modeles(soc, src)
+        _histoire(soc, "habillage", "a recopié les modèles de « %s »" % s["nom"], None, None)
+        _emettre("societe.modifiee", soc, {"rubrique": "habillage", "depuis": src})
+        return {"societe": soc, "depuis": src, "avant": avant, "apres": _lire_rub(soc, "habillage")}
+
+    def prouver_modeles(c, res):
+        return _lire_rub(res["societe"], "habillage") == res["apres"]
+
+    def defaire_modeles(c, res):
+        _ecrire_rub(res["societe"], "habillage", res["avant"]["habillage"])
+        _ecrire_rub(res["societe"], "banque", res["avant"]["banque"])
+
     def module_regler(c, societe="", module="", ouvert=True):
         soc = _cible(societe)
         if ctx.compte and not _superadmin(ctx.compte):
@@ -597,7 +673,7 @@ def brancher(ctx):
         idt.module_regler(res["societe"], res["module"], res["avant"])
 
     # ── les sociétés elles-mêmes : le superadministrateur seul ──────────────
-    def creer(c, nom="", identifiant="", administrateur="", modules_de=""):
+    def creer(c, nom="", identifiant="", administrateur="", modules_de="", modeles_de=""):
         _exiger_super()
         if not ctx.reglage("multi"):
             raise ValueError("une seule société dans cette instance : installez le module Multi-sociétés pour en ajouter")
@@ -612,6 +688,8 @@ def brancher(ctx):
                 for m in ctx.manifestes_actifs(toutes=True):
                     if not (m.importance == "vital" or m.essentiel or m.instance) and m.id not in idt.modules_de_societe("1"):
                         idt.module_regler(r["societe"], m.id, True)
+        if modeles_de and idt.societe(str(modeles_de)):                  # une société « modèle » : habillage et préfixes de la société choisie
+            _recopier_modeles(r["societe"], str(modeles_de))
         _initialiser_fonctions(r["societe"])
         _histoire(r["societe"], "", "société créée", None, None)
         _emettre("societe.creee", r["societe"], {"nom": r["nom"], "administrateur": adm})
@@ -888,6 +966,9 @@ def brancher(ctx):
     ctx.implementer("partageables", partageables)
     ctx.implementer("module_regler", module_regler, prouver_module_regler, defaire_module_regler)
     ctx.implementer("module_demander", module_demander, prouver_demander, defaire_demander)
+    ctx.implementer("profil_lire", profil_lire)
+    ctx.implementer("profil_regler", profil_regler, prouver_profil, defaire_profil)
+    ctx.implementer("modeles_recopier", modeles_recopier, prouver_modeles, defaire_modeles)
     ctx.implementer("module_demandes", module_demandes)
     ctx.implementer("module_demande_decider", module_demande_decider, prouver_decider, defaire_decider)
     ctx.implementer("fiche_regler", fiche_regler, prouver_regler, defaire_regler)

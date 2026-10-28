@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7b43d2
+# VERSION CN : 0.1.0  #84fca1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune. Socle du multi-sociétés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7b43d2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=84fca1 ▼▼▼
 [module]
 id = "societes"
 nom = "Sociétés"
@@ -290,6 +290,34 @@ risque = "lecture"
 droit = "utiliser"
 
 [[capacites]]
+id = "profil_lire"
+libelle = "Le profil d'une personne dans une société (nom d'affichage, fonction, téléphone, adresse) : le sien, ou celui d'un membre pour l'administrateur"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "profil_regler"
+libelle = "Régler son profil dans une société (ou celui d'un membre, pour son administrateur) : signature et coordonnées propres à cette société"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["le profil d'une personne dans une société", "jamais son compte ni son mot de passe"]
+preuve = "le profil relu est celui demandé"
+retour = "remettre le profil d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "modeles_recopier"
+libelle = "Recopier l'habillage et les préfixes de devis et facture d'une société qui les partage (jamais la banque)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["l'habillage et les préfixes de la société qui recopie", "jamais l'IBAN ni les coordonnées bancaires"]
+preuve = "l'habillage relu est celui de la société source"
+retour = "remettre l'habillage et les préfixes d'avant"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
 id = "module_demander"
 libelle = "Demander un module à la société principale (nom, motif, source) : une société secondaire n'installe rien elle-même"
 risque = "faible"
@@ -474,6 +502,12 @@ domaine = "socle"
 gabarit = "liste_detail"
 
 [[ecrans]]
+id = "s_profil"
+libelle = "Mon profil dans la société"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
 id = "s_reglages"
 libelle = "Réglages"
 domaine = "socle"
@@ -633,6 +667,16 @@ libelle = "Carnet de la société"
 ecran = "s_carnet"
 parent = "societe"
 ordre = 116
+role = "utilisateur"
+icone = "users"
+droit = "utiliser"
+
+[[menus]]
+id = "profil"
+libelle = "Mon profil ici"
+ecran = "s_profil"
+parent = "societe"
+ordre = 118
 role = "utilisateur"
 icone = "users"
 droit = "utiliser"

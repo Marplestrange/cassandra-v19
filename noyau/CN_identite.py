@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d81076
+# VERSION CN : 0.1.0  #680da3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions, jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d81076 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=680da3 ▼▼▼
 """L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions,
 jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt salé.
 
@@ -324,7 +324,7 @@ class Identite:
         return societe == "1"
 
     # ── les partages entre sociétés ──────────────────────────────────────────
-    TYPES_PARTAGE = ("utilisateurs", "contacts")
+    TYPES_PARTAGE = ("utilisateurs", "contacts", "modeles")
 
     def partage_regler(self, source: str, destinataire: str, type: str, mode: str, elements, actif: bool, par: str = "") -> dict:
         """Crée ou remplace le partage `type` de `source` vers `destinataire` ; `elements` ne compte qu'en mode « choisis »."""
@@ -338,8 +338,8 @@ class Identite:
             x = self.societe(s)
             if not x or x["archivee"]:
                 raise ValueError("société inconnue ou archivée")
-        if type == "contacts":
-            mode, elements = "tous", []                    # le carnet de société se partage en entier, en lecture
+        if type in ("contacts", "modeles"):
+            mode, elements = "tous", []                    # le carnet de société et les modèles se partagent en entier
         els = sorted({str(e).strip().lower() for e in (elements or []) if str(e).strip()}) if mode == "choisis" else []
         for e in els:
             if type == "utilisateurs" and self.societe_de(e) != source:

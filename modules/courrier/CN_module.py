@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.2  #fdc02b
+# VERSION CN : 0.1.2  #f3bbf4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=fdc02b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=f3bbf4 ▼▼▼
 """Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 
 Porté de la V18 (`_imap_*`, `itare_mail_*`, `mail_*`, `_courrier_*`), avec ses leçons :
@@ -726,7 +726,17 @@ def brancher(ctx):
         nom = str(carte.get("nom") or "").strip()
         if not nom:
             return ""
-        lignes = [" ".join(x for x in (nom, str(carte.get("forme") or "").strip()) if x)]
+        lignes = []
+        try:
+            p = ctx.executer_lecture("societes.profil_lire") or {}
+        except Exception:
+            p = {}
+        if isinstance(p, dict) and (p.get("nom") or p.get("fonction")):             # la personne se présente dans CETTE société
+            lignes.append(", ".join(x for x in (str(p.get("nom") or "").strip(), str(p.get("fonction") or "").strip()) if x))
+            perso = " · ".join(x for x in (("Tél. %s" % p["tel"]) if p.get("tel") else "", str(p.get("email") or "")) if x)
+            if perso:
+                lignes.append(perso)
+        lignes.append(" ".join(x for x in (nom, str(carte.get("forme") or "").strip()) if x))
         if str(carte.get("signature") or "complete") != "courte":
             if carte.get("siren"):
                 lignes.append("SIREN %s" % carte["siren"])

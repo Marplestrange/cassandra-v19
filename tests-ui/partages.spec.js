@@ -13,6 +13,7 @@ test("Société : partages entre sociétés et carnet de la société", async ({
   }
   await page.evaluate(() => {
     window.__appels = [];
+    window.__profil = { nom: '', fonction: '', tel: '', email: '' };
     window.__demandes = [{ id: 4, societe: 'form', nom_societe: 'Lumen Formation', nom: 'Gestion de stock', motif: 'inventaire du matériel', source: '', etat: 'demandee', module: '', reponse: '' }];
     const niv = (n) => ({ fiche: n, etablissements: n, horaires: n, pieces: n, banque: n, conformite: n, habillage: n, equipe: n });
     window.__acces = niv(3);
@@ -23,7 +24,7 @@ test("Société : partages entre sociétés et carnet de la société", async ({
       window.__appels.push([c, a]);
       if (c === 'societes.lister') return { societes: [{ id: '1', nom: 'Atelier Lumen', principale: true, archivee: false, ici: true, domicile: true }, { id: 'form', nom: 'Lumen Formation', principale: false, archivee: false, ici: false, domicile: false }], multi: true, superadmin: true, societe: '1' };
       if (c === 'societes.fiche_lire') return { societe: '1', rubriques: { identite: { nom: 'Atelier Lumen', forme: 'SAS' } }, acces: window.__acces };
-      if (c === 'societes.partages') return { societe: '1', sortants: partages.filter((p) => p.source === '1'), entrants: [{ source: 'form', destinataire: '1', type: 'contacts', mode: 'tous', actif: true, elements: [], nom_source: 'Lumen Formation', nom_destinataire: 'Atelier Lumen' }], peut_decider: true };
+      if (c === 'societes.partages') return { societe: '1', sortants: partages.filter((p) => p.source === '1'), entrants: [{ source: 'form', destinataire: '1', type: 'contacts', mode: 'tous', actif: true, elements: [], nom_source: 'Lumen Formation', nom_destinataire: 'Atelier Lumen' }, { source: 'form', destinataire: '1', type: 'modeles', mode: 'tous', actif: true, elements: [], nom_source: 'Lumen Formation', nom_destinataire: 'Atelier Lumen' }], peut_decider: true };
       if (c === 'societes.partageables') return { societe: '1', utilisateurs: [{ compte: 'zoe@x.fr', societe: 'form', fonction: '' }] };
       if (c === 'societes.fonctions') return { societe: '1', fonctions, domaines: Object.keys(window.__acces) };
       if (c === 'societes.membres') return { societe: '1', membres: [{ compte: 'bea@x.fr', nom: 'Béa', fonction: 'titulaire', domicile: true }, { compte: 'cam@x.fr', nom: 'Cam', fonction: '', domicile: true }] };
@@ -38,6 +39,9 @@ test("Société : partages entre sociétés et carnet de la société", async ({
       if (c === 'societes.module_demandes') return { demandes: window.__demandes, peut_decider: true };
       if (c === 'societes.module_demander') { window.__demandes = window.__demandes.concat([{ id: 5, societe: '1', nom_societe: 'Atelier Lumen', nom: a.nom, motif: a.motif, source: a.source, etat: 'demandee', module: '', reponse: '' }]); return { id: 5 }; }
       if (c === 'societes.module_demande_decider') { window.__demandes = window.__demandes.map((d) => d.id === a.id ? Object.assign({}, d, { etat: a.decision === 'accepter' ? 'acceptee' : 'refusee', module: a.module || '' }) : d); return {}; }
+      if (c === 'societes.profil_lire') return window.__profil;
+      if (c === 'societes.profil_regler') { window.__profil = Object.assign({}, window.__profil, { nom: a.nom, fonction: a.fonction, tel: a.tel, email: a.email }); return {}; }
+      if (c === 'societes.modeles_recopier') return {};
       if (c === 'comptes.moi') return { compte: 'bea@x.fr' };
       return {};
     };
@@ -63,6 +67,11 @@ test("Société : partages entre sociétés et carnet de la société", async ({
   await k.locator('select[data-af="zoe@x.fr"]').selectOption('membre');
   await expect.poll(async () => (await appels('societes.affecter')).some((x) => x.utilisateur === 'zoe@x.fr' && x.fonction === 'membre')).toBe(true);
 
+  // les modèles qu'une autre société partage : on les recopie après confirmation
+  await k.locator('button[data-a="mod-copy"]').click();
+  await page.locator('[data-c="oui"]').click();
+  await expect.poll(async () => (await appels('societes.modeles_recopier')).some((x) => x.depuis === 'form')).toBe(true);
+
   // un partage de carnet : toujours en entier, quelle que soit la sélection
   await k.locator('#pt-ty').selectOption('contacts');
   await k.locator('button[data-a="part-add"]').click();
@@ -81,6 +90,14 @@ test("Société : partages entre sociétés et carnet de la société", async ({
   await k.locator('button[data-a="dm-ok"][data-id="4"]').click();
   await expect.poll(async () => (await appels('societes.module_demande_decider')).some((x) => x.id === 4 && x.decision === 'accepter' && x.module === 'ged')).toBe(true);
   await expect(k).toContainText('acceptée');
+
+  // le profil de la personne dans la société : un nom d'affichage, une fonction, des coordonnées propres à celle-ci
+  k = await monter('societes:s_profil');
+  await expect(k).toContainText('Mon profil dans Atelier Lumen');
+  await k.locator('#pf-n').fill('Béa Martin');
+  await k.locator('#pf-f').fill('Directrice');
+  await k.locator('button[data-a="pf-save"]').click();
+  await expect.poll(async () => (await appels('societes.profil_regler')).some((x) => x.nom === 'Béa Martin' && x.fonction === 'Directrice')).toBe(true);
 
   // le carnet de la société : une fiche commune, un ajout, la corbeille, et le carnet partagé en lecture seule
   k = await monter('societes:s_carnet');

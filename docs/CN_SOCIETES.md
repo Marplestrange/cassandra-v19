@@ -12,7 +12,7 @@
 <!-- RÔLE       : Le socle société : tout compte appartient à une société, les fonctions sont des groupes attachés, le coffre isole chaque espace. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=6c12d6 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9fd37a ▼▼▼ -->
 # Sociétés et coffre
 
 Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/CN_societes-ecran.js` (Paramètres › Société / Organisation) et `interface/CN_coffre-ecran.js` (Mon coffre-fort). Moteur : `noyau/CN_base.py`, `noyau/CN_droits.py`, `noyau/CN_identite.py`, `noyau/CN_executeur.py`, modules `societes`, `coffre`, `comptes`.
@@ -40,7 +40,12 @@ Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/
 - **La société primaire est propriétaire de l'instance** : seule elle règle le comportement de l'application (réglages d'instance, Danger, réglages des agents structurels, sécurité, observabilité, sauvegardes, gestion des modules : les modules « d'instance »). Les sociétés secondaires ont le desk, le métier et le parc, leurs agents dédiés et les services des agents structurels, jamais leurs réglages. L'administrateur d'une société ouvre et ferme les modules de SA société parmi ceux qui ne sont pas la base.
 - **Un partage** va d'une société (source) à une autre (destinataire) pour un type d'objet : aujourd'hui « utilisateurs », tous ou ceux qu'on a choisis (tables `societe_partages`, `societe_partage_elements`). Seul le superadministrateur décide d'un partage et le retire ; chaque geste s'inscrit à l'historique et se défait.
 - **Ce que ça change** : l'administrateur d'une société ne range une personne d'une autre société dans une fonction que si elle est partagée avec la sienne (avant, `societes.affecter` acceptait n'importe quel compte de l'instance). `societes.partageables` liste ces personnes ; les agents et comptes système ne se partagent jamais. Page Société › Partages.
-- **À venir** : partager aussi des contacts, des modèles de documents ; un profil par société pour un utilisateur partagé (signature, téléphone) ; une société modèle pour en créer d'autres.
+- **Trois types de partage** : « utilisateurs » (à ranger dans une fonction), « contacts » (le carnet de la société, en lecture seule, sans les notes : `contacts.societe_*`, droits `societe_lire` pour tous les membres et `societe_ecrire` pour titulaire, administrateur, gestionnaire), « modeles » (l'habillage et les préfixes de devis et facture, recopiés par `societes.modeles_recopier`, jamais la banque ; se défait).
+- **Une société modèle** : `societes.creer(modeles_de=…)` reprend l'habillage et les préfixes d'une société existante, comme `modules_de` reprend ses modules.
+- **Un profil par société** (`societes.profil_lire` / `profil_regler`) : nom d'affichage, fonction, téléphone et adresse propres à chaque société où l'on travaille ; chacun règle le sien, l'administrateur celui des membres. La signature du courrier (réglage `courrier.signature_societe`) le reprend, puis ajoute les mentions de la société.
+- **Les demandes de module** : une société secondaire n'installe rien sur l'instance ; son administrateur dépose une demande (module, motif, source), la société principale examine et installe par la logithèque (permissions montrées, consentement) puis attribue le module à la société demandeuse (`societes.module_demande_decider`).
+- **Le fuseau de la société** règle la lecture des heures d'un flux iCalendar dans l'agenda (sinon celui du serveur).
+- **À venir** : les en-têtes des Documents et les mentions des Sites (ces modules n'ont pas encore de fonction qui lise l'identité), les Notifications par fuseau, le coffre externe.
 
 ## Le module Sociétés
 

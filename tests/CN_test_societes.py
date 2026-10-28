@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c109df
+# VERSION CN : 0.1.0  #1bfe8a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du socle société : tout compte a une société, la fiche est cloisonnée, les fonctions ne valent que dans la leur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c109df ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1bfe8a ▼▼▼
 """Bancs du socle société : rattachement obligatoire des comptes, fiche cloisonnée, fonctions attachées à une société, superadministrateur seul maître de l'ensemble."""
 import shutil
 import sys
@@ -375,6 +375,48 @@ class Monde(unittest.TestCase):
         self.non("societes.affecter", compte=DAN, societe=FORM, utilisateur=CAM, fonction="membre")
         self.non("societes.partage_retirer", compte=BEA, source="1", destinataire=FORM)                               # il n'existe plus
         self.non("societes.partager", compte=BEA, source="1", destinataire="1", mode="tous")                          # pas avec soi-même
+
+    # ── le profil d'une personne dans une société, et les modèles recopiés ──
+    def test_une_personne_a_un_profil_par_societe(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, societe=FORM, utilisateur=DAN, fonction="admin")
+        self.ok("societes.partager", compte=BEA, source="1", destinataire=FORM, mode="tous")
+        self.ok("societes.affecter", compte=DAN, societe=FORM, utilisateur=CAM, fonction="membre")                  # CAM travaille dans deux sociétés
+        self.ok("societes.profil_regler", compte=CAM, societe="1", nom="Cam Dupont", fonction="Comptable", email="cam@principale.fr")
+        self.ok("societes.profil_regler", compte=CAM, societe=FORM, dans=FORM, nom="Cam D.", fonction="Intervenante", tel="0102")
+        self.assertEqual(self.ok("societes.profil_lire", compte=CAM, societe="1")["fonction"], "Comptable")
+        p = self.ok("societes.profil_lire", compte=CAM, societe=FORM, dans=FORM)
+        self.assertEqual((p["nom"], p["fonction"], p["tel"], p["email"]), ("Cam D.", "Intervenante", "0102", ""))     # un profil par société, rien de commun
+        self.non("societes.profil_regler", compte=CAM, societe="1", email="pas-une-adresse")
+        self.non("societes.profil_lire", compte=CAM, societe="1", utilisateur=BEA)                                  # le profil d'un autre : pour l'administrateur seulement
+
+    def test_le_profil_d_un_autre_ne_se_lit_et_ne_se_regle_que_pour_son_administrateur(self):
+        self.monde()
+        self.ok("societes.profil_regler", compte=CAM, societe="1", nom="Cam")                                      # chacun règle le sien
+        self.non("societes.profil_regler", compte=CAM, societe="1", utilisateur=BEA, nom="Béa")                    # un membre ordinaire ne règle pas le profil d'un autre
+        self.ok("societes.profil_regler", compte=BEA, societe="1", utilisateur=CAM, fonction="Compta")             # le superadministrateur, si
+        self.assertEqual(self.ok("societes.profil_lire", compte=CAM, societe="1")["fonction"], "Compta")
+
+    def test_les_modeles_d_une_societe_se_recopient_si_elle_les_partage_jamais_la_banque(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, societe=FORM, utilisateur=DAN, fonction="admin")
+        self.ok("societes.fiche_regler", compte=BEA, societe="1", rubrique="habillage", valeurs={"accent": "#ff0000"})
+        self.ok("societes.fiche_regler", compte=BEA, societe="1", rubrique="banque", valeurs={"pref_devis": "DEV-", "pref_facture": "FAC-", "iban": IBAN})
+        self.non("societes.modeles_recopier", compte=DAN, societe=FORM, dans=FORM, depuis="1")                      # pas de partage : rien
+        self.ok("societes.partager", compte=BEA, source="1", destinataire=FORM, type="modeles")
+        self.ok("societes.modeles_recopier", compte=DAN, societe=FORM, dans=FORM, depuis="1")
+        self.assertEqual(self.ok("societes.fiche_lire", compte=DAN, societe=FORM, dans=FORM)["rubriques"]["habillage"]["accent"], "#ff0000")
+        ban = self.ok("societes.fiche_lire", compte=DAN, societe=FORM, dans=FORM)["rubriques"].get("banque", {})
+        self.assertEqual((ban.get("pref_devis"), ban.get("pref_facture")), ("DEV-", "FAC-"))
+        self.assertFalse(ban.get("iban"))                                                                          # la banque ne se recopie jamais
+        self.non("societes.modeles_recopier", compte=DAN, societe=FORM, dans=FORM, depuis=FORM)                    # pas depuis soi-même
+
+    def test_une_societe_creee_peut_reprendre_les_modeles_d_une_autre(self):
+        self.monde()
+        self.ok("societes.fiche_regler", compte=BEA, societe="1", rubrique="habillage", valeurs={"accent": "#123456", "entete": "bandeau"})
+        self.ok("societes.creer", compte=BEA, nom="Fille", identifiant="fille", modeles_de="1")
+        h = self.ok("societes.fiche_lire", compte=BEA, societe="fille")["rubriques"]["habillage"]
+        self.assertEqual((h["accent"], h["entete"]), ("#123456", "bandeau"))
 
     # ── les demandes de module ──────────────────────────────────────────────
     def test_une_societe_secondaire_demande_un_module_et_la_principale_l_attribue(self):
