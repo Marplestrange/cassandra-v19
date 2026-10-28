@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #89c16a
+# VERSION CN : 0.1.0  #5ed2dd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=89c16a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5ed2dd ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -1803,6 +1803,16 @@ id = "profil_vu"
 libelle = "Le profil d'un revendeur ou d'un artiste vu par le titulaire : complet ou ce qui manque, l'IBAN seulement par sa fin (jamais en entier)"
 risque = "lecture"
 droit = "gerer"
+
+[[capacites]]
+id = "repertoire_synchroniser"
+libelle = "Créer dans le répertoire du bureau (module Contacts) un contact pour chaque artiste et chaque revendeur qui n'en a pas encore (nom, courriel, téléphone, adresse, étiquettes) ; une fiche déjà liée n'est jamais doublée ; ce que Contacts refuse est dit fiche par fiche"
+risque = "faible"
+droit = "gerer"
+perimetre = ["des fiches du module Contacts, au nom du compte qui le demande ; le lien fiche-contact de la billetterie"]
+preuve = "chaque fiche créée relue liée à son contact"
+retour = "supprimer les contacts créés par cet appel et défaire leurs liens"
+paliers = ["raconter", "auto", "maitre"]
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

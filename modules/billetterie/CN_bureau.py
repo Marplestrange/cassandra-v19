@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8e9f2e
+# VERSION CN : 0.1.0  #802ac4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : l'événement dans le bureau de Cassandra (un projet et ses tâches).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e9f2e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=802ac4 ▼▼▼
 """Billetterie : l'événement dans le bureau de Cassandra (un projet et ses tâches).
 
 Organiser une soirée, c'est surtout des tâches : le contrat de la salle, l'assurance, la déclaration à la SACEM, la sécurité, la buvette, les bénévoles, la communication, la décision de maintenir
@@ -71,9 +71,21 @@ def brancher(ctx, db):
                 except Raconte:
                     break                                                                 # le projet existe, les tâches attendent la validation du module Tâches
                 taches.append(t["id"])
+        agenda_id = None
+        try:                                                                          # la soirée dans l'agenda, rattachée au projet, avec un rappel la veille
+            with db.transaction() as tx:
+                salle = r.ligne(tx, "salles", e["salle_id"]) if e["salle_id"] else None
+            fin = "%s %s" % (e["date_iso"], e["fin"]) if e["fin"] and e["fin"] > e["debut"] else ""
+            args = {"titre": e["nom"], "debut": "%s %s" % (e["date_iso"], e["debut"] or "20:00"), "lieu": " — ".join(x for x in (salle["nom"] if salle else "", salle["adresse"] if salle else "") if x),
+                    "description": "Portes %s. Événement %s de la billetterie." % (e["portes"], e["ref"]), "projet_id": p["id"], "alarme": "1d"}
+            if fin:
+                args["fin"] = fin
+            agenda_id = agir("agenda.evenement_enregistrer", args)["id"]
+        except (Raconte, ValueError):
+            agenda_id = None                                                          # l'agenda est un plus : le projet et ses tâches restent, on le dit dans le retour
         with db.transaction() as tx:
             tx.execute("UPDATE evenements SET projet_ref = ? WHERE id = ?", ("projet:%s" % p["id"], e["id"]))
-        return {"evenement_id": e["id"], "projet_id": p["id"], "taches": taches}
+        return {"evenement_id": e["id"], "projet_id": p["id"], "taches": taches, "agenda_id": agenda_id}
 
     def prouver_projet(c, res):
         if res.get("racontee"):
@@ -86,6 +98,45 @@ def brancher(ctx, db):
             return
         db.ecrire("UPDATE evenements SET projet_ref = '' WHERE id = ? AND projet_ref = ?", (res["evenement_id"], "projet:%s" % res["projet_id"]))
 
+    # ── le répertoire : les artistes et les revendeurs deviennent des contacts ─────
+    def repertoire(c):
+        crees, refuses, deja = [], [], 0
+        with db.transaction() as tx:
+            fiches = [("artiste", x["id"], x["scene"], x["mail"], x["tel"], x["ref"], x["adresse"], x["ville"]) for x in tx.execute("SELECT * FROM artistes ORDER BY id").fetchall()] +                      [("revendeur", x["id"], x["nom"], x["mail"], x["tel"], x["ref"], x["adresse"], x["ville"]) for x in tx.execute("SELECT * FROM revendeurs ORDER BY id").fetchall()]
+            liees = {(x["fiche_type"], x["fiche_id"]) for x in tx.execute("SELECT fiche_type, fiche_id FROM contacts_lies").fetchall()}
+        for genre, fid, nom, mail, tel, ref, adresse, ville in fiches:
+            if (genre, fid) in liees:
+                deja += 1
+                continue
+            if not (mail or tel):
+                refuses.append({"fiche": ref, "raison": "ni courriel ni téléphone : rien à mettre dans un répertoire"})
+                continue
+            try:
+                res = agir("contacts.creer", {"display_name": nom, "emails": [mail] if mail else [], "phone": tel, "address": ", ".join(x for x in (adresse, ville) if x), "tags": "billetterie, %s" % genre,
+                                              "notes": "Fiche %s de la billetterie." % ref, "source": "billetterie"})
+            except Raconte:
+                return {"crees": crees, "refuses": refuses, "deja": deja, "racontee": True,
+                        "message": "Le module Contacts demande encore une validation pour ce que font les agents (palier « raconter ») : rien de plus n'a été créé. Passez-le en « auto » (Autonomie des modules)."}
+            except ValueError as ex:
+                refuses.append({"fiche": ref, "raison": str(ex)})
+                continue
+            with db.transaction() as tx:
+                tx.execute("INSERT INTO contacts_lies(fiche_type, fiche_id, contact_id) VALUES (?,?,?)", (genre, fid, res["id"]))
+            crees.append({"fiche": ref, "contact_id": res["id"], "genre": genre, "fiche_id": fid})
+        return {"crees": crees, "refuses": refuses, "deja": deja, "racontee": False}
+
+    def prouver_repertoire(c, res):
+        return all(db.lire("SELECT 1 FROM contacts_lies WHERE fiche_type = ? AND fiche_id = ?", (x["genre"], x["fiche_id"])) for x in res["crees"])
+
+    def defaire_repertoire(c, res):
+        for x in res["crees"]:
+            try:
+                agir("contacts.supprimer", {"ids": [x["contact_id"]]})
+            except (Raconte, ValueError):
+                pass                                                                  # le contact reste dans le répertoire ; le lien se défait quand même
+            db.ecrire("DELETE FROM contacts_lies WHERE fiche_type = ? AND fiche_id = ?", (x["genre"], x["fiche_id"]))
+
+    ctx.implementer("repertoire_synchroniser", repertoire, prouver_repertoire, defaire_repertoire, simuler=lambda x, **_: "créerait un contact pour chaque artiste et revendeur qui n'en a pas")
     ctx.implementer("evenement_projet", projet, prouver_projet, defaire_projet, simuler=lambda x, evenement_id=0, **_: "créerait le projet de l'événement %s et ses tâches dans le bureau" % evenement_id)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

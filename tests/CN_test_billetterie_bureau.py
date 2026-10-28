@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b4eeed
+# VERSION CN : 0.1.0  #9d0cde
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie : l'événement dans le bureau (projet et tâches créés dans les VRAIS modules Projets et Tâches, au nom du compte).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b4eeed ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9d0cde ▼▼▼
 """Bancs de la billetterie : l'événement dans le bureau (projet et tâches créés dans les VRAIS modules Projets et Tâches, au nom du compte)."""
 import shutil
 import sys
@@ -33,18 +33,18 @@ class Fond(Monde):
         self.addCleanup(self.tmp.cleanup)
         base = Path(self.tmp.name)
         mods = base / "modules"
-        for m in ("billetterie", "droits", "comptes", "projets", "taches"):
+        for m in ("billetterie", "droits", "comptes", "projets", "taches", "agenda", "contacts"):
             shutil.copytree(RACINE / "modules" / m, mods / m, ignore=shutil.ignore_patterns("__pycache__"))
         self.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
         self.n.brancher()
-        for m in ("droits", "comptes", "billetterie", "projets", "taches"):
+        for m in ("droits", "comptes", "billetterie", "projets", "taches", "agenda", "contacts"):
             self.assertTrue(self.n.activer(m)["ok"], m)
         self.ctx = self.n.executeur.contextes["billetterie"]
         self.n.droits.regler_admin(BEA, True)
         self.e = self.evenement(date_iso="2027-06-12")
 
     def autoriser_les_agents(self):
-        for cle in ("projets.creer", "taches.creer"):
+        for cle in ("projets.creer", "taches.creer", "agenda.evenement_enregistrer", "contacts.creer", "contacts.supprimer"):
             self.n.regler_palier(cle, "auto")
 
     def ex_mod(self, cle, **a):
@@ -116,6 +116,68 @@ class Creation(Fond):
         self.assertEqual(self.n.executeur.executer("projets.voir", "humain", {"id": pid}, compte="gestion@x.fr")["statut"], "faite")
         autre = self.ex_mod("projets.voir", id=pid)                               # le titulaire de l'instance n'est pas le propriétaire : le cloisonnement par compte tient
         self.assertNotEqual(autre["statut"], "faite", autre)
+
+
+class Agenda(Fond):
+    def test_la_soiree_entre_dans_l_agenda_rattachee_au_projet_avec_un_rappel(self):
+        self.autoriser_les_agents()
+        r = self.ok("evenement_projet", evenement_id=self.e["id"])
+        self.assertIsNotNone(r["agenda_id"])
+        a = self.ex_mod("agenda.evenement", id=r["agenda_id"])
+        self.assertEqual(a["statut"], "faite", a)
+        t = str(a["resultat"])
+        self.assertIn("2027-06-12 20:00", t)
+        self.assertIn("2027-06-12 23:00", t)
+        self.assertIn("Soirée d'hiver", t)
+
+    def test_l_agenda_en_attente_de_validation_ne_bloque_pas_le_projet(self):
+        for cle in ("projets.creer", "taches.creer"):
+            self.n.regler_palier(cle, "auto")
+        r = self.ok("evenement_projet", evenement_id=self.e["id"])                 # l'agenda reste au palier « raconter »
+        self.assertTrue(r["projet_id"] and len(r["taches"]) == 10)
+        self.assertIsNone(r["agenda_id"])
+
+
+class Repertoire(Fond):
+    def setUp(self):
+        super().setUp()
+        self.autoriser_les_agents()
+        fa = self.ok("formule_save", nom="A", role="artiste", forfait=8000, com=500)
+        self.nova = self.ok("artiste_save", scene="Nova", formule_id=fa["id"], mail="nova@exemple.org", tel="0600000001")
+        self.muet = self.ok("artiste_save", scene="Sans coordonnées", formule_id=fa["id"])
+        self.lea = self.ok("revendeur_save", nom="Léa Martin", mail="lea@exemple.org")
+
+    def test_chaque_fiche_avec_coordonnees_devient_un_contact_et_les_autres_sont_dites(self):
+        r = self.ok("repertoire_synchroniser")
+        self.assertEqual(sorted((x["genre"], x["fiche"][:3]) for x in r["crees"]), [("artiste", "ART"), ("revendeur", "REV")])
+        self.assertEqual([x["raison"][:2] for x in r["refuses"]], ["ni"])
+        v = self.ex_mod("contacts.voir", id=r["crees"][0]["contact_id"])
+        self.assertEqual(v["statut"], "faite", v)
+
+    def test_une_fiche_deja_liee_n_est_jamais_doublee(self):
+        self.ok("repertoire_synchroniser")
+        r = self.ok("repertoire_synchroniser")
+        self.assertEqual((r["crees"], r["deja"]), ([], 2))
+
+    def test_une_adresse_deja_prise_par_un_autre_contact_est_dite_sans_rien_casser(self):
+        self.ex_mod("contacts.creer", display_name="Quelqu'un", emails=["nova@exemple.org"])
+        r = self.ok("repertoire_synchroniser")
+        self.assertEqual([x["genre"] for x in r["crees"]], ["revendeur"])
+        self.assertTrue([x for x in r["refuses"] if "adresse" in x["raison"] or "appartient" in x["raison"]])
+
+    def test_defaire_supprime_les_contacts_crees_et_leurs_liens(self):
+        r = self.ok("repertoire_synchroniser")
+        self.defaire("repertoire_synchroniser", r)
+        self.assertEqual(self.ctx.stockage.lire("SELECT COUNT(*) AS n FROM contacts_lies")[0]["n"], 0)
+        r2 = self.ok("repertoire_synchroniser")                                    # les contacts supprimés sont en corbeille et gardent leurs adresses : la billetterie le dit au lieu de les doubler
+        self.assertEqual(r2["crees"], [])
+        self.assertEqual(len([x for x in r2["refuses"] if "appartient" in x["raison"]]), 2)
+
+    def test_au_palier_raconter_rien_n_est_cree_et_on_le_dit(self):
+        self.n.regler_palier("contacts.creer", "raconter")
+        r = self.ok("repertoire_synchroniser")
+        self.assertTrue(r["racontee"] and r["crees"] == [])
+        self.assertIn("palier", r["message"])
 
 
 class PalierRaconter(Fond):

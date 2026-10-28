@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ce0833
+// VERSION CN : 0.1.0  #3dde24
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ce0833 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=3dde24 ▼▼▼
 // Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 (function () {
   "use strict";
@@ -322,9 +322,16 @@
     R.innerHTML = S.entetes("Personnes et bases", "Revendeurs, artistes, formules de rémunération, salles et codes promo.") + '<div class="onglets">' + TABS.map((t) => '<button class="' + (t[0] === S.onglet ? "on" : "") + '" data-a="onglet" data-o="' + t[0] + '">' + t[1] + "</button>").join("") + '</div><div id="bz"></div>';
     if (S.onglet === "legal") await legalOnglet(S, R.querySelector("#bz"));
     else await crud(S, S.onglet, R.querySelector("#bz"));
+    if (S.onglet === "revendeur" || S.onglet === "artiste") R.querySelector("#bz").insertAdjacentHTML("beforeend", '<div class="row" style="margin-top:10px"><button class="btn" data-a="repertoire">Mettre tout le monde dans le répertoire du bureau</button><span class="hint">Un contact par artiste et par revendeur ; ceux qui y sont déjà ne sont pas doublés.</span></div>');
     if (S.onglet === "revendeur") R.querySelector("#bz").insertAdjacentHTML("beforeend", '<p class="hint" style="margin-top:8px">Un artiste qui vend lui-même apparaît aussi ici : il naît de sa fiche d’artiste (case « vend lui-même »).</p>');
     S.clic = async (k, a) => {
       if (k === "onglet") { S.onglet = a.dataset.o; return S.rendre(); }
+      if (k === "repertoire") {
+        const r = await S.geste("repertoire_synchroniser", {});
+        if (r && r.racontee) await confirmer("Répertoire non modifié", "<p>" + esc(r.message) + "</p>", "Compris");
+        else if (r) await confirmer("Répertoire", "<p>" + r.crees.length + " contact(s) créé(s), " + r.deja + " déjà là.</p>" + (r.refuses.length ? '<p class="note">À regarder :</p><ul class="lst">' + r.refuses.map((x) => "<li>" + esc(x.fiche) + " — " + esc(x.raison) + "</li>").join("") + "</ul>" : ""), "Fermer");
+        return undefined;
+      }
       if (k === "profil-vu") {
         const r = await S.lire("profil_vu", { porteur: a.dataset.e, id: Number(a.dataset.id) });
         if (r) await confirmer("Profil · " + r.nom, '<p>' + (r.complet ? "Profil complet : on peut payer et facturer." : "<b>Il manque :</b> " + r.manque.map(esc).join(" ; ") + ".") + '</p><dl class="kv"><dt>Courriel</dt><dd>' + esc(r.mail || "—") + "</dd><dt>SIRET</dt><dd>" + esc(r.siret || "—") + "</dd><dt>IBAN</dt><dd>" + esc(r.iban_masque || "non renseigné") + "</dd>" + (r.mode_facturation ? "<dt>Commission</dt><dd>" + (r.mode_facturation === "mandat" ? "auto-facture établie par le titulaire" : "facturée par le revendeur") + "</dd>" : "") + "</dl>", "Fermer");
