@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2bd653
+# VERSION CN : 0.1.0  #7136de
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2bd653 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7136de ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire
@@ -40,6 +40,9 @@ class _Compte(threading.local):
 
 class _Acteur(threading.local):
     valeur = ""
+
+
+from .CN_stockage import StockageParSociete
 
 
 class _Societe(threading.local):
@@ -179,6 +182,8 @@ class Contexte:
         """La base de CE module (donnees/modules/<id>.db), migrations appliquées. Personne d'autre n'y touche ([permissions] stockage = true)."""
         if not self.manifeste.permissions.stockage:
             raise PermissionError("le module « %s » n'a pas demandé de stockage ([permissions] stockage)" % self.module)
+        if self.manifeste.permissions.stockage_par_societe:
+            return StockageParSociete(lambda soc: self._intro["stockage"](self.module, soc), lambda: self._societe.valeur)
         return self._intro["stockage"](self.module)
 
     def stockage_lecture(self, module: str):

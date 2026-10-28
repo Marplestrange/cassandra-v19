@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e3d609
+# VERSION CN : 0.1.0  #eaf071
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune ; les fonctions (groupes attachés à une société).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ═══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e3d609 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=eaf071 ▼▼▼
 """Le module Sociétés : la fiche de chaque société et ses fonctions.
 
 Tout compte appartient à une société (le noyau le garantit) ; la société principale existe toujours. Seul le superadministrateur crée, archive et
@@ -431,6 +431,73 @@ def brancher(ctx):
                         "choisi": m.id in idt.modules_de_societe(soc)})
         return {"societe": soc, "modules": out, "peut_regler": _superadmin(ctx.compte) or not ctx.compte or _niveau(ctx.compte, "equipe", soc) >= 3}
 
+    def partages(c, societe=""):
+        """Ce que la société partage avec d'autres, et ce que d'autres partagent avec elle."""
+        soc = _cible(societe)
+        _exiger("equipe", "voir", soc)
+        p = idt.partages(soc)
+        noms = {x["id"]: x["nom"] for x in idt.societes()}
+        for k in ("sortants", "entrants"):
+            for x in p[k]:
+                x["nom_source"] = noms.get(x["source"], x["source"])
+                x["nom_destinataire"] = noms.get(x["destinataire"], x["destinataire"])
+        return dict(p, societe=soc, peut_decider=_superadmin(ctx.compte) or not ctx.compte)
+
+    def partager(c, source="", destinataire="", type="utilisateurs", mode="tous", elements=None, actif=True):
+        _exiger_super()
+        src = str(source or "").strip()
+        dst = str(destinataire or "").strip()
+        typ = str(type or "utilisateurs")
+        avant = next((x for x in idt.partages(src)["sortants"] if x["destinataire"] == dst and x["type"] == typ), None)
+        r = idt.partage_regler(src, dst, typ, str(mode or "tous"), elements or [], bool(actif), ctx.compte or "")
+        r["avant"] = avant
+        _histoire(src, "partages", "partage ses %s avec « %s » (%s)" % (r["type"], dst, "tous" if r["mode"] == "tous" else "%d choisi(s)" % len(r["elements"])), None, None)
+        _emettre("societe.modifiee", src, {"rubrique": "partages", "destinataire": dst, "type": r["type"], "mode": r["mode"]})
+        return r
+
+    def partage_retirer(c, source="", destinataire="", type="utilisateurs"):
+        _exiger_super()
+        src = str(source or "").strip()
+        dst = str(destinataire or "").strip()
+        typ = str(type or "utilisateurs")
+        avant = next((x for x in idt.partages(src)["sortants"] if x["destinataire"] == dst and x["type"] == typ), None)
+        if not idt.partage_retirer(src, dst, typ):
+            raise ValueError("ce partage n'existe pas")
+        _histoire(src, "partages", "ne partage plus ses %s avec « %s »" % (type, dst), None, None)
+        _emettre("societe.modifiee", src, {"rubrique": "partages", "destinataire": dst, "type": type, "retire": True})
+        return {"source": src, "destinataire": dst, "type": typ, "avant": avant}
+
+    def _remettre_partage(res):
+        a = res.get("avant")
+        if a:
+            idt.partage_regler(a["source"], a["destinataire"], a["type"], a["mode"], a["elements"], a["actif"], ctx.compte or "")
+        else:
+            idt.partage_retirer(res["source"], res["destinataire"], res["type"])
+
+    def prouver_partager(c, res):
+        return any(x["destinataire"] == res["destinataire"] and x["type"] == res["type"] and x["mode"] == res["mode"] for x in idt.partages(res["source"])["sortants"])
+
+    def prouver_partage_retirer(c, res):
+        return not any(x["destinataire"] == res["destinataire"] and x["type"] == res["type"] for x in idt.partages(res["source"])["sortants"])
+
+    def defaire_partager(c, res):
+        _remettre_partage(res)
+
+    def defaire_partage_retirer(c, res):
+        _remettre_partage(res)
+
+    def partageables(c, societe=""):
+        """Les utilisateurs d'autres sociétés qu'on peut ranger dans une fonction de cette société, avec celle qu'ils y ont déjà."""
+        soc = _cible(societe)
+        _exiger("equipe", "gerer", soc)
+        _initialiser_fonctions(soc)
+        gids = {g["id"]: g["id"].split(".", 1)[-1] for g in _fonctions_de(soc)}
+        out = []
+        for u in idt.utilisateurs_partages(soc):
+            fct = next((gids[g] for g in gids if d.membre(u["compte"], g)), "")
+            out.append(dict(u, fonction=fct))
+        return {"societe": soc, "utilisateurs": out}
+
     def module_regler(c, societe="", module="", ouvert=True):
         soc = _cible(societe)
         if ctx.compte and not _superadmin(ctx.compte):
@@ -691,6 +758,8 @@ def brancher(ctx):
         cible = str(utilisateur or "").strip().lower()
         if not idt.existe(cible):
             raise ValueError("compte inconnu")
+        if idt.societe_de(cible) != soc and not _superadmin(ctx.compte) and ctx.compte and not idt.utilisateur_partage(cible, soc):
+            raise ValueError("cet utilisateur n'est pas de cette société ni partagé avec elle : seul le superadministrateur décide d'un partage")
         _initialiser_fonctions(soc)
         gids = [f["id"] for f in _fonctions_de(soc)]
         avant = next((g for g in gids if d.membre(cible, g)), "")
@@ -732,6 +801,10 @@ def brancher(ctx):
         ctx.implementer(cid, f)
     ctx.implementer("membres", membres)
     ctx.implementer("modules", modules)
+    ctx.implementer("partages", partages)
+    ctx.implementer("partager", partager, prouver_partager, defaire_partager)
+    ctx.implementer("partage_retirer", partage_retirer, prouver_partage_retirer, defaire_partage_retirer)
+    ctx.implementer("partageables", partageables)
     ctx.implementer("module_regler", module_regler, prouver_module_regler, defaire_module_regler)
     ctx.implementer("fiche_regler", fiche_regler, prouver_regler, defaire_regler)
     ctx.implementer("historique_defaire", historique_defaire, prouver_regler, defaire_regler)

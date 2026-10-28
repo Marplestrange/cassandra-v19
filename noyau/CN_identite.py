@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #20d5ca
+# VERSION CN : 0.1.0  #8ab563
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions, jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=20d5ca ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ab563 ▼▼▼
 """L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions,
 jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt salé.
 
@@ -322,6 +322,70 @@ class Identite:
         if r:
             return bool(r[0]["actif"])
         return societe == "1"
+
+    # ── les partages entre sociétés ──────────────────────────────────────────
+    TYPES_PARTAGE = ("utilisateurs",)
+
+    def partage_regler(self, source: str, destinataire: str, type: str, mode: str, elements, actif: bool, par: str = "") -> dict:
+        """Crée ou remplace le partage `type` de `source` vers `destinataire` ; `elements` ne compte qu'en mode « choisis »."""
+        if type not in self.TYPES_PARTAGE:
+            raise ValueError("type de partage inconnu : %s" % type)
+        if mode not in ("tous", "choisis"):
+            raise ValueError("mode de partage : tous ou choisis")
+        if source == destinataire:
+            raise ValueError("une société ne se partage pas avec elle-même")
+        for s in (source, destinataire):
+            x = self.societe(s)
+            if not x or x["archivee"]:
+                raise ValueError("société inconnue ou archivée")
+        els = sorted({str(e).strip().lower() for e in (elements or []) if str(e).strip()}) if mode == "choisis" else []
+        for e in els:
+            if type == "utilisateurs" and self.societe_de(e) != source:
+                raise ValueError("%s n'est pas un utilisateur de la société qui partage" % e)
+        self.base.ecrire("INSERT INTO societe_partages(source, destinataire, type, mode, actif, cree, par) VALUES(?,?,?,?,?,?,?) "
+                         "ON CONFLICT(source, destinataire, type) DO UPDATE SET mode=excluded.mode, actif=excluded.actif, par=excluded.par",
+                         (source, destinataire, type, mode, 1 if actif else 0, time.time(), par))
+        self.base.ecrire("DELETE FROM societe_partage_elements WHERE source=? AND destinataire=? AND type=?", (source, destinataire, type))
+        for e in els:
+            self.base.ecrire("INSERT INTO societe_partage_elements(source, destinataire, type, element) VALUES(?,?,?,?)", (source, destinataire, type, e))
+        return {"source": source, "destinataire": destinataire, "type": type, "mode": mode, "elements": els, "actif": bool(actif)}
+
+    def partage_retirer(self, source: str, destinataire: str, type: str) -> bool:
+        a = bool(self.base.lire("SELECT 1 FROM societe_partages WHERE source=? AND destinataire=? AND type=?", (source, destinataire, type)))
+        self.base.ecrire("DELETE FROM societe_partage_elements WHERE source=? AND destinataire=? AND type=?", (source, destinataire, type))
+        self.base.ecrire("DELETE FROM societe_partages WHERE source=? AND destinataire=? AND type=?", (source, destinataire, type))
+        return a
+
+    def partages(self, societe: str) -> dict:
+        """Ce que cette société partage (sortants) et ce qu'on partage avec elle (entrants)."""
+        def ligne(r):
+            els = [x["element"] for x in self.base.lire("SELECT element FROM societe_partage_elements WHERE source=? AND destinataire=? AND type=? ORDER BY element", (r["source"], r["destinataire"], r["type"]))]
+            return {"source": r["source"], "destinataire": r["destinataire"], "type": r["type"], "mode": r["mode"], "actif": bool(r["actif"]), "elements": els}
+        return {"sortants": [ligne(r) for r in self.base.lire("SELECT * FROM societe_partages WHERE source=? ORDER BY destinataire, type", (societe,))],
+                "entrants": [ligne(r) for r in self.base.lire("SELECT * FROM societe_partages WHERE destinataire=? AND actif=1 ORDER BY source, type", (societe,))]}
+
+    def utilisateur_partage(self, compte: str, destinataire: str) -> bool:
+        """Ce compte, d'une autre société, est-il mis à la disposition de `destinataire` par un partage actif ?"""
+        src = self.societe_de(compte)
+        if not src or src == destinataire or not self.base.lire("SELECT 1 FROM comptes WHERE compte=? AND type='humain'", (compte,)):
+            return False
+        r = self.base.lire("SELECT mode FROM societe_partages WHERE source=? AND destinataire=? AND type='utilisateurs' AND actif=1", (src, destinataire))
+        if not r:
+            return False
+        if r[0]["mode"] == "tous":
+            return True
+        return bool(self.base.lire("SELECT 1 FROM societe_partage_elements WHERE source=? AND destinataire=? AND type='utilisateurs' AND element=?", (src, destinataire, compte)))
+
+    def utilisateurs_partages(self, destinataire: str) -> list:
+        """Les comptes d'autres sociétés mis à la disposition de `destinataire`."""
+        out = []
+        for r in self.base.lire("SELECT source, mode FROM societe_partages WHERE destinataire=? AND type='utilisateurs' AND actif=1 ORDER BY source", (destinataire,)):
+            if r["mode"] == "tous":
+                cs = [x["compte"] for x in self.base.lire("SELECT compte FROM comptes WHERE societe=? AND type='humain' ORDER BY compte", (r["source"],))]
+            else:
+                cs = [x["element"] for x in self.base.lire("SELECT element FROM societe_partage_elements WHERE source=? AND destinataire=? AND type='utilisateurs' ORDER BY element", (r["source"], destinataire))]
+            out.extend({"compte": c, "societe": r["source"]} for c in cs)
+        return out
 
     def modules_de_societe(self, societe: str) -> dict:
         """Les choix faits pour cette société : {module: vrai | faux} (ce qui n'y figure pas suit la règle par défaut)."""

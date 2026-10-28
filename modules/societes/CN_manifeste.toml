@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c5d278
+# VERSION CN : 0.1.0  #6bcd9c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune. Socle du multi-sociétés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c5d278 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6bcd9c ▼▼▼
 [module]
 id = "societes"
 nom = "Sociétés"
@@ -256,6 +256,40 @@ risque = "lecture"
 droit = "utiliser"
 
 [[capacites]]
+id = "partages"
+libelle = "Ce que la société partage avec d'autres et ce que d'autres partagent avec elle"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "partager"
+libelle = "Mettre ses utilisateurs à la disposition d'une autre société, tous ou choisis (superadministrateur)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["le partage entre deux sociétés"]
+preuve = "le partage relu est celui demandé"
+retour = "retirer le partage"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "partage_retirer"
+libelle = "Retirer un partage entre deux sociétés (superadministrateur)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["le partage entre deux sociétés"]
+preuve = "le partage n'existe plus"
+retour = "refaire le partage"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "partageables"
+libelle = "Les utilisateurs d'autres sociétés qu'on peut ranger dans une fonction de cette société"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
 id = "module_regler"
 libelle = "Ouvrir ou fermer un module pour une société (superadministrateur)"
 risque = "moyen"
@@ -396,6 +430,12 @@ gabarit = "liste_detail"
 [[ecrans]]
 id = "s_modules"
 libelle = "Modules"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "s_partages"
+libelle = "Partages"
 domaine = "socle"
 gabarit = "liste_detail"
 
@@ -551,6 +591,16 @@ parent = "societe"
 ordre = 115
 role = "utilisateur"
 icone = "puzzle"
+droit = "utiliser"
+
+[[menus]]
+id = "partages"
+libelle = "Partages"
+ecran = "s_partages"
+parent = "societe"
+ordre = 117
+role = "utilisateur"
+icone = "users"
 droit = "utiliser"
 
 [[menus]]

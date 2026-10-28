@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #458c21
+# VERSION CN : 0.1.0  #5aaca1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=458c21 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5aaca1 ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -359,6 +359,7 @@ class Permissions:
     modules: bool = False              # peut lire le catalogue des modules et en changer l'état (activer, désactiver) : le module « modules ». Les droits et les paliers s'appliquent comme à tout acte
     urgence: bool = False              # peut poser et lever les freins du noyau (gel de l'autonomie, coupure des envois) : le module des gestes d'urgence
     evolution: bool = False            # peut piloter l'évolution du noyau (cibles, propositions, retour, visites) : le module « evolution ». Les droits et les paliers de ses capacités restent ceux de chaque geste.
+    stockage_par_societe: bool = False  # sa base est UNE PAR SOCIÉTÉ (donnees/modules/<id>@<société>.db ; la société principale garde <id>.db) : le code du module ne change pas, `ctx.stockage` suit la société de l'acte, et ses moteurs tournent société par société
 
 
 @dataclass(frozen=True)
@@ -472,7 +473,7 @@ def valider(brut: dict) -> list:
         perm = {}
     for champ in ("reseau", "ecritures", "privileges"):
         _liste_de_textes(perm.get(champ), "permissions.%s" % champ, e)
-    for champ in ("espace_utilisateur", "introspection", "lectures", "stockage_lecture", "modules", "urgence", "evolution"):
+    for champ in ("espace_utilisateur", "introspection", "lectures", "stockage_lecture", "modules", "urgence", "evolution", "stockage_par_societe"):
         if champ in perm and not isinstance(perm[champ], bool):
             e.append("permissions.%s : vrai ou faux" % champ)
     for chemin in perm.get("ecritures", []) if isinstance(perm.get("ecritures"), list) else []:
@@ -1031,7 +1032,8 @@ def construire(brut: dict, source="") -> Manifeste:
                                 bool((brut.get("permissions") or {}).get("agir", False)),
                                 bool((brut.get("permissions") or {}).get("modules", False)),
                                 bool((brut.get("permissions") or {}).get("urgence", False)),
-                                bool((brut.get("permissions") or {}).get("evolution", False))),
+                                bool((brut.get("permissions") or {}).get("evolution", False)),
+                                bool((brut.get("permissions") or {}).get("stockage_par_societe", False))),
         droits=tuple(Droit(d["id"], d["libelle"], bool(d.get("defaut", False)), bool(d.get("sensible", False))) for d in brut.get("droits", []) or []),
         reglages=tuple(Reglage(r["id"], r["libelle"], r.get("type", "texte"),
                                r.get("defaut", False if r.get("type") == "booleen" else (0 if r.get("type") == "entier" else "")),

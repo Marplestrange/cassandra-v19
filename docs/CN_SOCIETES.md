@@ -12,7 +12,7 @@
 <!-- RÔLE       : Le socle société : tout compte appartient à une société, les fonctions sont des groupes attachés, le coffre isole chaque espace. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=1deef8 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=33ab9f ▼▼▼ -->
 # Sociétés et coffre
 
 Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/CN_societes-ecran.js` (Paramètres › Société / Organisation) et `interface/CN_coffre-ecran.js` (Mon coffre-fort). Moteur : `noyau/CN_base.py`, `noyau/CN_droits.py`, `noyau/CN_identite.py`, `noyau/CN_executeur.py`, modules `societes`, `coffre`, `comptes`.
@@ -34,6 +34,13 @@ Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/
 - **Gestion des utilisateurs par l'administrateur d'une société** : les fonctions « titulaire » et « administrateur » reçoivent `comptes.gerer`, valable dans leur société seulement. Le module des comptes borne chaque geste (liste, lecture, création, modification, désactivation, suppression, corbeille, lien de mot de passe) aux comptes de la société ; seul le superadministrateur range ou transfère un compte dans une autre. L'administrateur de société ne règle pas les droits fins (matrice, groupes) : il donne des fonctions.
 - **Réglages par société** : un réglage peut être de portée `societe` (une valeur par société, repli sur celle de l'instance). Déjà : personas et rôles des agents, billetterie (identité du titulaire, règles de vente), vue des contacts, Dolibarr, mot du rôle Telegram. Rubrique Société › Réglages ; écrire pour une société demande d'en être l'administrateur.
 - **Partages** : on n'invite (projets, salon) qu'un compte qui a accès à la société active (`ctx.dans_ma_societe`).
+
+## Les partages entre sociétés (comme Multicompany de Dolibarr)
+
+- **La société primaire est propriétaire de l'instance** : seule elle règle le comportement de l'application (réglages d'instance, Danger, réglages des agents structurels, sécurité, observabilité, sauvegardes, gestion des modules : les modules « d'instance »). Les sociétés secondaires ont le desk, le métier et le parc, leurs agents dédiés et les services des agents structurels, jamais leurs réglages. L'administrateur d'une société ouvre et ferme les modules de SA société parmi ceux qui ne sont pas la base.
+- **Un partage** va d'une société (source) à une autre (destinataire) pour un type d'objet : aujourd'hui « utilisateurs », tous ou ceux qu'on a choisis (tables `societe_partages`, `societe_partage_elements`). Seul le superadministrateur décide d'un partage et le retire ; chaque geste s'inscrit à l'historique et se défait.
+- **Ce que ça change** : l'administrateur d'une société ne range une personne d'une autre société dans une fonction que si elle est partagée avec la sienne (avant, `societes.affecter` acceptait n'importe quel compte de l'instance). `societes.partageables` liste ces personnes ; les agents et comptes système ne se partagent jamais. Page Société › Partages.
+- **À venir** : partager aussi des contacts, des modèles de documents ; un profil par société pour un utilisateur partagé (signature, téléphone) ; une société modèle pour en créer d'autres.
 
 ## Le module Sociétés
 

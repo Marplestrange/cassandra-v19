@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f13316
+# VERSION CN : 0.1.0  #9495f5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f13316 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9495f5 ▼▼▼
 """La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
 
 Leçon de la V18 : un verrou SQLite vient presque toujours d'une connexion laissée ouverte.
@@ -82,6 +82,9 @@ CREATE TABLE IF NOT EXISTS societes(
 INSERT OR IGNORE INTO societes(id, nom, principale, cree) VALUES('1', 'Société principale', 1, 0);
 -- Les modules de chaque société : un module « vital » est ouvert partout ; les autres le sont là où on les a ouverts. Sans ligne : ouvert dans la société principale seulement.
 CREATE TABLE IF NOT EXISTS societe_modules(societe TEXT NOT NULL, module TEXT NOT NULL, actif INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(societe, module));
+-- Ce qu'une société met à la disposition d'une autre (comme le partage de Multicompany) : un type d'objet (« utilisateurs »), tous ses éléments ou ceux qu'on a choisis.
+CREATE TABLE IF NOT EXISTS societe_partages(source TEXT NOT NULL, destinataire TEXT NOT NULL, type TEXT NOT NULL, mode TEXT NOT NULL DEFAULT 'tous', actif INTEGER NOT NULL DEFAULT 1, cree REAL NOT NULL DEFAULT 0, par TEXT NOT NULL DEFAULT '', PRIMARY KEY(source, destinataire, type));
+CREATE TABLE IF NOT EXISTS societe_partage_elements(source TEXT NOT NULL, destinataire TEXT NOT NULL, type TEXT NOT NULL, element TEXT NOT NULL, PRIMARY KEY(source, destinataire, type, element));
 -- Un groupe de droits peut être attaché à UNE société : c'est une « fonction » (administrateur, comptable…) qui ne vaut que là.
 CREATE TABLE IF NOT EXISTS droit_groupe_portee(groupe TEXT PRIMARY KEY, societe TEXT NOT NULL);
 """

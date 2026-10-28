@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7e982e
+# VERSION CN : 0.1.0  #800a73
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le stockage d'un module : SA base SQLite, à lui, avec ses migrations. C'est la réponse à « 169 tables et 88 lues par plusieurs modules » de la V18 : une table appartient à UN module, dans UN fichier (donnees/modules/<module>.db), et personn
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7e982e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=800a73 ▼▼▼
 """Le stockage d'un module : SA base SQLite, à lui, avec ses migrations. C'est la réponse à « 169 tables et 88 lues par plusieurs modules » de la V18 :
 une table appartient à UN module, dans UN fichier (donnees/modules/<module>.db), et personne d'autre n'y touche. Pour partager, on passe par une
 capacité ou par un événement.
@@ -43,6 +43,21 @@ SUIVI = """CREATE TABLE IF NOT EXISTS _migrations(version TEXT PRIMARY KEY, empr
 
 class MigrationRefusee(RuntimeError):
     pass
+
+
+class StockageParSociete:
+    """Se comporte comme le Stockage du module, mais chaque appel va à la base de la société de l'acte (`ctx.societe`, par fil ; vide = la société principale).
+    Le module garde `db = ctx.stockage` tel quel : rien à changer dans son code."""
+
+    def __init__(self, resoudre, societe_courante):
+        object.__setattr__(self, "_resoudre", resoudre)
+        object.__setattr__(self, "_courante", societe_courante)
+
+    def _base(self):
+        return self._resoudre(self._courante() or "1")
+
+    def __getattr__(self, nom):
+        return getattr(self._base(), nom)
 
 
 class Stockage(Base):

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fe698d
+# VERSION CN : 0.1.0  #4f32cf
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du socle société : tout compte a une société, la fiche est cloisonnée, les fonctions ne valent que dans la leur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fe698d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4f32cf ▼▼▼
 """Bancs du socle société : rattachement obligatoire des comptes, fiche cloisonnée, fonctions attachées à une société, superadministrateur seul maître de l'ensemble."""
 import shutil
 import sys
@@ -336,6 +336,45 @@ class Monde(unittest.TestCase):
         r = self.non("reglages.regler", compte=BEA, dans=FORM, cle="ged.docs_base", valeur="/tmp/x")
         self.assertIn("société principale", r.get("erreur", "") + r.get("raison", ""))
         self.ok("reglages.regler", compte=BEA, cle="ged.docs_base", valeur="")
+
+    # ── les partages entre sociétés ─────────────────────────────────────────
+    def test_sans_partage_un_administrateur_de_societe_ne_range_pas_un_utilisateur_d_une_autre(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, societe=FORM, utilisateur=DAN, fonction="admin")
+        r = self.non("societes.affecter", compte=DAN, societe=FORM, utilisateur=CAM, fonction="membre")
+        self.assertIn("partagé", r.get("erreur", ""))
+        self.assertEqual(self.ok("societes.partageables", compte=DAN, societe=FORM)["utilisateurs"], [])
+
+    def test_un_partage_met_les_utilisateurs_d_une_societe_a_la_disposition_d_une_autre(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, societe=FORM, utilisateur=DAN, fonction="admin")
+        self.ok("societes.partager", compte=BEA, source="1", destinataire=FORM, mode="tous")
+        liste = {u["compte"] for u in self.ok("societes.partageables", compte=DAN, societe=FORM)["utilisateurs"]}
+        self.assertEqual(liste, {BEA, CAM})
+        self.ok("societes.affecter", compte=DAN, societe=FORM, utilisateur=CAM, fonction="membre")
+        self.assertIn(FORM, self.n.droits.societes_de(CAM))
+        p = self.ok("societes.partages", compte=DAN, societe=FORM)
+        self.assertEqual([x["source"] for x in p["entrants"]], ["1"])
+        self.assertFalse(p["peut_decider"])
+
+    def test_un_partage_choisi_ne_met_a_disposition_que_ceux_qu_on_a_choisis(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, societe=FORM, utilisateur=DAN, fonction="admin")
+        self.ok("societes.partager", compte=BEA, source="1", destinataire=FORM, mode="choisis", elements=[CAM])
+        self.assertEqual([u["compte"] for u in self.ok("societes.partageables", compte=DAN, societe=FORM)["utilisateurs"]], [CAM])
+        self.non("societes.affecter", compte=DAN, societe=FORM, utilisateur=BEA, fonction="membre")
+        self.non("societes.partager", compte=BEA, source="1", destinataire=FORM, mode="choisis", elements=[DAN])      # DAN n'est pas de la société qui partage
+
+    def test_seul_le_superadministrateur_decide_d_un_partage_et_le_retrait_le_referme(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, societe=FORM, utilisateur=DAN, fonction="admin")
+        r = self.non("societes.partager", compte=DAN, source=FORM, destinataire="1", mode="tous")
+        self.assertIn("superadministrateur", r["erreur"])
+        self.ok("societes.partager", compte=BEA, source="1", destinataire=FORM, mode="tous")
+        self.ok("societes.partage_retirer", compte=BEA, source="1", destinataire=FORM)
+        self.non("societes.affecter", compte=DAN, societe=FORM, utilisateur=CAM, fonction="membre")
+        self.non("societes.partage_retirer", compte=BEA, source="1", destinataire=FORM)                               # il n'existe plus
+        self.non("societes.partager", compte=BEA, source="1", destinataire="1", mode="tous")                          # pas avec soi-même
 
     def test_les_menus_et_les_droits_ne_montrent_que_les_modules_de_la_societe(self):
         self.monde()

@@ -6,18 +6,18 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #2a3f4e
+// VERSION CN : 0.1.0  #1ac22a
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran de la fiche société : identité, établissements, horaires, présence, responsables, fonctions, pièces, banque, conformité, habillage, coffre, multi-sociétés, historique.
 // MÉTHODE    : une scène (CASS.sceneSurMesure.societes) ; la page vient de l'écran ouvert (s_identite, s_etabs…). Chaque champ s'enregistre à la validation et passe par une capacité du module Sociétés.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=2a3f4e ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=1ac22a ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS, K = CASS.kit, esc = K.esc, agir = K.agir, dire = K.dire, confirmer = K.confirmer;
   const PAGES = { vue_societe: "identite", s_identite: "identite", s_etabs: "etabs", s_horaires: "horaires", s_presence: "presence", s_equipe: "equipe", s_fonctions: "fonctions", s_pieces: "pieces",
-    s_banque: "banque", s_conformite: "conformite", s_habillage: "habillage", s_coffre: "coffre", s_modules: "modules", s_reglages: "reglages", s_sert: "sert", s_multi: "multi", s_histo: "histo" };
+    s_banque: "banque", s_conformite: "conformite", s_habillage: "habillage", s_coffre: "coffre", s_modules: "modules", s_partages: "partages", s_reglages: "reglages", s_sert: "sert", s_multi: "multi", s_histo: "histo" };
   const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
   const DOMAINES = [["fiche", "Fiche société", 0], ["etablissements", "Établissements", 0], ["horaires", "Horaires et calendrier", 0], ["pieces", "Pièces et échéances", 0], ["banque", "Banque et facturation", 1],
     ["conformite", "Conformité", 0], ["habillage", "Habillage et modèles", 0], ["equipe", "Fonctions et responsables", 1]];
@@ -110,6 +110,10 @@
       if (p === "fonctions") { const [f, m] = await Promise.all([lire("societes.fonctions", { societe: S.actif }), lire("societes.membres", { societe: S.actif })]); S.fonc = f; S.membres = (m && m.membres) || []; }
       if (p === "equipe") { const m = await lire("societes.membres", { societe: S.actif }); S.membres = (m && m.membres) || []; }
       if (p === "modules") { const m = await lire("societes.modules", { societe: S.actif }); S.mods = (m && m.modules) || []; S.modsPeut = !!(m && m.peut_regler); }
+      if (p === "partages") {
+        const [pt, pb, f, m] = await Promise.all([lire("societes.partages", { societe: S.actif }), peut("equipe", 3) ? lire("societes.partageables", { societe: S.actif }) : null, peut("equipe", 3) ? lire("societes.fonctions", { societe: S.actif }) : null, lire("societes.membres", { societe: S.actif })]);
+        S.part = pt || { sortants: [], entrants: [] }; S.partageables = (pb && pb.utilisateurs) || []; S.fonc = f || S.fonc; S.membres = (m && m.membres) || [];
+      }
       if (p === "reglages") { const r = await lire("reglages.lire", { pour_societe: S.actif }); S.regl = ((r && r.reglages) || []).filter((x) => x.portee === "societe"); }
       if (p === "pieces") { const e = await lire("societes.echeances", { societe: S.actif }); S.ech = (e && e.echeances) || []; }
       if (p === "histo") { const h = await lire("societes.historique", { societe: S.actif, limite: 100 }); S.hist = (h && h.historique) || []; }
@@ -277,6 +281,20 @@
       return '<div class="main"><section class="carte"><h2>' + ic("globe") + "Modules de " + esc(nom) + '</h2><p class="sub">Chaque société a ses modules. Les modules vitaux (comptes, droits, sociétés, coffre…) sont ouverts partout ; les autres le sont là où on les ouvre. Un module fermé disparaît des menus et refuse ses gestes pour cette société.' + (S.modsPeut ? " Une société choisit ses modules parmi ceux de l’instance ; la base de l’installation (hébergement, sécurité, agents, logithèque) reste à la société principale." : " Seul l’administrateur de la société ouvre ou ferme ses modules.") + '</p><div class="tw"><table><thead><tr><th>Module</th><th>Importance</th><th>Dans cette société</th></tr></thead><tbody>' +
         (M.length ? M.map((m) => "<tr><td><b>" + esc(m.nom || m.id) + '</b><br><small style="color:var(--txt-faint)">' + esc(m.id) + "</small></td><td>" + chip(m.importance, m.importance === "vital" ? "acc" : "") + "</td><td>" + (m.instance ? chip("société principale seulement", "warn") : m.vital ? chip("toujours ouvert", "ok") : '<button class="tg' + (m.ouvert ? " on" : "") + '"' + (S.modsPeut ? "" : " disabled") + ' data-a="mod" data-id="' + esc(m.id) + '" data-o="' + (m.ouvert ? 1 : 0) + '" role="switch" aria-checked="' + !!m.ouvert + '" aria-label="' + esc(m.nom || m.id) + ' ouvert dans cette société"></button>') + "</td></tr>").join("") : '<tr><td colspan="3" class="vide">Aucun module.</td></tr>') + "</tbody></table></div></section></div>";
     }
+    function pPartages() {
+      const P = S.part || { sortants: [], entrants: [] }, U = S.partageables || [], F = (S.fonc && S.fonc.fonctions) || [], ro = !peut("equipe", 3), nom = nomSoc();
+      const autres = (S.liste || []).filter((x) => x.id !== S.actif && !x.archivee), nomDe = (id) => ((S.liste || []).find((x) => x.id === id) || {}).nom || id;
+      const entrants = P.entrants.length ? '<div class="tw"><table><thead><tr><th>Société</th><th>Ce qu’elle partage</th></tr></thead><tbody>' + P.entrants.map((e) => "<tr><td><b>" + esc(e.nom_source || nomDe(e.source)) + "</b></td><td>" + chip("utilisateurs") + " " + (e.mode === "tous" ? chip("tous", "ok") : chip(e.elements.length + " choisi(s)", "warn")) + "</td></tr>").join("") + "</tbody></table></div>"
+        : '<div class="vide">Aucune société ne partage rien avec ' + esc(nom) + ". Le superadministrateur décide des partages.</div>";
+      const dispo = U.length ? '<div class="tw"><table><thead><tr><th>Utilisateur</th><th>Sa société</th><th>Fonction ici</th></tr></thead><tbody>' + U.map((u) => '<tr><td><b>' + esc(u.compte) + "</b></td><td>" + esc(nomDe(u.societe)) + '</td><td><select data-af="' + esc(u.compte) + '"' + (ro ? " disabled" : "") + ' aria-label="Fonction de ' + esc(u.compte) + '" style="min-width:160px"><option value="">— aucune —</option>' + F.map((f) => '<option value="' + esc(f.fonction) + '"' + (f.fonction === u.fonction ? " selected" : "") + ">" + esc(f.nom) + "</option>").join("") + "</select></td></tr>").join("") + "</tbody></table></div>"
+        : (ro ? "" : '<div class="vide">Aucun utilisateur partagé à ranger pour l’instant.</div>');
+      const sortants = P.sortants.length ? '<div class="tw"><table><thead><tr><th>Avec</th><th>Ce qui est partagé</th><th></th></tr></thead><tbody>' + P.sortants.map((e) => "<tr><td><b>" + esc(e.nom_destinataire || nomDe(e.destinataire)) + "</b></td><td>" + chip("utilisateurs") + " " + (e.mode === "tous" ? chip("tous", "ok") : chip(e.elements.join(", ") || "aucun", "warn")) + "</td><td>" + (P.peut_decider ? '<button class="btn" data-a="part-del" data-d="' + esc(e.destinataire) + '">Retirer</button>' : "") + "</td></tr>").join("") + "</tbody></table></div>"
+        : '<div class="vide">' + esc(nom) + " ne partage rien.</div>";
+      const ajout = P.peut_decider && autres.length ? '<div class="row" style="margin-top:12px"><select id="pt-d" aria-label="Société destinataire" style="max-width:220px">' + autres.map((x) => '<option value="' + esc(x.id) + '">' + esc(x.nom) + "</option>").join("") + '</select><select id="pt-m" aria-label="Mode" style="max-width:200px"><option value="tous">Tous les utilisateurs</option><option value="choisis">Ceux que je choisis</option></select>' +
+        '<select id="pt-e" multiple size="4" aria-label="Utilisateurs choisis" style="min-width:200px">' + (S.membres || []).map((m) => '<option value="' + esc(m.compte) + '">' + esc(m.nom || m.compte) + "</option>").join("") + '</select><button class="btn pri" data-a="part-add">Partager</button></div><p class="hint">En mode « choisis », sélectionnez les utilisateurs dans la liste (Ctrl pour plusieurs).</p>' : "";
+      return '<div class="main"><section class="carte"><h2>' + ic("users") + "Utilisateurs partagés avec " + esc(nom) + '</h2><p class="sub">Une société peut mettre ses utilisateurs à la disposition d’une autre : l’administrateur de celle-ci leur donne alors une fonction, sans pouvoir toucher aux autres comptes de l’instance.</p>' + entrants + dispo + "</section>" +
+        '<section class="carte"><h2>' + ic("globe") + "Ce que " + esc(nom) + ' partage</h2><p class="sub">Seul le superadministrateur décide d’un partage : il choisit la société, et tous les utilisateurs ou ceux qu’il désigne.</p>' + sortants + ajout + "</section></div>";
+    }
     function pReglages() {
       const L = S.regl || [], ro = !peut("equipe", 3) && !S.superadmin, par = {};
       L.forEach((x) => { (par[x.module] = par[x.module] || []).push(x); });
@@ -307,7 +325,7 @@
       return '<div class="main"><section class="carte"><h2>' + ic("clock") + 'Historique</h2><p class="sub">Chaque changement de la fiche : qui, quand, et le geste pour le défaire quand c’est possible.</p><div class="row" style="margin-bottom:8px"><button class="btn" data-a="exporter">' + ic("down") + 'Exporter la fiche</button><label class="btn" for="so-imp" style="cursor:pointer">Importer une fiche</label><input type="file" id="so-imp" accept="application/json,.json" hidden><span class="hint">Pour dupliquer une société ou sauvegarder l’identité. Ni l’IBAN ni les responsables n’y figurent.</span></div>' +
         (S.hist.length ? S.hist.map((e) => '<div class="ev"><time>' + new Date(e.ts * 1000).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) + "</time><span>" + chip(e.qui || "système", e.qui ? "" : "acc") + " " + esc(e.resume) + (e.rubrique ? " " + chip(e.rubrique) : "") + "</span>" + (e.rubrique && e.rubrique !== "banque" && e.rubrique !== "roles" && /^a modifié/.test(e.resume) && peut("fiche", 2) ? '<button class="btn sm" data-a="defaire" data-id="' + e.id + '">Défaire</button>' : "<span></span>") + "</div>").join("") : '<div class="vide">Rien pour l’instant. Modifiez un champ de l’identité : il apparaît ici.</div>') + "</section></div>";
     }
-    const PAGE = { identite: pIdentite, etabs: pEtabs, horaires: pHoraires, presence: pPresence, equipe: pEquipe, fonctions: pFonctions, pieces: pPieces, banque: pBanque, conformite: pConformite, habillage: pHabillage, coffre: pCoffre, modules: pModules, reglages: pReglages, sert: pSert, multi: pMulti, histo: pHisto };
+    const PAGE = { identite: pIdentite, etabs: pEtabs, horaires: pHoraires, presence: pPresence, equipe: pEquipe, fonctions: pFonctions, pieces: pPieces, banque: pBanque, conformite: pConformite, habillage: pHabillage, coffre: pCoffre, modules: pModules, partages: pPartages, reglages: pReglages, sert: pSert, multi: pMulti, histo: pHisto };
     function dessiner() {
       racine.innerHTML = entete() + (S.erreur ? '<div class="carte"><span style="color:var(--danger)">' + esc(S.erreur) + "</span></div>" : "") + (S.charge ? '<div class="carte"><div class="vide">Chargement…</div></div>' : PAGE[S.page]());
     }
@@ -355,6 +373,8 @@
       else if (k === "cof-accorder") { const u = val("#cm-n"); if (!u) { dire("Tout le monde est déjà membre.", "err"); return; } const r = val("#cm-r"), c = val("#cm-c"); if (await geste("coffre.accorder", { espace: "s:" + S.actif, utilisateur: u, role: r, collections: c === "" ? "" : c, expire: val("#cm-e") }, "Accès donné.")) { await chargerCoffre(); dessiner(); } }
       else if (k === "cof-retirer") { if (!await confirmer("Retirer l’accès de " + a.dataset.c + " ?", "<p>Il ne verra plus ce coffre. Les secrets qu’il a déposés restent.</p>", "Retirer", true)) return; if (await geste("coffre.retirer", { espace: "s:" + S.actif, utilisateur: a.dataset.c }, "Accès retiré.")) { await chargerCoffre(); dessiner(); } }
       else if (k === "rg-reset") { if (await geste("reglages.reinitialiser", { cle: id || a.dataset.k, pour_societe: S.actif }, "Valeur de l’instance rétablie.")) { await chargerPage(); dessiner(); } }
+      else if (k === "part-add") { const els = [...(($("#pt-e") || {}).selectedOptions || [])].map((o) => o.value), mode = val("#pt-m"); if (mode === "choisis" && !els.length) { dire("Choisissez au moins un utilisateur.", "err"); return; } if (await geste("societes.partager", { source: S.actif, destinataire: val("#pt-d"), type: "utilisateurs", mode: mode, elements: els }, "Partage enregistré.")) { await chargerPage(); dessiner(); } }
+      else if (k === "part-del") { if (!await confirmer("Retirer ce partage ?", "<p>Les fonctions déjà données restent ; on ne pourra plus en donner à d’autres utilisateurs de cette société.</p>", "Retirer", true)) return; if (await geste("societes.partage_retirer", { source: S.actif, destinataire: a.dataset.d, type: "utilisateurs" }, "Partage retiré.")) { await chargerPage(); dessiner(); } }
       else if (k === "mod") { if (await geste("societes.module_regler", { societe: S.actif, module: id, ouvert: a.dataset.o !== "1" })) { await chargerPage(); dessiner(); } }
       else if (k === "multi-on") { if (await geste("reglages.regler", { cle: "societes.multi", valeur: true }, "Plusieurs sociétés activées.")) { await chargerBase(); await chargerPage(); dessiner(); } }
       else if (k === "multi-off") { if (S.liste.filter((x) => !x.archivee).length > 1) { dire("Archivez d’abord les autres sociétés.", "err"); return; } if (await geste("reglages.regler", { cle: "societes.multi", valeur: false }, "Retour à une seule société.")) { await chargerBase(); await chargerPage(); dessiner(); } }

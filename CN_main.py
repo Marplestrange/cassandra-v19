@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fe7b4b
+# VERSION CN : 0.1.0  #306465
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fe7b4b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=306465 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -45,6 +45,7 @@ import collections
 import json
 import logging
 import os
+import re
 import sys
 import tempfile
 import threading
@@ -133,13 +134,28 @@ class Noyau:
             r.append((self.extensions, True))
         return r
 
-    def _stockage_de(self, mid: str):
-        """Le stockage d'un module, migrations appliquées au premier appel. Une migration qui échoue lève : le module est écarté, le noyau démarre."""
-        if mid not in self._stockages:
+    def _stockage_de(self, mid: str, societe: str = ""):
+        """Le stockage d'un module, migrations appliquées au premier appel. Une migration qui échoue lève : le module est écarté, le noyau démarre.
+        `societe` ne compte que pour un module « par société » : la société principale garde <id>.db, les autres ont <id>@<société>.db."""
+        soc = str(societe or "1")
+        if soc == "1" or not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,62}", soc):
+            soc = "1"
+        cle = mid if soc == "1" else "%s@%s" % (mid, soc)
+        if cle not in self._stockages:
             connus, _ = self._connus()
             dossier = Path(connus[mid][0].source).parent / "migrations" if mid in connus else None
-            self._stockages[mid] = Stockage(self._donnees / "modules" / ("%s.db" % mid), dossier)
-        return self._stockages[mid]
+            self._stockages[cle] = Stockage(self._donnees / "modules" / ("%s.db" % cle), dossier)
+        return self._stockages[cle]
+
+    def _societes_du_moteur(self, module: str, ctx, ev=None, societe_ev: str = "") -> list:
+        """Les sociétés pour lesquelles un moteur de ce module tourne : une seule (celle de l'acte) s'il répond à un événement, sinon chacune de celles où le module est ouvert.
+        Un module qui n'est pas « par société » tourne une fois, hors société (comme avant)."""
+        if not ctx.manifeste.permissions.stockage_par_societe:
+            return [""]
+        if ev is not None:
+            return [societe_ev or "1"]
+        m = ctx.manifeste
+        return [s["id"] for s in self.identite.societes() if self.identite.module_ouvert(s["id"], m.id, m.importance, m.essentiel, m.instance)]
 
     def _fabriquer(self, m):
         self.droits.declarer(m)
@@ -539,7 +555,7 @@ class Noyau:
             if len(q) >= 500:
                 log.warning("moteur %s.%s : file pleine, événement %s abandonné", module, mo.id, ev.get("id"))
                 return {"statut": "file_pleine"}
-            q.append(ev)
+            q.append(dict(ev, _societe=self.executeur.contextes[module].societe) if module in self.executeur.contextes else ev)
             t = self._fils_async.get(k)
             if t is None or not t.is_alive():
                 t = threading.Thread(target=self._boucle_async, args=(module, mo, fn, k), daemon=True, name="moteur-async-%s.%s" % k)
@@ -562,7 +578,10 @@ class Noyau:
             ctx._compte.valeur = ev["compte"]
             d0, erreur = time.time(), ""
             try:
-                fn(ctx, ev)
+                for soc in self._societes_du_moteur(module, ctx, ev, ev.get("_societe", "")):
+                    ctx._societe.valeur = soc
+                    fn(ctx, ev)
+                ctx._societe.valeur = ""
             except Exception as ex:
                 log.exception("moteur en échec : %s.%s", module, mo.id)
                 erreur = str(ex)[:300]
@@ -592,13 +611,17 @@ class Noyau:
         self._figes.discard(k)
         ctx = self.executeur.contextes[module]
         sortie = {}
+        soc_ev = (ev or {}).get("_societe") or ctx.societe                   # ce thread est celui de l'acte qui émet : sa société est celle de l'événement
 
         def cible():
             ctx._cause.valeur = ev["id"] if ev else None
             ctx._compte.valeur = ev["compte"] if ev else ""
             d0 = time.time()
             try:
-                fn(ctx, ev) if ev is not None else fn(ctx)
+                for soc in self._societes_du_moteur(module, ctx, ev, soc_ev):
+                    ctx._societe.valeur = soc
+                    fn(ctx, ev) if ev is not None else fn(ctx)
+                ctx._societe.valeur = ""
             except Exception as ex:
                 log.exception("moteur en échec : %s.%s", module, mo.id)
                 sortie["erreur"] = str(ex)[:300]
