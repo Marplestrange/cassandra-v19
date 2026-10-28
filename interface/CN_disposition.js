@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #536de6
+// VERSION CN : 0.1.0  #9a762d
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=536de6 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=9a762d ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -98,7 +98,22 @@
   const VUE_IC = { calendrier: "calendar", taches: "tasks", rappels: "bell", messages: "mail", reglage: "fam_systeme",
     maintenant: "health", signaux: "bolt", dispo: "clock", engagement: "tasks" };
   // le pictogramme d'une sous-entrée : celui des vues du Panorama, celui de la table ci-dessus, à défaut celui que son module déclare ; "" si aucun
-  const icoSub = (e, f) => { const vid = f.vue || f.id; const k = e.id === "panorama" && EMO_PANORAMA[vid] ? EMO_PANORAMA[vid] : (VUE_IC[vid] || (f.icone && IC[f.icone] ? f.icone : "")); return k; };
+  // les pictogrammes des pages de Sécurité : ceux de l'ancien rail, devenu les sous-menus de l'entrée
+  const SECU_IC = {
+    verdict: "<path d=\"M3 12a9 9 0 0 1 18 0\"/><path d=\"M12 12l4-4\"/><circle cx=\"12\" cy=\"12\" r=\"1.2\"/>",
+    images: "<path d=\"M4 20V10M10 20V4M16 20v-7M22 20H2\"/>",
+    exposition: "<circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"5\"/><circle cx=\"12\" cy=\"12\" r=\"1.2\"/>",
+    parefeu: "<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"1.5\"/><path d=\"M3 10h18M3 15h18M9 5v5M15 10v5M9 15v4\"/>",
+    acces: "<circle cx=\"8\" cy=\"12\" r=\"3.5\"/><path d=\"M11.5 12H21M17 12v3M20 12v2\"/>",
+    defenses: "<path d=\"M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z\"/>",
+    outils: "<path d=\"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z\"/>",
+    maj: "<path d=\"M20 7a8 8 0 0 0-14.5 1M4 17a8 8 0 0 0 14.5-1\"/><path d=\"M20 3v4h-4M4 21v-4h4\"/>",
+    journal: "<path d=\"M5 4h14v16H5z\"/><path d=\"M8 8h8M8 12h8M8 16h5\"/>",
+    audit: "<path d=\"M4 5h16v11H9l-5 4z\"/><path d=\"M8 9h8M8 12h5\"/>",
+    ailleurs: "<path d=\"M14 4h6v6M20 4l-9 9\"/><path d=\"M18 14v5H5V6h5\"/>"
+  };
+  Object.keys(SECU_IC).forEach((k) => { IC["sc_" + k] = SECU_IC[k]; });
+  const icoSub = (e, f) => { const vid = f.vue || f.id; const k = e.id === "panorama" && EMO_PANORAMA[vid] ? EMO_PANORAMA[vid] : (e.id === "securite" && SECU_IC[vid] ? "sc_" + vid : VUE_IC[vid] || (f.icone && IC[f.icone] ? f.icone : "")); return k; };
   // le logo de Cassandra : le toit (celui de l'ancienne interface) ; il tient lieu de logo tant que l'organisation n'a pas le sien
   const INST_E_PLIABLES = ["coffre:mon_coffre", "societes:societe", "comptes:utilisateurs", "comptes:groupes"];     // entrées de Paramètres qu'un clic replie ou déplie
   const TOIT ='<svg class="d-i toit" viewBox="0 0 24 24"><path d="M4 11.5l8-7 8 7"/><path d="M6.5 20h11"/><circle cx="12" cy="14.5" r="2.4" fill="currentColor" stroke="none"/></svg>';
@@ -157,6 +172,10 @@
       } else if (typeof window.vuAller === "function") {
         setTimeout(function() { window.vuAller(vue || "verdict"); }, 80);         // l'entrée seule ouvre l'accueil de la rubrique
       }
+    }
+    if (entreeId === "securite") suivreSecurite();
+    if (entreeId === "securite" && typeof window.scAller === "function" && vue) {
+      setTimeout(function() { window.scAller(vue); }, 80);
     }
     if (entreeId === "flotte" && typeof window.flVue === "function" && vue) {
       setTimeout(function() { window.flVue(vue); }, 80);
@@ -290,6 +309,7 @@
     $("#d19-btn-cass").classList.toggle("d19-idee", urg);
     $("#d19-btn-cass").classList.toggle("actif", E.panel);
     const vt = $("#d19-vtxt"); if (vt) vt.textContent = E.d.version || "19";
+    rendreSocietes();
     const pg = groupesVisibles(), aff = pg.length > 4 ? pg.slice(0, 4) : pg;
     const bt = (g) => '<button class="' + (g.id === E.g && E.actif ? "on" : "") + '" data-g="' + esc(g.id) + '" data-bas="1">' + ico(g.icone) + "<span>" + esc(g.libelle) + "</span>" + pastille(g) + "</button>";
     $("#d19-bas").innerHTML = aff.slice(0, 2).map(bt).join("") + '<button class="cent' + (E.panel ? " on" : "") + (urg ? " d19-idee" : "") + '" data-cbas="1" aria-label="Itare et Cassandra">' + ico("spark") + "</button>" + aff.slice(2).map(bt).join("")
@@ -361,11 +381,12 @@
     PERSO_AV.forEach((id) => { if (avPar(id)) h += dAvatar(avPar(id)); });
     h += titre("Institutionnel");
     INST_E.forEach((id) => { if (ePar(id)) h += dEntree(ePar(id)); });
-    if (avPar("menus:logitheque")) h += dAvatar(avPar("menus:logitheque"));
+    if (avPar("menus:logitheque") && estPrincipale()) h += dAvatar(avPar("menus:logitheque"));
     av.filter((a) => PERSO_AV.concat(INST_AV).indexOf(a.id) < 0).forEach((a) => { h += dAvatar(a); });
-    h += titre("Général");
-    GEN_E.forEach((id) => { if (ePar(id)) h += dEntree(ePar(id)); });
-    pe.filter((e) => GEN_E.concat(INST_E, PERSO_E).indexOf(e.id) < 0).forEach((e) => { h += dEntree(e); });
+    let gen = "";
+    GEN_E.forEach((id) => { if (ePar(id)) gen += dEntree(ePar(id)); });
+    pe.filter((e) => GEN_E.concat(INST_E, PERSO_E).indexOf(e.id) < 0).forEach((e) => { gen += dEntree(e); });
+    if (gen) h += titre("Général") + gen;                  // hors de la société principale, rien de ce qui règle l'application : la section disparaît
     return h;
   }
   function rendreGauche() {
@@ -750,6 +771,17 @@
   }
   // ── une page propre : son onglet, son fil d'Ariane ────────────────────────
   // « Mon coffre-fort » : l'écran du module Coffre (espaces, rôles), ouvert depuis le menu de l'avatar comme depuis la colonne Paramètres
+  // Sécurité : les pages sont les sous-menus de l'entrée (le rail de l'écran est masqué) ; un bouton « Ouvrir » de l'écran qui change de page fait suivre le menu
+  function suivreSecurite() {
+    if (typeof window.scAller !== "function" || window.scAller.__d19) return;
+    const scO = window.scAller;
+    window.scAller = function (p, sansCharger) {
+      scO(p, sansCharger);
+      if (E.actif && E.e === "securite" && E.vue !== p) { E.vue = p; E.actif.vue = p; rendre(); }
+    };
+    window.scAller.__d19 = true;
+  }
+  window.addEventListener("load", suivreSecurite);
   window.ouvrirMonCoffre = () => { E.silence = false; aller("parametres", "coffre:mon_coffre", "coffre:c_secrets"); };
   function marquerPage(a) {
     E.pageNom = a.ecran && CASS.nomOnglet ? CASS.nomOnglet(a.ecran) : "";
@@ -830,8 +862,20 @@
       if (!E.g || !E.d.groupes.some((g) => g.id === E.g)) { E.g = E.d.groupes[0] ? E.d.groupes[0].id : ""; E.e = ""; }
       if (!E.moi) E.moi = await (await fetch("/api/moi", { headers: { "X-Session-Token": token() } })).json();
       E.compte = E.moi.compte || "";
+      try { const l = await agir("societes.lister", {}); E.societes = (l && l.societes) || []; } catch (e) { E.societes = []; }
       completerAvatar(); rendre();
     } catch (e) { console.warn("disposition :", e); }
+  }
+  // ── le sélecteur de société : visible seulement pour qui en a plusieurs ; il met TOUTE l'application dans la société choisie ──
+  // La société principale seule décide comment l'application se comporte (danger, agents, hébergement, sécurité, logithèque) : ailleurs, ces menus n'existent pas.
+  function estPrincipale() { const L = E.societes || [], cur = L.find((x) => x.ici) || L[0]; return !cur || !!cur.principale; }
+  function rendreSocietes() {
+    const el = $("#d19-soc"); if (!el) return;
+    const L = (E.societes || []).filter((x) => !x.archivee);
+    if (L.length < 2) { el.innerHTML = ""; return; }
+    const cur = L.find((x) => x.ici) || L[0], mono = (n) => (String(n || "?").split(/\s+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2).toUpperCase()) || "?";
+    el.innerHTML = '<button type="button" class="d19-ib d19-socb" id="d19-soc-b" title="Société active : ' + esc(cur.nom) + '" aria-haspopup="menu" aria-expanded="' + !!E.socMenu + '"><span class="d19-socm">' + esc(mono(cur.nom)) + '</span><span class="d19-soct">' + esc(cur.nom) + "</span></button>" +
+      (E.socMenu ? '<div class="d19-socl" role="menu">' + L.map((x) => '<button type="button" role="menuitem" class="' + (x.id === cur.id ? "on" : "") + '" data-soc="' + esc(x.id) + '"><span class="d19-socm">' + esc(mono(x.nom)) + "</span><span>" + esc(x.nom) + (x.principale ? " · principale" : "") + "</span></button>").join("") + "</div>" : "");
   }
   // ── le pouls : l'état (capsule, points des groupes, pastilles) suit le Sensorium tout seul, sans rien fermer ──
   let pouleEnCours = false;
@@ -858,7 +902,7 @@
     const top = document.createElement("div"); top.id = "d19-top";
     top.innerHTML = '<button class="d19-logo" id="d19-logo" aria-label="Accueil"></button><button class="d19-ib" id="d19-burger" title="Replier / déplier le menu de gauche" aria-label="Menu">' + ico("menu") + '</button><span id="d19-nav"></span>'
       + '<button class="d19-ib" id="d19-rafr" title="Actualiser la page" aria-label="Actualiser">' + ico("refresh") + '</button><nav id="d19-groupes" aria-label="Groupes"></nav>'
-      + '<div id="d19-droite"><button class="d19-ib" id="d19-btn-cass" title="Itare et Cassandra" aria-label="Itare et Cassandra">' + ico("spark") + '</button><button class="d19-ib" id="d19-search" title="Rechercher (Ctrl+K)" aria-label="Rechercher">' + ico("search") + '</button><span id="d19-bell"></span><span id="d19-theme"></span><span id="d19-vtxt"></span><span id="d19-corner"></span></div>';
+      + '<div id="d19-droite"><button class="d19-ib" id="d19-btn-cass" title="Itare et Cassandra" aria-label="Itare et Cassandra">' + ico("spark") + '</button><button class="d19-ib" id="d19-search" title="Rechercher (Ctrl+K)" aria-label="Rechercher">' + ico("search") + '</button><span id="d19-bell"></span><span id="d19-theme"></span><span id="d19-vtxt"></span><span id="d19-soc"></span><span id="d19-corner"></span></div>';
     app.insertBefore(top, $(".header", app) || corps);
     // les morceaux de l'ancienne barre qui servent encore : les flèches, la cloche, le thème, l'avatar et son menu
     const deplacer = (sel, vers) => { const x = $(sel); if (x && $(vers)) $(vers).appendChild(x); };
@@ -917,6 +961,9 @@
       if ((x = c("#d19-strip [data-pin]"))) { basculerPin(); return; }
       if (c("[data-gen-nouveau]")) { genererMdp(); return; }
       if (c("[data-gen-copier]")) { const v = document.getElementById("d19-gen-sortie").value; if (v && navigator.clipboard) navigator.clipboard.writeText(v).then(() => toast("Copié."), () => toast("Copie refusée par le navigateur.")); return; }
+      if ((x = c("[data-soc]"))) { const id = x.dataset.soc, cur = (E.societes || []).find((y) => y.ici); E.socMenu = false; if (!cur || cur.id !== id) CASS.choisirSociete(id); else rendreSocietes(); return; }
+      if (c("#d19-soc-b")) { E.socMenu = !E.socMenu; rendreSocietes(); return; }
+      if (E.socMenu && !c("#d19-soc")) { E.socMenu = false; rendreSocietes(); }
       if ((x = c("[data-lat]"))) { if (E.pageAction) E.pageAction(x.dataset.lat); return; }
       if (c("#d19-cap")) { capsuleAller(); return; }
       if ((x = c("#d19-side [data-sw]"))) {

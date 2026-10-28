@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.4  #468e44
+# VERSION CN : 0.3.4  #53cf25
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.4 empreinte=468e44 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.4 empreinte=53cf25 ▼▼▼
 [module]
 id = "securite"
 nom = "Sécurité"
@@ -22,6 +22,7 @@ description = "La sécurité : les gestes (bannir une adresse, fermer un chemin,
 confiance = "interne"
 famille = "securite"
 importance = "important"
+instance = true
 sans = "Plus de gestes de sécurité (bannir une adresse, fermer un chemin, faire tourner une clé) ni de journal de sécurité."
 
 [[droits]]

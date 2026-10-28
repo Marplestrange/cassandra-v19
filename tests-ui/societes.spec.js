@@ -55,12 +55,16 @@ test("Société : identité, fonctions, coffre, rubriques fermées sans droit, m
       if (c === 'societes.historique') return { societe: '1', historique: [{ id: 1, ts: 1790000000, qui: 'bea@x.fr', rubrique: 'siege', resume: 'a modifié ville' }] };
       if (c === 'societes.iban_voir') return { iban: 'FR1420041010050500013M02606' };
       if (c === 'societes.creer') { window.__multi = true; return { societe: 'form' }; }
-      if (c === 'reglages.regler') { window.__multi = !!a.valeur; return {}; }
+      if (c === 'reglages.regler') { if (a.cle === 'societes.multi') window.__multi = !!a.valeur; else window.__vm = a.valeur; return {}; }
       if (c === 'coffre.espaces') return { espaces };
       if (c === 'coffre.membres') return { espace: 's:1', membres: cof, admins: 1 };
       if (c === 'coffre.list') return { noms: [], secrets: [{ nom: 'banque', auteur: 'bea@x.fr', collection: 'compta' }, { nom: 'ovh', auteur: 'bea@x.fr', collection: 'hebergement' }], espace: 's:1', role: 'admin' };
       if (c === 'coffre.accorder') { cof = cof.filter((x) => x.compte !== a.utilisateur).concat([{ compte: a.utilisateur, role: a.role, collections: a.collections, expire: a.expire, accorde_par: '', cree: '' }]); return {}; }
       if (c === 'coffre.retirer') { cof = cof.filter((x) => x.compte !== a.utilisateur); return {}; }
+      if (c === 'societes.modules') return { societe: '1', modules: [{ id: 'comptes', nom: 'Comptes', importance: 'vital', vital: true, ouvert: true, choisi: false }, { id: 'ged', nom: 'Documents', importance: 'optionnel', vital: false, ouvert: !!window.__ged, choisi: true }], peut_regler: true };
+      if (c === 'societes.module_regler') { window.__ged = !!a.ouvert; return {}; }
+      if (c === 'reglages.lire') return { societe: '1', reglages: [{ cle: 'contacts.vue_modele', module: 'contacts', libelle: 'Ce qu’un modèle voit', type: 'choix', portee: 'societe', valeur: window.__vm || 'expurgee', pose: !!window.__vm, choix: ['expurgee', 'complete'], aide: '' }, { cle: 'comptes.session_heures', module: 'comptes', libelle: 'Durée', type: 'entier', portee: 'global', valeur: 24, pose: false, choix: [], aide: '' }] };
+      if (c === 'reglages.reinitialiser') { window.__vm = ''; return {}; }
       if (c === 'comptes.moi') return { compte: 'bea@x.fr' };
       return {};
     };
@@ -124,6 +128,23 @@ test("Société : identité, fonctions, coffre, rubriques fermées sans droit, m
   await expect(k).toContainText('ne vous ouvre pas cette rubrique');
   k = await monter('societes:s_identite');
   await expect(k.locator('#c-identite-nom')).toBeDisabled();                           // voir n'est pas modifier
+
+  // les modules de la société : un module vital reste ouvert, les autres s'ouvrent et se ferment
+  k = await monter('societes:s_modules');
+  await expect(k.locator('tr', { hasText: 'Comptes' })).toContainText('toujours ouvert');
+  await k.locator('button[data-a="mod"][data-id="ged"]').click();
+  await expect.poll(async () => (await appels('societes.module_regler')).some((x) => x.module === 'ged' && x.ouvert === true && x.societe === '1')).toBe(true);
+  await expect(k.locator('button[data-a="mod"][data-id="ged"]')).toHaveClass(/on/);
+
+  // les réglages de la société : seuls ceux qui peuvent différer d'une société à l'autre ; on les pose, puis on reprend la valeur de l'instance
+  k = await monter('societes:s_reglages');
+  await expect(k).toContainText('contacts');
+  await expect(k).not.toContainText('Durée');
+  await k.locator('select[data-rg="contacts.vue_modele"]').selectOption('complete');
+  await expect.poll(async () => (await appels('reglages.regler')).some((x) => x.cle === 'contacts.vue_modele' && x.valeur === 'complete' && x.pour_societe === '1')).toBe(true);
+  await expect(k).toContainText('propre à la société');
+  await k.locator('button[data-a="rg-reset"]').click();
+  await expect.poll(async () => (await appels('reglages.reinitialiser')).length).toBe(1);
 
   // le multi-sociétés : l'activation est proposée, puis la création d'une société
   await page.evaluate(() => { window.__acces = { fiche: 3, etablissements: 3, horaires: 3, pieces: 3, banque: 3, conformite: 3, habillage: 3, equipe: 3 }; });

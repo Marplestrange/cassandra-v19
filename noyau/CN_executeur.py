@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8ebd69
+# VERSION CN : 0.1.0  #0a2c19
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ebd69 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0a2c19 ▼▼▼
 """L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 
 Le contrat de souveraineté tient ici, en un seul endroit :
@@ -93,6 +93,12 @@ class Executeur:
                     self._evt("capacite.refusee", e, acteur, cause, {"raison": "société non accessible", "societe": societe}, compte)
                     return {"statut": "refuse", "raison": "le compte « %s » n'a pas accès à la société « %s »" % (compte, societe)}
                 soc = societe
+        if soc and not interne:
+            cm = self.contextes.get(e.module)
+            man = cm.manifeste if cm is not None else None
+            if man is not None and not self.identite.module_ouvert(soc, e.module, man.importance, man.essentiel, man.instance):
+                self._evt("capacite.refusee", e, acteur, cause, {"raison": "module fermé pour la société", "societe": soc}, compte)
+                return {"statut": "refuse", "raison": "le module « %s » n'est pas ouvert dans la société « %s »" % (e.module, soc)}
         if compte and c.droit and self.droits is not None:
             # quel que soit l'acteur : Itare ou Cassandra qui agissent AU NOM d'un compte n'ont pas plus de droits que lui
             d = self.droits.raison(compte, c.droit, soc)

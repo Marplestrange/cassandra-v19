@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e1db85
+# VERSION CN : 0.1.0  #1d405c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sections : les rubriques où se rangent les modules sont DÉCLARÉES (noyau + modules), plus écrites en dur dans l'interface. Le noyau en déclare un jeu ; un module en apporte de nouvelles ([[sections]]) mais ne redéfinit jamais celles du 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e1db85 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1d405c ▼▼▼
 """Les sections : les rubriques où se rangent les modules sont DÉCLARÉES (noyau + modules), plus écrites en dur dans l'interface.
 Le noyau en déclare un jeu ; un module en apporte de nouvelles ([[sections]]) mais ne redéfinit jamais celles du noyau ;
 une section que personne n'a déclarée existe quand même, pour qu'aucun module ne disparaisse de la page."""
@@ -26,7 +26,7 @@ RACINE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RACINE))
 from noyau import CN_manifeste as M, CN_sections as S  # noqa: E402
 
-BASE = {"module": {"id": "essai_sec", "nom": "Essai", "version": "0.1.0", "noyau_min": "0.1.0", "description": "Un module d'essai.", "importance": "optionnel", "sans": "Rien."}}
+BASE = {"module": {"id": "essai_sec", "nom": "Essai", "version": "0.1.0", "noyau_min": "0.1.0", "description": "Un module d'essai.", "importance": "optionnel", "sans": "Rien."}, "droits": [{"id": "utiliser", "libelle": "Utiliser", "defaut": True}]}
 
 
 def man(**plus):

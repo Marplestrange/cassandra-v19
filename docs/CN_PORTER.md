@@ -12,7 +12,7 @@
 <!-- RÔLE       : Porter un module de la V18 vers la V19 -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=530abc ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9a161b ▼▼▼ -->
 # Porter un module de la V18 vers la V19
 
 Ce guide est donné tel quel à qui porte (une personne, ou un Claude). Il dit CE QUE LE NOYAU FAIT DÉJÀ, pour ne pas le réécrire.
@@ -100,6 +100,9 @@ Tout compte appartient à une société (le noyau le garantit) et la société p
 
 - `ctx.societe` : la société dans laquelle l'acte s'exécute, par fil comme `ctx.compte`. **Une table qui garde des données d'une société porte une colonne `societe TEXT NOT NULL DEFAULT '1'`** et chaque lecture la filtre sur `ctx.societe` ; sans cela, le module multi-sociétés obligerait à migrer les données.
 - `ctx.espace_compte()` et `ctx.espace_societe()` ([permissions] `espace_utilisateur = true`) : les répertoires d'un utilisateur vivent dans le grand répertoire de SA société. Ne jamais construire un chemin à la main.
+- `ctx.dans_ma_societe(compte)` : tout partage (invitation, destinataire) vérifie qu'on ne s'adresse qu'à quelqu'un de la société active.
+- Un réglage qui peut différer d'une société à l'autre déclare `portee = "societe"` ; `ctx.reglage()` lit alors la valeur de la société active, à défaut celle de l'instance.
+- `importance = "vital"` : ouvert dans toutes les sociétés ; sinon le module est ouvert société par société.
 - `societes.carte` : pour nommer la société (en-têtes, signatures, mentions légales). Ne jamais recopier ces valeurs ; jamais la banque ni les responsables.
 - Un droit se règle avec une portée : une « fonction » est un groupe attaché à une société, valable là seulement. Rien à faire de plus : `droit = "..."` sur la capacité suffit, l'exécuteur décide dans la société active.
 - Le coffre : un secret appartient à un espace (le sien, ou celui d'une société), jamais à « tout le monde ». Voir `docs/CN_SOCIETES.md`.

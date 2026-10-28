@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : reglages
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9f6045
+# VERSION CN : 0.1.0  #e1e599
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des réglages : l'administration des réglages que les modules déclarent. La logique vit dans noyau/CN_reglages.py.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9f6045 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e1e599 ▼▼▼
 """Le module des réglages : l'administration des réglages que les modules déclarent. La logique vit dans noyau/CN_reglages.py.
 
 Qui peut quoi : un réglage de portée COMPTE se pose pour son propre compte sans autre droit ; un réglage GLOBAL, ou celui d'un autre compte,
@@ -27,10 +27,25 @@ def brancher(ctx):
     def gere(compte):
         return (not compte) or dr.raison(compte, "reglages.gerer")["accord"]
 
-    def autorise(cle, pour, ctx):
-        """Peut-on écrire ce réglage pour ce compte ? Rend la portée du compte visé ('' = global)."""
+    def autorise(cle, pour, ctx, pour_societe=""):
+        """Peut-on écrire ce réglage pour ce compte (ou cette société) ? Rend la portée visée ('' = global, « @s:<société> » = une société)."""
         d = rg._def(cle)
+        if d.portee == "societe":
+            if pour:
+                raise ValueError("« %s » est un réglage par société : il n'a pas de valeur par compte" % cle)
+            soc = pour_societe or ctx.societe
+            if not soc:
+                raise ValueError("un réglage par société s'écrit pour une société : aucune n'est active")
+            if ctx.compte and soc not in dr.societes_de(ctx.compte):
+                raise PermissionError("cette société n'est pas la vôtre")
+            if not gere(ctx.compte) and not dr.raison(ctx.compte, "societes.equipe_gerer", soc)["accord"]:
+                raise PermissionError("écrire un réglage de société demande d'en être l'administrateur")
+            return "@s:" + soc
+        if pour_societe:
+            raise ValueError("« %s » est un réglage %s : il n'a pas de valeur par société" % (cle, "global" if d.portee == "global" else "par compte"))
         if d.portee == "global":
+            if ctx.societe and ctx.societe != "1":
+                raise PermissionError("seule la société principale décide du comportement de l'application : ce réglage d'instance ne se règle pas d'ici")
             if pour:
                 raise ValueError("« %s » est un réglage global : il n'a pas de valeur par compte" % cle)
             if not gere(ctx.compte):
@@ -44,34 +59,37 @@ def brancher(ctx):
         return cible
 
     # ---- lectures ----
-    def lire(ctx, module="", pour_compte=""):
+    def lire(ctx, module="", pour_compte="", pour_societe=""):
         c = pour_compte or ctx.compte
         if c != ctx.compte and not gere(ctx.compte):
             raise PermissionError("lire les réglages d'un autre compte demande le droit reglages.gerer")
-        return {"reglages": rg.liste(module, c, global_visible=gere(ctx.compte))}
+        soc = pour_societe or ctx.societe
+        if soc and ctx.compte and soc not in dr.societes_de(ctx.compte):
+            raise PermissionError("cette société n'est pas la vôtre")
+        return {"reglages": rg.liste(module, c, global_visible=gere(ctx.compte), societe=soc), "societe": soc}
 
     def historique(ctx, cle="", pour_compte="", limite=20):
         return {"historique": rg.historique(cle, pour_compte, int(limite))}
 
     # ---- écrire ----
-    def regler(ctx, cle="", valeur=None, pour_compte=""):
+    def regler(ctx, cle="", valeur=None, pour_compte="", pour_societe=""):
         if rg._def(cle).type == "secret":
             raise ValueError("« %s » est un secret : il s'écrit par regler_secret" % cle)
-        cible = autorise(cle, pour_compte, ctx)
+        cible = autorise(cle, pour_compte, ctx, pour_societe)
         r = rg.poser(cle, valeur, cible, ctx.compte)
         ctx.emettre("reglage.change", objet=("reglage", cle), donnees={"cle": cle, "compte": cible, "de": r["avant"], "a": r["apres"]})
         return {"cle": cle, "compte": cible, "avant": r["avant"], "avait": r["avait"], "apres": r["apres"]}
 
-    def regler_secret(ctx, cle="", valeur="", pour_compte=""):
+    def regler_secret(ctx, cle="", valeur="", pour_compte="", pour_societe=""):
         if rg._def(cle).type != "secret":
             raise ValueError("« %s » n'est pas un secret : il s'écrit par regler" % cle)
-        cible = autorise(cle, pour_compte, ctx)
+        cible = autorise(cle, pour_compte, ctx, pour_societe)
         r = rg.poser(cle, valeur, cible, ctx.compte)
         ctx.emettre("reglage.change", objet=("reglage", cle), donnees={"cle": cle, "compte": cible, "secret": True})
         return {"cle": cle, "compte": cible, "avant": r["avant"], "avait": r["avait"], "apres": "***", "avant_chiffre": r.get("avant_chiffre")}
 
-    def reinitialiser(ctx, cle="", pour_compte=""):
-        cible = autorise(cle, pour_compte, ctx)
+    def reinitialiser(ctx, cle="", pour_compte="", pour_societe=""):
+        cible = autorise(cle, pour_compte, ctx, pour_societe)
         r = rg.retirer(cle, cible, ctx.compte)
         ctx.emettre("reglage.change", objet=("reglage", cle), donnees={"cle": cle, "compte": cible, "reinitialise": True, "secret": rg._def(cle).type == "secret"})
         return {"cle": cle, "compte": cible, "avant": r.get("avant"), "avait": r["avait"], "avant_chiffre": r.get("avant_chiffre")}

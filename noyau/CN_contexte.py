@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #056804
+# VERSION CN : 0.1.0  #2bd653
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=056804 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2bd653 ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire
@@ -73,6 +73,14 @@ class Contexte:
         f = self._intro.get("societe_de")
         return (f(compte) if f else "") or "1"
 
+    def dans_ma_societe(self, compte: str) -> bool:
+        """Ce compte a-t-il accès à la société dans laquelle on agit (la sienne, ou une fonction dans celle-ci) ? C'est la règle de tout partage : on n'invite, on ne
+        partage et on n'écrit qu'à quelqu'un de sa société. Hors société (infrastructure), tout est permis."""
+        f = self._intro.get("acces_societe")
+        if not f or not self.societe:
+            return True
+        return bool(f(str(compte or "").strip().lower(), self.societe))
+
     def societes(self) -> list:
         """Les identifiants des sociétés de l'instance (archivées comprises)."""
         f = self._intro.get("societes")
@@ -93,10 +101,15 @@ class Contexte:
         if not self.manifeste.permissions.introspection:
             raise PermissionError("le module « %s » n'a pas demandé l'introspection ([permissions] introspection)" % self.module)
 
-    def manifestes_actifs(self) -> list:
-        """Les manifestes des modules branchés, en lecture seule. C'est ainsi que le module de menus assemble l'arbre."""
+    def manifestes_actifs(self, toutes: bool = False) -> list:
+        """Les manifestes des modules branchés, en lecture seule. C'est ainsi que le module de menus assemble l'arbre.
+        Ceux de la société dans laquelle on agit seulement (un module peut être fermé pour une société) ; `toutes` : ceux de l'instance entière."""
         self._exiger_introspection()
-        return self._intro["manifestes"]()
+        ms = self._intro["manifestes"]()
+        f = self._intro.get("module_ouvert")
+        if toutes or not f or not self.societe:
+            return ms
+        return [m for m in ms if f(self.societe, m)]
 
     def gestion_modules(self):
         """Le catalogue des modules et l'état qu'on peut leur donner (.catalogue(), .activer(id, ...), .desactiver(id, ...)), pour le module « modules »
@@ -123,7 +136,7 @@ class Contexte:
         Réservé aux modules qui l'ont demandé ([permissions] lectures) ; jamais une écriture."""
         if not self.manifeste.permissions.lectures:
             raise PermissionError("le module « %s » n'a pas demandé d'appeler les lectures des autres ([permissions] lectures)" % self.module)
-        return self._intro["lecture"](capacite, args, self.compte)       # pour le compte au nom duquel on travaille : un module ne lit jamais plus que lui
+        return self._intro["lecture"](capacite, args, self.compte, self.societe)       # pour le compte au nom duquel on travaille : un module ne lit jamais plus que lui
 
     def point(self, point: str, entree):
         """Appelle un point d'évolution de CE module ([[points_evolution]]) : des DONNÉES en entrée, des DONNÉES en sortie, quel que soit le langage de l'EC qui le sert
@@ -206,7 +219,7 @@ class Contexte:
     def reglage(self, nom: str, compte=None):
         """La valeur EFFECTIVE d'un réglage que CE module a déclaré (« nom » sans le préfixe du module). Pour un réglage de portée compte,
         celle du compte au nom duquel on agit (ou `compte`). Le module qui déclare un secret est le seul à le lire en clair."""
-        return self._intro["reglages"].valeur("%s.%s" % (self.module, nom), self.compte if compte is None else compte)
+        return self._intro["reglages"].valeur("%s.%s" % (self.module, nom), self.compte if compte is None else compte, self.societe)
 
     def service_reglages(self):
         """Le service des réglages, pour le module qui les administre ([permissions] reglages)."""

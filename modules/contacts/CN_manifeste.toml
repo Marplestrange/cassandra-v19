@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.2  #68a200
+# VERSION CN : 0.3.2  #17205d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet de chaque compte : fiches (adresses, téléphones, société, notes, étiquettes, favori), dossiers, archive, corbeille de trente jours, rattachements aux projets, domaines et serveurs, détection de doublons et fusion (jamais d'office), import et export vCard, import CSV. Chaque compte ne voit que ses fiches. Un modèle (Itare, Cassandra) ne reçoit les coordonnées que si l'administrateur l'a choisi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=68a200 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.2 empreinte=17205d ▼▼▼
 [module]
 id = "contacts"
 nom = "Carnet d'adresses"
@@ -47,14 +47,14 @@ type = "choix"
 choix = ["expurgee", "complete"]
 defaut = "expurgee"
 aide = "Expurgée : la présence des coordonnées est dite (« a une adresse »), jamais la valeur. Complète : à choisir quand le modèle tourne sur ce serveur."
-
+portee = "societe"
 [[reglages]]
 id = "notes_au_modele"
 libelle = "Les notes de la fiche accompagnent-elles la fiche vers un modèle, même en vue expurgée ?"
 type = "booleen"
 defaut = true
 aide = "Les coordonnées sont des données de contact ; les notes sont du contexte (« rappeler avant 10 h »), utile et parfois sensible : le choix est le vôtre."
-
+portee = "societe"
 [evenements]
 emet = ["contact.cree", "contact.modifie", "contact.supprime", "contact.restaure", "contact.fusionne", "contact.importe"]
 

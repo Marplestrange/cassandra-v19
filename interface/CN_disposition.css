@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=76c431 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=80e522 ▼▼▼ */
 /* L'ancienne interface (V18) est dans la page dès le départ : tant que la disposition V19 n'a pas pris la main (body.d19), on la cache, pour qu'elle ne se montre pas quelques instants.
    Filet : si la disposition ne démarre jamais (script en erreur), l'ancienne interface réapparaît au bout de 6 secondes plutôt que de laisser une page vide. */
 body:not(.d19) #app-container{visibility:hidden;animation:d19-filet 0s 6s forwards}
@@ -458,9 +458,21 @@ body.d19.d19-rub-moi-boite #tab-settings .set-nav-item[data-fam="moi-boite"]{dis
 body.d19.d19-rub-moi-itare #tab-settings .set-nav-item[data-fam="moi-itare"]{display:none!important}
 
 .sh-titre.a-info{cursor:help}
+#d19-soc{position:relative;display:inline-flex;align-items:center}
+.d19-socb{display:inline-flex;gap:7px;align-items:center;width:auto!important;padding:0 10px 0 4px!important;max-width:200px}
+.d19-socm{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;font:700 10.5px 'JetBrains Mono',monospace;background:var(--accent);color:var(--on-accent,#fff);flex:none}
+.d19-soct{font:600 12px 'Inter',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.d19-socl{position:absolute;top:calc(100% + 8px);right:0;min-width:240px;background:var(--surface-solid,var(--surface));border:1px solid var(--line-strong,var(--line));border-radius:14px;box-shadow:var(--shadow-glass,0 8px 30px rgba(0,0,0,.25));padding:6px;z-index:60;display:grid;gap:2px}
+.d19-socl button{display:flex;gap:9px;align-items:center;border:0;background:none;border-radius:10px;padding:7px 8px;text-align:left;color:var(--txt);font:inherit;cursor:pointer}
+.d19-socl button:hover,.d19-socl button.on{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+#d19-soc .d19-socl button,#d19-soc .d19-socl button span:not(.d19-socm){color:var(--txt)!important;white-space:nowrap}
+@media (max-width:760px){.d19-soct{display:none}.d19-socb{padding:0 4px!important}}
 /* ▲▲▲ FIN BORNE CN ▲▲▲ */
 
 /* ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ */
 /* CN : tout ce fichier est du nexus : à compléter */
 /* EC : néant (aucun point d'évolution déclaré pour l'instant) */
 /* LIEN : à compléter (contrat, fichiers voisins) */
+
+/* Sécurité : les pages sont des sous-menus de la colonne de gauche, le rail propre à l'écran disparaît */
+body.d19 #tab-securite .sc-rail{display:none}

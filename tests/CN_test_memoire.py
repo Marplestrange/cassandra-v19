@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9695a2
+# VERSION CN : 0.1.0  #5eb2ac
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module memoire.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9695a2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5eb2ac ▼▼▼
 """Bancs du module memoire."""
 import json
 import shutil
@@ -736,7 +736,7 @@ class Peremption(Monde):
         self.assertEqual(self.w(nature="etat-courant", sonde="objet_etat", sonde_args=["service", "nginx", "actif"])["refus"], "sonde")
         ok = self.w(nature="etat-courant", sonde="capacite_absente", sonde_args=["memoire.nexistepas"], cle="a", valeur="la capacité memoire.nexistepas n'existe pas dans cette version")
         self.assertTrue(ok["ok"])
-        m = self.w(nature="etat-courant", sonde="module_version", sonde_args=["memoire", "0.1.0"], cle="b", valeur="le module memoire est en version 0.1.0 sur cette instance")
+        m = self.w(nature="etat-courant", sonde="module_version", sonde_args=["memoire", "0.1.1"], cle="b", valeur="le module memoire est en version 0.1.1 sur cette instance")
         self.assertEqual(self.ligne(m["id"])["artefact"], "module:memoire")
         self.assertEqual(self.ligne(m["id"])["sonde_valeur"], "true")
 

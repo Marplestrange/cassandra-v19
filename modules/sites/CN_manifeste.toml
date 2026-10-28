@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sites
 # ZONE       : CN
-# VERSION CN : 0.1.1  #d3ff7f
+# VERSION CN : 0.1.1  #aaf3a6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sites web que Cassandra suit : ceux d'un compte (déclarés, attribués, ou inscrits dans sa fiche de compte), ceux du panneau qui appartiennent au compte du panneau lié à ce compte. Une sonde chronomètre chaque site (code, durée, certificat) et en garde l'historique ; une panne, un retour, une lenteur, un certificat court font des constats. Chaque compte ne voit que ses sites ; l'administrateur voit l'état de tous, jamais le contenu. Demande d'adossement au panneau, accord limité dans le temps donné par le propriétaire, liens vers projets et contacts, journal des gestes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=d3ff7f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=aaf3a6 ▼▼▼
 [module]
 id = "sites"
 nom = "Sites"
@@ -42,7 +42,7 @@ type = "entier"
 defaut = 3000
 minimum = 500
 maximum = 60000
-
+portee = "societe"
 [[reglages]]
 id = "delai_sonde_s"
 libelle = "Délai d'attente d'une requête de la sonde, en secondes"
@@ -58,7 +58,7 @@ type = "entier"
 defaut = 90
 minimum = 7
 maximum = 730
-
+portee = "societe"
 [[reglages]]
 id = "ssl_court_j"
 libelle = "Jours restants sous lesquels le certificat d'un site est signalé"
@@ -66,7 +66,7 @@ type = "entier"
 defaut = 21
 minimum = 3
 maximum = 90
-
+portee = "societe"
 [evenements]
 emet = ["site.panne", "site.retour", "site.declare", "site.retire", "site.attribue", "site.transfere", "site.demande", "site.adossement", "site.accord"]
 

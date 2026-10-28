@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c9dff2
+# VERSION CN : 0.1.0  #badd5b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du coffre : le magasin de secrets, réversible, contre un faux serveur Vaultwarden.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c9dff2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=badd5b ▼▼▼
 """Bancs du coffre : le magasin de secrets, réversible, contre un faux serveur Vaultwarden."""
 import json
 import shutil
@@ -100,11 +100,11 @@ class Monde(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         base = Path(self.tmp.name)
         mods = base / "modules"
-        for m in ("coffre", "droits", "comptes"):
+        for m in ("coffre", "droits", "comptes", "societes"):
             shutil.copytree(RACINE / "modules" / m, mods / m, ignore=shutil.ignore_patterns("__pycache__"))
         self.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
         self.n.brancher()
-        for m in ("droits", "comptes", "coffre"):
+        for m in ("droits", "comptes", "societes", "coffre"):
             self.assertTrue(self.n.activer(m)["ok"], m)
         self.ctx = self.n.executeur.contextes["coffre"]
         self.db = self.ctx.stockage

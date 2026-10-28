@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #000000
+// VERSION CN : 0.1.0  #3b2e63
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Mon coffre-fort : mes espaces (le mien, puis ceux des sociétés où l'on m'a fait entrer), les secrets que j'ai le droit de voir, leur ajout, leur lecture, leur retrait.
 // MÉTHODE    : une scène (CASS.sceneSurMesure.coffre) ; tout passe par les capacités coffre.* : l'isolement (qui voit quoi) est garanti par le module, jamais par l'écran.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=3b2e63 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS, K = CASS.kit, esc = K.esc, agir = K.agir, dire = K.dire, confirmer = K.confirmer;

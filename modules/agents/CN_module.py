@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.2  #368c2e
+# VERSION CN : 0.1.2  #7d53d6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=368c2e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=7d53d6 ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -271,6 +271,10 @@ def brancher(ctx):
             schemas = [o.schema_outil(t) for t in pres] + o.meta_outils()
             ton = ""
             persona = str(reglage("persona_" + agent, ""))
+            soc = lecture("societes.carte") or {}
+            if soc.get("nom"):                                          # chaque société a ses agents : ils savent pour qui ils travaillent, et ne mélangent jamais deux sociétés
+                persona = (persona + "\n\n" if persona else "") + "Tu travailles pour la société « %s »%s. Ses données et celles de ses utilisateurs lui appartiennent : n'en mélange jamais avec celles d'une autre société." % (
+                    soc["nom"], (" (" + ", ".join(x for x in (soc.get("forme"), soc.get("ville")) if x) + ")") if (soc.get("forme") or soc.get("ville")) else "")
             try:
                 ton = str((lecture("modeles.lister") or {}).get("ton") or "")
             except Exception:

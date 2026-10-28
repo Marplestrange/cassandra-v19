@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : mesures
 # ZONE       : CN
-# VERSION CN : 0.1.0  #aede73
+# VERSION CN : 0.1.0  #2a8834
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'historique : chaque module déclare ses mesures ([[mesures]]) ; ce module en tire les courbes par période, l'habitude (ce qui est normal ce jour-là à cette heure), les écarts, la tendance (date de saturation) et un verdict. Une source muette est DITE muette : « tout est stable » n'est jamais un défaut.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=aede73 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2a8834 ▼▼▼
 [module]
 id = "mesures"
 nom = "Mesures"
@@ -22,6 +22,7 @@ description = "L'historique : chaque module déclare ses mesures ([[mesures]]) ;
 confiance = "interne"
 famille = "supervision"
 importance = "optionnel"
+instance = true
 sans = "Plus de courbes ni d'historique des mesures ; les mesures en cours restent visibles."
 
 [[droits]]

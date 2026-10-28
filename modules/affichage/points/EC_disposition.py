@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.7.0)  #b9c64d
+# VERSION EC : EC0 (référence 0.7.0)  #1955f1
 # HÔTE CN    : CN_module.py · disposition @1.0
 # RÔLE       : range les entrées de menu que les modules déclarent en groupes (barre du haut), entrées et sous-entrées (colonne de gauche), et en entrées du menu de l'avatar ; dit le pire niveau d'alerte de chaque entrée, de chaque groupe et du tout.
 # MÉTHODE    : fonction pure : une table de groupes, un repli par famille, un pont vers les onglets de l'ancienne interface ; chaque entrée reçue paraît une seule fois, rien n'est inventé, un groupe sans entrée n'existe pas.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=b9c64d ▼▼▼
+# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=1955f1 ▼▼▼
 
 # Les groupes de la barre du haut : (id, libellé, icône, ordre, interlocuteur par défaut du panneau).
 GROUPES = (
@@ -40,16 +40,16 @@ MASQUES = ("salon",)
 # Le pont vers l'ancienne interface : ce que ses onglets offrent déjà. Une entrée du pont paraît si les modules dont elle dépend sont actifs,
 # et elle remplace l'entrée qu'un module déclarerait pour le même module (l'écran de l'ancienne interface existe, il fait foi).
 PONT = (
-    {"id": "accueil", "libelle": "Aujourd’hui", "groupe": "desk", "icone": "clock", "onglet": "bureau", "modules": (), "ordre": 10, "role": "utilisateur", "vues": ()},
-    {"id": "agenda", "libelle": "Agenda", "groupe": "desk", "icone": "calendar", "onglet": "bureau", "modules": (), "ordre": 20, "role": "utilisateur",
+    {"id": "accueil", "libelle": "Aujourd’hui", "groupe": "desk", "icone": "clock", "onglet": "bureau", "modules": ("jour",), "ordre": 10, "role": "utilisateur", "vues": ()},
+    {"id": "agenda", "libelle": "Agenda", "groupe": "desk", "icone": "calendar", "onglet": "bureau", "modules": ("agenda",), "ordre": 20, "role": "utilisateur",
      "vues": (("calendrier", "Calendrier"), ("taches", "Tâches"), ("rappels", "Rappels"), ("reglage", "Réglage agenda"))},
-    {"id": "projets", "libelle": "Projets", "groupe": "desk", "icone": "panorama", "onglet": "bureau", "modules": (), "ordre": 30, "role": "utilisateur", "vues": ()},
-    {"id": "notes", "libelle": "Notes", "groupe": "desk", "icone": "scroll", "onglet": "bureau", "modules": (), "ordre": 40, "role": "utilisateur", "vues": ()},
-    {"id": "courrier", "libelle": "Courrier", "groupe": "desk", "icone": "mail", "onglet": "bureau", "modules": (), "ordre": 50, "role": "utilisateur",
+    {"id": "projets", "libelle": "Projets", "groupe": "desk", "icone": "panorama", "onglet": "bureau", "modules": ("projets",), "ordre": 30, "role": "utilisateur", "vues": ()},
+    {"id": "notes", "libelle": "Notes", "groupe": "desk", "icone": "scroll", "onglet": "bureau", "modules": ("notes",), "ordre": 40, "role": "utilisateur", "vues": ()},
+    {"id": "courrier", "libelle": "Courrier", "groupe": "desk", "icone": "mail", "onglet": "bureau", "modules": ("courrier",), "ordre": 50, "role": "utilisateur",
      "vues": (("messages", "Messages"), ("reglage", "Réglage Mail"))},
     {"id": "moi-itare", "libelle": "Mon Itare", "groupe": "desk", "icone": "bot", "onglet": "settings", "modules": (), "ordre": 80, "role": "utilisateur", "vues": ()},
-    {"id": "repertoire", "libelle": "Répertoire", "groupe": "desk", "icone": "contacts", "onglet": "bureau", "modules": (), "ordre": 60, "role": "utilisateur", "vues": ()},
-    {"id": "documents", "libelle": "Documents", "groupe": "desk", "icone": "folder", "onglet": "bureau", "modules": (), "ordre": 70, "role": "utilisateur", "vues": ()},
+    {"id": "repertoire", "libelle": "Répertoire", "groupe": "desk", "icone": "contacts", "onglet": "bureau", "modules": ("contacts",), "ordre": 60, "role": "utilisateur", "vues": ()},
+    {"id": "documents", "libelle": "Documents", "groupe": "desk", "icone": "folder", "onglet": "bureau", "modules": ("ged",), "ordre": 70, "role": "utilisateur", "vues": ()},
     {"id": "panorama", "libelle": "Panorama", "groupe": "parc", "icone": "panorama", "onglet": "overview", "modules": ("vue",), "ordre": 10, "role": "admin", "vues": (
         ("verdict", "Le verdict"),
         ("gestes", "Ce qui demande un geste"),
@@ -69,17 +69,29 @@ PONT = (
     {"id": "sites", "libelle": "Sites", "groupe": "parc", "icone": "globe", "onglet": "mysites", "modules": ("sites",), "ordre": 30, "role": "utilisateur", "vues": ()},
     {"id": "hebergement", "libelle": "Hébergement", "groupe": "parc", "icone": "db", "onglet": "fastpanel", "modules": ("fastpanel",), "ordre": 40, "role": "admin", "vues": ()},
     {"id": "automatismes", "libelle": "Automatismes", "groupe": "parc", "icone": "repeat", "onglet": "crons", "modules": ("planifie",), "ordre": 50, "role": "admin", "vues": ()},
-    {"id": "securite", "libelle": "Sécurité", "groupe": "secu", "icone": "shield", "onglet": "securite", "modules": ("securite",), "ordre": 10, "role": "admin", "vues": ()},
+    {"id": "securite", "libelle": "Sécurité", "groupe": "secu", "icone": "shield", "onglet": "securite", "modules": ("securite",), "ordre": 10, "role": "admin", "vues": (
+        ("verdict", "Verdict"),
+        ("images", "En images"),
+        ("exposition", "Exposition"),
+        ("parefeu", "Pare-feu"),
+        ("acces", "Accès"),
+        ("defenses", "Défenses"),
+        ("outils", "Outils"),
+        ("maj", "Mises à jour et noyau"),
+        ("journal", "Journal"),
+        ("audit", "Audit commenté"),
+        ("ailleurs", "Ce qui vit ailleurs")
+    )},
     {"id": "sensorium", "libelle": "Sensorium", "groupe": "obs", "icone": "health", "onglet": "sensorium", "modules": ("sensorium",), "ordre": 10, "role": "admin", "vues": ()},
     {"id": "historique", "libelle": "Historique", "groupe": "obs", "icone": "clock", "onglet": "history", "modules": ("mesures",), "ordre": 20, "role": "admin", "vues": ()},
     {"id": "journaux", "libelle": "Journaux", "groupe": "obs", "icone": "scroll", "onglet": "journal", "modules": ("journal",), "ordre": 30, "role": "utilisateur", "vues": ()},
-    {"id": "reg-tiers", "libelle": "Services tiers", "groupe": "parametres", "icone": "puzzle", "onglet": "settings", "modules": ("reglages",), "ordre": 30, "role": "admin", "vues": ()},
-    {"id": "reg-maintenance", "libelle": "Maintenance", "groupe": "parametres", "icone": "tasks", "onglet": "settings", "modules": ("reglages",), "ordre": 10, "role": "admin", "vues": ()},
-    {"id": "reg-donnees", "libelle": "Données", "groupe": "parametres", "icone": "archive", "onglet": "settings", "modules": ("reglages",), "ordre": 20, "role": "admin", "vues": ()},
-    {"id": "reg-veille", "libelle": "Surveillances", "groupe": "parametres", "icone": "eye", "onglet": "settings", "modules": ("sensorium",), "ordre": 50, "role": "admin", "vues": ()},
-    {"id": "reg-canaux", "libelle": "Canaux", "groupe": "parametres", "icone": "bell", "onglet": "settings", "modules": ("canaux",), "ordre": 40, "role": "admin", "vues": ()},
-    {"id": "reg-danger", "libelle": "Danger", "groupe": "parametres", "icone": "alert", "onglet": "settings", "modules": ("reglages",), "ordre": 60, "role": "admin", "vues": ()},
-    {"id": "agents-ia", "libelle": "Agents IA", "groupe": "auto", "icone": "bot", "onglet": "settings", "modules": ("agents",), "ordre": 5, "role": "admin", "vues": ()},
+    {"id": "reg-tiers", "libelle": "Services tiers", "groupe": "parametres", "icone": "puzzle", "onglet": "settings", "modules": ("reglages", "modules"), "ordre": 30, "role": "admin", "vues": ()},
+    {"id": "reg-maintenance", "libelle": "Maintenance", "groupe": "parametres", "icone": "tasks", "onglet": "settings", "modules": ("reglages", "modules"), "ordre": 10, "role": "admin", "vues": ()},
+    {"id": "reg-donnees", "libelle": "Données", "groupe": "parametres", "icone": "archive", "onglet": "settings", "modules": ("reglages", "modules"), "ordre": 20, "role": "admin", "vues": ()},
+    {"id": "reg-veille", "libelle": "Surveillances", "groupe": "parametres", "icone": "eye", "onglet": "settings", "modules": ("sensorium", "modules"), "ordre": 50, "role": "admin", "vues": ()},
+    {"id": "reg-canaux", "libelle": "Canaux", "groupe": "parametres", "icone": "bell", "onglet": "settings", "modules": ("canaux", "modules"), "ordre": 40, "role": "admin", "vues": ()},
+    {"id": "reg-danger", "libelle": "Danger", "groupe": "parametres", "icone": "alert", "onglet": "settings", "modules": ("reglages", "modules"), "ordre": 60, "role": "admin", "vues": ()},
+    {"id": "agents-ia", "libelle": "Agents IA", "groupe": "auto", "icone": "bot", "onglet": "settings", "modules": ("agents", "modules"), "ordre": 5, "role": "admin", "vues": ()},
     {"id": "evolution", "libelle": "Évolution", "groupe": "auto", "icone": "evo", "onglet": "evolution", "modules": ("evolution",), "ordre": 10, "role": "admin", "vues": ()},
     {"id": "proactivite", "libelle": "Proactivité", "groupe": "auto", "icone": "bolt", "onglet": "proactive", "modules": ("proactif",), "ordre": 20, "role": "admin", "vues": ()},
     {"id": "memoire", "libelle": "Mémoire", "groupe": "auto", "icone": "brain", "onglet": "memory", "modules": ("memoire",), "ordre": 30, "role": "utilisateur", "vues": ()},

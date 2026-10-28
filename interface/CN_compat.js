@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #0d1c7a
+// VERSION CN : 0.1.0  #db5aac
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Pont V18 -> noyau V19.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=0d1c7a ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=db5aac ▼▼▼
 /* Pont V18 -> noyau V19.
 
 L'interface V18 parle à ~615 routes (/api/...). Le noyau V19 n'en a qu'une porte : POST /api/agir/<module>.<capacité>.
@@ -64,6 +64,8 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
     if (t) e["Authorization"] = "Bearer " + t;
     e["Content-Type"] = "application/json";
     e["X-Cassandra"] = "1";
+    const soc = lire("X-Societe") || CASS.societe;                      // la société choisie dans l'en-tête de l'application : tout appel, même ancien, travaille dans celle-là
+    if (soc) e["X-Societe"] = soc;
     return e;
   }
   async function v19(methode, chemin, corps, init) {

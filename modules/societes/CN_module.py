@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #000000
+# VERSION CN : 0.1.0  #e3d609
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune ; les fonctions (groupes attachés à une société).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ═══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e3d609 ▼▼▼
 """Le module Sociétés : la fiche de chaque société et ses fonctions.
 
 Tout compte appartient à une société (le noyau le garantit) ; la société principale existe toujours. Seul le superadministrateur crée, archive et
@@ -420,8 +420,42 @@ def brancher(ctx):
         _ecrire_rub(res["societe"], res["rubrique"], res["avant"])
         _histoire(res["societe"], res["rubrique"], "a défait la modification", res["apres"], res["avant"])
 
+    # ── les modules de chaque société : le superadministrateur seul décide ──
+    def modules(c, societe=""):
+        """Les modules de l'instance et, pour cette société, s'ils sont ouverts. Les modules vitaux le sont partout."""
+        soc = _cible(societe)
+        out = []
+        for m in sorted(ctx.manifestes_actifs(toutes=True), key=lambda m: m.id):
+            vital = (m.importance == "vital" or bool(m.essentiel)) and not m.instance
+            out.append({"id": m.id, "nom": m.nom, "importance": m.importance or "optionnel", "vital": vital, "instance": bool(m.instance), "ouvert": idt.module_ouvert(soc, m.id, m.importance, m.essentiel, m.instance),
+                        "choisi": m.id in idt.modules_de_societe(soc)})
+        return {"societe": soc, "modules": out, "peut_regler": _superadmin(ctx.compte) or not ctx.compte or _niveau(ctx.compte, "equipe", soc) >= 3}
+
+    def module_regler(c, societe="", module="", ouvert=True):
+        soc = _cible(societe)
+        if ctx.compte and not _superadmin(ctx.compte):
+            _exiger("equipe", "gerer", soc)          # l'administrateur d'une société choisit les modules de SA société, parmi ceux de l'instance qui ne sont pas la base
+        m = next((x for x in ctx.manifestes_actifs(toutes=True) if x.id == module), None)
+        if m is None:
+            raise ValueError("module inconnu ou pas actif dans l'instance")
+        if m.instance:
+            raise ValueError("un module d'instance n'existe que dans la société principale : elle seule décide du comportement de l'application")
+        if m.importance == "vital" or m.essentiel:
+            raise ValueError("un module vital est ouvert dans toutes les sociétés")
+        avant = idt.modules_de_societe(soc).get(module)
+        idt.module_regler(soc, module, bool(ouvert))
+        _histoire(soc, "", "a %s le module %s" % ("ouvert" if ouvert else "fermé", module), None, None)
+        _emettre("societe.modifiee", soc, {"rubrique": "modules", "module": module, "ouvert": bool(ouvert)})
+        return {"societe": soc, "module": module, "avant": avant, "apres": bool(ouvert)}
+
+    def prouver_module_regler(c, res):
+        return idt.modules_de_societe(res["societe"]).get(res["module"]) == res["apres"]
+
+    def defaire_module_regler(c, res):
+        idt.module_regler(res["societe"], res["module"], res["avant"])
+
     # ── les sociétés elles-mêmes : le superadministrateur seul ──────────────
-    def creer(c, nom="", identifiant="", administrateur=""):
+    def creer(c, nom="", identifiant="", administrateur="", modules_de=""):
         _exiger_super()
         if not ctx.reglage("multi"):
             raise ValueError("une seule société dans cette instance : installez le module Multi-sociétés pour en ajouter")
@@ -429,6 +463,13 @@ def brancher(ctx):
         if not r["ok"]:
             raise ValueError(r["error"])
         adm = str(administrateur or ctx.compte or "").strip().lower()
+        if modules_de:
+            for mid, ouvert in idt.modules_de_societe(str(modules_de)).items():
+                idt.module_regler(r["societe"], mid, ouvert)
+            if str(modules_de) == "1":                                  # la principale ouvre par défaut tout ce qui n'a pas été choisi : on le recopie aussi
+                for m in ctx.manifestes_actifs(toutes=True):
+                    if not (m.importance == "vital" or m.essentiel or m.instance) and m.id not in idt.modules_de_societe("1"):
+                        idt.module_regler(r["societe"], m.id, True)
         _initialiser_fonctions(r["societe"])
         _histoire(r["societe"], "", "société créée", None, None)
         _emettre("societe.creee", r["societe"], {"nom": r["nom"], "administrateur": adm})
@@ -537,10 +578,19 @@ def brancher(ctx):
             d.regler_groupe(gid, lib, desc)
             d.attacher_groupe(gid, soc)
             _appliquer_niveaux(gid, niveaux)
+        _garantir_gestion(soc)
+
+    GERENT_LES_UTILISATEURS = ("titulaire", "admin")        # ces fonctions gèrent les utilisateurs de la société (droit « comptes.gerer », valable dans la société seulement)
 
     def _appliquer_niveaux(gid, niveaux):
         for dm, n in zip(DOMAINES, niveaux):
             _regler_domaine(gid, dm, n)
+
+    def _garantir_gestion(soc):
+        for f in GERENT_LES_UTILISATEURS:
+            gid = _gid(soc, f)
+            if d.groupe(gid) and "comptes.gerer" in d.connus and d.accord("groupe", gid, "comptes.gerer") is None:
+                d.regler("groupe", gid, "comptes.gerer", "accorde")
 
     def _regler_domaine(gid, dm, n):
         for i, nv in enumerate(NIVEAUX, 1):
@@ -681,6 +731,8 @@ def brancher(ctx):
                    ("echeances", echeances), ("fonctions", fonctions)):
         ctx.implementer(cid, f)
     ctx.implementer("membres", membres)
+    ctx.implementer("modules", modules)
+    ctx.implementer("module_regler", module_regler, prouver_module_regler, defaire_module_regler)
     ctx.implementer("fiche_regler", fiche_regler, prouver_regler, defaire_regler)
     ctx.implementer("historique_defaire", historique_defaire, prouver_regler, defaire_regler)
     ctx.implementer("creer", creer, prouver_creer, defaire_creer)

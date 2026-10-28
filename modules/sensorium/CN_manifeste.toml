@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.10  #8a2cb7
+# VERSION CN : 0.1.10  #1e976e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.10 empreinte=8a2cb7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.10 empreinte=1e976e ▼▼▼
 [module]
 id = "sensorium"
 nom = "Sensorium"
@@ -22,6 +22,7 @@ description = "Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé ent
 confiance = "interne"
 famille = "supervision"
 importance = "important"
+instance = true
 sans = "La maison n'a plus de sens : plus de mesure de la machine ni de détection automatique des pannes."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"

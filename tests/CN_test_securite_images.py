@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6691f4
+# VERSION CN : 0.1.0  #6aed96
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de Sécurité › En images : la composition (pure) à partir de l'état de la machine et des totaux du collecteur, et la capacité du module.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6691f4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6aed96 ▼▼▼
 """Bancs de Sécurité › En images : la composition (pure) à partir de l'état de la machine et des totaux du collecteur, et la capacité du module."""
 import shutil
 import sys
@@ -146,6 +146,11 @@ version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Pour les bancs"
 confiance = "interne"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
 
 [[capacites]]
 id = "secu"

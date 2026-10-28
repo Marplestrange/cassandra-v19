@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #8f7b93
+// VERSION CN : 0.1.0  #94fe03
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=8f7b93 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=94fe03 ▼▼▼
 /* Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 
    1. Les THÈMES : un module livre un thème complet ([[habillages]] : des variables CSS). Il apparaît dans le sélecteur d'apparence,
@@ -29,11 +29,19 @@
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   // Une capacité du noyau, appelée telle quelle. Rend le résultat ou lève l'erreur dite par le noyau.
+  // La société choisie (le sélecteur à côté de l'avatar) : tout l'écran travaille dans celle-là. Vide : celle du compte. Le serveur vérifie qu'elle est bien l'une des siennes.
+  CASS.societe = (function () { try { return localStorage.getItem("cn.societe") || ""; } catch (e) { return ""; } })();
+  CASS.choisirSociete = function (id) { try { if (id) localStorage.setItem("cn.societe", id); else localStorage.removeItem("cn.societe"); } catch (e) { /* sans mémoire locale, le choix ne survit pas au rechargement */ } CASS.societe = id || ""; location.reload(); };
   CASS.agir = async function (cap, args) {
-    const r = await fetch("/api/agir/" + cap, { method: "POST", headers: { "X-Session-Token": token() }, body: JSON.stringify({ args: args || {} }) });
+    const h = { "X-Session-Token": token() }; if (CASS.societe) h["X-Societe"] = CASS.societe;
+    const r = await fetch("/api/agir/" + cap, { method: "POST", headers: h, body: JSON.stringify({ args: args || {} }) });
     let d = {};
     try { d = await r.json(); } catch (e) {}
-    if (!r.ok || (d.statut !== "faite" && d.statut !== "racontee" && d.statut !== "simulee")) throw new Error(d.erreur || d.raison || d.statut || ("HTTP " + r.status));
+    if (!r.ok || (d.statut !== "faite" && d.statut !== "racontee" && d.statut !== "simulee")) {
+      const msg = d.erreur || d.raison || d.statut || ("HTTP " + r.status);
+      if (CASS.societe && /n'a pas accès à la société/.test(String(msg))) { CASS.choisirSociete(""); }      // un accès retiré entre-temps : retour à sa propre société
+      throw new Error(msg);
+    }
     return d.resultat;
   };
   CASS.moi = null;

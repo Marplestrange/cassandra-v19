@@ -26,6 +26,9 @@ test("Utilisateurs et groupes : liste, droits d'un compte et d'un groupe, dépar
       if (c === 'droits.etat') return etat;
       if (c === 'droits.catalogue') return { droits: catalogue };
       if (c === 'droits.decisions') return decisions(a.compte);
+      if (c === 'societes.lister') return { societes: [{ id: '1', nom: 'Atelier Lumen', principale: true, archivee: false, ici: true, domicile: true }, { id: 'form', nom: 'Lumen Formation', principale: false, archivee: false, ici: false, domicile: false }], multi: true, superadmin: true, societe: '1' };
+      if (c === 'societes.fonctions') return { societe: a.societe, fonctions: [{ fonction: 'membre', nom: 'Membre', membres: a.societe === 'form' ? ['bea@x.fr'] : [] }, { fonction: 'admin', nom: 'Administrateur', membres: [] }] };
+      if (c === 'societes.affecter') return {};
       if (c === 'comptes.regles_mdp') return { regles: [], legende: '12 caractères au moins' };
       if (c === 'droits.appliquer') {
         etat = Object.assign({}, etat, { accords: etat.accords.filter((x) => !(x.sujet_type === a.sujet_type && x.sujet === a.sujet && a.accords[x.droit])).concat(Object.keys(a.accords || {}).filter((d) => a.accords[d] !== 'herite').map((d) => ({ sujet_type: a.sujet_type, sujet: a.sujet, droit: d, accord: a.accords[d] === 'accorde' ? 1 : 0 }))) });
@@ -64,6 +67,12 @@ test("Utilisateurs et groupes : liste, droits d'un compte et d'un groupe, dépar
   await expect.poll(async () => (await appels('droits.appliquer')).pop()).toMatchObject({ sujet_type: 'compte', sujet: 'bea@x.fr', accords: { 'coffre.reveler': 'accorde', 'billetterie.voir': 'refuse' }, prevenir: true });
   await expect(k.locator('.cu-rt[data-d="billetterie.voir"] .cu-chip').first()).toContainText('Refusé');
   await expect(k.locator('.cu-rt[data-d="billetterie.voir"] .cu-why').last()).toContainText('refusé au compte');
+
+  // l'onglet Sociétés : sa société, et une fonction dans une autre (accès sans être administrateur)
+  await k.locator('button[data-a="onglet"][data-v="soc"]').click();
+  await expect(k.locator('tr', { hasText: 'Lumen Formation' }).locator('select')).toHaveValue('membre');
+  await k.locator('tr', { hasText: 'Atelier Lumen' }).locator('select').selectOption('admin');
+  await expect.poll(async () => (await appels('societes.affecter')).some((x) => x.societe === '1' && x.utilisateur === 'bea@x.fr' && x.fonction === 'admin')).toBe(true);
 
   // les groupes : le départ, voir comme
   await k.locator('[data-a="comme"]').click();

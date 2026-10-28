@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c50913
+# VERSION CN : 0.1.0  #d7371f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c50913 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d7371f ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -56,36 +56,36 @@ runtime = "python"
 [[reglages]]
 id = "titulaire_nom"
 libelle = "Nom de l'organisateur (le titulaire de l'instance)"
-
+portee = "societe"
 [[reglages]]
 id = "titulaire_statut"
 libelle = "Statut de l'organisateur"
 type = "choix"
 defaut = "association"
 choix = ["association", "autre"]
-
+portee = "societe"
 [[reglages]]
 id = "titulaire_tva"
 libelle = "L'organisateur est assujetti à la TVA"
 type = "booleen"
 defaut = false
-
+portee = "societe"
 [[reglages]]
 id = "titulaire_adresse"
 libelle = "Adresse de l'organisateur"
-
+portee = "societe"
 [[reglages]]
 id = "titulaire_mail"
 libelle = "Courriel d'envoi des billets"
-
+portee = "societe"
 [[reglages]]
 id = "titulaire_tel"
 libelle = "Téléphone de l'organisateur"
-
+portee = "societe"
 [[reglages]]
 id = "titulaire_siret"
 libelle = "SIRET de l'organisateur"
-
+portee = "societe"
 [[reglages]]
 id = "retrait_delai_jours"
 libelle = "Délai après l'événement avant qu'une commission soit retirable (jours)"
@@ -93,7 +93,7 @@ type = "entier"
 defaut = 7
 minimum = 0
 maximum = 90
-
+portee = "societe"
 [[reglages]]
 id = "retrait_seuil"
 libelle = "Seuil minimal d'un retrait (centimes)"
@@ -101,14 +101,14 @@ type = "entier"
 defaut = 2000
 minimum = 0
 maximum = 1000000
-
+portee = "societe"
 [[reglages]]
 id = "compte_client"
 libelle = "Compte client à l'achat"
 type = "choix"
 defaut = "libre"
 choix = ["libre", "obligatoire"]
-
+portee = "societe"
 [[reglages]]
 id = "frais_sans_compte"
 libelle = "Frais de service d'un achat sans compte (centimes)"
@@ -116,7 +116,7 @@ type = "entier"
 defaut = 200
 minimum = 0
 maximum = 100000
-
+portee = "societe"
 [[reglages]]
 id = "reservation_minutes"
 libelle = "Durée pendant laquelle les places d'un panier sont retenues pendant le paiement (minutes)"
@@ -124,13 +124,13 @@ type = "entier"
 defaut = 10
 minimum = 1
 maximum = 120
-
+portee = "societe"
 [[reglages]]
 id = "liste_attente"
 libelle = "Liste d'attente quand un billet est épuisé"
 type = "booleen"
 defaut = true
-
+portee = "societe"
 [[reglages]]
 id = "offre_attente_heures"
 libelle = "Durée de l'offre faite à la liste d'attente (heures)"
@@ -138,19 +138,19 @@ type = "entier"
 defaut = 24
 minimum = 1
 maximum = 168
-
+portee = "societe"
 [[reglages]]
 id = "wallet_apple"
 libelle = "Billets pour Apple Wallet"
 type = "booleen"
 defaut = true
-
+portee = "societe"
 [[reglages]]
 id = "wallet_google"
 libelle = "Billets pour Google Wallet"
 type = "booleen"
 defaut = true
-
+portee = "societe"
 [[reglages]]
 id = "reserve_caisse"
 libelle = "Taille de la réserve de numéros de billets d'une caisse (numéros)"
@@ -158,113 +158,113 @@ type = "entier"
 defaut = 50
 minimum = 10
 maximum = 1000
-
+portee = "societe"
 [[reglages]]
 id = "regle_hors_ligne"
 libelle = "Règle du contrôle hors ligne quand deux portes ne se parlent pas"
 type = "choix"
 defaut = "portes"
 choix = ["portes", "signaler", "secours"]
-
+portee = "societe"
 [[reglages]]
 id = "recu_fiscal_autonome"
 libelle = "Reçu fiscal de don produit par la billetterie (sans Dolibarr)"
 type = "booleen"
 defaut = true
-
+portee = "societe"
 [[reglages]]
 id = "dons_eligible"
 libelle = "L'organisme est éligible aux reçus de dons (intérêt général, reconnu par l'administration)"
 type = "booleen"
 defaut = false
-
+portee = "societe"
 [[reglages]]
 id = "dons_base_legale"
 libelle = "Base légale de l'éligibilité (article du CGI, décision de reconnaissance) : mentionnée sur chaque reçu"
-
+portee = "societe"
 [[reglages]]
 id = "stripe_actif"
 libelle = "Paiement par carte bancaire (Stripe)"
 type = "booleen"
 defaut = false
-
+portee = "societe"
 [[reglages]]
 id = "stripe_cle_secrete"
 libelle = "Clé secrète Stripe (sk_…) : jamais affichée"
 type = "secret"
-
+portee = "societe"
 [[reglages]]
 id = "stripe_webhook_secret"
 libelle = "Secret de signature des webhooks Stripe (whsec_…) : jamais affiché"
 type = "secret"
-
+portee = "societe"
 [[reglages]]
 id = "helloasso_actif"
 libelle = "Paiement par HelloAsso (adaptateur à venir)"
 type = "booleen"
 defaut = false
-
+portee = "societe"
 [[reglages]]
 id = "paypal_actif"
 libelle = "Paiement par PayPal (adaptateur à venir)"
 type = "booleen"
 defaut = false
-
+portee = "societe"
 [[reglages]]
 id = "virement_actif"
 libelle = "Paiement par virement bancaire (places retenues 3 jours)"
 type = "booleen"
 defaut = false
-
+portee = "societe"
 [[reglages]]
 id = "iban"
 libelle = "IBAN qui reçoit les virements"
-
+portee = "societe"
 [[reglages]]
 id = "virement_beneficiaire"
 libelle = "Bénéficiaire affiché pour les virements (sinon le nom de l'organisateur)"
-
+portee = "societe"
 [[reglages]]
 id = "domaine"
 libelle = "Domaine de la boutique (sans https:// ni chemin)"
-
+portee = "societe"
 [[reglages]]
 id = "https"
 libelle = "Boutique en connexion sécurisée (https)"
 type = "booleen"
 defaut = true
-
+portee = "societe"
 [[reglages]]
 id = "boutique_en_ligne"
 libelle = "Boutique en ligne (sinon page d'attente)"
 type = "booleen"
 defaut = true
-
+portee = "societe"
 [[reglages]]
 id = "chemin_accueil"
 libelle = "Page d'accueil par défaut de la boutique"
 defaut = "/calendrier"
-
+portee = "societe"
 [[reglages]]
 id = "chemin_evenement"
 libelle = "Chemin d'une page événement ({id})"
 defaut = "/e/{id}"
-
+portee = "societe"
 [[reglages]]
 id = "chemin_compte"
 libelle = "Chemin du compte client"
 defaut = "/compte"
-
+portee = "societe"
 [[reglages]]
 id = "chemin_revendeur"
 libelle = "Chemin du lien de vente d'un revendeur ({code})"
 defaut = "/r/{code}"
-
+portee = "societe"
 [[reglages]]
 id = "chemin_retours"
 libelle = "Chemin des retours des prestataires de paiement ({fournisseur})"
 defaut = "/hooks/{fournisseur}"
-
+portee = "societe"
 [[capacites]]
 id = "salles"
 libelle = "La liste : la salle (recherche par nom ou référence)"

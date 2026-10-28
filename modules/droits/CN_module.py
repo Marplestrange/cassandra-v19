@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : droits
 # ZONE       : CN
-# VERSION CN : 0.2.0  #82ded7
+# VERSION CN : 0.2.0  #ba4816
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des droits : l'administration des droits des comptes. La DÉCISION, elle, est prise par l'exécuteur (noyau/CN_droits.py).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=82ded7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=ba4816 ▼▼▼
 """Le module des droits : l'administration des droits des comptes. La DÉCISION, elle, est prise par l'exécuteur (noyau/CN_droits.py).
 
 Chaque écriture rend de quoi se défaire : l'état d'avant et l'état attendu. Rien n'est jamais interdit ici par un plafond codé :
@@ -28,7 +28,7 @@ def brancher(ctx):
 
     # ---- lectures ----
     def mes_droits(ctx, compte=""):
-        return d.detenus(compte)
+        return d.detenus(compte, ctx.societe)
 
     def verifier(ctx, compte="", droit=""):
         return dict(d.raison(compte, droit), compte=compte, droit=droit)

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #000000
+# VERSION CN : 0.1.0  #08bb23
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les droits obligatoires pour tout module, l'application des droits d'un compte ou d'un groupe, le dernier administrateur, le départ d'un utilisateur.
 # MÉTHODE    : un monde réel (modules droits, comptes, notifications, menus) monté dans un dossier jetable ; on agit par l'exécuteur, comme l'interface.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=08bb23 ▼▼▼
 import glob
 import shutil
 import sys

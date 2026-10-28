@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #50fa77
+# VERSION CN : 0.1.0  #a8a2f2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Évolution : ses capacités dans un vrai noyau, avec un module « labo » qui déclare un point d'évolution et un faux module « modeles ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=50fa77 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a8a2f2 ▼▼▼
 """Bancs du module Évolution : ses capacités dans un vrai noyau, avec un module « labo » qui déclare un point d'évolution et un faux module « modeles »."""
 import json
 import shutil
@@ -37,6 +37,11 @@ noyau_min = "0.1.0"
 description = "Un module d'essai qui déclare un point d'évolution"
 confiance = "interne"
 
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
+
 [[capacites]]
 id = "ping"
 libelle = "ping"
@@ -56,6 +61,11 @@ version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Pour les bancs"
 confiance = "interne"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
 
 [[capacites]]
 id = "completer"

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #827c06
+# VERSION CN : 0.1.0  #55eed1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les réglages : ce que la V18 gardait dans UN fichier config.json réécrit en entier à chaque sauvegarde (d'où la leçon : « relire avant d'écrire », sans quoi un réglage disparaissait). Ici chaque réglage est une LIGNE, écrite seule, avec son
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=827c06 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=55eed1 ▼▼▼
 """Les réglages : ce que la V18 gardait dans UN fichier config.json réécrit en entier à chaque sauvegarde (d'où la leçon : « relire avant d'écrire »,
 sans quoi un réglage disparaissait). Ici chaque réglage est une LIGNE, écrite seule, avec son historique.
 
@@ -179,11 +179,16 @@ class Reglages:
                       (cle, compte, json.dumps(chiffre), now, par))
             c.execute("INSERT INTO reglages_historique(cle, compte, avant, apres, ts, par) VALUES(?,?,?,?,?,?)", (cle, compte, None, json.dumps("***"), now, par))
 
-    def valeur(self, cle: str, compte: str = ""):
-        """La valeur EFFECTIVE : celle du compte si le réglage est de portée compte et qu'il l'a posée, sinon la globale, sinon le défaut."""
+    def valeur(self, cle: str, compte: str = "", societe: str = ""):
+        """La valeur EFFECTIVE : celle du compte si le réglage est de portée compte et qu'il l'a posée, celle de la société s'il est de portée société et qu'elle l'a posée,
+        sinon la globale, sinon le défaut."""
         d = self._def(cle)
         if d.portee == "compte" and compte:
             ok, v = self._brut(cle, compte)
+            if ok:
+                return v
+        if d.portee == "societe" and societe:
+            ok, v = self._brut(cle, "@s:" + societe)
             if ok:
                 return v
         ok, v = self._brut(cle, "")
@@ -192,7 +197,10 @@ class Reglages:
     def poser(self, cle: str, valeur, compte: str = "", par: str = "") -> dict:
         """Écrit UN réglage (jamais un fichier entier). `compte` : la valeur propre à ce compte (portée compte) ; vide : la valeur globale."""
         d = self._def(cle)
-        if compte and d.portee != "compte":
+        if compte.startswith("@s:"):
+            if d.portee != "societe":
+                raise ValueError("« %s » n'a pas de valeur par société" % cle)
+        elif compte and d.portee != "compte":
             raise ValueError("« %s » est un réglage global : il n'a pas de valeur par compte" % cle)
         v, err = valider(d, valeur)
         if err:
@@ -236,7 +244,7 @@ class Reglages:
                  "avant": ("***" if masque and r["avant"] is not None else (json.loads(r["avant"]) if r["avant"] is not None else None)),
                  "apres": ("***" if masque and r["apres"] is not None else (json.loads(r["apres"]) if r["apres"] is not None else None))} for r in rows]
 
-    def liste(self, module: str = "", compte: str = "", global_visible: bool = True) -> list:
+    def liste(self, module: str = "", compte: str = "", global_visible: bool = True, societe: str = "") -> list:
         """Les réglages déclarés, leurs valeurs effectives, les secrets MASQUÉS (« *** » s'ils ont une valeur, vide sinon)."""
         out = []
         with self._verrou:
@@ -246,8 +254,8 @@ class Reglages:
                 continue
             if d.portee == "global" and not global_visible:
                 continue
-            v = self.valeur(cle, compte)
-            pose = self._brut(cle, compte if d.portee == "compte" and compte else "")[0]
+            v = self.valeur(cle, compte, societe)
+            pose = self._brut(cle, ("@s:" + societe) if (d.portee == "societe" and societe) else (compte if d.portee == "compte" and compte else ""))[0]
             if d.type == "secret":
                 v = "***" if (v not in (None, "")) else ""
             out.append({"cle": cle, "module": mod, "libelle": d.libelle, "type": d.type, "portee": d.portee, "valeur": v,

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #86da97
+# VERSION CN : 0.1.0  #20d5ca
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions, jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=86da97 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=20d5ca ▼▼▼
 """L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions,
 jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt salé.
 
@@ -309,6 +309,32 @@ class Identite:
         if societe != "1" and not self.comptes_de_societe(societe):
             self.base.ecrire("DELETE FROM societes WHERE id=? AND principale=0", (societe,))
 
+    # ---- les modules de chaque société ----
+    def module_ouvert(self, societe: str, module: str, importance: str = "", essentiel: bool = False, instance: bool = False) -> bool:
+        """Ce module est-il ouvert dans cette société ? Un module vital ou essentiel l'est partout ; sinon il l'est là où on l'a ouvert, et par défaut dans la société principale."""
+        if not societe:
+            return True
+        if instance:                      # un module d'instance n'est ouvert que dans la société principale, quoi qu'on ait choisi
+            return societe == "1"
+        if importance == "vital" or essentiel:
+            return True
+        r = self.base.lire("SELECT actif FROM societe_modules WHERE societe=? AND module=?", (societe, module))
+        if r:
+            return bool(r[0]["actif"])
+        return societe == "1"
+
+    def modules_de_societe(self, societe: str) -> dict:
+        """Les choix faits pour cette société : {module: vrai | faux} (ce qui n'y figure pas suit la règle par défaut)."""
+        return {r["module"]: bool(r["actif"]) for r in self.base.lire("SELECT module, actif FROM societe_modules WHERE societe=?", (societe,))}
+
+    def module_regler(self, societe: str, module: str, actif) -> None:
+        """actif : vrai, faux, ou None (retire le choix : la règle par défaut s'applique de nouveau)."""
+        if actif is None:
+            self.base.ecrire("DELETE FROM societe_modules WHERE societe=? AND module=?", (societe, module))
+        else:
+            self.base.ecrire("INSERT INTO societe_modules(societe, module, actif) VALUES(?,?,?) ON CONFLICT(societe, module) DO UPDATE SET actif=excluded.actif",
+                             (societe, module, 1 if actif else 0))
+
     def est_superadmin(self, compte: str) -> bool:
         r = self.base.lire("SELECT superadmin FROM comptes WHERE compte=?", (compte,))
         return bool(r and r[0]["superadmin"])
@@ -573,8 +599,17 @@ class Identite:
                 for a in res.get("agents_touches", []):
                     c.execute("UPDATE comptes SET invite_par=?, maj=? WHERE compte=?", (compte, time.time(), a))
 
-    def corbeille(self) -> list:
-        return [{"id": r["id"], "compte": r["compte"], "ts": r["ts"]} for r in self.base.lire("SELECT id, compte, ts FROM comptes_corbeille ORDER BY id DESC")]
+    def corbeille(self, societe: str = "") -> list:
+        """Les comptes supprimés qu'on peut restaurer ; `societe` : ceux de cette société seulement (l'instantané garde la société du compte)."""
+        sortie = []
+        for r in self.base.lire("SELECT id, compte, ts, instantane FROM comptes_corbeille ORDER BY id DESC"):
+            try:
+                soc = json.loads(r["instantane"]).get("societe") or "1"
+            except Exception:
+                soc = "1"
+            if not societe or soc == societe:
+                sortie.append({"id": r["id"], "compte": r["compte"], "ts": r["ts"], "societe": soc})
+        return sortie
 
     def restaurer(self, corbeille: int) -> dict:
         r = self.base.lire("SELECT instantane FROM comptes_corbeille WHERE id=?", (corbeille,))

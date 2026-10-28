@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c9bfee
+# VERSION CN : 0.1.0  #fe7b4b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c9bfee ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fe7b4b ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -155,7 +155,7 @@ class Noyau:
                     except (OSError, ValueError) as ex:
                         log.warning("corpus doré illisible (%s) : %s", corpus.name, ex)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
-                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "societe_de": (lambda c: self.identite.societe_de(c)), "societes": (lambda: [x["id"] for x in self.identite.societes(tout=True)]), "reglages": self.reglages,
+                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "societe_de": (lambda c: self.identite.societe_de(c)), "societes": (lambda: [x["id"] for x in self.identite.societes(tout=True)]), "acces_societe": (lambda compte, soc: soc in self.droits.societes_de(compte)), "module_ouvert": (lambda soc, m: self.identite.module_ouvert(soc, m.id, m.importance, m.essentiel, m.instance)), "reglages": self.reglages,
                         "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "racine": self.racine, "point": self.points.appeler, "evolution": self.evolution,
                         "urgence": types.SimpleNamespace(freins=self.freins, freiner=self.freiner, en_crise=self.en_crise, crise=self.crise),
                         "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, cycle=self.cycle, sante=self.sante_module, sante_tous=self.sante_tous, contributions=self.contributions, extensions=lambda: self.extensions, capacites=self.capacites_de, catalogue=self.catalogue_modules, sections=self.sections_modules, gel=lambda: "gel" in self.freins(), activer=self.activer, desactiver=self.desactiver)})
@@ -201,12 +201,12 @@ class Noyau:
         connus, _ = self._connus()
         return [connus[i][0] for i in sorted(self._branches) if i in connus]
 
-    def _lecture(self, cle: str, args: dict, compte: str = ""):
+    def _lecture(self, cle: str, args: dict, compte: str = "", societe: str = ""):
         """Une lecture pour le compte d'un module : jamais une écriture, et un échec rend None au lieu de casser l'appelant."""
         e = self.catalogue.get(cle)
         if e is None or e.capacite.ecrit:
             raise PermissionError("« %s » n'est pas une capacité de lecture" % cle)
-        r = self.executeur.executer(cle, "cassandra", args, compte=compte, interne=True)
+        r = self.executeur.executer(cle, "cassandra", args, compte=compte, interne=True, societe=societe)
         return r.get("resultat") if r["statut"] == "faite" else None
 
     def _agir(self, cle: str, args: dict, compte: str, acteur: str, cause=None, essai: bool = False) -> dict:

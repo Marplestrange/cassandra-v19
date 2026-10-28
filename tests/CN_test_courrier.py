@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9eff43
+# VERSION CN : 0.1.0  #0e5f75
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module courrier : un vrai noyau, de vrais imaplib et smtplib, un serveur IMAP et un serveur SMTP de poche.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9eff43 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0e5f75 ▼▼▼
 """Bancs du module courrier : un vrai noyau, de vrais imaplib et smtplib, un serveur IMAP et un serveur SMTP de poche."""
 import base64
 import json
@@ -48,6 +48,7 @@ class Monde(unittest.TestCase):
         self.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
         self.n.brancher()
         self.assertTrue(self.n.activer("courrier")["ok"])
+        self.n.droits.regler_admin(BEA, True)
         self.ctx = self.n.executeur.contextes["courrier"]
         self.reglages_de(BEA, "127.0.0.1", self.imap.port, BEA, "mdp-imap")
         self.n.reglages.poser("courrier.smtp_hote", "127.0.0.1", BEA)

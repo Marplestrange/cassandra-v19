@@ -1,0 +1,15 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Migration 002_espaces.sql
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : coffre
+# ZONE       : CN
+# VERSION CN : 0.1.0  #a81f3d
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Migration 002_espaces.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)
+# MÉTHODE    : à compléter par l'auteur
+# ══════════════════════════════════════════════════════════════════════════════
+# FICHIER    : CN_002_espaces.sql  (empreinte du contenu #a81f3d)

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : salon
 # ZONE       : CN
-# VERSION CN : 0.1.1  #98a6a0
+# VERSION CN : 0.1.1  #e18822
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le salon : des fils de travail où les personnes et les agents se parlent.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=98a6a0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=e18822 ▼▼▼
 """Le salon : des fils de travail où les personnes et les agents se parlent.
 
 Porté de la V18 (`salon_*`), avec ses leçons :
@@ -379,6 +379,8 @@ def brancher(ctx):
         if f["proprietaire"] != moi_:
             raise PermissionError("seul le propriétaire d'un fil y invite")
         cible = str(compte or "").strip().lower()
+        if not ctx.dans_ma_societe(cible):
+            raise ValueError("ce compte n'a pas accès à cette société : on n'invite que les siens")
         try:
             existe = any(x["compte"] == cible for x in (ctx.executer_lecture("comptes.lister") or {}).get("comptes", []))
         except Exception:

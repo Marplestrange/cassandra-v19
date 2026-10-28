@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #769672
+# VERSION CN : 0.1.0  #f72602
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'installation d'un module par archive, de bout en bout : le téléversement HTTP, les capacités du module modules, les droits, le catalogue.
 # MÉTHODE    : un vrai noyau, une vraie passerelle HTTP, une vraie archive signée du module d'exemple
 # ═══════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=769672 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f72602 ▼▼▼
 """Le chemin que prend l'administrateur depuis la page App Store : il dépose une archive (POST d'octets), lit l'examen, consent aux permissions montrées, installe, puis désinstalle.
 Un compte sans le droit d'installer, ou sans session, n'obtient rien ; une capacité qui ne reçoit pas de fichier refuse d'en recevoir."""
 import http.client
@@ -152,7 +152,7 @@ class Installation(unittest.TestCase):
     def depose(self, mid, corps):
         d = self.base / "ext" / mid
         d.mkdir(parents=True, exist_ok=True)
-        entete = '[module]\nid = "%s"\nnom = "%s"\nversion = "0.1.0"\nnoyau_min = "0.1.0"\ndescription = "essai"\nconfiance = "local"\nimportance = "optionnel"\nsans = "rien"\n' % (mid, mid.capitalize())
+        entete = '[module]\nid = "%s"\nnom = "%s"\nversion = "0.1.0"\nnoyau_min = "0.1.0"\ndescription = "essai"\nconfiance = "local"\nimportance = "optionnel"\nsans = "rien"\n[[droits]]\nid = "utiliser"\nlibelle = "Utiliser"\ndefaut = true\n' % (mid, mid.capitalize())
         (d / "CN_manifeste.toml").write_text(entete + corps, encoding="utf-8")
         (d / "CN_module.py").write_text("def brancher(ctx):\n    pass\n", encoding="utf-8")
 

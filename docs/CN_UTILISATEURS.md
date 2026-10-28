@@ -12,7 +12,7 @@
 <!-- RÔLE       : Utilisateurs et groupes : ce que l'écran fait, ce que le moteur garantit, ce qui reste à faire. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=c7e724 ▼▼▼ -->
 # Utilisateurs et groupes
 
 Maquette de référence : `docs/CN_maquette-utilisateurs.html`. Écran : `interface/CN_comptes-ecran.js`. Moteur : `noyau/CN_droits.py`, `noyau/CN_identite.py`, modules `droits` et `comptes`.

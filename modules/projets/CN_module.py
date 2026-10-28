@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : projets
 # ZONE       : CN
-# VERSION CN : 0.1.1  #4fef41
+# VERSION CN : 0.1.1  #1c82d8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les projets.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=4fef41 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=1c82d8 ▼▼▼
 """Les projets.
 
 Porté de la V18 (`pj_*`, `projet_*`), avec ses leçons :
@@ -685,6 +685,8 @@ def brancher(ctx):
         moi = compte_agit()
         p = exiger(id, "equipe", moi)
         cible = str(compte or "").strip().lower()
+        if not ctx.dans_ma_societe(cible):
+            raise ValueError("ce compte n'a pas accès à cette société : on ne partage qu'avec les siens")
         r = str(role or "").strip().lower().replace("-", "")
         if r not in ROLES:
             raise ValueError("rôle inconnu (lecteur, auteur, coproprietaire)")

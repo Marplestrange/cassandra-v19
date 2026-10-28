@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d4cbaf
+# VERSION CN : 0.1.0  #dba918
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des mesures : le moteur (pur), la déclaration [[mesures]] des modules, et le module qui les assemble.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d4cbaf ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=dba918 ▼▼▼
 """Bancs des mesures : le moteur (pur), la déclaration [[mesures]] des modules, et le module qui les assemble."""
 import shutil
 import sys
@@ -197,7 +197,7 @@ class Declaration(unittest.TestCase):
     def brut(self, **mesure):
         m = {"id": "charge", "libelle": "Charge", "capacite": "lire"}
         m.update(mesure)
-        return {"module": {"id": "essai", "nom": "Essai", "version": "0.1.0", "noyau_min": "0.1.0", "description": "d", "confiance": "interne"},
+        return {"module": {"id": "essai", "nom": "Essai", "version": "0.1.0", "noyau_min": "0.1.0", "description": "d", "confiance": "interne"}, "droits": [{"id": "utiliser", "libelle": "Utiliser", "defaut": True}],
                 "capacites": [{"id": "lire", "libelle": "lire", "risque": "lecture"}], "mesures": [m]}
 
     def test_une_mesure_valide_se_construit(self):
@@ -228,6 +228,11 @@ version = "0.1.0"
 noyau_min = "0.1.0"
 description = "Une source de mesures pour les bancs"
 confiance = "interne"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
 
 [[capacites]]
 id = "courbe"

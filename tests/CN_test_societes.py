@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #000000
+# VERSION CN : 0.1.0  #fe698d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du socle société : tout compte a une société, la fiche est cloisonnée, les fonctions ne valent que dans la leur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fe698d ▼▼▼
 """Bancs du socle société : rattachement obligatoire des comptes, fiche cloisonnée, fonctions attachées à une société, superadministrateur seul maître de l'ensemble."""
 import shutil
 import sys
@@ -38,11 +38,11 @@ class Monde(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         base = Path(self.tmp.name)
         mods = base / "modules"
-        for m in ("droits", "comptes", "societes", "coffre"):
+        for m in ("droits", "comptes", "societes", "coffre", "ged", "reglages", "contacts"):
             shutil.copytree(RACINE / "modules" / m, mods / m, ignore=shutil.ignore_patterns("__pycache__"))
         self.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
         self.n.brancher()
-        for m in ("droits", "comptes", "societes", "coffre"):
+        for m in ("droits", "comptes", "societes", "coffre", "ged", "reglages", "contacts"):
             self.assertTrue(self.n.activer(m)["ok"], m)
         self.multi = True
         self.n.executeur.contextes["societes"].reglage = lambda nom, compte=None: self.multi if nom == "multi" else None
@@ -282,6 +282,178 @@ class Monde(unittest.TestCase):
         self.n.catalogue.get("comptes.transferer").defaire(self.n.executeur.contextes["comptes"], res["resultat"])
         self.assertEqual(self.idt.societe_de(CAM), "1")
         self.assertEqual(self.n.droits.groupes_de(CAM, "1"), ["s1.admin"])
+
+    # ── chaque société a ses modules ─────────────────────────────────────────
+    def test_un_module_n_est_ouvert_que_dans_les_societes_ou_on_l_a_ouvert(self):
+        self.monde()
+        self.ok("ged.sources", compte=CAM)                                                                    # la société principale a tout ce qui est actif
+        r = self.non("ged.sources", compte=DAN)                                                               # une autre société : rien d'ouvert d'office
+        self.assertIn("n'est pas ouvert", r.get("raison", "") + r.get("erreur", ""))
+        self.ok("societes.module_regler", compte=BEA, societe=FORM, module="ged", ouvert=True)
+        self.ok("ged.sources", compte=DAN)
+        self.ok("societes.module_regler", compte=BEA, societe=FORM, module="ged", ouvert=False)
+        self.non("ged.sources", compte=DAN)
+        self.ok("societes.module_regler", compte=BEA, societe="1", module="ged", ouvert=False)               # on peut aussi fermer un module à la société principale
+        self.non("ged.sources", compte=CAM)
+
+    def test_les_modules_vitaux_sont_ouverts_partout(self):
+        self.monde()
+        self.ok("societes.lister", compte=DAN)                                                                # societes, comptes, droits, coffre : vitaux
+        self.ok("coffre.espaces", compte=DAN)
+        self.ok("comptes.moi", compte=DAN)
+        r = self.non("societes.module_regler", compte=BEA, societe=FORM, module="comptes", ouvert=False)
+        self.assertIn("vital", r["erreur"])
+
+    def test_l_administrateur_d_une_societe_choisit_les_modules_de_sa_societe_seulement(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, societe=FORM, utilisateur=DAN, fonction="admin")
+        self.ok("societes.module_regler", compte=DAN, societe=FORM, module="ged", ouvert=True)
+        self.ok("ged.sources", compte=DAN)
+        self.ok("societes.module_regler", compte=DAN, societe=FORM, module="ged", ouvert=False)
+        self.non("ged.sources", compte=DAN)
+        self.non("societes.module_regler", compte=DAN, societe="1", module="ged", ouvert=False)                # pas celle des autres
+        self.assertTrue(self.ok("societes.modules", compte=DAN, societe=FORM)["peut_regler"])
+        mods = {m["id"]: m for m in self.ok("societes.modules", compte=DAN, societe=FORM)["modules"]}
+        self.assertTrue(mods["comptes"]["ouvert"] and mods["comptes"]["vital"])
+
+    def test_un_membre_ordinaire_n_ouvre_aucun_module(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, societe=FORM, utilisateur=DAN, fonction="membre")
+        self.non("societes.module_regler", compte=DAN, societe=FORM, module="ged", ouvert=True)
+        self.assertFalse(self.ok("societes.modules", compte=DAN, societe=FORM)["peut_regler"])
+
+    def test_un_module_d_instance_n_existe_que_dans_la_societe_principale(self):
+        self.monde()
+        idt = self.n.identite
+        self.assertTrue(idt.module_ouvert("1", "x", "optionnel", False, True))
+        self.assertFalse(idt.module_ouvert(FORM, "x", "optionnel", False, True))
+        idt.module_regler(FORM, "x", True)                                                                      # même « ouvert » par erreur : jamais ailleurs
+        self.assertFalse(idt.module_ouvert(FORM, "x", "vital", True, True))
+        self.assertTrue(idt.module_ouvert(FORM, "y", "vital", False, False))
+
+    def test_un_reglage_d_instance_ne_se_pose_que_depuis_la_societe_principale(self):
+        self.monde()
+        r = self.non("reglages.regler", compte=BEA, dans=FORM, cle="ged.docs_base", valeur="/tmp/x")
+        self.assertIn("société principale", r.get("erreur", "") + r.get("raison", ""))
+        self.ok("reglages.regler", compte=BEA, cle="ged.docs_base", valeur="")
+
+    def test_les_menus_et_les_droits_ne_montrent_que_les_modules_de_la_societe(self):
+        self.monde()
+        ctx = self.n.executeur.contextes["societes"]
+        ctx._societe.valeur = FORM
+        try:
+            ids = {m.id for m in ctx.manifestes_actifs()}
+            self.assertNotIn("ged", ids)
+            self.assertIn("comptes", ids)
+            self.assertIn("ged", {m.id for m in ctx.manifestes_actifs(toutes=True)})
+        finally:
+            ctx._societe.valeur = ""
+
+    def test_une_societe_creee_peut_recopier_les_modules_d_une_autre(self):
+        self.monde()
+        self.ok("societes.creer", compte=BEA, nom="Clone", identifiant="clone", modules_de="1")
+        self.assertTrue(self.idt.module_ouvert("clone", "ged"))
+        self.ok("societes.creer", compte=BEA, nom="Nu", identifiant="nu")
+        self.assertFalse(self.idt.module_ouvert("nu", "ged"))
+
+    # ── la gestion des utilisateurs par l'administrateur d'une société ───────
+    def test_l_administrateur_d_une_societe_gere_les_utilisateurs_de_sa_societe_seulement(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, utilisateur=CAM, fonction="admin")                          # CAM : administratrice de la société « 1 », pas de l'instance
+        self.assertFalse(self.n.droits.est_admin(CAM))
+        res = self.n.executeur.executer("comptes.creer", "humain", {"compte": EVE, "mot_de_passe": MDP}, compte=CAM)
+        self.assertEqual(res["statut"], "faite", res)
+        self.assertEqual(self.idt.societe_de(EVE), "1")                                                       # rangé dans SA société
+        vus = {c["compte"] for c in self.ok("comptes.lister", compte=CAM)["comptes"]}
+        self.assertIn(EVE, vus)
+        self.assertNotIn(DAN, vus)
+        for cap, args in (("comptes.desactiver", {"compte": DAN}), ("comptes.modifier", {"compte": DAN, "display_name": "x"}), ("comptes.supprimer", {"compte": DAN})):
+            r = self.n.executeur.executer(cap, "humain", args, compte=CAM)
+            self.assertEqual(r["statut"], "echec", (cap, r))
+        r = self.n.executeur.executer("comptes.creer", "humain", {"compte": "fay@x.fr", "mot_de_passe": MDP, "societe": FORM}, compte=CAM)
+        self.assertEqual(r["statut"], "echec", r)                                                             # pas dans une autre société
+        r = self.n.executeur.executer("comptes.desactiver", "humain", {"compte": EVE}, compte=CAM)
+        self.assertEqual(r["statut"], "faite", r)
+
+    def test_le_droit_de_gerer_les_comptes_ne_vaut_que_dans_la_societe_de_la_fonction(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, utilisateur=CAM, fonction="admin")
+        mes = self.n.executeur.executer("droits.mes_droits", "humain", {"compte": CAM}, compte=CAM)
+        self.assertEqual(mes["statut"], "faite", mes)
+        self.assertIn("comptes.gerer", mes["resultat"]["droits"])                                             # chez elle
+        mes2 = self.n.executeur.executer("droits.mes_droits", "humain", {"compte": CAM}, compte=CAM, societe=FORM)
+        self.assertEqual(mes2["statut"], "refuse", mes2)                                                      # elle n'a aucun accès à la société FORM
+        self.assertNotIn("comptes.gerer", self.n.droits.detenus(CAM, FORM)["droits"])
+
+    def test_un_utilisateur_peut_avoir_plusieurs_societes_sans_etre_administrateur(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, societe="1", utilisateur=DAN, fonction="membre")             # DAN est de FORM ; membre de la société principale aussi
+        self.assertEqual({s["id"] for s in self.ok("societes.lister", compte=DAN)["societes"]}, {"1", FORM})
+        self.assertFalse(self.n.droits.est_admin(DAN))
+        r = self.ex("societes.lister", compte=DAN, dans="1")
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertEqual(r["resultat"]["societe"], "1")
+        self.assertIn("identite", self.ok("societes.fiche_lire", compte=DAN, dans="1")["rubriques"])           # voir la fiche de « 1 » avec sa fonction de membre
+        r = self.n.executeur.executer("comptes.creer", "humain", {"compte": "zoe@x.fr", "mot_de_passe": MDP}, compte=DAN, societe="1")
+        self.assertIn(r["statut"], ("refuse", "echec"), r)                                                    # membre : il ne gère personne
+
+    def test_la_corbeille_des_comptes_est_celle_de_la_societe(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, utilisateur=CAM, fonction="admin")
+        self.n.executeur.executer("comptes.creer", "humain", {"compte": EVE, "mot_de_passe": MDP}, compte=CAM)
+        self.n.executeur.executer("comptes.supprimer", "humain", {"compte": EVE}, compte=CAM)
+        self.n.executeur.executer("comptes.supprimer", "humain", {"compte": DAN}, compte=BEA)               # un compte de FORM, supprimé par le superadministrateur
+        corbeille = self.ok("comptes.corbeille", compte=CAM)["corbeille"]
+        self.assertEqual({c["compte"] for c in corbeille}, {EVE})
+        tout = {c["compte"] for c in self.ok("comptes.corbeille", compte=BEA)["corbeille"]}
+        self.assertEqual(tout, {EVE, DAN})
+        id_dan = next(c["id"] for c in self.ok("comptes.corbeille", compte=BEA)["corbeille"] if c["compte"] == DAN)
+        r = self.n.executeur.executer("comptes.restaurer", "humain", {"corbeille": id_dan}, compte=CAM)
+        self.assertEqual(r["statut"], "echec", r)
+
+    # ── les réglages par société ─────────────────────────────────────────────
+    def lu(self, societe, cle="vue_modele"):
+        """Ce que le module des contacts lit pour ce réglage quand il agit dans cette société."""
+        ctx = self.n.executeur.contextes["contacts"]
+        ctx._societe.valeur = societe
+        try:
+            return ctx.reglage(cle)
+        finally:
+            ctx._societe.valeur = ""
+
+    def test_un_reglage_par_societe_suit_l_instance_tant_qu_on_ne_l_a_pas_pose(self):
+        self.monde()
+        self.assertEqual((self.lu("1"), self.lu(FORM)), ("expurgee", "expurgee"))
+        self.ok("reglages.regler", compte=BEA, cle="contacts.vue_modele", valeur="complete", pour_societe=FORM)
+        self.assertEqual(self.lu(FORM), "complete")
+        self.assertEqual(self.lu("1"), "expurgee")                                                            # les autres sociétés ne bougent pas
+        self.ok("reglages.reinitialiser", compte=BEA, cle="contacts.vue_modele", pour_societe=FORM)
+        self.assertEqual(self.lu(FORM), "expurgee")                                                           # retour à la valeur de l'instance
+
+    def test_seul_l_administrateur_de_la_societe_regle_ses_reglages(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, utilisateur=CAM, fonction="membre")
+        r = self.non("reglages.regler", compte=CAM, cle="contacts.vue_modele", valeur="complete", pour_societe="1")
+        self.assertIn("administrateur", r["erreur"])
+        self.ok("societes.affecter", compte=BEA, utilisateur=CAM, fonction="admin")
+        self.ok("reglages.regler", compte=CAM, cle="contacts.vue_modele", valeur="complete", pour_societe="1")
+        self.assertEqual(self.lu("1"), "complete")
+        r = self.non("reglages.regler", compte=CAM, cle="contacts.vue_modele", valeur="complete", pour_societe=FORM)    # pas la sienne
+        self.assertIn("pas la vôtre", r["erreur"])
+
+    def test_un_reglage_global_ne_se_pose_pas_pour_une_societe(self):
+        self.monde()
+        r = self.non("reglages.regler", compte=BEA, cle="comptes.session_heures", valeur=4, pour_societe="1")
+        self.assertIn("réglage global", r["erreur"])
+
+    def test_la_liste_des_reglages_dit_ce_que_la_societe_a_pose(self):
+        self.monde()
+        self.ok("reglages.regler", compte=BEA, cle="contacts.vue_modele", valeur="complete", pour_societe=FORM)
+        mine = {x["cle"]: x for x in self.ok("reglages.lire", compte=BEA, pour_societe=FORM)["reglages"] if x["portee"] == "societe"}
+        self.assertTrue(mine["contacts.vue_modele"]["pose"])
+        self.assertEqual(mine["contacts.vue_modele"]["valeur"], "complete")
+        autre = {x["cle"]: x for x in self.ok("reglages.lire", compte=BEA, pour_societe="1")["reglages"] if x["portee"] == "societe"}
+        self.assertFalse(autre["contacts.vue_modele"]["pose"])
 
     def test_renommer_une_societe_se_defait(self):
         self.monde()

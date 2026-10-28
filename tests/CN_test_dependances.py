@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #62d7b5
+# VERSION CN : 0.1.0  #f4bdb6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les dépendances versionnées des modules : plages de version, conflits, modules suggérés, services fournis.
 # MÉTHODE    : fabrique des manifestes d'essai en mémoire et éprouve l'ordre, les refus et les messages
 # ═══════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=62d7b5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f4bdb6 ▼▼▼
 """Un module requiert « dns >=0.2, <1 » : la version installée doit y répondre. Il peut refuser la compagnie d'un autre (`conflits`), en suggérer un (`suggere`) et
 fournir un nom de service (`fournit = ["courrier"]`) qu'un autre requiert sans savoir QUEL module le rend."""
 import sys
@@ -27,7 +27,7 @@ from noyau import CN_manifeste as M  # noqa: E402
 def mod(mid, version="1.0.0", **plus):
     m = {"id": mid, "nom": mid.capitalize(), "version": version, "noyau_min": "0.1.0", "description": "Module d'essai " + mid, "confiance": "interne"}
     m.update(plus)
-    return M.construire({"module": m}, "essai")
+    return M.construire({"module": m, "droits": [{"id": "utiliser", "libelle": "Utiliser", "defaut": True}]}, "essai")
 
 
 class Versions(unittest.TestCase):
@@ -75,7 +75,7 @@ class Validation(unittest.TestCase):
     def brut(self, **plus):
         d = {"id": "essai", "nom": "Essai", "version": "1.0.0", "noyau_min": "0.1.0", "description": "x", "confiance": "interne"}
         d.update(plus)
-        return {"module": d}
+        return {"module": d, "droits": [{"id": "utiliser", "libelle": "Utiliser", "defaut": True}]}
 
     def test_les_champs_nouveaux_se_valident(self):
         self.assertEqual(M.valider(self.brut(requiert=["dns >=0.2"], conflits=["autre"], suggere=["x" * 3], fournit=["courrier"])), [])
@@ -92,7 +92,7 @@ class Validation(unittest.TestCase):
 
 class PointsExtension(unittest.TestCase):
     def brut(self, **extra):
-        d = {"module": {"id": "essai", "nom": "Essai", "version": "1.0.0", "noyau_min": "0.1.0", "description": "x", "confiance": "interne"}}
+        d = {"module": {"id": "essai", "nom": "Essai", "version": "1.0.0", "noyau_min": "0.1.0", "description": "x", "confiance": "interne"}, "droits": [{"id": "utiliser", "libelle": "Utiliser", "defaut": True}]}
         d.update(extra)
         return d
 
@@ -108,10 +108,10 @@ class PointsExtension(unittest.TestCase):
 
     def test_une_contribution_vers_un_point_inexistant_ou_incomplete_est_un_defaut(self):
         hote = M.construire(self.brut(points_extension=[{"id": "colonne", "libelle": "Une colonne", "attend": ["titre"]}]), "essai")
-        hote = M.construire({"module": dict(self.brut()["module"], id="hote"), "points_extension": [{"id": "colonne", "libelle": "Une colonne", "attend": ["titre"]}]}, "essai")
+        hote = M.construire({"module": dict(self.brut()["module"], id="hote"), "droits": [{"id": "utiliser", "libelle": "Utiliser", "defaut": True}], "points_extension": [{"id": "colonne", "libelle": "Une colonne", "attend": ["titre"]}]}, "essai")
 
         def invite(point, donnees):
-            return M.construire({"module": dict(self.brut()["module"], id="invite"), "contributions": [{"point": point, "id": "cc", "libelle": "C", "donnees": donnees}]}, "essai")
+            return M.construire({"module": dict(self.brut()["module"], id="invite"), "droits": [{"id": "utiliser", "libelle": "Utiliser", "defaut": True}], "contributions": [{"point": point, "id": "cc", "libelle": "C", "donnees": donnees}]}, "essai")
         self.assertEqual(M.verifier_ensemble([hote, invite("hote:colonne", {"titre": "Prix"})]), [])
         self.assertTrue(any("n'offre pas ce point" in x for x in M.verifier_ensemble([hote, invite("hote:inconnu", {})])))
         self.assertTrue(any("doit porter : titre" in x for x in M.verifier_ensemble([hote, invite("hote:colonne", {})])))

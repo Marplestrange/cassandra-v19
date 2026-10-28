@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.2  #ddade5
+# VERSION CN : 0.1.2  #9f984d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=ddade5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=9f984d ▼▼▼
 [module]
 id = "agents"
 nom = "Agents"
@@ -46,21 +46,17 @@ emet = ["conversation.tour"]
 [[reglages]]
 id = "persona_cassandra"
 libelle = "Le ton de Cassandra pour toute l'instance (vide : le ton d'origine)"
-
 [[reglages]]
 id = "persona_itare"
 libelle = "Le ton d'Itare pour toute l'instance (vide : le ton d'origine)"
-
 [[reglages]]
 id = "role_cassandra"
 libelle = "Le rôle de modèle qui fait parler Cassandra"
 defaut = "principal"
-
 [[reglages]]
 id = "role_itare"
 libelle = "Le rôle de modèle d'Itare quand le compte n'a pas choisi le sien"
 defaut = "itare_citadelle"
-
 [[reglages]]
 id = "max_tours"
 libelle = "Étapes d'outils au plus par tour"

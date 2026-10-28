@@ -6,18 +6,18 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #000000
+// VERSION CN : 0.1.0  #2a3f4e
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran de la fiche société : identité, établissements, horaires, présence, responsables, fonctions, pièces, banque, conformité, habillage, coffre, multi-sociétés, historique.
 // MÉTHODE    : une scène (CASS.sceneSurMesure.societes) ; la page vient de l'écran ouvert (s_identite, s_etabs…). Chaque champ s'enregistre à la validation et passe par une capacité du module Sociétés.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=2a3f4e ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS, K = CASS.kit, esc = K.esc, agir = K.agir, dire = K.dire, confirmer = K.confirmer;
   const PAGES = { vue_societe: "identite", s_identite: "identite", s_etabs: "etabs", s_horaires: "horaires", s_presence: "presence", s_equipe: "equipe", s_fonctions: "fonctions", s_pieces: "pieces",
-    s_banque: "banque", s_conformite: "conformite", s_habillage: "habillage", s_coffre: "coffre", s_sert: "sert", s_multi: "multi", s_histo: "histo" };
+    s_banque: "banque", s_conformite: "conformite", s_habillage: "habillage", s_coffre: "coffre", s_modules: "modules", s_reglages: "reglages", s_sert: "sert", s_multi: "multi", s_histo: "histo" };
   const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
   const DOMAINES = [["fiche", "Fiche société", 0], ["etablissements", "Établissements", 0], ["horaires", "Horaires et calendrier", 0], ["pieces", "Pièces et échéances", 0], ["banque", "Banque et facturation", 1],
     ["conformite", "Conformité", 0], ["habillage", "Habillage et modèles", 0], ["equipe", "Fonctions et responsables", 1]];
@@ -100,7 +100,7 @@
     // ── chargement ───────────────────────────────────────────────────────
     async function chargerBase() {
       const l = await lire("societes.lister");
-      if (l) { S.liste = l.societes || []; S.multi = !!l.multi; S.superadmin = !!l.superadmin; if (!S.actif) { let m = ""; try { m = localStorage.getItem("cn.societe") || ""; } catch (e) { m = ""; } S.actif = S.liste.some((x) => x.id === m) ? m : (l.societe || (S.liste[0] || {}).id || "1"); } }
+      if (l) { S.liste = l.societes || []; S.multi = !!l.multi; S.superadmin = !!l.superadmin; if (!S.actif) { const m = CASS.societe || ""; S.actif = S.liste.some((x) => x.id === m) ? m : (l.societe || (S.liste[0] || {}).id || "1"); } }
       if (!S.liste.some((x) => x.id === S.actif)) S.actif = (S.liste[0] || {}).id || "1";
     }
     async function chargerFiche() { const f = await lire("societes.fiche_lire", { societe: S.actif }); S.fiche = f ? { rubriques: f.rubriques || {}, acces: f.acces || {} } : { rubriques: {}, acces: {} }; }
@@ -109,6 +109,8 @@
       const p = S.page;
       if (p === "fonctions") { const [f, m] = await Promise.all([lire("societes.fonctions", { societe: S.actif }), lire("societes.membres", { societe: S.actif })]); S.fonc = f; S.membres = (m && m.membres) || []; }
       if (p === "equipe") { const m = await lire("societes.membres", { societe: S.actif }); S.membres = (m && m.membres) || []; }
+      if (p === "modules") { const m = await lire("societes.modules", { societe: S.actif }); S.mods = (m && m.modules) || []; S.modsPeut = !!(m && m.peut_regler); }
+      if (p === "reglages") { const r = await lire("reglages.lire", { pour_societe: S.actif }); S.regl = ((r && r.reglages) || []).filter((x) => x.portee === "societe"); }
       if (p === "pieces") { const e = await lire("societes.echeances", { societe: S.actif }); S.ech = (e && e.echeances) || []; }
       if (p === "histo") { const h = await lire("societes.historique", { societe: S.actif, limite: 100 }); S.hist = (h && h.historique) || []; }
       if (p === "coffre") { const m = await lire("societes.membres", { societe: S.actif }); S.membres = (m && m.membres) || []; S.erreur = ""; await chargerCoffre(); }
@@ -123,7 +125,7 @@
       }
     }
     async function recharger() { await chargerFiche(); await chargerPage(); dessiner(); }
-    async function choisir(id) { S.actif = id; try { localStorage.setItem("cn.societe", id); } catch (e) { /* sans mémoire locale, on garde le choix de la page */ } S.menu = false; await recharger(); }
+    async function choisir(id) { S.actif = id; S.menu = false; await recharger(); }      // la société qu'on ADMINISTRE ici ; le sélecteur de l'en-tête, lui, change toute l\'application
 
     // ── complétude ───────────────────────────────────────────────────────
     const CHAMPS = [["identite", "nom", "Raison sociale", 2], ["identite", "forme", "Forme juridique", 1], ["identite", "siren", "SIREN valide", 2], ["siege", "adresse", "Adresse du siège", 2], ["siege", "ville", "Ville", 1], ["siege", "email", "Courriel de contact", 2],
@@ -270,6 +272,24 @@
         (Object.keys(cols).length ? '<section class="carte"><h3>Ce que vous voyez</h3><div class="tw"><table><thead><tr><th>Collection</th><th>Secrets</th></tr></thead><tbody>' + Object.keys(cols).map((k) => "<tr><td><b>" + esc(k) + "</b></td><td>" + cols[k] + "</td></tr>").join("") + '</tbody></table></div><p class="hint">Seuls les noms apparaissent ici, jamais les valeurs.</p></section>' : "") + "</div>" +
         '<aside class="carte"><h3>Garde-fous</h3><div class="list"><div class="etab"><b>Droits</b><div class="row">' + chip("coffre.utiliser") + chip("espace : membre", "warn") + '</div><div class="hint" style="margin:0">L’accès se donne par appartenance à l’espace, pas par un droit global.</div></div><div class="etab"><b>Départ d’un administrateur</b><div class="hint" style="margin:0">Impossible tant qu’il en resterait moins d’un : le coffre ne se perd pas.</div></div><div class="etab"><b>Journal</b><div class="hint" style="margin:0">Chaque lecture, écriture et accord est inscrit : qui, quand, sur quoi.</div></div></div></aside></div>';
     }
+    function pModules() {
+      const M = S.mods || [], nom = nomSoc();
+      return '<div class="main"><section class="carte"><h2>' + ic("globe") + "Modules de " + esc(nom) + '</h2><p class="sub">Chaque société a ses modules. Les modules vitaux (comptes, droits, sociétés, coffre…) sont ouverts partout ; les autres le sont là où on les ouvre. Un module fermé disparaît des menus et refuse ses gestes pour cette société.' + (S.modsPeut ? " Une société choisit ses modules parmi ceux de l’instance ; la base de l’installation (hébergement, sécurité, agents, logithèque) reste à la société principale." : " Seul l’administrateur de la société ouvre ou ferme ses modules.") + '</p><div class="tw"><table><thead><tr><th>Module</th><th>Importance</th><th>Dans cette société</th></tr></thead><tbody>' +
+        (M.length ? M.map((m) => "<tr><td><b>" + esc(m.nom || m.id) + '</b><br><small style="color:var(--txt-faint)">' + esc(m.id) + "</small></td><td>" + chip(m.importance, m.importance === "vital" ? "acc" : "") + "</td><td>" + (m.instance ? chip("société principale seulement", "warn") : m.vital ? chip("toujours ouvert", "ok") : '<button class="tg' + (m.ouvert ? " on" : "") + '"' + (S.modsPeut ? "" : " disabled") + ' data-a="mod" data-id="' + esc(m.id) + '" data-o="' + (m.ouvert ? 1 : 0) + '" role="switch" aria-checked="' + !!m.ouvert + '" aria-label="' + esc(m.nom || m.id) + ' ouvert dans cette société"></button>') + "</td></tr>").join("") : '<tr><td colspan="3" class="vide">Aucun module.</td></tr>') + "</tbody></table></div></section></div>";
+    }
+    function pReglages() {
+      const L = S.regl || [], ro = !peut("equipe", 3) && !S.superadmin, par = {};
+      L.forEach((x) => { (par[x.module] = par[x.module] || []).push(x); });
+      const champ = (x) => {
+        const id = "rg-" + x.cle.replace(/[^a-z0-9]/gi, "_"), v = x.valeur === null || x.valeur === undefined ? "" : x.valeur, dis = ro ? " disabled" : "";
+        if (x.type === "booleen") return '<select id="' + id + '" data-rg="' + esc(x.cle) + '" data-t="booleen"' + dis + '><option value="1"' + (v ? " selected" : "") + '>Oui</option><option value="0"' + (v ? "" : " selected") + ">Non</option></select>";
+        if (x.type === "choix") return '<select id="' + id + '" data-rg="' + esc(x.cle) + '" data-t="choix"' + dis + ">" + (x.choix || []).map((c) => "<option" + (c === v ? " selected" : "") + ">" + esc(c) + "</option>").join("") + "</select>";
+        if (x.type === "secret") return '<input id="' + id + '" type="password" data-rg="' + esc(x.cle) + '" data-t="secret" value="' + (v ? "***" : "") + '" placeholder="valeur secrète"' + dis + ' autocomplete="new-password">';
+        return '<input id="' + id + '" type="' + (x.type === "entier" ? "number" : "text") + '" data-rg="' + esc(x.cle) + '" data-t="' + x.type + '" value="' + esc(v) + '"' + dis + ' autocomplete="off">';
+      };
+      const cartes = Object.keys(par).sort().map((m) => '<section class="carte"><h3>' + esc(m) + '</h3><div class="list">' + par[m].map((x) => '<div class="etab"><div class="row"><label class="f" for="rg-' + esc(x.cle.replace(/[^a-z0-9]/gi, "_")) + '" style="margin:0">' + esc(x.libelle) + '</label><span class="sp"></span>' + (x.pose ? chip("propre à la société", "acc") : chip("valeur de l’instance")) + (x.pose && !ro ? '<button class="btn sm" data-a="rg-reset" data-k="' + esc(x.cle) + '">Reprendre celle de l’instance</button>' : "") + "</div>" + champ(x) + (x.aide ? '<div class="hint" style="margin:0">' + esc(x.aide) + "</div>" : "") + "</div>").join("") + "</div></section>").join("");
+      return '<div class="main"><section class="carte"><h2>' + ic("globe") + "Réglages de " + esc(nomSoc()) + '</h2><p class="sub">Les réglages qui peuvent différer d’une société à l’autre (personas des agents, identité de la billetterie, adresse du progiciel…). Tant qu’une société n’a rien posé, elle suit la valeur de l’instance ; ce qu’elle pose ne change rien pour les autres.' + (ro ? " Seul l’administrateur de la société les modifie." : "") + "</p></section>" + (cartes || '<div class="carte"><div class="vide">Aucun réglage par société dans les modules ouverts.</div></div>') + "</div>";
+    }
     function pSert() {
       return '<div class="main"><section class="carte"><h2>' + ic("globe") + 'Où ça sert</h2><p class="sub">Chaque module qui a besoin de nommer la société lit « societes.carte » : jamais la banque, jamais les responsables. Les modules ci-dessous sont ceux à brancher ; aucun n’est encore relié.</p><div class="tw"><table><thead><tr><th>Module</th><th>Ce qu’il lira</th><th>État</th></tr></thead><tbody>' +
         CONSOMMATEURS.map((c) => "<tr><td><b>" + c[0] + "</b></td><td>" + c[1] + "</td><td>" + chip("à brancher", "warn") + "</td></tr>").join("") + "</tbody></table></div></section>" +
@@ -281,13 +301,13 @@
         (sup ? '<div class="row" style="margin-top:10px"><button class="btn pri" data-a="multi-on">Activer plusieurs sociétés</button><span class="hint">Réservé au superadministrateur. Le module Multi-sociétés de l’App Store ajoutera le sélecteur dans chaque écran, l’héritage du groupe et la vue consolidée.</span></div>' : '<p class="hint">Seul le superadministrateur peut l’activer.</p>') + "</div></section></div>";
       return '<div class="main"><section class="carte"><div class="row"><h2 style="margin:0">' + ic("pin") + 'Sociétés de l’instance</h2>' + chip("Activé", "ok") + '<span class="sp"></span>' + (sup ? '<button class="btn sm" data-a="multi-off">Revenir à une société</button>' : "") + "</div><p class=\"sub\">Seul le superadministrateur crée, archive et administre l’ensemble des sociétés ; l’administrateur d’une société ne gère que la sienne.</p>" +
         '<div class="tw"><table><thead><tr><th>Société</th><th>État</th><th></th></tr></thead><tbody>' + S.liste.map((x) => "<tr><td><div class=\"row\">" + nomAv(x.nom, x.id === S.actif ? R("habillage").accent : "") + "<span><b>" + esc(x.nom) + "</b> " + (x.principale ? chip("principale", "acc") : "") + '<br><small style="color:var(--txt-faint)">' + esc(x.id) + "</small></span></div></td><td>" + (x.archivee ? chip("archivée", "dng") : chip("active", "ok")) + '</td><td class="row">' + (x.archivee ? "" : '<button class="btn sm" data-a="soc" data-id="' + esc(x.id) + '" data-go="1">Ouvrir</button>') + (sup && !x.principale ? (x.archivee ? '<button class="btn sm" data-a="rouvrir" data-id="' + esc(x.id) + '">Rouvrir</button>' : '<button class="btn sm dng" data-a="archiver" data-id="' + esc(x.id) + '">Archiver</button>') : "") + "</td></tr>").join("") + "</tbody></table></div>" +
-        (sup ? '<div class="row" style="margin-top:12px"><input id="sc-n" type="text" placeholder="Nom de la nouvelle société" style="flex:1;min-width:220px"><input id="sc-a" type="text" placeholder="Administrateur (e-mail d’un compte)" style="flex:1;min-width:220px"><button class="btn pri" data-a="soc-add">' + ic("plus") + "Créer la société</button></div><p class=\"hint\">La société reçoit ses sept fonctions et son espace de coffre ; l’administrateur désigné en est le premier administrateur.</p>" : "") + "</section></div>";
+        (sup ? '<div class="row" style="margin-top:12px"><input id="sc-n" type="text" placeholder="Nom de la nouvelle société" style="flex:1;min-width:220px"><input id="sc-a" type="text" placeholder="Administrateur (e-mail d’un compte)" style="flex:1;min-width:220px"><label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="sc-m" style="width:auto"> Reprendre les modules de la société principale</label><button class="btn pri" data-a="soc-add">' + ic("plus") + "Créer la société</button></div><p class=\"hint\">La société reçoit ses sept fonctions et son espace de coffre ; l’administrateur désigné en est le premier administrateur.</p>" : "") + "</section></div>";
     }
     function pHisto() {
       return '<div class="main"><section class="carte"><h2>' + ic("clock") + 'Historique</h2><p class="sub">Chaque changement de la fiche : qui, quand, et le geste pour le défaire quand c’est possible.</p><div class="row" style="margin-bottom:8px"><button class="btn" data-a="exporter">' + ic("down") + 'Exporter la fiche</button><label class="btn" for="so-imp" style="cursor:pointer">Importer une fiche</label><input type="file" id="so-imp" accept="application/json,.json" hidden><span class="hint">Pour dupliquer une société ou sauvegarder l’identité. Ni l’IBAN ni les responsables n’y figurent.</span></div>' +
         (S.hist.length ? S.hist.map((e) => '<div class="ev"><time>' + new Date(e.ts * 1000).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) + "</time><span>" + chip(e.qui || "système", e.qui ? "" : "acc") + " " + esc(e.resume) + (e.rubrique ? " " + chip(e.rubrique) : "") + "</span>" + (e.rubrique && e.rubrique !== "banque" && e.rubrique !== "roles" && /^a modifié/.test(e.resume) && peut("fiche", 2) ? '<button class="btn sm" data-a="defaire" data-id="' + e.id + '">Défaire</button>' : "<span></span>") + "</div>").join("") : '<div class="vide">Rien pour l’instant. Modifiez un champ de l’identité : il apparaît ici.</div>') + "</section></div>";
     }
-    const PAGE = { identite: pIdentite, etabs: pEtabs, horaires: pHoraires, presence: pPresence, equipe: pEquipe, fonctions: pFonctions, pieces: pPieces, banque: pBanque, conformite: pConformite, habillage: pHabillage, coffre: pCoffre, sert: pSert, multi: pMulti, histo: pHisto };
+    const PAGE = { identite: pIdentite, etabs: pEtabs, horaires: pHoraires, presence: pPresence, equipe: pEquipe, fonctions: pFonctions, pieces: pPieces, banque: pBanque, conformite: pConformite, habillage: pHabillage, coffre: pCoffre, modules: pModules, reglages: pReglages, sert: pSert, multi: pMulti, histo: pHisto };
     function dessiner() {
       racine.innerHTML = entete() + (S.erreur ? '<div class="carte"><span style="color:var(--danger)">' + esc(S.erreur) + "</span></div>" : "") + (S.charge ? '<div class="carte"><div class="vide">Chargement…</div></div>' : PAGE[S.page]());
     }
@@ -334,9 +354,11 @@
       else if (k === "cmode") { const mon = S.espaces.find((x) => x.id === "s:" + S.actif); let url = ""; if (id === "externe") { url = await promptUrl(); if (!url) return; } if (await geste("coffre.regler", { espace: mon.id, mode: id, url: url }, "Mode du coffre réglé.")) { await chargerCoffre(); dessiner(); } }
       else if (k === "cof-accorder") { const u = val("#cm-n"); if (!u) { dire("Tout le monde est déjà membre.", "err"); return; } const r = val("#cm-r"), c = val("#cm-c"); if (await geste("coffre.accorder", { espace: "s:" + S.actif, utilisateur: u, role: r, collections: c === "" ? "" : c, expire: val("#cm-e") }, "Accès donné.")) { await chargerCoffre(); dessiner(); } }
       else if (k === "cof-retirer") { if (!await confirmer("Retirer l’accès de " + a.dataset.c + " ?", "<p>Il ne verra plus ce coffre. Les secrets qu’il a déposés restent.</p>", "Retirer", true)) return; if (await geste("coffre.retirer", { espace: "s:" + S.actif, utilisateur: a.dataset.c }, "Accès retiré.")) { await chargerCoffre(); dessiner(); } }
+      else if (k === "rg-reset") { if (await geste("reglages.reinitialiser", { cle: id || a.dataset.k, pour_societe: S.actif }, "Valeur de l’instance rétablie.")) { await chargerPage(); dessiner(); } }
+      else if (k === "mod") { if (await geste("societes.module_regler", { societe: S.actif, module: id, ouvert: a.dataset.o !== "1" })) { await chargerPage(); dessiner(); } }
       else if (k === "multi-on") { if (await geste("reglages.regler", { cle: "societes.multi", valeur: true }, "Plusieurs sociétés activées.")) { await chargerBase(); await chargerPage(); dessiner(); } }
       else if (k === "multi-off") { if (S.liste.filter((x) => !x.archivee).length > 1) { dire("Archivez d’abord les autres sociétés.", "err"); return; } if (await geste("reglages.regler", { cle: "societes.multi", valeur: false }, "Retour à une seule société.")) { await chargerBase(); await chargerPage(); dessiner(); } }
-      else if (k === "soc-add") { const n = val("#sc-n"), adm = val("#sc-a"); if (!n) { dire("Un nom pour la société.", "err"); return; } if (await geste("societes.creer", { nom: n, administrateur: adm }, "Société créée avec ses fonctions et son coffre.")) { await chargerBase(); dessiner(); } }
+      else if (k === "soc-add") { const n = val("#sc-n"), adm = val("#sc-a"); if (!n) { dire("Un nom pour la société.", "err"); return; } const reprise = !!($("#sc-m") && $("#sc-m").checked); if (await geste("societes.creer", { nom: n, administrateur: adm, modules_de: reprise ? "1" : "" }, "Société créée avec ses fonctions et son coffre.")) { await chargerBase(); dessiner(); } }
       else if (k === "archiver") { if (!await confirmer("Archiver cette société ?", "<p>Rien n’est effacé ; elle n’est plus proposée. Elle ne doit plus avoir de comptes.</p>", "Archiver", true)) return; if (await geste("societes.archiver", { societe: id }, "Société archivée.")) { await chargerBase(); dessiner(); } }
       else if (k === "rouvrir") { if (await geste("societes.rouvrir", { societe: id }, "Société rouverte.")) { await chargerBase(); dessiner(); } }
       else if (k === "exporter") {
@@ -364,6 +386,12 @@
         if (!await regler(rub, v)) { await chargerFiche(); dessiner(); return; }
         majLegere(); }
       else if (t.dataset.h !== undefined) { const j = (R("horaires").jours || []).map((x) => Object.assign({}, x)); j[+t.dataset.h][t.dataset.w] = t.value; if (!await regler("horaires", { jours: j })) await chargerFiche(); dessiner(); }
+      else if (t.dataset.rg) {
+        const x = (S.regl || []).find((y) => y.cle === t.dataset.rg) || {}, ty = t.dataset.t; let v = t.value;
+        if (ty === "booleen") v = t.value === "1"; else if (ty === "entier") v = v === "" ? null : Number(v);
+        if (ty === "secret") { if (v === "***") return; if (await geste("reglages.regler_secret", { cle: x.cle, valeur: v, pour_societe: S.actif }, "Réglage enregistré.")) await chargerPage(); }
+        else if (await geste("reglages.regler", { cle: x.cle, valeur: v, pour_societe: S.actif }, "Réglage enregistré.")) await chargerPage();
+        dessiner(); }
       else if (t.dataset.role) { const v = {}; v[t.dataset.role] = t.value; await regler("roles", v); dessiner(); }
       else if (t.dataset.fc) { const p = t.dataset.fc.split("|"), n = +t.value, d = DOMAINES.find((x) => x[0] === p[1]); if (n === 3 && d && d[2] && !await confirmer("Droit sensible", "<p>« Gérer » « " + esc(d[1]) + " » donne accès à des gestes sensibles ; chaque usage sera journalisé.</p>", "Accorder", true)) { await chargerPage(); dessiner(); return; } if (await geste("societes.fonction_regler", { societe: S.actif, fonction: p[0], domaine: p[1], niveau: n })) await chargerPage(); dessiner(); }
       else if (t.dataset.af !== undefined) { if (await geste("societes.affecter", { societe: S.actif, utilisateur: t.dataset.af, fonction: t.value }, "Fonction donnée.")) await chargerPage(); dessiner(); }

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f5b1f9
+# VERSION CN : 0.1.0  #f13316
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f5b1f9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f13316 ▼▼▼
 """La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
 
 Leçon de la V18 : un verrou SQLite vient presque toujours d'une connexion laissée ouverte.
@@ -80,6 +80,8 @@ CREATE TABLE IF NOT EXISTS societes(
   id TEXT PRIMARY KEY, nom TEXT NOT NULL DEFAULT '', principale INTEGER NOT NULL DEFAULT 0,
   archivee INTEGER NOT NULL DEFAULT 0, cree REAL NOT NULL DEFAULT 0);
 INSERT OR IGNORE INTO societes(id, nom, principale, cree) VALUES('1', 'Société principale', 1, 0);
+-- Les modules de chaque société : un module « vital » est ouvert partout ; les autres le sont là où on les a ouverts. Sans ligne : ouvert dans la société principale seulement.
+CREATE TABLE IF NOT EXISTS societe_modules(societe TEXT NOT NULL, module TEXT NOT NULL, actif INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(societe, module));
 -- Un groupe de droits peut être attaché à UNE société : c'est une « fonction » (administrateur, comptable…) qui ne vaut que là.
 CREATE TABLE IF NOT EXISTS droit_groupe_portee(groupe TEXT PRIMARY KEY, societe TEXT NOT NULL);
 """

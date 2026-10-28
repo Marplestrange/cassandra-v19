@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : urgence
 # ZONE       : CN
-# VERSION CN : 0.2.0  #7eeff7
+# VERSION CN : 0.2.0  #3e5430
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les gestes d'urgence : geler l'autonomie des agents (ils observent, n'agissent plus), couper les envois (rien ne sort plus de la maison), fermer les sessions des autres, lever la crise du noyau, et CONFINER la machine (mots de passe SSH coupés, réseau fermé sauf à votre session, avec une échéance qui rouvre seule). Aucun n'est un outil d'agent : une session humaine, un mot tapé, une justification. Le danger du confinement est de se couper soi-même : l'adresse de la session vient de la connexion, jamais de la demande, et la porte se rouvre toute seule.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=7eeff7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=3e5430 ▼▼▼
 [module]
 id = "urgence"
 nom = "Urgence"
@@ -22,6 +22,7 @@ description = "Les gestes d'urgence : geler l'autonomie des agents (ils observen
 confiance = "interne"
 famille = "securite"
 importance = "important"
+instance = true
 sans = "Plus de gestes d'urgence : on ne peut plus geler les agents ni couper les envois d'un clic."
 requiert = ["droits", "comptes"]
 

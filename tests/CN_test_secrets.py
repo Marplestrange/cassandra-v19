@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7d240e
+# VERSION CN : 0.1.0  #3fecba
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des secrets : chiffrés au repos, liés à leur réglage et à leur compte, jamais dans un historique ni un résultat, et défaisables sans être lus.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7d240e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3fecba ▼▼▼
 """Bancs des secrets : chiffrés au repos, liés à leur réglage et à leur compte, jamais dans un historique ni un résultat, et défaisables sans être lus."""
 import json
 import shutil
@@ -37,6 +37,11 @@ MANIFESTE = textwrap.dedent('''
     version = "0.1.0"
     noyau_min = "0.1.0"
     description = "Un module qui déclare des secrets."
+
+    [[droits]]
+    id = "utiliser"
+    libelle = "Utiliser"
+    defaut = true
 
     [[reglages]]
     id = "jeton"

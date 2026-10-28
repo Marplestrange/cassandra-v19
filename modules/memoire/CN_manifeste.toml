@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.1  #feb69c
+# VERSION CN : 0.1.1  #e6206f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La mémoire de Cassandra : un souvenir est un fait daté, prouvé, propriétaire, corrigeable d'une phrase. Une seule porte d'écriture avec ses gardes (secret, consigne, données sensibles, sujet, quotas), des versions liées plutôt que des éditions, un veto pour les écritures critiques, des doutes posés à l'humain, des épisodes, des rappels conditionnés aux capteurs, un journal chaîné par empreintes. Un état se mesure, il ne se rappelle pas : « je ne sais pas » est une réponse de succès. Cloisonnée : on ne voit que sa portée.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=feb69c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=e6206f ▼▼▼
 [module]
 id = "memoire"
 nom = "Mémoire"
@@ -22,6 +22,7 @@ description = "La mémoire de Cassandra : un souvenir est un fait daté, prouvé
 confiance = "interne"
 famille = "agents"
 importance = "important"
+instance = true
 sans = "Cassandra n'a plus de mémoire entre deux échanges : elle ne retient plus rien de nouveau."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"

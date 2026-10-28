@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #5e4f46
+// VERSION CN : 0.2.0  #e2fc4a
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Les pages « Utilisateurs et groupes » : listes, fiches, droits par utilisateur et par groupe, matrice, « qui peut… ? », journal.
 // MÉTHODE    : une seule scène (CASS.sceneSurMesure.comptes) ; la page vient de l'écran ouvert (u_liste, u_nouveau, g_liste, g_nouveau, matrice, qui, journal) et la navigation interne ne change que l'état.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=5e4f46 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=e2fc4a ▼▼▼
 // Les données viennent des capacités comptes.* (lister, creer, modifier, desactiver, reactiver, creer_jeton, regles_mdp, moi) et droits.* (etat, catalogue, decisions, appliquer, groupe, membre, qui_peut, voir_comme, journal).
 // Un droit se règle en trois états (hérité, accordé, refusé) ; la décision et son pourquoi viennent du moteur (droits.decisions), jamais recalculés ici.
 (function () {
@@ -85,9 +85,10 @@
     async function charger() {
       const [l, e, c, m, so] = await Promise.all([lire("comptes.lister"), lire("droits.etat"), lire("droits.catalogue"), lire("comptes.moi"), lire("societes.lister")]);
       S.societes = (so && so.societes) || []; S.superadmin = !!(so && so.superadmin); S.societeActive = (so && so.societe) || "1";
+      S.droitsOk = !!e; if (!e) S.erreur = "";                                // sans le droit de régler les droits fins : une vue réduite, par fonctions
       S.comptes = (l && l.comptes) || []; S.etat = e || { admins: [], groupes: [], accords: [] }; S.catalogue = (c && c.droits) || []; S.moi = (m && (m.compte || (m.profil && m.profil.compte))) || "";
       const humains = S.comptes.filter((x) => x.type !== "systeme").slice(0, 60);
-      await Promise.all(humains.map(async (x) => { const r = await lire("droits.decisions", { compte: x.compte }); if (r) S.dec[x.compte] = r; }));
+      if (S.droitsOk) await Promise.all(humains.map(async (x) => { const r = await lire("droits.decisions", { compte: x.compte }); if (r) S.dec[x.compte] = r; }));
     }
     const nbOk = (c) => { const d = S.dec[c]; return d ? d.droits.filter((x) => x.accord).length : 0; };
 
@@ -120,7 +121,7 @@
     function pUNouveau() {
       const M = modeles();
       return rien("Paramètres › Utilisateurs", "Nouvel utilisateur") + entete("Nouvel utilisateur", "Quatre étapes : qui est-ce, à quoi a-t-il accès, sur quels sites, comment entre-t-il. Les droits se retouchent ensuite sur sa fiche.") +
-        '<div class="cu-split"><div style="display:grid;gap:14px"><div class="cu-carte"><h3>① Identité</h3><div class="cu-g2"><div><label class="cu-f">Adresse e-mail (identifiant) *</label><input type="email" id="nu-id" placeholder="prenom@exemple.fr"></div><div><label class="cu-f">Nom affiché</label><input type="text" id="nu-nom" placeholder="Prénom Nom"></div><div><label class="cu-f">Fonction</label><input type="text" id="nu-fn"></div><div><label class="cu-f">Téléphone</label><input type="text" id="nu-tel"></div><div><label class="cu-f">Société *</label><select id="nu-soc"' + (S.superadmin && (S.societes || []).length > 1 ? "" : " disabled") + ">" + (S.societes || []).map((x) => '<option value="' + esc(x.id) + '"' + (x.id === (S.nu.societe || S.societeActive) ? " selected" : "") + ">" + esc(x.nom) + "</option>").join("") + '</select></div></div></div>' +
+        '<div class="cu-split"><div style="display:grid;gap:14px"><div class="cu-carte"><h3>① Identité</h3><div class="cu-g2"><div><label class="cu-f">Adresse e-mail (identifiant) *</label><input type="email" id="nu-id" placeholder="prenom@exemple.fr"></div><div><label class="cu-f">Nom affiché</label><input type="text" id="nu-nom" placeholder="Prénom Nom"></div><div><label class="cu-f">Fonction</label><input type="text" id="nu-fn"></div><div><label class="cu-f">Téléphone</label><input type="text" id="nu-tel"></div><div><label class="cu-f">Société *</label><select id="nu-soc"' + (S.superadmin && (S.societes || []).length > 1 ? "" : " disabled") + ">" + (S.societes || []).map((x) => '<option value="' + esc(x.id) + '"' + (x.id === (S.nu.societe || S.societeActive) ? " selected" : "") + ">" + esc(x.nom) + '</option>').join("") + '</select></div><div><label class="cu-f">Fonction dans la société</label><select id="nu-fon"><option value="">— aucune —</option>' + (S.nuFonctions || []).map((g) => '<option value="' + esc(g.fonction) + '">' + esc(g.nom) + "</option>").join("") + '</select></div></div></div>' +
         '<div class="cu-carte"><h3>② Accès</h3><div class="cu-g2"><div><label class="cu-f">Modèle de droits</label><select id="nu-mod">' + Object.keys(M).map((k) => '<option' + (S.nu.modele === k ? " selected" : "") + ">" + esc(k) + "</option>").join("") + '</select></div></div><div style="margin-top:12px"><label class="cu-f">Groupes</label><div class="cu-fls">' +
         (S.etat.groupes.map((g) => '<button class="cu-fl' + (S.nu.groupes.indexOf(g.groupe) >= 0 ? " on" : "") + '" data-a="nu-g" data-k="' + esc(g.groupe) + '">' + esc(g.libelle || g.groupe) + "</button>").join("") || '<span class="cu-why">Aucun groupe encore.</span>') + '</div></div></div>' +
         '<div class="cu-carte"><h3>③ Sites et hébergement</h3><label class="cu-f">Sites accessibles (séparés par des virgules)</label><input type="text" id="nu-sites" placeholder="www.exemple.fr, shop.exemple.fr"><div class="cu-g2" style="margin-top:12px"><div><label class="cu-f">Compte FastPanel lié</label><input type="text" id="nu-fp" placeholder="(aucun)"></div><div><label class="cu-f">Utilisateur Unix</label><input type="text" id="nu-unix" placeholder="(aucun)"></div></div><p class="cu-why" style="margin:8px 0 0">Sans site, le compte ne voit aucun site, même avec le droit de les voir.</p></div>' +
@@ -166,18 +167,37 @@
       '</div><button class="cu-bulk" data-a="ouvrir" data-v="1">Tout dérouler</button><button class="cu-bulk" data-a="ouvrir" data-v="0">Tout replier</button></div>';
     const nbModifs = (type, sujet) => Object.keys(S.draft).filter((d) => S.draft[d] !== accordDe(type, sujet, d)).length + (type === "compte" && S.adm != null && S.adm !== estAdmin(sujet) ? 1 : 0);
 
+    // Un utilisateur appartient à UNE société (la sienne) et peut avoir une fonction dans d'autres : il n'a alors accès qu'à ce que cette fonction lui ouvre.
+    async function chargerFicheSocietes(compte) {
+      S.ficheSoc = {};
+      await Promise.all((S.societes || []).filter((x) => !x.archivee).map(async (x) => {
+        const r = await lire("societes.fonctions", { societe: x.id }); S.erreur = "";
+        const F = (r && r.fonctions) || [], actuelle = (F.find((f) => (f.membres || []).indexOf(compte) >= 0) || {}).fonction || "";
+        S.ficheSoc[x.id] = { ok: !!r, fonctions: F, actuelle: actuelle };
+      }));
+    }
+    function pFicheSocietes(c) {
+      const lignes = (S.societes || []).filter((x) => !x.archivee).map((x) => {
+        const f = (S.ficheSoc || {})[x.id] || { ok: false, fonctions: [], actuelle: "" };
+        return "<tr><td><b>" + esc(x.nom) + "</b>" + (c.societe === x.id ? " " + chip("sa société", "acc") : "") + "</td><td>" + (f.ok ? '<select data-sf="' + esc(x.id) + '" aria-label="Fonction dans ' + esc(x.nom) + '" style="min-width:180px"><option value="">— aucune —</option>' + f.fonctions.map((g) => '<option value="' + esc(g.fonction) + '"' + (g.fonction === f.actuelle ? " selected" : "") + ">" + esc(g.nom) + "</option>").join("") + "</select>" : '<span class="cu-why">Vous ne gérez pas cette société.</span>') + "</td></tr>";
+      }).join("");
+      return '<div class="cu-carte"><h3>Sociétés et fonctions</h3><p class="cu-why" style="margin:0 0 10px">Sa société est celle où ses documents et son espace sont rangés. Une fonction dans une autre société lui en ouvre l’accès, sans le rendre administrateur : il ne voit alors que ce que cette fonction permet. Sans fonction, aucun accès.</p><div class="cu-tw"><table><thead><tr><th>Société</th><th>Fonction</th></tr></thead><tbody>' + (lignes || '<tr><td colspan="2" class="cu-vide">Aucune société.</td></tr>') + "</tbody></table></div></div>";
+    }
     function pFiche() {
-      const c = compteDe(S.fiche), tab = S.onglet || "droits", adm = S.adm == null ? estAdmin(c.compte) : S.adm, dec = S.dec[c.compte] || { droits: [] };
+      const c = compteDe(S.fiche), tab = S.onglet || (S.droitsOk ? "droits" : "fiche"), adm = S.adm == null ? estAdmin(c.compte) : S.adm, dec = S.dec[c.compte] || { droits: [] };
       const n = nbModifs("compte", c.compte);
-      const tabs = '<div class="cu-tabs">' + [["fiche", "Fiche"], ["droits", "Droits"], ["groupes", "Groupes"], ["jrn", "Journal"]].map((x) => '<button class="cu-tab' + (tab === x[0] ? " on" : "") + '" data-a="onglet" data-v="' + x[0] + '">' + x[1] + (x[0] === "droits" && n ? ' <span class="cu-chip warn">' + n + "</span>" : "") + "</button>").join("") + "</div>";
+      const tabs = '<div class="cu-tabs">' + (S.droitsOk ? [["fiche", "Fiche"], ["soc", "Sociétés"], ["droits", "Droits"], ["groupes", "Groupes"], ["jrn", "Journal"]] : [["fiche", "Fiche"], ["soc", "Sociétés"]]).map((x) => '<button class="cu-tab' + (tab === x[0] ? " on" : "") + '" data-a="onglet" data-v="' + x[0] + '">' + x[1] + (x[0] === "droits" && n ? ' <span class="cu-chip warn">' + n + "</span>" : "") + "</button>").join("") + "</div>";
       let h = fil('Paramètres › Utilisateurs › <button data-a="page" data-p="u_liste">Liste</button>', nomDe(c)) +
         '<div class="cu-hero">' + '<span class="cu-av big">' + esc(initiales(c)) + '</span><div class="cu-m"><h2>' + esc(nomDe(c)) + "</h2><p class=\"cu-why\" style=\"margin:2px 0 6px\">" + esc([c.role_label, c.compte].filter(Boolean).join(" · ")) + '</p><div class="cu-fls">' + (estAdmin(c.compte) ? chip("Administrateur", "warn") : "") + chip(c.type || "humain") + groupesDe(c.compte).map((g) => chip(g.libelle || g.groupe, "acc")).join("") + (c.desactive ? chip("désactivé", "dng") : chip("actif", "ok")) + "</div></div>" +
         '<div class="cu-barre"><button class="cu-btn" data-a="comme" data-k="' + esc(c.compte) + '">' + ico("M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6a3 3 0 0 0 0-6") + 'Voir comme</button><button class="cu-btn" data-a="jeton" data-k="' + esc(c.compte) + '">Lien de mot de passe</button>' +
         (c.desactive ? '<button class="cu-btn" data-a="reactiver" data-k="' + esc(c.compte) + '">Réactiver</button>' : '<button class="cu-btn dng" data-a="depart" data-k="' + esc(c.compte) + '"' + (c.compte === S.moi ? " disabled" : "") + ">Désactiver</button>") + "</div></div>" + (S.jeton && S.jeton.compte === c.compte ? '<div class="cu-note">Lien à donner à la personne (72 h, un seul usage) : <b style="word-break:break-all">' + esc(S.jeton.jeton) + "</b></div>" : "") + tabs;
+      if (!S.droitsOk) h = h.replace(/<button class="cu-btn" data-a="comme"[\s\S]*?<\/button>/, "");
       if (tab === "fiche") {
         const champ = (cle, lib, type) => '<div><label class="cu-f">' + esc(lib) + '</label><input id="cf-' + cle + '" type="' + (type || "text") + '" value="' + esc(c[cle] || "") + '"></div>';
         h += '<div class="cu-carte"><h3>Identité</h3><div class="cu-g2">' + champ("display_name", "Nom affiché") + champ("role_label", "Fonction") + champ("contact_email", "Courriel de contact", "email") + champ("phone", "Téléphone", "tel") + champ("lang", "Langue") + '</div></div>' +
           '<div class="cu-carte"><h3>Sites et hébergement</h3><label class="cu-f">Sites accessibles (séparés par des virgules)</label><input id="cf-sites" type="text" value="' + esc((c.sites || []).join(", ")) + '"><div class="cu-g2" style="margin-top:12px">' + champ("fp_account", "Compte FastPanel lié") + '<div><label class="cu-f">Utilisateur Unix</label><input type="text" value="' + esc(c.unix_user || "") + '" disabled></div></div></div><div class="cu-barre"><button class="cu-btn pri" data-a="profil" data-k="' + esc(c.compte) + '">Enregistrer</button></div>';
+      } else if (tab === "soc") {
+        h += pFicheSocietes(c);
       } else if (tab === "groupes") {
         h += '<div class="cu-carte"><h3>Appartenance</h3><div class="cu-fls">' + (S.etat.groupes.map((g) => '<button class="cu-fl' + (g.membres.indexOf(c.compte) >= 0 ? " on" : "") + '" data-a="membre" data-k="' + esc(g.groupe) + '" data-p="' + (g.membres.indexOf(c.compte) >= 0 ? 0 : 1) + '">' + esc(g.libelle || g.groupe) + "</button>").join("") || '<span class="cu-why">Aucun groupe : créez-en un.</span>') + '</div><p class="cu-why" style="margin:10px 0 0">Cliquer ajoute ou retire le groupe, et les droits se recalculent aussitôt.</p></div>';
       } else if (tab === "jrn") {
@@ -259,17 +279,24 @@
     function pJournal() { return rien("Paramètres › Groupes", "Journal des droits") + entete("Journal des droits", "Chaque changement est inscrit : qui l'a fait (un humain ou un agent) et sur quoi. Chaque réglage se défait depuis le journal des gestes.") + '<div class="cu-carte">' + journalHtml(S.journal) + "</div>"; }
 
     function dessiner() {
+      dessinerPlein();
+      if (!S.droitsOk && S.page === "u_nouveau") { const c2 = Array.from(racine.querySelectorAll(".cu-carte")).find((n) => /② Accès/.test(n.textContent)); if (c2) c2.remove(); }
+    }
+    function dessinerPlein() {
       let h;
       if (S.charge) h = '<div class="cu-vide">Lecture…</div>';
       else if (S.erreur && !S.comptes.length) h = '<div class="cu-carte"><h3>La gestion des utilisateurs ne répond pas</h3><p class="cu-why">' + esc(S.erreur) + "</p></div>";
       else h = ({ u_liste: pUListe, u_nouveau: pUNouveau, u_fiche: pFiche, g_liste: pGListe, g_nouveau: pGNouveau, g_fiche: pGFiche, matrice: pMatrice, qui: pQui, journal: pJournal }[S.page] || pUListe)();
       racine.innerHTML = h;
     }
+    async function chargerFonctionsNu(soc) { const r = await lire("societes.fonctions", { societe: soc }); S.erreur = ""; S.nuFonctions = (r && r.fonctions) || []; }
     async function aller(page, plus) {
       if (Object.keys(S.draft).length || S.adm != null) { S.draft = {}; S.adm = null; }
       Object.assign(S, plus || {}); S.page = page; S.erreur = "";
       if (page === "u_nouveau" && !S.regles) { const r = await lire("comptes.regles_mdp"); S.regles = r ? r.legende || "" : ""; }
       if (page === "qui") await chargerQui();
+      if (page === "u_fiche" && S.fiche) await chargerFicheSocietes(S.fiche);
+      if (page === "u_nouveau") await chargerFonctionsNu(S.nu.societe || S.societeActive);
       if (page === "journal" || S.onglet === "jrn") await chargerJournal();
       dessiner();
     }
@@ -348,10 +375,14 @@
         const id = val("#nu-id"), mdp = val("#nu-mdp"); $("#nu-id").classList.toggle("cu-bad", !id); if (!id || !mdp) { dire("Il faut une adresse e-mail et un mot de passe.", "err"); return; }
         const args = { compte: id, mot_de_passe: mdp, sites: val("#nu-sites").split(/[\s,;]+/).filter(Boolean), unix_user: val("#nu-unix"), display_name: val("#nu-nom"), role_label: val("#nu-fn"), phone: val("#nu-tel"), fp_account: val("#nu-fp"), societe: val("#nu-soc") };
         if (!await geste("comptes.creer", args)) return;
-        for (const g of S.nu.groupes) await geste("droits.membre", { compte: id.toLowerCase(), groupe: g, present: true });
-        const M = modeles(), mod = val("#nu-mod"), liste = M[mod] || [], accords = {}; liste.forEach((d) => { accords[d] = "accorde"; });
-        if (Object.keys(accords).length) await geste("droits.appliquer", { sujet_type: "compte", sujet: id.toLowerCase(), accords, prevenir: false });
-        dire(nomDe({ compte: id, display_name: args.display_name }) + " est créé. Affinez ses droits ci-dessous.", "ok"); S.nu = { groupes: [], modele: "Opérateur" }; await charger(); await aller("u_fiche", { fiche: id.toLowerCase(), onglet: "droits", filtre: "tous", qd: "" });
+        const fon = val("#nu-fon"), socNu = val("#nu-soc") || S.societeActive;
+        if (fon) await geste("societes.affecter", { societe: socNu, utilisateur: id.toLowerCase(), fonction: fon });
+        if (S.droitsOk) {
+          for (const g of S.nu.groupes) await geste("droits.membre", { compte: id.toLowerCase(), groupe: g, present: true });
+          const M = modeles(), mod = val("#nu-mod"), liste = M[mod] || [], accords = {}; liste.forEach((d) => { accords[d] = "accorde"; });
+          if (Object.keys(accords).length) await geste("droits.appliquer", { sujet_type: "compte", sujet: id.toLowerCase(), accords, prevenir: false });
+        }
+        dire(nomDe({ compte: id, display_name: args.display_name }) + " est créé. Affinez ses droits ci-dessous.", "ok"); S.nu = { groupes: [], modele: "Opérateur" }; await charger(); await aller("u_fiche", { fiche: id.toLowerCase(), onglet: S.droitsOk ? "droits" : "soc", filtre: "tous", qd: "" });
       }
       else if (k === "ng-m") { const i = S.ng.membres.indexOf(cle); if (i >= 0) S.ng.membres.splice(i, 1); else S.ng.membres.push(cle); a.classList.toggle("on"); }
       else if (k === "ng-creer") {
@@ -373,6 +404,8 @@
     });
     racine.addEventListener("change", async (e) => {
       const t = e.target;
+      if (t.dataset.sf) { if (await geste("societes.affecter", { societe: t.dataset.sf, utilisateur: S.fiche, fonction: t.value }, "Fonction donnée.")) { await chargerFicheSocietes(S.fiche); } dessiner(); return; }
+      if (t.id === "nu-soc") { S.nu.societe = t.value; await chargerFonctionsNu(t.value); dessiner(); return; }
       if (t.id === "cu-notif") S.notif = t.checked;
       else if (t.id === "cu-tpl" && t.selectedIndex > 0) { const liste = modeles()[t.value] || []; (S.catalogue || []).forEach((d) => { S.draft[d.droit] = liste.indexOf(d.droit) >= 0 ? "accorde" : "herite"; }); dire("Modèle « " + t.value + " » préparé : rien n'est appliqué avant validation.", "ok"); dessiner(); }
       else if (t.id === "cu-cpy" && t.value) { S.catalogue.forEach((d) => { S.draft[d.droit] = accordDe("compte", t.value, d.droit); }); dire("Droits de " + nomDe(compteDe(t.value)) + " préparés : rien n'est appliqué avant validation.", "ok"); dessiner(); }

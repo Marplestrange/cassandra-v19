@@ -12,7 +12,7 @@
 <!-- RÔLE       : Le socle société : tout compte appartient à une société, les fonctions sont des groupes attachés, le coffre isole chaque espace. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=1deef8 ▼▼▼ -->
 # Sociétés et coffre
 
 Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/CN_societes-ecran.js` (Paramètres › Société / Organisation) et `interface/CN_coffre-ecran.js` (Mon coffre-fort). Moteur : `noyau/CN_base.py`, `noyau/CN_droits.py`, `noyau/CN_identite.py`, `noyau/CN_executeur.py`, modules `societes`, `coffre`, `comptes`.
@@ -25,6 +25,15 @@ Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/
 - **La société active d'un acte** (`ctx.societe`) est par fil d'exécution, comme le compte : celle du compte, ou celle qu'il choisit (en-tête `X-Societe`) parmi les siennes. Un compte n'agit jamais dans une société qui n'est pas la sienne ; le superadministrateur les administre toutes.
 - **Des droits avec portée** : un groupe peut être attaché à une société (`droit_groupe_portee`). Une « fonction » est un tel groupe : ses droits ne valent que dans sa société, jamais ailleurs (`Droits.raison(compte, droit, societe)`). Sans société, seuls comptent les groupes valables partout : aucun droit existant ne change de sens.
 - **Seul le superadministrateur** crée, archive, rouvre et administre l'ensemble des sociétés. L'administrateur d'une société ne gère que la sienne. Une société qui a encore des comptes ne s'archive pas. Plus d'une société demande le réglage `societes.multi` (posé par le module Multi-sociétés de l'App Store, ou à la main par le superadministrateur).
+
+## Chaque société a ses modules, ses réglages et son écran
+
+- **Modules par société** : un module « vital » (comptes, droits, sociétés, coffre, menus…) est ouvert dans toutes les sociétés ; les autres le sont là où le superadministrateur les ouvre (table `societe_modules`). Sans choix, un module est ouvert dans la société principale seulement. Un module fermé disparaît des menus (`ctx.manifestes_actifs()` filtre par société) et refuse ses gestes (« le module X n'est pas ouvert dans la société Y »). Rubrique Société › Modules.
+- **Le sélecteur de société** (à côté du menu avatar, visible seulement pour qui en a plusieurs) met TOUTE l'application dans la société choisie : chaque appel envoie `X-Societe` (`CASS.societe`, y compris les routes de l'ancienne interface), le serveur vérifie que c'est bien l'une des siennes, et un accès retiré remet l'écran dans sa propre société. Chacun ne voit que les sociétés qui lui sont attribuées ; le superadministrateur les voit toutes.
+- **Un utilisateur dans plusieurs sociétés sans être administrateur** : sa société est celle où ses documents sont rangés ; une fonction dans une autre société lui en ouvre l'accès (onglet « Sociétés » de sa fiche), et il n'y voit que ce que cette fonction permet.
+- **Gestion des utilisateurs par l'administrateur d'une société** : les fonctions « titulaire » et « administrateur » reçoivent `comptes.gerer`, valable dans leur société seulement. Le module des comptes borne chaque geste (liste, lecture, création, modification, désactivation, suppression, corbeille, lien de mot de passe) aux comptes de la société ; seul le superadministrateur range ou transfère un compte dans une autre. L'administrateur de société ne règle pas les droits fins (matrice, groupes) : il donne des fonctions.
+- **Réglages par société** : un réglage peut être de portée `societe` (une valeur par société, repli sur celle de l'instance). Déjà : personas et rôles des agents, billetterie (identité du titulaire, règles de vente), vue des contacts, Dolibarr, mot du rôle Telegram. Rubrique Société › Réglages ; écrire pour une société demande d'en être l'administrateur.
+- **Partages** : on n'invite (projets, salon) qu'un compte qui a accès à la société active (`ctx.dans_ma_societe`).
 
 ## Le module Sociétés
 
@@ -43,6 +52,7 @@ Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/
 
 ## À faire, si on le garde
 
+Les données propres à une société dans les modules d'entreprise (la billetterie en premier : une base par société est la piste la plus sûre, sans retoucher le code du module) ; 
 Brancher les modules consommateurs sur `societes.carte` ; une valeur « société » sur les données de chaque module (Courrier, Agenda, Billetterie…) ; le branchement d'un coffre externe ; le départ d'un utilisateur dans le coffre (retirer ses accès à l'événement `compte.desactive`) ; le module Multi-sociétés de l'App Store (sélecteur dans chaque écran, héritage du groupe, vue consolidée, opérations entre sociétés) ; la gestion des utilisateurs par l'administrateur de société (aujourd'hui l'instance seule crée les comptes d'une société).
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 

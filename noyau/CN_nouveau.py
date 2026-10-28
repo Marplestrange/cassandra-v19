@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #79a366
+# VERSION CN : 0.1.0  #702f70
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'assistant de création d'un module : un squelette valide, qui se charge, s'active et répond, que l'auteur n'a plus qu'à faire grandir.
 # MÉTHODE    : écrit un dossier (manifeste, code, mode d'emploi) puis le recharge avec le chargeur du noyau : un squelette que le noyau refuserait n'est jamais rendu
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=79a366 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=702f70 ▼▼▼
 """Un module neuf, prêt à greffer : `python CN_main.py module nouveau mon_module --nom "Mon module"`.
 
 Le squelette déclare une capacité de lecture (`etat`), un réglage (`message`), son importance et ce qui s'arrête sans lui ; son code se branche et répond. Rien n'est écrit
@@ -49,6 +49,11 @@ requiert = []
 id = "message"
 libelle = "Le message que ce module répond"
 defaut = "Bonjour depuis {nom}"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
 
 [[capacites]]
 id = "etat"

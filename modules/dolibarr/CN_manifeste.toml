@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.3.1  #44fc62
+# VERSION CN : 0.3.1  #f30d95
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=44fc62 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=f30d95 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -50,11 +50,11 @@ libelle = "La copie entière d'un objet supprimé de Dolibarr, de quoi le recré
 id = "url"
 libelle = "Adresse de l'API de Dolibarr (https://… ou http://…/api/index.php)"
 aide = "Vide : on lit config/dolibarr.conf. Rempli, ce réglage l'emporte."
-
+portee = "societe"
 [[reglages]]
 id = "hote"
 libelle = "En-tête Host à envoyer (quand l'adresse est une IP)"
-
+portee = "societe"
 [[reglages]]
 id = "delai"
 libelle = "Délai d'attente d'une requête, en secondes"
@@ -63,7 +63,7 @@ defaut = 0
 minimum = 0
 maximum = 120
 aide = "0 : la valeur du fichier dolibarr.conf, sinon 15 secondes."
-
+portee = "societe"
 [evenements]
 emet = ["dolibarr.injoignable", "dolibarr.acces_refuse", "dolibarr.reprise"]
 

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : comptes
 # ZONE       : CN
-# VERSION CN : 0.5.0  #70ba52
+# VERSION CN : 0.5.0  #9f3e0b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=70ba52 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=9f3e0b ▼▼▼
 """Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
 
 Règle de la V18 gardée : le compte d'une action de session n'est JAMAIS un paramètre libre. C'est `ctx.compte`, le compte au nom duquel
@@ -61,7 +61,7 @@ def brancher(ctx):
         return {"comptes": tous}
 
     def corbeille(ctx):
-        return {"corbeille": idt.corbeille()}
+        return {"corbeille": idt.corbeille("" if _large(ctx) else (ctx.societe or idt.societe_de(ctx.compte)))}
 
     def regles_mdp(ctx):
         from noyau import CN_identite as identite
@@ -255,6 +255,8 @@ def brancher(ctx):
         idt.desactiver(res["compte"])
 
     def restaurer(ctx, corbeille=0):
+        if not _large(ctx) and int(corbeille) not in {c["id"] for c in idt.corbeille(ctx.societe or idt.societe_de(ctx.compte))}:
+            raise ValueError("Rien de tel dans la corbeille de votre société")
         r = ok_ou_erreur(idt.restaurer(int(corbeille)))
         ctx.emettre("compte.restaure", objet=("compte", r["compte"]), donnees={})
         return {"compte": r["compte"]}

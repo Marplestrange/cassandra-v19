@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #73b255
+# VERSION CN : 0.1.0  #458c21
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=73b255 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=458c21 ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -159,7 +159,7 @@ class Reglage:
     type: str = "texte"        # texte | entier | booleen | choix | secret
     defaut: object = ""
     choix: tuple = ()          # pour le type « choix »
-    portee: str = "global"     # global | compte (une valeur propre à chaque compte)
+    portee: str = "global"     # global | compte (une valeur propre à chaque compte) | societe (une valeur propre à chaque société, repli sur la globale)
     minimum: object = None
     maximum: object = None
     aide: str = ""
@@ -376,6 +376,7 @@ class Manifeste:
     api: str = "1"             # la version MAJEURE de l'API du noyau que ce module vise
     permissions: Permissions = field(default_factory=Permissions)
     essentiel: bool = False    # un module essentiel ne se désactive pas (comptes, coffre, notifications...)
+    instance: bool = False     # un module d'instance (hébergement, sécurité, flotte, sauvegardes…) n'existe que dans la société principale : elle seule décide du comportement de l'application
     famille: str = ""          # la SECTION où le module se range (« securite », « reseau »...) ; écrite section = "..." (famille, ancien nom, est lu aussi)
     sections: tuple = ()       # les sections NOUVELLES que ce module apporte ([[sections]]) : voir CN_sections
     contraintes: tuple = ()    # ((id, « >=0.2, <1 »), ...) : les versions que les dépendances doivent avoir
@@ -479,6 +480,8 @@ def valider(brut: dict) -> list:
             e.append("permissions.ecritures : « %s » doit être un chemin absolu sans « .. »" % chemin)
     if "essentiel" in m and not isinstance(m["essentiel"], bool):
         e.append("module.essentiel : vrai ou faux")
+    if "instance" in m and not isinstance(m["instance"], bool):
+        e.append("module.instance : vrai ou faux")
     for champ in ("section", "famille"):
         if champ in m and (not isinstance(m[champ], str) or len(m[champ]) > 40):
             e.append("module.%s : un texte de 40 caractères au plus" % champ)
@@ -575,8 +578,8 @@ def valider(brut: dict) -> list:
         t = r.get("type", "texte")
         if t not in ("texte", "entier", "booleen", "choix", "secret"):
             e.append("%s.type : texte | entier | booleen | choix | secret" % nom)
-        if r.get("portee", "global") not in ("global", "compte"):
-            e.append("%s.portee : global | compte" % nom)
+        if r.get("portee", "global") not in ("global", "compte", "societe"):
+            e.append("%s.portee : global | compte | societe" % nom)
         if t == "choix":
             ch = r.get("choix")
             if not isinstance(ch, list) or not ch:
@@ -1006,7 +1009,7 @@ def construire(brut: dict, source="") -> Manifeste:
         confiance=m.get("confiance", "interne"), requiert=tuple(lire_requis(x)[0] for x in m.get("requiert", ())),
         contraintes=tuple(lire_requis(x) for x in m.get("requiert", ()) if lire_requis(x)[1]),
         conflits=tuple(m.get("conflits", ())), suggere=tuple(m.get("suggere", ())), fournit=tuple(m.get("fournit", ())),
-        essentiel=bool(m.get("essentiel", False)), famille=str(m.get("section") or m.get("famille", "")),
+        essentiel=bool(m.get("essentiel", False)), instance=bool(m.get("instance", False)), famille=str(m.get("section") or m.get("famille", "")),
         sections=tuple(Section(d["id"], d["libelle"].strip(), str(d.get("icone", "")), str(d.get("icone_trace", "")), int(d.get("ordre", 500)), m["id"]) for d in (brut.get("sections") or [])),
         famille_libelle=str(m.get("famille_libelle", "")).strip(), famille_icone=str(m.get("famille_icone", "")),
         icone_trace=str(m.get("icone_trace", "")), famille_icone_trace=str(m.get("famille_icone_trace", "")),

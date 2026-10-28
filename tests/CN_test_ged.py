@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #292f75
+# VERSION CN : 0.1.0  #43db21
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la GED : cloisonnement des racines, dépôt, listage, fiche, corbeille réversible, règles de classement.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=292f75 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=43db21 ▼▼▼
 """Bancs de la GED : cloisonnement des racines, dépôt, listage, fiche, corbeille réversible, règles de classement."""
 import importlib.util
 import os
@@ -129,6 +129,7 @@ class Monde(unittest.TestCase):
         self.assertEqual(Path(r["dossier"]).parent, self.docs / "1")                  # BEA est de la société principale
         self.n.identite.societe_creer("Autre société", "autre")
         self.n.identite.creer(LEO, "Essai-Local-1234", societe="autre")
+        self.n.identite.module_regler("autre", "ged", True)
         r2 = self.s("dossier_creer", compte=LEO)
         self.assertEqual(Path(r2["dossier"]).parent, self.docs / "autre")             # LEO, d'une autre : dans le grand répertoire de la sienne
 
