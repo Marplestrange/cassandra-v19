@@ -6,7 +6,7 @@
   {
    "cas": "cas 01",
    "entree": {
-    "texte": "2: enp3s0    inet 192.168.1.199/24 brd 192.168.1.255 scope global enp3s0\n3: tailscale0    inet 100.64.0.10/32 scope global tailscale0\n"
+    "texte": "2: enp3s0    inet 192.168.1.20/24 brd 192.168.1.255 scope global enp3s0\n3: tailscale0    inet 100.64.0.10/32 scope global tailscale0\n"
    },
    "sortie": {
     "valeur": {
@@ -16,7 +16,7 @@
       "192.168.1.0/24"
      ],
      "ips_locales": [
-      "192.168.1.199"
+      "192.168.1.20"
      ]
     }
    }

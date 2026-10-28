@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.3.1  #17111b
+# VERSION CN : 0.3.1  #5d07dd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=17111b ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.1 empreinte=5d07dd ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -27,7 +27,7 @@ un humain agit en voie parallèle, ou monte le palier.
 Il en tire un objet du registre (l'instance : version, comptes, impayés), des constats (injoignable, accès refusé) et des lectures bornées.
 
 Réglage : config/dolibarr.conf, des lignes « cle = valeur » :
-    url          = http://100.64.0.9:8081/api/index.php     l'adresse de l'API (en production : Athena, par le réseau privé)
+    url          = http://100.64.0.20:8081/api/index.php     l'adresse de l'API (en production : l'adresse privée de la machine Dolibarr)
     hote         = www.cassandra.center                          (facultatif) l'en-tête Host, quand l'adresse est une IP
     fichier_cle  = dolibarr.key                                   (facultatif) où est la clé, relativement à config/
     delai        = 15                                             (facultatif) secondes

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ee8aa3
+# VERSION CN : 0.1.0  #fe6d2a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'analyse de sécurité : des relevés bruts (ss, iptables -S, sshd -T, fail2ban) -> exposition, pare-feu, accès, verdict. Chaque banc rejoue une situation réelle de la V18 : une règle finale REJECT, un port ouvert par adresse, une ma
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ee8aa3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fe6d2a ▼▼▼
 """Bancs de l'analyse de sécurité : des relevés bruts (ss, iptables -S, sshd -T, fail2ban) -> exposition, pare-feu, accès, verdict.
 Chaque banc rejoue une situation réelle de la V18 : une règle finale REJECT, un port ouvert par adresse, une machine derrière une box."""
 import sys
@@ -62,7 +62,7 @@ class Portee(unittest.TestCase):
         self.assertEqual(an.portee("127.0.0.1"), "machine")
         self.assertEqual(an.portee("[::1]"), "machine")
         self.assertEqual(an.portee("100.64.0.10"), "tailscale")
-        self.assertEqual(an.portee("192.168.1.199"), "reseau")
+        self.assertEqual(an.portee("192.168.1.20"), "reseau")
         self.assertEqual(an.portee("198.51.100.9"), "public")
         self.assertEqual(an.portee("0.0.0.0"), "tout")
         self.assertEqual(an.portee("*"), "tout")
@@ -74,9 +74,9 @@ class Adresses(unittest.TestCase):
         self.assertEqual(m["public_v4"], ["198.51.100.9"])
 
     def test_derriere_une_box(self):
-        m = an.adresses_machine("2: enp3s0    inet 192.168.1.199/24 brd 192.168.1.255 scope global enp3s0\n3: tailscale0    inet 100.64.0.10/32 scope global tailscale0\n")
+        m = an.adresses_machine("2: enp3s0    inet 192.168.1.20/24 brd 192.168.1.255 scope global enp3s0\n3: tailscale0    inet 100.64.0.10/32 scope global tailscale0\n")
         self.assertEqual(m["public_v4"], [])
-        self.assertEqual(m["ips_locales"], ["192.168.1.199"])
+        self.assertEqual(m["ips_locales"], ["192.168.1.20"])
         self.assertEqual(m["reseaux_locaux"], ["192.168.1.0/24"])        # Tailscale n'est pas un réseau local
 
 
@@ -253,7 +253,7 @@ class Exposition(unittest.TestCase):
         self.assertEqual(e["internet"], "oui")
 
     def test_derriere_une_box_on_ne_sait_pas(self):
-        e = self.expo([ecoute("tcp", "0.0.0.0", 80, "nginx")], ip_addr="2: enp3s0    inet 192.168.1.199/24 scope global enp3s0\n")[0]
+        e = self.expo([ecoute("tcp", "0.0.0.0", 80, "nginx")], ip_addr="2: enp3s0    inet 192.168.1.20/24 scope global enp3s0\n")[0]
         self.assertEqual(e["internet"], "box")                   # dit « selon la box », n'affirme ni oui ni non
 
     def test_les_clients_dhcp_et_ntp_ne_sont_pas_des_services(self):

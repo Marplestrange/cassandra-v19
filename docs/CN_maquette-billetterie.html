@@ -13,7 +13,7 @@
 <!-- RÔLE       : maquette-billetterie.html -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=a07811 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=54352b ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -608,7 +608,7 @@ function pontHtml(){
   var dom=function(k,t,s,fb){return '<div class="inter"><div class="t">'+t+'<small>'+s+(on?'':' · sans pont: '+fb)+'</small></div><button class="bascule" role="switch" aria-checked="'+(on&&dm[k])+'" aria-label="'+t+'" data-dm="'+k+'" type="button"'+(on?'':' disabled')+'></button></div>'};
   return '<section class="bloc verre"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2>Pont Dolibarr</h2>'+(on?pastille("relié",0):pastille("autonome",1))+'<span class="sp"></span><button class="bascule" role="switch" aria-checked="'+on+'" aria-label="Relier à Dolibarr" data-pl="1" type="button"></button></div>'+
    '<p class="sous">'+(on?'Dolibarr tient la comptabilité. Chaque domaine se relie séparément.':'La billetterie fonctionne seule: reçus simples, export comptable, identité saisie ici. Les bases (clients, artistes, revendeurs, salles) restent dans Cassandra.')+'</p>'+
-   (on?'<div class="deux"><div class="champ"><label>Adresse de l\u2019API</label><input readonly value="http://100.64.0.9:8081/api/index.php"></div><div class="champ"><label>Clé API</label><input readonly value="Dans le coffre"></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button class="btn pt" type="button" data-act="pont-test">Tester la connexion</button><button class="btn pt" type="button" data-act="pont-rapprocher">Rapprocher les fiches existantes</button></div><div class="sous" id="pont-msg"></div>':'')+
+   (on?'<div class="deux"><div class="champ"><label>Adresse de l\u2019API</label><input readonly value="http://100.64.0.20:8081/api/index.php"></div><div class="champ"><label>Clé API</label><input readonly value="Dans le coffre"></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button class="btn pt" type="button" data-act="pont-test">Tester la connexion</button><button class="btn pt" type="button" data-act="pont-rapprocher">Rapprocher les fiches existantes</button></div><div class="sous" id="pont-msg"></div>':'')+
    dom("identite","Identité du titulaire","Lue depuis la société Dolibarr","saisie locale")+
    dom("caisse","Ventes en caisse → factures et règlements","Règlement sur un compte « caisse » (espèces) ou sur le compte du prestataire (carte)","reçus de caisse et clôtures exportables")+dom("projets","Événements → projets","Un projet par événement, ses tâches deviennent des tâches du projet","suivi dans la fiche événement seul")+dom("clients","Clients → tiers","Un tiers par client, retrouvé par courriel","base clients locale seule")+
    dom("adherents","Artistes → adhérents","Une fiche adhérent par artiste, type « Artiste »","fiche artiste locale seule")+dom("fournisseurs","Revendeurs et artistes payés → fournisseurs","Pour payer cachets et commissions","suivi dans le portefeuille seulement")+

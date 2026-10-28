@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #988e96
+# VERSION CN : 0.1.0  #b7ca10
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la crise AUTOMATIQUE : le moteur de décision (pur), la veille du module (courtier simulé), la commande de mesure.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=988e96 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b7ca10 ▼▼▼
 """Bancs de la crise AUTOMATIQUE : le moteur de décision (pur), la veille du module (courtier simulé), la commande de mesure."""
 import importlib.machinery
 import importlib.util
