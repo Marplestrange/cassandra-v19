@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #472873
+# VERSION CN : 0.1.0  #1309db
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 5d : « Mon espace » du revendeur et de l'artiste (cloisonnement par compte, portefeuille, retrait, un compte pour une seule fiche).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=472873 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1309db ▼▼▼
 """Bancs de la billetterie, lot 5d : « Mon espace » du revendeur et de l'artiste (cloisonnement par compte, portefeuille, retrait, un compte pour une seule fiche)."""
 import sys
 import unittest

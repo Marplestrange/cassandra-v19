@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #9d8dce
+// VERSION CN : 0.1.0  #6b90ee
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : stockage plein ou interdit : on continue sans
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=9d8dce ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=6b90ee ▼▼▼
 // Billetterie : les écrans du terrain, pensés pour le téléphone (la caisse, le contrôle à l'entrée) et « Mon espace » du revendeur et de l'artiste.
 (function () {
   "use strict";
