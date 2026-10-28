@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9b9327
+# VERSION CN : 0.1.0  #88f1f4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9b9327 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=88f1f4 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -32,7 +32,7 @@ licence = "AGPL-3.0-or-later"
 stockage = true
 stockage_par_societe = true
 secrets = true
-reseau = ["l'API de Stripe (api.stripe.com), pour créer la page de paiement hébergée d'une commande"]
+reseau = ["l'API de Stripe (api.stripe.com), pour créer la page de paiement hébergée d'une commande", "le serveur d'envoi de courrier (SMTP) réglé dans la billetterie, pour expédier les billets et les messages aux acheteurs"]
 
 [[droits]]
 id = "gerer"
@@ -198,6 +198,51 @@ type = "entier"
 defaut = 7
 minimum = 0
 maximum = 30
+
+[[reglages]]
+id = "courriels_actifs"
+libelle = "Expédier les courriels de la billetterie (billets, annulations, liens de connexion) : rien ne part tant que ce n'est pas activé"
+type = "booleen"
+defaut = false
+portee = "societe"
+
+[[reglages]]
+id = "smtp_hote"
+libelle = "Serveur d'envoi de courrier (SMTP)"
+portee = "societe"
+
+[[reglages]]
+id = "smtp_port"
+libelle = "Port du serveur d'envoi (587 : STARTTLS, 465 : SSL)"
+type = "entier"
+defaut = 587
+minimum = 1
+maximum = 65535
+portee = "societe"
+
+[[reglages]]
+id = "smtp_securite"
+libelle = "Chiffrement de la connexion au serveur d'envoi"
+type = "choix"
+defaut = "starttls"
+choix = ["starttls", "ssl", "aucune"]
+portee = "societe"
+
+[[reglages]]
+id = "smtp_identifiant"
+libelle = "Identifiant du serveur d'envoi"
+portee = "societe"
+
+[[reglages]]
+id = "smtp_mot_de_passe"
+libelle = "Mot de passe du serveur d'envoi"
+type = "secret"
+portee = "societe"
+
+[[reglages]]
+id = "smtp_expediteur"
+libelle = "Adresse d'expédition affichée (vide : le courriel du titulaire)"
+portee = "societe"
 
 [[reglages]]
 id = "stripe_actif"
@@ -1017,6 +1062,13 @@ toutes_les_s = 3600
 duree_max_s = 60
 
 [[moteurs]]
+id = "courriels"
+libelle = "Expédier les courriels de la boîte d'envoi (réessais espacés, jamais pendant le frein « envois »)"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 50
+
+[[moteurs]]
 id = "attente"
 libelle = "Proposer les places libérées à la liste d'attente, dans l'ordre d'inscription"
 mode = "periodique"
@@ -1414,6 +1466,33 @@ perimetre = ["la date d'effacement de la fiche d'un client"]
 preuve = "la date d'effacement relue"
 retour = "remettre la date d'avant (annuler la demande)"
 paliers = ["raconter"]
+
+[[capacites]]
+id = "courriels_envoyer"
+libelle = "Expédier maintenant les courriels de la boîte d'envoi par le serveur réglé (rien ne part si l'envoi n'est pas activé ; le frein « envois » l'arrête)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la boîte d'envoi de la billetterie et le serveur d'envoi réglé"]
+preuve = "les courriels dus relus envoyés, reportés ou en échec"
+retour = "aucun : un courriel parti ne se rappelle pas ; un échec se relance"
+paliers = ["raconter", "auto"]
+sortant = true
+
+[[capacites]]
+id = "courriel_relancer"
+libelle = "Remettre un courriel en échec dans la boîte d'envoi pour qu'il soit retenté"
+risque = "faible"
+droit = "gerer"
+perimetre = ["l'état d'un courriel de la boîte d'envoi"]
+preuve = "le courriel relu à envoyer"
+retour = "le remettre en échec"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "courriels_etat"
+libelle = "Où en est l'envoi des courriels : activé ou non, serveur réglé, nombre à envoyer, envoyés, en échec, frein « envois »"
+risque = "lecture"
+droit = "gerer"
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
