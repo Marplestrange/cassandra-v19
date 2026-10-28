@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #14e880
+# VERSION CN : 0.1.0  #149ab6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 5b : la liste d'attente (inscription, ordre, offres qui retiennent les places, expiration, paiement d'une offre, annulation de l'événement).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=14e880 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=149ab6 ▼▼▼
 """Bancs de la billetterie, lot 5b : la liste d'attente (inscription, ordre, offres qui retiennent les places, expiration, paiement d'une offre, annulation de l'événement)."""
 import sys
 import unittest
@@ -90,6 +90,13 @@ class Attente(Boutique):
         self.ok("attente_proposer", evenement_id=self.e["id"])
         self.assertEqual((self.etat(a)["etat"], self.etat(b)["etat"]), ("expiree", "offerte"))
 
+    def test_sans_billet_precise_l_offre_est_au_plein_tarif_pas_au_tarif_reduit(self):
+        a = self.inscrire("a@exemple.org", 1)
+        self.liberer(self.petit)
+        self.ok("attente_proposer", evenement_id=self.e["id"])
+        o = self.etat(a)["offre"]
+        self.assertEqual(self.ok("commande", ref=o["commande"])["lignes"][0]["nom"], "Plein tarif")
+
     def test_payer_l_offre_la_convertit(self):
         a = self.inscrire("a@exemple.org", 2)
         self.liberer(self.petit)
@@ -97,7 +104,7 @@ class Attente(Boutique):
         o = self.etat(a)["offre"]
         p = self.pub_ok("public_payer", commande=o["commande"], suivi=o["suivi"], moyen="stripe")
         self.assertEqual(p["paiement"]["type"], "stripe")
-        self.assertEqual(p["total"], 2200)                                    # 2 x 10 € + 2 € de frais d'achat sans compte
+        self.assertEqual(p["total"], 3000)
         self.ok("commande_encaisser", ref=o["commande"], moyen="stripe", reference_externe="pi_att")
         self.assertEqual(self.etat(a)["etat"], "convertie")
         self.assertEqual(self.stock()["vendus"], 10)

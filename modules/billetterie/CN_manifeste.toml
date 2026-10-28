@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7e8ba7
+# VERSION CN : 0.1.0  #9b9327
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7e8ba7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9b9327 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -191,6 +191,14 @@ portee = "societe"
 id = "dons_base_legale"
 libelle = "Base légale de l'éligibilité (article du CGI, décision de reconnaissance) : mentionnée sur chaque reçu"
 portee = "societe"
+[[reglages]]
+id = "suppression_delai_jours"
+libelle = "Délai avant l'effacement d'un compte client qui l'a demandé (jours) : la demande se défait jusque-là"
+type = "entier"
+defaut = 7
+minimum = 0
+maximum = 30
+
 [[reglages]]
 id = "stripe_actif"
 libelle = "Paiement par carte bancaire (Stripe)"
@@ -939,6 +947,7 @@ id = "public_panier"
 libelle = "Chiffrer un panier de la boutique sans rien écrire : prix de la base, code promo, don, frais sans compte (public)"
 risque = "lecture"
 qui = ["anonyme"]
+masque = ["session"]
 
 [[capacites]]
 id = "public_commander"
@@ -949,6 +958,7 @@ preuve = "la commande relue en cours"
 retour = "annuler la commande : les places reviennent"
 paliers = ["auto", "raconter"]
 qui = ["anonyme"]
+masque = ["session"]
 
 [[capacites]]
 id = "public_suivre"
@@ -998,6 +1008,13 @@ perimetre = ["la date de l'événement, la boîte d'envoi, la disponibilité des
 preuve = "la date relue"
 retour = "remettre l'ancienne date ; un courriel déjà parti ne se rappelle pas"
 paliers = ["raconter", "auto", "maitre"]
+
+[[moteurs]]
+id = "clients"
+libelle = "Effacer les comptes clients dont le délai de suppression est écoulé ; purger les liens et sessions périmés"
+mode = "periodique"
+toutes_les_s = 3600
+duree_max_s = 60
 
 [[moteurs]]
 id = "attente"
@@ -1300,6 +1317,103 @@ ordre = 90
 role = "utilisateur"
 icone = "star"
 droit = "artiste"
+
+[[capacites]]
+id = "public_compte_lien"
+libelle = "Demander un lien de connexion à son courriel (public, limité par origine ; la réponse est la même que le compte existe ou non)"
+risque = "faible"
+perimetre = ["un lien à usage unique (empreinte seulement) et un courriel dans la boîte d'envoi"]
+preuve = "le lien relu en base"
+retour = "supprimer le lien et le courriel s'il n'est pas parti"
+paliers = ["auto", "raconter"]
+qui = ["anonyme"]
+
+[[capacites]]
+id = "public_compte_ouvrir"
+libelle = "Ouvrir son espace avec le lien reçu par courriel : rend une session de 30 jours (public ; le lien ne sert qu'une fois)"
+risque = "faible"
+perimetre = ["une session client (empreinte seulement)"]
+preuve = "la session relue en base"
+retour = "supprimer la session et rendre son lien s'il court encore"
+paliers = ["auto", "raconter"]
+qui = ["anonyme"]
+masque = ["jeton", "session"]
+
+[[capacites]]
+id = "public_compte_fermer"
+libelle = "Se déconnecter : la session est supprimée (public, par jeton de session)"
+risque = "lecture"
+qui = ["anonyme"]
+masque = ["session"]
+
+[[capacites]]
+id = "public_compte_moi"
+libelle = "Mon espace client : mes coordonnées, mes commandes et leurs liens, mes inscriptions en liste d'attente (public, par jeton de session)"
+risque = "lecture"
+qui = ["anonyme"]
+masque = ["session", "suivi"]
+
+[[capacites]]
+id = "public_compte_modifier"
+libelle = "Modifier mon nom, mon téléphone et mon accord pour les nouvelles de l'organisateur (public, par jeton de session)"
+risque = "faible"
+perimetre = ["ma fiche client"]
+preuve = "le nom relu"
+retour = "remettre mes anciennes coordonnées"
+paliers = ["auto", "raconter"]
+qui = ["anonyme"]
+masque = ["session"]
+
+[[capacites]]
+id = "public_compte_exporter"
+libelle = "Exporter toutes mes données (droit d'accès) : fiche, commandes, billets, reçus, liste d'attente, courriels (public, par jeton de session)"
+risque = "lecture"
+qui = ["anonyme"]
+masque = ["session"]
+
+[[capacites]]
+id = "public_compte_supprimer"
+libelle = "Demander la suppression de mon compte : effacement différé (réglage), qui se défait jusque-là (public, par jeton de session)"
+risque = "moyen"
+perimetre = ["la date d'effacement de ma fiche, ma liste d'attente, mes courriels à envoyer"]
+preuve = "la date d'effacement relue"
+retour = "annuler la demande tant que l'effacement n'a pas eu lieu"
+paliers = ["auto", "raconter"]
+qui = ["anonyme"]
+masque = ["session"]
+
+[[capacites]]
+id = "public_compte_annuler_suppression"
+libelle = "Annuler ma demande de suppression avant son exécution (public, par jeton de session)"
+risque = "faible"
+perimetre = ["la date d'effacement de ma fiche"]
+preuve = "la date relue vide"
+retour = "reprogrammer l'effacement à la date d'avant"
+paliers = ["auto", "raconter"]
+qui = ["anonyme"]
+masque = ["session"]
+
+[[capacites]]
+id = "clients"
+libelle = "Lire les clients de la boutique : nom, courriel, compte ou achat sans compte, accord, commandes, suppression demandée"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "client_dossier"
+libelle = "Lire tout ce que la billetterie sait d'un client (réponse à une demande d'accès RGPD par courriel)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "client_effacement"
+libelle = "Programmer (ou annuler) l'effacement des données d'un client, par exemple sur sa demande par courriel : même délai que sa propre demande, défaisable jusque-là"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la date d'effacement de la fiche d'un client"]
+preuve = "la date d'effacement relue"
+retour = "remettre la date d'avant (annuler la demande)"
+paliers = ["raconter"]
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

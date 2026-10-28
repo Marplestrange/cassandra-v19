@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b99b2f
+# VERSION CN : 0.1.0  #2097c5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 5a : annuler et reporter un événement (remboursements en masse, commissions reprises, courriels, disponibilité des commissions).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b99b2f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2097c5 ▼▼▼
 """Bancs de la billetterie, lot 5a : annuler et reporter un événement (remboursements en masse, commissions reprises, courriels, disponibilité des commissions)."""
 import sys
 import unittest
@@ -65,7 +65,7 @@ class Annulation(Ventes):
         self.assertEqual(sorted(x["moyen"] for x in r["reste_a_faire"]), ["especes", "stripe"])
         self.assertTrue([x for x in r["reste_a_faire"] if x["moyen"] == "stripe"][0]["chez_le_prestataire"])
         e = self.ok("evenement", id=self.e["id"])["evenement"]
-        self.assertEqual((e["statut"], e["publie"], e["motif_annulation"]), ("annulé", 0, "Salle fermée"))
+        self.assertEqual((e["statut"], e["publie"], e["motif_annulation"]), ("annulé", 1, "Salle fermée"))
         self.assertIn("pas en vente", self.echec("panier_devis", evenement_id=self.e["id"], lignes=[{"type_billet_id": self.plein, "quantite": 1}]))
 
     def test_les_acheteurs_sont_prevenus_pas_ceux_dont_la_commande_n_etait_pas_payee(self):

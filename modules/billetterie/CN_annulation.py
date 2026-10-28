@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b3878e
+# VERSION CN : 0.1.0  #c51cc5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : annuler ou reporter un événement, par une seule procédure.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b3878e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c51cc5 ▼▼▼
 """Billetterie : annuler ou reporter un événement, par une seule procédure.
 
 Deux gestes, une seule règle : on annonce d'abord les chiffres (`evenement_impact`, qui n'écrit rien), puis on agit.
@@ -113,7 +113,7 @@ def brancher(ctx, db):
                 if cid:
                     courriels.append(cid)
             attente_avant = att.fermer_evenement(tx, e["id"])
-            tx.execute("UPDATE evenements SET statut = 'annulé', publie = 0, motif_annulation = ? WHERE id = ?", (motif, e["id"]))
+            tx.execute("UPDATE evenements SET statut = 'annulé', motif_annulation = ? WHERE id = ?", (motif, e["id"]))       # il reste publié : la page dit qu'il est annulé (on ne le fait pas disparaître sous les yeux des acheteurs)
         return {"id": e["id"], "avant": {"statut": e["statut"], "publie": e["publie"], "motif": e["motif_annulation"]}, "remboursees": remboursees, "abandonnees": abandonnees,
                 "invitations_annulees": invites, "attente_fermee": attente_avant, "courriels": courriels, "reste_a_faire": restes, "chiffres": chiffres}
 

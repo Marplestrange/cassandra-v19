@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f674b3
+# VERSION CN : 0.1.0  #f095cb
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : la liste d'attente d'un billet épuisé.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f674b3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f095cb ▼▼▼
 """Billetterie : la liste d'attente d'un billet épuisé.
 
 Une personne s'inscrit quand le billet qu'elle veut n'est plus disponible ; dès qu'une place se libère (réservation expirée, remboursement, quota augmenté), la première inscrite
@@ -40,7 +40,7 @@ def _type_pour(tx, s, ligne):
         return None
     infos = {t["id"]: r.ligne(tx, "types_billets", t["id"]) for t in s["types"]}
     candidats = [t for t in s["types"] if (not ligne["type_billet_id"] or t["id"] == ligne["type_billet_id"]) and (t["restant"] is None or t["restant"] >= q)]
-    for t in sorted(candidats, key=lambda x: (infos[x["id"]]["prix"], x["id"])):
+    for t in candidats:                                  # dans l'ordre de l'événement : « le premier disponible » est le plein tarif, jamais un tarif réduit réservé à certains
         i = infos[t["id"]]
         if i["visible"] and "boutique" in i["canaux"].split(",") and not (i["ouverture"] and v.aujourdhui() < i["ouverture"]) and not (i["fermeture"] and v.aujourdhui() > i["fermeture"]):
             return t["id"]

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0d0646
+# VERSION CN : 0.1.0  #a92c8e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 4c : la boutique publique (calendrier, page d'un événement, panier, commande, paiement Stripe par webhook signé, virement, suivi par jeton, limites contre l'abus).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0d0646 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a92c8e ▼▼▼
 """Bancs de la billetterie, lot 4c : la boutique publique (calendrier, page d'un événement, panier, commande, paiement Stripe par webhook signé, virement, suivi par jeton, limites contre l'abus)."""
 import http.client
 import json
@@ -33,7 +33,7 @@ class Boutique(Ventes):
         super().setUp()
         self.t[0] = 1_790_000_000.0                         # septembre 2026 : l'événement (12 décembre) est à venir
         for cle, val in (("stripe_actif", True), ("stripe_cle_secrete", "sk_test_essai"), ("stripe_webhook_secret", SECRET), ("virement_actif", True),
-                         ("iban", "FR76 3000 6000 0112 3456 7890 189"), ("domaine", "billets.exemple.fr")):
+                         ("iban", "FR76 3000 6000 0112 3456 7890 189"), ("domaine", "billets.exemple.fr"), ("frais_sans_compte", 0)):
             self.n.reglages.poser("billetterie." + cle, val, "")
         self.appels = []
         self.mod.CN_boutique.HTTP["stripe"] = self.faux_stripe

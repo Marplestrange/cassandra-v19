@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #6b90ee
+// VERSION CN : 0.1.0  #83b810
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : stockage plein ou interdit : on continue sans
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=6b90ee ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=83b810 ▼▼▼
 // Billetterie : les écrans du terrain, pensés pour le téléphone (la caisse, le contrôle à l'entrée) et « Mon espace » du revendeur et de l'artiste.
 (function () {
   "use strict";
@@ -225,7 +225,7 @@
   P.revendeur = async (S) => {
     const R = S.racine, m = await S.lire("mon_revendeur");
     if (!m) { R.innerHTML = S.entetes("Mon espace revendeur", "") + '<div class="carte vide">' + esc(S.erreur || "Indisponible.") + "</div>"; return; }
-    const lien = location.origin + "/" + m.lien_de_vente;
+    const lien = location.origin + "/boutique.html" + m.lien_de_vente;
     R.innerHTML = S.entetes(m.nom, "Mon espace revendeur", m.actif ? puce("actif", "ok") : puce("suspendu", "dg")) + (m.actif ? "" : '<div class="alerte dg"><span class="sp">Ton compte est suspendu' + (m.motif_suspension ? " : " + esc(m.motif_suspension) : "") + ". Tes ventes passées restent visibles.</span></div>") +
       '<div class="carte"><h3>Mon code de vente</h3><p class="sub" style="margin:0 0 8px">Donne-le à tes acheteurs : leurs billets te sont attribués.</p><div class="row"><b style="font:700 22px ui-monospace,Menlo,monospace">' + esc(m.code) + '</b><button class="btn sm" data-a="copier" data-v="' + esc(m.code) + '">Copier le code</button><button class="btn sm" data-a="copier" data-v="' + esc(lien) + '">Copier le lien</button></div></div>' +
       portefeuille(m.portefeuille, "revendeur") +

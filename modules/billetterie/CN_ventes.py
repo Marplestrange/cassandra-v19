@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #eaac31
+# VERSION CN : 0.1.0  #065f40
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=eaac31 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=065f40 ▼▼▼
 """Billetterie : les ventes (places, panier, commandes, billets, commissions, remboursements, invitations).
 
 Ce fichier DÉCIDE : qui peut acheter quoi, à quel prix, combien de places restent, quand une vente est acquise, ce qu'elle rapporte au revendeur et quand elle s'annule.
@@ -28,6 +28,7 @@ Règles qui tiennent tout :
 """
 from __future__ import annotations
 
+import hashlib
 import secrets
 import time
 from datetime import date
@@ -51,9 +52,24 @@ def aujourdhui() -> str:
     return date.fromtimestamp(horloge()).isoformat()
 
 
+def empreinte(jeton: str) -> str:
+    """Un jeton (lien, session) ne se garde jamais en clair : on garde son empreinte."""
+    return hashlib.sha256(str(jeton).encode("utf-8")).hexdigest()
+
+
+def client_de_session(tx, session):
+    """Le client d'une session valide, sinon None : un visiteur sans compte est un cas normal, pas une erreur."""
+    if not session:
+        return None
+    x = tx.execute("SELECT c.* FROM sessions_client s JOIN clients c ON c.id = s.client_id WHERE s.empreinte = ? AND s.expire_le > ? AND c.efface = 0", (empreinte(session), horloge())).fetchone()
+    return dict(x) if x else None
+
+
 def url(ctx, chemin: str) -> str:
     """Une adresse de la boutique : le domaine du réglage, https sauf avis contraire."""
     d = ctx.reglage("domaine")
+    if chemin.startswith(("/c/", "/e/", "/a/")):                  # les pages de la boutique : une seule page statique, la route est dans le fragment (rien à configurer côté serveur)
+        chemin = "/boutique.html#" + chemin
     return "%s://%s%s" % ("https" if ctx.reglage("https") else "http", d or "localhost", chemin)
 
 

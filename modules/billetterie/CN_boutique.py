@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3877b6
+# VERSION CN : 0.1.0  #5e6e3b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : la boutique PUBLIQUE (calendrier, page d'un événement, panier, commande, suivi, webhook du prestataire).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3877b6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5e6e3b ▼▼▼
 """Billetterie : la boutique PUBLIQUE (calendrier, page d'un événement, panier, commande, suivi, webhook du prestataire).
 
 Ces capacités se déclarent publiques (`qui = ["anonyme"]`) : elles s'exécutent avant toute connexion. Donc :
@@ -27,6 +27,7 @@ import hmac
 import json
 
 from . import CN_ventes as v
+from . import CN_recus as recus
 from . import CN_regles as r
 from . import CN_stripe as stripe
 
@@ -145,11 +146,12 @@ def brancher(ctx, db):
             out.append({"type_billet_id": t[0], "quantite": (x or {}).get("quantite", 0)})
         return out
 
-    def panier(c, evenement="", lignes=None, code_promo="", don=0, sans_compte=False):
+    def panier(c, evenement="", lignes=None, code_promo="", don=0, sans_compte=False, session=""):
         en_ligne()
         with db.transaction() as tx:
             e = evt_pub(tx, evenement)
-            d = v.devis(ctx, tx, e, _lignes(tx, e, lignes), canal="boutique", code_promo=code_promo, don=don, sans_compte=bool(sans_compte))
+            cli = v.client_de_session(tx, session)                 # sans session valide, on achète SANS compte : frais, ou compte obligatoire ; le paramètre `sans_compte` n'est plus cru
+            d = v.devis(ctx, tx, e, _lignes(tx, e, lignes), canal="boutique", code_promo=code_promo, don=don, sans_compte=cli is None)
         return {"lignes": d["lignes"], "places": d["places"], "sous_total": d["sous_total"], "remise": d["remise"], "promo": d["promo"], "don": d["don"], "frais": d["frais"], "total": d["total"]}
 
     # ── préparer le paiement d'une commande qui retient déjà ses places ──────
@@ -171,8 +173,15 @@ def brancher(ctx, db):
         return {"type": "stripe", "url": page["url"]}
 
     # ── commander ────────────────────────────────────────────────────────────
-    def commander(c, evenement="", lignes=None, nom="", mail="", moyen="", code_promo="", don=0, sans_compte=False, code_revendeur="", ip="", consentement=False):
+    def commander(c, evenement="", lignes=None, nom="", mail="", moyen="", code_promo="", don=0, sans_compte=False, code_revendeur="", ip="", consentement=False, session=""):
         en_ligne()
+        with db.transaction() as tx0:
+            cli = v.client_de_session(tx0, session)
+        if session and not cli:
+            raise ValueError("votre session a expiré : reconnectez-vous")
+        if cli:                                                      # le compte fait foi : son courriel, son nom ; pas de frais d'achat sans compte
+            mail, nom = cli["mail"], (nom or cli["nom"] or "")
+        sans_compte = cli is None
         dispo = {m["id"] for m in moyens()}
         if moyen not in dispo:
             raise ValueError("ce moyen de paiement n'est pas proposé (%s)" % (", ".join(sorted(dispo)) or "aucun n'est configuré"))
@@ -191,6 +200,8 @@ def brancher(ctx, db):
             cid, d = v.creer_commande(ctx, tx, e, _lignes(tx, e, lignes), canal="boutique", nom=nom, mail=mail, revendeur_code=code_revendeur, code_promo=code_promo, don=don,
                                       sans_compte=bool(sans_compte), moyen="virement" if moyen == "virement" else "", par="boutique")
             tx.execute("UPDATE commandes SET moyen = ?, ip = ? WHERE id = ?", (moyen, ip, cid))
+            if cli and not cli["nom"]:                                  # la première commande d'un compte sans nom lui donne son nom
+                tx.execute("UPDATE clients SET nom = ? WHERE id = ?", (nom, cli["id"]))
             if consentement:
                 tx.execute("UPDATE clients SET consentement = 1 WHERE mail = ?", (mail,))
             cmd = dict(tx.execute("SELECT * FROM commandes WHERE id = ?", (cid,)).fetchone())
@@ -214,7 +225,16 @@ def brancher(ctx, db):
                 raise ValueError("commande introuvable")            # la même phrase dans les deux cas : on ne dit pas si la référence existe
             x = dict(x)
             e = r.ligne(tx, "evenements", x["evenement_id"])
-        out = {"commande": x["ref"], "etat": x["etat"], "total": x["total"], "evenement": {"ref": e["ref"], "nom": e["nom"], "date": e["date_iso"]}, "billets": []}
+            salle = r.ligne(tx, "salles", e["salle_id"])
+            deja = tx.execute("SELECT numero FROM recus_fiscaux WHERE commande_id = ? AND etat = 'emis'", (x["id"],)).fetchone()
+        out = {"commande": x["ref"], "etat": x["etat"], "total": x["total"], "don": x["don"], "nom": x["nom"],
+               "evenement": {"ref": e["ref"], "nom": e["nom"], "date": e["date_iso"], "portes": e["portes"], "debut": e["debut"], "lieu": salle["nom"] if salle else "", "adresse": salle["adresse"] if salle else ""}, "billets": []}
+        if x["etat"] == "payee" and x["don"] > 0:
+            try:
+                recus.conditions(ctx)
+                out["recu_fiscal"] = {"possible": True, "numero": deja[0] if deja else ""}
+            except ValueError:
+                out["recu_fiscal"] = {"possible": False, "numero": deja[0] if deja else ""}
         if x["etat"] == "payee":
             k = bil.cle(ctx, db)
             out["billets"] = [{"numero": b["numero"], "nom": b["nom"], "etat": b["etat"], "qr": bil.contenu_qr(k, b["numero"], b["version"]), "code_controle": bil.code_controle(k, b["numero"], b["version"])}

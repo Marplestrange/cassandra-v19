@@ -2,6 +2,8 @@
  "agenda:CN_module.py:analyser_regle": "entrées introuvables (aucun des 50 essais ne rend un résultat exact)",
  "agenda:CN_module.py:en_datetime": "sorties trop uniformes (1 distinctes)",
  "billetterie:CN_boutique.py:horaires": "couverture insuffisante (37 %)",
+ "billetterie:CN_clients.py:anonymiser": "écrit dans la base par la transaction qu'on lui passe (efface les données personnelles d'un client) : une opération sur des données, pas un calcul pur",
+ "billetterie:CN_clients.py:dossier": "lit la base par la transaction qu'on lui passe (export des données d'un client) : une lecture de données, pas un calcul pur",
  "canvas:CN_module.py:_plan_valider": "modifie ses entrées",
  "courrier:CN_outils.py:cle_de_fil": "couverture insuffisante (33 %)",
  "courrier:CN_outils.py:corps": "entrées introuvables (aucun des 197 essais ne rend un résultat exact)",
