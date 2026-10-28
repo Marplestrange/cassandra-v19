@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e79dfe
+# VERSION CN : 0.1.0  #753881
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e79dfe ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=753881 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -31,6 +31,7 @@ licence = "AGPL-3.0-or-later"
 [permissions]
 stockage = true
 stockage_par_societe = true
+agir = true
 secrets = true
 reseau = ["l'API REST de Dolibarr réglée dans la billetterie (pont facultatif : tiers, factures, paiements, avoirs, commissions), jamais sur le chemin d'un paiement", "l'API de Stripe (api.stripe.com), pour créer la page de paiement hébergée d'une commande", "les API de PayPal (api-m.paypal.com) et de HelloAsso (api.helloasso.com), pour créer la page de paiement et vérifier le paiement au retour de l'acheteur", "le serveur d'envoi de courrier (SMTP) réglé dans la billetterie, pour expédier les billets et les messages aux acheteurs"]
 
@@ -1707,6 +1708,16 @@ id = "evenement_rentabilite"
 libelle = "La rentabilité d'un événement : coûts (salle, forfaits et cachets), recettes, commissions dues, seuil de rentabilité en places, date de décision et ce que l'annulation coûterait au plus ; elle éclaire, elle ne décide rien"
 risque = "lecture"
 droit = "gerer"
+
+[[capacites]]
+id = "evenement_projet"
+libelle = "Créer dans le bureau de Cassandra le projet de l'événement et ses tâches types (contrat de salle, assurance, SACEM, sécurité, buvette, bénévoles, communication, décision, vérifications, solde), échéances calculées sur la date de la soirée"
+risque = "faible"
+droit = "gerer"
+perimetre = ["un projet et ses tâches dans les modules Projets et Tâches, au nom du compte qui le demande ; le lien « projet » de la fiche de l'événement"]
+preuve = "la fiche de l'événement relue avec son projet"
+retour = "détacher le projet de l'événement ; le projet et ses tâches restent (à archiver depuis Projets)"
+paliers = ["raconter", "auto", "maitre"]
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

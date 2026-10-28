@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ba850b
+// VERSION CN : 0.1.0  #7c3795
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ba850b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=7c3795 ▼▼▼
 // Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 (function () {
   "use strict";
@@ -141,7 +141,7 @@
           tuile(rent.seuil_places == null ? "—" : rent.seuil_places, "places pour s’équilibrer", "") + tuile(eur(rent.resultat), "résultat à ce jour", rent.resultat < 0 ? "al" : "") + "</div><p class=\"" + (rent.decision_due && rent.sous_le_seuil ? "erreur" : "doux") + "\">" + esc(rent.conseil) + "</p></div>" : "") +
         '<div class="row">' + (vend ? '<button class="btn pri" data-a="publier">Mettre en vente</button>' : "") + (e.statut === "en vente" || e.statut === "complet" ? '<button class="btn" data-a="depublier">Retirer de la vente</button>' : "") +
         '<button class="btn" data-a="modifier">Modifier</button>' + (["brouillon", "en vente", "complet"].indexOf(e.statut) >= 0 ? '<button class="btn" data-a="reporter">Reporter…</button><button class="btn dng" data-a="annuler">Annuler l’événement…</button>' : "") +
-        (vend ? '<button class="btn dng" data-a="supprimer">Supprimer</button>' : "") + "</div>";
+        (vend ? '<button class="btn dng" data-a="supprimer">Supprimer</button>' : "") + (e.projet_ref ? '<span class="bp ok">Projet dans le bureau</span>' : (e.date_iso && ["brouillon", "en vente", "complet"].indexOf(e.statut) >= 0 ? '<button class="btn" data-a="projet">Créer le projet dans le bureau</button>' : "")) + "</div>";
     } else if (ong === "billets") {
       corps = '<div class="row" style="margin-bottom:10px"><span class="sp hint">Les billets que l’on peut acheter.</span><button class="btn pri" data-a="type-nouveau">+ Billet</button></div>' +
         tableau([["n", "Billet"], ["p", "Prix", "n"], ["q", "Quota", "n"], ["e", "Entrées", "n"], ["v", "Visible"], ["", ""]], f.types.map((t) => "<tr><td><b>" + esc(t.nom) + '</b><div class="hint">' + esc(t.description) + '</div></td><td class="n">' + eur(t.prix) + '</td><td class="n">' + (t.quota || "illimité") + '</td><td class="n">' + t.entrees + "</td><td>" + (t.visible ? puce("oui", "ok") : puce("masqué", "")) + '</td><td class="n" style="white-space:nowrap"><button class="btn sm" data-a="type-modifier" data-id="' + t.id + '">Modifier</button> <button class="btn sm dng" data-a="type-supprimer" data-id="' + t.id + '">Supprimer</button></td></tr>'));
@@ -176,7 +176,11 @@
       if (k === "modifier") { if (await editerEvenement(S, e)) recharger(); }
       else if (k === "publier") { if (await S.geste("evenement_publier", { id: e.id }, "Mis en vente.")) recharger(); }
       else if (k === "depublier") { if (await S.geste("evenement_depublier", { id: e.id }, "Retiré de la vente.")) recharger(); }
-      else if (k === "supprimer") { if (await confirmer("Supprimer l’événement ?", "<p>Seul un brouillon sans vente peut être supprimé.</p>", "Supprimer", true) && await S.geste("evenement_delete", { id: e.id }, "Supprimé.")) { delete B.choix.evenement; recharger(); } }
+      else if (k === "projet") {
+        const r = await S.geste("evenement_projet", { evenement_id: e.id });
+        if (r && r.racontee) await confirmer("Projet non créé", "<p>" + esc(r.message) + "</p>", "Compris");
+        else if (r) { dire("Projet créé avec " + r.taches.length + " tâche(s).", "ok"); recharger(); }
+      } else if (k === "supprimer") { if (await confirmer("Supprimer l’événement ?", "<p>Seul un brouillon sans vente peut être supprimé.</p>", "Supprimer", true) && await S.geste("evenement_delete", { id: e.id }, "Supprimé.")) { delete B.choix.evenement; recharger(); } }
       else if (k === "annuler" || k === "reporter") { if (await procedure(S, e, k)) recharger(); }
       else if (k === "type-nouveau" || k === "type-modifier") {
         const t = k === "type-modifier" ? parId(f.types, i) : null;

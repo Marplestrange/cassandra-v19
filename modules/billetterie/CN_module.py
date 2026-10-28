@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c8faff
+# VERSION CN : 0.1.0  #621af4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : branchement du module.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c8faff ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=621af4 ▼▼▼
 """La billetterie : branchement du module.
 
 Un événement, une salle, des artistes et des revendeurs, des formules de rémunération, des billets, une caisse, un contrôle à l'entrée, une boutique publique,
@@ -29,6 +29,7 @@ from . import CN_attente as attente
 from . import CN_entites as entites
 from . import CN_espaces as espaces
 from . import CN_boutique as boutique
+from . import CN_bureau as bureau
 from . import CN_caisse as caisse
 from . import CN_clients as clients
 from . import CN_courriels as courriels
@@ -60,6 +61,7 @@ def brancher(ctx):
     courriels.brancher(ctx, db)
     dolibarr.brancher(ctx, db)
     rentabilite.brancher(ctx, db)
+    bureau.brancher(ctx, db)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
