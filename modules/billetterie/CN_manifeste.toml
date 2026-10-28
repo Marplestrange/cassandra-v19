@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #753881
+# VERSION CN : 0.1.0  #e87426
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=753881 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e87426 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -1718,6 +1718,34 @@ perimetre = ["un projet et ses tâches dans les modules Projets et Tâches, au n
 preuve = "la fiche de l'événement relue avec son projet"
 retour = "détacher le projet de l'événement ; le projet et ses tâches restent (à archiver depuis Projets)"
 paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "legal_pages"
+libelle = "Les textes légaux de la boutique (conditions de vente, mentions légales, confidentialité) : version, date, publié ou non"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "legal_page_save"
+libelle = "Écrire ou modifier un texte légal de la boutique : sa version monte, les conditions de vente publiées deviennent obligatoires à la commande"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["un texte légal publié sur la boutique"]
+preuve = "le texte relu à sa nouvelle version"
+retour = "remettre le texte et la version d'avant"
+paliers = ["raconter", "auto"]
+
+[[capacites]]
+id = "legal_modele"
+libelle = "Un squelette de texte légal à compléter avec les données du titulaire (conditions de vente, mentions, confidentialité) ; il ne remplace aucun avis juridique et le dit"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "public_legal"
+libelle = "Lire un texte légal publié de la boutique (public)"
+risque = "lecture"
+qui = ["anonyme"]
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #a6ad28
+// VERSION CN : 0.1.0  #6f5694
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : stockage refusé : on continue
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=a6ad28 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=6f5694 ▼▼▼
 // La boutique publique : la programmation, la page d'un événement, la commande, le suivi d'une commande avec ses billets, la liste d'attente, le reçu de don.
 // Page statique et SANS session : tout passe par les capacités publiques billetterie.public_* (limitées par origine, protégées par jeton de suivi). La route est dans le fragment (#/e/..., #/c/..., #/a/...).
 (function () {
@@ -87,6 +87,7 @@
       (moi ? "" : (p.achat.compte_obligatoire ? '<div class="info alerte">Cet événement demande un compte client. <a href="#/compte">Se connecter ou créer un compte</a> (un lien vous est envoyé par courriel, sans mot de passe).</div>' : (p.achat.frais_sans_compte ? '<p class="pale">Achat sans compte : ' + esc(eur(p.achat.frais_sans_compte)) + " de frais.</p>" : ""))) +
       '<fieldset style="border:0;padding:0;margin:0;display:grid;gap:8px"><legend class="doux" style="padding:0;margin-bottom:6px">Paiement</legend>' + (p.paiements.length ? p.paiements.map((m, i) => '<label class="coche" style="color:var(--txt)"><input type="radio" name="moyen" value="' + esc(m.id) + '"' + (i === 0 ? " checked" : "") + "><span><b>" + esc(m.libelle) + "</b>" + (m.detail ? '<br><span class="pale">' + esc(m.detail) + "</span>" : "") + "</span></label>").join("") : '<p class="erreur">Le paiement en ligne n’est pas encore ouvert. Contactez l’organisateur.</p>') + "</fieldset>" +
       '<label class="coche"><input type="checkbox" name="consentement"><span>Je souhaite recevoir les nouvelles de l’organisateur (facultatif).</span></label>' +
+      ((p.legal || {}).cgv ? '<label class="coche"><input type="checkbox" name="cgv" required><span>J’ai lu et j’accepte les <a href="#/legal/cgv" target="_blank" rel="noopener">conditions générales de vente</a>.</span></label>' : "") +
       '<div id="msg"></div><div class="ligne"><span class="total" id="total">0,00 €</span><span class="ext"></span><button class="principal" type="submit" id="valider" disabled>Réserver et payer</button></div>' +
       '<p class="pale">Vos places sont retenues pendant quelques minutes le temps du paiement. Vos données ne servent qu’à vous envoyer vos billets.</p></form>';
 
@@ -123,7 +124,7 @@
       bouton.disabled = true; bouton.textContent = "Un instant…";
       try {
         const r = await api("public_commander", { evenement: e.ref, lignes: lignes(), nom: f.get("nom").trim(), mail: f.get("mail").trim(), moyen: f.get("moyen"), code_promo: (f.get("code_promo") || "").trim(), don: cts(f.get("don")),
-          session: session, code_revendeur: revendeur, consentement: !!f.get("consentement") });
+          session: session, code_revendeur: revendeur, consentement: !!f.get("consentement"), cgv: !!f.get("cgv") });
         memoire.ecrire("derniere", { commande: r.commande, suivi: r.suivi });
         if (r.paiement && r.paiement.url) { window.location.href = r.paiement.url; return; }
         location.hash = "#/c/" + r.commande + "?s=" + encodeURIComponent(r.suivi);
@@ -240,6 +241,13 @@
     const an = document.getElementById("annuler-sup"); if (an) an.addEventListener("click", async () => { try { await api("public_compte_annuler_suppression", { session: cl.session }); compte(); } catch (x) { alert(x.message); } });
   }
 
+  // ── les textes légaux ───────────────────────────────────────────────────
+  async function legal(cle) {
+    const x = await api("public_legal", { cle: cle });
+    titrePage(x.titre);
+    app.innerHTML = '<p class="ariane"><a href="#/">← Programmation</a></p><div class="carte"><h1>' + esc(x.titre) + '</h1><p class="pale">Version ' + x.version + " du " + esc(String(x.maj_le).slice(0, 10)) + '</p><div style="margin-top:12px;white-space:pre-wrap">' + esc(x.texte) + "</div></div>";
+  }
+
   // ── la route ─────────────────────────────────────────────────────────────
   // Le retour de PayPal ou de HelloAsso arrive sur boutique.html?c=…&s=…&p=… (+ leurs paramètres) : on le range dans la route et on retire l'adresse de la barre.
   function retourPrestataire() {
@@ -259,9 +267,10 @@
       else if (m[0] === "c" && m[1]) await commande(decodeURIComponent(m[1]), q.get("s") || "");
       else if (m[0] === "a" && m[1]) await attente(decodeURIComponent(m[1]));
       else if (m[0] === "compte") await compte(q.get("t") || "");
+      else if (m[0] === "legal" && m[1]) await legal(decodeURIComponent(m[1]));
       else await calendrier();
     } catch (x) { app.innerHTML = '<div class="carte"><h2>Oups</h2>' + erreur(x.message) + '<p style="margin-top:10px"><a href="#/">Retour à la programmation</a></p></div>'; }
-    document.getElementById("pied").textContent = window.__orga ? window.__orga + " · billetterie" : "";
+    document.getElementById("pied").innerHTML = (window.__orga ? esc(window.__orga) + " · billetterie" : "") + ' · <a href="#/legal/cgv">Conditions de vente</a> · <a href="#/legal/mentions">Mentions légales</a> · <a href="#/legal/confidentialite">Confidentialité</a>';
   }
   window.addEventListener("hashchange", router);
   majLien();

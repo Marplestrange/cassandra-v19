@@ -12,7 +12,7 @@
 <!-- RÔLE       : Billetterie : vente par revendeurs, portefeuille de commissions -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=347b12 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=ea0ddd ▼▼▼ -->
 <!-- TITRE : Module billetterie et réglage Titulaire de l'instance -->
 <!-- LICENCE : AGPL-3.0 · AUTEUR : Atek Drisse · MODULE : docs -->
 
@@ -605,6 +605,36 @@ Un événement, un artiste ou une salle créé depuis un écran n'avait pas d'id
 
 ### Défauts mobiles trouvés et corrigés
 L'en-tête du titulaire débordait sur téléphone (flèches, badge, thème, avatar) et plusieurs écrans (clients, artistes, salles, événements) étaient élargis par leurs tableaux. Correctifs : en-tête compact sous 700 px, enfants de grille réductibles, tableaux défilants. Mesure refaite à 375 px fixes sur les 43 vues.
+## 21. Ce qui est construit, ce qui ne l'est pas (28-10-2026)
+
+**Construit et testé** (module `modules/billetterie`, ~130 capacités, 14 migrations, une trentaine de fichiers de bancs, six specs Playwright) :
+- les bases (salles, formules, artistes, revendeurs, événements, types de billets, programme, affectations, invitations) avec leurs règles et leurs identifiants jamais réutilisés ;
+- le registre des mouvements en écriture seule (centimes), les retraits (demande, validation, versement, refus) et la commission d'un revendeur calculée par le point d'évolution `commission` ;
+- les ventes (stock et places retenues, prix toujours lu en base, codes promo, billets signés, remboursement, transfert, réémission), la caisse (réserve de numéros signés, vente hors ligne, clôture avec écart), le contrôle (portes, hors ligne, conflits) ;
+- la boutique publique (page statique `boutique.html`, route dans le fragment) : programmation, panier chiffré, commande, suivi avec QR, impression, agenda, liste d'attente, reçu de don, textes légaux avec acceptation des conditions de vente ;
+- les comptes clients par lien de connexion (sans mot de passe), l'export et la suppression différée des données ; les espaces revendeur et artiste, cloisonnés par compte ;
+- les paiements : Stripe, PayPal et HelloAsso en pages hébergées, vérifiées chez le prestataire au retour (montant exact, ordre de CETTE commande), virement ;
+- l'annulation et le report d'un événement (chiffres annoncés avant, remboursements en masse, commissions reprises), la liste d'attente (offres qui retiennent les places), les reçus fiscaux de don (association éligible, numéro continu, contenu figé), la rentabilité et la date de décision ;
+- l'envoi réel des courriels (SMTP réglé, réessais, jamais sans activation) avec les billets en PDF joints ; le billet en PDF et son QR vectoriel (même dessin que l'écran, vérifié contre la bibliothèque de référence) ;
+- le pont Dolibarr facultatif (file de rattrapage idempotente : tiers, facture validée, règlement, avoir, versement de commission), le projet de l'événement dans le bureau (Projets, Tâches) ;
+- l'interface V19 : dix menus, l'écran du titulaire, la caisse et le contrôle pour téléphone (avec file hors ligne), « Mon espace » du revendeur et de l'artiste.
+
+**Écarts avec ce qui était prévu plus haut**
+- Le pont Dolibarr vit dans la billetterie (son propre client d'API et ses réglages), pas dans le module `dolibarr` : une écriture comptable automatique part d'un moteur, qui n'a pas de compte et ne peut donc pas passer par les capacités d'un autre module. Le module `dolibarr` n'a pas été modifié.
+- Les courriels partent d'un moteur, hors de l'exécuteur : le frein « envois » du noyau est consulté par `ctx.frein_actif`.
+- Le revendeur n'a pas d'onglet « Mon profil » (fiscalité, IBAN au coffre) ni de facturation de commission par mandat : seul son portefeuille et ses retraits.
+- Un compte client n'a pas d'historique de dons ni de factures PDF téléchargeables (le reçu fiscal et les billets le sont).
+
+**Jamais éprouvé contre un service réel** (à essayer en bac à sable ou sur une entité de recette avant de s'y fier) : Stripe, PayPal, HelloAsso (le code suit leurs documentations publiques, les bancs utilisent des doublures), Dolibarr (en particulier l'avoir, et le mode de paiement par code), un vrai serveur SMTP, la lecture d'un QR par la caméra d'un vrai téléphone.
+
+**Pas construit**
+- Apple Wallet et Google Wallet (les réglages existent, les passes ne sont pas générés : signature avec un certificat ou une clé de service à fournir) ;
+- les artistes comme adhérents Dolibarr (le tiers fournisseur d'un artiste se crée à son premier versement ; le type de membre « Artiste » et l'adhérent ne sont pas écrits) ;
+- le don dans Dolibarr (le module Dons n'a pas de route d'API : le reçu fiscal de la billetterie reste la voie) ;
+- le lien de l'événement avec l'agenda et le répertoire du bureau (le projet et ses tâches le sont) ;
+- les pages publiques de la boutique n'ont pas de sélecteur de langue ni de thème propre à l'organisateur (couleurs de la marque).
+
+**À savoir en exploitation** : rien ne part par courriel tant que `courriels_actifs` n'est pas coché et le serveur réglé ; le pont Dolibarr ne fait rien tant que `dolibarr_actif`, l'adresse, la clé et les comptes bancaires ne sont pas réglés (l'onglet Argent › Comptabilité dit ce qui manque) ; les textes légaux sont des squelettes à faire relire.
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 
 <!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->

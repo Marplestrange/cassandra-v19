@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #7c3795
+// VERSION CN : 0.1.0  #5bcb7e
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=7c3795 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=5bcb7e ▼▼▼
 // Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 (function () {
   "use strict";
@@ -317,16 +317,26 @@
 
   // ═══ PERSONNES ═══
   P.personnes = async (S) => {
-    const R = S.racine, TABS = [["revendeur", "Revendeurs"], ["artiste", "Artistes"], ["formule", "Formules"], ["salle", "Salles"], ["promo", "Codes promo"]];
+    const R = S.racine, TABS = [["revendeur", "Revendeurs"], ["artiste", "Artistes"], ["formule", "Formules"], ["salle", "Salles"], ["promo", "Codes promo"], ["legal", "Textes légaux"]];
     S.onglet = TABS.some((t) => t[0] === S.onglet) ? S.onglet : "revendeur";
     R.innerHTML = S.entetes("Personnes et bases", "Revendeurs, artistes, formules de rémunération, salles et codes promo.") + '<div class="onglets">' + TABS.map((t) => '<button class="' + (t[0] === S.onglet ? "on" : "") + '" data-a="onglet" data-o="' + t[0] + '">' + t[1] + "</button>").join("") + '</div><div id="bz"></div>';
-    await crud(S, S.onglet, R.querySelector("#bz"));
+    if (S.onglet === "legal") await legalOnglet(S, R.querySelector("#bz"));
+    else await crud(S, S.onglet, R.querySelector("#bz"));
     if (S.onglet === "revendeur") R.querySelector("#bz").insertAdjacentHTML("beforeend", '<p class="hint" style="margin-top:8px">Un artiste qui vend lui-même apparaît aussi ici : il naît de sa fiche d’artiste (case « vend lui-même »).</p>');
     S.clic = async (k, a) => {
       if (k === "onglet") { S.onglet = a.dataset.o; return S.rendre(); }
+      if (k === "legal-modele") { const r = await S.lire("legal_modele", { cle: a.dataset.cle }); if (r) { const z = R.querySelector("#lg-" + a.dataset.cle); if (!z.value.trim() || confirm("Remplacer le texte par le squelette ?")) z.value = r.texte; } return undefined; }
+      if (k === "legal-save") { if (await S.geste("legal_page_save", { cle: a.dataset.cle, texte: R.querySelector("#lg-" + a.dataset.cle).value }, "Texte enregistré.")) S.rendre(); return undefined; }
       if (await clicEntite(S, a)) S.rendre();
     };
   };
+
+  // les textes légaux de la boutique : un cadre par texte, un squelette à compléter, la version qui monte
+  async function legalOnglet(S, zone) {
+    const r = await S.lire("legal_pages"), l = (r && r.pages) || [];
+    zone.innerHTML = '<p class="sub">Les conditions de vente, les mentions légales et la politique de confidentialité s’affichent en pied de la boutique. Dès que les conditions de vente sont publiées, l’acheteur doit les accepter pour commander, et la commande garde la version acceptée. Le squelette n’est pas un avis juridique : à compléter et à faire relire.</p>' +
+      l.map((p) => '<div class="carte" style="margin-bottom:12px"><div class="row"><h3 style="margin:0">' + esc(p.titre) + '</h3>' + (p.publiee ? puce("publié · version " + p.version, "ok") : puce("non publié", "")) + '<span class="sp"></span><button class="btn sm" data-a="legal-modele" data-cle="' + p.cle + '">Partir d’un squelette</button><button class="btn sm pri" data-a="legal-save" data-cle="' + p.cle + '">Enregistrer</button></div><textarea id="lg-' + p.cle + '" style="min-height:160px;margin-top:8px">' + esc(p.texte) + "</textarea></div>").join("");
+  }
 
   // ═══ ARGENT ═══
   P.argent = async (S) => {

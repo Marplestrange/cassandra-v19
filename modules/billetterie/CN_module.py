@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #621af4
+# VERSION CN : 0.1.0  #1c979d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : branchement du module.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=621af4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1c979d ▼▼▼
 """La billetterie : branchement du module.
 
 Un événement, une salle, des artistes et des revendeurs, des formules de rémunération, des billets, une caisse, un contrôle à l'entrée, une boutique publique,
@@ -37,6 +37,7 @@ from . import CN_dolibarr as dolibarr
 from . import CN_commandes as commandes
 from . import CN_controle as controle
 from . import CN_evenements as evenements
+from . import CN_legal as legal
 from . import CN_recus as recus
 from . import CN_rentabilite as rentabilite
 from . import CN_registre as registre
@@ -62,6 +63,7 @@ def brancher(ctx):
     dolibarr.brancher(ctx, db)
     rentabilite.brancher(ctx, db)
     bureau.brancher(ctx, db)
+    legal.brancher(ctx, db)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

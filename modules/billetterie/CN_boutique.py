@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #023b39
+# VERSION CN : 0.1.0  #8ed75a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : la boutique PUBLIQUE (calendrier, page d'un événement, panier, commande, suivi, webhook du prestataire).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=023b39 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ed75a ▼▼▼
 """Billetterie : la boutique PUBLIQUE (calendrier, page d'un événement, panier, commande, suivi, webhook du prestataire).
 
 Ces capacités se déclarent publiques (`qui = ["anonyme"]`) : elles s'exécutent avant toute connexion. Donc :
@@ -143,7 +143,7 @@ def brancher(ctx, db):
                     "programme": prog, "billets": types, "places_restantes": s["restant"],
                     "achat": {"compte_obligatoire": mode == "obligatoire", "frais_sans_compte": (e["frais_sans_compte"] if e["frais_sans_compte"] is not None else int(ctx.reglage("frais_sans_compte"))),
                               "don_possible": ctx.reglage("titulaire_statut") == "association"},
-                    "paiements": moyens(), "liste_attente": attente, "organisateur": {"nom": ctx.reglage("titulaire_nom"), "mail": ctx.reglage("titulaire_mail")}}
+                    "paiements": moyens(), "liste_attente": attente, "legal": {k: bool((db.lire("SELECT 1 FROM pages_legales WHERE cle = ? AND trim(texte) <> ''", (k,)) or [None])[0]) for k in ("cgv", "mentions", "confidentialite")}, "organisateur": {"nom": ctx.reglage("titulaire_nom"), "mail": ctx.reglage("titulaire_mail")}}
 
     def _lignes(tx, e, lignes):
         out = []
@@ -193,8 +193,11 @@ def brancher(ctx, db):
         return {"type": "stripe", "url": page["url"]}
 
     # ── commander ────────────────────────────────────────────────────────────
-    def commander(c, evenement="", lignes=None, nom="", mail="", moyen="", code_promo="", don=0, sans_compte=False, code_revendeur="", ip="", consentement=False, session=""):
+    def commander(c, evenement="", lignes=None, nom="", mail="", moyen="", code_promo="", don=0, sans_compte=False, code_revendeur="", ip="", consentement=False, session="", cgv=False):
         en_ligne()
+        cgv_v = db.lire("SELECT version FROM pages_legales WHERE cle = 'cgv' AND trim(texte) <> ''")
+        if cgv_v and not cgv:
+            raise ValueError("acceptez les conditions générales de vente pour commander")
         with db.transaction() as tx0:
             cli = v.client_de_session(tx0, session)
         if session and not cli:
@@ -219,7 +222,7 @@ def brancher(ctx, db):
             limiter(tx, "cmd:mail:" + mail.lower(), *LIMITE_COMMANDES_MAIL)
             cid, d = v.creer_commande(ctx, tx, e, _lignes(tx, e, lignes), canal="boutique", nom=nom, mail=mail, revendeur_code=code_revendeur, code_promo=code_promo, don=don,
                                       sans_compte=bool(sans_compte), moyen="virement" if moyen == "virement" else "", par="boutique")
-            tx.execute("UPDATE commandes SET moyen = ?, ip = ? WHERE id = ?", (moyen, ip, cid))
+            tx.execute("UPDATE commandes SET moyen = ?, ip = ?, cgv_version = ? WHERE id = ?", (moyen, ip, cgv_v[0]["version"] if cgv_v else 0, cid))
             if cli and not cli["nom"]:                                  # la première commande d'un compte sans nom lui donne son nom
                 tx.execute("UPDATE clients SET nom = ? WHERE id = ?", (nom, cli["id"]))
             if consentement:
