@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0e5f75
+# VERSION CN : 0.1.0  #dee561
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module courrier : un vrai noyau, de vrais imaplib et smtplib, un serveur IMAP et un serveur SMTP de poche.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0e5f75 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=dee561 ▼▼▼
 """Bancs du module courrier : un vrai noyau, de vrais imaplib et smtplib, un serveur IMAP et un serveur SMTP de poche."""
 import base64
 import json
@@ -361,6 +361,29 @@ class Ecrire(Monde):
         for a in ("", "pas-une-adresse", "a@b", "zoe@exemple.fr, @x.fr", ",".join("u%d@exemple.fr" % i for i in range(21))):
             self.assertEqual(self.ex("brouillon_creer", a=a, objet="x", texte="y")["statut"], "echec", a)
         self.assertEqual(self.ex("brouillon_creer", a="zoe@exemple.fr", cc="mauvaise", objet="x", texte="y")["statut"], "echec")
+
+    CARTE = {"nom": "Atelier Lumen", "forme": "SAS", "siren": "123456782", "adresse": "12 quai des Chartrons", "cp": "33000", "ville": "Bordeaux", "tel": "0102030405",
+             "email": "contact@lumen.test", "web": "https://lumen.test", "signature": "complete"}
+
+    def envoyer_avec_carte(self, carte):
+        self.ctx.executer_lecture = lambda cap, **a: carte if cap == "societes.carte" else {"comptes": self.comptes}
+        r = self.ex("envoyer", a="zoe@exemple.fr", objet="Devis", texte="Voici le devis")
+        self.assertEqual(r["statut"], "faite", r)
+        return self.smtp.recus[-1]["raw"].decode()
+
+    def test_la_signature_de_la_societe_ne_s_ajoute_que_si_elle_est_voulue(self):
+        self.assertNotIn("Atelier Lumen", self.envoyer_avec_carte(self.CARTE))                  # réglage éteint : rien n'est ajouté
+        self.n.reglages.poser("courrier.signature_societe", True, "")
+        txt = self.envoyer_avec_carte(self.CARTE)
+        self.assertIn("Atelier Lumen SAS", txt)
+        self.assertIn("SIREN 123456782", txt)
+        self.assertIn("33000 Bordeaux", txt)
+        self.assertIn("Voici le devis", txt)
+        courte = self.envoyer_avec_carte(dict(self.CARTE, signature="courte"))
+        self.assertIn("Atelier Lumen SAS", courte)
+        self.assertNotIn("SIREN", courte)                                                        # la courte : le nom et le site seulement
+        self.assertIn("https://lumen.test", courte)
+        self.assertNotIn("Atelier Lumen", self.envoyer_avec_carte({"nom": ""}))                  # une fiche sans nom : aucune signature
 
     def test_envoyer_par_smtp_journalise_et_garde_une_copie(self):
         r = self.ex("envoyer", a="zoe@exemple.fr", cc="paul@exemple.fr", objet="Devis", texte="Voici le devis", repond_a_message="<orig@exemple.fr>")

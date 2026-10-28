@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a66408
+# VERSION CN : 0.1.0  #c109df
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du socle société : tout compte a une société, la fiche est cloisonnée, les fonctions ne valent que dans la leur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a66408 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c109df ▼▼▼
 """Bancs du socle société : rattachement obligatoire des comptes, fiche cloisonnée, fonctions attachées à une société, superadministrateur seul maître de l'ensemble."""
 import shutil
 import sys
@@ -375,6 +375,35 @@ class Monde(unittest.TestCase):
         self.non("societes.affecter", compte=DAN, societe=FORM, utilisateur=CAM, fonction="membre")
         self.non("societes.partage_retirer", compte=BEA, source="1", destinataire=FORM)                               # il n'existe plus
         self.non("societes.partager", compte=BEA, source="1", destinataire="1", mode="tous")                          # pas avec soi-même
+
+    # ── les demandes de module ──────────────────────────────────────────────
+    def test_une_societe_secondaire_demande_un_module_et_la_principale_l_attribue(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, societe=FORM, utilisateur=DAN, fonction="admin")
+        self.non("societes.module_demander", compte=DAN, societe=FORM, nom="Documents", motif="")                   # sans motif, rien
+        d = self.ok("societes.module_demander", compte=DAN, societe=FORM, nom="Documents", motif="classer les contrats", source="logithèque")
+        self.non("societes.module_demandes", compte=CAM, toutes=True)                                              # seul le superadministrateur les voit toutes
+        self.assertEqual([x["nom"] for x in self.ok("societes.module_demandes", compte=BEA, toutes=True)["demandes"]], ["Documents"])
+        self.assertEqual(len(self.ok("societes.module_demandes", compte=DAN, societe=FORM)["demandes"]), 1)       # la société voit les siennes
+        r = self.non("societes.module_demande_decider", compte=DAN, id=d["id"], decision="accepter", module="ged")
+        self.assertIn("superadministrateur", r["erreur"])
+        self.non("societes.module_demande_decider", compte=BEA, id=d["id"], decision="accepter", module="inexistant")
+        self.non("societes.module_demande_decider", compte=BEA, id=d["id"], decision="accepter", module="comptes")  # un module vital est déjà partout
+        self.non("ged.sources", compte=DAN)                                                                        # rien n'est ouvert tant qu'on n'a pas décidé
+        self.ok("societes.module_demande_decider", compte=BEA, id=d["id"], decision="accepter", module="ged", reponse="installé")
+        self.ok("ged.sources", compte=DAN)                                                                         # attribué à la société demandeuse
+        self.non("ged.sources", compte=CAM)                                                                        # installé pour eux : la principale ne l'a pas d'office
+        self.non("societes.module_demande_decider", compte=BEA, id=d["id"], decision="refuser")                    # une demande se décide une fois
+        etat = self.ok("societes.module_demandes", compte=DAN, societe=FORM)["demandes"][0]
+        self.assertEqual((etat["etat"], etat["module"], etat["reponse"]), ("acceptee", "ged", "installé"))
+
+    def test_une_demande_refusee_n_ouvre_rien(self):
+        self.monde()
+        self.ok("societes.affecter", compte=BEA, societe=FORM, utilisateur=DAN, fonction="admin")
+        d = self.ok("societes.module_demander", compte=DAN, societe=FORM, nom="Documents", motif="x")
+        self.ok("societes.module_demande_decider", compte=BEA, id=d["id"], decision="refuser", reponse="pas maintenant")
+        self.non("ged.sources", compte=DAN)
+        self.assertEqual(self.ok("societes.module_demandes", compte=DAN, societe=FORM)["demandes"][0]["etat"], "refusee")
 
     # ── le carnet de la société ─────────────────────────────────────────────
     def test_le_carnet_de_la_societe_est_commun_et_les_carnets_personnels_restent_prives(self):

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agenda
 # ZONE       : CN
-# VERSION CN : 0.1.2  #43837d
+# VERSION CN : 0.1.2  #4f6e07
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'agenda.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=43837d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=4f6e07 ▼▼▼
 """L'agenda.
 
 Porté de la V18 (`itare_event_*`, `itare_reminder_*`, `itare_calendar_items`, `itare_agenda_list`, `ical_parse`, `rrule_expand`, `_caldav_*`), avec ses leçons :
@@ -232,10 +232,24 @@ def ical_escape(v):
     return str(v or "").replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\r", "").replace("\n", "\\n")
 
 
-def ical_lire(texte, appeler):
+def decalage_pour(fuseau=""):
+    """Le décalage à l'heure d'été ou d'hiver du moment, en minutes, pour un fuseau (« Europe/Paris ») ; celui du serveur quand on n'en dit pas, ou qu'on ne le connaît pas.
+    L'horloge se lit ICI, dans le nexus. ARRONDI À LA MINUTE : les deux horloges sont lues à quelques microsecondes d'écart."""
+    if fuseau:
+        try:
+            from zoneinfo import ZoneInfo
+            d = datetime.now(ZoneInfo(str(fuseau))).utcoffset()
+            if d is not None:
+                return round(d.total_seconds() / 60.0)
+        except Exception:
+            pass
+    return round((datetime.now() - datetime.now(timezone.utc).replace(tzinfo=None)).total_seconds() / 60.0)
+
+
+def ical_lire(texte, appeler, fuseau=""):
     """Les VEVENT d'un flux iCalendar (RFC 5545). Le décodage est un POINT D'ÉVOLUTION : points/EC_ical_lire.py. L'horloge se lit ICI, dans le nexus : l'EC reçoit le décalage local en minutes
     (ARRONDI À LA MINUTE : les deux horloges sont lues à quelques microsecondes d'écart, et sans arrondi 09:00Z devenait 10:59)."""
-    decalage = round((datetime.now() - datetime.now(timezone.utc).replace(tzinfo=None)).total_seconds() / 60.0)
+    decalage = decalage_pour(fuseau)
     return appeler("ical_lire", {"texte": texte or "", "decalage_min": decalage})["evenements"]
 
 
@@ -248,6 +262,13 @@ def plier(ligne):
 def brancher(ctx):
     global _point
     _point = ctx.point
+
+    def fuseau_societe():
+        """Le fuseau de la société où l'on travaille (sa fiche, rubrique régionale) ; vide : celui du serveur."""
+        try:
+            return str((ctx.executer_lecture("societes.carte") or {}).get("fuseau") or "")
+        except Exception:
+            return ""
     db = ctx.stockage
 
     def compte_agit():
@@ -616,7 +637,7 @@ def brancher(ctx):
     def caldav_evenements(compte, d0, d1):
         brut = caldav_requete(compte, d0, d1)
         out = []
-        for ev in ical_lire(brut.replace("&#13;", "").replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&"), ctx.point):
+        for ev in ical_lire(brut.replace("&#13;", "").replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&"), ctx.point, fuseau_societe()):
             starts = [ev["debut"]]
             if ev["rrule"]:
                 s, motif = occurrences(ev["rrule"], ev["debut"], ev["journee"], d0, d1)
@@ -685,7 +706,7 @@ def brancher(ctx):
         texte = str(texte or "")
         if len(texte.encode("utf-8")) > MAX_ICS:
             raise ValueError("fichier trop gros (5 Mo au plus)")
-        evs = ical_lire(texte, ctx.point)
+        evs = ical_lire(texte, ctx.point, fuseau_societe())
         if not evs:
             raise ValueError("aucun événement trouvé dans ce fichier")
         if len(evs) > MAX_EVENEMENTS_ICS:

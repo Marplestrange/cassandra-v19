@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #cfff94
+# VERSION CN : 0.1.0  #e5b1c5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune ; les fonctions (groupes attachés à une société).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ═══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=cfff94 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e5b1c5 ▼▼▼
 """Le module Sociétés : la fiche de chaque société et ses fonctions.
 
 Tout compte appartient à une société (le noyau le garantit) ; la société principale existe toujours. Seul le superadministrateur crée, archive et
@@ -498,6 +498,81 @@ def brancher(ctx):
             out.append(dict(u, fonction=fct))
         return {"societe": soc, "utilisateurs": out}
 
+    # ── les demandes de module : une société secondaire n'installe rien sur l'instance, elle demande ; la principale examine, installe, attribue ──
+    def _demande(did):
+        r = db.lire("SELECT * FROM demandes_module WHERE id=?", (int(did),))
+        if not r:
+            raise ValueError("demande introuvable")
+        return dict(r[0])
+
+    def module_demander(c, societe="", nom="", motif="", source=""):
+        soc = _cible(societe)
+        _exiger("equipe", "gerer", soc)
+        n, m, s = str(nom or "").strip()[:120], str(motif or "").strip()[:1000], str(source or "").strip()[:300]
+        if not n:
+            raise ValueError("quel module ? Un nom au moins")
+        if not m:
+            raise ValueError("dites à quoi il servira : la société principale décide sur ce motif")
+        cur = db.ecrire("INSERT INTO demandes_module(societe, demandeur, ts, nom, motif, source) VALUES(?,?,?,?,?,?)", (soc, ctx.compte or "", time.time(), n, m, s))
+        did = cur if isinstance(cur, int) else db.lire("SELECT max(id) AS i FROM demandes_module")[0]["i"]
+        _histoire(soc, "", "a demandé le module « %s »" % n, None, None)
+        _emettre("societe.modifiee", soc, {"rubrique": "demandes", "demande": did, "nom": n})
+        return {"id": did, "societe": soc, "nom": n}
+
+    def prouver_demander(c, res):
+        return bool(db.lire("SELECT 1 FROM demandes_module WHERE id=? AND etat='demandee'", (res["id"],)))
+
+    def defaire_demander(c, res):
+        db.ecrire("DELETE FROM demandes_module WHERE id=? AND etat='demandee'", (res["id"],))
+
+    def module_demandes(c, societe="", toutes=False):
+        """Les demandes d'une société ; la société principale (superadministrateur) les voit toutes avec `toutes`."""
+        if toutes:
+            _exiger_super()
+            rows = db.lire("SELECT * FROM demandes_module ORDER BY (etat='demandee') DESC, id DESC LIMIT 200")
+        else:
+            soc = _cible(societe)
+            _exiger("equipe", "voir", soc)
+            rows = db.lire("SELECT * FROM demandes_module WHERE societe=? ORDER BY id DESC LIMIT 100", (soc,))
+        noms = {x["id"]: x["nom"] for x in idt.societes(True)}
+        return {"demandes": [dict(r, nom_societe=noms.get(r["societe"], r["societe"])) for r in rows], "peut_decider": _superadmin(ctx.compte) or not ctx.compte}
+
+    def module_demande_decider(c, id=0, decision="", module="", reponse="", exclusif=True):
+        _exiger_super()
+        d_ = _demande(id)
+        if d_["etat"] != "demandee":
+            raise ValueError("cette demande est déjà traitée")
+        decision = str(decision or "").strip()
+        if decision not in ("accepter", "refuser"):
+            raise ValueError("décision : accepter ou refuser")
+        mod = ""
+        if decision == "accepter":
+            mod = str(module or "").strip()
+            m = next((x for x in ctx.manifestes_actifs(toutes=True) if x.id == mod), None)
+            if m is None:
+                raise ValueError("ce module n'est pas installé et actif : installez-le d'abord par la logithèque (examen et consentement), puis attribuez-le")
+            if m.instance:
+                raise ValueError("un module d'instance n'existe que dans la société principale")
+            if m.importance == "vital" or m.essentiel:
+                raise ValueError("un module vital est déjà ouvert dans toutes les sociétés")
+            idt.module_regler(d_["societe"], mod, True)
+            if exclusif and d_["societe"] != "1" and mod not in idt.modules_de_societe("1"):
+                idt.module_regler("1", mod, False)                  # installé pour eux : la société principale ne l'a pas d'office
+        db.ecrire("UPDATE demandes_module SET etat=?, module=?, decide_par=?, decide_ts=?, reponse=? WHERE id=?",
+                  ("acceptee" if decision == "accepter" else "refusee", mod, ctx.compte or "", time.time(), str(reponse or "").strip()[:500], int(id)))
+        _histoire(d_["societe"], "", "demande du module « %s » %s%s" % (d_["nom"], "acceptée" if decision == "accepter" else "refusée", (" : " + mod) if mod else ""), None, None)
+        _emettre("societe.modifiee", d_["societe"], {"rubrique": "demandes", "demande": int(id), "decision": decision, "module": mod})
+        return {"id": int(id), "societe": d_["societe"], "etat": "acceptee" if decision == "accepter" else "refusee", "module": mod, "avant": d_}
+
+    def prouver_decider(c, res):
+        return _demande(res["id"])["etat"] == res["etat"]
+
+    def defaire_decider(c, res):
+        a = res["avant"]
+        if res.get("module"):
+            idt.module_regler(a["societe"], res["module"], None)
+        db.ecrire("UPDATE demandes_module SET etat='demandee', module='', decide_par='', decide_ts=0, reponse='' WHERE id=?", (res["id"],))
+
     def module_regler(c, societe="", module="", ouvert=True):
         soc = _cible(societe)
         if ctx.compte and not _superadmin(ctx.compte):
@@ -812,6 +887,9 @@ def brancher(ctx):
     ctx.implementer("partage_retirer", partage_retirer, prouver_partage_retirer, defaire_partage_retirer)
     ctx.implementer("partageables", partageables)
     ctx.implementer("module_regler", module_regler, prouver_module_regler, defaire_module_regler)
+    ctx.implementer("module_demander", module_demander, prouver_demander, defaire_demander)
+    ctx.implementer("module_demandes", module_demandes)
+    ctx.implementer("module_demande_decider", module_demande_decider, prouver_decider, defaire_decider)
     ctx.implementer("fiche_regler", fiche_regler, prouver_regler, defaire_regler)
     ctx.implementer("historique_defaire", historique_defaire, prouver_regler, defaire_regler)
     ctx.implementer("creer", creer, prouver_creer, defaire_creer)

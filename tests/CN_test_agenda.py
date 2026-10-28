@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7d5fa1
+# VERSION CN : 0.1.0  #4af603
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module agenda.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7d5fa1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4af603 ▼▼▼
 """Bancs du module agenda."""
 import base64
 import shutil
@@ -63,6 +63,29 @@ class FauxCalDav:
     def arreter(self):
         self.srv.shutdown()
         self.srv.server_close()
+
+
+class DecalageDeLaSociete(unittest.TestCase):
+    """Le fuseau de la société règle la lecture des heures d'un flux iCalendar (sinon celui du serveur)."""
+
+    def charger(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("agenda_nexus_test", RACINE / "modules" / "agenda" / "CN_module.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m
+
+    def test_un_fuseau_connu_donne_son_decalage_et_les_autres_celui_du_serveur(self):
+        m = self.charger()
+        serveur = m.decalage_pour("")
+        self.assertEqual(m.decalage_pour("pas/un-fuseau"), serveur)
+        try:
+            import zoneinfo
+            zoneinfo.ZoneInfo("Asia/Tokyo")
+        except Exception:
+            self.skipTest("base des fuseaux absente")
+        self.assertEqual(m.decalage_pour("Asia/Tokyo"), 540)
+        self.assertEqual(m.decalage_pour("UTC"), 0)
 
 
 class Monde(unittest.TestCase):

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.2  #00ade6
+# VERSION CN : 0.1.2  #fdc02b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=00ade6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=fdc02b ▼▼▼
 """Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 
 Porté de la V18 (`_imap_*`, `itare_mail_*`, `mail_*`, `_courrier_*`), avec ses leçons :
@@ -714,6 +714,34 @@ def brancher(ctx):
                 raise ValueError("%s : adresse invalide « %s »" % (nom, a))
         return adresses
 
+    def signature_societe():
+        """La signature de la société où l'on écrit, si elle l'a voulue (réglage « signature_societe ») : son nom, ses mentions et ses coordonnées, d'après sa fiche (societes.carte).
+        Rien n'est ajouté quand le message la porte déjà, ni quand la fiche n'a pas de nom."""
+        if not ctx.reglage("signature_societe", ""):
+            return ""
+        try:
+            carte = ctx.executer_lecture("societes.carte") or {}
+        except Exception:
+            return ""
+        nom = str(carte.get("nom") or "").strip()
+        if not nom:
+            return ""
+        lignes = [" ".join(x for x in (nom, str(carte.get("forme") or "").strip()) if x)]
+        if str(carte.get("signature") or "complete") != "courte":
+            if carte.get("siren"):
+                lignes.append("SIREN %s" % carte["siren"])
+            ville = " ".join(x for x in (str(carte.get("cp") or ""), str(carte.get("ville") or "")) if x)
+            adresse = ", ".join(x for x in (str(carte.get("adresse") or ""), ville) if x)
+            if adresse:
+                lignes.append(adresse)
+            if carte.get("tel"):
+                lignes.append("Tél. %s" % carte["tel"])
+            if carte.get("email"):
+                lignes.append(str(carte["email"]))
+        if carte.get("web"):
+            lignes.append(str(carte["web"]))
+        return "\n".join(lignes)
+
     def construire(compte, a, objet, texte, cc="", repond_a_message="", references=""):
         destinataires, copies = liste_adresses(a, "destinataire"), liste_adresses(cc, "copie")
         if not destinataires:
@@ -721,6 +749,9 @@ def brancher(ctx):
         corps = str(texte or "")
         if len(corps) > 200000:
             raise ValueError("message trop long (200 000 caractères au plus)")
+        sig = signature_societe()
+        if sig and sig not in corps:
+            corps = corps.rstrip() + "\n\n-- \n" + sig
         expediteur = str(reglage("smtp_expediteur", compte) or reglage("imap_identifiant", compte)).strip()
         if not EMAIL.match(expediteur):
             expediteur = str(reglage("imap_identifiant", compte)).strip()

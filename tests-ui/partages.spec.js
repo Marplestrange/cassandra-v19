@@ -13,6 +13,7 @@ test("Société : partages entre sociétés et carnet de la société", async ({
   }
   await page.evaluate(() => {
     window.__appels = [];
+    window.__demandes = [{ id: 4, societe: 'form', nom_societe: 'Lumen Formation', nom: 'Gestion de stock', motif: 'inventaire du matériel', source: '', etat: 'demandee', module: '', reponse: '' }];
     const niv = (n) => ({ fiche: n, etablissements: n, horaires: n, pieces: n, banque: n, conformite: n, habillage: n, equipe: n });
     window.__acces = niv(3);
     let partages = [{ source: '1', destinataire: 'form', type: 'utilisateurs', mode: 'tous', actif: true, elements: [], nom_source: 'Atelier Lumen', nom_destinataire: 'Lumen Formation' }];
@@ -33,6 +34,10 @@ test("Société : partages entre sociétés et carnet de la société", async ({
       if (c === 'contacts.societe_creer') { carnet = carnet.concat([{ id: 8, display_name: a.display_name, company: a.company, emails: a.emails, phone: a.phone }]); return { id: 8 }; }
       if (c === 'contacts.societe_supprimer') { carnet = carnet.filter((x) => a.ids.indexOf(x.id) < 0); return {}; }
       if (c === 'contacts.societe_partage_lister') return { depuis: a.depuis, contacts: [{ id: 3, display_name: 'Fournisseur Formation', company: '', emails: ['f@form.fr'], phone: '' }] };
+      if (c === 'societes.modules') return { societe: '1', modules: [{ id: 'comptes', nom: 'Comptes', importance: 'vital', vital: true, instance: false, ouvert: true }, { id: 'ged', nom: 'Documents', importance: 'optionnel', vital: false, instance: false, ouvert: false }], peut_regler: true };
+      if (c === 'societes.module_demandes') return { demandes: window.__demandes, peut_decider: true };
+      if (c === 'societes.module_demander') { window.__demandes = window.__demandes.concat([{ id: 5, societe: '1', nom_societe: 'Atelier Lumen', nom: a.nom, motif: a.motif, source: a.source, etat: 'demandee', module: '', reponse: '' }]); return { id: 5 }; }
+      if (c === 'societes.module_demande_decider') { window.__demandes = window.__demandes.map((d) => d.id === a.id ? Object.assign({}, d, { etat: a.decision === 'accepter' ? 'acceptee' : 'refusee', module: a.module || '' }) : d); return {}; }
       if (c === 'comptes.moi') return { compte: 'bea@x.fr' };
       return {};
     };
@@ -67,6 +72,15 @@ test("Société : partages entre sociétés et carnet de la société", async ({
   await k.locator('button[data-a="part-del"][data-ty="utilisateurs"]').click();
   await page.locator('[data-c="oui"]').click();
   await expect.poll(async () => (await appels('societes.partage_retirer')).some((x) => x.type === 'utilisateurs')).toBe(true);
+
+  // les demandes de module : une société secondaire demande, la principale attribue un module installé
+  k = await monter('societes:s_modules');
+  await expect(k).toContainText('Demandes de module');
+  await expect(k).toContainText('Gestion de stock');
+  await k.locator('select[data-dm-mod="4"]').selectOption('ged');
+  await k.locator('button[data-a="dm-ok"][data-id="4"]').click();
+  await expect.poll(async () => (await appels('societes.module_demande_decider')).some((x) => x.id === 4 && x.decision === 'accepter' && x.module === 'ged')).toBe(true);
+  await expect(k).toContainText('acceptée');
 
   // le carnet de la société : une fiche commune, un ajout, la corbeille, et le carnet partagé en lecture seule
   k = await monter('societes:s_carnet');

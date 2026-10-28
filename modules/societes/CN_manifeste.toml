@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8ac75c
+# VERSION CN : 0.1.0  #7b43d2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune. Socle du multi-sociétés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ac75c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7b43d2 ▼▼▼
 [module]
 id = "societes"
 nom = "Sociétés"
@@ -288,6 +288,34 @@ id = "partageables"
 libelle = "Les utilisateurs d'autres sociétés qu'on peut ranger dans une fonction de cette société"
 risque = "lecture"
 droit = "utiliser"
+
+[[capacites]]
+id = "module_demander"
+libelle = "Demander un module à la société principale (nom, motif, source) : une société secondaire n'installe rien elle-même"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["une demande écrite, sans aucune installation"]
+preuve = "la demande relue est en attente"
+retour = "retirer la demande"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "module_demandes"
+libelle = "Les demandes de module d'une société, ou toutes (superadministrateur)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "module_demande_decider"
+libelle = "Accepter une demande en attribuant un module déjà installé à la société, ou la refuser (superadministrateur)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["l'ouverture d'un module installé pour la société demandeuse", "jamais un module d'instance ni une installation"]
+preuve = "l'état de la demande relu est celui décidé"
+retour = "remettre la demande en attente et retirer le choix d'ouverture"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
 
 [[capacites]]
 id = "module_regler"

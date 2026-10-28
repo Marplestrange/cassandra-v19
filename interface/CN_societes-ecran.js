@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #9ccc07
+// VERSION CN : 0.1.0  #f537ec
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran de la fiche société : identité, établissements, horaires, présence, responsables, fonctions, pièces, banque, conformité, habillage, coffre, multi-sociétés, historique.
 // MÉTHODE    : une scène (CASS.sceneSurMesure.societes) ; la page vient de l'écran ouvert (s_identite, s_etabs…). Chaque champ s'enregistre à la validation et passe par une capacité du module Sociétés.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=9ccc07 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f537ec ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS, K = CASS.kit, esc = K.esc, agir = K.agir, dire = K.dire, confirmer = K.confirmer;
@@ -109,7 +109,10 @@
       const p = S.page;
       if (p === "fonctions") { const [f, m] = await Promise.all([lire("societes.fonctions", { societe: S.actif }), lire("societes.membres", { societe: S.actif })]); S.fonc = f; S.membres = (m && m.membres) || []; }
       if (p === "equipe") { const m = await lire("societes.membres", { societe: S.actif }); S.membres = (m && m.membres) || []; }
-      if (p === "modules") { const m = await lire("societes.modules", { societe: S.actif }); S.mods = (m && m.modules) || []; S.modsPeut = !!(m && m.peut_regler); }
+      if (p === "modules") {
+        const m = await lire("societes.modules", { societe: S.actif }); S.mods = (m && m.modules) || []; S.modsPeut = !!(m && m.peut_regler);
+        const dm = await lire("societes.module_demandes", S.superadmin ? { toutes: true } : { societe: S.actif }); S.demandes = (dm && dm.demandes) || []; S.peutDecider = !!(dm && dm.peut_decider);
+      }
       if (p === "carnet") {
         S.erreurCarnet = "";
         let c = null; try { c = await agirSoc("contacts.societe_lister", { limite: 500 }); } catch (e) { S.erreurCarnet = /n'est pas ouvert/.test(e.message || "") ? "Le module Carnet d’adresses n’est pas ouvert dans cette société : ouvrez-le dans « Modules »." : (e.message || String(e)); }
@@ -285,10 +288,19 @@
         (Object.keys(cols).length ? '<section class="carte"><h3>Ce que vous voyez</h3><div class="tw"><table><thead><tr><th>Collection</th><th>Secrets</th></tr></thead><tbody>' + Object.keys(cols).map((k) => "<tr><td><b>" + esc(k) + "</b></td><td>" + cols[k] + "</td></tr>").join("") + '</tbody></table></div><p class="hint">Seuls les noms apparaissent ici, jamais les valeurs.</p></section>' : "") + "</div>" +
         '<aside class="carte"><h3>Garde-fous</h3><div class="list"><div class="etab"><b>Droits</b><div class="row">' + chip("coffre.utiliser") + chip("espace : membre", "warn") + '</div><div class="hint" style="margin:0">L’accès se donne par appartenance à l’espace, pas par un droit global.</div></div><div class="etab"><b>Départ d’un administrateur</b><div class="hint" style="margin:0">Impossible tant qu’il en resterait moins d’un : le coffre ne se perd pas.</div></div><div class="etab"><b>Journal</b><div class="hint" style="margin:0">Chaque lecture, écriture et accord est inscrit : qui, quand, sur quoi.</div></div></div></aside></div>';
     }
+    function demandesHtml() {
+      const D = S.demandes || [], nomEt = { demandee: ["en attente", "warn"], acceptee: ["acceptée", "ok"], refusee: ["refusée", ""] };
+      const ajouter = S.superadmin && soc().principale ? "" : '<div class="row" style="margin-top:12px"><input type="text" id="dm-n" placeholder="Nom du module souhaité" style="max-width:220px" aria-label="Nom du module"><input type="text" id="dm-m" placeholder="À quoi il servira" style="flex:1;min-width:200px" aria-label="Motif"><input type="text" id="dm-s" placeholder="Où le trouver (adresse, éditeur)" style="max-width:240px" aria-label="Source"><button class="btn pri" data-a="dm-add">Demander</button></div>';
+      const dispo = (S.mods || []).filter((m) => !m.vital && !m.instance);
+      const lignes = D.length ? '<div class="tw"><table><thead><tr><th>Société</th><th>Module demandé</th><th>Motif</th><th>État</th><th></th></tr></thead><tbody>' + D.map((x) => "<tr><td>" + esc(x.nom_societe || x.societe) + "</td><td><b>" + esc(x.nom) + "</b>" + (x.source ? '<br><small style="color:var(--txt-faint)">' + esc(x.source) + "</small>" : "") + "</td><td>" + esc(x.motif) + "</td><td>" + chip(nomEt[x.etat][0], nomEt[x.etat][1]) + (x.module ? " " + chip(x.module) : "") + (x.reponse ? '<br><small style="color:var(--txt-faint)">' + esc(x.reponse) + "</small>" : "") + "</td><td>" +
+        (S.peutDecider && x.etat === "demandee" ? '<select data-dm-mod="' + x.id + '" aria-label="Module à attribuer" style="max-width:170px"><option value="">— module installé —</option>' + dispo.map((m) => '<option value="' + esc(m.id) + '">' + esc(m.nom || m.id) + "</option>").join("") + '</select> <button class="btn pri" data-a="dm-ok" data-id="' + x.id + '">Accepter</button> <button class="btn" data-a="dm-non" data-id="' + x.id + '">Refuser</button>' : "") + "</td></tr>").join("") + "</tbody></table></div>"
+        : '<div class="vide">Aucune demande.</div>';
+      return '<section class="carte"><h2>' + ic("puzzle") + "Demandes de module</h2><p class=\"sub\">Une société secondaire n’installe rien elle-même : elle demande, la société principale examine le module (permissions montrées, consentement), l’installe par la logithèque puis l’attribue ici.</p>" + lignes + ajouter + "</section>";
+    }
     function pModules() {
       const M = S.mods || [], nom = nomSoc();
       return '<div class="main"><section class="carte"><h2>' + ic("globe") + "Modules de " + esc(nom) + '</h2><p class="sub">Chaque société a ses modules. Les modules vitaux (comptes, droits, sociétés, coffre…) sont ouverts partout ; les autres le sont là où on les ouvre. Un module fermé disparaît des menus et refuse ses gestes pour cette société.' + (S.modsPeut ? " Une société choisit ses modules parmi ceux de l’instance ; la base de l’installation (hébergement, sécurité, agents, logithèque) reste à la société principale." : " Seul l’administrateur de la société ouvre ou ferme ses modules.") + '</p><div class="tw"><table><thead><tr><th>Module</th><th>Importance</th><th>Dans cette société</th></tr></thead><tbody>' +
-        (M.length ? M.map((m) => "<tr><td><b>" + esc(m.nom || m.id) + '</b><br><small style="color:var(--txt-faint)">' + esc(m.id) + "</small></td><td>" + chip(m.importance, m.importance === "vital" ? "acc" : "") + "</td><td>" + (m.instance ? chip("société principale seulement", "warn") : m.vital ? chip("toujours ouvert", "ok") : '<button class="tg' + (m.ouvert ? " on" : "") + '"' + (S.modsPeut ? "" : " disabled") + ' data-a="mod" data-id="' + esc(m.id) + '" data-o="' + (m.ouvert ? 1 : 0) + '" role="switch" aria-checked="' + !!m.ouvert + '" aria-label="' + esc(m.nom || m.id) + ' ouvert dans cette société"></button>') + "</td></tr>").join("") : '<tr><td colspan="3" class="vide">Aucun module.</td></tr>') + "</tbody></table></div></section></div>";
+        (M.length ? M.map((m) => "<tr><td><b>" + esc(m.nom || m.id) + '</b><br><small style="color:var(--txt-faint)">' + esc(m.id) + "</small></td><td>" + chip(m.importance, m.importance === "vital" ? "acc" : "") + "</td><td>" + (m.instance ? chip("société principale seulement", "warn") : m.vital ? chip("toujours ouvert", "ok") : '<button class="tg' + (m.ouvert ? " on" : "") + '"' + (S.modsPeut ? "" : " disabled") + ' data-a="mod" data-id="' + esc(m.id) + '" data-o="' + (m.ouvert ? 1 : 0) + '" role="switch" aria-checked="' + !!m.ouvert + '" aria-label="' + esc(m.nom || m.id) + ' ouvert dans cette société"></button>') + "</td></tr>").join("") : '<tr><td colspan="3" class="vide">Aucun module.</td></tr>') + "</tbody></table></div></section>" + demandesHtml() + "</div>";
     }
     // le geste part dans la société qu'on regarde ici (celle de l'en-tête peut être une autre) : l'en-tête n'est lu qu'au départ de l'appel
     const agirSoc = async (cap, args) => { const o = CASS.societe; CASS.societe = S.actif; try { return await agir(cap, args); } finally { CASS.societe = o; } };
@@ -399,6 +411,9 @@
       else if (k === "car-del") { if (await gesteSoc("contacts.societe_supprimer", { ids: [parseInt(a.dataset.id, 10)] }, "Fiche mise à la corbeille.")) { await chargerPage(); dessiner(); } }
       else if (k === "part-add") { const els = [...(($("#pt-e") || {}).selectedOptions || [])].map((o) => o.value), mode = val("#pt-m"); if (val("#pt-ty") !== "contacts" && mode === "choisis" && !els.length) { dire("Choisissez au moins un utilisateur.", "err"); return; } if (await geste("societes.partager", { source: S.actif, destinataire: val("#pt-d"), type: val("#pt-ty") || "utilisateurs", mode: val("#pt-ty") === "contacts" ? "tous" : mode, elements: els }, "Partage enregistré.")) { await chargerPage(); dessiner(); } }
       else if (k === "part-del") { if (!await confirmer("Retirer ce partage ?", "<p>Les fonctions déjà données restent ; on ne pourra plus en donner à d’autres utilisateurs de cette société.</p>", "Retirer", true)) return; if (await geste("societes.partage_retirer", { source: S.actif, destinataire: a.dataset.d, type: a.dataset.ty || "utilisateurs" }, "Partage retiré.")) { await chargerPage(); dessiner(); } }
+      else if (k === "dm-add") { const n = val("#dm-n"), m = val("#dm-m"); if (!n || !m) { dire("Le nom du module et à quoi il servira.", "err"); return; } if (await geste("societes.module_demander", { societe: S.actif, nom: n, motif: m, source: val("#dm-s") }, "Demande envoyée à la société principale.")) { await chargerPage(); dessiner(); } }
+      else if (k === "dm-ok") { const mod = ($('[data-dm-mod="' + id + '"]') || {}).value; if (!mod) { dire("Choisissez le module installé à attribuer.", "err"); return; } if (await geste("societes.module_demande_decider", { id: parseInt(id, 10), decision: "accepter", module: mod }, "Module attribué à la société.")) { await chargerPage(); dessiner(); } }
+      else if (k === "dm-non") { if (await geste("societes.module_demande_decider", { id: parseInt(id, 10), decision: "refuser" }, "Demande refusée.")) { await chargerPage(); dessiner(); } }
       else if (k === "mod") { if (await geste("societes.module_regler", { societe: S.actif, module: id, ouvert: a.dataset.o !== "1" })) { await chargerPage(); dessiner(); } }
       else if (k === "multi-on") { if (await geste("reglages.regler", { cle: "societes.multi", valeur: true }, "Plusieurs sociétés activées.")) { await chargerBase(); await chargerPage(); dessiner(); } }
       else if (k === "multi-off") { if (S.liste.filter((x) => !x.archivee).length > 1) { dire("Archivez d’abord les autres sociétés.", "err"); return; } if (await geste("reglages.regler", { cle: "societes.multi", valeur: false }, "Retour à une seule société.")) { await chargerBase(); await chargerPage(); dessiner(); } }
