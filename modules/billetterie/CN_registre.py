@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d9fb02
+# VERSION CN : 0.1.0  #8a44a5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : le registre des mouvements (le « portefeuille » des revendeurs et des artistes) et les demandes de retrait.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d9fb02 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8a44a5 ▼▼▼
 """Billetterie : le registre des mouvements (le « portefeuille » des revendeurs et des artistes) et les demandes de retrait.
 
 Règles d'or :
@@ -227,6 +227,7 @@ def brancher(ctx, db):
     ctx.implementer("retrait_valider", valider, prouver_valider, defaire_valider, simuler=lambda x, id=0, **_: "validerait la demande de retrait %s" % id)
     ctx.implementer("retrait_payer", payer, prouver_payer, defaire_payer, simuler=lambda x, id=0, **_: "enregistrerait le versement de la demande %s" % id)
     ctx.implementer("retrait_refuser", refuser, prouver_refuser, defaire_refuser, simuler=lambda x, id=0, **_: "refuserait la demande de retrait %s" % id)
+    return {"demander": demander, "prouver": prouver_demander, "defaire": defaire_demander}
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

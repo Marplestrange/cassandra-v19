@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d7371f
+# VERSION CN : 0.1.0  #7a326c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d7371f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7a326c ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -30,6 +30,7 @@ licence = "AGPL-3.0-or-later"
 
 [permissions]
 stockage = true
+stockage_par_societe = true
 secrets = true
 reseau = ["l'API de Stripe (api.stripe.com), pour créer la page de paiement hébergée d'une commande"]
 
@@ -45,6 +46,14 @@ libelle = "Contrôler les billets à l'entrée (l'ouvreur : lire les billets, vo
 [[droits]]
 id = "vendre"
 libelle = "Vendre à la caisse (le caissier : ouvrir sa caisse, vendre, clôturer, réserver des numéros pour vendre sans réseau)"
+
+[[droits]]
+id = "revendeur"
+libelle = "Espace revendeur (voir SES ventes, SON portefeuille et demander un retrait ; rien de plus)"
+
+[[droits]]
+id = "artiste"
+libelle = "Espace artiste (voir SON programme, SA formule, SON portefeuille et demander un retrait ; rien de plus)"
 
 [[points_evolution]]
 id = "commission"
@@ -1109,4 +1118,42 @@ id = "public_recu"
 libelle = "Lire SON reçu fiscal avec le jeton de sa commande (public)"
 risque = "lecture"
 qui = ["anonyme"]
+
+[[capacites]]
+id = "mon_revendeur"
+libelle = "Mon espace revendeur : mon code, mes événements (formule, quota, vendus), mes ventes récentes, mon portefeuille et mes retraits (le compte vient de l'acte)"
+risque = "lecture"
+droit = "revendeur"
+
+[[capacites]]
+id = "mes_ventes"
+libelle = "Mes ventes de revendeur : commande, événement, billets, total, commission (le nom de l'acheteur, jamais son courriel)"
+risque = "lecture"
+droit = "revendeur"
+
+[[capacites]]
+id = "mon_retrait_revendeur"
+libelle = "Demander un retrait de MA commission : le montant est réservé dans mon portefeuille (seuil minimal, disponible seulement)"
+risque = "faible"
+droit = "revendeur"
+perimetre = ["une demande de retrait et sa réserve, sur mon portefeuille"]
+preuve = "la demande relue en attente"
+retour = "refuser la demande : la réserve revient par une ligne contraire"
+paliers = ["raconter", "auto"]
+
+[[capacites]]
+id = "mon_artiste"
+libelle = "Mon espace artiste : mon programme (ordre et heure de passage, durée), ma formule, mon portefeuille et mes retraits, et mes ventes si je vends"
+risque = "lecture"
+droit = "artiste"
+
+[[capacites]]
+id = "mon_retrait_artiste"
+libelle = "Demander un retrait de MON solde d'artiste : le montant est réservé dans mon portefeuille (seuil minimal, disponible seulement)"
+risque = "faible"
+droit = "artiste"
+perimetre = ["une demande de retrait et sa réserve, sur mon portefeuille"]
+preuve = "la demande relue en attente"
+retour = "refuser la demande : la réserve revient par une ligne contraire"
+paliers = ["raconter", "auto"]
 

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0ad1f9
+# VERSION CN : 0.1.0  #e62356
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : branchement du module.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0ad1f9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e62356 ▼▼▼
 """La billetterie : branchement du module.
 
 Un événement, une salle, des artistes et des revendeurs, des formules de rémunération, des billets, une caisse, un contrôle à l'entrée, une boutique publique,
@@ -27,6 +27,7 @@ from __future__ import annotations
 from . import CN_annulation as annulation
 from . import CN_attente as attente
 from . import CN_entites as entites
+from . import CN_espaces as espaces
 from . import CN_boutique as boutique
 from . import CN_caisse as caisse
 from . import CN_commandes as commandes
@@ -42,7 +43,7 @@ def brancher(ctx):
     for e in E.values():
         e.brancher(ctx)
     evenements.brancher(ctx, db, E)
-    registre.brancher(ctx, db)
+    retrait = registre.brancher(ctx, db)
     commandes.brancher(ctx, db)
     controle.brancher(ctx, db)
     caisse.brancher(ctx, db)
@@ -50,6 +51,7 @@ def brancher(ctx):
     attente.brancher(ctx, db, outils)
     annulation.brancher(ctx, db)
     recus.brancher(ctx, db)
+    espaces.brancher(ctx, db, retrait)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

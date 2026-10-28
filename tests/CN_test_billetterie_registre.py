@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ce16a7
+# VERSION CN : 0.1.0  #cc9ac6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 2 : le registre en écriture seule, les soldes, la date de disponibilité, les retraits et leur retour arrière.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ce16a7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cc9ac6 ▼▼▼
 """Bancs de la billetterie, lot 2 : le registre en écriture seule, les soldes, la date de disponibilité, les retraits et leur retour arrière."""
 import sqlite3
 import sys
@@ -104,8 +104,7 @@ class EcritureSeule(Registre):
         self.assertIn("zéro", self.echec("provision", porteur="revendeur", porteur_id=self.rev["id"], nature="ajustement", montant=0))
 
     def test_la_meme_cle_n_ecrit_qu_une_ligne(self):
-        from importlib import import_module  # noqa: F401
-        mod = sys.modules[[k for k in sys.modules if k.startswith("cassandra_module_billetterie")][0]]
+        mod = sys.modules["cassandra_module_billetterie"]          # le nom exact : un préfixe attrape aussi les sous-modules et les modules d'essai
         reg = getattr(mod, "CN_registre")
         with self.db.transaction() as tx:
             a = reg.ecrire(tx, "revendeur", self.rev["id"], "commission", 500, cle="commande:CMD-000001:ligne:1")

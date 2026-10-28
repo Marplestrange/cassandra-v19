@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #52223e
+# VERSION CN : 0.1.0  #a4b6d2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : les règles de chaque fiche (ce qui est permis d'enregistrer, et ce qui part avec).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=52223e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a4b6d2 ▼▼▼
 """Billetterie : les règles de chaque fiche (ce qui est permis d'enregistrer, et ce qui part avec).
 
 Un `preparer` reçoit la transaction, ce que l'appelant a donné (`d`, seulement les champs précisés) et la fiche d'avant (None si neuve) ;
@@ -155,6 +155,14 @@ def dependances_formule(tx, f):
 
 
 # ── artistes ─────────────────────────────────────────────────────────────────
+def compte_libre(tx, table, compte, avant):
+    """Un compte ne se lie qu'à UNE fiche de revendeur et qu'à UNE fiche d'artiste : son espace montre ses chiffres, pas ceux d'un autre."""
+    compte = texte(compte, 160)
+    if compte and tx.execute("SELECT 1 FROM %s WHERE compte = ? AND id <> ?" % table, (compte, avant["id"] if avant else 0)).fetchone():
+        raise ValueError("ce compte est déjà lié à une autre fiche de %s" % ("revendeur" if table == "revendeurs" else "artiste"))
+    return compte
+
+
 def preparer_artiste(tx, d, avant):
     g = lambda k, df=None: pris(d, avant, k, df)
     statut = g("statut", "Particulier")
@@ -173,7 +181,7 @@ def preparer_artiste(tx, d, avant):
             "mail": mail_valide(g("mail", "")), "tel": texte(g("tel", ""), 40), "rider": texte(g("rider", ""), 600), "bio": texte(g("bio", ""), 600),
             "formule_id": f["id"] if f else None, "vend": vend, "siret": re.sub(r"\s", "", texte(g("siret", ""), 20)), "ape": texte(g("ape", ""), 8).upper(), "tva": texte(g("tva", ""), 20),
             "adresse": texte(g("adresse", ""), 200), "code_postal": texte(g("code_postal", ""), 12), "ville": texte(g("ville", ""), 80), "pays": texte(g("pays", "FR"), 2).upper() or "FR",
-            "adhesion_fin": jour(g("adhesion_fin", ""), "fin d'adhésion"), "compte": texte(g("compte", ""), 160)}
+            "adhesion_fin": jour(g("adhesion_fin", ""), "fin d'adhésion"), "compte": compte_libre(tx, "artistes", g("compte", ""), avant)}
 
 
 def apres_artiste(tx, avant, a):
@@ -237,7 +245,7 @@ def preparer_revendeur(tx, d, avant):
     if statut not in STATUTS_PERSONNE:
         raise ValueError("statut : %s" % ", ".join(STATUTS_PERSONNE))
     nom = requis(g("nom"), "le nom du revendeur")
-    vals = {"nom": nom, "statut": statut, "mail": mail_valide(g("mail", "")), "tel": texte(g("tel", ""), 40), "compte": texte(g("compte", ""), 160),
+    vals = {"nom": nom, "statut": statut, "mail": mail_valide(g("mail", "")), "tel": texte(g("tel", ""), 40), "compte": compte_libre(tx, "revendeurs", g("compte", ""), avant),
             "siret": re.sub(r"\s", "", texte(g("siret", ""), 20)), "ape": texte(g("ape", ""), 8).upper(), "tva": texte(g("tva", ""), 20),
             "adresse": texte(g("adresse", ""), 200), "code_postal": texte(g("code_postal", ""), 12), "ville": texte(g("ville", ""), 80), "pays": texte(g("pays", "FR"), 2).upper() or "FR",
             "actif": booleen(g("actif", 1)), "suspendu_motif": texte(g("suspendu_motif", ""), 200)}
