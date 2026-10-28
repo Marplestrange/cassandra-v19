@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #73cb70
+# VERSION CN : 0.1.0  #54532a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=73cb70 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=54532a ▼▼▼
 # CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 #
 #   ./CN_install.sh                         le noyau seul, dans UN dossier : /var/cassandra
@@ -74,6 +74,18 @@ verifier_python() {
     python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' && return 0
   fi
   echouer "Python 3.11 ou plus est nécessaire (tomllib, SQLite avec JSON)"
+}
+
+# Les dépendances du noyau : « cryptography » (les secrets, l'IBAN, WebAuthn) est INDISPENSABLE ; le reste sert aux gestes
+# (openssl : certificats ; sudo/cron : planifié ; iptables : urgence ; ssh : flotte). Installés par apt quand ils manquent.
+assurer_dependances() {
+  python3 -c 'import cryptography' 2>/dev/null && return 0
+  if command -v apt-get >/dev/null 2>&1; then
+    dire "dépendances : python3-cryptography et outils système (apt)"
+    DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1 || true
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-cryptography openssl sudo cron iptables openssh-client curl >/dev/null       || avertir "apt n'a pas tout installé : voir ci-dessus"
+  fi
+  python3 -c 'import cryptography' 2>/dev/null || echouer "la bibliothèque Python « cryptography » manque (apt install python3-cryptography, ou pip install cryptography) : sans elle, aucun secret ne s'écrit"
 }
 
 # ---------------------------------------------------------------- un module
@@ -179,6 +191,7 @@ fi
 
 # ---------------------------------------------------------------- le noyau
 verifier_python
+assurer_dependances
 migrer_ancienne_disposition
 
 dire "dossiers : $RACINE (Cassandra), $UTILISATEURS/<utilisateur> (les utilisateurs, comme FastPanel)"
