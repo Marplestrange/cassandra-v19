@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #9feaf8
+// VERSION CN : 0.1.0  #ba850b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=9feaf8 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=ba850b ▼▼▼
 // Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 (function () {
   "use strict";
@@ -126,7 +126,7 @@
   };
 
   async function fiche(S, id) {
-    const R = S.racine, [f, st] = await Promise.all([S.lire("evenement_fiche", { id: id }), S.lire("stock", { evenement_id: id })]);
+    const R = S.racine, [f, st, rent] = await Promise.all([S.lire("evenement_fiche", { id: id }), S.lire("stock", { evenement_id: id }), S.lire("evenement_rentabilite", { evenement_id: id })]);
     if (!f) { delete B.choix.evenement; R.innerHTML = '<div class="carte vide">Cet événement n’existe plus.</div>'; return; }
     const e = f.evenement, ong = S.onglet;
     const TABS = [["resume", "Résumé"], ["billets", "Billets"], ["programme", "Programme"], ["revendeurs", "Revendeurs"], ["invitations", "Invitations"], ["ventes", "Ventes"], ["attente", "Liste d’attente"]];
@@ -137,6 +137,8 @@
         (e.motif_annulation ? "<dt>Annulation</dt><dd>" + esc(e.motif_annulation) + "</dd>" : "") + "</dl></div>" +
         (st ? '<div class="carte"><h3>Ventes</h3>' + jauge(st.vendus + st.retenus, st.quota) + '<p class="sub" style="margin:6px 0 10px">' + st.vendus + " vendus · " + st.retenus + " réservés · " + st.restant + " restants sur " + st.quota + "</p>" +
           tableau([["t", "Billet"], ["v", "Vendus", "n"], ["r", "Réservés", "n"], ["q", "Restant", "n"]], st.types.map((t) => "<tr><td>" + esc(t.nom) + '</td><td class="n">' + t.vendus + '</td><td class="n">' + t.retenus + '</td><td class="n">' + (t.restant == null ? "illimité" : t.restant) + "</td></tr>")) + "</div>" : "") +
+        (rent && rent.couts_fixes ? '<div class="carte"><h3>Rentabilité</h3><div class="tuiles" style="margin-bottom:8px">' + tuile(eur(rent.couts_fixes), "coûts fixes (salle " + eur(rent.couts_salle) + ", artistes " + eur(rent.couts_artistes) + ")", "") + tuile(eur(rent.recettes), "recettes (" + rent.vendus + " places)", "") +
+          tuile(rent.seuil_places == null ? "—" : rent.seuil_places, "places pour s’équilibrer", "") + tuile(eur(rent.resultat), "résultat à ce jour", rent.resultat < 0 ? "al" : "") + "</div><p class=\"" + (rent.decision_due && rent.sous_le_seuil ? "erreur" : "doux") + "\">" + esc(rent.conseil) + "</p></div>" : "") +
         '<div class="row">' + (vend ? '<button class="btn pri" data-a="publier">Mettre en vente</button>' : "") + (e.statut === "en vente" || e.statut === "complet" ? '<button class="btn" data-a="depublier">Retirer de la vente</button>' : "") +
         '<button class="btn" data-a="modifier">Modifier</button>' + (["brouillon", "en vente", "complet"].indexOf(e.statut) >= 0 ? '<button class="btn" data-a="reporter">Reporter…</button><button class="btn dng" data-a="annuler">Annuler l’événement…</button>' : "") +
         (vend ? '<button class="btn dng" data-a="supprimer">Supprimer</button>' : "") + "</div>";

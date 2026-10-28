@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #be6198
+# VERSION CN : 0.1.0  #e79dfe
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=be6198 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e79dfe ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -401,6 +401,15 @@ type = "entier"
 defaut = 0
 minimum = 0
 maximum = 100000
+portee = "societe"
+
+[[reglages]]
+id = "decision_jours"
+libelle = "Jours avant l'événement où l'on décide de maintenir, annuler ou reporter (sous le seuil de rentabilité)"
+type = "entier"
+defaut = 7
+minimum = 0
+maximum = 60
 portee = "societe"
 
 [[reglages]]
@@ -1692,6 +1701,12 @@ perimetre = ["l'état d'une ligne de la file de rattrapage"]
 preuve = "la ligne relue à faire"
 retour = "la remettre en échec"
 paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "evenement_rentabilite"
+libelle = "La rentabilité d'un événement : coûts (salle, forfaits et cachets), recettes, commissions dues, seuil de rentabilité en places, date de décision et ce que l'annulation coûterait au plus ; elle éclaire, elle ne décide rien"
+risque = "lecture"
+droit = "gerer"
 
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
