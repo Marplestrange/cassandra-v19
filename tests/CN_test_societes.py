@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e8e089
+# VERSION CN : 0.1.0  #9e0cde
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du socle société : tout compte a une société, la fiche est cloisonnée, les fonctions ne valent que dans la leur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e8e089 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9e0cde ▼▼▼
 """Bancs du socle société : rattachement obligatoire des comptes, fiche cloisonnée, fonctions attachées à une société, superadministrateur seul maître de l'ensemble."""
 import shutil
 import sys
@@ -430,6 +430,11 @@ class Monde(unittest.TestCase):
         self.assertEqual((v[FORM]["demandes"], v["1"]["demandes"]), (1, 0))
         self.assertGreater(v["1"]["modules"], v[FORM]["modules"])                                                  # la principale a tout ce qui est actif, Lumen les modules vitaux
         self.non("societes.vue_consolidee", compte=CAM)                                                            # réservée au superadministrateur
+
+    def test_les_membres_d_une_societe_sont_des_personnes_pas_des_agents(self):
+        self.monde()
+        comptes = {m["compte"] for m in self.ok("societes.membres", compte=BEA, societe="1")["membres"]}
+        self.assertEqual(comptes, {BEA, CAM})                                                                      # ni cassandra, ni itare, ni le noyau
 
     # ── les demandes de module ──────────────────────────────────────────────
     def test_une_societe_secondaire_demande_un_module_et_la_principale_l_attribue(self):

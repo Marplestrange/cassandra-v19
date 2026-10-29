@@ -26,6 +26,18 @@ local) ; la clé ne sort jamais du module qui la garde.
 > preuve, retour arrière, journal. Un humain agit en voie parallèle, et le noyau le sait. L'administrateur règle jusqu'où l'autonomie va (un palier),
 > mais cette prudence est un réglage, jamais un interdit codé en dur.
 
+## Aperçu
+
+L'interface de la V19, sur des données d'essai fictives : le bureau de la personne, puis l'organisation (la société, ses fonctions et leurs droits, ses partages).
+
+![Le bureau : la journée, le temps libre, les tâches](docs/captures/bureau.png)
+
+![La fiche de la société, avec l'aperçu en direct de ce que les modules en lisent](docs/captures/societe.png)
+
+![Les fonctions d'une société : un niveau par domaine, aucun, voir, modifier ou gérer](docs/captures/fonctions.png)
+
+![Les partages entre sociétés : utilisateurs, carnet de contacts, modèles](docs/captures/partages.png)
+
 ## Comment elle travaille
 
 1. **Percevoir.** Des *détecteurs* (chaque module déclare les siens) relèvent des faits ; le collecteur du Sensorium mesure la machine en continu.
@@ -46,6 +58,41 @@ Quelques règles ne bougent jamais :
 - **Quand des agents agissent au nom d'un compte, ils n'ont pas plus de droits que lui.**
 - **Un geste d'urgence est humain** : geler l'autonomie des agents, couper les envois, fermer les sessions, confiner la machine. Aucun n'est un outil
   d'agent, et le confinement se rouvre seul à son échéance.
+
+## Deux sortes de code : le nexus (CN) et l'évolution (EC)
+
+Le projet sépare nettement ce qui doit **rester vrai** de ce qui peut **s'améliorer tout seul**. C'est ce qui permet à Cassandra de se corriger sans jamais
+toucher à ce qui protège.
+
+| | **Le nexus (CN)** | **L'évolution (EC, *Evolution Cassandra*)** |
+|---|---|---|
+| Ce que c'est | ce qui doit rester vrai même si tout ce qui est optimisé se trompe | ce qui peut changer sans que rien de vrai ne change : le *comment* d'un calcul pur |
+| Ce qu'il fait | **décide, autorise, agit et prouve** | **calcule**, rien d'autre |
+| Ce qu'il couvre | l'identité et l'accès (comptes, droits, cloisonnement, secrets), les effets sur le monde (disque, réseau, base, processus, envois), les données (schémas, migrations, sauvegardes), la preuve (journal, chaîne d'empreintes), l'exploitation (installation, retour arrière, arrêt d'urgence) | l'implémentation d'un **point d'évolution** déclaré par un module : une fonction pure qui respecte son contrat ; aussi les prompts d'agents et les seuils, bornés par le nexus |
+| Où il vit | `noyau/` en entier, tous les manifestes, les programmes exécutés en racine, les migrations, les contrats, les tests, les données | dans un fichier **à part**, hors du dossier du module (`/var/cassandra/ec/<module>/`) |
+| Qui l'écrit | le dépôt, signé : personne ne le modifie en service | le moteur d'évolution, jamais sans preuve |
+
+**Le test, en six conditions.** Une fonction n'est un point d'évolution que si elle est : **pure** (aucune entrée ni sortie, aucun état), **déterministe** (l'heure et
+le hasard arrivent en paramètres), **bornée** (durée et mémoire plafonnées), **mesurable** (une mesure déclarée et un corpus de rejeu), **non décisive** (elle ne
+décide d'aucun droit, secret, suppression, envoi ni vérification de preuve) et **contractuelle** (entrée et sortie décrites par un schéma). Sinon, c'est du nexus.
+Une fonction pure mais décisive (vérifier une signature, contrôler un droit) reste nexus par défaut ; l'administrateur peut l'ouvrir à l'évolution, sous garde renforcée.
+
+**Comment une EC entre en service, sans pari.**
+
+1. Une variante est proposée (par le moteur d'optimisation, déterministe ou à modèle) pour un point qui coûte cher.
+2. Un **évaluateur déterministe**, jamais un modèle qui note son propre travail, la juge sur un **corpus de rejeu** fait d'appels réels, avec une part **réservée**
+   que le générateur ne voit pas, et des variantes volontairement fausses pour vérifier que l'évaluateur lui-même n'est pas cassé.
+3. Elle tourne **en ombre** à côté de l'actuelle : seules les lectures sont exécutées, les écritures sont détournées vers un simulacre comparé.
+4. Elle monte **par paliers** (10 %, 50 %, 100 % du trafic) sur un verdict calculé ; un gain n'est retenu que s'il dépasse 5 % **et** deux fois le bruit de mesure.
+5. Un **disjoncteur** la coupe après trois fautes en dix minutes ; le **retour** est instantané (on repasse l'aiguillage) ; une **visite à trente jours** confirme le gain.
+
+**Deux versions par artefact évolutif.** La *version dépôt* (`fastpanel 1.9.0`, signée, personne n'y touche) et la *version EC* (`EC21`, l'état de la ligne évoluée posée
+par-dessus), écrites `1.9.0+EC21.a3f9c2` : l'EC ne passe jamais devant le dépôt. Le noyau et le moteur d'optimisation n'ont qu'une version dépôt : ils sont hors évolution.
+Chaque fichier le dit dans son en-tête (`ZONE : CN`, `VERSION CN`, `VERSION EC`, `EC LIÉES`) et dans une **borne scellée** que `outils/CN_bornes.py` vérifie.
+
+**Ce qui est vrai aujourd'hui.** Le mécanisme est construit et éprouvé (points d'évolution, corpus de rejeu, évaluateur avec auto-test par mutations, ombre, paliers,
+chaîne d'empreintes, module `evolution`), avec `vue` comme premier pilote. Aucune évolution n'a encore été mesurée en production, et l'activer est un choix de
+l'administrateur : `docs/CN_EVOLUTION.md` (§ 7) dit l'état exact. La définition et le test sont dans `docs/CN_NEXUS.md`, le format des fichiers dans `docs/CN_FORMAT.md`.
 
 ## Installer
 
@@ -146,6 +193,29 @@ Plus de quarante modules, regroupés par famille. Chacun est autonome : on peut 
 |---|---|
 | `billetterie` | La billetterie complète (ci-dessous). |
 | `dolibarr` | Un pont vers une instance Dolibarr par son API REST : lit (santé, comptes, impayés, objets) et agit (tiers, contacts, produits, brouillons de documents), avec preuve et retour ; supprimer passe par une corbeille. Facultatif. |
+
+## Plusieurs sociétés dans une même instance
+
+Une instance peut porter plusieurs organisations, à la façon de Dolibarr (Multicompany), avec une règle qui simplifie tout : **la société principale est
+propriétaire de l'instance**. Seule elle décide du comportement de l'application ; les autres travaillent dedans.
+
+- **Tout compte appartient à une société.** Ses répertoires et documents vivent dans le grand répertoire de sa société. Un utilisateur peut aussi avoir une
+  fonction dans d'autres sociétés, sans y être administrateur. Un sélecteur à côté de l'avatar met toute l'application dans la société choisie.
+- **Des fonctions, pas des rôles figés.** Sept fonctions de départ (titulaire, administrateur, gestionnaire, comptable, conformité, membre, invité), un niveau par
+  domaine (aucun, voir, modifier, gérer), d'autres à créer. Une fonction ne vaut que dans sa société.
+- **Chaque société a ses modules.** Les modules vitaux sont partout ; les autres s'ouvrent société par société. La base de l'installation (sécurité, sauvegardes,
+  agents, logithèque) reste à la société principale. Une société secondaire n'installe rien : elle **demande** un module, la principale l'examine, l'installe puis l'attribue.
+- **Des données séparées.** Un module peut déclarer une **base par société** : son code ne change pas, ses données et ses moteurs suivent la société de l'acte.
+- **Un coffre isolé.** Un compte ne voit que son coffre ; chaque société a le sien (rôles administrateur, membre, contributeur, lecture ; chaque secret garde son auteur).
+  Le coffre d'une société peut vivre sur **son propre serveur Vaultwarden**, dont l'adresse n'est fixée que par l'administrateur de l'instance.
+- **Des partages décidés par le superadministrateur** : les utilisateurs d'une société mis à la disposition d'une autre, son carnet de contacts (en lecture seule,
+  sans les notes), ses modèles (habillage, préfixes de devis et de facture : jamais la banque).
+- **Un profil par société.** La même personne signe et se présente différemment dans chacune ; la signature du courrier le reprend.
+- **Une vue consolidée** pour le superadministrateur : utilisateurs, modules ouverts, partages et demandes en attente, société par société.
+
+Le détail est dans `docs/CN_SOCIETES.md`.
+
+![Les modules d'une société : vitaux partout, les autres ouverts ou fermés pour elle](docs/captures/modules-societe.png)
 
 ## La billetterie, de bout en bout
 
@@ -389,6 +459,11 @@ muette qu'on prend pour une absence) sont devenues des règles du noyau.
 | `CN_UTILISATEURS.md`, `CN_SOCIETES.md` | comptes, groupes, sociétés, coffre isolé par espace |
 | `CN_EVOLUTION.md` | le moteur d'évolution : rejeu, ombre, paliers, retrait |
 | `CN_AFFICHAGE.md`, `CN_REGISTRE.md`, `CN_FORMAT.md` | l'interface assemblée, le registre des objets, le format des fichiers |
+
+## Contribuer et signaler une faille
+
+La V19 est faite pour les contributions : un module est un dossier indépendant, avec son manifeste, ses droits et ses tests. Le guide est dans
+[`CONTRIBUTING.md`](CONTRIBUTING.md). Une faille se signale en privé, avant toute publication : voir [`SECURITY.md`](SECURITY.md).
 
 ## Qui porte le projet
 

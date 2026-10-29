@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3eded6
+# VERSION CN : 0.1.0  #9fba12
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune ; les fonctions (groupes attachés à une société).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ═══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3eded6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9fba12 ▼▼▼
 """Le module Sociétés : la fiche de chaque société et ses fonctions.
 
 Tout compte appartient à une société (le noyau le garantit) ; la société principale existe toujours. Seul le superadministrateur crée, archive et
@@ -790,7 +790,7 @@ def brancher(ctx):
         soc = _cible(societe)
         _exiger("equipe", "voir", soc)
         fonc = {m: f["fonction"] for f in _fonctions_de(soc) for m in f["membres"]}
-        noms = set(idt.comptes_de_societe(soc)) | set(fonc)
+        noms = {x for x in (set(idt.comptes_de_societe(soc)) | set(fonc)) if idt.est_utilisateur(x)}      # des personnes : ni les agents ni le noyau
         out = []
         for cpt in sorted(noms):
             try:
