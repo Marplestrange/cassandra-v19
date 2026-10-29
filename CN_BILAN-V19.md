@@ -12,7 +12,7 @@
 <!-- RÔLE       : Bilan de session — portage V18 → V19 (16 octobre 2026) -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=ea3f5f ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=a9baf7 ▼▼▼ -->
 # Bilan de session — portage V18 → V19 (16 octobre 2026)
 
 À lire en premier pour reprendre le chantier. Ce document est le point d'entrée ; la mémoire de l'agent
@@ -111,7 +111,7 @@ nouveau arrive « non activé » — le déploiement n'active jamais un module n
 
 ## Règles de méthode (de Drisse, à respecter)
 
-- **Pas de squelettes** : lire le code V18 du module en entier, porter toutes ses règles et leçons, écrire les bancs, *puis* ranger dans `modules/`. Les brouillons d'Orion vivent dans `brouillons/` et ne comptent pas comme portés.
+- **Pas de squelettes** : lire le code V18 du module en entier, porter toutes ses règles et leçons, écrire les bancs, *puis* ranger dans `modules/`. Les squelettes d'un premier jet (autrefois dans `brouillons/`, retirés du dépôt une fois tous les modules portés) ne comptaient pas comme portés.
 - **Lire la source avant de coder** : chaque supposition coûte un aller-retour.
 - **Sobriété** : les jetons de Drisse sont comptés — sorties courtes, ne lire en entier que ce qu'on modifie.
 - **Tutoiement** partout.

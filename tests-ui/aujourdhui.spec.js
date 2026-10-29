@@ -9,6 +9,9 @@ test.describe("Page Aujourd'hui - Glisser-déposer tactile", () => {
       }
     });
 
+    // la frise du jour dépend de l'heure : on fixe celle du navigateur à 10 h, sinon l'essai échoue la nuit (la voie « À faire » n'a plus de place visible)
+    const dixHeures = new Date(); dixHeures.setHours(10, 0, 0, 0);          // le même jour que le serveur, à 10 h
+    await page.clock.setFixedTime(dixHeures);
     await page.goto('/');
 
     const loginForm = page.locator('#login-modal');

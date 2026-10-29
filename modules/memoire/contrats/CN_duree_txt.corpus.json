@@ -1,0 +1,322 @@
+{
+ "point": "memoire.duree_txt",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de memoire, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "s": 3456000.844835
+   },
+   "sortie": {
+    "valeur": "40 j"
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "s": 14400
+   },
+   "sortie": {
+    "valeur": "4 h"
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "s": 7200
+   },
+   "sortie": {
+    "valeur": "2 h"
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "s": 86400
+   },
+   "sortie": {
+    "valeur": "1 j"
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "s": 604800
+   },
+   "sortie": {
+    "valeur": "7 j"
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "s": 5400
+   },
+   "sortie": {
+    "valeur": "1 h"
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "s": 1800
+   },
+   "sortie": {
+    "valeur": "30 min"
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "s": 900
+   },
+   "sortie": {
+    "valeur": "15 min"
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "s": 300
+   },
+   "sortie": {
+    "valeur": "5 min"
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "s": 1.7419
+   },
+   "sortie": {
+    "valeur": "1 s"
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "s": 1000000.0
+   },
+   "sortie": {
+    "valeur": "11 j"
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "s": 1760000000
+   },
+   "sortie": {
+    "valeur": "20370 j"
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "s": 86399
+   },
+   "sortie": {
+    "valeur": "23 h"
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "s": 3599
+   },
+   "sortie": {
+    "valeur": "59 min"
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "s": 99
+   },
+   "sortie": {
+    "valeur": "1 min"
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "s": 500
+   },
+   "sortie": {
+    "valeur": "8 min"
+   }
+  },
+  {
+   "cas": "cas 17",
+   "entree": {
+    "s": 1024
+   },
+   "sortie": {
+    "valeur": "17 min"
+   }
+  },
+  {
+   "cas": "cas 18",
+   "entree": {
+    "s": 700
+   },
+   "sortie": {
+    "valeur": "11 min"
+   }
+  },
+  {
+   "cas": "cas 19",
+   "entree": {
+    "s": 12
+   },
+   "sortie": {
+    "valeur": "12 s"
+   }
+  },
+  {
+   "cas": "cas 20",
+   "entree": {
+    "s": 5
+   },
+   "sortie": {
+    "valeur": "5 s"
+   }
+  },
+  {
+   "cas": "cas 21",
+   "entree": {
+    "s": 0.6666666666666666
+   },
+   "sortie": {
+    "valeur": "0 s"
+   }
+  },
+  {
+   "cas": "cas 22",
+   "entree": {
+    "s": 29
+   },
+   "sortie": {
+    "valeur": "29 s"
+   }
+  },
+  {
+   "cas": "cas 23",
+   "entree": {
+    "s": -1
+   },
+   "sortie": {
+    "valeur": "-1 s"
+   }
+  },
+  {
+   "cas": "cas 24",
+   "entree": {
+    "s": -2.25
+   },
+   "sortie": {
+    "valeur": "-2 s"
+   }
+  },
+  {
+   "cas": "cas 25",
+   "entree": {
+    "s": 25
+   },
+   "sortie": {
+    "valeur": "25 s"
+   }
+  },
+  {
+   "cas": "cas 26",
+   "entree": {
+    "s": 8
+   },
+   "sortie": {
+    "valeur": "8 s"
+   }
+  },
+  {
+   "cas": "cas 27",
+   "entree": {
+    "s": 7
+   },
+   "sortie": {
+    "valeur": "7 s"
+   }
+  },
+  {
+   "cas": "cas 28",
+   "entree": {
+    "s": 20
+   },
+   "sortie": {
+    "valeur": "20 s"
+   }
+  },
+  {
+   "cas": "cas 29",
+   "entree": {
+    "s": 3
+   },
+   "sortie": {
+    "valeur": "3 s"
+   }
+  },
+  {
+   "cas": "cas 30",
+   "entree": {
+    "s": 2
+   },
+   "sortie": {
+    "valeur": "2 s"
+   }
+  },
+  {
+   "cas": "cas 31",
+   "entree": {
+    "s": 15
+   },
+   "sortie": {
+    "valeur": "15 s"
+   }
+  },
+  {
+   "cas": "cas 32",
+   "entree": {
+    "s": 30
+   },
+   "sortie": {
+    "valeur": "30 s"
+   }
+  },
+  {
+   "cas": "cas 33",
+   "entree": {
+    "s": 10
+   },
+   "sortie": {
+    "valeur": "10 s"
+   }
+  },
+  {
+   "cas": "cas 34",
+   "entree": {
+    "s": 59
+   },
+   "sortie": {
+    "valeur": "59 s"
+   }
+  },
+  {
+   "cas": "cas 35",
+   "entree": {
+    "s": null
+   },
+   "sortie": {
+    "valeur": "date inconnue"
+   }
+  }
+ ]
+}

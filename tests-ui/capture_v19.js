@@ -16,7 +16,7 @@ if (!dossier) { console.error('Usage : node capture_v19.js <dossier>'); process.
   }
   await page.waitForSelector('body.d19', { timeout: 30000 });
   await page.waitForTimeout(5000);
-  const photo = async (nom) => { await page.waitForTimeout(2500); await page.screenshot({ path: `${dossier}/${nom}.png` }); console.log('ok', nom); };
+  const photo = async (nom) => { await page.waitForTimeout(2500); await page.screenshot({ path: `${dossier}/CN_capture-${nom}.png` }); console.log('ok', nom); };
   const sous = async (libelle) => { await page.evaluate((l) => { const b = [...document.querySelectorAll('#d19-side .sub')].find((x) => x.textContent.trim() === l); if (b) b.click(); }, libelle); };
 
   const attendre = async () => { await page.waitForTimeout(1500); for (let i = 0; i < 40; i++) { const charge = await page.evaluate(() => /Chargement/.test(document.body.innerText)); if (!charge) break; await page.waitForTimeout(500); } };

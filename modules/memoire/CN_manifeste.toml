@@ -397,3 +397,11 @@ contrat = "1.0"
 reference = "points/EC_cle_de"
 fonction = "point_cle_de"
 runtime = "python"
+
+[[points_evolution]]
+id = "duree_txt"
+libelle = "duree_txt (extrait automatiquement de CN_outils.py)"
+contrat = "1.0"
+reference = "points/EC_duree_txt"
+fonction = "point_duree_txt"
+runtime = "python"

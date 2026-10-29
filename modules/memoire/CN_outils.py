@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : memoire
 # ZONE       : CN
-# VERSION CN : 0.1.1  #ece52f
+# VERSION CN : 0.1.1  #44d4b0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les fonctions pures de la mémoire : gardes, clés, proximité, routage, perception. Rien ici ne touche la base.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=ece52f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=44d4b0 ▼▼▼
 """Les fonctions pures de la mémoire : gardes, clés, proximité, routage, perception. Rien ici ne touche la base."""
 from __future__ import annotations
 
@@ -186,16 +186,8 @@ def age(ts):
 
 
 def duree_txt(s):
-    if s is None:
-        return "date inconnue"
-    s = int(s)
-    if s < 60:
-        return "%d s" % s
-    if s < 3600:
-        return "%d min" % (s // 60)
-    if s < 86400:
-        return "%d h" % (s // 3600)
-    return "%d j" % (s // 86400)
+    """duree_txt. Le calcul est un POINT D'ÉVOLUTION : points/EC_duree_txt.py."""
+    return _appeler_point("duree_txt", {"s": s})["valeur"]
 
 
 def empreinte(prev, ts, acteur, verbe, memoire_id, details):

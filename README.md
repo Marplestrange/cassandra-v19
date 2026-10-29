@@ -30,13 +30,13 @@ local) ; la clé ne sort jamais du module qui la garde.
 
 L'interface de la V19, sur des données d'essai fictives : le bureau de la personne, puis l'organisation (la société, ses fonctions et leurs droits, ses partages).
 
-![Le bureau : la journée, le temps libre, les tâches](docs/captures/bureau.png)
+![Le bureau : la journée, le temps libre, les tâches](docs/captures/CN_capture-bureau.png)
 
-![La fiche de la société, avec l'aperçu en direct de ce que les modules en lisent](docs/captures/societe.png)
+![La fiche de la société, avec l'aperçu en direct de ce que les modules en lisent](docs/captures/CN_capture-societe.png)
 
-![Les fonctions d'une société : un niveau par domaine, aucun, voir, modifier ou gérer](docs/captures/fonctions.png)
+![Les fonctions d'une société : un niveau par domaine, aucun, voir, modifier ou gérer](docs/captures/CN_capture-fonctions.png)
 
-![Les partages entre sociétés : utilisateurs, carnet de contacts, modèles](docs/captures/partages.png)
+![Les partages entre sociétés : utilisateurs, carnet de contacts, modèles](docs/captures/CN_capture-partages.png)
 
 ## Comment elle travaille
 
@@ -148,7 +148,7 @@ Plus de quarante modules, regroupés par famille. Chacun est autonome : on peut 
 | `sauvegardes` | Les plans (un site ou une base passe par FastPanel, le reste par rclone), la rotation par dossiers datés, la vérification par échantillon, la couverture. |
 | `securite` | Les gestes (bannir une adresse, fermer un chemin, tourner une clé), le journal de ce qui a été fait, les audits (Lynis, Trivy, ClamAV, CrowdSec), le pare-feu. |
 | `urgence` | Geler l'autonomie des agents, couper les envois, fermer les sessions des autres, lever la crise du noyau, **confiner** la machine (SSH par mot de passe coupé, réseau fermé sauf à votre session, avec une échéance qui rouvre seule). |
-| `coffre` | Le magasin de secrets (Vaultwarden) : un espace par compte et par société, un rôle par secret, l'auteur de chaque secret ; lecture, écriture réversible, retrait. |
+| `coffre` | Le magasin de secrets (Vaultwarden, compatible Bitwarden) : un espace par compte et par société, un rôle par secret, l'auteur de chaque secret ; lecture, écriture réversible, retrait. |
 | `webauthn` | Clés de sécurité en second facteur (avec huit codes de secours) ou connexion sans mot de passe par clé d'accès. |
 
 ### Travailler : le bureau de la personne
@@ -194,6 +194,28 @@ Plus de quarante modules, regroupés par famille. Chacun est autonome : on peut 
 | `billetterie` | La billetterie complète (ci-dessous). |
 | `dolibarr` | Un pont vers une instance Dolibarr par son API REST : lit (santé, comptes, impayés, objets) et agit (tiers, contacts, produits, brouillons de documents), avec preuve et retour ; supprimer passe par une corbeille. Facultatif. |
 
+## Le coffre : Vaultwarden, compatible Bitwarden
+
+Cassandra ne réinvente pas le coffre-fort. Les secrets (clés d'API, mots de passe de boîtes, jetons) vivent dans **Vaultwarden**, une implémentation libre et légère
+du serveur **Bitwarden**, que vous hébergez vous-même. Aucun secret n'est gardé en clair ni dans la mémoire de Cassandra, ni dans ses journaux, ni dans le code : un module
+qui a besoin d'une clé la demande au coffre.
+
+- **Comment elle lui parle.** Le module `coffre` dialogue avec le client en ligne de commande de Bitwarden, lancé en `bw serve` (une API REST locale, par défaut
+  `http://127.0.0.1:8087`, réglable), déverrouillé sur le même serveur. Chaque secret est une **note sécurisée** nommée `espace::nom`. Une liste ne rend jamais que les
+  noms, jamais les valeurs ; chaque lecture est inscrite au journal du coffre ; chaque écriture a sa preuve (relue) et son retour arrière.
+- **Qui voit quoi.** Vaultwarden n'ouvre ici qu'une session de service : l'isolement est tenu **par le module**, dans sa propre base. Un compte ne voit que son coffre ;
+  chaque société a le sien, avec des rôles (administrateur du coffre, membre, contributeur, lecture), des collections, une date de fin d'accès, et l'auteur de chaque
+  secret : un contributeur écrit mais ne relit que les siens. Ni l'administrateur de l'instance, ni Cassandra, ni l'administrateur d'une société ne lit un espace dont
+  il n'est pas membre. Les secrets ne se consultent donc pas compte par compte avec les applications Bitwarden : l'accès normal passe par Cassandra.
+- **Un coffre par société, sur son propre serveur.** L'espace d'une société peut être *externe* : ses secrets vivent sur le Vaultwarden de la société (un `bw serve`
+  déverrouillé), à l'adresse que lui donne l'administrateur de l'instance. S'il est injoignable, rien n'est lu ni écrit et rien ne se replie sur le serveur de l'instance.
+- **Quand quelqu'un part.** Un compte désactivé ou supprimé perd à l'instant l'accès aux espaces de société ; son coffre personnel reste le sien. Le dernier administrateur
+  d'un espace ne part pas : le journal du coffre le dit, et il faut en nommer un autre.
+- **À installer à part.** Vaultwarden et le client `bw` sont des produits tiers, sans affiliation avec Cassandra. Les réglages du module sont `coffre.vault_url` et
+  `coffre.vault_timeout` ; sans coffre joignable, le module le dit (statut « indisponible ») et ce qui a besoin d'un secret s'arrête, proprement.
+
+Le détail (rôles, collections, espace externe, départ) est dans `docs/CN_SOCIETES.md`.
+
 ## Plusieurs sociétés dans une même instance
 
 Une instance peut porter plusieurs organisations, à la façon de Dolibarr (Multicompany), avec une règle qui simplifie tout : **la société principale est
@@ -215,7 +237,7 @@ propriétaire de l'instance**. Seule elle décide du comportement de l'applicati
 
 Le détail est dans `docs/CN_SOCIETES.md`.
 
-![Les modules d'une société : vitaux partout, les autres ouverts ou fermés pour elle](docs/captures/modules-societe.png)
+![Les modules d'une société : vitaux partout, les autres ouverts ou fermés pour elle](docs/captures/CN_capture-modules-societe.png)
 
 ## La billetterie, de bout en bout
 

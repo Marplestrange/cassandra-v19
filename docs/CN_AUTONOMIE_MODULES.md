@@ -12,7 +12,7 @@
 <!-- RÔLE       : L'autonomie de Cassandra sur les modules -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=153364 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=716b92 ▼▼▼ -->
 # L'autonomie de Cassandra sur les modules
 
 Principe (IA souveraine) : **Cassandra n'attend jamais un utilisateur pour gérer les modules.** L'utilisateur peut agir aussi, en parallèle, et Cassandra sait tout ce qu'il fait. La sûreté ne vient pas d'une permission mais de la **réversibilité** : chaque geste est prouvé, a son retour arrière, et laisse un récit où chaque acte porte le geste qui le défait.
@@ -44,7 +44,7 @@ Chaque geste porte son pourquoi : celui que l'acteur a donné (`pourquoi = "…"
 ## Rassurer l'utilisateur
 Par défaut l'utilisateur ne voit pas de boutons à manipuler : un état calme (« Tout va bien »), le récit de ce que Cassandra a fait avec un « Défaire » par ligne, une zone « Demander à Cassandra », un bouton **Pause** (le frein « gel » du noyau, posé par `urgence.geler` : les agents observent, n'agissent plus ; `activite` dit s'il est posé), et le niveau d'autonomie. Les interrupteurs, installations et retraits directs sont derrière un « Mode avancé ». Un utilisateur qui agit passe toujours (voie parallèle), et son acte entre au récit.
 
-Maquette : `brouillons/maquette-logitheque.html` (Vue d'ensemble, Installés, Sécurité).
+Maquette : `docs/maquettes/CN_maquette-logitheque.html` (Vue d'ensemble, Installés, Sécurité).
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 
 <!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->

@@ -12,10 +12,10 @@
 <!-- RÔLE       : Module affichage : la disposition (menus du haut, colonne de gauche, menu avatar) -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=96f79f ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d5cc28 ▼▼▼ -->
 # Module affichage : la disposition (menus du haut, colonne de gauche, menu avatar)
 
-Note de conception, 18-10. Maquette de référence (interactive) : `brouillons/maquette-menus-artifact.html`, publiée en page privée.
+Note de conception, 18-10. Maquette de référence (interactive) : `docs/maquettes/CN_maquette-menus-artifact.html`, publiée en page privée.
 
 ## 1. Principe
 
