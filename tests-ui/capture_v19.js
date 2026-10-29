@@ -34,5 +34,28 @@ if (!dossier) { console.error('Usage : node capture_v19.js <dossier>'); process.
     await attendre();
     await photo(nom);
   }
+
+  // les mêmes écrans en mode sombre et sur un téléphone (l'interface s'adapte, on le montre)
+  const variante = async (options, nom, sombre) => {
+    const ctx = await nav.newContext(options);
+    const pg = await ctx.newPage();
+    await pg.goto('http://127.0.0.1:9005/');
+    await pg.evaluate(() => { try { localStorage.setItem('cn.societe', '1'); } catch (e) { /* sans mémoire locale */ } });
+    if (await pg.locator('#login-modal').isVisible({ timeout: 3000 }).catch(() => false)) {
+      await pg.fill('#login-username', 'ui@exemple.test');
+      await pg.fill('#login-password', 'Essai-UI-2026!');
+      await pg.click('#login-go');
+      await pg.waitForSelector('#login-modal', { state: 'hidden', timeout: 15000 });
+    }
+    await pg.waitForSelector('body.d19', { timeout: 30000 });
+    await pg.waitForSelector('#d19-side button, #d19-bas button', { timeout: 20000 }).catch(() => {});
+    await pg.waitForTimeout(6000);
+    if (sombre) { for (let i = 0; i < 3 && (await pg.evaluate(() => document.documentElement.getAttribute('data-theme'))) !== 'dark'; i++) { await pg.click('#theme-btn'); await pg.waitForTimeout(1500); } }
+    await pg.screenshot({ path: `${dossier}/CN_capture-${nom}.png` });
+    console.log('ok', nom);
+    await ctx.close();
+  };
+  await variante({ viewport: { width: 1440, height: 860 }, colorScheme: 'dark' }, 'bureau-sombre', true);
+  await variante({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }, 'bureau-telephone');
   await nav.close();
 })();

@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #000000
+# VERSION EC : EC0 (référence 0.3.0)  #9678b9
 # HÔTE CN    : CN_module.py · duree_txt @1.0
 # RÔLE       : duree_txt.
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=duree_txt contrat=@1.0 version=EC0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE EC point=duree_txt contrat=@1.0 version=EC0 empreinte=9678b9 ▼▼▼
 
 def duree_txt(s):
     if s is None:

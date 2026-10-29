@@ -1,0 +1,45 @@
+name: Vérifications
+
+# Rapide à chaque envoi et à chaque demande de fusion (quelques minutes) ; la suite complète (plus d'une heure) la nuit du dimanche et à la demande.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rapide:
+    name: Vérifications rapides
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install cryptography
+      - name: Manifestes, isolation, ordre d'installation
+        run: python CN_main.py verifier
+      - name: Le catalogue des modules est à jour
+        run: python outils/CN_catalogue_modules.py --verifier
+      - name: Conformité du dépôt (format, empreintes, nommage, éligibilité)
+        run: python -m unittest tests.CN_test_depot_conforme tests.CN_test_eligibilite tests.CN_test_catalogue_modules -v
+
+  complet:
+    name: Suite complète
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install cryptography
+      - name: Tous les bancs
+        run: python -m unittest discover -s tests -p "CN_test*.py"

@@ -1,0 +1,39 @@
+name: Un défaut
+description: Quelque chose ne marche pas comme prévu
+title: "[défaut] "
+labels: ["défaut"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Une faille de sécurité ne se signale pas ici** : écrivez en privé, voir [la politique de sécurité](https://github.com/Marplestrange/cassandra-v19/security/policy).
+        N'écrivez ici ni mot de passe, ni clé d'API, ni adresse réelle de votre serveur.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: V19 (ce dépôt) ou V18, et le commit si vous le connaissez
+    validations:
+      required: true
+  - type: textarea
+    id: installation
+    attributes:
+      label: Comment Cassandra est installée
+      description: Système, reverse proxy ou tunnel, modules concernés
+  - type: textarea
+    id: observe
+    attributes:
+      label: Ce que vous avez observé
+    validations:
+      required: true
+  - type: textarea
+    id: attendu
+    attributes:
+      label: Ce que vous attendiez
+    validations:
+      required: true
+  - type: textarea
+    id: etapes
+    attributes:
+      label: Pour le reproduire
+      description: Les étapes, le message d'erreur, une capture si elle ne montre aucune donnée personnelle

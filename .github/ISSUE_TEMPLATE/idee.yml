@@ -1,0 +1,27 @@
+name: Une idée
+description: Une amélioration, un nouveau module, une question de conception
+title: "[idée] "
+labels: ["idée"]
+body:
+  - type: textarea
+    id: besoin
+    attributes:
+      label: Le besoin
+      description: Ce que vous voulez faire et ce qui l'empêche aujourd'hui
+    validations:
+      required: true
+  - type: textarea
+    id: piste
+    attributes:
+      label: Une piste
+      description: Un module à écrire, un réglage, un écran ? Si c'est un geste qui écrit, comment on le prouve et comment on le défait ?
+  - type: dropdown
+    id: nature
+    attributes:
+      label: C'est plutôt
+      options:
+        - Un nouveau module
+        - Une amélioration d'un module existant
+        - Le noyau (droits, preuve, journal, évolution)
+        - La documentation
+        - Je ne sais pas

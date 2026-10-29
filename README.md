@@ -1,5 +1,7 @@
 # Cassandra V19
 
+*English summary: [`README.en.md`](README.en.md).*
+
 **Cassandra est une IA qui administre vos machines, vos sites et votre travail, avec vous, sans vous attendre.** Elle s'installe sur votre serveur,
 reste auto-hébergée (aucun service tiers n'est obligatoire) et se pilote par une interface web.
 
@@ -38,6 +40,13 @@ L'interface de la V19, sur des données d'essai fictives : le bureau de la perso
 
 ![Les partages entre sociétés : utilisateurs, carnet de contacts, modèles](docs/captures/CN_capture-partages.png)
 
+L'interface suit le thème choisi et s'adapte au téléphone (mode sombre à gauche, téléphone à droite).
+
+<p>
+  <img src="docs/captures/CN_capture-bureau-sombre.png" alt="Le bureau en mode sombre" width="64%">
+  <img src="docs/captures/CN_capture-bureau-telephone.png" alt="Le bureau sur un téléphone" width="22%">
+</p>
+
 ## Comment elle travaille
 
 1. **Percevoir.** Des *détecteurs* (chaque module déclare les siens) relèvent des faits ; le collecteur du Sensorium mesure la machine en continu.
@@ -58,6 +67,31 @@ Quelques règles ne bougent jamais :
 - **Quand des agents agissent au nom d'un compte, ils n'ont pas plus de droits que lui.**
 - **Un geste d'urgence est humain** : geler l'autonomie des agents, couper les envois, fermer les sessions, confiner la machine. Aucun n'est un outil
   d'agent, et le confinement se rouvre seul à son échéance.
+
+### Le chemin d'un geste
+
+```mermaid
+flowchart LR
+    U["Une personne ou un agent"] --> P["Passerelle web ou ligne de commande"]
+    P --> X{"Exécuteur du noyau"}
+    X -->|"droits · société · palier d'autonomie"| C["Capacité d'un module"]
+    C --> V["Preuve : on relit ce qu'on a fait"]
+    V --> J[("Journal chaîné par empreintes")]
+    C -.->|"le retour arrière défait le geste"| X
+    EC["Point d'évolution (EC) : une fonction pure"] -.-> C
+    subgraph CN ["Le nexus (CN) : fixe, signé par le dépôt"]
+        P
+        X
+        J
+    end
+    subgraph M ["Un module : manifeste, droits, capacités, base"]
+        C
+        V
+        EC
+    end
+```
+
+Le noyau ne sait rien des métiers ; les modules ne savent rien des droits. Chaque geste traverse le même chemin, et aucun module ne peut s'y soustraire.
 
 ## Deux sortes de code : le nexus (CN) et l'évolution (EC)
 
@@ -326,6 +360,17 @@ python -m unittest discover -s tests -p "CN_test*.py" -v
 
 Les données vont dans `donnees/` (ou `$CASSANDRA_DONNEES`).
 
+### L'essayer sans rien risquer
+
+Un serveur d'essai, avec ses propres données jetables (dossier ignoré par git), un compte administrateur fictif et aucune donnée réelle :
+
+```
+python tests-ui/serveur_dev.py          écoute sur 127.0.0.1:9005 ; compte d'essai ui@exemple.test, mot de passe Essai-UI-2026!
+```
+
+C'est un outil de développement, pas une démonstration commerciale : il sert à regarder l'interface et à rejouer ses essais, pas à héberger quoi que ce soit.
+Les captures de ce README en viennent (`tests-ui/capture_v19.js`).
+
 ## Les moteurs : le noyau les ordonnance
 
 Une boucle ou une passe qui tourne seule se déclare au manifeste (`[[moteurs]]`) et s'inscrit par `ctx.moteur(id, fonction)`. Le module n'ouvre
@@ -478,6 +523,7 @@ muette qu'on prend pour une absence) sont devenues des règles du noyau.
 | `CN_MODULES_DEVELOPPEUR.md` | écrire un module : manifeste, `brancher(ctx)`, capacités, migrations, paquet |
 | `CN_LOGITHEQUE.md`, `CN_STORE.md`, `CN_AUTONOMIE_MODULES.md` | le magasin d'applications, la chaîne de confiance, l'autonomie sur les modules |
 | `CN_BILLETTERIE.md` | la billetterie : conception, registre, paiements, ce qui est fait |
+| `CN_MODULES.md` | le catalogue des modules, généré depuis leurs manifestes |
 | `CN_UTILISATEURS.md`, `CN_SOCIETES.md` | comptes, groupes, sociétés, coffre isolé par espace |
 | `CN_EVOLUTION.md` | le moteur d'évolution : rejeu, ombre, paliers, retrait |
 | `CN_AFFICHAGE.md`, `CN_REGISTRE.md`, `CN_FORMAT.md` | l'interface assemblée, le registre des objets, le format des fichiers |
