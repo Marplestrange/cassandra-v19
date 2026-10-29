@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4efcab
+# VERSION CN : 0.1.0  #70b696
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du coffre : le magasin de secrets, réversible, contre un faux serveur Vaultwarden.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4efcab ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=70b696 ▼▼▼
 """Bancs du coffre : le magasin de secrets, réversible, contre un faux serveur Vaultwarden."""
 import json
 import shutil
@@ -84,6 +84,12 @@ class FauxVault(BaseHTTPRequestHandler):
 
     def log_message(self, *a):
         pass
+
+
+class FauxVaultExterne(FauxVault):
+    """Le serveur Vaultwarden d'une société : ses propres secrets, séparés de ceux de l'instance."""
+    items = {}
+    prochain = 1
 
 
 class Monde(unittest.TestCase):
@@ -236,6 +242,40 @@ class Monde(unittest.TestCase):
         self.assertTrue(self.db.lire("SELECT 1 FROM vault_membres WHERE espace=? AND compte=? AND role='admin'", (esp, BEA)))
         self.assertTrue(self.db.lire("SELECT 1 FROM vault_audit WHERE action=? AND espace=?", ("depart_bloque:" + BEA, esp)))
 
+    def serveur_externe(self):
+        FauxVaultExterne.items = {}
+        httpd = HTTPServer(("127.0.0.1", 0), FauxVaultExterne)
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        self.addCleanup(httpd.shutdown)
+        return "http://127.0.0.1:%d" % httpd.server_address[1]
+
+    def test_un_coffre_externe_garde_ses_secrets_sur_son_propre_serveur(self):
+        esp = self.societe()
+        url2 = self.serveur_externe()
+        self.ex_accorder(BEA, esp, CAM, "membre")                                             # BEA administre le coffre ; CAM, membre, y dépose des secrets
+        self.s("regler", espace=esp, mode="externe", url=url2)
+        self.s("set", compte=CAM, espace=esp, name="k", valeur="chez-eux")
+        self.assertIn(esp + "::k", FauxVaultExterne.items)                                   # chez eux
+        self.assertNotIn(esp + "::k", FauxVault.items)                                       # pas sur le serveur de l'instance
+        self.assertEqual(self.s("get", compte=CAM, espace=esp, name="k")["valeur"], "chez-eux")
+        st = self.s("status", compte=CAM, espace=esp)
+        self.assertTrue(st["available"] and st["externe"])
+        self.s("regler", espace=esp, mode="interne")                                         # retour au serveur de l'instance : les nouveaux secrets y vont
+        self.s("set", compte=CAM, espace=esp, name="k2", valeur="chez-nous")
+        self.assertIn(esp + "::k2", FauxVault.items)
+        self.assertNotIn(esp + "::k2", FauxVaultExterne.items)
+
+    def test_seul_l_administrateur_de_l_instance_branche_un_coffre_externe(self):
+        esp = self.societe()
+        self.ex_accorder(BEA, esp, DAN, "admin")                                             # DAN gère le coffre de la société, il n'est pas administrateur de l'instance
+        r = self.refuse("regler", compte=DAN, espace=esp, mode="externe", url=self.serveur_externe())
+        self.assertIn("administrateur de l'instance", r["erreur"])
+
+    def test_l_adresse_d_un_coffre_externe_est_controlee(self):
+        esp = self.societe()
+        for mauvaise in ("ftp://exemple.fr", "pas une adresse", "http://u:p@exemple.fr", "http://169.254.169.254/latest", "https://exemple.fr/?x=1"):
+            self.refuse("regler", espace=esp, mode="externe", url=mauvaise)
+
     def ex_accorder(self, qui, esp, cible, role, **plus):
         r = self.ex("coffre.accorder", compte=qui, **dict({"espace": esp, "utilisateur": cible, "role": role}, **plus))
         self.assertEqual(r["statut"], "faite", r)
@@ -306,12 +346,13 @@ class Monde(unittest.TestCase):
         self.creer(BEA, CAM)                                                              # CAM n'est pas administratrice
         self.assertEqual(self.ex("coffre.espace_creer", compte=CAM, societe="9", nom="X")["statut"], "refuse")
 
-    def test_un_coffre_externe_n_est_pas_lu_par_l_instance(self):
+    def test_un_coffre_externe_injoignable_ne_se_replie_jamais_sur_l_instance(self):
         esp = self.societe()
         self.ex_accorder(BEA, esp, BEA, "admin", collections="*")
-        self.s("regler", compte=BEA, espace=esp, mode="externe", url="https://coffre.exemple.test")
+        self.s("regler", compte=BEA, espace=esp, mode="externe", url="http://127.0.0.1:9")            # personne n'écoute sur ce port
         r = self.refuse("set", compte=BEA, espace=esp, name="k", valeur="v")
-        self.assertIn("hors de l'instance", r["erreur"])
+        self.assertIn("indisponible", r["erreur"])
+        self.assertEqual(FauxVault.items, {})                                                         # rien n'est parti chez l'instance à la place
         self.refuse("regler", compte=BEA, espace=esp, mode="externe", url="pas-une-adresse")
 
     def test_les_acces_se_defont(self):

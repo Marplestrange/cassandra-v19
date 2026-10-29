@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #680da3
+# VERSION CN : 0.1.0  #7e677b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions, jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=680da3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7e677b ▼▼▼
 """L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions,
 jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt salé.
 
@@ -270,6 +270,10 @@ class Identite:
 
     def comptes_de_societe(self, societe: str) -> list:
         return [r["compte"] for r in self.base.lire("SELECT compte FROM comptes WHERE societe=? AND desactive=0 ORDER BY compte", (societe,))]
+
+    def nombre_utilisateurs(self, societe: str) -> int:
+        """Les personnes actives d'une société (ni agents ni comptes système)."""
+        return self.base.lire("SELECT COUNT(*) AS n FROM comptes WHERE societe=? AND desactive=0 AND type='humain'", (societe,))[0]["n"]
 
     def societe_creer(self, nom: str, identifiant: str = "") -> dict:
         nom = (nom or "").strip()

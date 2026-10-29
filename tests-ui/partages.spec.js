@@ -39,6 +39,7 @@ test("Société : partages entre sociétés et carnet de la société", async ({
       if (c === 'societes.module_demandes') return { demandes: window.__demandes, peut_decider: true };
       if (c === 'societes.module_demander') { window.__demandes = window.__demandes.concat([{ id: 5, societe: '1', nom_societe: 'Atelier Lumen', nom: a.nom, motif: a.motif, source: a.source, etat: 'demandee', module: '', reponse: '' }]); return { id: 5 }; }
       if (c === 'societes.module_demande_decider') { window.__demandes = window.__demandes.map((d) => d.id === a.id ? Object.assign({}, d, { etat: a.decision === 'accepter' ? 'acceptee' : 'refusee', module: a.module || '' }) : d); return {}; }
+      if (c === 'societes.vue_consolidee') return { societes: [{ id: '1', nom: 'Atelier Lumen', principale: true, archivee: false, utilisateurs: 4, modules: 12, partages_donnes: 2, partages_recus: 1, demandes: 0 }, { id: 'form', nom: 'Lumen Formation', principale: false, archivee: false, utilisateurs: 2, modules: 6, partages_donnes: 1, partages_recus: 2, demandes: 1 }], modules_installes: 12 };
       if (c === 'societes.profil_lire') return window.__profil;
       if (c === 'societes.profil_regler') { window.__profil = Object.assign({}, window.__profil, { nom: a.nom, fonction: a.fonction, tel: a.tel, email: a.email }); return {}; }
       if (c === 'societes.modeles_recopier') return {};
@@ -90,6 +91,13 @@ test("Société : partages entre sociétés et carnet de la société", async ({
   await k.locator('button[data-a="dm-ok"][data-id="4"]').click();
   await expect.poll(async () => (await appels('societes.module_demande_decider')).some((x) => x.id === 4 && x.decision === 'accepter' && x.module === 'ged')).toBe(true);
   await expect(k).toContainText('acceptée');
+
+  // la vue consolidée du superadministrateur : toutes les sociétés d'un coup
+  k = await monter('societes:s_multi');
+  await expect(k).toContainText('Sociétés de l’instance');
+  await expect(k).toContainText('Lumen Formation');
+  await expect(k).toContainText('1 en attente');
+  await expect(k.locator('tr', { hasText: 'Lumen Formation' })).toContainText('↑ 1 · ↓ 2');
 
   // le profil de la personne dans la société : un nom d'affichage, une fonction, des coordonnées propres à celle-ci
   k = await monter('societes:s_profil');

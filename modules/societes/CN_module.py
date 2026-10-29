@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4e8c77
+# VERSION CN : 0.1.0  #3eded6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune ; les fonctions (groupes attachés à une société).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ═══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4e8c77 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3eded6 ▼▼▼
 """Le module Sociétés : la fiche de chaque société et ses fonctions.
 
 Tout compte appartient à une société (le noyau le garantit) ; la société principale existe toujours. Seul le superadministrateur crée, archive et
@@ -314,6 +314,21 @@ def brancher(ctx):
                 out.append({"id": s["id"], "nom": s["nom"], "principale": bool(s["principale"]), "archivee": bool(s["archivee"]), "ici": s["id"] == (ctx.societe or "1"),
                             "domicile": bool(compte) and s["id"] == idt.societe_de(compte)})
         return {"societes": out, "multi": bool(ctx.reglage("multi")), "superadmin": sup, "societe": ctx.societe or "1"}
+
+    def vue_consolidee(c):
+        """Toutes les sociétés d'un coup, pour le superadministrateur : utilisateurs, modules ouverts, partages, demandes de module en attente."""
+        _exiger_super()
+        manifs = ctx.manifestes_actifs(toutes=True)
+        attente = {r["societe"]: r["n"] for r in db.lire("SELECT societe, COUNT(*) AS n FROM demandes_module WHERE etat='demandee' GROUP BY societe")}
+        out = []
+        for s in idt.societes(tout=True):
+            p = idt.partages(s["id"])
+            out.append({"id": s["id"], "nom": s["nom"], "principale": bool(s["principale"]), "archivee": bool(s["archivee"]),
+                        "utilisateurs": idt.nombre_utilisateurs(s["id"]),
+                        "modules": sum(1 for m in manifs if idt.module_ouvert(s["id"], m.id, m.importance, m.essentiel, m.instance)),
+                        "partages_donnes": len([x for x in p["sortants"] if x["actif"]]), "partages_recus": len(p["entrants"]),
+                        "demandes": attente.get(s["id"], 0)})
+        return {"societes": out, "modules_installes": len(manifs)}
 
     def lire(c, societe=""):
         soc = _cible(societe)
@@ -966,6 +981,7 @@ def brancher(ctx):
     ctx.implementer("partageables", partageables)
     ctx.implementer("module_regler", module_regler, prouver_module_regler, defaire_module_regler)
     ctx.implementer("module_demander", module_demander, prouver_demander, defaire_demander)
+    ctx.implementer("vue_consolidee", vue_consolidee)
     ctx.implementer("profil_lire", profil_lire)
     ctx.implementer("profil_regler", profil_regler, prouver_profil, defaire_profil)
     ctx.implementer("modeles_recopier", modeles_recopier, prouver_modeles, defaire_modeles)

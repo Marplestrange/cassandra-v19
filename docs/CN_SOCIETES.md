@@ -12,7 +12,7 @@
 <!-- RÔLE       : Le socle société : tout compte appartient à une société, les fonctions sont des groupes attachés, le coffre isole chaque espace. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9fd37a ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=fa93d5 ▼▼▼ -->
 # Sociétés et coffre
 
 Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/CN_societes-ecran.js` (Paramètres › Société / Organisation) et `interface/CN_coffre-ecran.js` (Mon coffre-fort). Moteur : `noyau/CN_base.py`, `noyau/CN_droits.py`, `noyau/CN_identite.py`, `noyau/CN_executeur.py`, modules `societes`, `coffre`, `comptes`.
@@ -45,7 +45,7 @@ Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/
 - **Un profil par société** (`societes.profil_lire` / `profil_regler`) : nom d'affichage, fonction, téléphone et adresse propres à chaque société où l'on travaille ; chacun règle le sien, l'administrateur celui des membres. La signature du courrier (réglage `courrier.signature_societe`) le reprend, puis ajoute les mentions de la société.
 - **Les demandes de module** : une société secondaire n'installe rien sur l'instance ; son administrateur dépose une demande (module, motif, source), la société principale examine et installe par la logithèque (permissions montrées, consentement) puis attribue le module à la société demandeuse (`societes.module_demande_decider`).
 - **Le fuseau de la société** règle la lecture des heures d'un flux iCalendar dans l'agenda (sinon celui du serveur).
-- **À venir** : les en-têtes des Documents et les mentions des Sites (ces modules n'ont pas encore de fonction qui lise l'identité), les Notifications par fuseau, le coffre externe.
+- **À venir** : les en-têtes des Documents et les mentions des Sites (ces modules n'ont pas encore de fonction qui lise l'identité), les Notifications par fuseau.
 
 ## Le module Sociétés
 
@@ -61,12 +61,12 @@ Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/
 - **Rôles** dans un espace de société : administrateur du coffre (gère les accès, ne lit que les collections qu'on lui ouvre), membre, contributeur (écrit, ne relit que SES secrets), lecture seule. Collections par accès, date de fin facultative. Le dernier administrateur ne part pas et ne change pas de rôle.
 - **Chaque secret garde son auteur** (table `vault_secrets`) : c'est ce qui rend possible le rôle contributeur. Le serveur Vaultwarden n'a qu'une session : l'isolement est dans le module.
 - **Le départ d'un utilisateur** : un compte désactivé ou supprimé perd à l'instant tout accès aux espaces de société (événements `compte.desactive` et `compte.supprime`) ; son coffre personnel reste le sien. Le dernier administrateur d'un espace ne part pas : le journal du coffre dit « départ bloqué » et il faut en nommer un autre.
-- Un coffre peut être déclaré **externe** (adresse seulement) ; son branchement n'est pas encore disponible : tant qu'il ne l'est pas, rien n'y est lu ni écrit.
+- Un espace de société peut être **externe** : ses secrets vivent sur le serveur Vaultwarden de la société (un `bw serve` déverrouillé), à l'adresse que lui donne l'administrateur de l'instance (http ou https, sans identifiants ni paramètres, jamais une adresse de métadonnées). Les rôles, collections et l'auteur par secret sont les mêmes ; seul le serveur change. S'il est injoignable, rien n'est lu ni écrit et rien ne se replie sur le serveur de l'instance. `coffre.status(espace)` dit son état.
 
 ## À faire, si on le garde
 
 Les données propres à une société dans les modules d'entreprise (la billetterie en premier : une base par société est la piste la plus sûre, sans retoucher le code du module) ; 
-Brancher les modules consommateurs sur `societes.carte` ; une valeur « société » sur les données de chaque module (Courrier, Agenda, Billetterie…) ; le branchement d'un coffre externe ; le module Multi-sociétés de l'App Store (sélecteur dans chaque écran, héritage du groupe, vue consolidée, opérations entre sociétés) ; la gestion des utilisateurs par l'administrateur de société (aujourd'hui l'instance seule crée les comptes d'une société).
+Brancher les modules consommateurs sur `societes.carte` ; une valeur « société » sur les données de chaque module (Courrier, Agenda, Billetterie…) ; le module Multi-sociétés de l'App Store (sélecteur dans chaque écran, héritage du groupe, vue consolidée, opérations entre sociétés) ; la gestion des utilisateurs par l'administrateur de société (aujourd'hui l'instance seule crée les comptes d'une société).
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 
 <!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->

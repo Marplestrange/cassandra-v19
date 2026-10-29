@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : coffre
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9f314f
+# VERSION CN : 0.1.0  #41b890
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le coffre Vaultwarden : le magasin de secrets de Cassandra.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9f314f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=41b890 ▼▼▼
 """Le coffre Vaultwarden : le magasin de secrets de Cassandra.
 
 Chaque compte ne voit QUE ses espaces : le sien (« u:<compte> »), puis ceux de société où on l'a fait entrer (« s:<société> »)
@@ -64,9 +64,17 @@ def brancher(ctx):
         except Exception:
             return 8
 
-    def _req(method, path, body=None):
+    def base_de(esp):
+        """Le serveur Vaultwarden d'un espace : celui de l'instance, ou — pour un espace de société déclaré « externe » — le sien (son adresse, fixée par l'administrateur de l'instance)."""
+        if str(esp).startswith("s:"):
+            e = db.lire("SELECT mode, url FROM vault_espaces WHERE id=?", (esp,))
+            if e and e[0]["mode"] == "externe" and e[0]["url"]:
+                return str(e[0]["url"]).rstrip("/")
+        return url()
+
+    def _req(method, path, body=None, base=None):
         """Un appel au coffre. Ne lève jamais : l'échec est un dict, pas une panne."""
-        cible = url() + path
+        cible = (base or url()) + path
         data = json.dumps(body).encode() if body is not None else None
         req = urllib.request.Request(cible, data=data, method=method, headers={"Content-Type": "application/json"})
         try:
@@ -155,14 +163,8 @@ def brancher(ctx):
         r = db.lire("SELECT * FROM vault_secrets WHERE espace=? AND nom=?", (esp, nom))
         return r[0] if r else None
 
-    def _exiger_interne(esp):
-        if esp.startswith("s:"):
-            e = db.lire("SELECT mode FROM vault_espaces WHERE id=?", (esp,))
-            if e and e[0]["mode"] == "externe":
-                raise ValueError("ce coffre est hébergé hors de l'instance : son branchement n'est pas encore disponible ici")
-
-    def _exiger_ouvert():
-        s = status(None)
+    def _exiger_ouvert(esp=""):
+        s = _etat(base_de(esp) if esp else None)
         if not (s.get("available") and s.get("status") == "unlocked"):
             raise ValueError("coffre indisponible ou verrouillé")
 
@@ -171,7 +173,7 @@ def brancher(ctx):
         return esp + "::" + nom
 
     def _find(phys):
-        r = _req("GET", "/list/object/items?search=" + urllib.parse.quote(str(phys)))
+        r = _req("GET", "/list/object/items?search=" + urllib.parse.quote(str(phys)), base=base_de(str(phys).split("::", 1)[0]))
         items = ((r.get("data") or {}).get("data")) or []
         for it in items:
             if it.get("name") == phys:
@@ -187,16 +189,16 @@ def brancher(ctx):
         it = _find(phys)
         if it:
             it["notes"] = valeur
-            r = _req("PUT", "/object/item/%s" % it["id"], it)
+            r = _req("PUT", "/object/item/%s" % it["id"], it, base=base_de(esp))
         else:
-            r = _req("POST", "/object/item", {"type": 2, "name": phys, "notes": valeur, "secureNote": {"type": 0}, "fields": []})
+            r = _req("POST", "/object/item", {"type": 2, "name": phys, "notes": valeur, "secureNote": {"type": 0}, "fields": []}, base=base_de(esp))
         if not r.get("success"):
             raise ValueError(r.get("error") or "échec écriture coffre")
 
     def _effacer_brut(esp, nom):
         it = _find(_phys(esp, nom))
         if it:
-            _req("DELETE", "/object/item/%s" % it["id"])
+            _req("DELETE", "/object/item/%s" % it["id"], base=base_de(esp))
 
     def _nom(name) -> str:
         n = str(name or "").strip()
@@ -207,11 +209,20 @@ def brancher(ctx):
         return n
 
     # ── lectures ─────────────────────────────────────────────────────────────
-    def status(c):
-        r = _req("GET", "/status")
+    def _etat(base=None):
+        r = _req("GET", "/status", base=base)
         t = (r.get("data") or {}).get("template") or {}
         return {"available": bool(r.get("success")), "status": t.get("status"),
                 "email": t.get("userEmail"), "server": t.get("serverUrl"), "error": r.get("error")}
+
+    def status(c, espace=""):
+        """L'état du serveur de coffre : celui de l'instance, ou celui de l'espace demandé (un coffre externe a le sien)."""
+        if not espace:
+            return _etat()
+        esp = _espace(ctx.compte, espace)
+        if _acces(ctx.compte, esp) is None:
+            raise ValueError(REFUS)
+        return dict(_etat(base_de(esp)), espace=esp, externe=base_de(esp) != url())
 
     def available(c):
         s = status(c)
@@ -223,7 +234,6 @@ def brancher(ctx):
         m = _acces(ctx.compte, esp)
         if m is None:
             raise ValueError(REFUS)
-        _exiger_interne(esp)
         meta = _meta(esp, nom)
         if not meta or not _peut(m, "lire", meta, "", ctx.compte):
             return {"valeur": None, "espace": esp}          # un secret qu'on ne peut pas lire est, pour soi, un secret absent
@@ -259,7 +269,7 @@ def brancher(ctx):
         perso = _perso(compte)
         n = db.lire("SELECT COUNT(*) AS n FROM vault_secrets WHERE espace=?", (perso,))[0]["n"]
         out.append({"id": perso, "genre": "perso", "nom": "Mon coffre", "role": "proprio", "secrets": n, "collections": "*", "expire": "", "admins": None})
-        for m in db.lire("SELECT m.*, e.nom AS nom_espace, e.mode AS mode FROM vault_membres m JOIN vault_espaces e ON e.id=m.espace WHERE m.compte=? AND e.archive=0 ORDER BY e.nom", (compte,)):
+        for m in db.lire("SELECT m.*, e.nom AS nom_espace, e.mode AS mode, e.url AS url_espace FROM vault_membres m JOIN vault_espaces e ON e.id=m.espace WHERE m.compte=? AND e.archive=0 ORDER BY e.nom", (compte,)):
             if m["expire"] and m["expire"] < _aujourdhui():
                 continue
             rows = db.lire("SELECT nom, auteur, collection FROM vault_secrets WHERE espace=?", (m["espace"],))
@@ -268,7 +278,8 @@ def brancher(ctx):
             if m["role"] == "admin":
                 admins = db.lire("SELECT COUNT(*) AS n FROM vault_membres WHERE espace=? AND role='admin' AND (expire='' OR expire>=?)", (m["espace"], _aujourdhui()))[0]["n"]
             out.append({"id": m["espace"], "genre": "societe", "nom": m["nom_espace"] or m["espace"], "role": m["role"], "secrets": vus,
-                        "collections": m["collections"], "expire": m["expire"], "mode": m["mode"], "admins": admins})
+                        "collections": m["collections"], "expire": m["expire"], "mode": m["mode"], "admins": admins,
+                        "url": m["url_espace"] if (m["role"] == "admin" and m["mode"] == "externe") else ""})          # l'adresse interne d'un serveur : à ses administrateurs seulement
         return {"espaces": out}
 
     def membres(c, espace=""):
@@ -288,12 +299,11 @@ def brancher(ctx):
         m = _acces(ctx.compte, esp)
         if m is None:
             raise ValueError(REFUS)
-        _exiger_interne(esp)
         meta = _meta(esp, nom)
         col = str(collection or "").strip() or (meta["collection"] if meta else "")
         if not _peut(m, "ecrire", meta, col, ctx.compte):
             raise ValueError(REFUS)
-        _exiger_ouvert()
+        _exiger_ouvert(esp)
         avant = _lire_brut(esp, nom)
         _poser_brut(esp, nom, valeur)
         db.ecrire("INSERT INTO vault_secrets (espace, nom, auteur, collection) VALUES (?,?,?,?) "
@@ -324,7 +334,6 @@ def brancher(ctx):
         m = _acces(ctx.compte, esp)
         if m is None:
             raise ValueError(REFUS)
-        _exiger_interne(esp)
         meta = _meta(esp, nom)
         if meta and not _peut(m, "ecrire", meta, meta["collection"], ctx.compte):
             raise ValueError(REFUS)
@@ -424,14 +433,27 @@ def brancher(ctx):
     def defaire_retirer(c, res):
         _remettre_membre(res)
 
+    def adresse_externe(u):
+        """Une adresse http(s) d'un serveur `bw serve`, sans identifiants ni fragment ; jamais l'adresse des métadonnées d'un hébergeur (169.254.x.x)."""
+        p = urllib.parse.urlsplit(u)
+        if p.scheme not in ("http", "https") or not p.hostname:
+            raise ValueError("un coffre externe a une adresse http(s)")
+        if p.username or p.password or p.fragment or p.query:
+            raise ValueError("l'adresse d'un coffre externe ne porte ni identifiants, ni paramètres, ni ancre")
+        if p.hostname.startswith("169.254."):
+            raise ValueError("adresse refusée : celle d'un service de métadonnées")
+        return "%s://%s%s" % (p.scheme, p.netloc, p.path.rstrip("/"))
+
     def regler(c, espace="", mode="interne", url=""):
         esp = _espace(ctx.compte, espace)
         _exiger_gerer(esp)
         if mode not in ("interne", "externe"):
             raise ValueError("mode : interne | externe")
         u = str(url or "").strip()
-        if mode == "externe" and not (u.startswith("https://") or u.startswith("http://")):
-            raise ValueError("un coffre externe a une adresse http(s)")
+        if mode == "externe":
+            if not ctx.est_admin(ctx.compte):
+                raise ValueError("seul l'administrateur de l'instance branche un coffre externe : l'instance appelle cette adresse depuis son réseau")
+            u = adresse_externe(u)
         avant = db.lire("SELECT mode, url FROM vault_espaces WHERE id=?", (esp,))[0]
         db.ecrire("UPDATE vault_espaces SET mode=?, url=? WHERE id=?", (mode, u if mode == "externe" else "", esp))
         _audit("regler:%s" % mode, "", esp)

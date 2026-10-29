@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1bfe8a
+# VERSION CN : 0.1.0  #e8e089
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du socle société : tout compte a une société, la fiche est cloisonnée, les fonctions ne valent que dans la leur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1bfe8a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e8e089 ▼▼▼
 """Bancs du socle société : rattachement obligatoire des comptes, fiche cloisonnée, fonctions attachées à une société, superadministrateur seul maître de l'ensemble."""
 import shutil
 import sys
@@ -417,6 +417,19 @@ class Monde(unittest.TestCase):
         self.ok("societes.creer", compte=BEA, nom="Fille", identifiant="fille", modeles_de="1")
         h = self.ok("societes.fiche_lire", compte=BEA, societe="fille")["rubriques"]["habillage"]
         self.assertEqual((h["accent"], h["entete"]), ("#123456", "bandeau"))
+
+    def test_la_vue_consolidee_resume_toutes_les_societes_pour_le_superadministrateur(self):
+        self.monde()
+        self.ok("societes.partager", compte=BEA, source="1", destinataire=FORM, mode="tous")
+        self.ok("societes.affecter", compte=BEA, societe=FORM, utilisateur=DAN, fonction="admin")
+        self.ok("societes.module_demander", compte=DAN, societe=FORM, nom="Documents", motif="classer")
+        v = {x["id"]: x for x in self.ok("societes.vue_consolidee", compte=BEA)["societes"]}
+        self.assertEqual(set(v), {"1", FORM})
+        self.assertEqual((v["1"]["utilisateurs"], v[FORM]["utilisateurs"]), (2, 1))                                # BEA et CAM chez la principale, DAN chez Lumen
+        self.assertEqual((v["1"]["partages_donnes"], v[FORM]["partages_recus"]), (1, 1))
+        self.assertEqual((v[FORM]["demandes"], v["1"]["demandes"]), (1, 0))
+        self.assertGreater(v["1"]["modules"], v[FORM]["modules"])                                                  # la principale a tout ce qui est actif, Lumen les modules vitaux
+        self.non("societes.vue_consolidee", compte=CAM)                                                            # réservée au superadministrateur
 
     # ── les demandes de module ──────────────────────────────────────────────
     def test_une_societe_secondaire_demande_un_module_et_la_principale_l_attribue(self):

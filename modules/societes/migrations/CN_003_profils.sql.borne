@@ -1,0 +1,15 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Migration 003_profils.sql
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : societes
+# ZONE       : CN
+# VERSION CN : 0.1.0  #b86559
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Migration 003_profils.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)
+# MÉTHODE    : à compléter par l'auteur
+# ══════════════════════════════════════════════════════════════════════════════
+# FICHIER    : CN_003_profils.sql  (empreinte du contenu #b86559)

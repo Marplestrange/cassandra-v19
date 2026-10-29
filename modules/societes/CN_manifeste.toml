@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #84fca1
+# VERSION CN : 0.1.0  #8e6e8e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune. Socle du multi-sociétés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=84fca1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e6e8e ▼▼▼
 [module]
 id = "societes"
 nom = "Sociétés"
@@ -286,6 +286,12 @@ qui = ["humain", "compte"]
 [[capacites]]
 id = "partageables"
 libelle = "Les utilisateurs d'autres sociétés qu'on peut ranger dans une fonction de cette société"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "vue_consolidee"
+libelle = "Toutes les sociétés d'un coup (utilisateurs, modules ouverts, partages, demandes de module en attente), pour le superadministrateur"
 risque = "lecture"
 droit = "utiliser"
 
