@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4bed93
+# VERSION CN : 0.1.0  #018da3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le chargeur : découvre les modules, vérifie leur isolation, les branche dans l'ordre de leurs dépendances.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4bed93 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=018da3 ▼▼▼
 """Le chargeur : découvre les modules, vérifie leur isolation, les branche dans l'ordre de leurs dépendances.
 
 Règle d'or : un module n'importe JAMAIS un autre module. Il parle par événements et par capacités,
@@ -24,9 +24,9 @@ Deux provenances de modules :
                    ne peuvent pas se déclarer « interne ». On y dépose un dossier, on l'ajoute aux modules
                    actifs, et le noyau le branche à chaud.
 
-Surcharge (comme `custom` l'emporte sur `htdocs` dans Dolibarr) : une extension qui porte l'identifiant d'un module livré LE REMPLACE.
+Surcharge (une extension l'emporte sur le module livré) : une extension qui porte l'identifiant d'un module livré LE REMPLACE.
 Le module livré est alors mis de côté, jamais perdu : si le remplaçant est écarté, il revient. Un module ESSENTIEL (le « core/ » de Cassandra,
-que Dolibarr exclut de la surcharge) ne se remplace que si l'administrateur l'a décidé ([surcharge] essentiels = ["droits"]) : un réglage, pas un interdit.
+qu'on ne remplace pas d'office) ne se remplace que si l'administrateur l'a décidé ([surcharge] essentiels = ["droits"]) : un réglage, pas un interdit.
 """
 from __future__ import annotations
 

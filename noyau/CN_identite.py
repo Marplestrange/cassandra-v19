@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7e677b
+# VERSION CN : 0.1.0  #eba50a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions, jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7e677b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=eba50a ▼▼▼
 """L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions,
 jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt salé.
 
@@ -247,7 +247,7 @@ class Identite:
         r["sites"] = json.loads(r.get("sites") or "[]")
         return r
 
-    # ---- la société d'un compte : obligatoire, comme dans Dolibarr ----
+    # ---- la société d'un compte : obligatoire ----
     def societe_valide(self, societe: str = ""):
         """L'identifiant d'une société où l'on peut ranger un compte (vide : la principale), ou None si elle n'existe pas ou est archivée."""
         s = str(societe or "").strip() or "1"

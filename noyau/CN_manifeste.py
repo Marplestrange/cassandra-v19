@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5aaca1
+# VERSION CN : 0.1.0  #fc82cf
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5aaca1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fc82cf ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -143,7 +143,7 @@ class Capacite:
 
 @dataclass(frozen=True)
 class Droit:
-    """Un droit qu'un module déclare (comme les « rights » d'un module Dolibarr). Qualifié « module.droit » partout ailleurs.
+    """Un droit qu'un module déclare. Qualifié « module.droit » partout ailleurs.
     Le module des droits l'attribue à des comptes et à des groupes ; l'exécuteur le vérifie, en un seul endroit."""
     id: str
     libelle: str
@@ -226,7 +226,7 @@ class Theme:
 
 @dataclass(frozen=True)
 class PointExtension:
-    """Un endroit où D'AUTRES modules peuvent brancher quelque chose (à la façon des hooks de Dolibarr) : une colonne dans une liste, une tuile dans une fiche, une règle dans un contrôle.
+    """Un endroit où D'AUTRES modules peuvent brancher quelque chose : une colonne dans une liste, une tuile dans une fiche, une règle dans un contrôle.
     Le module qui l'offre dit ce qu'il attend (`attend` : les clés des données d'une contribution) ; il lit les contributions des modules ACTIFS (`modules.contributions`) sans les connaître."""
     id: str
     libelle: str
@@ -244,7 +244,7 @@ class Contribution:
 
 @dataclass(frozen=True)
 class Onglet:
-    """Un onglet qu'un module ajoute à la fiche d'un OBJET, que cet objet soit le sien ou celui d'un autre module (à la façon des onglets de fiche de Dolibarr).
+    """Un onglet qu'un module ajoute à la fiche d'un OBJET, que cet objet soit le sien ou celui d'un autre module.
     Le module de l'objet ne sait rien de l'onglet : l'interface demande « quels onglets pour cet objet ? » et ouvre l'écran du module qui l'a déclaré, avec la référence."""
     id: str
     libelle: str

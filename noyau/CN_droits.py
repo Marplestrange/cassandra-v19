@@ -6,14 +6,14 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7ca04d
+# VERSION CN : 0.1.0  #7764f1
 # VERSION EC : néant
 # EC LIÉES   : néant
-# RÔLE       : Les droits : qui, parmi les COMPTES, peut utiliser quoi. Le modèle est celui de Dolibarr, resserré.
+# RÔLE       : Les droits : qui, parmi les COMPTES, peut utiliser quoi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7ca04d ▼▼▼
-"""Les droits : qui, parmi les COMPTES, peut utiliser quoi. Le modèle est celui de Dolibarr, resserré.
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7764f1 ▼▼▼
+"""Les droits : qui, parmi les COMPTES, peut utiliser quoi.
 
   - un module DÉCLARE ses droits dans son manifeste ([[droits]]) ; ils s'appellent « module.droit » ;
   - on les attribue à un compte, ou à un groupe dont le compte est membre ;

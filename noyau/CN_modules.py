@@ -6,20 +6,20 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1419e4
+# VERSION CN : 0.1.0  #9280b6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'état des modules : disponible, installé, actif. Le menu des modules s'appuie là-dessus.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1419e4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9280b6 ▼▼▼
 """L'état des modules : disponible, installé, actif. Le menu des modules s'appuie là-dessus.
 
   disponible  le manifeste est là, rien n'a été posé
   installé    son installation (scripts, fichiers système) est faite et prouvée
   actif       le noyau l'a branché : ses moteurs, détecteurs et capacités répondent
 
-Désactiver n'efface rien : les données du module (objets, événements, savoir-faire) restent, comme dans Dolibarr.
+Désactiver n'efface rien : les données du module (objets, événements, savoir-faire) restent.
 Un humain ou un agent change l'état ; chaque changement est un événement avec son auteur, donc Cassandra sait.
 """
 from __future__ import annotations

@@ -12,7 +12,7 @@
 <!-- RÔLE       : Module affichage : la disposition (menus du haut, colonne de gauche, menu avatar) -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=03da5e ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=96f79f ▼▼▼ -->
 # Module affichage : la disposition (menus du haut, colonne de gauche, menu avatar)
 
 Note de conception, 18-10. Maquette de référence (interactive) : `brouillons/maquette-menus-artifact.html`, publiée en page privée.
@@ -31,7 +31,7 @@ Note de conception, 18-10. Maquette de référence (interactive) : `brouillons/m
 | Colonne de gauche | les **entrées** du groupe choisi, chacune dépliable sur ses **sous-entrées** | arbre `menus` |
 | Menu avatar | identité, session, paramètres généraux, compte, coffre, raccourcis, verrouiller, déconnecter, version | entrées de zone `avatar` |
 
-Trois niveaux : **groupe** (haut, icône seule : Desk…) → **entrée** (gauche : Accueil…) → **sous-entrée** (gauche, sous l'entrée dépliée : Salon…). Décision 18-10 : les groupes 1 à 6 sont toujours dans la barre haute, représentés par une icône (style de la barre Dolibarr : barre pleine couleur, pictogrammes blancs au trait, petite encoche sous le groupe actif, titre en infobulle ; jetons `--barre`, `--barre-haut`, `--barre-encre`) avec le titre au survol ; 
+Trois niveaux : **groupe** (haut, icône seule : Desk…) → **entrée** (gauche : Accueil…) → **sous-entrée** (gauche, sous l'entrée dépliée : Salon…). Décision 18-10 : les groupes 1 à 6 sont toujours dans la barre haute, représentés par une icône (barre pleine couleur, pictogrammes blancs au trait, petite encoche sous le groupe actif, titre en infobulle ; jetons `--barre`, `--barre-haut`, `--barre-encre`) avec le titre au survol ; 
 
 ## 3. Ce qui manque au noyau (contrat)
 

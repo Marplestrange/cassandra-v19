@@ -12,7 +12,7 @@
 <!-- RÔLE       : Le socle société : tout compte appartient à une société, les fonctions sont des groupes attachés, le coffre isole chaque espace. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═════════════════════════════════════════════════════════════════
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=fa93d5 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9329ba ▼▼▼ -->
 # Sociétés et coffre
 
 Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/CN_societes-ecran.js` (Paramètres › Société / Organisation) et `interface/CN_coffre-ecran.js` (Mon coffre-fort). Moteur : `noyau/CN_base.py`, `noyau/CN_droits.py`, `noyau/CN_identite.py`, `noyau/CN_executeur.py`, modules `societes`, `coffre`, `comptes`.
@@ -20,7 +20,7 @@ Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/
 ## Le socle (dans le noyau, toujours là)
 
 - **Une société principale** (`1`) existe toujours et ne s'archive pas. Même avec une seule société, rien ne change pour l'utilisateur : mono-société = multi-société avec n = 1.
-- **Tout compte appartient à une société** (colonne `comptes.societe`, jamais vide, comme dans Dolibarr). Créer un compte sans société valide est refusé ; un agent invité est de la société de son invitant. Seul le superadministrateur range un compte dans une autre société que la sienne (`comptes.creer`) ou le change de société (`comptes.transferer`, réversible : ses fonctions de l'ancienne société tombent).
+- **Tout compte appartient à une société** (colonne `comptes.societe`, jamais vide). Créer un compte sans société valide est refusé ; un agent invité est de la société de son invitant. Seul le superadministrateur range un compte dans une autre société que la sienne (`comptes.creer`) ou le change de société (`comptes.transferer`, réversible : ses fonctions de l'ancienne société tombent).
 - **Les répertoires d'un utilisateur vivent dans le grand répertoire de sa société** : `<sociétés>/<société>/utilisateurs/<compte>/<module>` (`ctx.espace_compte()`), et `<sociétés>/<société>/commun/<module>` pour ce que toute la société partage (`ctx.espace_societe()`). Racine : `$CASSANDRA_SOCIETES`, `/var/cassandra/societes` par défaut. Les sites hébergés restent sous `/var/www` (FastPanel).
 - **La société active d'un acte** (`ctx.societe`) est par fil d'exécution, comme le compte : celle du compte, ou celle qu'il choisit (en-tête `X-Societe`) parmi les siennes. Un compte n'agit jamais dans une société qui n'est pas la sienne ; le superadministrateur les administre toutes.
 - **Des droits avec portée** : un groupe peut être attaché à une société (`droit_groupe_portee`). Une « fonction » est un tel groupe : ses droits ne valent que dans sa société, jamais ailleurs (`Droits.raison(compte, droit, societe)`). Sans société, seuls comptent les groupes valables partout : aucun droit existant ne change de sens.
@@ -35,7 +35,7 @@ Maquette de référence : `docs/CN_maquette-societe.html`. Écrans : `interface/
 - **Réglages par société** : un réglage peut être de portée `societe` (une valeur par société, repli sur celle de l'instance). Déjà : personas et rôles des agents, billetterie (identité du titulaire, règles de vente), vue des contacts, Dolibarr, mot du rôle Telegram. Rubrique Société › Réglages ; écrire pour une société demande d'en être l'administrateur.
 - **Partages** : on n'invite (projets, salon) qu'un compte qui a accès à la société active (`ctx.dans_ma_societe`).
 
-## Les partages entre sociétés (comme Multicompany de Dolibarr)
+## Les partages entre sociétés
 
 - **La société primaire est propriétaire de l'instance** : seule elle règle le comportement de l'application (réglages d'instance, Danger, réglages des agents structurels, sécurité, observabilité, sauvegardes, gestion des modules : les modules « d'instance »). Les sociétés secondaires ont le desk, le métier et le parc, leurs agents dédiés et les services des agents structurels, jamais leurs réglages. L'administrateur d'une société ouvre et ferme les modules de SA société parmi ceux qui ne sont pas la base.
 - **Un partage** va d'une société (source) à une autre (destinataire) pour un type d'objet : aujourd'hui « utilisateurs », tous ou ceux qu'on a choisis (tables `societe_partages`, `societe_partage_elements`). Seul le superadministrateur décide d'un partage et le retire ; chaque geste s'inscrit à l'historique et se défait.

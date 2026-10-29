@@ -6,19 +6,19 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : droits
 # ZONE       : CN
-# VERSION CN : 0.2.0  #8e78f0
+# VERSION CN : 0.2.0  #e2107c
 # VERSION EC : néant
 # EC LIÉES   : néant
-# RÔLE       : Qui, parmi les comptes, peut utiliser quoi : les modules déclarent leurs droits, on les attribue à des comptes et à des groupes, l'exécuteur les vérifie. Modèle de Dolibarr.
+# RÔLE       : Qui, parmi les comptes, peut utiliser quoi : les modules déclarent leurs droits, on les attribue à des comptes et à des groupes, l'exécuteur les vérifie.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=8e78f0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=e2107c ▼▼▼
 [module]
 id = "droits"
 nom = "Droits"
 version = "0.2.0"
 noyau_min = "0.1.0"
-description = "Qui, parmi les comptes, peut utiliser quoi : les modules déclarent leurs droits, on les attribue à des comptes et à des groupes, l'exécuteur les vérifie. Modèle de Dolibarr."
+description = "Qui, parmi les comptes, peut utiliser quoi : les modules déclarent leurs droits, on les attribue à des comptes et à des groupes, l'exécuteur les vérifie."
 confiance = "interne"
 famille = "securite"
 importance = "vital"
