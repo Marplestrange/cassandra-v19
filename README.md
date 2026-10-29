@@ -390,6 +390,12 @@ muette qu'on prend pour une absence) sont devenues des règles du noyau.
 | `CN_EVOLUTION.md` | le moteur d'évolution : rejeu, ombre, paliers, retrait |
 | `CN_AFFICHAGE.md`, `CN_REGISTRE.md`, `CN_FORMAT.md` | l'interface assemblée, le registre des objets, le format des fichiers |
 
+## Qui porte le projet
+
+Cassandra est portée par **La Maison Bohème**, association loi 1901 (SIREN 899 553 093, RNA W751260323), qui accepte les dons. Les dons ouvrent
+droit à une réduction d'impôt de 66 % de leur montant, dans les limites fixées par la loi. Pour soutenir le projet, écrivez à
+marplestrange@cassandra.center.
+
 ## Licence
 
 AGPL-3.0. Auteur : Atek Drisse, github.com/Marplestrange.
