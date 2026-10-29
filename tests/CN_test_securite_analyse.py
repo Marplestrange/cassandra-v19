@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fe6d2a
+# VERSION CN : 0.1.0  #b8a643
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'analyse de sécurité : des relevés bruts (ss, iptables -S, sshd -T, fail2ban) -> exposition, pare-feu, accès, verdict. Chaque banc rejoue une situation réelle de la V18 : une règle finale REJECT, un port ouvert par adresse, une ma
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fe6d2a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b8a643 ▼▼▼
 """Bancs de l'analyse de sécurité : des relevés bruts (ss, iptables -S, sshd -T, fail2ban) -> exposition, pare-feu, accès, verdict.
 Chaque banc rejoue une situation réelle de la V18 : une règle finale REJECT, un port ouvert par adresse, une machine derrière une box."""
 import sys
@@ -48,7 +48,7 @@ def ecoute(proto, adr, port, proc, pid=1):
 
 
 def releves(**kw):
-    base = {"ecoutes": [], "ip_addr": "2: eth0    inet 198.51.100.9/32 scope global eth0\n", "iptables": PARE_FEU_FERME, "ip6tables": None, "iptables_docker": None, "nft": None,
+    base = {"ecoutes": [], "ip_addr": "2: eth0    inet 93.184.216.34/32 scope global eth0\n", "iptables": PARE_FEU_FERME, "ip6tables": None, "iptables_docker": None, "nft": None,
             "sshd": {"passwordauthentication": "no", "permitrootlogin": "prohibit-password", "x11forwarding": "no", "port": "22"}, "echecs_ssh_7j": 3,
             "comptes": {"shells": ["root"], "sudo": []}, "cles_ssh": {"root": 1}, "fail2ban": {"present": True, "actif": True, "jails": {"sshd": "Total failed: 9\nCurrently banned: 2\nTotal banned: 5\nBanned IP list: 1.2.3.4 5.6.7.8"}},
             "maj": {"apt": True, "a_mettre_a_jour": 4, "securite": 0, "auto_installe": True, "auto_conf": 'APT::Periodic::Unattended-Upgrade "1";', "unites_en_echec": []},
@@ -63,15 +63,15 @@ class Portee(unittest.TestCase):
         self.assertEqual(an.portee("[::1]"), "machine")
         self.assertEqual(an.portee("100.64.0.10"), "tailscale")
         self.assertEqual(an.portee("192.168.1.20"), "reseau")
-        self.assertEqual(an.portee("198.51.100.9"), "public")
+        self.assertEqual(an.portee("93.184.216.34"), "public")
         self.assertEqual(an.portee("0.0.0.0"), "tout")
         self.assertEqual(an.portee("*"), "tout")
 
 
 class Adresses(unittest.TestCase):
     def test_publique_donc_pas_de_box(self):
-        m = an.adresses_machine("2: eth0    inet 198.51.100.9/32 scope global eth0\n1: lo inet 127.0.0.1/8 scope host lo\n")
-        self.assertEqual(m["public_v4"], ["198.51.100.9"])
+        m = an.adresses_machine("2: eth0    inet 93.184.216.34/32 scope global eth0\n1: lo inet 127.0.0.1/8 scope host lo\n")
+        self.assertEqual(m["public_v4"], ["93.184.216.34"])
 
     def test_derriere_une_box(self):
         m = an.adresses_machine("2: enp3s0    inet 192.168.1.20/24 brd 192.168.1.255 scope global enp3s0\n3: tailscale0    inet 100.64.0.10/32 scope global tailscale0\n")

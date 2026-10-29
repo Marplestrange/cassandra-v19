@@ -12,7 +12,7 @@
 <!-- RÔLE       : Billetterie : vente par revendeurs, portefeuille de commissions -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=2bf62e ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=189f47 ▼▼▼ -->
 <!-- TITRE : Module billetterie et réglage Titulaire de l'instance -->
 <!-- LICENCE : AGPL-3.0 · AUTEUR : Atek Drisse · MODULE : docs -->
 
@@ -416,7 +416,7 @@ Décision (Drisse) : **la fiscalité n'est pas réinventée dans Cassandra, elle
 
 **Lot ajouté** : *lot 3 bis, extension du module `dolibarr`* (paiement, avoir, TVA, compte bancaire, facture fournisseur), avec tests contre une instance Dolibarr de recette, avant le lot 4. À vérifier d'abord que l'API REST de l'instance expose ces routes (versions de Dolibarr).
 
-*Vérification du 17-10-2026* (lecture seule, clé de `Documents\Cassandra\dolibarr.key`, instance Athena `:8081`, **Dolibarr 23.0.2**, 341 routes) :
+*Vérification du 17-10-2026* (lecture seule, clé d'API de l'instance, instance de recette, **Dolibarr 23.0.2**, 341 routes) :
 
 | Besoin | Route | État |
 |---|---|---|
