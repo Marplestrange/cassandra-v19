@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #000000
+# VERSION CN : 0.1.0  #507b6e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs : les VRAIES archives du registre officiel (billetterie, dolibarr), vérifiées par les clés embarquées, s'installent par le cycle de l'application par-dessus les modules livrés, qui sont alors remplacés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=507b6e ▼▼▼
 """Bancs : les VRAIES archives du registre officiel (billetterie, dolibarr), vérifiées par les clés embarquées, s'installent par le cycle de l'application par-dessus les modules livrés, qui sont alors remplacés.
 
 Le banc cherche le dépôt du registre à côté de celui-ci (`../cassandra-registre`) ou dans `CASSANDRA_REGISTRE` ; sans lui, il est ignoré.
