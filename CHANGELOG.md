@@ -15,6 +15,7 @@ quelqu'un qui découvre le projet ; le détail est dans l'historique git, dont c
 - **La billetterie** : l'interface V19 (vue d'ensemble, événements, ventes, revendeurs, caisse, contrôle, espaces du revendeur et de l'artiste), la boutique publique, les comptes clients.
 - **Sécurité** : ses pages sont des sous-menus de la colonne de gauche.
 - **Documentation** : README refait (aperçu, nexus CN et évolution EC, sociétés, coffre), `SECURITY.md`, `CONTRIBUTING.md`, résumé en anglais, catalogue des modules généré.
+- **Dépôt** : badges, `CODE_OF_CONDUCT.md`, `CODEOWNERS`, Dependabot pour les actions GitHub, `CN_essai.sh` (essayer V19 en une commande, sur des données fictives).
 - `ctx.frein_actif(nom)` : lecture seule des freins d'urgence, pour les moteurs (qui n'ont pas de compte).
 
 ### Corrigé

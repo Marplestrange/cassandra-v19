@@ -17,3 +17,4 @@ tests-ui/.donnees-test*/
 tests-ui/.resultats/
 .donnees-dev/
 tests-ui/.donnees-dev/
+.venv-essai/

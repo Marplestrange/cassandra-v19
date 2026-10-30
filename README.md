@@ -1,5 +1,10 @@
 # Cassandra V19
 
+[![Vérifications](https://github.com/Marplestrange/cassandra-v19/actions/workflows/verification.yml/badge.svg)](https://github.com/Marplestrange/cassandra-v19/actions/workflows/verification.yml)
+[![Licence AGPL-3.0](https://img.shields.io/badge/licence-AGPL--3.0-blue)](LICENSE)
+![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776ab)
+![Auto-hébergée](https://img.shields.io/badge/auto--h%C3%A9berg%C3%A9e-oui-2e7d32)
+
 *English summary: [`README.en.md`](README.en.md).*
 
 **Cassandra est une IA qui administre vos machines, vos sites et votre travail, avec vous, sans vous attendre.** Elle s'installe sur votre serveur,
@@ -365,8 +370,12 @@ Les données vont dans `donnees/` (ou `$CASSANDRA_DONNEES`).
 Un serveur d'essai, avec ses propres données jetables (dossier ignoré par git), un compte administrateur fictif et aucune donnée réelle :
 
 ```
-python tests-ui/serveur_dev.py          écoute sur 127.0.0.1:9005 ; compte d'essai ui@exemple.test, mot de passe Essai-UI-2026!
+bash CN_essai.sh                        crée un environnement jetable, lance le serveur d'essai sur http://127.0.0.1:9005
+                                        compte ui@exemple.test, mot de passe Essai-UI-2026!
+bash CN_essai.sh --effacer              supprime l'environnement et les données d'essai
 ```
+
+(Python 3.12 ou plus récent suffit ; le script installe seulement `cryptography`, dans un dossier à lui. Sans bash : `python tests-ui/serveur_dev.py`.)
 
 C'est un outil de développement, pas une démonstration commerciale : il sert à regarder l'interface et à rejouer ses essais, pas à héberger quoi que ce soit.
 Les captures de ce README en viennent (`tests-ui/capture_v19.js`).

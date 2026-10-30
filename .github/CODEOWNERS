@@ -1,0 +1,5 @@
+# Les mainteneurs relisent tout ; le noyau et la sécurité ne changent jamais sans eux.
+*                @Marplestrange
+/noyau/          @Marplestrange
+/SECURITY.md     @Marplestrange
+/.github/        @Marplestrange
