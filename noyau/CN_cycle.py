@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ec97f8
+# VERSION CN : 0.1.0  #7dc131
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le cycle de vie d'un module venu d'une archive : examiner sans rien poser, installer avec consentement, mettre à jour, revenir en arrière, désinstaller (rien ne se perd : tout ce qui part va en sauvegarde).
 # MÉTHODE    : l'archive attend en quarantaine ; l'examen la vérifie (empreintes, signature, manifeste) et compare au module en place ; l'installation re-vérifie, exige le consentement aux permissions, sauvegarde l'ancienne version puis dépose le dossier dans celui des extensions que le noyau surveille
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ec97f8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7dc131 ▼▼▼
 """Le cycle de vie d'un module installé, à la manière d'un module store.
 
     examiner(octets)       l'archive va en quarantaine ; on la vérifie (SOMMES, signature, manifeste) et on dit ce qu'elle ferait : nouveau, mise à jour, retour à une version
@@ -128,7 +128,7 @@ def elargies(avant: dict, apres: dict) -> list:
 
 
 class Cycle:
-    def __init__(self, extensions, donnees, cles, connus, actifs=None, cles_racine=None, url_officielle=None):
+    def __init__(self, extensions, donnees, cles, connus, actifs=None, cles_racine=None, url_officielle=None, canal="stable", miroirs=None):
         """`connus` : appelable qui rend [(manifeste, est_extension)] des modules en place ; `actifs` : appelable qui rend l'ensemble des ids actifs."""
         self.extensions = Path(extensions) if extensions else None
         self.donnees = Path(donnees)
@@ -141,6 +141,41 @@ class Cycle:
         self.cles_racine = dict(officiel.CLES_RACINE if cles_racine is None else cles_racine)       # la racine de confiance : EMBARQUÉE, jamais lue du disque
         self.url_officielle = officiel.URL_OFFICIELLE if url_officielle is None else url_officielle
         self.cache_officiel = self.donnees / "registre_officiel.json"
+        self.canal = canal if canal in ("stable", "beta") else "stable"                       # « beta » : cette installation veut aussi les versions en bêta
+        self.miroirs = tuple(officiel.MIROIRS if miroirs is None else miroirs)
+        self.fichier_serie = self.donnees / "registre_serie.json"
+        self.fichier_installation = self.donnees / "installation.id"
+
+    def id_installation(self) -> str:
+        """Un identifiant propre à cette installation, tiré une fois et gardé ici : il ne sert qu'à répartir les déploiements progressifs et ne quitte jamais la machine."""
+        try:
+            v = self.fichier_installation.read_text(encoding="ascii").strip()
+            if re.match(r"^[0-9a-f]{32}$", v):
+                return v
+        except OSError:
+            pass
+        import secrets
+        v = secrets.token_hex(16)
+        try:
+            self.donnees.mkdir(parents=True, exist_ok=True)
+            self.fichier_installation.write_text(v, encoding="ascii")
+        except OSError:
+            pass
+        return v
+
+    def serie_vue(self) -> int:
+        try:
+            return int(json.loads(self.fichier_serie.read_text(encoding="utf-8")).get("serie", 0))
+        except (OSError, ValueError, TypeError):
+            return 0
+
+    def _noter_serie(self, serie: int):
+        if serie > self.serie_vue():
+            try:
+                self.donnees.mkdir(parents=True, exist_ok=True)
+                self.fichier_serie.write_text(json.dumps({"serie": serie}), encoding="utf-8")
+            except OSError:
+                pass
 
     # ------------------------------------------------------------------ le journal des installations
     def journal(self) -> list:
@@ -228,14 +263,32 @@ class Cycle:
         """Lit l'index officiel et sa signature, les vérifie contre la racine EMBARQUÉE, garde l'index vérifié en cache (ses éditeurs et ses révocations servent à l'examen des archives
         déposées à la main), et rend les modules proposés avec leur état ici, leur éditeur et leur niveau, les révocations, et les modules installés qui sont révoqués."""
         ouvrir = ouvrir or _ouvrir
-        octets = ouvrir(self.url_officielle, 8, TAILLE_INDEX)
-        signature = ouvrir(self.url_officielle + ".sig", 8, 4096)
-        i = officiel.lire_index_signe(octets, signature, self.cles_racine, maintenant)
+        derniere = None
+        for url in (self.url_officielle,) + tuple(m for m in self.miroirs if m != self.url_officielle):       # l'adresse principale, puis les miroirs : le premier index ENTIÈREMENT valide l'emporte
+            try:
+                octets = ouvrir(url, 8, TAILLE_INDEX)
+                signature = ouvrir(url + ".sig", 8, 4096)
+                i = officiel.lire_index_signe(octets, signature, self.cles_racine, maintenant, serie_min=self.serie_vue())
+                if i["brut"].get("fraicheur"):
+                    base = url.rsplit("/", 1)[0] + "/"
+                    try:
+                        fr, fr_sig = ouvrir(base + "fraicheur.json", 8, 4096), ouvrir(base + "fraicheur.json.sig", 8, 4096)
+                    except CycleErreur as ex:
+                        raise officiel.RegistreErreur("l'index annonce une fraîcheur qui n'est pas publiée (%s) : index refusé" % ex) from ex
+                    officiel.verifier_fraicheur(i["brut"], octets, fr, fr_sig, maintenant)
+                break
+            except (CycleErreur, officiel.RegistreErreur, OSError) as ex:
+                derniere = ex
+        else:
+            raise derniere if derniere is not None else CycleErreur("aucun registre joignable")
         brut = i["brut"]
+        self.url_utilisee = url
+        self._noter_serie(i["serie"])
         self.donnees.mkdir(parents=True, exist_ok=True)
         self.cache_officiel.write_text(json.dumps({"index": octets.decode("utf-8"), "signature": signature.decode("ascii", "replace").strip()}), encoding="utf-8")
         editeurs, revoc = officiel.lire_editeurs(brut), officiel.lire_revocations(brut)
-        entrees = lire_index(octets, self.url_officielle)
+        entrees = lire_index(octets, url)
+        entrees = self._versions_proposees(entrees, brut, url)
         en_place = {x.id: x for x, _ in self.connus()}
         for e in entrees:
             m = en_place.get(e["id"])
@@ -251,6 +304,23 @@ class Cycle:
         return {"url": self.url_officielle, "officiel": True, "emis": i["emis"], "expire": i["expire"], "signe_par": i["signe_par"],
                 "modules": sorted(entrees, key=lambda e: (e["nom"].lower(), e["id"])),
                 "editeurs": [{"id": k, "nom": v["nom"]} for k, v in sorted(editeurs.items())], "revocations": revoc, "installes_revoques": installes_revoques}
+
+    def _versions_proposees(self, entrees: list, brut: dict, url: str) -> list:
+        """Ce que CETTE installation se voit proposer : la version offerte à tous, remplacée par la version en déploiement progressif si le tirage de l'installation tombe dans la part
+        servie, et par la bêta si l'installation a choisi ce canal. Les entrées se lisent comme celles de l'index (même hôte, mêmes contrôles)."""
+        def lues(cle):
+            liste = [x for x in (brut.get(cle) or []) if isinstance(x, dict)]
+            return {e["id"]: (e, x) for x in liste for e in lire_index(json.dumps({"modules": [x]}).encode("utf-8"), url)}
+        par_id = {e["id"]: e for e in entrees}
+        moi = self.id_installation()
+        for mid, (e, x) in lues("progressifs").items():
+            if mid in par_id and officiel.en_deploiement(moi, mid, e["version"], x.get("pourcent", 100) if isinstance(x.get("pourcent"), int) else 100) and mf.version_de(e["version"]) > mf.version_de(par_id[mid]["version"]):
+                par_id[mid] = e
+        if self.canal == "beta":
+            for mid, (e, _x) in lues("beta").items():
+                if mid not in par_id or mf.version_de(e["version"]) > mf.version_de(par_id[mid]["version"]):
+                    par_id[mid] = dict(e, canal="beta")
+        return list(par_id.values())
 
     def telecharger_officiel(self, mid: str, politique: str = "signes", ouvrir=None, maintenant=None) -> dict:
         """Télécharge une archive du registre officiel : l'index est vérifié, l'empreinte aussi, une version révoquée est refusée, puis l'archive est examinée avec les clés racine et les éditeurs vérifiés."""

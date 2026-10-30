@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #059b55
+# VERSION CN : 0.1.0  #79bbe2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le registre officiel de Cassandra, EN DUR : son adresse, ses deux clés racine, la lecture de son index signé (éditeurs vérifiés, révocations) et les niveaux de confiance.
 # MÉTHODE    : l'index est un fichier JSON accompagné de sa signature Ed25519 (index.json.sig, en base64) ; une clé racine EMBARQUÉE ici le vérifie, jamais une clé du disque ; un index périmé, ou signé par une autre clé, est refusé ; les éditeurs et les révocations qu'il porte sont donc couverts par la même signature
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=059b55 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=79bbe2 ▼▼▼
 """Le registre officiel, dont l'application connaît l'adresse et la clé : ce n'est pas un réglage.
 
     URL_OFFICIELLE   où vit l'index (une page statique : le dépôt `cassandra-registre`, publié) ; elle changera de domaine un jour, pas de forme.
@@ -29,6 +29,7 @@ Trois niveaux de confiance, que l'application montre :
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import os
 import re
@@ -40,6 +41,7 @@ from pathlib import Path
 from . import CN_manifeste as mf
 
 URL_OFFICIELLE = "https://marplestrange.github.io/cassandra-registre/index.json"
+MIROIRS: tuple = ()                   # copies byte-à-byte de docs/ chez d'autres hébergeurs : sans confiance à leur accorder (tout est signé), essayées si la première adresse tombe ou sert un index refusé
 FORMAT = 1
 TOLERANCE_HORLOGE_S = 3600            # une horloge en avance d'une heure ne rend pas un index « du futur »
 
@@ -95,8 +97,9 @@ def signer(octets: bytes, cle_privee) -> bytes:
         return base64.b64encode((Path(t) / "s").read_bytes()) + b"\n"
 
 
-def lire_index_signe(octets: bytes, signature: bytes, cles_racine: dict | None = None, maintenant: float | None = None) -> dict:
-    """Vérifie la signature (une clé racine) puis le contenu : format, validité dans le temps. Rend {'signe_par', 'emis', 'expire', 'brut'}. Refuse tout le reste."""
+def lire_index_signe(octets: bytes, signature: bytes, cles_racine: dict | None = None, maintenant: float | None = None, serie_min: int = 0) -> dict:
+    """Vérifie la signature (une clé racine) puis le contenu : format, validité dans le temps, et la SÉRIE (jamais en arrière : `serie_min` est la plus haute déjà vue ; un index plus
+    ancien, même valide, est un rejeu qui pourrait cacher une révocation). Rend {'signe_par', 'emis', 'expire', 'serie', 'brut'}. Refuse tout le reste."""
     cles = CLES_RACINE if cles_racine is None else cles_racine
     qui = signature_valide(octets, signature, cles)
     if not qui:
@@ -115,7 +118,46 @@ def lire_index_signe(octets: bytes, signature: bytes, cles_racine: dict | None =
         raise RegistreErreur("l'index est daté du futur : horloge de la machine, ou index forgé")
     if expire < now:
         raise RegistreErreur("l'index a expiré : on ne s'appuie pas sur un registre qui n'est plus tenu à jour")
-    return {"signe_par": qui, "emis": emis, "expire": expire, "brut": brut}
+    serie = brut.get("serie", 0)
+    if isinstance(serie, bool) or not isinstance(serie, int) or serie < 0:
+        raise RegistreErreur("la série de l'index est illisible")
+    if serie < serie_min:
+        raise RegistreErreur("cet index (série %d) est plus ancien que le dernier vu (série %d) : rejeu refusé" % (serie, serie_min))
+    return {"signe_par": qui, "emis": emis, "expire": expire, "serie": serie, "brut": brut}
+
+
+def verifier_fraicheur(brut: dict, octets_index: bytes, octets_fraicheur: bytes, signature: bytes, maintenant: float | None = None):
+    """Si l'index (signé par la racine) annonce une clé de fraîcheur, un fichier de fraîcheur signé par CETTE clé doit attester que cet index-ci est toujours le courant et ne pas être périmé.
+    Sans clé annoncée, rien n'est demandé (l'index se suffit, avec sa date d'expiration). Lève RegistreErreur."""
+    fr = brut.get("fraicheur")
+    if not fr:
+        return
+    cle = fr.get("cle") if isinstance(fr, dict) else None
+    if not isinstance(cle, str) or not _PEM.match(cle.replace("\r", "")):
+        raise RegistreErreur("la clé de fraîcheur annoncée par l'index est illisible")
+    if not signature_valide(octets_fraicheur, signature, {"fraicheur": cle}):
+        raise RegistreErreur("la fraîcheur n'est pas signée par la clé que l'index annonce : index refusé")
+    try:
+        d = json.loads(octets_fraicheur.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as ex:
+        raise RegistreErreur("la fraîcheur n'est pas un JSON lisible") from ex
+    now = time.time() if maintenant is None else maintenant
+    if d.get("serie") != brut.get("serie") or d.get("index_sha256") != hashlib.sha256(octets_index).hexdigest():
+        raise RegistreErreur("la fraîcheur atteste un autre index que celui reçu")
+    if not isinstance(d.get("expire"), (int, float)) or d["expire"] < now:
+        raise RegistreErreur("la fraîcheur de l'index est périmée : le registre n'est plus tenu à jour")
+    if isinstance(d.get("emis"), (int, float)) and d["emis"] > now + TOLERANCE_HORLOGE_S:
+        raise RegistreErreur("la fraîcheur est datée du futur")
+
+
+def en_deploiement(id_installation: str, mid: str, version: str, pourcent: int) -> bool:
+    """Un déploiement progressif : cette installation en fait-elle partie ? Le tirage est STABLE (même installation, même module, même version, même réponse) et réparti uniformément."""
+    if pourcent >= 100:
+        return True
+    if pourcent <= 0:
+        return False
+    n = int(hashlib.sha256(("%s|%s|%s" % (id_installation, mid, version)).encode("utf-8")).hexdigest()[:8], 16) % 100
+    return n < pourcent
 
 
 def lire_editeurs(brut: dict) -> dict:
