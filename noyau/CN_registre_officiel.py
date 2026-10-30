@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #79bbe2
+# VERSION CN : 0.1.0  #2f32c1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le registre officiel de Cassandra, EN DUR : son adresse, ses deux clés racine, la lecture de son index signé (éditeurs vérifiés, révocations) et les niveaux de confiance.
 # MÉTHODE    : l'index est un fichier JSON accompagné de sa signature Ed25519 (index.json.sig, en base64) ; une clé racine EMBARQUÉE ici le vérifie, jamais une clé du disque ; un index périmé, ou signé par une autre clé, est refusé ; les éditeurs et les révocations qu'il porte sont donc couverts par la même signature
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=79bbe2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2f32c1 ▼▼▼
 """Le registre officiel, dont l'application connaît l'adresse et la clé : ce n'est pas un réglage.
 
     URL_OFFICIELLE   où vit l'index (une page statique : le dépôt `cassandra-registre`, publié) ; elle changera de domaine un jour, pas de forme.
@@ -123,7 +123,20 @@ def lire_index_signe(octets: bytes, signature: bytes, cles_racine: dict | None =
         raise RegistreErreur("la série de l'index est illisible")
     if serie < serie_min:
         raise RegistreErreur("cet index (série %d) est plus ancien que le dernier vu (série %d) : rejeu refusé" % (serie, serie_min))
-    return {"signe_par": qui, "emis": emis, "expire": expire, "serie": serie, "brut": brut}
+    return {"signe_par": qui, "emis": emis, "expire": expire, "serie": serie, "brut": brut, "rotation": lire_rotation(brut, qui)}
+
+
+def lire_rotation(brut: dict, signe_par: str):
+    """Une rotation de la clé principale : l'index annonce `{"nom": "principale", "retire": ["principale"], "cle": PEM}`. Elle n'est CRUE que si l'index est signé par la clé de SECOURS (gardée
+    à part, hors ligne) : une clé principale volée ne peut pas se faire remplacer par celle d'un voleur, ni retirer la secours. Rend {nom: PEM} à adopter, ou None (rien d'annoncé, ou annoncé par
+    une autre clé : alors ignoré). Une annonce de la secours mal formée est refusée."""
+    r = brut.get("rotation")
+    if not isinstance(r, dict) or signe_par != "secours":
+        return None
+    cle = r.get("cle")
+    if r.get("nom") != "principale" or r.get("retire") != ["principale"] or not isinstance(cle, str) or not _PEM.match(cle.replace("\r", "")):
+        raise RegistreErreur("l'annonce de rotation est mal formée : seule la clé « principale » peut être remplacée")
+    return {"principale": cle.replace("\r", "")}
 
 
 def verifier_fraicheur(brut: dict, octets_index: bytes, octets_fraicheur: bytes, signature: bytes, maintenant: float | None = None):

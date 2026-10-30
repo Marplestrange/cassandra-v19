@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7dc131
+# VERSION CN : 0.1.0  #9656cc
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le cycle de vie d'un module venu d'une archive : examiner sans rien poser, installer avec consentement, mettre à jour, revenir en arrière, désinstaller (rien ne se perd : tout ce qui part va en sauvegarde).
 # MÉTHODE    : l'archive attend en quarantaine ; l'examen la vérifie (empreintes, signature, manifeste) et compare au module en place ; l'installation re-vérifie, exige le consentement aux permissions, sauvegarde l'ancienne version puis dépose le dossier dans celui des extensions que le noyau surveille
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7dc131 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9656cc ▼▼▼
 """Le cycle de vie d'un module installé, à la manière d'un module store.
 
     examiner(octets)       l'archive va en quarantaine ; on la vérifie (SOMMES, signature, manifeste) et on dit ce qu'elle ferait : nouveau, mise à jour, retour à une version
@@ -144,7 +144,27 @@ class Cycle:
         self.canal = canal if canal in ("stable", "beta") else "stable"                       # « beta » : cette installation veut aussi les versions en bêta
         self.miroirs = tuple(officiel.MIROIRS if miroirs is None else miroirs)
         self.fichier_serie = self.donnees / "registre_serie.json"
+        self.fichier_rotation = self.donnees / "registre_rotation.json"
+        if cles_racine is None:
+            self._charger_rotation()                                                      # une rotation déjà annoncée par la clé de secours : la principale d'ici est la nouvelle
         self.fichier_installation = self.donnees / "installation.id"
+
+    def _charger_rotation(self):
+        try:
+            d = json.loads(self.fichier_rotation.read_text(encoding="utf-8"))
+            if isinstance(d, dict) and isinstance(d.get("principale"), str) and officiel._PEM.match(d["principale"]):
+                self.cles_racine["principale"] = d["principale"]
+        except (OSError, ValueError):
+            pass
+
+    def _adopter_rotation(self, nouvelles: dict):
+        """La clé de secours a annoncé une nouvelle clé principale : on la garde (elle survit au redémarrage) et l'ancienne ne vaut plus rien ici."""
+        try:
+            self.donnees.mkdir(parents=True, exist_ok=True)
+            self.fichier_rotation.write_text(json.dumps(nouvelles), encoding="utf-8")
+        except OSError:
+            pass
+        self.cles_racine.update(nouvelles)
 
     def id_installation(self) -> str:
         """Un identifiant propre à cette installation, tiré une fois et gardé ici : il ne sert qu'à répartir les déploiements progressifs et ne quitte jamais la machine."""
@@ -284,6 +304,8 @@ class Cycle:
         brut = i["brut"]
         self.url_utilisee = url
         self._noter_serie(i["serie"])
+        if i.get("rotation"):
+            self._adopter_rotation(i["rotation"])
         self.donnees.mkdir(parents=True, exist_ok=True)
         self.cache_officiel.write_text(json.dumps({"index": octets.decode("utf-8"), "signature": signature.decode("ascii", "replace").strip()}), encoding="utf-8")
         editeurs, revoc = officiel.lire_editeurs(brut), officiel.lire_revocations(brut)

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #000000
+# VERSION CN : 0.1.0  #a6a70a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du registre officiel : la série qui ne recule jamais (rejeu refusé), la fraîcheur signée par une clé annoncée, les miroirs, le déploiement progressif et la bêta.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a6a70a ▼▼▼
 """Bancs du registre officiel : la série qui ne recule jamais (rejeu refusé), la fraîcheur signée par une clé annoncée, les miroirs, le déploiement progressif et la bêta."""
 import hashlib
 import json
@@ -134,6 +134,57 @@ class Serie(_officiel.Officiel):
         c = self.nouveau_cycle()
         c.canal = "beta"
         self.assertEqual({m["id"]: m for m in c.registre_officiel()["modules"]}["sentinelle"]["version"], "0.3.0")
+
+    # ── la rotation de la clé principale : annoncée par la SECOURS, jamais par une autre
+    def cycle_avec_secours(self, secours_pub):
+        c = self.nouveau_cycle(racine={"principale": self.racine_pub, "secours": secours_pub})
+        c.cles_racine = {"principale": self.racine_pub, "secours": secours_pub}
+        c.fichier_rotation = self.base / "d" / "registre_rotation.json"
+        return c
+
+    def test_la_secours_annonce_une_nouvelle_principale_et_l_ancienne_ne_vaut_plus_rien(self):
+        secours_priv, secours_pub = cle(self.base, "secours")
+        nouvelle_priv, nouvelle_pub = cle(self.base, "nouvelle")
+        c = self.cycle_avec_secours(secours_pub)
+        self.publier(priv=secours_priv, serie=1, rotation={"nom": "principale", "retire": ["principale"], "cle": nouvelle_pub, "raison": "répétition"})
+        c.registre_officiel()
+        self.assertEqual(c.cles_racine["principale"], nouvelle_pub)
+        self.assertTrue(c.fichier_rotation.is_file())
+        self.publier(priv=self.racine_priv, serie=2)                    # l'ancienne principale (supposée volée) ne signe plus rien de crédible
+        with self.assertRaises(R.RegistreErreur):
+            c.registre_officiel()
+        self.publier(priv=nouvelle_priv, serie=3)                       # la nouvelle principale, si
+        self.assertEqual(c.registre_officiel()["signe_par"], "principale")
+        self.publier(priv=secours_priv, serie=4)                        # et la secours reste racine
+        self.assertEqual(c.registre_officiel()["signe_par"], "secours")
+
+    def test_la_rotation_survit_au_redemarrage(self):
+        secours_priv, secours_pub = cle(self.base, "secours")
+        nouvelle_priv, nouvelle_pub = cle(self.base, "nouvelle")
+        c = self.cycle_avec_secours(secours_pub)
+        self.publier(priv=secours_priv, serie=1, rotation={"nom": "principale", "retire": ["principale"], "cle": nouvelle_pub, "raison": "x"})
+        c.registre_officiel()
+        redemarre = self.cycle_avec_secours(secours_pub)
+        redemarre.cles_racine = {"principale": self.racine_pub, "secours": secours_pub}
+        redemarre._charger_rotation()
+        self.assertEqual(redemarre.cles_racine["principale"], nouvelle_pub)
+
+    def test_une_rotation_annoncee_par_la_principale_est_ignoree(self):
+        secours_priv, secours_pub = cle(self.base, "secours")
+        voleur_priv, voleur_pub = cle(self.base, "voleur")
+        c = self.cycle_avec_secours(secours_pub)
+        self.publier(priv=self.racine_priv, serie=1, rotation={"nom": "principale", "retire": ["principale"], "cle": voleur_pub, "raison": "prise de contrôle"})
+        c.registre_officiel()                                           # l'index reste lisible (signé par la principale) mais la rotation n'est pas crue
+        self.assertEqual(c.cles_racine["principale"], self.racine_pub)
+        self.assertFalse(c.fichier_rotation.exists())
+
+    def test_une_annonce_de_la_secours_qui_veut_retirer_autre_chose_est_refusee(self):
+        secours_priv, secours_pub = cle(self.base, "secours")
+        _, nouvelle_pub = cle(self.base, "nouvelle")
+        c = self.cycle_avec_secours(secours_pub)
+        self.publier(priv=secours_priv, serie=1, rotation={"nom": "principale", "retire": ["secours"], "cle": nouvelle_pub, "raison": "x"})
+        with self.assertRaises(R.RegistreErreur):
+            c.registre_officiel()
 
     def test_l_identifiant_d_installation_est_tire_une_fois_et_garde(self):
         a = self.cycle.id_installation()
