@@ -13,7 +13,7 @@
 <!-- RÔLE       : maquette-agents.html -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=1d2825 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=dada31 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -410,6 +410,8 @@ let PROPOS=[
  {id:'p3',ag:'itare',titre:'Envoyer le compte rendu du conseil à 9 membres',sous:'Brouillon prêt. Un envoi ne se rappelle pas : il part seulement avec ton accord.',outil:'courrier.envoyer',risque:'moyen',pourquoi:'Tu as écrit « envoie le compte rendu » hier.',impact:'9 courriels'}
 ];
 let GEL=false;
+const GLOBAL={plafond:8,action:0};
+const ACTIONS_PLAFOND=['bascule les agents sur leur modèle de secours','arrête les agents sauf la machine (Cassandra) et te prévient','demande ton accord avant chaque nouveau tour'];
 const REGLES=[
  ['Vérité','Un fait vient de la mémoire ou du résultat d\'un outil de ce tour. Sinon l\'agent vérifie, ou dit « je ne sais pas ». Chaque souvenir cité porte son [M:id].'],
  ['Les outils sont la seule façon d\'agir','Chaque geste traverse l\'exécuteur : droits du compte, palier, preuve, retour arrière, journal. « Non exécuté » = rien n\'a été fait, et l\'agent le dit.'],
@@ -448,6 +450,7 @@ const av=(a,etat)=>`<div class="avatar" style="background:${a.coul}">${a.lettre}
 function nbAttente(){return PROPOS.length}
 function cumulCout(id,n){return COUT[id].slice(-n).reduce((s,x)=>s+x,0)}
 function jourCout(id){return COUT[id][COUT[id].length-1]}
+function totalJour(){return AGENTS.reduce((s,a)=>s+jourCout(a.id),0)}
 function palierStats(a){let auto=0,rac=0,dem=0,ret=0;Object.values(ETAT[a.id]).forEach(p=>{if(p==='auto')auto++;else if(p==='raconter')rac++;else if(p==='demander')dem++;else ret++});return{auto,rac,dem,ret,tot:auto+rac+dem+ret}}
 function journalise(e){JOURNAL.unshift(Object.assign({id:Date.now()+Math.random(),h:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),j:'aujourd\'hui',cout:0,mem:[],preuve:'—',retour:'—',outil:'—',palier:'—'},e));}
 
@@ -483,7 +486,7 @@ function etatGlobal(){
 }
 function vEquipe(){
   const e=etatGlobal();
-  const tot=AGENTS.reduce((s,a)=>s+jourCout(a.id),0), totB=AGENTS.reduce((s,a)=>s+a.budget,0);
+  const tot=AGENTS.reduce((s,a)=>s+jourCout(a.id),0), totB=GLOBAL.plafond;
   const actes24=JOURNAL.filter(x=>x.j==='aujourd\'hui'&&x.type==='acte').length;
   const refus24=JOURNAL.filter(x=>x.j==='aujourd\'hui'&&x.type==='refus').length;
   $('#vue').innerHTML=`
@@ -492,7 +495,7 @@ function vEquipe(){
   <section class="kpis">
     <div class="verre kpi"><span class="lib">Actes aujourd'hui</span><span class="v">${actes24}</span><span class="note">tous prouvés, tous défaisables</span></div>
     <div class="verre kpi"><span class="lib">Retenus ou refusés</span><span class="v">${refus24}</span><span class="note">par la règle, pas par oubli</span></div>
-    <div class="verre kpi"><span class="lib">Dépensé aujourd'hui</span><span class="v">${eur(tot)}</span><div class="barre ${tot/totB>.85?'al':''}"><i style="width:${Math.min(100,tot/totB*100)}%"></i></div><span class="note">sur ${eur(totB)} de plafond</span></div>
+    <div class="verre kpi"><span class="lib">Dépensé aujourd'hui</span><span class="v">${eur(tot)}</span><div class="barre ${tot/totB>.85?'al':''}"><i style="width:${Math.min(100,tot/totB*100)}%"></i></div><span class="note">sur ${eur(totB)} de plafond global</span></div>
     <div class="verre kpi"><span class="lib">À valider</span><span class="v">${PROPOS.length}</span><span class="note">${PROPOS.length?'<a href="#" data-go="boite" style="color:var(--accent)">les voir</a>':'rien'}</span></div>
   </section>
   <section class="verre carte idee-bloc"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h2>${idee('Le rapport du matin')}</h2>
@@ -837,7 +840,7 @@ function oCout(a){
    <div class="deux"><section class="verre carte"><h2>Le plafond du jour</h2>
      <div class="champ"><label for="plaf">Plafond (€ / jour)</label><div><input type="range" id="plaf" min="0" max="12" step=".5" value="${a.budget}"><div class="note" id="plaf-v">${eur(a.budget)} par jour</div></div></div>
      <div class="champ"><label for="plaf-a">Au plafond…</label><select id="plaf-a"><option>bascule sur le modèle de secours (${esc(mod(a.secours).nom)})</option><option>s'arrête et te prévient</option><option>demande avant de continuer</option></select></div>
-     <div class="barre ${jourCout(a.id)/a.budget>.85?'al':''}"><i style="width:${Math.min(100,jourCout(a.id)/Math.max(.01,a.budget)*100)}%"></i></div><div class="note">Aujourd'hui : ${eur(jourCout(a.id))} sur ${eur(a.budget)}. Un plafond est un réglage, jamais un mur codé.</div></section>
+     <div class="barre ${jourCout(a.id)/a.budget>.85?'al':''}"><i style="width:${Math.min(100,jourCout(a.id)/Math.max(.01,a.budget)*100)}%"></i></div><div class="note">Aujourd'hui : ${eur(jourCout(a.id))} sur ${eur(a.budget)}. Un plafond est un réglage, jamais un mur codé.</div><div class="note"><b>Plafond global</b> de l\'instance : ${eur(GLOBAL.plafond)} par jour, dont ${eur(totalJour())} déjà dépensés par tous les agents. Le plus bas des deux plafonds s\'applique.</div></section>
     <section class="verre carte idee-bloc"><h2>${idee('Économies suggérées')}</h2>
      <div class="l2"><div><b>${a.id==='relecteur'?'Relire une réponse sur trois':'Mettre les lectures simples sur le modèle rapide'}</b><div class="g">Les cas sans risque (lectures, rangements) n'ont pas besoin du grand modèle. Test d'équivalence : 96 % identiques sur 200 tours rejoués.</div></div><span class="puce ok">−${eur(eco)}</span></div>
      <button class="btn prim pt" id="eco-ok" style="align-self:flex-start">Essayer 7 jours à blanc</button><div class="note">Mesuré avant d'être appliqué (même moteur que l'Évolution) : si la qualité baisse, retour automatique.</div></section></div>
@@ -883,7 +886,7 @@ function oBiblio(a){
    <section class="verre carte idee-bloc"><h2>${idee('Recherche hybride')}</h2><p class="muet" style="font-size:12.5px">Une question, quatre signaux : les <b>mots</b> (recherche plein texte), le <b>sens</b> (vecteurs), la <b>fraîcheur</b> et la <b>confiance de la source</b>. Règle les poids et regarde le classement bouger. Une fiche bloquée n\'apparaît jamais.</p>
     <input type="search" id="hy-q" placeholder="Poser une question à la bibliothèque…" value="dons déduction fiscale">
     <div class="cadran" style="grid-template-columns:repeat(4,1fr)" id="hy-w">${[['m','Mots',35],['z','Sens',35],['f','Fraîcheur',15],['c','Confiance',15]].map(x=>`<div><label class="note" for="hy-${x[0]}">${x[1]} <b id="hv-${x[0]}">${x[2]}</b> %</label><input type="range" id="hy-${x[0]}" min="0" max="100" value="${x[2]}"></div>`).join('')}</div>
-    <div id="hy-l"></div><div class="note">Base dédiée <span class="mono">bibliotheque.db</span> : texte plein (FTS5) + vecteurs, fiches découpées en passages avec leur position, déduplication par empreinte, historique des versions d\'une fiche, une base par instance et un cloisonnement par société. Les vecteurs sont calculés au premier usage (modèle lourd) : la recherche par mots fonctionne seule en attendant.</div></section>
+    <div id="hy-l"></div><div class="note">Base dédiée <span class="mono">bibliotheque.db</span> : texte plein (FTS5) + vecteurs, fiches découpées en passages avec leur position, déduplication par empreinte, historique des versions d\'une fiche, une base par instance et un cloisonnement par société. Les vecteurs (modèle multilingue e5-large, déjà éprouvé en V18, environ 2,4 Go, partagé avec la Mémoire) sont calculés au premier usage : la recherche par mots fonctionne seule en attendant.</div></section>
    <div class="deux"><section class="verre carte idee-bloc"><h2>${idee('Sources de confiance')}</h2>${SOURCES.map((x,i)=>`<div class="l2"><div><b class="mono" style="font-size:12px">${x.h}</b><div class="g">${x.c}</div></div><label class="sw"><input type="checkbox" ${x.on?'checked':''} data-src="${i}"><i></i></label></div>`).join('')}<div class="note">Une source décochée n\'est plus lue. Une page qui contient un ordre caché est décochée d\'office.</div></section>
    <section class="verre carte idee-bloc"><h2>${idee('Ce qu\'Amizo a transmis')}</h2>${TRANSMIS.map(t=>`<div class="l2"><div><b>${esc(t[1])}</b><div class="g">à ${t[0]} · ${t[2]}</div></div></div>`).join('')}<div class="note">Chaque transmission porte ses sources et son niveau de confiance.</div></section></div>`;
   const dessiner=()=>{const q=f.q.toLowerCase();const l=BIB.filter(b=>(f.r==='tout'||b.r===f.r)&&(!q||(b.titre+b.src).toLowerCase().includes(q)));
@@ -958,12 +961,25 @@ function vModeles(){
 function vMaison(){
   $('#vue').innerHTML=`<section class="verre carte"><h2>Les règles communes</h2><p class="muet" style="font-size:12.5px">Valent pour tous les agents. Ce ne sont pas des interdits de plus : ce sont les garanties qui permettent de les laisser agir.</p>
    ${REGLES.map((r,i)=>`<div class="l2"><div><b>${i+1}. ${r[0]}</b><div class="g">${r[1]}</div></div></div>`).join('')}</section>
+  <section class="verre carte" id="gl-card"><h2>Le plafond global de coût</h2><p class="muet" style="font-size:12.5px">En plus du plafond de chaque agent : une limite pour tout ce que les agents dépensent en une journée. Le plus bas des deux s\'applique.</p>
+   <div class="champ"><label for="gl-p">Plafond global (€ / jour)</label><div><input type="range" id="gl-p" min="1" max="20" step=".5" value="${GLOBAL.plafond}"><div class="note" id="gl-pv">${eur(GLOBAL.plafond)} par jour</div></div></div>
+   <div class="champ"><label for="gl-a">Quand il est atteint</label><select id="gl-a">${ACTIONS_PLAFOND.map((x,i)=>`<option value="${i}" ${GLOBAL.action===i?'selected':''}>${x}</option>`).join('')}</select></div>
+   <div id="gl-bar"></div></section>
   <section class="verre carte"><h2>Le palier par défaut</h2><p class="muet" style="font-size:12.5px">Le point de départ de tout nouvel agent. Chaque agent peut ensuite être réglé outil par outil.</p>
    <div class="cadran" id="cad-m">${['observer','entretien','reine'].map(k=>`<button class="opt ${k==='entretien'?'on':''}" data-n="${k}"><b>${NIVEAUX[k][0]}</b><span>${NIVEAUX[k][1]}</span></button>`).join('')}</div>
    <div class="note">Défaut prudent, capacité complète : rien n'est interdit, tout est réglable.</div></section>
   <section class="verre carte idee-bloc"><h2>${idee('Le dehors passe par un seul agent')}</h2><p class="muet" style="font-size:12.5px">Seul Amizo lit le web, et il n\'a aucun outil qui sort. Cassandra et Itare, qui agissent, ne lisent jamais le dehors eux-mêmes : ils le lui demandent et reçoivent un résumé étiqueté « externe ». Une page piégée n\'atteint donc jamais un agent capable d\'agir.</p></section>
   <section class="verre carte idee-bloc"><h2>${idee('Le journal à l\'envers : le mode « mauvais jour »')}</h2><p class="muet" style="font-size:12.5px">Un seul bouton quand quelque chose te semble bizarre : les agents passent tous en « raconter » pendant une durée choisie, et le journal te dit exactement ce qui a changé depuis ce moment.</p>
    <div class="pal"><button class="btn" data-mj="1">1 heure</button><button class="btn" data-mj="24">24 heures</button><button class="btn" data-mj="0">Jusqu'à ce que je lève</button></div></section>`;
+  const glDess=()=>{const tot=totalJour(),p=GLOBAL.plafond,somme=AGENTS.reduce((x,a)=>x+a.budget,0);
+    $('#gl-bar').innerHTML=`<div style="display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--filet)">${AGENTS.filter(a=>jourCout(a.id)).map(a=>`<i title="${a.nom} ${eur(jourCout(a.id))}" style="width:${Math.min(100,jourCout(a.id)/p*100)}%;background:${a.coul}"></i>`).join('')}</div>
+     <div class="legende" style="margin-top:6px">${AGENTS.filter(a=>jourCout(a.id)).map(a=>`<span><i style="background:${a.coul}"></i>${a.nom} ${eur(jourCout(a.id))}</span>`).join('')}</div>
+     <div class="note" style="margin-top:6px">Aujourd\'hui : <b>${eur(tot)}</b> sur ${eur(p)} (${Math.round(tot/p*100)} %).</div>
+     ${somme>p?`<div class="puce al" style="margin-top:6px;white-space:normal">La somme des plafonds par agent (${eur(somme)}) dépasse le plafond global : c\'est le global qui gagne.</div>`:''}
+     ${tot/p>.85?`<div class="puce dg" style="margin-top:6px;white-space:normal">Presque atteint : ${ACTIONS_PLAFOND[GLOBAL.action]}.</div>`:''}`;};
+  glDess();$('#gl-p').oninput=e=>{GLOBAL.plafond=+e.target.value;$('#gl-pv').textContent=eur(GLOBAL.plafond)+' par jour';glDess()};
+  $('#gl-p').onchange=()=>toast('Plafond global : '+eur(GLOBAL.plafond)+' par jour');
+  $('#gl-a').onchange=e=>{GLOBAL.action=+e.target.value;glDess();toast('Au plafond : '+ACTIONS_PLAFOND[GLOBAL.action])};
   $$('#cad-m .opt').forEach(b=>b.onclick=()=>{$$('#cad-m .opt').forEach(x=>x.classList.toggle('on',x===b));toast('Palier par défaut : '+NIVEAUX[b.dataset.n][0])});
   $$('[data-mj]').forEach(b=>b.onclick=()=>{const sv=JSON.parse(JSON.stringify(ETAT));AGENTS.forEach(a=>Object.keys(ETAT[a.id]).forEach(k=>ETAT[a.id][k]='raconter'));
     toast('Mauvais jour : tous les agents racontent seulement'+(b.dataset.mj!=='0'?' pendant '+b.dataset.mj+' h':''),()=>{AGENTS.forEach(a=>Object.assign(ETAT[a.id],sv[a.id]))})});
@@ -1006,8 +1022,8 @@ const LIENS=[
  ['droits','Droits','Les droits déclarés',['Les six droits ci-dessus ; chaque capacité en nomme un, sinon l\'installation est refusée.'],'Rien à modifier.'],
  ['societes','Sociétés et comptes','Le cloisonnement',['Amizo lit les espaces partagés d\'une société seulement (ctx.dans_ma_societe).','Itare est lié à un compte ; un compte n\'en voit pas un autre.'],'Rien à modifier.'],
  ['modeles','Modèles et coffre','Le registre et les clés',['La page « Modèles & clés » est celle du module Modèles, affichée ici et non refaite.','Les clés restent dans le coffre ; un agent ne les lit jamais.'],'Rien à modifier ; l\'écran l\'intègre.'],
- ['memoire','Mémoire','Les souvenirs [M:id]',['Les souvenirs d\'un agent restent dans la Mémoire ; elle ne change pas.','La bibliothèque d\'Amizo est un module à part (décidé) : un souvenir est une phrase retenue, une fiche est un document sourcé.'],'Rien à modifier.'],
- ['bibliotheque','Bibliothèque (module neuf)','La connaissance d\'Amizo',['Base SQL dédiée, recherche hybride (mots + sens), quarantaine et provenance.','Lit les espaces partagés par les capacités « lecture partagée » des autres modules ; ne lit jamais un bureau.','Seul Amizo y écrit ; tout agent et tout utilisateur y lit selon la société.'],'Module à écrire en entier.'],
+ ['memoire','Mémoire','Les souvenirs [M:id]',['Les souvenirs d\'un agent restent dans la Mémoire ; elle ne change pas.','La bibliothèque d\'Amizo est un module à part (décidé) : un souvenir est une phrase retenue, une fiche est un document sourcé.','Elle gagne la recherche par le sens, avec le même modèle que la bibliothèque (multilingual-e5-large, déjà éprouvé en V18) : chargé une seule fois et partagé, soit 2,4 Go une fois et non deux.'],'À brancher : la recherche par le sens, sur le service d\'embeddings partagé.'],
+ ['bibliotheque','Bibliothèque (module neuf)','La connaissance d\'Amizo',['Base SQL dédiée, recherche hybride (mots + sens), quarantaine et provenance.','Le sens vient du service d\'embeddings partagé avec la Mémoire ; le nom du modèle est écrit dans la base, pour ne jamais mélanger deux espaces de vecteurs.','Lit les espaces partagés par les capacités « lecture partagée » des autres modules ; ne lit jamais un bureau.','Seul Amizo y écrit ; tout agent et tout utilisateur y lit selon la société.'],'Module à écrire en entier.'],
  ['journal','Journal et notifications','Un seul journal',['Chaque acte, refus, passation et réglage va au journal unique.','« À valider » déclenche une notification ; le résumé du matin en est une.'],'Rien à modifier.'],
  ['urgence','Urgence et Proactivité','Le frein et les initiatives',['La pause générale est le frein « gel » de l\'Urgence.','Les initiatives d\'Itare et les veilles de Cassandra viennent de la Proactivité.'],'Rien à modifier.'],
  ['mandats','Mandats et canaux','Ce qui sort',['Un envoi n\'part que par un mandat ; Itare ne sort rien seul.','Courriel, Telegram : les canaux par lesquels un agent te joint.'],'Rien à modifier.'],
