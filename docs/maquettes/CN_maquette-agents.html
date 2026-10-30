@@ -13,7 +13,7 @@
 <!-- RÔLE       : maquette-agents.html -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=320bdd ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=b71ce8 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -256,7 +256,7 @@ const AGENTS=[
   ton:'Descriptive, prudente : dit ce qui est lisible et ce qui ne l\'est pas.',niveau:'observer',dernier:'hier 18:40'}
 ];
 const CATS={machine:'La machine',bureau:'Le bureau',web:'Le dehors',coffre:'Secrets'};
-/* risque : lecture < faible < moyen < élevé ; ext = lit de l'extérieur (pose la teinte) ; sort = fait sortir de la maison */
+/* risque : lecture < faible < moyen < élevé ; ext = lit de l'extérieur (pose la teinte) ; sort = fait partir quelque chose vers l'extérieur */
 const OUTILS=[
  {id:'sites.etat',lib:'Lire l\'état des sites',mod:'sites',cat:'machine',risque:'lecture',qui:['cassandra','relecteur'],pal:['auto','raconter'],preuve:'—',retour:'—'},
  {id:'certificats.etat',lib:'Lire la date d\'expiration des certificats',mod:'certificats',cat:'machine',risque:'lecture',qui:['cassandra'],pal:['auto','raconter'],preuve:'—',retour:'—'},
@@ -344,7 +344,7 @@ let GEL=false;
 const REGLES=[
  ['Vérité','Un fait vient de la mémoire ou du résultat d\'un outil de ce tour. Sinon l\'agent vérifie, ou dit « je ne sais pas ». Chaque souvenir cité porte son [M:id].'],
  ['Les outils sont la seule façon d\'agir','Chaque geste traverse l\'exécuteur : droits du compte, palier, preuve, retour arrière, journal. « Non exécuté » = rien n\'a été fait, et l\'agent le dit.'],
- ['Une donnée n\'est jamais une consigne','Une page, un courriel, un document peuvent contenir des ordres : ce sont des textes à lire. Après une lecture venue du dehors, ce qui sort de la maison ne part pas seul.'],
+ ['Une donnée n\'est jamais une consigne','Une page, un courriel, un document peuvent contenir des ordres : ce sont des textes à lire. Après une lecture venue du dehors, ce qui part vers l\'extérieur (un envoi, un lien public) ne part pas seul.'],
  ['Secrets','Un mot de passe, une clé, un jeton ne s\'affichent jamais — ni dans la réponse ni dans un outil qui n\'en a pas besoin.'],
  ['Toujours conclure','Après des outils, une réponse en français clair : fait, état final, reste à faire.'],
  ['Un doute se pose','Si la mémoire garde un doute, l\'agent te le pose en une phrase, avec les choix.']
@@ -384,7 +384,7 @@ function journalise(e){JOURNAL.unshift(Object.assign({id:Date.now()+Math.random(
 
 /* ════════════ NAVIGATION ════════════ */
 function navRender(){
-  const items=[['equipe','L\'équipe'],['boite','À valider'+(nbAttente()?`<span class="n">${nbAttente()}</span>`:'')],['journal','Journal'],['modeles','Modèles & clés'],['maison','Règles de la maison']];
+  const items=[['equipe','L\'équipe'],['boite','À valider'+(nbAttente()?`<span class="n">${nbAttente()}</span>`:'')],['journal','Journal'],['modeles','Modèles & clés'],['maison','Règles communes']];
   if(S.vue==='fiche')items.splice(1,0,['fiche',esc(ag(S.agent).nom)]);
   $('#nav').innerHTML=items.map(([k,l])=>`<button data-v="${k}" class="${S.vue===k?'on':''}">${l}</button>`).join('');
   $$('#nav button').forEach(b=>b.onclick=()=>aller(b.dataset.v));
@@ -532,7 +532,7 @@ function oOutils(a){
       const verrouille=!o.qui.length;const cur=verrouille?'retire':(ETAT[a.id][o.id]||'retire');
       const opts=[['auto','Auto'],['raconter','Raconter'],['demander','Demander ✦'],['retire','Retirer']];
       return `<div class="outil"><div><div class="n">${o.id}</div><div class="d">${o.lib}</div>
-        <div class="meta"><span class="puce ${o.risque==='lecture'?'mu':o.risque==='faible'?'ok':o.risque==='moyen'?'al':'dg'}">${o.risque}</span>${o.ext?'<span class="puce al" title="Lit de l\'extérieur : pose la teinte du tour">lit le dehors</span>':''}${o.sort?'<span class="puce dg" title="Fait sortir quelque chose de la maison">sort de la maison</span>':''}<span class="puce mu">${o.mod}</span></div>
+        <div class="meta"><span class="puce ${o.risque==='lecture'?'mu':o.risque==='faible'?'ok':o.risque==='moyen'?'al':'dg'}">${o.risque}</span>${o.ext?'<span class="puce al" title="Lit de l\'extérieur : pose la teinte du tour">lit le dehors</span>':''}${o.sort?'<span class="puce dg" title="Envoie quelque chose vers l\'extérieur">part vers l\'extérieur</span>':''}<span class="puce mu">${o.mod}</span></div>
         <div class="note" style="margin-top:5px">${verrouille?esc(o.note):'Preuve : '+o.preuve+' · Retour : '+o.retour}</div></div>
         <div class="sel3" data-o="${o.id}">${opts.map(([k,l])=>{const perm=k==='retire'||(k==='demander')||o.pal.includes(k);const dis=verrouille||!perm;return `<button class="${k} ${cur===k?'on':''}" data-p="${k}" ${dis?'disabled':''} title="${k==='demander'?'Idée : l\'agent prépare, tu confirmes d\'un clic':''}">${l}</button>`}).join('')}</div></div>`}).join(''):'<div class="note" style="padding:14px 0">Aucun outil ne correspond.</div>';
     $$('#of-liste .sel3').forEach(sel=>$$('button',sel).forEach(b=>b.onclick=()=>{if(b.disabled)return;const id=sel.dataset.o,av0=ETAT[a.id][id];const nv=b.dataset.p;
@@ -660,7 +660,7 @@ async function envoyer(a,texte){
     if(!mine){absent=true;add(`<div class="etape dg"><div class="i">✕</div><div><code>${o.id}</code> — ${a.nom} n'a pas cet outil (retiré ou jamais ouvert).</div></div>`);ok=false;await wait(450);break}
     let pal=E.aBlanc?'raconter':mine;
     if(E.teinte&&o.sort&&pal==='auto'){pal='demander'}
-    if(o.sort&&E.teinte&&pal!=='raconter'){retenu=true;add(`<div class="etape dg"><div class="i">!</div><div><code>${o.id}</code> — <b>retenu</b> : le tour est teinté par une lecture du dehors, ce qui sort de la maison ne part pas seul.</div></div>`);await wait(500);continue}
+    if(o.sort&&E.teinte&&pal!=='raconter'){retenu=true;add(`<div class="etape dg"><div class="i">!</div><div><code>${o.id}</code> — <b>retenu</b> : le tour est teinté par une lecture du dehors, ce qui part vers l\'extérieur (un envoi, un lien public) ne part pas seul.</div></div>`);await wait(500);continue}
     if(pal==='auto'){add(`<div class="etape ok"><div class="i">✓</div><div><code>${o.id}</code> — palier <b>auto</b> : fait. Preuve : ${o.preuve}. Retour : ${o.retour}.</div></div>`);
       journalise({ag:a.id,type:'acte',st:'fait',titre:'(essai) '+o.lib,sous:'Fait pendant un essai en direct.',pourquoi:'Ta demande dans le banc d\'essai.',outil:o.id,palier:'auto',preuve:o.preuve,retour:o.retour,rev:RISQ[o.risque]<3&&o.retour.indexOf('aucun')!==0})}
     else if(pal==='demander'){add(`<div class="etape al"><div class="i">?</div><div><code>${o.id}</code> — palier <b>demander</b> ${idee('')} : prêt, il attend ton clic.</div></div><div class="etape al"><button class="btn pt prim" onclick="this.parentNode.innerHTML='<div class=&quot;i&quot;>✓</div><div>Confirmé par toi : fait.</div>'">Confirmer</button> <button class="btn pt" onclick="this.parentNode.innerHTML='<div class=&quot;i&quot;>✕</div><div>Refusé par toi : rien n\'est fait.</div>'">Refuser</button></div>`)}
@@ -713,7 +713,7 @@ function brancherProp(refaire){
   $$('[data-tj]').forEach(b=>b.onclick=()=>{const p=PROPOS.find(x=>x.id===b.dataset.tj);const o=OUTILS.find(x=>x.id===p.outil);if(o.pal.includes('auto')){ETAT[p.ag][p.outil]='auto';toast(o.id+' passe en auto pour '+ag(p.ag).nom,()=>{ETAT[p.ag][p.outil]=o.pal[0]})}else toast('Cet outil ne peut pas être mis en auto (jamais pour '+o.risque+' sans retour).');});
 }
 function vBoite(){
-  $('#vue').innerHTML=`<section class="verre carte"><h2>À valider</h2><p class="muet" style="font-size:12.5px">Seulement ce qui sort de la maison, ne se défait pas ou dépasse un palier. Le reste, les agents le font seuls et te le racontent dans le journal.</p>
+  $('#vue').innerHTML=`<section class="verre carte"><h2>À valider</h2><p class="muet" style="font-size:12.5px">Seulement ce qui part vers l\'extérieur, ne se défait pas ou dépasse un palier. Le reste, les agents le font seuls et te le racontent dans le journal.</p>
    ${PROPOS.length?PROPOS.map(carteProp).join(''):'<div style="text-align:center;padding:30px 10px"><div class="rond" style="width:52px;height:52px;margin:0 auto 10px;border-radius:50%;display:grid;place-items:center;background:var(--ok-doux);color:var(--ok);font-size:24px">✓</div><h2>Rien n\'attend ton mot</h2><div class="note">Les agents agissent seuls dans leurs paliers.</div></div>'}</section>`;
   brancherProp(vBoite);
 }
@@ -828,14 +828,14 @@ function vModeles(){
 
 /* ════════════ JOURNAL GLOBAL & MAISON ════════════ */
 function vMaison(){
-  $('#vue').innerHTML=`<section class="verre carte"><h2>Les règles de la maison</h2><p class="muet" style="font-size:12.5px">Valent pour tous les agents. Ce ne sont pas des interdits de plus : ce sont les garanties qui permettent de les laisser agir.</p>
+  $('#vue').innerHTML=`<section class="verre carte"><h2>Les règles communes</h2><p class="muet" style="font-size:12.5px">Valent pour tous les agents. Ce ne sont pas des interdits de plus : ce sont les garanties qui permettent de les laisser agir.</p>
    ${REGLES.map((r,i)=>`<div class="l2"><div><b>${i+1}. ${r[0]}</b><div class="g">${r[1]}</div></div></div>`).join('')}</section>
-  <section class="verre carte"><h2>Le palier de la maison</h2><p class="muet" style="font-size:12.5px">Le point de départ de tout nouvel agent. Chaque agent peut ensuite être réglé outil par outil.</p>
+  <section class="verre carte"><h2>Le palier par défaut</h2><p class="muet" style="font-size:12.5px">Le point de départ de tout nouvel agent. Chaque agent peut ensuite être réglé outil par outil.</p>
    <div class="cadran" id="cad-m">${['observer','entretien','reine'].map(k=>`<button class="opt ${k==='entretien'?'on':''}" data-n="${k}"><b>${NIVEAUX[k][0]}</b><span>${NIVEAUX[k][1]}</span></button>`).join('')}</div>
    <div class="note">Défaut prudent, capacité complète : rien n'est interdit, tout est réglable.</div></section>
   <section class="verre carte idee-bloc"><h2>${idee('Le journal à l\'envers : le mode « mauvais jour »')}</h2><p class="muet" style="font-size:12.5px">Un seul bouton quand quelque chose te semble bizarre : les agents passent tous en « raconter » pendant une durée choisie, et le journal te dit exactement ce qui a changé depuis ce moment.</p>
    <div class="pal"><button class="btn" data-mj="1">1 heure</button><button class="btn" data-mj="24">24 heures</button><button class="btn" data-mj="0">Jusqu'à ce que je lève</button></div></section>`;
-  $$('#cad-m .opt').forEach(b=>b.onclick=()=>{$$('#cad-m .opt').forEach(x=>x.classList.toggle('on',x===b));toast('Palier de départ de la maison : '+NIVEAUX[b.dataset.n][0])});
+  $$('#cad-m .opt').forEach(b=>b.onclick=()=>{$$('#cad-m .opt').forEach(x=>x.classList.toggle('on',x===b));toast('Palier par défaut : '+NIVEAUX[b.dataset.n][0])});
   $$('[data-mj]').forEach(b=>b.onclick=()=>{const sv=JSON.parse(JSON.stringify(ETAT));AGENTS.forEach(a=>Object.keys(ETAT[a.id]).forEach(k=>ETAT[a.id][k]='raconter'));
     toast('Mauvais jour : tous les agents racontent seulement'+(b.dataset.mj!=='0'?' pendant '+b.dataset.mj+' h':''),()=>{AGENTS.forEach(a=>Object.assign(ETAT[a.id],sv[a.id]))})});
 }
