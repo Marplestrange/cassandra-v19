@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9656cc
+# VERSION CN : 0.1.0  #ae77d6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le cycle de vie d'un module venu d'une archive : examiner sans rien poser, installer avec consentement, mettre à jour, revenir en arrière, désinstaller (rien ne se perd : tout ce qui part va en sauvegarde).
 # MÉTHODE    : l'archive attend en quarantaine ; l'examen la vérifie (empreintes, signature, manifeste) et compare au module en place ; l'installation re-vérifie, exige le consentement aux permissions, sauvegarde l'ancienne version puis dépose le dossier dans celui des extensions que le noyau surveille
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9656cc ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ae77d6 ▼▼▼
 """Le cycle de vie d'un module installé, à la manière d'un module store.
 
     examiner(octets)       l'archive va en quarantaine ; on la vérifie (SOMMES, signature, manifeste) et on dit ce qu'elle ferait : nouveau, mise à jour, retour à une version
@@ -142,7 +142,7 @@ class Cycle:
         self.url_officielle = officiel.URL_OFFICIELLE if url_officielle is None else url_officielle
         self.cache_officiel = self.donnees / "registre_officiel.json"
         self.canal = canal if canal in ("stable", "beta") else "stable"                       # « beta » : cette installation veut aussi les versions en bêta
-        self.miroirs = tuple(officiel.MIROIRS if miroirs is None else miroirs)
+        self.miroirs = tuple(miroirs if miroirs is not None else (officiel.MIROIRS if url_officielle is None else ()))      # les miroirs officiels ne servent qu'au registre officiel
         self.fichier_serie = self.donnees / "registre_serie.json"
         self.fichier_rotation = self.donnees / "registre_rotation.json"
         if cles_racine is None:
@@ -298,7 +298,7 @@ class Cycle:
                     officiel.verifier_fraicheur(i["brut"], octets, fr, fr_sig, maintenant)
                 break
             except (CycleErreur, officiel.RegistreErreur, OSError) as ex:
-                derniere = ex
+                derniere = derniere or ex                                                       # c'est l'échec de l'adresse PRINCIPALE qu'on rapporte, pas celui d'un miroir
         else:
             raise derniere if derniere is not None else CycleErreur("aucun registre joignable")
         brut = i["brut"]

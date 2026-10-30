@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2f32c1
+# VERSION CN : 0.1.0  #cd845a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le registre officiel de Cassandra, EN DUR : son adresse, ses deux clés racine, la lecture de son index signé (éditeurs vérifiés, révocations) et les niveaux de confiance.
 # MÉTHODE    : l'index est un fichier JSON accompagné de sa signature Ed25519 (index.json.sig, en base64) ; une clé racine EMBARQUÉE ici le vérifie, jamais une clé du disque ; un index périmé, ou signé par une autre clé, est refusé ; les éditeurs et les révocations qu'il porte sont donc couverts par la même signature
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2f32c1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cd845a ▼▼▼
 """Le registre officiel, dont l'application connaît l'adresse et la clé : ce n'est pas un réglage.
 
     URL_OFFICIELLE   où vit l'index (une page statique : le dépôt `cassandra-registre`, publié) ; elle changera de domaine un jour, pas de forme.
@@ -41,7 +41,7 @@ from pathlib import Path
 from . import CN_manifeste as mf
 
 URL_OFFICIELLE = "https://marplestrange.github.io/cassandra-registre/index.json"
-MIROIRS: tuple = ()                   # copies byte-à-byte de docs/ chez d'autres hébergeurs : sans confiance à leur accorder (tout est signé), essayées si la première adresse tombe ou sert un index refusé
+MIROIRS: tuple = ("https://cdn.jsdelivr.net/gh/Marplestrange/cassandra-registre@main/docs/index.json",)                   # copies byte-à-byte de docs/ chez d'autres hébergeurs (ici jsDelivr, qui sert le dépôt GitHub par son propre réseau ; son cache peut retarder jusqu'à 12 h, ce que la série et la fraîcheur rendent sans danger) : sans confiance à leur accorder (tout est signé), essayées si la première adresse tombe ou sert un index refusé
 FORMAT = 1
 TOLERANCE_HORLOGE_S = 3600            # une horloge en avance d'une heure ne rend pas un index « du futur »
 

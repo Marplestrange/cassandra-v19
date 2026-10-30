@@ -542,6 +542,17 @@ muette qu'on prend pour une absence) sont devenues des règles du noyau.
 La V19 est faite pour les contributions : un module est un dossier indépendant, avec son manifeste, ses droits et ses tests. Le guide est dans
 [`CONTRIBUTING.md`](CONTRIBUTING.md). Une faille se signale en privé, avant toute publication : voir [`SECURITY.md`](SECURITY.md).
 
+## Les clés du registre de modules
+
+La Logithèque installe ses modules depuis le [registre officiel](https://github.com/Marplestrange/cassandra-registre), signé. Les deux clés racine qui en font foi sont **écrites dans le noyau** (`noyau/CN_registre_officiel.py`). Leurs empreintes (SHA-256 de la clé publique), à comparer à celles publiées dans le dépôt du registre et ailleurs :
+
+| Clé | Empreinte SHA-256 |
+|---|---|
+| racine **principale** | `b8480dd60c5fb3c58a78b96c1adb3e9ecf2f82dc9deae60ed174fbbfa8e5e40b` |
+| racine de **secours** | `d40407cfa327559acd7fbd6d867690417cfd77e36efe423ba99ce04c8181d4ae` |
+
+Pour vérifier le registre sans nous croire : `python outils/verifier_independant.py` dans le dépôt du registre (Python et openssl seuls).
+
 ## Qui porte le projet
 
 Cassandra est portée par **La Maison Bohème**, association loi 1901 (SIREN 899 553 093, RNA W751260323), qui accepte les dons. Les dons ouvrent
