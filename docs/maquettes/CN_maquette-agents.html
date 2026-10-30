@@ -13,7 +13,7 @@
 <!-- RÔLE       : maquette-agents.html -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=3d26dd ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=0c8b73 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -207,23 +207,35 @@ th{font:650 10.5px var(--sans);letter-spacing:.07em;text-transform:uppercase;col
 .burger{display:none}
 @media(max-width:900px){.coque{grid-template-columns:1fr}.menu{display:none;position:fixed;inset:0 auto 0 0;width:min(280px,86vw);max-height:none;z-index:30;border-radius:0 16px 16px 0;background:var(--verre-fort)}.menu.ouvert{display:flex}.burger{display:inline-flex}}
 .voile{display:none;position:fixed;inset:0;background:rgba(10,14,20,.5);z-index:29}.voile.on{display:block}
+.barre-app{display:flex;gap:6px;align-items:center;padding:8px 12px;background:linear-gradient(90deg,#0f8b80,#0b7c74);border-radius:16px;max-width:1560px;margin:0 auto 14px;overflow-x:auto}
+.barre-app .bi{width:34px;height:34px;display:grid;place-items:center;color:#fff;border-radius:10px;font-size:16px;flex:none}.barre-app .bi.home{background:rgba(255,255,255,.18)}.barre-app .bi.dim{opacity:.45}
+.barre-app .sep{width:10px;flex:none}.barre-app .bg{width:44px;height:36px;display:grid;place-items:center;color:#fff;border-radius:10px;background:rgba(255,255,255,.14);flex:none}.barre-app .bg.on{background:rgba(255,255,255,.34);box-shadow:inset 0 0 0 1px rgba(255,255,255,.5)}
+.menu{gap:12px}.menu .grp{display:flex;gap:10px;align-items:center;padding:12px}
+.menu .gi{width:36px;height:36px;border-radius:11px;background:var(--accent-doux);color:var(--accent);display:grid;place-items:center;position:relative;font-size:16px}
+.menu .pastille{position:absolute;right:-3px;top:-3px;width:10px;height:10px;border-radius:50%;background:var(--ok);border:2px solid var(--sol)}
+.menu .liste{padding:10px;display:flex;flex-direction:column;gap:2px}
+.menu .liste a{padding:8px 11px}.menu .liste a.sub{margin-left:20px;font-weight:550;font-size:12.3px;padding:6px 10px;position:relative}
+.menu .liste a.sub::before{content:"";position:absolute;left:-10px;top:0;bottom:0;width:1px;background:var(--filet)}
+.menu .liste a.sub2{margin-left:38px;font-size:12px;padding:5px 10px;font-weight:550}
+.menu .liste a.tete{font-weight:700}
+.fil{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--encre-3);padding:2px 4px;flex-wrap:wrap}.fil b{color:var(--encre);background:var(--verre-fort);border:1px solid var(--filet);border-radius:9px;padding:3px 10px;font-weight:600}
+@media(min-width:901px){#nav{display:none}}
+@media(max-width:900px){.barre-app .bg:nth-of-type(n+3){display:none}}
 .bas-mobile{display:none}
 @media(max-width:600px){body{padding:10px 10px 70px}.haut{padding:9px 11px}.etat{padding:12px}h1{font-size:18px}.grille{grid-template-columns:1fr}.hide-m{display:none}}
 </style>
 </head>
 <body>
+<div class="barre-app" aria-hidden="true"><span class="bi home">⌂</span><span class="bi">≡</span><span class="bi">‹</span><span class="bi dim">›</span><span class="bi">↻</span><span class="sep"></span>
+  <span class="bg">▤</span><span class="bg">▥</span><span class="bg">▦</span><span class="bg">⛨</span><span class="bg">◉</span><span class="bg on">✦</span></div>
 <div class="coque">
-<aside class="verre menu" id="menu" aria-label="Menu principal">
-  <div class="marque"><div class="logo" aria-hidden="true">✦</div><b>Cassandra</b></div>
-  <div class="gr">Aujourd'hui</div><a><span class="ic">◐</span>Vue d'ensemble</a><a><span class="ic">✉</span>Mon bureau</a>
-  <div class="gr">La machine</div><a><span class="ic">▤</span>Sites</a><a><span class="ic">⛨</span>Sécurité</a><a><span class="ic">⟳</span>Sauvegardes</a>
-  <div class="gr">Autonomie</div>
-  <a class="on" id="m-agents"><span class="ic">✦</span>Agents IA<span class="n" id="m-n"></span></a>
-  <a><span class="ic">⚑</span>Proactivité</a><a><span class="ic">∞</span>Évolution</a><a><span class="ic">▦</span>Modules</a>
-  <div class="gr">Réglages</div><a><span class="ic">☺</span>Mon compte</a><a><span class="ic">⚙</span>Paramètres généraux</a>
+<aside class="menu" id="menu" aria-label="Menu du groupe Autonomie">
+  <div class="verre grp"><span class="gi">✦<i class="pastille"></i></span><div><b>Autonomie</b><div class="note" id="grp-etat">Tout va bien</div></div></div>
+  <div class="verre liste" id="menu-liste"></div>
 </aside>
 <div class="voile" id="voile"></div>
 <div class="page">
+<div class="fil" id="fil"></div>
 
 <!-- barre haute -->
 <header class="verre haut">
@@ -408,11 +420,22 @@ function journalise(e){JOURNAL.unshift(Object.assign({id:Date.now()+Math.random(
 
 /* ════════════ NAVIGATION ════════════ */
 function navRender(){
-  const mn=$('#m-n');if(mn){mn.textContent=nbAttente()||'';mn.style.display=nbAttente()?'':'none'}
   const items=[['equipe','L\'équipe'],['boite','À valider'+(nbAttente()?`<span class="n">${nbAttente()}</span>`:'')],['journal','Journal'],['modeles','Modèles & clés'],['maison','Règles communes']];
   if(S.vue==='fiche')items.splice(1,0,['fiche',esc(ag(S.agent).nom)]);
   $('#nav').innerHTML=items.map(([k,l])=>`<button data-v="${k}" class="${S.vue===k?'on':''}">${l}</button>`).join('');
   $$('#nav button').forEach(b=>b.onclick=()=>aller(b.dataset.v));
+  const n=nbAttente();const lab={equipe:'L\'équipe',boite:'À valider',journal:'Journal',modeles:'Modèles & clés',maison:'Règles communes',fiche:ag(S.agent).nom};
+  const sub=(v,l,ic,extra)=>`<a class="sub ${S.vue===v?'on':''}" data-v="${v}"><span class="ic">${ic}</span>${l}${extra||''}</a>`;
+  $('#menu-liste').innerHTML=`<a class="tete on" data-v="equipe"><span class="ic">▣</span>Agents IA</a>`
+    +sub('equipe','L\'équipe','◎')
+    +AGENTS.map(a=>`<a class="sub2 ${S.vue==='fiche'&&S.agent===a.id?'on':''}" data-a="${a.id}"><span class="ic" style="color:${a.coul}">●</span>${esc(a.nom)}</a>`).join('')
+    +sub('boite','À valider','✓',n?`<span class="n">${n}</span>`:'')+sub('journal','Journal','☰')+sub('modeles','Modèles & clés','◇')+sub('maison','Règles communes','⚖')
+    +['Évolution|⚘','Proactivité|ϟ','Mémoire|◐'].map(x=>{const [t,i]=x.split('|');return `<a data-x="1"><span class="ic">${i}</span>${t}</a>`}).join('');
+  $$('#menu-liste [data-v]').forEach(b=>b.onclick=()=>{aller(b.dataset.v);$('#menu').classList.remove('ouvert');$('#voile').classList.remove('on')});
+  $$('#menu-liste [data-a]').forEach(b=>b.onclick=()=>{aller('fiche',b.dataset.a,S.vue==='fiche'?S.onglet:'apercu');$('#menu').classList.remove('ouvert');$('#voile').classList.remove('on')});
+  $$('#menu-liste [data-x]').forEach(b=>b.onclick=()=>toast('Autre entrée du groupe Autonomie — hors de cette maquette'));
+  $('#fil').innerHTML=`<span>✦ Autonomie</span><span>›</span><span>Agents IA</span><span>›</span><b>${lab[S.vue]}</b>`;
+  $('#grp-etat').textContent=GEL?'En pause':n?n+' à valider':'Tout va bien';
 }
 function aller(v,agent,onglet){S.vue=v;if(agent)S.agent=agent;if(onglet)S.onglet=onglet;S.ouvert=null;render();window.scrollTo({top:0,behavior:'smooth'});}
 function render(){navRender();const f={equipe:vEquipe,fiche:vFiche,boite:vBoite,journal:()=>vJournal(null),modeles:vModeles,maison:vMaison}[S.vue];$('#vue').innerHTML='';f();}
@@ -895,8 +918,6 @@ $$('#themes button').forEach(b=>b.onclick=()=>{S.theme=b.dataset.th;document.doc
 $('#sw-idees').onchange=e=>document.body.classList.toggle('sans-idees',!e.target.checked);
 if(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.setAttribute('data-theme','dark');$$('#themes button').forEach(x=>x.classList.toggle('on',x.dataset.th==='dark'))}
 const h=new URLSearchParams(location.search);if(h.get('theme')){const t=h.get('theme');document.documentElement.setAttribute('data-theme',t==='light'?'':t);$$('#themes button').forEach(x=>x.classList.toggle('on',x.dataset.th===t))}
-$('#m-agents').onclick=()=>{aller('equipe');$('#menu').classList.remove('ouvert');$('#voile').classList.remove('on')};
-$$('#menu a:not(#m-agents)').forEach(a=>a.onclick=()=>toast('Autre entrée du menu — hors de cette maquette'));
 $('#burger').onclick=()=>{$('#menu').classList.add('ouvert');$('#voile').classList.add('on')};
 $('#voile').onclick=()=>{$('#menu').classList.remove('ouvert');$('#voile').classList.remove('on')};
 initPaliers();
