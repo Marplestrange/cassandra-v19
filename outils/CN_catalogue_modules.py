@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Le catalogue des modules (docs/CN_MODULES
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : outils
+# ZONE       : CN
+# VERSION CN : 0.1.0  #91d768
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le catalogue des modules (docs/CN_MODULES.md), généré depuis leurs manifestes : un module de plus, une description changée, et le banc `CN_test_catalogue_modules` dit de relancer ce script. Usage : python outils/CN_catalogue_modules.py [--v
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=91d768 ▼▼▼
 """Le catalogue des modules (docs/CN_MODULES.md), généré depuis leurs manifestes : un module de plus, une description changée, et le banc
 `CN_test_catalogue_modules` dit de relancer ce script. Usage : python outils/CN_catalogue_modules.py [--verifier]"""
 import re
@@ -88,3 +103,9 @@ if __name__ == "__main__":
         sys.exit(0 if (zone if zone is not None else t) == corps() else 1)
     ecrire()
     print("catalogue écrit :", CIBLE.relative_to(RACINE))
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : premiere_phrase, modules, corps, lire_zone, ecrire
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

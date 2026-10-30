@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e1435b
+# VERSION CN : 0.1.0  #471add
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : lit tous les fichiers suivis par git et dit s'ils respectent docs/CN_FORMAT.md (nom, en-tête, bornes, pureté des EC).
 # MÉTHODE    : analyse textuelle et arbre syntaxique Python ; mode audit par défaut (rien ne bloque), --strict pour l'intégration continue.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e1435b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=471add ▼▼▼
 """Outil de bornes. Usage :
     python outils/CN_bornes.py                 audit de tout le dépôt (résumé par module)
     python outils/CN_bornes.py --module vue    un seul module
@@ -64,7 +64,7 @@ RE_BORNE_EC = re.compile(r"BORNE EC point=(\S+) contrat=@(\S+) version=(\S+) emp
 def fichiers_suivis() -> list[str]:
     try:
         sortie = subprocess.run(["git", "ls-files"], cwd=RACINE, capture_output=True, text=True, check=True).stdout
-        return [l for l in sortie.splitlines() if l]
+        return [l for l in sortie.splitlines() if l and not any(d.startswith(".") for d in Path(l).parts[:-1])]      # un dossier caché (.github) n'est pas du projet : comme dans le parcours ci-dessous
     except Exception:
         out = []
         for r, ds, fs in os.walk(RACINE):

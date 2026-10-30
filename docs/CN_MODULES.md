@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Les modules -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Les modules -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=fb47d1 ▼▼▼ -->
 # Les modules
 
 Ce catalogue est **généré** depuis les manifestes (`python outils/CN_catalogue_modules.py`) ; un banc vérifie qu'il est à jour. Chaque module est un dossier
@@ -118,3 +133,9 @@ indépendant de `modules/` : son manifeste déclare ses droits, ses capacités, 
 | Module | Importance | Ce qu'il fait |
 |---|---|---|
 | `evolution` — Évolution | optionnel · instance | Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le… |
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->
