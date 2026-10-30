@@ -13,7 +13,7 @@
 <!-- RÔLE       : maquette-agents.html -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=b05e52 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=4acc3d ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -456,13 +456,13 @@ function navRender(){
   if(S.vue==='fiche')items.splice(1,0,['fiche',esc(ag(S.agent).nom)]);
   $('#nav').innerHTML=items.map(([k,l])=>`<button data-v="${k}" class="${S.vue===k?'on':''}">${l}</button>`).join('');
   $$('#nav button').forEach(b=>b.onclick=()=>aller(b.dataset.v));
-  const n=nbAttente();const lab={equipe:'L\'équipe',boite:'À valider',journal:'Journal',modeles:'Modèles & clés',maison:'Règles communes',fiche:ag(S.agent).nom};
+  const n=nbAttente();const lab={equipe:'L\'équipe',boite:'À valider',journal:'Journal',modeles:'Modèles & clés',maison:'Règles communes',plan:'Plan du module',fiche:ag(S.agent).nom};
   const sub=(v,l,ic,extra)=>`<a class="sub ${S.vue===v?'on':''}" data-v="${v}"><span class="ic">${ic}</span>${l}${extra||''}</a>`;
   const lienAg=a=>`<a class="sub2 ${S.vue==='fiche'&&S.agent===a.id?'on':''}" data-a="${a.id}"><span class="ic" style="color:${a.coul}">●</span>${esc(a.nom)}</a>`;
   $('#menu-liste').innerHTML=`<a class="tete on" data-v="equipe"><span class="ic">▣</span>Agents IA</a>`
     +sub('equipe','L\'équipe','◎')+AGENTS.filter(a=>!a.service).map(lienAg).join('')
     +`<div class="lbl">Services agentiques</div>`+AGENTS.filter(a=>a.service).map(lienAg).join('')
-    +sub('boite','À valider','✓',n?`<span class="n">${n}</span>`:'')+sub('journal','Journal','☰')+sub('modeles','Modèles & clés','◇')+sub('maison','Règles communes','⚖')
+    +sub('boite','À valider','✓',n?`<span class="n">${n}</span>`:'')+sub('journal','Journal','☰')+sub('modeles','Modèles & clés','◇')+sub('maison','Règles communes','⚖')+sub('plan','Plan du module ✦','⌘')
     +['Évolution|⚘','Proactivité|ϟ','Mémoire|◐'].map(x=>{const [t,i]=x.split('|');return `<a data-x="1"><span class="ic">${i}</span>${t}</a>`}).join('');
   $$('#menu-liste [data-v]').forEach(b=>b.onclick=()=>{aller(b.dataset.v);$('#menu').classList.remove('ouvert');$('#voile').classList.remove('on')});
   $$('#menu-liste [data-a]').forEach(b=>b.onclick=()=>{aller('fiche',b.dataset.a,S.vue==='fiche'?S.onglet:'apercu');$('#menu').classList.remove('ouvert');$('#voile').classList.remove('on')});
@@ -471,7 +471,7 @@ function navRender(){
   $('#grp-etat').textContent=GEL?'En pause':n?n+' à valider':'Tout va bien';
 }
 function aller(v,agent,onglet){S.vue=v;if(agent)S.agent=agent;if(onglet)S.onglet=onglet;S.ouvert=null;render();window.scrollTo({top:0,behavior:'smooth'});}
-function render(){navRender();const f={equipe:vEquipe,fiche:vFiche,boite:vBoite,journal:()=>vJournal(null),modeles:vModeles,maison:vMaison}[S.vue];$('#vue').innerHTML='';f();}
+function render(){navRender();const f={equipe:vEquipe,fiche:vFiche,boite:vBoite,journal:()=>vJournal(null),modeles:vModeles,maison:vMaison,plan:vPlan}[S.vue];$('#vue').innerHTML='';f();}
 
 /* ════════════ ÉQUIPE ════════════ */
 function etatGlobal(){
@@ -957,6 +957,65 @@ function vMaison(){
   $$('#cad-m .opt').forEach(b=>b.onclick=()=>{$$('#cad-m .opt').forEach(x=>x.classList.toggle('on',x===b));toast('Palier par défaut : '+NIVEAUX[b.dataset.n][0])});
   $$('[data-mj]').forEach(b=>b.onclick=()=>{const sv=JSON.parse(JSON.stringify(ETAT));AGENTS.forEach(a=>Object.keys(ETAT[a.id]).forEach(k=>ETAT[a.id][k]='raconter'));
     toast('Mauvais jour : tous les agents racontent seulement'+(b.dataset.mj!=='0'?' pendant '+b.dataset.mj+' h':''),()=>{AGENTS.forEach(a=>Object.assign(ETAT[a.id],sv[a.id]))})});
+}
+
+/* ════════════ PLAN DU MODULE (droits, CN/EC, liens) ════════════ */
+const ROLES=['Utilisateur','Responsable de société','Administrateur'];
+const DROITS=[
+ ['utiliser','Utiliser Agents','Parler à ses agents, voir les fils, les outils, le journal et la mémoire DE SON COMPTE.',false,[1,1,1]],
+ ['valider','Valider ce que proposent les agents','Accepter ou refuser les propositions « À valider » de son périmètre (son bureau pour Itare).',false,[1,1,1]],
+ ['regler_agent','Régler l\'agent de son compte','Palier, ton et limites d\'Itare pour son propre compte. Il ne touche pas aux autres comptes.',false,[1,1,1]],
+ ['bibliotheque_verifier','Vérifier une fiche de la bibliothèque','Passer une fiche externe de « non vérifié » à « vérifié » pour une société : cela engage tous ses membres.',true,[0,1,1]],
+ ['administrer','Administrer Agents','Modèles et plafonds, paliers de Cassandra et d\'Amizo, pause générale, tâches récurrentes de la machine.',true,[0,0,1]],
+ ['auditer','Auditer les agents (idée)','Lire le journal d\'instance des actes machine et les alertes de l\'Auditeur. Jamais un bureau personnel.',true,[0,0,1]]];
+const CAPDROIT=[['conversations · conversation · outils · converser · arreter','utiliser'],['propositions_decider (accepter, refuser, plus tard)','valider'],['palier_regler (compte propre)','regler_agent'],['bibliotheque_verifier','bibliotheque_verifier'],['modele_regler · plafond_regler · gel · tache_confier','administrer'],['journal_instance','auditer']];
+const CNEC={cn:[
+ ['L\'exécuteur','Chaque outil passe par ctx.agir : droits du compte, palier, preuve, retour, journal. Aucun agent ne le contourne.'],
+ ['Les paliers et leur recul','Qui peut quoi, et le recul d\'un palier après deux échecs. Un EC ne peut jamais élargir un palier.'],
+ ['Le cloisonnement par compte','Itare ne lit que le bureau de son compte ; l\'administrateur ne lit pas les bureaux des autres.'],
+ ['Les six règles non négociables','Vérité, outils seuls pour agir, donnée ≠ consigne, secrets, conclure, doute posé : vérifiées par le noyau, pas par le texte d\'un prompt.'],
+ ['La teinte et le refus de sortie','Amizo n\'a aucun outil qui sort : c\'est déclaré dans le manifeste, pas laissé à la bonne volonté d\'un modèle.'],
+ ['La quarantaine de la bibliothèque','Les états (quarantaine, vérifié, bloqué, périmé) et les conditions pour passer de l\'un à l\'autre.'],
+ ['Plafonds de coût et pause','L\'application du plafond, la bascule sur le secours, le frein « gel ».'],
+ ['Stockage et journal','Conversations, souvenirs cités [M:id], journal unique, droits.']],
+ ec:[
+ ['prompt_systeme','existe','Le texte qui cadre un agent. Fitness : part d\'actes prouvés, part de réponses sourcées.'],
+ ['choisir_outils','existe','Quels outils présenter d\'emblée. Corpus de rejeu déjà écrit ; fitness : l\'outil attendu est présenté.'],
+ ['resume_resultat','existe','Ce que le modèle lit d\'un acte. Fitness : aucune perte de fait, longueur.'],
+ ['coherents','existe','Remettre un fil en cohérence. Fitness : le fil est accepté par l\'API.'],
+ ['ton_agent','nouveau','Le style d\'un agent à partir de son ton. Fitness : relecture par le Relecteur, longueur.'],
+ ['planifier_recherche','nouveau','Amizo : quelles requêtes, combien de sources, quand s\'arrêter. Fitness : fiches retenues puis vérifiées, coût.'],
+ ['classer_fiche','nouveau','Étagère, titre, résumé, fraîcheur d\'une fiche. Fitness : retrouvée par la recherche suivante.'],
+ ['score_source','nouveau','Confiance d\'une source. Fitness : concordance avec les fiches vérifiées par toi.'],
+ ['rapport_matin','nouveau','Trois phrases par agent. Fitness : chaque phrase renvoie à une ligne du journal.'],
+ ['proposer_promotion','nouveau','Quand proposer « auto » (carte de confiance). Fitness : promotions suivies d\'aucun recul.'],
+ ['choix_modele','nouveau','Le modèle selon le cas (lecture simple : le rapide). Fitness : équivalence rejouée, coût.']]};
+const LIENS=[
+ ['salon','Le Salon','Le fil des conversations',['Les résidents d\'un fil (Cassandra, Itare, Amizo) viennent du module Agents : plus de liste en dur dans le Salon.','Une passation est un message d\'un agent à un autre, visible dans le fil.','Une proposition « À valider » est un message avec ses boutons (Accepter, Refuser, Plus tard).','Ce qu\'Amizo transmet arrive dans le fil du destinataire avec ses sources.','Le panneau ✦ choisit l\'interlocuteur ; Amizo pour toute recherche.'],'À modifier dans le Salon : lire ses résidents depuis Agents ; accepter un message « proposition ».'],
+ ['droits','Droits','Les droits déclarés',['Les six droits ci-dessus ; chaque capacité en nomme un, sinon l\'installation est refusée.'],'Rien à modifier.'],
+ ['societes','Sociétés et comptes','Le cloisonnement',['Amizo lit les espaces partagés d\'une société seulement (ctx.dans_ma_societe).','Itare est lié à un compte ; un compte n\'en voit pas un autre.'],'Rien à modifier.'],
+ ['modeles','Modèles et coffre','Le registre et les clés',['La page « Modèles & clés » est celle du module Modèles, affichée ici et non refaite.','Les clés restent dans le coffre ; un agent ne les lit jamais.'],'Rien à modifier ; l\'écran l\'intègre.'],
+ ['memoire','Mémoire','Les souvenirs [M:id]',['Les souvenirs d\'un agent restent dans la Mémoire.','À décider : la bibliothèque d\'Amizo prolonge la Mémoire, ou devient un module à part (« bibliotheque »).'],'À décider avant de coder.'],
+ ['journal','Journal et notifications','Un seul journal',['Chaque acte, refus, passation et réglage va au journal unique.','« À valider » déclenche une notification ; le résumé du matin en est une.'],'Rien à modifier.'],
+ ['urgence','Urgence et Proactivité','Le frein et les initiatives',['La pause générale est le frein « gel » de l\'Urgence.','Les initiatives d\'Itare et les veilles de Cassandra viennent de la Proactivité.'],'Rien à modifier.'],
+ ['mandats','Mandats et canaux','Ce qui sort',['Un envoi n\'part que par un mandat ; Itare ne sort rien seul.','Courriel, Telegram : les canaux par lesquels un agent te joint.'],'Rien à modifier.'],
+ ['evolution','Évolution','Les points EC',['Les points EC ci-dessus sont rejoués et évalués par Évolution (mode ombre). Le noyau reste hors de sa portée.'],'Les corpus de rejeu des nouveaux points sont à écrire.']];
+function vPlan(){
+  const t=S.plan||(S.plan='droits');
+  $('#vue').innerHTML=`<section class="verre carte idee-bloc"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h2>${idee('Plan du module — ce qui sera déclaré au portage')}</h2><div class="seg" id="plan-seg">${[['droits','Droits'],['cnec','CN / EC'],['liens','Liens']].map(([k,l])=>`<button data-t="${k}" class="${t===k?'on':''}">${l}</button>`).join('')}</div></div><div class="note">Rien n\'est codé : ce sont les propositions que tu valides en même temps que l\'écran. Un clic sur une ligne montre le détail.</div></section><div id="plan-c" class="corps"></div>`;
+  $$('#plan-seg button').forEach(b=>b.onclick=()=>{S.plan=b.dataset.t;vPlan()});
+  const c=$('#plan-c');
+  if(t==='droits'){
+    c.innerHTML=`<section class="verre carte"><h2>Qui a quel droit</h2><div class="zone-x"><table><tr><th>Droit</th>${ROLES.map(r=>`<th>${r}</th>`).join('')}</tr>${DROITS.map((d,i)=>`<tr><td><b class="mono" style="font-size:12px">${d[0]}</b> ${d[3]?'<span class="puce dg">sensible</span>':''}<div class="note">${d[1]} — ${d[2]}</div></td>${d[4].map((v,j)=>`<td><label class="sw"><input type="checkbox" ${v?'checked':''} data-d="${i}" data-r="${j}"><i></i></label></td>`).join('')}</tr>`).join('')}</table></div><div class="note">Les cases se changent ici pour voir l\'effet ; au portage, ce sont les valeurs par défaut du manifeste (l\'administrateur peut les modifier ensuite).</div></section>
+    <section class="verre carte"><h2>Chaque capacité nomme un droit</h2>${CAPDROIT.map(x=>`<div class="l2"><span style="max-width:70%">${x[0]}</span><span class="puce">${x[1]}</span></div>`).join('')}<div class="note">Sans droit nommé, le noyau refuse d\'installer le module.</div></section>`;
+    $$('#plan-c input[data-d]').forEach(i=>i.onchange=()=>{DROITS[+i.dataset.d][4][+i.dataset.r]=i.checked?1:0;toast(DROITS[+i.dataset.d][0]+' : '+ROLES[+i.dataset.r]+(i.checked?' autorisé':' retiré'))});
+  }else if(t==='cnec'){
+    c.innerHTML=`<div class="deux"><section class="verre carte"><h2>CN — le nexus <span class="note">· jamais évolué</span></h2><p class="muet" style="font-size:12.5px">Ce qui garantit la sûreté. Évolution n\'y touche pas : ce sont les garde-fous.</p>${CNEC.cn.map(x=>`<details style="border-top:1px solid var(--filet);padding:7px 0"><summary style="cursor:pointer;font-weight:650;font-size:12.8px">${x[0]}</summary><div class="muet" style="font-size:12.2px;margin-top:5px">${x[1]}</div></details>`).join('')}</section>
+     <section class="verre carte"><h2>EC — les points d\'évolution <span class="note">· fonctions pures, rejouables</span></h2><p class="muet" style="font-size:12.5px">Ce qui compose, sélectionne ou classe. Chaque point a un corpus de rejeu et une mesure : Évolution peut le faire progresser sans toucher aux règles.</p>${CNEC.ec.map(x=>`<details style="border-top:1px solid var(--filet);padding:7px 0"><summary style="cursor:pointer;font-weight:650;font-size:12.5px"><span class="mono">${x[0]}</span> <span class="puce ${x[1]==='existe'?'ok':''}">${x[1]}</span></summary><div class="muet" style="font-size:12.2px;margin-top:5px">${x[2]}</div></details>`).join('')}</section></div>
+     <section class="verre carte"><div class="note"><b>Règle de partage</b> : si une erreur peut faire du mal, c\'est du CN ; si une erreur ne fait que moins bien (un texte, un classement, un coût), c\'est de l\'EC. Un EC ne peut ni élargir un palier, ni toucher un droit, ni contourner l\'exécuteur.</div></section>`;
+  }else{
+    c.innerHTML=`<section class="verre carte"><h2>Les liens avec les autres modules</h2>${LIENS.map((l,i)=>`<details ${l[0]==='salon'?'open':''} style="border-top:1px solid var(--filet);padding:8px 0"><summary style="cursor:pointer;font-weight:650;font-size:12.8px"><span class="mono">${l[0]}</span> ${l[1]} <span class="note">· ${l[2]}</span></summary><ul style="margin:6px 0 4px 18px;padding:0;font-size:12.3px;color:var(--encre-2)">${l[3].map(x=>`<li>${x}</li>`).join('')}</ul><div class="note"><b>Côté de l\'autre module</b> : ${l[4]}</div></details>`).join('')}</section>`;
+  }
 }
 
 /* ════════════ RECRUTER ════════════ */
