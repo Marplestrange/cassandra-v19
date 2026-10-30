@@ -13,7 +13,7 @@
 <!-- RÔLE       : maquette-agents.html -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=dada31 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=12c3f2 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -223,6 +223,18 @@ th{font:650 10.5px var(--sans);letter-spacing:.07em;text-transform:uppercase;col
 .fil{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--encre-3);padding:2px 4px;flex-wrap:wrap}.fil b{color:var(--encre);background:var(--verre-fort);border:1px solid var(--filet);border-radius:9px;padding:3px 10px;font-weight:600}
 @media(min-width:901px){#nav{display:none}}
 @media(max-width:900px){.barre-app .bg:nth-of-type(n+3){display:none}}
+.conv-g{display:grid;grid-template-columns:290px minmax(0,1fr);gap:14px;align-items:start}
+@media(max-width:900px){.conv-g{grid-template-columns:1fr}}
+.conv-l{display:flex;flex-direction:column;gap:2px;max-height:520px;overflow:auto}
+.conv-i{display:flex;gap:10px;align-items:center;padding:9px 10px;border-radius:11px;border:1px solid transparent;background:transparent;text-align:left;width:100%}
+.conv-i:hover{background:var(--accent-doux)}.conv-i.on{background:var(--verre-fort);border-color:var(--accent)}
+.conv-i .t{font:600 12.8px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grp3{display:inline-flex;gap:4px}.grp3 button{border:1px solid var(--filet);background:var(--verre-fort);border-radius:7px;padding:3px 8px;font:600 10.5px var(--sans);text-transform:none;letter-spacing:0;color:var(--encre-2)}
+.grp3 button:hover{border-color:var(--accent)}
+.demo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:5px 8px;border-radius:12px;background:var(--idee-doux)}
+.demo select{padding:4px 8px;font-size:11.5px}.demo .lib{color:var(--idee)}
+.matr-c{display:grid;grid-template-columns:minmax(110px,1.4fr) repeat(3,1fr);font-size:12px;border:1px solid var(--filet);border-radius:12px;overflow:hidden}
+.matr-c>div{padding:8px;border-top:1px solid var(--filet);text-align:center}.matr-c>div:nth-child(4n+1){text-align:left}.matr-c>div:nth-child(-n+4){border-top:0;background:var(--filet);font:650 10.5px var(--sans);text-transform:uppercase;letter-spacing:.05em;color:var(--encre-3)}
 .bas-mobile{display:none}
 @media(max-width:600px){body{padding:10px 10px 70px}.haut{padding:9px 11px}.etat{padding:12px}h1{font-size:18px}.grille{grid-template-columns:1fr}.hide-m{display:none}}
 </style>
@@ -246,6 +258,10 @@ th{font:650 10.5px var(--sans);letter-spacing:.07em;text-transform:uppercase;col
     <div><h1>Agents IA</h1><div class="note">Maquette interactive · données fictives · rien n'est enregistré</div></div>
   </div>
   <div class="g">
+    <div class="demo" title="Réglages de la démonstration"><span class="lib">démo</span>
+      <div class="seg" id="role-seg" role="group" aria-label="Voir comme"><button data-r="admin" class="on">Administrateur</button><button data-r="user">Utilisateur</button></div>
+      <select id="soc" aria-label="Société active"><option>Société principale</option><option>Association exemple</option></select>
+      <select id="sim" aria-label="Simuler un cas"><option value="">Tout va bien</option><option value="panne">Modèle en panne</option><option value="quota">Quota épuisé</option><option value="plafond">Plafond atteint</option><option value="premier">Premier lancement</option></select></div>
     <label class="sw" title="Montre ou cache les propositions nouvelles"><input type="checkbox" id="sw-idees" checked><i></i><span><span class="idee">idée</span> afficher</span></label>
     <div class="seg" role="group" aria-label="Thème" id="themes">
       <button data-th="light" class="on">Clair</button><button data-th="dark">Sombre</button><button data-th="ardoise">Ardoise</button>
@@ -256,6 +272,7 @@ th{font:650 10.5px var(--sans);letter-spacing:.07em;text-transform:uppercase;col
 
 <nav class="verre nav" id="nav" aria-label="Sections"></nav>
 
+<div id="bandeau-sim"></div>
 <main id="vue" class="corps" aria-live="polite"></main>
 </div>
 </div>
@@ -374,10 +391,10 @@ const SOUVENIRS={
 };
 SOUVENIRS.amizo=[{id:'M:51',t:'Le site du service public fiscal est une source officielle ; les blogs d\'associations sont à recouper.',src:'3 vérifications',conf:90},{id:'M:52',t:'Les tarifs d\'hébergeur changent chaque trimestre : une fiche de plus de 90 jours est à relire.',src:'règle de fraîcheur',conf:95}];SOUVENIRS.auditeur=[];
 const BIB=[
- {id:'b1',r:'interne',titre:'Compte rendu du conseil — 14 octobre',src:'espace du conseil · société',date:'14/10',etat:'interne'},
- {id:'b2',r:'interne',titre:'Statuts de l\'association',src:'espace partagé · société',date:'02/03',etat:'interne'},
- {id:'b3',r:'interne',titre:'Budget prévisionnel de la saison',src:'espace du conseil · société',date:'21/09',etat:'interne'},
- {id:'b4',r:'interne',titre:'Procédure de remboursement des frais',src:'espace des bénévoles · société',date:'11/06',etat:'interne'},
+ {id:'b1',soc:'Association exemple',r:'interne',titre:'Compte rendu du conseil — 14 octobre',src:'espace du conseil · société',date:'14/10',etat:'interne'},
+ {id:'b2',soc:'Association exemple',r:'interne',titre:'Statuts de l\'association',src:'espace partagé · société',date:'02/03',etat:'interne'},
+ {id:'b3',soc:'Société principale',r:'interne',titre:'Budget prévisionnel de la saison',src:'espace du conseil · société',date:'21/09',etat:'interne'},
+ {id:'b4',soc:'Société principale',r:'interne',titre:'Procédure de remboursement des frais',src:'espace des bénévoles · société',date:'11/06',etat:'interne'},
  {id:'b5',r:'externe',titre:'Déduction fiscale des dons : règles générales',src:'www.impots.exemple.test/dons',date:'lue aujourd\'hui 09:48',etat:'quarantaine'},
  {id:'b6',r:'externe',titre:'Guide pratique de la loi de 1901',src:'www.service-public.exemple.test/associations',date:'lue il y a 6 j',etat:'verifie'},
  {id:'b7',r:'externe',titre:'Offre promotionnelle d\'abonnement',src:'exemple.test/promo',date:'lue aujourd\'hui 09:30',etat:'bloque'},
@@ -434,7 +451,7 @@ const RESULTATS_EPREUVES={ 'm-large':[1,1,1,1,1,1,1,1], 'm-rapide':[1,1,1,1,1,1,
 
 /* état d'interface */
 const S={vue:'equipe',agent:'cassandra',onglet:'apercu',theme:'light',jf:{ag:'tous',type:'tous',q:''},ouvert:null,cout:{plage:14,plafondAvant:null},
-  essai:{aBlanc:true,teinte:false,tours:0,msgs:[]},of:{q:'',risque:'tous',cat:'tous'},epreuves:{}};
+  essai:{aBlanc:true,teinte:false,tours:0,msgs:[]},of:{q:'',risque:'tous',cat:'tous'},epreuves:{},role:'admin',soc:'Société principale',sim:'',ob:0,cv:{id:'c1',fige:false,pj:'',run:false,stop:false}};
 
 /* ════════════ OUTILS D'INTERFACE ════════════ */
 const ag=id=>AGENTS.find(a=>a.id===id);
@@ -447,7 +464,9 @@ $('#tiroir').addEventListener('click',e=>{if(e.target.id==='tiroir')fermer()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')fermer()});
 const idee=(txt)=>`<span class="idee">✦ idée</span>${txt?' '+txt:''}`;
 const av=(a,etat)=>`<div class="avatar" style="background:${a.coul}">${a.lettre}<span class="pt ${GEL?'pause':(etat||a.etat)==='tour'?'tour':''}"></span></div>`;
-function nbAttente(){return PROPOS.length}
+function mesPropos(){return S.role==='user'?PROPOS.filter(p=>p.ag==='itare'):PROPOS}
+function mesJournal(){return S.role==='user'?JOURNAL.filter(x=>x.ag==='itare'):JOURNAL}
+function nbAttente(){return mesPropos().length}
 function cumulCout(id,n){return COUT[id].slice(-n).reduce((s,x)=>s+x,0)}
 function jourCout(id){return COUT[id][COUT[id].length-1]}
 function totalJour(){return AGENTS.reduce((s,a)=>s+jourCout(a.id),0)}
@@ -456,26 +475,37 @@ function journalise(e){JOURNAL.unshift(Object.assign({id:Date.now()+Math.random(
 
 /* ════════════ NAVIGATION ════════════ */
 function navRender(){
-  const items=[['equipe','L\'équipe'],['boite','À valider'+(nbAttente()?`<span class="n">${nbAttente()}</span>`:'')],['journal','Journal'],['modeles','Modèles & clés'],['maison','Règles communes']];
-  if(S.vue==='fiche')items.splice(1,0,['fiche',esc(ag(S.agent).nom)]);
+  const user=S.role==='user',n=nbAttente();
+  const badge=n?`<span class="n">${n}</span>`:'';
+  const items=user?[['fiche','Mon Itare'],['conv','Conversations'],['boite','À valider'+badge],['journal','Journal']]
+    :[['equipe','L\'équipe'],['conv','Conversations'],['boite','À valider'+badge],['journal','Journal'],['modeles','Modèles & clés'],['maison','Règles communes']];
+  if(!user&&S.vue==='fiche')items.splice(1,0,['fiche',esc(ag(S.agent).nom)]);
   $('#nav').innerHTML=items.map(([k,l])=>`<button data-v="${k}" class="${S.vue===k?'on':''}">${l}</button>`).join('');
-  $$('#nav button').forEach(b=>b.onclick=()=>aller(b.dataset.v));
-  const n=nbAttente();const lab={equipe:'L\'équipe',boite:'À valider',journal:'Journal',modeles:'Modèles & clés',maison:'Règles communes',plan:'Plan du module',fiche:ag(S.agent).nom};
+  $$('#nav button').forEach(b=>b.onclick=()=>{if(b.dataset.v==='fiche'&&user){aller('fiche','itare','apercu')}else aller(b.dataset.v)});
+  const lab={equipe:'L\'équipe',conv:'Conversations',boite:'À valider',journal:'Journal',modeles:'Modèles & clés',maison:'Règles communes',plan:'Plan du module',fiche:user?'Mon Itare':ag(S.agent).nom};
   const sub=(v,l,ic,extra)=>`<a class="sub ${S.vue===v?'on':''}" data-v="${v}"><span class="ic">${ic}</span>${l}${extra||''}</a>`;
   const lienAg=a=>`<a class="sub2 ${S.vue==='fiche'&&S.agent===a.id?'on':''}" data-a="${a.id}"><span class="ic" style="color:${a.coul}">●</span>${esc(a.nom)}</a>`;
-  $('#menu-liste').innerHTML=`<a class="tete on" data-v="equipe"><span class="ic">▣</span>Agents IA</a>`
+  $('#menu-liste').innerHTML=user
+    ?`<a class="tete on" data-a="itare"><span class="ic">▣</span>Agents IA</a><a class="sub ${S.vue==='fiche'?'on':''}" data-a="itare"><span class="ic">◉</span>Mon Itare</a>`+sub('conv','Conversations','✎')+sub('boite','À valider','✓',badge)+sub('journal','Journal','☰')
+    :`<a class="tete on" data-v="equipe"><span class="ic">▣</span>Agents IA</a>`
     +sub('equipe','L\'équipe','◎')+AGENTS.filter(a=>!a.service).map(lienAg).join('')
     +`<div class="lbl">Services agentiques</div>`+AGENTS.filter(a=>a.service).map(lienAg).join('')
-    +sub('boite','À valider','✓',n?`<span class="n">${n}</span>`:'')+sub('journal','Journal','☰')+sub('modeles','Modèles & clés','◇')+sub('maison','Règles communes','⚖')+sub('plan','Plan du module ✦','⌘')
+    +sub('conv','Conversations','✎')+sub('boite','À valider','✓',badge)+sub('journal','Journal','☰')+sub('modeles','Modèles & clés','◇')+sub('maison','Règles communes','⚖')+sub('plan','Plan du module ✦','⌘')
     +['Évolution|⚘','Proactivité|ϟ','Mémoire|◐'].map(x=>{const [t,i]=x.split('|');return `<a data-x="1"><span class="ic">${i}</span>${t}</a>`}).join('');
   $$('#menu-liste [data-v]').forEach(b=>b.onclick=()=>{aller(b.dataset.v);$('#menu').classList.remove('ouvert');$('#voile').classList.remove('on')});
   $$('#menu-liste [data-a]').forEach(b=>b.onclick=()=>{aller('fiche',b.dataset.a,S.vue==='fiche'?S.onglet:'apercu');$('#menu').classList.remove('ouvert');$('#voile').classList.remove('on')});
   $$('#menu-liste [data-x]').forEach(b=>b.onclick=()=>toast('Autre entrée du groupe Autonomie — hors de cette maquette'));
   $('#fil').innerHTML=`<span>✦ Autonomie</span><span>›</span><span>Agents IA</span><span>›</span><b>${lab[S.vue]}</b>`;
   $('#grp-etat').textContent=GEL?'En pause':n?n+' à valider':'Tout va bien';
+  $('#bandeau-sim').innerHTML=bandeauSim();
 }
 function aller(v,agent,onglet){S.vue=v;if(agent)S.agent=agent;if(onglet)S.onglet=onglet;S.ouvert=null;render();window.scrollTo({top:0,behavior:'smooth'});}
-function render(){navRender();const f={equipe:vEquipe,fiche:vFiche,boite:vBoite,journal:()=>vJournal(null),modeles:vModeles,maison:vMaison,plan:vPlan}[S.vue];$('#vue').innerHTML='';f();}
+function render(){
+  if(S.role==='user'&&!['fiche','conv','boite','journal'].includes(S.vue)){S.vue='fiche';S.agent='itare'}
+  navRender();
+  if(S.sim==='premier'&&S.role==='admin'&&S.vue==='equipe'){onboarding(S.ob||0);return}
+  const f={equipe:vEquipe,fiche:vFiche,boite:vBoite,journal:()=>vJournal(null),modeles:vModeles,maison:vMaison,plan:vPlan,conv:vConv}[S.vue];$('#vue').innerHTML='';f();
+}
 
 /* ════════════ ÉQUIPE ════════════ */
 function etatGlobal(){
@@ -543,15 +573,17 @@ function passations(){
 
 /* ════════════ FICHE ════════════ */
 function vFiche(){
+  if(S.role==='user')S.agent='itare';
   const a=ag(S.agent);const p=palierStats(a);const nv=niveauReel(a);
   const tabs=[['apercu','Aperçu'],['outils','Outils & palier'],['journal','Journal'],['essai','Essai en direct'],['propose','Fait & proposé'],['cout','Coût'],['sur','Sûr & refusé']];
   if(a.id==='amizo')tabs.splice(1,0,['biblio','Bibliothèque ✦']);
   if(!a.service)tabs.push(['memoire','Mémoire ✦']);tabs.push(['reglages','Réglages']);
+  if(S.role==='user'){const ok=['apercu','outils','journal','propose','memoire','reglages'];for(let i=tabs.length-1;i>=0;i--)if(!ok.includes(tabs[i][0]))tabs.splice(i,1)}
   if(!tabs.some(t=>t[0]===S.onglet))S.onglet='apercu';
   $('#vue').innerHTML=`
-  <section class="verre fiche-tete">${av(a)}<div style="flex:1;min-width:200px"><h1>${a.nom}</h1><div class="note">${a.role} · porte : ${a.portee}</div></div>
+  <section class="verre fiche-tete">${av(a)}<div style="flex:1;min-width:200px"><h1>${S.role==='user'?'Mon Itare':a.nom}</h1><div class="note">${S.role==='user'?'Ton agent du bureau : lui seul voit ton bureau, personne d\'autre.':a.role+' · porte : '+a.portee}</div></div>
     <div class="pal">${a.service?'<span class="puce mu">service agentique</span>':''}${a.idee?'<span class="idee">✦ idée</span>':''}<span class="puce ${GEL?'al':'ok'}">${GEL?'en pause':'au repos'}</span><span class="puce ${nv==='mesure'?'mu':''}">${NIVEAUX[nv][0]}</span><span class="puce mu">${esc(mod(a.modele).nom)}</span></div>
-    <div style="display:flex;gap:6px"><button class="btn" id="ag-pause">${GEL?'▶ Reprendre':'⏸ Pause'}</button><select id="ag-sel" aria-label="Changer d'agent">${AGENTS.map(x=>`<option value="${x.id}" ${x.id===a.id?'selected':''}>${x.nom}</option>`).join('')}</select></div></section>
+    <div style="display:${S.role==='user'?'none':'flex'};gap:6px"><button class="btn" id="ag-pause">${GEL?'▶ Reprendre':'⏸ Pause'}</button><select id="ag-sel" aria-label="Changer d'agent">${AGENTS.map(x=>`<option value="${x.id}" ${x.id===a.id?'selected':''}>${x.nom}</option>`).join('')}</select></div></section>
   <div class="verre onglets" id="onglets">${tabs.map(([k,l])=>`<button data-o="${k}" class="${S.onglet===k?'on':''}">${l}</button>`).join('')}</div>
   <div id="fiche-c" class="corps"></div>`;
   $('#ag-sel').onchange=e=>{S.agent=e.target.value;S.essai.msgs=[];render()};
@@ -608,6 +640,7 @@ function oOutils(a){
   const p=palierStats(a);
   $('#fiche-c').innerHTML=`
   <section class="verre carte"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h2>Les outils de ${a.nom} <span class="note">· dérivés du catalogue des capacités — une capacité de plus, un outil de plus</span></h2></div>
+    <div class="note"><b>Inventaire réel :</b> ${inv(a)}. La maquette n\'en montre qu\'une partie ; les outils se règlent par module.</div>
     <div class="pal"><span class="puce ok" id="c-auto">${p.auto} en auto</span><span class="puce al" id="c-rac">${p.rac} racontés</span><span class="puce mu" id="c-ret">${p.ret} retirés</span></div>
     <div class="filtres"><input type="search" id="of-q" placeholder="Chercher un outil…" value="${esc(S.of.q)}" style="flex:1;min-width:160px">
       <select id="of-r"><option value="tous">Tous les risques</option>${['lecture','faible','moyen','élevé'].map(r=>`<option ${S.of.risque===r?'selected':''}>${r}</option>`).join('')}</select>
@@ -619,10 +652,12 @@ function oOutils(a){
   const dessiner=()=>{
     const q=S.of.q.toLowerCase();
     const l=OUTILS.filter(o=>o.qui.includes(a.id)||(!o.qui.length&&a.id==='cassandra')).filter(o=>(S.of.risque==='tous'||o.risque===S.of.risque)&&(S.of.cat==='tous'||o.cat===S.of.cat)&&(!q||(o.id+o.lib).toLowerCase().includes(q)));
+    l.sort((x,y)=>x.mod.localeCompare(y.mod));let dm='';
     $('#of-liste').innerHTML=l.length?l.map(o=>{
+      const gh=o.mod!==dm?(dm=o.mod,`<div class="lib" style="padding:14px 2px 4px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>module ${o.mod} · ${l.filter(z=>z.mod===o.mod).length} outil(s)</span><span class="grp3" data-g="${o.mod}"><button data-gp="raconter">Tout raconter</button><button data-gp="auto">Tout auto</button></span></div>`):'';
       const verrouille=!o.qui.length;const cur=verrouille?'retire':(ETAT[a.id][o.id]||'retire');
       const opts=[['auto','Auto'],['raconter','Raconter'],['demander','Demander ✦'],['retire','Retirer']];
-      return `<div class="outil"><div><div class="n">${o.id}</div><div class="d">${o.lib}</div>
+      return gh+`<div class="outil"><div><div class="n">${o.id}</div><div class="d">${o.lib}</div>
         <div class="meta"><span class="puce ${o.risque==='lecture'?'mu':o.risque==='faible'?'ok':o.risque==='moyen'?'al':'dg'}">${o.risque}</span>${o.ext?'<span class="puce al" title="Lit de l\'extérieur : pose la teinte du tour">lit le dehors</span>':''}${o.sort?'<span class="puce dg" title="Envoie quelque chose vers l\'extérieur">part vers l\'extérieur</span>':''}<span class="puce mu">${o.mod}</span></div>
         <div class="note" style="margin-top:5px">${verrouille?esc(o.note):'Preuve : '+o.preuve+' · Retour : '+o.retour}</div></div>
         <div class="sel3" data-o="${o.id}">${opts.map(([k,l])=>{const perm=k==='retire'||(k==='demander')||o.pal.includes(k);const dis=verrouille||!perm;return `<button class="${k} ${cur===k?'on':''}" data-p="${k}" ${dis?'disabled':''} title="${k==='demander'?'Idée : l\'agent prépare, tu confirmes d\'un clic':''}">${l}</button>`}).join('')}</div></div>`}).join(''):'<div class="note" style="padding:14px 0">Aucun outil ne correspond.</div>';
@@ -630,6 +665,7 @@ function oOutils(a){
       if(nv==='retire')delete ETAT[a.id][id];else ETAT[a.id][id]=nv;
       journalise({ag:a.id,type:'réglage',st:'fait',titre:'« '+id+' » réglé sur « '+nv+' »',sous:'Réglage de l\'utilisateur, relu.',pourquoi:'Geste de l\'utilisateur.',outil:id,palier:nv,rev:true});
       toast(id+' → '+nv,()=>{if(av0)ETAT[a.id][id]=av0;else delete ETAT[a.id][id];oOutils(a)});oOutils(a)}));
+    $$('#of-liste .grp3 button').forEach(b=>b.onclick=()=>{const m=b.parentNode.dataset.g,p=b.dataset.gp,av0={...ETAT[a.id]};OUTILS.filter(o=>o.mod===m&&o.qui.includes(a.id)&&o.pal.includes(p)).forEach(o=>ETAT[a.id][o.id]=p);toast('Module '+m+' : '+(p==='auto'?'tout en auto':'tout raconté'),()=>{Object.assign(ETAT[a.id],av0);oOutils(a)});oOutils(a)});
   };
   dessiner();
   $('#of-q').oninput=e=>{S.of.q=e.target.value;dessiner()};$('#of-r').onchange=e=>{S.of.risque=e.target.value;dessiner()};$('#of-c').onchange=e=>{S.of.cat=e.target.value;dessiner()};
@@ -638,20 +674,22 @@ function oOutils(a){
 
 /* — Journal — */
 function vJournal(agentFixe){
-  const f=S.jf;if(agentFixe)f.ag=agentFixe;
+  const f=S.jf;if(agentFixe)f.ag=agentFixe;if(S.role==='user')f.ag='itare';
   const cible=agentFixe?$('#fiche-c'):$('#vue');
   cible.innerHTML=`<section class="verre carte"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h2>${agentFixe?'Le journal de '+ag(agentFixe).nom:'Le journal de tous les agents'}</h2><span class="note">Un seul journal : qui, quoi, pourquoi, la preuve, le geste qui défait.</span></div>
-    <div class="filtres">${agentFixe?'':`<select id="jf-a"><option value="tous">Tous les agents</option>${AGENTS.map(x=>`<option value="${x.id}" ${f.ag===x.id?'selected':''}>${x.nom}</option>`).join('')}</select>`}
+    <div class="filtres">${agentFixe||S.role==='user'?'':`<select id="jf-a"><option value="tous">Tous les agents</option>${AGENTS.map(x=>`<option value="${x.id}" ${f.ag===x.id?'selected':''}>${x.nom}</option>`).join('')}</select>`}
     <select id="jf-t">${['tous','acte','proposition','refus','réglage','passation','panne'].map(t=>`<option value="${t}" ${f.type===t?'selected':''}>${t==='tous'?'Tous les types':t}</option>`).join('')}</select>
     <input type="search" id="jf-q" placeholder="Chercher dans le journal…" value="${esc(f.q)}" style="flex:1;min-width:150px"></div>
     <div id="jl"></div></section>`;
   const dessiner=()=>{
     const q=f.q.toLowerCase();
-    const l=JOURNAL.filter(x=>(f.ag==='tous'||x.ag===f.ag)&&(f.type==='tous'||x.type===f.type)&&(!q||(x.titre+x.sous+x.pourquoi).toLowerCase().includes(q)));
+    const l0=mesJournal().filter(x=>(f.ag==='tous'||x.ag===f.ag)&&(f.type==='tous'||x.type===f.type)&&(!q||(x.titre+x.sous+x.pourquoi).toLowerCase().includes(q)));const l=l0.slice(0,f.n||8);
     let dernierJ='';
     $('#jl').innerHTML=l.length?l.map(x=>{const A=ag(x.ag);const sep=x.j!==dernierJ?(dernierJ=x.j,`<div class="lib" style="padding:12px 2px 4px">${x.j}</div>`):'';
       return sep+`<div class="ev ${x.st==='défait'?'defait':''}" data-id="${x.id}" tabindex="0" role="button"><div class="h">${x.h}</div><div><div class="t">${esc(x.titre)}</div><div class="s"><span style="color:${A.coul};font-weight:700">${A.nom}</span> · ${x.type}${x.palier&&x.palier!=='—'?' · palier '+x.palier:''}</div></div><div class="dr">${stPuce(x.st)}</div>
       ${S.ouvert==x.id?detailEv(x):''}</div>`}).join(''):'<div class="note" style="padding:14px 0">Rien ne correspond.</div>';
+    $('#jl').insertAdjacentHTML('beforeend',`<div class="pal" style="padding-top:10px;align-items:center"><span class="note">${l.length} sur ${l0.length} affichés · ${fr(l0.length*89)} gestes sur 30 jours en réel</span>${l.length<l0.length?'<button class="btn pt" id="jp-plus">Afficher 8 de plus</button>':''}<button class="btn pt" id="jp-exp">Exporter (CSV)</button><select id="jp-ret" aria-label="Conservation"><option>Garder 30 jours</option><option>Garder 90 jours</option><option>Garder 1 an</option></select></div>`);
+    const pl=$('#jp-plus');if(pl)pl.onclick=()=>{f.n=(f.n||8)+8;dessiner()};$('#jp-exp').onclick=()=>toast('Export du journal filtré (fichier CSV) — hors de cette maquette');$('#jp-ret').onchange=e=>toast('Conservation : '+e.target.value.toLowerCase());
     $$('#jl .ev').forEach(el=>{const open=()=>{S.ouvert=S.ouvert==el.dataset.id?null:el.dataset.id;dessiner()};el.onclick=e=>{if(e.target.closest('.detail'))return;open()};el.onkeydown=e=>{if(e.key==='Enter')open()}});
     $$('#jl [data-def]').forEach(b=>b.onclick=e=>{e.stopPropagation();const x=JOURNAL.find(y=>y.id==b.dataset.def);const av0=x.st;x.st='défait';toast('Défait : '+x.titre,()=>{x.st=av0;dessiner()});dessiner()});
     $$('#jl [data-rej]').forEach(b=>b.onclick=e=>{e.stopPropagation();rejouer(JOURNAL.find(y=>y.id==b.dataset.rej))});
@@ -745,6 +783,8 @@ async function envoyer(a,texte){
   if(!E.msgs.length)chat.innerHTML='';
   add(`<div class="bulle u">${esc(texte)}</div>`);
   const low=texte.toLowerCase();
+  if(S.sim==='plafond'&&GLOBAL.action>0&&!(GLOBAL.action===1&&a.id==='cassandra')){await wait(400);add(`<div class="etapes"><div class="etape dg"><div class="i">€</div><div>Plafond global atteint : ${ACTIONS_PLAFOND[GLOBAL.action]}.</div></div></div><div class="bulle a">${GLOBAL.action===1?'Je m\'arrête : le plafond de coût du jour est atteint. Cassandra continue seule de tenir la machine, et je reprends demain ou dès que tu relèves le plafond.':'Le plafond de coût du jour est atteint. J\'ai besoin de ton accord pour continuer : réponds « oui » ou relève le plafond dans Règles communes.'}</div>`.replace(/\'/g,"'"));E.occupe=false;return}
+  if(S.sim==='panne')add(`<div class="etape al"><div class="i">!</div><div>Le modèle principal ne répond pas : bascule sur <b>${esc(mod(a.secours).nom)}</b> en 1,8 s. La panne est gardée à part, elle n\'entre pas dans la conversation.</div></div>`.replace(/\'/g,"'"));
   const sc=SCEN.filter(s=>s.pour.includes(a.id)).map(s=>({s,n:s.cle.filter(c=>low.includes(c)).length+(s.txt===texte?9:0)})).sort((x,y)=>y.n-x.n)[0];
   if(GEL){await wait(500);add(`<div class="etapes"><div class="etape al"><div class="i">⏸</div><div>Pause générale : je n'agis pas, j'observe.</div></div></div><div class="bulle a">La pause est posée : je peux te dire ce que je ferais, mais je ne touche à rien. Reprends quand tu veux.</div>`);E.occupe=false;return}
   if(!sc||!sc.n){await wait(500);add(`<div class="etapes"><div class="etape"><div class="i">M</div><div>Mémoire consultée : rien de pertinent.</div></div><div class="etape"><div class="i">⚙</div><div>Aucun de mes outils ne correspond.</div></div></div><div class="bulle a">Je n'ai pas d'outil pour ça, et je ne vais pas inventer de réponse. ${a.id==='amizo'?'':'Pour une recherche ou une lecture du dehors, je demande à Amizo. '}Dis-moi ce que tu veux faire, ou essaie un des cas à droite.</div>`);E.occupe=false;return}
@@ -806,7 +846,7 @@ function oPropose(a){
 function carteProp(p){const A=ag(p.ag);
   return `<div class="verre carte" style="background:var(--verre-fort)" data-p="${p.id}"><div class="tete"><div class="avatar" style="background:${A.coul};width:34px;height:34px;font-size:14px">${A.lettre}</div><div style="min-width:0"><h3>${esc(p.titre)}</h3><div class="note">${A.nom} · <span class="mono">${p.outil}</span></div></div></div>
    <div class="muet" style="font-size:12.5px">${esc(p.sous)}</div><div class="pal"><span class="puce ${p.risque==='élevé'?'dg':'al'}">risque ${p.risque}</span><span class="puce mu">${esc(p.impact)}</span></div>
-   <div class="note"><b>Pourquoi</b> : ${esc(p.pourquoi)}</div>
+   <div class="note"><b>Pourquoi</b> : ${esc(p.pourquoi)}</div>${p.outil==='courrier.envoyer'?mandatHtml():''}
    <div class="pal"><button class="btn prim pt" data-ok="${p.id}">Accepter</button><button class="btn pt" data-non="${p.id}">Refuser</button><button class="btn pt" data-plus="${p.id}">Plus tard</button><button class="btn pt idee-bloc" data-tj="${p.id}" title="Passe l'outil en auto pour ce genre de demande">${'✦'} Toujours pour ça</button></div></div>`}
 function brancherProp(refaire){
   $$('[data-ok]').forEach(b=>b.onclick=()=>{const p=PROPOS.find(x=>x.id===b.dataset.ok);PROPOS=PROPOS.filter(x=>x!==p);
@@ -820,7 +860,7 @@ function brancherProp(refaire){
 }
 function vBoite(){
   $('#vue').innerHTML=`<section class="verre carte"><h2>À valider</h2><p class="muet" style="font-size:12.5px">Seulement ce qui part vers l\'extérieur, ne se défait pas ou dépasse un palier. Le reste, les agents le font seuls et te le racontent dans le journal.</p>
-   ${PROPOS.length?PROPOS.map(carteProp).join(''):'<div style="text-align:center;padding:30px 10px"><div class="rond" style="width:52px;height:52px;margin:0 auto 10px;border-radius:50%;display:grid;place-items:center;background:var(--ok-doux);color:var(--ok);font-size:24px">✓</div><h2>Rien n\'attend ton mot</h2><div class="note">Les agents agissent seuls dans leurs paliers.</div></div>'}</section>`;
+   ${mesPropos().length?mesPropos().map(carteProp).join(''):'<div style="text-align:center;padding:30px 10px"><div class="rond" style="width:52px;height:52px;margin:0 auto 10px;border-radius:50%;display:grid;place-items:center;background:var(--ok-doux);color:var(--ok);font-size:24px">✓</div><h2>Rien n\'attend ton mot</h2><div class="note">Les agents agissent seuls dans leurs paliers.</div></div>'}</section>`;
   brancherProp(vBoite);
 }
 
@@ -880,8 +920,8 @@ async function lancerEpreuves(a){const m=$('#ep-m').value;S.epreuves[m]=[];const
 function oBiblio(a){
   const f=S.bib||(S.bib={r:'tout',q:''});
   const etats={interne:['mu','interne'],verifie:['ok','vérifié'],quarantaine:['al','quarantaine · non vérifié'],bloque:['dg','bloqué'],perime:['al','périmé · à relire']};
-  $('#fiche-c').innerHTML=`<section class="verre carte idee-bloc"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h2>${idee('La bibliothèque d\'Amizo')}</h2><div class="seg" id="bib-seg">${[['tout','Tout'],['interne','Interne'],['externe','Externe']].map(([k,l])=>`<button data-r="${k}" class="${f.r===k?'on':''}">${l}</button>`).join('')}</div></div>
-    <p class="muet" style="font-size:12.5px">Deux étagères. <b>Interne</b> : ce qui vient des espaces partagés d\'une société. <b>Externe</b> : ce qu\'il a lu sur le web ; tout arrive en <b>quarantaine</b> avec son adresse et sa date, et ne devient « vérifié » que sur ton accord ou avec deux sources qui concordent.</p>
+  $('#fiche-c').innerHTML=`<section class="verre carte idee-bloc"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h2>${idee('La bibliothèque d\'Amizo')} <span class="puce">Société : ${esc(S.soc)}</span></h2><div class="seg" id="bib-seg">${[['tout','Tout'],['interne','Interne'],['externe','Externe']].map(([k,l])=>`<button data-r="${k}" class="${f.r===k?'on':''}">${l}</button>`).join('')}</div></div>
+    <p class="muet" style="font-size:12.5px">Deux étagères. <b>Interne</b> : ce qui vient des espaces partagés de la société active (change-la en haut de la page). <b>Externe</b> : ce qu\'il a lu sur le web ; tout arrive en <b>quarantaine</b> avec son adresse et sa date, et ne devient « vérifié » que sur ton accord ou avec deux sources qui concordent.</p>
     <input type="search" id="bib-q" placeholder="Chercher dans la bibliothèque…" value="${esc(f.q)}"><div id="bib-l"></div></section>
    <section class="verre carte idee-bloc"><h2>${idee('Recherche hybride')}</h2><p class="muet" style="font-size:12.5px">Une question, quatre signaux : les <b>mots</b> (recherche plein texte), le <b>sens</b> (vecteurs), la <b>fraîcheur</b> et la <b>confiance de la source</b>. Règle les poids et regarde le classement bouger. Une fiche bloquée n\'apparaît jamais.</p>
     <input type="search" id="hy-q" placeholder="Poser une question à la bibliothèque…" value="dons déduction fiscale">
@@ -889,14 +929,14 @@ function oBiblio(a){
     <div id="hy-l"></div><div class="note">Base dédiée <span class="mono">bibliotheque.db</span> : texte plein (FTS5) + vecteurs, fiches découpées en passages avec leur position, déduplication par empreinte, historique des versions d\'une fiche, une base par instance et un cloisonnement par société. Les vecteurs (modèle multilingue e5-large, déjà éprouvé en V18, environ 2,4 Go, partagé avec la Mémoire) sont calculés au premier usage : la recherche par mots fonctionne seule en attendant.</div></section>
    <div class="deux"><section class="verre carte idee-bloc"><h2>${idee('Sources de confiance')}</h2>${SOURCES.map((x,i)=>`<div class="l2"><div><b class="mono" style="font-size:12px">${x.h}</b><div class="g">${x.c}</div></div><label class="sw"><input type="checkbox" ${x.on?'checked':''} data-src="${i}"><i></i></label></div>`).join('')}<div class="note">Une source décochée n\'est plus lue. Une page qui contient un ordre caché est décochée d\'office.</div></section>
    <section class="verre carte idee-bloc"><h2>${idee('Ce qu\'Amizo a transmis')}</h2>${TRANSMIS.map(t=>`<div class="l2"><div><b>${esc(t[1])}</b><div class="g">à ${t[0]} · ${t[2]}</div></div></div>`).join('')}<div class="note">Chaque transmission porte ses sources et son niveau de confiance.</div></section></div>`;
-  const dessiner=()=>{const q=f.q.toLowerCase();const l=BIB.filter(b=>(f.r==='tout'||b.r===f.r)&&(!q||(b.titre+b.src).toLowerCase().includes(q)));
+  const dessiner=()=>{const q=f.q.toLowerCase();const l=BIB.filter(b=>(f.r==='tout'||b.r===f.r)&&(b.r==='externe'||b.soc===S.soc)&&(!q||(b.titre+b.src).toLowerCase().includes(q)));
     $('#bib-l').innerHTML=l.map(b=>{const e=etats[b.etat];return `<div class="l2"><div style="min-width:0"><b>${esc(b.titre)}</b><div class="g">${b.src} · ${b.date}</div></div><div class="pal" style="justify-content:flex-end"><span class="puce ${e[0]}">${e[1]}</span>
       ${b.etat==='quarantaine'||b.etat==='perime'?`<button class="btn pt prim" data-bv="${b.id}">${b.etat==='perime'?'Relire':'Vérifier'}</button>`:''}${b.etat==='verifie'?`<button class="btn pt" data-bq="${b.id}">Remettre en quarantaine</button>`:''}${b.r==='externe'?`<button class="btn pt dng" data-br="${b.id}">Retirer</button>`:''}</div></div>`}).join('')||'<div class="note">Rien ne correspond.</div>';
     $$('[data-bv]').forEach(x=>x.onclick=()=>{const b=BIB.find(y=>y.id===x.dataset.bv);const av0=b.etat;b.etat='verifie';journalise({ag:'amizo',type:'acte',st:'fait',titre:'Fiche passée en « vérifié » sur ton accord : '+b.titre,sous:b.src,pourquoi:'Ta décision.',outil:'bibliotheque.noter',palier:'confirmé',rev:true});toast('Vérifié : '+b.titre,()=>{b.etat=av0;dessiner()});dessiner()});
     $$('[data-bq]').forEach(x=>x.onclick=()=>{BIB.find(y=>y.id===x.dataset.bq).etat='quarantaine';dessiner()});
     $$('[data-br]').forEach(x=>x.onclick=()=>{const i=BIB.findIndex(y=>y.id===x.dataset.br);const b=BIB.splice(i,1)[0];toast('Fiche retirée',()=>{BIB.splice(i,0,b);dessiner()});dessiner()});};
   const hy=()=>{const q=($('#hy-q').value||'').toLowerCase().split(/[^a-zàâçéèêëîïôûùüÿ]+/).filter(w=>w.length>2);const W={};['m','z','f','c'].forEach(k=>{W[k]=+$('#hy-'+k).value;$('#hv-'+k).textContent=W[k]});const tot=(W.m+W.z+W.f+W.c)||1;
-    const L=BIB.filter(b=>b.etat!=='bloque').map(b=>{const sc=SCORES[b.id]||[.3,.3,.3,.5];const txt=(b.titre+' '+b.src).toLowerCase();const ov=q.length?q.filter(w=>txt.includes(w)).length/q.length:sc[0];const mots=q.length?ov:sc[0];const sens=q.length?sc[1]*(.55+.45*ov):sc[1];const f=sc[2],c=sc[3];
+    const L=BIB.filter(b=>b.etat!=='bloque'&&(b.r==='externe'||b.soc===S.soc)).map(b=>{const sc=SCORES[b.id]||[.3,.3,.3,.5];const txt=(b.titre+' '+b.src).toLowerCase();const ov=q.length?q.filter(w=>txt.includes(w)).length/q.length:sc[0];const mots=q.length?ov:sc[0];const sens=q.length?sc[1]*(.55+.45*ov):sc[1];const f=sc[2],c=sc[3];
       return {b,mots,sens,f,c,s:(W.m*mots+W.z*sens+W.f*f+W.c*c)/tot}}).sort((x,y)=>y.s-x.s).slice(0,5);
     $('#hy-l').innerHTML=L.map((r,i)=>`<div class="l2"><div style="flex:1;min-width:0"><b>${i+1}. ${esc(r.b.titre)}</b><div class="g">${r.b.src} · ${r.b.r}</div><div style="display:flex;gap:4px;margin-top:5px;max-width:300px">${[['mots',r.mots],['sens',r.sens],['frais',r.f],['conf.',r.c]].map(x=>`<div style="flex:1"><div class="barre"><i style="width:${Math.round(x[1]*100)}%"></i></div><div class="note" style="font-size:10px">${x[0]}</div></div>`).join('')}</div></div><span class="puce ${r.s>.7?'ok':r.s>.5?'al':'mu'}">${Math.round(r.s*100)}</span></div>`).join('')||'<div class="note">Aucune fiche.</div>'};
   hy();$('#hy-q').oninput=hy;$$('#hy-w input').forEach(i=>i.oninput=hy);
@@ -939,22 +979,71 @@ function oReglages(a){
     journalise({ag:a.id,type:'réglage',st:'fait',titre:'Réglages de '+a.nom+' enregistrés',sous:'Modèle : '+mod(a.modele).nom+'.',pourquoi:'Geste de l\'utilisateur.',rev:true});
     toast('Réglages enregistrés — le prochain tour les utilise',()=>{Object.assign(a,av0);oReglages(a)});vFiche()};
   $$('.sw-a').forEach(s=>s.onchange=()=>toast(s.dataset.n+(s.checked?' activée':' arrêtée')));
+  if(S.role==='user'){$$('#fiche-c > section').forEach(x=>{const t=x.querySelector('h2');if(t&&/Limites d/.test(t.textContent))x.remove()});const sec=$('#r-sec');if(sec)sec.closest('.champ').remove()}
+  const extra=[];
+  if(a.id==='itare')extra.push(`<section class="verre carte"><h2>La voix d\'Itare</h2><p class="muet" style="font-size:12.5px">Ce qu\'il emploie quand tu cliques sur Écouter, et ce qui transcrit tes dictées. Tout tourne <b>sur le serveur</b> : rien de ce que tu dictes n\'en sort. Le choix est le tien.</p>
+    <div class="champ"><label for="vx">Voix</label><select id="vx"><option>Voix douce (locale)</option><option>Voix claire (locale)</option><option>Désactivée</option></select></div><div class="pal"><button class="btn" id="vx-t">Écouter un échantillon</button><span class="note">Aucune voix installée ? Un administrateur en pose une depuis le module Voix.</span></div></section>`);
+  extra.push(`<section class="verre carte"><h2>Où te joindre</h2><p class="muet" style="font-size:12.5px">Par quel canal ${S.role==='user'?'Itare te prévient':'les agents prévoient de prévenir un utilisateur par défaut'}. Une urgence passe toujours, par au moins un canal.</p>
+    <div class="matr-c"><div>Canal</div><div>Propositions</div><div>Rapport du matin</div><div>Urgences</div>${[['Dans l\'application',1,1,1],['Courriel',0,1,1],['Telegram',1,0,1],['Voix',0,0,0]].map((r,i)=>`<div>${r[0]}</div>${[1,2,3].map(j=>`<div><label class="sw"><input type="checkbox" data-cn="${i}${j}" ${r[j]?'checked':''}><i></i></label></div>`).join('')}`).join('')}</div>
+    <div class="champ"><label for="hc">Heures calmes</label><select id="hc"><option>Aucune</option><option selected>De 22 h à 8 h (urgences seules)</option><option>Le week-end entier</option></select></div></section>`);
+  $('#fiche-c').insertAdjacentHTML('beforeend',extra.join('').replace(/\'/g,"'"));
+  const vt=$('#vx-t');if(vt)vt.onclick=()=>toast('Échantillon lu sur le serveur (hors maquette)');
+  $$('[data-cn]').forEach(c=>c.onchange=()=>toast('Canal mis à jour'));
 }
 
 /* ════════════ MODÈLES & CLÉS ════════════ */
+const FOURNISSEURS=[
+ {id:'a',nom:'Fournisseur A (en ligne)',url:'https://api.fournisseur-a.exemple.test/v1',proto:'API de messages'},
+ {id:'b',nom:'Fournisseur B (en ligne)',url:'https://api.fournisseur-b.exemple.test/v1',proto:'API de messages'},
+ {id:'c',nom:'Fournisseur C (gratuit, quota)',url:'https://api.fournisseur-c.exemple.test/v1',proto:'compatible OpenAI'},
+ {id:'compat',nom:'Autre — compatible OpenAI (adresse libre)',url:'',proto:'compatible OpenAI'},
+ {id:'local',nom:'Sur la machine (local)',url:'http://127.0.0.1:11434',proto:'local'}];
+function mdef(m){return Object.assign({url:'',prixOut:m.prix*4,maxJ:12000,delai:60,rpm:60,vision:false,outils:true,actif:true},m)}
+MODELES.forEach((m,i)=>{Object.assign(m,mdef(m));m.fid=m.type==='local'?'local':['a','b','c'][Math.min(i,2)];m.url=(FOURNISSEURS.find(f=>f.id===m.fid)||{}).url||'';m.vision=m.id==='m-rapide'||m.id==='m-large'});
 function vModeles(){
-  $('#vue').innerHTML=`<section class="verre carte"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h2>Le registre de modèles <span class="note">· une déclaration, les agents y puisent</span></h2><button class="btn prim" id="m-add">Ajouter un modèle</button></div>
-   <div class="zone-x"><table><tr><th>Modèle</th><th>Fournisseur</th><th>Clé</th><th>Prix</th><th>Sert</th><th>État</th></tr>${MODELES.map(m=>`<tr><td><b>${m.nom}</b></td><td>${m.four}</td><td>${m.cle==='coffre'?'<span class="puce ok">dans le coffre</span>':'<span class="puce mu">sans clé</span>'}</td><td>${m.prix?m.prix.toFixed(2)+' €/M':'gratuit'}</td><td>${AGENTS.filter(a=>a.modele===m.id).map(a=>`<span class="puce" style="background:${a.coul}22;color:${a.coul}">${a.nom}</span>`).join(' ')||'<span class="note">—</span>'}</td><td>${m.etat==='ok'?'<span class="puce ok">prêt</span>':'<span class="puce al">quota bas</span>'}</td></tr>`).join('')}</table></div>
-   <div class="note">Une seule vérité par rôle. Les clés partent dans le coffre de service : elles ne sont jamais affichées, ni dans un agent, ni dans cet écran.</div></section>
+  $('#vue').innerHTML=`<section class="verre carte"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h2>Le registre de modèles <span class="note">· une déclaration, les agents y puisent</span></h2><button class="btn prim" id="m-add">+ Ajouter un modèle en ligne</button></div>
+   <div class="zone-x"><table><tr><th>Modèle</th><th>Adresse de l\'API</th><th>Clé</th><th>Prix (entrée / sortie)</th><th>Sert</th><th>État</th><th></th></tr>${MODELES.map(m=>`<tr><td><b>${m.nom}</b><div class="note">${m.four}</div></td><td><span class="mono" style="font-size:11px;word-break:break-all">${m.url||'—'}</span></td><td>${m.cle==='coffre'?'<span class="puce ok">dans le coffre</span>':'<span class="puce mu">sans clé</span>'}</td><td>${m.prix?m.prix.toFixed(2)+' / '+m.prixOut.toFixed(2)+' €/M':'gratuit'}</td><td>${AGENTS.filter(a=>a.modele===m.id).map(a=>`<span class="puce" style="background:${a.coul}22;color:${a.coul}">${a.nom}</span>`).join(' ')||'<span class="note">—</span>'}</td><td>${!m.actif?'<span class="puce mu">désactivé</span>':m.etat==='ok'?'<span class="puce ok">prêt</span>':'<span class="puce al">quota bas</span>'}</td><td><button class="btn pt" data-md="${m.id}">Modifier</button></td></tr>`).join('')}</table></div>
+   <div class="note">Une seule vérité par rôle. Les clés partent dans le coffre de service : elles ne sont jamais affichées, ni dans un agent, ni dans cet écran. Cette page est celle du module Modèles, affichée ici.</div></section>
   <section class="verre carte idee-bloc"><h2>${idee('Chaîne de secours visible')}</h2><p class="muet" style="font-size:12.5px">Qui prend le relais de qui quand un fournisseur tombe, et à quel prix.</p>
    ${AGENTS.map(a=>`<div class="l2"><b style="color:${a.coul}">${a.nom}</b><span>${esc(mod(a.modele).nom)} <span class="note">→</span> ${esc(mod(a.secours).nom)} <span class="note">${mod(a.secours).prix?'(≈ '+mod(a.secours).prix.toFixed(2)+' €/M)':'(gratuit)'}</span></span></div>`).join('')}</section>`;
-  $('#m-add').onclick=()=>tiroir(`<div style="display:flex;justify-content:space-between;align-items:center"><h2>Ajouter un modèle</h2><button class="btn pt" id="x">Fermer</button></div>
-   <div class="champ"><label>Fournisseur</label><select><option>Fournisseur A (en ligne)</option><option>Fournisseur B (en ligne)</option><option>Sur la machine (local)</option></select></div>
-   <div class="champ"><label>Nom du modèle</label><input type="text" placeholder="nom-du-modele"></div>
-   <div class="champ"><label>Clé API</label><input type="text" placeholder="collée ici, rangée dans le coffre, jamais relue"></div>
-   <div class="idee-bloc" style="padding:10px;border-radius:12px">${idee('Passage obligatoire par les épreuves')}<div class="note" style="margin-top:4px">Le modèle ne sert aucun agent tant qu'il n'a pas passé les 8 épreuves de sûreté (onglet « Sûr & refusé »).</div></div>
-   <div class="pal"><button class="btn prim" id="ok">Ajouter et lancer les épreuves</button></div>`);
-  document.addEventListener('click',function f(e){if(e.target.id==='x'){fermer();document.removeEventListener('click',f)}if(e.target.id==='ok'){toast('Modèle déclaré (maquette) — épreuves lancées');fermer();document.removeEventListener('click',f)}});
+  $('#m-add').onclick=()=>formModele(null);
+  $$('[data-md]').forEach(b=>b.onclick=()=>formModele(MODELES.find(m=>m.id===b.dataset.md)));
+}
+function formModele(m){
+  const neuf=!m;const d=m?Object.assign({},m):mdef({id:'m-'+Date.now(),nom:'',four:FOURNISSEURS[0].nom,fid:'a',type:'ligne',prix:0,lat:0,cle:'aucune',etat:'ok',roles:[],url:FOURNISSEURS[0].url,prix:3,prixOut:12});
+  const utilise=!neuf&&AGENTS.some(a=>a.modele===m.id||a.secours===m.id);
+  tiroir(`<div style="display:flex;justify-content:space-between;align-items:center"><h2>${neuf?'Ajouter un modèle en ligne':'Modifier '+esc(m.nom)}</h2><button class="btn pt" id="x">Fermer</button></div>
+   <div class="champ"><label for="f-four">Fournisseur</label><select id="f-four">${FOURNISSEURS.map(f=>`<option value="${f.id}" ${f.id===d.fid?'selected':''}>${f.nom}</option>`).join('')}</select></div>
+   <div class="champ"><label for="f-url">Adresse de l\'API</label><div><input type="text" id="f-url" value="${esc(d.url)}" placeholder="https://api.exemple.test/v1" class="mono" style="width:100%"><div class="note" id="f-proto"></div></div></div>
+   <div class="champ"><label for="f-nom">Nom du modèle</label><div><input type="text" id="f-nom" value="${esc(d.nom)}" placeholder="nom-du-modele" class="mono" style="width:100%"><div class="note">Un nom, pas une adresse : exactement celui que le fournisseur annonce.</div></div></div>
+   <div class="champ"><label for="f-cle">Clé API</label><div><input type="password" id="f-cle" autocomplete="off" placeholder="${d.cle==='coffre'?'•••••••• (rangée dans le coffre)':'colle la clé ici'}" style="width:100%"><div class="note">À l\'enregistrement, la clé part dans le coffre de service ; on ne la relit jamais. Pour la changer, colles-en une nouvelle.</div></div></div>
+   <details ${neuf?'':'open'}><summary style="cursor:pointer;font-weight:650;font-size:12.8px;padding:6px 0">Prix, limites et capacités</summary>
+    <div class="champ"><label>Prix € / million de jetons</label><div style="display:flex;gap:8px"><input type="text" id="f-pin" value="${d.prix}" style="width:90px" aria-label="Prix d\'entrée"><input type="text" id="f-pout" value="${d.prixOut}" style="width:90px" aria-label="Prix de sortie"><span class="note">entrée · sortie</span></div></div>
+    <div class="champ"><label for="f-max">Jetons max par réponse</label><div><input type="range" id="f-max" min="256" max="64000" step="256" value="${d.maxJ}"><div class="note" id="f-maxv">${fr(d.maxJ)} (un modèle qui raisonne compte sa réflexion ici)</div></div></div>
+    <div class="champ"><label for="f-del">Délai d\'attente (s)</label><input type="text" id="f-del" value="${d.delai}" style="width:90px"></div>
+    <div class="champ"><label for="f-rpm">Requêtes par minute</label><input type="text" id="f-rpm" value="${d.rpm}" style="width:90px"></div>
+    <div class="champ"><label>Capacités</label><div style="display:flex;gap:16px;flex-wrap:wrap"><label class="sw"><input type="checkbox" id="f-out" ${d.outils?'checked':''}><i></i><span>Appels d\'outils</span></label><label class="sw"><input type="checkbox" id="f-vis" ${d.vision?'checked':''}><i></i><span>Lit les images</span></label></div></div></details>
+   <div class="champ"><label>Peut servir de</label><div style="display:flex;gap:12px;flex-wrap:wrap">${['principal','secours','relecteur','vision','itare_citadelle'].map(r=>`<label class="sw"><input type="checkbox" data-role="${r}" ${(d.roles||[]).includes(r)?'checked':''}><i></i><span>${r}</span></label>`).join('')}</div></div>
+   <div class="verre carte" style="padding:12px;background:var(--verre-fort)"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>Tester la connexion</b><button class="btn" id="f-test">Lancer le test</button></div><div id="f-log" class="note" style="margin-top:8px">Le test vérifie l\'adresse, la clé, le nom du modèle, les appels d\'outils et le coût d\'un échange. La clé n\'est affichée nulle part.</div></div>
+   <div class="idee-bloc" style="padding:10px;border-radius:12px">${idee('Épreuves obligatoires')}<div class="note" style="margin-top:4px">Le modèle ne sert aucun agent tant qu\'il n\'a pas passé les 8 épreuves de sûreté (onglet « Sûr & refusé » d\'un agent).</div></div>
+   <div class="pal"><button class="btn prim" id="f-ok">${neuf?'Ajouter et lancer les épreuves':'Enregistrer'}</button>${neuf?'':`<button class="btn" id="f-act">${d.actif?'Désactiver':'Réactiver'}</button><button class="btn dng" id="f-del2" ${utilise?'disabled title="Utilisé par un agent : change d\'abord son modèle"':''}>Retirer du registre</button>`}</div>`);
+  const maj=()=>{const f=FOURNISSEURS.find(x=>x.id===$('#f-four').value);$('#f-proto').textContent='Protocole : '+f.proto+(f.id==='compat'?' — colle l\'adresse du fournisseur (se termine souvent par /v1).':'');};
+  maj();$('#f-four').onchange=()=>{const f=FOURNISSEURS.find(x=>x.id===$('#f-four').value);if(f.url)$('#f-url').value=f.url;else if(f.id==='compat')$('#f-url').value='';maj()};
+  $('#f-max').oninput=e=>{$('#f-maxv').textContent=fr(e.target.value)+' (un modèle qui raisonne compte sa réflexion ici)'};
+  $('#x').onclick=fermer;
+  $('#f-test').onclick=async()=>{const url=$('#f-url').value.trim(),nom=$('#f-nom').value.trim(),cle=$('#f-cle').value||(d.cle==='coffre'?'ok':'');const L=$('#f-log');
+    const pas=[['Adresse '+(url||'(vide)'),!!url&&/^https?:/.test(url),'adresse invalide : elle doit commencer par https:// (ou http:// en local)'],['Clé acceptée par le fournisseur',!!cle,'aucune clé : colle-la dans le champ'],['Modèle « '+(nom||'?')+' » trouvé',!!nom,'nom du modèle manquant'],['Appel d\'outils compris',$('#f-out').checked,'ce modèle n\'appelle pas d\'outils : les agents ne pourraient pas agir avec lui'],['Réponse en '+(1.1+Math.random()*1.3).toFixed(1)+' s · coût du test ≈ '+(0.0004).toFixed(4)+' €',true,'']];
+    L.innerHTML='';let ok=true;$('#f-test').disabled=true;
+    for(const p of pas){await wait(380);L.insertAdjacentHTML('beforeend',`<div class="etape ${p[1]?'ok':'dg'}" style="margin-top:5px"><div class="i">${p[1]?'✓':'✕'}</div><div>${p[1]?p[0]:p[2]}</div></div>`.replace(/\'/g,"'"));if(!p[1]){ok=false;break}}
+    L.insertAdjacentHTML('beforeend',`<div class="puce ${ok?'ok':'dg'}" style="margin-top:8px">${ok?'Connexion valide — la clé est rangée au moment d\'enregistrer':'Test échoué — rien n\'est enregistré'}</div>`.replace(/\'/g,"'"));$('#f-test').disabled=false};
+  $('#f-ok').onclick=()=>{const nom=$('#f-nom').value.trim();if(!nom){toast('Donne un nom de modèle');return}
+    const f=FOURNISSEURS.find(x=>x.id===$('#f-four').value);const roles=$$('[data-role]').filter(c=>c.checked).map(c=>c.dataset.role);
+    const o=Object.assign(m||d,{nom,fid:f.id,four:f.nom,url:$('#f-url').value.trim(),prix:parseFloat($('#f-pin').value)||0,prixOut:parseFloat($('#f-pout').value)||0,maxJ:+$('#f-max').value,delai:+$('#f-del').value||60,rpm:+$('#f-rpm').value||60,outils:$('#f-out').checked,vision:$('#f-vis').checked,roles,type:f.id==='local'?'local':'ligne'});
+    if($('#f-cle').value)o.cle='coffre';if(neuf)MODELES.push(o);
+    journalise({ag:'cassandra',type:'réglage',st:'fait',titre:(neuf?'Modèle ajouté : ':'Modèle modifié : ')+nom,sous:'Adresse '+(o.url||'locale')+' · clé '+(o.cle==='coffre'?'rangée dans le coffre':'aucune'),pourquoi:'Geste de l\'administrateur.',rev:true});
+    fermer();toast(neuf?'Modèle ajouté — épreuves lancées (maquette)':'Modèle enregistré');vModeles()};
+  const ac=$('#f-act');if(ac)ac.onclick=()=>{m.actif=!m.actif;fermer();toast(m.nom+(m.actif?' réactivé':' désactivé'));vModeles()};
+  const dl=$('#f-del2');if(dl)dl.onclick=()=>{const i=MODELES.indexOf(m);MODELES.splice(i,1);fermer();toast('Retiré du registre',()=>{MODELES.splice(i,0,m);vModeles()});vModeles()};
 }
 
 /* ════════════ JOURNAL GLOBAL & MAISON ════════════ */
@@ -1019,6 +1108,7 @@ const CNEC={cn:[
 const MODS=[["affichage", "socle", "vital", 20, 12, 8, 0, 0, 2, 2, 0, "itare", 0], ["agenda", "gestion", "important", 17, 9, 6, 2, 0, 6, 6, 0, "itare", 0], ["agents", "agents", "vital", 8, 3, 4, 1, 0, 2, 2, 0, "itare", 0], ["billetterie", "finance", "optionnel", 142, 70, 46, 25, 1, 0, 0, 0, "itare",1], ["canaux", "canaux", "optionnel", 4, 3, 1, 0, 0, 0, 0, 0, "itare", 0], ["canvas", "gestion", "optionnel", 4, 3, 1, 0, 0, 0, 0, 0, "itare", 0], ["certificats", "securite", "important", 4, 4, 0, 0, 0, 0, 0, 0, "cassandra", 0], ["coffre", "securite", "vital", 14, 7, 2, 5, 0, 2, 2, 2, "aucun", 0], ["comptes", "securite", "vital", 26, 9, 9, 7, 1, 8, 8, 0, "aucun", 0], ["contacts", "gestion", "optionnel", 38, 14, 19, 5, 0, 16, 16, 0, "itare", 0], ["courrier", "communication", "important", 17, 8, 4, 4, 1, 7, 7, 0, "itare", 0], ["dns", "reseau", "optionnel", 5, 3, 1, 1, 0, 2, 0, 0, "cassandra", 0], ["dolibarr", "finance", "optionnel", 14, 8, 0, 4, 2, 6, 5, 0, "itare", 0], ["droits", "securite", "vital", 13, 8, 1, 3, 1, 5, 5, 0, "aucun", 0], ["evolution", "evolution", "optionnel", 5, 2, 0, 3, 0, 2, 1, 0, "cassandra", 0], ["fastpanel", "hebergement", "important", 27, 17, 0, 6, 4, 6, 5, 0, "cassandra", 0], ["flotte", "reseau", "important", 19, 11, 4, 3, 1, 8, 0, 0, "cassandra", 0], ["ged", "gestion", "optionnel", 27, 12, 14, 1, 0, 0, 0, 0, "itare", 1], ["jour", "socle", "important", 1, 1, 0, 0, 0, 0, 0, 0, "itare", 0], ["journal", "supervision", "optionnel", 18, 14, 4, 0, 0, 2, 2, 2, "cassandra", 0], ["mandats", "echanges", "important", 6, 3, 3, 0, 0, 0, 0, 0, "itare", 0], ["memoire", "agents", "important", 28, 13, 13, 2, 0, 12, 12, 12, "itare", 0], ["menus", "socle", "vital", 3, 2, 1, 0, 0, 1, 1, 0, "itare", 0], ["mesures", "supervision", "optionnel", 6, 6, 0, 0, 0, 0, 0, 0, "cassandra", 0], ["modeles", "agents", "vital", 15, 5, 5, 4, 1, 3, 3, 0, "aucun", 0], ["modules", "socle", "vital", 19, 7, 4, 4, 4, 9, 9, 9, "cassandra", 0], ["notes", "gestion", "optionnel", 38, 20, 15, 3, 0, 13, 13, 0, "itare", 1], ["notifications", "communication", "vital", 8, 3, 5, 0, 0, 3, 3, 0, "itare", 0], ["planifie", "systeme", "important", 19, 10, 3, 3, 3, 9, 0, 0, "cassandra", 0], ["proactif", "supervision", "important", 18, 9, 9, 0, 0, 0, 0, 0, "cassandra", 0], ["projets", "gestion", "optionnel", 26, 9, 15, 2, 0, 7, 7, 0, "itare", 1], ["reglages", "socle", "vital", 5, 2, 2, 1, 0, 2, 2, 0, "cassandra",0], ["salon", "echanges", "optionnel", 20, 8, 10, 2, 0, 12, 12, 2, "itare", 1], ["sauvegardes", "supervision", "important", 7, 4, 3, 0, 0, 0, 0, 0, "cassandra", 0], ["securite", "securite", "important", 18, 6, 4, 6, 2, 0, 0, 0, "cassandra", 0], ["sensorium", "supervision", "important", 8, 8, 0, 0, 0, 0, 0, 0, "cassandra", 0], ["sites", "hebergement", "important", 18, 9, 7, 2, 0, 8, 6, 0, "cassandra", 0], ["societes", "socle", "vital", 31, 15, 5, 11, 0, 0, 0, 0, "aucun", 1], ["taches", "gestion", "optionnel", 9, 4, 4, 1, 0, 4, 4, 0, "itare", 0], ["telegram", "canaux", "optionnel", 7, 2, 1, 4, 0, 1, 1, 0, "itare", 0], ["themes", "socle", "optionnel", 0, 0, 0, 0, 0, 0, 0, 0, "itare", 0], ["urgence", "securite", "important", 9, 1, 1, 6, 1, 0, 0, 0, "cassandra", 0], ["voix", "echanges", "optionnel", 7, 4, 3, 0, 0, 0, 0, 0, "itare", 0], ["vue", "supervision", "important", 1, 1, 0, 0, 0, 0, 0, 0, "cassandra", 0], ["webauthn", "securite", "important", 8, 3, 0, 5, 0, 0, 0, 0, "aucun", 0]];
 const LIENS=[
  ['salon','Le Salon','Le fil des conversations',['Les résidents d\'un fil (Cassandra, Itare, Amizo) viennent du module Agents : plus de liste en dur dans le Salon.','Une passation est un message d\'un agent à un autre, visible dans le fil.','Une proposition « À valider » est un message avec ses boutons (Accepter, Refuser, Plus tard).','Ce qu\'Amizo transmet arrive dans le fil du destinataire avec ses sources.','Le panneau ✦ choisit l\'interlocuteur ; Amizo pour toute recherche.'],'À modifier dans le Salon : lire ses résidents depuis Agents ; accepter un message « proposition ».'],
+ ['affichage','Affichage et menus','L\'entrée « Agents IA »',['L\'entrée « Mon Itare » du Desk disparaît (la rubrique moi-itare est retirée).','« Agents IA » n\'est plus réservée à l\'administrateur : elle s\'ouvre à tous les comptes et montre à chacun sa vue (Mon Itare, ou l\'équipe).','Le panneau ✦ choisit l\'interlocuteur ; la page Conversations en est le prolongement.'],'À modifier : EC_disposition (retirer le rôle admin de l\'entrée), CN_disposition.js (rubrique moi-itare), le test agents-ia.spec.js.'],
  ['droits','Droits','Les droits déclarés',['Les six droits ci-dessus ; chaque capacité en nomme un, sinon l\'installation est refusée.'],'Rien à modifier.'],
  ['societes','Sociétés et comptes','Le cloisonnement',['Amizo lit les espaces partagés d\'une société seulement (ctx.dans_ma_societe).','Itare est lié à un compte ; un compte n\'en voit pas un autre.'],'Rien à modifier.'],
  ['modeles','Modèles et coffre','Le registre et les clés',['La page « Modèles & clés » est celle du module Modèles, affichée ici et non refaite.','Les clés restent dans le coffre ; un agent ne les lit jamais.'],'Rien à modifier ; l\'écran l\'intègre.'],
@@ -1084,6 +1174,98 @@ function recruter(){
   dessin();$('#tiroir').classList.add('on');
 }
 
+/* ════════════ INVENTAIRE, ÉTATS LIMITES, CONVERSATIONS ════════════ */
+function inv(a){
+  if(a.id==='amizo'){const m=MODS.filter(x=>x[12]);return fr(m.reduce((s,x)=>s+x[4],0))+' lectures partagées dans '+m.length+' modules, plus ses 5 outils propres'}
+  const m=MODS.filter(x=>x[11]===a.id);
+  if(!m.length)return 'quelques outils propres (le service n\'a pas de module à lui)';
+  return fr(m.reduce((s,x)=>s+x[3],0))+' capacités dans '+m.length+' modules'}
+function mandatHtml(){return `<div class="verre carte" style="padding:10px;background:var(--accent-doux)"><b>Mandat d'envoi</b>
+  <div class="l2"><span class="g">De</span><span>ton adresse (jamais celle d'un autre)</span></div><div class="l2"><span class="g">À</span><span>9 membres du conseil</span></div>
+  <div class="l2"><span class="g">Objet</span><span>Compte rendu du conseil — 14 octobre</span></div><div class="l2"><span class="g">Valable</span><span>24 h, un seul envoi</span></div>
+  <details><summary style="cursor:pointer;font-size:12px;font-weight:650">Voir le brouillon</summary><div class="muet" style="font-size:12.2px;margin-top:6px">Bonjour à toutes et tous, voici le compte rendu du conseil du 14 octobre : le budget de la saison est voté (4 200 €), un point est à rediscuter en janvier… (brouillon écrit par Itare, modifiable avant l'envoi)</div></details></div>`}
+function bandeauSim(){
+  const u=S.role==='user';
+  const b=(ico,t,txt)=>`<section class="verre etat gel" style="margin-bottom:14px"><div class="rond">${ico}</div><div class="t"><h2>${t}</h2><p class="muet" style="font-size:12.5px;margin-top:3px">${txt}</p></div><button class="btn" id="sim-off">Rétablir</button></section>`;
+  if(S.sim==='panne')return b('⚠',u?'Itare répond avec son modèle de secours':'Le modèle principal ne répond pas',u?'Tu peux continuer à lui parler ; ses réponses peuvent être un peu moins fines, et rien n\'est perdu.':'Cassandra, Amizo et le Relecteur ont basculé sur leur modèle de secours en moins de 2 secondes. La panne est gardée à part : elle n\'entre pas dans les conversations ni dans la mémoire.').replace(/\'/g,"'");
+  if(S.sim==='quota')return b('⏳',u?'Un service est ralenti':'Le quota du fournisseur C est épuisé',u?'Itare continue sur son modèle local.':'Les agents qui s\'en servaient (modèle gratuit) passent sur un modèle local. Un modèle sans quota n\'est jamais lu comme « zéro » : il est dit épuisé. Le quota revient demain 02:00.').replace(/\'/g,"'");
+  if(S.sim==='plafond')return b('€',u?'Le plafond de coût du jour est atteint':'Plafond global atteint — '+eur(GLOBAL.plafond),u?'Itare est en pause jusqu\'à demain ou jusqu\'à ce qu\'un administrateur relève le plafond.':'Selon ton réglage : '+ACTIONS_PLAFOND[GLOBAL.action]+'. Essaie de parler à un agent dans « Conversations » pour voir l\'effet.').replace(/\'/g,"'");
+  return '';
+}
+function onboarding(n){
+  S.ob=n;const st=['Choisir un modèle','Ranger la clé','Passer les épreuves','Terminé'];
+  $('#vue').innerHTML=`<section class="verre carte"><h2>Bienvenue — aucun modèle n\'est encore enregistré</h2><p class="muet" style="font-size:12.5px">C\'est le message que tu vois aujourd\'hui (« l\'agent ne peut pas répondre »). Trois gestes et les agents parlent : un modèle, sa clé rangée dans le coffre, huit épreuves de sûreté.</p>
+    <div class="pal">${st.map((x,i)=>`<span class="puce ${i<n?'ok':i===n?'':'mu'}">${i+1}. ${x}</span>`).join('')}</div><div id="ob-c" class="corps"></div></section>`.replace(/\'/g,"'");
+  const c=$('#ob-c');
+  if(n===0){c.innerHTML=`<div class="cadran">${MODELES.filter(m=>m.etat==='ok').slice(0,3).map((m,i)=>`<button class="opt ${i===(S.obm||0)?'on':''}" data-m="${i}"><b>${m.nom}</b><span>${m.type==='local'?'Sur la machine, gratuit, plus lent':m.four+' · '+m.prix.toFixed(2)+' €/M'}</span></button>`).join('')}</div><div class="pal"><button class="btn prim" id="ob-n">Continuer</button></div>`;
+    $$('#ob-c [data-m]').forEach(b=>b.onclick=()=>{S.obm=+b.dataset.m;onboarding(0)});$('#ob-n').onclick=()=>onboarding(MODELES[S.obm||0].type==='local'?2:1)}
+  if(n===1){c.innerHTML=`<div class="champ"><label for="ob-k">Clé API</label><input type="text" id="ob-k" placeholder="collée ici, rangée dans le coffre, jamais relue"></div><div class="note">La clé part dans le coffre de service : elle ne s\'affiche plus jamais, ni ici ni dans un agent.</div><div class="pal"><button class="btn" id="ob-p">Retour</button><button class="btn prim" id="ob-n">Ranger la clé</button></div>`.replace(/\'/g,"'");
+    $('#ob-p').onclick=()=>onboarding(0);$('#ob-n').onclick=()=>onboarding(2)}
+  if(n===2){c.innerHTML=`<div id="ob-ep">${EPREUVES.map((e,i)=>`<div class="l2"><div><b>${e[0]}</b></div><span class="puce mu" id="obe${i}">en attente</span></div>`).join('')}</div><div class="pal"><button class="btn prim" id="ob-go">Lancer les 8 épreuves</button></div>`;
+    $('#ob-go').onclick=async()=>{$('#ob-go').disabled=true;for(let i=0;i<8;i++){await wait(220);const e=$('#obe'+i);if(e){e.className='puce ok';e.textContent='réussie'}}onboarding(3)}}
+  if(n===3){c.innerHTML=`<div class="etat"><div class="rond">✓</div><div class="t"><h2>Les agents peuvent répondre</h2><p class="muet" style="font-size:12.5px">Le modèle a passé les huit épreuves. Cassandra, Itare et Amizo l\'utilisent ; tu pourras en ajouter d\'autres dans « Modèles & clés ».</p></div><button class="btn prim" id="ob-f">Voir l\'équipe</button></div>`.replace(/\'/g,"'");
+    $('#ob-f').onclick=()=>{S.sim='';$('#sim').value='';S.ob=0;render()}}
+}
+const CONVS=[
+ {id:'c1',ag:'itare',titre:'Préparer le conseil de jeudi',date:'aujourd\'hui',msgs:[['u','Prépare ma journée.'],['a','Ta journée : 2 réunions le matin (10 h et 11 h 30), l\'après-midi libre. J\'ai créé la tâche « Préparer le conseil » sur l\'après-midi.']]},
+ {id:'c2',ag:'amizo',titre:'Règles de déduction des dons',date:'aujourd\'hui',msgs:[['u','Cherche la règle de déduction fiscale des dons aux associations.'],['a','Trois sources lues, une retenue : réduction d\'impôt dans une limite annuelle (source externe, état « non vérifié »). Fiche classée en quarantaine.']]},
+ {id:'c3',ag:'cassandra',titre:'Certificat de l\'atelier',date:'hier',msgs:[['u','Le certificat de atelier.exemple.test expire dans 9 jours.'],['a','Certificat renouvelé : 90 jours, l\'ancien reste 30 jours si tu veux revenir en arrière.']]},
+ {id:'c4',ag:'itare',titre:'Fil principal',date:'lundi',msgs:[['u','Merci pour le rangement des notes.'],['a','Avec plaisir : 12 notes dans « Association », la liste des anciens emplacements est gardée.']]}
+].map(c=>({...c,date:c.date.replace(/\'/g,"'"),titre:c.titre.replace(/\'/g,"'"),msgs:c.msgs.map(m=>[m[0],m[1].replace(/\'/g,"'")])}));
+function convsVisibles(){return CONVS.filter(c=>S.role==='admin'||c.ag!=='cassandra')}
+function vConv(){
+  const L=convsVisibles();if(!L.find(c=>c.id===S.cv.id))S.cv.id=(L[0]||{}).id;
+  const c=L.find(x=>x.id===S.cv.id);
+  $('#vue').innerHTML=`<div class="conv-g"><section class="verre carte"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Conversations</h2><button class="btn pt prim" id="cv-new">+ Nouvelle</button></div>
+    <input type="search" id="cv-q" placeholder="Chercher…"><div class="conv-l" id="cv-l"></div>
+    <div class="note">Les fils partagés avec d'autres personnes vivent dans le Salon ; ici, tes échanges avec les agents.</div></section>
+   <section class="verre" style="display:flex;flex-direction:column;overflow:hidden"><div id="cv-t"></div></section></div>`;
+  const liste=()=>{const q=($('#cv-q').value||'').toLowerCase();$('#cv-l').innerHTML=L.filter(x=>!q||x.titre.toLowerCase().includes(q)).map(x=>{const A=ag(x.ag);return `<button class="conv-i ${x.id===S.cv.id?'on':''}" data-c="${x.id}"><div class="avatar" style="background:${A.coul};width:30px;height:30px;font-size:13px;border-radius:10px">${A.lettre}</div><div style="min-width:0"><div class="t">${esc(x.titre)}</div><div class="note">${A.nom} · ${x.date} · ${x.msgs.length} messages</div></div></button>`}).join('')||'<div class="note" style="padding:10px">Aucune conversation.</div>';
+    $$('#cv-l [data-c]').forEach(b=>b.onclick=()=>{S.cv.id=b.dataset.c;vConv()})};
+  liste();$('#cv-q').oninput=liste;
+  const A=c?ag(c.ag):null;
+  $('#cv-t').innerHTML=c?`<div style="display:flex;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--filet);flex-wrap:wrap"><div class="avatar" style="background:${A.coul};width:34px;height:34px;font-size:14px;border-radius:11px">${A.lettre}</div><div style="flex:1;min-width:140px"><b>${esc(c.titre)}</b><div class="note">avec ${A.nom}</div></div>
+    <button class="btn pt" id="cv-ren">Renommer</button><button class="btn pt dng" id="cv-del">Supprimer</button></div>
+    <div class="chat" id="cv-chat" style="height:min(380px,50vh)">${c.msgs.map(m=>`<div class="bulle ${m[0]}">${esc(m[1])}</div>`).join('')}</div>
+    <div style="padding:8px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--filet)"><label class="sw"><input type="checkbox" id="cv-fige" ${S.cv.fige?'checked':''}><i></i><span>Figer ce fil <span class="note">(la navigation ne le quitte plus)</span></span></label><span class="note">Interlocuteur automatique selon la page : ${S.role==='user'?'Itare':'Cassandra pour la machine, Itare pour le bureau, Amizo pour une recherche'}.</span></div>
+    ${S.cv.pj?`<div style="padding:0 12px 6px"><span class="puce">📎 ${esc(S.cv.pj)} · lue par Vision</span> <button class="btn pt" id="cv-pjx">Retirer</button></div>`:''}
+    <div class="saisie"><button class="btn" id="cv-pj" aria-label="Joindre un fichier">📎</button><input type="text" id="cv-in" placeholder="Écrire à ${A.nom}…" aria-label="Message"><button class="btn prim" id="cv-ok">Envoyer</button><button class="btn dng" id="cv-stop" style="display:none">■ Arrêter</button></div>`:'<div class="note" style="padding:20px">Aucune conversation. Crée-en une avec « + Nouvelle ».</div>';
+  if(!c)return;
+  const ch=$('#cv-chat');ch.scrollTop=ch.scrollHeight;
+  $('#cv-fige').onchange=e=>{S.cv.fige=e.target.checked;toast(S.cv.fige?'Fil figé':'Fil libre')};
+  $('#cv-pj').onclick=()=>{S.cv.pj='facture-fournisseur.jpg';vConv()};const px=$('#cv-pjx');if(px)px.onclick=()=>{S.cv.pj='';vConv()};
+  $('#cv-ren').onclick=()=>{const n=prompt('Nouveau titre',c.titre);if(n&&n.trim()){const av=c.titre;c.titre=n.trim();toast('Renommée',()=>{c.titre=av;vConv()});vConv()}};
+  $('#cv-del').onclick=()=>{const i=CONVS.indexOf(c);CONVS.splice(i,1);journalise({ag:c.ag,type:'acte',st:'fait',titre:'Conversation supprimée : '+c.titre,sous:'Une copie est gardée dans le résultat de l\'acte.'.replace(/\'/g,"'"),pourquoi:'Geste de l\'utilisateur.'.replace(/\'/g,"'"),outil:'conversation.supprimer',palier:'auto',preuve:'La conversation n\'existe plus.'.replace(/\'/g,"'"),retour:'Recréer la conversation depuis la copie gardée.',rev:true});toast('Conversation supprimée',()=>{CONVS.splice(i,0,c);vConv()});vConv()};
+  const envoie=async()=>{const v=$('#cv-in').value.trim();if(!v||S.cv.run)return;S.cv.run=true;S.cv.stop=false;
+    const pj=S.cv.pj;S.cv.pj='';c.msgs.push(['u',(pj?'📎 '+pj+'\n':'')+v]);
+    ch.insertAdjacentHTML('beforeend',`<div class="bulle u">${esc((pj?'📎 '+pj+'\n':'')+v)}</div><div class="bulle a" id="cv-att">…</div>`);ch.scrollTop=ch.scrollHeight;$('#cv-in').value='';$('#cv-ok').style.display='none';$('#cv-stop').style.display='';
+    $('#cv-stop').onclick=()=>{S.cv.stop=true};
+    await wait(500);let rep;
+    if(S.cv.stop)rep='Arrêté entre deux étapes : rien n\'a été fait de plus. Une action déjà lancée finit, avec son journal et son retour.';
+    else if(S.sim==='plafond'&&GLOBAL.action>0&&!(GLOBAL.action===1&&c.ag==='cassandra'))rep='Le plafond de coût du jour est atteint : '+ACTIONS_PLAFOND[GLOBAL.action]+'.';
+    else{const low=v.toLowerCase();const sc=SCEN.filter(s=>s.pour.includes(c.ag)).map(s=>({s,n:s.cle.filter(k=>low.includes(k)).length})).sort((x,y)=>y.n-x.n)[0];
+      if(!sc||!sc.n)rep='Je n\'ai pas d\'outil pour ça, et je ne vais pas inventer de réponse.';
+      else{const tools=sc.s.etapes.filter(e=>e.t==='tool'||e.t==='via').map(e=>({ag:e.t==='via'?e.ag:c.ag,o:e.o}));const tout=tools.every(t=>(ETAT[t.ag]||{})[t.o]==='auto');rep=tout?sc.s.fin.fait:sc.s.fin.racon;
+        if(!tout&&!GEL){}if(GEL)rep='La pause est posée : je ne touche à rien. '+sc.s.fin.racon}}
+    if(S.sim==='panne')rep+=' (réponse du modèle de secours)';
+    rep=rep.replace(/\'/g,"'");
+    if(pj)rep='Vision a lu '+pj+' : un document de 184,20 € (total lisible, date floue). '+rep;
+    c.msgs.push(['a',rep]);const at=$('#cv-att');if(at){at.removeAttribute('id');at.textContent=rep}
+    $('#cv-stop').style.display='none';$('#cv-ok').style.display='';S.cv.run=false;ch.scrollTop=ch.scrollHeight;liste()};
+  $('#cv-ok').onclick=envoie;$('#cv-in').onkeydown=e=>{if(e.key==='Enter')envoie()};
+  $('#cv-new').onclick=()=>{const ags=AGENTS.filter(x=>!x.service&&(S.role==='admin'||x.id!=='cassandra'));let ch0=ags[0].id;
+    tiroir(`<div style="display:flex;justify-content:space-between;align-items:center"><h2>Nouvelle conversation</h2><button class="btn pt" id="x">Fermer</button></div>
+     <div class="champ"><label for="nv-a">Avec</label><select id="nv-a">${ags.map(x=>`<option value="${x.id}">${x.nom} — ${x.role}</option>`).join('')}</select></div>
+     <div class="champ"><label for="nv-t">Titre</label><input type="text" id="nv-t" placeholder="(facultatif)"></div><div class="pal"><button class="btn prim" id="nv-ok">Ouvrir</button></div>`);
+    $('#x').onclick=fermer;$('#nv-ok').onclick=()=>{const id='c'+Date.now();CONVS.unshift({id,ag:$('#nv-a').value,titre:$('#nv-t').value.trim()||'Nouvelle conversation',date:'à l\'instant'.replace(/\'/g,"'"),msgs:[]});S.cv.id=id;fermer();toast('Conversation ouverte');vConv()}};
+}
+document.addEventListener('click',e=>{if(e.target.id==='sim-off'){S.sim='';$('#sim').value='';render()}});
+function setRole(r){S.role=r;$$('#role-seg button').forEach(x=>x.classList.toggle('on',x.dataset.r===r));$('#gel-btn').style.display=r==='user'?'none':'';
+  if(r==='user'&&S.vue!=='conv'&&S.vue!=='boite'&&S.vue!=='journal'){S.vue='fiche';S.agent='itare';S.onglet='apercu'}render()}
+$$('#role-seg button').forEach(b=>b.onclick=()=>setRole(b.dataset.r));
+$('#soc').onchange=e=>{S.soc=e.target.value;toast('Société active : '+S.soc);render()};
+$('#sim').onchange=e=>{S.sim=e.target.value;S.ob=0;render()};
+
 /* ════════════ THÈME & IDÉES ════════════ */
 $$('#themes button').forEach(b=>b.onclick=()=>{S.theme=b.dataset.th;document.documentElement.setAttribute('data-theme',b.dataset.th==='light'?'':b.dataset.th);$$('#themes button').forEach(x=>x.classList.toggle('on',x===b))});
 $('#sw-idees').onchange=e=>document.body.classList.toggle('sans-idees',!e.target.checked);
@@ -1095,6 +1277,7 @@ initPaliers();
 appliquerNiveau(ag('cassandra'),'reine');appliquerNiveau(ag('itare'),'entretien');appliquerNiveau(ag('relecteur'),'observer');appliquerNiveau(ag('vision'),'observer');appliquerNiveau(ag('amizo'),'reine');appliquerNiveau(ag('auditeur'),'observer');
 render();
 if(h.get('v')){S.vue=h.get('v');if(h.get('a'))S.agent=h.get('a');if(h.get('o'))S.onglet=h.get('o');render()}
+if(h.get('role')||h.get('sim')||h.get('soc')){if(h.get('sim')){S.sim=h.get('sim');$('#sim').value=S.sim}if(h.get('soc')){S.soc=h.get('soc');$('#soc').value=S.soc}if(h.get('role'))setRole(h.get('role'));else render()}
 })();
 </script>
 </body>
