@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ef3639
+// VERSION CN : 0.1.0  #0a4d7f
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ef3639 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=0a4d7f ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -148,7 +148,8 @@
     }
     async function oApercu(f) {
       const a = f.agent, n = f.decompte || {};
-      const d = await dernierGestes(a).catch(() => null);
+      S.gestes = null;
+      dernierGestes(a).catch(() => null).then((d) => { S.gestes = d && d.length ? d.slice(0, 5).map((x) => '<div class="ag-ligne" style="padding:4px 0"><span>' + esc(x.action) + '</span><span class="g">' + esc(x.ts) + "</span></div>").join("") : '<p class="note">Rien à montrer pour le moment.</p>'; peindreGestes(); });
       return '<div class="g2"><section class="carte"><h3>Qui est ' + esc(a.nom) + '</h3><p class="note">' + esc(a.role) + "</p>" +
         '<div class="ag-ligne"><span class="g">Ton</span><b style="max-width:62%">' + esc(a.ton || "le ton d'origine") + "</b></div>" +
         '<div class="ag-ligne"><span class="g">Modèle principal</span><b>' + esc(a.modele || "par défaut") + "</b></div>" +
@@ -159,10 +160,11 @@
         NIVEAUX.map(([k, l, t]) => '<button class="radio' + (a.niveau === k ? " on" : "") + '" data-niveau="' + k + '"><i></i><span><b>' + l + '</b><br><span class="note">' + t + "</span></span></button>").join("") + "</div>" +
         '<div class="ag-puces">' + pill((n.auto || 0) + " outils en auto", "ok") + pill((n.raconter || 0) + " racontés", "al") + pill((n.retire || 0) + " retirés") + "</div>" +
         '<p class="note">Le niveau est un réglage, pas un interdit codé : il se précise outil par outil (onglet « Outils & palier »). La sûreté vient de la preuve et du retour arrière.</p></section></div>' +
-        '<section class="carte"><h3>Ses derniers gestes</h3>' + (d && d.length ? d.slice(0, 5).map((x) => '<div class="ag-ligne" style="padding:4px 0"><span>' + esc(x.action) + '</span><span class="g">' + esc(x.ts) + "</span></div>").join("") : '<p class="note">Rien à montrer pour l\'instant.</p>') +
+        '<section class="carte"><h3>Ses derniers gestes</h3><div id="ag-gestes"><p class="note">Chargement…</p></div>' +
         '<div><button class="btn mini" data-onglet-vers="journal">Tout le journal</button></div></section>' +
         nonBranche("Carte de confiance", "Un outil raconté qui a huit validations de suite sans refus est proposé en auto, jamais passé seul. Pas encore construit.");
     }
+    function peindreGestes() { const z = racine.querySelector("#ag-gestes"); if (z && S.gestes) z.innerHTML = S.gestes; }
     async function dernierGestes(a) {
       const r = await API.journal(a.id === "itare" ? "itare" : a.id, 8);
       return (r.entrees || []).filter(mien).map((e) => ({ action: String(e.action || e.sujet || ""), ts: String(e.ts || "").replace("T", " ").slice(0, 16) }));
@@ -322,6 +324,7 @@
     const lancer = async (fn, ok) => { try { await fn(); if (ok) dire(ok, "ok"); } catch (e) { erreur(e); } };
 
     function brancher() {
+      peindreGestes();
       sur(".ag-nav[role=tablist]:not(#ag-ong) [data-v]", "click", (b) => aller(b.dataset.v, b.dataset.v === "fiche" ? "itare" : ""));
       sur("[data-agent]", "click", (b) => aller("fiche", b.dataset.agent, b.dataset.onglet || "apercu"));
       sur("#ag-ong [data-o]", "click", (b) => { S.onglet = b.dataset.o; dessiner(); });

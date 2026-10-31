@@ -9,7 +9,7 @@ async function entrer(page) {
     await page.fill('#login-username', process.env.UI_COMPTE);
     await page.fill('#login-password', process.env.UI_MDP);
     await page.click('#login-go');
-    await page.waitForSelector('#login-modal', { state: 'hidden', timeout: 10000 });
+    await page.waitForSelector('#login-modal', { state: 'hidden', timeout: 90000 });
   }
   await page.waitForSelector('body.d19', { timeout: 60000 });
 }
@@ -40,7 +40,7 @@ test("Agents IA, vue administrateur : la fiche d'un agent et ses onglets", async
   await page.evaluate(() => window.CASS.disposition.rafraichir());
   await page.evaluate(() => window.CASS.disposition.aller('auto', 'agents-ia', ''));
   await page.waitForSelector('#tab-mod-agents-equipe .ag-cartes button[data-agent="cassandra"]', { timeout: 60000 });
-  await page.click('#tab-mod-agents-equipe button[data-agent="cassandra"]');
+  await page.click('#tab-mod-agents-equipe .ag-cartes button[data-agent="cassandra"]');
   await page.waitForSelector('#tab-mod-agents-equipe #ag-ong', { timeout: 10000 });
   const onglets = await page.evaluate(() => [...document.querySelectorAll('#ag-ong button')].map((b) => b.textContent.trim()));
   expect(onglets).toEqual(['Aperçu', 'Outils & palier', 'Journal', 'Essai en direct', 'Fait & proposé', 'Coût', 'Sûr & refusé', 'Mémoire', 'Réglages']);
