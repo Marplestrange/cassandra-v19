@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #262e71
+# VERSION CN : 0.1.0  #8f0bf1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 7 : l'envoi réel des courriels (activation, nouvelles tentatives, frein, transport SMTP vrai contre un petit serveur de banc).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=262e71 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8f0bf1 ▼▼▼
 """Bancs de la billetterie, lot 7 : l'envoi réel des courriels (activation, nouvelles tentatives, frein, transport SMTP vrai contre un petit serveur de banc)."""
 import socketserver
 import sys

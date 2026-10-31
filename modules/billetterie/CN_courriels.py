@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #841c7d
+# VERSION CN : 0.1.0  #620701
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : l'envoi réel des courriels (billets, annulations, offres de la liste d'attente, liens de connexion).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=841c7d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=620701 ▼▼▼
 """Billetterie : l'envoi réel des courriels (billets, annulations, offres de la liste d'attente, liens de connexion).
 
 La billetterie PRÉPARE ses courriels dans une boîte d'envoi (jamais d'envoi au milieu d'une vente : un serveur de courrier en panne ne doit pas faire perdre une commande).

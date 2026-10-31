@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #000000
+# VERSION CN : 0.1.0  #645a77
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Un même identifiant de réglage ne se déclare pas dans deux modules, sauf exception écrite et justifiée : deux réglages de même nom qui disent des choses différentes finissent par être pris l'un pour l'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=645a77 ▼▼▼
 """Un même identifiant de réglage ne se déclare pas dans deux modules, sauf exception écrite et justifiée : deux réglages de même nom qui disent des choses différentes finissent par être pris l'un pour l'autre."""
 import sys
 import tomllib

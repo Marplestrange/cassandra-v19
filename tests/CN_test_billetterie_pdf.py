@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6f3e2b
+# VERSION CN : 0.1.0  #f1233c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 9 : le QR code en Python (vecteurs de référence), le billet en PDF (structure, une page par billet, accents), son téléchargement par jeton, et la pièce jointe du courriel de confirmation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6f3e2b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f1233c ▼▼▼
 """Bancs de la billetterie, lot 9 : le QR code en Python (vecteurs de référence), le billet en PDF (structure, une page par billet, accents), son téléchargement par jeton, et la pièce jointe du courriel de confirmation."""
 import base64
 import hashlib
