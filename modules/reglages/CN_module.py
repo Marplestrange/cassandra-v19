@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : reglages
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e1e599
+# VERSION CN : 0.1.0  #8f64b5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des réglages : l'administration des réglages que les modules déclarent. La logique vit dans noyau/CN_reglages.py.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e1e599 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8f64b5 ▼▼▼
 """Le module des réglages : l'administration des réglages que les modules déclarent. La logique vit dans noyau/CN_reglages.py.
 
 Qui peut quoi : un réglage de portée COMPTE se pose pour son propre compte sans autre droit ; un réglage GLOBAL, ou celui d'un autre compte,
@@ -71,6 +71,16 @@ def brancher(ctx):
     def historique(ctx, cle="", pour_compte="", limite=20):
         return {"historique": rg.historique(cle, pour_compte, int(limite))}
 
+    def secrets_lectures(ctx, limite=100, reglage="", module="", depuis=0.0):
+        return rg.lectures(int(limite), str(reglage), str(module), float(depuis or 0))
+
+    def secrets_ages(ctx, seuil_jours=0):
+        return rg.ages(int(seuil_jours) or None)
+
+    def pieges(ctx, limite=50):
+        r = rg.lectures(int(limite))
+        return {"pieges": rg.pieges(), "touches": [x for x in r["lectures"] if x["piege"]]}
+
     # ---- écrire ----
     def regler(ctx, cle="", valeur=None, pour_compte="", pour_societe=""):
         if rg._def(cle).type == "secret":
@@ -86,13 +96,13 @@ def brancher(ctx):
         cible = autorise(cle, pour_compte, ctx, pour_societe)
         r = rg.poser(cle, valeur, cible, ctx.compte)
         ctx.emettre("reglage.change", objet=("reglage", cle), donnees={"cle": cle, "compte": cible, "secret": True})
-        return {"cle": cle, "compte": cible, "avant": r["avant"], "avait": r["avait"], "apres": "***", "avant_chiffre": r.get("avant_chiffre")}
+        return {"cle": cle, "compte": cible, "avant": r["avant"], "avait": r["avait"], "apres": "***", "avant_chiffre": r.get("avant_chiffre"), "avant_pose": r.get("avant_pose")}
 
     def reinitialiser(ctx, cle="", pour_compte="", pour_societe=""):
         cible = autorise(cle, pour_compte, ctx, pour_societe)
         r = rg.retirer(cle, cible, ctx.compte)
         ctx.emettre("reglage.change", objet=("reglage", cle), donnees={"cle": cle, "compte": cible, "reinitialise": True, "secret": rg._def(cle).type == "secret"})
-        return {"cle": cle, "compte": cible, "avant": r.get("avant"), "avait": r["avait"], "avant_chiffre": r.get("avant_chiffre")}
+        return {"cle": cle, "compte": cible, "avant": r.get("avant"), "avait": r["avait"], "avant_chiffre": r.get("avant_chiffre"), "avant_pose": r.get("avant_pose")}
 
     def prouver_regler(ctx, res):
         ok, v = rg._brut(res["cle"], res["compte"])
@@ -100,7 +110,7 @@ def brancher(ctx):
 
     def defaire_regler(ctx, res):
         if res["avait"] and res.get("avant_chiffre") is not None:               # un secret : on remet la valeur chiffrée d'avant, sans jamais la déchiffrer
-            rg.poser_chiffre(res["cle"], res["compte"], res["avant_chiffre"], ctx.compte or "retour arrière")
+            rg.poser_chiffre(res["cle"], res["compte"], res["avant_chiffre"], ctx.compte or "retour arrière", res.get("avant_pose"))
         elif res["avait"]:
             rg.poser(res["cle"], res["avant"], res["compte"], ctx.compte or "retour arrière")
         else:
@@ -111,12 +121,15 @@ def brancher(ctx):
 
     def defaire_reinit(ctx, res):
         if res["avait"] and res.get("avant_chiffre") is not None:
-            rg.poser_chiffre(res["cle"], res["compte"], res["avant_chiffre"], ctx.compte or "retour arrière")
+            rg.poser_chiffre(res["cle"], res["compte"], res["avant_chiffre"], ctx.compte or "retour arrière", res.get("avant_pose"))
         elif res["avait"]:
             rg.poser(res["cle"], res["avant"], res["compte"], ctx.compte or "retour arrière")
 
     ctx.implementer("lire", lire)
     ctx.implementer("historique", historique)
+    ctx.implementer("secrets_lectures", secrets_lectures)
+    ctx.implementer("secrets_ages", secrets_ages)
+    ctx.implementer("pieges", pieges)
     ctx.implementer("regler", regler, prouver_regler, defaire_regler)
     ctx.implementer("regler_secret", regler_secret, prouver_regler, defaire_regler)
     ctx.implementer("reinitialiser", reinitialiser, prouver_reinit, defaire_reinit)

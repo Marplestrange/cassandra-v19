@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d064de
+# VERSION CN : 0.1.0  #160ca2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les réglages : ce que la V18 gardait dans UN fichier config.json réécrit en entier à chaque sauvegarde (d'où la leçon : « relire avant d'écrire », sans quoi un réglage disparaissait). Ici chaque réglage est une LIGNE, écrite seule, avec son
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d064de ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=160ca2 ▼▼▼
 """Les réglages : ce que la V18 gardait dans UN fichier config.json réécrit en entier à chaque sauvegarde (d'où la leçon : « relire avant d'écrire »,
 sans quoi un réglage disparaissait). Ici chaque réglage est une LIGNE, écrite seule, avec son historique.
 
@@ -25,6 +25,8 @@ sans quoi un réglage disparaissait). Ici chaque réglage est une LIGNE, écrite
 from __future__ import annotations
 
 import base64
+import hashlib
+import hmac
 import json
 import logging
 import os
@@ -214,8 +216,12 @@ class Reglages:
         return self._cle
 
     def demarrer(self) -> None:
-        """Au démarrage du noyau : si la clé est fournie hors des données, la charge tout de suite (une panne se voit au démarrage)
+        """Au démarrage du noyau : élague le journal des lectures ; si la clé est fournie hors des données, la charge tout de suite (une panne se voit au démarrage)
         et rechiffre sous elle les secrets d'avant. Ne crée jamais de clé de repli de lui-même."""
+        try:
+            self.base.ecrire("DELETE FROM reglages_lectures WHERE ts < ?", (time.time() - GARDE_LECTURES_JOURS * 86400,))
+        except Exception as e:
+            log.warning("réglages : le journal des lectures n'a pu être élagué (%s)", type(e).__name__)
         if self._source_externe() is None:
             return
         try:
@@ -296,29 +302,119 @@ class Reglages:
             v = self.chiffrer(v, cle, compte)
         return v
 
-    def poser_chiffre(self, cle, compte, chiffre, par=""):
-        """Remet une valeur chiffrée d'avant (retour arrière)."""
+    def _pose_de(self, cle, compte):
+        r = self.base.lire("SELECT pose FROM reglages_poses WHERE cle=? AND compte=?", (cle, compte))
+        return r[0]["pose"] if r else None
+
+    def poser_chiffre(self, cle, compte, chiffre, par="", pose=None):
+        """Remet une valeur chiffrée d'avant (retour arrière). `pose` : la date de pose d'avant, pour qu'un retour arrière ne rajeunisse pas un vieux secret."""
         self._def(cle)
         now = time.time()
         with self.base.transaction() as c:
             c.execute("INSERT INTO reglages(cle, compte, valeur, maj, par) VALUES(?,?,?,?,?) ON CONFLICT(cle, compte) DO UPDATE SET valeur=excluded.valeur, maj=excluded.maj, par=excluded.par",
                       (cle, compte, json.dumps(chiffre), now, par))
             c.execute("INSERT INTO reglages_historique(cle, compte, avant, apres, ts, par) VALUES(?,?,?,?,?,?)", (cle, compte, None, json.dumps("***"), now, par))
+            if pose is not None:
+                c.execute("INSERT INTO reglages_poses(cle, compte, pose) VALUES(?,?,?) ON CONFLICT(cle, compte) DO UPDATE SET pose=excluded.pose", (cle, compte, pose))
 
-    def valeur(self, cle: str, compte: str = "", societe: str = ""):
-        """La valeur EFFECTIVE : celle du compte si le réglage est de portée compte et qu'il l'a posée, celle de la société s'il est de portée société et qu'elle l'a posée,
-        sinon la globale, sinon le défaut."""
-        d = self._def(cle)
+    def _effective(self, d, cle, compte, societe):
+        """(posé ?, valeur, compte de la ligne lue). Rien n'est noté : c'est `valeur` qui note une lecture."""
         if d.portee == "compte" and compte:
             ok, v = self._brut(cle, compte)
             if ok:
-                return v
+                return True, v, compte
         if d.portee == "societe" and societe:
             ok, v = self._brut(cle, "@s:" + societe)
             if ok:
-                return v
+                return True, v, "@s:" + societe
         ok, v = self._brut(cle, "")
-        return v if ok else d.defaut
+        return (True, v, "") if ok else (False, d.defaut, "")
+
+    def valeur(self, cle: str, compte: str = "", societe: str = ""):
+        """La valeur EFFECTIVE : celle du compte si le réglage est de portée compte et qu'il l'a posée, celle de la société s'il est de portée société et qu'elle l'a posée,
+        sinon la globale, sinon le défaut. La lecture d'un SECRET est notée (module, compte, nom, moment : jamais la valeur) ; celle d'un secret-piège lève l'alarme."""
+        if cle in PIEGES:
+            return self._lire_piege(cle, compte)
+        d = self._def(cle)
+        ok, v, ligne = self._effective(d, cle, compte, societe)
+        if ok and d.type == "secret":
+            self._noter_lecture(cle, ligne)
+        return v
+
+    # ---- le journal des lectures, les pièges ----
+    def _noter_lecture(self, cle, compte, piege=False) -> None:
+        try:
+            self.base.ecrire("INSERT INTO reglages_lectures(ts, module, cle, compte, piege) VALUES(?,?,?,?,?)",
+                             (time.time(), cle.split(".", 1)[0], cle, compte or "", 1 if piege else 0))
+        except Exception as e:                           # la lecture ne tombe jamais pour un journal qui ne s'écrit pas
+            log.warning("réglages : une lecture de secret n'a pu être notée (%s)", type(e).__name__)
+
+    def _valeur_piege(self, cle) -> str:
+        """Une fausse valeur, stable, qui ressemble à son nom ; elle se dérive de la clé du serveur et n'est stockée nulle part."""
+        try:
+            graine = hmac.new(self._cle_secrets(), ("piege|" + cle).encode("utf-8"), hashlib.sha256).digest()
+        except SecretIllisible:
+            graine = hashlib.sha256(("piege|" + cle).encode("utf-8")).digest()
+        corps = base64.b32encode(graine).decode("ascii").rstrip("=").lower()[:32]
+        return PIEGES[cle] + corps
+
+    def _lire_piege(self, cle, compte):
+        self._noter_lecture(cle, compte, piege=True)
+        module = cle.split(".", 1)[0]
+        log.critical("réglages : ALARME, le secret-piège « %s » a été lu (module « %s », compte « %s »). Personne n'a de raison de le lire.", cle, module, compte or "-")
+        if self.bus is not None:
+            try:
+                self.bus.emettre("noyau.piege_touche", source="noyau", acteur="noyau", objet=("reglage", cle), compte=compte or "",
+                                 donnees={"cle": cle, "module": module, "compte": compte or ""})
+                # Le constat critique devient une notification aux administrateurs (jamais au compte lecteur). Le noyau ne gèle rien seul : le gel est une règle de l'administrateur.
+                self.bus.emettre("constat.ouvert", source="noyau", acteur="sonde", objet=("piege", cle),
+                                 donnees={"detecteur": "piege_secret", "niveau": "critique", "titre": "Un secret-piège a été lu : %s" % cle,
+                                          "detail": "Module « %s », compte « %s ». Aucun module légitime ne lit ce nom : un code a fouillé les secrets." % (module, compte or "-")})
+            except Exception as e:
+                log.error("réglages : l'alarme du piège n'a pu être émise (%s)", type(e).__name__)
+        return self._valeur_piege(cle)
+
+    def pieges(self) -> list:
+        """Les noms des secrets-pièges (pour l'administrateur, qui sait ainsi lesquels sont faux)."""
+        return sorted(PIEGES)
+
+    def lectures(self, limite: int = 100, cle: str = "", module: str = "", depuis: float = 0.0) -> dict:
+        """Qui a lu quel secret et quand (jamais la valeur) : les dernières lectures, et le compte par secret."""
+        cond, args = "ts >= ?", [float(depuis or 0)]
+        if cle:
+            cond += " AND cle=?"
+            args.append(cle)
+        if module:
+            cond += " AND module=?"
+            args.append(module)
+        rows = self.base.lire("SELECT ts, module, cle, compte, piege FROM reglages_lectures WHERE " + cond + " ORDER BY id DESC LIMIT ?",
+                              tuple(args) + (max(1, min(int(limite), 1000)),))
+        par = self.base.lire("SELECT cle, module, COUNT(*) n, MAX(ts) derniere, MAX(piege) piege FROM reglages_lectures WHERE " + cond + " GROUP BY cle ORDER BY derniere DESC", tuple(args))
+        return {"lectures": [{"ts": r["ts"], "module": r["module"], "cle": r["cle"], "compte": r["compte"], "piege": bool(r["piege"])} for r in rows],
+                "par_secret": [{"cle": r["cle"], "module": r["module"], "lectures": r["n"], "derniere": r["derniere"], "piege": bool(r["piege"])} for r in par]}
+
+    def ages(self, seuil_jours=None) -> dict:
+        """L'âge de chaque secret posé et ceux qui dépassent le seuil (par défaut `reglages.secret_age_max_jours`, 90 jours). Aucune valeur."""
+        if seuil_jours is None:
+            try:
+                seuil_jours = int(self.valeur("reglages.secret_age_max_jours") or AGE_MAX_JOURS)
+            except (KeyError, ValueError, TypeError):
+                seuil_jours = AGE_MAX_JOURS
+        seuil_jours = max(1, int(seuil_jours))
+        poses = {(r["cle"], r["compte"]): r["pose"] for r in self.base.lire("SELECT cle, compte, pose FROM reglages_poses")}
+        now = time.time()
+        out = []
+        with self._verrou:
+            secrets_ = {k: m for k, (m, d) in self.connus.items() if d.type == "secret"}
+        for r in self.base.lire("SELECT cle, compte, valeur, maj FROM reglages ORDER BY cle, compte"):
+            if r["cle"] not in secrets_ or json.loads(r["valeur"]) in ("", None):
+                continue
+            pose = poses.get((r["cle"], r["compte"]))
+            estimee = pose is None                       # posé avant la date de pose : on retient la dernière modification
+            pose = r["maj"] if estimee else pose
+            age = int((now - pose) // 86400)
+            out.append({"cle": r["cle"], "module": secrets_[r["cle"]], "compte": r["compte"], "pose": pose, "age_jours": age, "estimee": estimee, "a_renouveler": age >= seuil_jours})
+        return {"seuil_jours": seuil_jours, "secrets": out, "a_renouveler": [x for x in out if x["a_renouveler"]]}
 
     def poser(self, cle: str, valeur, compte: str = "", par: str = "") -> dict:
         """Écrit UN réglage (jamais un fichier entier). `compte` : la valeur propre à ce compte (portée compte) ; vide : la valeur globale."""
@@ -334,6 +430,7 @@ class Reglages:
         secret = d.type == "secret"
         ok, avant = self._brut(cle, compte)
         avant_chiffre = self.brut_chiffre(cle, compte) if (secret and ok) else None
+        avant_pose = self._pose_de(cle, compte) if (secret and ok) else None
         stocke = self.chiffrer(v, cle, compte) if (secret and v != "") else v
         now = time.time()
         with self.base.transaction() as c:
@@ -342,8 +439,13 @@ class Reglages:
                       (cle, compte, json.dumps(stocke), now, par))
             c.execute("INSERT INTO reglages_historique(cle, compte, avant, apres, ts, par) VALUES(?,?,?,?,?,?)",
                       (cle, compte, (json.dumps("***") if (secret and ok) else (json.dumps(avant) if ok else None)), json.dumps("***" if secret else v), now, par))
+            if secret:
+                if v != "":
+                    c.execute("INSERT INTO reglages_poses(cle, compte, pose) VALUES(?,?,?) ON CONFLICT(cle, compte) DO UPDATE SET pose=excluded.pose", (cle, compte, now))
+                else:
+                    c.execute("DELETE FROM reglages_poses WHERE cle=? AND compte=?", (cle, compte))
         if secret:
-            return {"cle": cle, "compte": compte, "avant": "***" if ok else None, "avait": ok, "apres": "***", "avant_chiffre": avant_chiffre}
+            return {"cle": cle, "compte": compte, "avant": "***" if ok else None, "avait": ok, "apres": "***", "avant_chiffre": avant_chiffre, "avant_pose": avant_pose}
         return {"cle": cle, "compte": compte, "avant": avant, "avait": ok, "apres": v}
 
     def retirer(self, cle: str, compte: str = "", par: str = "") -> dict:
@@ -354,12 +456,14 @@ class Reglages:
             return {"cle": cle, "compte": compte, "avait": False}
         secret = self._def(cle).type == "secret"
         avant_chiffre = self.brut_chiffre(cle, compte) if secret else None
+        avant_pose = self._pose_de(cle, compte) if secret else None
         now = time.time()
         with self.base.transaction() as c:
             c.execute("DELETE FROM reglages WHERE cle=? AND compte=?", (cle, compte))
+            c.execute("DELETE FROM reglages_poses WHERE cle=? AND compte=?", (cle, compte))
             c.execute("INSERT INTO reglages_historique(cle, compte, avant, apres, ts, par) VALUES(?,?,?,NULL,?,?)",
                       (cle, compte, json.dumps("***" if secret else avant), now, par))
-        return {"cle": cle, "compte": compte, "avant": "***" if secret else avant, "avait": True, "avant_chiffre": avant_chiffre}
+        return {"cle": cle, "compte": compte, "avant": "***" if secret else avant, "avait": True, "avant_chiffre": avant_chiffre, "avant_pose": avant_pose}
 
     def historique(self, cle: str, compte: str = "", limite: int = 20) -> list:
         d = self._def(cle)
@@ -380,7 +484,7 @@ class Reglages:
                 continue
             if d.portee == "global" and not global_visible:
                 continue
-            v = self.valeur(cle, compte, societe)
+            v = self._effective(d, cle, compte, societe)[1]          # une liste d'administration ne compte pas comme une lecture : elle ne rend jamais la valeur d'un secret
             pose = self._brut(cle, ("@s:" + societe) if (d.portee == "societe" and societe) else (compte if d.portee == "compte" and compte else ""))[0]
             if d.type == "secret":
                 v = "***" if (v not in (None, "")) else ""

@@ -12,7 +12,7 @@
 <!-- RÔLE       : Les secrets des modules : où est la clé, qui les lit, quel âge ils ont -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=28af7a ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=932611 ▼▼▼ -->
 # Les secrets des modules : où est la clé, qui les lit, quel âge ils ont
 
 Les secrets des modules (mots de passe de boîte, jetons d'API…) restent dans le noyau, dans la table des réglages, chiffrés au repos (AES-256-GCM). Ce
@@ -74,7 +74,7 @@ défaut, réglable). Aucune valeur n'est affichée.
 Quelques noms de secrets plausibles, qu'aucun module ne déclare, rendent une valeur fausse. Personne n'a de raison de les lire : **toute lecture est
 une alarme**. Le noyau écrit au journal en niveau critique et ouvre un constat critique (donc une notification aux administrateurs). La réaction est
 volontairement mesurée : le noyau ne gèle rien seul, puisqu'une règle de gel doit être posée par l'administrateur (module `urgence`, frein « gel »)
-et qu'un module légitime mais bogué peut toucher un nom par erreur. L'événement `reglage.piege_touche` porte le module, le compte et le nom lus ; une
+et qu'un module légitime mais bogué peut toucher un nom par erreur. L'événement `noyau.piege_touche` porte le module, le compte et le nom lus ; une
 règle de l'administrateur peut s'y accrocher.
 
 ## Ce que ces garde-fous ne font pas

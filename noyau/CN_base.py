@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f1a96e
+# VERSION CN : 0.1.0  #2af425
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f1a96e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2af425 ▼▼▼
 """La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
 
 Leçon de la V18 : un verrou SQLite vient presque toujours d'une connexion laissée ouverte.
@@ -67,6 +67,10 @@ CREATE TABLE IF NOT EXISTS reglages(
 CREATE TABLE IF NOT EXISTS reglages_historique(
   id INTEGER PRIMARY KEY AUTOINCREMENT, cle TEXT NOT NULL, compte TEXT NOT NULL DEFAULT '', avant TEXT, apres TEXT, ts REAL NOT NULL, par TEXT NOT NULL DEFAULT '');
 CREATE INDEX IF NOT EXISTS reglages_hist_cle ON reglages_historique(cle, id);
+CREATE TABLE IF NOT EXISTS reglages_lectures(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL NOT NULL, module TEXT NOT NULL, cle TEXT NOT NULL, compte TEXT NOT NULL DEFAULT '', piege INTEGER NOT NULL DEFAULT 0);
+CREATE INDEX IF NOT EXISTS reglages_lectures_ts ON reglages_lectures(ts);
+CREATE TABLE IF NOT EXISTS reglages_poses(cle TEXT NOT NULL, compte TEXT NOT NULL DEFAULT '', pose REAL NOT NULL, PRIMARY KEY(cle, compte));
 CREATE TABLE IF NOT EXISTS agents_jetons(
   id TEXT PRIMARY KEY, compte TEXT NOT NULL, cree REAL NOT NULL, dernier_vu REAL, actif INTEGER NOT NULL DEFAULT 1);
 CREATE TABLE IF NOT EXISTS comptes_corbeille(id INTEGER PRIMARY KEY AUTOINCREMENT, compte TEXT NOT NULL, instantane TEXT NOT NULL, ts REAL NOT NULL);

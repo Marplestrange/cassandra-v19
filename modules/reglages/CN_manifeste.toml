@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : reglages
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e2a1b4
+# VERSION CN : 0.1.0  #9de315
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les réglages des modules : chacun déclare les siens (type, défaut, portée), ils s'écrivent un par un avec leur historique, les secrets ne sortent jamais en clair. Remplace le config.json réécrit en entier de la V18.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e2a1b4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9de315 ▼▼▼
 [module]
 id = "reglages"
 nom = "Réglages"
@@ -30,6 +30,14 @@ requiert = ["droits"]
 id = "gerer"
 libelle = "Changer les réglages globaux et lire leurs valeurs"
 sensible = true
+
+[[reglages]]
+id = "secret_age_max_jours"
+libelle = "Âge au-delà duquel un secret est signalé « à renouveler » (jours)"
+type = "entier"
+defaut = 90
+minimum = 1
+maximum = 3650
 
 [[objets]]
 type = "reglage"
@@ -49,6 +57,27 @@ id = "historique"
 libelle = "L'historique d'un réglage : qui l'a changé, quand, de quoi à quoi (secrets masqués)"
 risque = "lecture"
 droit = "gerer"
+
+[[capacites]]
+id = "secrets_lectures"
+libelle = "Qui a lu quel secret et quand : module, compte, nom du réglage, moment. Jamais la valeur. Réservé à l'administrateur, fermé aux agents"
+risque = "lecture"
+droit = "gerer"
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "secrets_ages"
+libelle = "L'âge de chaque secret posé et ceux à renouveler (au-delà de reglages.secret_age_max_jours). Aucune valeur. Réservé à l'administrateur, fermé aux agents"
+risque = "lecture"
+droit = "gerer"
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "pieges"
+libelle = "Les noms des secrets-pièges (faux secrets dont toute lecture lève l'alarme) et leurs lectures. Réservé à l'administrateur, fermé aux agents"
+risque = "lecture"
+droit = "gerer"
+qui = ["humain", "compte"]
 
 # ---------- écritures ----------
 [[capacites]]
