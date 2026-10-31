@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fc82cf
+# VERSION CN : 0.1.0  #95bd59
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fc82cf ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=95bd59 ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -37,7 +37,9 @@ API_NOYAU = "1.0"     # le contrat offert aux modules (ctx, manifeste). Sa versi
 
 RISQUES = ("lecture", "faible", "moyen", "eleve")
 PALIERS = ("raconter", "auto", "maitre")
-ACTEURS = ("cassandra", "itare", "humain", "compte", "agent", "anonyme")
+ACTEURS = ("cassandra", "itare", "humain", "compte", "agent", "anonyme", "amizo")      # « amizo » (la connaissance) n'est JAMAIS un défaut : une capacité doit le nommer, et ne peut que lire du partagé
+ECRITURES_AMIZO = ("bibliotheque.noter", "information.transmettre")   # LES SEULES écritures qu'« amizo » peut porter : sa bibliothèque, et un message à un agent ou à un utilisateur. Toute autre est refusée.
+PARTAGES = ("societe",)    # « societe » : ne lit que des données PARTAGÉES de la société active, jamais le bureau d'un compte
 MODES_MOTEUR = ("periodique", "evenement", "demande")
 ROLES_MENU = ("utilisateur", "admin")
 BASES_HABILLAGE = ("clair", "creme", "sombre")
@@ -129,6 +131,7 @@ class Capacite:
     droit: str = ""            # le droit qu'un COMPTE doit détenir pour l'utiliser (voir [[droits]]) ; vide : aucun droit particulier
     masque: tuple = ()         # noms d'arguments et de résultats qui ne vont JAMAIS au journal (mot de passe, jeton de session...)
     externe: bool = False      # ce qu'elle lit vient de l'EXTÉRIEUR (un message reçu, une page web) : du texte étranger entre dans le tour, et l'agent ne le tient pas pour des instructions
+    partage: str = ""          # « societe » : lecture seule de données partagées de la société active (jamais le bureau d'un compte) ; seule condition pour qu'« amizo » la nomme
     sortant: bool = False      # ce qu'elle fait SORT de la maison (un message envoyé, un lien public) : après une lecture externe dans le même tour, elle ne part pas toute seule
 
     @property
@@ -633,6 +636,16 @@ def valider(brut: dict) -> list:
         for q in _liste_de_textes(c.get("qui"), nom + ".qui", e):
             if q not in ACTEURS:
                 e.append("%s.qui : « %s » inconnu (%s)" % (nom, q, " | ".join(ACTEURS)))
+        partage = c.get("partage", "")
+        if partage not in ("",) + PARTAGES:
+            e.append("%s.partage : « %s » inconnu (%s)" % (nom, partage, " | ".join(PARTAGES)))
+        elif partage and risque != "lecture":
+            e.append("%s.partage : n'est permis que sur une capacité de risque « lecture » (celle-ci est « %s »)" % (nom, risque))
+        if "amizo" in (c.get("qui") or ()) and "%s.%s" % ((brut.get("module") or {}).get("id", ""), cid) not in ECRITURES_AMIZO:
+            if risque != "lecture":
+                e.append("%s.qui : « amizo » ne peut nommer qu'une lecture (il n'agit jamais ; seules écritures permises : %s ; celle-ci est « %s »)" % (nom, ", ".join(ECRITURES_AMIZO), risque))
+            elif partage not in PARTAGES and not c.get("externe"):
+                e.append("%s.qui : « amizo » exige que la lecture déclare `partage` (%s) ou `externe` (lecture du web)" % (nom, " | ".join(PARTAGES)))
         if risque != "lecture":
             if not _liste_de_textes(c.get("perimetre"), nom + ".perimetre", e):
                 e.append("%s : une capacité qui écrit doit déclarer son périmètre" % nom)
@@ -1003,7 +1016,7 @@ def construire(brut: dict, source="") -> Manifeste:
         id=c["id"], libelle=c["libelle"], risque=c["risque"],
         perimetre=tuple(c.get("perimetre", ())), preuve=str(c.get("preuve", "")).strip(), retour=str(c.get("retour", "")).strip(),
         paliers=tuple(c.get("paliers", ("raconter",))), qui=tuple(c.get("qui", ("cassandra", "itare", "humain", "agent"))),
-        droit=_qualifier(m["id"], c.get("droit")), masque=tuple(c.get("masque", ())), externe=bool(c.get("externe", False)), sortant=bool(c.get("sortant", False)),
+        droit=_qualifier(m["id"], c.get("droit")), masque=tuple(c.get("masque", ())), externe=bool(c.get("externe", False)), sortant=bool(c.get("sortant", False)), partage=str(c.get("partage", "")),
     ) for c in brut.get("capacites", []) or [])
     return Manifeste(
         id=m["id"], nom=m["nom"], version=m["version"], noyau_min=m["noyau_min"], description=m["description"].strip(),

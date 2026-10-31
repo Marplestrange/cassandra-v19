@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e1ea55
+# VERSION CN : 0.1.0  #1e6f50
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e1ea55 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1e6f50 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -253,7 +253,7 @@ class Noyau:
                 if p.default is p.empty:
                     requis.append(p.name)
             palier = self.catalogue.savoir(e.cle).get("palier", "raconter") if c.ecrit else ""
-            sorties.append({"nom": e.cle.replace(".", "__"), "cle": e.cle, "description": c.libelle, "risque": c.risque, "palier": palier, "externe": c.externe, "sortant": c.sortant,
+            sorties.append({"nom": e.cle.replace(".", "__"), "cle": e.cle, "description": c.libelle, "risque": c.risque, "palier": palier, "externe": c.externe, "sortant": c.sortant, "partage": c.partage,
                             "parametres": {"type": "object", "properties": props, "required": requis}})
         return sorties
 
@@ -280,7 +280,7 @@ class Noyau:
                 typ = {bool: "booleen", int: "entier", float: "nombre", list: "liste", dict: "objet", str: "texte"}.get(type(d), "texte")
                 ps.append({"nom": p.name, "type": typ, "requis": d is p.empty, "defaut": None if d is p.empty else d})
             sortie.append({"cle": e.cle, "id": c.id, "libelle": c.libelle, "risque": c.risque, "ecrit": c.ecrit, "droit": c.droit, "parametres": ps,
-                           "preuve": c.preuve, "retour": c.retour, "perimetre": list(c.perimetre), "reversible": bool(e.defaire), "masque": list(c.masque)})
+                           "preuve": c.preuve, "retour": c.retour, "perimetre": list(c.perimetre), "reversible": bool(e.defaire), "masque": list(c.masque), "partage": c.partage})
         return sorted(sortie, key=lambda x: (x["ecrit"], x["id"]))
 
     def _compteurs(self, mid: str) -> dict:

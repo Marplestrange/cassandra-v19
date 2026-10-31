@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8e6e8e
+# VERSION CN : 0.1.0  #3c4a5c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune. Socle du multi-sociétés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e6e8e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3c4a5c ▼▼▼
 [module]
 id = "societes"
 nom = "Sociétés"
@@ -192,6 +192,8 @@ id = "carte"
 libelle = "L'identité publique de la société, pour nommer (en-têtes, signatures, mentions) : jamais la banque ni les responsables"
 risque = "lecture"
 droit = "utiliser"
+qui = ["cassandra", "itare", "humain", "agent", "amizo"]
+partage = "societe"
 
 [[capacites]]
 id = "fonctions"
