@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.7.0)  #1955f1
+# VERSION EC : EC0 (référence 0.7.0)  #fd5135
 # HÔTE CN    : CN_module.py · disposition @1.0
 # RÔLE       : range les entrées de menu que les modules déclarent en groupes (barre du haut), entrées et sous-entrées (colonne de gauche), et en entrées du menu de l'avatar ; dit le pire niveau d'alerte de chaque entrée, de chaque groupe et du tout.
 # MÉTHODE    : fonction pure : une table de groupes, un repli par famille, un pont vers les onglets de l'ancienne interface ; chaque entrée reçue paraît une seule fois, rien n'est inventé, un groupe sans entrée n'existe pas.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=1955f1 ▼▼▼
+# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=fd5135 ▼▼▼
 
 # Les groupes de la barre du haut : (id, libellé, icône, ordre, interlocuteur par défaut du panneau).
 GROUPES = (
@@ -47,7 +47,6 @@ PONT = (
     {"id": "notes", "libelle": "Notes", "groupe": "desk", "icone": "scroll", "onglet": "bureau", "modules": ("notes",), "ordre": 40, "role": "utilisateur", "vues": ()},
     {"id": "courrier", "libelle": "Courrier", "groupe": "desk", "icone": "mail", "onglet": "bureau", "modules": ("courrier",), "ordre": 50, "role": "utilisateur",
      "vues": (("messages", "Messages"), ("reglage", "Réglage Mail"))},
-    {"id": "moi-itare", "libelle": "Mon Itare", "groupe": "desk", "icone": "bot", "onglet": "settings", "modules": (), "ordre": 80, "role": "utilisateur", "vues": ()},
     {"id": "repertoire", "libelle": "Répertoire", "groupe": "desk", "icone": "contacts", "onglet": "bureau", "modules": ("contacts",), "ordre": 60, "role": "utilisateur", "vues": ()},
     {"id": "documents", "libelle": "Documents", "groupe": "desk", "icone": "folder", "onglet": "bureau", "modules": ("ged",), "ordre": 70, "role": "utilisateur", "vues": ()},
     {"id": "panorama", "libelle": "Panorama", "groupe": "parc", "icone": "panorama", "onglet": "overview", "modules": ("vue",), "ordre": 10, "role": "admin", "vues": (
@@ -91,10 +90,24 @@ PONT = (
     {"id": "reg-veille", "libelle": "Surveillances", "groupe": "parametres", "icone": "eye", "onglet": "settings", "modules": ("sensorium", "modules"), "ordre": 50, "role": "admin", "vues": ()},
     {"id": "reg-canaux", "libelle": "Canaux", "groupe": "parametres", "icone": "bell", "onglet": "settings", "modules": ("canaux", "modules"), "ordre": 40, "role": "admin", "vues": ()},
     {"id": "reg-danger", "libelle": "Danger", "groupe": "parametres", "icone": "alert", "onglet": "settings", "modules": ("reglages", "modules"), "ordre": 60, "role": "admin", "vues": ()},
-    {"id": "agents-ia", "libelle": "Agents IA", "groupe": "auto", "icone": "bot", "onglet": "settings", "modules": ("agents", "modules"), "ordre": 5, "role": "admin", "vues": ()},
+    {"id": "agents-ia", "libelle": "Agents IA", "groupe": "auto", "icone": "bot", "onglet": "", "modules": ("agents", "modules"), "ordre": 5, "role": "utilisateur", "ecran": "agents:equipe", "vues": ()},
     {"id": "evolution", "libelle": "Évolution", "groupe": "auto", "icone": "evo", "onglet": "evolution", "modules": ("evolution",), "ordre": 10, "role": "admin", "vues": ()},
     {"id": "proactivite", "libelle": "Proactivité", "groupe": "auto", "icone": "bolt", "onglet": "proactive", "modules": ("proactif",), "ordre": 20, "role": "admin", "vues": ()},
-    {"id": "memoire", "libelle": "Mémoire", "groupe": "auto", "icone": "brain", "onglet": "memory", "modules": ("memoire",), "ordre": 30, "role": "utilisateur", "vues": ()},
+    {"id": "memoire", "libelle": "Mémoire", "groupe": "auto", "icone": "brain", "onglet": "memory", "modules": ("memoire",), "ordre": 30, "role": "utilisateur", "vues": (
+        ("vue", "Vue d’ensemble"),
+        ("actifs", "Ce qu’elle sait"),
+        ("conteste", "Versions en concurrence"),
+        ("quarantaine", "En relecture"),
+        ("expire", "Anciennes versions"),
+        ("doutes", "Questions pour toi"),
+        ("refus", "Écartés · 7 jours"),
+        ("episodes", "Conversations résumées"),
+        ("rappels", "Rappels sur condition"),
+        ("perception", "Mesures en direct"),
+        ("journal", "Historique des changements"),
+        ("rappel", "Tester sa mémoire"),
+        ("moteurs", "Comment elle fonctionne")
+    )},
 )
 
 # D'où vient une alerte du jour : le champ « ou » de l'item, ou à défaut son genre, rangé vers l'entrée qui la porte.
@@ -167,7 +180,7 @@ def disposition(entrees, modules, badges, signaux):
     for p in PONT:
         if not all(m in actifs for m in p["modules"]):
             continue
-        brut = dict(p, module=p["modules"][0] if p["modules"] else "", ecran="")
+        brut = dict(p, module=p["modules"][0] if p["modules"] else "", ecran=p.get("ecran", ""))
         ent = _entree(brut, badges, niveaux)
         for i, (vue, lib) in enumerate(p["vues"]):
             ent["enfants"].append({"id": "%s.%s" % (p["id"], vue), "libelle": lib, "icone": "", "module": ent["module"], "ecran": "", "onglet": p["onglet"], "vue": vue,

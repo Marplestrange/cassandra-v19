@@ -13,7 +13,7 @@
 <!-- RÔLE       : la page unique de l'interface : le corps de la V18 et la liste des scripts. -->
 <!-- MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=3d9305 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7f8b9c ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -939,35 +939,13 @@
         <div><h1>Mémoire</h1></div>
         <div class="mv-tete-droite">
           <span class="mx-pill" id="mv-chaine" style="display:none;cursor:pointer" title="chaque geste du journal est chaîné au précédent par empreinte : une altération se voit au recalcul" onclick="memoireChaine()">chaîne</span>
+          <input class="mx-select" id="mv-q" placeholder="Chercher dans les souvenirs (plein texte)…" aria-label="Chercher dans les souvenirs" onkeydown="if(event.key==='Enter'){MV.q=this.value;memoireAller(MV_VUES[MV.sec].statut?MV.sec:'actifs');}">
           <span class="mx-meta">relevé <b id="mv-releve">—</b></span>
           <button class="mx-btn" onclick="memoireCharger()">Relever</button>
         </div>
       </div>
     </header>
     <div class="mx-body" id="mv-page">
-      <aside class="mx-rail" id="mv-rail" aria-label="Mémoire">
-        <div class="mx-rail-h"><b>Mémoire</b><span id="mv-rail-sous">—</span></div>
-        <input class="mx-select" id="mv-q" placeholder="Chercher dans les souvenirs (plein texte)…" aria-label="Chercher dans les souvenirs" onkeydown="if(event.key==='Enter'){MV.q=this.value;memoireAller(MV_VUES[MV.sec].statut?MV.sec:'actifs');}">
-        <div class="mx-fam">Souvenirs</div>
-        <button class="mx-item" id="mvnav-vue" data-s="vue" onclick="memoireAller('vue')"><span class="mx-dot" id="mv-etat-vue"></span><span class="nm">Vue d’ensemble</span><span class="mx-st" id="mv-n-vue"></span></button>
-        <button class="mx-item" id="mvnav-actifs" data-s="actifs" onclick="memoireAller('actifs')"><span class="mx-dot" id="mv-etat-actifs"></span><span class="nm">Ce qu’elle sait</span><span class="mx-st" id="mv-n-actifs">—</span></button>
-        <button class="mx-item" id="mvnav-conteste" data-s="conteste" onclick="memoireAller('conteste')"><span class="mx-dot" id="mv-etat-conteste"></span><span class="nm">Versions en concurrence</span><span class="mx-st" id="mv-n-conteste">—</span></button>
-        <button class="mx-item" id="mvnav-quarantaine" data-s="quarantaine" onclick="memoireAller('quarantaine')"><span class="mx-dot" id="mv-etat-quarantaine"></span><span class="nm">En relecture</span><span class="mx-st" id="mv-n-quarantaine">—</span></button>
-        <button class="mx-item" id="mvnav-expire" data-s="expire" onclick="memoireAller('expire')"><span class="mx-dot" id="mv-etat-expire"></span><span class="nm">Anciennes versions</span><span class="mx-st" id="mv-n-expire">—</span></button>
-        <div class="mx-fam">À toi de voir</div>
-        <button class="mx-item" id="mvnav-doutes" data-s="doutes" onclick="memoireAller('doutes')"><span class="mx-dot" id="mv-etat-doutes"></span><span class="nm">Questions pour toi</span><span class="mx-st" id="mv-n-doutes">—</span></button>
-        <button class="mx-item" id="mvnav-refus" data-s="refus" onclick="memoireAller('refus')"><span class="mx-dot" id="mv-etat-refus"></span><span class="nm">Écartés · 7 jours</span><span class="mx-st" id="mv-n-refus">—</span></button>
-        <div class="mx-fam">Dans le temps</div>
-        <button class="mx-item" id="mvnav-episodes" data-s="episodes" onclick="memoireAller('episodes')"><span class="mx-dot" id="mv-etat-episodes"></span><span class="nm">Conversations résumées</span><span class="mx-st" id="mv-n-episodes">—</span></button>
-        <button class="mx-item" id="mvnav-rappels" data-s="rappels" onclick="memoireAller('rappels')"><span class="mx-dot" id="mv-etat-rappels"></span><span class="nm">Rappels sur condition</span><span class="mx-st" id="mv-n-rappels">—</span></button>
-        <div class="mx-fam">Coulisses</div>
-        <button class="mx-item" id="mvnav-perception" data-s="perception" onclick="memoireAller('perception')"><span class="mx-dot" id="mv-etat-perception"></span><span class="nm">Mesures en direct</span><span class="mx-st" id="mv-n-perception"></span></button>
-        <button class="mx-item" id="mvnav-journal" data-s="journal" onclick="memoireAller('journal')"><span class="mx-dot" id="mv-etat-journal"></span><span class="nm">Historique des changements</span><span class="mx-st" id="mv-n-journal">—</span></button>
-        <button class="mx-item" id="mvnav-rappel" data-s="rappel" onclick="memoireAller('rappel')"><span class="mx-dot" id="mv-etat-rappel"></span><span class="nm">Tester sa mémoire</span><span class="mx-st" id="mv-n-rappel"></span></button>
-        <div class="mx-fam">Comprendre</div>
-        <button class="mx-item" id="mvnav-moteurs" data-s="moteurs" onclick="memoireAller('moteurs')"><span class="mx-dot" id="mv-etat-moteurs"></span><span class="nm">Comment elle fonctionne</span><span class="mx-st" id="mv-n-moteurs"></span></button>
-        <div class="mx-rail-foot"><b style="color:var(--txt-soft)">Portée</b><br><span class="mono" id="mv-portee">—</span><br>Chaque compte ne voit que sa propre mémoire ; l’administrateur ne voit pas celle des autres comptes.</div>
-      </aside>
       <main class="mx-main" id="mv-main">
         <div id="mv-barre"></div>
         <div id="mv-contenu"></div>
@@ -4769,6 +4747,7 @@
 <script src="/logitheque.js"></script>
 <script src="/console-module.js"></script>
 <script src="/evolution-ecran.js"></script>
+<script src="/agents-ecran.js"></script>
 <script src="/dns-ecran.js"></script>
 <script src="/disposition.js"></script>
 <script src="/aujourdhui.js"></script>

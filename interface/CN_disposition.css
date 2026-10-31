@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=80e522 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=8a513d ▼▼▼ */
 /* L'ancienne interface (V18) est dans la page dès le départ : tant que la disposition V19 n'a pas pris la main (body.d19), on la cache, pour qu'elle ne se montre pas quelques instants.
    Filet : si la disposition ne démarre jamais (script en erreur), l'ancienne interface réapparaît au bout de 6 secondes plutôt que de laisser une page vide. */
 body:not(.d19) #app-container{visibility:hidden;animation:d19-filet 0s 6s forwards}
@@ -87,7 +87,7 @@ body.d19 .app-body{position:relative}
 .d19-si .car{margin-left:auto;width:14px;height:14px;transition:transform .15s}
 .d19-si .car.ouv{transform:rotate(90deg)}
 .d19-si.sub{padding-left:38px;font-size:13px}
-.d19-si .pt{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.45}
+.d19-si .pt{flex:none;width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.45}
 .d19-si.pinned svg.d-i:first-child{color:#d97706;fill:currentColor;width:15px;height:15px}
 .d19-nb{margin-left:auto;min-width:18px;height:18px;border-radius:9px;font:600 10.5px/18px 'JetBrains Mono',monospace;text-align:center;padding:0 5px;background:var(--acc-10);color:var(--accent)}
 .d19-nb.alerte{background:rgba(180,83,9,.12);color:var(--warn,#b45309)}.d19-nb.danger{background:var(--danger-soft,rgba(190,18,60,.1));color:var(--danger,#be123c)}
@@ -445,7 +445,6 @@ body.d19 #tab-fleet .mx-rail{display:none!important}
 /* Une rubrique de Paramètres généraux ouverte seule depuis le menu (Agents IA) : ni rail, ni recherche, ni note ; et la rubrique ne figure plus dans le rail tant que son entrée de menu existe */
 body.d19 #tab-settings.set-seule .settings-corps > .set-nav,body.d19 #tab-settings.set-seule .set-search,body.d19 #tab-settings.set-seule #set-note,body.d19 #tab-settings.set-seule #set-visions{display:none!important}
 body.d19 #tab-settings.mx-app.set-seule .settings-corps{grid-template-columns:minmax(0,1fr)}
-body.d19.d19-rub-agents #tab-settings .set-nav-item[data-fam="agents"]{display:none!important}
 body.d19.d19-rub-users #tab-settings .set-nav-item[data-fam="users"]{display:none!important}
 body.d19.d19-rub-tiers #tab-settings .set-nav-item[data-fam="tiers"]{display:none!important}
 body.d19.d19-rub-maintenance #tab-settings .set-nav-item[data-fam="maintenance"]{display:none!important}
@@ -455,7 +454,7 @@ body.d19.d19-rub-canaux #tab-settings .set-nav-item[data-fam="canaux"]{display:n
 body.d19.d19-rub-danger #tab-settings .set-nav-item[data-fam="danger"]{display:none!important}
 body.d19.d19-rub-moi-agenda #tab-settings .set-nav-item[data-fam="moi-agenda"]{display:none!important}
 body.d19.d19-rub-moi-boite #tab-settings .set-nav-item[data-fam="moi-boite"]{display:none!important}
-body.d19.d19-rub-moi-itare #tab-settings .set-nav-item[data-fam="moi-itare"]{display:none!important}
+body.d19 #tab-settings .set-nav-item[data-fam="moi-itare"]{display:none!important}
 
 .sh-titre.a-info{cursor:help}
 #d19-soc{position:relative;display:inline-flex;align-items:center}
@@ -476,3 +475,7 @@ body.d19.d19-rub-moi-itare #tab-settings .set-nav-item[data-fam="moi-itare"]{dis
 
 /* Sécurité : les pages sont des sous-menus de la colonne de gauche, le rail propre à l'écran disparaît */
 body.d19 #tab-securite .sc-rail{display:none}
+/* Mémoire : ses pages sont des sous-menus de la colonne de gauche ; la recherche est montée dans le bandeau */
+body.d19 #tab-memory .mv-tete-droite{flex:1 1 440px;justify-content:flex-end;gap:8px 12px}
+body.d19 #tab-memory #mv-q{flex:1 1 200px;width:auto;min-width:160px;max-width:340px}
+body.d19 #tab-memory .mv-tete-droite .mx-meta{white-space:nowrap}

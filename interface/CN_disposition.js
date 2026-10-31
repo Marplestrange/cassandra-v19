@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #9a762d
+// VERSION CN : 0.1.0  #653bd5
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=9a762d ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=653bd5 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -113,7 +113,24 @@
     ailleurs: "<path d=\"M14 4h6v6M20 4l-9 9\"/><path d=\"M18 14v5H5V6h5\"/>"
   };
   Object.keys(SECU_IC).forEach((k) => { IC["sc_" + k] = SECU_IC[k]; });
-  const icoSub = (e, f) => { const vid = f.vue || f.id; const k = e.id === "panorama" && EMO_PANORAMA[vid] ? EMO_PANORAMA[vid] : (e.id === "securite" && SECU_IC[vid] ? "sc_" + vid : VUE_IC[vid] || (f.icone && IC[f.icone] ? f.icone : "")); return k; };
+  // Mémoire : une icône par page du sous-menu (clé « mv_<vue> »)
+  const MEM_IC = {
+    vue: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    actifs: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+    conteste: '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="12" r="2"/><path d="M6 7v10M8 5h4a4 4 0 0 1 4 4v1"/>',
+    quarantaine: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    expire: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11h14V8M10 12h4"/>',
+    doutes: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/>',
+    refus: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+    episodes: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
+    rappels: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
+    perception: '<path d="M3 12h4l3-7 4 14 3-7h4"/>',
+    journal: '<path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    rappel: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+    moteurs: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>'
+  };
+  Object.keys(MEM_IC).forEach((k) => { IC["mv_" + k] = MEM_IC[k]; });
+  const icoSub = (e, f) => { const vid = f.vue || f.id; const k = e.id === "panorama" && EMO_PANORAMA[vid] ? EMO_PANORAMA[vid] : (e.id === "securite" && SECU_IC[vid] ? "sc_" + vid : e.id === "memoire" ? (MEM_IC[vid] ? "mv_" + vid : "") : VUE_IC[vid] || (f.icone && IC[f.icone] ? f.icone : "")); return k; };
   // le logo de Cassandra : le toit (celui de l'ancienne interface) ; il tient lieu de logo tant que l'organisation n'a pas le sien
   const INST_E_PLIABLES = ["coffre:mon_coffre", "societes:societe", "comptes:utilisateurs", "comptes:groupes"];     // entrées de Paramètres qu'un clic replie ou déplie
   const TOIT ='<svg class="d-i toit" viewBox="0 0 24 24"><path d="M4 11.5l8-7 8 7"/><path d="M6.5 20h11"/><circle cx="12" cy="14.5" r="2.4" fill="currentColor" stroke="none"/></svg>';
@@ -153,8 +170,7 @@
   const VERS_MENU = { today: ["accueil", ""], cal: ["agenda", "calendrier"], tk: ["agenda", "taches"], rem: ["agenda", "rappels"], proj: ["projets", ""], notes: ["notes", ""], carnet: ["notes", ""],
     canvas: ["notes", ""], liens: ["notes", ""], fusion: ["notes", ""], menage: ["notes", ""], ranger: ["notes", ""], mail: ["courrier", "messages"], rep: ["repertoire", ""], doc: ["documents", ""] };
   // Une rubrique de Paramètres généraux qui a son entrée de menu : elle s'ouvre seule, sans le rail des autres rubriques.
-  const RUBRIQUES_SEULES = { "agents-ia": ["agents", "machine", "Agents IA"], "reg-tiers": ["tiers", "machine", "Services tiers"], "reg-maintenance": ["maintenance", "machine", "Maintenance"], "reg-donnees": ["donnees", "machine", "Données"], "reg-veille": ["veille", "machine", "Surveillances"], "reg-canaux": ["canaux", "machine", "Canaux"], "reg-danger": ["danger", "machine", "Danger"],
-    "moi-itare": ["moi-itare", "moi", "Mon Itare"] };
+  const RUBRIQUES_SEULES = { "reg-tiers": ["tiers", "machine", "Services tiers"], "reg-maintenance": ["maintenance", "machine", "Maintenance"], "reg-donnees": ["donnees", "machine", "Données"], "reg-veille": ["veille", "machine", "Surveillances"], "reg-canaux": ["canaux", "machine", "Canaux"], "reg-danger": ["danger", "machine", "Danger"] };
   function rubriqueSeule(r) {
     const t = document.getElementById("tab-settings"); if (!t) return;
     if (typeof window.setVision === "function") window.setVision(r[1]);
@@ -179,6 +195,10 @@
     }
     if (entreeId === "flotte" && typeof window.flVue === "function" && vue) {
       setTimeout(function() { window.flVue(vue); }, 80);
+    }
+    if (entreeId === "memoire") {
+      suivreMemoire();
+      setTimeout(function() { if (typeof window.memoireAller === "function") window.memoireAller(vue || "vue"); }, 80);
     }
   }
 
@@ -782,6 +802,17 @@
     window.scAller.__d19 = true;
   }
   window.addEventListener("load", suivreSecurite);
+  // Mémoire : ses pages sont des sous-menus de la colonne de gauche ; un geste fait dans l'écran lui-même (lien, recherche) met l'entrée à jour
+  function suivreMemoire() {
+    if (typeof window.memoireAller !== "function" || window.memoireAller.__d19) return;
+    const mvO = window.memoireAller;
+    window.memoireAller = function (s, sansFiche) {
+      mvO(s, sansFiche);
+      if (E.actif && E.e === "memoire" && E.vue !== s) { E.vue = s; E.actif.vue = s; rendre(); }
+    };
+    window.memoireAller.__d19 = true;
+  }
+  window.addEventListener("load", suivreMemoire);
   window.ouvrirMonCoffre = () => { E.silence = false; aller("parametres", "coffre:mon_coffre", "coffre:c_secrets"); };
   function marquerPage(a) {
     E.pageNom = a.ecran && CASS.nomOnglet ? CASS.nomOnglet(a.ecran) : "";
