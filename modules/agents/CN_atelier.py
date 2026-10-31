@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.2.0  #faee09
+# VERSION CN : 0.2.0  #41e4e8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents, et les services que le tour de conversation emploie (réglage effec
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=faee09 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=41e4e8 ▼▼▼
 """L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents,
 et les services que le tour de conversation emploie (réglage effectif, palier par outil, coût du jour, plafond).
 
@@ -29,6 +29,7 @@ from . import CN_equipe as eq
 
 D = eq.DONNEES
 COLONNES = ("nom_affiche", "ton", "modele", "secours", "niveau")
+TTL_OUTILS = 20.0                                                 # secondes
 CHAMPS_REGLABLES = {"nom_affiche": 40, "ton": 2000, "modele": 80, "secours": 80, "limites": 0}
 
 
@@ -100,10 +101,18 @@ def brancher_equipe(ctx, reglage):
     def surcharges(agent, compte):
         return {r["outil"]: {"palier": r["palier"], "confirmer": bool(r["confirmer"])} for r in db.lire("SELECT * FROM agent_paliers WHERE agent=? AND compte=?", (agent, compte))}
 
+    memoire_outils = {}                                           # (acteur, compte) -> (instant, outils) : dériver ~600 outils du catalogue coûte cher, on ne le refait pas à chaque écran
+
     def outils_de(d):
         if not d["acteur_outils"]:
             return []
-        return [t for t in ctx.outils(d["acteur_outils"]) if d["acteur_outils"] == "cassandra" or not t["nom"].startswith(tuple(D["interdit_hors_cassandra"]))]
+        cle, now = (d["acteur_outils"], ctx.compte), time.time()
+        hit = memoire_outils.get(cle)
+        if hit and now - hit[0] < TTL_OUTILS:
+            return hit[1]
+        out = [t for t in ctx.outils(d["acteur_outils"]) if d["acteur_outils"] == "cassandra" or not t["nom"].startswith(tuple(D["interdit_hors_cassandra"]))]
+        memoire_outils[cle] = (now, out)
+        return out
 
     def palier_outil(t, surcharge):
         """Le palier effectif d'un outil pour cet agent : le sien s'il a été posé, sinon celui du catalogue ; une lecture n'a pas de palier."""
