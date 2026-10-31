@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : agents -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.1.2  #000000 -->
+<!-- VERSION CN : 0.2.0  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : Agents -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.2 empreinte=1459e8 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.2.0 empreinte=2486d7 ▼▼▼ -->
 # Agents
 
 Cassandra (la machine) et Itare (le bureau) en conversation. Un tour : mémoire → modèle → outils → réponse en clair.
@@ -23,6 +23,13 @@ Cassandra (la machine) et Itare (le bureau) en conversation. Un tour : mémoire 
 - **Modèles** : Cassandra par le rôle `principal` ; Itare par le modèle choisi du compte, à défaut par le rôle `itare_citadelle`. Jamais la clé de la maison pour un compte sans modèle (Itare).
 - **Mémoire** : `tour_commencer`, `rappeler`, `doutes_depuis_reponse` au début ; `apres_echange` à la fin (épisode, file de distillation).
 - Une panne est gardée à part (rôle `panne`) et ne revient jamais dans le contexte ; un fil relu est remis en cohérence (chaque appel a sa réponse) ; « arrêter » est lu entre deux étapes ; un tour à la fois par conversation.
+
+## L'équipe (lot 1 du portage de l'onglet « Agents IA »)
+- **Trois agents et des services, déclarés comme DONNÉES** (`CN_equipe.json`, semés dans `agents_def`) : Cassandra (l'infrastructure seulement), Itare (le bureau de chaque compte), Amizo (la connaissance, n'agit jamais) ; services Relecteur et Vision. Le nom affiché, le ton, le modèle principal et de secours et les limites se règlent par agent (`agent_regler`).
+- **Paliers par agent et par outil** (`palier_regler`) : `auto`, `raconter`, `retire` ; « demander » est l'indicateur `confirmer` posé sur `auto` (l'action est retenue dans `agent_attentes`). Niveau d'autonomie par agent (`niveau_regler`) : `observer` raconte toute écriture.
+- **Coûts et plafonds** : chaque réponse du modèle est comptée par jour et par agent ; plafond par agent et global, le plus bas atteint donne l'action (`secours`, `arret` sauf Cassandra, `accord`).
+- **Cloisonnement** : un compte ordinaire n'agit que sur SON Itare ; l'administrateur règle Cassandra, Amizo et les services, et ne lit jamais le bureau d'un autre compte. Les réglages sont refusés à tout agent. Aucun outil `coffre__*` pour un autre agent que Cassandra.
+- Contrat des capacités : `equipe`, `agent`, `couts`, `paliers` (lecture), `agent_regler`, `palier_regler`, `niveau_regler`, `plafond_regler` (écriture, avec preuve et retour).
 
 ## Non porté
 Le flux de jetons (le tour rend sa réponse entière : l'écran sondera la conversation), le salon multi-agents, les pièces jointes de conversation (« lab »), le mode plan, la compression de l'historique (les épisodes de la mémoire la remplacent), le comparateur solo.

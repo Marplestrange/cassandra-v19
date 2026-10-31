@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.2  #9f984d
+# VERSION CN : 0.2.0  #0c1520
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=9f984d ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=0c1520 ▼▼▼
 [module]
 id = "agents"
 nom = "Agents"
-version = "0.1.2"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul."
 confiance = "interne"
@@ -32,8 +32,18 @@ libelle = "Utiliser Agents : consulter et travailler dans ce module"
 defaut = true
 
 [[droits]]
+id = "valider"
+libelle = "Valider ce que mon agent propose : accepter ou refuser une proposition"
+defaut = true
+
+[[droits]]
+id = "regler_agent"
+libelle = "Régler mon agent : son ton, son nom, ses modèles, ses limites, ses paliers par outil"
+defaut = true
+
+[[droits]]
 id = "administrer"
-libelle = "Administrer Agents : réglages et gestes sensibles"
+libelle = "Administrer Agents : régler Cassandra, Amizo et les services, poser les plafonds de coût"
 sensible = true
 
 [[objets]]
@@ -164,6 +174,74 @@ retour = "retirer les messages que ce tour a gardés (les actions de l'agent ont
 paliers = ["auto", "raconter"]
 qui = ["humain", "compte", "cassandra", "itare"]
 masque = ["message", "texte", "actions"]
+
+[[capacites]]
+id = "equipe"
+libelle = "L'équipe d'agents : chaque agent et service avec son état, son niveau, son modèle, ses outils par palier et son coût du jour (un compte ordinaire ne voit que son Itare)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "agent"
+libelle = "La fiche d'un agent : ton, nom affiché, modèles, limites, niveau, outils avec leur palier, coût du jour"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "couts"
+libelle = "Les coûts par jour et par agent sur quelques jours, avec les plafonds posés (l'administrateur voit toute l'équipe, un compte ordinaire son Itare)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "paliers"
+libelle = "Les outils d'un agent avec leur palier (auto, raconter, retiré) et l'indicateur de confirmation"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "agent_regler"
+libelle = "Régler un agent : nom affiché, ton, modèle principal et de secours, limites (un compte ordinaire règle son Itare ; l'administrateur règle Cassandra, Amizo et les services)"
+risque = "faible"
+droit = "regler_agent"
+perimetre = ["Itare : le compte qui agit, jamais un autre", "Cassandra, Amizo, services : l'administrateur seulement", "des champs connus, des limites bornées"]
+preuve = "relire la configuration de l'agent"
+retour = "remettre la configuration d'avant, gardée dans le résultat de l'acte"
+paliers = ["auto", "raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "palier_regler"
+libelle = "Régler un outil d'un agent : auto, raconter ou retiré, avec ou sans confirmation (« demander » est une confirmation posée sur auto)"
+risque = "moyen"
+droit = "regler_agent"
+perimetre = ["Itare : le compte qui agit, jamais un autre", "Cassandra, Amizo, services : l'administrateur seulement", "un outil que cet agent peut utiliser"]
+preuve = "relire la ligne de palier de cet outil"
+retour = "remettre le palier d'avant (ou le palier du catalogue), gardé dans le résultat de l'acte"
+paliers = ["auto", "raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "niveau_regler"
+libelle = "Régler le niveau d'autonomie d'un agent : observer (il raconte), entretien ou reine"
+risque = "moyen"
+droit = "regler_agent"
+perimetre = ["Itare : le compte qui agit, jamais un autre", "Cassandra, Amizo, services : l'administrateur seulement"]
+preuve = "relire le niveau de l'agent"
+retour = "remettre le niveau d'avant, gardé dans le résultat de l'acte"
+paliers = ["auto", "raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "plafond_regler"
+libelle = "Poser, lever ou accorder pour aujourd'hui un plafond de coût par jour (par agent ou global), avec son action : secours, arrêt sauf Cassandra, ou demande d'accord"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["l'administrateur seulement", "un montant positif ou le retrait", "une action connue"]
+preuve = "relire la ligne du plafond"
+retour = "remettre le plafond d'avant, gardé dans le résultat de l'acte"
+paliers = ["auto", "raconter"]
+qui = ["humain", "compte"]
 
 [permissions]
 stockage = true

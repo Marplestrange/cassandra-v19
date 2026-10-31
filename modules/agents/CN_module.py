@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.2  #7d53d6
+# VERSION CN : 0.2.0  #06554f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=7d53d6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=06554f ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -34,6 +34,7 @@ import time
 from datetime import datetime
 
 from . import CN_outils as o
+from .CN_atelier import brancher_equipe
 
 SYSTEME = ("cassandra", "itare", "noyau", "operateur")
 AGENTS = ("cassandra", "itare")
@@ -62,6 +63,12 @@ def brancher(ctx):
         except Exception:
             return defaut
         return defaut if v in (None, "") else v
+
+    E = brancher_equipe(ctx, reglage)                                  # l'équipe : réglages par agent, paliers par outil, coûts et plafonds
+
+    def cle_cfg(agent, compte):
+        """Itare se règle compte par compte ; les autres agents pour toute l'instance."""
+        return compte if agent == "itare" else ""
 
     # ------------------------------------------------------------------ conversations
     def conv_brute(cid, compte):
@@ -186,22 +193,35 @@ def brancher(ctx):
                 msgs.append({"role": "user", "content": m["contenu"]})
         return o.coherents(msgs)
 
-    def modele_pour(agent):
-        """(role, essais) : Cassandra parle par le rôle de la maison ; Itare par le modèle que le compte a choisi, à défaut par le rôle d'Itare."""
-        if agent == "itare":
-            return ["", str(reglage("role_itare", "itare_citadelle"))]
-        return [str(reglage("role_cassandra", "principal"))]
+    def modele_pour(agent, cfg, secours=False):
+        """Les rôles essayés, dans l'ordre. Cassandra parle par le rôle de la maison ; Itare par le modèle que le compte a choisi, à défaut par le rôle d'Itare ;
+        le réglage de l'agent (modèle principal) l'emporte, et son modèle de secours ferme la liste. Au plafond « secours », le secours seul."""
+        if secours and (cfg["secours"] or agent != "cassandra"):          # Cassandra n'est jamais coupée : sans secours, elle garde son modèle
+            return [cfg["secours"]] if cfg["secours"] else []
+        if cfg["modele"]:
+            roles = [cfg["modele"]]
+        elif agent == "itare":
+            roles = ["", str(reglage("role_itare", "itare_citadelle"))]
+        else:
+            roles = [str(reglage("role_cassandra", "principal"))]
+        return roles + ([cfg["secours"]] if cfg["secours"] and cfg["secours"] not in roles else [])
 
-    def appeler_modele(agent, msgs, systeme, tools, max_jetons):
+    def appeler_modele(agent, compte, cfg, msgs, systeme, tools, max_jetons, secours=False):
         derniere = {"ok": False, "erreur": "aucun modèle"}
-        for role in modele_pour(agent):
+        for role in modele_pour(agent, cfg, secours):
             r = lecture("modeles.completer", messages=msgs, systeme=systeme, max_tokens=max_jetons, role=role, outils=tools, allow_reasoning=True, timeout=120.0, temperature=0.4)
+            if isinstance(r, dict):
+                try:
+                    if r.get("usage"):
+                        E.compter(agent, compte, r["usage"])            # le coût du jour, par agent
+                except Exception:
+                    pass
             if isinstance(r, dict) and r.get("ok"):
                 return r
             derniere = r if isinstance(r, dict) else derniere
         return derniere
 
-    def executer_appel(a, index, par_cle, tous, etat, agent):
+    def executer_appel(a, index, par_cle, tous, etat, agent, compte=""):
         """Un appel d'outil : TOUJOURS une réponse pour le modèle, jamais une exception."""
         nom, args = a["nom"], a["arguments"]
         if "_brut" in args:
@@ -222,6 +242,13 @@ def brancher(ctx):
         if (t["sortant"] or t["risque"] in ECRITURES_RISQUEES) and etat["teinte"]:
             return ("Non exécuté : ce tour a lu du contenu venu de l'extérieur (%s). Une action qui sort de la maison, ou qui engage fortement, ne part pas seule après une lecture étrangère : "
                     "dis à la personne ce que tu ferais et demande-lui de confirmer dans un nouveau message." % ", ".join(sorted(set(etat["teinte"])))), {"cle": t["cle"], "statut": "retenue"}
+        sur = E.surcharges(agent, cle_cfg(agent, compte)).get(t["cle"]) or {}
+        if t["risque"] != "lecture" and (sur.get("confirmer") or etat["niveau"] == "observer" or sur.get("palier") == "raconter"):
+            if sur.get("confirmer"):                                   # « demander » : un accord posé sur « auto », retenu jusqu'à ce qu'on décide
+                E.retenir(agent, compte, "confirmer", t["cle"], args)
+                return "Non exécuté : cette action demande l'accord de l'utilisateur (elle est retenue, rien n'a été fait). Dis-le tel quel.", {"cle": t["cle"], "statut": "a_confirmer", "risque": t["risque"]}
+            sim = ctx.agir(t["cle"], args, acteur=agent, essai=True)   # observer, ou palier « raconter » posé pour cet agent : il raconte, il ne fait pas
+            return o.resume_resultat(dict(sim, statut="racontee", simulation=sim.get("simulation") if sim.get("statut") == "simulee" else ""), ctx.point), {"cle": t["cle"], "statut": "racontee", "risque": t["risque"]}
         r = ctx.agir(t["cle"], args, acteur=agent)
         if r.get("statut") == "racontee":
             sim = ctx.agir(t["cle"], args, acteur=agent, essai=True)
@@ -264,13 +291,15 @@ def brancher(ctx):
                 ctx.agir("memoire.doutes_depuis_reponse", {"texte": message}, acteur=agent)
             except Exception:
                 pass
-            tous = ctx.outils(agent)
+            cfg = E.effectif(agent, cle_cfg(agent, compte))
+            retires = {k for k, v in E.surcharges(agent, cle_cfg(agent, compte)).items() if v["palier"] == "retire"}
+            tous = [t for t in ctx.outils(agent) if t["cle"] not in retires and (agent == "cassandra" or not t["nom"].startswith("coffre__"))]     # Cassandra seule tient le coffre : jamais un outil de secret pour les autres
             par_cle = {t["cle"]: t for t in tous}
             pres = o.choisir_outils(tous, message, int(reglage("max_outils", 60)))
             index = {t["nom"]: t for t in tous}                    # tout ce qui est permis s'appelle par son nom, présenté ou non : le modèle peut s'en souvenir d'un tour précédent
             schemas = [o.schema_outil(t) for t in pres] + o.meta_outils()
             ton = ""
-            persona = str(reglage("persona_" + agent, ""))
+            persona = cfg["ton"] or str(reglage("persona_" + agent, ""))
             soc = lecture("societes.carte") or {}
             if soc.get("nom"):                                          # chaque société a ses agents : ils savent pour qui ils travaillent, et ne mélangent jamais deux sociétés
                 persona = (persona + "\n\n" if persona else "") + "Tu travailles pour la société « %s »%s. Ses données et celles de ses utilisateurs lui appartiennent : n'en mélange jamais avec celles d'une autre société." % (
@@ -280,16 +309,28 @@ def brancher(ctx):
             except Exception:
                 ton = ""
             systeme = o.prompt_systeme(agent, compte, datetime.now().strftime("%A %d %B %Y, %H:%M"), memo.get("bloc") or "", persona, ton, len(pres))
-            etat = {"teinte": [], "ecritures": 0}
-            texte, vide_rejoue = "", False
-            for etape in range(int(reglage("max_tours", 12))):
+            etat = {"teinte": [], "ecritures": 0, "niveau": cfg["niveau"]}
+            texte, vide_rejoue, secours = "", False, False
+            max_tours = E.limite(cfg, "max_tours", int(reglage("max_tours", 12)))
+            for etape in range(max_tours):
                 if db.lire("SELECT 1 FROM arrets WHERE conversation_id=?", (cid,)):
                     crees.append(stocker(cid, "panne", "Tour arrêté à ta demande.", tour=tour))
                     texte = ""
                     actions.append({"statut": "arrete"})
                     break
-                msgs = fil_pour_modele(cid, int(reglage("taille_fil", 40)))
-                r = appeler_modele(agent, msgs, systeme, schemas, int(reglage("max_jetons", 12000)))
+                v = E.verdict(agent)                                        # le plafond de coût le plus bas que la dépense du jour atteint
+                if v and v["action"] == "accord":
+                    E.retenir(agent, compte, "plafond")
+                    crees.append(stocker(cid, "panne", "⚠️ Plafond de coût atteint (%s) : l'accord de l'administrateur est requis pour continuer aujourd'hui." % v["portee"], tour=tour))
+                    actions.append({"statut": "plafond", "portee": v["portee"], "action": "accord"})
+                    break
+                if v and v["action"] == "arret" and agent != "cassandra":
+                    crees.append(stocker(cid, "panne", "⚠️ Plafond de coût atteint (%s) : %s est arrêté jusqu'à demain." % (v["portee"], cfg["nom_affiche"]), tour=tour))
+                    actions.append({"statut": "plafond", "portee": v["portee"], "action": "arret"})
+                    break
+                secours = bool(v and v["action"] in ("secours", "arret"))   # Cassandra n'est jamais arrêtée : au plafond elle passe sur son secours
+                msgs = fil_pour_modele(cid, E.limite(cfg, "taille_fil", int(reglage("taille_fil", 40))))
+                r = appeler_modele(agent, compte, cfg, msgs, systeme, schemas, E.limite(cfg, "max_jetons", int(reglage("max_jetons", 12000))), secours)
                 if not r.get("ok") and etape > 0 and not vide_rejoue and "VIDE" in str(r.get("erreur", "")):
                     vide_rejoue = True                                      # des outils, puis un contenu vide : on demande de conclure, une fois
                     crees.append(stocker(cid, "user", "(Conclus maintenant en clair : ce qui a été fait, l'état final, ce qui reste.)", tour=tour))
@@ -313,14 +354,14 @@ def brancher(ctx):
                 crees.append(stocker(cid, "assistant", r.get("texte") or "", appels=brut.get("tool_calls"), tour=tour))      # l'assistant d'abord : l'API l'impose
                 for a in appels:
                     try:
-                        contenu, action = executer_appel(a, index, par_cle, tous, etat, agent)
+                        contenu, action = executer_appel(a, index, par_cle, tous, etat, agent, compte)
                     except Exception as e:                                  # une erreur d'outil se dit au modèle, elle ne fait pas tomber le tour
                         contenu, action = "Erreur de l'outil : %s" % str(e)[:300], {"cle": a["nom"], "statut": "erreur"}
                     crees.append(stocker(cid, "tool", contenu, tool_call_id=a["id"], nom=a["nom"], statut=(action or {}).get("statut", ""), tour=tour))
                     if action:
                         actions.append(action)
             else:
-                crees.append(stocker(cid, "panne", "⚠️ Trop d'étapes d'outils dans ce tour : arrêté (%s au plus)." % reglage("max_tours", 12), tour=tour))
+                crees.append(stocker(cid, "panne", "⚠️ Trop d'étapes d'outils dans ce tour : arrêté (%s au plus)." % max_tours, tour=tour))
             if texte:
                 try:
                     ctx.agir("memoire.apres_echange", {"session_id": "conv-%d" % cid, "question": message, "reponse": texte, "actes": etat["ecritures"],

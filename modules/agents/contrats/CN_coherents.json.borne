@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.1.2  #313135
+# VERSION CN : 0.2.0  #313135
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : coherents.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)
