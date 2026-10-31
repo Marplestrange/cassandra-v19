@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #145c91
+# VERSION CN : 0.1.0  #423823
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=145c91 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=423823 ▼▼▼
 """Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v"""
 import os
 import sys
@@ -4378,8 +4378,14 @@ id = "repare"
 libelle = "Répare un jouet"
 mode = "demande"
 
+[[moteurs]]
+id = "sort"
+libelle = "Tente une capacité hors de sa liste"
+mode = "demande"
+
 [permissions]
 agir = true
+agir_moteur = ["labo.reparer_jouet"]
 """
 
 GARDIEN_PY = '''
@@ -4390,7 +4396,14 @@ def brancher(ctx):
         sortie["compte_du_moteur"] = ctx.compte
         sortie["rep"] = ctx.agir("labo.reparer_jouet", {"nom": "ours"}, acteur="cassandra")
 
+    def sort(ctx):
+        try:
+            ctx.agir("labo.lire_jouet", {"nom": "ours"}, acteur="cassandra")
+        except PermissionError as ex:
+            sortie["refus"] = str(ex)
+
     ctx.moteur("repare", repare)
+    ctx.moteur("sort", sort)
     sortie["agir"] = lambda: ctx.agir("labo.reparer_jouet", {"nom": "ours"}, acteur="cassandra")
 '''
 
@@ -4421,6 +4434,22 @@ class MoteurQuiAgit(unittest.TestCase):
         self.assertEqual(self.sortie()["compte_du_moteur"], "")                       # le moteur, lui, n'a pas de compte
         dem = [e for e in self.n.bus.recents(portee=TOUT, limite=200) if e["type"] == "capacite.demandee" and e["objet_id"] == "labo.reparer_jouet"]
         self.assertEqual((dem[-1]["compte"], dem[-1]["acteur"]), ("noyau", "cassandra"))      # l'acte est journalisé, au nom du compte système
+
+    def test_un_moteur_ne_sort_pas_de_sa_liste_et_la_tentative_est_journalisee(self):
+        self.assertEqual(self.n.lancer("gardien.sort")["statut"], "fait")
+        self.assertIn("agir_moteur", self.sortie()["refus"])                                  # lire_jouet existe, mais n'est pas dans la liste du module
+        ev = [e for e in self.n.bus.recents(portee=TOUT, limite=200) if e["type"] == "moteur.hors_liste"]
+        self.assertEqual((len(ev), ev[0]["compte"], ev[0]["objet_id"]), (1, "noyau", "labo.lire_jouet"))
+        self.assertEqual(self.jouets["ours"], "casse")
+
+    def test_la_liste_se_valide_dans_le_manifeste(self):
+        import tomllib
+        b = tomllib.loads(GARDIEN_TOML)
+        self.assertEqual(mf.valider(b), [])
+        b["permissions"]["agir_moteur"] = ["pas-une-capacite"]
+        self.assertTrue(any("module.capacite" in x for x in mf.valider(b)))
+        b["permissions"] = {"agir_moteur": ["labo.reparer_jouet"]}
+        self.assertTrue(any("permissions.agir" in x for x in mf.valider(b)))
 
     def test_hors_moteur_un_acte_sans_compte_reste_refuse(self):
         r = self.sortie()["agir"]()

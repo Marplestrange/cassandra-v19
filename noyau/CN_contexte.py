@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e32c97
+# VERSION CN : 0.1.0  #d34b75
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e32c97 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d34b75 ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire
@@ -226,6 +226,10 @@ class Contexte:
         # Un moteur de fond n'a pas de compte (un tick du temps) : il agit sous le compte SYSTÈME « noyau » (administrateur, voir COMPTES_SYSTEME), dans la société de son tour.
         # L'exécuteur ordinaire s'applique en entier : acteur permis par la capacité, palier, preuve, retour, journal. Hors moteur, un acte sans compte reste refusé.
         compte = self.compte or ("noyau" if self._en_moteur.valeur else "")
+        if compte == "noyau" and not self.compte and capacite not in self.manifeste.permissions.agir_moteur:
+            # La liste du manifeste est l'étendue d'un moteur : hors d'elle, rien ne part, et la tentative est journalisée.
+            self._bus.emettre("moteur.hors_liste", source=self.module, acteur="noyau", objet=("capacite", capacite), compte="noyau", donnees={"acteur_demande": acteur})
+            raise PermissionError("le module « %s » n'a pas déclaré « %s » dans [permissions] agir_moteur : un moteur n'agit que dans sa liste" % (self.module, capacite))
         return self._intro["agir"](capacite, dict(args or {}), compte, acteur, cause, essai, self.societe if compte == "noyau" else "")
 
     def defaire_acte(self, fait: int, demandeur: str = "") -> dict:

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a64556
+# VERSION CN : 0.1.0  #ae6c78
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a64556 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ae6c78 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -32,6 +32,7 @@ licence = "AGPL-3.0-or-later"
 stockage = true
 stockage_par_societe = true
 agir = true
+agir_moteur = ["dolibarr.bil_tiers", "dolibarr.bil_facture", "dolibarr.bil_avoir", "dolibarr.bil_versement", "dolibarr.bil_adherent"]          # sa file Dolibarr, et rien d'autre
 secrets = true
 reseau = ["l'API de Stripe (api.stripe.com), pour créer la page de paiement hébergée d'une commande", "les API de PayPal (api-m.paypal.com) et de HelloAsso (api.helloasso.com), pour créer la page de paiement et vérifier le paiement au retour de l'acheteur", "le serveur d'envoi de courrier (SMTP) réglé dans la billetterie, pour expédier les billets et les messages aux acheteurs"]
 

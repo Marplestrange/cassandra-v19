@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #578d4c
+# VERSION CN : 0.1.0  #1ec156
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=578d4c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1ec156 ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -363,6 +363,7 @@ class Permissions:
     urgence: bool = False              # peut poser et lever les freins du noyau (gel de l'autonomie, coupure des envois) : le module des gestes d'urgence
     evolution: bool = False            # peut piloter l'évolution du noyau (cibles, propositions, retour, visites) : le module « evolution ». Les droits et les paliers de ses capacités restent ceux de chaque geste.
     stockage_par_societe: bool = False  # sa base est UNE PAR SOCIÉTÉ (donnees/modules/<id>@<société>.db ; la société principale garde <id>.db) : le code du module ne change pas, `ctx.stockage` suit la société de l'acte, et ses moteurs tournent société par société
+    agir_moteur: tuple = ()            # les capacités (« module.capacite ») que SES MOTEURS peuvent appeler par ctx.agir, sous le compte système « noyau » ; rien d'autre (exige `agir`). Un moteur n'a pas de compte : sa liste est sa seule étendue
 
 
 @dataclass(frozen=True)
@@ -474,8 +475,13 @@ def valider(brut: dict) -> list:
     if not isinstance(perm, dict):
         e.append("permissions : une table est attendue")
         perm = {}
-    for champ in ("reseau", "ecritures", "privileges"):
+    for champ in ("reseau", "ecritures", "privileges", "agir_moteur"):
         _liste_de_textes(perm.get(champ), "permissions.%s" % champ, e)
+    for cap in perm.get("agir_moteur", []) if isinstance(perm.get("agir_moteur"), list) else []:
+        if not re.fullmatch(r"[a-z0-9_]+\.[a-z0-9_]+", str(cap)):
+            e.append("permissions.agir_moteur : « %s » doit s'écrire module.capacite" % cap)
+    if perm.get("agir_moteur") and not perm.get("agir"):
+        e.append("permissions.agir_moteur : demande aussi permissions.agir")
     for champ in ("espace_utilisateur", "introspection", "lectures", "stockage_lecture", "modules", "urgence", "evolution", "stockage_par_societe"):
         if champ in perm and not isinstance(perm[champ], bool):
             e.append("permissions.%s : vrai ou faux" % champ)
@@ -1046,7 +1052,8 @@ def construire(brut: dict, source="") -> Manifeste:
                                 bool((brut.get("permissions") or {}).get("modules", False)),
                                 bool((brut.get("permissions") or {}).get("urgence", False)),
                                 bool((brut.get("permissions") or {}).get("evolution", False)),
-                                bool((brut.get("permissions") or {}).get("stockage_par_societe", False))),
+                                bool((brut.get("permissions") or {}).get("stockage_par_societe", False)),
+                                tuple((brut.get("permissions") or {}).get("agir_moteur", ()))),
         droits=tuple(Droit(d["id"], d["libelle"], bool(d.get("defaut", False)), bool(d.get("sensible", False))) for d in brut.get("droits", []) or []),
         reglages=tuple(Reglage(r["id"], r["libelle"], r.get("type", "texte"),
                                r.get("defaut", False if r.get("type") == "booleen" else (0 if r.get("type") == "entier" else "")),
