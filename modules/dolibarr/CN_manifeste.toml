@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #727a18
+# VERSION CN : 0.4.0  #3821ce
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=727a18 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=3821ce ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -476,14 +476,301 @@ libelle = "Dolibarr"
 domaine = "gestion"
 gabarit = "tableau"
 
+[[ecrans]]
+id = "d_afaire"
+libelle = "À faire"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_tiers"
+libelle = "Tiers"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_devis"
+libelle = "Devis"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_factures"
+libelle = "Factures"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_produits"
+libelle = "Produits"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_fournisseurs"
+libelle = "Fournisseurs"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_banque"
+libelle = "Banque"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_adherents"
+libelle = "Adhérents"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_dons"
+libelle = "Dons"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_projets"
+libelle = "Projets"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_cprojets"
+libelle = "Projets de Cassandra"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_ccontacts"
+libelle = "Contacts de Cassandra"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_itare"
+libelle = "Itare"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_acces"
+libelle = "Mon accès"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_capacites"
+libelle = "Capacités"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_comptes"
+libelle = "Comptes"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_instance"
+libelle = "Instance"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_libre"
+libelle = "Requête libre"
+domaine = "gestion"
+gabarit = "libre"
+
 [[menus]]
 id = "dolibarr"
 libelle = "Dolibarr"
-ecran = "vue_dolibarr"
 ordre = 10
-role = "admin"
+role = "utilisateur"
 icone = "briefcase"
 badge = "constats"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_afaire"
+libelle = "À faire"
+ecran = "d_afaire"
+parent = "dolibarr"
+ordre = 10
+role = "utilisateur"
+icone = "tasks"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_tiers"
+libelle = "Tiers"
+ecran = "d_tiers"
+parent = "dolibarr"
+ordre = 20
+role = "utilisateur"
+icone = "building"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_devis"
+libelle = "Devis"
+ecran = "d_devis"
+parent = "dolibarr"
+ordre = 30
+role = "utilisateur"
+icone = "scroll"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_factures"
+libelle = "Factures"
+ecran = "d_factures"
+parent = "dolibarr"
+ordre = 40
+role = "utilisateur"
+icone = "archive"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_produits"
+libelle = "Produits"
+ecran = "d_produits"
+parent = "dolibarr"
+ordre = 50
+role = "utilisateur"
+icone = "star"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_fournisseurs"
+libelle = "Fournisseurs"
+ecran = "d_fournisseurs"
+parent = "dolibarr"
+ordre = 60
+role = "utilisateur"
+icone = "repeat"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_banque"
+libelle = "Banque"
+ecran = "d_banque"
+parent = "dolibarr"
+ordre = 70
+role = "utilisateur"
+icone = "db"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_adherents"
+libelle = "Adhérents"
+ecran = "d_adherents"
+parent = "dolibarr"
+ordre = 80
+role = "utilisateur"
+icone = "contacts"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_dons"
+libelle = "Dons"
+ecran = "d_dons"
+parent = "dolibarr"
+ordre = 90
+role = "utilisateur"
+icone = "star"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_projets"
+libelle = "Projets"
+ecran = "d_projets"
+parent = "dolibarr"
+ordre = 100
+role = "utilisateur"
+icone = "calendar"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_cprojets"
+libelle = "Projets de Cassandra"
+ecran = "d_cprojets"
+parent = "dolibarr"
+ordre = 110
+role = "utilisateur"
+icone = "calendar"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_ccontacts"
+libelle = "Contacts de Cassandra"
+ecran = "d_ccontacts"
+parent = "dolibarr"
+ordre = 120
+role = "utilisateur"
+icone = "contacts"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_itare"
+libelle = "Itare"
+ecran = "d_itare"
+parent = "dolibarr"
+ordre = 130
+role = "utilisateur"
+icone = "spark"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_acces"
+libelle = "Mon accès"
+ecran = "d_acces"
+parent = "dolibarr"
+ordre = 140
+role = "utilisateur"
+icone = "lock"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_capacites"
+libelle = "Capacités"
+ecran = "d_capacites"
+parent = "dolibarr"
+ordre = 150
+role = "utilisateur"
+icone = "bolt"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_comptes"
+libelle = "Comptes"
+ecran = "d_comptes"
+parent = "dolibarr"
+ordre = 160
+role = "admin"
+icone = "groupe"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_instance"
+libelle = "Instance"
+ecran = "d_instance"
+parent = "dolibarr"
+ordre = 170
+role = "utilisateur"
+icone = "info"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_libre"
+libelle = "Requête libre"
+ecran = "d_libre"
+parent = "dolibarr"
+ordre = 180
+role = "utilisateur"
+icone = "search"
 droit = "utiliser"
 
 [[widgets]]

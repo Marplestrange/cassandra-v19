@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #c60e1c
+// VERSION CN : 0.1.0  #4cdc7c
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=c60e1c ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=4cdc7c ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -35,7 +35,26 @@
     const anc = document.getElementById("dlb-css"); if (anc) anc.remove();
     const st = document.createElement("style"); st.id = "dlb-css"; st.textContent = CSS; document.head.appendChild(st);
     const racine = document.createElement("div"); racine.className = "kit dlb"; corps.appendChild(racine);
-    const S = { v: {}, onglet: "afaire", d: {}, q: {}, f: { factures: "ouvertes" }, err: "", occupe: false, acces: null, libre: "", libreRep: null };
+    const PAGES = {
+    d_afaire: "afaire",
+    d_tiers: "tiers",
+    d_devis: "devis",
+    d_factures: "factures",
+    d_produits: "produits",
+    d_fournisseurs: "fournisseurs",
+    d_banque: "banque",
+    d_adherents: "adherents",
+    d_dons: "dons",
+    d_projets: "projets",
+    d_cprojets: "cprojets",
+    d_ccontacts: "ccontacts",
+    d_itare: "itare",
+    d_acces: "acces",
+    d_capacites: "capacites",
+    d_comptes: "comptes",
+    d_instance: "instance",
+    d_libre: "libre" };
+    const S = { v: {}, onglet: PAGES[String((ctx && ctx.ecran) || "").split(":")[1]] || "afaire", d: {}, q: {}, f: { factures: "ouvertes" }, err: "", occupe: false, acces: null, libre: "", libreRep: null };
 
     async function lire(chemin, params) { return (await agir("dolibarr.lire_libre", { chemin: chemin, parametres: params || "" })).reponse || []; }
     const liste = (r) => (Array.isArray(r) ? r : []);
@@ -181,7 +200,7 @@
     const ONGLETS = [["afaire", "À faire"], ["factures", "Factures"], ["devis", "Devis"], ["tiers", "Tiers"], ["banque", "Banque"], ["dons", "Dons"], ["adherents", "Adhérents"], ["projets", "Projets"], ["cprojets", "Projets de Cassandra"], ["ccontacts", "Contacts de Cassandra"], ["produits", "Produits"], ["fournisseurs", "Fournisseurs"], ["itare", "Itare"], ["capacites", "Capacités"], ["comptes", "Comptes"], ["instance", "Instance"], ["acces", "Mon accès"], ["libre", "Requête libre"]];
     function dessiner() {
       const foc = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.q : null, pos = foc ? document.activeElement.selectionStart : 0;
-      racine.innerHTML = K.titre("Dolibarr", "Gestion complète : facturer, encaisser, relancer, donner un reçu, cotiser. Chaque geste est relu, journalisé et défaisable.") + '<div class="onglets">' + ONGLETS.map((o) => '<button data-o="' + o[0] + '" class="' + (S.onglet === o[0] ? "on" : "") + '">' + o[1] + "</button>").join("") + "</div>" +
+      racine.innerHTML = K.titre((ONGLETS.find((o) => o[0] === S.onglet) || ["", "Dolibarr"])[1], "Dolibarr · chaque geste est relu, journalisé et défaisable.") +
         (S.err ? '<div class="alerte dg"><div class="sp">' + esc(S.err) + "</div></div>" : "") + VUES[S.onglet]();
       if (foc) { const n = racine.querySelector('[data-q="' + foc + '"]'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }
     }
