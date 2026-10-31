@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution V19 — note de conception -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=aa1382 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=c08dec ▼▼▼ -->
 # Évolution V19 — note de conception
 
 Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le moteur V18 (diff d'un fichier unique `cassandra.py`), qui n'a plus d'objet.
@@ -128,6 +128,21 @@ Conséquence du contrat neutre : si l'EC est une fonction pure `entrée JSON →
 - **Coûts** : surface de sécurité et d'évaluation par langage ; quelques ms de frontière de processus (ne vaut que pour les points assez lourds).
 - **Horizon distinct, hors V19** : la même mécanique appliquée aux sites hébergés (le code du client = nexus à son commit, l'EC = couche d'optimisation). C'est un autre produit, au périmètre à part.
 - Chantier d'**Orfan R&D**, après le Python.
+
+## 2 octies. La cage des EC : ce qu'elle tient, ce qu'elle ne tient pas (audit de sécurité C2, 31-10)
+
+**Corrigé** (`noyau/CN_points.py`, `analyser_purete` et `executer_ec`, éprouvés par `tests/CN_test_points.py::CageDesEC`) :
+- l'analyse refuse tout nom ou attribut `__xxx__` (seul `super().__init__(…)` est toléré), `__builtins__`, `getattr`, `setattr`, `delattr`, `vars`, `dir`, `type`, `object`, `breakpoint`, `help`, `hasattr`, les cadres d'exécution (`f_*`, `gi_*`, `tb_*`, `co_*`…), `attrgetter`/`methodcaller`/`Formatter`/`format_map`/`ForwardRef`/`get_type_hints`, `.format` sur autre chose qu'une chaîne littérale (ou dont la chaîne lit un attribut), `import *`, les décorateurs, les métaclasses et les fonctions asynchrones ;
+- l'EC s'exécute avec un `__builtins__` en LISTE BLANCHE (pas d'`open`, d'`eval`, de `type`…) et un `import` filtré : seuls les modules de `STDLIB_PURE`, rendus en vues qui n'exposent pas les modules que ces modules ont eux-mêmes importés (`email.utils.os`, `functools.sys`).
+
+**Non corrigé** : l'EC tourne toujours DANS le processus du noyau, et le délai de l'évaluateur est tenu par `sys.settrace` dans ce même processus. Une liste noire d'analyse et une liste blanche de natives réduisent la surface, elles ne font pas un bac à sable (un oubli de la liste est une évasion). **Tant que les candidats évolués ne tournent pas dans un processus séparé, le moteur Évolution ne doit charger que des EC de référence signées** ; un candidat généré par un modèle ne doit pas être chargé dans le noyau.
+
+**Plan du processus séparé (non codé)** :
+1. un exécuteur `CN_ec_hote.py`, lancé par une unité systemd transitoire (`systemd-run --pipe --collect`) : `DynamicUser=yes`, `PrivateNetwork=yes` (aucun réseau), `PrivateTmp`, `ProtectSystem=strict`, `ProtectHome=yes`, `InaccessiblePaths=` des données et clés, `NoNewPrivileges`, `CapabilityBoundingSet=` vide, `MemoryMax`, `CPUQuota`, `RuntimeMaxSec` (le délai est alors tenu par systemd, plus par `settrace`), `SystemCallFilter=@system-service ~@privileged @resources @mount @network-io`, `RestrictAddressFamilies=AF_UNIX` ;
+2. l'entrée et la sortie passent en JSON sur stdin/stdout (la frontière de données existe déjà : `_copie`) ; le processus ne reçoit que le texte du candidat et un lot d'entrées, jamais de descripteur ni de clé ;
+3. l'évaluateur appelle l'hôte par lots (un démarrage par candidat et par échantillon complet, pas par appel) ; une sortie hors contrat, un code de sortie non nul ou un dépassement comptent une faute, comme aujourd'hui ;
+4. les EC servies en production gardent la voie actuelle seulement si elles sont signées par la clé racine du registre (empreinte du texte vérifiée avant `executer_ec`) ; les autres passent par l'hôte séparé, y compris en service ;
+5. un test d'intégration sur un serveur Linux (le banc Windows ne peut pas l'éprouver) : le candidat qui tente un `socket`, un `open` ou un `fork` meurt sans effet.
 
 ## 3. Rôles (pas de nouvel agent)
 

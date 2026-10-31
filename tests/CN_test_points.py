@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #363513
+# VERSION CN : 0.1.0  #66e68e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=363513 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=66e68e ▼▼▼
 """Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats."""
 import json
 import shutil
@@ -352,6 +352,89 @@ class Contrat(unittest.TestCase):
         self.assertEqual(P.analyser_purete("import datetime\n\ndef f(s):\n    return datetime.datetime.strptime(s, '%Y')\n"), [])
         for mal in ("import datetime\n\ndef f():\n    return datetime.datetime.now()\n", "import random\n\ndef f():\n    return random.random()\n"):
             self.assertTrue(P.analyser_purete(mal), mal)
+
+
+
+class CageDesEC(unittest.TestCase):
+    """Audit de sécurité C2 : une EC ne sort pas d'elle-même par la réflexion de l'interpréteur."""
+
+    EVASIONS = (
+        "def f(x): return __builtins__['__import__']('os').getcwd()",
+        "def f(x): return ().__class__.__mro__[1].__subclasses__()",
+        "def f(x): return getattr(x, 'real')", "def f(x): return setattr(x, 'a', 1)", "def f(x): return delattr(x, 'a')",
+        "def f(x): return vars(x)", "def f(x): return dir(x)", "def f(x): return type(x)", "def f(x): return object", "def f(x): return breakpoint()", "def f(x): return help",
+        "def f(x): return '{0.__class__}'.format(x)",
+        "def f(x):\n    s = '{0.__cl' + 'ass__}'\n    return s.format(x)",
+        "def f(x): return str.format('{0}', x)", "def f(x): return '{0.real}'.format(x)", "def f(x): return '{}'.format_map(x)",
+        "import string\ndef f(x): return string.Formatter().format('{0.real}', x)",
+        "import operator\ndef f(x): return operator.attrgetter('real')(x)", "import operator\ndef f(x): return operator.methodcaller('real')(x)",
+        "import typing\ndef f(x): return typing.ForwardRef('x')", "import typing\ndef f(x): return typing.get_type_hints(f)",
+        "def d(g): return g\n@d\ndef f(x): return x", "def d(c): return c\n@d\nclass A: pass",
+        "class M(type): pass", "class M: pass\nclass A(metaclass=M): pass",
+        "def f(x): return f.__globals__", "def f(x): return f.__code__", "def f(x): return x.__dict__", "def f(x): return [].append.__self__",
+        "def f(x):\n    try:\n        1 / 0\n    except Exception as e:\n        return e.__traceback__",
+        "def f(x): return (i for i in x).gi_frame.f_globals", "def f(x): return str.mro()",
+        "from functools import *\ndef f(x): return x", "from os import path\ndef f(x): return x", "def f(__x__): return __x__", "def f(x): return __name__",
+    )
+
+    def test_les_evasions_classiques_sont_refusees(self):
+        for mal in self.EVASIONS:
+            self.assertTrue(P.analyser_purete(mal), mal)
+
+    def test_ce_que_les_ec_ecrivent_vraiment_passe(self):
+        ok = ("import math\n\ndef f(x):\n    return math.sqrt(x)\n", "def f(x):\n    return '{} {}'.format(x, 1.5)\n",
+              "def f(x):\n    return '{0:.2f}'.format(x)\n", "class A(Exception):\n    def __init__(self):\n        super().__init__('x')\n\ndef f(x):\n    return A()\n",
+              "def f(x):\n    return f'{x!r:>4}'\n")
+        for bien in ok:
+            self.assertEqual(P.analyser_purete(bien), [], bien)
+
+    def test_super_init_est_la_seule_exception_dunder(self):
+        self.assertTrue(P.analyser_purete("class A:\n    def f(self):\n        return super().__init__.__globals__\n"))
+        self.assertTrue(P.analyser_purete("class A:\n    def f(self):\n        return self.__init__\n"))
+
+    def test_l_execution_n_a_que_les_natives_de_la_liste_blanche(self):
+        b = P.builtins_restreints()
+        for dangereux in ("open", "getattr", "type", "object", "eval", "exec", "compile", "globals", "vars", "print", "input", "__builtins__"):
+            self.assertNotIn(dangereux, b)
+        for sur in ("len", "range", "sorted", "isinstance", "ValueError", "KeyError", "TypeError"):
+            self.assertIn(sur, b)
+
+    def test_une_ec_executee_ne_voit_pas_les_natives_dangereuses(self):
+        # le texte est exécuté SANS passer par l'analyse : c'est le second rempart qu'on éprouve
+        for code, erreur in (("def f(x): return open('x')", NameError), ("def f(x): return type(x)", NameError), ("def f(x): return getattr(x, 'a')", NameError),
+                             ("def f(x): return eval('1')", NameError), ("def f(x): return __import__('os')", ImportError)):
+            ns = {}
+            P.executer_ec(code, "<essai>", ns)
+            with self.assertRaises(erreur, msg=code):
+                ns["f"](1)
+
+    def test_un_import_n_expose_pas_les_modules_que_l_import_a_lui_meme_importes(self):
+        ns = {}
+        P.executer_ec("import email.utils\nimport functools\ndef a(x): return email.utils.os\ndef b(x): return functools.sys\ndef c(x): return email.utils.formatdate", "<essai>", ns)
+        for nom in ("a", "b"):
+            with self.assertRaises(AttributeError):
+                ns[nom](1)
+        self.assertTrue(callable(ns["c"](1)))
+        with self.assertRaises(ImportError):
+            P.executer_ec("import os", "<essai>", {})
+        with self.assertRaises(ImportError):
+            P.executer_ec("from subprocess import run", "<essai>", {})
+
+    def test_le_chargeur_de_l_evaluateur_refuse_les_deux_evasions_prouvees(self):
+        from noyau import CN_evaluateur as E
+        for mal in self.EVASIONS[:2]:
+            with self.assertRaises(E.Impur):
+                E.charger_texte(mal, "f")
+        self.assertEqual(E.charger_texte("def f(x):\n    return sorted(x)\n", "f")([2, 1]), [1, 2])
+
+    def test_toutes_les_ec_du_depot_passent_la_cage(self):
+        racine = Path(__file__).resolve().parent.parent
+        fichiers = sorted(racine.glob("modules/*/points/EC_*.py"))
+        self.assertTrue(fichiers)
+        for f in fichiers:
+            texte = f.read_text(encoding="utf-8")
+            self.assertEqual(P.analyser_purete(texte), [], str(f))
+            P.executer_ec(texte, str(f), {"__name__": "essai"})
 
 
 if __name__ == "__main__":

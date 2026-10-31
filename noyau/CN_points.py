@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #09ac49
+# VERSION CN : 0.1.0  #168cf7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=09ac49 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=168cf7 ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -46,7 +46,17 @@ STDLIB_PURE = {"__future__", "math", "re", "json", "itertools", "functools", "co
                "textwrap", "unicodedata", "operator", "copy", "heapq", "bisect", "statistics", "hashlib", "base64", "struct", "ec_api", "abc", "numbers", "ipaddress", "datetime", "shlex", "email", "html", "quopri", "binascii"}
 # Une horloge ou un hasard lu par un attribut (datetime.now(), random.choice…) rendrait l'EC non déterministe : refusé même si le module est pur.
 ATTRIBUTS_INTERDITS = {"now", "today", "utcnow", "fromtimestamp", "utcfromtimestamp", "monotonic", "perf_counter", "random", "randint", "choice", "shuffle", "uuid4", "urandom"}
-NOMS_INTERDITS = {"ctx", "self", "cls", "open", "print", "input", "exec", "eval", "__import__", "compile", "globals", "locals"}
+NOMS_INTERDITS = {"ctx", "self", "cls", "open", "print", "input", "exec", "eval", "__import__", "compile", "globals", "locals",
+                  "__builtins__", "getattr", "setattr", "delattr", "vars", "dir", "type", "object", "breakpoint", "help", "memoryview", "hasattr"}
+# La cage de l'EC (audit C2) : l'analyse refuse ce qui sort de l'EC par réflexion, l'exécution la prive des fonctions natives dangereuses. Aucun des deux ne suffit seul,
+# et aucun ne remplace un processus séparé (docs/CN_EVOLUTION.md) : tant qu'il n'existe pas, seules des EC de référence signées doivent être chargées.
+ATTRIBUTS_REFLEXION = {"mro", "attrgetter", "methodcaller", "Formatter", "format_map", "vformat", "get_field", "ForwardRef", "get_type_hints", "make_dataclass", "gi_frame", "gi_code"}
+PREFIXES_REFLEXION = ("f_", "gi_", "cr_", "ag_", "tb_", "co_")      # cadres, générateurs, traces et code : f_globals, f_back, tb_frame, co_code…
+_FORMAT_ATTRIBUT = re.compile(r"\{[^{}:!]*\.[^{}]*\}")                 # « {0.__class__} » : une chaîne de format qui lit un attribut
+
+
+def _dunder(nom: str) -> bool:
+    return len(nom) > 4 and nom.startswith("__") and nom.endswith("__")
 
 
 class PointInconnu(KeyError):
@@ -132,7 +142,92 @@ def analyser_purete(source: str) -> list:
             fautes.add("paramètre interdit : " + n.arg)
         elif isinstance(n, (ast.Global, ast.Nonlocal, ast.Await, ast.Yield)):
             fautes.add("global / nonlocal / await / yield")
+    fautes |= _fautes_reflexion(arbre)
     return sorted(fautes)
+
+
+def _fautes_reflexion(arbre) -> set:
+    """Ce qui permet à une EC de sortir d'elle-même sans importer ni ouvrir quoi que ce soit : tout nom ou attribut `__xxx__`, la lecture d'attributs par une chaîne,
+    les cadres d'exécution, les décorateurs et les métaclasses."""
+    fautes = set()
+    appels_super = {id(c.func) for c in ast.walk(arbre) if isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute) and c.func.attr == "__init__"
+                    and isinstance(c.func.value, ast.Call) and isinstance(c.func.value.func, ast.Name) and c.func.value.func.id == "super"}      # le SEUL `__x__` toléré : l'appel `super().__init__(…)`
+    for n in ast.walk(arbre):
+        if isinstance(n, ast.Name) and _dunder(n.id):
+            fautes.add("réflexion interdite : " + n.id)
+        elif isinstance(n, ast.arg) and _dunder(n.arg):
+            fautes.add("réflexion interdite : " + n.arg)
+        elif isinstance(n, ast.Attribute):
+            if id(n) in appels_super:
+                continue
+            if _dunder(n.attr):
+                fautes.add("réflexion interdite : ." + n.attr)
+            elif n.attr in ATTRIBUTS_REFLEXION or n.attr.startswith(PREFIXES_REFLEXION):
+                fautes.add("réflexion interdite : ." + n.attr)
+            elif n.attr == "format" and not (isinstance(n.value, ast.Constant) and isinstance(n.value.value, str)):
+                fautes.add("format interdit : .format sur autre chose qu'une chaîne littérale")
+            elif n.attr == "format" and _FORMAT_ATTRIBUT.search(n.value.value):
+                fautes.add("format interdit : la chaîne lit un attribut")
+        elif isinstance(n, ast.ImportFrom):
+            if any(a.name == "*" or _dunder(a.name) or a.name in ATTRIBUTS_REFLEXION for a in n.names):
+                fautes.add("import interdit : from %s import * / réflexion" % n.module)
+        elif isinstance(n, (ast.FunctionDef, ast.ClassDef)) and n.decorator_list:
+            fautes.add("décorateur interdit : " + n.name)
+        elif isinstance(n, ast.AsyncFunctionDef):
+            fautes.add("fonction asynchrone interdite : " + n.name)
+        elif isinstance(n, ast.ClassDef) and any(k.arg in (None, "metaclass") for k in n.keywords):
+            fautes.add("métaclasse interdite : " + n.name)
+    return fautes
+
+
+# ── l'exécution : des fonctions natives en liste blanche, des imports filtrés ─
+_NATIVES_SURES = ("len range min max sum sorted reversed enumerate zip map filter any all abs round divmod pow int float str bool list dict set tuple frozenset bytes "
+                  "bytearray complex slice isinstance issubclass callable iter next repr ascii chr ord hex bin oct hash format super property staticmethod classmethod").split()
+_EXCEPTIONS_SURES = ("Exception ValueError TypeError KeyError IndexError LookupError ArithmeticError ZeroDivisionError OverflowError AttributeError RuntimeError "
+                     "NotImplementedError StopIteration AssertionError UnicodeError UnicodeDecodeError UnicodeEncodeError RecursionError").split()
+
+
+def _vue(module):
+    """Une VUE d'un module importé : ses noms publics, sans les modules qu'il a lui-même importés (email.utils.os, functools.sys…). Seuls ses propres sous-modules passent."""
+    nom = module.__name__
+
+    class Vue:
+        __slots__ = ()
+
+        def __getattr__(self, attr):
+            if attr.startswith("_") and attr not in ("_",):
+                raise AttributeError(attr)
+            v = getattr(module, attr)
+            if isinstance(v, types.ModuleType):
+                if v.__name__.startswith(nom + "."):
+                    return _vue(v)
+                raise AttributeError(attr)
+            return v
+
+        def __repr__(self):
+            return "<module %s>" % nom
+    return Vue()
+
+
+def _import_filtre(nom, globaux=None, locaux=None, liste=(), niveau=0):
+    import builtins as _b
+    if niveau or nom.split(".")[0] not in STDLIB_PURE:
+        raise ImportError("import interdit dans une EC : " + nom)
+    return _vue(_b.__import__(nom, None, None, liste, 0))
+
+
+def builtins_restreints() -> dict:
+    """Le `__builtins__` d'une EC : la liste blanche des natives et des exceptions, un import filtré (STDLIB_PURE, modules rendus en vue). Ni open, ni getattr, ni type."""
+    import builtins as _b
+    d = {k: getattr(_b, k) for k in _NATIVES_SURES + _EXCEPTIONS_SURES if hasattr(_b, k)}
+    d.update({"__build_class__": _b.__build_class__, "__import__": _import_filtre, "NotImplemented": NotImplemented, "Ellipsis": Ellipsis, "True": True, "False": False, "None": None})
+    return d
+
+
+def executer_ec(texte: str, nom: str, espace: dict) -> None:
+    """Le SEUL endroit où le noyau exécute le texte d'une EC : `espace` reçoit les natives restreintes avant l'exécution."""
+    espace["__builtins__"] = builtins_restreints()
+    exec(compile(texte, nom, "exec"), espace)
 
 
 def _champs(texte: str) -> dict:
@@ -174,7 +269,7 @@ class HotePython:
             if cle not in self._cache:
                 mod = types.ModuleType("cassandra_point_" + hashlib.sha1(str(chemin).encode()).hexdigest()[:10])
                 mod.__file__ = str(chemin)
-                exec(compile(texte, str(chemin), "exec"), mod.__dict__)
+                executer_ec(texte, str(chemin), mod.__dict__)
                 self._cache[cle] = getattr(mod, fonction)
             return self._cache[cle]
 

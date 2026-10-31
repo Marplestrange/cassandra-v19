@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fdac92
+# VERSION CN : 0.1.0  #f37d63
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : dit si une variante d'un point d'évolution est équivalente à la référence, plus rapide, et si son gain tient hors de ce que le générateur a vu.
 # MÉTHODE    : code déterministe (jamais un modèle) ; évaluation par paliers avec arrêt à la première divergence ; partition réservée ; contrôle de sa propre solidité par des variantes fausses.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fdac92 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f37d63 ▼▼▼
 """L'évaluateur (docs/CN_EVOLUTION.md §2, docs/CN_NEXUS.md §4 : un juge ne s'évolue pas).
 
   - DÉTERMINISTE : aucune note donnée par un modèle ; une comparaison de données et des mesures de durée ;
@@ -49,7 +49,7 @@ def charger_texte(texte: str, fonction: str):
     if fautes:
         raise Impur(fautes)
     mod = types.ModuleType("candidat")
-    exec(compile(texte, "<candidat>", "exec"), mod.__dict__)
+    P.executer_ec(texte, "<candidat>", mod.__dict__)
     return getattr(mod, fonction)
 
 
