@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1e6f50
+# VERSION CN : 0.1.0  #8e46e6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1e6f50 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e46e6 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -53,6 +53,7 @@ import time
 from pathlib import Path
 
 from noyau import CN_chargeur as chargeur, CN_cycle as cycle, CN_manifeste as manifeste, CN_nouveau as nouveau, CN_paquets as paquets, CN_sections as sections, CN_systemd as systemd
+from noyau import CN_base
 from noyau.CN_base import Base
 from noyau.CN_bus import TOUT, Bus
 from noyau.CN_catalogue import Catalogue
@@ -1168,6 +1169,8 @@ def main(argv) -> int:
     if commande in ("etat", "tick", "demarrer", "moteurs"):
         try:
             gerer = bool(os.environ.get("CASSANDRA_CONFIG"))     # en exploitation : l'état des modules vit dans la base
+            if commande == "demarrer":
+                CN_base.garder_ouvert()                          # le serveur seul : une connexion sentinelle par base (évite un checkpoint WAL à chaque lecture)
             n = Noyau(_donnees(), actifs=None if gerer else _actifs(), extensions=_extensions(), lire_actifs=None if gerer else _actifs,
                       gerer_modules=gerer, amorce=_actifs, exiger_compte=True)
             n.brancher(annoncer=commande != "etat")

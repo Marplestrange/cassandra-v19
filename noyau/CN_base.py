@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9495f5
+# VERSION CN : 0.1.0  #f1a96e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9495f5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f1a96e ▼▼▼
 """La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
 
 Leçon de la V18 : un verrou SQLite vient presque toujours d'une connexion laissée ouverte.
@@ -20,7 +20,9 @@ Ici AUCUNE connexion ne vit plus que l'opération qui l'a ouverte.
 """
 from __future__ import annotations
 
+import os
 import sqlite3
+import threading
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -89,6 +91,34 @@ CREATE TABLE IF NOT EXISTS societe_partage_elements(source TEXT NOT NULL, destin
 CREATE TABLE IF NOT EXISTS droit_groupe_portee(groupe TEXT PRIMARY KEY, societe TEXT NOT NULL);
 """
 
+# Une connexion « sentinelle » par fichier, gardée ouverte pour la durée du processus, SEULEMENT quand le serveur l'a demandé (`garder_ouvert()`).
+# Elle ne tient aucun verrou (pas de transaction, aucune requête en cours) : elle empêche seulement que la fermeture d'une connexion courte soit
+# la DERNIÈRE sur le fichier, ce qui, en mode WAL, force un checkpoint et la suppression du WAL à CHAQUE lecture (mesuré : 26 ms contre 5 ms sur
+# une base de 500 Mo). Hors du serveur (bancs, ligne de commande) rien ne change : aucune connexion ne vit plus que l'opération.
+_garde = {"actif": False}
+_sentinelles: dict = {}
+_verrou_sentinelles = threading.Lock()
+
+
+def garder_ouvert(actif: bool = True) -> None:
+    """Le serveur l'appelle une fois avant d'ouvrir ses bases. `False` ferme aussi les sentinelles déjà posées."""
+    _garde["actif"] = bool(actif)
+    if not actif:
+        liberer()
+
+
+def liberer(chemin=None) -> None:
+    """Ferme les sentinelles d'un fichier (ou toutes) : à appeler avant de supprimer un dossier de données sous Windows."""
+    with _verrou_sentinelles:
+        cles = [os.path.abspath(str(chemin))] if chemin is not None else list(_sentinelles)
+        for cle in cles:
+            c = _sentinelles.pop(cle, None)
+            if c is not None:
+                try:
+                    c.close()
+                except sqlite3.Error:
+                    pass
+
 
 class Base:
     def __init__(self, chemin, schema=None):
@@ -113,7 +143,21 @@ class Base:
         c.row_factory = sqlite3.Row
         c.execute("PRAGMA journal_mode=WAL")
         c.execute("PRAGMA busy_timeout=30000")
+        if _garde["actif"] and self.chemin != ":memory:":
+            self._sentinelle()
         return c
+
+    def _sentinelle(self) -> None:
+        cle = os.path.abspath(self.chemin)
+        if cle in _sentinelles:
+            return
+        with _verrou_sentinelles:
+            if cle in _sentinelles:
+                return
+            s = sqlite3.connect(self.chemin, timeout=30, isolation_level=None, check_same_thread=False)
+            s.execute("PRAGMA journal_mode=WAL")
+            s.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchall()      # le fichier et son WAL sont ouverts ; aucune transaction ne reste
+            _sentinelles[cle] = s
 
     def lire(self, sql: str, params=()) -> list:
         c = self._ouvrir()
