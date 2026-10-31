@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9f7533
+# VERSION CN : 0.1.0  #1f0ab2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9f7533 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1f0ab2 ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import gzip
 import json
@@ -172,6 +172,8 @@ class FauxGestion:
             return R(200, {"success": {}})
         if p[0] == "proposals":
             if len(p) == 1 and m == "POST":
+                if not corps.get("date"):                                                             # comme Dolibarr 24
+                    return R(500, {"error": {"code": 500, "message": "Internal Server Error: Error creating order", "0": "Date of proposal is required"}})
                 return R(200, self.nouveau("proposals", dict(corps, statut="0")))
             i = int(p[1]) if len(p) > 1 and p[1].isdigit() else None
             if i not in self.t["proposals"]:
@@ -188,7 +190,7 @@ class FauxGestion:
                 return R(200, self.nouveau("donations", dict(corps, statut="0", ref="DON-%d" % self.suivant["donations"])))
             i = int(p[1])
             if i not in self.t["donations"]:
-                return R(404, {})
+                return R(200, {"id": None, "ref": None})                                              # Dolibarr 24 : 200 et un objet vide
             if p[2:] == ["validate"]:
                 self.t["donations"][i]["statut"] = "1"
                 return R(200, dict(self.t["donations"][i]))
@@ -225,6 +227,8 @@ class FauxGestion:
             return R(200, {"success": {}})
         if p[0] == "projects":
             if len(p) == 1 and m == "POST":
+                if not corps.get("ref"):                                                              # comme Dolibarr 24
+                    return R(400, {"error": {"code": 400, "message": "Bad Request: ref field missing"}})
                 return R(200, self.nouveau("projects", dict(corps, statut="0")))
             i = int(p[1])
             if i not in self.t["projects"]:
@@ -233,10 +237,14 @@ class FauxGestion:
                 self.t["projects"][i]["statut"] = "1"
                 return R(200, dict(self.t["projects"][i]))
             if m == "PUT":
-                self.t["projects"][i].update({k: str(v) if k == "statut" else v for k, v in corps.items()})
+                self.t["projects"][i].update({("statut" if k == "status" else k): str(v) if k in ("status", "statut") else v for k, v in corps.items() if k != "statut"})   # « statut » est ignoré, comme Dolibarr 24
             return R(200, dict(self.t["projects"][i]))
         if p[0] == "agendaevents":
             if len(p) == 1 and m == "POST":
+                if "fk_element" in corps or "elementtype" in corps:                                   # comme Dolibarr 24
+                    return R(400, {"error": {"code": 400, "message": "Bad Request: Parameter fk_element is not allowed in request"}})
+                if not corps.get("userownerid"):                                                      # comme Dolibarr 24
+                    return R(400, {"error": {"code": 400, "message": "Bad Request: userownerid field missing"}})
                 return R(200, self.nouveau("agendaevents", corps))
             i = int(p[1])
             if i not in self.t["agendaevents"]:
@@ -247,6 +255,8 @@ class FauxGestion:
             return R(200, dict(self.t["agendaevents"][i]))
         if p[0] == "thirdparties":
             if len(p) == 1 and m == "POST":
+                if str(corps.get("client", 0)) not in ("0", "") and not corps.get("code_client"):      # comme Dolibarr 24 : sans code client, l'erreur
+                    return R(500, {"error": {"code": 500, "message": "Internal Server Error: Error creating thirdparty", "1": "ErrorCustomerCodeRequired"}})
                 return R(200, self.nouveau("thirdparties", corps))
             i = int(p[1]) if len(p) > 1 else 0
             if i not in self.t["thirdparties"]:
@@ -339,7 +349,7 @@ class GestionDolibarr(unittest.TestCase):
         r = self.e("dolibarr.relancer", "humain", {"id": i, "message": "Bonjour, la facture est échue."})
         self.assertEqual(r["statut"], "faite", msg=str(r))
         ev = self.faux.t["agendaevents"][r["resultat"]["evenement"]]
-        self.assertEqual((ev["elementtype"], ev["fk_element"], ev["note"]), ("facture", i, "Bonjour, la facture est échue."))
+        self.assertEqual((ev["note"], ev["socid"], "fk_element" in ev, "FA2610-0001" in ev["label"]), ("Bonjour, la facture est échue.", 1, False, True))
         self.retour("relancer", r["resultat"])
         self.assertEqual(self.faux.t["agendaevents"], {})
         self.assertEqual(self.e("dolibarr.relancer", "humain", {"id": i, "message": ""})["statut"], "echec")
@@ -414,6 +424,27 @@ class GestionDolibarr(unittest.TestCase):
         self.assertEqual((r["statut"], self.faux.t["projects"][p]["statut"]), ("faite", "2"))
         self.retour("projet", r["resultat"])
         self.assertEqual(self.faux.t["projects"][p]["statut"], "1")
+
+    def test_dolibarr_24_exige_un_code_client_et_une_ref_de_projet_le_module_les_pose(self):
+        r = self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": {"name": "Client neuf", "client": 1}})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        self.assertEqual(self.faux.t["thirdparties"][r["resultat"]["id"]]["code_client"], "auto")
+        r2 = self.e("dolibarr.creer", "humain", {"objet": "projets", "champs": {"title": "Cabaret"}})
+        self.assertEqual(r2["statut"], "faite", msg=str(r2))
+        self.assertEqual(self.faux.t["projects"][r2["resultat"]["id"]]["ref"], "auto")
+
+    def test_un_tiers_supprime_se_recree_avec_son_code(self):
+        r = self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": {"name": "À supprimer", "client": 1}})
+        s = self.e("dolibarr.supprimer", "humain", {"objet": "tiers", "id": r["resultat"]["id"]})
+        self.assertEqual(s["statut"], "faite", msg=str(s))
+        back = self.e("dolibarr.restaurer", "humain", {"corbeille": s["resultat"]["corbeille"]})
+        self.assertEqual(back["statut"], "faite", msg=str(back))
+
+    def test_un_devis_brouillon_a_toujours_sa_date_et_un_don_disparu_est_introuvable(self):
+        r = self.e("dolibarr.creer_brouillon", "humain", {"objet": "devis", "socid": 3, "lignes": [{"desc": "x", "qty": 1, "subprice": 1}]})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        self.assertTrue(self.faux.t["proposals"][r["resultat"]["id"]]["date"])
+        self.assertEqual(self.e("dolibarr.don_valider", "humain", {"id": 999})["statut"], "echec")
 
     # --- tout le catalogue
     def test_la_lecture_libre_masque_les_secrets(self):

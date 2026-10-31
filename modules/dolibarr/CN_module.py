@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #e31325
+# VERSION CN : 0.4.0  #bff67b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=e31325 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=bff67b ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -343,6 +343,20 @@ def _egaux(a, b):
     return _appeler_point("egaux", {"a": a, "b": b})["valeur"]
 
 
+def _completer(objet, corps):
+    """Ce que Dolibarr 24 exige à la CRÉATION et que l'appelant n'a pas à connaître : le code client ou fournisseur d'un tiers (« auto » : Dolibarr le numérote),
+    la référence d'un projet (« auto » aussi). Vu sur le vrai Dolibarr : sans cela, HTTP 500 (ErrorCustomerCodeRequired) ou 400 (ref field missing)."""
+    c = dict(corps)
+    if objet == "tiers":
+        if str(c.get("client", 0)) not in ("0", "", "None") and not c.get("code_client"):
+            c["code_client"] = "auto"
+        if str(c.get("fournisseur", 0)) not in ("0", "", "None") and not c.get("code_fournisseur"):
+            c["code_fournisseur"] = "auto"
+    elif objet == "projets" and not c.get("ref"):
+        c["ref"] = "auto"
+    return c
+
+
 def _verifier_champs(champs, permis, ce_quon_fait):
     if not isinstance(champs, dict) or not champs:
         raise ValueError("champs : un dictionnaire non vide")
@@ -489,7 +503,7 @@ def brancher(ctx):
             raise ValueError("objet inconnu : %r (permis : %s)" % (objet, ", ".join(sorted(ECRIVABLES))))
         _verifier_champs(champs, ECRIVABLES[objet]["champs"], objet)
         conf = _conf()
-        nouvel = ecrire(conf, "POST", ECRIVABLES[objet]["chemin"], champs)
+        nouvel = ecrire(conf, "POST", ECRIVABLES[objet]["chemin"], _completer(objet, champs))
         if not isinstance(nouvel, int) and not (isinstance(nouvel, str) and _ID.match(nouvel)):
             raise PontErreur("Dolibarr n'a pas rendu l'identifiant de l'objet créé")
         return {"objet": objet, "id": int(nouvel), "champs": champs, "cree": True}
@@ -536,9 +550,7 @@ def brancher(ctx):
             raise ValueError("document inconnu : %r (permis : %s)" % (objet, ", ".join(sorted(DOCUMENTS))))
         if not _ID.match(str(socid)):
             raise ValueError("socid : un nombre (l'identifiant du tiers)")
-        corps = {"socid": int(socid), "lines": _lignes(lignes)}
-        if date is not None:
-            corps["date"] = date
+        corps = {"socid": int(socid), "lines": _lignes(lignes), "date": date if date is not None else _jour_ts("")}      # Dolibarr 24 exige la date d'un devis
         if note:
             corps["note_private"] = str(note)[:4000]
         conf = _conf()
@@ -612,7 +624,7 @@ def brancher(ctx):
             raise PontErreur("la corbeille ne contient pas %s" % cid)
         objet, copie = c["donnees"]["objet"], c["donnees"]["copie"]
         chemin = _chemin_de(objet)
-        nouvel = ecrire(conf, "POST", chemin, _corps_depuis(objet, copie))
+        nouvel = ecrire(conf, "POST", chemin, _completer(objet, _corps_depuis(objet, copie)))
         if not isinstance(nouvel, int) and not (isinstance(nouvel, str) and _ID.match(nouvel)):
             raise PontErreur("Dolibarr n'a pas rendu l'identifiant de l'objet recréé")
         ctx.poser("dolibarr_corbeille", cid, c["libelle"], etat="restaure", donnees=dict(c["donnees"], restaure_id=int(nouvel)))
@@ -714,7 +726,7 @@ def brancher(ctx):
         if not _ID.match(str(id)):
             raise ValueError("id : un nombre")
         d = _lire_un(conf, chemin, id)
-        if not isinstance(d, dict):
+        if not isinstance(d, dict) or d.get("id") in (None, ""):          # Dolibarr 24 rend 200 et un objet VIDE pour un don qui n'existe plus
             raise PontErreur("%s %s est introuvable" % (quoi, id))
         return d
 
@@ -804,9 +816,13 @@ def brancher(ctx):
         if _statut(f) != "1" or str(f.get("paye")) == "1":
             raise ValueError("la facture %s n'est pas ouverte : rien à relancer" % id)
         maintenant = int(time.time())
-        nouvel = _int_id(ecrire(conf, "POST", "/agendaevents", {"type_code": "AC_OTH", "label": "Relance de la facture %s" % (f.get("ref") or id), "note": message, "datep": maintenant,
-                                                                "datef": maintenant, "percentage": 100, "socid": int(f.get("socid") or f.get("fk_soc")), "elementtype": "facture",
-                                                                "fk_element": int(id)}), "l'évènement de relance")
+        moi = appeler(conf, "/users/info")
+        proprietaire = int((moi or {}).get("id") or 0) if isinstance(moi, dict) else 0
+        if not proprietaire:
+            raise PontErreur("Dolibarr n'a pas dit qui est l'utilisateur de la clé : un évènement d'agenda doit avoir un propriétaire")
+        nouvel = _int_id(ecrire(conf, "POST", "/agendaevents", {"userownerid": proprietaire, "type_code": "AC_OTH", "label": "Relance de la facture %s" % (f.get("ref") or id), "note": message, "datep": maintenant,
+                                                                "datef": maintenant, "percentage": 100, "socid": int(f.get("socid") or f.get("fk_soc"))}),
+                       "l'évènement de relance")          # Dolibarr 24 refuse elementtype et fk_element dans la requête : le lien à la facture est dans le libellé
         return {"evenement": nouvel, "id": int(id)}
 
     def prouver_relance(ctx, res):
@@ -913,7 +929,7 @@ def brancher(ctx):
         conf = _conf()
         m = _doc(conf, "/members", membre, "l'adhérent")
         avant = len(_liste(conf, "/members/%s/subscriptions" % membre))
-        nouvel = _int_id(ecrire(conf, "POST", "/members/%s/subscriptions" % membre, {"start_date": _jour_ts(debut), "end_date": _jour_ts(fin or debut), "amount": montant,
+        nouvel = _int_id(ecrire(conf, "POST", "/members/%s/subscriptions" % membre, {"start_date": _jour_ts(debut), "end_date": _jour_ts(fin) if fin else _jour_ts(debut) + 365 * 86400, "amount": montant,
                                                                                    "label": str(libelle or "Cotisation")[:120]}), "la cotisation")
         return {"membre": int(membre), "cotisation": nouvel, "montant": montant, "avant": avant, "fin_avant": m.get("datefin")}
 
@@ -963,7 +979,7 @@ def brancher(ctx):
         if action == "valider":
             ecrire(conf, "POST", "/projects/%s/validate" % id, {"notrigger": 0})
         else:
-            ecrire(conf, "PUT", "/projects/%s" % id, {"statut": int(vers)})
+            ecrire(conf, "PUT", "/projects/%s" % id, {"status": int(vers)})          # « statut » est ignoré par Dolibarr 24 : seul « status » (ou fk_statut) agit
         return {"id": int(id), "action": action, "avant": de, "apres": vers}
 
     def prouver_projet(ctx, res):
@@ -971,7 +987,7 @@ def brancher(ctx):
         return isinstance(p, dict) and _statut(p) == res["apres"]
 
     def defaire_projet(ctx, res):
-        ecrire(_conf(), "PUT", "/projects/%d" % res["id"], {"statut": int(res["avant"])})
+        ecrire(_conf(), "PUT", "/projects/%d" % res["id"], {"status": int(res["avant"])})
 
     # --- tout le reste de l'API : une lecture libre (jamais un secret) et une écriture libre (preuve et retour quand l'acte le permet)
     def _nettoyer(x):
