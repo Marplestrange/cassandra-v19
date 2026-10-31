@@ -1,0 +1,822 @@
+{
+ "point": "agents.planifier_recherche",
+ "contrat": "1.0",
+ "origine": "sorties de la référence du dépôt, données synthétiques",
+ "cas": [
+  {
+   "cas": "plan 01",
+   "entree": {
+    "demande": "",
+    "connus": [],
+    "budget": {}
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [],
+     "max_sources": 0,
+     "arret": {
+      "apres_sources": 0,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 02",
+   "entree": {
+    "demande": "a",
+    "connus": [],
+    "budget": {}
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [],
+     "max_sources": 0,
+     "arret": {
+      "apres_sources": 0,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 03",
+   "entree": {
+    "demande": "Quel est le prix du menu de l'offre de la semaine ?",
+    "connus": [],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Quel est le prix du menu de l'offre de la semaine ?",
+      "prix menu offre semaine"
+     ],
+     "max_sources": 4,
+     "arret": {
+      "apres_sources": 4,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 04",
+   "entree": {
+    "demande": "Quelle est la dernière version de Debian stable ?",
+    "connus": [],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Quelle est la dernière version de Debian stable ?",
+      "derniere version debian stable"
+     ],
+     "max_sources": 4,
+     "arret": {
+      "apres_sources": 4,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 05",
+   "entree": {
+    "demande": "Cherche « horaires d'ouverture » de la mairie de Nantes",
+    "connus": [],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Cherche « horaires d'ouverture » de la mairie de Nantes",
+      "horaires ouverture mairie nantes",
+      "horaires d'ouverture"
+     ],
+     "max_sources": 4,
+     "arret": {
+      "apres_sources": 4,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 06",
+   "entree": {
+    "demande": "Cherche \"licence AGPL\" et \"compatibilité GPL\"",
+    "connus": [],
+    "budget": {
+     "requetes": 5,
+     "sources": 10
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Cherche \"licence AGPL\" et \"compatibilité GPL\"",
+      "licence agpl compatibilite gpl",
+      "licence AGPL",
+      "compatibilité GPL"
+     ],
+     "max_sources": 8,
+     "arret": {
+      "apres_sources": 8,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 07",
+   "entree": {
+    "demande": "Combien de temps dure un certificat Let's Encrypt ?",
+    "connus": [
+     "Certificat Let's Encrypt : durée de vie"
+    ],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Combien de temps dure un certificat Let's Encrypt ?",
+      "combien temps dure certificat let encrypt"
+     ],
+     "max_sources": 4,
+     "arret": {
+      "apres_sources": 4,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 08",
+   "entree": {
+    "demande": "durée certificat Let's Encrypt",
+    "connus": [
+     "Certificat Let's Encrypt : durée de vie"
+    ],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [],
+     "max_sources": 0,
+     "arret": {
+      "apres_sources": 0,
+      "si_concordance": 2
+     },
+     "deja_connu": true
+    }
+   }
+  },
+  {
+   "cas": "plan 09",
+   "entree": {
+    "demande": "Prix du menu",
+    "connus": [
+     "Offre de la semaine : menu à 12 euros"
+    ],
+    "budget": {
+     "requetes": 2,
+     "sources": 2
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Prix du menu",
+      "prix menu"
+     ],
+     "max_sources": 2,
+     "arret": {
+      "apres_sources": 2,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 10",
+   "entree": {
+    "demande": "Prix menu offre",
+    "connus": [
+     "Offre de la semaine : menu"
+    ],
+    "budget": {
+     "requetes": 2,
+     "sources": 2
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Prix menu offre"
+     ],
+     "max_sources": 2,
+     "arret": {
+      "apres_sources": 2,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 11",
+   "entree": {
+    "demande": "Les nouveautés du noyau Linux 6.12",
+    "connus": [],
+    "budget": {
+     "requetes": 1,
+     "sources": 1
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Les nouveautés du noyau Linux 6.12"
+     ],
+     "max_sources": 1,
+     "arret": {
+      "apres_sources": 1,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 12",
+   "entree": {
+    "demande": "Les nouveautés du noyau Linux 6.12",
+    "connus": [],
+    "budget": {
+     "requetes": 9,
+     "sources": 99
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Les nouveautés du noyau Linux 6.12",
+      "nouveautes noyau linux"
+     ],
+     "max_sources": 4,
+     "arret": {
+      "apres_sources": 4,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 13",
+   "entree": {
+    "demande": "Les nouveautés du noyau Linux 6.12",
+    "connus": [],
+    "budget": {
+     "requetes": 0,
+     "sources": 0
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Les nouveautés du noyau Linux 6.12"
+     ],
+     "max_sources": 1,
+     "arret": {
+      "apres_sources": 1,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 14",
+   "entree": {
+    "demande": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "connus": [],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+     ],
+     "max_sources": 2,
+     "arret": {
+      "apres_sources": 2,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 15",
+   "entree": {
+    "demande": "peux-tu me dire stp",
+    "connus": [],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "peux-tu me dire stp",
+      "dire"
+     ],
+     "max_sources": 4,
+     "arret": {
+      "apres_sources": 4,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 16",
+   "entree": {
+    "demande": "peux-tu me dire stp",
+    "connus": [
+     "autre chose"
+    ],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "peux-tu me dire stp",
+      "dire"
+     ],
+     "max_sources": 4,
+     "arret": {
+      "apres_sources": 4,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 17",
+   "entree": {
+    "demande": "Python 3.14 free threading performance",
+    "connus": [
+     "Python 3.13 free threading"
+    ],
+    "budget": {
+     "requetes": 3,
+     "sources": 6
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Python 3.14 free threading performance",
+      "python free threading performance"
+     ],
+     "max_sources": 4,
+     "arret": {
+      "apres_sources": 4,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 18",
+   "entree": {
+    "demande": "Python 3.14 free threading performance",
+    "connus": [
+     "Python free threading performance 3.14 benchmark"
+    ],
+    "budget": {
+     "requetes": 3,
+     "sources": 6
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [],
+     "max_sources": 0,
+     "arret": {
+      "apres_sources": 0,
+      "si_concordance": 2
+     },
+     "deja_connu": true
+    }
+   }
+  },
+  {
+   "cas": "plan 19",
+   "entree": {
+    "demande": "Mot Mot MOT mot",
+    "connus": [],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Mot Mot MOT mot",
+      "mot"
+     ],
+     "max_sources": 4,
+     "arret": {
+      "apres_sources": 4,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 20",
+   "entree": {
+    "demande": "  espaces   multiples   partout  ",
+    "connus": [],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "espaces multiples partout"
+     ],
+     "max_sources": 2,
+     "arret": {
+      "apres_sources": 2,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 21",
+   "entree": {
+    "demande": "RGPD durée de conservation des journaux de connexion",
+    "connus": [],
+    "budget": {
+     "requetes": 4,
+     "sources": 8
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "RGPD durée de conservation des journaux de connexion",
+      "rgpd duree conservation journaux connexion"
+     ],
+     "max_sources": 4,
+     "arret": {
+      "apres_sources": 4,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 22",
+   "entree": {
+    "demande": "Cherche « un » et « deux trois »",
+    "connus": [],
+    "budget": {
+     "requetes": 4,
+     "sources": 8
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Cherche « un » et « deux trois »",
+      "deux trois"
+     ],
+     "max_sources": 4,
+     "arret": {
+      "apres_sources": 4,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 23",
+   "entree": {
+    "demande": "tarif électricité 2026",
+    "connus": [
+     "Tarif de l'électricité",
+     "Gaz"
+    ],
+    "budget": {
+     "requetes": 3,
+     "sources": 3
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "tarif électricité 2026",
+      "tarif electricite 2026"
+     ],
+     "max_sources": 3,
+     "arret": {
+      "apres_sources": 3,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 24",
+   "entree": {
+    "demande": "tarif électricité 2026",
+    "connus": [
+     "Tarif de l'électricité 2026"
+    ],
+    "budget": {
+     "requetes": 3,
+     "sources": 3
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [],
+     "max_sources": 0,
+     "arret": {
+      "apres_sources": 0,
+      "si_concordance": 2
+     },
+     "deja_connu": true
+    }
+   }
+  },
+  {
+   "cas": "plan 25",
+   "entree": {
+    "demande": "Où trouver la documentation de SQLite FTS5 ?",
+    "connus": [],
+    "budget": {}
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Où trouver la documentation de SQLite FTS5 ?",
+      "trouver documentation sqlite fts5"
+     ],
+     "max_sources": 4,
+     "arret": {
+      "apres_sources": 4,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 26",
+   "entree": {
+    "demande": "Cherche « un » et « deux » et « trois » et « quatre » sur Linux",
+    "connus": [],
+    "budget": {
+     "requetes": 6,
+     "sources": 12
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Cherche « un » et « deux » et « trois » et « quatre » sur Linux",
+      "deux trois quatre linux",
+      "deux",
+      "trois",
+      "quatre"
+     ],
+     "max_sources": 10,
+     "arret": {
+      "apres_sources": 10,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 27",
+   "entree": {
+    "demande": "Cherche « un » et « deux » et « trois » et « quatre » sur Linux",
+    "connus": [],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "Cherche « un » et « deux » et « trois » et « quatre » sur Linux",
+      "deux trois quatre linux",
+      "deux"
+     ],
+     "max_sources": 4,
+     "arret": {
+      "apres_sources": 4,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 28",
+   "entree": {
+    "demande": "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm",
+    "connus": [],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+     ],
+     "max_sources": 2,
+     "arret": {
+      "apres_sources": 2,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 29",
+   "entree": {
+    "demande": "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm",
+    "connus": [],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+     ],
+     "max_sources": 2,
+     "arret": {
+      "apres_sources": 2,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 30",
+   "entree": {
+    "demande": "mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot ",
+    "connus": [],
+    "budget": {
+     "requetes": 2,
+     "sources": 3
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot",
+      "mot"
+     ],
+     "max_sources": 3,
+     "arret": {
+      "apres_sources": 3,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 31",
+   "entree": {
+    "demande": "Version de Debian",
+    "connus": [
+     "Debian version stable"
+    ],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [],
+     "max_sources": 0,
+     "arret": {
+      "apres_sources": 0,
+      "si_concordance": 2
+     },
+     "deja_connu": true
+    }
+   }
+  },
+  {
+   "cas": "plan 32",
+   "entree": {
+    "demande": "ab",
+    "connus": [],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [],
+     "max_sources": 0,
+     "arret": {
+      "apres_sources": 0,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  },
+  {
+   "cas": "plan 33",
+   "entree": {
+    "demande": "abc",
+    "connus": [],
+    "budget": {
+     "requetes": 3,
+     "sources": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "requetes": [
+      "abc"
+     ],
+     "max_sources": 2,
+     "arret": {
+      "apres_sources": 2,
+      "si_concordance": 2
+     },
+     "deja_connu": false
+    }
+   }
+  }
+ ]
+}

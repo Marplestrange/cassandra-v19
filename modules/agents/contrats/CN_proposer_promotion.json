@@ -1,0 +1,52 @@
+{
+ "point": "agents.proposer_promotion",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "validations",
+   "seuil",
+   "essai",
+   "refus_recent"
+  ],
+  "properties": {
+   "validations": {
+    "type": "integer"
+   },
+   "seuil": {
+    "type": "integer"
+   },
+   "essai": {
+    "type": "boolean"
+   },
+   "refus_recent": {
+    "type": "boolean"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ],
+  "properties": {
+   "valeur": {
+    "type": "object",
+    "required": [
+     "propose",
+     "raison",
+     "manque"
+    ]
+   }
+  }
+ },
+ "invariants": [
+  "propose si et seulement si validations >= seuil, hors essai et sans refus récent",
+  "`manque` vaut max(0, seuil - validations)",
+  "la raison est une phrase courte, jamais vide",
+  "jamais de promotion posée : la sortie ne fait que proposer",
+  "la même entrée donne toujours la même sortie"
+ ],
+ "mesure": "promotions suivies d'aucun recul : après acceptation, l'outil ne redescend pas par les deux échecs de suite du noyau"
+}

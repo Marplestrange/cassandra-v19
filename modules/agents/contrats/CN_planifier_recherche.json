@@ -1,0 +1,50 @@
+{
+ "point": "agents.planifier_recherche",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "demande",
+   "connus",
+   "budget"
+  ],
+  "properties": {
+   "demande": {
+    "type": "string"
+   },
+   "connus": {
+    "type": "array"
+   },
+   "budget": {
+    "type": "object"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ],
+  "properties": {
+   "valeur": {
+    "type": "object",
+    "required": [
+     "requetes",
+     "max_sources",
+     "arret",
+     "deja_connu"
+    ]
+   }
+  }
+ },
+ "invariants": [
+  "jamais plus de `budget.requetes` requêtes, jamais deux fois la même",
+  "aucune requête ne dépasse 120 caractères",
+  "`max_sources` ne dépasse ni `budget.sources` ni le double des requêtes",
+  "tous les mots de la demande déjà connus : aucune requête, `deja_connu` vrai",
+  "une demande trop courte ne donne aucune requête",
+  "la même demande donne toujours le même plan"
+ ],
+ "mesure": "fiches retenues puis vérifiées par un utilisateur pour une demande ; coût (requêtes et pages lues)"
+}

@@ -1,0 +1,57 @@
+{
+ "point": "agents.classer_fiche",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "url",
+   "titre",
+   "texte",
+   "lu_le",
+   "maintenant"
+  ],
+  "properties": {
+   "url": {
+    "type": "string"
+   },
+   "titre": {
+    "type": "string"
+   },
+   "texte": {
+    "type": "string"
+   },
+   "lu_le": {
+    "type": "string"
+   },
+   "maintenant": {
+    "type": "string"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ],
+  "properties": {
+   "valeur": {
+    "type": "object",
+    "required": [
+     "etagere",
+     "titre",
+     "resume",
+     "fraicheur"
+    ]
+   }
+  }
+ },
+ "invariants": [
+  "l'étagère est `interne` si et seulement si l'adresse commence par « espace: »",
+  "le titre n'est jamais vide et tient en 200 caractères",
+  "le résumé tient en 300 caractères au plus",
+  "la fraîcheur est `recente` (30 jours au plus), `datee` (365 au plus), `ancienne`, ou `inconnue` quand une date manque ou n'est pas lisible",
+  "la même page donne toujours le même classement"
+ ],
+ "mesure": "la fiche est retrouvée par la recherche suivante (mêmes mots que le titre ou le résumé) ; vérifiée plus tard par un utilisateur"
+}

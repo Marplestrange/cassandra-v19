@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #b862ac
+# VERSION CN : 0.4.0  #042e0c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=b862ac ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=042e0c ▼▼▼
 """Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils."""
 from __future__ import annotations
 
@@ -115,6 +115,41 @@ def court(x, maxi=RESULTAT_MAX):
 def resume_resultat(r, appeler):
     """Ce que le modèle lit d'un acte : le résultat, ou pourquoi il n'y en a pas — jamais un silence. Le calcul est un POINT D'ÉVOLUTION : points/EC_resume_resultat.py."""
     return appeler("resume_resultat", {"r": r})["texte"]
+
+
+def ton_agent(agent, ton, longueur_max=2000):
+    """Le ton d'un agent, propre et borné (Amizo, sans ton réglé : précis et sourcé). POINT D'ÉVOLUTION : points/EC_ton_agent.py."""
+    return _appeler_point("ton_agent", {"agent": agent, "ton": ton, "longueur_max": longueur_max})["valeur"]
+
+
+def planifier_recherche(demande, connus, budget):
+    """Le plan d'une recherche d'Amizo : requêtes, nombre de sources, arrêt. POINT D'ÉVOLUTION : points/EC_planifier_recherche.py."""
+    return _appeler_point("planifier_recherche", {"demande": demande, "connus": connus, "budget": budget})["valeur"]
+
+
+def classer_fiche(url, titre, texte, lu_le, maintenant):
+    """Étagère, titre, résumé et fraîcheur d'une page lue. POINT D'ÉVOLUTION : points/EC_classer_fiche.py."""
+    return _appeler_point("classer_fiche", {"url": url, "titre": titre, "texte": texte, "lu_le": lu_le, "maintenant": maintenant})["valeur"]
+
+
+def score_source(url, confiance_connue, bloques, verifiees):
+    """La confiance qu'on accorde à une source. POINT D'ÉVOLUTION : points/EC_score_source.py."""
+    return _appeler_point("score_source", {"url": url, "confiance_connue": confiance_connue, "bloques": bloques, "verifiees": verifiees})["valeur"]
+
+
+def rapport_matin(evenements, agents, debut, fin):
+    """Trois phrases au plus par agent, chacune renvoyant à une ligne du journal. POINT D'ÉVOLUTION : points/EC_rapport_matin.py."""
+    return _appeler_point("rapport_matin", {"evenements": evenements, "agents": agents, "debut": debut, "fin": fin})["valeur"]
+
+
+def proposer_promotion(validations, seuil, essai, refus_recent):
+    """Faut-il proposer « auto » pour cet outil ? POINT D'ÉVOLUTION : points/EC_proposer_promotion.py."""
+    return _appeler_point("proposer_promotion", {"validations": validations, "seuil": seuil, "essai": essai, "refus_recent": refus_recent})["valeur"]
+
+
+def choix_modele(agent, modele, secours, au_plafond, origine, deconseilles, exiger):
+    """Les rôles de modèle qu'un agent essaie, dans l'ordre. POINT D'ÉVOLUTION : points/EC_choix_modele.py."""
+    return _appeler_point("choix_modele", {"agent": agent, "modele": modele, "secours": secours, "au_plafond": au_plafond, "origine": origine, "deconseilles": deconseilles, "exiger": exiger})["valeur"]
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

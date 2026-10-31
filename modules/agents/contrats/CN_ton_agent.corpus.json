@@ -1,0 +1,271 @@
+{
+ "point": "agents.ton_agent",
+ "contrat": "1.0",
+ "origine": "sorties de la référence du dépôt, données synthétiques",
+ "cas": [
+  {
+   "cas": "ton 01 : cassandra",
+   "entree": {
+    "agent": "cassandra",
+    "ton": "",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "ton 02 : itare",
+   "entree": {
+    "agent": "itare",
+    "ton": "",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "ton 03 : amizo",
+   "entree": {
+    "agent": "amizo",
+    "ton": "",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": "Précis et sourcé : tu donnes d'abord la réponse, puis tes sources avec leur date de lecture, puis ton niveau de confiance. Tu dis « je ne sais pas » plutôt que de deviner."
+   }
+  },
+  {
+   "cas": "ton 04 : amizo",
+   "entree": {
+    "agent": "amizo",
+    "ton": "   \n\n  ",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": "Précis et sourcé : tu donnes d'abord la réponse, puis tes sources avec leur date de lecture, puis ton niveau de confiance. Tu dis « je ne sais pas » plutôt que de deviner."
+   }
+  },
+  {
+   "cas": "ton 05 : cassandra",
+   "entree": {
+    "agent": "cassandra",
+    "ton": "Direct et bref.",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": "Direct et bref."
+   }
+  },
+  {
+   "cas": "ton 06 : itare",
+   "entree": {
+    "agent": "itare",
+    "ton": "  Chaleureux   et  clair.  ",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": "Chaleureux et clair."
+   }
+  },
+  {
+   "cas": "ton 07 : itare",
+   "entree": {
+    "agent": "itare",
+    "ton": "Ligne un.\n\n\n\nLigne deux.",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": "Ligne un.\n\nLigne deux."
+   }
+  },
+  {
+   "cas": "ton 08 : cassandra",
+   "entree": {
+    "agent": "cassandra",
+    "ton": "A\u0000B\u0007C",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": "ABC"
+   }
+  },
+  {
+   "cas": "ton 09 : itare",
+   "entree": {
+    "agent": "itare",
+    "ton": "Tutoie toujours.\nPas d'emoji.",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": "Tutoie toujours.\nPas d'emoji."
+   }
+  },
+  {
+   "cas": "ton 10 : amizo",
+   "entree": {
+    "agent": "amizo",
+    "ton": "Sobre.",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": "Sobre."
+   }
+  },
+  {
+   "cas": "ton 11 : cassandra",
+   "entree": {
+    "agent": "cassandra",
+    "ton": "Un ton tres long Un ton tres long Un ton tres long Un ton tres long Un ton tres long Un ton tres long Un ton tres long Un ton tres long ",
+    "longueur_max": 40
+   },
+   "sortie": {
+    "valeur": "Un ton tres long Un ton tres long Un"
+   }
+  },
+  {
+   "cas": "ton 12 : itare",
+   "entree": {
+    "agent": "itare",
+    "ton": "mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots mots ",
+    "longueur_max": 50
+   },
+   "sortie": {
+    "valeur": "mots mots mots mots mots mots mots mots mots mots"
+   }
+  },
+  {
+   "cas": "ton 13 : itare",
+   "entree": {
+    "agent": "itare",
+    "ton": "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+    "longueur_max": 30
+   },
+   "sortie": {
+    "valeur": "abcdefghijklmnopqrstuvwxyzabcd"
+   }
+  },
+  {
+   "cas": "ton 14 : amizo",
+   "entree": {
+    "agent": "amizo",
+    "ton": "",
+    "longueur_max": 20
+   },
+   "sortie": {
+    "valeur": "Précis et sourcé :"
+   }
+  },
+  {
+   "cas": "ton 15 : cassandra",
+   "entree": {
+    "agent": "cassandra",
+    "ton": "\n\nDebut apres vides.\n",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": "Debut apres vides."
+   }
+  },
+  {
+   "cas": "ton 16 : itare",
+   "entree": {
+    "agent": "itare",
+    "ton": "Tab\tet\t\tespaces",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": "Tab et espaces"
+   }
+  },
+  {
+   "cas": "ton 17 : itare",
+   "entree": {
+    "agent": "itare",
+    "ton": "Exactement dix",
+    "longueur_max": 14
+   },
+   "sortie": {
+    "valeur": "Exactement dix"
+   }
+  },
+  {
+   "cas": "ton 18 : itare",
+   "entree": {
+    "agent": "itare",
+    "ton": "Exactement dix",
+    "longueur_max": 13
+   },
+   "sortie": {
+    "valeur": "Exactement"
+   }
+  },
+  {
+   "cas": "ton 19 : itare",
+   "entree": {
+    "agent": "itare",
+    "ton": "Exactement dix",
+    "longueur_max": 0
+   },
+   "sortie": {
+    "valeur": ""
+   }
+  },
+  {
+   "cas": "ton 20 : cassandra",
+   "entree": {
+    "agent": "cassandra",
+    "ton": "Avec « guillemets » et accents é à ç.",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": "Avec « guillemets » et accents é à ç."
+   }
+  },
+  {
+   "cas": "ton 21 : amizo",
+   "entree": {
+    "agent": "amizo",
+    "ton": "Précis.\n\n\nSourcé.",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": "Précis.\n\nSourcé."
+   }
+  },
+  {
+   "cas": "ton 22 : itare",
+   "entree": {
+    "agent": "itare",
+    "ton": "xxxxx",
+    "longueur_max": 5
+   },
+   "sortie": {
+    "valeur": "xxxxx"
+   }
+  },
+  {
+   "cas": "ton 23 : itare",
+   "entree": {
+    "agent": "itare",
+    "ton": "ligne\nligne\nligne\nligne\nligne\nligne\n",
+    "longueur_max": 2000
+   },
+   "sortie": {
+    "valeur": "ligne\nligne\nligne\nligne\nligne\nligne"
+   }
+  },
+  {
+   "cas": "ton 24 : cassandra",
+   "entree": {
+    "agent": "cassandra",
+    "ton": "Mot  seul",
+    "longueur_max": 6
+   },
+   "sortie": {
+    "valeur": "Mot se"
+   }
+  }
+ ]
+}

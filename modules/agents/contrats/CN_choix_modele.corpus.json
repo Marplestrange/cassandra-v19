@@ -1,0 +1,734 @@
+{
+ "point": "agents.choix_modele",
+ "contrat": "1.0",
+ "origine": "sorties de la référence du dépôt, données synthétiques",
+ "cas": [
+  {
+   "cas": "modèle 01",
+   "entree": {
+    "agent": "cassandra",
+    "modele": "",
+    "secours": "",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "principal"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 02",
+   "entree": {
+    "agent": "cassandra",
+    "modele": "",
+    "secours": "",
+    "au_plafond": true,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "principal"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 03",
+   "entree": {
+    "agent": "cassandra",
+    "modele": "",
+    "secours": "secours",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "principal",
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 04",
+   "entree": {
+    "agent": "cassandra",
+    "modele": "",
+    "secours": "secours",
+    "au_plafond": true,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 05",
+   "entree": {
+    "agent": "cassandra",
+    "modele": "gpt-x",
+    "secours": "",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "gpt-x"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 06",
+   "entree": {
+    "agent": "cassandra",
+    "modele": "gpt-x",
+    "secours": "",
+    "au_plafond": true,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "gpt-x"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 07",
+   "entree": {
+    "agent": "cassandra",
+    "modele": "gpt-x",
+    "secours": "secours",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "gpt-x",
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 08",
+   "entree": {
+    "agent": "cassandra",
+    "modele": "gpt-x",
+    "secours": "secours",
+    "au_plafond": true,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 09",
+   "entree": {
+    "agent": "itare",
+    "modele": "",
+    "secours": "",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "",
+     "itare_citadelle"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 10",
+   "entree": {
+    "agent": "itare",
+    "modele": "",
+    "secours": "",
+    "au_plafond": true,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "modèle 11",
+   "entree": {
+    "agent": "itare",
+    "modele": "",
+    "secours": "secours",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "",
+     "itare_citadelle",
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 12",
+   "entree": {
+    "agent": "itare",
+    "modele": "",
+    "secours": "secours",
+    "au_plafond": true,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 13",
+   "entree": {
+    "agent": "itare",
+    "modele": "gpt-x",
+    "secours": "",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "gpt-x"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 14",
+   "entree": {
+    "agent": "itare",
+    "modele": "gpt-x",
+    "secours": "",
+    "au_plafond": true,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "modèle 15",
+   "entree": {
+    "agent": "itare",
+    "modele": "gpt-x",
+    "secours": "secours",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "gpt-x",
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 16",
+   "entree": {
+    "agent": "itare",
+    "modele": "gpt-x",
+    "secours": "secours",
+    "au_plafond": true,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 17",
+   "entree": {
+    "agent": "amizo",
+    "modele": "",
+    "secours": "",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "economique"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 18",
+   "entree": {
+    "agent": "amizo",
+    "modele": "",
+    "secours": "",
+    "au_plafond": true,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "modèle 19",
+   "entree": {
+    "agent": "amizo",
+    "modele": "",
+    "secours": "secours",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "economique",
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 20",
+   "entree": {
+    "agent": "amizo",
+    "modele": "",
+    "secours": "secours",
+    "au_plafond": true,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 21",
+   "entree": {
+    "agent": "amizo",
+    "modele": "gpt-x",
+    "secours": "",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "gpt-x"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 22",
+   "entree": {
+    "agent": "amizo",
+    "modele": "gpt-x",
+    "secours": "",
+    "au_plafond": true,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "modèle 23",
+   "entree": {
+    "agent": "amizo",
+    "modele": "gpt-x",
+    "secours": "secours",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "gpt-x",
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 24",
+   "entree": {
+    "agent": "amizo",
+    "modele": "gpt-x",
+    "secours": "secours",
+    "au_plafond": true,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 25",
+   "entree": {
+    "agent": "cassandra",
+    "modele": "",
+    "secours": "",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [
+     "principal"
+    ],
+    "exiger": true
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "modèle 26",
+   "entree": {
+    "agent": "cassandra",
+    "modele": "",
+    "secours": "",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [
+     "principal"
+    ],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "principal"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 27",
+   "entree": {
+    "agent": "itare",
+    "modele": "",
+    "secours": "secours",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [
+     "itare_citadelle"
+    ],
+    "exiger": true
+   },
+   "sortie": {
+    "valeur": [
+     "",
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 28",
+   "entree": {
+    "agent": "itare",
+    "modele": "",
+    "secours": "secours",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [
+     "secours"
+    ],
+    "exiger": true
+   },
+   "sortie": {
+    "valeur": [
+     "",
+     "itare_citadelle"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 29",
+   "entree": {
+    "agent": "itare",
+    "modele": "gpt-x",
+    "secours": "gpt-x",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "gpt-x"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 30",
+   "entree": {
+    "agent": "amizo",
+    "modele": "",
+    "secours": "secours",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [
+     "economique"
+    ],
+    "exiger": true
+   },
+   "sortie": {
+    "valeur": [
+     "secours"
+    ]
+   }
+  },
+  {
+   "cas": "modèle 31",
+   "entree": {
+    "agent": "amizo",
+    "modele": "gpt-x",
+    "secours": "secours",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [
+     "gpt-x",
+     "secours"
+    ],
+    "exiger": true
+   },
+   "sortie": {
+    "valeur": []
+   }
+  },
+  {
+   "cas": "modèle 32",
+   "entree": {
+    "agent": "itare",
+    "modele": "",
+    "secours": "",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [
+     "itare_citadelle"
+    ],
+    "exiger": true
+   },
+   "sortie": {
+    "valeur": [
+     ""
+    ]
+   }
+  },
+  {
+   "cas": "modèle 33",
+   "entree": {
+    "agent": "cassandra",
+    "modele": "gpt-x",
+    "secours": "secours",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal",
+     "itare": "itare_citadelle",
+     "amizo": "economique"
+    },
+    "deconseilles": [
+     "secours"
+    ],
+    "exiger": true
+   },
+   "sortie": {
+    "valeur": [
+     "gpt-x"
+    ]
+   }
+  },
+  {
+   "cas": "agent sans origine",
+   "entree": {
+    "agent": "service",
+    "modele": "",
+    "secours": "",
+    "au_plafond": false,
+    "origine": {
+     "cassandra": "principal"
+    },
+    "deconseilles": [],
+    "exiger": false
+   },
+   "sortie": {
+    "valeur": [
+     "principal"
+    ]
+   }
+  }
+ ]
+}

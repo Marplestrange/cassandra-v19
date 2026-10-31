@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #ce156a
+# VERSION CN : 0.4.0  #1ac9ac
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=ce156a ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=1ac9ac ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -203,21 +203,11 @@ def brancher(ctx):
     def modele_pour(agent, cfg, secours=False):
         """Les rôles essayés, dans l'ordre. Cassandra parle par le rôle de la maison ; Itare par le modèle que le compte a choisi, à défaut par le rôle d'Itare ;
         le réglage de l'agent (modèle principal) l'emporte, et son modèle de secours ferme la liste. Au plafond « secours », le secours seul."""
-        if secours and (cfg["secours"] or agent != "cassandra"):          # Cassandra n'est jamais coupée : sans secours, elle garde son modèle
-            roles = [cfg["secours"]] if cfg["secours"] else []
-        else:
-            if cfg["modele"]:
-                roles = [cfg["modele"]]
-            elif agent == "itare":
-                roles = ["", str(reglage("role_itare", "itare_citadelle"))]
-            elif agent == "amizo":
-                roles = [str(reglage("role_amizo", "principal"))]
-            else:
-                roles = [str(reglage("role_cassandra", "principal"))]
-            roles = roles + ([cfg["secours"]] if cfg["secours"] and cfg["secours"] not in roles else [])
-        if reglage("epreuves_exigees", False) in (True, 1, "1", "true"):  # un modèle qui a échoué à ses épreuves de sûreté ne sert pas un agent (un modèle jamais éprouvé n'est pas écarté)
-            roles = [r for r in roles if not r or not G.deconseille(r)]
-        return roles
+        origine = {"cassandra": str(reglage("role_cassandra", "principal")), "itare": str(reglage("role_itare", "itare_citadelle")), "amizo": str(reglage("role_amizo", "principal"))}
+        exiger = reglage("epreuves_exigees", False) in (True, 1, "1", "true")          # un modèle qui a échoué à ses épreuves de sûreté ne sert pas un agent (un modèle jamais éprouvé n'est pas écarté)
+        candidats = {r for r in [cfg["modele"], cfg["secours"]] + list(origine.values()) if r}
+        deconseilles = sorted(r for r in candidats if G.deconseille(r)) if exiger else []
+        return o.choix_modele(agent, cfg["modele"], cfg["secours"], bool(secours), origine, deconseilles, exiger)
 
     def appeler_modele(agent, compte, cfg, msgs, systeme, tools, max_jetons, secours=False):
         derniere = {"ok": False, "erreur": "aucun modèle"}
@@ -262,6 +252,13 @@ def brancher(ctx):
         def refusee(prop):
             return ("Non exécuté : l'utilisateur a déjà refusé cette même action (proposition n° %d) : ne la repropose pas, sauf s'il te le redemande." % prop["id"], {"cle": t["cle"], "statut": "refusee", "risque": t["risque"]})
 
+        if agent == "amizo" and t["cle"] == "bibliotheque.noter":              # l'étagère et le titre d'une fiche se classent (point classer_fiche) quand Amizo les a omis
+            c = o.classer_fiche(str(args.get("source") or ""), str(args.get("titre") or ""), str(args.get("corps") or ""), str(args.get("lu_le") or ""), datetime.now().strftime("%Y-%m-%d"))
+            args = dict(args)
+            if not args.get("etagere"):
+                args["etagere"] = c["etagere"]
+            if not str(args.get("titre") or "").strip():
+                args["titre"] = c["titre"]
         sur = E.surcharges(agent, cle_cfg(agent, compte)).get(t["cle"]) or {}
         if (t["sortant"] or t["risque"] in ECRITURES_RISQUEES) and etat["teinte"]:
             prop = proposer("retenue")
@@ -339,7 +336,7 @@ def brancher(ctx):
             index = {t["nom"]: t for t in tous}                    # tout ce qui est permis s'appelle par son nom, présenté ou non : le modèle peut s'en souvenir d'un tour précédent
             schemas = [o.schema_outil(t) for t in pres] + o.meta_outils()
             ton = ""
-            persona = cfg["ton"] or str(reglage("persona_" + agent, ""))
+            persona = o.ton_agent(agent, cfg["ton"] or str(reglage("persona_" + agent, "")))
             if agent == "amizo":
                 persona = (persona + "\n\n" if persona else "") + A.regle_amizo
             elif "agents.passer_la_main" in par_cle:                    # un agent qui n'a pas l'outil du web le dit, et passe la main
@@ -436,7 +433,7 @@ def brancher(ctx):
             db.ecrire("DELETE FROM messages WHERE id=?", (m,))
 
     # ------------------------------------------------------------------ inscription
-    A = brancher_amizo(ctx, E, db, compte_agit, stocker, lambda *a, **k: converser(*a, **k))          # Amizo : transmettre, passer la main, traiter une passation
+    A = brancher_amizo(ctx, E, o, lecture, db, compte_agit, stocker, lambda *a, **k: converser(*a, **k))          # Amizo : transmettre, passer la main, traiter une passation
     c = ctx
     for cid, f in (("conversations", conversations), ("conversation", conversation), ("outils", outils)):
         c.implementer(cid, f)

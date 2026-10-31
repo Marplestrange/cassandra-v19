@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b7a4a1
+# VERSION CN : 0.1.0  #551977
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Amizo, l'agent de la connaissance, VIVANT : ses outils exacts, ce qu'il rend (sources, date de lecture, confiance), la passation d'Itare et de Cassandra vers lui, et la page piégée lue sans réseau réel (la résolution et le téléchargement so
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b7a4a1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=551977 ▼▼▼
 """Amizo, l'agent de la connaissance, VIVANT : ses outils exacts, ce qu'il rend (sources, date de lecture, confiance), la passation d'Itare et de Cassandra vers lui, et la page piégée
 lue sans réseau réel (la résolution et le téléchargement sont injectés comme dans le banc du module web) : rangée en quarantaine, jamais exécutée, aucun envoi."""
 import shutil
@@ -124,6 +124,11 @@ class CeQuIlRend(Amizo):
             self.assertNotEqual(self.transmettre(**a)["statut"], "faite", a)
         self.assertEqual(len(self.info_de(ROOT)), 1)
 
+    def test_la_transmission_porte_la_fiabilite_estimee_de_la_source(self):
+        self.transmettre()
+        contenu = self.info_de(ROOT)[0]["contenu"]
+        self.assertIn("Fiabilité estimée des sources : faible (0.40)", contenu)                 # source inconnue, en https : le point score_source
+
     def test_seul_amizo_transmet(self):
         for acteur in ("humain", "itare", "cassandra", "agent"):
             r = self.ex("agents.transmettre", compte=ROOT, acteur=acteur, destinataire="utilisateur", texte="x", confiance="haute", sources=SOURCES)
@@ -165,6 +170,29 @@ class PagePiegee(Amizo):
         self.assertEqual(self.ex("bibliotheque.chercher", compte=ROOT, q="menu")["resultat"]["resultats"], [])      # par défaut, seules les fiches vérifiées
         q = self.ex("bibliotheque.chercher", compte=ROOT, q="menu", etats=["quarantaine"])["resultat"]
         self.assertEqual([x["etat"] for x in q["resultats"]], ["quarantaine"])
+
+
+class RapportDuMatin(Amizo):
+    def test_chaque_phrase_renvoie_a_une_ligne_du_journal_de_ce_compte(self):
+        self.causer("Crée une note", [appel("notes__creer", {"titre": "Courses", "corps": "pain"}, ident="n1"), texte("C'est fait.")], agent="itare", compte=BEA)
+        r = self.agent("rapport_matin", compte=BEA)
+        self.assertEqual([a["id"] for a in r["agents"]], ["itare"])                            # un compte ordinaire ne voit que son Itare
+        phrases = r["agents"][0]["phrases"]
+        self.assertTrue(phrases and len(phrases) <= 3)
+        lignes = {e["id"]: e for e in self.ctx.evenements("capacite.", 3000)}
+        for ph in phrases:
+            ligne = lignes[ph["journal"]]
+            self.assertEqual((ligne["acteur"], ligne["compte"]), ("itare", BEA))
+            self.assertEqual(ph["type"], ligne["type"])
+        self.assertIn("Itare a fait", " ".join(ph["phrase"] for ph in phrases))
+
+    def test_l_administrateur_voit_l_equipe_sans_le_journal_d_un_autre_compte(self):
+        self.causer("Crée une note", [appel("notes__creer", {"titre": "Courses", "corps": "pain"}, ident="n1"), texte("C'est fait.")], agent="itare", compte=BEA)
+        r = self.agent("rapport_matin", compte=ROOT)
+        self.assertEqual([a["id"] for a in r["agents"]], ["cassandra", "itare", "amizo"])
+        itare = next(a for a in r["agents"] if a["id"] == "itare")
+        self.assertEqual(itare["phrases"], [])                                                 # les actes d'Itare chez Bea ne sont pas ceux de l'administrateur
+        self.assertIn("itare", r["silencieux"])
 
 
 class Passation(Amizo):

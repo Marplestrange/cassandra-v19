@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f20da1
+# VERSION CN : 0.1.0  #768fd6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'équipe d'agents : droits, capacités de lecture et de réglage, coût par jour, plafonds, cloisonnement, et l'absence d'outil de secret chez Itare et les agents invités.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f20da1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=768fd6 ▼▼▼
 """Bancs de l'équipe d'agents : droits, capacités de lecture et de réglage, coût par jour, plafonds, cloisonnement, et l'absence d'outil de secret chez Itare et les agents invités."""
 import shutil
 import sys
@@ -83,7 +83,7 @@ class Droits(Equipe):
             for acteur in ("itare", "cassandra", "agent"):
                 self.assertEqual(self.n.executeur.executer("agents." + cap, acteur, {"agent": "itare", "id": "itare"}, compte=BEA)["statut"], "refuse")
         outils = {t["cle"] for t in self.ctx.outils("itare")} | {t["cle"] for t in self.ctx.outils("cassandra")}
-        self.assertFalse([c for c in outils if c.startswith("agents.")])
+        self.assertEqual({c for c in outils if c.startswith("agents.")}, {"agents.passer_la_main"})          # le seul outil du module : passer la main à Amizo
 
     def test_plafond_regler_demande_administrer(self):
         r = self.ex("agents.plafond_regler", compte=BEA, portee="global", euros=5)
@@ -120,7 +120,7 @@ class Lectures(Equipe):
 
     def test_un_agent_inconnu_et_les_agents_sans_outils(self):
         self.refuse("agent", compte=ROOT, id="fantome")
-        self.assertEqual(self.agent("paliers", compte=ROOT, id="amizo")["paliers"], [])
+        self.assertEqual([p["cle"] for p in self.agent("paliers", compte=ROOT, id="amizo")["paliers"]], ["agents.transmettre"])          # dans ce banc, sans web ni bibliothèque : le seul outil du module
 
     def test_couts_par_jour_et_par_agent(self):
         self.tarifs_chers()

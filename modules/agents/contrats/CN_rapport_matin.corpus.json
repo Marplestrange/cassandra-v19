@@ -1,0 +1,1191 @@
+{
+ "point": "agents.rapport_matin",
+ "contrat": "1.0",
+ "origine": "sorties de la référence du dépôt, données synthétiques",
+ "cas": [
+  {
+   "cas": "rapport 01",
+   "entree": {
+    "evenements": [],
+    "agents": [
+     {
+      "id": "cassandra",
+      "nom": "Cassandra"
+     },
+     {
+      "id": "itare",
+      "nom": "Itare"
+     },
+     {
+      "id": "amizo",
+      "nom": "Amizo"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {},
+     "silencieux": [
+      "cassandra",
+      "itare",
+      "amizo"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "rapport 02",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare a fait 1 acte ; le dernier acte : notes.creer.",
+        "journal": 1
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 03",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 2,
+      "ts": 20.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "taches.creer",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare a fait 2 actes ; le dernier acte : taches.creer.",
+        "journal": 2
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 04",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.lister",
+      "donnees": {
+       "lecture": true
+      }
+     },
+     {
+      "id": 2,
+      "ts": 20.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.lire",
+      "donnees": {
+       "lecture": true
+      }
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare n'a fait que 2 lectures ; la dernière : notes.lire.",
+        "journal": 2
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 05",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.lister",
+      "donnees": {
+       "lecture": true
+      }
+     },
+     {
+      "id": 2,
+      "ts": 20.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare a fait 1 acte et 1 lecture ; le dernier acte : notes.creer.",
+        "journal": 2
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 06",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.echouee",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "1 acte a échoué ; le dernier : notes.creer.",
+        "journal": 1
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 07",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.echouee",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 2,
+      "ts": 11.0,
+      "type": "capacite.echouee",
+      "acteur": "itare",
+      "objet_id": "notes.ecrire",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "2 actes ont échoué ; le dernier : notes.ecrire.",
+        "journal": 2
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 08",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.racontee",
+      "acteur": "itare",
+      "objet_id": "courrier.envoyer",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "1 geste est resté raconté ou refusé, rien n'a été fait ; le dernier : courrier.envoyer.",
+        "journal": 1
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 09",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.racontee",
+      "acteur": "itare",
+      "objet_id": "courrier.envoyer",
+      "donnees": {}
+     },
+     {
+      "id": 2,
+      "ts": 11.0,
+      "type": "capacite.refusee",
+      "acteur": "itare",
+      "objet_id": "dns.corriger",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "2 gestes sont restés raconté ou refusé, rien n'a été fait ; le dernier : dns.corriger.",
+        "journal": 2
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 10",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 2,
+      "ts": 11.0,
+      "type": "capacite.echouee",
+      "acteur": "itare",
+      "objet_id": "notes.ecrire",
+      "donnees": {}
+     },
+     {
+      "id": 3,
+      "ts": 12.0,
+      "type": "capacite.racontee",
+      "acteur": "itare",
+      "objet_id": "courrier.envoyer",
+      "donnees": {}
+     },
+     {
+      "id": 4,
+      "ts": 13.0,
+      "type": "capacite.refusee",
+      "acteur": "itare",
+      "objet_id": "x.y",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare a fait 1 acte ; le dernier acte : notes.creer.",
+        "journal": 1
+       },
+       {
+        "phrase": "1 acte a échoué ; le dernier : notes.ecrire.",
+        "journal": 2
+       },
+       {
+        "phrase": "2 gestes sont restés raconté ou refusé, rien n'a été fait ; le dernier : x.y.",
+        "journal": 4
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 11",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.faite",
+      "acteur": "cassandra",
+      "objet_id": "sites.liste",
+      "donnees": {
+       "lecture": true
+      }
+     },
+     {
+      "id": 2,
+      "ts": 11.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 3,
+      "ts": 12.0,
+      "type": "capacite.faite",
+      "acteur": "amizo",
+      "objet_id": "web.lire",
+      "donnees": {
+       "lecture": true
+      }
+     }
+    ],
+    "agents": [
+     {
+      "id": "cassandra",
+      "nom": "Cassandra"
+     },
+     {
+      "id": "itare",
+      "nom": "Itare"
+     },
+     {
+      "id": "amizo",
+      "nom": "Amizo"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "cassandra": [
+       {
+        "phrase": "Cassandra n'a fait que 1 lecture ; la dernière : sites.liste.",
+        "journal": 1
+       }
+      ],
+      "itare": [
+       {
+        "phrase": "Itare a fait 1 acte ; le dernier acte : notes.creer.",
+        "journal": 2
+       }
+      ],
+      "amizo": [
+       {
+        "phrase": "Amizo n'a fait que 1 lecture ; la dernière : web.lire.",
+        "journal": 3
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 12",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.faite",
+      "acteur": "cassandra",
+      "objet_id": "sites.liste",
+      "donnees": {
+       "lecture": true
+      }
+     },
+     {
+      "id": 2,
+      "ts": 11.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "cassandra",
+      "nom": "Cassandra"
+     },
+     {
+      "id": "itare",
+      "nom": "Itare"
+     },
+     {
+      "id": "amizo",
+      "nom": "Amizo"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "cassandra": [
+       {
+        "phrase": "Cassandra n'a fait que 1 lecture ; la dernière : sites.liste.",
+        "journal": 1
+       }
+      ],
+      "itare": [
+       {
+        "phrase": "Itare a fait 1 acte ; le dernier acte : notes.creer.",
+        "journal": 2
+       }
+      ]
+     },
+     "silencieux": [
+      "amizo"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "rapport 13",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 5.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 2,
+      "ts": 50.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.ecrire",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 10,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare a fait 1 acte ; le dernier acte : notes.ecrire.",
+        "journal": 2
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 14",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 5.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 2,
+      "ts": 50.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.ecrire",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 50
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare a fait 1 acte ; le dernier acte : notes.creer.",
+        "journal": 1
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 15",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 5.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 2,
+      "ts": 50.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.ecrire",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 5,
+    "fin": 50
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare a fait 1 acte ; le dernier acte : notes.creer.",
+        "journal": 1
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 16",
+   "entree": {
+    "evenements": [
+     {
+      "id": 3,
+      "ts": 12.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "b.b",
+      "donnees": {}
+     },
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "a.a",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare a fait 2 actes ; le dernier acte : b.b.",
+        "journal": 3
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 17",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.demandee",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 2,
+      "ts": 10.0,
+      "type": "capacite.simulee",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {},
+     "silencieux": [
+      "itare"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "rapport 18",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare a fait 3 actes ; le dernier acte : notes.creer.",
+        "journal": 1
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 19",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 11.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 2,
+      "ts": 12.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 3,
+      "ts": 13.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 4,
+      "ts": 14.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 5,
+      "ts": 15.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 6,
+      "ts": 16.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     },
+     {
+      "id": 7,
+      "ts": 17.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare a fait 7 actes ; le dernier acte : notes.creer.",
+        "journal": 7
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 20",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.faite",
+      "acteur": "inconnu",
+      "objet_id": "notes.creer",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {},
+     "silencieux": [
+      "itare"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "rapport 21",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10,
+      "type": "capacite.faite",
+      "acteur": "itare"
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare a fait 1 acte ; le dernier acte : ?.",
+        "journal": 1
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 22",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.faite",
+      "acteur": "amizo",
+      "objet_id": "bibliotheque.noter",
+      "donnees": {}
+     },
+     {
+      "id": 2,
+      "ts": 11.0,
+      "type": "capacite.faite",
+      "acteur": "amizo",
+      "objet_id": "agents.transmettre",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "cassandra",
+      "nom": "Cassandra"
+     },
+     {
+      "id": "itare",
+      "nom": "Itare"
+     },
+     {
+      "id": "amizo",
+      "nom": "Amizo"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "amizo": [
+       {
+        "phrase": "Amizo a fait 2 actes ; le dernier acte : agents.transmettre.",
+        "journal": 2
+       }
+      ]
+     },
+     "silencieux": [
+      "cassandra",
+      "itare"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "rapport 23",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 10.0,
+      "type": "capacite.echouee",
+      "acteur": "amizo",
+      "objet_id": "web.lire",
+      "donnees": {}
+     },
+     {
+      "id": 2,
+      "ts": 11.0,
+      "type": "capacite.faite",
+      "acteur": "amizo",
+      "objet_id": "web.rechercher",
+      "donnees": {
+       "lecture": true
+      }
+     }
+    ],
+    "agents": [
+     {
+      "id": "cassandra",
+      "nom": "Cassandra"
+     },
+     {
+      "id": "itare",
+      "nom": "Itare"
+     },
+     {
+      "id": "amizo",
+      "nom": "Amizo"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "amizo": [
+       {
+        "phrase": "Amizo n'a fait que 1 lecture ; la dernière : web.rechercher.",
+        "journal": 2
+       },
+       {
+        "phrase": "1 acte a échoué ; le dernier : web.lire.",
+        "journal": 1
+       }
+      ]
+     },
+     "silencieux": [
+      "cassandra",
+      "itare"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "rapport 24",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 99.9,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "a.a",
+      "donnees": {}
+     },
+     {
+      "id": 2,
+      "ts": 100.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "b.b",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare a fait 1 acte ; le dernier acte : a.a.",
+        "journal": 1
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  },
+  {
+   "cas": "rapport 25",
+   "entree": {
+    "evenements": [
+     {
+      "id": 1,
+      "ts": 0.0,
+      "type": "capacite.faite",
+      "acteur": "itare",
+      "objet_id": "a.a",
+      "donnees": {}
+     }
+    ],
+    "agents": [
+     {
+      "id": "itare",
+      "nom": "Itare"
+     }
+    ],
+    "debut": 0,
+    "fin": 100
+   },
+   "sortie": {
+    "valeur": {
+     "agents": {
+      "itare": [
+       {
+        "phrase": "Itare a fait 1 acte ; le dernier acte : a.a.",
+        "journal": 1
+       }
+      ]
+     },
+     "silencieux": []
+    }
+   }
+  }
+ ]
+}

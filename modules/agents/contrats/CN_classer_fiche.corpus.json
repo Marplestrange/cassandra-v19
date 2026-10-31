@@ -1,0 +1,583 @@
+{
+ "point": "agents.classer_fiche",
+ "contrat": "1.0",
+ "origine": "sorties de la référence du dépôt, données synthétiques",
+ "cas": [
+  {
+   "cas": "fiche 01",
+   "entree": {
+    "url": "https://exemple.fr/offre",
+    "titre": "Offre de la semaine",
+    "texte": "Un menu à 12 euros. Entrée, plat, dessert.",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Offre de la semaine",
+     "resume": "Un menu à 12 euros. Entrée, plat, dessert.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 02",
+   "entree": {
+    "url": "https://exemple.fr/offre",
+    "titre": "",
+    "texte": "Premier titre\nSuite du texte.",
+    "lu_le": "2026-10-01",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Premier titre",
+     "resume": "Premier titre Suite du texte.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 03",
+   "entree": {
+    "url": "https://exemple.fr/offre",
+    "titre": "",
+    "texte": "",
+    "lu_le": "2026-10-01",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "exemple.fr",
+     "resume": "",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 04",
+   "entree": {
+    "url": "https://www.exemple.fr/",
+    "titre": "",
+    "texte": "   ",
+    "lu_le": "",
+    "maintenant": ""
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "www.exemple.fr",
+     "resume": "",
+     "fraicheur": "inconnue"
+    }
+   }
+  },
+  {
+   "cas": "fiche 05",
+   "entree": {
+    "url": "espace:notes/cuisine.md",
+    "titre": "Recettes",
+    "texte": "Pâtes au pistou. Compter vingt minutes.",
+    "lu_le": "2026-10-30",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "interne",
+     "titre": "Recettes",
+     "resume": "Pâtes au pistou. Compter vingt minutes.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 06",
+   "entree": {
+    "url": "ESPACE:notes/x.md",
+    "titre": "X",
+    "texte": "y",
+    "lu_le": "2026-10-30",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "interne",
+     "titre": "X",
+     "resume": "y",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 07",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "titre": "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "texte": "Court.",
+    "lu_le": "2026-01-01",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+     "resume": "Court.",
+     "fraicheur": "datee"
+    }
+   }
+  },
+  {
+   "cas": "fiche 08",
+   "entree": {
+    "url": "https://exemple.fr/b",
+    "titre": "Titre",
+    "texte": "Le menu de la semaine est à douze euros. Il comprend une entrée, un plat et un dessert. Texte plus long qui n'entre pas dans le résumé. Texte plus long qui n'entre pas dans le résumé. Texte plus long qui n'entre pas dans le résumé. Texte plus long qui n'entre pas dans le résumé. Texte plus long qui n'entre pas dans le résumé. Texte plus long qui n'entre pas dans le résumé. Texte plus long qui n'entre pas dans le résumé. Texte plus long qui n'entre pas dans le résumé. Texte plus long qui n'entre pas dans le résumé. Texte plus long qui n'entre pas dans le résumé. ",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Le menu de la semaine est à douze euros. Il comprend une entrée, un plat et un dessert.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 09",
+   "entree": {
+    "url": "https://exemple.fr/c",
+    "titre": "Titre",
+    "texte": "Phrase un. Phrase deux. Phrase trois. Phrase quatre.",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Phrase un. Phrase deux.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 10",
+   "entree": {
+    "url": "https://exemple.fr/d",
+    "titre": "Titre",
+    "texte": "Une seule phrase très longue mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot ",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Une seule phrase très longue mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 11",
+   "entree": {
+    "url": "https://exemple.fr/e",
+    "titre": "Titre",
+    "texte": "Texte.",
+    "lu_le": "2026-10-01",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Texte.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 12",
+   "entree": {
+    "url": "https://exemple.fr/e",
+    "titre": "Titre",
+    "texte": "Texte.",
+    "lu_le": "2026-10-02",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Texte.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 13",
+   "entree": {
+    "url": "https://exemple.fr/e",
+    "titre": "Titre",
+    "texte": "Texte.",
+    "lu_le": "2026-09-01",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Texte.",
+     "fraicheur": "datee"
+    }
+   }
+  },
+  {
+   "cas": "fiche 14",
+   "entree": {
+    "url": "https://exemple.fr/e",
+    "titre": "Titre",
+    "texte": "Texte.",
+    "lu_le": "2025-11-01",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Texte.",
+     "fraicheur": "datee"
+    }
+   }
+  },
+  {
+   "cas": "fiche 15",
+   "entree": {
+    "url": "https://exemple.fr/e",
+    "titre": "Titre",
+    "texte": "Texte.",
+    "lu_le": "2025-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Texte.",
+     "fraicheur": "datee"
+    }
+   }
+  },
+  {
+   "cas": "fiche 16",
+   "entree": {
+    "url": "https://exemple.fr/e",
+    "titre": "Titre",
+    "texte": "Texte.",
+    "lu_le": "2025-10-30",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Texte.",
+     "fraicheur": "ancienne"
+    }
+   }
+  },
+  {
+   "cas": "fiche 17",
+   "entree": {
+    "url": "https://exemple.fr/e",
+    "titre": "Titre",
+    "texte": "Texte.",
+    "lu_le": "2020-01-01",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Texte.",
+     "fraicheur": "ancienne"
+    }
+   }
+  },
+  {
+   "cas": "fiche 18",
+   "entree": {
+    "url": "https://exemple.fr/e",
+    "titre": "Titre",
+    "texte": "Texte.",
+    "lu_le": "2026-11-05",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Texte.",
+     "fraicheur": "inconnue"
+    }
+   }
+  },
+  {
+   "cas": "fiche 19",
+   "entree": {
+    "url": "https://exemple.fr/e",
+    "titre": "Titre",
+    "texte": "Texte.",
+    "lu_le": "pas une date",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Texte.",
+     "fraicheur": "inconnue"
+    }
+   }
+  },
+  {
+   "cas": "fiche 20",
+   "entree": {
+    "url": "https://exemple.fr/e",
+    "titre": "Titre",
+    "texte": "Texte.",
+    "lu_le": "2026-13-45",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Texte.",
+     "fraicheur": "inconnue"
+    }
+   }
+  },
+  {
+   "cas": "fiche 21",
+   "entree": {
+    "url": "https://exemple.fr/e",
+    "titre": "Titre",
+    "texte": "Texte.",
+    "lu_le": "2026-10-31T08:00:00",
+    "maintenant": "2026-10-31 12:00"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "Texte.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 22",
+   "entree": {
+    "url": "https://exemple.fr/f",
+    "titre": "  Titre   avec   espaces  ",
+    "texte": "  Un   texte   avec\n\nretours.  ",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre avec espaces",
+     "resume": "Un texte avec retours.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 23",
+   "entree": {
+    "url": "",
+    "titre": "",
+    "texte": "",
+    "lu_le": "",
+    "maintenant": ""
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Sans titre",
+     "resume": "",
+     "fraicheur": "inconnue"
+    }
+   }
+  },
+  {
+   "cas": "fiche 24",
+   "entree": {
+    "url": "https://Exemple.FR:8080/Chemin?x=1",
+    "titre": "",
+    "texte": "\n\n  Ligne après vides.\nAutre.",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Ligne après vides.",
+     "resume": "Ligne après vides. Autre.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 25",
+   "entree": {
+    "url": "https://exemple.fr/g",
+    "titre": "",
+    "texte": "Ligne longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue ",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Ligne longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue lo",
+     "resume": "Ligne longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue longue",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 26",
+   "entree": {
+    "url": "ftp://exemple.fr/h",
+    "titre": "",
+    "texte": "Texte.",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Texte.",
+     "resume": "Texte.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 27",
+   "entree": {
+    "url": "https://exemple.fr/i",
+    "titre": "Titre",
+    "texte": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. Deux.",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 28",
+   "entree": {
+    "url": "https://exemple.fr/i",
+    "titre": "Titre",
+    "texte": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. Deux.",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. Deux.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 29",
+   "entree": {
+    "url": "https://exemple.fr/j",
+    "titre": "Titre",
+    "texte": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB. Trois.",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 30",
+   "entree": {
+    "url": "https://exemple.fr/j",
+    "titre": "Titre",
+    "texte": "mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot fin. autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre fin.",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "Titre",
+     "resume": "mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot fin. autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre autre",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 31",
+   "entree": {
+    "url": "https://exemple.fr/k",
+    "titre": "",
+    "texte": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\nSuite.",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+     "resume": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL Suite.",
+     "fraicheur": "recente"
+    }
+   }
+  },
+  {
+   "cas": "fiche 32",
+   "entree": {
+    "url": "https://exemple.fr/k",
+    "titre": "",
+    "texte": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\nSuite.",
+    "lu_le": "2026-10-31",
+    "maintenant": "2026-10-31"
+   },
+   "sortie": {
+    "valeur": {
+     "etagere": "externe",
+     "titre": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+     "resume": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL Suite.",
+     "fraicheur": "recente"
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,51 @@
+{
+ "point": "agents.rapport_matin",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "evenements",
+   "agents",
+   "debut",
+   "fin"
+  ],
+  "properties": {
+   "evenements": {
+    "type": "array"
+   },
+   "agents": {
+    "type": "array"
+   },
+   "debut": {
+    "type": "number"
+   },
+   "fin": {
+    "type": "number"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ],
+  "properties": {
+   "valeur": {
+    "type": "object",
+    "required": [
+     "agents",
+     "silencieux"
+    ]
+   }
+  }
+ },
+ "invariants": [
+  "trois phrases au plus par agent",
+  "chaque phrase porte `journal`, l'identifiant d'un événement de l'entrée, de cet agent, dans la période",
+  "un agent sans événement n'a aucune phrase : il est listé dans `silencieux`",
+  "aucun contenu d'acte n'entre dans une phrase : la clé de la capacité et le nombre seulement",
+  "la même entrée donne toujours le même rapport"
+ ],
+ "mesure": "chaque phrase renvoie à une ligne du journal : la ligne existe dans l'entrée, appartient à l'agent et tombe dans la période"
+}

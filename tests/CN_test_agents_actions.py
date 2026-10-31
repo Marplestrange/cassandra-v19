@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a88479
+# VERSION CN : 0.1.0  #7ca1f5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des actions de l'équipe d'agents : propositions, carte de confiance, « Pourquoi ? », épreuves de sûreté, Relecteur et sentinelle anti-fuite.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a88479 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7ca1f5 ▼▼▼
 """Bancs des actions de l'équipe d'agents : propositions (cloisonnement, exécution à l'acceptation, refus mémorisé, report, mandat des envois, secret masqué), carte de confiance
 (8 validations, essai de 7 jours, recul du noyau), « Pourquoi ? » sans fuite entre comptes, épreuves de sûreté (un modèle piégé échoue), Relecteur et sentinelle anti-fuite."""
 import json
@@ -587,7 +587,7 @@ class Garde(Actions):
             for acteur in ("itare", "cassandra", "agent"):
                 self.assertEqual(self.n.executeur.executer("agents." + cap, acteur, {"id": 1, "decision": "accepter", "modele": "x", "etiquette": "x", "valeur": SECRET * 2}, compte=BEA)["statut"], "refuse")
         outils = {t["cle"] for a in ("itare", "cassandra", "agent") for t in self.ctx.outils(a)}
-        self.assertEqual([c for c in outils if c.startswith("agents.")], [])
+        self.assertEqual([c for c in outils if c.startswith("agents.")], ["agents.passer_la_main"])          # le seul outil du module : passer la main à Amizo
 
     def test_les_services_sont_des_donnees_de_configuration(self):
         eq = self.eq

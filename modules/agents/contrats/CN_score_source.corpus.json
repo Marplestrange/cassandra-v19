@@ -1,0 +1,563 @@
+{
+ "point": "agents.score_source",
+ "contrat": "1.0",
+ "origine": "sorties de la référence du dépôt, données synthétiques",
+ "cas": [
+  {
+   "cas": "source 01",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.4,
+     "niveau": "faible",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 02",
+   "entree": {
+    "url": "http://exemple.fr/a",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.3,
+     "niveau": "faible",
+     "raisons": [
+      "source encore inconnue"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 03",
+   "entree": {
+    "url": "https://www.exemple.fr/a",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.4,
+     "niveau": "faible",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 04",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {
+     "exemple.fr": 1
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.5,
+     "niveau": "moyenne",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée",
+      "1 fiche(s) déjà vérifiée(s)"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 05",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {
+     "exemple.fr": 2
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.6,
+     "niveau": "moyenne",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée",
+      "2 fiche(s) déjà vérifiée(s)"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 06",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {
+     "exemple.fr": 3
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.7,
+     "niveau": "moyenne",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée",
+      "3 fiche(s) déjà vérifiée(s)"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 07",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {
+     "exemple.fr": 9
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.7,
+     "niveau": "moyenne",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée",
+      "9 fiche(s) déjà vérifiée(s)"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 08",
+   "entree": {
+    "url": "https://www.service-public.gouv.fr/x",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.7,
+     "niveau": "moyenne",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée",
+      "organisme public ou universitaire"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 09",
+   "entree": {
+    "url": "https://www.service-public.gouv.fr/x",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {
+     "service-public.gouv.fr": 3
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 1.0,
+     "niveau": "haute",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée",
+      "organisme public ou universitaire",
+      "3 fiche(s) déjà vérifiée(s)"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 10",
+   "entree": {
+    "url": "https://nasa.gov/x",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.7,
+     "niveau": "moyenne",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée",
+      "organisme public ou universitaire"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 11",
+   "entree": {
+    "url": "https://www.ox.ac.uk/x",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.7,
+     "niveau": "moyenne",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée",
+      "organisme public ou universitaire"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 12",
+   "entree": {
+    "url": "https://cs.stanford.edu/x",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.7,
+     "niveau": "moyenne",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée",
+      "organisme public ou universitaire"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 13",
+   "entree": {
+    "url": "https://europa.eu/x",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.4,
+     "niveau": "faible",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 14",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "confiance_connue": 0.9,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.9,
+     "niveau": "haute",
+     "raisons": [
+      "confiance posée par un utilisateur"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 15",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "confiance_connue": 0.0,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.0,
+     "niveau": "aucune",
+     "raisons": [
+      "confiance posée par un utilisateur"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 16",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "confiance_connue": 1.7,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 1.0,
+     "niveau": "haute",
+     "raisons": [
+      "confiance posée par un utilisateur"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 17",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "confiance_connue": -0.5,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.0,
+     "niveau": "aucune",
+     "raisons": [
+      "confiance posée par un utilisateur"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 18",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "confiance_connue": 0.555,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.56,
+     "niveau": "moyenne",
+     "raisons": [
+      "confiance posée par un utilisateur"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 19",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "confiance_connue": 0.9,
+    "bloques": [
+     "exemple.fr"
+    ],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.0,
+     "niveau": "aucune",
+     "raisons": [
+      "source bloquée par un utilisateur"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 20",
+   "entree": {
+    "url": "https://blog.exemple.fr/a",
+    "confiance_connue": null,
+    "bloques": [
+     "exemple.fr"
+    ],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.0,
+     "niveau": "aucune",
+     "raisons": [
+      "source bloquée par un utilisateur"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 21",
+   "entree": {
+    "url": "https://autreexemple.fr/a",
+    "confiance_connue": null,
+    "bloques": [
+     "exemple.fr"
+    ],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.4,
+     "niveau": "faible",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 22",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "confiance_connue": null,
+    "bloques": [
+     "EXEMPLE.FR"
+    ],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.0,
+     "niveau": "aucune",
+     "raisons": [
+      "source bloquée par un utilisateur"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 23",
+   "entree": {
+    "url": "pas une adresse",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.0,
+     "niveau": "aucune",
+     "raisons": [
+      "adresse illisible"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 24",
+   "entree": {
+    "url": "",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.0,
+     "niveau": "aucune",
+     "raisons": [
+      "adresse illisible"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 25",
+   "entree": {
+    "url": "ftp://exemple.fr/a",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.0,
+     "niveau": "aucune",
+     "raisons": [
+      "adresse illisible"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 26",
+   "entree": {
+    "url": "https://sub.exemple.fr:8443/a?b=1",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {
+     "sub.exemple.fr": 1
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.5,
+     "niveau": "moyenne",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée",
+      "1 fiche(s) déjà vérifiée(s)"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 27",
+   "entree": {
+    "url": "https://exemple.fr/a",
+    "confiance_connue": null,
+    "bloques": [
+     "autre.fr"
+    ],
+    "verifiees": {
+     "exemple.fr": 4
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.7,
+     "niveau": "moyenne",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée",
+      "4 fiche(s) déjà vérifiée(s)"
+     ]
+    }
+   }
+  },
+  {
+   "cas": "source 28",
+   "entree": {
+    "url": "https://exemple.gov.evil.fr/x",
+    "confiance_connue": null,
+    "bloques": [],
+    "verifiees": {}
+   },
+   "sortie": {
+    "valeur": {
+     "confiance": 0.4,
+     "niveau": "faible",
+     "raisons": [
+      "source encore inconnue",
+      "connexion chiffrée"
+     ]
+    }
+   }
+  }
+ ]
+}

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #7e8110
+# VERSION CN : 0.4.0  #aad238
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=7e8110 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=aad238 ▼▼▼
 [module]
 id = "agents"
 nom = "Agents"
@@ -334,6 +334,62 @@ stockage = true
 lectures = true
 agir = true
 introspection = true
+
+[[points_evolution]]
+id = "ton_agent"
+libelle = "Le ton d'un agent : l'agent, le ton réglé et la longueur maximale en entrée, le texte de style prêt pour le prompt en sortie (Amizo : précis et sourcé par défaut)"
+contrat = "1.0"
+reference = "points/EC_ton_agent"
+fonction = "point_ton_agent"
+runtime = "python"
+
+[[points_evolution]]
+id = "planifier_recherche"
+libelle = "Le plan d'une recherche d'Amizo : la demande, les titres déjà connus et le budget en entrée, les requêtes, le nombre de sources et la règle d'arrêt en sortie"
+contrat = "1.0"
+reference = "points/EC_planifier_recherche"
+fonction = "point_planifier_recherche"
+runtime = "python"
+
+[[points_evolution]]
+id = "classer_fiche"
+libelle = "Le classement d'une fiche : l'adresse, le titre, le texte, la date de lecture et la date du jour en entrée, l'étagère, le titre, le résumé et la fraîcheur en sortie"
+contrat = "1.0"
+reference = "points/EC_classer_fiche"
+fonction = "point_classer_fiche"
+runtime = "python"
+
+[[points_evolution]]
+id = "score_source"
+libelle = "La confiance d'une source : l'adresse, la confiance posée par un utilisateur, les hôtes bloqués et les fiches vérifiées par hôte en entrée, la confiance, son niveau et ses raisons en sortie"
+contrat = "1.0"
+reference = "points/EC_score_source"
+fonction = "point_score_source"
+runtime = "python"
+
+[[points_evolution]]
+id = "rapport_matin"
+libelle = "Le rapport du matin : les événements du journal, les agents et la période en entrée, trois phrases au plus par agent en sortie, chacune avec la ligne du journal qui la fonde"
+contrat = "1.0"
+reference = "points/EC_rapport_matin"
+fonction = "point_rapport_matin"
+runtime = "python"
+
+[[points_evolution]]
+id = "proposer_promotion"
+libelle = "La promotion proposée : les validations de suite, le seuil, la période d'essai et le refus récent en entrée, la proposition, la raison et ce qui manque en sortie"
+contrat = "1.0"
+reference = "points/EC_proposer_promotion"
+fonction = "point_proposer_promotion"
+runtime = "python"
+
+[[points_evolution]]
+id = "choix_modele"
+libelle = "Le choix du modèle d'un agent : l'agent, son modèle et son secours réglés, le plafond atteint, les rôles d'origine et les rôles déconseillés en entrée, la liste ordonnée des rôles à essayer en sortie"
+contrat = "1.0"
+reference = "points/EC_choix_modele"
+fonction = "point_choix_modele"
+runtime = "python"
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
@@ -366,6 +422,12 @@ qui = ["itare", "cassandra"]
 [[capacites]]
 id = "passations"
 libelle = "Les passations à Amizo : les miennes ; toutes pour l'administrateur"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "rapport_matin"
+libelle = "Le rapport du matin : trois phrases au plus par agent, tirées du journal ; chacune renvoie à une ligne précise du journal"
 risque = "lecture"
 droit = "utiliser"
 

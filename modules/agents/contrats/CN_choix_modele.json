@@ -1,0 +1,59 @@
+{
+ "point": "agents.choix_modele",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "agent",
+   "modele",
+   "secours",
+   "au_plafond",
+   "origine",
+   "deconseilles",
+   "exiger"
+  ],
+  "properties": {
+   "agent": {
+    "type": "string"
+   },
+   "modele": {
+    "type": "string"
+   },
+   "secours": {
+    "type": "string"
+   },
+   "au_plafond": {
+    "type": "boolean"
+   },
+   "origine": {
+    "type": "object"
+   },
+   "deconseilles": {
+    "type": "array"
+   },
+   "exiger": {
+    "type": "boolean"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ],
+  "properties": {
+   "valeur": {
+    "type": "array"
+   }
+  }
+ },
+ "invariants": [
+  "au plafond, jamais autre chose que le secours (sauf Cassandra sans secours)",
+  "le secours ferme toujours la liste, sans doublon",
+  "un rôle déconseillé est écarté quand les épreuves sont exigées, le rôle vide jamais",
+  "Amizo sans réglage prend son rôle d'origine, jamais celui de Cassandra",
+  "la même entrée donne toujours la même liste"
+ ],
+ "mesure": "équivalence rejouée avec l'ancien choix ; coût du jour de l'agent"
+}

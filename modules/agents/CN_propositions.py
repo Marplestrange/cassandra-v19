@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #aa0035
+# VERSION CN : 0.4.0  #e63749
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les propositions des agents : « À valider » (accepter exécute, refuser se mémorise, reporter), la carte de confiance et « Pourquoi ? ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=aa0035 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=e63749 ▼▼▼
 """Les propositions des agents.
 
 Une proposition est ce qu'un agent veut faire et ne fait pas seul : un geste raconté (palier ou niveau), retenu pour accord (« demander »), ou retenu parce qu'il sort de la maison
@@ -344,7 +344,7 @@ def brancher_propositions(ctx, E, o, lecture, reglage):
             serie, refus = serie_de_validations(decisions.get(t["cle"], []))
             essai = en_essai(vus.get(t["cle"], now()), now())
             en_essai_n += 1 if essai else 0
-            ok = propose_auto(serie, False, essai)
+            ok = bool(o.proposer_promotion(serie, SEUIL_AUTO, essai, False)["propose"])
             if ok:
                 propose.append(t["cle"])
             if serie or refus or ok:

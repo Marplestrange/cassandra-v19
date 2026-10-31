@@ -1,0 +1,43 @@
+{
+ "point": "agents.ton_agent",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "agent",
+   "ton",
+   "longueur_max"
+  ],
+  "properties": {
+   "agent": {
+    "type": "string"
+   },
+   "ton": {
+    "type": "string"
+   },
+   "longueur_max": {
+    "type": "integer"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ],
+  "properties": {
+   "valeur": {
+    "type": "string"
+   }
+  }
+ },
+ "invariants": [
+  "jamais plus de `longueur_max` caractères",
+  "aucun caractère de contrôle ni espace en double dans le texte rendu",
+  "un ton vide donne une chaîne vide, sauf pour Amizo qui reçoit « précis et sourcé »",
+  "une coupe tombe sur une limite de mot quand c'est possible",
+  "le même ton donne toujours le même texte"
+ ],
+ "mesure": "relecture du texte rendu par le Relecteur (aucun ordre caché, aucun secret) ; longueur rendue"
+}

@@ -1,0 +1,50 @@
+{
+ "point": "agents.score_source",
+ "contrat": "1.0",
+ "delai_ms": 2000,
+ "entree": {
+  "type": "object",
+  "required": [
+   "url",
+   "confiance_connue",
+   "bloques",
+   "verifiees"
+  ],
+  "properties": {
+   "url": {
+    "type": "string"
+   },
+   "bloques": {
+    "type": "array"
+   },
+   "verifiees": {
+    "type": "object"
+   }
+  }
+ },
+ "sortie": {
+  "type": "object",
+  "required": [
+   "valeur"
+  ],
+  "properties": {
+   "valeur": {
+    "type": "object",
+    "required": [
+     "confiance",
+     "niveau",
+     "raisons"
+    ]
+   }
+  }
+ },
+ "invariants": [
+  "la confiance est comprise entre 0 et 1, arrondie à deux décimales",
+  "un hôte bloqué (ou l'un de ses parents) donne 0 et le niveau `aucune`",
+  "une confiance posée par un utilisateur l'emporte sur l'estimation",
+  "chaque raison est une phrase courte, il y en a au moins une",
+  "le niveau suit la confiance : haute dès 0,75, moyenne dès 0,5, faible au-dessus de 0, aucune à 0",
+  "la même source donne toujours la même estimation"
+ ],
+ "mesure": "concordance avec les fiches vérifiées par l'utilisateur : une source de niveau haute doit donner des fiches vérifiées, une de niveau faible des fiches bloquées ou laissées en quarantaine"
+}

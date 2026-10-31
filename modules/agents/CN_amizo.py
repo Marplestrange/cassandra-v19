@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #e9e73f
+# VERSION CN : 0.4.0  #e41e23
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Amizo, la connaissance : transmettre une information sourcée, recevoir une passation, la traiter.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=e9e73f ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=e41e23 ▼▼▼
 """Amizo, la connaissance.
 
   - Amizo est le SEUL agent qui lit le dehors (`web.rechercher`, `web.lire`) ; il n'agit jamais : sa seule écriture est sa bibliothèque (`bibliotheque.noter`, en quarantaine) et ce qu'il TRANSMET.
@@ -48,7 +48,7 @@ REGLE_AMIZO = ("## TON MÉTIER\nTu es la connaissance : tu cherches (`web__reche
                "- Quand une passation te demande une réponse, tu la rends par `agents__transmettre` avec son numéro (`passation`).")
 
 
-def brancher_amizo(ctx, E, db, compte_agit, stocker, converser):
+def brancher_amizo(ctx, E, o, lecture, db, compte_agit, stocker, converser):
     def maintenant():
         return time.time()
 
@@ -60,11 +60,32 @@ def brancher_amizo(ctx, E, db, compte_agit, stocker, converser):
         n = maintenant()
         return db.ecrire("INSERT INTO conversations(compte, agent, titre, cree, maj) VALUES (?,?,?,?,?)", (compte, agent, TITRE_INFO, n, n))
 
+    def fiabilite(sources):
+        """La fiabilité estimée de la meilleure source (point score_source), d'après ce que la bibliothèque sait déjà de son hôte. Une estimation qui accompagne la confiance d'Amizo, jamais ne la remplace."""
+        urls = [x["source"] for x in sources if x["source"].lower().startswith("http")]
+        if not urls:
+            return None
+        connues = (lecture("bibliotheque.sources", limite=500) or {}).get("sources") or []
+        bloques = [x["domaine"] for x in connues if x.get("statut") == "bloquee"]
+        autorisees = {x["domaine"]: x for x in connues if x.get("statut") == "autorisee"}
+        verifiees = {d: int(x.get("fiches") or 0) for d, x in autorisees.items()}
+        meilleur = None
+        for u in urls:
+            hote = u.split("/")[2].split(":")[0].lower() if u.count("/") >= 2 else ""
+            hote = hote[4:] if hote.startswith("www.") else hote
+            v = o.score_source(u, autorisees[hote].get("confiance") if hote in autorisees else None, bloques, verifiees)
+            if meilleur is None or v["confiance"] > meilleur["confiance"]:
+                meilleur = v
+        return meilleur
+
     def composer(sujet, texte, sources, confiance):
         lignes = [ETIQUETTE_INFO, ""]
         if sujet:
             lignes.append("Sujet : %s" % sujet)
         lignes.append("Confiance : %s" % confiance)
+        est = fiabilite(sources)
+        if est:
+            lignes.append("Fiabilité estimée des sources : %s (%.2f)" % (est["niveau"], est["confiance"]))
         lignes += ["", texte.strip(), ""]
         if sources:
             lignes.append("Sources (adresse · date de lecture) :")
@@ -199,9 +220,13 @@ def brancher_amizo(ctx, E, db, compte_agit, stocker, converser):
 
     def traiter_une(c, p):
         db.ecrire("UPDATE passations SET etat='en_cours' WHERE id=?", (p["id"],))
-        message = ("Passation n° %d. %s te demande, pour un compte de l'instance, de chercher une information sur le web : « %s ». "
+        trouvees = (lecture("bibliotheque.chercher", q=p["demande"], etats=["verifie", "quarantaine"], limite=5) or {}).get("resultats") or []
+        plan = o.planifier_recherche(p["demande"], [x.get("titre", "") for x in trouvees], {"requetes": 3, "sources": 4})
+        conseil = ("Ta bibliothèque sait déjà de quoi répondre : relis ses fiches (`bibliotheque__chercher`) avant d'aller sur le web." if plan["deja_connu"] else
+                   "Plan conseillé : requêtes %s ; au plus %d page(s) lue(s) ; arrête-toi dès que deux sources de domaines différents concordent." % (" | ".join("« %s »" % q for q in plan["requetes"]) or "aucune", plan["max_sources"]))
+        message = ("Passation n° %d. %s te demande, pour un compte de l'instance, de chercher une information sur le web : « %s ». %s "
                    "Cherche, lis, range dans ta bibliothèque ce qui vaut d'être gardé, puis rends ta réponse par `agents__transmettre` avec `passation` = %d "
-                   "(tes sources, leur date de lecture, ta confiance)." % (p["id"], p["de"].capitalize(), p["demande"], p["id"]))
+                   "(tes sources, leur date de lecture, ta confiance)." % (p["id"], p["de"].capitalize(), p["demande"], conseil, p["id"]))
         r = converser(c, 0, message, "amizo")
         apres = passation_ligne(p["id"])
         if apres["etat"] != "repondue":                                   # Amizo n'a pas transmis : le tour est rendu tel quel, sans source ni confiance
@@ -238,7 +263,22 @@ def brancher_amizo(ctx, E, db, compte_agit, stocker, converser):
         for t in res["traitees"]:
             db.ecrire("UPDATE passations SET etat='attend', traitee=NULL WHERE id=?", (t["id"],))
 
-    for cid, f in (("passations", passations),):
+    def rapport_matin(c, jours=1):
+        """Trois phrases au plus par agent, tirées du journal ; chacune renvoie à une ligne précise du journal (id, type, instant). Le journal d'un autre compte n'est jamais lu."""
+        compte = compte_agit()
+        jours = max(1, min(int(jours or 1), 30))
+        fin = time.time() + 1
+        debut = fin - jours * 86400
+        admin = E.admin(compte)
+        agents = [{"id": d["id"], "nom": E.effectif(d["id"], compte if d["portee"] == "compte" else "")["nom_affiche"]} for d in E.definitions().values() if d["genre"] == "agent" and (admin or d["portee"] == "compte")]
+        evs = [{"id": e["id"], "ts": e["ts"], "type": e["type"], "acteur": e.get("acteur") or "", "objet_id": e.get("objet_id") or "", "donnees": {"lecture": bool((e.get("donnees") or {}).get("lecture"))}}
+               for e in ctx.evenements("capacite.", 5000) if (e.get("compte") or "") in (compte, "")]
+        rapport = o.rapport_matin(evs, agents, debut, fin)
+        lignes = {e["id"]: e for e in evs}
+        return {"jours": jours, "agents": [{"id": a["id"], "nom": a["nom"], "phrases": [dict(ph, ts=lignes[ph["journal"]]["ts"], type=lignes[ph["journal"]]["type"]) for ph in rapport["agents"].get(a["id"], [])]} for a in agents],
+                "silencieux": rapport["silencieux"]}
+
+    for cid, f in (("passations", passations), ("rapport_matin", rapport_matin)):
         ctx.implementer(cid, f)
     ctx.implementer("transmettre", transmettre, prouver_transmise, defaire_transmise, simuler=lambda x, destinataire="", sujet="", **_: "transmettrait une information sourcée (%s) : %s" % (destinataire, sujet))
     ctx.implementer("passer_la_main", passer_la_main, prouver_passee, defaire_passee, simuler=lambda x, demande="", **_: "demanderait à Amizo de chercher : %s" % str(demande)[:120])

@@ -1,0 +1,503 @@
+{
+ "point": "agents.proposer_promotion",
+ "contrat": "1.0",
+ "origine": "sorties de la référence du dépôt, données synthétiques",
+ "cas": [
+  {
+   "cas": "promotion v=0 essai=False refus=False",
+   "entree": {
+    "validations": 0,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "il manque 8 validation(s) de suite",
+     "manque": 8
+    }
+   }
+  },
+  {
+   "cas": "promotion v=0 essai=False refus=True",
+   "entree": {
+    "validations": 0,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 8
+    }
+   }
+  },
+  {
+   "cas": "promotion v=0 essai=True refus=False",
+   "entree": {
+    "validations": 0,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "l'outil est encore en période d'essai",
+     "manque": 8
+    }
+   }
+  },
+  {
+   "cas": "promotion v=0 essai=True refus=True",
+   "entree": {
+    "validations": 0,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 8
+    }
+   }
+  },
+  {
+   "cas": "promotion v=1 essai=False refus=False",
+   "entree": {
+    "validations": 1,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "il manque 7 validation(s) de suite",
+     "manque": 7
+    }
+   }
+  },
+  {
+   "cas": "promotion v=1 essai=False refus=True",
+   "entree": {
+    "validations": 1,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 7
+    }
+   }
+  },
+  {
+   "cas": "promotion v=1 essai=True refus=False",
+   "entree": {
+    "validations": 1,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "l'outil est encore en période d'essai",
+     "manque": 7
+    }
+   }
+  },
+  {
+   "cas": "promotion v=1 essai=True refus=True",
+   "entree": {
+    "validations": 1,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 7
+    }
+   }
+  },
+  {
+   "cas": "promotion v=3 essai=False refus=False",
+   "entree": {
+    "validations": 3,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "il manque 5 validation(s) de suite",
+     "manque": 5
+    }
+   }
+  },
+  {
+   "cas": "promotion v=3 essai=False refus=True",
+   "entree": {
+    "validations": 3,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 5
+    }
+   }
+  },
+  {
+   "cas": "promotion v=3 essai=True refus=False",
+   "entree": {
+    "validations": 3,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "l'outil est encore en période d'essai",
+     "manque": 5
+    }
+   }
+  },
+  {
+   "cas": "promotion v=3 essai=True refus=True",
+   "entree": {
+    "validations": 3,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 5
+    }
+   }
+  },
+  {
+   "cas": "promotion v=7 essai=False refus=False",
+   "entree": {
+    "validations": 7,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "il manque 1 validation(s) de suite",
+     "manque": 1
+    }
+   }
+  },
+  {
+   "cas": "promotion v=7 essai=False refus=True",
+   "entree": {
+    "validations": 7,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 1
+    }
+   }
+  },
+  {
+   "cas": "promotion v=7 essai=True refus=False",
+   "entree": {
+    "validations": 7,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "l'outil est encore en période d'essai",
+     "manque": 1
+    }
+   }
+  },
+  {
+   "cas": "promotion v=7 essai=True refus=True",
+   "entree": {
+    "validations": 7,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 1
+    }
+   }
+  },
+  {
+   "cas": "promotion v=8 essai=False refus=False",
+   "entree": {
+    "validations": 8,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": true,
+     "raison": "8 validations de suite, hors essai, sans refus récent",
+     "manque": 0
+    }
+   }
+  },
+  {
+   "cas": "promotion v=8 essai=False refus=True",
+   "entree": {
+    "validations": 8,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 0
+    }
+   }
+  },
+  {
+   "cas": "promotion v=8 essai=True refus=False",
+   "entree": {
+    "validations": 8,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "l'outil est encore en période d'essai",
+     "manque": 0
+    }
+   }
+  },
+  {
+   "cas": "promotion v=8 essai=True refus=True",
+   "entree": {
+    "validations": 8,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 0
+    }
+   }
+  },
+  {
+   "cas": "promotion v=9 essai=False refus=False",
+   "entree": {
+    "validations": 9,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": true,
+     "raison": "9 validations de suite, hors essai, sans refus récent",
+     "manque": 0
+    }
+   }
+  },
+  {
+   "cas": "promotion v=9 essai=False refus=True",
+   "entree": {
+    "validations": 9,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 0
+    }
+   }
+  },
+  {
+   "cas": "promotion v=9 essai=True refus=False",
+   "entree": {
+    "validations": 9,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "l'outil est encore en période d'essai",
+     "manque": 0
+    }
+   }
+  },
+  {
+   "cas": "promotion v=9 essai=True refus=True",
+   "entree": {
+    "validations": 9,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 0
+    }
+   }
+  },
+  {
+   "cas": "promotion v=20 essai=False refus=False",
+   "entree": {
+    "validations": 20,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": true,
+     "raison": "20 validations de suite, hors essai, sans refus récent",
+     "manque": 0
+    }
+   }
+  },
+  {
+   "cas": "promotion v=20 essai=False refus=True",
+   "entree": {
+    "validations": 20,
+    "seuil": 8,
+    "essai": false,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 0
+    }
+   }
+  },
+  {
+   "cas": "promotion v=20 essai=True refus=False",
+   "entree": {
+    "validations": 20,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "l'outil est encore en période d'essai",
+     "manque": 0
+    }
+   }
+  },
+  {
+   "cas": "promotion v=20 essai=True refus=True",
+   "entree": {
+    "validations": 20,
+    "seuil": 8,
+    "essai": true,
+    "refus_recent": true
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "un refus récent : on laisse l'outil raconté",
+     "manque": 0
+    }
+   }
+  },
+  {
+   "cas": "promotion seuil 3",
+   "entree": {
+    "validations": 3,
+    "seuil": 3,
+    "essai": false,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": true,
+     "raison": "3 validations de suite, hors essai, sans refus récent",
+     "manque": 0
+    }
+   }
+  },
+  {
+   "cas": "promotion seuil 3 manque",
+   "entree": {
+    "validations": 2,
+    "seuil": 3,
+    "essai": false,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": false,
+     "raison": "il manque 1 validation(s) de suite",
+     "manque": 1
+    }
+   }
+  },
+  {
+   "cas": "promotion seuil 0",
+   "entree": {
+    "validations": 0,
+    "seuil": 0,
+    "essai": false,
+    "refus_recent": false
+   },
+   "sortie": {
+    "valeur": {
+     "propose": true,
+     "raison": "0 validations de suite, hors essai, sans refus récent",
+     "manque": 0
+    }
+   }
+  }
+ ]
+}
