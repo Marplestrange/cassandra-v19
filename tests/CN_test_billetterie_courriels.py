@@ -45,7 +45,7 @@ class Courriels(Ventes):
         self.envoyes.append((hote, port, securite, identifiant, de, a, objet))
 
     def regler(self, **k):
-        d = dict(courriels_actifs=True, smtp_hote="smtp.exemple.fr", smtp_identifiant="billets@exemple.fr", smtp_mot_de_passe=MDP, smtp_expediteur="Maison Bohème <billets@exemple.fr>")
+        d = dict(courriels_actifs=True, courriels_hote="smtp.exemple.fr", courriels_identifiant="billets@exemple.fr", courriels_mot_de_passe=MDP, courriels_expediteur="Maison Bohème <billets@exemple.fr>")
         d.update(k)
         for cle, val in d.items():
             self.n.reglages.poser("billetterie." + cle, val, "")
@@ -77,7 +77,7 @@ class Envoi(Courriels):
         self.assertEqual(self.lot()["envoyes"], 0)                      # une seule fois
 
     def test_l_expediteur_est_par_defaut_l_adresse_du_titulaire(self):
-        self.regler(smtp_expediteur="")
+        self.regler(courriels_expediteur="")
         self.n.reglages.poser("billetterie.titulaire_mail", "contact@exemple.fr", "")
         self.lot()
         self.assertEqual(self.envoyes[0][4], "contact@exemple.fr")

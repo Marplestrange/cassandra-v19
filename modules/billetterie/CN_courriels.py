@@ -70,9 +70,9 @@ def frein_envois(ctx) -> bool:
 
 
 def reglages(ctx):
-    return {"actif": bool(ctx.reglage("courriels_actifs")), "hote": str(ctx.reglage("smtp_hote") or "").strip(), "port": int(ctx.reglage("smtp_port") or 587),
-            "securite": str(ctx.reglage("smtp_securite") or "starttls"), "identifiant": str(ctx.reglage("smtp_identifiant") or "").strip(),
-            "mdp": str(ctx.reglage("smtp_mot_de_passe") or ""), "de": str(ctx.reglage("smtp_expediteur") or ctx.reglage("titulaire_mail") or "").strip()}
+    return {"actif": bool(ctx.reglage("courriels_actifs")), "hote": str(ctx.reglage("courriels_hote") or "").strip(), "port": int(ctx.reglage("courriels_port") or 587),
+            "securite": str(ctx.reglage("courriels_securite") or "starttls"), "identifiant": str(ctx.reglage("courriels_identifiant") or "").strip(),
+            "mdp": str(ctx.reglage("courriels_mot_de_passe") or ""), "de": str(ctx.reglage("courriels_expediteur") or ctx.reglage("titulaire_mail") or "").strip()}
 
 
 def pieces_jointes(ctx, db, m):

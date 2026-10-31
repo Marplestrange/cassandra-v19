@@ -131,7 +131,7 @@ class PieceJointe(Billets):
             self.recus.append((a, objet, pieces or []))
         self.cc.ENVOI["smtp"] = faux
         self.addCleanup(self.cc.ENVOI.clear)
-        for cle, val in (("courriels_actifs", True), ("smtp_hote", "smtp.exemple.fr"), ("smtp_expediteur", "billets@exemple.fr")):
+        for cle, val in (("courriels_actifs", True), ("courriels_hote", "smtp.exemple.fr"), ("courriels_expediteur", "billets@exemple.fr")):
             self.n.reglages.poser("billetterie." + cle, val, "")
 
     def expedier(self):

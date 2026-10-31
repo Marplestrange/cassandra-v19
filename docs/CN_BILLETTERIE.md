@@ -12,7 +12,7 @@
 <!-- RÔLE       : Billetterie : vente par revendeurs, portefeuille de commissions -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=189f47 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=442f09 ▼▼▼ -->
 <!-- TITRE : Module billetterie et réglage Titulaire de l'instance -->
 <!-- LICENCE : AGPL-3.0 · AUTEUR : Atek Drisse · MODULE : docs -->
 
@@ -615,7 +615,7 @@ L'en-tête du titulaire débordait sur téléphone (flèches, badge, thème, ava
 - les comptes clients par lien de connexion (sans mot de passe), l'export et la suppression différée des données ; les espaces revendeur et artiste, cloisonnés par compte ;
 - les paiements : Stripe, PayPal et HelloAsso en pages hébergées, vérifiées chez le prestataire au retour (montant exact, ordre de CETTE commande), virement ;
 - l'annulation et le report d'un événement (chiffres annoncés avant, remboursements en masse, commissions reprises), la liste d'attente (offres qui retiennent les places), les reçus fiscaux de don (association éligible, numéro continu, contenu figé), la rentabilité et la date de décision ;
-- l'envoi réel des courriels (SMTP réglé, réessais, jamais sans activation) avec les billets en PDF joints ; le billet en PDF et son QR vectoriel (même dessin que l'écran, vérifié contre la bibliothèque de référence) ;
+- l'envoi réel des courriels (serveur d'envoi de la société, réglages `courriels_hote`, `courriels_port`, `courriels_securite`, `courriels_identifiant`, `courriels_mot_de_passe`, `courriels_expediteur`, par société ; ils s'appelaient `smtp_*` avant le 31-10, nom gardé par le module Courrier pour la boîte personnelle ; la billetterie n'étant pas en service, aucune valeur n'est reprise : à ressaisir), réessais, jamais sans activation) avec les billets en PDF joints ; le billet en PDF et son QR vectoriel (même dessin que l'écran, vérifié contre la bibliothèque de référence) ;
 - le pont Dolibarr facultatif (file de rattrapage idempotente : tiers, facture validée, règlement, avoir, versement de commission, artiste comme adhérent avec son type de membre « Artiste »), le projet de l'événement dans le bureau (Projets, Tâches, et la soirée dans l'Agenda avec un rappel la veille), les artistes et revendeurs dans le répertoire (Contacts) ;
 - l'interface V19 : dix menus, l'écran du titulaire, la caisse et le contrôle pour téléphone (avec file hors ligne), « Mon espace » du revendeur et de l'artiste.
 
