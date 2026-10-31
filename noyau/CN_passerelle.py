@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a3bc4a
+# VERSION CN : 0.1.0  #52336b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a3bc4a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=52336b ▼▼▼
 """La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 
 Un module n'écrit aucune route. Il déclare des capacités, et la passerelle les rend toutes joignables par la même URL :
@@ -51,6 +51,24 @@ TYPES_STATIQUES = {".html": "text/html; charset=utf-8", ".js": "text/javascript;
                    ".json": "application/json; charset=utf-8", ".png": "image/png", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json", ".woff2": "font/woff2"}
 RE_CAPACITE = re.compile(r"^[a-z][a-z0-9_]{1,40}\.[a-z][a-z0-9_]{1,40}$")
 COOKIE = "cassandra_session"
+HSTS = "max-age=31536000; includeSubDomains"
+BOUCLES = ("127.0.0.1", "::1", "localhost")
+
+
+def cookie_secure_effectif(demande, hote, proxy, env=None) -> bool:
+    """Le cookie de session part-il avec `Secure` ? OUI par défaut dès que l'écoute n'est pas une boucle locale ou qu'un reverse proxy de confiance est devant
+    (c'est lui qui porte le TLS : un cookie sans `Secure` y passerait en clair au premier oubli). On peut le FORCER ou le COUPER explicitement : par l'argument
+    ou par CASSANDRA_COOKIE_SECURE, en texte ("1", "oui"… / "0", "non"…). Un booléen False et None veulent dire « pas de choix » : le défaut sûr s'applique."""
+    for v in (os.environ.get("CASSANDRA_COOKIE_SECURE") if env is None else env, demande):
+        if isinstance(v, str):
+            t = v.strip().lower()
+            if t in ("0", "non", "no", "false", "off", "faux"):
+                return False
+            if t in ("1", "oui", "yes", "true", "on", "vrai"):
+                return True
+        elif v is True:
+            return True
+    return bool(proxy) or (hote or "") not in BOUCLES
 STATUTS_HTTP = {"faite": 200, "simulee": 200, "racontee": 202, "refuse": 403, "echec": 500, "annulee": 500, "annulation_impossible": 500}
 
 
@@ -62,12 +80,12 @@ def _valeur(v: str):
 
 
 class Passerelle:
-    def __init__(self, noyau, hote="127.0.0.1", port=9000, cookie_secure=False, proxy_de_confiance=False, interface=None):
+    def __init__(self, noyau, hote="127.0.0.1", port=9000, cookie_secure=None, proxy_de_confiance=False, interface=None):
         self.noyau = noyau
         self.interface = os.path.realpath(interface) if interface else None      # le dossier de l'interface servie à GET / (None : API seule)
         self.hote, self.port = hote, int(port)
-        self.cookie_secure = cookie_secure
         self.proxy = proxy_de_confiance          # croire X-Forwarded-For : seulement derrière notre propre reverse proxy
+        self.cookie_secure = cookie_secure_effectif(cookie_secure, self.hote, self.proxy)
         self.serveur = None
         self.fil = None
         passerelle = self
@@ -146,10 +164,17 @@ class Passerelle:
         h.send_header("X-Content-Type-Options", "nosniff")
         h.send_header("Referrer-Policy", "no-referrer")
         h.send_header("Content-Security-Policy", "default-src 'none'")
+        self._hsts(h)
         if cookie:
             h.send_header("Set-Cookie", cookie)
         h.end_headers()
         h.wfile.write(donnees)
+
+    def _hsts(self, h) -> None:
+        """Strict-Transport-Security : seulement quand le cookie est `Secure` ET que la requête est arrivée en HTTPS par notre proxy (X-Forwarded-Proto, cru
+        seulement s'il est de confiance). Sur du HTTP direct l'en-tête n'a pas de sens (les navigateurs l'ignorent) : on ne le pose pas."""
+        if self.cookie_secure and self.proxy and (h.headers.get("X-Forwarded-Proto") or "").split(",")[0].strip().lower() == "https":
+            h.send_header("Strict-Transport-Security", HSTS)
 
     def _ip(self, h) -> str:
         if self.proxy:
@@ -223,6 +248,7 @@ class Passerelle:
             if qui is None:
                 return self._repondre(h, 401, {"erreur": "authentification requise"})
             compte, acteur, admin, jeton = qui
+            h._jeton_session = jeton
             venait_cookie = self._jeton(h)[1]
             if methode == "POST" and venait_cookie and h.headers.get("X-Cassandra") != "1":
                 return self._repondre(h, 403, {"erreur": "en-tête X-Cassandra: 1 exigé (protection contre les requêtes d'un autre site)"})
@@ -231,6 +257,8 @@ class Passerelle:
             if methode == "POST" and chemin == "/api/deconnexion":
                 r = self.noyau.executeur.executer("comptes.fermer_session", acteur, {"jeton": jeton}, compte=compte)
                 return self._repondre(h, 200, {"ok": True}, cookie="%s=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict" % COOKIE)
+            if methode == "POST" and chemin == "/api/reverifier":
+                return self._reverifier(h, compte, acteur, jeton)
             if methode == "GET" and chemin == "/api/menu":
                 r = self.noyau.executeur.executer("menus.lire_menu", acteur, {"role": "admin" if admin else "utilisateur", "compte": compte}, compte=compte)
                 return self._repondre(h, STATUTS_HTTP.get(r["statut"], 200), r)
@@ -273,6 +301,7 @@ class Passerelle:
         h.send_header("Referrer-Policy", "no-referrer")
         if ext == ".html":
             h.send_header("Content-Security-Policy", CSP_PAGE)
+        self._hsts(h)
         h.end_headers()
         h.wfile.write(donnees)
 
@@ -290,7 +319,41 @@ class Passerelle:
         if not res.get("ok"):
             return self._repondre(h, 429 if res.get("limite") else 401, {"erreur": res.get("erreur", "refusé"), "attente_s": res.get("attente_s", 0)})
         cookie = "%s=%s; Path=/; Max-Age=%d; HttpOnly; SameSite=Strict%s" % (COOKIE, res["jeton"], self.noyau.identite.ttl, "; Secure" if self.cookie_secure else "")
-        return self._repondre(h, 200, {"ok": True, "compte": res["compte"], "jeton": res["jeton"]}, cookie=cookie)
+        corps = {"ok": True, "compte": res["compte"], "jeton": res["jeton"]}
+        avert = self.noyau.identite.avertissement_connexion(res["compte"])         # un administrateur encore dans sa période de grâce est prévenu, avec la date
+        if avert:
+            corps["avertissement"] = avert
+        return self._repondre(h, 200, corps, cookie=cookie)
+
+    def _sensible(self, e, acteur) -> bool:
+        """Un geste sensible : une capacité à risque « eleve », ou qui exige un droit que son module déclare sensible. Il ne concerne que la session d'un utilisateur."""
+        if acteur != "humain":
+            return False
+        c = e.capacite
+        d = getattr(self.noyau.droits, "connus", {}).get(c.droit) if c.droit else None
+        return c.risque == "eleve" or bool(d and d[1].sensible)
+
+    def _exiger_reverification(self, h, e, compte, acteur) -> bool:
+        """Vrai si la requête a reçu sa réponse (401 + invitation du second facteur) : la session d'un administrateur est ancienne, il doit ressaisir son second facteur."""
+        jeton = getattr(h, "_jeton_session", "")
+        if not jeton or not self._sensible(e, acteur):
+            return False
+        demande = self.noyau.identite.reverif_requise(compte, jeton)
+        if not demande:
+            return False
+        self._repondre(h, 401, {"erreur": "Geste sensible : ressaisissez votre second facteur", "second_facteur": True, "reverification": True,
+                                "methodes": demande["methodes"], "invite": demande["invite"]})
+        return True
+
+    def _reverifier(self, h, compte, acteur, jeton):
+        """POST /api/reverifier {"preuve": {...}} : la session ouverte prouve de nouveau son second facteur, puis le geste sensible se redemande."""
+        corps = self._corps(h)
+        if acteur != "humain":
+            return self._repondre(h, 403, {"erreur": "réservé à la session d'un utilisateur"})
+        r = self.noyau.identite.reverifier(jeton, compte, corps.get("preuve"), self._ip(h))
+        if r.get("ok"):
+            return self._repondre(h, 200, {"ok": True})
+        return self._repondre(h, 429 if r.get("limite") else 401, {"erreur": r.get("error", "refusé"), "attente_s": r.get("attente_s", 0)})
 
     def _public(self, h, methode, cle):
         """Les capacités qui se DÉCLARENT publiques (qui = ["anonyme"]) : avant la connexion. Jamais les autres. L'origine est consignée."""
@@ -339,6 +402,8 @@ class Passerelle:
         e = self.noyau.catalogue.get(cle)
         if e is None or "corps_octets" not in self._noms_args(e):
             return self._repondre(h, 404, {"erreur": "cette capacité ne reçoit pas de fichier"})
+        if self._exiger_reverification(h, e, compte, acteur):
+            return
         n = int(h.headers.get("Content-Length") or 0)
         if n <= 0:
             raise ValueError("fichier vide")
@@ -357,6 +422,8 @@ class Passerelle:
         e = self.noyau.catalogue.get(cle)
         if e is None:
             return self._repondre(h, 404, {"erreur": "capacité inconnue : %s" % cle})
+        if self._exiger_reverification(h, e, compte, acteur):
+            return
         if methode == "GET":
             if e.capacite.ecrit:
                 return self._repondre(h, 405, {"erreur": "une écriture se demande par POST"})

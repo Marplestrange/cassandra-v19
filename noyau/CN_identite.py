@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #29a005
+# VERSION CN : 0.1.0  #fa3b1b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions, jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=29a005 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fa3b1b ▼▼▼
 """L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions,
 jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt salé.
 
@@ -61,7 +61,18 @@ RE_AGENT = re.compile(r"^agent:[a-z][a-z0-9_-]{1,30}$")
 CHAMPS_PROFIL = ("display_name", "role_label", "contact_email", "phone", "lang", "fp_account")
 TENTATIVES_MAX, TENTATIVES_FENETRE = 10, 300       # comme la V18 : dix échecs en cinq minutes
 TTL_SESSION_HEURES = 24
-_SCRYPT = dict(n=2 ** 14, r=8, p=1, dklen=32)
+# Le coût du mot de passe : scrypt n=2**17, r=8, p=1 (la recommandation d'OWASP), soit 128 Mo de mémoire et ~0,5 s par hachage. hashlib plafonne la mémoire à
+# 32 Mo si on ne la lève pas (ValueError) : MAXMEM la lève, avec de la marge. Les paramètres VIVENT DANS L'EMPREINTE (« scrypt$n=..,r=..,p=..$sel$hash ») : une
+# empreinte plus ancienne reste vérifiable avec les siens, et se réécrit au paramètre courant à la connexion suivante.
+_SCRYPT = dict(n=2 ** 17, r=8, p=1, dklen=32)
+_SCRYPT_ANCIEN = dict(n=2 ** 14, r=8, p=1, dklen=32)      # l'ancien format « scrypt$sel$hash », sans paramètres : c'étaient eux
+_SCRYPT_SECRET = dict(n=2 ** 14, r=8, p=1, dklen=32)      # un secret tiré au hasard (code de secours) : assez d'entropie, huit vérifications par essai
+MAXMEM = 2 ** 29
+# Sessions : délai d'INACTIVITÉ (en plus de la durée maximale), plus court pour un administrateur ; âge au-delà duquel une session d'administrateur doit
+# ressaisir son second facteur pour un geste sensible. 0 : sans délai. Valeurs de départ ; réglables (voir Identite.parametre).
+INACTIVITE_HEURES, INACTIVITE_ADMIN_HEURES = 8, 2
+REVERIF_ADMIN_MINUTES = 60
+GRACE_SECOND_FACTEUR_JOURS = 7
 
 
 def norm_domain(d) -> str:
@@ -88,21 +99,46 @@ def mdp_legende() -> str:
     return "Il faut " + ", ".join(d for _, d, _ in MDP_REGLES) + "."
 
 
-def hacher(pwd: str) -> str:
+def hacher(pwd: str, params=None) -> str:
+    """« scrypt$n=131072,r=8,p=1$sel$hash » : les paramètres sont DANS l'empreinte."""
+    p = dict(params or _SCRYPT)
     sel = secrets.token_bytes(16)
-    h = hashlib.scrypt(pwd.encode("utf-8"), salt=sel, **_SCRYPT)
-    return "scrypt$%s$%s" % (sel.hex(), h.hex())
+    h = hashlib.scrypt(pwd.encode("utf-8"), salt=sel, maxmem=MAXMEM, **p)
+    return "scrypt$n=%d,r=%d,p=%d$%s$%s" % (p["n"], p["r"], p["p"], sel.hex(), h.hex())
+
+
+def _lire_empreinte(enregistre: str):
+    """(paramètres, sel, hash) d'une empreinte, ancien format compris ; ValueError si elle n'est pas lisible."""
+    morceaux = enregistre.split("$")
+    if morceaux[0] != "scrypt":
+        raise ValueError("algorithme inconnu")
+    if len(morceaux) == 3:                                     # l'ancien format : « scrypt$sel$hash », avec les paramètres d'alors
+        return dict(_SCRYPT_ANCIEN), morceaux[1], morceaux[2]
+    if len(morceaux) != 4:
+        raise ValueError("empreinte illisible")
+    kv = dict(x.split("=", 1) for x in morceaux[1].split(","))
+    p = {"n": int(kv["n"]), "r": int(kv["r"]), "p": int(kv["p"]), "dklen": 32}
+    if not (2 ** 10 <= p["n"] <= 2 ** 20 and p["n"] & (p["n"] - 1) == 0 and 1 <= p["r"] <= 16 and 1 <= p["p"] <= 8):      # une base altérée ne choisit pas notre mémoire
+        raise ValueError("paramètres hors bornes")
+    return p, morceaux[2], morceaux[3]
 
 
 def hash_ok(pwd: str, enregistre: str) -> bool:
     try:
-        algo, sel, h = enregistre.split("$")
-        if algo != "scrypt":
-            return False
-        calcul = hashlib.scrypt((pwd or "").encode("utf-8"), salt=bytes.fromhex(sel), **_SCRYPT)
+        p, sel, h = _lire_empreinte(enregistre)
+        calcul = hashlib.scrypt((pwd or "").encode("utf-8"), salt=bytes.fromhex(sel), maxmem=MAXMEM, **p)
         return hmac.compare_digest(calcul, bytes.fromhex(h))
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, KeyError):
         return False
+
+
+def hash_a_jour(enregistre: str) -> bool:
+    """L'empreinte est-elle au paramètre courant ? Sinon on la réécrit à la prochaine connexion réussie (le mot de passe n'est connu qu'à ce moment-là)."""
+    try:
+        p, _, _ = _lire_empreinte(enregistre)
+    except (ValueError, TypeError, KeyError):
+        return True                                            # illisible : on ne réécrit pas ce qu'on ne comprend pas
+    return p["n"] >= _SCRYPT["n"] and p["r"] >= _SCRYPT["r"] and p["p"] >= _SCRYPT["p"]
 
 
 def ip_nature(ip) -> str:
@@ -206,8 +242,32 @@ class Identite:
         self._ttl_depart = int(ttl_heures) * 3600
         self.reglages = reglages                      # le service des réglages : la durée des sessions y est réglable (comptes.session_heures)
         self.seconds_facteurs = {}                    # module -> objet (exige, invite, verifier) : un second facteur branché par un module
-        self._faux = hacher("sel-de-leurre")      # un compte inconnu coûte le même temps qu'un mauvais mot de passe
+        self._faux_h = None                           # le leurre : un compte inconnu coûte le même temps qu'un mauvais mot de passe (calculé au premier besoin : 0,5 s)
+        self.securite = {}                            # valeurs de départ des réglages de sécurité (clé courte -> valeur) quand le service des réglages ne les porte pas
+        self._tables_securite()
         self.amorcer_systeme()
+
+    @property
+    def _faux(self) -> str:
+        if self._faux_h is None:
+            self._faux_h = hacher("sel-de-leurre")
+        return self._faux_h
+
+    def _tables_securite(self) -> None:
+        """Deux petites tables à elles : la dernière preuve du second facteur d'une session, et quelques dates (l'activation de l'obligation)."""
+        with self.base.transaction() as c:
+            c.execute("CREATE TABLE IF NOT EXISTS sessions_verif(id TEXT PRIMARY KEY, ts REAL NOT NULL)")
+            c.execute("CREATE TABLE IF NOT EXISTS identite_etat(cle TEXT PRIMARY KEY, valeur REAL NOT NULL)")
+
+    def parametre(self, cle: str, defaut):
+        """Un réglage de sécurité : `comptes.<cle>` dans les réglages s'il y est déclaré, sinon `self.securite[cle]`, sinon la valeur de départ."""
+        try:
+            v = self.reglages.valeur("comptes." + cle)
+            if v is not None:
+                return v
+        except Exception:
+            pass
+        return self.securite.get(cle, defaut)
 
     def verrou_superadmin(self, compte: str) -> str:
         """Pourquoi on ne retire pas l'administration à ce compte ("" : on peut). Conditionnel : seul le superadmin ET seulement si FastPanel est là."""
@@ -741,7 +801,8 @@ class Identite:
         self.seconds_facteurs.pop(module, None)
 
     def hacher(self, secret: str) -> str:
-        return hacher(secret)
+        """Pour un SECRET tiré au hasard (code de secours), pas pour un mot de passe choisi : coût léger, parce que huit empreintes se vérifient à chaque essai."""
+        return hacher(secret, _SCRYPT_SECRET)
 
     def secret_ok(self, secret: str, enregistre: str) -> bool:
         return hash_ok(secret, enregistre)
@@ -768,6 +829,9 @@ class Identite:
             return {"ok": False, "error": "Identifiant ou mot de passe incorrect"}
         if self.desactive(compte):
             return {"ok": False, "desactive": True, "error": "Ce compte est désactivé : demandez à un administrateur de le réactiver"}
+        refus = self._obligation_second_facteur(compte)
+        if refus:
+            return {"ok": False, "error": refus}
         for module, f in list(self.seconds_facteurs.items()):
             try:
                 if not f.exige(compte):
@@ -780,6 +844,11 @@ class Identite:
             if not v.get("ok"):
                 self._echec(compte, ip)
                 return {"ok": False, "error": v.get("error") or "Second facteur refusé"}
+        if h and not hash_a_jour(h):                   # une empreinte de l'ancien coût : on la réécrit maintenant, le mot de passe est sous la main
+            try:
+                self.poser_hash(compte, hacher(mdp))
+            except Exception:
+                pass                                   # jamais refuser une entrée valide pour une réécriture qui échoue : ce sera pour la prochaine
         return self._session(compte, ip, agent)
 
     def ouvrir_sans_mdp(self, compte: str, ip: str = "", agent: str = "") -> dict:
@@ -800,12 +869,123 @@ class Identite:
                            "WHERE s.id=? AND s.cree>? AND COALESCE(c.desactive,0)=0", (_empreinte(jeton), now - self.ttl))
         if not r:
             return {"ok": False}
+        admin = self.droits.est_admin(r[0]["compte"])
+        delai = self.inactivite(admin)
+        if delai and now - r[0]["derniere"] > delai:      # restée sans servir trop longtemps : fermée, il faut se reconnecter
+            self.fermer(jeton)
+            return {"ok": False, "inactive": True}
         if now - r[0]["derniere"] >= 60:
             try:
                 self.base.ecrire("UPDATE sessions SET derniere=? WHERE id=?", (now, _empreinte(jeton)))
             except Exception:
                 pass                                   # une donnée de télémétrie n'invalide jamais une session par ailleurs valide
-        return {"ok": True, "compte": r[0]["compte"], "admin": self.droits.est_admin(r[0]["compte"]), "id": jeton[-6:]}
+        return {"ok": True, "compte": r[0]["compte"], "admin": admin, "id": jeton[-6:]}
+
+    # ---- la sécurité des sessions et du second facteur ----
+    def inactivite(self, admin: bool) -> int:
+        """Secondes sans servir au-delà desquelles une session se ferme (0 : pas de délai). Plus court pour un administrateur."""
+        defaut = INACTIVITE_ADMIN_HEURES if admin else INACTIVITE_HEURES
+        try:
+            h = float(self.parametre("inactivite_admin_heures" if admin else "inactivite_heures", defaut))
+        except (TypeError, ValueError):
+            h = defaut
+        return max(0, int(h * 3600))
+
+    def _a_un_second_facteur(self, compte: str) -> bool:
+        for f in list(self.seconds_facteurs.values()):
+            try:
+                if f.exige(compte):
+                    return True
+            except Exception:
+                return True                                    # dans le doute on le tient pour posé : fermé, pas ouvert
+        return False
+
+    def reverif_requise(self, compte: str, jeton: str):
+        """Pour un geste SENSIBLE : None si l'on peut y aller, sinon la demande à rendre au navigateur (l'invitation du second facteur). Ne concerne qu'une session
+        d'administrateur dont le compte a un second facteur et dont la dernière preuve (la connexion, ou une ressaisie) date de plus de `admin_reverif_minutes`."""
+        if not self.droits.est_admin(compte) or not self._a_un_second_facteur(compte):
+            return None
+        try:
+            minutes = float(self.parametre("admin_reverif_minutes", REVERIF_ADMIN_MINUTES))
+        except (TypeError, ValueError):
+            minutes = REVERIF_ADMIN_MINUTES
+        if minutes <= 0:
+            return None
+        s = self.base.lire("SELECT s.cree AS cree, v.ts AS ts FROM sessions s LEFT JOIN sessions_verif v ON v.id=s.id WHERE s.id=?", (_empreinte(jeton),))
+        if not s or time.time() - max(s[0]["cree"], s[0]["ts"] or 0) <= minutes * 60:
+            return None
+        for module, f in list(self.seconds_facteurs.items()):
+            try:
+                if f.exige(compte):
+                    return {"methodes": [module], "invite": f.invite(compte)}
+            except Exception:
+                return {"methodes": [module], "invite": {}}
+        return None
+
+    def reverifier(self, jeton: str, compte: str, preuve, ip: str = "") -> dict:
+        """Ressaisie du second facteur sur une session ouverte : remet à zéro l'âge de la dernière preuve. Les essais comptent comme à la connexion."""
+        attente = self.bloque(compte, ip)
+        if attente:
+            return {"ok": False, "limite": True, "attente_s": attente, "error": "Trop d'essais : réessayez dans %d s" % attente}
+        if not isinstance(preuve, dict) or not preuve:
+            return {"ok": False, "error": "Preuve du second facteur attendue"}
+        for module, f in list(self.seconds_facteurs.items()):
+            try:
+                if not f.exige(compte):
+                    continue
+                v = f.verifier(compte, preuve, ip)
+            except Exception:
+                return {"ok": False, "error": "Le second facteur (%s) est indisponible" % module}
+            if not v.get("ok"):
+                self._echec(compte, ip)
+                return {"ok": False, "error": v.get("error") or "Second facteur refusé"}
+        self.base.ecrire("INSERT OR REPLACE INTO sessions_verif(id, ts) VALUES(?,?)", (_empreinte(jeton), time.time()))
+        return {"ok": True}
+
+    def _obligation_depuis(self) -> float:
+        """Depuis quand l'obligation est active (0 : elle ne l'est pas). Observée à la première lecture : c'est de là que court la période de grâce."""
+        actif = bool(self.parametre("admin_second_facteur_obligatoire", False))
+        r = self.base.lire("SELECT valeur FROM identite_etat WHERE cle='mfa_admin_depuis'")
+        if not actif:
+            if r:
+                self.base.ecrire("DELETE FROM identite_etat WHERE cle='mfa_admin_depuis'")
+            return 0.0
+        if r:
+            return float(r[0]["valeur"])
+        now = time.time()
+        self.base.ecrire("INSERT OR IGNORE INTO identite_etat(cle, valeur) VALUES('mfa_admin_depuis', ?)", (now,))
+        return now
+
+    def _grace_second_facteur(self, compte: str):
+        """None si rien à dire ; sinon (fin_de_grace, encore_en_grace) pour un administrateur SANS second facteur quand l'instance l'exige."""
+        if not self.seconds_facteurs or not self.droits.est_admin(compte):
+            return None                                        # aucun module de second facteur branché : on ne peut rien exiger, donc on n'enferme personne
+        depuis = self._obligation_depuis()
+        if not depuis or self._a_un_second_facteur(compte):
+            return None
+        try:
+            jours = float(self.parametre("admin_second_facteur_grace_jours", GRACE_SECOND_FACTEUR_JOURS))
+        except (TypeError, ValueError):
+            jours = GRACE_SECOND_FACTEUR_JOURS
+        fin = depuis + max(0.0, jours) * 86400
+        return fin, time.time() < fin
+
+    def _obligation_second_facteur(self, compte: str) -> str:
+        """Le refus (en clair) d'un administrateur sans second facteur, une fois la grâce écoulée ; "" sinon."""
+        g = self._grace_second_facteur(compte)
+        if g is None or g[1]:
+            return ""
+        return ("Cette instance exige un second facteur (clé de sécurité) pour les administrateurs, et la période de grâce est terminée. Un autre administrateur "
+                "peut en poser un pour vous, ou désactiver l'obligation (réglage « comptes.admin_second_facteur_obligatoire »), y compris depuis le serveur.")
+
+    def avertissement_connexion(self, compte: str) -> dict:
+        """À rendre avec une connexion réussie : un administrateur encore dans sa période de grâce est prévenu, avec la date. {} sinon."""
+        g = self._grace_second_facteur((compte or "").strip().lower())
+        if g is None or not g[1]:
+            return {}
+        jour = time.strftime("%d/%m/%Y", time.localtime(g[0]))
+        return {"code": "second_facteur_requis_bientot", "jusqu_au": time.strftime("%Y-%m-%d", time.localtime(g[0])),
+                "message": "Cette instance exige un second facteur pour les administrateurs : posez une clé de sécurité avant le %s, sinon vous ne pourrez plus vous connecter." % jour}
 
     def fermer(self, jeton: str) -> int:
         self.base.ecrire("DELETE FROM sessions WHERE id=?", (_empreinte(jeton or ""),))
