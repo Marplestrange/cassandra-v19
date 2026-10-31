@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #a37d29
+# VERSION EC : EC0 (référence 0.3.0)  #e04d7e
 # HÔTE CN    : CN_module.py · date_ok @1.0
 # RÔLE       : Une date ISO, ou ''. Jamais une approximation.
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=date_ok contrat=@1.0 version=EC0 empreinte=a37d29 ▼▼▼
+# ▼▼▼ BORNE EC point=date_ok contrat=@1.0 version=EC0 empreinte=e04d7e ▼▼▼
 from datetime import datetime
 import re
 
@@ -26,7 +26,7 @@ def date_ok(v):
         raise ValueError("date invalide « %s » (AAAA-MM-JJ attendu)" % v)
     if v:
         try:
-            datetime.strptime(v, "%Y-%m-%d")
+            datetime(int(v[:4]), int(v[5:7]), int(v[8:10]))      # pas strptime : il importe _strptime, que le filtre des EC refuse
         except ValueError:
             raise ValueError("date impossible « %s »" % v)
     return v

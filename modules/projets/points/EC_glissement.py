@@ -8,17 +8,27 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #2d0a14
+# VERSION EC : EC0 (référence 0.3.0)  #d3c7b4
 # HÔTE CN    : CN_module.py · glissement @1.0
 # RÔLE       : dit de combien de jours chaque phase et chaque jalon a glissé depuis la référence du projet.
 # MÉTHODE    : fonction pure : pour chaque phase et jalon qui a une date de référence et une date actuelle plus tardive, l'écart en jours ; le plus grand écart est rendu avec la date de référence.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=glissement contrat=@1.0 version=EC0 empreinte=2d0a14 ▼▼▼
+# ▼▼▼ BORNE EC point=glissement contrat=@1.0 version=EC0 empreinte=d3c7b4 ▼▼▼
 from datetime import datetime
+import re
+
+# Les motifs de strptime pour « %Y-%m-%d » : strptime importe _strptime, que le filtre des EC refuse.
+_JOUR = re.compile(r"(?P<Y>\d\d\d\d)-(?P<m>1[0-2]|0[1-9]|[1-9])-(?P<d>3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9])")
+
+def _jour(v):
+    g = _JOUR.fullmatch(v)
+    if not g:
+        raise ValueError(v)
+    return datetime(int(g["Y"]), int(g["m"]), int(g["d"]))
 
 def jours_entre(a, b):
     try:
-        return (datetime.strptime(b, "%Y-%m-%d") - datetime.strptime(a, "%Y-%m-%d")).days
+        return (_jour(b) - _jour(a)).days
     except ValueError:
         return 0
 

@@ -8,17 +8,20 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #02f0a6
+# VERSION EC : EC0 (référence 0.3.0)  #7bad59
 # HÔTE CN    : CN_module.py · perception_monde @1.0
 # RÔLE       : choisit, parmi les relevés du Sensorium, ceux que la question appelle, et les dit avec leur âge, leur durée de validité, ou « je ne sais plus » quand ils sont périmés.
 # MÉTHODE    : fonction pure : une passe sur les relevés, chacun retenu par son préfixe et par ce que la question cite ou évoque ; l'instant est une ENTRÉE, lue par la façade, pour que l'EC ne lise aucune horloge.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=perception_monde contrat=@1.0 version=EC0 empreinte=02f0a6 ▼▼▼
+# ▼▼▼ BORNE EC point=perception_monde contrat=@1.0 version=EC0 empreinte=7bad59 ▼▼▼
 from datetime import datetime, timezone
 import re
 
 PERCEPTION_TTL = {"service": 1800, "machine_hors_ligne": 900, "machine_en_ligne": 14400, "site": 7200, "disque": 86400, "ram": 300, "charge": 300, "certificat": 604800,
                   "config": 1800, "logiciel": 10800, "maj": 10800, "montage": 1800, "interface": 600, "stockage": 1800, "systeme": 1800, "port": 600, "machine_flotte": 2700}
+
+# Les motifs de strptime pour « %Y-%m-%d %H:%M:%S » : strptime importe _strptime à son premier appel, import que le filtre des EC refuse.
+_HORODATAGE = re.compile(r"(?P<Y>\d\d\d\d)-(?P<m>1[0-2]|0[1-9]|[1-9])-(?P<d>3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9])\s+(?P<H>2[0-3]|[0-1]\d|\d):(?P<M>[0-5]\d|\d):(?P<S>6[0-1]|[0-5]\d|\d)")
 
 def age(ts, instant):
     """Âge en secondes d'un horodatage « AAAA-MM-JJ HH:MM:SS » (UTC) ou d'une époque ; None si illisible. `instant` (époque) est une ENTRÉE : l'horloge se lit dans le nexus."""
@@ -27,7 +30,10 @@ def age(ts, instant):
     try:
         if isinstance(ts, (int, float)):
             return max(0.0, instant - float(ts))
-        d = datetime.strptime(str(ts).strip().replace("T", " ")[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        g = _HORODATAGE.fullmatch(str(ts).strip().replace("T", " ")[:19])
+        if not g:
+            raise ValueError(ts)
+        d = datetime(int(g["Y"]), int(g["m"]), int(g["d"]), int(g["H"]), int(g["M"]), int(g["S"]), tzinfo=timezone.utc)
         return max(0.0, instant - d.timestamp())
     except ValueError:
         try:
