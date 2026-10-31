@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #43a37c
+# VERSION CN : 0.1.0  #102333
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : le pont facultatif vers Dolibarr (tiers, factures, paiements, avoirs, versements de commissions).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=43a37c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=102333 ▼▼▼
 """Billetterie : le pont facultatif vers Dolibarr (tiers, factures, paiements, avoirs, versements de commissions).
 
 Règles qui tiennent tout (voir docs/CN_BILLETTERIE.md §5 ter) :
@@ -249,7 +249,7 @@ def ecrire_versement(ctx, db, cible):
     if ctx.reglage("dolibarr_paiements"):
         deja = appel(ctx, "GET", "/supplierinvoices/%d/payments" % fid)
         if not (isinstance(deja, list) and deja):
-            appel(ctx, "POST", "/supplierinvoices/%d/payments" % fid, {"datepaye": _date_ts(r["traite_le"]), "paymentid": mode_id(ctx, "VIR"), "closepaidinvoices": "yes", "accountid": banque(ctx, "VIR"),
+            appel(ctx, "POST", "/supplierinvoices/%d/payments" % fid, {"datepaye": _date_ts(r["traite_le"]), "payment_mode_id": mode_id(ctx, "VIR"), "closepaidinvoices": "yes", "accountid": banque(ctx, "VIR"),
                                                                         "num_payment": str(r["reference_virement"] or r["ref"])[:60], "comment": "Versement %s" % r["ref"]})
     return "fait", json.dumps({"facture_fournisseur_id": fid, "facture_fournisseur": str(f.get("ref") or "")})
 

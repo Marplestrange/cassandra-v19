@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #11747b
+# VERSION CN : 0.1.0  #6939ee
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 10 : le pont facultatif vers Dolibarr (file de rattrapage, idempotence, factures, règlements, avoirs, versements, pannes, prérequis, vrai transport HTTP).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=11747b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6939ee ▼▼▼
 """Bancs de la billetterie, lot 10 : le pont facultatif vers Dolibarr (file de rattrapage, idempotence, factures, règlements, avoirs, versements, pannes, prérequis, vrai transport HTTP)."""
 import json
 import re
@@ -327,7 +327,7 @@ class Versement(Pont):
         fa = list(self.dol.fournisseurs.values())[0]
         self.assertEqual((fa["ref_supplier"], fa["lines"][0]["subprice"], fa["statut"]), (r["ref"], 20.0, 1))
         p = fa["paiements"][0]
-        self.assertEqual((p["paymentid"], p["accountid"], p["num_payment"]), (2, 1, "VIR-123"))
+        self.assertEqual((p["payment_mode_id"], p["accountid"], p["num_payment"]), (2, 1, "VIR-123"))
 
     def test_le_domaine_commissions_est_coupe_par_defaut(self):
         self.relier()
