@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #4465e6
+// VERSION CN : 0.1.0  #f3fa06
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=4465e6 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f3fa06 ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -37,10 +37,19 @@
     renommer: (id, titre) => A("conversation_renommer", { id: id, titre: titre }),
     supprimer: (id) => A("conversation_supprimer", { id: id }),
     converser: (cid, message, agent) => A("converser", { conversation_id: cid || 0, message: message, agent: agent }),
-    propositions: () => A("propositions"),                                  // lot 2 : tant qu'elle manque, l'écran le dit
-    decider: (id, decision) => A("proposition_decider", { id: id, decision: decision }),
+    propositions: (etat, agent) => A("propositions", { etat: etat || "a_valider", agent: agent || "", limite: 100 }),
+    decider: (id, decision, jusqu) => A("proposition_decider", { id: id, decision: decision, jusqu_a: jusqu || "" }),
+    confiance: (agent) => A("confiance", { agent: agent }),
+    pourquoi: (acte) => A("pourquoi", { acte: acte, detail: true }),
+    epreuvesLancer: (modele) => A("epreuves_lancer", { modele: modele }),
+    epreuvesResultats: (modele) => A("epreuves_resultats", { modele: modele || "" }),
+    sentinelle: () => A("sentinelle_etat"),
     journal: (acteur, n) => K.agir("journal.flux", { acteur: acteur || "", limit: n || 60, bruit: false }),
   };
+  const RISQUE = { faible: "ok", moyen: "al", eleve: "dg", haut: "dg", fort: "dg" };
+  const ETAT = { attend: "en attente", acceptee: "acceptée", refusee: "refusée", reportee: "reportée", perimee: "périmée" };
+  const tx = (v) => (v && typeof v === "object" ? JSON.stringify(v) : String(v == null ? "" : v));
+  const btnPq = (acte) => (acte ? '<div><button class="btn mini" data-pq="' + esc(acte) + '">Pourquoi ?</button></div><div class="ag-pq" id="pq-' + esc(acte) + '"></div>' : "");
   const manque = (e) => /inconnu|introuvable|n'existe pas|not found|404|capacit/i.test(String((e && e.message) || e));
 
   const COUL = { cassandra: "#0b7c74", itare: "#6d3fd1", amizo: "#1d6fb8", relecteur: "#b45309", vision: "#be185d" };
@@ -78,6 +87,8 @@
     ".ag .ag-m.outil{font:12px ui-monospace,Menlo,monospace;color:var(--txt-soft);max-width:100%}.ag .ag-sel{display:flex;gap:10px;align-items:center;padding:9px 10px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;text-align:left;color:inherit;font:inherit;width:100%}" +
     ".ag .ag-sel.on{border-color:var(--accent)}.ag .ag-sel .sp{flex:1;min-width:0}.ag .ag-sel b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ag .ag-ecrire{display:flex;gap:8px}.ag .ag-ecrire textarea{min-height:44px;height:44px}" +
     ".ag .ag-nb{font:600 9.5px 'Inter',sans-serif;letter-spacing:.07em;text-transform:uppercase;border:1px dashed var(--line-strong,var(--line));border-radius:99px;padding:2px 8px;color:var(--txt-faint);white-space:nowrap}" +
+    ".ag .ag-prop{border-top:1px solid var(--line);padding:11px 0;display:flex;flex-direction:column;gap:6px}.ag .ag-prop:first-of-type{border-top:0}.ag .ag-mandat{border:1px solid var(--line);border-radius:12px;padding:8px 11px;background:var(--ag-doux)}.ag .ag-mandat pre{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font:12px ui-monospace,Menlo,monospace;color:var(--txt-soft)}" +
+    ".ag .ag-pq{border:1px dashed var(--line);border-radius:12px;padding:8px 11px;margin-top:6px}.ag .ag-pq:empty{display:none}.ag .ag-jauge{display:inline-block;width:90px;height:7px;border-radius:99px;background:var(--line);overflow:hidden;vertical-align:middle}.ag .ag-jauge i{display:block;height:100%;background:var(--accent)}.ag td .ag-puces{margin:0}" +
     "@media (max-width:760px){.ag .ag-conv{grid-template-columns:1fr}.ag .ag-outil{grid-template-columns:1fr}.ag .ag-ctl{justify-content:flex-start}.ag .ag-m{max-width:100%}.ag .ag-ecrire{flex-direction:column}.ag .ag-ecrire textarea{height:70px}.ag table{min-width:420px}}";
 
   // ── l'état de l'écran (une scène, des vues) ────────────────────────────────
@@ -86,7 +97,7 @@
     K.injecter();
     if (!document.getElementById("ag-css")) { const st = document.createElement("style"); st.id = "ag-css"; st.textContent = CSS; document.head.appendChild(st); }
     corps.innerHTML = ""; const racine = document.createElement("div"); racine.className = "kit ag"; corps.appendChild(racine);
-    const S = { vue: "", agent: "", onglet: "apercu", eq: null, admin: false, filtre: { q: "", risque: "tous" }, conv: { id: 0, liste: null, fil: null, agent: "itare", occupe: false }, jours: 14 };
+    const S = { props: {}, vue: "", agent: "", onglet: "apercu", eq: null, admin: false, filtre: { q: "", risque: "tous" }, conv: { id: 0, liste: null, fil: null, agent: "itare", occupe: false }, jours: 14 };
 
     const erreur = (e) => dire(String((e && e.message) || e), "err");
     // l'identifiant de la page dans le menu de gauche (sous-entrées d'« Agents IA ») et sa traduction en vue de l'écran
@@ -150,7 +161,8 @@
     }
     async function oApercu(f) {
       const a = f.agent, n = f.decompte || {};
-      S.gestes = null;
+      S.gestes = null; S.conf = null;
+      API.confiance(a.id).then((c) => { S.conf = carteConfiance(c); peindreGestes(); }).catch((e) => { S.conf = nonBranche("Carte de confiance", String((e && e.message) || e)); peindreGestes(); });
       dernierGestes(a).catch(() => null).then((d) => { S.gestes = d && d.length ? d.slice(0, 5).map((x) => '<div class="ag-ligne" style="padding:4px 0"><span>' + esc(x.action) + '</span><span class="g">' + esc(x.ts) + "</span></div>").join("") : '<p class="note">Rien à montrer pour le moment.</p>'; peindreGestes(); });
       return '<div class="g2"><section class="carte"><h3>Qui est ' + esc(a.nom) + '</h3><p class="note">' + esc(a.role) + "</p>" +
         '<div class="ag-ligne"><span class="g">Ton</span><b style="max-width:62%">' + esc(a.ton || "le ton d'origine") + "</b></div>" +
@@ -164,10 +176,23 @@
         '<p class="note">Le niveau est un réglage, pas un interdit codé : il se précise outil par outil (onglet « Outils & palier »). La sûreté vient de la preuve et du retour arrière.</p></section></div>' +
         '<section class="carte"><h3>Ses derniers gestes</h3><div id="ag-gestes"><p class="note">Chargement…</p></div>' +
         '<div><button class="btn mini" data-onglet-vers="journal">Tout le journal</button></div></section>' +
-        nonBranche("Carte de confiance", "Un outil raconté qui a huit validations de suite sans refus est proposé en auto, jamais passé seul. Pas encore construit.");
+        '<section class="carte" id="ag-conf"><h3>Carte de confiance</h3><p class="note">Chargement…</p></section>';
     }
-    function peindreGestes() { const z = racine.querySelector("#ag-gestes"); if (z && S.gestes) z.innerHTML = S.gestes; }
+    function peindreGestes() {
+      const z = racine.querySelector("#ag-gestes"); if (z && S.gestes) z.innerHTML = S.gestes;
+      const c = racine.querySelector("#ag-conf"); if (c && S.conf) c.outerHTML = S.conf;
+    }
+    function carteConfiance(c) {
+      const o = c.outils || [], seuil = c.seuil || 8;
+      const lignes = o.map((x) => '<tr><td class="mono">' + esc(x.cle) + "</td><td><span class=\"ag-jauge\" title=\"" + (x.validations || 0) + " validations de suite sur " + seuil + "\"><i style=\"width:" + Math.min(100, Math.round(100 * (x.validations || 0) / seuil)) + "%\"></i></span> " + (x.validations || 0) + "/" + seuil + "</td><td>" +
+        '<div class="ag-puces">' + pill(x.risque || "", RISQUE[x.risque] || "") + (x.refus ? pill(x.refus + " refus", "al") : "") + (x.essai ? pill("à l'essai" + (x.essai_jusqua ? " jusqu'au " + dateFr(x.essai_jusqua) : "")) : "") + "</div></td><td>" +
+        (x.propose_auto ? '<button class="btn pri mini" data-auto="' + esc(x.cle) + '">Passer en auto</button>' : '<span class="note">' + (x.essai ? "période d'essai" : "encore " + (x.manque == null ? Math.max(0, seuil - (x.validations || 0)) : x.manque) + " à valider") + "</span>") + "</td></tr>").join("");
+      return '<section class="carte" id="ag-conf"><div class="barre"><h3 style="flex:1">Carte de confiance</h3>' + ((c.propose_auto || []).length ? pill((c.propose_auto || []).length + " à passer en auto", "ok") : "") + "</div>" +
+        '<p class="note">Un outil raconté qui a ' + seuil + " validations de suite, hors période d'essai (" + (c.essai_jours || 7) + " jours), est proposé en auto. La carte ne passe jamais rien toute seule.</p>" +
+        (o.length ? '<div class="ag-tw"><table><tr><th>Outil</th><th>Validations</th><th>État</th><th></th></tr>' + lignes + "</table></div>" : '<p class="note">Aucune décision à compter pour l\'instant : un outil raconté apparaît ici dès qu\'il a été validé ou refusé.</p>') + "</section>";
+    }
     async function dernierGestes(a) {
+      if (!S.admin) return (await actes(a.id)).slice(0, 8).map((x) => ({ action: x.titre || x.capacite, ts: dateFr(x.decidee || x.cree) }));   // le flux du journal n'est pas cloisonné : un compte ordinaire lit ses actes par les propositions
       const r = await API.journal(a.id === "itare" ? "itare" : a.id, 8);
       return (r.entrees || []).filter(mien).map((e) => ({ action: String(e.action || e.sujet || ""), ts: String(e.ts || "").replace("T", " ").slice(0, 16) }));
     }
@@ -198,10 +223,28 @@
           (liste.length ? Object.keys(groupes).sort().map((m) => '<div class="ag-mod">module ' + esc(m) + " · " + groupes[m].length + " outil(s)</div>" + groupes[m].map(ligne).join("")).join("") : '<div class="vide">Aucun outil ne correspond.</div>') :
           '<p class="note">' + esc(a.nom) + " n'a pas d'outils à régler" + (a.id === "amizo" ? " : il cherche, lit et informe, il n'agit jamais." : ".") + "</p>") + "</section>";
     }
+    async function actes(agent) { const p = await API.propositions("toutes", agent || ""); return (p.propositions || []).filter((x) => x.acte); }
+    function ligneActes(l) {
+      return l.length ? '<div class="liste">' + l.map((x) => '<div class="li"><div class="sp"><b>' + esc(x.titre || x.capacite) + '</b><div class="note">' + esc(x.nom || x.agent) + " · " + esc(ETAT[x.etat] || x.etat) + (x.par ? " par " + esc(x.par) : "") + " · " + esc(dateFr(x.decidee || x.cree)) + "</div>" + btnPq(x.acte) + "</div></div>").join("") + "</div>"
+        : '<p class="note">Aucun acte décidé pour le moment : ce que l\'agent fait après ton accord apparaît ici, avec son « Pourquoi ? ».</p>';
+    }
+    function vPourquoi(r) {
+      const d = r.declencheur || {};
+      const decl = d.type === "tour" ? "un message dans une conversation" + (d.extrait ? " : « " + d.extrait + " »" : "") : d.type === "proposition" ? "une proposition acceptée" + (d.accepte_par ? " par " + d.accepte_par : "") : "—";
+      const mem = (r.memoire || []).map((m) => '<button class="btn mini" data-chez="memory" data-q="' + esc(m.ref) + '" title="' + esc(m.valeur ? tx(m.valeur) : "Ouvrir la Mémoire") + '">[' + esc(m.ref) + "]</button>").join(" ") || "aucun souvenir consulté";
+      const preuve = r.preuve === true ? "prouvé" : r.preuve === false ? "preuve manquante" : "sans objet";
+      const retour = r.retour === "annulee" ? "annulé par le noyau" : r.retour === "annulation_impossible" ? "annulation impossible" : "aucun retour nécessaire";
+      const l = (k, v) => '<div class="ag-ligne"><span class="g">' + k + "</span><b>" + v + "</b></div>";
+      return l("Déclencheur", esc(decl)) + l("Mémoire consultée", mem) + l("Outil", esc((r.outil && r.outil.cle) || r.capacite || "")) + l("Palier", esc(r.palier || "") + (r.confirmer ? " · à confirmer" : "") + (r.niveau ? " · niveau " + esc(r.niveau) : "")) +
+        l("Issue", pill(r.issue || "?", r.issue === "echec" ? "dg" : r.issue === "faite" ? "ok" : "al")) + l("Preuve", esc(preuve)) + l("Retour", esc(retour)) + l("Lignes du journal", (r.journal || []).length) +
+        '<p class="note">Défaire : le module n\'offre pas encore de geste direct ; le noyau annule seul quand la preuve échoue (« Retour » ci-dessus).</p>';
+    }
     async function oJournal(f) {
-      const a = f.agent; let l = [];
+      const a = f.agent; let l = [], ac = "";
+      try { ac = ligneActes(await actes(a.id)); } catch (e) { ac = nonBranche("Actes", String((e && e.message) || e)); }
+      if (!S.admin) return '<section class="carte"><div class="barre"><h3 style="flex:1">Ce que ' + esc(a.nom) + " a fait</h3></div>" + ac + "</section>";
       try { l = (await API.journal(a.id === "itare" ? "itare" : a.id, 40)).entrees.filter(mien); } catch (e) { return nonBranche("Journal de " + a.nom, String(e.message || e)); }
-      return '<section class="carte"><div class="barre"><h3 style="flex:1">Ce que ' + esc(a.nom) + " a fait</h3>" + (S.admin ? lien("journal", "Ouvrir les Journaux", a.id) : "") + "</div>" + ligneJournal(l) + "</section>";
+      return '<section class="carte"><div class="barre"><h3 style="flex:1">Ce que ' + esc(a.nom) + " a fait</h3>" + lien("journal", "Ouvrir les Journaux", a.id) + "</div>" + ac + '<div class="note" style="margin:10px 2px 2px"><b>Dans le journal du noyau</b></div>' + ligneJournal(l) + "</section>";
     }
     function ligneJournal(l) {
       return l.length ? '<div class="liste">' + l.map((e) => '<div class="li"><div class="sp"><b>' + esc(e.action || e.sujet || "") + '</b><div class="note">' + esc(e.label || e.source || "") + (e.sujet && e.action ? " · " + esc(e.sujet) : "") + '</div></div>' + pill(e.niveau || "info", e.niveau === "erreur" || e.niveau === "critique" ? "dg" : e.niveau === "alerte" ? "al" : "") + '<span class="note">' + esc(String(e.ts || "").replace("T", " ").slice(0, 16)) + "</span></div>").join("") + "</div>" : '<div class="vide">Rien pour l\'instant.</div>';
@@ -213,12 +256,33 @@
         '<div class="ag-ecrire"><textarea id="ag-essai-t" placeholder="Demande-lui quelque chose…" aria-label="Message"></textarea><button class="btn pri" id="ag-essai-go">Envoyer</button></div></section>';
     }
     async function oPropose(f) {
-      let p; try { p = await API.propositions(); } catch (e) { return nonBranche("Fait & proposé", "Ce que " + f.agent.nom + " propose et ce qu'il a fait sans te demander. Cette lecture arrive avec les propositions du module."); }
-      const mine = (p.propositions || []).filter((x) => x.agent === f.agent.id);
-      return '<section class="carte"><h3>Ce que ' + esc(f.agent.nom) + " propose</h3>" + (mine.length ? mine.map(carteProp).join("") : '<p class="note">Rien n\'attend ton mot.</p>') + "</section>";
+      let p; try { p = await API.propositions("toutes", f.agent.id); } catch (e) { return nonBranche("Fait & proposé", String((e && e.message) || e)); }
+      const l = p.propositions || [], att = l.filter((x) => x.etat === "attend" || x.etat === "reportee"), fait = l.filter((x) => !(x.etat === "attend" || x.etat === "reportee"));
+      return '<section class="carte"><h3>Ce que ' + esc(f.agent.nom) + " propose</h3>" + (att.length ? att.map((x) => carteProp(x)).join("") : '<p class="note">Rien n\'attend ton mot.</p>') + "</section>" +
+        '<section class="carte"><h3>Ce qui a été décidé</h3>' + (fait.length ? fait.map((x) => carteProp(x)).join("") : '<p class="note">Aucune décision pour le moment.</p>') + "</section>";
     }
     function carteProp(p) {
-      return '<div class="alerte"><div class="sp"><b>' + esc(p.titre || p.outil || "Proposition") + '</b><div class="note">' + esc(p.sous || p.pourquoi || "") + '</div></div><button class="btn pri mini" data-prop="' + esc(p.id) + '" data-d="accepter">Accepter</button><button class="btn mini" data-prop="' + esc(p.id) + '" data-d="refuser">Refuser</button></div>';
+      S.props[p.id] = p;
+      const m = p.mandat && p.mandat.id ? p.mandat : null, a = p.args || {};
+      const k = ["corps", "texte", "message", "body", "brouillon"].find((x) => a[x]), brouillon = k ? tx(a[k]) : "";
+      const attend = p.etat === "attend" || p.etat === "reportee", l = (t, v) => '<div class="ag-ligne"><span class="g">' + t + "</span><b>" + esc(v) + "</b></div>";
+      return '<div class="ag-prop"><div class="barre"><b style="flex:1;min-width:0;overflow-wrap:anywhere">' + esc(p.titre || p.capacite || "Proposition") + "</b>" + pill(p.nom || p.agent, "ac") + pill(p.risque || "risque ?", RISQUE[p.risque] || "") + (attend ? "" : pill(ETAT[p.etat] || p.etat, p.etat === "acceptee" ? "ok" : "")) + "</div>" +
+        (p.resume ? '<p class="note">' + esc(p.resume) + "</p>" : "") + (p.pourquoi ? l("Pourquoi", p.pourquoi) : "") + (p.impact ? l("Impact", p.impact) : "") +
+        (m ? '<div class="ag-mandat"><div class="ag-mod">Mandat d\'envoi</div>' + l("Mandat", m.nom || "") + l("De", m.de || (S.eq && S.eq.compte) || "") + l("À", m.a || "") + l("Objet", m.objet || "") + l("Validité", tx(m.validite)) + (brouillon ? '<div class="note">Brouillon</div><pre>' + esc(brouillon) + "</pre>" : "") + "</div>" : "") +
+        (p.blocage ? '<p class="note" style="color:var(--danger)">' + esc(p.blocage) + "</p>" : "") +
+        (p.etat === "reportee" && p.reporte_jusqua ? '<p class="note">Reportée jusqu\'au ' + esc(dateFr(p.reporte_jusqua)) + ".</p>" : "") +
+        (attend ? '<div class="ag-puces"><button class="btn pri mini" data-prop="' + esc(p.id) + '" data-d="accepter"' + (p.executable === false ? ' disabled title="' + esc(p.blocage || "Cette proposition ne peut pas être exécutée") + '"' : "") + '>Accepter</button><button class="btn mini" data-prop="' + esc(p.id) + '" data-d="refuser">Refuser</button><button class="btn mini" data-prop="' + esc(p.id) + '" data-d="reporter">Plus tard</button><button class="btn mini" data-prop="' + esc(p.id) + '" data-d="reporter" data-jusqu="demain">Demain</button></div>' : (p.resultat ? '<p class="note">' + esc(tx(p.resultat).slice(0, 220)) + "</p>" : "")) +
+        btnPq(p.acte) + "</div>";
+    }
+    async function decider(id, d, jusqu) {
+      const p = S.props[id] || {};
+      try { await API.decider(id, d, jusqu); }
+      catch (e) {
+        if (!(d === "accepter" && /palier/i.test(String((e && e.message) || e)))) throw e;
+        if (!(await confirmer("Passer cette capacité en auto ?", '<p class="note">Le palier « raconter » de <span class="mono">' + esc(p.capacite || "") + "</span> ne se contourne pas par un accord : pour que " + esc(p.nom || p.agent || "l'agent") + " l'exécute, elle doit passer en « auto ». Tu peux la remettre en « raconter » dans l'onglet « Outils & palier ».</p>", "Passer en auto"))) return;
+        await API.palier(p.agent, p.capacite, "auto"); await API.decider(id, d, jusqu);
+      }
+      S.attente = undefined; dire({ accepter: "Accepté : l'agent l'exécute", refuser: "Refusé : il s'en souviendra", reporter: "Reporté" }[d] || "C'est noté", "ok"); await dessiner();
     }
     async function oCout(f) {
       const a = f.agent, c = await API.couts(a.id, S.jours), jours = {};
@@ -236,9 +300,37 @@
           '<div class="ag-puces"><button class="btn pri" id="ag-pl-poser">Poser le plafond de ' + esc(a.nom) + '</button><button class="btn" id="ag-pl-g">Poser le plafond global</button>' + (pl ? '<button class="btn" data-plaf="accorder">Accorder pour aujourd\'hui</button><button class="btn dng" data-plaf="lever">Lever</button>' : "") + "</div></section>" :
           '<section class="carte"><h3>Ton plafond</h3><p class="note">Les plafonds de coût se posent depuis l\'administration. Si l\'un retient Itare, la fiche te le dit.</p></section>');
     }
-    function oSur() {
-      return '<section class="carte"><h3>Les règles non négociables</h3>' + REGLES.map((r) => '<details style="border-top:1px solid var(--line);padding:7px 0"><summary style="cursor:pointer;font-weight:600">' + esc(r[0]) + '</summary><p class="note" style="margin-top:6px">' + esc(r[1]) + "</p></details>").join("") + "</section>" +
-        nonBranche("Les épreuves de sûreté", "Rejouer à blanc les pièges connus (ordre caché dans une page, envoi suspect, secret demandé) avant de changer de modèle. Pas encore construit.");
+    const MATRICE = [
+      ["Cassandra", "la machine, ses sites, ses certificats", "gère le Coffre (jamais la valeur dans un modèle)", "non", "non"],
+      ["Itare", "non", "aucun outil de secret", "son bureau, lui seul", "non"],
+      ["Amizo", "non", "aucun outil de secret", "non", "ce qui est partagé ; écrit sa bibliothèque seule"],
+      ["Relecteur", "non", "reconnaît un secret par son empreinte, ne le garde pas", "relit chaque réponse finale", "non"],
+      ["Vision", "non", "aucun outil de secret", "pièces jointes (pas encore branché)", "non"],
+    ];
+    function vEpreuve(r) {
+      const cas = (r.cas || []).map((c) => '<div class="li"><div class="sp"><b>' + esc(c.titre || c.id) + '</b><div class="note">' + esc(c.detail || "") + "</div></div>" + pill(c.reussi ? "réussi" : "échoué", c.reussi ? "ok" : "dg") + "</div>").join("");
+      return '<div class="ag-puces">' + pill(r.reussies + "/" + r.total + " réussies", r.ok ? "ok" : "dg") + (r.deconseille ? pill("modèle déconseillé", "dg") : r.sert ? pill("peut servir", "ok") : "") + '<span class="note">' + esc(r.modele || "") + (r.quand ? " · " + esc(dateFr(r.quand)) : "") + "</span></div>" + (cas ? '<div class="liste">' + cas + "</div>" : "");
+    }
+    async function oSur(f) {
+      let res = null, cor = [], sen = null, err = "";
+      if (S.admin) {
+        try { const r = await API.epreuvesResultats(); res = r.resultats || []; cor = r.corpus || []; } catch (e) { err = String((e && e.message) || e); }
+        try { sen = await API.sentinelle(); } catch (e) { sen = null; }
+      }
+      const regles = '<section class="carte"><h3>Les règles non négociables</h3>' + REGLES.map((r) => '<details style="border-top:1px solid var(--line);padding:7px 0"><summary style="cursor:pointer;font-weight:600">' + esc(r[0]) + '</summary><p class="note" style="margin-top:6px">' + esc(r[1]) + "</p></details>").join("") + "</section>";
+      const matrice = '<section class="carte"><h3>Qui voit quoi</h3><div class="ag-tw"><table><tr><th>Agent</th><th>La machine</th><th>Les secrets</th><th>Un bureau</th><th>La connaissance</th></tr>' + MATRICE.map((r) => "<tr>" + r.map((c, i) => (i ? "<td>" : "<td><b>") + esc(c) + (i ? "</td>" : "</b></td>")).join("") + "</tr>").join("") + "</table></div>" +
+        '<p class="note">Un compte ne règle et ne lit que son Itare ; administrer n\'est pas voir le bureau d\'un autre.</p></section>';
+      if (!S.admin) return regles + matrice;
+      if (err) return regles + matrice + nonBranche("Les épreuves de sûreté", err);
+      const modele = f && f.agent ? f.agent.modele || "" : "";
+      const hist = res.length ? '<div class="liste">' + res.map((r) => '<div class="li"><div class="sp"><b>' + esc(r.modele) + '</b><div class="note">' + esc(dateFr(r.quand || r.ts)) + "</div></div>" + pill(r.reussies + "/" + r.total, r.ok ? "ok" : "dg") + (r.deconseille ? pill("déconseillé", "dg") : "") + "</div>").join("") + "</div>" : '<p class="note">Aucun modèle n\'a encore passé les épreuves.</p>';
+      const epr = '<section class="carte"><h3>Les épreuves de sûreté</h3><p class="note">Huit pièges rejoués à blanc, avec des outils-bouchons : rien n\'est touché. À faire avant de confier un agent à un autre modèle.</p>' +
+        '<div class="ag-ecrire"><input type="text" id="ag-ep-m" value="' + esc(modele) + '" placeholder="rôle ou nom du modèle" aria-label="Modèle à éprouver"><button class="btn pri" id="ag-ep-go">Lancer les épreuves</button></div><div id="ag-ep-r" style="margin-top:8px"></div>' +
+        '<div class="note" style="margin:10px 2px 2px"><b>Derniers passages</b></div>' + hist +
+        '<details style="border-top:1px solid var(--line);padding:7px 0;margin-top:8px"><summary style="cursor:pointer;font-weight:600">Les huit cas</summary>' + cor.map((c) => '<p class="note"><b>' + esc(c.titre) + "</b><br>" + esc(c.attendu || "") + "</p>").join("") + "</details></section>";
+      const sent = sen ? '<section class="carte"><h3>La sentinelle anti-fuite</h3><p class="note">Le Relecteur retient toute réponse qui contient un secret connu ou un ordre caché. Seules l\'étiquette et la longueur d\'un secret sont gardées, jamais sa valeur.</p><div class="ag-puces">' + pill((sen.secrets || []).length + " secrets connus") + pill((sen.relectures_retenues || 0) + " réponses retenues", sen.relectures_retenues ? "al" : "") + "</div>" +
+        ((sen.secrets || []).length ? '<div class="liste">' + sen.secrets.map((x) => '<div class="li"><div class="sp"><b>' + esc(x.etiquette) + '</b></div><span class="note">' + esc(x.longueur) + " caractères</span></div>").join("") + "</div>" : "") + "</section>" : "";
+      return regles + matrice + epr + sent;
     }
     async function oMemoire(f) {
       return '<section class="carte"><div class="barre"><h3 style="flex:1">Ce que ' + esc(f.agent.nom) + ' sait</h3>' + lien("memory", "Ouvrir la Mémoire") + '</div><p class="note">La mémoire vit dans son module : un seul propriétaire par donnée. Rien n\'est copié ici ; le bouton ouvre l\'écran Mémoire.</p></section>';
@@ -267,10 +359,10 @@
       if (S.conv.id) {
         const d = await API.conversation(S.conv.id);
         const fil = d.messages.filter((m) => m.role !== "tool" || true).map((m) => {
-          if (m.role === "tool") return '<div class="ag-m outil">↳ ' + esc(m.nom || "outil") + (m.statut ? " · " + esc(m.statut) : "") + "</div>";
+          if (m.role === "tool") return '<div class="ag-m outil">↳ ' + esc(m.nom || "outil") + (m.statut ? " · " + esc(m.statut) : "") + (m.evenement ? btnPq(m.evenement) : "") + "</div>";
           if (m.role === "panne") return '<div class="ag-m outil" style="color:var(--danger)">' + esc(m.contenu) + "</div>";
           if (!m.contenu && m.appels) return '<div class="ag-m outil">appelle ' + esc((m.appels || []).map((c) => (c.function && c.function.name) || c.nom || "outil").join(", ")) + "</div>";
-          return '<div class="ag-m' + (m.role === "user" ? " moi" : "") + '">' + esc(m.contenu) + "</div>";
+          return '<div class="ag-m' + (m.role === "user" ? " moi" : "") + '">' + esc(m.contenu) + (m.actions || []).filter((x) => x && x.evenement).map((x) => '<div class="note">↳ ' + esc(x.outil || x.capacite || "geste") + btnPq(x.evenement) + "</div>").join("") + "</div>";
         }).join("");
         droite = '<section class="carte"><div class="barre"><h3 style="flex:1">' + esc(d.conversation.titre || "Sans titre") + " · " + esc(d.conversation.agent) + '</h3><button class="btn mini" id="cv-ren">Renommer</button><button class="btn mini dng" id="cv-sup">Supprimer</button></div>' +
           '<div class="ag-fil" id="cv-fil">' + (fil || '<div class="vide">Aucun message.</div>') + "</div>" + (d.en_cours ? '<p class="note">Un tour est en cours…</p>' : "") +
@@ -282,20 +374,21 @@
     // ── à valider ────────────────────────────────────────────────────────────
     async function vBoite() {
       let p;
-      try { p = await API.propositions(); } catch (e) { S.attente = null; return nonBranche("À valider", "Seulement ce qui part vers l'extérieur ou ne se défait pas : l'agent propose, tu décides. Les propositions arrivent avec la prochaine étape du module ; rien n'attend ton mot pour l'instant.") ; }
+      try { p = await API.propositions(); } catch (e) { S.attente = null; return nonBranche("À valider", String((e && e.message) || e)); }
       const l = (p.propositions || []).filter((x) => S.admin || x.agent === "itare");
       S.attente = l.length;
-      return '<section class="carte"><h3>À valider</h3><p class="note">Seulement ce qui part vers l\'extérieur, ne se défait pas ou sort du palier.</p>' + (l.length ? l.map(carteProp).join("") : '<div class="vide">Rien n\'attend ton mot.</div>') + "</section>";
+      return '<section class="carte"><h3>À valider</h3><p class="note">Seulement ce qui part vers l\'extérieur, ne se défait pas ou sort du palier. L\'agent propose, tu décides.</p>' + (l.length ? l.map((x) => carteProp(x)).join("") : '<div class="vide">Rien n\'attend ton mot. Quand un agent voudra faire quelque chose qui sort du cadre, ce sera ici.</div>') + "</section>";
     }
 
     // ── journal ──────────────────────────────────────────────────────────────
     async function vJournal() {
       let l = [];
-      // le flux du module journal n'est pas cloisonné par compte (journaux système compris) : un compte ordinaire n'y lit rien tant que les actes de son Itare n'ont pas leur propre lecture
-      if (!S.admin) return nonBranche("Journal", "Le journal de ton Itare s'affichera ici dès que ses actes seront lisibles compte par compte ; en attendant, rien d'un autre compte ni de la machine n'est montré.");
+      let ac; try { ac = ligneActes(await actes("")); } catch (e) { ac = nonBranche("Actes", String((e && e.message) || e)); }
+      // le flux du module journal n'est pas cloisonné par compte (journaux système compris) : un compte ordinaire lit ses actes par les propositions, jamais le flux
+      if (!S.admin) return '<section class="carte"><h3>Ce que ton Itare a fait</h3>' + ac + "</section>";
       try { l = (await API.journal("", 80)).entrees.filter(mien); } catch (e) { return nonBranche("Journal", String(e.message || e)); }
       if (S.admin) l = l.filter((e) => /cassandra|itare|amizo|agent|relecteur|vision/i.test((e.acteur || "") + " " + (e.source || "") + " " + (e.label || "")));
-      return '<section class="carte"><div class="barre"><h3 style="flex:1">Ce que les agents ont fait</h3>' + lien("journal", "Ouvrir les Journaux") + "</div>" + ligneJournal(l) + "</section>";
+      return '<section class="carte"><div class="barre"><h3 style="flex:1">Ce que les agents ont fait</h3>' + lien("journal", "Ouvrir les Journaux") + "</div>" + ac + '<div class="note" style="margin:10px 2px 2px"><b>Dans le journal du noyau</b></div>' + ligneJournal(l) + "</section>";
     }
 
     // ── modèles et clés ──────────────────────────────────────────────────────
@@ -328,7 +421,15 @@
     const recharger = (eq) => { if (eq) S.eq = null; return dessiner(); };
     const aller = (v, agent, onglet) => { S.vue = v; if (agent) S.agent = agent; if (onglet) S.onglet = onglet; if (v === "conv") S.conv.liste = null; dessiner(); };
     const sur = (sel, ev, fn) => racine.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, (e) => fn(el, e)));
+    const b0 = (off) => { const b = racine.querySelector("#ag-ep-go"); if (b) b.disabled = off; };
     const lancer = async (fn, ok) => { try { await fn(); if (ok) dire(ok, "ok"); } catch (e) { erreur(e); } };
+    // la carte de confiance se peint après coup : son bouton se lit par délégation
+    racine.addEventListener("click", (ev) => { const b = ev.target.closest("[data-auto]"); if (!b) return;
+      lancer(async () => {
+        const o = b.dataset.auto; if (!(await confirmer("Passer « " + o + " » en auto ?", '<p class="note">Huit validations de suite l\'y autorisent. Elle recule d\'elle-même après deux échecs de suite (règle du noyau).</p>', "Passer en auto"))) return;
+        await API.palier(S.agent, o, "auto"); await recharger(true);
+      }, "Palier posé : auto");
+    });
 
     function brancher() {
       peindreGestes();
@@ -362,7 +463,18 @@
         else { if (!(await confirmer("Lever le plafond ?", '<p class="note">' + esc(S.fiche.agent.nom) + " ne sera plus retenu par un plafond de coût.</p>", "Lever", true))) return; await API.plafond(S.agent, null, "secours"); }
         await recharger(true);
       }));
-      sur("[data-prop]", "click", (b) => lancer(async () => { await API.decider(b.dataset.prop, b.dataset.d); S.attente = undefined; await recharger(); }, "C'est noté"));
+      sur("[data-prop]", "click", (b) => lancer(() => decider(Number(b.dataset.prop), b.dataset.d, b.dataset.jusqu)));
+      sur("[data-pq]", "click", (b) => lancer(async () => {
+        const z = racine.querySelector("#pq-" + b.dataset.pq); if (!z) return;
+        if (z.innerHTML) { z.innerHTML = ""; return; }
+        z.innerHTML = '<p class="note">Lecture…</p>'; z.innerHTML = vPourquoi(await API.pourquoi(Number(b.dataset.pq)));
+        z.querySelectorAll("[data-chez]").forEach((x) => x.addEventListener("click", () => chez(x.dataset.chez, x.dataset.q)));
+      }));
+      sur("#ag-ep-go", "click", () => lancer(async () => {
+        const m = racine.querySelector("#ag-ep-m").value.trim(); if (!m) throw new Error("indique le modèle à éprouver");
+        const z = racine.querySelector("#ag-ep-r"); z.innerHTML = '<p class="note" role="status">Épreuves en cours : huit cas, jusqu\'à une demi-minute…</p>'; b0(true);
+        try { z.innerHTML = vEpreuve(await API.epreuvesLancer(m)); } finally { b0(false); }
+      }));
       sur("#ag-reg", "click", () => { if (CASS.ouvrirConsole) CASS.ouvrirConsole("modeles", "Modèles"); });
       // essai en direct (une conversation à part, tenue dans la fiche)
       sur("#ag-essai-go", "click", () => lancer(async () => {

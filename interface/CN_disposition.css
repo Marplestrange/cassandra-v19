@@ -479,3 +479,4 @@ body.d19 #tab-securite .sc-rail{display:none}
 body.d19 #tab-memory .mv-tete-droite{flex:1 1 440px;justify-content:flex-end;gap:8px 12px}
 body.d19 #tab-memory #mv-q{flex:1 1 200px;width:auto;min-width:160px;max-width:340px}
 body.d19 #tab-memory .mv-tete-droite .mx-meta{white-space:nowrap}
+.d19-lbl{padding:8px 14px 2px 38px;font:650 10px 'Inter',system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-faint)}#d19-side.rail .d19-lbl{display:none}
