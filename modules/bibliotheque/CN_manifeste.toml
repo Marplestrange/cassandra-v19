@@ -1,0 +1,146 @@
+# ══════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Bibliothèque
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : bibliotheque
+# ZONE       : CN
+# VERSION CN : 0.1.0  #d913bc
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : La bibliothèque.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d913bc ▼▼▼
+[module]
+id = "bibliotheque"
+nom = "Bibliothèque"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "La connaissance d'Amizo : des fiches sourcées (adresse, date de lecture) découpées en passages, sur deux étagères (interne : espaces partagés de la société ; externe : lu sur le web, en quarantaine jusqu'à vérification), recherche plein texte classée par pertinence, fraîcheur et confiance de la source. Seul Amizo écrit une fiche ; vérifier, bloquer et retirer sont des gestes d'utilisateur."
+confiance = "interne"
+famille = "agents"
+importance = "optionnel"
+sans = "Amizo ne retrouve plus ce qu'il a lu : la bibliothèque n'est plus consultable ni alimentée ; les fiches restent enregistrées."
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "utiliser"
+libelle = "Consulter la bibliothèque : chercher, lire une fiche, parcourir les étagères et les sources"
+defaut = true
+
+[[droits]]
+id = "noter"
+libelle = "Écrire une fiche dans la bibliothèque (réservé au compte de l'agent Amizo)"
+sensible = true
+
+[[droits]]
+id = "verifier"
+libelle = "Vérifier, bloquer ou retirer une fiche ou une source : décider ce que la bibliothèque tient pour vrai"
+sensible = true
+
+[[objets]]
+type = "fiche"
+libelle = "Une fiche de la bibliothèque"
+
+[evenements]
+emet = ["fiche.ecrite", "fiche.verifiee", "fiche.bloquee", "fiche.retiree"]
+
+[[reglages]]
+id = "compte_amizo"
+libelle = "Le compte de l'agent Amizo, seul autorisé à écrire une fiche (vide : personne n'écrit)"
+type = "texte"
+defaut = ""
+
+[[reglages]]
+id = "jours_peremption"
+libelle = "Au bout de combien de jours une fiche non relue est périmée"
+type = "entier"
+defaut = 90
+minimum = 7
+maximum = 3650
+
+[[capacites]]
+id = "chercher"
+libelle = "Chercher dans la bibliothèque (plein texte) : classé par pertinence, fraîcheur et confiance de la source ; fiches vérifiées par défaut, quarantaine et périmées sur demande, bloquées jamais"
+risque = "lecture"
+droit = "utiliser"
+externe = true
+qui = ["cassandra", "itare", "humain", "compte", "agent"]
+
+[[capacites]]
+id = "fiche"
+libelle = "Une fiche entière : texte, passages dans l'ordre, provenance, attestations (sources concordantes), versions, état"
+risque = "lecture"
+droit = "utiliser"
+externe = true
+qui = ["cassandra", "itare", "humain", "compte", "agent"]
+
+[[capacites]]
+id = "etagere"
+libelle = "Une étagère (interne ou externe) : ses fiches par état, les comptes par état, l'état de l'index"
+risque = "lecture"
+droit = "utiliser"
+qui = ["cassandra", "itare", "humain", "compte", "agent"]
+
+[[capacites]]
+id = "sources"
+libelle = "Les sources (domaines) autorisées, bloquées ou encore inconnues, avec leur confiance et le nombre de fiches"
+risque = "lecture"
+droit = "utiliser"
+qui = ["cassandra", "itare", "humain", "compte", "agent"]
+
+[[capacites]]
+id = "noter"
+libelle = "Écrire une fiche (la seule écriture de contenu) : externe = quarantaine, interne = vérifiée ; même adresse et texte changé = nouvelle version ; même texte d'une autre adresse = attestation, pas doublon"
+risque = "faible"
+droit = "noter"
+perimetre = ["réservée à l'acteur agent dont le compte est celui désigné par le réglage compte_amizo", "la société de l'agent, jamais une autre", "une source bloquée est refusée", "aucun bureau personnel n'est lu"]
+preuve = "relire la fiche : elle existe dans la société de l'acte et porte au moins un passage"
+retour = "défaire exactement ce que l'acte a fait : retirer la fiche créée, retirer l'attestation ajoutée, rendre la version d'avant, remettre la date de lecture"
+paliers = ["raconter", "auto"]
+qui = ["agent"]
+
+[[capacites]]
+id = "verifier"
+libelle = "Vérifier une fiche (l'accord d'un utilisateur) ou autoriser une source (sa confiance monte, ses fiches ne sont pas vérifiées pour autant)"
+risque = "faible"
+droit = "verifier"
+perimetre = ["un utilisateur seulement, jamais un agent", "une fiche périmée doit d'abord être relue", "une fiche d'une source bloquée n'est pas vérifiable"]
+preuve = "relire : la fiche est vérifiée, ou la source est autorisée"
+retour = "remettre l'état, l'auteur de la vérification et la source tels qu'avant"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "bloquer"
+libelle = "Bloquer une fiche, ou une source entière (ses fiches se bloquent, plus rien n'en entre) ; un motif est exigé"
+risque = "faible"
+droit = "verifier"
+perimetre = ["un utilisateur seulement, jamais un agent", "un motif obligatoire"]
+preuve = "relire : toutes les fiches visées sont bloquées"
+retour = "remettre chaque fiche dans l'état d'avant, et la source comme elle était"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "retirer"
+libelle = "Retirer une fiche de la bibliothèque (plus de recherche) ; son texte et ses versions sont gardés"
+risque = "faible"
+droit = "verifier"
+perimetre = ["un utilisateur seulement, jamais un agent"]
+preuve = "relire : la fiche est marquée retirée et n'a plus de passage"
+retour = "remettre la fiche et reconstruire ses passages depuis son texte"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[permissions]
+stockage = true
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

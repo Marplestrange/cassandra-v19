@@ -12,7 +12,7 @@
 <!-- RÔLE       : Les modules -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=fb47d1 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=83c2dc ▼▼▼ -->
 # Les modules
 
 Ce catalogue est **généré** depuis les manifestes (`python outils/CN_catalogue_modules.py`) ; un banc vérifie qu'il est à jour. Chaque module est un dossier
@@ -22,7 +22,7 @@ indépendant de `modules/` : son manifeste déclare ses droits, ses capacités, 
 - **instance** : n'existe que dans la société principale (sécurité, observabilité, sauvegardes, gestion des modules…).
 - **base par société** : les données du module sont séparées société par société.
 
-45 modules.
+47 modules.
 
 ## Socle
 
@@ -72,6 +72,7 @@ indépendant de `modules/` : son manifeste déclare ses droits, ses capacités, 
 |---|---|---|
 | `flotte` — Flotte | important | Le parc de machines : le registre déclaré, Tailscale et les relevés SSH côte à côte, la présence mesurée, la disponibilité, le verdict d'ouverture, les commandes nommées… |
 | `dns` — Zones DNS | optionnel | Relève les zones suivies auprès de leur serveur de noms faisant foi, garde une référence versionnée (rien n'est écrasé), signale la dérive, l'adresse publique qui a… |
+| `web` — Web | optionnel | La porte du dehors : chercher sur le web (par un moteur compatible SearXNG que l'administrateur configure) et lire une page en texte seul. |
 
 ## Système
 
@@ -86,6 +87,7 @@ indépendant de `modules/` : son manifeste déclare ses droits, ses capacités, 
 | `agents` — Agents | vital | Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la… |
 | `modeles` — Modèles | vital | Le registre des modèles de langage : un modèle se déclare une fois (fournisseur, nom, adresse, clé chiffrée), les rôles de la maison et les comptes y puisent. |
 | `memoire` — Mémoire | important · instance | La mémoire de Cassandra : un souvenir est un fait daté, prouvé, propriétaire, corrigeable d'une phrase. |
+| `bibliotheque` — Bibliothèque | optionnel | La connaissance d'Amizo : des fiches sourcées (adresse, date de lecture) découpées en passages, sur deux étagères (interne : espaces partagés de la société ; externe :… |
 
 ## Communication
 
