@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #717a7a
+# VERSION CN : 0.1.0  #e32c97
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=717a7a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e32c97 ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire
@@ -32,6 +32,10 @@ from . import CN_chemins as chemins
 
 class _Fil(threading.local):
     valeur = None
+
+
+class _EnMoteur(threading.local):
+    valeur = False         # vrai le temps qu'un moteur de ce module s'exécute dans ce fil (posé par le noyau, jamais par un module)
 
 
 class _Compte(threading.local):
@@ -62,6 +66,7 @@ class Contexte:
         self._compte = _Compte()
         self._acteur = _Acteur()
         self._societe = _Societe()
+        self._en_moteur = _EnMoteur()
 
     TOUT = "*"   # la portée des agents (voir CN_bus.py) : un module la passe explicitement, jamais par défaut
 
@@ -218,7 +223,17 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé d'agir comme un agent ([permissions] agir)" % self.module)
         if acteur not in self.ACTEURS_AGENTS:
             raise PermissionError("un module n'agit que comme un agent (%s), jamais comme « %s »" % (", ".join(self.ACTEURS_AGENTS), acteur))
-        return self._intro["agir"](capacite, dict(args or {}), self.compte, acteur, cause, essai)
+        # Un moteur de fond n'a pas de compte (un tick du temps) : il agit sous le compte SYSTÈME « noyau » (administrateur, voir COMPTES_SYSTEME), dans la société de son tour.
+        # L'exécuteur ordinaire s'applique en entier : acteur permis par la capacité, palier, preuve, retour, journal. Hors moteur, un acte sans compte reste refusé.
+        compte = self.compte or ("noyau" if self._en_moteur.valeur else "")
+        return self._intro["agir"](capacite, dict(args or {}), compte, acteur, cause, essai, self.societe if compte == "noyau" else "")
+
+    def defaire_acte(self, fait: int, demandeur: str = "") -> dict:
+        """Le retour arrière d'un acte d'agent déjà fait et journalisé (l'id de son `capacite.faite`). L'exécuteur le joue et le raconte ; le module qui le demande a vérifié à qui est l'acte
+        ([permissions] agir, comme pour agir : il n'y a qu'un agent qui défait l'acte d'un agent)."""
+        if not self.manifeste.permissions.agir:
+            raise PermissionError("le module « %s » n'a pas demandé d'agir comme un agent ([permissions] agir)" % self.module)
+        return self._intro["defaire_acte"](fait, demandeur or self.compte)
 
     def outils(self, acteur: str = "itare") -> list:
         """Les outils d'un agent pour le compte en cours : chaque capacité que cet acteur peut utiliser et que ce compte a le droit d'utiliser, avec ses arguments, son risque et son palier."""

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fc8540
+# VERSION CN : 0.1.0  #145c91
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fc8540 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=145c91 ▼▼▼
 """Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v"""
 import os
 import sys
@@ -4356,6 +4356,86 @@ class ParitéComptesV18(unittest.TestCase):
         from noyau import CN_identite as identite
         for ip in ("127.0.0.1", "::1", "10.1.2.3", "192.168.0.9", "172.16.0.1", "172.32.0.1", "8.8.8.8", "fd00::1", "fe80::1", "", None, "n'importe quoi"):
             self.assertEqual(identite.ip_nature(ip), self.v18["_ip_nature"](ip), ip)
+
+
+GARDIEN_TOML = """
+[module]
+id = "gardien"
+nom = "Gardien"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Module d'essai : un moteur de fond qui agit comme un agent."
+requiert = ["labo"]
+confiance = "interne"
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser le module d'essai"
+defaut = true
+
+[[moteurs]]
+id = "repare"
+libelle = "Répare un jouet"
+mode = "demande"
+
+[permissions]
+agir = true
+"""
+
+GARDIEN_PY = '''
+def brancher(ctx):
+    sortie = ctx.config
+
+    def repare(ctx):
+        sortie["compte_du_moteur"] = ctx.compte
+        sortie["rep"] = ctx.agir("labo.reparer_jouet", {"nom": "ours"}, acteur="cassandra")
+
+    ctx.moteur("repare", repare)
+    sortie["agir"] = lambda: ctx.agir("labo.reparer_jouet", {"nom": "ours"}, acteur="cassandra")
+'''
+
+
+class MoteurQuiAgit(unittest.TestCase):
+    """Un moteur de fond n'a pas de compte : il agit sous le compte système « noyau », par l'exécuteur ordinaire (acteur permis, journal), et nulle part ailleurs."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        mods = Path(self.tmp.name) / "modules"
+        ecrire_module(mods, "labo", LABO_TOML, LABO_PY)
+        ecrire_module(mods, "gardien", GARDIEN_TOML, GARDIEN_PY)
+        self.jouets = {"ours": "casse"}
+        self.cfg = {"labo": {"jouets": self.jouets, "drapeaux": {}}, "gardien": {}}
+        self.n = moteur.Noyau(Path(self.tmp.name) / "d", mods, self.cfg, exiger_compte=True)
+        self.n.brancher(annoncer=False)
+        self.n.regler_palier("labo.reparer_jouet", "auto")
+
+    def sortie(self):
+        return self.n.executeur.contextes["gardien"].config                              # le contexte garde SA copie de la configuration
+
+    def test_un_moteur_agit_sous_le_compte_noyau(self):
+        self.assertEqual(self.n.lancer("gardien.repare")["statut"], "fait")
+        rep = self.sortie()["rep"]
+        self.assertEqual(rep["statut"], "faite")
+        self.assertEqual(self.jouets["ours"], "ok")
+        self.assertEqual(self.sortie()["compte_du_moteur"], "")                       # le moteur, lui, n'a pas de compte
+        dem = [e for e in self.n.bus.recents(portee=TOUT, limite=200) if e["type"] == "capacite.demandee" and e["objet_id"] == "labo.reparer_jouet"]
+        self.assertEqual((dem[-1]["compte"], dem[-1]["acteur"]), ("noyau", "cassandra"))      # l'acte est journalisé, au nom du compte système
+
+    def test_hors_moteur_un_acte_sans_compte_reste_refuse(self):
+        r = self.sortie()["agir"]()
+        self.assertEqual(r["statut"], "refuse")
+        self.assertIn("aucun compte", r["raison"])
+        self.assertEqual(self.jouets["ours"], "casse")
+
+    def test_l_acteur_reste_celui_que_la_capacite_permet(self):
+        ctx = self.n.executeur.contextes["gardien"]
+        ctx._en_moteur.valeur = True
+        try:
+            with self.assertRaises(PermissionError):
+                ctx.agir("labo.reparer_jouet", {"nom": "ours"}, acteur="humain")            # un module ne se fait jamais passer pour un humain
+        finally:
+            ctx._en_moteur.valeur = False
 
 
 if __name__ == "__main__":

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #768fd6
+# VERSION CN : 0.1.0  #6230bc
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'équipe d'agents : droits, capacités de lecture et de réglage, coût par jour, plafonds, cloisonnement, et l'absence d'outil de secret chez Itare et les agents invités.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=768fd6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6230bc ▼▼▼
 """Bancs de l'équipe d'agents : droits, capacités de lecture et de réglage, coût par jour, plafonds, cloisonnement, et l'absence d'outil de secret chez Itare et les agents invités."""
 import shutil
 import sys
@@ -95,7 +95,7 @@ class Lectures(Equipe):
     def test_equipe_de_l_administrateur_et_d_un_compte_ordinaire(self):
         ids = lambda r: [a["id"] for a in r["equipe"]]            # noqa: E731
         admin = self.agent("equipe", compte=ROOT)
-        self.assertEqual(ids(admin), ["cassandra", "itare", "amizo", "relecteur", "vision"])
+        self.assertEqual(ids(admin), ["cassandra", "itare", "amizo", "relecteur", "vision", "auditeur"])
         self.assertTrue(admin["administrateur"])
         self.assertEqual({a["genre"] for a in admin["equipe"]}, {"agent", "service"})
         cassandra = admin["equipe"][0]

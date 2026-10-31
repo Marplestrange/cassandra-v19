@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0a2c19
+# VERSION CN : 0.1.0  #f98188
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0a2c19 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f98188 ▼▼▼
 """L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 
 Le contrat de souveraineté tient ici, en un seul endroit :
@@ -89,7 +89,7 @@ class Executeur:
         if compte and self.identite is not None:
             soc = self.identite.societe_de(compte)
             if societe and societe != soc:
-                if not self.identite.peut_agir_dans(compte, societe):
+                if compte != "noyau" and not self.identite.peut_agir_dans(compte, societe):          # le compte système des moteurs sert chaque société à son tour
                     self._evt("capacite.refusee", e, acteur, cause, {"raison": "société non accessible", "societe": societe}, compte)
                     return {"statut": "refuse", "raison": "le compte « %s » n'a pas accès à la société « %s »" % (compte, societe)}
                 soc = societe
@@ -188,6 +188,39 @@ class Executeur:
         except Exception as ex:
             log.exception("retour arrière impossible pour %s", e.cle)
             return False, str(ex)[:200]
+
+    def defaire_acte(self, fait, demandeur="") -> dict:
+        """Le retour arrière d'un acte DÉJÀ fait et journalisé (`capacite.faite`) : celui que le retour arrière automatique n'a pas eu à jouer. Le résultat consigné est rendu à `defaire` de la
+        capacité, tel quel ; l'issue se raconte au journal (`capacite.defaite`, ou `capacite.defaite_impossible`) avec le demandeur. Un acte ne se défait qu'une fois, et un résultat dont un
+        champ est masqué ne se défait pas (le retour aurait besoin de la valeur qu'on a cachée). Le CLOISONNEMENT est celui de l'appelant : ce service ne regarde pas à qui est l'acte."""
+        try:
+            ev = self.bus._lire(int(fait))
+        except (TypeError, ValueError):
+            ev = None
+        if not ev or ev["type"] != "capacite.faite" or (ev["donnees"] or {}).get("lecture"):
+            return {"statut": "refuse", "raison": "ce n'est pas un acte d'écriture fait"}
+        e = self.catalogue.get(ev["objet_id"])
+        if e is None or not e.implementee or e.defaire is None:
+            return {"statut": "impossible", "raison": "la capacité n'est plus là pour défaire"}
+        if self.bus.base.lire("SELECT 1 FROM evenements WHERE cause=? AND type IN ('capacite.annulee','capacite.defaite')", (ev["id"],)):
+            return {"statut": "refuse", "raison": "cet acte est déjà défait"}
+        res = (ev["donnees"] or {}).get("resultat")
+        masque = e.capacite.masque
+        if masque and isinstance(res, dict) and any(res.get(k) == "***" for k in masque):
+            return {"statut": "impossible", "raison": "le résultat de l'acte est masqué : le défaire demanderait la valeur cachée"}
+        ctx = self.contextes.get(e.module)
+        soc = self.identite.societe_de(ev["compte"]) if (self.identite is not None and ev["compte"]) else ""
+        avant = None
+        if ctx is not None:                                  # posé le temps du retour, rendu ensuite : le module appelant peut être le même (son propre acte en cours)
+            avant = (ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur, ctx._societe.valeur)
+            ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur, ctx._societe.valeur = ev["id"], ev["compte"], ev["acteur"], soc
+        try:
+            defait, detail = self.defaire(e, ctx, res)
+        finally:
+            if ctx is not None:
+                ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur, ctx._societe.valeur = avant
+        self._evt("capacite.defaite" if defait else "capacite.defaite_impossible", e, "humain", ev["id"], {"par": demandeur, "detail": detail}, ev["compte"])
+        return {"statut": "defaite" if defait else "impossible", "raison": detail, "capacite": e.cle}
 
     def _apprendre(self, e, succes, humain, cause, compte):
         bouge = self.catalogue.apprendre(e.cle, succes, compte_echec=not humain)

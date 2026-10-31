@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #aad238
+# VERSION CN : 0.4.0  #4bc6dc
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=aad238 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=4bc6dc ▼▼▼
 [module]
 id = "agents"
 nom = "Agents"
@@ -282,6 +282,24 @@ id = "pourquoi"
 libelle = "« Pourquoi ? » : la chaîne d'un acte d'agent reconstruite du journal et de la mémoire (déclencheur, souvenirs cités, outil, palier au moment du geste, preuve, retour) sans rien copier ; jamais l'acte d'un autre compte"
 risque = "lecture"
 droit = "utiliser"
+
+[[capacites]]
+id = "defaire"
+libelle = "Défaire un acte d'agent déjà fait : le bouton « Défaire » du journal rejoue le retour arrière de la capacité, une seule fois, et le raconte"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["un acte d'agent de son compte (l'administrateur : ceux de l'instance), jamais celui d'un autre compte", "une seule fois par acte", "un résultat masqué ne se défait pas"]
+preuve = "relire le journal : l'acte porte un « capacite.defaite »"
+retour = "aucun : un retour arrière ne se rejoue pas, on refait l'acte lui-même"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "auditer"
+libelle = "L'Auditeur relit le journal et signale les dérives : un coût qui dérive, un palier trop généreux, des tentatives d'injection répétées. Il signale, il ne corrige pas"
+risque = "lecture"
+droit = "administrer"
+perimetre = ["lecture seule, aucun outil", "le journal d'instance : administrateur seulement", "plafonds : 30 jours, 5000 lignes, 20 signaux"]
 
 [[capacites]]
 id = "epreuves_lancer"

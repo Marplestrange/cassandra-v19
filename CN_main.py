@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e6a18e
+# VERSION CN : 0.1.0  #d2ed73
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e6a18e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d2ed73 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -174,7 +174,7 @@ class Noyau:
                     except (OSError, ValueError) as ex:
                         log.warning("corpus doré illisible (%s) : %s", corpus.name, ex)
         ctx = Contexte(m, self.bus, self.registre, self.catalogue, self.detecteurs, self.config.get(m.id), self.moteurs,
-                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "outils": self._outils, "droits": self.droits, "identite": self.identite, "societe_de": (lambda c: self.identite.societe_de(c)), "societes": (lambda: [x["id"] for x in self.identite.societes(tout=True)]), "acces_societe": (lambda compte, soc: soc in self.droits.societes_de(compte)), "module_ouvert": (lambda soc, m: self.identite.module_ouvert(soc, m.id, m.importance, m.essentiel, m.instance)), "reglages": self.reglages,
+                       {"manifestes": self._manifestes_actifs, "compteurs": self._compteurs, "evenements": lambda t, n: self.bus.recents(portee=TOUT, limite=n, type_prefixe=t), "lecture": self._lecture, "agir": self._agir, "defaire_acte": self.executeur.defaire_acte, "outils": self._outils, "droits": self.droits, "identite": self.identite, "societe_de": (lambda c: self.identite.societe_de(c)), "societes": (lambda: [x["id"] for x in self.identite.societes(tout=True)]), "acces_societe": (lambda compte, soc: soc in self.droits.societes_de(compte)), "module_ouvert": (lambda soc, m: self.identite.module_ouvert(soc, m.id, m.importance, m.essentiel, m.instance)), "reglages": self.reglages,
                         "stockage": self._stockage_de, "stockage_lecture": self._stockage_de, "frein_actif": lambda nom: nom in self.freins(), "partage_actif": lambda s, d, t: self.identite.partage_actif(s, d, t), "racine": self.racine, "point": self.points.appeler, "evolution": self.evolution,
                         "urgence": types.SimpleNamespace(freins=self.freins, freiner=self.freiner, en_crise=self.en_crise, crise=self.crise),
                         "gestion_modules": types.SimpleNamespace(gere=lambda: self.gerer, cycle=self.cycle, sante=self.sante_module, sante_tous=self.sante_tous, contributions=self.contributions, extensions=lambda: self.extensions, capacites=self.capacites_de, catalogue=self.catalogue_modules, sections=self.sections_modules, gel=lambda: "gel" in self.freins(), activer=self.activer, desactiver=self.desactiver)})
@@ -228,9 +228,9 @@ class Noyau:
         r = self.executeur.executer(cle, "cassandra", args, compte=compte, interne=True, societe=societe)
         return r.get("resultat") if r["statut"] == "faite" else None
 
-    def _agir(self, cle: str, args: dict, compte: str, acteur: str, cause=None, essai: bool = False) -> dict:
+    def _agir(self, cle: str, args: dict, compte: str, acteur: str, cause=None, essai: bool = False, societe: str = "") -> dict:
         """Un acte d'agent pour le compte d'un module : par l'exécuteur ordinaire, jamais `interne`."""
-        return self.executeur.executer(cle, acteur, args, cause=cause, essai=essai, compte=compte)
+        return self.executeur.executer(cle, acteur, args, cause=cause, essai=essai, compte=compte, societe=societe)
 
     def _outils(self, compte: str, acteur: str) -> list:
         """Les outils d'un agent, dérivés du catalogue : rien à écrire à la main, un outil de plus = une capacité de plus."""
@@ -619,6 +619,7 @@ class Noyau:
         def cible():
             ctx._cause.valeur = ev["id"] if ev else None
             ctx._compte.valeur = ev["compte"] if ev else ""
+            ctx._en_moteur.valeur = True
             d0 = time.time()
             try:
                 for soc in self._societes_du_moteur(module, ctx, ev, soc_ev):

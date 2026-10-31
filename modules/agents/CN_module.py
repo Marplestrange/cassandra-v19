@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #1ac9ac
+# VERSION CN : 0.4.0  #695ed8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=1ac9ac ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=695ed8 ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -35,6 +35,7 @@ from datetime import datetime
 
 from . import CN_outils as o
 from .CN_amizo import brancher_amizo
+from .CN_auditeur import brancher_auditeur
 from .CN_atelier import brancher_equipe
 from .CN_garde import brancher_garde
 from .CN_propositions import REF_SOUVENIR, brancher_propositions
@@ -434,6 +435,7 @@ def brancher(ctx):
 
     # ------------------------------------------------------------------ inscription
     A = brancher_amizo(ctx, E, o, lecture, db, compte_agit, stocker, lambda *a, **k: converser(*a, **k))          # Amizo : transmettre, passer la main, traiter une passation
+    brancher_auditeur(ctx, E, db, compte_agit)      # l'Auditeur : lecture seule du journal, il signale les dérives
     c = ctx
     for cid, f in (("conversations", conversations), ("conversation", conversation), ("outils", outils)):
         c.implementer(cid, f)

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #e63749
+# VERSION CN : 0.4.0  #f9968f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les propositions des agents : « À valider » (accepter exécute, refuser se mémorise, reporter), la carte de confiance et « Pourquoi ? ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=e63749 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=f9968f ▼▼▼
 """Les propositions des agents.
 
 Une proposition est ce qu'un agent veut faire et ne fait pas seul : un geste raconté (palier ou niveau), retenu pour accord (« demander »), ou retenu parce qu'il sort de la maison
@@ -389,6 +389,8 @@ def brancher_propositions(ctx, E, o, lecture, reglage):
                 journal.append({"id": s["id"], "type": s["type"], "ts": s["ts"]})
                 if s["type"] == "capacite.prouvee":
                     preuve = True
+                elif s["type"] == "capacite.defaite":
+                    retour = "defaite"
                 elif s["type"] in ("capacite.annulee", "capacite.annulation_impossible"):
                     preuve, retour = False, "annulee" if s["type"] == "capacite.annulee" else "annulation_impossible"
         decl = {"type": a["declencheur"]}
@@ -409,12 +411,39 @@ def brancher_propositions(ctx, E, o, lecture, reglage):
                     m.update({"cle": s.get("cle"), "valeur": str(s.get("valeur") or "")[:300], "statut": s.get("statut")})
         return res
 
+    def defaire(c, acte=0, raison=""):
+        """Le retour arrière d'un acte d'agent déjà fait : le bouton « Défaire » du journal. Le cloisonnement est celui de `pourquoi` : l'acte d'un autre compte n'existe pas, administrateur compris.
+        Ce que le retour n'a pas pu défaire se dit (le module et le noyau le racontent au journal) ; un acte qui n'a pas été fait ne se défait pas."""
+        compte = compte_agit()
+        try:
+            a = db.lire("SELECT * FROM agent_actes WHERE evenement=?", (int(acte),))
+        except (TypeError, ValueError):
+            a = []
+        if not a or not (a[0]["compte"] == compte or (portee_de(a[0]["agent"]) != "compte" and E.admin(compte))):
+            raise ValueError("acte introuvable")
+        a = a[0]
+        faits = [e for e in ctx.evenements("capacite.faite", 5000) if e.get("cause") == a["evenement"]]
+        if not faits:
+            raise ValueError("cet acte n'a rien fait : il n'y a rien à défaire")
+        fait = faits[0]
+        r = ctx.defaire_acte(fait["id"], compte)
+        if r["statut"] != "defaite":
+            raise ValueError(r.get("raison") or "le retour arrière n'a pas pu être joué")
+        return {"acte": a["evenement"], "fait": fait["id"], "agent": a["agent"], "capacite": a["capacite"], "defait": True, "raison": str(raison or "")[:300]}
+
+    def prouver_defaite(c, res):
+        return any(e.get("cause") == res["fait"] for e in ctx.evenements("capacite.defaite", 5000))
+
+    def defaire_defaite(c, res):
+        raise ValueError("un retour arrière ne se rejoue pas : refais l'acte lui-même")
+
     c = ctx
     c.implementer("propositions", propositions)
     c.implementer("proposition_decider", proposition_decider, prouver_decision, defaire_decision,
                   simuler=lambda x, id="", decision="", **_: "%s la proposition %s" % ({"accepter": "accepterait (et ferait)", "refuser": "refuserait", "reporter": "reporterait"}.get(decision, "déciderait"), id))
     c.implementer("confiance", confiance)
     c.implementer("pourquoi", pourquoi)
+    c.implementer("defaire", defaire, prouver_defaite, defaire_defaite, simuler=lambda x, acte=0, **_: "défairait l'acte %s (le retour arrière de sa capacité, une seule fois)" % acte)
     return SimpleNamespace(proposer=proposer, tracer=tracer, observer_outils=observer_outils, perimer=perimer)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
