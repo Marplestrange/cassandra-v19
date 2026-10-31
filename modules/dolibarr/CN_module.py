@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #bff67b
+# VERSION CN : 0.4.0  #6b7ee9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=bff67b ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=6b7ee9 ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -82,6 +82,9 @@ DOMAINES = ("accountancy", "agendaevents", "bankaccounts", "categories", "contac
 _CHEMIN_LIBRE = re.compile(r"^/[a-z]{3,30}(/[A-Za-z0-9_.@-]{1,60}){0,4}$")
 _REQUETE = re.compile(r"^[A-Za-z0-9_.,=&%+:*()\[\]-]{0,400}$")
 _SECRET = re.compile(r"(pass|api_key|apikey|token|secret|signature|private_key|cle_)", re.I)
+# Les pièces dont on lit ou produit le PDF : objet -> (chemin de l'objet, « modulepart » de Dolibarr). Le PDF est celui que Dolibarr a produit : Cassandra le lit, elle ne le recompose pas.
+PIECES = {"devis": ("/proposals", "propal"), "factures": ("/invoices", "facture"), "dons": ("/donations", "donation")}
+MAX_PDF = 8 * 1024 * 1024
 MAX_LIBRE = 100             # lignes rendues par une lecture libre
 MAX_LIGNES = 50
 
@@ -344,17 +347,8 @@ def _egaux(a, b):
 
 
 def _completer(objet, corps):
-    """Ce que Dolibarr 24 exige à la CRÉATION et que l'appelant n'a pas à connaître : le code client ou fournisseur d'un tiers (« auto » : Dolibarr le numérote),
-    la référence d'un projet (« auto » aussi). Vu sur le vrai Dolibarr : sans cela, HTTP 500 (ErrorCustomerCodeRequired) ou 400 (ref field missing)."""
-    c = dict(corps)
-    if objet == "tiers":
-        if str(c.get("client", 0)) not in ("0", "", "None") and not c.get("code_client"):
-            c["code_client"] = "auto"
-        if str(c.get("fournisseur", 0)) not in ("0", "", "None") and not c.get("code_fournisseur"):
-            c["code_fournisseur"] = "auto"
-    elif objet == "projets" and not c.get("ref"):
-        c["ref"] = "auto"
-    return c
+    """Ce que Dolibarr 24 exige à la CRÉATION et que l'appelant n'a pas à connaître : le code client ou fournisseur d'un tiers et la référence d'un projet (« auto » : Dolibarr numérote). Vu sur le vrai Dolibarr : sans cela, HTTP 500 (ErrorCustomerCodeRequired) ou 400 (ref field missing). Le calcul est un POINT D'ÉVOLUTION : points/EC_completer.py."""
+    return _appeler_point("completer", {"objet": objet, "corps": corps})["valeur"]
 
 
 def _verifier_champs(champs, permis, ce_quon_fait):
@@ -744,6 +738,49 @@ def brancher(ctx):
                 return int(m["id"])
         raise PontErreur("Dolibarr n'a pas de mode de règlement de code « %s » (Configuration › Dictionnaires)" % code)
 
+
+    # --- le PDF d'une pièce : le lire (pour l'afficher), le produire s'il n'existe pas encore
+    def _piece(objet, id):
+        if objet not in PIECES:
+            raise ValueError("objet : %s" % ", ".join(sorted(PIECES)))
+        conf = _conf()
+        chemin, part = PIECES[objet]
+        d = _doc(conf, chemin, id, "la pièce")
+        return conf, chemin, part, d, str(d.get("ref") or id)
+
+    def _pdfs(conf, part, id):
+        return [x for x in _liste(conf, "/documents", {"modulepart": part, "id": id}) if isinstance(x, dict) and str(x.get("name", "")).lower().endswith(".pdf")]
+
+    def piece_pdf(ctx, objet, id):
+        conf, chemin, part, d, ref = _piece(objet, id)
+        pdfs = _pdfs(conf, part, id)
+        if not pdfs:
+            raise ValueError("%s %s n'a pas de PDF : on peut le produire (produire_pdf)" % (objet, ref))
+        nom = sorted(str(x["name"]) for x in pdfs)[0]
+        rep = appeler(conf, "/documents/download", {"modulepart": part, "original_file": "%s/%s" % (ref, nom)})
+        if not isinstance(rep, dict) or not rep.get("content"):
+            raise PontErreur("Dolibarr n'a pas rendu le contenu du PDF")
+        if str(rep.get("content-type", "application/pdf")).split(";")[0] != "application/pdf":
+            raise PontErreur("le fichier n'est pas un PDF (%s)" % rep.get("content-type"))
+        if int(rep.get("filesize") or 0) > MAX_PDF:
+            raise ValueError("le PDF dépasse %d Mo : ouvrez-le dans Dolibarr" % (MAX_PDF // 2 ** 20))
+        return {"objet": objet, "id": int(id), "ref": ref, "nom": nom, "type": "application/pdf", "taille": int(rep.get("filesize") or 0), "donnees_b64": str(rep["content"])}
+
+    def produire_pdf(ctx, objet, id):
+        conf, chemin, part, d, ref = _piece(objet, id)
+        if _pdfs(conf, part, id):
+            raise ValueError("%s %s a déjà son PDF" % (objet, ref))
+        fichier = "%s/%s.pdf" % (ref, ref)
+        ecrire(conf, "PUT", "/documents/builddoc", {"modulepart": part, "original_file": fichier, "langcode": "fr_FR"})
+        return {"objet": objet, "id": int(id), "ref": ref, "fichier": fichier}
+
+    def prouver_produire(ctx, res):
+        conf = _conf()
+        return bool(_pdfs(conf, PIECES[res["objet"]][1], res["id"]))
+
+    def defaire_produire(ctx, res):
+        ecrire(_conf(), "DELETE", "/documents?" + urllib.parse.urlencode({"modulepart": PIECES[res["objet"]][1], "original_file": res["fichier"]}))
+
     def mon_acces(ctx):
         conf = _conf()
         info = appeler(conf, "/users/info")
@@ -1078,6 +1115,8 @@ def brancher(ctx):
                     simuler=lambda ctx, id="", **_: "validerait la facture %s (elle prendrait un numéro)" % id)
 
     ctx.implementer("mon_acces", mon_acces)
+    ctx.implementer("piece_pdf", piece_pdf)
+    ctx.implementer("produire_pdf", produire_pdf, prouver_produire, defaire_produire, simuler=lambda ctx, objet="", id="", **_: "produirait le PDF de %s %s" % (objet, id))
     ctx.implementer("encaisser", encaisser, prouver_encaisser, defaire_encaisser,
                     simuler=lambda ctx, id="", montant="", **_: "encaisserait %s € sur la facture %s" % (montant, id))
     ctx.implementer("creer_avoir", creer_avoir, prouver_brouillon, defaire_brouillon, simuler=lambda ctx, id="", **_: "préparerait un avoir en brouillon pour la facture %s" % id)

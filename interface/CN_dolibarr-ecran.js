@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #499d0b
+// VERSION CN : 0.1.0  #ea0fe5
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=499d0b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=ea0fe5 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -92,7 +92,7 @@
         const L = ["Brouillon", "Ouvert", "Signé", "Refusé", "Facturé"], D = filtrer(S.d.devis, "devis");
         return '<div class="carte">' + barre("devis", btn("+ Nouveau devis", "ndevis", "", "pri")) + table(["Réf.", "Tiers", "Date", "Total", "État", ""], D.map((d) => {
           const s = String(d.statut); const b = s === "0" ? btn("Valider", "devis", d.id + "|valider") : s === "1" ? btn("Marquer signé", "devis", d.id + "|signer") + btn("Refusé", "devis", d.id + "|refuser") : s === "2" ? btn("Facturer", "facturer", d.id, "pri") : "";
-          return "<tr><td class=\"num\"><b>" + esc(d.ref) + "</b></td><td>" + esc(nomTiers(d.socid)) + "</td><td>" + jour(d.date) + '</td><td class="num">' + eur(d.total_ttc) + "</td><td>" + pill(L[Number(s)] || "Annulé", s === "2" ? "ok" : "") + "</td><td>" + b + "</td></tr>";
+          return "<tr class=\"clk\" data-a=\"fichedevis\" data-p=\"" + d.id + "\"><td class=\"num\"><b>" + esc(d.ref) + "</b></td><td>" + esc(nomTiers(d.socid)) + "</td><td>" + jour(d.date) + '</td><td class="num">' + eur(d.total_ttc) + "</td><td>" + pill(L[Number(s)] || "Annulé", s === "2" ? "ok" : "") + "</td><td>" + b + "</td></tr>";
         })) + "</div>";
       },
       tiers() {
@@ -157,7 +157,7 @@
       fiche: async (p) => {
         const f = (S.d.factures || []).find((x) => String(x.id) === String(p)); if (!f) return;
         const corpsF = '<div class="note">' + esc(nomTiers(f.socid)) + " · " + jour(f.date) + " · " + eur(f.total_ttc) + (ouverte(f) ? " · reste " + eur(f.remaintopay) : "") + "</div><div>" + etatF(f) + "</div><div style=\"display:flex;gap:6px;flex-wrap:wrap\">" +
-          (String(f.statut) === "0" ? btn("Valider", "valider", f.id, "pri") : "") + (ouverte(f) ? btn("Encaisser", "encaisser", f.id, "pri") + btn("Relancer", "relancer", f.id) : "") + (String(f.statut) !== "0" ? btn("Créer un avoir", "avoir", f.id) : "") + "</div>";
+          (String(f.statut) === "0" ? btn("Valider", "valider", f.id, "pri") : "") + (ouverte(f) ? btn("Encaisser", "encaisser", f.id, "pri") + btn("Relancer", "relancer", f.id) : "") + (String(f.statut) !== "0" ? btn("Créer un avoir", "avoir", f.id) : "") + (String(f.statut) !== "0" ? btn("Voir le PDF", "pdf", "factures|" + f.id) : "") + "</div>";
         modale("Facture " + f.ref, corpsF, "Fermer");
       },
       encaisser: async (p) => {
@@ -186,6 +186,29 @@
       ntiers: async () => {
         const ok = await modale("Nouveau tiers", champ("n-n", "Nom", "") + '<div class="grille2">' + champ("n-v", "Ville", "") + sel("n-ty", "Type", [["cli", "Client"], ["fou", "Fournisseur"], ["les2", "Les deux"]], "cli") + "</div>", "Créer");
         if (ok && val("n-n")) { const t = val("n-ty"); await fait("dolibarr.creer", { objet: "tiers", champs: { name: val("n-n"), town: val("n-v"), client: t !== "fou" ? 1 : 0, fournisseur: t !== "cli" ? 1 : 0 } }, "Tiers créé"); }
+      },
+      fichedevis: async (p) => {
+        document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
+        const d = (S.d.devis || []).find((x) => String(x.id) === String(p)); if (!d) return;
+        let full = {}; try { full = (await agir("dolibarr.lire_libre", { chemin: "/proposals/" + p })).reponse || {}; } catch (e) { K.dire(e.message || String(e), "err"); }
+        const L = ["Brouillon", "Ouvert", "Signé", "Refusé", "Facturé"], s = String(d.statut), nb = (n) => Number(n || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const lignes = (full.lines || []).map((l) => "<tr><td>" + esc(String(l.desc || l.description || l.product_label || "").replace(/<br\s*\/?>/gi, " ").replace(/\s+/g, " ").trim()) + '</td><td class="num">' + nb(l.qty) + '</td><td class="num">' + nb(l.subprice) + '</td><td class="num">' + nb(l.tva_tx) + ' %</td><td class="num">' + nb(l.total_ttc) + " €</td></tr>");
+        const gestes = s === "0" ? btn("Valider", "devis", d.id + "|valider", "pri") : s === "1" ? btn("Marquer signé", "devis", d.id + "|signer", "pri") + btn("Refusé", "devis", d.id + "|refuser") : s === "2" ? btn("Facturer", "facturer", d.id, "pri") : "";
+        await modale("Propale " + d.ref, '<div class="note">' + esc(nomTiers(d.socid)) + " · " + jour(d.date) + (full.fin_validite ? " · valable jusqu’au " + jour(full.fin_validite) : "") + "</div><div>" + pill(L[Number(s)] || "Annulé", s === "2" ? "ok" : "") + "</div>" +
+          table(["Désignation", "Qté", "PU HT", "TVA", "Total"], lignes) + '<p class="num" style="text-align:right">Total HT ' + nb(full.total_ht || d.total_ttc) + " € · TVA " + nb(full.total_tva) + " € · <b>Total TTC " + nb(d.total_ttc) + " €</b></p>" +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap">' + btn("Voir le PDF", "pdf", "devis|" + d.id, "pri") + gestes + "</div>", "Fermer");
+      },
+      pdf: async (p) => {
+        const [objet, id] = p.split("|"); document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
+        let r; try { r = await agir("dolibarr.piece_pdf", { objet: objet, id: Number(id) }); }
+        catch (e) {
+          if (/pas de PDF/.test(e.message || "")) { if (await modale("Pas encore de PDF", "<p>Dolibarr n’a pas encore produit le PDF de cette pièce. Il peut le faire maintenant ; le geste se défait.</p>", "Produire le PDF")) { await fait("dolibarr.produire_pdf", { objet: objet, id: Number(id) }, "PDF produit", false); return GESTES.pdf(p); } return; }
+          return K.dire(e.message || String(e), "err");
+        }
+        const oct = Uint8Array.from(atob(r.donnees_b64), (c) => c.charCodeAt(0)), url = URL.createObjectURL(new Blob([oct], { type: "application/pdf" }));
+        // pas d'attribut sandbox : le lecteur PDF du navigateur a besoin de scripter son document (même choix que le visionneur de la GED)
+        const fin = modale("PDF · " + r.nom, '<iframe id="dlb-pdf" title="' + esc(r.nom) + '" style="width:100%;height:70vh;border:0;border-radius:8px;background:#fff"></iframe><div class="note">' + esc(r.ref) + " · " + Math.round(r.taille / 1024) + " Ko · produit par Dolibarr</div>", "Fermer");
+        const cadre = document.getElementById("dlb-pdf"); if (cadre) cadre.src = url; fin.then(() => URL.revokeObjectURL(url));
       },
       tiers: async (p) => { const t = (S.d.tiers || []).find((x) => String(x.id) === String(p)); const f = (S.d.factures || []).filter((x) => String(x.socid) === String(p)); modale(t.name, '<div class="note">' + f.length + " factures · dû " + eur(f.filter(ouverte).reduce((s, x) => s + Number(x.remaintopay), 0)) + "</div>" + f.slice(0, 8).map((x) => '<div class="li"><div class="sp mono">' + esc(x.ref) + '</div><div class="note">' + eur(x.total_ttc) + "</div>" + etatF(x) + "</div>").join(""), "Fermer"); },
       virement: async () => {

@@ -10,7 +10,6 @@
  "courrier:CN_outils.py:ensemble_uid": "bancs du module : ERROR: test_un_jeu_d_uid_n_accepte_que_des_entiers (tests.CN_test_courrier_outils.Dossiers.test_un_jeu_d_uid_n_accepte_que_des_entiers)",
  "courrier:CN_outils.py:piece_numero": "entrées introuvables (aucun des 2447 essais ne rend un résultat exact)",
  "courrier:CN_outils.py:pieces_jointes": "entrées introuvables (aucun des 202 essais ne rend un résultat exact)",
- "dolibarr:CN_module.py:_completer": "r\u00e8gle de compatibilit\u00e9 avec l'API de Dolibarr 24 (code client, code fournisseur et r\u00e9f\u00e9rence de projet \u00ab auto \u00bb exig\u00e9s \u00e0 la cr\u00e9ation) : elle change quand Dolibarr change, pas quand Cassandra apprend ; la v\u00e9rifier demande un Dolibarr r\u00e9el ou son double, dont les bancs de la gestion (tests/CN_test_dolibarr_gestion.py) le font d\u00e9j\u00e0",
  "dolibarr:CN_module.py:_reglages": "entrées introuvables (1 cas valides sur 1 essais)",
  "fastpanel:CN_module.py:_diag": "bancs du module : ERROR: test_arreter_un_service_est_prouve_et_le_retour_le_relance (tests.CN_test_fastpanel.Actions.test_arreter_un_service_est_prouve_et_le_retour_le_relance); ERROR: test_cassandra_au_palier_raconter_ne_touche_a_rien (tests.CN_test_fastpanel.Actions.test_cassandra_au_palier_raconter_ne_touche_a_rien)",
  "fastpanel:CN_module.py:_reglage": "couverture insuffisante (33 %)",

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1f0ab2
+# VERSION CN : 0.1.0  #fe3d5b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1f0ab2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fe3d5b ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import gzip
 import json
@@ -45,6 +45,8 @@ class FauxGestion:
         self.paiements = {}                  # id de facture -> [ids de règlements]
         self.banques = {1: 1000.0, 2: 50.0}
         self.docs = {}                       # id de don -> [noms de fichiers]
+        self.pdfs = {}                       # (modulepart, id) -> [chemins de PDF] pour les devis et les factures
+        self.taille_pdf = None               # une taille annoncée exprès trop grande
         self.mode_vir = {"id": 6, "code": "VIR"}
         faux = self
 
@@ -200,6 +202,19 @@ class FauxGestion:
                 del self.t["donations"][i]
                 return R(200, {"success": {}})
         if p[0] == "documents":
+            if p[1:] == ["builddoc"] and m == "PUT" and corps["modulepart"] != "donation":
+                coll = {"propal": "proposals", "facture": "invoices"}[corps["modulepart"]]
+                ref = corps["original_file"].split("/")[0]
+                i = next(k for k, v in self.t[coll].items() if v.get("ref") == ref)
+                self.pdfs.setdefault((corps["modulepart"], i), []).append(corps["original_file"])
+                return R(200, {"filename": corps["original_file"]})
+            if p[1:] == ["download"] and m == "GET":
+                import base64
+                contenu = b"%PDF-1.4 faux"
+                return R(200, {"filename": q["original_file"].split("/")[-1], "content-type": "application/pdf", "filesize": self.taille_pdf or len(contenu), "content": base64.b64encode(contenu).decode(), "encoding": "base64"})
+            if len(p) == 1 and m == "GET" and q.get("modulepart") != "donation":
+                noms = self.pdfs.get((q["modulepart"], int(q["id"])), [])
+                return R(200, [{"name": n.split("/")[1]} for n in noms]) if noms else R(404, {})
             if p[1:] == ["builddoc"] and m == "PUT":
                 ref = corps["original_file"].split("/")[0]
                 i = next(k for k, v in self.t["donations"].items() if v["ref"] == ref)
@@ -208,6 +223,9 @@ class FauxGestion:
             if len(p) == 1 and m == "GET":
                 return R(200, [{"name": n.split("/")[1]} for n in self.docs.get(int(q["id"]), [])]) if self.docs.get(int(q["id"])) else R(404, {})
             if len(p) == 1 and m == "DELETE":
+                for k in self.pdfs:
+                    if q["original_file"] in self.pdfs[k]:
+                        self.pdfs[k].remove(q["original_file"])
                 for k in self.docs:
                     if q["original_file"] in self.docs[k]:
                         self.docs[k].remove(q["original_file"])
@@ -445,6 +463,32 @@ class GestionDolibarr(unittest.TestCase):
         self.assertEqual(r["statut"], "faite", msg=str(r))
         self.assertTrue(self.faux.t["proposals"][r["resultat"]["id"]]["date"])
         self.assertEqual(self.e("dolibarr.don_valider", "humain", {"id": 999})["statut"], "echec")
+
+    # --- le PDF d'une pièce
+    def test_le_pdf_d_une_facture_se_lit_en_base64(self):
+        import base64
+        i = self.facture()
+        self.faux.pdfs[("facture", i)] = ["FA2610-0001/FA2610-0001.pdf"]
+        r = self.e("dolibarr.piece_pdf", "humain", {"objet": "factures", "id": i})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        self.assertEqual((r["resultat"]["nom"], r["resultat"]["type"], base64.b64decode(r["resultat"]["donnees_b64"])[:5]), ("FA2610-0001.pdf", "application/pdf", b"%PDF-"))
+
+    def test_une_piece_sans_pdf_se_voit_refuser_la_lecture_mais_peut_le_produire_puis_le_retirer(self):
+        d = self.faux.nouveau("proposals", {"statut": "1", "socid": 3, "ref": "PR2610-0001", "lines": []})
+        self.assertEqual(self.e("dolibarr.piece_pdf", "humain", {"objet": "devis", "id": d})["statut"], "echec")
+        r = self.e("dolibarr.produire_pdf", "humain", {"objet": "devis", "id": d})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        self.assertEqual(self.e("dolibarr.piece_pdf", "humain", {"objet": "devis", "id": d})["statut"], "faite")
+        self.assertEqual(self.e("dolibarr.produire_pdf", "humain", {"objet": "devis", "id": d})["statut"], "echec")        # il existe déjà
+        self.retour("produire_pdf", r["resultat"])
+        self.assertEqual(self.e("dolibarr.piece_pdf", "humain", {"objet": "devis", "id": d})["statut"], "echec")
+
+    def test_un_pdf_trop_gros_ou_un_objet_inconnu_est_refuse(self):
+        i = self.facture()
+        self.faux.pdfs[("facture", i)] = ["FA2610-0001/FA2610-0001.pdf"]
+        self.faux.taille_pdf = 50 * 1024 * 1024
+        self.assertEqual(self.e("dolibarr.piece_pdf", "humain", {"objet": "factures", "id": i})["statut"], "echec")
+        self.assertEqual(self.e("dolibarr.piece_pdf", "humain", {"objet": "contrats", "id": 1})["statut"], "echec")
 
     # --- tout le catalogue
     def test_la_lecture_libre_masque_les_secrets(self):

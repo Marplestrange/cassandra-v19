@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #195d29
+# VERSION CN : 0.4.0  #f05625
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=195d29 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=f05625 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -366,6 +366,23 @@ retour = "PUT : remettre les valeurs d'avant ; POST sur une collection : supprim
 paliers = ["raconter", "auto"]
 qui = ["humain", "cassandra", "itare"]
 
+[[capacites]]
+id = "piece_pdf"
+libelle = "Lire le PDF qu'a produit Dolibarr pour un devis, une facture ou un reçu de don (pour l'afficher dans Cassandra)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "produire_pdf"
+libelle = "Faire produire à Dolibarr le PDF d'un devis, d'une facture ou d'un don qui n'en a pas encore"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["devis, factures, dons", "une pièce qui n'a pas encore de PDF"]
+preuve = "relire les documents de la pièce : un PDF existe"
+retour = "supprimer le PDF que cet acte vient de produire"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
 [[ecrans]]
 id = "vue_dolibarr"
 libelle = "Dolibarr"
@@ -421,4 +438,12 @@ libelle = "Dolibarr rend souvent des nombres en texte (« 1 » pour 1) : on comp
 contrat = "1.0"
 reference = "points/EC_egaux"
 fonction = "point_egaux"
+runtime = "python"
+
+[[points_evolution]]
+id = "completer"
+libelle = "Ce que Dolibarr 24 exige à la CRÉATION et que l'appelant n'a pas à connaître : le code client ou fournisseur d'un tiers (« auto » : Dolibarr le numérote), (extrait automatiquement de CN_module.py)"
+contrat = "1.0"
+reference = "points/EC_completer"
+fonction = "point_completer"
 runtime = "python"

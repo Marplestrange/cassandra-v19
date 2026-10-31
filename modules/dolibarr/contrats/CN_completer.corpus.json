@@ -1,0 +1,253 @@
+{
+ "point": "dolibarr.completer",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de dolibarr, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "objet": "tiers",
+    "corps": {
+     "name": "Client neuf",
+     "client": 1
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "name": "Client neuf",
+     "client": 1,
+     "code_client": "auto"
+    }
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "objet": "tiers",
+    "corps": {
+     "name": "À supprimer",
+     "client": 1
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "name": "À supprimer",
+     "client": 1,
+     "code_client": "auto"
+    }
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "objet": "projets",
+    "corps": {
+     "title": "Cabaret"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "title": "Cabaret",
+     "ref": "auto"
+    }
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "objet": {
+     "factures": "/invoices",
+     "devis": "/proposals",
+     "commandes": "/orders"
+    },
+    "corps": ""
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "objet": {
+     "id": 999
+    },
+    "corps": {
+     "login": "cassandra",
+     "admin": "0"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "login": "cassandra",
+     "admin": "0"
+    }
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "objet": {
+     "delai": "15"
+    },
+    "corps": {
+     "login": "marple",
+     "admin": "1"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "login": "marple",
+     "admin": "1"
+    }
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "objet": {
+     "title": "Cabaret"
+    },
+    "corps": {
+     "id": 6,
+     "code": "VIR"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "id": 6,
+     "code": "VIR"
+    }
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "objet": {
+     "delai": "15"
+    },
+    "corps": {
+     "statut": "0",
+     "socid": 3,
+     "ref": "PR2610-0001",
+     "lines": [
+      {
+       "desc": "Spectacle",
+       "qty": 1,
+       "subprice": 500,
+       "tva_tx": 0
+      }
+     ]
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "statut": "0",
+     "socid": 3,
+     "ref": "PR2610-0001",
+     "lines": [
+      {
+       "desc": "Spectacle",
+       "qty": 1,
+       "subprice": 500,
+       "tva_tx": 0
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "objet": {
+     "dolibarr_version": "23.0.2",
+     "access_locked": "0"
+    },
+    "corps": {
+     "login": "amandine",
+     "admin": "0"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "login": "amandine",
+     "admin": "0"
+    }
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "objet": {
+     "montant": "2000",
+     "date": "2026-10-31",
+     "nom": "Dupont"
+    },
+    "corps": {
+     "error": {
+      "code": 404
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "error": {
+      "code": 404
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "objet": {
+     "code": 400,
+     "message": "Bad Request: ref field missing"
+    },
+    "corps": ""
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "objet": {},
+    "corps": ""
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "objet": {
+     "name": "Avant",
+     "town": "Paris"
+    },
+    "corps": ""
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "objet": {
+     "error": {
+      "code": 500,
+      "message": "Internal Server Error: Error creating thirdparty",
+      "1": "ErrorCustomerCodeRequired"
+     }
+    },
+    "corps": ""
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  }
+ ]
+}
