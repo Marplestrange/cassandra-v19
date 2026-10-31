@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #3821ce
+# VERSION CN : 0.4.0  #5c6682
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=3821ce ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=5c6682 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -326,17 +326,6 @@ paliers = ["raconter", "auto"]
 qui = ["humain", "cassandra", "itare"]
 
 [[capacites]]
-id = "don_recu"
-libelle = "Éditer le reçu fiscal (PDF) d'un don validé"
-risque = "moyen"
-droit = "utiliser"
-perimetre = ["un don validé"]
-preuve = "relire les documents du don : un PDF existe"
-retour = "supprimer le PDF que cet acte vient de produire"
-paliers = ["raconter", "auto"]
-qui = ["humain", "cassandra", "itare"]
-
-[[capacites]]
 id = "cotisation"
 libelle = "Enregistrer la cotisation d'un adhérent"
 risque = "moyen"
@@ -388,16 +377,16 @@ qui = ["humain", "cassandra", "itare"]
 
 [[capacites]]
 id = "piece_pdf"
-libelle = "Lire le PDF qu'a produit Dolibarr pour un devis, une facture ou un reçu de don (pour l'afficher dans Cassandra)"
+libelle = "Lire le PDF qu'a produit Dolibarr pour un devis ou une facture (pour l'afficher dans Cassandra)"
 risque = "lecture"
 droit = "utiliser"
 
 [[capacites]]
 id = "produire_pdf"
-libelle = "Faire produire à Dolibarr le PDF d'un devis, d'une facture ou d'un don qui n'en a pas encore"
+libelle = "Faire produire à Dolibarr le PDF d'un devis ou d'une facture qui n'en a pas encore"
 risque = "moyen"
 droit = "utiliser"
-perimetre = ["devis, factures, dons", "une pièce qui n'a pas encore de PDF"]
+perimetre = ["devis, factures", "une pièce qui n'a pas encore de PDF"]
 preuve = "relire les documents de la pièce : un PDF existe"
 retour = "supprimer le PDF que cet acte vient de produire"
 paliers = ["raconter", "auto"]

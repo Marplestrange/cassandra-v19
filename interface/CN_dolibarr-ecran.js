@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #fe37ee
+// VERSION CN : 0.1.0  #ab4b4b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=fe37ee ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=ab4b4b ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -131,11 +131,11 @@
       },
       banque() {
         const B = (S.d.banques || []).filter((b) => String(b.clos) !== "1");
-        return '<div class="stats">' + B.map((b) => '<div class="stat"><b>' + (b.solde == null ? "?" : eur(b.solde)) + "</b><span>" + esc(b.label) + "</span></div>").join("") + '</div><div class="carte"><h3>Virement entre comptes</h3><div class="note">Le solde des deux comptes est relu après le virement ; un contre-virement le défait.</div><div>' + btn("Virer d’un compte à l’autre", "virement", "", "pri") + "</div></div>";
+        return '<div class="stats">' + B.map((b) => '<div class="stat"><b>' + (b.solde == null ? "?" : eur(b.solde)) + "</b><span>" + esc(b.label) + '</span><div style="margin-top:6px">' + btn("Voir les écritures", "lignesb", b.id) + "</div></div>").join("") + '</div><div class="carte"><h3>Virement entre comptes</h3><div class="note">Le solde des deux comptes est relu après le virement ; un contre-virement le défait.</div><div>' + btn("Virer d’un compte à l’autre", "virement", "", "pri") + "</div></div>";
       },
       dons() {
         const D = S.d.dons || [];
-        return '<div class="carte"><div class="barre2"><h3 style="flex:1">Dons</h3>' + btn("+ Nouveau don", "ndon", "", "pri") + "</div>" + table(["Réf.", "Date", "Montant", "État", ""], D.map((d) => "<tr><td class=\"num\">" + esc(d.ref || d.id) + "</td><td>" + jour(d.date) + '</td><td class="num">' + eur(d.amount) + "</td><td>" + (String(d.statut) === "0" ? pill("Promesse", "al") : pill("Validé", "ok")) + "</td><td>" + (String(d.statut) === "0" ? btn("Valider", "donvalider", d.id) : btn("Reçu fiscal", "donrecu", d.id, "pri")) + "</td></tr>")) + "</div>";
+        return '<div class="carte"><div class="barre2"><h3 style="flex:1">Dons</h3>' + btn("+ Nouveau don", "ndon", "", "pri") + "</div>" + table(["Réf.", "Date", "Montant", "État", ""], D.map((d) => "<tr><td class=\"num\">" + esc(d.ref || d.id) + "</td><td>" + jour(d.date) + '</td><td class="num">' + eur(d.amount) + "</td><td>" + (String(d.statut) === "0" ? pill("Promesse", "al") : pill("Validé", "ok")) + "</td><td>" + (String(d.statut) === "0" ? btn("Valider", "donvalider", d.id) : "—") + "</td></tr>")) + '<div class="note">Le reçu fiscal d’un don se produit dans Dolibarr (fiche du don, « Générer ») : son API ne le propose pas.</div></div>';
       },
       adherents() {
         const T = Object.fromEntries((S.d.types || []).map((t) => [String(t.id), t.label])), A = filtrer(S.d.adherents, "adherents");
@@ -313,6 +313,16 @@
         const [type, id] = p.split("|");
         if (await modale("Détacher de Dolibarr", "<p>Le lien est rompu, les deux copies restent. L’étiquette redevient « Cassandra seulement ».</p>", "Détacher")) await fait("dolibarr.detacher", { type: type, id: Number(id) }, "Fiche détachée");
       },
+      lignesb: async (id) => {
+        document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
+        const b = (S.d.banques || []).find((x) => String(x.id) === String(id)); let L;
+        try { L = liste((await agir("dolibarr.lire_libre", { chemin: "/bankaccounts/" + id + "/lines", parametres: "limit=100&sortfield=rowid&sortorder=DESC" })).reponse); } catch (e) { return K.dire(e.message || String(e), "err"); }
+        L.sort((x, y) => Number(y.dateo) - Number(x.dateo) || Number(y.id) - Number(x.id));
+        L = L.slice(0, 300);
+        const nonR = L.filter((l) => String(l.rappro) !== "1" && l.fk_type !== "SOLD").length;
+        await modale("Écritures · " + (b ? b.label : "compte " + id), '<div class="note">' + L.length + " écritures · " + nonR + " non rapprochées. Un règlement enregistré depuis une facture crée sa propre ligne ici ; le rapprochement avec un relevé se fait dans Dolibarr.</div>" +
+          table(["Date", "Libellé", "Mode", "Montant", "Rapprochée"], L.map((l) => "<tr><td>" + jour(l.dateo) + "</td><td>" + esc(l.label || "") + '</td><td class="num">' + esc(l.fk_type || "") + '</td><td class="num" style="color:' + (Number(l.amount) < 0 ? "var(--danger)" : "var(--ok)") + '">' + eur(l.amount) + "</td><td>" + (String(l.rappro) === "1" ? pill("oui" + (l.num_releve ? " · " + esc(l.num_releve) : ""), "ok") : l.fk_type === "SOLD" ? "—" : pill("non", "al")) + "</td></tr>")), "Fermer");
+      },
       nprod: async () => {
         const ok = await modale("Nouveau produit", '<div class="grille2">' + champ("n-r", "Référence", "") + champ("n-p", "Prix HT", "0", "number", 'step="0.01"') + "</div>" + champ("n-l", "Libellé", ""), "Créer");
         if (ok && val("n-r") && val("n-l")) await fait("dolibarr.creer", { objet: "produits", champs: { ref: val("n-r"), label: val("n-l"), price: Number(val("n-p")) || 0, price_base_type: "HT", type: 1 } }, "Produit créé");
@@ -356,7 +366,6 @@
       },
       ndon: async () => { if (await modale("Nouveau don", champ("n-mt", "Montant", "50", "number", 'step="0.01"') + '<div class="grille2">' + champ("n-nom", "Nom", "") + champ("n-dt", "Date", AUJ, "date") + "</div>", "Saisir la promesse")) await fait("dolibarr.don_creer", { montant: val("n-mt"), nom: val("n-nom"), date: val("n-dt") }, "Promesse saisie"); },
       donvalider: async (p) => { if (await modale("Valider le don", "<p>Le don prend son numéro. Dolibarr ne le repasse pas en promesse par l’API.</p>", "Valider")) await fait("dolibarr.don_valider", { id: Number(p) }, "Don validé"); },
-      donrecu: async (p) => { if (await modale("Reçu fiscal", "<p>Le PDF du reçu est produit par Dolibarr (modèle de l’association).</p>", "Éditer le reçu")) await fait("dolibarr.don_recu", { id: Number(p) }, "Reçu produit"); },
       cotis: async (p) => { if (await modale("Cotisation", '<div class="grille2">' + champ("c-mt", "Montant", "15", "number") + champ("c-d", "Du", AUJ, "date") + "</div>" + champ("c-f", "Au", String(new Date().getFullYear() + 1) + AUJ.slice(4), "date"), "Enregistrer")) await fait("dolibarr.cotisation", { membre: Number(p), montant: val("c-mt"), debut: val("c-d"), fin: val("c-f") }, "Cotisation enregistrée"); },
       nprojet: async () => { if (await modale("Nouveau projet", champ("n-t", "Titre", ""), "Créer")) await fait("dolibarr.creer", { objet: "projets", champs: { title: val("n-t") || "Nouveau projet" } }, "Projet créé"); },
       projet: async (p) => { const [id, action] = p.split("|"); if (await modale("Projet : " + action, "<p>Le statut du projet change ; cela se défait.</p>", "Faire")) await fait("dolibarr.projet", { id: Number(id), action: action }, "Projet mis à jour"); },

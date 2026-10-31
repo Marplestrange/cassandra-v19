@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #b91386
+# VERSION CN : 0.4.0  #edb3aa
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=b91386 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=edb3aa ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -83,7 +83,7 @@ _CHEMIN_LIBRE = re.compile(r"^/[a-z]{3,30}(/[A-Za-z0-9_.@-]{1,60}){0,4}$")
 _REQUETE = re.compile(r"^[A-Za-z0-9_.,=&%+:*()\[\]-]{0,400}$")
 _SECRET = re.compile(r"(pass|api_key|apikey|token|secret|signature|private_key|cle_)", re.I)
 # Les pièces dont on lit ou produit le PDF : objet -> (chemin de l'objet, « modulepart » de Dolibarr). Le PDF est celui que Dolibarr a produit : Cassandra le lit, elle ne le recompose pas.
-PIECES = {"devis": ("/proposals", "propal"), "factures": ("/invoices", "facture"), "dons": ("/donations", "donation")}
+PIECES = {"devis": ("/proposals", "propal"), "factures": ("/invoices", "facture")}
 MAX_PDF = 8 * 1024 * 1024
 MAX_LIBRE = 100             # lignes rendues par une lecture libre
 MAX_LIGNES = 50
@@ -983,7 +983,8 @@ def brancher(ctx):
         if _statut(f) != "1" or str(f.get("paye")) == "1":
             raise ValueError("la facture fournisseur %s n'est pas validée et ouverte (statut %s)" % (id, _statut(f)))
         _garde_agent(float(f.get("total_ttc") or 0))
-        corps = {"datepaye": _jour_ts(date), "paymentid": _mode_id(conf, str(mode).upper()), "closepaidinvoices": "yes", "accountid": int(banque), "num_payment": str(numero)[:60],
+        # Dolibarr 24 : « payment_mode_id » pour une facture reçue (« paymentid » ne vaut que pour une facture émise) ; vu sur une copie de l'instance
+        corps = {"datepaye": _jour_ts(date), "payment_mode_id": _mode_id(conf, str(mode).upper()), "closepaidinvoices": "yes", "accountid": int(banque), "num_payment": str(numero)[:60],
                  "comment": str(note)[:500]}
         ecrire(conf, "POST", "/supplierinvoices/%s/payments" % id, corps)
         return {"id": int(id), "montant": round(float(f.get("total_ttc") or 0), 2)}
@@ -1033,8 +1034,8 @@ def brancher(ctx):
         if montant > reste + 0.005:
             raise ValueError("%.2f dépasse le reste dû (%.2f)" % (montant, reste))
         avant = len(_liste(conf, "/invoices/%s/payments" % id))
-        # « paymentsdistributed » : le seul point qui accepte un MONTANT (le point /payments d'une facture règle toujours tout le reste dû)
-        corps = {"arrayofamounts": {str(int(id)): {"amount": montant, "multicurrency_amount": montant}}, "datepaye": _jour_ts(date), "paymentid": _mode_id(conf, str(mode).upper()),
+        # « paymentsdistributed » : le seul point qui accepte un MONTANT (le point /payments d'une facture règle toujours tout le reste dû). Dolibarr 24 refuse « amount » ET « multicurrency_amount » ensemble.
+        corps = {"arrayofamounts": {str(int(id)): {"amount": montant}}, "datepaye": _jour_ts(date), "paymentid": _mode_id(conf, str(mode).upper()),
                  "closepaidinvoices": "yes" if montant >= reste - 0.005 else "no", "accountid": int(banque), "num_payment": str(numero)[:60], "comment": str(note)[:500]}
         rep = ecrire(conf, "POST", "/invoices/paymentsdistributed", corps)
         pid = int(rep) if isinstance(rep, int) and not isinstance(rep, bool) or (isinstance(rep, str) and _ID.match(rep)) else None
@@ -1049,7 +1050,12 @@ def brancher(ctx):
     def defaire_encaisser(ctx, res):
         if not res.get("paiement"):
             raise PontErreur("Dolibarr n'a pas rendu l'identifiant du règlement : à supprimer dans Dolibarr (Facture › Règlements)")
-        ecrire(_conf(), "DELETE", "/paiements/%d" % res["paiement"])          # Dolibarr refuse un règlement déjà rapproché en banque : cette garde est la sienne
+        conf = _conf()
+        f = _lire_un(conf, DOCUMENTS["factures"], res["id"])
+        if isinstance(f, dict) and (str(f.get("paye")) == "1" or _statut(f) == "2"):
+            # le règlement qui a soldé la facture : Dolibarr refuse de le supprimer tant que la facture est CLOSE (ErrorDeletePaymentLinkedToAClosedInvoiceNotPossible), on la rouvre d'abord
+            ecrire(conf, "POST", "%s/%d/settounpaid" % (DOCUMENTS["factures"], res["id"]), {})
+        ecrire(conf, "DELETE", "/paiements/%d" % res["paiement"])          # Dolibarr refuse un règlement déjà rapproché en banque : cette garde est la sienne
 
     # --- un avoir en brouillon
     def creer_avoir(ctx, id):
@@ -1118,7 +1124,17 @@ def brancher(ctx):
         return isinstance(d, dict) and _statut(d) == res["apres"]
 
     def defaire_devis(ctx, res):
-        ecrire(_conf(), "POST", "%s/%s/settodraft" % (DOCUMENTS["devis"], res["id"]), {"idwarehouse": 0})
+        conf = _conf()
+        courant = _lire_un(conf, DOCUMENTS["devis"], res["id"])
+        if isinstance(courant, dict) and _statut(courant) == res["avant"]:
+            return                                                 # déjà revenu à l'état d'avant (un retour plus tôt l'a fait) : rien à refaire
+        try:
+            ecrire(conf, "POST", "%s/%s/settodraft" % (DOCUMENTS["devis"], res["id"]), {"idwarehouse": 0})
+        except PontErreur as ex:
+            if ex.code != 304:                                     # 304 : Dolibarr dit qu'il n'y a rien à changer
+                raise
+        if res["avant"] == "1":                                    # signé ou refusé : on revient à « ouvert », pas seulement à « brouillon »
+            ecrire(conf, "POST", "%s/%s/validate" % (DOCUMENTS["devis"], res["id"]), {"notrigger": 0})
 
     def facturer_devis(ctx, id):
         conf = _conf()
@@ -1133,7 +1149,7 @@ def brancher(ctx):
                                                                       "note_private": "Issue du devis %s, préparée par Cassandra" % (d.get("ref") or id)}), "la facture")
         return {"document": "factures", "id": nouvel, "socid": socid, "lignes": len(lignes), "devis": int(id)}
 
-    # --- les dons : saisir, valider, éditer le reçu fiscal
+    # --- les dons : saisir, valider
     def don_creer(ctx, montant, date="", nom="", prenom="", societe=""):
         montant = _montant(montant)
         _garde_agent(montant)
@@ -1170,23 +1186,7 @@ def brancher(ctx):
     def defaire_don_valide(ctx, res):
         raise PontErreur("Dolibarr ne repasse pas un don validé en promesse par l'API : à défaire dans Dolibarr")
 
-    def don_recu(ctx, id):
-        conf = _conf()
-        d = _doc(conf, "/donations", id, "le don")
-        if _statut(d) not in ("1", "2"):
-            raise ValueError("le reçu fiscal se prépare pour un don validé (statut %s)" % _statut(d))
-        ref = str(d.get("ref") or id)
-        fichier = "%s/%s.pdf" % (ref, ref)
-        rep = ecrire(conf, "PUT", "/documents/builddoc", {"modulepart": "donation", "original_file": fichier, "doctemplate": "html_cerfaDonation", "langcode": "fr_FR"})
-        return {"id": int(id), "fichier": fichier, "reponse": (rep if isinstance(rep, (dict, str)) else {})}
-
-    def prouver_recu(ctx, res):
-        conf = _conf()
-        rep = appeler(conf, "/documents", {"modulepart": "donation", "id": res["id"]})
-        return isinstance(rep, list) and any(str(x.get("name", "")).endswith(".pdf") for x in rep if isinstance(x, dict))
-
-    def defaire_recu(ctx, res):
-        ecrire(_conf(), "DELETE", "/documents?" + urllib.parse.urlencode({"modulepart": "donation", "original_file": res["fichier"]}))
+    # Le reçu fiscal d'un don ne passe pas par l'API de Dolibarr 24 (« Generation not available for this modulepart », vu sur une copie de ton instance) : il se produit dans Dolibarr.
 
     # --- une cotisation d'adhérent
     def cotisation(ctx, membre, montant, debut="", fin="", libelle=""):
@@ -1363,7 +1363,6 @@ def brancher(ctx):
     ctx.implementer("facturer_devis", facturer_devis, prouver_brouillon, defaire_brouillon, simuler=lambda ctx, id="", **_: "préparerait une facture en brouillon depuis le devis %s" % id)
     ctx.implementer("don_creer", don_creer, prouver_don, defaire_don, simuler=lambda ctx, montant="", **_: "saisirait un don de %s €" % montant)
     ctx.implementer("don_valider", don_valider, prouver_don_valide, defaire_don_valide, simuler=lambda ctx, id="", **_: "validerait le don %s" % id)
-    ctx.implementer("don_recu", don_recu, prouver_recu, defaire_recu, simuler=lambda ctx, id="", **_: "éditerait le reçu fiscal du don %s" % id)
     ctx.implementer("cotisation", cotisation, prouver_cotisation, defaire_cotisation, simuler=lambda ctx, membre="", montant="", **_: "enregistrerait une cotisation de %s € pour l'adhérent %s" % (montant, membre))
     ctx.implementer("virement_interne", virement_interne, prouver_virement, defaire_virement,
                     simuler=lambda ctx, de="", vers="", montant="", **_: "virerait %s € du compte %s au compte %s" % (montant, de, vers))

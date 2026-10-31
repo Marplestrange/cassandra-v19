@@ -12,7 +12,7 @@
 <!-- RÔLE       : Dolibarr, la gestion complète : ce que le module sait faire, la clé d'API par compte, le compte de mandat, les paliers -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d58a38 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=1767fe ▼▼▼ -->
 # Dolibarr : la gestion complète
 
 Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il écrit, et tout geste a sa **preuve** (relire ce qui a été écrit) et son **retour arrière**.
@@ -26,7 +26,7 @@ Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il �
 | Garder une relance dans l'agenda du tiers | `relancer` | supprimer l'évènement |
 | Valider, signer, refuser un devis | `devis` | remettre le devis en brouillon |
 | Facturer un devis signé (brouillon) | `facturer_devis` | supprimer ce brouillon |
-| Saisir, valider un don ; éditer son reçu fiscal | `don_creer`, `don_valider`, `don_recu` | supprimer la promesse ; un don validé ne se défait pas par l'API ; supprimer le PDF |
+| Saisir, valider un don | `don_creer`, `don_valider` | supprimer la promesse ; un don validé ne se défait pas par l'API |
 | Enregistrer une cotisation | `cotisation` | supprimer cette cotisation |
 | Virer d'un compte bancaire à un autre | `virement_interne` | le virement inverse |
 | Ouvrir, clore un projet | `projet` | remettre le statut d'avant |
@@ -46,7 +46,7 @@ Avant elles : `creer`, `modifier`, `creer_brouillon`, `supprimer` (avec corbeill
 
 ## Le PDF d'une pièce
 
-`piece_pdf` lit le PDF que Dolibarr a produit pour un devis, une facture ou un reçu de don (base64, 8 Mo au plus) ; l'écran l'affiche dans un cadre sur adresse locale (`blob:`), sans `sandbox`, comme le visionneur de la GED. Si la pièce n'en a pas, `produire_pdf` le fait produire (retour : supprimer ce PDF).
+`piece_pdf` lit le PDF que Dolibarr a produit pour un devis ou une facture (base64, 8 Mo au plus) ; l'écran l'affiche dans un cadre sur adresse locale (`blob:`), sans `sandbox`, comme le visionneur de la GED. Si la pièce n'en a pas, `produire_pdf` le fait produire. Le **reçu fiscal d'un don** ne passe pas par l'API de Dolibarr 24 (« Generation not available for this modulepart ») : il se produit dans Dolibarr. `produire_pdf` (retour : supprimer ce PDF).
 
 ## Envoyer un projet ou un contact à Dolibarr
 
@@ -63,9 +63,9 @@ Par défaut une fiche de Cassandra reste « Cassandra seulement ». `envoyer_pro
 
 Chaque capacité a un palier, choix de l'administrateur : « raconter » (Cassandra ou Itare prépare, un humain approuve) ou « auto ». Aucun geste n'est interdit par le code. `valider_facture` reste réservée aux humains et à Cassandra : elle consomme un numéro légal.
 
-## Ce qui n'est pas vérifié contre un vrai Dolibarr
+## Ce qui a été vérifié contre un vrai Dolibarr 24.0.2
 
-Les chemins viennent du `swagger.json` de l'instance ; les bancs tournent contre un Dolibarr de poche (`tests/CN_test_dolibarr_gestion.py`). Pas encore essayés sur une vraie instance : le paiement partiel par `paymentsdistributed`, le reçu fiscal par `documents/builddoc`, le virement `bankaccounts/transfer`, la clôture d'un projet par PUT.
+Sur une copie isolée de la base (31-10) : valider une facture, l'encaisser en deux fois (le règlement qui la solde se défait en la rouvrant d'abord, par `settounpaid`), son PDF, un avoir, un devis (valider, signer, facturer), un don validé, un virement entre comptes, le paiement d'une facture reçue. Ce que cette copie a appris, et que le code applique : `paymentsdistributed` refuse « amount » et « multicurrency_amount » ensemble ; un paiement fournisseur veut `payment_mode_id` ; le reçu fiscal d'un don n'a pas d'API ; la validation d'une facture échoue si le module `blockedlog` ne peut plus déchiffrer sa clé (`BLOCKEDLOG_HMAC_KEY`, après un changement de `dolibarr_main_instance_unique_id`).
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 
 <!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->

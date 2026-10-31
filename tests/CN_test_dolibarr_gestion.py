@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d1c258
+# VERSION CN : 0.1.0  #e12cef
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d1c258 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e12cef ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import gzip
 import json
@@ -135,8 +135,12 @@ class FauxGestion:
                 return R(400, {"error": {"message": "compte inconnu"}})
             pid = None
             for k, v in corps["arrayofamounts"].items():
+                if "amount" in v and "multicurrency_amount" in v:                                       # comme Dolibarr 24
+                    return R(400, {"error": {"code": 400, "message": "Bad Request: Payment in both currency %s ( amount: %s, multicurrency_amount: %s)" % (k, v["amount"], v["multicurrency_amount"])}})
                 pid = self.nouveau("paiements", {"amount": float(v["amount"]), "facture": int(k), "compte": corps["accountid"], "mode": corps["paymentid"]})
                 self.paiements.setdefault(int(k), []).append(pid)
+                if corps.get("closepaidinvoices") == "yes" and self.reste(int(k)) <= 0.005:                 # comme Dolibarr : la facture soldée est close
+                    self.t["invoices"][int(k)].update(paye="1", statut="2")
             return R(200, pid)
         if p == ["invoices"] and m == "GET":
             ls = [self.facture(i) for i in sorted(self.t["invoices"]) if self.t["invoices"][i].get("statut") == "1" and self.reste(i) > 0.005] if q.get("status") == "unpaid" else [self.facture(i) for i in sorted(self.t["invoices"])]
@@ -158,6 +162,9 @@ class FauxGestion:
             if p[2:] == ["validate"]:
                 self.t["invoices"][i]["statut"] = "1"
                 return R(200, self.facture(i))
+            if p[2:] == ["settounpaid"]:
+                self.t["invoices"][i].update(paye="0", statut="1")
+                return R(200, self.facture(i))
             if p[2:] == ["payments"] and m == "GET":
                 ps = [self.t["paiements"][x] for x in self.paiements.get(i, [])]
                 return R(200, ps) if ps else R(404, {"error": {"code": 404}})
@@ -172,6 +179,8 @@ class FauxGestion:
             if pid not in self.t["paiements"]:
                 return R(404, {})
             i = self.t["paiements"][pid]["facture"]
+            if self.t["invoices"][i].get("paye") == "1":                                                   # comme Dolibarr 24
+                return R(500, {"error": {"code": 500, "message": "Internal Server Error: Error when deleting Paiement : ErrorDeletePaymentLinkedToAClosedInvoiceNotPossible"}})
             self.paiements[i].remove(pid)
             del self.t["paiements"][pid]
             return R(200, {"success": {}})
@@ -270,6 +279,8 @@ class FauxGestion:
             if i not in self.t["supplierinvoices"]:
                 return R(404, {})
             if p[2:] == ["payments"] and m == "POST":
+                if not corps.get("payment_mode_id"):                                                  # comme Dolibarr 24
+                    return R(400, {"error": {"code": 400, "message": "Bad Request: `payment_mode_id` is required."}})
                 self.t["supplierinvoices"][i]["paye"] = "1"
                 self.t["supplierinvoices"][i]["statut"] = "2"
                 return R(200, 1)
@@ -367,6 +378,13 @@ class GestionDolibarr(unittest.TestCase):
         self.retour("encaisser", r["resultat"])
         self.assertEqual(self.faux.reste(i), 120.0)
 
+    def test_le_reglement_qui_solde_la_facture_se_defait_en_la_rouvrant(self):
+        i = self.facture()
+        r = self.e("dolibarr.encaisser", "humain", {"id": i, "montant": 120, "banque": 1})
+        self.assertEqual((r["statut"], self.faux.t["invoices"][i]["paye"]), ("faite", "1"))
+        self.retour("encaisser", r["resultat"])                                    # sans rouvrir d'abord, Dolibarr 24 refuse (facture close)
+        self.assertEqual((self.faux.reste(i), self.faux.t["invoices"][i]["paye"]), (120.0, "0"))
+
     def test_encaisser_refuse_ce_qui_depasse_ou_ce_qui_n_est_pas_validee(self):
         i, brouillon = self.facture(), self.facture(statut="0")
         self.assertEqual(self.e("dolibarr.encaisser", "humain", {"id": i, "montant": 500, "banque": 1})["statut"], "echec")
@@ -426,21 +444,17 @@ class GestionDolibarr(unittest.TestCase):
         self.assertEqual(self.e("dolibarr.facturer_devis", "humain", {"id": d})["statut"], "echec")
         r = self.e("dolibarr.devis", "humain", {"id": d, "action": "signer"})
         self.retour("devis", r["resultat"])
-        self.assertEqual(self.faux.t["proposals"][d]["statut"], "0")
+        self.assertEqual(self.faux.t["proposals"][d]["statut"], "1")          # signé → on revient à « ouvert », pas seulement à « brouillon »
 
     # --- dons
-    def test_un_don_se_saisit_se_valide_et_donne_son_recu(self):
+    def test_un_don_se_saisit_et_se_valide_mais_son_recu_ne_passe_pas_par_l_api(self):
         r = self.e("dolibarr.don_creer", "humain", {"montant": "2000", "date": "2026-10-31", "nom": "Dupont"})
         self.assertEqual(r["statut"], "faite", msg=str(r))
         i = r["resultat"]["id"]
         self.assertEqual(self.faux.t["donations"][i]["amount"], 2000.0)
-        self.assertEqual(self.e("dolibarr.don_recu", "humain", {"id": i})["statut"], "echec")           # pas encore validé
         self.assertEqual(self.e("dolibarr.don_valider", "humain", {"id": i})["statut"], "faite")
-        rr = self.e("dolibarr.don_recu", "humain", {"id": i})
-        self.assertEqual(rr["statut"], "faite", msg=str(rr))
-        self.assertEqual(len(self.faux.docs[i]), 1)
-        self.retour("don_recu", rr["resultat"])
-        self.assertEqual(self.faux.docs[i], [])
+        self.assertEqual(self.e("dolibarr.don_recu", "humain", {"id": i})["statut"], "refuse")           # la capacité n'existe plus : Dolibarr 24 ne produit pas ce PDF par l'API
+        self.assertEqual(self.e("dolibarr.piece_pdf", "humain", {"objet": "dons", "id": i})["statut"], "echec")
         with self.assertRaises(Exception):
             self.retour("don_valider", {"id": i})                    # un don validé ne se repasse pas en promesse : le retour le dit
         with self.assertRaises(Exception):
