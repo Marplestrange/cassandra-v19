@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : bibliotheque
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f7cd53
+# VERSION CN : 0.1.0  #8755c9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La bibliothèque.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ═══════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f7cd53 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8755c9 ▼▼▼
 """La bibliothèque d'Amizo : la connaissance SOURCÉE, dans sa propre base.
 
   - une fiche est un document avec sa provenance (adresse, date de lecture), découpé en passages dont la position est gardée ; un souvenir (module Mémoire) est
@@ -50,6 +50,25 @@ _HORLOGE = [time.time]                           # un banc la remplace pour viei
 _VECTEURS = {"fournisseur": None}                # posé par brancher_vecteurs() quand le service d'encodage partagé existe
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 def maintenant():
     return _HORLOGE[0]()
 
@@ -78,25 +97,9 @@ def requete_fts(q):
     return " OR ".join('"%s"' % m for m in RE_MOT.findall(str(q or ""))[:24])
 
 
-def decouper(corps, titre=""):
-    """Le texte en passages ordonnés : les paragraphes s'additionnent jusqu'à ~900 caractères ; un paragraphe trop long se coupe à une fin de phrase."""
-    morceaux = []
-    for para in re.split(r"\n\s*\n", str(corps or "").replace("\r\n", "\n")):
-        para = para.strip()
-        while len(para) > PASSAGE_MAX:
-            coupe = max(para.rfind(". ", 0, PASSAGE_MAX), para.rfind("\n", 0, PASSAGE_MAX))
-            coupe = coupe + 1 if coupe > PASSAGE_MAX // 3 else PASSAGE_MAX
-            morceaux.append(para[:coupe].strip())
-            para = para[coupe:].strip()
-        if para:
-            morceaux.append(para)
-    out = []
-    for m in morceaux:
-        if out and len(out[-1]) + len(m) + 2 <= PASSAGE_CIBLE:
-            out[-1] += "\n\n" + m
-        else:
-            out.append(m)
-    return out or [str(titre or "").strip() or "(vide)"]
+def decouper(corps, titre=''):
+    """Le texte en passages ordonnés : les paragraphes s'additionnent jusqu'à ~900 caractères ; un paragraphe trop long se coupe à une fin de phrase. Le calcul est un POINT D'ÉVOLUTION : points/EC_decouper.py."""
+    return _appeler_point("decouper", {"corps": corps, "titre": titre})["valeur"]
 
 
 def note_de(pertinence, age_jours, confiance, jours=JOURS_PEREMPTION):
@@ -111,6 +114,8 @@ def brancher_vecteurs(fournisseur):
 
 
 def brancher(ctx):
+    global _point
+    _point = ctx.point
     db = ctx.stockage
 
     # ------------------------------------------------------------------ gardes

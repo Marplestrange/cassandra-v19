@@ -1,0 +1,444 @@
+{
+ "point": "bibliotheque.decouper",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de bibliotheque, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "corps": "Le tarif de l'abonnement fibre est de vingt euros par mois, engagement de douze mois, installation offerte.",
+    "titre": "Tarifs"
+   },
+   "sortie": {
+    "valeur": [
+     "Le tarif de l'abonnement fibre est de vingt euros par mois, engagement de douze mois, installation offerte."
+    ]
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "corps": "Un tout autre texte sur les offres de téléphonie mobile.",
+    "titre": "Tarifs"
+   },
+   "sortie": {
+    "valeur": [
+     "Un tout autre texte sur les offres de téléphonie mobile."
+    ]
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "corps": "Paragraphe numéro 0 : mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot \n\nParagraphe numéro 1 : mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot \n\nParagraphe numéro 2 : mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot \n\nParagraphe numéro 3 : mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot \n\nParagraphe numéro 4 : mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot \n\nParagraphe numéro 5 : mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot",
+    "titre": "Tarifs"
+   },
+   "sortie": {
+    "valeur": [
+     "Paragraphe numéro 0 : mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot",
+     "Paragraphe numéro 1 : mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot",
+     "Paragraphe numéro 2 : mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot",
+     "Paragraphe numéro 3 : mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot",
+     "Paragraphe numéro 4 : mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot",
+     "Paragraphe numéro 5 : mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot mot"
+    ]
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "corps": "Le tarif de l'abonnement fibre est de vingt euros par mois, engagement de douze mois, installation offerte. Tarif révisé au premier janvier.",
+    "titre": "Tarifs"
+   },
+   "sortie": {
+    "valeur": [
+     "Le tarif de l'abonnement fibre est de vingt euros par mois, engagement de douze mois, installation offerte. Tarif révisé au premier janvier."
+    ]
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "corps": "Une page sans rapport sur les tarifs de la fibre optique en zone rurale.",
+    "titre": "Autre"
+   },
+   "sortie": {
+    "valeur": [
+     "Une page sans rapport sur les tarifs de la fibre optique en zone rurale."
+    ]
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "corps": "Un texte entièrement neuf sur les routeurs, la fibre et le wifi.",
+    "titre": "Tarifs"
+   },
+   "sortie": {
+    "valeur": [
+     "Un texte entièrement neuf sur les routeurs, la fibre et le wifi."
+    ]
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "corps": "Les tarifs du gaz de ville évoluent chaque trimestre.",
+    "titre": "Autre"
+   },
+   "sortie": {
+    "valeur": [
+     "Les tarifs du gaz de ville évoluent chaque trimestre."
+    ]
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "corps": "La cérémonie d'accueil des nouveaux arrivants a lieu le lundi.",
+    "titre": "Accueil"
+   },
+   "sortie": {
+    "valeur": [
+     "La cérémonie d'accueil des nouveaux arrivants a lieu le lundi."
+    ]
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "corps": "Procédure de sauvegarde des serveurs : procédure ancienne détaillée alpha.",
+    "titre": "Vieux"
+   },
+   "sortie": {
+    "valeur": [
+     "Procédure de sauvegarde des serveurs : procédure ancienne détaillée alpha."
+    ]
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "corps": "Procédure de sauvegarde des serveurs : procédure ancienne détaillée bravo.",
+    "titre": "Neuf"
+   },
+   "sortie": {
+    "valeur": [
+     "Procédure de sauvegarde des serveurs : procédure ancienne détaillée bravo."
+    ]
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "corps": "Procédure de sauvegarde des serveurs : procédure ancienne détaillée charlie.",
+    "titre": "Ext"
+   },
+   "sortie": {
+    "valeur": [
+     "Procédure de sauvegarde des serveurs : procédure ancienne détaillée charlie."
+    ]
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "corps": "Un texte entièrement neuf, sans rapport.",
+    "titre": "Tarifs"
+   },
+   "sortie": {
+    "valeur": [
+     "Un texte entièrement neuf, sans rapport."
+    ]
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "corps": "bibliotheque.jours_peremption",
+    "titre": " \n\n "
+   },
+   "sortie": {
+    "valeur": [
+     "bibliotheque.jours_peremption"
+    ]
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "corps": "interne",
+    "titre": "Offres"
+   },
+   "sortie": {
+    "valeur": [
+     "interne"
+    ]
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "corps": "C:\\x",
+    "titre": "etagere"
+   },
+   "sortie": {
+    "valeur": [
+     "C:\\x"
+    ]
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "corps": "amizo2@x.fr",
+    "titre": "verifier"
+   },
+   "sortie": {
+    "valeur": [
+     "amizo2@x.fr"
+    ]
+   }
+  },
+  {
+   "cas": "cas 17",
+   "entree": {
+    "corps": "ok",
+    "titre": "\\n\\s*\\n"
+   },
+   "sortie": {
+    "valeur": [
+     "ok"
+    ]
+   }
+  },
+  {
+   "cas": "cas 18",
+   "entree": {
+    "corps": "etagere",
+    "titre": "exemple.test"
+   },
+   "sortie": {
+    "valeur": [
+     "etagere"
+    ]
+   }
+  },
+  {
+   "cas": "cas 19",
+   "entree": {
+    "corps": "externe",
+    "titre": "Nom Prénom <a@exemple.test>"
+   },
+   "sortie": {
+    "valeur": [
+     "externe"
+    ]
+   }
+  },
+  {
+   "cas": "cas 20",
+   "entree": {
+    "corps": "abonnement fibre",
+    "titre": "bibliotheque.compte_amizo"
+   },
+   "sortie": {
+    "valeur": [
+     "abonnement fibre"
+    ]
+   }
+  },
+  {
+   "cas": "cas 21",
+   "entree": {
+    "corps": "(vide)x",
+    "titre": "\n\n"
+   },
+   "sortie": {
+    "valeur": [
+     "(vide)x"
+    ]
+   }
+  },
+  {
+   "cas": "cas 22",
+   "entree": {
+    "corps": "auto",
+    "titre": "Neuf"
+   },
+   "sortie": {
+    "valeur": [
+     "auto"
+    ]
+   }
+  },
+  {
+   "cas": "cas 23",
+   "entree": {
+    "corps": "10:30",
+    "titre": "127.0.0.1"
+   },
+   "sortie": {
+    "valeur": [
+     "10:30"
+    ]
+   }
+  },
+  {
+   "cas": "cas 24",
+   "entree": {
+    "corps": "concordance",
+    "titre": ". "
+   },
+   "sortie": {
+    "valeur": [
+     "concordance"
+    ]
+   }
+  },
+  {
+   "cas": "cas 25",
+   "entree": {
+    "corps": ". x",
+    "titre": "exemple-a.test"
+   },
+   "sortie": {
+    "valeur": [
+     ". x"
+    ]
+   }
+  },
+  {
+   "cas": "cas 26",
+   "entree": {
+    "corps": "2026-10-17 12:00",
+    "titre": "Bonjour le monde"
+   },
+   "sortie": {
+    "valeur": [
+     "2026-10-17 12:00"
+    ]
+   }
+  },
+  {
+   "cas": "cas 27",
+   "entree": {
+    "corps": "cassandra",
+    "titre": "bibliotheque.jours_peremption"
+   },
+   "sortie": {
+    "valeur": [
+     "cassandra"
+    ]
+   }
+  },
+  {
+   "cas": "cas 28",
+   "entree": {
+    "corps": "brancher",
+    "titre": "bloque"
+   },
+   "sortie": {
+    "valeur": [
+     "brancher"
+    ]
+   }
+  },
+  {
+   "cas": "cas 29",
+   "entree": {
+    "corps": "humain",
+    "titre": "contenu trompeur"
+   },
+   "sortie": {
+    "valeur": [
+     "humain"
+    ]
+   }
+  },
+  {
+   "cas": "cas 30",
+   "entree": {
+    "corps": "Paragraphe numéro 0",
+    "titre": "ok"
+   },
+   "sortie": {
+    "valeur": [
+     "Paragraphe numéro 0"
+    ]
+   }
+  },
+  {
+   "cas": "cas 31",
+   "entree": {
+    "corps": "confiance",
+    "titre": "a.b.c"
+   },
+   "sortie": {
+    "valeur": [
+     "confiance"
+    ]
+   }
+  },
+  {
+   "cas": "cas 32",
+   "entree": {
+    "corps": "non",
+    "titre": "abonnement fibre"
+   },
+   "sortie": {
+    "valeur": [
+     "non"
+    ]
+   }
+  },
+  {
+   "cas": "cas 33",
+   "entree": {
+    "corps": "procédure sauvegarde serveurs",
+    "titre": " \n\n "
+   },
+   "sortie": {
+    "valeur": [
+     "procédure sauvegarde serveurs"
+    ]
+   }
+  },
+  {
+   "cas": "cas 34",
+   "entree": {
+    "corps": " \\n\\s*\\n ",
+    "titre": "a@exemple.test"
+   },
+   "sortie": {
+    "valeur": [
+     "\\n\\s*\\n"
+    ]
+   }
+  },
+  {
+   "cas": "cas 35",
+   "entree": {
+    "corps": "Essai-Local-1234",
+    "titre": "\\n\\s*\\nx"
+   },
+   "sortie": {
+    "valeur": [
+     "Essai-Local-1234"
+    ]
+   }
+  },
+  {
+   "cas": "cas 36",
+   "entree": {
+    "corps": "INSERT",
+    "titre": "a,b;c"
+   },
+   "sortie": {
+    "valeur": [
+     "INSERT"
+    ]
+   }
+  }
+ ]
+}

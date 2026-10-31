@@ -144,3 +144,11 @@ stockage = true
 # CN : tout ce fichier est du nexus : à compléter
 # EC : néant (aucun point d'évolution déclaré pour l'instant)
 # LIEN : à compléter (contrat, fichiers voisins)
+
+[[points_evolution]]
+id = "decouper"
+libelle = "Le texte en passages ordonnés : les paragraphes s'additionnent jusqu'à ~900 caractères ; un paragraphe trop long se coupe à une fin de phrase (extrait automatiquement de CN_module.py)"
+contrat = "1.0"
+reference = "points/EC_decouper"
+fonction = "point_decouper"
+runtime = "python"
