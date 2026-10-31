@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #e77c79
+// VERSION CN : 0.1.0  #c60e1c
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=e77c79 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=c60e1c ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -51,10 +51,15 @@
       cp: async () => liste((await agir("projets.lister")).projets),
       cc: async () => liste((await agir("contacts.lister", { limite: 200 })).contacts),
       liens: async () => liste(await agir("dolibarr.liens")),
+      sup: async () => liste(await lire("/supplierinvoices", PAGE + "&properties=id,ref,socid,date,total_ttc,statut,paye")),
+      inst: async () => { const [r, m, st] = await Promise.all([agir("dolibarr.resume"), agir("dolibarr.modules"), agir("dolibarr.statut")]); return { r: r || {}, m: m || [], st: st || {} }; },
+      cat: async () => await agir("dolibarr.catalogue_api"),
+      rgl: async () => { const r = await agir("reglages.lire", { module: "dolibarr" }); const o = {}; (r.reglages || []).forEach((x) => { o[x.cle] = x.valeur; }); return o; },
+      cpts: async () => { const l = (await agir("comptes.lister")); const cs = liste(l.comptes || l); return await Promise.all(cs.map(async (c) => { const id = c.id || c.compte || c.login || c; let cle = null; try { const r = await agir("reglages.lire", { module: "dolibarr", pour_compte: id }); const x = (r.reglages || []).find((y) => y.cle === "dolibarr.cle_api"); cle = !!(x && (x.valeur || x.defini || x.pose)); } catch (e) { cle = null; } return { id: id, nom: c.nom || c.display_name || id, cle: cle }; })); },
       types: async () => liste(await lire("/members/types", "limit=100")),
       banques: async () => { const l = liste(await lire("/bankaccounts", "limit=100&properties=id,label,clos")); await Promise.all(l.map(async (b) => { try { b.solde = Number((await lire("/bankaccounts/" + b.id + "/balance")) || 0); } catch (e) { b.solde = null; } })); return l; },
     };
-    const BESOIN = { afaire: ["factures", "devis", "dons", "tiers"], factures: ["factures", "tiers", "banques"], devis: ["devis", "tiers"], tiers: ["tiers", "factures"], banque: ["banques"], dons: ["dons"], adherents: ["adherents", "types"], projets: ["projets"], cprojets: ["cp", "liens", "projets"], ccontacts: ["cc", "liens", "tiers"] };
+    const BESOIN = { afaire: ["factures", "devis", "dons", "tiers"], factures: ["factures", "tiers", "banques"], devis: ["devis", "tiers"], tiers: ["tiers", "factures"], banque: ["banques"], dons: ["dons"], adherents: ["adherents", "types"], projets: ["projets"], cprojets: ["cp", "liens", "projets"], ccontacts: ["cc", "liens", "tiers"], produits: ["produits"], fournisseurs: ["sup", "tiers", "banques"], instance: ["inst"], capacites: ["cat", "rgl"], comptes: ["cpts"] };
     async function charger(forcer) {
       S.err = ""; const vus = BESOIN[S.onglet] || [];
       await Promise.all(vus.filter((k) => forcer || !S.d[k]).map(async (k) => { try { S.d[k] = await CHARGEURS[k](); } catch (e) { S.err = e.message || String(e); S.d[k] = []; } }));
@@ -134,6 +139,34 @@
         return '<div class="carte">' + barre("ccontacts", "") + seg("ccontacts", [["tous", "Tous"], ["cass", "Cassandra seulement"], ["lie", "Dolibarr · lié"]]) +
           table(["Contact", "Organisation", "Étiquette", ""], L.map((o) => '<tr class="clk" data-a="fichec" data-p="c|' + o.id + '"><td><b>' + esc(o.nom) + "</b></td><td>" + esc(o.orga || "—") + "</td><td>" + etiq(o) + (o.lien ? '<div class="note">rattaché au tiers ' + esc(nomTiers(o.lien.tiers)) + "</div>" : "") + "</td><td>" + (o.lien ? "" : btn("Envoyer à Dolibarr", "envoyerc", o.id)) + "</td></tr>")) + '<div class="note">Un contact Dolibarr est toujours rattaché à un tiers que tu choisis : il ne devient jamais un tiers tout seul.</div></div>';
       },
+      produits() {
+        const P = filtrer(S.d.produits, "produits");
+        return '<div class="carte">' + barre("produits", btn("+ Nouveau produit", "nprod", "", "pri")) + table(["Réf.", "Libellé", "Prix HT", "TVA", ""], P.map((p) => '<tr><td class="num">' + esc(p.ref) + "</td><td><b>" + esc(p.label) + '</b></td><td class="num">' + eur(p.price) + '</td><td class="num">' + Number(p.tva_tx || 0) + " %</td><td>" + btn("Modifier le prix", "prix", p.id) + "</td></tr>")) + '<div class="note">Ce sont les pass et services de la billetterie : elle s’y accroche sans rien recréer.</div></div>';
+      },
+      fournisseurs() {
+        const F = filtrer(S.d.sup, "fournisseurs");
+        return '<div class="carte">' + barre("fournisseurs", "") + table(["Réf.", "Fournisseur", "Date", "Total", "État", ""], F.map((f) => '<tr><td class="num"><b>' + esc(f.ref) + "</b></td><td>" + esc(nomTiers(f.socid)) + "</td><td>" + jour(f.date) + '</td><td class="num">' + eur(f.total_ttc) + "</td><td>" + (String(f.paye) === "1" || String(f.statut) === "2" ? pill("Payée", "ok") : String(f.statut) === "0" ? pill("Brouillon") : pill("À payer", "al")) + "</td><td>" + (String(f.statut) === "1" && String(f.paye) !== "1" ? btn("Payer", "payersup", f.id, "pri") : "") + "</td></tr>")) + '<div class="note">Pour collecter les factures reçues par courriel, le module emailcollector de Dolibarr doit être actif.</div></div>';
+      },
+      instance() {
+        const i = S.d.inst || { r: {}, m: [], st: {} }, c = i.r.comptes || {}, imp = i.r.impayees || {};
+        return '<div class="g2"><div class="carte"><h3>Connexion</h3><dl class="kv"><dt>Version</dt><dd>Dolibarr ' + esc(i.st.version || i.r.version || "?") + "</dd><dt>Réponse</dt><dd>" + (i.st.latence_ms != null ? i.st.latence_ms + " ms" : "—") + "</dd><dt>État</dt><dd>" + pill(i.r.etat === "ok" ? "joignable" : esc(i.r.etat || "inconnu"), i.r.etat === "ok" ? "ok" : "al") + "</dd><dt>Impayées</dt><dd>" + (imp.n != null ? imp.n + " · " + eur(imp.total_ttc) : "—") + '</dd></dl></div><div class="carte"><h3>Données</h3><dl class="kv">' + Object.keys(c).map((k) => "<dt>" + esc(k) + '</dt><dd class="num">' + c[k] + "</dd>").join("") + "</dl></div></div>" +
+          '<div class="carte"><h3>' + (i.m || []).length + ' modules actifs</h3><div style="display:flex;gap:6px;flex-wrap:wrap">' + (i.m || []).map((m) => pill(m)).join("") + "</div></div>";
+      },
+      capacites() {
+        const c = S.d.cat || { domaines: [], operations: 0 }, g = S.d.rgl || {}, T = c.domaines.reduce((a, d) => [a[0] + d.lire, a[1] + d.creer + d.modifier, a[2] + d.supprimer], [0, 0, 0]);
+        return '<div class="stats"><div class="stat"><b>' + c.operations + "</b><span>opérations dans l’API (" + c.domaines.length + ' domaines)</span></div><div class="stat"><b>' + T[0] + '</b><span>pour lire</span></div><div class="stat"><b>' + T[1] + '</b><span>pour créer ou modifier</span></div><div class="stat"><b>' + T[2] + "</b><span>pour supprimer</span></div></div>" +
+          '<div class="carte"><h3>Ce que mon Itare peut faire seul</h3><div class="note">Le palier de chaque geste (« raconter » ou « auto ») est choisi par l’administrateur. Tes deux réglages ci-dessous sont plus stricts : ils ne sont jamais plus larges que lui.</div>' +
+          '<label class="fld"><span><input type="checkbox" id="g-off"' + (g["dolibarr.itare_ecrire"] === "desactive" ? " checked" : "") + "> Mon Itare n’écrit jamais dans Dolibarr (il lit seulement)</span></label>" + champ("g-seuil", "Seuil en euros : au-dessus, mon Itare ne règle, ne vire ni ne cotise (0 : pas de seuil)", Number(g["dolibarr.itare_seuil"] || 0), "number") +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap">' + btn("Enregistrer mes réglages", "savegarde", "", "pri") + btn("Régler les paliers (administrateur)", "paliers") + "</div></div>" +
+          '<div class="carte"><h3>Le catalogue de l’API</h3>' + table(["Domaine", "Lire", "Créer", "Modifier", "Supprimer"], c.domaines.map((d) => "<tr><td><b>/" + esc(d.domaine) + '</b></td><td class="num">' + d.lire + '</td><td class="num">' + d.creer + '</td><td class="num">' + d.modifier + '</td><td class="num">' + d.supprimer + "</td></tr>")) + '<div class="note">Tout passe par la requête libre, et chaque geste a sa preuve et son retour arrière quand l’acte le permet.</div></div>';
+      },
+      comptes() {
+        const C = S.d.cpts || [];
+        return '<div class="carte"><h3>Comptes de Cassandra</h3><div class="note">L’administrateur voit qui a branché sa clé. Il ne voit jamais les clés.</div>' + table(["Compte", "Clé Dolibarr"], C.map((c) => "<tr><td><b>" + esc(c.nom) + '</b></td><td>' + (c.cle === null ? pill("illisible (réservé à l’administrateur)") : c.cle ? pill("clé renseignée", "ok") : pill("aucune clé : il lit, il n’écrit pas", "al")) + "</td></tr>")) + '<div class="note">Un compte sans clé lit mais n’écrit pas. Le réglage « mandat pour tous » (société) change cela, au choix de l’administrateur.</div></div>';
+      },
+      itare() {
+        return '<div class="carte"><h3>Demander à Itare</h3><div class="note">Itare agit avec <b>ta clé</b> et dans la limite de tes réglages : chaque geste passe par les mêmes capacités, avec leur palier, leur preuve et leur retour. Exemples : « Qui me doit de l’argent ? », « Prépare les relances des factures récentes », « Facture 2 jours de son à MONARCH, 260 € la journée ».</div><div class="liste" id="dlb-conv">' + (S.itare || []).map((m) => '<div class="li"><div class="sp"><b>' + (m[0] === "u" ? "Toi" : "Itare") + "</b><div>" + esc(m[1]) + "</div></div></div>").join("") + '</div><div class="barre2"><input class="in" id="dlb-msg" style="flex:1 1 320px" placeholder="Dis-lui quoi faire dans Dolibarr…" autocomplete="off"><button class="btn pri" data-a="itareenvoi">Envoyer</button></div></div>';
+      },
       acces() {
         const a = S.acces || {}, o = { compte: "ta clé propre", mandat: "la clé de mandat", fichier: "le fichier de clé" }[a.cle] || "";
         return '<div class="g2"><div class="carte"><h3>Ma clé d’API Dolibarr</h3><div class="note">Mon Itare et moi agissons dans Dolibarr sous le nom de son utilisateur, avec ses droits. La clé est chiffrée, jamais réaffichée ; personne d’autre ne la lit.</div>' +
@@ -145,7 +178,7 @@
         return '<div class="carte"><h3>Requête libre</h3><div class="note">Tout le catalogue de Dolibarr : par exemple <span class="mono">GET /thirdparties/12</span> ou <span class="mono">PUT /products/3 {"price": 12}</span>. Les secrets sont masqués ; une suppression passe par la corbeille du module.</div><div class="barre2"><input class="in mono" id="dlb-req" style="flex:1 1 320px" value="' + esc(S.libre || "GET /thirdparties?limit=5") + '"><button class="btn pri" data-a="libre">Lancer</button></div>' + (S.libreRep ? '<pre class="code">' + esc(typeof S.libreRep === "string" ? S.libreRep : JSON.stringify(S.libreRep, null, 1)) + "</pre>" : "") + "</div>";
       },
     };
-    const ONGLETS = [["afaire", "À faire"], ["factures", "Factures"], ["devis", "Devis"], ["tiers", "Tiers"], ["banque", "Banque"], ["dons", "Dons"], ["adherents", "Adhérents"], ["projets", "Projets"], ["cprojets", "Projets de Cassandra"], ["ccontacts", "Contacts de Cassandra"], ["acces", "Mon accès"], ["libre", "Requête libre"]];
+    const ONGLETS = [["afaire", "À faire"], ["factures", "Factures"], ["devis", "Devis"], ["tiers", "Tiers"], ["banque", "Banque"], ["dons", "Dons"], ["adherents", "Adhérents"], ["projets", "Projets"], ["cprojets", "Projets de Cassandra"], ["ccontacts", "Contacts de Cassandra"], ["produits", "Produits"], ["fournisseurs", "Fournisseurs"], ["itare", "Itare"], ["capacites", "Capacités"], ["comptes", "Comptes"], ["instance", "Instance"], ["acces", "Mon accès"], ["libre", "Requête libre"]];
     function dessiner() {
       const foc = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.q : null, pos = foc ? document.activeElement.selectionStart : 0;
       racine.innerHTML = K.titre("Dolibarr", "Gestion complète : facturer, encaisser, relancer, donner un reçu, cotiser. Chaque geste est relu, journalisé et défaisable.") + '<div class="onglets">' + ONGLETS.map((o) => '<button data-o="' + o[0] + '" class="' + (S.onglet === o[0] ? "on" : "") + '">' + o[1] + "</button>").join("") + "</div>" +
@@ -254,6 +287,30 @@
         document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
         const [type, id] = p.split("|");
         if (await modale("Détacher de Dolibarr", "<p>Le lien est rompu, les deux copies restent. L’étiquette redevient « Cassandra seulement ».</p>", "Détacher")) await fait("dolibarr.detacher", { type: type, id: Number(id) }, "Fiche détachée");
+      },
+      nprod: async () => {
+        const ok = await modale("Nouveau produit", '<div class="grille2">' + champ("n-r", "Référence", "") + champ("n-p", "Prix HT", "0", "number", 'step="0.01"') + "</div>" + champ("n-l", "Libellé", ""), "Créer");
+        if (ok && val("n-r") && val("n-l")) await fait("dolibarr.creer", { objet: "produits", champs: { ref: val("n-r"), label: val("n-l"), price: Number(val("n-p")) || 0, price_base_type: "HT", type: 1 } }, "Produit créé");
+        else if (ok) K.dire("Référence et libellé sont obligatoires", "err");
+      },
+      prix: async (id) => {
+        const p = (S.d.produits || []).find((x) => String(x.id) === String(id));
+        if (await modale("Prix de " + p.label, champ("n-p", "Nouveau prix HT", Number(p.price), "number", 'step="0.01"'), "Modifier")) await fait("dolibarr.modifier", { objet: "produits", id: Number(id), champs: { price: Number(val("n-p")), price_base_type: "HT" } }, "Prix modifié");
+      },
+      payersup: async (id) => {
+        const f = (S.d.sup || []).find((x) => String(x.id) === String(id));
+        if (await modale("Payer " + f.ref, '<p class="note">Dolibarr règle tout le reste dû : ' + eur(f.total_ttc) + '.</p><div class="grille2">' + sel("p-bk", "Compte", banqueOpts(), "") + sel("p-md", "Mode", [["VIR", "Virement"], ["CHQ", "Chèque"], ["CB", "Carte"], ["LIQ", "Espèces"]], "VIR") + "</div>", "Payer")) await fait("dolibarr.payer_fournisseur", { id: Number(id), banque: Number(val("p-bk")), mode: val("p-md") }, "Facture payée");
+      },
+      savegarde: async () => {
+        const off = document.getElementById("g-off").checked, seuil = Number(document.getElementById("g-seuil").value) || 0;
+        try { await agir("reglages.regler", { cle: "dolibarr.itare_ecrire", valeur: off ? "desactive" : "libre" }); await agir("reglages.regler", { cle: "dolibarr.itare_seuil", valeur: seuil }); K.dire("Réglages enregistrés"); S.d.rgl = null; await charger(true); } catch (e) { K.dire(e.message || String(e), "err"); }
+      },
+      itareenvoi: async () => {
+        const e = document.getElementById("dlb-msg"), m = (e && e.value || "").trim(); if (!m) return;
+        S.itare = (S.itare || []).concat([["u", m]]); dessiner();
+        try { const r = await agir("agents.converser", { conversation_id: S.conv || 0, message: "[Dolibarr, avec ma clé] " + m, agent: "itare" }); S.conv = r.conversation_id || S.conv; S.itare.push(["i", String(r.reponse || r.message || r.texte || r.resume || "(Itare a répondu sans texte)")]); }
+        catch (x) { S.itare.push(["i", "Je n’ai pas pu : " + (x.message || String(x))]); }
+        dessiner();
       },
       pdf: async (p) => {
         const [objet, id] = p.split("|"); document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());

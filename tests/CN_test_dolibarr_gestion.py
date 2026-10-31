@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #09c917
+# VERSION CN : 0.1.0  #89dde9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=09c917 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=89dde9 ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import gzip
 import json
@@ -40,7 +40,7 @@ class FauxGestion:
     def __init__(self):
         self.journal, self.societe = [], "Maison Bohème"
         self.utilisateurs = {CLE_MANDAT: {"login": "cassandra", "admin": "0"}, CLE_DRISSE: {"login": "marple", "admin": "1"}, CLE_AMANDINE: {"login": "amandine", "admin": "0"}}
-        self.t = {c: {} for c in ("thirdparties", "invoices", "proposals", "projects", "donations", "members", "agendaevents", "subscriptions", "paiements", "contacts")}
+        self.t = {c: {} for c in ("thirdparties", "invoices", "proposals", "projects", "donations", "members", "agendaevents", "subscriptions", "paiements", "contacts", "supplierinvoices")}
         self.suivant = {c: 1 for c in self.t}
         self.paiements = {}                  # id de facture -> [ids de règlements]
         self.banques = {1: 1000.0, 2: 50.0}
@@ -260,6 +260,20 @@ class FauxGestion:
             if m == "PUT":
                 self.t["projects"][i].update({("statut" if k == "status" else k): str(v) if k in ("status", "statut") else v for k, v in corps.items() if k != "statut"})   # « statut » est ignoré, comme Dolibarr 24
             return R(200, dict(self.t["projects"][i]))
+        if p == ["explorer", "swagger.json"]:
+            return R(200, {"paths": {"/invoices": {"get": {}, "post": {}}, "/invoices/{id}": {"get": {}, "put": {}, "delete": {}}, "/thirdparties": {"get": {}, "post": {}}}})
+        if p[0] == "supplierinvoices":
+            i = int(p[1]) if len(p) > 1 and p[1].isdigit() else None
+            if i not in self.t["supplierinvoices"]:
+                return R(404, {})
+            if p[2:] == ["payments"] and m == "POST":
+                self.t["supplierinvoices"][i]["paye"] = "1"
+                self.t["supplierinvoices"][i]["statut"] = "2"
+                return R(200, 1)
+            if p[2:] == ["settounpaid"]:
+                self.t["supplierinvoices"][i].update(paye="0", statut="1")
+                return R(200, dict(self.t["supplierinvoices"][i]))
+            return R(200, dict(self.t["supplierinvoices"][i]))
         if p[0] == "contacts":
             if len(p) == 1 and m == "POST":
                 if not corps.get("socid") or corps["socid"] not in self.t["thirdparties"]:
@@ -600,6 +614,41 @@ class GestionDolibarr(unittest.TestCase):
         self.assertEqual(r["statut"], "echec")
         self.assertIn("IMRI", json.dumps(r, ensure_ascii=False))
         self.assertFalse([1 for m, _, _ in self.faux.journal if m != "GET"])
+
+    # --- le catalogue, le paiement d'une facture reçue, les réglages propres au compte
+    def test_le_catalogue_de_l_api_compte_les_operations_par_domaine(self):
+        r = self.e("dolibarr.catalogue_api", "humain", {})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        self.assertEqual(r["resultat"]["operations"], 7)
+        self.assertEqual(r["resultat"]["domaines"][0], {"domaine": "invoices", "lire": 2, "creer": 1, "modifier": 1, "supprimer": 1})
+
+    def test_payer_une_facture_recue_se_prouve_et_se_defait(self):
+        i = self.faux.nouveau("supplierinvoices", {"statut": "1", "paye": "0", "total_ttc": 80, "ref": "SI2610-0001"})
+        r = self.e("dolibarr.payer_fournisseur", "humain", {"id": i, "banque": 1})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        self.assertEqual(self.faux.t["supplierinvoices"][i]["paye"], "1")
+        self.retour("payer_fournisseur", r["resultat"])
+        self.assertEqual(self.faux.t["supplierinvoices"][i]["paye"], "0")
+        self.assertEqual(self.e("dolibarr.payer_fournisseur", "humain", {"id": 999, "banque": 1})["statut"], "echec")
+
+    def test_le_compte_peut_interdire_l_ecriture_a_son_itare_et_lui_fixer_un_seuil(self):
+        self.accorder("drisse")
+        self.poser_cle("drisse", CLE_DRISSE)
+        self.n.catalogue.regler_palier("dolibarr.encaisser", "auto")
+        i = self.facture(total=900.0)
+        self.assertEqual(self.e("dolibarr.encaisser", "itare", {"id": i, "montant": 100, "banque": 1}, compte="drisse")["statut"], "faite")      # libre par défaut
+        self.n.reglages.poser("dolibarr.itare_seuil", 150, compte="drisse")
+        r = self.e("dolibarr.encaisser", "itare", {"id": i, "montant": 200, "banque": 1}, compte="drisse")
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("seuil", json.dumps(r, ensure_ascii=False))
+        self.assertEqual(self.e("dolibarr.encaisser", "itare", {"id": i, "montant": 100, "banque": 1}, compte="drisse")["statut"], "faite")      # sous le seuil
+        self.assertEqual(self.e("dolibarr.encaisser", "humain", {"id": i, "montant": 200, "banque": 1}, compte="drisse")["statut"], "faite")      # un humain n'a pas de seuil
+        self.n.reglages.poser("dolibarr.itare_ecrire", "desactive", compte="drisse")
+        self.n.catalogue.regler_palier("dolibarr.relancer", "auto")          # au palier « raconter », il ne ferait que proposer : la garde ne joue que pour ce qui s'exécute seul
+        self.faux.journal.clear()
+        self.assertEqual(self.e("dolibarr.relancer", "itare", {"id": i, "message": "x"}, compte="drisse")["statut"], "echec")
+        self.assertFalse([1 for m, _, _ in self.faux.journal if m != "GET"])
+        self.assertEqual(self.e("dolibarr.lire_libre", "itare", {"chemin": "/invoices/%d" % i}, compte="drisse")["statut"], "faite")           # il lit toujours
 
 
 class LiensDolibarr(unittest.TestCase):

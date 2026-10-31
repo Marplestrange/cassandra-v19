@@ -12,7 +12,7 @@
 <!-- RÔLE       : Dolibarr, la gestion complète : ce que le module sait faire, la clé d'API par compte, le compte de mandat, les paliers -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=a055b9 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d58a38 ▼▼▼ -->
 # Dolibarr : la gestion complète
 
 Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il écrit, et tout geste a sa **preuve** (relire ce qui a été écrit) et son **retour arrière**.
@@ -33,6 +33,16 @@ Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il �
 | Lire ou écrire n'importe où dans l'API | `lire_libre`, `ecrire_libre` | restaurer les champs d'avant (PUT), supprimer ce qui vient d'être créé (POST) |
 
 Avant elles : `creer`, `modifier`, `creer_brouillon`, `supprimer` (avec corbeille), `restaurer`, `valider_facture`. L'écran est `interface/CN_dolibarr-ecran.js`.
+
+## Les réglages propres au compte (plus stricts que le palier, jamais plus larges)
+
+- `dolibarr.itare_ecrire` = `desactive` : l'Itare (ou Cassandra) de ce compte lit, mais n'écrit jamais dans Dolibarr quand il agit seul. Au palier « raconter » il ne fait que proposer, donc la garde ne joue que pour ce qui s'exécute sans accord.
+- `dolibarr.itare_seuil` (euros, 0 = aucun) : au-dessus, un agent ne règle pas, ne vire pas, ne saisit pas de don ni de cotisation. Un humain n'y est jamais soumis.
+- Le **palier** de chaque geste reste global : c'est le choix de l'administrateur. Un palier par compte demanderait un changement du noyau, non fait.
+
+## Les pages de l'écran
+
+À faire, Factures, Devis (fiche et PDF), Tiers, Banque, Dons, Adhérents, Projets, Projets et Contacts de Cassandra (liens), Produits, Fournisseurs (`payer_fournisseur`), Itare (parle à `agents.converser`, avec la clé du compte), Capacités (`catalogue_api` et les deux réglages ci-dessus), Comptes (qui a une clé), Instance, Mon accès, Requête libre. Le rapprochement bancaire ligne à ligne et le virement SEPA groupé n'ont pas de point d'API dans Dolibarr : ils ne sont pas dans l'écran.
 
 ## Le PDF d'une pièce
 

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #9f01d7
+# VERSION CN : 0.4.0  #f4215c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=9f01d7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=f4215c ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -202,6 +202,27 @@ def _cle(conf, ecriture=False):
     return cle
 
 
+def _garde_agent(montant=None):
+    """Les réglages PROPRES au compte, plus stricts que le palier global et jamais plus larges : un agent (Itare, Cassandra) qui agit au nom d'un compte n'écrit pas si le compte l'a
+    interdit (« itare_ecrire » = desactive), ni au-dessus de son seuil en euros (« itare_seuil », 0 : pas de seuil). Un humain, un moteur et le système n'y sont pas soumis."""
+    if _CTX is None or not _compte_courant():
+        return
+    try:
+        agent = str(_CTX.acteur or "") in ("itare", "cassandra", "agent")
+    except Exception:
+        agent = False
+    if not agent:
+        return
+    if _reglage_texte("itare_ecrire") == "desactive":
+        raise PontErreur("ton réglage interdit à ton Itare d'écrire dans Dolibarr (Dolibarr › Mon accès)", genre="refuse_compte")
+    try:
+        seuil = float(_reglage_texte("itare_seuil") or 0)
+    except ValueError:
+        seuil = 0
+    if montant is not None and seuil and float(montant) > seuil:
+        raise ValueError("%.2f € dépasse le seuil de ton compte pour ton Itare (%.2f €) : fais-le toi-même, ou monte le seuil" % (float(montant), seuil))
+
+
 _SOCIETES = {}          # (adresse, empreinte de clé) -> (horodatage, nom de la société lue) : la société ne change pas à chaque geste
 
 
@@ -268,6 +289,7 @@ def ecrire(conf, methode, chemin, corps=None):
     donnees = json.dumps(corps, ensure_ascii=False).encode("utf-8") if corps is not None else None
     if donnees is not None and len(donnees) > MAX_CORPS:
         raise ValueError("le corps de la requête dépasse %d octets" % MAX_CORPS)
+    _garde_agent()
     _garde_societe(conf)
     en_tetes = {"DOLAPIKEY": _cle(conf, ecriture=True), "Accept": "application/json", "Content-Type": "application/json", "User-Agent": AGENT}
     if conf.get("hote"):
@@ -949,6 +971,40 @@ def brancher(ctx):
                 sortie.append({"type": d["type"], "id": d["id"], "id_doli": d["id_doli"], "ref": d.get("ref", ""), "tiers": d.get("tiers", ""), "le": d.get("le", "")})
         return sorted(sortie, key=lambda x: (x["type"], x["id"]))
 
+
+    # --- payer une facture reçue (Dolibarr règle alors tout le reste dû) ; le catalogue de l'API
+    def payer_fournisseur(ctx, id, banque, mode="VIR", date="", numero="", note=""):
+        if not _ID.match(str(banque)):
+            raise ValueError("banque : l'identifiant du compte bancaire Dolibarr")
+        conf = _conf()
+        f = _doc(conf, "/supplierinvoices", id, "la facture fournisseur")
+        if _statut(f) != "1" or str(f.get("paye")) == "1":
+            raise ValueError("la facture fournisseur %s n'est pas validée et ouverte (statut %s)" % (id, _statut(f)))
+        _garde_agent(float(f.get("total_ttc") or 0))
+        corps = {"datepaye": _jour_ts(date), "paymentid": _mode_id(conf, str(mode).upper()), "closepaidinvoices": "yes", "accountid": int(banque), "num_payment": str(numero)[:60],
+                 "comment": str(note)[:500]}
+        ecrire(conf, "POST", "/supplierinvoices/%s/payments" % id, corps)
+        return {"id": int(id), "montant": round(float(f.get("total_ttc") or 0), 2)}
+
+    def prouver_paiement_fournisseur(ctx, res):
+        f = _lire_un(_conf(), "/supplierinvoices", res["id"])
+        return isinstance(f, dict) and (str(f.get("paye")) == "1" or _statut(f) == "2")
+
+    def defaire_paiement_fournisseur(ctx, res):
+        ecrire(_conf(), "POST", "/supplierinvoices/%d/settounpaid" % res["id"], {})        # la facture redevient due ; la ligne de règlement reste visible chez Dolibarr
+
+    def catalogue_api(ctx):
+        sw = appeler(_conf(), "/explorer/swagger.json")
+        chemins = (sw or {}).get("paths") or {} if isinstance(sw, dict) else {}
+        par = {}
+        for chemin, ops in chemins.items():
+            dom = chemin.strip("/").split("/")[0]
+            c = par.setdefault(dom, {"domaine": dom, "lire": 0, "creer": 0, "modifier": 0, "supprimer": 0})
+            for m, cle in (("get", "lire"), ("post", "creer"), ("put", "modifier"), ("delete", "supprimer")):
+                if m in ops:
+                    c[cle] += 1
+        return {"domaines": sorted(par.values(), key=lambda c: -(c["lire"] + c["creer"] + c["modifier"] + c["supprimer"])), "operations": sum(c["lire"] + c["creer"] + c["modifier"] + c["supprimer"] for c in par.values())}
+
     def mon_acces(ctx):
         conf = _conf()
         info = appeler(conf, "/users/info")
@@ -964,6 +1020,7 @@ def brancher(ctx):
     # --- encaisser un règlement
     def encaisser(ctx, id, montant, banque, mode="VIR", date="", numero="", note=""):
         montant = _montant(montant)
+        _garde_agent(montant)
         if not _ID.match(str(banque)):
             raise ValueError("banque : l'identifiant du compte bancaire Dolibarr")
         conf = _conf()
@@ -1077,6 +1134,7 @@ def brancher(ctx):
     # --- les dons : saisir, valider, éditer le reçu fiscal
     def don_creer(ctx, montant, date="", nom="", prenom="", societe=""):
         montant = _montant(montant)
+        _garde_agent(montant)
         conf = _conf()
         champs = {"amount": montant, "date": _jour_ts(date)}
         for k, v in (("lastname", nom), ("firstname", prenom), ("societe", societe)):
@@ -1131,6 +1189,7 @@ def brancher(ctx):
     # --- une cotisation d'adhérent
     def cotisation(ctx, membre, montant, debut="", fin="", libelle=""):
         montant = _montant(montant)
+        _garde_agent(montant)
         conf = _conf()
         m = _doc(conf, "/members", membre, "l'adhérent")
         avant = len(_liste(conf, "/members/%s/subscriptions" % membre))
@@ -1154,6 +1213,7 @@ def brancher(ctx):
 
     def virement_interne(ctx, de, vers, montant, date="", libelle=""):
         montant = _montant(montant)
+        _garde_agent(montant)
         if not _ID.match(str(de)) or not _ID.match(str(vers)) or str(de) == str(vers):
             raise ValueError("de et vers : deux comptes bancaires différents (identifiants)")
         conf = _conf()
@@ -1283,6 +1343,9 @@ def brancher(ctx):
                     simuler=lambda ctx, id="", **_: "validerait la facture %s (elle prendrait un numéro)" % id)
 
     ctx.implementer("mon_acces", mon_acces)
+    ctx.implementer("catalogue_api", catalogue_api)
+    ctx.implementer("payer_fournisseur", payer_fournisseur, prouver_paiement_fournisseur, defaire_paiement_fournisseur,
+                    simuler=lambda ctx, id="", **_: "paierait la facture fournisseur %s" % id)
     ctx.implementer("liens", liens)
     ctx.implementer("envoyer_projet", envoyer_projet, prouver_envoi_projet, defaire_envoi_projet, simuler=lambda ctx, id="", **_: "enverrait le projet %s à Dolibarr (il y serait créé et lié)" % id)
     ctx.implementer("envoyer_contact", envoyer_contact, prouver_envoi_contact, defaire_envoi_contact, simuler=lambda ctx, id="", **_: "enverrait le contact %s à Dolibarr (créé et lié, rattaché à un tiers)" % id)

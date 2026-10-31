@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #ef4a09
+# VERSION CN : 0.4.0  #727a18
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=ef4a09 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=727a18 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -92,6 +92,22 @@ id = "societe_attendue"
 libelle = "Nom exact de la société Dolibarr dans laquelle on écrit"
 aide = "Rempli : avant chaque écriture, le pont vérifie que la clé voit cette société ; sinon il refuse. Évite d'écrire dans la mauvaise entité."
 portee = "societe"
+[[reglages]]
+id = "itare_ecrire"
+libelle = "Mon Itare écrit dans Dolibarr"
+aide = "« libre » : il suit le palier de chaque geste. « desactive » : il lit, il n'écrit jamais, quel que soit le palier. Ce réglage n'est jamais plus large que le palier."
+type = "choix"
+choix = ["libre", "desactive"]
+defaut = "libre"
+portee = "compte"
+[[reglages]]
+id = "itare_seuil"
+libelle = "Seuil en euros : au-dessus, mon Itare ne règle, ne vire, ne cotise ni ne saisit un don (0 : pas de seuil)"
+type = "entier"
+defaut = 0
+minimum = 0
+maximum = 10000000
+portee = "compte"
 [evenements]
 emet = ["dolibarr.injoignable", "dolibarr.acces_refuse", "dolibarr.reprise"]
 
@@ -434,6 +450,23 @@ droit = "utiliser"
 perimetre = ["le lien seulement : aucune requête vers Dolibarr"]
 preuve = "le lien n'existe plus"
 retour = "reposer le lien"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "catalogue_api"
+libelle = "Le catalogue de l'API de Dolibarr : les domaines et le nombre d'opérations de chacun (lire, créer, modifier, supprimer)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "payer_fournisseur"
+libelle = "Payer une facture reçue : Dolibarr règle tout le reste dû, depuis un compte bancaire"
+risque = "eleve"
+droit = "administrer"
+perimetre = ["une facture fournisseur validée et ouverte"]
+preuve = "relire la facture fournisseur : payée"
+retour = "repasser la facture en impayée (la ligne de règlement reste visible chez Dolibarr)"
 paliers = ["raconter", "auto"]
 qui = ["humain", "cassandra", "itare"]
 
