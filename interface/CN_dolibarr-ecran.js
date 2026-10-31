@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #4cdc7c
+// VERSION CN : 0.1.0  #ee8bf6
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=4cdc7c ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=ee8bf6 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -23,7 +23,8 @@
   const iso = (v) => { if (!v) return ""; const d = /^\d+$/.test(String(v)) ? new Date(Number(v) * 1000 + 43200000) : new Date(v); return isNaN(d) ? "" : d.toISOString().slice(0, 10); };
   const retard = (f) => { const e = f.date_lim_reglement; if (!e) return 0; const d = /^\d+$/.test(String(e)) ? Number(e) * 1000 : new Date(e).getTime(); return Math.floor((Date.now() - d) / 864e5); };
   const AUJ = new Date().toISOString().slice(0, 10);
-  const CSS = ".dlb .barre2{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.dlb .t{width:100%;border-collapse:collapse;font-size:13px}.dlb .t th{text-align:left;font:600 10.5px 'Inter',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--txt-faint);padding:6px 8px;border-bottom:1px solid var(--line)}" +
+  const CSS = ".sh-scene:has(.kit.dlb){max-width:none;width:100%;flex:1 1 100%;min-width:0}.kit.dlb{width:100%}" +
+    ".dlb .barre2{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.dlb .t{width:100%;border-collapse:collapse;font-size:13px}.dlb .t th{text-align:left;font:600 10.5px 'Inter',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--txt-faint);padding:6px 8px;border-bottom:1px solid var(--line)}" +
     ".dlb .t td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}.dlb .t tr.clk{cursor:pointer}.dlb .t tr.clk:hover td{background:color-mix(in srgb,var(--accent) 7%,transparent)}.dlb .t .num{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}" +
     ".dlb .defil{overflow-x:auto}.dlb .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.dlb .in,.kit-m .in{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:8px 11px;font:500 13px 'Inter',sans-serif;min-width:0;max-width:100%}" +
     ".kit-m .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.kit-m .grille2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kit-m textarea.in{width:100%;resize:vertical}.dlb .code{background:var(--surface);border:1px dashed var(--line-strong,var(--line));border-radius:10px;padding:10px 12px;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}";
