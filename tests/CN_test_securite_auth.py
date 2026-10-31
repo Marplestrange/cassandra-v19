@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f693bd
+# VERSION CN : 0.1.0  #56a7d9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'authentification : cookie Secure et HSTS, coût de scrypt et réécriture des empreintes, inactivité des sessions, ressaisie du second facteur pour un geste sensible, second facteur obligatoire pour les administrateurs (avec période
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f693bd ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=56a7d9 ▼▼▼
 """Bancs de l'authentification : cookie Secure et HSTS, coût de scrypt et réécriture des empreintes, inactivité des sessions, ressaisie du second facteur
 pour un geste sensible, second facteur obligatoire pour les administrateurs (avec période de grâce)."""
 import hashlib
@@ -31,6 +31,7 @@ sys.path.insert(0, str(RACINE))
 import CN_main as moteur                                   # noqa: E402
 from noyau import CN_identite as idt                       # noqa: E402
 from noyau.CN_passerelle import Passerelle, cookie_secure_effectif   # noqa: E402
+from tests import SCRYPT_PRODUCTION, parametres_de_production      # noqa: E402
 
 MDP = "Abcdefgh1!"
 
@@ -72,6 +73,14 @@ class Secure(unittest.TestCase):
 
 
 class Scrypt(unittest.TestCase):
+    def test_le_fichier_de_production_porte_le_cout_d_owasp_et_le_banc_ne_le_cache_pas(self):
+        self.assertEqual(SCRYPT_PRODUCTION, dict(n=2 ** 17, r=8, p=1, dklen=32))      # relevé avant que tests/__init__ ne le remplace pour le banc
+        self.assertLess(idt._SCRYPT["n"], SCRYPT_PRODUCTION["n"])                      # le banc court au coût réduit...
+        with parametres_de_production():
+            self.assertEqual(idt._SCRYPT, SCRYPT_PRODUCTION)                         # ...et rétablit le vrai le temps d'un test
+        self.assertLess(idt._SCRYPT["n"], SCRYPT_PRODUCTION["n"])
+
+    @parametres_de_production()
     def test_les_parametres_vivent_dans_l_empreinte_et_le_cout_est_celui_d_owasp(self):
         t = time.time()
         h = idt.hacher("Abcdefgh1!")
@@ -83,6 +92,7 @@ class Scrypt(unittest.TestCase):
         print("\n  scrypt n=2**17 : %.2f s par hachage, mémoire ~%d Mo (maxmem %d Mo)" % (duree, 128 * 2 ** 17 * 8 // 2 ** 20, idt.MAXMEM // 2 ** 20))
         self.assertLess(duree, 5)
 
+    @parametres_de_production()
     def test_une_ancienne_empreinte_reste_verifiable_et_se_dit_perimee(self):
         sel = bytes(range(16))
         ancien = "scrypt$%s$%s" % (sel.hex(), hashlib.scrypt(b"Abcdefgh1!", salt=sel, n=2 ** 14, r=8, p=1, dklen=32).hex())
@@ -162,6 +172,7 @@ class Monde(unittest.TestCase):
 
 
 class Reecriture(Monde):
+    @parametres_de_production()
     def test_une_ancienne_empreinte_est_reecrite_a_la_prochaine_connexion_reussie(self):
         sel = bytes(range(16))
         ancien = "scrypt$%s$%s" % (sel.hex(), hashlib.scrypt(MDP.encode(), salt=sel, n=2 ** 14, r=8, p=1, dklen=32).hex())
@@ -178,6 +189,7 @@ class Reecriture(Monde):
         self.assertEqual(self.entrer("bea@x.fr")[0], 200)
         self.assertEqual(self.idt.hash_de("bea@x.fr"), a_jour)
 
+    @parametres_de_production()
     def test_un_mauvais_mot_de_passe_ne_reecrit_rien(self):
         sel = bytes(range(16))
         ancien = "scrypt$%s$%s" % (sel.hex(), hashlib.scrypt(MDP.encode(), salt=sel, n=2 ** 14, r=8, p=1, dklen=32).hex())
