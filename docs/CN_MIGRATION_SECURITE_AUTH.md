@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Authentification : note de migration (audit du 31-10-2026, points H4, M2, M3, M4) -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Authentification : note de migration (audit du 31-10-2026, points H4, M2, M3, M4) -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=b7506a ▼▼▼ -->
 # Authentification : note de migration (audit du 31-10-2026, points H4, M2, M3, M4)
 
 Rien ne casse : aucun compte, aucune session ouverte, aucune empreinte existante n'est invalidée par ces changements. Voici ce qui change, point par point.
@@ -75,3 +90,9 @@ maximum = 90
 ## Tests
 
 `tests/CN_test_securite_auth.py` couvre les quatre points (cookie et HSTS, paramètres et réécriture des empreintes, inactivité, ressaisie, obligation et grâce).
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->
