@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #10bcfc
+// VERSION CN : 0.1.0  #1baf24
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=10bcfc ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=1baf24 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -3429,7 +3429,7 @@ async function memoireCharger(){
     const r=document.getElementById('mv-releve'); if(r) r.textContent=new Date().toLocaleTimeString('fr-FR');
     try{ const ep=await apiPost('/api/memoire/episodes',{limite:30}); MV.episodes=ep.episodes||[]; }catch(err){ MV.episodes=[]; }
     try{ const rp=await apiPost('/api/memoire/rappels',{}); MV.rappels=rp.rappels||[]; }catch(err){ MV.rappels=[]; }
-    mvRail(); mvVigilances(); mvChaine();
+    mvVigilances(); mvChaine();
     memoireAller(MV.sec, true);
     if(ETAT.moi._memoireFicheId){ const id=ETAT.moi._memoireFicheId; ETAT.moi._memoireFicheId=null; memoireOuvrirFiche(id); }
 }
@@ -3465,19 +3465,6 @@ function mvBandeau(){
         ${kpi('Recherches sans résultat', cad.rappel_vide?cad.rappel_vide.n:0, `${cad.rappel_plein?cad.rappel_plein.n:0} avec résultat`, '', 'quand elle a cherché dans sa mémoire', 'rappel')}
         ${kpi('Historique', nGestes, chaine?((rompue?'ALTÉRÉ':'intact')+' · vérifié '+mvHeure(chaine.ts)):'jamais vérifié', rompue?'bad':'', 'chaque changement est tracé', 'journal')}
       </div></section>`;
-}
-function mvRail(){
-    const e=MV.etat||{}, st=e.statuts||{};
-    const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
-    set('mv-n-actifs',st.actif||0); set('mv-n-conteste',st.conteste||0); set('mv-n-quarantaine',st.quarantaine||0); set('mv-n-expire',st.expire||0);
-    set('mv-n-doutes',e.doutes_ouverts||0); set('mv-n-refus',(e.refus_7j||[]).length+((e.refus_7j||[]).length>=30?'+':'')); set('mv-n-episodes',(MV.episodes||[]).length); set('mv-n-rappels',(MV.rappels||[]).filter(x=>x.actif).length);
-    set('mv-n-journal',(e.chaine&&e.chaine.details)?(function(){try{return JSON.parse(e.chaine.details).n||'—';}catch(x){return '—';}})():'—');
-    const sous=document.getElementById('mv-rail-sous'); if(sous) sous.textContent=`${st.actif||0} souvenir${(st.actif||0)>1?'s':''} · ${st.expire||0} expiré${(st.expire||0)>1?'s':''}`;
-    const pt=(s,etat)=>{ const el=document.getElementById('mv-etat-'+s); if(el) el.className='mx-dot '+(etat||''); };
-    pt('actifs', st.actif?'ok':''); pt('conteste', st.conteste?'warn':''); pt('quarantaine', st.quarantaine?'info':''); pt('expire','');
-    pt('doutes', e.doutes_ouverts?'warn':''); pt('refus', (e.refus_7j||[]).length?'warn':'ok'); pt('episodes', (MV.episodes||[]).length?'ok':''); pt('rappels', (MV.rappels||[]).some(x=>x.actif)?'ok':'');
-    pt('journal', e.chaine?(e.chaine.verbe==='chaine_rompue'?'danger':'ok'):''); pt('perception', MV.admin?'ok':''); pt('moteurs','info');
-    const p=document.getElementById('mv-portee'); if(p) p.textContent=(e.portee||[]).join(' · ')||'—';
 }
 // « CE QUI DEMANDE UN GESTE » : calculé ici, rendu sous le verdict (l'ancien « À toi » du rail).
 function mvVigilances(){
@@ -3529,7 +3516,6 @@ function memoireAller(s, sansFiche){
     // Les places (repli, plein écran) se retiennent par page : la clé d'une
     // section porte le nom de la page.
     const mm = document.getElementById('mv-main'); if(mm) mm.dataset.plPage = MV.sec;
-    document.querySelectorAll('#mv-rail .mx-item').forEach(b=>{ const on=b.dataset.s===MV.sec; b.classList.toggle('on', on); if(on) b.setAttribute('aria-current','true'); else b.removeAttribute('aria-current'); });
     if(!sansFiche) memoireFicheFermer();
     mvBarre(); mvRendre();
 }
@@ -7384,9 +7370,20 @@ function _sysCharger(){
 }
 document.addEventListener('keydown', function(e){ if(e.key==='Escape') fermerSysteme(); });
 
+// Source muette (collecteur absent ou muet) : un tiret, jamais un « 0% » posé comme mesure.
+function _metriquesMuettes(){
+    ['cpu-val','ram-val','disk-val','load-val','mmd-cpu','mmd-ram','mmd-disk','mmd-load'].forEach(function(id){
+        const el=document.getElementById(id); if(el) el.textContent='—';
+    });
+    ['mms-cpu','mms-ram','mms-disk'].forEach(function(id){
+        const el=document.getElementById(id); if(el){ el.textContent='—'; el.className='mms-val'; }
+    });
+    ['cpu-bar','ram-bar','disk-bar','mmd-cpu-bar','mmd-ram-bar','mmd-disk-bar'].forEach(function(id){ _setStatBar(id,0); });
+}
 async function loadMetrics(){
     try{
         const d=await apiGet('/api/metrics');
+        if(d&&d.muet){ _metriquesMuettes(); return; }
         const cpu=Math.round(d.cpu||0), ram=Math.round(d.ram||0), disk=Math.round(d.disk||0);
         const load=(d.load_1m||0)+' '+(d.load_5m||0)+' '+(d.load_15m||0);
         // Desktop panels
@@ -35064,6 +35061,7 @@ function _initWebSocket(){
 // Applique un objet métriques reçu par WS (même structure que /api/metrics)
 function _applyMetrics(m){
     if(!m) return;
+    if(m.muet){ _metriquesMuettes(); return; }
     // LE CHEMIN RÉPARÉ (21-09) : cette fonction écrivait dans `cpu-pct`, `cpu-arc`… qui n'existent pas, et lisait
     // `cpu_pct` alors que la trame porte `cpu` — le bandeau n'était à jour que quand la WebSocket était morte.
     try {
