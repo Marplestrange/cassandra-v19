@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.2.0  #41e4e8
+# VERSION CN : 0.2.0  #37d92c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents, et les services que le tour de conversation emploie (réglage effec
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=41e4e8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=37d92c ▼▼▼
 """L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents,
 et les services que le tour de conversation emploie (réglage effectif, palier par outil, coût du jour, plafond).
 
@@ -29,7 +29,7 @@ from . import CN_equipe as eq
 
 D = eq.DONNEES
 COLONNES = ("nom_affiche", "ton", "modele", "secours", "niveau")
-TTL_OUTILS = 20.0                                                 # secondes
+TTL_OUTILS = 90.0                                                 # secondes
 CHAMPS_REGLABLES = {"nom_affiche": 40, "ton": 2000, "modele": 80, "secours": 80, "limites": 0}
 
 
@@ -106,12 +106,12 @@ def brancher_equipe(ctx, reglage):
     def outils_de(d):
         if not d["acteur_outils"]:
             return []
-        cle, now = (d["acteur_outils"], ctx.compte), time.time()
+        cle = (d["acteur_outils"], ctx.compte)
         hit = memoire_outils.get(cle)
-        if hit and now - hit[0] < TTL_OUTILS:
+        if hit and time.time() - hit[0] < TTL_OUTILS:
             return hit[1]
         out = [t for t in ctx.outils(d["acteur_outils"]) if d["acteur_outils"] == "cassandra" or not t["nom"].startswith(tuple(D["interdit_hors_cassandra"]))]
-        memoire_outils[cle] = (now, out)
+        memoire_outils[cle] = (time.time(), out)            # l'instant d'APRÈS la dérivation : sur un catalogue lent elle dure plus que le délai
         return out
 
     def palier_outil(t, surcharge):
