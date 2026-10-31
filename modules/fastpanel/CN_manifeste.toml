@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #e9d8df
+# VERSION CN : 0.2.0  #624d7e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers le panneau d'hébergement FastPanel. Lit le parc (comptes, sites, certificats, bases, FTP, courrier, DNS, sauvegardes, services) dans la base du panneau, ouverte en lecture seule, et agit par son API : services, certificats, bases, stockages et plans de sauvegarde, avec preuve et retour arrière. Surveille les services tombés, les certificats proches de l'échéance, les sauvegardes absentes ou périmées et les versions de PHP en fin de support. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=e9d8df ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=624d7e ▼▼▼
 [module]
 id = "fastpanel"
 nom = "FastPanel"
@@ -91,10 +91,11 @@ maximum = 365
 
 [[reglages]]
 id = "ssl_alerte_j"
-libelle = "Jours restants sous lesquels un certificat est signalé"
+libelle = "OBSOLÈTE : le seuil d'alerte des certificats est celui du module Certificats (certificats.seuil_jours)"
+aide = "Gardé seulement pour reprendre une valeur déjà posée : tant que Certificats garde son seuil par défaut, cette valeur (si elle est posée) est reprise. 0 : rien de posé. À vider une fois le seuil posé dans Certificats."
 type = "entier"
-defaut = 30
-minimum = 1
+defaut = 0
+minimum = 0
 maximum = 90
 
 [evenements]
@@ -358,6 +359,7 @@ preuve = "l'essai n'existe plus"
 retour = "refaire le réglage (garder ou défaire ne se rejoue pas)"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
+masque = ["jeton"]
 
 [permissions]
 lectures = true

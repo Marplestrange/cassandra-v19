@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #5434db
+# VERSION CN : 0.2.0  #3caba1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont FastPanel.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=5434db ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=3caba1 ▼▼▼
 """Le pont FastPanel.
 
 Deux voies, chacune pour ce qu'elle fait de mieux :
@@ -534,10 +534,18 @@ def brancher(ctx):
         return c.lire(*PANNEAU, portee=c.TOUT)
 
     def seuil_ssl():
+        """Le seuil d'alerte d'un certificat : celui du module `certificats` (son propriétaire). L'ancien réglage `ssl_alerte_j` n'est repris que si le
+        propriétaire est resté à son défaut (migration : rien d'une installation existante ne change en silence) ; sans le propriétaire, son défaut."""
         try:
-            return int(_reglage("ssl_alerte_j", 30) or 30)
+            ancien = int(_reglage("ssl_alerte_j", 0) or 0)
         except (TypeError, ValueError):
-            return 30
+            ancien = 0
+        try:
+            r = _CTX.executer_lecture("certificats.seuil") or {}
+            jours, defaut = int(r["jours"]), int(r.get("defaut", 21))
+        except Exception:
+            jours, defaut = 21, 21
+        return ancien if (ancien > 0 and jours == defaut) else jours
 
     def seuil_sauvegarde():
         try:

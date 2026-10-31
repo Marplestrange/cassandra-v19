@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #c3dde3
+# VERSION CN : 0.1.0  #653169
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du pont FastPanel : un faux panneau (API HTTP avec état + base SQLite au schéma réel) et le module branché dans un vrai noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=c3dde3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=653169 ▼▼▼
 """Bancs du pont FastPanel : un faux panneau (API HTTP avec état + base SQLite au schéma réel) et le module branché dans un vrai noyau."""
 import json
 import shutil
@@ -618,6 +618,51 @@ class Actions(Base):
         self.assertEqual((c["full_copy_limit"], c["partial_copy_limit"], c["hour"], c["account"]), (5, 5, "3", 3))
         self.retour("plan_creer", r["resultat"])
         self.assertEqual(self.faux.plans, [])
+
+
+class SeuilUnique(Base):
+    """Un seul seuil d'alerte de certificat : celui du module certificats ; l'ancien ssl_alerte_j n'est qu'une valeur à reprendre.
+    On lit le seuil que fastpanel PASSE à la lecture des sites (la lecture elle-même est une autre affaire)."""
+
+    def monde(self, avec_certificats):
+        mods = self.base / "modules"
+        for m in (("dns", "certificats") if avec_certificats else ()):
+            shutil.copytree(RACINE / "modules" / m, mods / m, dirs_exist_ok=True)
+        n = self.noyau()
+        if avec_certificats:
+            n.etat_modules.poser("certificats", installe=True, actif=False, par="test")
+            self.assertTrue(n.activer("certificats")["ok"])
+        self.vus = []
+        g = n.catalogue.get("fastpanel.certificats").faire.__globals__
+
+        def espion(seuil=30, maintenant=None):
+            self.vus.append(seuil)
+            return []
+        g["lire_sites"] = espion
+
+    def seuil(self):
+        self.vus.clear()
+        self.lire("certificats")
+        return self.vus[-1]
+
+    def test_le_seuil_de_certificats_commande(self):
+        self.monde(True)
+        self.assertEqual(self.seuil(), 21)                               # le défaut du propriétaire (l'ancien défaut de fastpanel était 30)
+        self.n.reglages.poser("certificats.seuil_jours", 45)
+        self.assertEqual(self.seuil(), 45)
+
+    def test_une_valeur_deja_posee_dans_fastpanel_est_reprise(self):
+        self.monde(True)
+        self.n.reglages.poser("fastpanel.ssl_alerte_j", 30)
+        self.assertEqual(self.seuil(), 30)                               # certificats resté à son défaut : l'ancienne valeur vaut
+        self.n.reglages.poser("certificats.seuil_jours", 10)
+        self.assertEqual(self.seuil(), 10)                               # le propriétaire a parlé : l'ancienne valeur ne dit plus rien
+
+    def test_sans_certificats_l_ancienne_valeur_puis_le_defaut_du_proprietaire(self):
+        self.monde(False)
+        self.assertEqual(self.seuil(), 21)
+        self.n.reglages.poser("fastpanel.ssl_alerte_j", 30)
+        self.assertEqual(self.seuil(), 30)
 
 
 if __name__ == "__main__":

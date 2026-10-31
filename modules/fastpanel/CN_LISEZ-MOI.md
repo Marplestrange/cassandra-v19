@@ -12,7 +12,7 @@
 <!-- RÔLE       : fastpanel — le pont vers FastPanel -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.2.0 empreinte=a8d50e ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.2.0 empreinte=229b98 ▼▼▼ -->
 # fastpanel — le pont vers FastPanel
 
 Porté de la V18 (`hebergement` : `get_fp_*`, `fp_api_*`, `fp_*_watch`/`_audit`), lu en entier, avec ses leçons.
@@ -24,7 +24,7 @@ Porté de la V18 (`hebergement` : `get_fp_*`, `fp_api_*`, `fp_*_watch`/`_audit`)
 - **Surveille** (une relève chaque minute, les audits chaque quart d'heure) : panneau injoignable ou refus d'accès, service actif tombé sans action de Cassandra, certificat échu ou proche, sauvegarde absente ou périmée, PHP en fin de support.
 
 ## Réglages
-`url` (vide : le panneau local, 8888), `utilisateur`, `mot_de_passe` (secret), `jeton` (secret, remplace le compte), `base_panneau`, `delai`, `sauvegarde_age_max_j`, `ssl_alerte_j`.
+`url` (vide : le panneau local, 8888), `utilisateur`, `mot_de_passe` (secret), `jeton` (secret, remplace le compte), `base_panneau`, `delai`, `sauvegarde_age_max_j`. Le seuil d'alerte des certificats n'est plus ici : c'est `certificats.seuil_jours` (fastpanel le lit par la capacité `certificats.seuil`). L'ancien `ssl_alerte_j` (0 : rien de posé) n'est repris que tant que Certificats reste à son défaut ; à vider ensuite.
 
 ## Droits
 `fastpanel.voir` pour les lectures, `fastpanel.piloter` pour les actions (les deux sensibles). Aucun interdit codé : l'arrêt d'un service est de risque élevé, plafonné au palier « auto », réservé à l'humain et à Cassandra ; le plafond réel est le choix de l'administrateur.

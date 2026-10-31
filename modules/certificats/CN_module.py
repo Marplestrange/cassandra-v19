@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : certificats
 # ZONE       : CN
-# VERSION CN : 0.2.0  #57bcf4
+# VERSION CN : 0.2.0  #cd918b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Certificats TLS : ce que les visiteurs voient, et combien d'émissions il reste.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=57bcf4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=cd918b ▼▼▼
 """Certificats TLS : ce que les visiteurs voient, et combien d'émissions il reste.
 
 Porté de la V18 (`_ssl_probe`, `ssl_quota_state`, `_ssl_quota_note`, `_cert_sonde_jours`), avec ses leçons :
@@ -155,6 +155,10 @@ def brancher(ctx):
             raise ValueError("domaine requis")
         return quota_de(domaine)
 
+    def seuil(c):
+        """Le seuil d'alerte, tel que CE module le tient : les autres modules (fastpanel) le LISENT ici, ils n'en gardent pas un second."""
+        return {"jours": entier("seuil_jours", 21), "defaut": 21}
+
     def jours_de(quand):
         """Le nombre de jours entre aujourd'hui et une date « AAAA-MM-JJ… » (négatif : dépassée) ; None si elle est illisible."""
         s = str(quand or "")[:10]
@@ -187,6 +191,7 @@ def brancher(ctx):
     c.implementer("etat", etat)
     c.implementer("signal_jour", signal_jour)
     c.implementer("quota", quota)
+    c.implementer("seuil", seuil)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
