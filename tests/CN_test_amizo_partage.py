@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ed3cfe
+# VERSION CN : 0.1.0  #b3ae3b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Amizo ne lit que du partagé d'une société : le champ `partage`, l'acteur « amizo » jamais par défaut, l'invariant sur tous les manifestes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b3ae3b ▼▼▼
 """Amizo (la connaissance) ne lit que du PARTAGÉ d'une société : le champ `partage` d'une capacité, l'acteur « amizo » jamais par défaut, et l'invariant sur tous les manifestes."""
 import copy
 import shutil
