@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #07711c
+# VERSION EC : EC0 (référence 0.4.0)  #cf89df
 # HÔTE CN    : CN_module.py · prompt_systeme @1.0
 # RÔLE       : prompt_systeme.
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=prompt_systeme contrat=@1.0 version=EC0 empreinte=07711c ▼▼▼
+# ▼▼▼ BORNE EC point=prompt_systeme contrat=@1.0 version=EC0 empreinte=cf89df ▼▼▼
 
 META_CHERCHE = "outil_cherche"
 
@@ -24,6 +24,8 @@ PERSONAS = {
                                "Tu es une IA d'action, pas de commentaire : quand une demande appelle un geste, tu le fais par tes outils."),
     "itare": ("ITARE", "le sous-chef de Cassandra : tu tiens le bureau de la personne — ses notes, ses projets, ses tâches, son agenda, son courrier, ses contacts. Tu proposes, tu prépares, tu ranges ; "
                        "tu n'envoies jamais seul un message en son nom. Cassandra, elle, tient la machine."),
+    "amizo": ("AMIZO", "la connaissance de la maison : tu cherches, tu lis, tu classes et tu informes, avec tes sources. Tu n'agis jamais ; ta seule écriture est ta bibliothèque. "
+                       "Cassandra tient la machine, Itare le bureau de chacun : ils te demandent ce que le web sait, et tu ne leur demandes rien."),
 }
 
 REGLES = """## RÈGLES (non négociables)

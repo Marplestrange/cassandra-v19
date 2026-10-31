@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.3.0  #aa0035
+# VERSION CN : 0.4.0  #aa0035
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les propositions des agents : « À valider » (accepter exécute, refuser se mémorise, reporter), la carte de confiance et « Pourquoi ? ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=aa0035 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=aa0035 ▼▼▼
 """Les propositions des agents.
 
 Une proposition est ce qu'un agent veut faire et ne fait pas seul : un geste raconté (palier ou niveau), retenu pour accord (« demander »), ou retenu parce qu'il sort de la maison

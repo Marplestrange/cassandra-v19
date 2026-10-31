@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.3.0  #74d96c
+# VERSION CN : 0.4.0  #74d96c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le Relecteur : relit une réponse avant qu'elle parte et la retient si elle laisse échapper un secret connu (par son empreinte) ou porte un ordre caché.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=74d96c ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=74d96c ▼▼▼
 """Le Relecteur (un service agentique : ni mémoire propre, ni initiative) relit une réponse avant qu'elle parte.
 
 La sentinelle anti-fuite compare chaque réponse aux EMPREINTES des secrets connus — jamais à leurs valeurs : le module ne garde que HMAC-SHA256(clé de l'instance, valeur) et la longueur.

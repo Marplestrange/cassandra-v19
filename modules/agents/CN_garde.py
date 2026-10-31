@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.3.0  #1a501c
+# VERSION CN : 0.4.0  #1a501c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La garde des agents : la sentinelle anti-fuite (empreintes des secrets), le Relecteur qui retient une réponse, et les épreuves de sûreté d'un modèle.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=1a501c ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=1a501c ▼▼▼
 """La garde des agents.
 
   - Sentinelle : le module ne garde des secrets connus que leur EMPREINTE (HMAC sous une clé propre à l'instance) et leur longueur — jamais la valeur. On l'apprend d'un secret

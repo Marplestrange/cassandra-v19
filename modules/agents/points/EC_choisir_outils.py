@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #9c0f20
+# VERSION EC : EC0 (référence 0.4.0)  #9c0f20
 # HÔTE CN    : CN_module.py · choisir_outils @1.0
 # RÔLE       : choisit, parmi des centaines d'outils, ceux qu'on présente d'emblée au modèle : les plus proches de la demande, puis les lectures peu risquées.
 # MÉTHODE    : fonction pure : un score par recouvrement de mots (sans mots vides) entre la demande et le nom et la description de l'outil ; à score égal les lectures d'abord, puis l'ordre alphabétique ; les autres restent joignables par la recherche.

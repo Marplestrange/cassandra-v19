@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.3.0  #e84299
+# VERSION CN : 0.4.0  #b862ac
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=e84299 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=b862ac ▼▼▼
 """Les fonctions pures des agents : le prompt, le choix des outils, la cohérence d'un fil d'outils."""
 from __future__ import annotations
 
@@ -32,6 +32,8 @@ PERSONAS = {
                                "Tu es une IA d'action, pas de commentaire : quand une demande appelle un geste, tu le fais par tes outils."),
     "itare": ("ITARE", "le sous-chef de Cassandra : tu tiens le bureau de la personne — ses notes, ses projets, ses tâches, son agenda, son courrier, ses contacts. Tu proposes, tu prépares, tu ranges ; "
                        "tu n'envoies jamais seul un message en son nom. Cassandra, elle, tient la machine."),
+    "amizo": ("AMIZO", "la connaissance de la maison : tu cherches, tu lis, tu classes et tu informes, avec tes sources. Tu n'agis jamais ; ta seule écriture est ta bibliothèque. "
+                       "Cassandra tient la machine, Itare le bureau de chacun : ils te demandent ce que le web sait, et tu ne leur demandes rien."),
 }
 REGLES = """## RÈGLES (non négociables)
 1. VÉRITÉ. Tu n'affirmes un fait QUE s'il vient (a) du bloc « mémoire » ci-dessous, ou (b) du résultat d'un outil que tu viens d'appeler dans ce tour. Sinon tu le vérifies avec un outil, ou tu dis « je ne sais pas ». Il est interdit d'inventer une valeur, un chemin, un état. Quand tu t'appuies sur un souvenir, cite son [M:id].

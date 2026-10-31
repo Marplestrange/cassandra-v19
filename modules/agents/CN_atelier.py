@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.3.0  #1886aa
+# VERSION CN : 0.4.0  #808112
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents, et les services que le tour de conversation emploie (réglage effec
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=1886aa ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=808112 ▼▼▼
 """L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents,
 et les services que le tour de conversation emploie (réglage effectif, palier par outil, coût du jour, plafond).
 
@@ -40,6 +40,9 @@ def brancher_equipe(ctx, reglage):
     for a in D["agents"]:
         db.ecrire("INSERT OR IGNORE INTO agents_def(id, genre, nom, role, portee, acteur_outils, niveau_defaut, modele_defaut, ordre) VALUES (?,?,?,?,?,?,?,?,?)",
                   (a["id"], a["genre"], a["nom"], a["role"], a["portee"], a["acteur_outils"], a["niveau_defaut"], a["modele_defaut"], a["ordre"]))
+
+    db.ecrire("UPDATE agents_def SET acteur_outils='amizo' WHERE id='amizo' AND acteur_outils=''")                           # une instance semée avant que l'agent vive : Amizo prend ses outils
+    db.ecrire("UPDATE agents_def SET niveau_defaut='entretien' WHERE id='amizo' AND niveau_defaut='observer'")
 
     def definitions():
         return {r["id"]: dict(r) for r in db.lire("SELECT * FROM agents_def ORDER BY ordre, id")}

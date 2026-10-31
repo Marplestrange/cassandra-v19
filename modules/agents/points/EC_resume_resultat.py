@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #2b89b6
+# VERSION EC : EC0 (référence 0.4.0)  #2b89b6
 # HÔTE CN    : CN_module.py · resume_resultat @1.0
 # RÔLE       : dit au modèle ce qui est arrivé à l'acte qu'il a demandé : fait, simplement raconté, simulé, refusé, échoué ou annulé.
 # MÉTHODE    : fonction pure : une phrase par statut ; un résultat trop long est tronqué avec le nombre de caractères perdus.

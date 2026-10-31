@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #baad70
+# VERSION EC : EC0 (référence 0.4.0)  #baad70
 # HÔTE CN    : CN_module.py · coherents @1.0
 # RÔLE       : Une conversation que l'API accepte : chaque message assistant porteur de `tool_calls` est suivi d'une réponse `tool` pour CHACUN de ses identifiants, et aucune réponse `tool` n'est orpheline.
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.

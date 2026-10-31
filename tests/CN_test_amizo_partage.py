@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b3ae3b
+# VERSION CN : 0.1.0  #5e5bbe
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Amizo ne lit que du partagé d'une société : le champ `partage`, l'acteur « amizo » jamais par défaut, l'invariant sur tous les manifestes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b3ae3b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5e5bbe ▼▼▼
 """Amizo (la connaissance) ne lit que du PARTAGÉ d'une société : le champ `partage` d'une capacité, l'acteur « amizo » jamais par défaut, et l'invariant sur tous les manifestes."""
 import copy
 import shutil
@@ -85,7 +85,7 @@ class ChampPartage(unittest.TestCase):
         self.assertEqual(erreurs_de(brut_societes(), partage=None, externe=True, qui=["amizo"]), [])
 
     def test_la_liste_blanche_des_ecritures_est_courte(self):
-        self.assertEqual(mf.ECRITURES_AMIZO, ("bibliotheque.noter", "information.transmettre"))
+        self.assertEqual(mf.ECRITURES_AMIZO, ("bibliotheque.noter", "agents.transmettre"))
         b = brut_societes()
         for c in b["capacites"]:
             if c["id"] == "carte":

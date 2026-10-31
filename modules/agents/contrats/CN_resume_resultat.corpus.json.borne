@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.3.0  #4f66a3
+# VERSION CN : 0.4.0  #4f66a3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : resume_resultat.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.3.0  #d266db
+# VERSION CN : 0.4.0  #ce156a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=d266db ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=ce156a ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -34,12 +34,13 @@ import time
 from datetime import datetime
 
 from . import CN_outils as o
+from .CN_amizo import brancher_amizo
 from .CN_atelier import brancher_equipe
 from .CN_garde import brancher_garde
 from .CN_propositions import REF_SOUVENIR, brancher_propositions
 
-SYSTEME = ("cassandra", "itare", "noyau", "operateur")
-AGENTS = ("cassandra", "itare")
+SYSTEME = ("cassandra", "itare", "amizo", "noyau", "operateur")
+AGENTS = ("cassandra", "itare", "amizo")
 ECRITURES_RISQUEES = ("moyen", "eleve")
 
 
@@ -90,7 +91,7 @@ def brancher(ctx):
 
     def conversations(c):
         compte = compte_agit()
-        return {"conversations": db.lire("SELECT c.id, c.agent, c.titre, c.cree, c.maj, (SELECT COUNT(*) FROM messages m WHERE m.conversation_id=c.id AND m.role IN ('user','assistant')) AS n "
+        return {"conversations": db.lire("SELECT c.id, c.agent, c.titre, c.cree, c.maj, (SELECT COUNT(*) FROM messages m WHERE m.conversation_id=c.id AND m.role IN ('user','assistant','info')) AS n "
                                          "FROM conversations c WHERE c.compte=? AND c.supprime_at IS NULL ORDER BY c.maj DESC LIMIT 200", (compte,))}
 
     def messages_de(cid, limite=None):
@@ -111,6 +112,8 @@ def brancher(ctx):
         agent = str(agent or "cassandra").strip().lower()
         if agent not in AGENTS:
             raise ValueError("agent : %s" % " | ".join(AGENTS))
+        if agent == "amizo" and not E.admin(compte):
+            raise PermissionError("Amizo est un agent d'instance : sa conversation se tient depuis l'administration (ton Itare lui passe la main quand il faut)")
         now = time.time()
         cid = db.ecrire("INSERT INTO conversations(compte, agent, titre, cree, maj) VALUES (?,?,?,?,?)", (compte, agent, str(titre or "").strip()[:120], now, now))
         return {"id": cid, "compte": compte, "agent": agent}
@@ -207,6 +210,8 @@ def brancher(ctx):
                 roles = [cfg["modele"]]
             elif agent == "itare":
                 roles = ["", str(reglage("role_itare", "itare_citadelle"))]
+            elif agent == "amizo":
+                roles = [str(reglage("role_amizo", "principal"))]
             else:
                 roles = [str(reglage("role_cassandra", "principal"))]
             roles = roles + ([cfg["secours"]] if cfg["secours"] and cfg["secours"] not in roles else [])
@@ -315,15 +320,17 @@ def brancher(ctx):
             crees.append(stocker(cid, "user", message, tour=tour))
             if not cv["titre"]:
                 db.ecrire("UPDATE conversations SET titre=? WHERE id=?", (" ".join(message.split())[:60], cid))
-            try:
-                ctx.agir("memoire.tour_commencer", {"question": message}, acteur=agent)
-                memo = lecture("memoire.rappeler", question=message) or {}
-            except Exception:
-                memo = {}
-            try:
-                ctx.agir("memoire.doutes_depuis_reponse", {"texte": message}, acteur=agent)
-            except Exception:
-                pass
+            memo = {}
+            if agent != "amizo":                                       # Amizo n'a pas de mémoire de la personne : il sert la connaissance, pas le bureau
+                try:
+                    ctx.agir("memoire.tour_commencer", {"question": message}, acteur=agent)
+                    memo = lecture("memoire.rappeler", question=message) or {}
+                except Exception:
+                    memo = {}
+                try:
+                    ctx.agir("memoire.doutes_depuis_reponse", {"texte": message}, acteur=agent)
+                except Exception:
+                    pass
             cfg = E.effectif(agent, cle_cfg(agent, compte))
             retires = {k for k, v in E.surcharges(agent, cle_cfg(agent, compte)).items() if v["palier"] == "retire"}
             tous = [t for t in ctx.outils(agent) if t["cle"] not in retires and (agent == "cassandra" or not t["nom"].startswith("coffre__"))]     # Cassandra seule tient le coffre : jamais un outil de secret pour les autres
@@ -333,6 +340,10 @@ def brancher(ctx):
             schemas = [o.schema_outil(t) for t in pres] + o.meta_outils()
             ton = ""
             persona = cfg["ton"] or str(reglage("persona_" + agent, ""))
+            if agent == "amizo":
+                persona = (persona + "\n\n" if persona else "") + A.regle_amizo
+            elif "agents.passer_la_main" in par_cle:                    # un agent qui n'a pas l'outil du web le dit, et passe la main
+                persona = (persona + "\n\n" if persona else "") + A.regle_passation
             soc = lecture("societes.carte") or {}
             if soc.get("nom"):                                          # chaque société a ses agents : ils savent pour qui ils travaillent, et ne mélangent jamais deux sociétés
                 persona = (persona + "\n\n" if persona else "") + "Tu travailles pour la société « %s »%s. Ses données et celles de ses utilisateurs lui appartiennent : n'en mélange jamais avec celles d'une autre société." % (
@@ -405,7 +416,7 @@ def brancher(ctx):
                         actions.append(action)
             else:
                 crees.append(stocker(cid, "panne", "⚠️ Trop d'étapes d'outils dans ce tour : arrêté (%s au plus)." % max_tours, tour=tour))
-            if texte:
+            if texte and agent != "amizo":
                 try:
                     ctx.agir("memoire.apres_echange", {"session_id": "conv-%d" % cid, "question": message, "reponse": texte, "actes": etat["ecritures"],
                                                        "commandes": "; ".join(a["cle"] for a in actions if a.get("cle") and a.get("risque") != "lecture")}, acteur=agent)
@@ -425,6 +436,7 @@ def brancher(ctx):
             db.ecrire("DELETE FROM messages WHERE id=?", (m,))
 
     # ------------------------------------------------------------------ inscription
+    A = brancher_amizo(ctx, E, db, compte_agit, stocker, lambda *a, **k: converser(*a, **k))          # Amizo : transmettre, passer la main, traiter une passation
     c = ctx
     for cid, f in (("conversations", conversations), ("conversation", conversation), ("outils", outils)):
         c.implementer(cid, f)

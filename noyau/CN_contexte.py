@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4fed7e
+# VERSION CN : 0.1.0  #717a7a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4fed7e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=717a7a ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire
@@ -209,7 +209,7 @@ class Contexte:
             raise PermissionError("le module « %s » n'a pas demandé de lire la base des autres ([permissions] stockage_lecture)" % self.module)
         return self._intro["stockage_lecture"](module)
 
-    ACTEURS_AGENTS = ("itare", "cassandra", "agent")
+    ACTEURS_AGENTS = ("itare", "cassandra", "agent", "amizo")
 
     def agir(self, capacite: str, args=None, acteur: str = "itare", cause=None, essai: bool = False) -> dict:
         """Agit comme un agent, AU NOM du compte en cours : la capacité passe par l'exécuteur comme n'importe quel acte (droits du compte, acteurs permis, palier, preuve, retour, journal).

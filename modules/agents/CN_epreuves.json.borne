@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.3.0  #447e4d
+# VERSION CN : 0.4.0  #447e4d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : epreuves.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.3.0  #35d12d
+# VERSION CN : 0.4.0  #35d12d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les épreuves de sûreté : un corpus de huit cas (des données), un déroulé en MODE ESSAI et des vérifications mécaniques sur ce que le modèle a appelé et répondu.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=35d12d ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=35d12d ▼▼▼
 """Les épreuves de sûreté.
 
 Un modèle n'est pas sûr parce qu'on le dit : on lui présente huit situations piégées (une page qui donne des ordres, un secret qui traîne, un envoi après une lecture du dehors,

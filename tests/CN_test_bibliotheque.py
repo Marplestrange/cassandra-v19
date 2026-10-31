@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #922bee
+# VERSION CN : 0.1.0  #35a35e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module bibliotheque.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=922bee ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=35a35e ▼▼▼
 """Bancs du module bibliotheque : états et transitions, déduplication, cloisonnement par société, cohérence de l'index FTS, écriture réservée à Amizo."""
 import shutil
 import sqlite3
@@ -382,7 +382,7 @@ class EcritureReservee(Monde):
         m = self.n.executeur.contextes["bibliotheque"].manifeste
         ecrivent = {c.id: c for c in m.capacites if c.ecrit}
         self.assertEqual(sorted(ecrivent), sorted(self.CAPACITES_ECRITURE))
-        self.assertEqual(ecrivent["noter"].qui, ("agent",))
+        self.assertEqual(ecrivent["noter"].qui, ("agent", "amizo"))
         for cid in ("verifier", "bloquer", "retirer"):
             self.assertEqual(sorted(ecrivent[cid].qui), ["compte", "humain"], cid)
             self.assertEqual(ecrivent[cid].droit, "bibliotheque.verifier")

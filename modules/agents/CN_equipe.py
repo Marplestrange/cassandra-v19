@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.3.0  #b578ea
+# VERSION CN : 0.4.0  #b578ea
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'équipe des agents : qui ils sont (des DONNÉES : CN_equipe.json), comment chacun est réglé, ce qu'il dépense, et le plafond qui le retient.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=b578ea ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=b578ea ▼▼▼
 """L'équipe des agents : qui ils sont (des DONNÉES : CN_equipe.json), comment chacun est réglé, ce qu'il dépense, et le plafond qui le retient.
 
 Règles tenues ici :

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : web
 # ZONE       : CN
-# VERSION CN : 0.1.0  #584c65
+# VERSION CN : 0.1.0  #5c5e94
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La porte du dehors : recherche et lecture de pages web, protégées contre la forgerie de requête côté serveur ; tout ce qui revient est une donnée extérieure.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=584c65 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5c5e94 ▼▼▼
 [module]
 id = "web"
 nom = "Web"
@@ -79,7 +79,7 @@ libelle = "Chercher sur le web : titre, adresse et extrait de chaque résultat (
 risque = "lecture"
 droit = "utiliser"
 externe = true
-qui = ["humain", "compte"]
+qui = ["humain", "compte", "amizo"]
 
 [[capacites]]
 id = "lire"
@@ -87,7 +87,7 @@ libelle = "Lire UNE page web : son texte seul, borné, avec la date de lecture e
 risque = "lecture"
 droit = "utiliser"
 externe = true
-qui = ["humain", "compte"]
+qui = ["humain", "compte", "amizo"]
 
 [[capacites]]
 id = "lectures_recentes"

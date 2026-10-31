@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : bibliotheque
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8755c9
+# VERSION CN : 0.1.0  #6aa0e4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La bibliothèque.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ═══════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8755c9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6aa0e4 ▼▼▼
 """La bibliothèque d'Amizo : la connaissance SOURCÉE, dans sa propre base.
 
   - une fiche est un document avec sa provenance (adresse, date de lecture), découpé en passages dont la position est gardée ; un souvenir (module Mémoire) est
@@ -132,7 +132,9 @@ def brancher(ctx):
             return JOURS_PEREMPTION
 
     def exiger_amizo():
-        """La seule porte d'écriture d'une fiche : l'acteur est un agent ET c'est le compte que le réglage désigne comme Amizo (vide : personne n'écrit)."""
+        """La seule porte d'écriture d'une fiche : l'acteur « amizo » (le noyau ne le laisse porter que cette écriture), ou un agent invité dont le compte est celui que le réglage désigne comme Amizo (vide : personne d'autre n'écrit)."""
+        if (ctx.acteur or "") == "amizo":
+            return
         amizo = str(ctx.reglage("compte_amizo") or "").strip()
         if (ctx.acteur or "") != "agent" or not amizo or qui() != amizo:
             raise PermissionError("seul Amizo écrit dans la bibliothèque")

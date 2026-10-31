@@ -2,7 +2,7 @@
   "agents": [
     {"id": "cassandra", "genre": "agent", "nom": "Cassandra", "role": "L'infrastructure seulement : la machine, ses sites, ses certificats, ses sauvegardes, le coffre des secrets.", "portee": "instance", "acteur_outils": "cassandra", "niveau_defaut": "reine", "modele_defaut": "principal", "ordre": 1},
     {"id": "itare", "genre": "agent", "nom": "Itare", "role": "Le bureau de chaque compte : notes, projets, tâches, agenda, courrier, contacts, billetterie. Aucun outil de secret.", "portee": "compte", "acteur_outils": "itare", "niveau_defaut": "entretien", "modele_defaut": "", "ordre": 2},
-    {"id": "amizo", "genre": "agent", "nom": "Amizo", "role": "La connaissance : cherche, lit, classe, informe ; n'agit jamais. Sa seule écriture est sa bibliothèque.", "portee": "instance", "acteur_outils": "", "niveau_defaut": "observer", "modele_defaut": "", "ordre": 3},
+    {"id": "amizo", "genre": "agent", "nom": "Amizo", "role": "La connaissance : cherche, lit, classe, informe ; n'agit jamais. Sa seule écriture est sa bibliothèque.", "portee": "instance", "acteur_outils": "amizo", "niveau_defaut": "entretien", "modele_defaut": "", "ordre": 3},
     {"id": "relecteur", "genre": "service", "nom": "Relecteur", "role": "Service agentique : relit un texte avant qu'il ne parte.", "portee": "instance", "acteur_outils": "", "niveau_defaut": "observer", "modele_defaut": "", "ordre": 4},
     {"id": "vision", "genre": "service", "nom": "Vision", "role": "Service agentique : lit une image ou un document scanné.", "portee": "instance", "acteur_outils": "", "niveau_defaut": "observer", "modele_defaut": "", "ordre": 5}
   ],

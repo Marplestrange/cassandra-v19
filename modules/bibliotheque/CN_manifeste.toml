@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : bibliotheque
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d913bc
+# VERSION CN : 0.1.0  #5ec969
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La bibliothèque.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d913bc ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5ec969 ▼▼▼
 [module]
 id = "bibliotheque"
 nom = "Bibliothèque"
@@ -68,7 +68,7 @@ libelle = "Chercher dans la bibliothèque (plein texte) : classé par pertinence
 risque = "lecture"
 droit = "utiliser"
 externe = true
-qui = ["cassandra", "itare", "humain", "compte", "agent"]
+qui = ["cassandra", "itare", "humain", "compte", "agent", "amizo"]
 
 [[capacites]]
 id = "fiche"
@@ -97,11 +97,11 @@ id = "noter"
 libelle = "Écrire une fiche (la seule écriture de contenu) : externe = quarantaine, interne = vérifiée ; même adresse et texte changé = nouvelle version ; même texte d'une autre adresse = attestation, pas doublon"
 risque = "faible"
 droit = "noter"
-perimetre = ["réservée à l'acteur agent dont le compte est celui désigné par le réglage compte_amizo", "la société de l'agent, jamais une autre", "une source bloquée est refusée", "aucun bureau personnel n'est lu"]
+perimetre = ["réservée à l'acteur amizo (ou à un agent invité dont le compte est celui désigné par le réglage compte_amizo)", "la société de l'agent, jamais une autre", "une source bloquée est refusée", "aucun bureau personnel n'est lu"]
 preuve = "relire la fiche : elle existe dans la société de l'acte et porte au moins un passage"
 retour = "défaire exactement ce que l'acte a fait : retirer la fiche créée, retirer l'attestation ajoutée, rendre la version d'avant, remettre la date de lecture"
 paliers = ["raconter", "auto"]
-qui = ["agent"]
+qui = ["agent", "amizo"]
 
 [[capacites]]
 id = "verifier"

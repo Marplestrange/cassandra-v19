@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #95bd59
+# VERSION CN : 0.1.0  #578d4c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=95bd59 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=578d4c ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -38,7 +38,7 @@ API_NOYAU = "1.0"     # le contrat offert aux modules (ctx, manifeste). Sa versi
 RISQUES = ("lecture", "faible", "moyen", "eleve")
 PALIERS = ("raconter", "auto", "maitre")
 ACTEURS = ("cassandra", "itare", "humain", "compte", "agent", "anonyme", "amizo")      # « amizo » (la connaissance) n'est JAMAIS un défaut : une capacité doit le nommer, et ne peut que lire du partagé
-ECRITURES_AMIZO = ("bibliotheque.noter", "information.transmettre")   # LES SEULES écritures qu'« amizo » peut porter : sa bibliothèque, et un message à un agent ou à un utilisateur. Toute autre est refusée.
+ECRITURES_AMIZO = ("bibliotheque.noter", "agents.transmettre")   # LES SEULES écritures qu'« amizo » peut porter : sa bibliothèque, et un message à un agent ou à un utilisateur. Toute autre est refusée.
 PARTAGES = ("societe",)    # « societe » : ne lit que des données PARTAGÉES de la société active, jamais le bureau d'un compte
 MODES_MOTEUR = ("periodique", "evenement", "demande")
 ROLES_MENU = ("utilisateur", "admin")

@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2aa253
+# VERSION CN : 0.1.0  #e6a18e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2aa253 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e6a18e ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -75,6 +75,7 @@ from noyau.CN_stockage import Stockage
 RACINE = Path(__file__).resolve().parent
 log = logging.getLogger("noyau")
 SEUIL_PANNES = 5   # pannes de suite d'un détecteur avant qu'il soit suspendu (disjoncteur)
+OUTILS_DU_MODULE_AGENTS = ("agents.transmettre", "agents.passer_la_main")   # les seules capacités du module des agents qu'un agent emploie comme outil (le reste est le réglage de l'équipe : jamais un outil)
 
 
 class Noyau:
@@ -237,7 +238,7 @@ class Noyau:
         sorties = []
         for e in self.catalogue.lister():
             c = e.capacite
-            if not e.actif or not e.implementee or acteur not in c.qui or c.qui == ("anonyme",) or e.module == "agents":
+            if not e.actif or not e.implementee or acteur not in c.qui or c.qui == ("anonyme",) or (e.module == "agents" and e.cle not in OUTILS_DU_MODULE_AGENTS):
                 continue
             if compte and c.droit and self.droits is not None and not self.droits.raison(compte, c.droit)["accord"]:
                 continue
