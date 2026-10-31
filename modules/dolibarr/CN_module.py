@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #c30270
+# VERSION CN : 0.4.0  #e31325
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=c30270 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=e31325 ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -71,6 +71,7 @@ DOCUMENTS = {"factures": "/invoices", "devis": "/proposals", "commandes": "/orde
 CHAMPS_DOC = {"socid", "date", "note_private", "note_public", "lines"}
 CHAMPS_LIGNE = {"desc", "qty", "subprice", "tva_tx", "fk_product", "product_type", "remise_percent"}
 MAX_CORPS = 16384
+AGENT = "Cassandra-Dolibarr/0.4"      # une identité franche : un pare-feu applicatif (Cloudflare) refuse l'agent par défaut de Python
 MODES_PAIEMENT = ("VIR", "CHQ", "LIQ", "CB", "PRE")      # les codes du dictionnaire « modes de règlement » de Dolibarr
 # Les domaines de l'API REST de Dolibarr (noyau) : la requête libre ne sort pas de cette liste, une faute de frappe est refusée avant d'être envoyée.
 DOMAINES = ("accountancy", "agendaevents", "bankaccounts", "categories", "contacts", "contracts", "documents", "donations", "emailtemplates",
@@ -212,7 +213,7 @@ def _garde_societe(conf):
     k = (conf["url"], hashlib.sha256(cle.encode()).hexdigest()[:12])
     t, nom = _SOCIETES.get(k, (0, ""))
     if time.time() - t > 300:
-        en_tetes = {"DOLAPIKEY": cle, "Accept": "application/json"}
+        en_tetes = {"DOLAPIKEY": cle, "Accept": "application/json", "User-Agent": AGENT}
         if conf.get("hote"):
             en_tetes["Host"] = conf["hote"]
         req = urllib.request.Request(conf["url"].rstrip("/") + "/setup/company", headers=en_tetes, method="GET")
@@ -235,7 +236,7 @@ def appeler(conf, chemin, parametres=None):
     url = conf["url"].rstrip("/") + chemin
     if parametres:
         url += ("&" if "?" in url else "?") + urllib.parse.urlencode(parametres)
-    en_tetes = {"DOLAPIKEY": _cle(conf), "Accept": "application/json"}
+    en_tetes = {"DOLAPIKEY": _cle(conf), "Accept": "application/json", "User-Agent": AGENT}
     if conf.get("hote"):
         en_tetes["Host"] = conf["hote"]
     req = urllib.request.Request(url, headers=en_tetes, method="GET")
@@ -265,7 +266,7 @@ def ecrire(conf, methode, chemin, corps=None):
     if donnees is not None and len(donnees) > MAX_CORPS:
         raise ValueError("le corps de la requête dépasse %d octets" % MAX_CORPS)
     _garde_societe(conf)
-    en_tetes = {"DOLAPIKEY": _cle(conf, ecriture=True), "Accept": "application/json", "Content-Type": "application/json"}
+    en_tetes = {"DOLAPIKEY": _cle(conf, ecriture=True), "Accept": "application/json", "Content-Type": "application/json", "User-Agent": AGENT}
     if conf.get("hote"):
         en_tetes["Host"] = conf["hote"]
     req = urllib.request.Request(conf["url"].rstrip("/") + chemin, data=donnees, headers=en_tetes, method=methode)
@@ -993,17 +994,18 @@ def brancher(ctx):
             raise ValueError("parametres : une chaîne de requête simple (limit=5&page=0)")
         conf = _conf()
         p = dict(urllib.parse.parse_qsl(str(parametres or ""))) if parametres else {}
-        if chemin.count("/") == 1:
-            p.setdefault("limit", str(MAX_LIBRE))
+        if chemin.count("/") == 1:                                  # une collection : une page de MAX_LIBRE lignes au plus (page=1, page=2… pour la suite)
+            try:
+                p["limit"] = str(max(1, min(int(p.get("limit", MAX_LIBRE)), MAX_LIBRE)))
+            except ValueError:
+                raise ValueError("limit : un entier")
         try:
             rep = appeler(conf, chemin, p)
         except PontErreur as ex:
             if ex.code == 404:
                 return {"chemin": chemin, "reponse": [], "tronque": False}
             raise
-        tronque = isinstance(rep, list) and len(rep) > MAX_LIBRE
-        if tronque:
-            rep = rep[:MAX_LIBRE]
+        tronque = isinstance(rep, list) and chemin.count("/") == 1 and len(rep) >= int(p["limit"])        # il en reste peut-être : la page suivante
         return {"chemin": chemin, "reponse": _nettoyer(rep), "tronque": tronque}
 
     def ecrire_libre(ctx, methode, chemin, corps=None):
