@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.10  #b331c1
+# VERSION CN : 0.1.10  #79144c
 # VERSION EC : néant
 # EC LIÉES   : points/EC_*.py (les points du Sensorium)
 # RÔLE       : donne au démon du Sensorium (un processus à part, sans noyau) l'accès aux points d'évolution de son module : le même service que le noyau, la même pile de sûreté.
 # MÉTHODE    : charge le service des points du noyau (disjoncteur, ombre, routage) sur le stock d'EC du noyau, en lecture ; garde ses appels dans son propre fichier de rejeu, que le noyau absorbe ; si ce service ne se charge pas, exécute la référence du dépôt directement : jamais de mesure perdue.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.10 empreinte=b331c1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.10 empreinte=79144c ▼▼▼
 """Le démon du Sensorium tourne seul : il n'a ni noyau, ni contexte, ni `ctx.point`. Ce module lui en tient lieu.
 
    - Le stock d'EC est celui du noyau (<données>/ec) : une EC mise en service par l'évolution sert aussi le démon, et son routage (ombre, paliers) le suit.
@@ -69,6 +69,11 @@ def _reference_directe(nom, entree):
     else:
         manifeste_p = _ICI / (p.reference + ".py")
         fonction = p.fonction or p.id.split(".")[-1]
+    # Le nom d'un point est un identifiant, jamais un chemin : il vient du code qui appelle (des noms écrits en dur), et un « ../ » ferait
+    # exécuter un autre fichier. On le refuse ici plutôt que de compter sur l'honnêteté de l'appelant.
+    import re
+    if not re.fullmatch(r"[a-z0-9_]+", str(nom)):
+        raise ValueError("nom de point invalide : %r" % (nom,))
     espace = {}
     exec(compile(manifeste_p.read_text(encoding="utf-8"), str(manifeste_p), "exec"), espace)
     return espace[fonction](json.loads(json.dumps(entree)))

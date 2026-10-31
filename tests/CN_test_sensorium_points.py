@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ec7add
+# VERSION CN : 0.1.0  #b5e48d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le démon du Sensorium, seul et sans noyau, appelle ses points d'évolution ; que ses appels nourrissent le rejeu que le noyau absorbe ; et qu'une panne du service ne perd jamais une mesure.
 # MÉTHODE    : charge CN_sensorium.py comme module, un dossier de données temporaire, puis appelle les fonctions façades.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ec7add ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b5e48d ▼▼▼
 import importlib.util
 import json
 import os
@@ -288,6 +288,7 @@ class Collecteurs(unittest.TestCase):
                 return sc.get("du", {}).get(c.split()[2].strip("'"), "")
             return sc.get("mysql", "")
         m.run_cmd = run_cmd
+        m.run_cmd_ex = lambda cmd, timeout=10, input_data=None: (0, run_cmd(cmd), "")      # run_json / run_cmd_strict passent par run_cmd_ex
         m._read_meminfo = lambda: dict(sc.get("mi", {}))
         if fonction in ("collect_controles", "collect_exposition", "collect_courriel_domaines"):
             import io
@@ -306,6 +307,7 @@ class Collecteurs(unittest.TestCase):
                         return val
                 return ""
             m.run_cmd = cmd
+            m.run_cmd_ex = lambda c, timeout=10, input_data=None: (0, cmd(c), "")
             m._ip_publique = lambda: sc.get("ip_pub", "")
             m._DOMAINES_CACHE = {"t": 0, "d": None}
             db = sqlite3.connect(":memory:")

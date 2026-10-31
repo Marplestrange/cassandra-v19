@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.10  #d68a86
+# VERSION CN : 0.1.10  #03e804
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.10 empreinte=d68a86 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.10 empreinte=03e804 ▼▼▼
 """Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 
 Le collecteur mesure la machine et son monde. Ce module ne mesure rien : il le questionne par son socket (une requête texte, une réponse
@@ -123,7 +123,12 @@ def brancher(ctx):
         return None if not m else dict(m["donnees"], etat=m["etat"], machine=m["libelle"])
 
     def metriques(ctx):
-        return json_de("GET_METRICS", 10)
+        """Les ressources de la machine, ou {muet: True, erreur} quand le collecteur ne répond pas (pas de socket Unix, collecteur arrêté) :
+        une source muette ne dit rien, elle ne pose pas des zéros, et l'appel ne fait pas une erreur 500 à chaque chargement."""
+        try:
+            return json_de("GET_METRICS", 10)
+        except (OSError, ValueError, RuntimeError) as ex:
+            return {"muet": True, "erreur": str(ex)[:200]}
 
     def monde(ctx, prefixe=""):
         if prefixe and not _CLE.match(prefixe):
