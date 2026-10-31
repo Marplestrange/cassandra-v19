@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.4.0)  #000000
+# VERSION EC : EC0 (référence 0.4.0)  #5351eb
 # HÔTE CN    : CN_module.py · ton_agent @1.0
 # RÔLE       : met en forme le ton réglé pour un agent (fiche ou instance) avant qu'il entre dans son prompt ; Amizo, sans ton réglé, reçoit le sien : précis et sourcé.
 # MÉTHODE    : fonction pure : retire les caractères de contrôle, replie les espaces, borne les lignes vides, coupe à la longueur maximale sur une limite de mot ; ton vide = chaîne vide, sauf pour Amizo.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=ton_agent contrat=@1.0 version=EC0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE EC point=ton_agent contrat=@1.0 version=EC0 empreinte=5351eb ▼▼▼
 import re
 
 DEFAUT_AMIZO = "Précis et sourcé : tu donnes d'abord la réponse, puis tes sources avec leur date de lecture, puis ton niveau de confiance. Tu dis « je ne sais pas » plutôt que de deviner."

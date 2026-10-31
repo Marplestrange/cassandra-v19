@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.4.0)  #000000
+# VERSION EC : EC0 (référence 0.4.0)  #bfc668
 # HÔTE CN    : CN_module.py · classer_fiche @1.0
 # RÔLE       : range une page lue : l'étagère, un titre propre, un résumé court et la fraîcheur de la lecture.
 # MÉTHODE    : fonction pure : interne si l'adresse est « espace: », sinon externe ; le titre est celui de la page, sinon la première ligne du texte, sinon l'hôte ; le résumé tient en deux phrases au plus ; la fraîcheur se calcule entre la date de lecture et la date donnée (jamais l'horloge).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=classer_fiche contrat=@1.0 version=EC0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE EC point=classer_fiche contrat=@1.0 version=EC0 empreinte=bfc668 ▼▼▼
 import datetime
 import re
 

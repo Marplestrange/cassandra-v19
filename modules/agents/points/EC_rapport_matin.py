@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.4.0)  #000000
+# VERSION EC : EC0 (référence 0.4.0)  #e94c59
 # HÔTE CN    : CN_module.py · rapport_matin @1.0
 # RÔLE       : résume en trois phrases au plus, par agent, ce que le journal dit de la période : chaque phrase renvoie à une ligne précise du journal.
 # MÉTHODE    : fonction pure : retient les événements de l'agent dans [debut, fin[, sépare actes, lectures, échecs et gestes restés racontés ou refusés, et bâtit une phrase par groupe qui cite le dernier acte ; la ligne citée est celle de cet acte.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=rapport_matin contrat=@1.0 version=EC0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE EC point=rapport_matin contrat=@1.0 version=EC0 empreinte=e94c59 ▼▼▼
 def _cle(e):
     c = e.get("objet_id")
     return str(c) if c else "?"

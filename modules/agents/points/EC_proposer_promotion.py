@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.4.0)  #000000
+# VERSION EC : EC0 (référence 0.4.0)  #022ff0
 # HÔTE CN    : CN_propositions.py · proposer_promotion @1.0
 # RÔLE       : décide si la carte de confiance propose de passer un outil de « raconter » à « auto » : assez de validations de suite, hors période d'essai, sans refus récent.
 # MÉTHODE    : fonction pure : propose si validations >= seuil, et ni essai ni refus récent ; la raison dit ce qui manque.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=proposer_promotion contrat=@1.0 version=EC0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE EC point=proposer_promotion contrat=@1.0 version=EC0 empreinte=022ff0 ▼▼▼
 def proposer_promotion(validations, seuil, essai, refus_recent):
     manque = max(0, int(seuil) - int(validations))
     if refus_recent:

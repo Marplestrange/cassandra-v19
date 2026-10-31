@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.4.0)  #000000
+# VERSION EC : EC0 (référence 0.4.0)  #34fff5
 # HÔTE CN    : CN_module.py · choix_modele @1.0
 # RÔLE       : ordonne les rôles de modèle qu'un agent essaie : son modèle réglé, son secours, les rôles d'origine ; au plafond de coût, le secours seul ; un modèle déconseillé par les épreuves de sûreté est écarté.
 # MÉTHODE    : fonction pure : au plafond, le secours seul (Cassandra, sans secours, garde son modèle) ; sinon le modèle réglé, à défaut le rôle d'origine de l'agent, puis le secours ; le rôle vide (le modèle du compte) n'est jamais écarté.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=choix_modele contrat=@1.0 version=EC0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE EC point=choix_modele contrat=@1.0 version=EC0 empreinte=34fff5 ▼▼▼
 def choix_modele(agent, modele, secours, au_plafond, origine, deconseilles, exiger):
     if au_plafond and (secours or agent != "cassandra"):
         roles = [secours] if secours else []
