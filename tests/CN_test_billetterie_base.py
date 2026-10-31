@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #dbfe6e
+# VERSION CN : 0.1.0  #be0afc
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 1 : les bases, les formules, les événements, la mise en vente, le calcul de la commission, les identifiants jamais réutilisés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=dbfe6e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=be0afc ▼▼▼
 """Bancs de la billetterie, lot 1 : les bases, les formules, les événements, la mise en vente, le calcul de la commission, les identifiants jamais réutilisés."""
 import shutil
 import sys
@@ -29,16 +29,18 @@ BEA = "bea@x.fr"
 
 
 class Monde(unittest.TestCase):
+    MODULES = ("billetterie", "droits", "comptes")          # un banc qui a besoin d'un autre module (le pont Dolibarr) l'ajoute ici
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         base = Path(self.tmp.name)
         mods = base / "modules"
-        for m in ("billetterie", "droits", "comptes"):
+        for m in self.MODULES:
             shutil.copytree(RACINE / "modules" / m, mods / m, ignore=shutil.ignore_patterns("__pycache__"))
         self.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
         self.n.brancher()
-        for m in ("droits", "comptes", "billetterie"):
+        for m in ("droits", "comptes") + tuple(x for x in self.MODULES if x not in ("droits", "comptes")):
             self.assertTrue(self.n.activer(m)["ok"], m)
         self.ctx = self.n.executeur.contextes["billetterie"]
         self.n.droits.regler_admin(BEA, True)               # le titulaire de l'instance

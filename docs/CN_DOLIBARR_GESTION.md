@@ -63,6 +63,10 @@ Par défaut une fiche de Cassandra reste « Cassandra seulement ». `envoyer_pro
 
 Chaque capacité a un palier, choix de l'administrateur : « raconter » (Cassandra ou Itare prépare, un humain approuve) ou « auto ». Aucun geste n'est interdit par le code. `valider_facture` reste réservée aux humains et à Cassandra : elle consomme un numéro légal.
 
+## Le pont de la billetterie (un seul client)
+
+La billetterie n'a plus ni adresse ni clé de Dolibarr : sa file d'écritures (un moteur, donc sans compte) appelle les capacités `bil_tiers`, `bil_facture`, `bil_avoir`, `bil_versement`, `bil_adherent` (et `bil_tester`, en lecture) par `ctx.agir`, acteur « cassandra ». Un moteur agit sous le compte système `noyau` : c'est la clé de **mandat** qui écrit, dans la société de son tour, avec la garde de société, le palier et le journal de ce module. Chaque écriture est idempotente (recherche par `ref_ext` avant de créer). Le palier est le mandat de l'administrateur : « raconter » (défaut) fait attendre la file en le disant, « auto » la laisse écrire. Une panne de Dolibarr est rendue comme un report (`differe`), jamais comme un échec de la capacité : deux échecs de suite la rétrograderaient. Ces capacités ne sont proposées qu'à « cassandra » (ni à Itare, ni aux humains, sauf `bil_tester`).
+
 ## Ce qui a été vérifié contre un vrai Dolibarr 24.0.2
 
 Sur une copie isolée de la base (31-10) : valider une facture, l'encaisser en deux fois (le règlement qui la solde se défait en la rouvrant d'abord, par `settounpaid`), son PDF, un avoir, un devis (valider, signer, facturer), un don validé, un virement entre comptes, le paiement d'une facture reçue. Ce que cette copie a appris, et que le code applique : `paymentsdistributed` refuse « amount » et « multicurrency_amount » ensemble ; un paiement fournisseur veut `payment_mode_id` ; le reçu fiscal d'un don n'a pas d'API ; la validation d'une facture échoue si le module `blockedlog` ne peut plus déchiffrer sa clé (`BLOCKEDLOG_HMAC_KEY`, après un changement de `dolibarr_main_instance_unique_id`).

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9d0660
+# VERSION CN : 0.1.0  #c7a97f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Billetterie : la file de rattrapage de Dolibarr (l'empilement seulement).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9d0660 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c7a97f ▼▼▼
 """Billetterie : la file de rattrapage de Dolibarr (l'empilement seulement).
 
 Une vente, un remboursement, un versement EMPILENT une écriture à faire ; ils ne parlent jamais à Dolibarr. Ce petit fichier ne dépend de rien d'autre pour que la vente puisse l'appeler sans cycle d'importation.
@@ -24,7 +24,7 @@ OBJETS = {"facture": "dolibarr_factures", "avoir": "dolibarr_avoirs", "versement
 
 
 def relie(ctx) -> bool:
-    return bool(ctx.reglage("dolibarr_actif") and str(ctx.reglage("dolibarr_url") or "").strip() and ctx.reglage("dolibarr_cle"))
+    return bool(ctx.reglage("dolibarr_actif"))                  # l'adresse et la clé sont celles du module « dolibarr » : la billetterie n'en garde aucune
 
 
 def empiler(ctx, tx, objet: str, cible_id: int) -> bool:

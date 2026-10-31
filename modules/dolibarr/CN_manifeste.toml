@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #5c6682
+# VERSION CN : 0.4.0  #a88f01
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=5c6682 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=a88f01 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -269,6 +269,70 @@ preuve = "relire l'avoir : brouillon, relié à sa facture, mêmes lignes en né
 retour = "supprimer ce brouillon, seulement s'il l'est encore"
 paliers = ["raconter", "auto"]
 qui = ["humain", "cassandra", "itare"]
+
+# ── le pont de la billetterie : sa file d'écritures appelle ces capacités (ctx.agir, acteur « cassandra », compte système « noyau »). Tant que le palier est « raconter »,
+# la file attend et le dit ; l'administrateur choisit « auto » pour donner son mandat à la billetterie (Dolibarr › Capacités).
+[[capacites]]
+id = "bil_tiers"
+libelle = "Billetterie : retrouver ou créer le tiers (client, fournisseur ou « Clients divers ») d'une vente ou d'un versement"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["un tiers, retrouvé par courriel ou par référence extérieure avant d'être créé"]
+preuve = "relire le tiers par son identifiant"
+retour = "rien : un tiers déjà lié à des pièces ne se supprime pas à la volée, il s'archive dans Dolibarr"
+paliers = ["raconter", "auto"]
+qui = ["cassandra"]
+
+[[capacites]]
+id = "bil_facture"
+libelle = "Billetterie : écrire la facture d'une commande payée, la valider (numéro légal) et y poser le règlement"
+risque = "eleve"
+droit = "utiliser"
+perimetre = ["une facture client par commande, retrouvée par sa référence extérieure ; un seul règlement"]
+preuve = "relire la facture : validée, avec son numéro"
+retour = "une facture validée ne s'efface pas : un avoir la corrige (bil_avoir)"
+paliers = ["raconter", "auto"]
+qui = ["cassandra"]
+
+[[capacites]]
+id = "bil_avoir"
+libelle = "Billetterie : écrire et valider l'avoir d'une commande remboursée"
+risque = "eleve"
+droit = "utiliser"
+perimetre = ["un avoir par remboursement, retrouvé par sa référence extérieure"]
+preuve = "relire l'avoir : de type avoir, validé, avec son numéro"
+retour = "un avoir validé ne s'efface pas : il se corrige dans Dolibarr"
+paliers = ["raconter", "auto"]
+qui = ["cassandra"]
+
+[[capacites]]
+id = "bil_versement"
+libelle = "Billetterie : écrire la facture fournisseur d'un versement de commission, la valider et y poser le virement"
+risque = "eleve"
+droit = "utiliser"
+perimetre = ["une facture fournisseur par versement, retrouvée par sa référence extérieure ; un seul règlement"]
+preuve = "relire la facture fournisseur : validée, avec son numéro"
+retour = "une facture validée ne s'efface pas : elle se corrige dans Dolibarr"
+paliers = ["raconter", "auto"]
+qui = ["cassandra"]
+
+[[capacites]]
+id = "bil_adherent"
+libelle = "Billetterie : créer l'adhérent Dolibarr d'un artiste (type « Artiste », créé la première fois)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["un adhérent par artiste, retrouvé par sa référence extérieure"]
+preuve = "relire l'adhérent par son identifiant"
+retour = "se corrige dans Dolibarr (résilier ou supprimer l'adhérent)"
+paliers = ["raconter", "auto"]
+qui = ["cassandra"]
+
+[[capacites]]
+id = "bil_tester"
+libelle = "Billetterie : vérifier que Dolibarr est prêt (société, comptes bancaires, modes de paiement, taux de TVA)"
+risque = "lecture"
+droit = "utiliser"
+qui = ["cassandra", "humain"]
 
 [[capacites]]
 id = "relancer"

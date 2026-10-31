@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #edb3aa
+# VERSION CN : 0.4.0  #805e3c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=edb3aa ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=805e3c ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -165,9 +165,10 @@ def lire_conf():
 def _compte_courant():
     """Le compte au nom duquel la capacité en cours s'exécute ('' : un moteur, le système). PAR FIL : jamais un global."""
     try:
-        return str(_CTX.compte or "") if _CTX is not None else ""
+        c = str(_CTX.compte or "") if _CTX is not None else ""
     except Exception:
         return ""
+    return "" if c in ("noyau", "operateur") else c          # un compte SYSTÈME (les moteurs agissent sous « noyau ») n'a pas de clé propre : c'est le mandat
 
 
 def _reglage_texte(nom):
@@ -1343,6 +1344,171 @@ def brancher(ctx):
     ctx.implementer("corbeille", corbeille_lue)
     ctx.implementer("valider_facture", valider_facture, prouver_validation, defaire_validation,
                     simuler=lambda ctx, id="", **_: "validerait la facture %s (elle prendrait un numéro)" % id)
+
+    # ------------------------------------------------------------------ le pont de la billetterie : LE client, un seul
+    # La billetterie (module « billetterie ») n'a ni adresse ni clé de Dolibarr : sa file d'écritures appelle ces capacités par ctx.agir, sous le compte système « noyau »
+    # (donc la clé de mandat), avec le palier, le journal et la garde de société de CE module. Chaque écriture est IDEMPOTENTE : on cherche par la référence extérieure
+    # avant de créer, une écriture rejouée ne double rien. Les données arrivent toutes faites : le module ne lit jamais la base de la billetterie.
+    def _filtre_ext(champ, valeur):
+        if not str(valeur).strip() or any(c in str(valeur) for c in "'()\\"):
+            raise ValueError("valeur de recherche refusée : %r" % valeur)
+        return "(t.%s:=:'%s')" % (champ, valeur)
+
+    def _trouver(conf, chemin, champ, valeur):
+        r = _liste(conf, chemin, {"sqlfilters": _filtre_ext(champ, valeur), "limit": 1})
+        return int(r[0]["id"]) if r and isinstance(r[0], dict) and r[0].get("id") not in (None, "") else None
+
+    def _lignes_pont(lignes):
+        if not isinstance(lignes, list) or not 0 < len(lignes) <= MAX_LIGNES:
+            raise ValueError("lignes : de 1 à %d" % MAX_LIGNES)
+        sortie = []
+        for l in lignes:
+            if not isinstance(l, dict):
+                raise ValueError("une ligne est un objet {desc, qty, subprice, tva_tx}")
+            sortie.append({"desc": str(l.get("desc") or "")[:500], "qty": float(l.get("qty") or 0), "subprice": round(float(l.get("subprice") or 0), 2), "tva_tx": float(l.get("tva_tx") or 0)})
+        return sortie
+
+    def _reglement_pont(conf, chemin, fid, reglement, cle_mode):
+        """Le règlement d'une pièce, une seule fois : s'il y en a déjà un, on n'en ajoute pas."""
+        if not reglement:
+            return
+        mode, banque = str(reglement.get("mode") or "").upper(), int(reglement.get("banque") or 0)
+        if banque <= 0:
+            raise PontErreur("choisissez le compte bancaire Dolibarr des règlements « %s » dans les réglages de la billetterie" % mode)
+        if _liste(conf, "%s/%d/payments" % (chemin, fid)):
+            return
+        ecrire(conf, "POST", "%s/%d/payments" % (chemin, fid),
+               {"datepaye": int(reglement["date"]), cle_mode: _mode_id(conf, mode), "closepaidinvoices": "yes", "accountid": banque,
+                "num_payment": str(reglement.get("num") or "")[:60], "comment": str(reglement.get("commentaire") or "")[:200]})
+
+    def _valider_si_brouillon(conf, chemin, fid, quoi):
+        f = appeler(conf, "%s/%d" % (chemin, fid)) or {}
+        if _statut(f) == "0":
+            f = ecrire(conf, "POST", "%s/%d/validate" % (chemin, fid), {"idwarehouse": 0, "notrigger": 0}) or f
+        return f if isinstance(f, dict) else {}
+
+    def bil_tiers(ctx, genre, ref, nom="", mail="", tel="", adresse="", code_postal="", ville="", pays="FR", siret="", divers=False):
+        if genre not in ("client", "fournisseur"):
+            raise ValueError("genre : client ou fournisseur")
+        conf = _conf()
+        if divers:
+            ref, nom, mail = "BILLETTERIE-DIVERS", "Clients divers (billetterie)", ""
+        sid = _trouver(conf, "/thirdparties", "email", mail) if (genre == "client" and mail) else None
+        sid = sid or _trouver(conf, "/thirdparties", "ref_ext", ref)
+        cree = not sid
+        if not sid:
+            corps = {"name": str(nom or mail or ref)[:200], "email": mail, "phone": tel, "address": adresse, "zip": code_postal, "town": ville, "country_code": pays or "FR", "ref_ext": ref}
+            corps.update({"client": 1, "code_client": "auto"} if genre == "client" else {"fournisseur": 1, "code_fournisseur": "auto", "client": 0, "idprof1": siret})
+            sid = _int_id(ecrire(conf, "POST", "/thirdparties", corps), "le tiers")
+        return {"id": sid, "cree": cree}
+
+    def prouver_pont_tiers(ctx, res):
+        d = _lire_un(_conf(), "/thirdparties", res["id"])
+        return isinstance(d, dict) and str(d.get("id")) == str(res["id"])
+
+    def bil_facture(ctx, socid, ref_ext, date, lignes, note="", reglement=None):
+        conf = _conf()
+        lignes = _lignes_pont(lignes)
+        fid = _trouver(conf, "/invoices", "ref_ext", ref_ext) or _int_id(ecrire(conf, "POST", "/invoices", {"socid": int(socid), "type": 0, "date": int(date), "ref_ext": ref_ext, "lines": lignes,
+                                                                                                            "note_private": str(note)[:500]}), "la facture")
+        f = _valider_si_brouillon(conf, "/invoices", fid, "la facture")                        # Dolibarr lui donne son numéro légal
+        _reglement_pont(conf, "/invoices", fid, reglement, "paymentid")
+        return {"facture_id": fid, "facture": str(f.get("ref") or "")}
+
+    def bil_avoir(ctx, socid, ref_ext, source_id, date, lignes, note=""):
+        conf = _conf()
+        lignes = _lignes_pont(lignes)
+        aid = _trouver(conf, "/invoices", "ref_ext", ref_ext) or _int_id(ecrire(conf, "POST", "/invoices", {"socid": int(socid), "type": 2, "fk_facture_source": int(source_id), "date": int(date),
+                                                                                                             "ref_ext": ref_ext, "lines": lignes, "note_private": str(note)[:500]}), "l'avoir")
+        f = _valider_si_brouillon(conf, "/invoices", aid, "l'avoir")
+        return {"avoir_id": aid, "avoir": str(f.get("ref") or "")}
+
+    def bil_versement(ctx, socid, ref_ext, date, libelle, montant, reglement=None):
+        conf = _conf()
+        m = _montant(montant)
+        fid = _trouver(conf, "/supplierinvoices", "ref_ext", ref_ext) or _int_id(ecrire(conf, "POST", "/supplierinvoices", {
+            "socid": int(socid), "ref_supplier": ref_ext, "ref_ext": ref_ext, "date": int(date), "lines": [{"desc": str(libelle)[:500], "qty": 1, "subprice": m, "tva_tx": 0}]}), "la facture fournisseur")
+        f = _valider_si_brouillon(conf, "/supplierinvoices", fid, "la facture fournisseur")
+        _reglement_pont(conf, "/supplierinvoices", fid, reglement, "payment_mode_id")          # Dolibarr 24 : « payment_mode_id » côté fournisseur, « paymentid » côté client
+        return {"facture_fournisseur_id": fid, "facture_fournisseur": str(f.get("ref") or "")}
+
+    def _type_membre(conf):
+        """Le type de membre « Artiste » : retrouvé, ou créé la première fois (il n'existe pas dans une instance neuve)."""
+        for t in _liste(conf, "/memberstypes", {"limit": 100}):
+            if isinstance(t, dict) and str(t.get("label")).strip().lower() == "artiste":
+                return int(t["id"])
+        return _int_id(ecrire(conf, "POST", "/memberstypes", {"label": "Artiste", "subscription": 0, "vote": 0, "morphy": ""}), "le type de membre")
+
+    CHAMPS_MEMBRE = ("login", "morphy", "firstname", "lastname", "societe", "email", "phone", "address", "zip", "town", "country_code", "datefin")
+
+    def bil_adherent(ctx, ref, socid=0, **champs):
+        conf = _conf()
+        mid = _trouver(conf, "/members", "ref_ext", ref)
+        cree = not mid
+        if not mid:
+            corps = {k: champs[k] for k in CHAMPS_MEMBRE if champs.get(k) not in (None, "")}
+            corps.update({"typeid": _type_membre(conf), "public": 0, "ref_ext": ref})
+            if int(socid or 0):
+                corps["fk_soc"] = int(socid)
+            mid = _int_id(ecrire(conf, "POST", "/members", corps), "l'adhérent")
+        return {"adherent_id": mid, "cree": cree}
+
+    def prouver_pont_adherent(ctx, res):
+        d = _lire_un(_conf(), "/members", res["adherent_id"])
+        return isinstance(d, dict) and str(d.get("id")) == str(res["adherent_id"])
+
+    def bil_tester(ctx, banque_CB=0, banque_LIQ=0, banque_VIR=0):
+        conf = _conf()
+        etat = appeler(conf, "/status") or {}
+        societe = appeler(conf, "/setup/company") or {}
+        banques, modes, taux = _liste(conf, "/bankaccounts", {"limit": 100}), _liste(conf, "/setup/dictionary/payment_types", {"limit": 200}), _liste(conf, "/setup/dictionary/vat", {"limit": 50})
+        succes = etat.get("success", {}) if isinstance(etat, dict) else {}
+        bq = [{"id": int(b["id"]), "ref": b.get("ref"), "libelle": b.get("label")} for b in banques if isinstance(b, dict) and b.get("id") is not None]
+        md = [{"id": int(m["id"]), "code": m.get("code"), "libelle": m.get("label") or m.get("libelle")} for m in modes if isinstance(m, dict) and m.get("id") is not None]
+        ids_banques, codes = {b["id"] for b in bq}, {str(m["code"]).upper() for m in md}
+        points = [{"libelle": "Dolibarr répond avec cette clé", "ok": True, "detail": "version %s" % succes.get("dolibarr_version", "?")},
+                  {"libelle": "La société est renseignée", "ok": bool(societe.get("name")), "detail": societe.get("name") or "renseignez la société dans Dolibarr (Configuration › Société)"}]
+        for code, lib, b in (("CB", "carte", int(banque_CB or 0)), ("LIQ", "espèces", int(banque_LIQ or 0)), ("VIR", "virement", int(banque_VIR or 0))):
+            points.append({"libelle": "Mode de paiement « %s » (%s) existe" % (code, lib), "ok": code in codes, "detail": "" if code in codes else "créez-le dans Dolibarr (Configuration › Dictionnaires › Types de paiement)"})
+            points.append({"libelle": "Compte bancaire des règlements %s choisi" % lib, "ok": b in ids_banques,
+                           "detail": "compte n° %d" % b if b in ids_banques else "choisissez-le dans les réglages de la billetterie (comptes : %s)" % (", ".join("%d %s" % (x["id"], x["libelle"]) for x in bq) or "aucun")})
+        return {"ok": all(p["ok"] for p in points), "version": succes.get("dolibarr_version"), "societe": {k: societe.get(k) for k in ("name", "country_code", "idprof1", "tva_intra", "address", "zip", "town", "email")},
+                "comptes_bancaires": bq, "modes_de_paiement": md, "taux_de_tva": [{"taux": t.get("taux"), "libelle": t.get("note") or t.get("code")} for t in taux if isinstance(t, dict)], "points": points}
+
+    def _differable(faire):
+        """Une panne de Dolibarr (injoignable, refus, 500) n'est pas un échec de la CAPACITÉ : le noyau rétrograderait son palier après deux échecs de suite et la billetterie cesserait d'écrire.
+        Elle est rendue comme un report {"differe": raison} : la file de la billetterie le voit, attend, se retente, puis passe en échec visible. Une demande invalide (ValueError) lève toujours."""
+        def g(ctx, **args):
+            try:
+                return faire(ctx, **args)
+            except PontErreur as ex:
+                return {"differe": str(ex)}
+        return g
+
+    def _prouve_ou_differe(prouver):
+        return lambda ctx, res: True if res.get("differe") else prouver(ctx, res)
+
+    def retour_comptable(ctx, res):
+        return None                                    # une écriture comptable ne s'efface pas : elle se corrige dans Dolibarr (avoir, annulation), le retour de la capacité le dit
+
+    def prouver_pont_facture(ctx, res):
+        d = _lire_un(_conf(), "/invoices", res["facture_id"])
+        return isinstance(d, dict) and bool(d.get("ref")) and not str(d.get("ref")).startswith("(PROV")
+
+    def prouver_pont_avoir(ctx, res):
+        d = _lire_un(_conf(), "/invoices", res["avoir_id"])
+        return isinstance(d, dict) and str(d.get("type")) == "2" and bool(d.get("ref")) and not str(d.get("ref")).startswith("(PROV")
+
+    def prouver_pont_versement(ctx, res):
+        d = _lire_un(_conf(), "/supplierinvoices", res["facture_fournisseur_id"])
+        return isinstance(d, dict) and bool(d.get("ref")) and not str(d.get("ref")).startswith("(PROV")
+
+    ctx.implementer("bil_tiers", _differable(bil_tiers), _prouve_ou_differe(prouver_pont_tiers), retour_comptable, simuler=lambda ctx, ref="", **_: "retrouverait ou créerait le tiers %s" % ref)
+    ctx.implementer("bil_facture", _differable(bil_facture), _prouve_ou_differe(prouver_pont_facture), retour_comptable, simuler=lambda ctx, ref_ext="", **_: "écrirait, validerait et règlerait la facture de la commande %s" % ref_ext)
+    ctx.implementer("bil_avoir", _differable(bil_avoir), _prouve_ou_differe(prouver_pont_avoir), retour_comptable, simuler=lambda ctx, ref_ext="", **_: "écrirait et validerait l'avoir %s" % ref_ext)
+    ctx.implementer("bil_versement", _differable(bil_versement), _prouve_ou_differe(prouver_pont_versement), retour_comptable, simuler=lambda ctx, ref_ext="", **_: "écrirait, validerait et règlerait la facture fournisseur du versement %s" % ref_ext)
+    ctx.implementer("bil_adherent", _differable(bil_adherent), _prouve_ou_differe(prouver_pont_adherent), retour_comptable, simuler=lambda ctx, ref="", **_: "créerait l'adhérent %s" % ref)
+    ctx.implementer("bil_tester", bil_tester)
 
     ctx.implementer("mon_acces", mon_acces)
     ctx.implementer("catalogue_api", catalogue_api)

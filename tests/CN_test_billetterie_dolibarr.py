@@ -6,16 +6,18 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6939ee
+# VERSION CN : 0.1.0  #54b294
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 10 : le pont facultatif vers Dolibarr (file de rattrapage, idempotence, factures, règlements, avoirs, versements, pannes, prérequis, vrai transport HTTP).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6939ee ▼▼▼
-"""Bancs de la billetterie, lot 10 : le pont facultatif vers Dolibarr (file de rattrapage, idempotence, factures, règlements, avoirs, versements, pannes, prérequis, vrai transport HTTP)."""
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=54b294 ▼▼▼
+"""Bancs de la billetterie, lot 10 : le pont facultatif vers Dolibarr (file de rattrapage, idempotence, factures, règlements, avoirs, versements, pannes, prérequis). La billetterie n'a pas de client : elle appelle les capacités du module « dolibarr » (ctx.agir), qui parlent à un faux Dolibarr par un vrai transport HTTP."""
 import json
+import os
 import re
+import socket
 import sys
 import threading
 import unittest
@@ -32,9 +34,11 @@ from CN_test_billetterie_ventes import Ventes      # noqa: E402
 class FauxDolibarr:
     """Un Dolibarr minimal en mémoire : assez pour vérifier ce que la billetterie envoie et comment elle se comporte quand il répond, se tait ou refuse."""
 
-    def __init__(self, pont_erreur):
-        self.pe = pont_erreur
+    CLE = "cle-mandat-essai"
+
+    def __init__(self):
         self.appels, self.tiers, self.factures, self.fournisseurs, self.panne, self.refus = [], {}, {}, {}, False, None
+        self.cle_ok = self.CLE
         self.compteur = 0
         self.types_membre, self.membres = {}, {}
 
@@ -43,8 +47,8 @@ class FauxDolibarr:
         return self.compteur
 
     def __call__(self, methode, url, entetes, corps, delai):
-        if self.panne:
-            raise self.pe("Dolibarr est injoignable (ConnectionRefusedError)", injoignable=True)
+        if entetes.get("dolapikey") != self.cle_ok:
+            return 401, {"error": "Unauthorized"}
         u = urllib.parse.urlsplit(url)
         chemin, q = u.path.split("/api/index.php", 1)[1], dict(urllib.parse.parse_qsl(u.query))
         d = json.loads(corps) if corps else None
@@ -103,22 +107,74 @@ class FauxDolibarr:
             i = self.id()
             self.membres[i] = d
             return 200, i
+        m = re.match(r"/(thirdparties|members)/(\d+)$", chemin)
+        if m and methode == "GET":
+            table, i = {"thirdparties": self.tiers, "members": self.membres}[m.group(1)], int(m.group(2))
+            return (200, dict(table[i], id=i)) if i in table else (404, {"error": {"message": "Not Found"}})
         return 404, {"error": {"message": "route inconnue " + chemin}}
 
 
+class Serveur:
+    """Le faux Dolibarr derrière un vrai serveur HTTP : le module « dolibarr » y parle comme à une vraie instance. Une panne coupe la connexion sans répondre."""
+
+    def __init__(self, faux):
+        outer = faux
+
+        class H(BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def _traiter(self):
+                corps = self.rfile.read(int(self.headers.get("Content-Length") or 0)) or None
+                if outer.panne:
+                    self.request.shutdown(socket.SHUT_RDWR)
+                    self.request.close()
+                    return
+                code, rep = outer(self.command, "http://127.0.0.1" + self.path, {k.lower(): v for k, v in self.headers.items()}, corps, 15)
+                brut = json.dumps(rep).encode()
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(brut)))
+                self.end_headers()
+                self.wfile.write(brut)
+            do_GET = do_POST = do_PUT = do_DELETE = _traiter
+        self.srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
+        self.url = "http://127.0.0.1:%d/api/index.php" % self.srv.server_address[1]
+        threading.Thread(target=self.srv.serve_forever, daemon=True).start()
+
+    def arreter(self):
+        self.srv.shutdown()
+        self.srv.server_close()
+
+
+CAPACITES_PONT = ("bil_tiers", "bil_facture", "bil_avoir", "bil_versement", "bil_adherent")
+
+
 class Pont(Ventes):
+    MODULES = ("billetterie", "droits", "comptes", "dolibarr")
+
     def setUp(self):
+        import tempfile
+        self.dol = FauxDolibarr()
+        self.serveur = Serveur(self.dol)
+        self.addCleanup(self.serveur.arreter)
+        conf = tempfile.TemporaryDirectory()
+        self.addCleanup(conf.cleanup)
+        (Path(conf.name) / "dolibarr.conf").write_text("url = %s\n" % self.serveur.url, encoding="utf-8")
+        (Path(conf.name) / "dolibarr.key").write_text(FauxDolibarr.CLE, encoding="utf-8")
+        ancien = os.environ.get("CASSANDRA_CONFIG")
+        os.environ["CASSANDRA_CONFIG"] = conf.name
+        self.addCleanup(lambda: os.environ.__setitem__("CASSANDRA_CONFIG", ancien) if ancien else os.environ.pop("CASSANDRA_CONFIG", None))
         super().setUp()
         self.mod_dol = self.mod.CN_dolibarr
-        self.dol = FauxDolibarr(self.mod_dol.PontErreur)
-        self.mod_dol.HTTP["dolibarr"] = self.dol
-        self.addCleanup(self.mod_dol.HTTP.clear)
 
-    def relier(self, **k):
-        d = dict(dolibarr_actif=True, dolibarr_url="http://dolibarr.test/api/index.php", dolibarr_cle="cle-secrete", dolibarr_banque_carte=1, dolibarr_banque_especes=2, dolibarr_banque_virement=1)
+    def relier(self, palier="auto", **k):
+        d = dict(dolibarr_actif=True, dolibarr_banque_carte=1, dolibarr_banque_especes=2, dolibarr_banque_virement=1)
         d.update(k)
         for cle, val in d.items():
             self.n.reglages.poser("billetterie." + cle, val, "")
+        for cap in CAPACITES_PONT:                                      # le mandat explicite : l'administrateur de Dolibarr donne le palier « auto » à la billetterie
+            self.n.regler_palier("dolibarr." + cap, palier)
 
     def traiter(self, maximum=10):
         return self.mod_dol.traiter(self.ctx, self.ctx.stockage, maximum)
@@ -261,11 +317,8 @@ class Pannes(Pont):
     def test_la_cle_refusee_est_dite(self):
         self.relier()
         self.vendre(1)
-        self.dol.refus = None
-        original = self.mod_dol.HTTP["dolibarr"]
-        self.mod_dol.HTTP["dolibarr"] = lambda *a: (401, {"error": "Unauthorized"})
+        self.dol.cle_ok = "une-autre-cle"
         self.traiter()
-        self.mod_dol.HTTP["dolibarr"] = original
         self.assertIn("refuse l'accès", self.file()[0]["erreur"])
 
     def test_une_adresse_piegee_ne_part_jamais_dans_une_recherche(self):
@@ -276,6 +329,23 @@ class Pannes(Pont):
         self.traiter()
         self.assertFalse([a for a in self.dol.appels if "OR 1=1" in json.dumps(a[2])])
         self.assertIn("refusée", self.file()[0]["erreur"])
+
+    def test_une_panne_ne_fait_pas_redescendre_le_palier_de_la_capacite(self):
+        self.relier()
+        self.vendre(1)
+        self.dol.panne = True
+        for i in range(4):
+            self.traiter()
+            self.avance(300 * 2 ** i + 1)
+        self.assertEqual(self.n.catalogue.savoir("dolibarr.bil_facture")["palier"], "auto")        # deux échecs de suite la rétrograderaient : une panne de Dolibarr n'est pas sa faute
+
+    def test_tant_que_le_palier_est_raconter_la_file_attend_et_le_dit(self):
+        self.relier(palier="raconter")
+        self.vendre(1)
+        r = self.traiter()
+        self.assertEqual((r["faits"], r["reportes"], len(self.dol.factures)), (0, 1, 0))
+        self.assertIn("palier", self.file()[0]["erreur"])
+        self.assertIn("auto", self.file()[0]["erreur"])
 
 
 class Avoir(Pont):
@@ -353,7 +423,7 @@ class Adherents(Pont):
         self.assertEqual(self.traiter()["faits"], 1)
         m = list(self.dol.membres.values())[0]
         t = [i for i, x in self.dol.tiers.items() if x.get("fournisseur") == 1][0]
-        self.assertEqual((m["login"], m["morphy"], m["lastname"], m["societe"], m["email"], m["zip"], m["fk_soc"], m["ref_ext"]), (a["ref"].lower(), "mor", "Quartet", "Nova", "nova@exemple.org", "", t, a["ref"]))
+        self.assertEqual((m["login"], m["morphy"], m["lastname"], m["societe"], m["email"], m.get("zip", ""), m["fk_soc"], m["ref_ext"]), (a["ref"].lower(), "mor", "Quartet", "Nova", "nova@exemple.org", "", t, a["ref"]))          # un champ vide n'est pas envoyé
         self.assertEqual(m["firstname"], "Nova")
         self.assertEqual(m["typeid"], list(self.dol.types_membre)[0])
         self.assertTrue(m["datefin"] and m["public"] == 0)
@@ -365,7 +435,7 @@ class Adherents(Pont):
         self.ok("dolibarr_adherent", artiste_id=a["id"])
         self.traiter()
         m = list(self.dol.membres.values())[0]
-        self.assertEqual((m["morphy"], m["firstname"], m["lastname"], m["societe"], m["datefin"]), ("phy", "Zoé", "Martin", "", None))
+        self.assertEqual((m["morphy"], m["firstname"], m["lastname"], m.get("societe", ""), m.get("datefin")), ("phy", "Zoé", "Martin", "", None))
 
     def test_le_type_artiste_n_est_cree_qu_une_fois_et_l_ecriture_ne_double_rien(self):
         self.relier(dolibarr_adherents=True)
@@ -398,9 +468,6 @@ class Adherents(Pont):
 
 
 class Prerequis(Pont):
-    def test_tester_sans_reglage_dit_quoi_regler(self):
-        self.assertIn("adresse de l'API", self.echec("dolibarr_tester"))
-
     def test_tester_liste_ce_qui_manque_et_ce_qui_va(self):
         self.relier(dolibarr_banque_virement=99)
         r = self.ok("dolibarr_tester")
@@ -418,6 +485,7 @@ class Prerequis(Pont):
         self.vendre(1)
         e = self.ok("dolibarr_etat")
         self.assertEqual((e["relie"], e["a_faire"], e["domaines"]["factures"]), (True, 1, True))
+        self.n.reglages.poser("dolibarr.mandat_pour_tous", True, "")          # le titulaire qui rattrape à la main écrit sous son compte : sans clé propre, il lui faut le mandat
         self.assertEqual(self.ok("dolibarr_rattraper")["faits"], 1)
         self.assertEqual(self.ok("dolibarr_etat")["faits"], 1)
 
@@ -425,69 +493,28 @@ class Prerequis(Pont):
         self.assertIn("pas relié", self.ok("dolibarr_rattraper")["raison"])
 
 
-class Transport(unittest.TestCase):
-    """Le vrai transport HTTP contre un petit serveur : en-tête de clé, corps JSON, 404 d'une recherche vide, accès refusé."""
+class Transport(Pont):
+    """Ce que le module « dolibarr » envoie vraiment pour la billetterie : la clé de mandat, une identité franche, des corps JSON."""
 
-    def test_le_vrai_client_parle_correctement(self):
-        vus = []
+    def test_la_billetterie_n_a_ni_adresse_ni_cle_et_parle_par_la_cle_de_mandat(self):
+        self.relier()
+        self.vendre(1)
+        self.traiter()
+        vus = self.dol.appels
+        self.assertTrue(vus)
+        self.assertTrue(all(a[4].get("dolapikey") == FauxDolibarr.CLE for a in vus))
+        self.assertTrue(all(a[4].get("user-agent", "").startswith("Cassandra-Dolibarr") for a in vus))
+        self.assertTrue(all(a[4].get("content-type") == "application/json" for a in vus if a[0] == "POST"))
+        ids = {r.id for r in self.n.executeur.contextes["billetterie"].manifeste.reglages}
+        self.assertFalse({"dolibarr_url", "dolibarr_cle", "dolibarr_hote"} & ids)
 
-        class H(BaseHTTPRequestHandler):
-            def log_message(self, *a):
-                pass
-
-            def repondre(self, code, corps):
-                b = json.dumps(corps).encode()
-                self.send_response(code)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(b)))
-                self.end_headers()
-                self.wfile.write(b)
-
-            def do_GET(self):
-                vus.append(("GET", self.path, self.headers.get("DOLAPIKEY"), self.headers.get("Host")))
-                if "vide" in self.path:
-                    return self.repondre(404, {"error": {"message": "Not Found"}})
-                if self.headers.get("DOLAPIKEY") != "bonne-cle":
-                    return self.repondre(401, {"error": "Unauthorized"})
-                self.repondre(200, {"success": {"dolibarr_version": "23"}})
-
-            def do_POST(self):
-                corps = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
-                vus.append(("POST", self.path, corps, self.headers.get("Content-Type")))
-                self.repondre(200, 42)
-        srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
-        threading.Thread(target=srv.serve_forever, daemon=True).start()
-        self.addCleanup(srv.server_close)
-        self.addCleanup(srv.shutdown)
-        import importlib.util as u
-        import importlib
-        racine = RACINE / "modules" / "billetterie"
-        sp = u.spec_from_file_location("cassandra_module_billetterie_dol", racine / "CN_module.py", submodule_search_locations=[str(racine)])
-        mod = u.module_from_spec(sp)
-        sys.modules["cassandra_module_billetterie_dol"] = mod
-        self.addCleanup(sys.modules.pop, "cassandra_module_billetterie_dol", None)
-        sp.loader.exec_module(mod)
-        d = importlib.import_module("cassandra_module_billetterie_dol.CN_dolibarr")
-
-        class Ctx:
-            def __init__(s, cle):
-                s.v = {"dolibarr_url": "http://127.0.0.1:%d/api/index.php" % srv.server_address[1], "dolibarr_cle": cle, "dolibarr_hote": "dolibarr.interne"}
-
-            def reglage(s, n):
-                return s.v.get(n)
-        self.assertEqual(d.appel(Ctx("bonne-cle"), "GET", "/status")["success"]["dolibarr_version"], "23")
-        self.assertIsNone(d.appel(Ctx("bonne-cle"), "GET", "/thirdparties-vide"))
-        self.assertEqual(d.appel(Ctx("bonne-cle"), "POST", "/thirdparties", {"name": "Zoë"}), 42)
-        with self.assertRaises(d.PontErreur) as m:
-            d.appel(Ctx("mauvaise"), "GET", "/status")
-        self.assertIn("refuse l'accès", str(m.exception))
-        self.assertEqual(vus[0][2:], ("bonne-cle", "dolibarr.interne"))
-        self.assertEqual(vus[2][2:], ({"name": "Zoë"}, "application/json"))
-        with self.assertRaises(d.PontErreur) as m:
-            ctx_mort = Ctx("x")
-            ctx_mort.v["dolibarr_url"] = "http://127.0.0.1:1/api/index.php"
-            d.appel(ctx_mort, "GET", "/status")
-        self.assertTrue(m.exception.injoignable)
+    def test_le_moteur_de_la_billetterie_ecrit_sous_le_compte_systeme_noyau(self):
+        self.relier()
+        self.vendre(1)
+        self.assertEqual(self.n.lancer("billetterie.dolibarr")["statut"], "fait")
+        self.assertEqual(self.file()[0]["etat"], "fait")
+        dem = [e for e in self.n.bus.recents(portee="*", limite=500) if e["type"] == "capacite.demandee" and e["objet_id"] == "dolibarr.bil_facture"]
+        self.assertEqual((dem[-1]["compte"], dem[-1]["acteur"]), ("noyau", "cassandra"))
 
 
 if __name__ == "__main__":

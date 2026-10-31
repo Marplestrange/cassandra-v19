@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f3b7dd
+# VERSION CN : 0.1.0  #a64556
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f3b7dd ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a64556 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -33,7 +33,7 @@ stockage = true
 stockage_par_societe = true
 agir = true
 secrets = true
-reseau = ["l'API REST de Dolibarr réglée dans la billetterie (pont facultatif : tiers, factures, paiements, avoirs, commissions), jamais sur le chemin d'un paiement", "l'API de Stripe (api.stripe.com), pour créer la page de paiement hébergée d'une commande", "les API de PayPal (api-m.paypal.com) et de HelloAsso (api.helloasso.com), pour créer la page de paiement et vérifier le paiement au retour de l'acheteur", "le serveur d'envoi de courrier (SMTP) réglé dans la billetterie, pour expédier les billets et les messages aux acheteurs"]
+reseau = ["l'API de Stripe (api.stripe.com), pour créer la page de paiement hébergée d'une commande", "les API de PayPal (api-m.paypal.com) et de HelloAsso (api.helloasso.com), pour créer la page de paiement et vérifier le paiement au retour de l'acheteur", "le serveur d'envoi de courrier (SMTP) réglé dans la billetterie, pour expédier les billets et les messages aux acheteurs"]
 
 [[droits]]
 id = "gerer"
@@ -316,25 +316,9 @@ portee = "societe"
 
 [[reglages]]
 id = "dolibarr_actif"
-libelle = "Relier Dolibarr (comptabilité) : les ventes, remboursements et versements y sont écrits en arrière-plan"
+libelle = "Relier Dolibarr (comptabilité) : les ventes, remboursements et versements y sont écrits en arrière-plan, par le module Dolibarr (son adresse, sa clé de mandat et son palier : la billetterie n'en a pas)"
 type = "booleen"
 defaut = false
-portee = "societe"
-
-[[reglages]]
-id = "dolibarr_url"
-libelle = "Adresse de l'API de Dolibarr (par exemple https://dolibarr.exemple.fr/api/index.php)"
-portee = "societe"
-
-[[reglages]]
-id = "dolibarr_hote"
-libelle = "En-tête Host à présenter à Dolibarr (derrière un proxy ; vide en général)"
-portee = "societe"
-
-[[reglages]]
-id = "dolibarr_cle"
-libelle = "Clé d'API de Dolibarr (utilisateur dédié, droits limités)"
-type = "secret"
 portee = "societe"
 
 [[reglages]]
