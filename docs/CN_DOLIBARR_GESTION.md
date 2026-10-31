@@ -12,7 +12,7 @@
 <!-- RÔLE       : Dolibarr, la gestion complète : ce que le module sait faire, la clé d'API par compte, le compte de mandat, les paliers -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=4760fe ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=a055b9 ▼▼▼ -->
 # Dolibarr : la gestion complète
 
 Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il écrit, et tout geste a sa **preuve** (relire ce qui a été écrit) et son **retour arrière**.
@@ -33,6 +33,14 @@ Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il �
 | Lire ou écrire n'importe où dans l'API | `lire_libre`, `ecrire_libre` | restaurer les champs d'avant (PUT), supprimer ce qui vient d'être créé (POST) |
 
 Avant elles : `creer`, `modifier`, `creer_brouillon`, `supprimer` (avec corbeille), `restaurer`, `valider_facture`. L'écran est `interface/CN_dolibarr-ecran.js`.
+
+## Le PDF d'une pièce
+
+`piece_pdf` lit le PDF que Dolibarr a produit pour un devis, une facture ou un reçu de don (base64, 8 Mo au plus) ; l'écran l'affiche dans un cadre sur adresse locale (`blob:`), sans `sandbox`, comme le visionneur de la GED. Si la pièce n'en a pas, `produire_pdf` le fait produire (retour : supprimer ce PDF).
+
+## Envoyer un projet ou un contact à Dolibarr
+
+Par défaut une fiche de Cassandra reste « Cassandra seulement ». `envoyer_projet` et `envoyer_contact` la créent chez Dolibarr et posent un lien (objet `dolibarr_lien`, propre au compte). Une fois liée : **Dolibarr fait foi** pour ce qu'il porte (`modifier_lie` envoie la modification chez lui) ; les notes, l'équipe, les jalons et les tâches restent dans Cassandra. Un contact est toujours rattaché à un tiers choisi (`tiers`) ou créé pour l'occasion (`nouveau_tiers`) : il ne devient jamais un tiers. `detacher` rompt le lien et garde les deux copies. `liens` liste ce qu'on a envoyé. Les lectures de Cassandra passent par `[permissions] lectures` (`projets.voir`, `contacts.voir`).
 
 ## Une clé d'API par compte
 

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ea0fe5
+// VERSION CN : 0.1.0  #e77c79
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ea0fe5 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=e77c79 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -48,10 +48,13 @@
       produits: async () => liste(await lire("/products", PAGE + "&properties=id,ref,label,price,tva_tx")),
       dons: async () => liste(await lire("/donations", PAGE + "&properties=id,ref,amount,date,statut")),
       adherents: async () => liste(await lire("/members", PAGE + "&properties=id,firstname,lastname,typeid,statut,datefin")),
+      cp: async () => liste((await agir("projets.lister")).projets),
+      cc: async () => liste((await agir("contacts.lister", { limite: 200 })).contacts),
+      liens: async () => liste(await agir("dolibarr.liens")),
       types: async () => liste(await lire("/members/types", "limit=100")),
       banques: async () => { const l = liste(await lire("/bankaccounts", "limit=100&properties=id,label,clos")); await Promise.all(l.map(async (b) => { try { b.solde = Number((await lire("/bankaccounts/" + b.id + "/balance")) || 0); } catch (e) { b.solde = null; } })); return l; },
     };
-    const BESOIN = { afaire: ["factures", "devis", "dons", "tiers"], factures: ["factures", "tiers", "banques"], devis: ["devis", "tiers"], tiers: ["tiers", "factures"], banque: ["banques"], dons: ["dons"], adherents: ["adherents", "types"], projets: ["projets"] };
+    const BESOIN = { afaire: ["factures", "devis", "dons", "tiers"], factures: ["factures", "tiers", "banques"], devis: ["devis", "tiers"], tiers: ["tiers", "factures"], banque: ["banques"], dons: ["dons"], adherents: ["adherents", "types"], projets: ["projets"], cprojets: ["cp", "liens", "projets"], ccontacts: ["cc", "liens", "tiers"] };
     async function charger(forcer) {
       S.err = ""; const vus = BESOIN[S.onglet] || [];
       await Promise.all(vus.filter((k) => forcer || !S.d[k]).map(async (k) => { try { S.d[k] = await CHARGEURS[k](); } catch (e) { S.err = e.message || String(e); S.d[k] = []; } }));
@@ -63,6 +66,7 @@
     const barre = (k, droite) => '<div class="barre2"><input type="search" class="in" data-q="' + k + '" placeholder="Chercher…" value="' + esc(S.q[k] || "") + '" style="flex:1 1 220px"><span style="flex:1"></span>' + (droite || "") + "</div>";
     const seg = (k, opts) => '<div class="seg">' + opts.map((o) => '<button data-f="' + k + '|' + o[0] + '" class="' + ((S.f[k] || opts[0][0]) === o[0] ? "on" : "") + '">' + o[1] + "</button>").join("") + "</div>";
     const etatF = (f) => { const s = String(f.statut); if (s === "0") return pill("Brouillon"); if (s === "3") return pill("Abandonnée"); if (s === "2" || String(f.paye) === "1") return pill("Payée", "ok"); const r = retard(f); return r > 0 ? pill("En retard · " + r + " j", r > 365 ? "dg" : "al") : pill("À encaisser", "ac"); };
+    const etiq = (o) => (o.venu ? pill("Venu de Dolibarr", "ac") : o.lien ? pill("Dolibarr · lié", "ok") + ' <span class="note">le ' + jour(o.lien.le) + "</span>" : pill("Cassandra seulement", ""));
     const ouverte = (f) => String(f.statut) === "1" && String(f.paye) !== "1" && Number(f.remaintopay) > 0.005;
     const table = (cols, rows) => '<div class="defil"><table class="t"><thead><tr>' + cols.map((c) => "<th>" + c + "</th>").join("") + "</tr></thead><tbody>" + (rows.join("") || '<tr><td colspan="' + cols.length + '" class="note">Rien ne correspond.</td></tr>') + "</tbody></table></div>";
     const btn = (t, a, p, c) => '<button class="btn mini ' + (c || "") + '" data-a="' + a + '" data-p="' + esc(p == null ? "" : p) + '">' + t + "</button>";
@@ -115,6 +119,21 @@
         const P = filtrer(S.d.projets, "projets"), L = ["Brouillon", "Ouvert", "Clos"];
         return '<div class="carte">' + barre("projets", btn("+ Nouveau projet", "nprojet", "", "pri")) + table(["Réf.", "Projet", "Début", "Fin", "État", ""], P.map((p) => "<tr><td class=\"num\">" + esc(p.ref) + "</td><td><b>" + esc(p.title) + "</b></td><td>" + jour(p.date_start) + "</td><td>" + jour(p.date_end) + "</td><td>" + pill(L[Number(p.statut)] || p.statut, String(p.statut) === "1" ? "ok" : "") + "</td><td>" + (String(p.statut) === "0" ? btn("Valider", "projet", p.id + "|valider") : String(p.statut) === "1" ? btn("Clore", "projet", p.id + "|clore") : "") + "</td></tr>")) + "</div>";
       },
+      cprojets() {
+        const lie = (id) => (S.d.liens || []).find((l) => l.type === "projet" && String(l.id) === String(id)), f = S.f.cprojets || "tous";
+        const liesDoli = new Set((S.d.liens || []).filter((l) => l.type === "projet").map((l) => String(l.id_doli)));
+        const mien = (S.d.cp || []).map((p) => ({ cle: "p|" + p.id, id: p.id, titre: p.nom, d1: p.debut, d2: p.fin, lien: lie(p.id), venu: false }));
+        const venus = (S.d.projets || []).filter((p) => String(p.statut) === "1" && !liesDoli.has(String(p.id))).slice(0, 8).map((p) => ({ cle: "v|" + p.id, id: p.id, titre: p.title, d1: p.date_start, d2: p.date_end, ref: p.ref, venu: true }));
+        const L = mien.concat(venus).filter((o) => (f === "tous" || (f === "cass" && !o.lien && !o.venu) || (f === "lie" && o.lien) || (f === "venu" && o.venu)) && (!S.q.cprojets || o.titre.toLowerCase().includes(S.q.cprojets.toLowerCase())));
+        return '<div class="carte">' + barre("cprojets", "") + seg("cprojets", [["tous", "Tous"], ["cass", "Cassandra seulement"], ["lie", "Dolibarr · lié"], ["venu", "Venu de Dolibarr"]]) +
+          table(["Projet", "Dates", "Étiquette", ""], L.map((o) => '<tr class="clk" data-a="fichec" data-p="' + o.cle + '"><td><b>' + esc(o.titre) + '</b><div class="note">' + esc(o.venu ? o.ref : o.lien ? o.lien.ref : "") + "</div></td><td>" + (o.d1 ? jour(o.d1) : "—") + (o.d2 && o.d2 !== o.d1 ? " → " + jour(o.d2) : "") + "</td><td>" + etiq(o) + "</td><td>" + (!o.venu && !o.lien ? btn("Envoyer à Dolibarr", "envoyerp", o.id) : "") + "</td></tr>")) + '<div class="note">Un projet reste chez Cassandra tant que tu ne l’envoies pas. Envoyé, Dolibarr fait foi pour son titre, ses dates et sa description.</div></div>';
+      },
+      ccontacts() {
+        const lie = (id) => (S.d.liens || []).find((l) => l.type === "contact" && String(l.id) === String(id)), f = S.f.ccontacts || "tous";
+        const L = (S.d.cc || []).map((c) => ({ id: c.id, nom: c.display_name, orga: c.company, lien: lie(c.id) })).filter((o) => (f === "tous" || (f === "cass" && !o.lien) || (f === "lie" && o.lien)) && (!S.q.ccontacts || (o.nom + " " + o.orga).toLowerCase().includes(S.q.ccontacts.toLowerCase())));
+        return '<div class="carte">' + barre("ccontacts", "") + seg("ccontacts", [["tous", "Tous"], ["cass", "Cassandra seulement"], ["lie", "Dolibarr · lié"]]) +
+          table(["Contact", "Organisation", "Étiquette", ""], L.map((o) => '<tr class="clk" data-a="fichec" data-p="c|' + o.id + '"><td><b>' + esc(o.nom) + "</b></td><td>" + esc(o.orga || "—") + "</td><td>" + etiq(o) + (o.lien ? '<div class="note">rattaché au tiers ' + esc(nomTiers(o.lien.tiers)) + "</div>" : "") + "</td><td>" + (o.lien ? "" : btn("Envoyer à Dolibarr", "envoyerc", o.id)) + "</td></tr>")) + '<div class="note">Un contact Dolibarr est toujours rattaché à un tiers que tu choisis : il ne devient jamais un tiers tout seul.</div></div>';
+      },
       acces() {
         const a = S.acces || {}, o = { compte: "ta clé propre", mandat: "la clé de mandat", fichier: "le fichier de clé" }[a.cle] || "";
         return '<div class="g2"><div class="carte"><h3>Ma clé d’API Dolibarr</h3><div class="note">Mon Itare et moi agissons dans Dolibarr sous le nom de son utilisateur, avec ses droits. La clé est chiffrée, jamais réaffichée ; personne d’autre ne la lit.</div>' +
@@ -126,7 +145,7 @@
         return '<div class="carte"><h3>Requête libre</h3><div class="note">Tout le catalogue de Dolibarr : par exemple <span class="mono">GET /thirdparties/12</span> ou <span class="mono">PUT /products/3 {"price": 12}</span>. Les secrets sont masqués ; une suppression passe par la corbeille du module.</div><div class="barre2"><input class="in mono" id="dlb-req" style="flex:1 1 320px" value="' + esc(S.libre || "GET /thirdparties?limit=5") + '"><button class="btn pri" data-a="libre">Lancer</button></div>' + (S.libreRep ? '<pre class="code">' + esc(typeof S.libreRep === "string" ? S.libreRep : JSON.stringify(S.libreRep, null, 1)) + "</pre>" : "") + "</div>";
       },
     };
-    const ONGLETS = [["afaire", "À faire"], ["factures", "Factures"], ["devis", "Devis"], ["tiers", "Tiers"], ["banque", "Banque"], ["dons", "Dons"], ["adherents", "Adhérents"], ["projets", "Projets"], ["acces", "Mon accès"], ["libre", "Requête libre"]];
+    const ONGLETS = [["afaire", "À faire"], ["factures", "Factures"], ["devis", "Devis"], ["tiers", "Tiers"], ["banque", "Banque"], ["dons", "Dons"], ["adherents", "Adhérents"], ["projets", "Projets"], ["cprojets", "Projets de Cassandra"], ["ccontacts", "Contacts de Cassandra"], ["acces", "Mon accès"], ["libre", "Requête libre"]];
     function dessiner() {
       const foc = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.q : null, pos = foc ? document.activeElement.selectionStart : 0;
       racine.innerHTML = K.titre("Dolibarr", "Gestion complète : facturer, encaisser, relancer, donner un reçu, cotiser. Chaque geste est relu, journalisé et défaisable.") + '<div class="onglets">' + ONGLETS.map((o) => '<button data-o="' + o[0] + '" class="' + (S.onglet === o[0] ? "on" : "") + '">' + o[1] + "</button>").join("") + "</div>" +
@@ -141,7 +160,7 @@
       const v = document.createElement("div"); v.className = "kit-v"; v.style.zIndex = 9999;
       const m = document.createElement("div"); m.className = "kit-m"; m.setAttribute("role", "dialog"); m.setAttribute("aria-modal", "true"); m.setAttribute("aria-label", titre);
       m.innerHTML = "<h2>" + esc(titre) + "</h2>" + corps + '<div class="acts"><button class="btn" data-c="non">Annuler</button><button class="btn pri" data-c="oui">' + esc(oui || "Envoyer à Dolibarr") + "</button></div>";
-      const clore = (r) => { if (r) { S.v = {}; m.querySelectorAll("[id]").forEach((e) => { S.v[e.id] = e.value; }); } v.remove(); m.remove(); fin(r); };
+      const clore = (r) => { if (r) { S.v = {}; m.querySelectorAll("[id]").forEach((e) => { S.v[e.id] = e.type === "checkbox" ? e.checked : e.value; }); } v.remove(); m.remove(); fin(r); };
       v.addEventListener("click", () => clore(false)); m.addEventListener("click", (e) => { const b = e.target.closest("[data-c]"); if (b) clore(b.dataset.c === "oui"); });
       m.addEventListener("keydown", (e) => { if (e.key === "Escape") clore(false); });
       document.body.appendChild(v); document.body.appendChild(m); const f = m.querySelector("input,textarea,select,[data-c=non]"); if (f) f.focus();
@@ -197,6 +216,44 @@
         await modale("Propale " + d.ref, '<div class="note">' + esc(nomTiers(d.socid)) + " · " + jour(d.date) + (full.fin_validite ? " · valable jusqu’au " + jour(full.fin_validite) : "") + "</div><div>" + pill(L[Number(s)] || "Annulé", s === "2" ? "ok" : "") + "</div>" +
           table(["Désignation", "Qté", "PU HT", "TVA", "Total"], lignes) + '<p class="num" style="text-align:right">Total HT ' + nb(full.total_ht || d.total_ttc) + " € · TVA " + nb(full.total_tva) + " € · <b>Total TTC " + nb(d.total_ttc) + " €</b></p>" +
           '<div style="display:flex;gap:6px;flex-wrap:wrap">' + btn("Voir le PDF", "pdf", "devis|" + d.id, "pri") + gestes + "</div>", "Fermer");
+      },
+      fichec: async (p) => {
+        document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
+        const [k, id] = p.split("|");
+        if (k === "v") { const d = (S.d.projets || []).find((x) => String(x.id) === String(id)); return void modale(d.title, '<div>' + pill("Venu de Dolibarr", "ac") + ' <span class="mono">' + esc(d.ref) + '</span></div><p class="note">Ce projet est né dans Dolibarr : Cassandra le montre, il se modifie chez Dolibarr.</p>', "Fermer"); }
+        const type = k === "p" ? "projet" : "contact", o = (k === "p" ? S.d.cp : S.d.cc || []).find((x) => String(x.id) === String(id)); if (!o) return;
+        const lien = (S.d.liens || []).find((l) => l.type === type && String(l.id) === String(id)), nom = k === "p" ? o.nom : o.display_name;
+        const corps = lien
+          ? "<div>" + etiq({ lien: lien }) + ' <span class="mono">' + esc(lien.ref) + '</span></div><div class="alerte"><div class="sp"><b>Dolibarr fait foi</b> pour ' + (k === "p" ? "le titre, les dates et la description" : "le nom, le courriel, le téléphone et le tiers") + ". Modifier ici envoie la modification à Dolibarr. Restent dans Cassandra : " + (k === "p" ? "les notes, l’équipe, les jalons et les tâches." : "les notes.") + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + btn("Modifier (part vers Dolibarr)", "modifl", type + "|" + id, "pri") + btn("Détacher", "detacher", type + "|" + id) + '</div><div class="note">« Détacher » rompt le lien et garde les deux copies : rien n’est supprimé, ni chez Dolibarr ni chez Cassandra.</div>'
+          : "<div>" + etiq({}) + '</div><p class="note">Cette fiche n’existe que dans Cassandra. Rien ne part vers Dolibarr sans ton clic.</p><div>' + btn("Envoyer à Dolibarr…", k === "p" ? "envoyerp" : "envoyerc", id, "pri") + "</div>";
+        await modale(nom, corps, "Fermer");
+      },
+      envoyerp: async (id) => {
+        document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
+        const o = (S.d.cp || []).find((x) => String(x.id) === String(id));
+        const ok = await modale("Envoyer le projet à Dolibarr", '<p class="note">Il y sera créé avec son titre « ' + esc(o.nom) + " », ses dates et sa description. Ses notes, son équipe, ses jalons et ses tâches restent dans Cassandra.</p>" + sel("e-t", "Tiers de rattachement (facultatif)", [["", "Aucun"]].concat(tiersOpts()), "") + '<label class="fld"><span><input type="checkbox" id="e-v"> Le valider tout de suite (il prend sa référence)</span></label>', "Envoyer");
+        if (ok) await fait("dolibarr.envoyer_projet", { id: Number(id), tiers: val("e-t") === "" ? "" : Number(val("e-t")), valider: val("e-v") === true }, "Projet envoyé");
+      },
+      envoyerc: async (id) => {
+        document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
+        const o = (S.d.cc || []).find((x) => String(x.id) === String(id));
+        const ok = await modale("Envoyer le contact à Dolibarr", '<p class="note">Un contact Dolibarr est toujours rattaché à un tiers. Choisis-le, ou nomme celui à créer : le contact ne devient jamais un tiers.</p>' + sel("e-t", "Rattacher à un tiers existant", [["", "— en créer un —"]].concat(tiersOpts()), "") + champ("e-nt", "… ou créer ce tiers", o.company || ""), "Envoyer");
+        if (ok) await fait("dolibarr.envoyer_contact", { id: Number(id), tiers: val("e-t") === "" ? "" : Number(val("e-t")), nouveau_tiers: val("e-t") === "" ? val("e-nt") : "" }, "Contact envoyé");
+      },
+      modifl: async (p) => {
+        document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
+        const [type, id] = p.split("|");
+        const ok = await modale("Modifier chez Dolibarr", type === "projet" ? champ("m-a", "Titre", "") + champ("m-b", "Description", "") : champ("m-a", "Courriel", "") + champ("m-b", "Téléphone", ""), "Envoyer");
+        if (!ok) return;
+        const champs = type === "projet" ? { title: val("m-a"), description: val("m-b") } : { email: val("m-a"), phone_pro: val("m-b") };
+        Object.keys(champs).forEach((k) => { if (champs[k] === "") delete champs[k]; });
+        if (!Object.keys(champs).length) return K.dire("Rien à modifier", "err");
+        await fait("dolibarr.modifier_lie", { type: type, id: Number(id), champs: champs }, "Modification envoyée à Dolibarr");
+      },
+      detacher: async (p) => {
+        document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
+        const [type, id] = p.split("|");
+        if (await modale("Détacher de Dolibarr", "<p>Le lien est rompu, les deux copies restent. L’étiquette redevient « Cassandra seulement ».</p>", "Détacher")) await fait("dolibarr.detacher", { type: type, id: Number(id) }, "Fiche détachée");
       },
       pdf: async (p) => {
         const [objet, id] = p.split("|"); document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());

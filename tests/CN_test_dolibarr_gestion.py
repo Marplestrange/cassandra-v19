@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fe3d5b
+# VERSION CN : 0.1.0  #09c917
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fe3d5b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=09c917 ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import gzip
 import json
@@ -40,7 +40,7 @@ class FauxGestion:
     def __init__(self):
         self.journal, self.societe = [], "Maison Bohème"
         self.utilisateurs = {CLE_MANDAT: {"login": "cassandra", "admin": "0"}, CLE_DRISSE: {"login": "marple", "admin": "1"}, CLE_AMANDINE: {"login": "amandine", "admin": "0"}}
-        self.t = {c: {} for c in ("thirdparties", "invoices", "proposals", "projects", "donations", "members", "agendaevents", "subscriptions", "paiements")}
+        self.t = {c: {} for c in ("thirdparties", "invoices", "proposals", "projects", "donations", "members", "agendaevents", "subscriptions", "paiements", "contacts")}
         self.suivant = {c: 1 for c in self.t}
         self.paiements = {}                  # id de facture -> [ids de règlements]
         self.banques = {1: 1000.0, 2: 50.0}
@@ -254,9 +254,26 @@ class FauxGestion:
             if p[2:] == ["validate"]:
                 self.t["projects"][i]["statut"] = "1"
                 return R(200, dict(self.t["projects"][i]))
+            if m == "DELETE":
+                del self.t["projects"][i]
+                return R(200, {"success": {}})
             if m == "PUT":
                 self.t["projects"][i].update({("statut" if k == "status" else k): str(v) if k in ("status", "statut") else v for k, v in corps.items() if k != "statut"})   # « statut » est ignoré, comme Dolibarr 24
             return R(200, dict(self.t["projects"][i]))
+        if p[0] == "contacts":
+            if len(p) == 1 and m == "POST":
+                if not corps.get("socid") or corps["socid"] not in self.t["thirdparties"]:
+                    return R(500, {"error": {"code": 500, "message": "Internal Server Error: Error creating contact", "0": "ErrorFieldRequired socid"}})
+                return R(200, self.nouveau("contacts", corps))
+            i = int(p[1])
+            if i not in self.t["contacts"]:
+                return R(404, {})
+            if m == "DELETE":
+                del self.t["contacts"][i]
+                return R(200, {"success": {}})
+            if m == "PUT":
+                self.t["contacts"][i].update(corps)
+            return R(200, dict(self.t["contacts"][i]))
         if p[0] == "agendaevents":
             if len(p) == 1 and m == "POST":
                 if "fk_element" in corps or "elementtype" in corps:                                   # comme Dolibarr 24
@@ -583,6 +600,118 @@ class GestionDolibarr(unittest.TestCase):
         self.assertEqual(r["statut"], "echec")
         self.assertIn("IMRI", json.dumps(r, ensure_ascii=False))
         self.assertFalse([1 for m, _, _ in self.faux.journal if m != "GET"])
+
+
+class LiensDolibarr(unittest.TestCase):
+    """Envoyer un projet ou un contact de Cassandra à Dolibarr : par défaut rien ne part, envoyé il est lié, Dolibarr fait foi, détaché les deux copies restent."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        base = Path(self.tmp.name)
+        self.faux = FauxGestion()
+        self.addCleanup(self.faux.arreter)
+        conf = base / "config"
+        conf.mkdir()
+        (conf / "dolibarr.conf").write_text("url = %s\n" % self.faux.url, encoding="utf-8")
+        (conf / "dolibarr.key").write_text(CLE_MANDAT, encoding="utf-8")
+        ancien = os.environ.get("CASSANDRA_CONFIG")
+        os.environ["CASSANDRA_CONFIG"] = str(conf)
+        self.addCleanup(lambda: os.environ.__setitem__("CASSANDRA_CONFIG", ancien) if ancien else os.environ.pop("CASSANDRA_CONFIG", None))
+        mods = base / "modules"
+        shutil.copytree(RACINE / "modules" / "dolibarr", mods / "dolibarr")
+        self.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
+        self.n.brancher()
+        self.assertTrue(self.n.activer("dolibarr")["ok"])
+        self.e = self.n.executeur.executer
+        for c in ("drisse", "amandine", "camille"):
+            self.n.droits.regler("compte", c, "dolibarr.utiliser", "accorde")
+        # Les fiches de Cassandra : lues par executer_lecture (projets.voir, contacts.voir). Le module projets de ce dépôt ne s'exécute pas ici (son point date_ok importe
+        # _strptime, refusé par le bac à sable de Python 3.14) : on rend donc les fiches à la main, dans la forme exacte que ces deux capacités rendent.
+        fiches = {"projets.voir": {"projet": {"id": 1, "nom": "Soirée de lancement", "debut": "2026-12-12", "fin": "2026-12-13", "resume": "Équipe de six"}},
+                  "contacts.voir": {"id": 1, "display_name": "Léa Fontaine", "emails": ["lea@exemple.invalid"], "addr": "lea@exemple.invalid", "phone": "0600000001", "mobile": "",
+                                    "company": "Cie Les Pierrots", "job_title": ""}}
+        self.n.executeur.contextes["dolibarr"].executer_lecture = lambda cap, **a: fiches.get(cap) if int(a.get("id", 0)) in (1, 2) else None
+        self.n.reglages.poser("dolibarr.cle_api", CLE_DRISSE, compte="drisse")
+        self.n.reglages.poser("dolibarr.cle_api", CLE_AMANDINE, compte="amandine")
+        self.projet = self.contact = 1
+
+    def lien(self, cap, args, compte="drisse", qui="humain"):
+        return self.e("dolibarr." + cap, qui, args, compte=compte)
+
+    def retour(self, cap, res, compte="drisse"):
+        """Le retour arrière d'un envoi : exécuté au nom du compte, comme le ferait le Journal."""
+        mod = sys.modules[self.n.executeur.catalogue.get("dolibarr." + cap).faire.__module__]
+        mod._CTX = self.n.executeur.contextes["dolibarr"]
+        self.n.executeur.contextes["dolibarr"]._compte.valeur = compte
+        try:
+            self.n.catalogue.get("dolibarr." + cap).defaire(self.n.executeur.contextes["dolibarr"], res)
+        finally:
+            self.n.executeur.contextes["dolibarr"]._compte.valeur = ""
+
+    def test_rien_ne_part_vers_dolibarr_sans_envoi(self):
+        self.assertEqual(self.faux.t["projects"], {})
+        self.assertEqual(self.faux.t["contacts"], {})
+        self.assertEqual(self.lien("liens", {})["resultat"], [])
+
+    def test_un_projet_envoye_est_cree_chez_dolibarr_et_lie(self):
+        r = self.lien("envoyer_projet", {"id": self.projet})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        o = self.faux.t["projects"][r["resultat"]["id_doli"]]
+        self.assertEqual((o["title"], o["ref"], o["description"]), ("Soirée de lancement", "auto", "Équipe de six"))
+        liens = self.lien("liens", {"type": "projet"})["resultat"]
+        self.assertEqual([(x["type"], x["id"], x["id_doli"]) for x in liens], [("projet", self.projet, r["resultat"]["id_doli"])])
+        self.assertEqual(self.lien("envoyer_projet", {"id": self.projet})["statut"], "echec")             # déjà lié
+
+    def test_un_envoi_se_defait_en_retirant_l_objet_et_le_lien(self):
+        r = self.lien("envoyer_projet", {"id": self.projet})
+        self.retour("envoyer_projet", r["resultat"])
+        self.assertEqual(self.faux.t["projects"], {})
+        self.assertEqual(self.lien("liens", {})["resultat"], [])
+
+    def test_un_contact_est_toujours_rattache_a_un_tiers_choisi_ou_cree(self):
+        self.assertEqual(self.lien("envoyer_contact", {"id": self.contact})["statut"], "echec")           # ni tiers ni nouveau tiers : il ne devient pas un tiers tout seul
+        self.assertEqual(self.faux.t["contacts"], {})
+        r = self.lien("envoyer_contact", {"id": self.contact, "nouveau_tiers": "Cie Les Pierrots"})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        c = self.faux.t["contacts"][r["resultat"]["id_doli"]]
+        self.assertEqual((c["firstname"], c["lastname"], c["email"], c["phone_pro"]), ("Léa", "Fontaine", "lea@exemple.invalid", "0600000001"))
+        self.assertEqual(self.faux.t["thirdparties"][c["socid"]]["name"], "Cie Les Pierrots")
+        self.retour("envoyer_contact", r["resultat"])
+        self.assertEqual((self.faux.t["contacts"], self.faux.t["thirdparties"]), ({}, {}))                 # le contact ET le tiers que cet envoi a créé
+
+    def test_un_contact_peut_etre_rattache_a_un_tiers_existant(self):
+        tid = self.faux.nouveau("thirdparties", {"name": "MONARCH", "client": 1})
+        r = self.lien("envoyer_contact", {"id": self.contact, "tiers": tid})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        self.assertEqual(self.faux.t["contacts"][r["resultat"]["id_doli"]]["socid"], tid)
+        self.retour("envoyer_contact", r["resultat"])
+        self.assertEqual(len(self.faux.t["thirdparties"]), 1)                                              # le tiers existant n'est jamais supprimé
+
+    def test_dolibarr_fait_foi_une_fois_lie_et_detacher_garde_les_deux_copies(self):
+        r = self.lien("envoyer_projet", {"id": self.projet})
+        m = self.lien("modifier_lie", {"type": "projet", "id": self.projet, "champs": {"title": "Soirée du 12"}})
+        self.assertEqual(m["statut"], "faite", msg=str(m))
+        self.assertEqual(self.faux.t["projects"][r["resultat"]["id_doli"]]["title"], "Soirée du 12")
+        self.assertEqual(self.lien("modifier_lie", {"type": "projet", "id": self.projet, "champs": {"rowid": 1}})["statut"], "echec")     # hors liste
+        d = self.lien("detacher", {"type": "projet", "id": self.projet})
+        self.assertEqual(d["statut"], "faite", msg=str(d))
+        self.assertEqual(self.lien("liens", {})["resultat"], [])
+        self.assertEqual(len(self.faux.t["projects"]), 1)                                                  # chez Dolibarr : intact
+        self.assertEqual(self.n.executeur.contextes["dolibarr"].executer_lecture("projets.voir", id=1)["projet"]["nom"], "Soirée de lancement")      # chez Cassandra : intact
+        self.assertEqual(self.lien("modifier_lie", {"type": "projet", "id": self.projet, "champs": {"title": "x"}})["statut"], "echec")   # plus lié
+
+    def test_les_liens_sont_ceux_du_compte_et_un_compte_sans_cle_n_envoie_pas(self):
+        self.lien("envoyer_projet", {"id": self.projet})
+        self.assertEqual(self.lien("liens", {}, compte="amandine")["resultat"], [])                         # le lien de l'un n'est pas à l'autre
+        p = 2
+        self.faux.journal.clear()
+        self.assertEqual(self.lien("envoyer_projet", {"id": p}, compte="camille")["statut"], "echec")
+        self.assertFalse([1 for m, _, _ in self.faux.journal if m != "GET"])
+
+    def test_itare_prepare_seulement_tant_que_le_palier_est_raconter(self):
+        self.assertEqual(self.lien("envoyer_projet", {"id": self.projet}, qui="itare")["statut"], "racontee")
+        self.assertEqual(self.faux.t["projects"], {})
 
 
 if __name__ == "__main__":

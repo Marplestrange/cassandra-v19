@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #f05625
+# VERSION CN : 0.4.0  #ef4a09
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=f05625 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=ef4a09 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -41,6 +41,10 @@ sensible = true
 [[objets]]
 type = "dolibarr"
 libelle = "Une instance Dolibarr pilotée par Cassandra"
+
+[[objets]]
+type = "dolibarr_lien"
+libelle = "Le lien entre une fiche de Cassandra (projet, contact) et l'objet Dolibarr où elle a été envoyée"
 
 [[objets]]
 type = "dolibarr_corbeille"
@@ -383,6 +387,56 @@ retour = "supprimer le PDF que cet acte vient de produire"
 paliers = ["raconter", "auto"]
 qui = ["humain", "cassandra", "itare"]
 
+[[capacites]]
+id = "liens"
+libelle = "Les fiches de Cassandra (projets, contacts) que j'ai envoyées à Dolibarr, et ce qui les lie"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "envoyer_projet"
+libelle = "Envoyer un projet de Cassandra à Dolibarr : il y est créé et lié, et Dolibarr fait foi pour son titre, ses dates et sa description"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["un projet de ce compte, jamais déjà lié", "ses notes, son équipe, ses jalons et ses tâches restent dans Cassandra"]
+preuve = "relire le projet chez Dolibarr : même titre, et le lien existe"
+retour = "supprimer le projet que cet envoi vient de créer chez Dolibarr, et le lien"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "envoyer_contact"
+libelle = "Envoyer un contact de Cassandra à Dolibarr, rattaché à un tiers choisi (ou à un tiers créé pour l'occasion)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["un contact de ce compte, jamais déjà lié", "toujours rattaché à un tiers : un contact ne devient jamais un tiers"]
+preuve = "relire le contact chez Dolibarr : même nom, même tiers, et le lien existe"
+retour = "supprimer le contact créé et le tiers que cet envoi a lui-même créé, et le lien"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "modifier_lie"
+libelle = "Modifier chez Dolibarr la fiche liée (Dolibarr fait foi : la modification part chez lui)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["une fiche déjà liée", "champs de la liste permise seulement"]
+preuve = "relire l'objet chez Dolibarr et comparer les champs"
+retour = "remettre les valeurs d'avant, relevées juste avant l'écriture"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "detacher"
+libelle = "Détacher une fiche de Dolibarr : le lien est rompu, les deux copies restent"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["le lien seulement : aucune requête vers Dolibarr"]
+preuve = "le lien n'existe plus"
+retour = "reposer le lien"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
 [[ecrans]]
 id = "vue_dolibarr"
 libelle = "Dolibarr"
@@ -423,6 +477,7 @@ rafraichir_s = 60
 accent = "#6a3fa0"
 
 [permissions]
+lectures = true
 reseau = ["l'hôte de l'instance, fixé dans config/dolibarr.conf"]
 privileges = ["la clé d'API de Dolibarr donne les droits de son utilisateur : en faire un utilisateur dédié aux droits limités"]
 # ▲▲▲ FIN BORNE CN ▲▲▲

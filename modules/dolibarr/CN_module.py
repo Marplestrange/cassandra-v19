@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #6b7ee9
+# VERSION CN : 0.4.0  #9f01d7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=6b7ee9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=9f01d7 ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -781,6 +781,174 @@ def brancher(ctx):
     def defaire_produire(ctx, res):
         ecrire(_conf(), "DELETE", "/documents?" + urllib.parse.urlencode({"modulepart": PIECES[res["objet"]][1], "original_file": res["fichier"]}))
 
+
+    # ------------------------------------------------------------------ les liens : ce que l'utilisateur envoie à Dolibarr, et ce qui n'en part jamais
+    # Une fiche de Cassandra (un projet, un contact) reste chez elle tant que l'utilisateur ne l'envoie pas. Envoyée, elle est LIÉE : Dolibarr fait foi pour les champs qu'il porte.
+    # Le lien est un objet du registre, propre au compte : « dolibarr_lien », id « compte:type:identifiant ».
+    LIENS = ("projet", "contact")
+
+    def _lien_id(type_, id):
+        return "%s:%s:%s" % (ctx_compte(), type_, id)
+
+    def ctx_compte():
+        return _compte_courant() or "-"
+
+    def _lien(ctx, type_, id):
+        o = ctx.lire("dolibarr_lien", _lien_id(type_, id), portee=ctx.compte or ctx.TOUT)
+        return o["donnees"] if o and o.get("etat") == "lie" else None
+
+    def _poser_lien(ctx, type_, id, **champs):
+        ctx.poser("dolibarr_lien", _lien_id(type_, id), "%s %s" % (type_, id), etat="lie", donnees=dict(champs, type=type_, id=int(id), le=time.strftime("%Y-%m-%d")))
+
+    def _cassandra(ctx, capacite, **args):
+        r = ctx.executer_lecture(capacite, **args)
+        if not r:
+            raise ValueError("Cassandra n'a pas pu lire la fiche (%s) : elle n'existe pas, ou ce compte n'y a pas droit" % capacite)
+        return r
+
+    def _jour_ou_rien(v):
+        return _jour_ts(str(v)[:10]) if v and re.match(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}", str(v)) else None
+
+    def envoyer_projet(ctx, id, tiers="", valider=False):
+        if not _ID.match(str(id)):
+            raise ValueError("id : le numéro du projet de Cassandra")
+        if _lien(ctx, "projet", id):
+            raise ValueError("ce projet est déjà lié à Dolibarr : détachez-le d'abord pour le renvoyer")
+        p = (_cassandra(ctx, "projets.voir", id=int(id)).get("projet") or {})
+        titre = str(p.get("nom") or "").strip()
+        if not titre:
+            raise ValueError("le projet n'a pas de nom : Dolibarr exige un titre")
+        conf = _conf()
+        corps = {"ref": "auto", "title": titre[:250]}
+        if p.get("resume"):
+            corps["description"] = str(p["resume"])[:4000]
+        for cle, champ in (("date_start", "debut"), ("date_end", "fin")):
+            if _jour_ou_rien(p.get(champ)):
+                corps[cle] = _jour_ou_rien(p.get(champ))
+        if tiers != "":
+            if not _ID.match(str(tiers)):
+                raise ValueError("tiers : l'identifiant du tiers Dolibarr")
+            corps["socid"] = int(tiers)
+        nouvel = _int_id(ecrire(conf, "POST", "/projects", corps), "le projet")
+        try:
+            if valider:
+                ecrire(conf, "POST", "/projects/%d/validate" % nouvel, {"notrigger": 0})
+            o = _lire_un(conf, "/projects", nouvel)
+            ref = str((o or {}).get("ref") or "") if isinstance(o, dict) else ""
+            _poser_lien(ctx, "projet", id, id_doli=nouvel, ref=ref, tiers=str(tiers or ""), titre=titre)
+        except Exception:
+            ecrire(conf, "DELETE", "/projects/%d" % nouvel)               # rien ne reste à moitié envoyé
+            raise
+        return {"type": "projet", "id": int(id), "id_doli": nouvel, "ref": ref, "titre": titre}
+
+    def prouver_envoi_projet(ctx, res):
+        o = _lire_un(_conf(), "/projects", res["id_doli"])
+        return isinstance(o, dict) and str(o.get("title", "")).strip() == res["titre"] and bool(_lien(ctx, "projet", res["id"]))
+
+    def defaire_envoi_projet(ctx, res):
+        ecrire(_conf(), "DELETE", "/projects/%d" % res["id_doli"])
+        ctx.retirer("dolibarr_lien", _lien_id("projet", res["id"]))
+
+    def _premier_courriel(f):
+        for e in (f.get("emails") or []):
+            a = e.get("addr") if isinstance(e, dict) else e
+            if a:
+                return str(a)
+        return str(f.get("email") or "")
+
+    def envoyer_contact(ctx, id, tiers="", nouveau_tiers=""):
+        if not _ID.match(str(id)):
+            raise ValueError("id : le numéro du contact de Cassandra")
+        if _lien(ctx, "contact", id):
+            raise ValueError("ce contact est déjà lié à Dolibarr : détachez-le d'abord pour le renvoyer")
+        if tiers == "" and not str(nouveau_tiers).strip():
+            raise ValueError("un contact Dolibarr est rattaché à un tiers : choisissez-le (tiers) ou nommez celui à créer (nouveau_tiers) ; un contact ne devient jamais un tiers tout seul")
+        if tiers != "" and not _ID.match(str(tiers)):
+            raise ValueError("tiers : l'identifiant du tiers Dolibarr")
+        f = (_cassandra(ctx, "contacts.voir", id=int(id)) or {})
+        f = f.get("contact", f) if isinstance(f.get("contact", f), dict) else f
+        nom = " ".join(str(f.get("display_name") or "").split())
+        if not nom:
+            raise ValueError("la fiche n'a pas de nom")
+        prenom, _, famille = nom.partition(" ")
+        if not famille:
+            prenom, famille = "", nom
+        conf = _conf()
+        cree_tiers = 0
+        socid = int(tiers) if tiers != "" else 0
+        if not socid:
+            socid = cree_tiers = _int_id(ecrire(conf, "POST", "/thirdparties", {"name": str(nouveau_tiers).strip()[:200], "client": 1, "code_client": "auto"}), "le tiers")
+        corps = {"socid": socid, "firstname": prenom, "lastname": famille}
+        for cle, v in (("email", _premier_courriel(f)), ("phone_pro", f.get("phone")), ("phone_mobile", f.get("mobile")), ("poste", f.get("job_title"))):
+            if v:
+                corps[cle] = str(v)[:200]
+        try:
+            nouvel = _int_id(ecrire(conf, "POST", "/contacts", corps), "le contact")
+            _poser_lien(ctx, "contact", id, id_doli=nouvel, ref=str(nouvel), tiers=str(socid), cree_tiers=cree_tiers, nom=nom)
+        except Exception:
+            if cree_tiers:
+                ecrire(conf, "DELETE", "/thirdparties/%d" % cree_tiers)
+            raise
+        return {"type": "contact", "id": int(id), "id_doli": nouvel, "socid": socid, "cree_tiers": cree_tiers, "nom": nom, "lastname": famille}
+
+    def prouver_envoi_contact(ctx, res):
+        o = _lire_un(_conf(), "/contacts", res["id_doli"])
+        return isinstance(o, dict) and str(o.get("lastname", "")).strip() == res["lastname"] and str(o.get("socid", o.get("fk_soc", ""))) == str(res["socid"]) and bool(_lien(ctx, "contact", res["id"]))
+
+    def defaire_envoi_contact(ctx, res):
+        conf = _conf()
+        ecrire(conf, "DELETE", "/contacts/%d" % res["id_doli"])
+        if res.get("cree_tiers"):
+            ecrire(conf, "DELETE", "/thirdparties/%d" % res["cree_tiers"])          # le tiers que CET envoi a créé, et lui seul
+        ctx.retirer("dolibarr_lien", _lien_id("contact", res["id"]))
+
+    CHAMPS_LIES = {"projet": ("/projects", {"title", "description", "date_start", "date_end"}), "contact": ("/contacts", {"firstname", "lastname", "email", "phone_pro", "phone_mobile", "poste"})}
+
+    def modifier_lie(ctx, type, id, champs):
+        if type not in CHAMPS_LIES:
+            raise ValueError("type : %s" % ", ".join(LIENS))
+        lien = _lien(ctx, type, id)
+        if not lien:
+            raise ValueError("cette fiche n'est pas liée à Dolibarr : rien à modifier chez lui")
+        chemin, permis = CHAMPS_LIES[type]
+        _verifier_champs(champs, permis, "une fiche liée")
+        conf = _conf()
+        courant = _lire_un(conf, chemin, lien["id_doli"])
+        if not isinstance(courant, dict):
+            raise PontErreur("l'objet lié n'existe plus chez Dolibarr : détachez la fiche")
+        avant = {k: courant.get(k) for k in champs}
+        ecrire(conf, "PUT", "%s/%d" % (chemin, lien["id_doli"]), champs)
+        return {"type": type, "id": int(id), "id_doli": lien["id_doli"], "avant": avant, "apres": dict(champs)}
+
+    def prouver_modif_liee(ctx, res):
+        o = _lire_un(_conf(), CHAMPS_LIES[res["type"]][0], res["id_doli"])
+        return isinstance(o, dict) and all(_egaux(o.get(k), v) for k, v in res["apres"].items())
+
+    def defaire_modif_liee(ctx, res):
+        ecrire(_conf(), "PUT", "%s/%d" % (CHAMPS_LIES[res["type"]][0], res["id_doli"]), res["avant"])
+
+    def detacher(ctx, type, id):
+        lien = _lien(ctx, type, id) if type in LIENS else None
+        if not lien:
+            raise ValueError("cette fiche n'est pas liée à Dolibarr")
+        ctx.retirer("dolibarr_lien", _lien_id(type, id))
+        return {"type": type, "id": int(id), "lien": lien}
+
+    def prouver_detache(ctx, res):
+        return _lien(ctx, res["type"], res["id"]) is None
+
+    def defaire_detache(ctx, res):
+        l = res["lien"]
+        _poser_lien(ctx, res["type"], res["id"], **{k: v for k, v in l.items() if k not in ("type", "id", "le")})
+
+    def liens(ctx, type=""):
+        sortie = []
+        for o in ctx.lister(portee=ctx.compte or ctx.TOUT, type="dolibarr_lien"):
+            d = o["donnees"]
+            if o["etat"] == "lie" and (not type or d.get("type") == type):
+                sortie.append({"type": d["type"], "id": d["id"], "id_doli": d["id_doli"], "ref": d.get("ref", ""), "tiers": d.get("tiers", ""), "le": d.get("le", "")})
+        return sorted(sortie, key=lambda x: (x["type"], x["id"]))
+
     def mon_acces(ctx):
         conf = _conf()
         info = appeler(conf, "/users/info")
@@ -1115,6 +1283,11 @@ def brancher(ctx):
                     simuler=lambda ctx, id="", **_: "validerait la facture %s (elle prendrait un numéro)" % id)
 
     ctx.implementer("mon_acces", mon_acces)
+    ctx.implementer("liens", liens)
+    ctx.implementer("envoyer_projet", envoyer_projet, prouver_envoi_projet, defaire_envoi_projet, simuler=lambda ctx, id="", **_: "enverrait le projet %s à Dolibarr (il y serait créé et lié)" % id)
+    ctx.implementer("envoyer_contact", envoyer_contact, prouver_envoi_contact, defaire_envoi_contact, simuler=lambda ctx, id="", **_: "enverrait le contact %s à Dolibarr (créé et lié, rattaché à un tiers)" % id)
+    ctx.implementer("modifier_lie", modifier_lie, prouver_modif_liee, defaire_modif_liee, simuler=lambda ctx, type="", id="", **_: "modifierait chez Dolibarr la fiche liée %s %s" % (type, id))
+    ctx.implementer("detacher", detacher, prouver_detache, defaire_detache, simuler=lambda ctx, type="", id="", **_: "détacherait %s %s de Dolibarr (les deux copies restent)" % (type, id))
     ctx.implementer("piece_pdf", piece_pdf)
     ctx.implementer("produire_pdf", produire_pdf, prouver_produire, defaire_produire, simuler=lambda ctx, objet="", id="", **_: "produirait le PDF de %s %s" % (objet, id))
     ctx.implementer("encaisser", encaisser, prouver_encaisser, defaire_encaisser,
