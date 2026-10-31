@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.3.1  #5d07dd
+# VERSION CN : 0.4.0  #c30270
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=5d07dd ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=c30270 ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -33,6 +33,7 @@ Réglage : config/dolibarr.conf, des lignes « cle = valeur » :
     delai        = 15                                             (facultatif) secondes
 La clé elle-même n'est JAMAIS dans la configuration, ne se logue pas, ne figure dans aucun événement ni aucun objet.
 """
+import calendar
 import gzip
 import json
 import os
@@ -70,6 +71,17 @@ DOCUMENTS = {"factures": "/invoices", "devis": "/proposals", "commandes": "/orde
 CHAMPS_DOC = {"socid", "date", "note_private", "note_public", "lines"}
 CHAMPS_LIGNE = {"desc", "qty", "subprice", "tva_tx", "fk_product", "product_type", "remise_percent"}
 MAX_CORPS = 16384
+MODES_PAIEMENT = ("VIR", "CHQ", "LIQ", "CB", "PRE")      # les codes du dictionnaire « modes de règlement » de Dolibarr
+# Les domaines de l'API REST de Dolibarr (noyau) : la requête libre ne sort pas de cette liste, une faute de frappe est refusée avant d'être envoyée.
+DOMAINES = ("accountancy", "agendaevents", "bankaccounts", "categories", "contacts", "contracts", "documents", "donations", "emailtemplates",
+            "eventattendees", "expensereports", "holidays", "interventions", "invoices", "knowledgemanagement", "mailings", "members", "memberstypes",
+            "objectlinks", "orders", "paiements", "partnerships", "productlots", "products", "projects", "proposals", "recruitments", "salaries",
+            "setup", "shipments", "status", "stockmovements", "subscriptions", "supplierinvoices", "supplierorders", "supplierproposals", "tasks",
+            "thirdparties", "tickets", "users", "warehouses")
+_CHEMIN_LIBRE = re.compile(r"^/[a-z]{3,30}(/[A-Za-z0-9_.@-]{1,60}){0,4}$")
+_REQUETE = re.compile(r"^[A-Za-z0-9_.,=&%+:*()\[\]-]{0,400}$")
+_SECRET = re.compile(r"(pass|api_key|apikey|token|secret|signature|private_key|cle_)", re.I)
+MAX_LIBRE = 100             # lignes rendues par une lecture libre
 MAX_LIGNES = 50
 
 
@@ -124,7 +136,7 @@ def _reglages():
 
 def lire_conf():
     """La configuration, relue à chaque passe (un changement s'applique sans redémarrer). None si le pont n'est pas configuré.
-    Les réglages (module « réglages ») l'emportent sur config/dolibarr.conf, qui reste le repli."""
+    Les réglages (module « réglages ») l'emportent sur config/dolibarr.conf, qui reste le repli. Elle porte aussi le compte courant et ses clés (jamais loguées)."""
     f = os.path.join(_dossier_config(), "dolibarr.conf")
     conf = {"delai": "15"}
     if os.path.isfile(f):
@@ -138,10 +150,44 @@ def lire_conf():
     if not conf.get("url", "").startswith(("http://", "https://")):
         return None
     conf["fichier_cle"] = os.path.join(_dossier_config(), conf.get("fichier_cle", "dolibarr.key"))
+    conf["compte"] = _compte_courant()
+    conf["cle_perso"] = _reglage_texte("cle_api") if conf["compte"] else ""
+    conf["cle_mandat"] = _reglage_texte("cle_mandat")
+    conf["mandat_pour_tous"] = _reglage_texte("mandat_pour_tous").lower() in ("1", "true", "vrai", "oui")
+    conf["societe_attendue"] = _reglage_texte("societe_attendue")
     return conf
 
 
-def _cle(conf):
+def _compte_courant():
+    """Le compte au nom duquel la capacité en cours s'exécute ('' : un moteur, le système). PAR FIL : jamais un global."""
+    try:
+        return str(_CTX.compte or "") if _CTX is not None else ""
+    except Exception:
+        return ""
+
+
+def _reglage_texte(nom):
+    if _CTX is None:
+        return ""
+    try:
+        return str(_CTX.reglage(nom) or "").strip()
+    except Exception:
+        return ""
+
+
+def _cle(conf, ecriture=False):
+    """LA clé d'API de ce geste. Trois sources, dans cet ordre :
+      1. la clé PROPRE du compte (réglage « cle_api », secret de portée compte) : Dolibarr agit alors sous le nom de son utilisateur, avec ses droits ;
+      2. la clé de MANDAT (réglage « cle_mandat ») ou le fichier de clé : le système, pour les moteurs et les lectures d'un compte sans clé ;
+    Un compte SANS clé propre ne peut pas écrire (sauf le réglage « mandat_pour_tous ») : il ne tombe jamais, par accident, sur la clé d'un autre."""
+    if conf.get("compte"):
+        if conf.get("cle_perso"):
+            return conf["cle_perso"]
+        if ecriture and not conf.get("mandat_pour_tous"):
+            raise PontErreur("la clé Dolibarr de ce compte n'est pas renseignée (Réglages › Dolibarr › Ma clé) : sans elle, rien ne s'écrit dans Dolibarr sous son nom",
+                             genre="pas_de_cle")
+    if conf.get("cle_mandat"):
+        return conf["cle_mandat"]
     try:
         with open(conf["fichier_cle"], encoding="utf-8") as fh:
             cle = fh.read().strip()
@@ -150,6 +196,37 @@ def _cle(conf):
     if not cle:
         raise PontErreur("le fichier de clé est vide", genre="non_configure")
     return cle
+
+
+_SOCIETES = {}          # (adresse, empreinte de clé) -> (horodatage, nom de la société lue) : la société ne change pas à chaque geste
+
+
+def _garde_societe(conf):
+    """Avant d'ÉCRIRE : la société que la clé voit est-elle celle qu'on attend (réglage « societe_attendue ») ? Une instance qui garde plusieurs entités peut
+    donner une clé qui écrit dans la mauvaise comptabilité : on le refuse avant, pas après."""
+    voulu = (conf.get("societe_attendue") or "").strip().lower()
+    if not voulu:
+        return
+    import hashlib
+    cle = _cle(conf, ecriture=True)
+    k = (conf["url"], hashlib.sha256(cle.encode()).hexdigest()[:12])
+    t, nom = _SOCIETES.get(k, (0, ""))
+    if time.time() - t > 300:
+        en_tetes = {"DOLAPIKEY": cle, "Accept": "application/json"}
+        if conf.get("hote"):
+            en_tetes["Host"] = conf["hote"]
+        req = urllib.request.Request(conf["url"].rstrip("/") + "/setup/company", headers=en_tetes, method="GET")
+        try:
+            with urllib.request.urlopen(req, timeout=float(conf.get("delai", 15))) as r:
+                brut = r.read()
+            if brut[:2] == b"\x1f\x8b":
+                brut = gzip.decompress(brut)
+            nom = str((json.loads(brut.decode("utf-8", "replace")) or {}).get("name") or "")
+        except Exception:
+            raise PontErreur("impossible de lire la société de Dolibarr : rien n'est écrit tant qu'on ne sait pas dans quelle comptabilité", genre="injoignable")
+        _SOCIETES[k] = (time.time(), nom)
+    if nom.strip().lower() != voulu:
+        raise PontErreur("la clé voit la société « %s », pas « %s » : rien n'est écrit" % (nom, conf["societe_attendue"]), genre="mauvaise_societe")
 
 
 # ------------------------------------------------------------------ le client : un GET, rien d'autre
@@ -187,7 +264,8 @@ def ecrire(conf, methode, chemin, corps=None):
     donnees = json.dumps(corps, ensure_ascii=False).encode("utf-8") if corps is not None else None
     if donnees is not None and len(donnees) > MAX_CORPS:
         raise ValueError("le corps de la requête dépasse %d octets" % MAX_CORPS)
-    en_tetes = {"DOLAPIKEY": _cle(conf), "Accept": "application/json", "Content-Type": "application/json"}
+    _garde_societe(conf)
+    en_tetes = {"DOLAPIKEY": _cle(conf, ecriture=True), "Accept": "application/json", "Content-Type": "application/json"}
     if conf.get("hote"):
         en_tetes["Host"] = conf["hote"]
     req = urllib.request.Request(conf["url"].rstrip("/") + chemin, data=donnees, headers=en_tetes, method=methode)
@@ -597,6 +675,378 @@ def brancher(ctx):
     def defaire_validation(ctx, res):
         ecrire(_conf(), "POST", "%s/%s/settodraft" % (DOCUMENTS["factures"], res["id"]), {"idwarehouse": 0})
 
+
+    # ------------------------------------------------------------------ la gestion complète : règlements, avoirs, relances, devis, dons, cotisations, virements, projets
+    def _int_id(nouvel, quoi):
+        if isinstance(nouvel, bool) or not (isinstance(nouvel, int) or (isinstance(nouvel, str) and _ID.match(nouvel))):
+            raise PontErreur("Dolibarr n'a pas rendu l'identifiant de %s" % quoi)
+        return int(nouvel)
+
+    def _liste(conf, chemin, params=None):
+        try:
+            r = appeler(conf, chemin, params)
+        except PontErreur as ex:
+            if ex.code == 404:                                   # « rien trouvé » : Dolibarr répond 404
+                return []
+            raise
+        return r if isinstance(r, list) else []
+
+    def _montant(v, nom="montant"):
+        try:
+            m = round(float(str(v).replace(",", ".")), 2)
+        except ValueError:
+            raise ValueError("%s : un nombre" % nom)
+        if not 0 < m <= 10000000:
+            raise ValueError("%s : entre 0,01 et 10 000 000" % nom)
+        return m
+
+    def _jour_ts(v):
+        v = v or time.strftime("%Y-%m-%d")
+        if not re.match(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$", str(v)):
+            raise ValueError("date : AAAA-MM-JJ")
+        return calendar.timegm(time.strptime(str(v), "%Y-%m-%d")) + 43200
+
+    def _statut(d):
+        return str(d.get("statut", d.get("status", "")))
+
+    def _doc(conf, chemin, id, quoi):
+        if not _ID.match(str(id)):
+            raise ValueError("id : un nombre")
+        d = _lire_un(conf, chemin, id)
+        if not isinstance(d, dict):
+            raise PontErreur("%s %s est introuvable" % (quoi, id))
+        return d
+
+    def _reste(conf, f):
+        if f.get("remaintopay") not in (None, ""):
+            return round(float(f["remaintopay"]), 2)
+        paye = sum(float(p.get("amount") or 0) for p in _liste(conf, "/invoices/%s/payments" % f["id"]))
+        return round(float(f.get("total_ttc") or 0) - paye, 2)
+
+    def _mode_id(conf, code):
+        if code not in MODES_PAIEMENT:
+            raise ValueError("mode : %s" % ", ".join(MODES_PAIEMENT))
+        for m in _liste(conf, "/setup/dictionary/payment_types", {"limit": 200}):
+            if str(m.get("code", "")).upper() == code:
+                return int(m["id"])
+        raise PontErreur("Dolibarr n'a pas de mode de règlement de code « %s » (Configuration › Dictionnaires)" % code)
+
+    def mon_acces(ctx):
+        conf = _conf()
+        info = appeler(conf, "/users/info")
+        info = info if isinstance(info, dict) else {}
+        try:
+            societe = str((appeler(conf, "/setup/company") or {}).get("name") or "")
+        except PontErreur:
+            societe = ""
+        propre = bool(conf["compte"] and conf["cle_perso"])
+        return {"cle": "compte" if propre else ("mandat" if conf["cle_mandat"] else "fichier"), "peut_ecrire": propre or not conf["compte"] or conf["mandat_pour_tous"],
+                "utilisateur": str(info.get("login") or ""), "administrateur": str(info.get("admin")) == "1", "entite": str(info.get("entity") or ""), "societe": societe}
+
+    # --- encaisser un règlement
+    def encaisser(ctx, id, montant, banque, mode="VIR", date="", numero="", note=""):
+        montant = _montant(montant)
+        if not _ID.match(str(banque)):
+            raise ValueError("banque : l'identifiant du compte bancaire Dolibarr")
+        conf = _conf()
+        f = _doc(conf, DOCUMENTS["factures"], id, "la facture")
+        if _statut(f) != "1" or str(f.get("paye")) == "1":
+            raise ValueError("la facture %s n'est pas validée et ouverte (statut %s)" % (id, _statut(f)))
+        reste = _reste(conf, f)
+        if montant > reste + 0.005:
+            raise ValueError("%.2f dépasse le reste dû (%.2f)" % (montant, reste))
+        avant = len(_liste(conf, "/invoices/%s/payments" % id))
+        # « paymentsdistributed » : le seul point qui accepte un MONTANT (le point /payments d'une facture règle toujours tout le reste dû)
+        corps = {"arrayofamounts": {str(int(id)): {"amount": montant, "multicurrency_amount": montant}}, "datepaye": _jour_ts(date), "paymentid": _mode_id(conf, str(mode).upper()),
+                 "closepaidinvoices": "yes" if montant >= reste - 0.005 else "no", "accountid": int(banque), "num_payment": str(numero)[:60], "comment": str(note)[:500]}
+        rep = ecrire(conf, "POST", "/invoices/paymentsdistributed", corps)
+        pid = int(rep) if isinstance(rep, int) and not isinstance(rep, bool) or (isinstance(rep, str) and _ID.match(rep)) else None
+        return {"id": int(id), "montant": montant, "reste_avant": reste, "paiements_avant": avant, "paiement": pid}
+
+    def prouver_encaisser(ctx, res):
+        conf = _conf()
+        f = _lire_un(conf, DOCUMENTS["factures"], res["id"])
+        return (isinstance(f, dict) and abs(_reste(conf, f) - (res["reste_avant"] - res["montant"])) < 0.01
+                and len(_liste(conf, "/invoices/%s/payments" % res["id"])) == res["paiements_avant"] + 1)
+
+    def defaire_encaisser(ctx, res):
+        if not res.get("paiement"):
+            raise PontErreur("Dolibarr n'a pas rendu l'identifiant du règlement : à supprimer dans Dolibarr (Facture › Règlements)")
+        ecrire(_conf(), "DELETE", "/paiements/%d" % res["paiement"])          # Dolibarr refuse un règlement déjà rapproché en banque : cette garde est la sienne
+
+    # --- un avoir en brouillon
+    def creer_avoir(ctx, id):
+        conf = _conf()
+        f = _doc(conf, DOCUMENTS["factures"], id, "la facture")
+        if _statut(f) not in ("1", "2") or str(f.get("type")) not in ("0", "None", ""):
+            raise ValueError("un avoir se fait sur une facture validée ordinaire (statut %s, type %s)" % (_statut(f), f.get("type")))
+        lignes = []
+        for l in (f.get("lines") or []):
+            n = {k: l[k] for k in CHAMPS_LIGNE if k in l and l[k] not in (None, "")}
+            if "subprice" in n:
+                n["subprice"] = -abs(float(n["subprice"]))               # un avoir porte les montants de la facture, en négatif
+            lignes.append(n)
+        if not lignes:
+            raise ValueError("la facture %s n'a pas de lignes" % id)
+        socid = int(f.get("socid") or f.get("fk_soc"))
+        nouvel = _int_id(ecrire(conf, "POST", DOCUMENTS["factures"], {"socid": socid, "type": 2, "fk_facture_source": int(id), "date": _jour_ts(""), "lines": lignes[:MAX_LIGNES],
+                                                                      "note_private": "Avoir préparé par Cassandra pour la facture %s" % (f.get("ref") or id)}), "l'avoir")
+        return {"document": "factures", "id": nouvel, "socid": socid, "lignes": len(lignes[:MAX_LIGNES]), "source": int(id)}
+
+    # --- une relance, gardée dans l'agenda du tiers (l'envoi du courriel reste au module Mandats, qui seul résout l'adresse)
+    def relancer(ctx, id, message):
+        message = str(message or "").strip()
+        if not message or len(message) > 4000:
+            raise ValueError("message : de 1 à 4000 caractères")
+        conf = _conf()
+        f = _doc(conf, DOCUMENTS["factures"], id, "la facture")
+        if _statut(f) != "1" or str(f.get("paye")) == "1":
+            raise ValueError("la facture %s n'est pas ouverte : rien à relancer" % id)
+        maintenant = int(time.time())
+        nouvel = _int_id(ecrire(conf, "POST", "/agendaevents", {"type_code": "AC_OTH", "label": "Relance de la facture %s" % (f.get("ref") or id), "note": message, "datep": maintenant,
+                                                                "datef": maintenant, "percentage": 100, "socid": int(f.get("socid") or f.get("fk_soc")), "elementtype": "facture",
+                                                                "fk_element": int(id)}), "l'évènement de relance")
+        return {"evenement": nouvel, "id": int(id)}
+
+    def prouver_relance(ctx, res):
+        e = _lire_un(_conf(), "/agendaevents", res["evenement"])
+        return isinstance(e, dict) and str(e.get("label", "")).startswith("Relance de la facture")
+
+    def defaire_relance(ctx, res):
+        ecrire(_conf(), "DELETE", "/agendaevents/%d" % res["evenement"])
+
+    # --- le devis : valider, marquer signé ou refusé ; puis le facturer
+    ETATS_DEVIS = {"valider": ("0", "1"), "signer": ("1", "2"), "refuser": ("1", "3")}
+
+    def devis(ctx, id, action):
+        if action not in ETATS_DEVIS:
+            raise ValueError("action : %s" % ", ".join(sorted(ETATS_DEVIS)))
+        conf = _conf()
+        d = _doc(conf, DOCUMENTS["devis"], id, "le devis")
+        de, vers = ETATS_DEVIS[action]
+        if _statut(d) != de:
+            raise ValueError("le devis %s est au statut %s : « %s » demande le statut %s" % (id, _statut(d), action, de))
+        if action == "valider":
+            ecrire(conf, "POST", "%s/%s/validate" % (DOCUMENTS["devis"], id), {"notrigger": 0})
+        else:
+            ecrire(conf, "POST", "%s/%s/close" % (DOCUMENTS["devis"], id), {"status": int(vers), "note_private": "Marqué par Cassandra (%s)" % action})
+        return {"id": int(id), "action": action, "avant": de, "apres": vers}
+
+    def prouver_devis(ctx, res):
+        d = _lire_un(_conf(), DOCUMENTS["devis"], res["id"])
+        return isinstance(d, dict) and _statut(d) == res["apres"]
+
+    def defaire_devis(ctx, res):
+        ecrire(_conf(), "POST", "%s/%s/settodraft" % (DOCUMENTS["devis"], res["id"]), {"idwarehouse": 0})
+
+    def facturer_devis(ctx, id):
+        conf = _conf()
+        d = _doc(conf, DOCUMENTS["devis"], id, "le devis")
+        if _statut(d) != "2":
+            raise ValueError("seul un devis signé se facture (statut %s)" % _statut(d))
+        lignes = [{k: l[k] for k in CHAMPS_LIGNE if k in l and l[k] not in (None, "")} for l in (d.get("lines") or [])][:MAX_LIGNES]
+        if not lignes:
+            raise ValueError("le devis %s n'a pas de lignes" % id)
+        socid = int(d.get("socid") or d.get("fk_soc"))
+        nouvel = _int_id(ecrire(conf, "POST", DOCUMENTS["factures"], {"socid": socid, "date": _jour_ts(""), "lines": lignes,
+                                                                      "note_private": "Issue du devis %s, préparée par Cassandra" % (d.get("ref") or id)}), "la facture")
+        return {"document": "factures", "id": nouvel, "socid": socid, "lignes": len(lignes), "devis": int(id)}
+
+    # --- les dons : saisir, valider, éditer le reçu fiscal
+    def don_creer(ctx, montant, date="", nom="", prenom="", societe=""):
+        montant = _montant(montant)
+        conf = _conf()
+        champs = {"amount": montant, "date": _jour_ts(date)}
+        for k, v in (("lastname", nom), ("firstname", prenom), ("societe", societe)):
+            if v:
+                champs[k] = str(v)[:120]
+        nouvel = _int_id(ecrire(conf, "POST", "/donations", champs), "le don")
+        return {"id": nouvel, "montant": montant}
+
+    def prouver_don(ctx, res):
+        d = _lire_un(_conf(), "/donations", res["id"])
+        return isinstance(d, dict) and abs(float(d.get("amount") or 0) - res["montant"]) < 0.01
+
+    def defaire_don(ctx, res):
+        d = _lire_un(_conf(), "/donations", res["id"])
+        if isinstance(d, dict) and _statut(d) not in ("0", "-1"):
+            raise PontErreur("le don n'est plus une promesse : il ne se supprime pas")
+        ecrire(_conf(), "DELETE", "/donations/%d" % res["id"])
+
+    def don_valider(ctx, id):
+        conf = _conf()
+        d = _doc(conf, "/donations", id, "le don")
+        if _statut(d) != "0":
+            raise ValueError("le don %s n'est pas une promesse à valider (statut %s)" % (id, _statut(d)))
+        ecrire(conf, "POST", "/donations/%s/validate" % id, {"notrigger": 0})
+        return {"id": int(id)}
+
+    def prouver_don_valide(ctx, res):
+        d = _lire_un(_conf(), "/donations", res["id"])
+        return isinstance(d, dict) and _statut(d) == "1"
+
+    def defaire_don_valide(ctx, res):
+        raise PontErreur("Dolibarr ne repasse pas un don validé en promesse par l'API : à défaire dans Dolibarr")
+
+    def don_recu(ctx, id):
+        conf = _conf()
+        d = _doc(conf, "/donations", id, "le don")
+        if _statut(d) not in ("1", "2"):
+            raise ValueError("le reçu fiscal se prépare pour un don validé (statut %s)" % _statut(d))
+        ref = str(d.get("ref") or id)
+        fichier = "%s/%s.pdf" % (ref, ref)
+        rep = ecrire(conf, "PUT", "/documents/builddoc", {"modulepart": "donation", "original_file": fichier, "doctemplate": "html_cerfaDonation", "langcode": "fr_FR"})
+        return {"id": int(id), "fichier": fichier, "reponse": (rep if isinstance(rep, (dict, str)) else {})}
+
+    def prouver_recu(ctx, res):
+        conf = _conf()
+        rep = appeler(conf, "/documents", {"modulepart": "donation", "id": res["id"]})
+        return isinstance(rep, list) and any(str(x.get("name", "")).endswith(".pdf") for x in rep if isinstance(x, dict))
+
+    def defaire_recu(ctx, res):
+        ecrire(_conf(), "DELETE", "/documents?" + urllib.parse.urlencode({"modulepart": "donation", "original_file": res["fichier"]}))
+
+    # --- une cotisation d'adhérent
+    def cotisation(ctx, membre, montant, debut="", fin="", libelle=""):
+        montant = _montant(montant)
+        conf = _conf()
+        m = _doc(conf, "/members", membre, "l'adhérent")
+        avant = len(_liste(conf, "/members/%s/subscriptions" % membre))
+        nouvel = _int_id(ecrire(conf, "POST", "/members/%s/subscriptions" % membre, {"start_date": _jour_ts(debut), "end_date": _jour_ts(fin or debut), "amount": montant,
+                                                                                   "label": str(libelle or "Cotisation")[:120]}), "la cotisation")
+        return {"membre": int(membre), "cotisation": nouvel, "montant": montant, "avant": avant, "fin_avant": m.get("datefin")}
+
+    def prouver_cotisation(ctx, res):
+        return len(_liste(_conf(), "/members/%s/subscriptions" % res["membre"])) == res["avant"] + 1
+
+    def defaire_cotisation(ctx, res):
+        ecrire(_conf(), "DELETE", "/subscriptions/%d" % res["cotisation"])
+
+    # --- un virement entre deux comptes bancaires (le retour est le virement inverse)
+    def _solde(conf, bid):
+        r = appeler(conf, "/bankaccounts/%s/balance" % bid)
+        try:
+            return round(float(r if not isinstance(r, dict) else r.get("balance", 0)), 2)
+        except (TypeError, ValueError):
+            raise PontErreur("Dolibarr n'a pas rendu le solde du compte %s" % bid)
+
+    def virement_interne(ctx, de, vers, montant, date="", libelle=""):
+        montant = _montant(montant)
+        if not _ID.match(str(de)) or not _ID.match(str(vers)) or str(de) == str(vers):
+            raise ValueError("de et vers : deux comptes bancaires différents (identifiants)")
+        conf = _conf()
+        sd, sv = _solde(conf, de), _solde(conf, vers)
+        ecrire(conf, "POST", "/bankaccounts/transfer", {"bankaccount_from_id": int(de), "bankaccount_to_id": int(vers), "amount": montant, "date": _jour_ts(date),
+                                                         "description": str(libelle or "Virement interne")[:120]})
+        return {"de": int(de), "vers": int(vers), "montant": montant, "solde_de": sd, "solde_vers": sv}
+
+    def prouver_virement(ctx, res):
+        conf = _conf()
+        return (abs(_solde(conf, res["de"]) - (res["solde_de"] - res["montant"])) < 0.01 and abs(_solde(conf, res["vers"]) - (res["solde_vers"] + res["montant"])) < 0.01)
+
+    def defaire_virement(ctx, res):
+        ecrire(_conf(), "POST", "/bankaccounts/transfer", {"bankaccount_from_id": res["vers"], "bankaccount_to_id": res["de"], "amount": res["montant"], "date": _jour_ts(""),
+                                                           "description": "Annulation du virement interne"})
+
+    # --- un projet : l'ouvrir, le clore
+    ETATS_PROJET = {"valider": ("0", "1"), "clore": ("1", "2")}
+
+    def projet(ctx, id, action):
+        if action not in ETATS_PROJET:
+            raise ValueError("action : %s" % ", ".join(sorted(ETATS_PROJET)))
+        conf = _conf()
+        p = _doc(conf, "/projects", id, "le projet")
+        de, vers = ETATS_PROJET[action]
+        if _statut(p) != de:
+            raise ValueError("le projet %s est au statut %s : « %s » demande le statut %s" % (id, _statut(p), action, de))
+        if action == "valider":
+            ecrire(conf, "POST", "/projects/%s/validate" % id, {"notrigger": 0})
+        else:
+            ecrire(conf, "PUT", "/projects/%s" % id, {"statut": int(vers)})
+        return {"id": int(id), "action": action, "avant": de, "apres": vers}
+
+    def prouver_projet(ctx, res):
+        p = _lire_un(_conf(), "/projects", res["id"])
+        return isinstance(p, dict) and _statut(p) == res["apres"]
+
+    def defaire_projet(ctx, res):
+        ecrire(_conf(), "PUT", "/projects/%d" % res["id"], {"statut": int(res["avant"])})
+
+    # --- tout le reste de l'API : une lecture libre (jamais un secret) et une écriture libre (preuve et retour quand l'acte le permet)
+    def _nettoyer(x):
+        if isinstance(x, dict):
+            return {k: ("***" if _SECRET.search(str(k)) and v not in (None, "", 0, "0") else _nettoyer(v)) for k, v in x.items()}
+        if isinstance(x, list):
+            return [_nettoyer(v) for v in x]
+        return x
+
+    def _chemin_libre(chemin):
+        if not isinstance(chemin, str) or not _CHEMIN_LIBRE.match(chemin) or ".." in chemin:
+            raise ValueError("chemin : de la forme /domaine/…, par exemple /thirdparties/12")
+        if chemin.split("/")[1] not in DOMAINES:
+            raise ValueError("domaine inconnu : %r (permis : %s)" % (chemin.split("/")[1], ", ".join(DOMAINES)))
+        return chemin
+
+    def lire_libre(ctx, chemin, parametres=""):
+        chemin = _chemin_libre(chemin)
+        if not _REQUETE.match(str(parametres or "")):
+            raise ValueError("parametres : une chaîne de requête simple (limit=5&page=0)")
+        conf = _conf()
+        p = dict(urllib.parse.parse_qsl(str(parametres or ""))) if parametres else {}
+        if chemin.count("/") == 1:
+            p.setdefault("limit", str(MAX_LIBRE))
+        try:
+            rep = appeler(conf, chemin, p)
+        except PontErreur as ex:
+            if ex.code == 404:
+                return {"chemin": chemin, "reponse": [], "tronque": False}
+            raise
+        tronque = isinstance(rep, list) and len(rep) > MAX_LIBRE
+        if tronque:
+            rep = rep[:MAX_LIBRE]
+        return {"chemin": chemin, "reponse": _nettoyer(rep), "tronque": tronque}
+
+    def ecrire_libre(ctx, methode, chemin, corps=None):
+        methode = str(methode).upper()
+        if methode not in ("POST", "PUT"):
+            raise ValueError("methode : POST ou PUT (une suppression passe par « supprimer », avec sa corbeille)")
+        chemin = _chemin_libre(chemin)
+        if corps is not None and not isinstance(corps, dict):
+            raise ValueError("corps : un objet JSON")
+        conf = _conf()
+        parties = chemin.strip("/").split("/")
+        avant = None
+        if methode == "PUT" and len(parties) == 2 and isinstance(corps, dict):
+            courant = _lire_un(conf, "/" + parties[0], parties[1])
+            if not isinstance(courant, dict):
+                raise PontErreur("%s est introuvable" % chemin)
+            avant = {k: courant.get(k) for k in corps}
+        rep = ecrire(conf, methode, chemin, corps)
+        nouvel = None
+        if methode == "POST" and len(parties) == 1 and isinstance(rep, (int, str)) and not isinstance(rep, bool) and _ID.match(str(rep)):
+            nouvel = int(rep)
+        return {"methode": methode, "chemin": chemin, "corps": corps, "avant": avant, "cree": nouvel, "reponse": _nettoyer(rep) if isinstance(rep, (dict, list)) else None}
+
+    def prouver_libre(ctx, res):
+        conf = _conf()
+        parties = res["chemin"].strip("/").split("/")
+        if res["avant"] is not None:
+            o = _lire_un(conf, "/" + parties[0], parties[1])
+            return isinstance(o, dict) and all(_egaux(o.get(k), v) for k, v in res["corps"].items())
+        if res["cree"]:
+            return isinstance(_lire_un(conf, res["chemin"], res["cree"]), dict)
+        return True            # une action (valider, clore…) : Dolibarr a répondu sans erreur, la preuve est sa réponse
+
+    def defaire_libre(ctx, res):
+        conf = _conf()
+        parties = res["chemin"].strip("/").split("/")
+        if res["avant"] is not None:
+            ecrire(conf, "PUT", res["chemin"], res["avant"])
+        elif res["cree"]:
+            ecrire(conf, "DELETE", "%s/%d" % (res["chemin"], res["cree"]))
+        else:
+            raise PontErreur("cette action n'a pas de retour générique : à défaire dans Dolibarr")
+
     ctx.implementer("creer", creer, prouver_objet, defaire_objet, simuler=lambda ctx, objet="", **_: "créerait un(e) %s" % objet)
     ctx.implementer("modifier", modifier, prouver_objet, defaire_objet, simuler=lambda ctx, objet="", id="", **_: "modifierait %s %s" % (objet, id))
     ctx.implementer("creer_brouillon", creer_brouillon, prouver_brouillon, defaire_brouillon,
@@ -608,6 +1058,23 @@ def brancher(ctx):
     ctx.implementer("corbeille", corbeille_lue)
     ctx.implementer("valider_facture", valider_facture, prouver_validation, defaire_validation,
                     simuler=lambda ctx, id="", **_: "validerait la facture %s (elle prendrait un numéro)" % id)
+
+    ctx.implementer("mon_acces", mon_acces)
+    ctx.implementer("encaisser", encaisser, prouver_encaisser, defaire_encaisser,
+                    simuler=lambda ctx, id="", montant="", **_: "encaisserait %s € sur la facture %s" % (montant, id))
+    ctx.implementer("creer_avoir", creer_avoir, prouver_brouillon, defaire_brouillon, simuler=lambda ctx, id="", **_: "préparerait un avoir en brouillon pour la facture %s" % id)
+    ctx.implementer("relancer", relancer, prouver_relance, defaire_relance, simuler=lambda ctx, id="", **_: "noterait une relance de la facture %s dans l'agenda du tiers" % id)
+    ctx.implementer("devis", devis, prouver_devis, defaire_devis, simuler=lambda ctx, id="", action="", **_: "ferait « %s » sur le devis %s" % (action, id))
+    ctx.implementer("facturer_devis", facturer_devis, prouver_brouillon, defaire_brouillon, simuler=lambda ctx, id="", **_: "préparerait une facture en brouillon depuis le devis %s" % id)
+    ctx.implementer("don_creer", don_creer, prouver_don, defaire_don, simuler=lambda ctx, montant="", **_: "saisirait un don de %s €" % montant)
+    ctx.implementer("don_valider", don_valider, prouver_don_valide, defaire_don_valide, simuler=lambda ctx, id="", **_: "validerait le don %s" % id)
+    ctx.implementer("don_recu", don_recu, prouver_recu, defaire_recu, simuler=lambda ctx, id="", **_: "éditerait le reçu fiscal du don %s" % id)
+    ctx.implementer("cotisation", cotisation, prouver_cotisation, defaire_cotisation, simuler=lambda ctx, membre="", montant="", **_: "enregistrerait une cotisation de %s € pour l'adhérent %s" % (montant, membre))
+    ctx.implementer("virement_interne", virement_interne, prouver_virement, defaire_virement,
+                    simuler=lambda ctx, de="", vers="", montant="", **_: "virerait %s € du compte %s au compte %s" % (montant, de, vers))
+    ctx.implementer("projet", projet, prouver_projet, defaire_projet, simuler=lambda ctx, id="", action="", **_: "ferait « %s » sur le projet %s" % (action, id))
+    ctx.implementer("lire_libre", lire_libre)
+    ctx.implementer("ecrire_libre", ecrire_libre, prouver_libre, defaire_libre, simuler=lambda ctx, methode="", chemin="", **_: "ferait %s %s" % (methode, chemin))
 
     ctx.moteur("releve", releve)
     ctx.detecteur("injoignable", lambda ctx: constat_si(ctx, "injoignable", "Dolibarr ne répond plus"))

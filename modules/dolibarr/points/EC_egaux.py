@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.1)  #b87697
+# VERSION EC : EC0 (référence 0.4.0)  #b87697
 # HÔTE CN    : CN_module.py · egaux @1.0
 # RÔLE       : Dolibarr rend souvent des nombres en texte (« 1 » pour 1) : on compare ce qui compte.
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.

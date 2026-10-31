@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.3.1  #f30d95
+# VERSION CN : 0.4.0  #195d29
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.1 empreinte=f30d95 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=195d29 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
-version = "0.3.1"
+version = "0.4.0"
 noyau_min = "0.1.0"
 description = "Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur."
 confiance = "interne"
@@ -63,6 +63,30 @@ defaut = 0
 minimum = 0
 maximum = 120
 aide = "0 : la valeur du fichier dolibarr.conf, sinon 15 secondes."
+portee = "societe"
+[[reglages]]
+id = "cle_api"
+libelle = "Ma clé d'API Dolibarr : mon Itare et moi agissons dans Dolibarr sous le nom de son utilisateur"
+aide = "Jamais affichée, chiffrée au repos. Sans elle, ni vous ni votre Itare n'écrivez dans Dolibarr ; vous lisez avec la clé de mandat."
+type = "secret"
+portee = "compte"
+[[reglages]]
+id = "cle_mandat"
+libelle = "Clé de mandat : celle de l'utilisateur Dolibarr dédié à Cassandra (moteurs, billetterie, lectures d'un compte sans clé)"
+aide = "Vide : on lit le fichier de clé (config/dolibarr.key). Un utilisateur Dolibarr aux droits limités vaut mieux qu'un administrateur."
+type = "secret"
+portee = "societe"
+[[reglages]]
+id = "mandat_pour_tous"
+libelle = "Un compte sans clé propre écrit avec la clé de mandat"
+aide = "Désactivé par défaut : un compte sans clé ne peut rien écrire, et ne tombe jamais sur la clé d'un autre."
+type = "booleen"
+defaut = false
+portee = "societe"
+[[reglages]]
+id = "societe_attendue"
+libelle = "Nom exact de la société Dolibarr dans laquelle on écrit"
+aide = "Rempli : avant chaque écriture, le pont vérifie que la clé voit cette société ; sinon il refuse. Évite d'écrire dans la mauvaise entité."
 portee = "societe"
 [evenements]
 emet = ["dolibarr.injoignable", "dolibarr.acces_refuse", "dolibarr.reprise"]
@@ -197,6 +221,150 @@ preuve = "relire la facture : statut validé"
 retour = "repasser la facture en brouillon (impossible si elle est payée ou comptabilisée)"
 paliers = ["raconter", "auto"]
 qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "mon_acces"
+libelle = "Qui suis-je dans Dolibarr : la clé utilisée (propre, de mandat ou du fichier), l'utilisateur, la société vue"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "encaisser"
+libelle = "Encaisser un règlement sur une facture validée, sur un compte bancaire"
+risque = "eleve"
+droit = "administrer"
+perimetre = ["une facture validée et ouverte", "le montant ne dépasse pas le reste dû"]
+preuve = "relire la facture : le reste dû a baissé du montant, et un règlement de plus existe"
+retour = "supprimer ce règlement (Dolibarr le refuse s'il est déjà rapproché en banque)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "creer_avoir"
+libelle = "Préparer un avoir en brouillon sur une facture validée"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["un brouillon d'avoir, jamais validé par cet acte"]
+preuve = "relire l'avoir : brouillon, relié à sa facture, mêmes lignes en négatif"
+retour = "supprimer ce brouillon, seulement s'il l'est encore"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "relancer"
+libelle = "Noter une relance de facture dans l'agenda du tiers (le courriel part par le module Mandats)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["une facture validée et ouverte", "le texte est gardé dans Dolibarr ; aucune adresse ne vient de la demande"]
+preuve = "relire l'évènement de l'agenda"
+retour = "supprimer l'évènement que cet acte vient de créer"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "devis"
+libelle = "Valider un devis, le marquer signé ou refusé"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["valider : brouillon → ouvert", "signer et refuser : ouvert → signé ou refusé"]
+preuve = "relire le devis : le statut voulu"
+retour = "remettre le devis en brouillon"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "facturer_devis"
+libelle = "Préparer une facture en brouillon depuis un devis signé"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["un devis signé, ses lignes recopiées", "la facture reste un brouillon"]
+preuve = "relire la facture : brouillon, tiers et nombre de lignes du devis"
+retour = "supprimer ce brouillon, seulement s'il l'est encore"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "don_creer"
+libelle = "Saisir un don (promesse)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["montant, date, donateur"]
+preuve = "relire le don : même montant"
+retour = "supprimer cette promesse, seulement si elle n'est pas validée"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "don_valider"
+libelle = "Valider un don : il prend son numéro"
+risque = "eleve"
+droit = "administrer"
+perimetre = ["une promesse de don"]
+preuve = "relire le don : statut validé"
+retour = "impossible par l'API : Dolibarr ne repasse pas un don validé en promesse, à défaire dans Dolibarr"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "don_recu"
+libelle = "Éditer le reçu fiscal (PDF) d'un don validé"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["un don validé"]
+preuve = "relire les documents du don : un PDF existe"
+retour = "supprimer le PDF que cet acte vient de produire"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "cotisation"
+libelle = "Enregistrer la cotisation d'un adhérent"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["une cotisation sur un adhérent existant"]
+preuve = "relire les cotisations de l'adhérent : une de plus"
+retour = "supprimer la cotisation que cet acte vient de créer"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "virement_interne"
+libelle = "Virer un montant d'un compte bancaire Dolibarr à un autre"
+risque = "eleve"
+droit = "administrer"
+perimetre = ["deux comptes différents", "le montant est relu sur les deux soldes"]
+preuve = "relire les deux soldes : l'un baisse, l'autre monte du montant"
+retour = "faire le virement inverse"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "projet"
+libelle = "Valider un projet ou le clore"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["valider : brouillon → ouvert", "clore : ouvert → clos"]
+preuve = "relire le projet : le statut voulu"
+retour = "remettre le statut d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "lire_libre"
+libelle = "Lire n'importe quel point de l'API de Dolibarr (les secrets sont masqués dans la réponse)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "ecrire_libre"
+libelle = "Écrire n'importe où dans l'API de Dolibarr (POST ou PUT ; une suppression passe par « supprimer »)"
+risque = "eleve"
+droit = "administrer"
+perimetre = ["tous les domaines de l'API de Dolibarr", "POST ou PUT seulement", "le corps est un objet JSON de 16 Ko au plus"]
+preuve = "relire l'objet écrit et comparer les champs (une action sans objet : la réponse de Dolibarr)"
+retour = "PUT : remettre les valeurs d'avant ; POST sur une collection : supprimer ce qui vient d'être créé ; une action n'a pas de retour générique"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
 
 [[ecrans]]
 id = "vue_dolibarr"
