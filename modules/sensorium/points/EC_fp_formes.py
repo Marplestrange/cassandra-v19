@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #81ba1c
+# VERSION EC : EC0 (référence 0.3.0)  #e21bcd
 # HÔTE CN    : CN_module.py · fp_formes @1.0
 # RÔLE       : transforme ce que le Sensorium lit de FastPanel (par sa ligne de commande, son API ou les fichiers des serveurs) en comptes mail et FTP, source par source.
 # MÉTHODE    : fonctions pures, une par source ; le nexus essaie les sources dans l'ordre (la plus fiable d'abord) et s'arrête à la première qui donne des comptes ; l'EC ne lit jamais de fichier.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=fp_formes contrat=@1.0 version=EC0 empreinte=81ba1c ▼▼▼
+# ▼▼▼ BORNE EC point=fp_formes contrat=@1.0 version=EC0 empreinte=e21bcd ▼▼▼
 from datetime import datetime
 import re
 
@@ -349,13 +349,22 @@ def crons_api(api_crons, runs, now):
         })
     return jobs
 
+_MOIS_OPENSSL = {m: i + 1 for i, m in enumerate(("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))}
+
+def _date_openssl(v):
+    """« Dec 25 12:00:00 2026 GMT » -> datetime ; ValueError sinon. Sans strptime : il importe _strptime à son premier appel, import que le filtre des EC refuse, et le `except` d'en dessous avalait ce refus (zéro jour, sans erreur)."""
+    m = re.fullmatch(r"([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d\d):(\d\d):(\d\d)\s+(\d{4})\s+(?:GMT|UTC)", v)
+    if not m or m.group(1) not in _MOIS_OPENSSL:
+        raise ValueError(v)
+    return datetime(int(m.group(6)), _MOIS_OPENSSL[m.group(1)], int(m.group(2)), int(m.group(3)), int(m.group(4)), int(m.group(5)))
+
 def _jours_ssl(out_ssl, now):
     """Jours avant l'expiration d'un certificat d'après la sortie d'openssl (notAfter=…) ; zéro quand elle est illisible. `now` : l'instant reçu, en ISO."""
     ssl_days = 0
     dm = re.search(r"notAfter=(.+)", out_ssl or "")
     if dm:
         try:
-            exp = datetime.strptime(dm.group(1).strip(), "%b %d %H:%M:%S %Y %Z")
+            exp = _date_openssl(dm.group(1).strip())
             ssl_days = (exp - datetime.fromisoformat(now)).days
         except Exception:
             pass

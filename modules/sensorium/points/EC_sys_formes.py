@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #c5168f
+# VERSION EC : EC0 (référence 0.3.0)  #154d35
 # HÔTE CN    : CN_module.py · sys_formes @1.0
 # RÔLE       : transforme ce que le Sensorium lit du système (sorties de commandes, fichiers de configuration, JSON de smartctl) en sessions, ports, certificats, disques, état du matériel et sites web déclarés.
 # MÉTHODE    : fonctions pures, une par mesure ; le nexus lit les sources et décide des replis (who puis ss puis last ; ss puis netstat) ; l'EC ne lit jamais de fichier ni de commande.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=sys_formes contrat=@1.0 version=EC0 empreinte=c5168f ▼▼▼
+# ▼▼▼ BORNE EC point=sys_formes contrat=@1.0 version=EC0 empreinte=154d35 ▼▼▼
 from datetime import datetime
 import re
 
@@ -153,6 +153,18 @@ def _radical(chemin):
     i = nom.rfind(".")
     return nom[:i] if 0 < i < len(nom) - 1 else nom
 
+_MOIS_OPENSSL = {m: i + 1 for i, m in enumerate(("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))}
+
+def _date_openssl(v):
+    """« Dec 25 12:00:00 2026 GMT » (le fuseau est facultatif) -> datetime, ou None. Sans strptime : il importe _strptime à son premier appel, import que le filtre des EC refuse, et l'`except` qui l'entourait avalait ce refus (le certificat paraissait illisible)."""
+    m = re.fullmatch(r"([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d\d):(\d\d):(\d\d)\s+(\d{4})(?:\s+(?:GMT|UTC))?", v)
+    if not m or m.group(1) not in _MOIS_OPENSSL:
+        return None
+    try:
+        return datetime(int(m.group(6)), _MOIS_OPENSSL[m.group(1)], int(m.group(2)), int(m.group(3)), int(m.group(4)), int(m.group(5)))
+    except ValueError:
+        return None
+
 def certificat(sortie, chemin, indice, now):
     """Un certificat d'après la sortie d'openssl (date, sujet, émetteur, noms alternatifs) ; None quand elle est illisible. `now` : l'instant reçu, en ISO."""
     if not sortie:
@@ -160,13 +172,9 @@ def certificat(sortie, chemin, indice, now):
     date_m = re.search(r"notAfter=(.+)", sortie)
     if not date_m:
         return None
-    try:
-        expiry = datetime.strptime(date_m.group(1).strip(), "%b %d %H:%M:%S %Y %Z")
-    except Exception:
-        try:
-            expiry = datetime.strptime(date_m.group(1).strip(), "%b %d %H:%M:%S %Y")
-        except Exception:
-            return None
+    expiry = _date_openssl(date_m.group(1).strip())
+    if expiry is None:
+        return None
     days = (expiry - datetime.fromisoformat(now)).days
     domain = indice
     san_m = re.search(r"DNS:([\w.*-]+)", sortie)
@@ -185,7 +193,7 @@ def certificat(sortie, chemin, indice, now):
         cn_m = re.search(r"\bCN\s*=\s*([^,/\n]+)", s)
         issuer = (o_m.group(1).strip() if o_m else (cn_m.group(1).strip() if cn_m else s.strip()))[:60]
     return {"domain": domain, "days_left": days, "cert_path": chemin,
-            "issuer": issuer, "expiry_date": expiry.strftime("%Y-%m-%d"),
+            "issuer": issuer, "expiry_date": expiry.date().isoformat(),
             "status": "expired" if days <= 0 else ("expiring" if days <= 30 else "valid"),
             "last_check": now}
 
@@ -545,7 +553,14 @@ def _date_de_ligne(texte, fmt, maintenant):
                     texte = texte.replace("-%s-" % m, "-%02d-" % (i + 1))
                     break
             fmt = fmt.replace("%b", "%m")
-        return datetime.strptime(texte, fmt).strftime("%Y-%m-%d %H:%M:%S")
+        # Sans strptime/strftime : l'un importe _strptime, l'autre time, que le filtre des EC refuse ; l'`except` ci-dessous avalait le refus
+        # et TOUTE date valait `maintenant`.
+        jetons = {"%Y": r"(?P<Y>\d{4})", "%m": r"(?P<m>\d{1,2})", "%d": r"(?P<d>\d{1,2})", "%H": r"(?P<H>\d{1,2})", "%M": r"(?P<M>\d{1,2})", "%S": r"(?P<S>\d{1,2})"}
+        rx = re.escape(fmt)
+        for k, v in jetons.items():
+            rx = rx.replace(k, v)
+        g = re.fullmatch(rx, texte).groupdict()
+        return datetime(int(g["Y"]), int(g["m"]), int(g["d"]), int(g["H"]), int(g["M"]), int(g["S"])).isoformat(" ")
     except Exception:
         return maintenant
 

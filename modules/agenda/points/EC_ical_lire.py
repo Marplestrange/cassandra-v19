@@ -8,17 +8,27 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.3.0)  #4c252b
+# VERSION EC : EC0 (référence 0.3.0)  #a61307
 # HÔTE CN    : CN_module.py · ical_lire @1.0
 # RÔLE       : lit un flux iCalendar (RFC 5545) et rend ses événements : titre, lieu, début, fin, journée entière, récurrence ; une heure UTC est ramenée à l'heure locale par le décalage reçu.
 # MÉTHODE    : fonction pure : dépliage des lignes, un bloc par VEVENT, le premier exemplaire d'un champ gagne ; le décalage local (minutes) est une ENTRÉE, lue par la façade, pour que l'EC ne lise aucune horloge.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=ical_lire contrat=@1.0 version=EC0 empreinte=4c252b ▼▼▼
+# ▼▼▼ BORNE EC point=ical_lire contrat=@1.0 version=EC0 empreinte=a61307 ▼▼▼
 from datetime import datetime, timedelta, timezone
 import re
 
 def ical_unescape(v):
     return (v or "").replace("\\n", "\n").replace("\\N", "\n").replace("\\,", ",").replace("\\;", ";").replace("\\\\", "\\")
+
+_JOUR = r"(?P<Y>\d\d\d\d)(?P<m>1[0-2]|0[1-9]|[1-9])(?P<d>3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9])"
+_HEURE = r"T(?P<H>2[0-3]|[0-1]\d|\d)(?P<M>[0-5]\d|\d)(?P<S>6[0-1]|[0-5]\d|\d)"
+
+def _date_heure(v, avec_heure):
+    """AAAAMMJJ ou AAAAMMJJTHHMMSS -> datetime ; ValueError si la forme ou la valeur est fausse. Mêmes motifs que strptime, qui n'est pas appelé : il importe _strptime à son premier appel, import que le filtre des EC refuse (strftime importe `time` pareil, d'où isoformat plus bas)."""
+    g = re.fullmatch(_JOUR + (_HEURE if avec_heure else ""), v)
+    if not g:
+        raise ValueError(v)
+    return datetime(int(g["Y"]), int(g["m"]), int(g["d"]), *((int(g["H"]), int(g["M"]), int(g["S"])) if avec_heure else ()))
 
 def ical_instant(brut, params, decalage_min):
     """(valeur normalisée, journée entière). VALUE=DATE, UTC suffixé Z (ramené à l'heure locale), heures locales avec TZID : chaînes naïves comme partout ailleurs."""
@@ -27,12 +37,12 @@ def ical_instant(brut, params, decalage_min):
     journee = "VALUE=DATE" in p and "DATE-TIME" not in p
     try:
         if journee or (len(brut) == 8 and brut.isdigit()):
-            return datetime.strptime(brut[:8], "%Y%m%d").strftime("%Y-%m-%d"), 1
+            return _date_heure(brut[:8], False).date().isoformat(), 1
         if brut.endswith("Z"):
-            d = datetime.strptime(brut[:15], "%Y%m%dT%H%M%S")
+            d = _date_heure(brut[:15], True)
             d = d + timedelta(minutes=decalage_min)
-            return d.strftime("%Y-%m-%d %H:%M"), 0
-        return datetime.strptime(brut[:15], "%Y%m%dT%H%M%S").strftime("%Y-%m-%d %H:%M"), 0
+            return d.isoformat(" ", "minutes"), 0
+        return _date_heure(brut[:15], True).isoformat(" ", "minutes"), 0
     except ValueError:
         return brut, 0
 

@@ -1829,7 +1829,8 @@
     "issuer": "Autorité",
     "expiry_date": "2026-10-20",
     "status": "expiring",
-    "last_check": "2026-10-17T12:00:00.000001"
+    "last_check": "2026-10-17T12:00:00.000001",
+    "sans": ""
    },
    {
     "domain": "exemple.test",
@@ -1838,7 +1839,8 @@
     "issuer": "Let's Encrypt",
     "expiry_date": "2026-12-25",
     "status": "valid",
-    "last_check": "2026-10-17T12:00:00.000001"
+    "last_check": "2026-10-17T12:00:00.000001",
+    "sans": "exemple.test,www.exemple.test"
    }
   ]
  },
@@ -1898,7 +1900,8 @@
     "issuer": "Autorité",
     "expiry_date": "2026-10-20",
     "status": "expiring",
-    "last_check": "2026-10-17T12:00:00.000001"
+    "last_check": "2026-10-17T12:00:00.000001",
+    "sans": ""
    },
    {
     "domain": "exemple.test",
@@ -1907,7 +1910,8 @@
     "issuer": "Let's Encrypt",
     "expiry_date": "2026-12-25",
     "status": "valid",
-    "last_check": "2026-10-17T12:00:00.000001"
+    "last_check": "2026-10-17T12:00:00.000001",
+    "sans": "exemple.test,www.exemple.test"
    }
   ]
  },
@@ -1936,7 +1940,8 @@
     "issuer": "",
     "expiry_date": "2026-01-01",
     "status": "expired",
-    "last_check": "2026-10-17T12:00:00.000001"
+    "last_check": "2026-10-17T12:00:00.000001",
+    "sans": ""
    },
    {
     "domain": "l.test",
@@ -1945,7 +1950,8 @@
     "issuer": "Autorité",
     "expiry_date": "2026-10-20",
     "status": "expiring",
-    "last_check": "2026-10-17T12:00:00.000001"
+    "last_check": "2026-10-17T12:00:00.000001",
+    "sans": ""
    }
   ]
  },
@@ -1974,7 +1980,8 @@
     "issuer": "Let's Encrypt",
     "expiry_date": "2026-12-25",
     "status": "valid",
-    "last_check": "2026-10-17T12:00:00.000001"
+    "last_check": "2026-10-17T12:00:00.000001",
+    "sans": "exemple.test,www.exemple.test"
    }
   ]
  },
@@ -2000,7 +2007,8 @@
     "issuer": "Let's Encrypt",
     "expiry_date": "2026-12-25",
     "status": "valid",
-    "last_check": "2026-10-17T12:00:00.000001"
+    "last_check": "2026-10-17T12:00:00.000001",
+    "sans": "exemple.test,www.exemple.test"
    }
   ]
  },
