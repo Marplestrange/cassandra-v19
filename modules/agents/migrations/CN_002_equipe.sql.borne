@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.2.0  #abd58a
+# VERSION CN : 0.3.0  #abd58a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Migration 002_equipe.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)

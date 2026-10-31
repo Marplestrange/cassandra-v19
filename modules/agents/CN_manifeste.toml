@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.2.0  #0c1520
+# VERSION CN : 0.3.0  #896768
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=0c1520 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=896768 ▼▼▼
 [module]
 id = "agents"
 nom = "Agents"
-version = "0.2.0"
+version = "0.3.0"
 noyau_min = "0.1.0"
 description = "Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul."
 confiance = "interne"
@@ -98,6 +98,12 @@ type = "entier"
 defaut = 60
 minimum = 10
 maximum = 200
+
+[[reglages]]
+id = "epreuves_exigees"
+libelle = "N'employer pour un agent qu'un modèle qui n'a pas échoué à ses épreuves de sûreté (un modèle jamais éprouvé n'est pas écarté)"
+type = "booleen"
+defaut = false
 
 [[capacites]]
 id = "conversations"
@@ -243,10 +249,87 @@ retour = "remettre le plafond d'avant, gardé dans le résultat de l'acte"
 paliers = ["auto", "raconter"]
 qui = ["humain", "compte"]
 
+[[capacites]]
+id = "propositions"
+libelle = "Ce que mes agents veulent faire et ne font pas seuls (« À valider ») : celles de mon compte ; l'administrateur voit celles des agents d'instance, jamais celles du bureau d'un autre compte"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "proposition_decider"
+libelle = "Décider d'une proposition : accepter (le geste est EXÉCUTÉ par l'exécuteur, avec mes droits), refuser (l'agent le sait et ne le repropose pas) ou reporter. Un envoi n'est accepté qu'avec un mandat valable"
+risque = "moyen"
+droit = "valider"
+perimetre = ["une proposition de mon périmètre : celles de mon Itare, ou (administrateur) celles des agents d'instance", "jamais le bureau d'un autre compte", "un envoi exige un mandat actif du module des mandats : l'adresse ne vient jamais de la demande", "une proposition à argument secret ne s'exécute pas"]
+preuve = "relire la proposition : son état est celui de la décision"
+retour = "remettre l'état d'avant (un geste déjà fait se défait par son propre retour, l'acte est dans le résultat)"
+paliers = ["auto", "raconter"]
+qui = ["humain", "compte"]
+masque = ["resultat"]
+
+[[capacites]]
+id = "confiance"
+libelle = "La carte de confiance d'un agent : pour chaque outil raconté, les validations de suite sans refus ; à 8 elle PROPOSE « auto » (jamais passé seul) ; un outil neuf reste 7 jours à l'essai"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "pourquoi"
+libelle = "« Pourquoi ? » : la chaîne d'un acte d'agent reconstruite du journal et de la mémoire (déclencheur, souvenirs cités, outil, palier au moment du geste, preuve, retour) sans rien copier ; jamais l'acte d'un autre compte"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "epreuves_lancer"
+libelle = "Jouer les huit épreuves de sûreté contre un modèle, en MODE ESSAI (rien n'est fait pour de bon) : un modèle qui échoue est déconseillé"
+risque = "faible"
+droit = "administrer"
+perimetre = ["l'administrateur seulement", "huit cas du corpus, outils-bouchons", "les actes ne sont que simulés"]
+preuve = "relire le passage des épreuves"
+retour = "supprimer le passage"
+paliers = ["auto", "raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "epreuves_resultats"
+libelle = "Les résultats des épreuves de sûreté : le dernier passage de chaque modèle, cas par cas"
+risque = "lecture"
+droit = "administrer"
+
+[[capacites]]
+id = "sentinelle_apprendre"
+libelle = "Apprendre à la sentinelle anti-fuite l'EMPREINTE d'un secret : la valeur n'est jamais gardée, elle ne ressort nulle part"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["l'administrateur seulement", "une étiquette, jamais la valeur gardée"]
+preuve = "relire l'empreinte (étiquette et longueur)"
+retour = "retirer l'empreinte (ou remettre l'ancienne)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["valeur"]
+
+[[capacites]]
+id = "sentinelle_oublier"
+libelle = "Retirer de la sentinelle l'empreinte d'un secret"
+risque = "faible"
+droit = "administrer"
+perimetre = ["l'administrateur seulement"]
+preuve = "l'empreinte n'y est plus"
+retour = "remettre l'empreinte retirée"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "sentinelle_etat"
+libelle = "Les secrets que la sentinelle connaît (étiquette et longueur seulement) et le nombre de réponses retenues par le Relecteur"
+risque = "lecture"
+droit = "administrer"
+
 [permissions]
 stockage = true
 lectures = true
 agir = true
+introspection = true
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

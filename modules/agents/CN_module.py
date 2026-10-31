@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.2.0  #06554f
+# VERSION CN : 0.3.0  #d266db
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=06554f ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=d266db ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -35,6 +35,8 @@ from datetime import datetime
 
 from . import CN_outils as o
 from .CN_atelier import brancher_equipe
+from .CN_garde import brancher_garde
+from .CN_propositions import REF_SOUVENIR, brancher_propositions
 
 SYSTEME = ("cassandra", "itare", "noyau", "operateur")
 AGENTS = ("cassandra", "itare")
@@ -65,6 +67,8 @@ def brancher(ctx):
         return defaut if v in (None, "") else v
 
     E = brancher_equipe(ctx, reglage)                                  # l'équipe : réglages par agent, paliers par outil, coûts et plafonds
+    P = brancher_propositions(ctx, E, o, lecture, reglage)             # « À valider », la carte de confiance, « Pourquoi ? »
+    G = brancher_garde(ctx, E, o, lecture, reglage)                    # la sentinelle anti-fuite, le Relecteur, les épreuves de sûreté
 
     def cle_cfg(agent, compte):
         """Itare se règle compte par compte ; les autres agents pour toute l'instance."""
@@ -197,14 +201,18 @@ def brancher(ctx):
         """Les rôles essayés, dans l'ordre. Cassandra parle par le rôle de la maison ; Itare par le modèle que le compte a choisi, à défaut par le rôle d'Itare ;
         le réglage de l'agent (modèle principal) l'emporte, et son modèle de secours ferme la liste. Au plafond « secours », le secours seul."""
         if secours and (cfg["secours"] or agent != "cassandra"):          # Cassandra n'est jamais coupée : sans secours, elle garde son modèle
-            return [cfg["secours"]] if cfg["secours"] else []
-        if cfg["modele"]:
-            roles = [cfg["modele"]]
-        elif agent == "itare":
-            roles = ["", str(reglage("role_itare", "itare_citadelle"))]
+            roles = [cfg["secours"]] if cfg["secours"] else []
         else:
-            roles = [str(reglage("role_cassandra", "principal"))]
-        return roles + ([cfg["secours"]] if cfg["secours"] and cfg["secours"] not in roles else [])
+            if cfg["modele"]:
+                roles = [cfg["modele"]]
+            elif agent == "itare":
+                roles = ["", str(reglage("role_itare", "itare_citadelle"))]
+            else:
+                roles = [str(reglage("role_cassandra", "principal"))]
+            roles = roles + ([cfg["secours"]] if cfg["secours"] and cfg["secours"] not in roles else [])
+        if reglage("epreuves_exigees", False) in (True, 1, "1", "true"):  # un modèle qui a échoué à ses épreuves de sûreté ne sert pas un agent (un modèle jamais éprouvé n'est pas écarté)
+            roles = [r for r in roles if not r or not G.deconseille(r)]
+        return roles
 
     def appeler_modele(agent, compte, cfg, msgs, systeme, tools, max_jetons, secours=False):
         derniere = {"ok": False, "erreur": "aucun modèle"}
@@ -239,20 +247,45 @@ def brancher(ctx):
         if t is None:
             cible = str(a["arguments"].get("cle") or nom) if nom == o.META_APPELER else nom
             return "Outil inconnu ou non disponible pour toi : %s. Utilise `%s` pour trouver le bon." % (cible, o.META_CHERCHE), None
+        def proposer(origine, resume="", attente=0):
+            """Ce que l'agent ne fait pas seul entre dans « À valider » ; une proposition ratée ne fait jamais tomber le tour."""
+            try:
+                return P.proposer(agent, compte, t, args, origine, resume=resume, pourquoi="Demande : « %s »" % (etat.get("message") or "")[:160], conversation_id=etat.get("cid", 0), tour=etat.get("tour", 0), attente=attente)
+            except Exception:
+                return None
+
+        def refusee(prop):
+            return ("Non exécuté : l'utilisateur a déjà refusé cette même action (proposition n° %d) : ne la repropose pas, sauf s'il te le redemande." % prop["id"], {"cle": t["cle"], "statut": "refusee", "risque": t["risque"]})
+
+        sur = E.surcharges(agent, cle_cfg(agent, compte)).get(t["cle"]) or {}
         if (t["sortant"] or t["risque"] in ECRITURES_RISQUEES) and etat["teinte"]:
+            prop = proposer("retenue")
+            if prop and prop["etat"] == "refusee":
+                return refusee(prop)
             return ("Non exécuté : ce tour a lu du contenu venu de l'extérieur (%s). Une action qui sort de la maison, ou qui engage fortement, ne part pas seule après une lecture étrangère : "
                     "dis à la personne ce que tu ferais et demande-lui de confirmer dans un nouveau message." % ", ".join(sorted(set(etat["teinte"])))), {"cle": t["cle"], "statut": "retenue"}
-        sur = E.surcharges(agent, cle_cfg(agent, compte)).get(t["cle"]) or {}
         if t["risque"] != "lecture" and (sur.get("confirmer") or etat["niveau"] == "observer" or sur.get("palier") == "raconter"):
             if sur.get("confirmer"):                                   # « demander » : un accord posé sur « auto », retenu jusqu'à ce qu'on décide
-                E.retenir(agent, compte, "confirmer", t["cle"], args)
-                return "Non exécuté : cette action demande l'accord de l'utilisateur (elle est retenue, rien n'a été fait). Dis-le tel quel.", {"cle": t["cle"], "statut": "a_confirmer", "risque": t["risque"]}
+                attente = E.retenir(agent, compte, "confirmer", t["cle"], args)
+                prop = proposer("confirmer", attente=attente)
+                if prop and prop["etat"] == "refusee":
+                    return refusee(prop)
+                return "Non exécuté : cette action demande l'accord de l'utilisateur (elle est retenue dans « À valider », rien n'a été fait). Dis-le tel quel.", {"cle": t["cle"], "statut": "a_confirmer", "risque": t["risque"]}
             sim = ctx.agir(t["cle"], args, acteur=agent, essai=True)   # observer, ou palier « raconter » posé pour cet agent : il raconte, il ne fait pas
+            P.tracer(sim, agent, compte, t["cle"], etat, "raconter", etat["niveau"], False)
+            prop = proposer("racontee", resume=sim.get("simulation") if sim.get("statut") == "simulee" else "")
+            if prop and prop["etat"] == "refusee":
+                return refusee(prop)
             return o.resume_resultat(dict(sim, statut="racontee", simulation=sim.get("simulation") if sim.get("statut") == "simulee" else ""), ctx.point), {"cle": t["cle"], "statut": "racontee", "risque": t["risque"]}
         r = ctx.agir(t["cle"], args, acteur=agent)
+        P.tracer(r, agent, compte, t["cle"], etat, sur.get("palier") or t["palier"], etat["niveau"], sur.get("confirmer"))
         if r.get("statut") == "racontee":
             sim = ctx.agir(t["cle"], args, acteur=agent, essai=True)
             r = dict(r, simulation=sim.get("simulation") if sim.get("statut") == "simulee" else "")
+            if t["risque"] != "lecture":
+                prop = proposer("racontee", resume=r["simulation"])
+                if prop and prop["etat"] == "refusee":
+                    return refusee(prop)
         if t["externe"] and r.get("statut") == "faite":
             etat["teinte"].append(t["cle"])                    # du texte étranger est maintenant dans le tour
         if t["risque"] != "lecture" and r.get("statut") == "faite":
@@ -309,7 +342,11 @@ def brancher(ctx):
             except Exception:
                 ton = ""
             systeme = o.prompt_systeme(agent, compte, datetime.now().strftime("%A %d %B %Y, %H:%M"), memo.get("bloc") or "", persona, ton, len(pres))
-            etat = {"teinte": [], "ecritures": 0, "niveau": cfg["niveau"]}
+            etat = {"teinte": [], "ecritures": 0, "niveau": cfg["niveau"], "cid": cid, "tour": tour, "message": message, "memoires": sorted({int(i) for i in REF_SOUVENIR.findall(memo.get("bloc") or "")})}
+            try:
+                P.observer_outils(agent, cle_cfg(agent, compte), [t["cle"] for t in tous])      # la période d'essai d'un outil neuf commence à sa première apparition
+            except Exception:
+                pass
             texte, vide_rejoue, secours = "", False, False
             max_tours = E.limite(cfg, "max_tours", int(reglage("max_tours", 12)))
             for etape in range(max_tours):
@@ -347,7 +384,13 @@ def brancher(ctx):
                         crees.append(stocker(cid, "user", "(Conclus maintenant en clair : ce qui a été fait, l'état final, ce qui reste.)", tour=tour))
                         continue
                     if texte:
-                        crees.append(stocker(cid, "assistant", texte, tour=tour))
+                        v = G.relire(texte, agent, compte, cid, tour)           # le Relecteur relit AVANT que la réponse parte
+                        if v["verdict"] == "retenue":
+                            crees.append(stocker(cid, "panne", "⚠️ Réponse retenue par le Relecteur (%s) : elle n'est pas partie." % ", ".join(v["motifs"]), tour=tour))
+                            actions.append({"statut": "retenue", "relecteur": v["motifs"]})
+                            texte = ""
+                        else:
+                            crees.append(stocker(cid, "assistant", texte, tour=tour))
                     break
                 brut = r.get("message") or {"role": "assistant", "content": r.get("texte") or None, "tool_calls": [
                     {"id": a["id"], "type": "function", "function": {"name": a["nom"], "arguments": json.dumps(a["arguments"], ensure_ascii=False)}} for a in appels]}

@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : agents -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.2.0  #000000 -->
+<!-- VERSION CN : 0.3.0  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : Agents -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.2.0 empreinte=2486d7 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.3.0 empreinte=2486d7 ▼▼▼ -->
 # Agents
 
 Cassandra (la machine) et Itare (le bureau) en conversation. Un tour : mémoire → modèle → outils → réponse en clair.
