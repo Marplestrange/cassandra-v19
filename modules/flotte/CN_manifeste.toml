@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : flotte
 # ZONE       : CN
-# VERSION CN : 0.1.1  #8e5be4
+# VERSION CN : 0.1.1  #3b2c61
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le parc de machines : le registre déclaré, Tailscale et les relevés SSH côte à côte, la présence mesurée, la disponibilité, le verdict d'ouverture, les commandes nommées sur une machine. Réservé à l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=8e5be4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=3b2c61 ▼▼▼
 [module]
 id = "flotte"
 nom = "Flotte"
@@ -140,6 +140,7 @@ preuve = "la machine est au registre"
 retour = "remettre la ligne d'avant, ou la retirer si elle était nouvelle"
 paliers = ["raconter", "auto"]
 qui = ["humain", "cassandra"]
+masque = ["cle", "mot_de_passe", "jeton"]
 
 [[capacites]]
 id = "machine_retirer"

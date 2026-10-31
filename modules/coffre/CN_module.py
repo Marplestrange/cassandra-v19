@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : coffre
 # ZONE       : CN
-# VERSION CN : 0.1.0  #41b890
+# VERSION CN : 0.1.0  #2c9593
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le coffre Vaultwarden : le magasin de secrets de Cassandra.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=41b890 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2c9593 ▼▼▼
 """Le coffre Vaultwarden : le magasin de secrets de Cassandra.
 
 Chaque compte ne voit QUE ses espaces : le sien (« u:<compte> »), puis ceux de société où on l'a fait entrer (« s:<société> »)
@@ -91,8 +91,8 @@ def brancher(ctx):
 
     def _audit(action, secret, espace=""):
         try:
-            db.ecrire("INSERT INTO vault_audit (username, action, secret_name, espace) VALUES (?,?,?,?)",
-                      ((ctx.compte or "").strip()[:80], action, str(secret or "")[:200], str(espace or "")[:80]))
+            db.ecrire("INSERT INTO vault_audit (username, action, secret_name, espace, acteur) VALUES (?,?,?,?,?)",
+                      ((ctx.compte or "").strip()[:80], action, str(secret or "")[:200], str(espace or "")[:80], str(ctx.acteur or "")[:40]))
         except Exception:
             pass
 

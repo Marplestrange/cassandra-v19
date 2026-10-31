@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modules
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4424ff
+# VERSION CN : 0.1.0  #42f261
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La gestion des modules : ce qui est installé, actif ou à installer, ce qui dépend de quoi, et le geste d'activer ou de désactiver. Le noyau fait le travail (dépendances, essentiels, branchement à chaud) ; ce module en fait des capacités, donc des droits, une preuve, un retour et une trace.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4424ff ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=42f261 ▼▼▼
 [module]
 id = "modules"
 nom = "Modules"
@@ -124,6 +124,7 @@ preuve = "le catalogue montre le module dans la version installée"
 retour = "remettre la version d'avant, ou retirer le module s'il était nouveau"
 paliers = ["raconter"]
 qui = ["humain"]
+masque = ["jeton"]
 
 [[capacites]]
 id = "retour_arriere"
@@ -157,6 +158,7 @@ preuve = "l'archive n'y est plus"
 retour = "déposer l'archive de nouveau"
 paliers = ["auto", "raconter"]
 qui = ["humain", "compte", "cassandra", "itare", "agent"]
+masque = ["jeton"]
 
 [[capacites]]
 id = "versions"

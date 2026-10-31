@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : coffre
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1f4cea
+# VERSION CN : 0.1.0  #94d52c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le coffre Vaultwarden : le magasin de secrets de Cassandra (statut, liste des noms sans jamais les valeurs, lecture, écriture réversible, retrait). Un compte Cassandra = un compte Vault natif (même identifiant). Différé : la fiche complète d'un secret (chiffrement fin), le provisionnement des comptes, les clés d'API personnelles, le TOTP.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1f4cea ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=94d52c ▼▼▼
 [module]
 id = "coffre"
 nom = "Coffre fort"
@@ -74,24 +74,29 @@ id = "status"
 libelle = "L'état du coffre : disponible, verrouillé, l'adresse du serveur"
 risque = "lecture"
 droit = "utiliser"
+qui = ["humain", "compte"]
 
 [[capacites]]
 id = "available"
 libelle = "Vrai si le coffre répond et est déverrouillé"
 risque = "lecture"
 droit = "utiliser"
+qui = ["humain", "compte"]
 
 [[capacites]]
 id = "list"
 libelle = "Les NOMS des secrets de l'espace (jamais les valeurs), par préfixe : seulement ceux que ce compte a le droit de lire"
 risque = "lecture"
 droit = "utiliser"
+qui = ["humain", "compte", "cassandra"]
 
 [[capacites]]
 id = "get"
 libelle = "La valeur d'un secret par son nom (note sécurisée -> notes), ou rien"
 risque = "lecture"
 droit = "utiliser"
+qui = ["humain", "compte"]
+masque = ["valeur"]
 
 [[capacites]]
 id = "set"
@@ -102,7 +107,8 @@ perimetre = ["un secret du coffre"]
 preuve = "la valeur relue est la nouvelle"
 retour = "remettre l'ancienne valeur (ou retirer si le secret est neuf)"
 paliers = ["raconter", "auto", "maitre"]
-qui = ["humain", "compte", "cassandra", "itare", "agent"]
+qui = ["humain", "compte", "cassandra"]
+masque = ["valeur", "apres", "avant"]
 
 [[capacites]]
 id = "delete"
@@ -113,25 +119,28 @@ perimetre = ["un secret du coffre"]
 preuve = "le secret n'existe plus"
 retour = "remettre le secret"
 paliers = ["raconter", "auto", "maitre"]
-qui = ["humain", "compte", "cassandra", "itare", "agent"]
+qui = ["humain", "compte", "cassandra"]
 
 [[capacites]]
 id = "journal"
 libelle = "Les accès aux secrets : qui, quand, sur quoi"
 risque = "lecture"
 droit = "utiliser"
+qui = ["humain", "compte"]
 
 [[capacites]]
 id = "espaces"
 libelle = "Les espaces de ce compte : le sien, puis ceux de société où on l'a fait entrer, avec son rôle (jamais un espace étranger)"
 risque = "lecture"
 droit = "utiliser"
+qui = ["humain", "compte"]
 
 [[capacites]]
 id = "membres"
 libelle = "Les membres d'un espace de société (réservé à ses administrateurs)"
 risque = "lecture"
 droit = "utiliser"
+qui = ["humain", "compte"]
 
 [[capacites]]
 id = "accorder"
