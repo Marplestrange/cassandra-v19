@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #55eed1
+# VERSION CN : 0.1.0  #d064de
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les réglages : ce que la V18 gardait dans UN fichier config.json réécrit en entier à chaque sauvegarde (d'où la leçon : « relire avant d'écrire », sans quoi un réglage disparaissait). Ici chaque réglage est une LIGNE, écrite seule, avec son
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=55eed1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d064de ▼▼▼
 """Les réglages : ce que la V18 gardait dans UN fichier config.json réécrit en entier à chaque sauvegarde (d'où la leçon : « relire avant d'écrire »,
 sans quoi un réglage disparaissait). Ici chaque réglage est une LIGNE, écrite seule, avec son historique.
 
@@ -39,6 +39,21 @@ except Exception:                      # sans la bibliothèque, un secret ne s'�
 
 log = logging.getLogger("noyau.CN_reglages")
 PREFIXE = "enc1:"
+NOM_CREDENTIAL = "cassandra-secrets-key"            # le nom sous lequel systemd (LoadCredential=) dépose la clé dans $CREDENTIALS_DIRECTORY
+ENV_FICHIER_CLE = "CASSANDRA_SECRETS_KEY_FILE"      # ou un chemin de fichier, hors du dossier des données
+AGE_MAX_JOURS = 90                                  # au-delà, un secret est signalé « à renouveler » (réglable : reglages.secret_age_max_jours)
+GARDE_LECTURES_JOURS = 180                          # le journal des lectures est élagué au démarrage
+
+# Les secrets-pièges : des noms plausibles qu'AUCUN module ne déclare. Personne n'a de raison de les lire ; toute lecture est donc une alarme.
+# Ils n'ont aucune ligne en base : leur valeur (fausse) se dérive de la clé du serveur, elle ne ressemble à rien de réel et ne se stocke nulle part.
+PIEGES = {
+    "fastpanel.jeton_admin_ancien": "fp_",
+    "dns.cle_zone_secours": "cfk_",
+    "courrier.mot_de_passe_imap_secours": "",
+    "billetterie.cle_live_ancienne": "sk_live_",
+    "telegram.jeton_bot_ancien": "7",
+    "agenda.mot_de_passe_caldav_ancien": "",
+}
 
 TYPES = ("texte", "entier", "booleen", "choix", "secret")
 PORTEES = ("global", "compte")
@@ -81,12 +96,17 @@ class Reglages:
     sauvegardes et les copies de la base ; cela ne protège pas d'un accès au serveur lui-même (qui lit aussi la clé). Chaque valeur est liée à son
     réglage et à son compte (données associées) : recopier un secret chiffré d'une ligne à l'autre ne donne rien."""
 
-    def __init__(self, base, fichier_cle=None):
+    def __init__(self, base, fichier_cle=None, fichier_externe=None, bus=None):
         self.base = base
         self._fichier_cle = fichier_cle
+        self._fichier_externe = fichier_externe      # la clé fournie hors des données (prioritaire sur l'environnement)
+        self.bus = bus                               # pour l'alarme d'un secret-piège ; sans bus, l'alarme va au journal seul
         self._cle = None
+        self._cle_ancienne = None                    # l'ancienne clé du fichier de repli, gardée en lecture le temps de tout rechiffrer
+        self.origine_cle = ""                        # d'où vient la clé : « credential », « fichier externe », « fichier de repli », « processus »
         self.connus = {}                 # « module.reglage » -> (module, Reglage)
         self._verrou = threading.Lock()
+        self._verrou_cle = threading.RLock()
 
     def declarer(self, manifeste) -> None:
         with self._verrou:
@@ -106,19 +126,79 @@ class Reglages:
         return c[1]
 
     # ---- le chiffrement des secrets ----
+    @staticmethod
+    def _decoder_cle(brut, origine):
+        """32 octets bruts, ou 64 chiffres hexadécimaux, ou 32 octets en base64 (un credential est souvent un texte)."""
+        if len(brut) == 32:
+            return bytes(brut)
+        texte = brut.strip()
+        try:
+            if len(texte) == 64:
+                return bytes.fromhex(texte.decode("ascii"))
+            cle = base64.b64decode(texte, validate=True)
+            if len(cle) == 32:
+                return cle
+        except Exception:
+            pass
+        raise SecretIllisible("la clé des secrets fournie (%s) est invalide : 32 octets, 64 chiffres hexadécimaux ou 32 octets en base64 sont attendus" % origine)
+
+    def _source_externe(self):
+        """(chemin, origine) de la clé fournie hors des données, ou None. Priorité : le paramètre, le credential systemd, la variable d'environnement."""
+        if self._fichier_externe:
+            return str(self._fichier_externe), "fichier externe"
+        rep = os.environ.get("CREDENTIALS_DIRECTORY", "")
+        if rep and os.path.exists(os.path.join(rep, NOM_CREDENTIAL)):
+            return os.path.join(rep, NOM_CREDENTIAL), "credential"
+        chemin = os.environ.get(ENV_FICHIER_CLE, "")
+        if chemin:
+            return chemin, "fichier externe"
+        return None
+
     def _cle_secrets(self):
         if AESGCM is None:
             raise SecretIllisible("la bibliothèque « cryptography » manque : un secret ne s'écrit pas en clair, il n'est donc pas écrit")
-        if self._cle is None:
-            if self._fichier_cle is None:
+        if self._cle is not None:
+            return self._cle
+        with self._verrou_cle:
+            if self._cle is not None:
+                return self._cle
+            ext = self._source_externe()
+            if ext is not None:
+                chemin, origine = ext
+                try:
+                    with open(chemin, "rb") as f:
+                        brut = f.read()
+                except OSError:
+                    raise SecretIllisible("la clé des secrets fournie hors des données est introuvable ou illisible : %s" % chemin)
+                cle = self._decoder_cle(brut, origine)
+                # Une clé déjà rangée à côté de la base (installation d'avant) : elle sert encore à LIRE les anciens secrets, jusqu'à ce qu'on les rechiffre.
+                if self._fichier_cle is not None and os.path.exists(str(self._fichier_cle)):
+                    try:
+                        with open(str(self._fichier_cle), "rb") as f:
+                            ancienne = f.read()
+                    except OSError:
+                        ancienne = b""
+                    if len(ancienne) == 32 and ancienne != cle:
+                        self._cle_ancienne = ancienne
+                        log.warning("réglages : l'ancienne clé est encore dans le dossier des données (%s) ; les secrets vont être rechiffrés sous la nouvelle, "
+                                    "puis ce fichier pourra être supprimé", self._fichier_cle)
+                    elif len(ancienne) == 32:
+                        log.warning("réglages : la clé fournie hors des données est la même que celle du fichier de repli (%s) : supprimer ce fichier, "
+                                    "sans quoi la séparation ne sert à rien", self._fichier_cle)
+                if self._fichier_cle is not None and os.path.dirname(os.path.abspath(chemin)) == os.path.dirname(os.path.abspath(str(self._fichier_cle))):
+                    log.warning("réglages : la clé fournie est dans le même dossier que les données (%s) : elle n'en est pas séparée", chemin)
+                self._cle = cle
+                self.origine_cle = origine
+            elif self._fichier_cle is None:
                 self._cle = _secrets.token_bytes(32)                      # sans fichier (essais) : une clé de la durée du processus
+                self.origine_cle = "processus"
                 log.warning("réglages : pas de fichier de clé, les secrets ne survivront pas au redémarrage")
             else:
                 chemin = str(self._fichier_cle)
                 if os.path.exists(chemin):
                     with open(chemin, "rb") as f:
-                        self._cle = f.read()
-                    if len(self._cle) != 32:
+                        cle = f.read()
+                    if len(cle) != 32:
                         raise SecretIllisible("le fichier de clé des secrets est invalide : %s" % chemin)
                 else:
                     os.makedirs(os.path.dirname(chemin) or ".", exist_ok=True)
@@ -126,8 +206,45 @@ class Reglages:
                     fd = os.open(chemin, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)       # lisible de son seul propriétaire
                     with os.fdopen(fd, "wb") as f:
                         f.write(cle)
-                    self._cle = cle
+                self._cle = cle
+                self.origine_cle = "fichier de repli"
+                log.warning("réglages : la clé des secrets est dans le dossier des données (%s), à côté de la base : elle ne protège que les sauvegardes et les copies de la base, "
+                            "pas un accès au serveur. À fournir hors des données : credential systemd « %s » ou variable %s (docs/CN_SECRETS.md)",
+                            chemin, NOM_CREDENTIAL, ENV_FICHIER_CLE)
         return self._cle
+
+    def demarrer(self) -> None:
+        """Au démarrage du noyau : si la clé est fournie hors des données, la charge tout de suite (une panne se voit au démarrage)
+        et rechiffre sous elle les secrets d'avant. Ne crée jamais de clé de repli de lui-même."""
+        if self._source_externe() is None:
+            return
+        try:
+            self._cle_secrets()
+            if self._cle_ancienne is not None:
+                r = self.rechiffrer_tout()
+                log.warning("réglages : %d secret(s) rechiffré(s) sous la clé fournie hors des données, %d illisible(s)", r["rechiffres"], len(r["illisibles"]))
+        except SecretIllisible as e:
+            log.error("réglages : %s", e)
+
+    def rechiffrer_tout(self) -> dict:
+        """Remet tous les secrets sous la clé courante (la date de pose ne bouge pas). Rend {rechiffres, illisibles: [(cle, compte)]}."""
+        self._cle_secrets()
+        fait, mal = 0, []
+        for r in self.base.lire("SELECT cle, compte, valeur FROM reglages"):
+            v = json.loads(r["valeur"])
+            if not (isinstance(v, str) and v.startswith(PREFIXE)):
+                continue
+            try:
+                clair = self.dechiffrer(v, r["cle"], r["compte"])
+                neuf = self.chiffrer(clair, r["cle"], r["compte"])
+            except SecretIllisible:
+                mal.append((r["cle"], r["compte"]))
+                continue
+            self.base.ecrire("UPDATE reglages SET valeur=? WHERE cle=? AND compte=?", (json.dumps(neuf), r["cle"], r["compte"]))
+            fait += 1
+        if not mal:
+            self._cle_ancienne = None
+        return {"rechiffres": fait, "illisibles": mal}
 
     def chiffrer(self, valeur, cle, compte):
         nonce = _secrets.token_bytes(12)
@@ -137,13 +254,22 @@ class Reglages:
         return PREFIXE + base64.b64encode(nonce + ct).decode("ascii")
 
     def dechiffrer(self, chiffre, cle, compte):
+        aad = ("%s|%s" % (cle, compte)).encode("utf-8")
         try:
             brut = base64.b64decode(chiffre[len(PREFIXE):])
-            return AESGCM(self._cle_secrets()).decrypt(brut[:12], brut[12:], ("%s|%s" % (cle, compte)).encode("utf-8")).decode("utf-8")
+            principale = self._cle_secrets()
         except SecretIllisible:
             raise
         except Exception:
             raise SecretIllisible("le secret de « %s » est illisible (clé changée ou valeur altérée)" % cle)
+        for k in (principale, self._cle_ancienne):
+            if k is None:
+                continue
+            try:
+                return AESGCM(k).decrypt(brut[:12], brut[12:], aad).decode("utf-8")
+            except Exception:
+                continue
+        raise SecretIllisible("le secret de « %s » est illisible (clé changée ou valeur altérée)" % cle)
 
     def _brut(self, cle, compte):
         """(posé ?, valeur). Un secret est rendu EN CLAIR, déchiffré ; un secret resté en clair d'avant le chiffrement est chiffré au passage."""

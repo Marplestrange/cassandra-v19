@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8e46e6
+# VERSION CN : 0.1.0  #2aa253
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e46e6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2aa253 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -103,7 +103,8 @@ class Noyau:
         self.evolution = Evolution(self.points, self.rejeu, self.evaluateur, self._donnees / "evolution.db", seuils=(self.config.get("evolution") or {}).get("seuils"))
         self._stockages = {}       # module -> son Stockage, ouvert une fois
         self.droits = Droits(self.base)
-        self.reglages = Reglages(self.base, Path(donnees) / "secrets.cle")      # la clé qui chiffre les secrets, à part de la base
+        self.reglages = Reglages(self.base, Path(donnees) / "secrets.cle", bus=self.bus)      # la clé qui chiffre les secrets : hors des données si on l'y met (docs/CN_SECRETS.md), sinon ce fichier de repli
+        self.reglages.demarrer()
         self.identite = Identite(self.base, self.droits, (self.config.get("comptes") or {}).get("session_heures", 24),
                                  str((self.config.get("comptes") or {}).get("superadmin_unix", "fastuser")),
                                  courtier=str(Path(donnees) / "courtier"), reglages=self.reglages)
