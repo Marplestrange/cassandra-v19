@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #66e68e
+# VERSION CN : 0.1.0  #e3f637
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=66e68e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e3f637 ▼▼▼
 """Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats."""
 import json
 import shutil
@@ -419,6 +419,31 @@ class CageDesEC(unittest.TestCase):
             P.executer_ec("import os", "<essai>", {})
         with self.assertRaises(ImportError):
             P.executer_ec("from subprocess import run", "<essai>", {})
+
+    def test_strptime_et_strftime_fonctionnent_dans_la_cage_sans_ouvrir_time_ni_strptime_a_l_ec(self):
+        """datetime.strptime/strftime/timestamp importent _strptime et time pour leur compte : la cage les laisse faire (liste MESURÉE, exactement ces deux noms),
+        mais refuse toujours une instruction `import` de ces modules écrite dans l'EC, à l'analyse comme à l'exécution."""
+        self.assertEqual(P.IMPORTS_INTERNES, frozenset({"_strptime", "time"}))
+        ns = {}
+        P.executer_ec("""from datetime import datetime
+def f(x):
+    d = datetime.strptime(x, '%Y-%m-%d %H:%M:%S')
+    return d.strftime('%d/%m/%Y %H:%M'), d.timestamp() > 0
+""", "<essai>", ns)
+        self.assertEqual(ns["f"]("2026-10-17 12:30:00"), ("17/10/2026 12:30", True))
+        for code in ("import time", "from time import sleep", "import _strptime", "def f(x):\n    import time\n    return time.time()", "def f(x):\n    import _strptime\n    return 1",
+                     "def f(x):\n    from time import time\n    return time()"):
+            self.assertTrue(P.analyser_purete(code), code)
+            ns = {}
+            with self.assertRaises(ImportError, msg=code):
+                P.executer_ec(code, "<essai>", ns)
+                ns["f"](1)
+        self.assertTrue(P.analyser_purete("def f(x): return __import__('time')"))
+        for autre in ("os", "sys", "subprocess", "socket", "importlib", "ctypes"):
+            ns = {}
+            P.executer_ec("def f(x): return __import__(%r)" % autre, "<essai>", ns)
+            with self.assertRaises(ImportError, msg=autre):
+                ns["f"](1)
 
     def test_le_chargeur_de_l_evaluateur_refuse_les_deux_evasions_prouvees(self):
         from noyau import CN_evaluateur as E

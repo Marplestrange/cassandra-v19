@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #168cf7
+# VERSION CN : 0.1.0  #765e97
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=168cf7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=765e97 ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -209,8 +209,29 @@ def _vue(module):
     return Vue()
 
 
+# Les deux seuls modules que la bibliothèque standard autorisée importe pour son PROPRE compte quand une EC appelle datetime.strptime (_strptime)
+# ou strftime/timestamp (time). MESURÉ en instrumentant le filtre : aucun autre nom n'est demandé. Ils ne s'ouvrent jamais à une instruction
+# `import` écrite dans l'EC (refusée aussi par l'analyse statique) : voir _import_interne.
+IMPORTS_INTERNES = frozenset({"_strptime", "time"})
+
+
+def _import_interne(nom, liste, niveau) -> bool:
+    """Vrai si l'import vient d'un appel de la bibliothèque autorisée (CALL), faux s'il vient d'une instruction `import` de l'EC (IMPORT_NAME)."""
+    if niveau or liste or nom not in IMPORTS_INTERNES:
+        return False
+    try:
+        import dis
+        import sys
+        f = sys._getframe(2)               # 0 = ici, 1 = _import_filtre, 2 = le code de l'EC (l'appelant, directement ou par une fonction C)
+        return f.f_code.co_code[f.f_lasti] != dis.opmap["IMPORT_NAME"]
+    except Exception:
+        return False                       # dans le doute : refusé
+
+
 def _import_filtre(nom, globaux=None, locaux=None, liste=(), niveau=0):
     import builtins as _b
+    if _import_interne(nom, liste, niveau):
+        return _b.__import__(nom, None, None, (), 0)       # le module réel : la bibliothèque appelle ses fonctions privées (_strptime._strptime_datetime)
     if niveau or nom.split(".")[0] not in STDLIB_PURE:
         raise ImportError("import interdit dans une EC : " + nom)
     return _vue(_b.__import__(nom, None, None, liste, 0))
