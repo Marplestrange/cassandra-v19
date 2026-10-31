@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #653bd5
+// VERSION CN : 0.1.0  #2e9247
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=653bd5 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=2e9247 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -265,7 +265,29 @@
   function ouvrirNoeud(n, vue) {
     if (vue === "reglage" && REGLAGES_VUE[n.id.split(".")[0]]) { window.switchTab("settings"); setTimeout(function () { rubriqueSeule(REGLAGES_VUE[n.id.split(".")[0]]); }, 80); return; }
     if (n.onglet) { window.switchTab(n.onglet); pontVue(n.id.split(".")[0], vue || n.vue || ""); }
-    else if (n.ecran && CASS.ouvrirEcran) CASS.ouvrirEcran(n.ecran, n.libelle);
+    else if (n.ecran && CASS.ouvrirEcran) {
+      const agents = n.id.split(".")[0] === "agents-ia";
+      if (agents) window.__agentsVue = vue || n.vue || "equipe";           // l'écran des agents lit la page demandée à son ouverture ; ouvert déjà, il la reçoit par agentsAller
+      CASS.ouvrirEcran(n.ecran, n.libelle);
+      if (agents) setTimeout(function () { if (typeof window.agentsAller === "function") window.agentsAller(); }, 80);
+    }
+  }
+  // Agents IA : ses pages sont des sous-menus ; un geste fait dans l'écran lui-même (carte d'un agent, lien) met l'entrée à jour, et l'écran donne le nombre à valider
+  window.agentsSuivre = function (vue, attente) {
+    if (!E.d) return;
+    const e = ((E.d.groupes || []).reduce((r, g) => r.concat(g.entrees), [])).find((x) => x.id === "agents-ia");
+    if (!e) return;
+    const b = e.enfants.find((f) => f.vue === "boite");
+    let change = false;
+    if (attente !== undefined) E.attenteAgents = attente || 0;
+    if (b && b.badge.n !== (E.attenteAgents || 0)) { b.badge.n = E.attenteAgents || 0; change = true; }
+    if (vue && E.actif && E.e === "agents-ia" && E.vue !== vue) { E.vue = vue; E.actif.vue = vue; change = true; }
+    if (change) rendre();
+  };
+  // pour un utilisateur ordinaire, l'unique agent visible est le sien
+  function agentsLibelles(d) {
+    (d && d.groupes || []).forEach((g) => g.entrees.forEach((e) => { if (e.id === "agents-ia") e.enfants.forEach((f) => { if (f.vue === "itare" && !d.cassandra_ok) f.libelle = "Mon Itare"; if (f.vue === "boite") f.badge.n = E.attenteAgents || 0; }); }));
+    return d;
   }
   // Une page PROPRE (Modules et Applications, Société, Paramètres…) n'est pas une entrée de groupe : E.g / E.e gardent alors la dernière entrée visitée (« Aujourd'hui »), qu'il ne faut pas lire pour la page courante.
   function chemin() { if (!E.actif) return E.fil ? E.fil.join(" › ") : (E.hors || ""); const g = ent(), e = entree(); if (!g || !e) return ""; return g.libelle + " › " + e.libelle + (E.vue ? " › " + ((e.enfants.find((f) => (f.vue || f.id) === E.vue) || {}).libelle || E.vue) : ""); }
@@ -889,7 +911,7 @@
   function rendre() { marquerRubriques(); E.crMenu = null; rendreHaut(); rendreGauche(); rendreStrip(); if (E.panel) rendrePanel(); }
   async function charger() {
     try {
-      E.d = await agir("affichage.lire_disposition", {});
+      E.d = agentsLibelles(await agir("affichage.lire_disposition", {}));
       if (!E.g || !E.d.groupes.some((g) => g.id === E.g)) { E.g = E.d.groupes[0] ? E.d.groupes[0].id : ""; E.e = ""; }
       if (!E.moi) E.moi = await (await fetch("/api/moi", { headers: { "X-Session-Token": token() } })).json();
       E.compte = E.moi.compte || "";
@@ -916,7 +938,7 @@
     try {
       const d = await agir("affichage.lire_disposition", {});
       if (d && d.etag !== E.d.etag) {
-        E.d = d;
+        E.d = agentsLibelles(d);
         if (!E.d.groupes.some((g) => g.id === E.g)) { E.g = E.d.groupes[0] ? E.d.groupes[0].id : ""; E.e = ""; }
         rendreHaut(); rendreGauche();                                   // ni le fil, ni les menus ouverts, ni le panneau ne sont touchés
         marquerRubriques();

@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.7.0)  #fd5135
+# VERSION EC : EC0 (référence 0.7.0)  #1a9d2c
 # HÔTE CN    : CN_module.py · disposition @1.0
 # RÔLE       : range les entrées de menu que les modules déclarent en groupes (barre du haut), entrées et sous-entrées (colonne de gauche), et en entrées du menu de l'avatar ; dit le pire niveau d'alerte de chaque entrée, de chaque groupe et du tout.
 # MÉTHODE    : fonction pure : une table de groupes, un repli par famille, un pont vers les onglets de l'ancienne interface ; chaque entrée reçue paraît une seule fois, rien n'est inventé, un groupe sans entrée n'existe pas.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=fd5135 ▼▼▼
+# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=1a9d2c ▼▼▼
 
 # Les groupes de la barre du haut : (id, libellé, icône, ordre, interlocuteur par défaut du panneau).
 GROUPES = (
@@ -90,7 +90,11 @@ PONT = (
     {"id": "reg-veille", "libelle": "Surveillances", "groupe": "parametres", "icone": "eye", "onglet": "settings", "modules": ("sensorium", "modules"), "ordre": 50, "role": "admin", "vues": ()},
     {"id": "reg-canaux", "libelle": "Canaux", "groupe": "parametres", "icone": "bell", "onglet": "settings", "modules": ("canaux", "modules"), "ordre": 40, "role": "admin", "vues": ()},
     {"id": "reg-danger", "libelle": "Danger", "groupe": "parametres", "icone": "alert", "onglet": "settings", "modules": ("reglages", "modules"), "ordre": 60, "role": "admin", "vues": ()},
-    {"id": "agents-ia", "libelle": "Agents IA", "groupe": "auto", "icone": "bot", "onglet": "", "modules": ("agents", "modules"), "ordre": 5, "role": "utilisateur", "ecran": "agents:equipe", "vues": ()},
+    {"id": "agents-ia", "libelle": "Agents IA", "groupe": "auto", "icone": "bot", "onglet": "", "modules": ("agents", "modules"), "ordre": 5, "role": "utilisateur", "ecran": "agents:equipe", "vues": (
+        ("equipe", "L’équipe", "admin"), ("cassandra", "Cassandra", "admin"), ("itare", "Itare"), ("amizo", "Amizo", "admin"),
+        ("relecteur", "Relecteur", "admin"), ("vision", "Vision", "admin"),
+        ("conv", "Conversations"), ("boite", "À valider"), ("journal", "Journal"), ("modeles", "Modèles & clés", "admin")
+    )},
     {"id": "evolution", "libelle": "Évolution", "groupe": "auto", "icone": "evo", "onglet": "evolution", "modules": ("evolution",), "ordre": 10, "role": "admin", "vues": ()},
     {"id": "proactivite", "libelle": "Proactivité", "groupe": "auto", "icone": "bolt", "onglet": "proactive", "modules": ("proactif",), "ordre": 20, "role": "admin", "vues": ()},
     {"id": "memoire", "libelle": "Mémoire", "groupe": "auto", "icone": "brain", "onglet": "memory", "modules": ("memoire",), "ordre": 30, "role": "utilisateur", "vues": (
@@ -182,9 +186,10 @@ def disposition(entrees, modules, badges, signaux):
             continue
         brut = dict(p, module=p["modules"][0] if p["modules"] else "", ecran=p.get("ecran", ""))
         ent = _entree(brut, badges, niveaux)
-        for i, (vue, lib) in enumerate(p["vues"]):
-            ent["enfants"].append({"id": "%s.%s" % (p["id"], vue), "libelle": lib, "icone": "", "module": ent["module"], "ecran": "", "onglet": p["onglet"], "vue": vue,
-                                   "role": p["role"], "droit": "", "ordre": 10 * (i + 1), "badge": {"n": 0, "niveau": ""}, "enfants": []})
+        for i, v in enumerate(p["vues"]):
+            vue, lib = v[0], v[1]
+            ent["enfants"].append({"id": "%s.%s" % (p["id"], vue), "libelle": lib, "icone": "", "module": ent["module"], "ecran": p.get("ecran", ""), "onglet": p["onglet"], "vue": vue,
+                                   "role": v[2] if len(v) > 2 else p["role"], "droit": "", "ordre": 10 * (i + 1), "badge": {"n": 0, "niveau": ""}, "enfants": []})
         ponts.append((p["groupe"], ent))
     par_id = {e["id"]: e for e in declarees}
     avatar, groupes = [], {}

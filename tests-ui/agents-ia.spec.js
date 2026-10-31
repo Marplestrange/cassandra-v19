@@ -27,10 +27,17 @@ test("Agents IA : l'entrée est ouverte à tous, Mon Itare a quitté le Desk, l'
 
   await page.evaluate(() => window.CASS.disposition.rafraichir());
   await page.evaluate(() => window.CASS.disposition.aller('auto', 'agents-ia', ''));
-  await expect.poll(() => page.evaluate(() => !!document.querySelector('#tab-mod-agents-equipe .ag-nav')), { timeout: 60000 }).toBe(true);
-  // le compte d'essai est administrateur : l'équipe, ses cartes, ses services
-  const nav = await page.evaluate(() => [...document.querySelectorAll('#tab-mod-agents-equipe .ag-nav button')].map((b) => b.textContent.trim()));
-  expect(nav.join('|')).toMatch(/L'équipe.*Conversations.*À valider.*Journal.*Modèles & clés/);
+  await expect.poll(() => page.evaluate(() => !!document.querySelector('#tab-mod-agents-equipe .ag-cartes')), { timeout: 60000 }).toBe(true);
+  // le compte d'essai est administrateur : les pages sont des sous-entrées du menu de gauche (plus des onglets dans la page), l'équipe, ses cartes, ses services
+  expect(await page.evaluate(() => document.querySelectorAll('#tab-mod-agents-equipe .ag-nav[role=tablist]:not(#ag-ong)').length)).toBe(0);
+  const sous = await page.evaluate(() => [...document.querySelectorAll('.d19-si.sub[data-e="agents-ia"]')].map((b) => b.textContent.trim().replace(/\d+$/, '')));
+  expect(sous.join('|')).toMatch(/^L.équipe\|Cassandra\|Itare\|Amizo\|Relecteur\|Vision\|Conversations\|À valider\|Journal\|Modèles & clés$/);
+  // un clic sur « Conversations » dans le menu change de page, sans autre onglet de module
+  await page.click('.d19-si.sub[data-e="agents-ia"][data-v="conv"]');
+  await expect.poll(() => page.evaluate(() => !!document.querySelector('#tab-mod-agents-equipe #cv-t, #tab-mod-agents-equipe .vide'))).toBe(true);
+  await page.click('.d19-si.sub[data-e="agents-ia"][data-v="amizo"]');
+  await page.waitForSelector('#tab-mod-agents-equipe #ag-ong', { timeout: 30000 });
+  expect(await page.evaluate(() => !!document.querySelector('.d19-si.sub.on[data-v="amizo"]'))).toBe(true);
   expect(await page.evaluate(() => document.querySelectorAll('#tab-mod-agents-equipe .ag-cartes button.carte').length)).toBeGreaterThanOrEqual(5);
 });
 
@@ -66,9 +73,8 @@ test("Agents IA, vue utilisateur : seulement Mon Itare, Conversations, À valide
   await page.evaluate(() => { const r = window.CASS.agir; window.CASS.agir = async (c, a) => { const d = await r(c, a); if (c === 'agents.equipe') return { ...d, administrateur: false, equipe: d.equipe.filter((x) => x.portee === 'compte') }; return d; }; });
   await page.evaluate(() => window.CASS.disposition.rafraichir());
   await page.evaluate(() => window.CASS.disposition.aller('auto', 'agents-ia', ''));
-  await page.waitForSelector('#tab-mod-agents-equipe .ag-nav', { timeout: 60000 });
-  const nav = await page.evaluate(() => [...document.querySelectorAll('#tab-mod-agents-equipe .ag-nav[role=tablist]:not(#ag-ong) button')].map((b) => b.textContent.trim().replace(/\d+$/, '')));
-  expect(nav).toEqual(['Mon Itare', 'Conversations', 'À valider', 'Journal']);
+  await page.waitForSelector('#tab-mod-agents-equipe #ag-ong', { timeout: 60000 });
+  expect(await page.evaluate(() => document.querySelectorAll('#tab-mod-agents-equipe .ag-nav[role=tablist]:not(#ag-ong)').length)).toBe(0);
   expect(await page.evaluate(() => document.querySelector('#tab-mod-agents-equipe').textContent)).not.toMatch(/Cassandra|Amizo|Relecteur/);
   expect(await page.evaluate(() => document.querySelectorAll('#tab-mod-agents-equipe .ag-cartes').length)).toBe(0);
   const onglets = await page.evaluate(() => [...document.querySelectorAll('#ag-ong button')].map((b) => b.textContent.trim()));

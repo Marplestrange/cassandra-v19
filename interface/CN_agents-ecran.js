@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #0a4d7f
+// VERSION CN : 0.1.0  #4465e6
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=0a4d7f ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=4465e6 ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -89,10 +89,12 @@
     const S = { vue: "", agent: "", onglet: "apercu", eq: null, admin: false, filtre: { q: "", risque: "tous" }, conv: { id: 0, liste: null, fil: null, agent: "itare", occupe: false }, jours: 14 };
 
     const erreur = (e) => dire(String((e && e.message) || e), "err");
-    const nav = () => {
-      const base = S.admin ? [["equipe", "L'équipe"], ["conv", "Conversations"], ["boite", "À valider"], ["journal", "Journal"], ["modeles", "Modèles & clés"]]
-        : [["fiche", "Mon Itare"], ["conv", "Conversations"], ["boite", "À valider"], ["journal", "Journal"]];
-      return '<div class="ag-nav" role="tablist">' + base.map(([k, l]) => '<button role="tab" data-v="' + k + '" class="' + (S.vue === k || (k === "equipe" && S.vue === "fiche" && S.admin) ? "on" : "") + '">' + esc(l) + (k === "boite" && S.attente ? '<span class="ag-n">' + S.attente + "</span>" : "") + "</button>").join("") + "</div>";
+    // l'identifiant de la page dans le menu de gauche (sous-entrées d'« Agents IA ») et sa traduction en vue de l'écran
+    const pageMenu = () => (S.vue === "fiche" ? (S.admin ? S.agent : "itare") : S.vue);
+    const depuisMenu = (id) => {
+      if (["cassandra", "itare", "amizo", "relecteur", "vision"].includes(id)) { S.vue = "fiche"; S.agent = id; S.onglet = "apercu"; }
+      else if (["equipe", "conv", "boite", "journal", "modeles"].includes(id)) S.vue = id;
+      if (S.vue === "conv") S.conv.liste = null;
     };
     const nonBranche = (titre, texte) => '<section class="carte"><div class="barre"><h3 style="flex:1">' + esc(titre) + '</h3><span class="ag-nb">non branché</span></div><p class="note">' + esc(texte) + "</p></section>";
     const chez = (onglet, q) => {                                       // ouvrir l'écran d'un autre module, filtré quand il sait l'être
@@ -289,7 +291,9 @@
     // ── journal ──────────────────────────────────────────────────────────────
     async function vJournal() {
       let l = [];
-      try { l = (await API.journal(S.admin ? "" : "itare", 80)).entrees.filter(mien); } catch (e) { return nonBranche("Journal", String(e.message || e)); }
+      // le flux du module journal n'est pas cloisonné par compte (journaux système compris) : un compte ordinaire n'y lit rien tant que les actes de son Itare n'ont pas leur propre lecture
+      if (!S.admin) return nonBranche("Journal", "Le journal de ton Itare s'affichera ici dès que ses actes seront lisibles compte par compte ; en attendant, rien d'un autre compte ni de la machine n'est montré.");
+      try { l = (await API.journal("", 80)).entrees.filter(mien); } catch (e) { return nonBranche("Journal", String(e.message || e)); }
       if (S.admin) l = l.filter((e) => /cassandra|itare|amizo|agent|relecteur|vision/i.test((e.acteur || "") + " " + (e.source || "") + " " + (e.label || "")));
       return '<section class="carte"><div class="barre"><h3 style="flex:1">Ce que les agents ont fait</h3>' + lien("journal", "Ouvrir les Journaux") + "</div>" + ligneJournal(l) + "</section>";
     }
@@ -314,9 +318,12 @@
         if (!S.admin && !["fiche", "conv", "boite", "journal"].includes(S.vue)) S.vue = "fiche";
         if (S.attente === undefined) { try { S.attente = ((await API.propositions()).propositions || []).filter((x) => S.admin || x.agent === "itare").length; } catch (e) { S.attente = null; } }
         const f = { equipe: vEquipe, fiche: vFiche, conv: vConv, boite: vBoite, journal: vJournal, modeles: async () => vModeles() }[S.vue];
-        html = nav() + '<div id="ag-vue" style="display:flex;flex-direction:column;gap:12px">' + await f() + "</div>";
+        html = '<div id="ag-vue" style="display:flex;flex-direction:column;gap:12px">' + await f() + "</div>";
       } catch (e) { html = '<div class="vide">' + esc((e && e.message) || e) + "</div>"; }
       racine.innerHTML = html; brancher();
+      if (typeof window.agentsSuivre === "function") window.agentsSuivre(pageMenu(), S.attente == null ? 0 : S.attente);
+      const sc = corps.closest(".sh-scene"), ti = sc && sc.querySelector(".sh-titre");           // le titre suit la page choisie dans le menu
+      if (ti) ti.textContent = { equipe: "L’équipe", conv: "Conversations", boite: "À valider", journal: "Journal", modeles: "Modèles & clés" }[S.vue] || ((S.eq && S.eq.equipe.find((x) => x.id === S.agent) || {}).nom || "Agents IA");
     }
     const recharger = (eq) => { if (eq) S.eq = null; return dessiner(); };
     const aller = (v, agent, onglet) => { S.vue = v; if (agent) S.agent = agent; if (onglet) S.onglet = onglet; if (v === "conv") S.conv.liste = null; dessiner(); };
@@ -325,7 +332,6 @@
 
     function brancher() {
       peindreGestes();
-      sur(".ag-nav[role=tablist]:not(#ag-ong) [data-v]", "click", (b) => aller(b.dataset.v, b.dataset.v === "fiche" ? "itare" : ""));
       sur("[data-agent]", "click", (b) => aller("fiche", b.dataset.agent, b.dataset.onglet || "apercu"));
       sur("#ag-ong [data-o]", "click", (b) => { S.onglet = b.dataset.o; dessiner(); });
       sur("[data-onglet-vers]", "click", (b) => { S.onglet = b.getAttribute("data-onglet-vers"); dessiner(); });
@@ -384,6 +390,9 @@
     if (onglet) { let etait = onglet.classList.contains("active"); new MutationObserver(() => { const actif = onglet.classList.contains("active"); if (actif && !etait && racine.isConnected) { S.eq = null; S.attente = undefined; S.conv.liste = null; dessiner(); } etait = actif; }).observe(onglet, { attributes: true, attributeFilter: ["class"] }); }
     const cible = String((ctx && ctx.ecran) || "").split(":")[1] || "";
     if (cible && ["equipe", "conv", "boite", "journal", "modeles", "fiche"].includes(cible)) S.vue = cible;
+    // le menu de gauche demande une page : à l'ouverture (window.__agentsVue) ou, l'écran étant déjà là, par agentsAller
+    window.agentsAller = () => { const v = window.__agentsVue; window.__agentsVue = ""; if (!racine.isConnected) return; if (v) depuisMenu(v); dessiner(); };
+    if (window.__agentsVue) { depuisMenu(window.__agentsVue); window.__agentsVue = ""; }
     await dessiner();
   };
 })();
