@@ -37,5 +37,9 @@
  "securite:CN_images.py:courriel_etats": "entrées introuvables (aucun des 36 essais ne rend un résultat exact)",
  "societes:CN_module.py:_valider": "validation propre au module, couplée à son état : laissée au nexus",
  "societes:CN_module.py:luhn": "validation propre au module, couplée à son état : laissée au nexus",
- "societes:CN_module.py:valider_champs": "validation propre au module, couplée à son état : laissée au nexus"
+ "societes:CN_module.py:valider_champs": "validation propre au module, couplée à son état : laissée au nexus",
+ "web:CN_module.py:_incorporee": "garde de sécurité contre la forgerie de requête côté serveur : ce que la porte du dehors refuse ne se réécrit pas par évolution",
+ "web:CN_module.py:adresse_refusee": "garde de sécurité contre la forgerie de requête côté serveur : la liste des adresses refusées est fixée par le noyau du module, jamais par une évolution",
+ "web:CN_module.py:decoder": "dépend de la table des codages de la bibliothèque standard (LookupError) : sortie liée à la plateforme, pas un calcul isolable",
+ "web:CN_module.py:html_en_texte": "utilise un analyseur HTML à état (html.parser) : dépendance de bibliothèque standard, et dernier rempart avant que le texte d'une page entre dans le tour d'un agent"
 }
