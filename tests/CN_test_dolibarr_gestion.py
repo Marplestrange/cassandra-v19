@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #89dde9
+# VERSION CN : 0.1.0  #d1c258
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=89dde9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d1c258 ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import gzip
 import json
@@ -138,6 +138,9 @@ class FauxGestion:
                 pid = self.nouveau("paiements", {"amount": float(v["amount"]), "facture": int(k), "compte": corps["accountid"], "mode": corps["paymentid"]})
                 self.paiements.setdefault(int(k), []).append(pid)
             return R(200, pid)
+        if p == ["invoices"] and m == "GET":
+            ls = [self.facture(i) for i in sorted(self.t["invoices"]) if self.t["invoices"][i].get("statut") == "1" and self.reste(i) > 0.005] if q.get("status") == "unpaid" else [self.facture(i) for i in sorted(self.t["invoices"])]
+            return R(200, ls) if ls else R(404, {})
         if p[0] == "invoices":
             if len(p) == 1 and m == "POST":
                 i = self.nouveau("invoices", dict(corps, statut="0", fk_soc=corps.get("socid")))
@@ -494,6 +497,14 @@ class GestionDolibarr(unittest.TestCase):
         self.assertEqual(r["statut"], "faite", msg=str(r))
         self.assertTrue(self.faux.t["proposals"][r["resultat"]["id"]]["date"])
         self.assertEqual(self.e("dolibarr.don_valider", "humain", {"id": 999})["statut"], "echec")
+
+    def test_les_impayees_comptent_ce_qui_reste_du_et_pas_le_total_des_factures(self):
+        i = self.facture(total=120.0)
+        self.facture(total=50.0)
+        self.assertEqual(self.e("dolibarr.encaisser", "humain", {"id": i, "montant": 40, "banque": 1})["statut"], "faite")
+        r = self.e("dolibarr.impayees", "humain", {})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        self.assertEqual((r["resultat"]["n"], r["resultat"]["total_ttc"]), (2, 130.0))        # 80 + 50, pas 120 + 50
 
     # --- le PDF d'une pièce
     def test_le_pdf_d_une_facture_se_lit_en_base64(self):

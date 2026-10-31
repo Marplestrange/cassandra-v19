@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ee8bf6
+// VERSION CN : 0.1.0  #fe37ee
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ee8bf6 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=fe37ee ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -29,6 +29,7 @@
     ".dlb .defil{overflow-x:auto}.dlb .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.dlb .in,.kit-m .in{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:8px 11px;font:500 13px 'Inter',sans-serif;min-width:0;max-width:100%}" +
     ".kit-m .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.kit-m .grille2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kit-m textarea.in{width:100%;resize:vertical}.dlb .code{background:var(--surface);border:1px dashed var(--line-strong,var(--line));border-radius:10px;padding:10px 12px;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}";
 
+  const COURANTE = { racine: null };      // la page qui a reçu le dernier clic : à elle les fenêtres qu'elle a ouvertes
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};
   CASS.sceneSurMesure.dolibarr = async function (corps, ctx) {
     if (ctx && /:console$/.test(String(ctx.ecran || ""))) { if (CASS.console) CASS.console("dolibarr", corps); return; }
@@ -224,7 +225,11 @@
     const banqueOpts = () => (S.d.banques || []).filter((b) => String(b.clos) !== "1").map((b) => [b.id, b.label]);
     const tiersOpts = () => (S.d.tiers || []).map((t) => [t.id, t.name]);
     const GESTES = {
-      onglet: async (p) => { S.onglet = p; dessiner(); await charger(); },
+      onglet: async (p) => {
+        const ecran = Object.keys(PAGES).find((k) => PAGES[k] === p), lib = (ONGLETS.find((o) => o[0] === p) || [0, p])[1];
+        if (ecran && typeof CASS.ouvrirEcran === "function") { CASS.ouvrirEcran("dolibarr:" + ecran, lib); return; }          // la vraie page : le menu, le fil d'Ariane et le titre suivent
+        S.onglet = p; dessiner(); await charger();
+      },
       valider: async (p) => { if (await modale("Valider la facture", '<p>Elle prend son numéro légal. Cela se défait tant qu’elle n’est ni payée ni comptabilisée.</p>', "Valider")) await fait("dolibarr.valider_facture", { id: Number(p) }, "Facture validée"); },
       fiche: async (p) => {
         const f = (S.d.factures || []).find((x) => String(x.id) === String(p)); if (!f) return;
@@ -257,7 +262,7 @@
       facturer: async (p) => { if (await modale("Facturer le devis", "<p>Une facture en brouillon est préparée avec les lignes du devis. Rien n’est validé.</p>", "Préparer la facture")) await fait("dolibarr.facturer_devis", { id: Number(p) }, "Facture préparée"); },
       ntiers: async () => {
         const ok = await modale("Nouveau tiers", champ("n-n", "Nom", "") + '<div class="grille2">' + champ("n-v", "Ville", "") + sel("n-ty", "Type", [["cli", "Client"], ["fou", "Fournisseur"], ["les2", "Les deux"]], "cli") + "</div>", "Créer");
-        if (ok && val("n-n")) { const t = val("n-ty"); await fait("dolibarr.creer", { objet: "tiers", champs: { name: val("n-n"), town: val("n-v"), client: t !== "fou" ? 1 : 0, fournisseur: t !== "cli" ? 1 : 0 } }, "Tiers créé"); }
+        if (ok && !val("n-n")) K.dire("Le nom du tiers est obligatoire", "err"); else if (ok) { const t = val("n-ty"); await fait("dolibarr.creer", { objet: "tiers", champs: { name: val("n-n"), town: val("n-v"), client: t !== "fou" ? 1 : 0, fournisseur: t !== "cli" ? 1 : 0 } }, "Tiers créé"); }
       },
       fichedevis: async (p) => {
         document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
@@ -328,7 +333,7 @@
       itareenvoi: async () => {
         const e = document.getElementById("dlb-msg"), m = (e && e.value || "").trim(); if (!m) return;
         S.itare = (S.itare || []).concat([["u", m]]); dessiner();
-        try { const r = await agir("agents.converser", { conversation_id: S.conv || 0, message: "[Dolibarr, avec ma clé] " + m, agent: "itare" }); S.conv = r.conversation_id || S.conv; S.itare.push(["i", String(r.reponse || r.message || r.texte || r.resume || "(Itare a répondu sans texte)")]); }
+        try { const r = await agir("agents.converser", { conversation_id: S.conv || 0, message: "[Dolibarr, avec ma clé] " + m, agent: "itare" }); S.conv = r.conversation_id || S.conv; const pannes = (r.actions || []).filter((a) => a && a.erreur).map((a) => a.erreur); S.itare.push(["i", String(r.reponse || r.message || r.texte || r.resume || (pannes.length ? "Je ne peux pas répondre : " + pannes.join(" ; ") : "(Itare a répondu sans texte)"))]); }
         catch (x) { S.itare.push(["i", "Je n’ai pas pu : " + (x.message || String(x))]); }
         dessiner();
       },
@@ -358,7 +363,13 @@
       savecle: async () => { const v = val("dlb-cle").trim(); if (!v) return K.dire("Colle d’abord ta clé", "err"); try { await agir("reglages.regler_secret", { cle: "dolibarr.cle_api", valeur: v }); K.dire("Clé enregistrée dans ton coffre"); S.acces = null; await charger(); } catch (e) { K.dire(e.message || String(e), "err"); } },
       rmcle: async () => { if (await modale("Retirer ma clé", "<p>Ni toi ni ton Itare n’écrirez plus dans Dolibarr sous ton nom.</p>", "Retirer")) { try { await agir("reglages.reinitialiser", { cle: "dolibarr.cle_api" }); K.dire("Clé retirée"); S.acces = null; await charger(); } catch (e) { K.dire(e.message || String(e), "err"); } } },
       tester: async () => { S.acces = null; await charger(); },
-      paliers: () => { if (CASS.console) CASS.console("dolibarr", corps); },
+      paliers: async () => {
+        if (typeof CASS.console !== "function") return K.dire("La console des paliers n'est pas disponible ici", "err");
+        document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
+        const fin = modale("Paliers de Dolibarr", '<div id="dlb-console" style="min-height:120px">Lecture…</div><div class="note">Le palier de chaque geste est le choix de l’administrateur : « raconter » (on prépare, tu approuves) ou « auto ».</div>', "Fermer");
+        const h = document.getElementById("dlb-console"); if (h) { h.textContent = ""; try { await CASS.console("dolibarr", h); } catch (e) { h.textContent = e.message || String(e); } }
+        await fin;
+      },
       libre: async () => {
         S.libre = val("dlb-req").trim(); const m = S.libre.match(/^(GET|POST|PUT)\s+(\/[^\s?]*)(\?\S*)?\s*(\{[\s\S]*\})?$/i); if (!m) return K.dire("Format : GET /chemin  ou  PUT /chemin {json}", "err");
         try {
@@ -369,11 +380,22 @@
       },
     };
     // le tiroir de fiche (K.confirmer) ne porte pas nos boutons : on délègue sur tout le document pour ses data-a
-    const clic = (e) => { const b = e.target.closest("[data-a]"); if (!b || !GESTES[b.dataset.a]) return; if (!racine.isConnected) { document.removeEventListener("click", clic); return; } e.preventDefault(); GESTES[b.dataset.a](b.dataset.p); };
+    // Chaque page montée garde son gestionnaire sur le document (le shell garde les pages cachées) : sans cette garde, UN clic déclenchait le geste dans TOUTES les pages montées,
+    // donc plusieurs écritures. Seule répond la page qui a reçu le clic, ou qui a ouvert la fenêtre où il a eu lieu.
+    const clic = (e) => {
+      const b = e.target.closest("[data-a]"); if (!b || !GESTES[b.dataset.a]) return;
+      if (!racine.isConnected) { document.removeEventListener("click", clic); return; }
+      if (racine.contains(e.target)) { COURANTE.racine = racine; }
+      else if (!(e.target.closest(".kit-m") && COURANTE.racine === racine)) return;
+      e.preventDefault(); GESTES[b.dataset.a](b.dataset.p);
+    };
     document.addEventListener("click", clic);
     racine.addEventListener("click", (e) => { const o = e.target.closest("[data-o]"); if (o) { GESTES.onglet(o.dataset.o); return; } const f = e.target.closest("[data-f]"); if (f) { const [k, v] = f.dataset.f.split("|"); S.f[k] = v; dessiner(); } });
     racine.addEventListener("input", (e) => { const k = e.target.dataset && e.target.dataset.q; if (k) { S.q[k] = e.target.value; dessiner(); } });
     racine.innerHTML = '<div class="vide">Lecture de Dolibarr…</div>';
+    // Le shell garde les pages cachées : revenir sur une page déjà vue la montrait périmée. À chaque retour (8 s au moins après la dernière lecture), on relit.
+    S.vu = Date.now();
+    if ("IntersectionObserver" in window) new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting) && !S.occupe && Date.now() - S.vu > 8000) { S.vu = Date.now(); S.d = {}; charger(); } }).observe(racine);
     await charger();
   };
 })();

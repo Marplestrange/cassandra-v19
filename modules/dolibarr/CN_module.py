@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #f4215c
+# VERSION CN : 0.4.0  #b91386
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=f4215c ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=b91386 ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -353,14 +353,16 @@ def _date(v):
 
 def _impayees(conf):
     try:
-        lot = appeler(conf, OBJETS["factures"], {"limit": PAGE, "status": "unpaid", "properties": "id,total_ttc,date_lim_reglement"})
+        lot = appeler(conf, OBJETS["factures"], {"limit": PAGE, "status": "unpaid", "properties": "id,total_ttc,remaintopay,date_lim_reglement"})
     except PontErreur as ex:
         if ex.code == 404:
             return {"n": 0, "total_ttc": 0.0, "plus_ancienne": ""}
         raise
     lot = lot if isinstance(lot, list) else []
     echeances = sorted(_date(x.get("date_lim_reglement")) for x in lot if x.get("date_lim_reglement"))
-    return {"n": len(lot), "total_ttc": round(sum(float(x.get("total_ttc") or 0) for x in lot), 2), "plus_ancienne": echeances[0] if echeances else ""}
+    # ce qui reste DÛ (remaintopay), pas le total des factures : une facture à moitié payée ne pèse que sa moitié
+    return {"n": len(lot), "total_ttc": round(sum(float(x["remaintopay"] if x.get("remaintopay") not in (None, "") else (x.get("total_ttc") or 0)) for x in lot), 2),
+            "plus_ancienne": echeances[0] if echeances else ""}
 
 
 def _egaux(a, b):
