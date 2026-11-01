@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ee43e0
+// VERSION CN : 0.1.0  #04f987
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ee43e0 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=04f987 ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -94,6 +94,7 @@
     "@media (max-width:760px){.ag .ag-conv{grid-template-columns:1fr}.ag .ag-outil{grid-template-columns:1fr}.ag .ag-ctl{justify-content:flex-start}.ag .ag-m{max-width:100%}.ag .ag-ecrire{flex-direction:column}.ag .ag-ecrire textarea{height:70px}.ag table{min-width:420px}}";
 
   // ── l'état de l'écran (une scène, des vues) ────────────────────────────────
+  const MEM = { eq: null, t: 0 };                                // l'équipe lue il y a moins de 30 s survit au changement de page du menu (l'écran est remonté à chaque clic)
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};
   CASS.sceneSurMesure.agents = async function (corps, ctx) {
     K.injecter();
@@ -413,13 +414,19 @@
     // ── le dessin et les gestes ──────────────────────────────────────────────
     // l'équipe se lit lentement à froid : un seul appel en vol pour tous ceux qui l'attendent, et seul le dernier dessin compte (ouverture + clic du menu + retour d'onglet arrivent ensemble)
     let eqEnVol = null, dessin = 0;
-    const equipe = () => eqEnVol || (eqEnVol = API.equipe().finally(() => { eqEnVol = null; }));
-    async function dessiner() {
+    const equipe = () => (MEM.eq && Date.now() - MEM.t < 30000 ? Promise.resolve(MEM.eq) : eqEnVol || (eqEnVol = API.equipe().then((r) => { MEM.eq = r; MEM.t = Date.now(); return r; }).finally(() => { eqEnVol = null; })));
+    let enCours = null, cle = "";
+    function dessiner() {                                          // la même page demandée deux fois de suite (ouverture + menu) ne se dessine qu'une fois
+      const k = S.vue + "|" + S.agent + "|" + S.onglet;
+      if (enCours && cle === k) return enCours;
+      cle = k; const p = dessinerVraiment(); enCours = p; p.finally(() => { if (enCours === p) enCours = null; }); return p;
+    }
+    async function dessinerVraiment() {
       let html; const moi = ++dessin;
       const v0 = racine.querySelector("#ag-vue");
       if (v0) v0.style.opacity = ".5"; else racine.innerHTML = '<div class="vide" role="status">Chargement…</div>';
       try {
-        S.eq = S.eq || await equipe();
+        S.eq = S.eq || await equipe(); S.lu = S.lu || Date.now();
         S.admin = !!S.eq.administrateur;
         if (!S.vue) S.vue = S.admin ? "equipe" : "fiche";
         if (!S.admin && !["fiche", "conv", "boite", "journal"].includes(S.vue)) S.vue = "fiche";
@@ -433,7 +440,7 @@
       const sc = corps.closest(".sh-scene"), ti = sc && sc.querySelector(".sh-titre");           // le titre suit la page choisie dans le menu
       if (ti) ti.textContent = { equipe: "L’équipe", conv: "Conversations", boite: "À valider", journal: "Journal", auditeur: "Auditeur", modeles: "Modèles & clés" }[S.vue] || ((S.eq && S.eq.equipe.find((x) => x.id === S.agent) || {}).nom || "Agents IA");
     }
-    const recharger = (eq) => { if (eq) S.eq = null; return dessiner(); };
+    const recharger = (eq) => { if (eq) { S.eq = null; S.lu = 0; MEM.eq = null; } return dessiner(); };
     const aller = (v, agent, onglet) => { S.vue = v; if (agent) S.agent = agent; if (onglet) S.onglet = onglet; if (v === "conv") S.conv.liste = null; dessiner(); };
     const sur = (sel, ev, fn) => racine.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, (e) => fn(el, e)));
     const b0 = (off) => { const b = racine.querySelector("#ag-ep-go"); if (b) b.disabled = off; };
@@ -520,7 +527,7 @@
 
     // revenir sur l'onglet recharge l'écran (le compte a pu changer)
     const onglet = corps.closest(".tab-content");
-    if (onglet) { let etait = onglet.classList.contains("active"); new MutationObserver(() => { const actif = onglet.classList.contains("active"); if (actif && !etait && racine.isConnected) { S.eq = null; S.attente = undefined; S.conv.liste = null; dessiner(); } etait = actif; }).observe(onglet, { attributes: true, attributeFilter: ["class"] }); }
+    if (onglet) { let etait = onglet.classList.contains("active"); new MutationObserver(() => { const actif = onglet.classList.contains("active"); if (actif && !etait && racine.isConnected) { if (Date.now() - (S.lu || 0) > 30000) { S.eq = null; S.lu = 0; MEM.eq = null; S.attente = undefined; } S.conv.liste = null; dessiner(); } etait = actif; }).observe(onglet, { attributes: true, attributeFilter: ["class"] }); }
     const cible = String((ctx && ctx.ecran) || "").split(":")[1] || "";
     if (cible && ["equipe", "conv", "boite", "journal", "modeles", "fiche"].includes(cible)) S.vue = cible;
     // le menu de gauche demande une page : à l'ouverture (window.__agentsVue) ou, l'écran étant déjà là, par agentsAller
