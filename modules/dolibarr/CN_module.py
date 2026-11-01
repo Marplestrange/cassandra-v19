@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #04a197
+# VERSION CN : 0.4.1  #269679
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=04a197 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=269679 ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -117,6 +117,10 @@ _SECRET = re.compile(r"(pass|api_key|apikey|token|secret|signature|private_key|c
 # Les pièces dont on lit ou produit le PDF : objet -> (chemin de l'objet, « modulepart » de Dolibarr). Le PDF est celui que Dolibarr a produit : Cassandra le lit, elle ne le recompose pas.
 PIECES = {"devis": ("/proposals", "propal"), "factures": ("/invoices", "facture"), "commandes": ("/orders", "commande")}
 MAX_PDF = 8 * 1024 * 1024
+# Les champs personnalisés (extrafields) : le type d'élément que Dolibarr leur donne, et les types que l'écran sait saisir
+ELEMENTS_PERSO = {"tiers": "societe", "contacts": "socpeople", "produits": "product", "projets": "projet", "factures": "facture", "devis": "propal", "commandes": "commande",
+                  "fournisseurs": "facture_fourn", "commandes_fournisseurs": "commande_fournisseur", "adherents": "adherent"}
+TYPES_PERSO = ("varchar", "text", "html", "mail", "url", "phone", "int", "double", "price", "boolean", "date", "select", "radio")
 MAX_PJ = 5 * 1024 * 1024        # un document joint : 5 Mo (6,7 Mo une fois encodé en base64)
 # Les pièces auxquelles on joint des documents : (chemin de l'API, « modulepart » des documents, champ qui porte la référence)
 PIECES_JOINTES = {"factures": ("/invoices", "facture", "ref"), "devis": ("/proposals", "propal", "ref"), "tiers": ("/thirdparties", "societe", "name"), "dons": ("/donations", "donation", "ref"),
@@ -432,6 +436,39 @@ def _date(v):
     return t
 
 
+def _nouveautes(conf, vus):
+    """Ce qui est arrivé chez Dolibarr depuis la dernière passe : des factures payées, des dons. Dolibarr ne prévient pas Cassandra : elle va voir.
+    Rend (annonces, vus). À la première passe on note l'état sans rien annoncer ; au plus 10 annonces par passe."""
+    vus = dict(vus or {})
+    premiere = "payees" not in vus
+    annonces = []
+    try:
+        paye = appeler(conf, OBJETS["factures"], {"limit": 50, "sortfield": "t.rowid", "sortorder": "DESC", "status": "paid", "properties": "id,ref,total_ttc,socid"})
+    except PontErreur as ex:
+        if ex.code != 404:
+            raise
+        paye = []
+    paye = [x for x in (paye if isinstance(paye, list) else []) if isinstance(x, dict) and str(x.get("id", "")).isdigit()]
+    deja = set(vus.get("payees") or [])
+    for x in paye:
+        if int(x["id"]) not in deja and not premiere:
+            annonces.append(("dolibarr.facture_payee", {"id": int(x["id"]), "ref": str(x.get("ref") or ""), "total_ttc": x.get("total_ttc"), "socid": x.get("socid")}))
+    vus["payees"] = sorted(deja | {int(x["id"]) for x in paye})[-300:]
+    try:
+        dons = appeler(conf, "/donations", {"limit": 20, "sortfield": "t.rowid", "sortorder": "DESC", "properties": "id,ref,amount,statut"})
+    except PontErreur as ex:
+        if ex.code != 404:
+            raise
+        dons = []
+    dons = [x for x in (dons if isinstance(dons, list) else []) if isinstance(x, dict) and str(x.get("id", "")).isdigit()]
+    dernier = int(vus.get("don_max") or 0)
+    for x in sorted(dons, key=lambda d: int(d["id"])):
+        if int(x["id"]) > dernier and "don_max" in vus:
+            annonces.append(("dolibarr.don_recu", {"id": int(x["id"]), "ref": str(x.get("ref") or ""), "montant": x.get("amount")}))
+    vus["don_max"] = max([dernier] + [int(x["id"]) for x in dons])
+    return annonces[:10], vus
+
+
 def _impayees(conf):
     try:
         lot = appeler(conf, OBJETS["factures"], {"limit": PAGE, "status": "unpaid", "properties": "id,total_ttc,remaintopay,date_lim_reglement"})
@@ -522,6 +559,12 @@ def brancher(ctx):
                 donnees["impayees"] = _impayees(conf)
                 donnees["modules"] = len(appeler(conf, "/setup/modules") or [])
                 etat["comptes_t"] = time.time()
+                try:                                                # les nouveautés : un paiement reçu, un don arrivé (jamais bloquant pour la sonde)
+                    annonces, donnees["vus"] = _nouveautes(conf, donnees.get("vus"))
+                    for evenement, corps in annonces:
+                        ctx.emettre(evenement, objet=INSTANCE, donnees=corps)
+                except PontErreur:
+                    pass
             donnees["erreur"] = ""
             if precedent and precedent["etat"] in ("injoignable", "refuse"):
                 ctx.emettre("dolibarr.reprise", objet=INSTANCE, donnees={"version": donnees["version"]})
@@ -615,14 +658,90 @@ def brancher(ctx):
     def _lire_un(conf, chemin, id):
         return appeler(conf, "%s/%s" % (chemin, id))
 
+    # --- les champs personnalisés : on les lit chez Dolibarr (/setup/extrafields), on ne les devine pas
+    def _defs_perso(objet):
+        el = ELEMENTS_PERSO.get(objet)
+        if not el:
+            return {}
+        tout = appeler(_conf(), "/setup/extrafields")
+        defs = (tout.get(el) if isinstance(tout, dict) else None) or {}
+        return {n: d for n, d in defs.items() if isinstance(d, dict) and str(d.get("type")) in TYPES_PERSO and not d.get("computed")}
+
+    def _options_perso(d):
+        p = d.get("param")
+        o = p.get("options") if isinstance(p, dict) else None
+        return {str(k): str(v) for k, v in o.items()} if isinstance(o, dict) else {}
+
+    def _valeur_perso(n, d, v):
+        t, lib = str(d.get("type")), str(d.get("label") or n)
+        if v in (None, ""):
+            return None
+        try:
+            if t == "int":
+                return int(float(str(v).replace(",", ".")))
+            if t in ("double", "price"):
+                return float(str(v).replace(",", "."))
+            if t == "boolean":
+                if str(v).lower() in ("1", "true", "oui", "vrai"):
+                    return 1
+                if str(v).lower() in ("0", "false", "non", "faux"):
+                    return 0
+                raise ValueError
+            if t == "date":
+                if not re.match(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$", str(v)):
+                    raise ValueError
+                return str(v)
+            if t in ("select", "radio"):
+                o = _options_perso(d)
+                if o and str(v) not in o:
+                    raise ValueError
+                return str(v)
+        except ValueError:
+            raise ValueError("%s : valeur refusée (%s)" % (lib, {"int": "un entier", "double": "un nombre", "price": "un nombre", "boolean": "oui ou non", "date": "AAAA-MM-JJ",
+                                                              "select": "une valeur de la liste", "radio": "une valeur de la liste"}.get(t, "valeur")))
+        return str(v)[:2000]
+
+    def _perso(objet, champs, creation):
+        """Sépare les champs « options_… » (personnalisés) des champs de la fiche ; vérifie leur nom et leur type contre ce que Dolibarr déclare. Rend (champs de la fiche, array_options)."""
+        if not isinstance(champs, dict):
+            return champs, {}
+        entrants = {k: v for k, v in champs.items() if str(k).startswith("options_")}
+        if not entrants:
+            return champs, {}
+        defs = _defs_perso(objet)
+        sortie = {}
+        for k, v in entrants.items():
+            n = k[len("options_"):]
+            if n not in defs:
+                raise ValueError("champ personnalisé inconnu pour %s : %s" % (objet, n))
+            val = _valeur_perso(n, defs[n], v)
+            if val is None and creation:
+                continue
+            sortie[k] = val                                     # à la modification, une valeur vide efface le champ
+        return {k: v for k, v in champs.items() if k not in entrants}, sortie
+
+    def champs_perso(ctx, objet):
+        if objet not in ELEMENTS_PERSO:
+            raise ValueError("objet : %s" % ", ".join(sorted(ELEMENTS_PERSO)))
+        out = []
+        for n, d in sorted(_defs_perso(objet).items(), key=lambda x: (int(x[1].get("pos") or 0), x[0])):
+            out.append({"cle": "options_" + n, "libelle": str(d.get("label") or n), "genre": str(d.get("type")), "obligatoire": str(d.get("required")) == "1",
+                        "options": [[k, v] for k, v in _options_perso(d).items()], "aide": str(d.get("help") or "")})
+        return {"objet": objet, "champs": out}
+
     def creer(ctx, objet, champs):
         if objet not in ECRIVABLES:
             raise ValueError("objet inconnu : %r (permis : %s)" % (objet, ", ".join(sorted(ECRIVABLES))))
+        champs, perso = _perso(objet, champs, True)
         _verifier_champs(champs, ECRIVABLES[objet]["champs"], objet)
         _regles_dolibarr(objet, champs, True)
         champs = _reunir_sociaux(_numeriques(champs), None)
         conf = _conf()
-        nouvel = ecrire(conf, "POST", ECRIVABLES[objet]["chemin"], _completer(objet, champs))
+        corps = _completer(objet, champs)
+        if perso:
+            corps = dict(corps, array_options=perso)
+            champs = dict(champs, array_options=perso)
+        nouvel = ecrire(conf, "POST", ECRIVABLES[objet]["chemin"], corps)
         if not isinstance(nouvel, int) and not (isinstance(nouvel, str) and _ID.match(nouvel)):
             raise PontErreur("Dolibarr n'a pas rendu l'identifiant de l'objet créé")
         return {"objet": objet, "id": int(nouvel), "champs": champs, "cree": True}
@@ -643,7 +762,9 @@ def brancher(ctx):
             raise ValueError("objet inconnu : %r (permis : %s)" % (objet, ", ".join(sorted(ECRIVABLES))))
         if not _ID.match(str(id)):
             raise ValueError("id : un nombre")
-        _verifier_champs(champs, ECRIVABLES[objet]["champs"], objet)
+        champs, perso = _perso(objet, champs, False)
+        if champs or not perso:
+            _verifier_champs(champs, ECRIVABLES[objet]["champs"], objet)
         _regles_dolibarr(objet, champs, False)
         champs = _numeriques(champs)
         conf = _conf()
@@ -652,8 +773,19 @@ def brancher(ctx):
             raise PontErreur("l'objet %s %s est introuvable" % (objet, id))
         champs = _reunir_sociaux(champs, courant)
         avant = {k: courant.get(k) for k in champs}
+        if perso:
+            ao = courant.get("array_options") if isinstance(courant.get("array_options"), dict) else {}
+            avant["array_options"] = {k: ao.get(k) for k in perso}
+            champs = dict(champs, array_options=perso)
         ecrire(conf, "PUT", "%s/%s" % (ECRIVABLES[objet]["chemin"], id), champs)
         return {"objet": objet, "id": int(id), "avant": avant, "apres": champs, "cree": False}
+
+    def _egal_perso(lu, v):
+        if v is None:
+            return lu in (None, "")                                      # un champ vidé
+        if re.match(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$", str(v)) and str(lu).lstrip("-").isdigit():
+            return abs(int(lu) - _jour_ts(str(v))) <= 86400              # une date que Dolibarr garde en secondes
+        return _egaux(lu, v)
 
     def prouver_objet(ctx, res):
         conf = _conf()
@@ -664,8 +796,8 @@ def brancher(ctx):
             lu = o.get(k) if k in o else o.get("statut" if k == "status" else k)
             if k == "multicurrency_code":
                 return True                                              # sans le module multidevise, Dolibarr ne garde pas ce champ
-            if isinstance(v, dict):                                      # « socialnetworks » : chaque réseau posé se retrouve
-                return isinstance(lu, dict) and all(_egaux(lu.get(a), b) for a, b in v.items())
+            if isinstance(v, dict):                                      # « socialnetworks », « array_options » : chaque valeur posée se retrouve
+                return isinstance(lu, dict) and all(_egal_perso(lu.get(a), b) for a, b in v.items())
             if re.match(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$", str(v)) and str(lu).lstrip("-").isdigit():
                 return abs(int(lu) - _jour_ts(str(v))) <= 86400          # une date AAAA-MM-JJ, que Dolibarr garde en secondes
             if str(k).startswith("accountancy_code"):
@@ -698,6 +830,9 @@ def brancher(ctx):
         corps = {"socid": int(socid), "lines": _lignes(lignes), "date": date if date is not None else _jour_ts("")}      # Dolibarr 24 exige la date d'un devis
         if note:
             corps["note_private"] = str(note)[:4000]
+        champs, perso = _perso(objet, champs, True)
+        if perso:
+            corps["array_options"] = perso
         for k, v in (champs or {}).items():                     # l'en-tête de la fiche Dolibarr : mêmes noms, mêmes types ; rien d'autre n'est transmis
             if k not in ENTETES[objet]:
                 raise ValueError("champ %r refusé pour %s (permis : %s)" % (k, objet, ", ".join(sorted(ENTETES[objet]))))
@@ -1401,6 +1536,76 @@ def brancher(ctx):
                                                                       "note_private": "Issue du devis %s, préparée par Cassandra" % (d.get("ref") or id)}), "la facture")
         return {"document": "factures", "id": nouvel, "socid": socid, "lignes": len(lignes), "devis": int(id)}
 
+    # --- un brouillon se modifie ligne par ligne : ajouter, modifier, supprimer une ligne (factures, devis, commandes ; jamais une pièce validée)
+    PIECES_LIGNES = ("factures", "devis", "commandes")
+    CHAMPS_RELUS = ("desc", "qty", "subprice", "tva_tx", "remise_percent", "product_type", "fk_product")
+
+    def _propre(l):
+        return {k: l[k] for k in CHAMPS_RELUS if l.get(k) not in (None, "")}
+
+    def ligne(ctx, objet, id, action, ligne=None, ligne_id=None):
+        if objet not in PIECES_LIGNES:
+            raise ValueError("objet : %s" % ", ".join(PIECES_LIGNES))
+        if action not in ("ajouter", "modifier", "supprimer"):
+            raise ValueError("action : ajouter, modifier, supprimer")
+        conf = _conf()
+        d = _doc(conf, DOCUMENTS[objet], id, "la pièce")
+        if _statut(d) != "0":
+            raise ValueError("seul un brouillon se modifie ligne à ligne (cette pièce est au statut %s)" % _statut(d))
+        base = "%s/%s/lines" % (DOCUMENTS[objet], id)
+        if action == "ajouter":
+            l = _lignes([ligne])[0]
+            nouvelle = _int_id(ecrire(conf, "POST", base, l), "la ligne")
+            return {"objet": objet, "id": int(id), "action": action, "ligne_id": nouvelle, "apres": l}
+        if not _ID.match(str(ligne_id or "")):
+            raise ValueError("ligne_id : le numéro de la ligne (relire la pièce pour le connaître)")
+        courante = next((x for x in (d.get("lines") or []) if str(x.get("id")) == str(ligne_id)), None)
+        if courante is None:
+            raise ValueError("la pièce %s n'a pas de ligne %s" % (id, ligne_id))
+        avant = _propre(courante)
+        if action == "modifier":
+            _verifier_champs(ligne, CHAMPS_LIGNE, "une ligne")
+            apres = dict(avant, **ligne)
+            ecrire(conf, "PUT", "%s/%s" % (base, ligne_id), apres)
+            return {"objet": objet, "id": int(id), "action": action, "ligne_id": int(ligne_id), "avant": avant, "apres": apres}
+        ecrire(conf, "DELETE", "%s/%s" % (base, ligne_id))
+        return {"objet": objet, "id": int(id), "action": action, "ligne_id": int(ligne_id), "avant": avant}
+
+    def _lignes_de(res):
+        return (_lire_un(_conf(), DOCUMENTS[res["objet"]], res["id"]) or {}).get("lines") or []
+
+    def prouver_ligne(ctx, res):
+        trouvee = next((x for x in _lignes_de(res) if str(x.get("id")) == str(res["ligne_id"])), None)
+        if res["action"] == "supprimer":
+            return trouvee is None
+        if trouvee is None:
+            return False
+        return all(_egaux(trouvee.get(k), v) for k, v in res["apres"].items() if k in ("qty", "subprice", "tva_tx", "remise_percent")) and (res["apres"].get("desc") is None or str(res["apres"]["desc"]).strip() in str(trouvee.get("desc") or ""))
+
+    def _retrouver_ligne(res, valeurs):
+        """La ligne que cet acte a touchée : par son numéro ; sinon, si un retour plus récent l'a recréée (elle change alors de numéro), par son contenu."""
+        lignes = _lignes_de(res)
+        par_numero = next((x for x in lignes if str(x.get("id")) == str(res["ligne_id"])), None)
+        if par_numero is not None:
+            return par_numero
+        return next((x for x in lignes if all(_egaux(x.get(k), v) for k, v in valeurs.items() if k in ("qty", "subprice", "tva_tx", "remise_percent"))
+                     and str(valeurs.get("desc") or "").strip() in str(x.get("desc") or "")), None)
+
+    def defaire_ligne(ctx, res):
+        conf = _conf()
+        base = "%s/%s/lines" % (DOCUMENTS[res["objet"]], res["id"])
+        if res["action"] == "ajouter":
+            x = _retrouver_ligne(res, res["apres"])
+            if x is not None:
+                ecrire(conf, "DELETE", "%s/%s" % (base, x["id"]))
+        elif res["action"] == "modifier":
+            x = _retrouver_ligne(res, res["apres"])
+            if x is None:
+                raise PontErreur("la ligne modifiée n'existe plus : rien à remettre")
+            ecrire(conf, "PUT", "%s/%s" % (base, x["id"]), res["avant"])
+        else:
+            ecrire(conf, "POST", base, res["avant"])
+
     # --- la commande : l'étape entre le devis signé et la facture (devis → commande → facture). Dolibarr la numérote à la validation.
     ETATS_COMMANDE = {"valider": ("0", "1"), "livrer": ("1", "3")}
 
@@ -2045,6 +2250,7 @@ def brancher(ctx):
     ctx.implementer("modifier_lie", modifier_lie, prouver_modif_liee, defaire_modif_liee, simuler=lambda ctx, type="", id="", **_: "modifierait chez Dolibarr la fiche liée %s %s" % (type, id))
     ctx.implementer("detacher", detacher, prouver_detache, defaire_detache, simuler=lambda ctx, type="", id="", **_: "détacherait %s %s de Dolibarr (les deux copies restent)" % (type, id))
     ctx.implementer("piece_pdf", piece_pdf)
+    ctx.implementer("ligne", ligne, prouver_ligne, defaire_ligne, simuler=lambda ctx, objet="", id="", action="", **_: "ferait « %s une ligne » sur le brouillon %s %s" % (action, objet, id))
     ctx.implementer("commande_creer", commande_creer, prouver_brouillon, defaire_brouillon, simuler=lambda ctx, devis="", **_: "préparerait une commande en brouillon depuis le devis signé %s" % devis)
     ctx.implementer("commande", commande, prouver_commande, defaire_commande, simuler=lambda ctx, id="", action="", **_: "ferait « %s » sur la commande %s" % (action, id))
     ctx.implementer("facturer_commande", facturer_commande, prouver_brouillon, defaire_brouillon, simuler=lambda ctx, id="", **_: "préparerait une facture en brouillon depuis la commande %s" % id)
@@ -2053,6 +2259,7 @@ def brancher(ctx):
     ctx.implementer("frais_options", frais_options)
     ctx.implementer("frais_creer", frais_creer, prouver_frais, defaire_frais, simuler=lambda ctx, auteur="", total="", **_: "préparerait une note de frais en brouillon pour l'utilisateur %s" % auteur)
     ctx.implementer("frais_etat", frais_etat, prouver_frais_etat, defaire_frais_etat, simuler=lambda ctx, id="", action="", **_: "ferait « %s » sur la note de frais %s" % (action, id))
+    ctx.implementer("champs_perso", champs_perso)
     ctx.implementer("rib_lister", rib_lister)
     ctx.implementer("rib_creer", rib_creer, prouver_rib, defaire_rib, simuler=lambda ctx, tiers="", iban="", **_: "ajouterait l'IBAN %s…%s au tiers %s" % (str(iban)[:4], str(iban)[-4:], tiers))
     ctx.implementer("documents", documents)

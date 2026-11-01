@@ -12,7 +12,7 @@
 <!-- RÔLE       : Dolibarr, la gestion complète : ce que le module sait faire, la clé d'API par compte, le compte de mandat, les paliers -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=f2fe79 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=04ec72 ▼▼▼ -->
 # Dolibarr : la gestion complète
 
 Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il écrit, et tout geste a sa **preuve** (relire ce qui a été écrit) et son **retour arrière**.
@@ -33,6 +33,8 @@ Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il �
 | Préparer une facture ou une commande fournisseur (brouillon, avec la réf. du fournisseur) ; valider la facture | `creer_brouillon` (objets `fournisseurs`, `commandes_fournisseurs`), `facture_fournisseur_valider` | supprimer le brouillon ; remettre la facture en brouillon |
 | Valider, approuver puis passer une commande fournisseur | `commande_fournisseur` | aucun par l'API de Dolibarr : se défait dans Dolibarr (palier « raconter » seulement) |
 | Saisir une note de frais (par exemple d'un bénévole : période, type de frais, lignes avec TVA, totaux calculés), la valider, l'approuver | `frais_options`, `frais_creer`, `frais_etat` | supprimer le brouillon ; remettre la note dans son statut d'avant |
+| Modifier un brouillon (facture, devis, commande) ligne par ligne : ajouter, modifier, supprimer | `ligne` | supprimer la ligne ajoutée, remettre les valeurs d'avant, recréer la ligne supprimée |
+| Lire les champs personnalisés d'une fiche et les écrire avec elle (tiers, contact, produit, projet, facture, devis, commande) | `champs_perso`, puis `creer`, `modifier`, `creer_brouillon` avec des clés `options_…` | remettre les valeurs d'avant (un champ vidé redevient vide) |
 | Enregistrer une cotisation | `cotisation` | supprimer cette cotisation |
 | Virer d'un compte bancaire à un autre | `virement_interne` | le virement inverse |
 | Ouvrir, clore un projet | `projet` | remettre le statut d'avant |
@@ -71,7 +73,7 @@ Tout le monde ne doit pas pouvoir tout faire dans Dolibarr. Le module déclare d
 | Droit | Ce qu'il ouvre | Par défaut |
 |---|---|---|
 | `consulter` | lire tiers, factures, devis, dons, adhérents, projets, banque, PDF ; l'écran lit par `lire_ecran`, borné à ce qu'il affiche (pas les utilisateurs ni la configuration de Dolibarr) | oui |
-| `facturer` | brouillons de devis et factures, avoirs, relances, encaisser un règlement, produire un PDF, joindre un document | non |
+| `facturer` | brouillons de devis et factures, avoirs, relances, encaisser un règlement, produire un PDF, joindre un document, modifier un brouillon ligne par ligne | non |
 | `valider` (sensible) | numéro légal d'une facture (irréversible), valider un don, valider ou clore un projet, valider une facture fournisseur, valider et approuver une note de frais | non |
 | `tiers` | créer, modifier, restaurer tiers, contacts, produits, projets ; les envoyer à Dolibarr ou les en détacher | non |
 | `dons` | saisir un don, enregistrer une cotisation | non |

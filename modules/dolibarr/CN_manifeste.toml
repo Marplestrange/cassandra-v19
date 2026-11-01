@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #cedaca
+# VERSION CN : 0.4.1  #c3d0c7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=cedaca ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=c3d0c7 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -172,11 +172,11 @@ minimum = 0
 maximum = 10000000
 portee = "compte"
 [evenements]
-emet = ["dolibarr.injoignable", "dolibarr.acces_refuse", "dolibarr.reprise"]
+emet = ["dolibarr.injoignable", "dolibarr.acces_refuse", "dolibarr.reprise", "dolibarr.facture_payee", "dolibarr.don_recu"]
 
 [[moteurs]]
 id = "releve"
-libelle = "Sonde Dolibarr (santé chaque minute, comptes et impayés tous les quarts d'heure)"
+libelle = "Sonde Dolibarr (santé chaque minute ; comptes, impayés, factures payées et dons reçus tous les quarts d'heure)"
 mode = "periodique"
 toutes_les_s = 60
 duree_max_s = 90
@@ -527,6 +527,17 @@ risque = "lecture"
 droit = "consulter"
 
 [[capacites]]
+id = "ligne"
+libelle = "Modifier un brouillon ligne par ligne : ajouter, modifier ou supprimer une ligne d'une facture, d'un devis ou d'une commande"
+risque = "moyen"
+droit = "facturer"
+perimetre = ["factures, devis, commandes", "un brouillon seulement : jamais une pièce validée"]
+preuve = "relire la pièce : la ligne est ajoutée, modifiée ou absente"
+retour = "supprimer la ligne ajoutée, remettre les valeurs d'avant, ou recréer la ligne supprimée"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
 id = "commande_creer"
 libelle = "Préparer une commande (brouillon) depuis un devis signé : l'étape entre le devis et la facture"
 risque = "moyen"
@@ -608,6 +619,12 @@ preuve = "relire la note : le statut a changé"
 retour = "remettre la note dans son statut d'avant"
 paliers = ["raconter"]
 qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "champs_perso"
+libelle = "Lire les champs personnalisés que Dolibarr déclare pour une fiche (tiers, contact, produit, projet, facture, devis, commande, adhérent) : nom, libellé, type, valeurs permises"
+risque = "lecture"
+droit = "consulter"
 
 [[capacites]]
 id = "rib_lister"
