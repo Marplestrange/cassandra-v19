@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #9298d9
+# VERSION CN : 0.4.1  #04a197
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=9298d9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=04a197 ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -110,7 +110,7 @@ DOMAINES = ("accountancy", "agendaevents", "bankaccounts", "categories", "contac
             "objectlinks", "orders", "paiements", "partnerships", "productlots", "products", "projects", "proposals", "recruitments", "salaries",
             "setup", "shipments", "status", "stockmovements", "subscriptions", "supplierinvoices", "supplierorders", "supplierproposals", "tasks",
             "thirdparties", "tickets", "users", "warehouses")
-DOMAINES_ECRAN = ("bankaccounts", "contacts", "donations", "invoices", "members", "products", "projects", "proposals", "setup", "supplierinvoices", "supplierorders", "expensereports", "thirdparties")     # ce que l'écran affiche : la lecture « consulter » n'atteint rien d'autre
+DOMAINES_ECRAN = ("bankaccounts", "contacts", "donations", "invoices", "members", "orders", "products", "projects", "proposals", "setup", "supplierinvoices", "supplierorders", "expensereports", "thirdparties")     # ce que l'écran affiche : la lecture « consulter » n'atteint rien d'autre
 _CHEMIN_LIBRE = re.compile(r"^/[a-z]{3,30}(/[A-Za-z0-9_.@-]{1,60}){0,4}$")
 _REQUETE = re.compile(r"^[A-Za-z0-9_.,=&%+:*()\[\]-]{0,400}$")
 _SECRET = re.compile(r"(pass|api_key|apikey|token|secret|signature|private_key|cle_)", re.I)

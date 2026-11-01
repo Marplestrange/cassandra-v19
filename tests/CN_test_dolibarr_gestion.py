@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #80e118
+# VERSION CN : 0.1.0  #b70e5c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=80e118 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b70e5c ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import base64
 import gzip
@@ -748,6 +748,18 @@ class GestionDolibarr(unittest.TestCase):
         self.n.droits.regler("compte", "paul@x.fr", "dolibarr.administrer", "accorde")
         self._base()
         self.assertEqual(self.e("dolibarr.base_etat", "humain", {}, compte="paul@x.fr")["statut"], "echec")
+
+    def test_tout_ce_que_l_ecran_lit_est_permis_a_la_lecture_de_l_ecran(self):
+        """Une page ajoutée à l'écran dont le domaine manque à la liste ferait un 403 muet pour tout compte qui ne peut que consulter (vu avec « Commandes »)."""
+        import re as _re
+        src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "interface", "CN_dolibarr-ecran.js"), encoding="utf-8").read()
+        domaines = set(_re.findall(r'lire\("/([a-z]+)', src)) | set(_re.findall(r'agir\("dolibarr\.lire_ecran", \{ chemin: "/([a-z]+)', src))
+        self.assertGreater(len(domaines), 10)
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("dolibarr_mod_domaines", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "modules", "dolibarr", "CN_module.py"))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        self.assertEqual(sorted(domaines - set(mod.DOMAINES_ECRAN)), [], "l'écran lit ces domaines, que lire_ecran refuse")
 
     def test_consulter_suffit_a_l_ecran_mais_pas_a_la_requete_libre(self):
         self.n.identite.creer("chef@x.fr", "Abcdefgh1!", superadmin=True)
