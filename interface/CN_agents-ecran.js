@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #13cffc
+// VERSION CN : 0.1.0  #b1a1da
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=13cffc ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=b1a1da ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -54,6 +54,8 @@
     tacheLancer: (id) => A("tache_lancer", { id: id }),
     retenus: (jours) => A("retenus_refuses", { jours: jours || 1 }),
     rapport: () => A("rapport_matin", {}),
+    mauvaisJour: (h) => A("mauvais_jour", { duree_h: h }),
+    mauvaisJourLever: () => A("mauvais_jour_lever"),
     defaire: (acte, raison) => A("defaire", { acte: acte, raison: raison || "" }),
     auditer: (jours) => A("auditer", { jours: jours || 7 }),
     journal: (acteur, n) => K.agir("journal.flux", { acteur: acteur || "", limit: n || 60, bruit: false }),
@@ -302,6 +304,14 @@
         (defais ? '<div class="barre" style="margin-top:8px"><button class="btn mini" data-df="' + esc(r.acte) + '" title="Rejoue le retour arrière de ce geste, une seule fois">Défaire</button><span class="note">Rejoue le retour arrière de ce geste, une seule fois.</span></div>' : '<p class="note">' + (r.issue === "faite" || r.defaisable === false ? "Ce geste ne se défait pas (ou l'a déjà été)." : "Ce geste n'a rien fait : il n'y a rien à défaire.") + "</p>");
     }
     // « Règles communes » : ce qui vaut pour tous les agents, et les deux réglages qui valent pour tous (le plafond global ; le reste attend son module)
+    const bilanMJ = (l) => ((l || []).length ? '<div class="liste">' + l.map((x) => '<div class="li"><div class="sp"><b>' + esc(nomAg(x.agent)) + '</b><div class="note">' + esc(x.capacite) + " · " + x.fois + " fois racontée" + (x.fois > 1 ? "s" : "") + " au lieu d\'être faite" + (x.fois > 1 ? "s" : "") + "</div></div></div>").join("") + "</div>" : '<p class="note">Rien n\'a été raconté à la place d\'un geste.</p>');
+    function mauvaisJourCarte(rg) {
+      const mj = (rg && rg.mauvais_jour) || {}, bil = S.bilanMJ;
+      return '<section class="carte"><h3>Le mauvais jour</h3><p class="note">Un seul bouton quand quelque chose te semble bizarre : tous les agents passent en « ' + esc(VOC.outils.raconter) + " » pendant une durée choisie, puis reviennent seuls à leurs réglages. Le bilan dit ce qu\'ils ont raconté au lieu de faire.</p>" +
+        (mj.actif ? '<div class="ag-ligne"><span class="g">En cours</span><b>depuis ' + esc(dateFr(mj.depuis)) + (mj.jusqua ? " · jusqu\'à " + esc(dateFr(mj.jusqua)) : " · jusqu\'à la levée") + '</b></div><div class="note" style="margin:6px 2px 2px"><b>Ce qu\'ils ont raconté depuis</b></div>' + bilanMJ(mj.raconte) + '<div class="ag-puces"><button class="btn" data-mj-lever="1">Lever le mauvais jour</button></div>' :
+          '<div class="ag-puces"><button class="btn" data-mj="1">1 heure</button><button class="btn" data-mj="24">24 heures</button><button class="btn" data-mj="0">Jusqu\'à ce que je lève</button></div>') +
+        (bil ? '<div class="note" style="margin:8px 2px 2px"><b>Bilan du dernier mauvais jour</b></div>' + bilanMJ(bil) : "") + "</section>";
+    }
     async function vMaison() {
       let c = null; try { c = await API.couts("", 1); } catch (e) { c = null; }
       let rg = null; try { rg = await API.regles(); } catch (e) { rg = null; }
@@ -316,7 +326,7 @@
         '<div class="ag-champs"><label class="ag-f"><span>Montant par jour (€)</span><input type="number" min="0.01" step="0.01" id="ag-gl-e" value="' + (glob ? glob.euros : "") + '"></label>' +
         '<label class="ag-f"><span>À l\'atteinte</span><select id="ag-gl-a">' + ACTIONS.map(([k, l]) => '<option value="' + k + '"' + (glob && glob.action === k ? " selected" : "") + ">" + esc(l) + "</option>").join("") + "</select></label></div>" +
         '<div class="ag-puces"><button class="btn pri" id="ag-gl-poser">Poser le plafond global</button>' + (glob ? '<button class="btn dng" id="ag-gl-lever">Lever</button>' : "") + "</div></section>" +
-        (rg ? '<section class="carte"><h3>Le ' + esc(VOC.palier.toLowerCase()) + ' par défaut</h3><p class="note">Le point de départ de tout outil qu\'un agent n\'a pas réglé. Chaque agent se règle ensuite outil par outil.</p><div class="seg" id="ag-rg-p" role="radiogroup" aria-label="Palier par défaut">' +
+        mauvaisJourCarte(rg) + (rg ? '<section class="carte"><h3>Le ' + esc(VOC.palier.toLowerCase()) + ' par défaut</h3><p class="note">Le point de départ de tout outil qu\'un agent n\'a pas réglé. Chaque agent se règle ensuite outil par outil.</p><div class="seg" id="ag-rg-p" role="radiogroup" aria-label="Palier par défaut">' +
           ["auto", "raconter"].map((k) => '<button data-rgp="' + k + '" role="radio" aria-checked="' + (rg.palier_defaut === k) + '" class="' + (rg.palier_defaut === k ? "on" : "") + '">' + esc(VOC.outils[k]) + "</button>").join("") + '</div><p class="note">« ' + esc(VOC.outils.raconter) + " » : l\'agent dit ce qu\'il ferait, sans le faire, tant que tu n\'as pas réglé l\'outil. Défaut prudent, capacité complète : rien n\'est interdit, tout est réglable.</p></section>" +
           '<section class="carte"><h3>Le dehors passe par un seul agent</h3><label class="ag-conf"><input type="checkbox" id="ag-rg-d"' + (rg.dehors_par_amizo ? " checked" : "") + '> Seul Amizo lit le dehors</label><p class="note">Seul Amizo lit le web, et il n\'a aucun outil qui sort. Cassandra et Itare, qui agissent, ne lisent jamais le dehors eux-mêmes : ils le lui demandent et reçoivent un résumé étiqueté « externe ». Une page piégée n\'atteint donc jamais un agent capable d\'agir.</p></section>' +
           '<section class="carte"><h3>L\'ordre du journal</h3><p class="note">Le journal des agents s\'ouvre sur le plus récent, ou sur le plus ancien pour relire une journée depuis son début.</p><div class="seg" id="ag-rg-o" role="radiogroup" aria-label="Ordre du journal">' +
@@ -538,7 +548,8 @@
         if (!S.admin && !["fiche", "conv", "boite", "journal"].includes(S.vue)) S.vue = "fiche";
         if (S.attente === undefined) { try { S.attente = ((await API.propositions()).propositions || []).filter((x) => S.admin || x.agent === "itare").length; } catch (e) { S.attente = null; } }
         const f = { equipe: vEquipe, fiche: vFiche, conv: vConv, boite: vBoite, journal: vJournal, auditeur: vAuditeur, maison: vMaison, modeles: vModeles }[S.vue];
-        html = '<div id="ag-vue" style="display:flex;flex-direction:column;gap:12px">' + await f() + "</div>";
+        const mj = (MEM.regles || {}).mauvais_jour;
+        html = '<div id="ag-vue" style="display:flex;flex-direction:column;gap:12px">' + (mj && mj.actif ? '<section class="carte" role="status" style="border-color:var(--warn,#b45309)"><div class="barre"><div class="sp"><b>Mauvais jour en cours</b><div class="note">Tous les agents racontent au lieu de faire' + (mj.jusqua ? " jusqu\'à " + esc(dateFr(mj.jusqua)) : " jusqu\'à ce que tu lèves") + ".</div></div>" + (S.admin ? '<button class="btn" data-mj-lever="1">Lever</button>' : "") + "</div></section>" : "") + await f() + "</div>";
       } catch (e) { html = '<div class="vide">' + esc((e && e.message) || e) + "</div>"; }
       if (moi !== dessin) return;                                                     // un dessin plus récent est parti : il écrira seul
       racine.innerHTML = html; brancher();
@@ -594,6 +605,8 @@
         await API.regler(S.agent, { limites: lim }); await recharger(true);
       }, "Limites enregistrées"));
       sur("#ag-pl-poser", "click", () => lancer(async () => { const e = parseFloat(racine.querySelector("#ag-pl-e").value); if (!(e > 0)) throw new Error("un montant positif est requis"); await API.plafond(S.agent, e, racine.querySelector("#ag-pl-a").value); await recharger(true); }, "Plafond posé"));
+      sur("[data-mj]", "click", (b) => lancer(async () => { if (!(await confirmer("Passer en mauvais jour ?", '<p class="note">Tous les agents racontent au lieu de faire, ' + (b.dataset.mj === "0" ? "jusqu\'à ce que tu lèves." : "pendant " + b.dataset.mj + " h, puis reviennent seuls.") + "</p>", "Passer en mauvais jour", true))) return; await API.mauvaisJour(Number(b.dataset.mj)); MEM.regles = null; S.bilanMJ = null; await dessiner(); }, "Mauvais jour posé"));
+      sur("[data-mj-lever]", "click", () => lancer(async () => { const r = await API.mauvaisJourLever(); S.bilanMJ = (r && (r.raconte || (r.mauvais_jour && r.mauvais_jour.raconte))) || []; MEM.regles = null; await dessiner(); }, "Mauvais jour levé"));
       sur("[data-rgp]", "click", (b) => lancer(async () => { await API.reglesRegler({ palier_defaut: b.dataset.rgp }); MEM.regles = null; await dessiner(); }, "Réglage posé"));
       sur("[data-rgo]", "click", (b) => lancer(async () => { await API.reglesRegler({ ordre_journal: b.dataset.rgo }); MEM.regles = null; await dessiner(); }, "Réglage posé"));
       sur("#ag-rg-d", "change", (c) => lancer(async () => { await API.reglesRegler({ dehors_par_amizo: c.checked }); MEM.regles = null; await dessiner(); }, "Réglage posé"));
