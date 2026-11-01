@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b56c22
+# VERSION CN : 0.1.0  #80e118
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b56c22 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=80e118 ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import base64
 import gzip
@@ -41,7 +41,7 @@ class FauxGestion:
     def __init__(self):
         self.journal, self.societe = [], "Maison Bohème"
         self.utilisateurs = {CLE_MANDAT: {"login": "cassandra", "admin": "0"}, CLE_DRISSE: {"login": "marple", "admin": "1"}, CLE_AMANDINE: {"login": "amandine", "admin": "0"}}
-        self.t = {c: {} for c in ("thirdparties", "invoices", "proposals", "projects", "donations", "members", "agendaevents", "subscriptions", "paiements", "contacts", "supplierinvoices", "products")}
+        self.t = {c: {} for c in ("thirdparties", "invoices", "proposals", "projects", "donations", "members", "agendaevents", "subscriptions", "paiements", "contacts", "supplierinvoices", "products", "orders", "supplierorders", "expensereports")}
         self.suivant = {c: 1 for c in self.t}
         self.paiements = {}                  # id de facture -> [ids de règlements]
         self.banques = {1: 1000.0, 2: 50.0}
@@ -111,6 +111,39 @@ class FauxGestion:
     def route(self, h, m, chemin, q, corps, cle):
         R = h._rep
         p = chemin.strip("/").split("/")
+        if chemin == "/setup/dictionary/expensereport_types":
+            return R(200, [{"id": "29", "code": "EX_KME", "label": "Frais kilométriques", "active": "1"}, {"id": "30", "code": "EX_OLD", "label": "Ancien", "active": "0"}])
+        if p[0] in ("supplierorders", "expensereports") or (p[0] == "supplierinvoices" and (len(p) == 1 and m == "POST" or p[2:3] in (["validate"], ["settodraft"]) or m == "DELETE")):
+            coll = p[0]
+            if len(p) == 1 and m == "POST":
+                base = {"supplierinvoices": "SI", "supplierorders": "PO", "expensereports": "(PROV"}[coll]
+                return R(200, self.nouveau(coll, dict(corps, statut="0", status=0, ref=base + "%d" % self.suivant[coll], **({"total_ttc": sum(float(l["total_ttc"]) for l in corps["lines"])} if coll == "expensereports" else {}))))
+            i = int(p[1]) if len(p) > 1 and p[1].isdigit() else None
+            if i not in self.t[coll]:
+                return R(404, {})
+            if len(p) == 2:
+                if m == "DELETE":
+                    del self.t[coll][i]
+                    return R(200, {"success": {}})
+                return R(200, dict(self.t[coll][i]))
+            etat = {"validate": "1" if coll != "expensereports" else "2", "approve": "2" if coll != "expensereports" else "5", "makeorder": "3", "settodraft": "0"}[p[2]]
+            if coll == "expensereports" and not isinstance(corps.get("notrigger"), int):
+                return R(400, {"error": {"code": 400, "message": "Bad Request: Invalid value specified for `notrigger`. Expecting integer value"}})
+            self.t[coll][i].update(statut=etat, status=int(etat))
+            return R(200, dict(self.t[coll][i]))
+        if p == ["orders"] and m == "POST":
+            return R(200, self.nouveau("orders", dict(corps, statut="0", ref="(PROV%d)" % self.suivant["orders"])))
+        if p[0] == "orders" and len(p) >= 2 and p[1].isdigit():
+            i = int(p[1])
+            if i not in self.t["orders"]:
+                return R(404, {})
+            if len(p) == 2:
+                if m == "DELETE":
+                    del self.t["orders"][i]
+                    return R(200, {"success": {}})
+                return R(200, dict(self.t["orders"][i]))
+            self.t["orders"][i]["statut"] = {"validate": "1", "settodraft": "0", "close": "3", "reopen": "1"}[p[2]]
+            return R(200, dict(self.t["orders"][i]))
         if chemin == "/status":
             return R(200, {"success": {"dolibarr_version": "23.0.2", "access_locked": "0"}})
         if chemin == "/users/info":
@@ -785,6 +818,92 @@ class GestionDolibarr(unittest.TestCase):
         r = pour("document_ajouter", {"objet": "factures", "id": i, "nom": "a.pdf", "donnees_b64": base64.b64encode(b"x").decode()})
         self.assertEqual(r["statut"], "refuse")
         self.assertIn("dolibarr.facturer", r["raison"])
+
+    def test_devis_commande_facture_se_suivent_et_se_defont(self):
+        t = self.faux.nouveau("thirdparties", {"name": "Cie Les Pierrots", "client": 1})
+        lignes = [{"desc": "Animation", "qty": 1, "subprice": 450, "tva_tx": 0}]
+        brouillon = self.faux.nouveau("proposals", {"socid": t, "lines": lignes, "statut": "1", "ref": "PR1"})
+        self.assertEqual(self.e("dolibarr.commande_creer", "humain", {"devis": brouillon})["statut"], "echec")                       # un devis non signé ne devient pas commande
+        signe = self.faux.nouveau("proposals", {"socid": t, "lines": lignes, "statut": "2", "ref": "PR2"})
+        c = self.e("dolibarr.commande_creer", "humain", {"devis": signe})
+        self.assertEqual(c["statut"], "faite", msg=str(c))
+        cid = c["resultat"]["id"]
+        self.assertEqual(self.e("dolibarr.facturer_commande", "humain", {"id": cid})["statut"], "echec")                              # une commande en brouillon ne se facture pas
+        self.assertEqual(self.e("dolibarr.commande", "humain", {"id": cid, "action": "livrer"})["statut"], "echec")                   # on valide avant de livrer
+        v = self.e("dolibarr.commande", "humain", {"id": cid, "action": "valider"})
+        self.assertEqual(v["statut"], "faite", msg=str(v))
+        self.assertEqual(self.faux.t["orders"][cid]["statut"], "1")
+        f = self.e("dolibarr.facturer_commande", "humain", {"id": cid})
+        self.assertEqual(f["statut"], "faite", msg=str(f))
+        facture = self.faux.t["invoices"][f["resultat"]["id"]]
+        self.assertEqual((facture["statut"], facture["lines"], facture["socid"]), ("0", lignes, t))
+        l = self.e("dolibarr.commande", "humain", {"id": cid, "action": "livrer"})
+        self.assertEqual(l["statut"], "faite", msg=str(l))
+        # chaque geste se défait, dans l'ordre inverse
+        self.retour("commande", l["resultat"])
+        self.assertEqual(self.faux.t["orders"][cid]["statut"], "1")
+        self.retour("facturer_commande", f["resultat"])
+        self.assertNotIn(f["resultat"]["id"], self.faux.t["invoices"])
+        self.retour("commande", v["resultat"])
+        self.assertEqual(self.faux.t["orders"][cid]["statut"], "0")
+        self.retour("commande_creer", c["resultat"])
+        self.assertNotIn(cid, self.faux.t["orders"])
+
+    def test_une_facture_fournisseur_se_prepare_se_valide_et_se_defait(self):
+        t = self.faux.nouveau("thirdparties", {"name": "Imprimerie", "fournisseur": 1})
+        ligne = [{"desc": "Affiches", "qty": 1, "subprice": 80, "tva_tx": 20}]
+        sans_ref = self.e("dolibarr.creer_brouillon", "humain", {"objet": "fournisseurs", "socid": t, "lignes": ligne})
+        self.assertEqual(sans_ref["statut"], "echec")                                                  # Dolibarr exige la réf. du fournisseur
+        r = self.e("dolibarr.creer_brouillon", "humain", {"objet": "fournisseurs", "socid": t, "lignes": ligne, "champs": {"ref_supplier": "F-2026-14", "date_echeance": "2026-12-15"}})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        fid = r["resultat"]["id"]
+        v = self.e("dolibarr.facture_fournisseur_valider", "humain", {"id": fid})
+        self.assertEqual(v["statut"], "faite", msg=str(v))
+        self.assertEqual(self.faux.t["supplierinvoices"][fid]["statut"], "1")
+        self.assertEqual(self.e("dolibarr.facture_fournisseur_valider", "humain", {"id": fid})["statut"], "echec")        # déjà validée
+        self.retour("facture_fournisseur_valider", v["resultat"])
+        self.assertEqual(self.faux.t["supplierinvoices"][fid]["statut"], "0")
+        self.retour("creer_brouillon", r["resultat"])
+        self.assertNotIn(fid, self.faux.t["supplierinvoices"])
+
+    def test_une_commande_fournisseur_avance_pas_a_pas_et_ne_se_defait_pas_par_l_api(self):
+        t = self.faux.nouveau("thirdparties", {"name": "Imprimerie", "fournisseur": 1})
+        r = self.e("dolibarr.creer_brouillon", "humain", {"objet": "commandes_fournisseurs", "socid": t, "lignes": [{"desc": "Scène", "qty": 1, "subprice": 300, "tva_tx": 0}]})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        oid = r["resultat"]["id"]
+        self.assertEqual(self.e("dolibarr.commande_fournisseur", "humain", {"id": oid, "action": "commander"})["statut"], "echec")      # on valide et on approuve d'abord
+        for action, etat in (("valider", "1"), ("approuver", "2"), ("commander", "3")):
+            x = self.e("dolibarr.commande_fournisseur", "humain", {"id": oid, "action": action})
+            self.assertEqual(x["statut"], "faite", msg=str(x))
+            self.assertEqual(self.faux.t["supplierorders"][oid]["statut"], etat)
+        with self.assertRaises(Exception):
+            self.retour("commande_fournisseur", x["resultat"])                                                                         # aucun retour par l'API
+
+    def test_une_note_de_frais_se_saisit_avec_ses_totaux_se_valide_et_se_defait(self):
+        o = self.e("dolibarr.frais_options", "humain", {})
+        self.assertEqual(o["statut"], "faite", msg=str(o))
+        self.assertEqual([x["id"] for x in o["resultat"]["types"]], [29])                                                              # le type inactif n'est pas proposé
+        self.assertEqual(set(o["resultat"]["utilisateurs"][0]), {"id", "login", "nom"})
+        self.assertNotIn("SECRET-A-NE-PAS-MONTRER", json.dumps(o))                                                                     # jamais de clé ni de mot de passe
+        args = {"auteur": 7, "debut": "2026-10-01", "fin": "2026-10-31", "type": 29, "note": "Bénévole",
+                "lignes": [{"desc": "Trajet aller-retour", "qty": 2, "subprice": 12.5, "tva_tx": 20, "date": "2026-10-12"}, {"desc": "Péage", "qty": 1, "subprice": 8, "tva_tx": 0}]}
+        r = self.e("dolibarr.frais_creer", "humain", args)
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        self.assertEqual(r["resultat"]["total"], 38.0)                                                                                  # 25 + 5 de TVA + 8
+        fid = r["resultat"]["id"]
+        for mauvais in (dict(args, fin="2026-09-30"), dict(args, lignes=[]), dict(args, lignes=[{"desc": "x", "qty": 0, "subprice": 5}]), dict(args, auteur="x")):
+            self.assertEqual(self.e("dolibarr.frais_creer", "humain", mauvais)["statut"], "echec")
+        self.assertEqual(self.e("dolibarr.frais_etat", "humain", {"id": fid, "action": "approuver"})["statut"], "echec")               # on valide d'abord
+        v = self.e("dolibarr.frais_etat", "humain", {"id": fid, "action": "valider"})
+        a = self.e("dolibarr.frais_etat", "humain", {"id": fid, "action": "approuver"})
+        self.assertEqual((v["statut"], a["statut"]), ("faite", "faite"), msg=str((v, a)))
+        self.assertEqual(self.faux.t["expensereports"][fid]["status"], 5)
+        self.retour("frais_etat", a["resultat"])
+        self.assertEqual(self.faux.t["expensereports"][fid]["status"], 2)                                                              # revient à « validée »
+        self.retour("frais_etat", v["resultat"])
+        self.assertEqual(self.faux.t["expensereports"][fid]["status"], 0)
+        self.retour("frais_creer", r["resultat"])
+        self.assertNotIn(fid, self.faux.t["expensereports"])
 
     def test_un_rib_se_verifie_se_range_et_se_retire(self):
         t = self.faux.nouveau("thirdparties", {"name": "Cie Les Pierrots", "fournisseur": 1})

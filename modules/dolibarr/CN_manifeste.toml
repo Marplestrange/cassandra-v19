@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #1de075
+# VERSION CN : 0.4.1  #cedaca
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=1de075 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=cedaca ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -527,6 +527,89 @@ risque = "lecture"
 droit = "consulter"
 
 [[capacites]]
+id = "commande_creer"
+libelle = "Préparer une commande (brouillon) depuis un devis signé : l'étape entre le devis et la facture"
+risque = "moyen"
+droit = "facturer"
+perimetre = ["un devis signé", "brouillon, jamais validé ici"]
+preuve = "relire la commande : brouillon, mêmes lignes, même tiers"
+retour = "supprimer ce brouillon"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "commande"
+libelle = "Valider une commande, ou la marquer livrée"
+risque = "moyen"
+droit = "facturer"
+perimetre = ["valider : brouillon vers validée", "livrer : validée vers livrée"]
+preuve = "relire la commande : le statut a changé"
+retour = "remettre la commande dans son statut d'avant (brouillon, ou validée)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "facturer_commande"
+libelle = "Préparer une facture (brouillon) depuis une commande validée"
+risque = "moyen"
+droit = "facturer"
+perimetre = ["une commande validée", "brouillon, jamais validé ici"]
+preuve = "relire la facture : brouillon, mêmes lignes, même tiers"
+retour = "supprimer ce brouillon"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "facture_fournisseur_valider"
+libelle = "Valider une facture fournisseur en brouillon (elle prend son numéro)"
+risque = "moyen"
+droit = "valider"
+perimetre = ["une facture fournisseur en brouillon"]
+preuve = "relire la facture : elle est validée"
+retour = "remettre la facture en brouillon (refusé par Dolibarr si elle est payée ou comptabilisée)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "commande_fournisseur"
+libelle = "Faire avancer une commande fournisseur : valider, approuver, puis la passer au fournisseur"
+risque = "eleve"
+droit = "tresorerie"
+perimetre = ["valider : brouillon vers validée", "approuver : validée vers approuvée", "commander : approuvée vers passée"]
+preuve = "relire la commande : le statut a changé"
+retour = "aucun par l'API de Dolibarr : une commande validée, approuvée ou passée se défait dans Dolibarr"
+paliers = ["raconter"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "frais_options"
+libelle = "Lire ce qu'il faut pour saisir une note de frais : les types de frais et les utilisateurs actifs de Dolibarr (identifiant, identifiant de connexion, nom : rien d'autre)"
+risque = "lecture"
+droit = "tresorerie"
+
+[[capacites]]
+id = "frais_creer"
+libelle = "Saisir une note de frais en brouillon pour un utilisateur de Dolibarr (par exemple un bénévole) : période, type de frais, lignes avec leur TVA"
+risque = "moyen"
+droit = "tresorerie"
+perimetre = ["un utilisateur actif de Dolibarr", "brouillon, jamais validé ici", "totaux calculés ligne par ligne"]
+preuve = "relire la note : brouillon, mêmes lignes, même total, même auteur"
+retour = "supprimer ce brouillon"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "frais_etat"
+libelle = "Valider une note de frais, puis l'approuver"
+risque = "moyen"
+droit = "valider"
+perimetre = ["valider : brouillon vers validée", "approuver : validée vers approuvée"]
+preuve = "relire la note : le statut a changé"
+retour = "remettre la note dans son statut d'avant"
+paliers = ["raconter"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
 id = "rib_lister"
 libelle = "Lire les coordonnées bancaires (RIB, IBAN, BIC) d'un tiers"
 risque = "lecture"
@@ -676,6 +759,18 @@ domaine = "gestion"
 gabarit = "libre"
 
 [[ecrans]]
+id = "d_commandes"
+libelle = "Commandes"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
+id = "d_frais"
+libelle = "Notes de frais"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
 id = "d_factures"
 libelle = "Factures"
 domaine = "gestion"
@@ -815,6 +910,16 @@ icone = "scroll"
 droit = "consulter"
 
 [[menus]]
+id = "m_d_commandes"
+libelle = "Commandes"
+ecran = "d_commandes"
+parent = "dolibarr"
+ordre = 35
+role = "utilisateur"
+icone = "scroll"
+droit = "consulter"
+
+[[menus]]
 id = "m_d_factures"
 libelle = "Factures"
 ecran = "d_factures"
@@ -823,6 +928,16 @@ ordre = 40
 role = "utilisateur"
 icone = "archive"
 droit = "consulter"
+
+[[menus]]
+id = "m_d_frais"
+libelle = "Notes de frais"
+ecran = "d_frais"
+parent = "dolibarr"
+ordre = 65
+role = "utilisateur"
+icone = "scroll"
+droit = "tresorerie"
 
 [[menus]]
 id = "m_d_produits"

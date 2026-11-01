@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #864f20
+// VERSION CN : 0.1.0  #ba0749
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_ecran (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=864f20 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=ba0749 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -167,6 +167,8 @@
     pages: {
       afaire: ["À faire", "<p>Ce qui attend un geste : factures en retard à relancer, brouillons à valider, devis signés à facturer, dons à valider.</p><p>Tout est lu dans Dolibarr à l'instant ; chaque bouton ouvre une fenêtre qui te montre ce qui va être écrit avant de le faire.</p>"],
       factures: ["Factures", "<p>Les factures clients de Dolibarr, les plus récentes d'abord. Les colonnes sont celles de la liste de Dolibarr.</p><p>Clique une facture pour la valider, l'encaisser, la relancer, créer un avoir ou voir son PDF. <b>Valider</b> donne le numéro légal et la fige : cela s'inscrit au journal inaltérable et ne se défait pas.</p>"],
+      frais: ["Notes de frais", "<p>Les notes de frais de Dolibarr, par exemple celles d’un bénévole. « + Note de frais » saisit un <b>brouillon</b> (le total se calcule ligne par ligne, avec la TVA) ; <b>Valider</b>, puis <b>Approuver</b>, font avancer la note. Le remboursement se saisit dans Dolibarr. Chaque geste se défait.</p>"],
+      commandes: ["Commandes", "<p>L’étape entre le <b>devis signé</b> et la <b>facture</b>. « Créer la commande » (depuis un devis signé) prépare un brouillon ; <b>Valider</b> lui donne son numéro ; <b>Marquer livrée</b> la clôt ; <b>Facturer</b> prépare la facture en brouillon avec ses lignes. Chaque geste se défait.</p>"],
       devis: ["Devis", "<p>Les propositions commerciales de Dolibarr. Un devis passe de brouillon à validé, puis à signé, puis se transforme en facture (en brouillon : rien n'est validé à ta place).</p>"],
       tiers: ["Tiers", "<p>Les sociétés, associations et particuliers de Dolibarr : clients, prospects et fournisseurs. La fiche reprend exactement celle de Dolibarr, avec ses règles.</p><p>Les colonnes « Factures » et « Dû » sont un ajout de Cassandra.</p>"],
       contacts: ["Contacts", "<p>Les personnes rattachées aux tiers dans Dolibarr. Les contacts de Cassandra sont dans « Contacts de Cassandra » : tu choisis lesquels envoyer ici.</p>"],
@@ -208,7 +210,7 @@
   }
   // Quel geste demande quel droit de Paramètres › Droits (module Dolibarr). Ce sont ceux des capacités que le geste appelle : le serveur refuse de toute façon, l'écran ne fait que cacher ce que le compte ne peut pas faire.
   const DROIT_GESTE = { valider: "valider", donvalider: "valider", projet: "valider", encaisser: "facturer", relancer: "facturer", avoir: "facturer", nfacture: "facturer", ndevis: "facturer", devis: "facturer", facturer: "facturer",
-    ntiers: "tiers", ncontact: "tiers", nprod: "tiers", prix: "tiers", nprojet: "tiers", envoyerp: "tiers", envoyerc: "tiers", modifl: "tiers", detacher: "tiers", ndon: "dons", cotis: "dons", pjajout: "facturer", rib: "tresorerie", ribajout: "tresorerie", virement: "tresorerie", payersup: "tresorerie", libre: "libre" };
+    ntiers: "tiers", ncontact: "tiers", nprod: "tiers", prix: "tiers", nprojet: "tiers", envoyerp: "tiers", envoyerc: "tiers", modifl: "tiers", detacher: "tiers", ndon: "dons", cotis: "dons", pjajout: "facturer", cmdcreer: "facturer", cmd: "facturer", cmdfacturer: "facturer", ndfourn: "facturer", ncmdf: "facturer", ffvalider: "valider", cmdf: "tresorerie", nfrais: "tresorerie", frais: "valider", rib: "tresorerie", ribajout: "tresorerie", virement: "tresorerie", payersup: "tresorerie", libre: "libre" };
   const LIB_DROIT = { valider: "Valider", facturer: "Facturer et encaisser", tiers: "Gérer les tiers, contacts, produits et projets", dons: "Gérer les dons et les adhérents", tresorerie: "Trésorerie", libre: "Requête libre" };
   const peutGeste = (a) => { const d = DROIT_GESTE[a]; return !d || K.peut("dolibarr." + d); };
   const manque = (a) => "Il te manque le droit « " + LIB_DROIT[DROIT_GESTE[a]] + " » (Paramètres › Droits)";
@@ -226,6 +228,8 @@
     d_tiers: "tiers",
     d_contacts: "contacts",
     d_devis: "devis",
+    d_commandes: "commandes",
+    d_frais: "frais",
     d_factures: "factures",
     d_produits: "produits",
     d_fournisseurs: "fournisseurs",
@@ -250,6 +254,7 @@
       tiers: async () => liste(await lire("/thirdparties", PAGE + "&properties=id,name,name_alias,code_client,code_fournisseur,zip,town,country_code,phone,email,client,fournisseur,status")),
       contacts: async () => liste(await lire("/contacts", PAGE + "&properties=id,civility_code,lastname,firstname,socid,poste,phone_pro,phone_mobile,email,statut")),
       factures: async () => liste(await lire("/invoices", PAGE + "&properties=id,ref,ref_client,socid,date,date_lim_reglement,total_ht,total_tva,total_ttc,totalpaid,remaintopay,statut,paye,type")),
+      commandes: async () => liste(await lire("/orders", PAGE + "&properties=id,ref,ref_client,socid,date,date_commande,total_ht,total_ttc,statut,billed")),
       devis: async () => liste(await lire("/proposals", PAGE + "&properties=id,ref,ref_client,socid,date,fin_validite,total_ht,total_ttc,statut")),
       projets: async () => liste(await lire("/projects", PAGE + "&properties=id,ref,title,socid,statut,public,date_start,date_end")),
       produits: async () => liste(await lire("/products", PAGE + "&properties=id,ref,label,type,price,tva_tx,status,status_buy,barcode")),
@@ -264,6 +269,12 @@
       cp: async () => liste((await agir("projets.lister")).projets),
       cc: async () => liste((await agir("contacts.lister", { limite: 200 })).contacts),
       liens: async () => liste(await agir("dolibarr.liens")),
+      cf: async () => liste(await lire("/supplierorders", PAGE + "&properties=id,ref,ref_supplier,socid,date,date_livraison,total_ht,total_ttc,statut")),
+      frais: async () => {
+        let o = { utilisateurs: [] }; try { o = await frais(); } catch (e) { /* sans le droit : on affiche le numéro de l'utilisateur */ }
+        S.fraisU = {}; o.utilisateurs.forEach((u) => { S.fraisU[String(u.id)] = u.nom || u.login; });
+        return liste(await lire("/expensereports", PAGE + "&properties=id,ref,fk_user_author,date_debut,date_fin,total_ht,total_ttc,status,fk_statut"));
+      },
       sup: async () => liste(await lire("/supplierinvoices", PAGE + "&properties=id,ref,ref_supplier,socid,date,date_echeance,total_ht,total_ttc,statut,paye")),
       inst: async () => {
         const [r, m, st] = await Promise.all([agir("dolibarr.resume"), agir("dolibarr.modules"), agir("dolibarr.statut")]);
@@ -281,7 +292,7 @@
       types: async () => liste(await lire("/members/types", "limit=100")),
       banques: async () => { const l = liste(await lire("/bankaccounts", "limit=100&properties=id,label,clos")); await Promise.all(l.map(async (b) => { try { b.solde = Number((await lire("/bankaccounts/" + b.id + "/balance")) || 0); } catch (e) { b.solde = null; } })); return l; },
     };
-    const BESOIN = { afaire: ["factures", "devis", "dons", "tiers"], factures: ["factures", "tiers", "banques"], devis: ["devis", "tiers"], tiers: ["tiers", "factures"], contacts: ["contacts", "tiers"], banque: ["banques"], dons: ["dons"], adherents: ["adherents", "types"], projets: ["projets"], cprojets: ["cp", "liens", "projets"], ccontacts: ["cc", "liens", "tiers"], produits: ["produits"], fournisseurs: ["sup", "tiers", "banques"], instance: ["inst"], capacites: ["cat", "rgl"], comptes: ["cpts"] };
+    const BESOIN = { afaire: ["factures", "devis", "dons", "tiers"], factures: ["factures", "tiers", "banques"], devis: ["devis", "tiers"], commandes: ["commandes", "tiers"], tiers: ["tiers", "factures"], contacts: ["contacts", "tiers"], banque: ["banques"], dons: ["dons"], adherents: ["adherents", "types"], projets: ["projets"], cprojets: ["cp", "liens", "projets"], ccontacts: ["cc", "liens", "tiers"], produits: ["produits"], fournisseurs: ["sup", "cf", "tiers", "banques"], frais: ["frais"], instance: ["inst"], capacites: ["cat", "rgl"], comptes: ["cpts"] };
     async function charger(forcer) {
       await K.droits();
       S.err = ""; const vus = BESOIN[S.onglet] || [];
@@ -332,10 +343,25 @@
           table(["Réf.", "Réf. client", "Date facture", "Date d'échéance", "Tiers", "Montant HT", "Montant TVA", "Montant TTC", "Reçu", "Reste à payer", "Statut"], F.map((x) => '<tr class="clk" data-a="fiche" data-p="' + x.id + '"><td class="num"><b>' + esc(x.ref) + '</b></td><td class="num">' + esc(x.ref_client || "") + "</td><td>" + jour(x.date) + "</td><td>" + (String(x.statut) === "1" ? jour(x.date_lim_reglement) : "—") + "</td><td>" + esc(nomTiers(x.socid)) + '</td><td class="num">' + eur(x.total_ht) + '</td><td class="num">' + eur(x.total_tva) + '</td><td class="num">' + eur(x.total_ttc) + '</td><td class="num">' + (Number(x.totalpaid) ? eur(x.totalpaid) : "—") + '</td><td class="num">' + (ouverte(x) ? eur(x.remaintopay) : "—") + "</td><td>" + etatF(x) + "</td></tr>")) +
           (S.d.factures && S.d.factures.length >= 100 ? '<div class="note">100 lignes affichées : les plus récentes.</div>' : "") + "</div>";
       },
+      frais() {
+        const L = { "0": "Brouillon", "2": "Validée", "4": "Annulée", "5": "Approuvée", "6": "Payée", "99": "Refusée" }, D = filtrer(S.d.frais, "frais");
+        return '<div class="carte">' + barre("frais", btn("+ Note de frais", "nfrais", "", "pri")) + table(["Réf.", "Utilisateur", "Du", "Au", "Montant HT", "Montant TTC", "Statut", ""], D.map((e) => {
+          const s = String(e.status != null ? e.status : e.fk_statut), b = s === "0" ? btn("Valider", "frais", e.id + "|valider") : s === "2" ? btn("Approuver", "frais", e.id + "|approuver", "pri") : "";
+          return '<tr><td class="num"><b>' + esc(e.ref) + "</b></td><td>" + esc((S.fraisU || {})[String(e.fk_user_author)] || "Utilisateur " + e.fk_user_author) + "</td><td>" + jour(e.date_debut) + "</td><td>" + jour(e.date_fin) + '</td><td class="num">' + eur(e.total_ht) + '</td><td class="num">' + eur(e.total_ttc) + "</td><td>" + pill(L[s] || s, s === "5" || s === "6" ? "ok" : "") + "</td><td>" + b + "</td></tr>";
+        })) + '<div class="note">Le remboursement d’une note approuvée se saisit dans Dolibarr (fiche de la note, « Payer »).</div></div>';
+      },
+      commandes() {
+        const L = { "-1": "Annulée", "0": "Brouillon", "1": "Validée", "2": "En cours", "3": "Livrée" }, D = filtrer(S.d.commandes, "commandes");
+        return '<div class="carte">' + barre("commandes", "") + table(["Réf.", "Réf. client", "Tiers", "Date", "Montant HT", "Montant TTC", "Statut", ""], D.map((c) => {
+          const s = String(c.statut), facturee = String(c.billed) === "1";
+          const b = s === "0" ? btn("Valider", "cmd", c.id + "|valider") : (s === "1" || s === "2" || s === "3") ? (s === "1" ? btn("Marquer livrée", "cmd", c.id + "|livrer") : "") + (facturee ? "" : btn("Facturer", "cmdfacturer", c.id, "pri")) : "";
+          return "<tr><td class=\"num\"><b>" + esc(c.ref) + "</b></td><td class=\"num\">" + esc(c.ref_client || "") + "</td><td>" + esc(nomTiers(c.socid)) + "</td><td>" + jour(c.date_commande || c.date) + '</td><td class="num">' + eur(c.total_ht) + '</td><td class="num">' + eur(c.total_ttc) + "</td><td>" + pill(L[s] || s, s === "3" ? "ok" : "") + (facturee ? " " + pill("Facturée", "ok") : "") + "</td><td>" + b + "</td></tr>";
+        })) + '<div class="note">Les commandes se préparent depuis un devis signé (page Devis, « Créer la commande »).</div></div>';
+      },
       devis() {
         const L = ["Brouillon", "Ouvert", "Signé", "Refusé", "Facturé"], D = filtrer(S.d.devis, "devis");
         return '<div class="carte">' + barre("devis", btn("+ Nouveau devis", "ndevis", "", "pri")) + table(["Réf.", "Réf. client", "Tiers", "Date", "Fin de validité", "Montant HT", "Montant TTC", "Statut", ""], D.map((d) => {
-          const s = String(d.statut); const b = s === "0" ? btn("Valider", "devis", d.id + "|valider") : s === "1" ? btn("Marquer signé", "devis", d.id + "|signer") + btn("Refusé", "devis", d.id + "|refuser") : s === "2" ? btn("Facturer", "facturer", d.id, "pri") : "";
+          const s = String(d.statut); const b = s === "0" ? btn("Valider", "devis", d.id + "|valider") : s === "1" ? btn("Marquer signé", "devis", d.id + "|signer") + btn("Refusé", "devis", d.id + "|refuser") : s === "2" ? btn("Créer la commande", "cmdcreer", d.id, "pri") + btn("Facturer", "facturer", d.id) : "";
           return "<tr class=\"clk\" data-a=\"fichedevis\" data-p=\"" + d.id + "\"><td class=\"num\"><b>" + esc(d.ref) + "</b></td><td class=\"num\">" + esc(d.ref_client || "") + "</td><td>" + esc(nomTiers(d.socid)) + "</td><td>" + jour(d.date) + "</td><td>" + jour(d.fin_validite) + '</td><td class="num">' + eur(d.total_ht) + '</td><td class="num">' + eur(d.total_ttc) + "</td><td>" + pill(L[Number(s)] || "Annulé", s === "2" ? "ok" : "") + "</td><td>" + b + "</td></tr>";
         })) + "</div>";
       },
@@ -384,7 +410,12 @@
       },
       fournisseurs() {
         const F = filtrer(S.d.sup, "fournisseurs");
-        return '<div class="carte">' + barre("fournisseurs", "") + table(["Réf.", "Réf. fournisseur", "Fournisseur", "Date", "Date d'échéance", "Montant HT", "Montant TTC", "Statut", ""], F.map((f) => '<tr><td class="num"><b>' + esc(f.ref) + '</b></td><td class="num">' + esc(f.ref_supplier || "") + "</td><td>" + esc(nomTiers(f.socid)) + "</td><td>" + jour(f.date) + "</td><td>" + jour(f.date_echeance) + '</td><td class="num">' + eur(f.total_ht) + '</td><td class="num">' + eur(f.total_ttc) + "</td><td>" + (String(f.paye) === "1" || String(f.statut) === "2" ? pill("Payée", "ok") : String(f.statut) === "0" ? pill("Brouillon") : pill("À payer", "al")) + "</td><td>" + (String(f.statut) === "1" && String(f.paye) !== "1" ? btn("Payer", "payersup", f.id, "pri") : "") + "</td></tr>")) + '<div class="note">Pour collecter les factures reçues par courriel, le module emailcollector de Dolibarr doit être actif.</div></div>';
+        const LC = { "-1": "Annulée", "0": "Brouillon", "1": "Validée", "2": "Approuvée", "3": "Commandée", "4": "Reçue en partie", "5": "Reçue", "6": "Annulée", "7": "Annulée", "9": "Refusée" }, CF = filtrer(S.d.cf, "fournisseurs");
+        const cmdf = '<div class="carte" style="margin-top:12px"><div class="barre2"><h3 style="flex:1">Commandes fournisseurs</h3>' + btn("+ Commande fournisseur", "ncmdf", "") + "</div>" + (CF.length ? table(["Réf.", "Réf. fournisseur", "Fournisseur", "Date", "Montant HT", "Montant TTC", "Statut", ""], CF.map((c) => {
+          const s = String(c.statut), b = s === "0" ? btn("Valider", "cmdf", c.id + "|valider") : s === "1" ? btn("Approuver", "cmdf", c.id + "|approuver") : s === "2" ? btn("Passer commande", "cmdf", c.id + "|commander", "pri") : "";
+          return '<tr><td class="num"><b>' + esc(c.ref) + '</b></td><td class="num">' + esc(c.ref_supplier || "") + "</td><td>" + esc(nomTiers(c.socid)) + "</td><td>" + jour(c.date) + '</td><td class="num">' + eur(c.total_ht) + '</td><td class="num">' + eur(c.total_ttc) + "</td><td>" + pill(LC[s] || s, s === "3" ? "ok" : "") + "</td><td>" + b + "</td></tr>";
+        })) : '<div class="note">Aucune commande fournisseur.</div>') + '<div class="note">Valider, approuver et passer commande ne se défont pas par l’API de Dolibarr : à défaire dans Dolibarr.</div></div>';
+        return '<div class="carte">' + barre("fournisseurs", btn("+ Facture fournisseur", "ndfourn", "", "pri")) + table(["Réf.", "Réf. fournisseur", "Fournisseur", "Date", "Date d'échéance", "Montant HT", "Montant TTC", "Statut", ""], F.map((f) => '<tr><td class="num"><b>' + esc(f.ref) + '</b></td><td class="num">' + esc(f.ref_supplier || "") + "</td><td>" + esc(nomTiers(f.socid)) + "</td><td>" + jour(f.date) + "</td><td>" + jour(f.date_echeance) + '</td><td class="num">' + eur(f.total_ht) + '</td><td class="num">' + eur(f.total_ttc) + "</td><td>" + (String(f.paye) === "1" || String(f.statut) === "2" ? pill("Payée", "ok") : String(f.statut) === "0" ? pill("Brouillon") : pill("À payer", "al")) + "</td><td>" + (String(f.statut) === "0" ? btn("Valider", "ffvalider", f.id) : "") + (String(f.statut) === "1" && String(f.paye) !== "1" ? btn("Payer", "payersup", f.id, "pri") : "") + "</td></tr>")) + '<div class="note">Pour collecter les factures reçues par courriel, le module emailcollector de Dolibarr doit être actif.</div></div>' + cmdf;
       },
       instance() {
         const i = S.d.inst || { r: {}, m: [], st: {} }, c = i.r.comptes || {}, imp = i.r.impayees || {};
@@ -417,7 +448,7 @@
         return '<div class="carte"><h3>Requête libre</h3><div class="note">Tout le catalogue de Dolibarr : par exemple <span class="mono">GET /thirdparties/12</span> ou <span class="mono">PUT /products/3 {"price": 12}</span>. Les secrets sont masqués ; une suppression passe par la corbeille du module.</div><div class="barre2"><input class="in mono" id="dlb-req" style="flex:1 1 320px" value="' + esc(S.libre || "GET /thirdparties?limit=5") + '"><button class="btn pri" data-a="libre">Lancer</button></div>' + (S.libreRep ? '<pre class="code">' + esc(typeof S.libreRep === "string" ? S.libreRep : JSON.stringify(S.libreRep, null, 1)) + "</pre>" : "") + "</div>";
       },
     };
-    const ONGLETS = [["afaire", "À faire"], ["factures", "Factures"], ["devis", "Devis"], ["tiers", "Tiers"], ["contacts", "Contacts"], ["banque", "Banque"], ["dons", "Dons"], ["adherents", "Adhérents"], ["projets", "Projets"], ["cprojets", "Projets de Cassandra"], ["ccontacts", "Contacts de Cassandra"], ["produits", "Produits"], ["fournisseurs", "Fournisseurs"], ["itare", "Itare"], ["capacites", "Capacités"], ["comptes", "Comptes"], ["instance", "Instance"], ["acces", "Mon accès"], ["libre", "Requête libre"]];
+    const ONGLETS = [["afaire", "À faire"], ["factures", "Factures"], ["devis", "Devis"], ["commandes", "Commandes"], ["tiers", "Tiers"], ["contacts", "Contacts"], ["banque", "Banque"], ["dons", "Dons"], ["adherents", "Adhérents"], ["projets", "Projets"], ["cprojets", "Projets de Cassandra"], ["ccontacts", "Contacts de Cassandra"], ["produits", "Produits"], ["fournisseurs", "Fournisseurs"], ["frais", "Notes de frais"], ["itare", "Itare"], ["capacites", "Capacités"], ["comptes", "Comptes"], ["instance", "Instance"], ["acces", "Mon accès"], ["libre", "Requête libre"]];
     function dessiner() {
       const foc = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.q : null, pos = foc ? document.activeElement.selectionStart : 0;
       racine.innerHTML = K.titre((ONGLETS.find((o) => o[0] === S.onglet) || ["", "Dolibarr"])[1], "Dolibarr · chaque geste est relu, journalisé et défaisable.") + (AIDE.pages[S.onglet] ? '<div class="ib-page">' + ib("À quoi sert cette page ?", "<p><b>" + AIDE.pages[S.onglet][0] + "</b></p>" + AIDE.pages[S.onglet][1]) + "</div>" : "") +
@@ -496,6 +527,15 @@
     SCHEMAS.rib = { nom: "rib", sections: [["Compte bancaire", [
       { k: "label", l: "Nom du compte", d: "Compte principal", req: 1 }, { k: "titulaire", l: "Titulaire du compte" }, { k: "banque", l: "Banque" },
       { k: "iban", l: "IBAN", ph: "FR76 3000 6000 0112 3456 7890 189", req: 1 }, { k: "bic", l: "BIC" }, { k: "defaut", l: "Compte par défaut", t: "select", o: [["0", "Non"], ["1", "Oui"]], d: "0" }]]] };
+    SCHEMAS.achatf = { objet: "fournisseurs", nom: "facture fournisseur", sections: [
+      ["Facture fournisseur", [{ k: "socid", l: "Fournisseur", t: "select", dic: "fournisseurs", req: 1 }, { k: "ref_supplier", l: "Réf. fournisseur", req: 1 }, { k: "date", l: "Date", t: "date", d: AUJ, req: 1 }, { k: "date_echeance", l: "Date d'échéance", t: "date" }]],
+      ["Lignes", [LIGNES]], ["Notes", [{ k: "note_private", l: "Note privée", t: "area", large: 1 }]]] };
+    SCHEMAS.achatc = { objet: "commandes_fournisseurs", nom: "commande fournisseur", sections: [
+      ["Commande fournisseur", [{ k: "socid", l: "Fournisseur", t: "select", dic: "fournisseurs", req: 1 }, { k: "ref_supplier", l: "Réf. fournisseur" }, { k: "date", l: "Date", t: "date", d: AUJ, req: 1 }, { k: "date_livraison", l: "Livraison souhaitée", t: "date" }]],
+      ["Lignes", [LIGNES]], ["Notes", [{ k: "note_private", l: "Note privée", t: "area", large: 1 }]]] };
+    SCHEMAS.frais = { nom: "note de frais", sections: [
+      ["Note de frais", [{ k: "auteur", l: "Pour (utilisateur Dolibarr)", t: "select", dic: "fraisusers", req: 1 }, { k: "type", l: "Type de frais", t: "select", dic: "fraistypes", req: 1 }, { k: "debut", l: "Du", t: "date", d: AUJ, req: 1 }, { k: "fin", l: "Au", t: "date", d: AUJ, req: 1 }]],
+      ["Lignes", [LIGNES]], ["Notes", [{ k: "note", l: "Note", t: "area", large: 1 }]]] };
     SCHEMAS.cotisation = { nom: "cotisation", sections: [["Cotisation", [
       { k: "debut", l: "Date de début de cotisation", t: "date", d: AUJ, req: 1 }, { k: "fin", l: "Date de fin de cotisation", t: "date", d: String(new Date().getFullYear() + 1) + AUJ.slice(4) }, { k: "montant", l: "Montant", t: "number", d: "15", req: 1 }, { k: "libelle", l: "Libellé", d: "Cotisation", large: 1 }]]] };
     SCHEMAS.factures = { objet: "factures", nom: "facture", sections: DOC("Facture", [{ k: "date_lim_reglement", l: "Date d'échéance", t: "date" }, { k: "fk_account", l: "Compte bancaire", t: "select", dic: "comptes" }]) };
@@ -518,6 +558,7 @@
       ["Notes", [{ k: "note_public", l: "Note publique", t: "area", large: 1 }, { k: "note_private", l: "Note privée", t: "area", large: 1 }]]] };
     // Les listes de Dolibarr (dictionnaires), lues une fois dans l'instance : [valeur, libellé].
     const DICO = { cache: {} };
+    const frais = async () => DICO.fr || (DICO.fr = await agir("dolibarr.frais_options"));
     const dico = async (nom, pays) => {
       const cle = nom + "|" + (pays || ""); if (DICO.cache[cle]) return DICO.cache[cle];
       let l = [];
@@ -535,6 +576,9 @@
         else if (nom === "produits") l = liste(await lire("/products", "limit=200&sortfield=t.ref&sortorder=ASC&properties=id,ref,label,price,tva_tx")).map((x) => [String(x.id), x.ref + " — " + x.label, x]);
         else if (nom === "civilites") l = liste(await lire("/setup/dictionary/civilities", "limit=100")).map((x) => [String(x.code), x.label]);
         else if (nom === "modescode") l = liste(await lire("/setup/dictionary/payment_types", "limit=100")).filter((x) => ["VIR", "CHQ", "LIQ", "CB", "PRE"].includes(String(x.code).toUpperCase())).map((x) => [String(x.code).toUpperCase(), x.label || x.libelle]);
+        else if (nom === "fournisseurs") l = liste(await lire("/thirdparties", "limit=500&sortfield=t.nom&sortorder=ASC&properties=id,name&sqlfilters=(t.fournisseur:=:1)")).map((x) => [String(x.id), x.name]);
+        else if (nom === "fraisusers") l = (await frais()).utilisateurs.map((u) => [String(u.id), (u.nom || u.login) + " (" + u.login + ")"]);
+        else if (nom === "fraistypes") l = (await frais()).types.map((t) => [String(t.id), t.label]);
         else if (nom === "devises") l = liste(await lire("/setup/dictionary/currencies", "limit=500")).map((x) => [String(x.code_iso), x.code_iso + " — " + x.label]);
       } catch (e) { l = []; }
       l = nom === "tva" || nom === "modescode" ? l : [["", ""]].concat(l.filter((o) => o[0] !== ""));
@@ -627,6 +671,15 @@
       nfacture: async () => { if (await formulaire("Nouvelle facture (brouillon)", SCHEMAS.factures, { date: AUJ }, async (c) => { await agir("dolibarr.creer_brouillon", { objet: "factures", socid: Number(c.socid), lignes: c.lines, champs: extras(c) }); }, "Créer le brouillon")) { K.dire("Brouillon créé"); S.d = {}; await charger(true); } },
       ndevis: async () => { if (await formulaire("Nouveau devis (brouillon)", SCHEMAS.devis, { date: AUJ }, async (c) => { await agir("dolibarr.creer_brouillon", { objet: "devis", socid: Number(c.socid), lignes: c.lines, champs: extras(c) }); }, "Créer le brouillon")) { K.dire("Devis créé"); S.d = {}; await charger(true); } },
       devis: async (p) => { const [id, action] = p.split("|"); if (await modale("Devis : " + action, "<p>Le statut du devis change ; cela se défait (retour en brouillon).</p>", "Faire")) await fait("dolibarr.devis", { id: Number(id), action: action }, "Devis mis à jour"); },
+      ndfourn: async () => { if (await formulaire("Nouvelle facture fournisseur (brouillon)", SCHEMAS.achatf, { date: AUJ }, async (c) => { await agir("dolibarr.creer_brouillon", { objet: "fournisseurs", socid: Number(c.socid), lignes: c.lines, champs: extras(c) }); }, "Créer le brouillon")) { K.dire("Facture fournisseur créée"); S.d = {}; await charger(true); } },
+      ncmdf: async () => { if (await formulaire("Nouvelle commande fournisseur (brouillon)", SCHEMAS.achatc, { date: AUJ }, async (c) => { await agir("dolibarr.creer_brouillon", { objet: "commandes_fournisseurs", socid: Number(c.socid), lignes: c.lines, champs: extras(c) }); }, "Créer le brouillon")) { K.dire("Commande fournisseur créée"); S.d = {}; await charger(true); } },
+      ffvalider: async (p) => { if (await modale("Valider la facture fournisseur", "<p>Elle prend son numéro. Cela se défait tant qu’elle n’est ni payée ni comptabilisée.</p>", "Valider")) await fait("dolibarr.facture_fournisseur_valider", { id: Number(p) }, "Facture fournisseur validée"); },
+      cmdf: async (p) => { const [id, action] = p.split("|"), dit = { valider: "Valider la commande fournisseur", approuver: "Approuver la commande fournisseur", commander: "Passer la commande au fournisseur" }[action]; if (await modale(dit, "<p><b>Ce geste ne se défait pas par l’API de Dolibarr</b> : il faudrait le défaire dans Dolibarr.</p>", dit)) await fait("dolibarr.commande_fournisseur", { id: Number(id), action: action }, "Commande fournisseur : " + action); },
+      nfrais: async () => { if (await formulaire("Nouvelle note de frais (brouillon)", SCHEMAS.frais, { debut: AUJ, fin: AUJ }, async (c) => { await agir("dolibarr.frais_creer", { auteur: Number(c.auteur), type: Number(c.type), debut: c.debut, fin: c.fin, note: c.note || "", lignes: (c.lines || []).map((l) => ({ desc: l.desc || "", qty: l.qty, subprice: l.subprice, tva_tx: l.tva_tx || 0 })) }); }, "Créer le brouillon")) { K.dire("Note de frais créée"); S.d = {}; await charger(true); } },
+      frais: async (p) => { const [id, action] = p.split("|"), dit = action === "valider" ? "Valider la note de frais" : "Approuver la note de frais"; if (await modale(dit, "<p>Le geste se défait : la note revient à son statut d’avant.</p>", dit)) await fait("dolibarr.frais_etat", { id: Number(id), action: action }, action === "valider" ? "Note de frais validée" : "Note de frais approuvée"); },
+      cmdcreer: async (p) => { if (await modale("Créer la commande", "<p>Une commande en brouillon est préparée avec les lignes du devis signé. Rien n’est validé ; le geste se défait.</p>", "Préparer la commande")) await fait("dolibarr.commande_creer", { devis: Number(p) }, "Commande préparée"); },
+      cmd: async (p) => { const [id, action] = p.split("|"); const dit = action === "valider" ? "Valider la commande" : "Marquer la commande livrée"; if (await modale(dit, action === "valider" ? "<p>La commande prend son numéro. Le geste se défait.</p>" : "<p>La commande est classée « livrée ». Le geste se défait.</p>", dit)) await fait("dolibarr.commande", { id: Number(id), action: action }, action === "valider" ? "Commande validée" : "Commande livrée"); },
+      cmdfacturer: async (p) => { if (await modale("Facturer la commande", "<p>Une facture en brouillon est préparée avec les lignes de la commande. Rien n’est validé.</p>", "Préparer la facture")) await fait("dolibarr.facturer_commande", { id: Number(p) }, "Facture préparée"); },
       facturer: async (p) => { if (await modale("Facturer le devis", "<p>Une facture en brouillon est préparée avec les lignes du devis. Rien n’est validé.</p>", "Préparer la facture")) await fait("dolibarr.facturer_devis", { id: Number(p) }, "Facture préparée"); },
       ncontact: async () => { if (await formulaire("Nouveau contact", SCHEMAS.contacts, {}, async (champs) => { await agir("dolibarr.creer", { objet: "contacts", champs: champs }); }, "Créer")) { K.dire("Contact créé"); S.d = {}; await charger(true); } },
       contact: async (p) => { let c; try { c = await lire("/contacts/" + p); } catch (e) { K.dire(e.message || String(e), "err"); return; } if (!c || c.id == null) { K.dire("Contact introuvable", "err"); return; } if (await formulaire(((c.firstname || "") + " " + (c.lastname || "")).trim(), SCHEMAS.contacts, c, async (champs) => { await agir("dolibarr.modifier", { objet: "contacts", id: Number(p), champs: champs }); }, "Enregistrer", !K.peut("dolibarr.tiers"))) { K.dire("Contact enregistré"); S.d = {}; await charger(true); } },
@@ -637,7 +690,7 @@
         let full = {}; try { full = (await agir("dolibarr.lire_ecran", { chemin: "/proposals/" + p })).reponse || {}; } catch (e) { K.dire(e.message || String(e), "err"); }
         const L = ["Brouillon", "Ouvert", "Signé", "Refusé", "Facturé"], s = String(d.statut), nb = (n) => Number(n || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const lignes = (full.lines || []).map((l) => "<tr><td>" + esc(String(l.desc || l.description || l.product_label || "").replace(/<br\s*\/?>/gi, " ").replace(/\s+/g, " ").trim()) + '</td><td class="num">' + nb(l.qty) + '</td><td class="num">' + nb(l.subprice) + '</td><td class="num">' + nb(l.tva_tx) + ' %</td><td class="num">' + nb(l.total_ttc) + " €</td></tr>");
-        const gestes = s === "0" ? btn("Valider", "devis", d.id + "|valider", "pri") : s === "1" ? btn("Marquer signé", "devis", d.id + "|signer", "pri") + btn("Refusé", "devis", d.id + "|refuser") : s === "2" ? btn("Facturer", "facturer", d.id, "pri") : "";
+        const gestes = s === "0" ? btn("Valider", "devis", d.id + "|valider", "pri") : s === "1" ? btn("Marquer signé", "devis", d.id + "|signer", "pri") + btn("Refusé", "devis", d.id + "|refuser") : s === "2" ? btn("Créer la commande", "cmdcreer", d.id, "pri") + btn("Facturer", "facturer", d.id) : "";
         await modale("Propale " + d.ref, '<div class="note">' + esc(nomTiers(d.socid)) + " · " + jour(d.date) + (full.fin_validite ? " · valable jusqu’au " + jour(full.fin_validite) : "") + "</div><div>" + pill(L[Number(s)] || "Annulé", s === "2" ? "ok" : "") + "</div>" +
           table(["Désignation", "Qté", "PU HT", "TVA", "Total"], lignes) + '<p class="num" style="text-align:right">Total HT ' + nb(full.total_ht || d.total_ttc) + " € · TVA " + nb(full.total_tva) + " € · <b>Total TTC " + nb(d.total_ttc) + " €</b></p>" +
           '<div style="display:flex;gap:6px;flex-wrap:wrap">' + btn("Voir le PDF", "pdf", "devis|" + d.id, "pri") + gestes + btn("Documents", "docs", "devis|" + d.id) + "</div>", "Fermer");

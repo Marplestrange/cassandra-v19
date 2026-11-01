@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #4d5547
+# VERSION CN : 0.4.1  #9298d9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=4d5547 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=9298d9 ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -74,12 +74,14 @@ ECRIVABLES = {
     "projets": {"chemin": "/projects", "champs": {"ref", "title", "description", "socid", "date_start", "date_end", "public", "status", "usage_opportunity", "opp_status", "opp_percent",
                                                      "opp_amount", "budget_amount", "usage_task", "usage_bill_time", "note_private", "note_public"}},
 }
-DOCUMENTS = {"factures": "/invoices", "devis": "/proposals", "commandes": "/orders"}     # créés en brouillon, jamais validés ici
+DOCUMENTS = {"factures": "/invoices", "devis": "/proposals", "commandes": "/orders", "fournisseurs": "/supplierinvoices", "commandes_fournisseurs": "/supplierorders"}     # créés en brouillon, jamais validés ici
 CHAMPS_DOC = {"socid", "date", "note_private", "note_public", "lines"}
 # Les champs de l'en-tête d'une facture (compta/facture/card.php) et d'un devis (comm/propal/card.php) que l'écran peut poser à la création, sous leurs noms de propriété.
 ENTETES = {"factures": {"ref_client", "date", "date_lim_reglement", "cond_reglement_id", "mode_reglement_id", "fk_account", "fk_project", "note_public", "note_private"},
-           "devis": {"ref_client", "date", "duree_validite", "cond_reglement_id", "mode_reglement_id", "fk_project", "note_public", "note_private"}}
-ENTETES_DATES = ("date", "date_lim_reglement")
+           "devis": {"ref_client", "date", "duree_validite", "cond_reglement_id", "mode_reglement_id", "fk_project", "note_public", "note_private"},
+           "fournisseurs": {"ref_supplier", "date", "date_echeance", "cond_reglement_id", "mode_reglement_id", "fk_project", "note_public", "note_private"},
+           "commandes_fournisseurs": {"ref_supplier", "date", "date_livraison", "cond_reglement_id", "mode_reglement_id", "fk_project", "note_public", "note_private"}}
+ENTETES_DATES = ("date", "date_lim_reglement", "date_echeance", "date_livraison")
 ENTETES_ENTIERS = ("cond_reglement_id", "mode_reglement_id", "fk_account", "fk_project", "duree_validite")
 CHAMPS_LIGNE = {"desc", "qty", "subprice", "tva_tx", "fk_product", "product_type", "remise_percent"}
 # La lecture de la BASE de Dolibarr (en plus de son API) : pour ce que l'API cache ou ne sait pas compter. Réservée aux superadministrateurs, en lecture seule, par des requêtes NOMMÉES.
@@ -108,12 +110,12 @@ DOMAINES = ("accountancy", "agendaevents", "bankaccounts", "categories", "contac
             "objectlinks", "orders", "paiements", "partnerships", "productlots", "products", "projects", "proposals", "recruitments", "salaries",
             "setup", "shipments", "status", "stockmovements", "subscriptions", "supplierinvoices", "supplierorders", "supplierproposals", "tasks",
             "thirdparties", "tickets", "users", "warehouses")
-DOMAINES_ECRAN = ("bankaccounts", "contacts", "donations", "invoices", "members", "products", "projects", "proposals", "setup", "supplierinvoices", "thirdparties")     # ce que l'écran affiche : la lecture « consulter » n'atteint rien d'autre
+DOMAINES_ECRAN = ("bankaccounts", "contacts", "donations", "invoices", "members", "products", "projects", "proposals", "setup", "supplierinvoices", "supplierorders", "expensereports", "thirdparties")     # ce que l'écran affiche : la lecture « consulter » n'atteint rien d'autre
 _CHEMIN_LIBRE = re.compile(r"^/[a-z]{3,30}(/[A-Za-z0-9_.@-]{1,60}){0,4}$")
 _REQUETE = re.compile(r"^[A-Za-z0-9_.,=&%+:*()\[\]-]{0,400}$")
 _SECRET = re.compile(r"(pass|api_key|apikey|token|secret|signature|private_key|cle_)", re.I)
 # Les pièces dont on lit ou produit le PDF : objet -> (chemin de l'objet, « modulepart » de Dolibarr). Le PDF est celui que Dolibarr a produit : Cassandra le lit, elle ne le recompose pas.
-PIECES = {"devis": ("/proposals", "propal"), "factures": ("/invoices", "facture")}
+PIECES = {"devis": ("/proposals", "propal"), "factures": ("/invoices", "facture"), "commandes": ("/orders", "commande")}
 MAX_PDF = 8 * 1024 * 1024
 MAX_PJ = 5 * 1024 * 1024        # un document joint : 5 Mo (6,7 Mo une fois encodé en base64)
 # Les pièces auxquelles on joint des documents : (chemin de l'API, « modulepart » des documents, champ qui porte la référence)
@@ -709,6 +711,8 @@ def brancher(ctx):
                 corps[k] = int(v)
             else:
                 corps[k] = str(v)[:4000]
+        if objet == "fournisseurs" and not corps.get("ref_supplier"):
+            raise ValueError("ref_supplier est obligatoire : le numéro de la facture, tel que le fournisseur l'a écrit")
         conf = _conf()
         nouvel = ecrire(conf, "POST", DOCUMENTS[objet], corps)
         if not isinstance(nouvel, int) and not (isinstance(nouvel, str) and _ID.match(nouvel)):
@@ -1397,6 +1401,183 @@ def brancher(ctx):
                                                                       "note_private": "Issue du devis %s, préparée par Cassandra" % (d.get("ref") or id)}), "la facture")
         return {"document": "factures", "id": nouvel, "socid": socid, "lignes": len(lignes), "devis": int(id)}
 
+    # --- la commande : l'étape entre le devis signé et la facture (devis → commande → facture). Dolibarr la numérote à la validation.
+    ETATS_COMMANDE = {"valider": ("0", "1"), "livrer": ("1", "3")}
+
+    def commande_creer(ctx, devis):
+        conf = _conf()
+        d = _doc(conf, DOCUMENTS["devis"], devis, "le devis")
+        if _statut(d) != "2":
+            raise ValueError("seul un devis signé devient une commande (statut %s)" % _statut(d))
+        if not d.get("lines"):
+            raise ValueError("le devis %s n'a pas de lignes" % devis)
+        # l'API de Dolibarr 24 refuse « createfromproposal » (405 : la route est masquée par /orders/{id}) : on prépare la commande avec les lignes du devis, comme pour la facture
+        socid = int(d.get("socid") or d.get("fk_soc"))
+        corps = {"socid": socid, "date": _jour_ts(""), "lines": [{k: l[k] for k in CHAMPS_LIGNE if k in l and l[k] not in (None, "")} for l in d["lines"]][:MAX_LIGNES],
+                 "note_private": "Issue du devis %s, préparée par Cassandra" % (d.get("ref") or devis)}
+        if d.get("ref_client"):
+            corps["ref_client"] = str(d["ref_client"])[:120]
+        nouvel = _int_id(ecrire(conf, "POST", DOCUMENTS["commandes"], corps), "la commande")
+        return {"document": "commandes", "id": nouvel, "socid": socid, "lignes": len(corps["lines"]), "devis": int(devis)}
+
+    def commande(ctx, id, action):
+        if action not in ETATS_COMMANDE:
+            raise ValueError("action : %s" % ", ".join(sorted(ETATS_COMMANDE)))
+        conf = _conf()
+        c = _doc(conf, DOCUMENTS["commandes"], id, "la commande")
+        de, vers = ETATS_COMMANDE[action]
+        if _statut(c) != de:
+            raise ValueError("la commande %s est au statut %s : « %s » demande le statut %s" % (id, _statut(c), action, de))
+        ecrire(conf, "POST", "%s/%s/%s" % (DOCUMENTS["commandes"], id, "validate" if action == "valider" else "close"), {"notrigger": 0})
+        return {"id": int(id), "action": action, "avant": de, "apres": vers}
+
+    def prouver_commande(ctx, res):
+        c = _lire_un(_conf(), DOCUMENTS["commandes"], res["id"])
+        return isinstance(c, dict) and _statut(c) == res["apres"]
+
+    def defaire_commande(ctx, res):
+        conf = _conf()
+        courant = _lire_un(conf, DOCUMENTS["commandes"], res["id"])
+        if isinstance(courant, dict) and _statut(courant) == res["avant"]:
+            return
+        ecrire(conf, "POST", "%s/%s/%s" % (DOCUMENTS["commandes"], res["id"], "settodraft" if res["action"] == "valider" else "reopen"), {"idwarehouse": 0} if res["action"] == "valider" else {})
+
+    def facturer_commande(ctx, id):
+        conf = _conf()
+        c = _doc(conf, DOCUMENTS["commandes"], id, "la commande")
+        if _statut(c) not in ("1", "2", "3"):
+            raise ValueError("seule une commande validée se facture (statut %s)" % _statut(c))
+        lignes = [{k: l[k] for k in CHAMPS_LIGNE if k in l and l[k] not in (None, "")} for l in (c.get("lines") or [])][:MAX_LIGNES]
+        if not lignes:
+            raise ValueError("la commande %s n'a pas de lignes" % id)
+        socid = int(c.get("socid") or c.get("fk_soc"))      # « createfromorder » est refusé par l'API de Dolibarr 24 (405) : la facture se prépare avec les lignes de la commande
+        nouvel = _int_id(ecrire(conf, "POST", DOCUMENTS["factures"], {"socid": socid, "date": _jour_ts(""), "lines": lignes,
+                                                                      "note_private": "Issue de la commande %s, préparée par Cassandra" % (c.get("ref") or id)}), "la facture")
+        return {"document": "factures", "id": nouvel, "socid": socid, "lignes": len(lignes), "commande": int(id)}
+
+    # --- les achats : valider une facture fournisseur, faire avancer une commande fournisseur, saisir et faire valider une note de frais
+    def facture_fournisseur_valider(ctx, id):
+        conf = _conf()
+        f = _doc(conf, DOCUMENTS["fournisseurs"], id, "la facture fournisseur")
+        if _statut(f) != "0":
+            raise ValueError("la facture fournisseur %s n'est pas un brouillon (statut %s)" % (id, _statut(f)))
+        ecrire(conf, "POST", "%s/%s/validate" % (DOCUMENTS["fournisseurs"], id), {"idwarehouse": 0, "notrigger": 0})
+        return {"id": int(id), "avant": "0", "apres": "1"}
+
+    def prouver_facture_fournisseur(ctx, res):
+        f = _lire_un(_conf(), DOCUMENTS["fournisseurs"], res["id"])
+        return isinstance(f, dict) and _statut(f) == res["apres"]
+
+    def defaire_facture_fournisseur(ctx, res):
+        conf = _conf()
+        f = _lire_un(conf, DOCUMENTS["fournisseurs"], res["id"])
+        if isinstance(f, dict) and _statut(f) == res["avant"]:
+            return
+        ecrire(conf, "POST", "%s/%s/settodraft" % (DOCUMENTS["fournisseurs"], res["id"]), {"idwarehouse": 0})
+
+    ETAPES_ACHAT = {"valider": ("0", "1", "validate"), "approuver": ("1", "2", "approve"), "commander": ("2", "3", "makeorder")}
+
+    def commande_fournisseur(ctx, id, action):
+        if action not in ETAPES_ACHAT:
+            raise ValueError("action : %s" % ", ".join(sorted(ETAPES_ACHAT)))
+        conf = _conf()
+        c = _doc(conf, DOCUMENTS["commandes_fournisseurs"], id, "la commande fournisseur")
+        de, vers, route = ETAPES_ACHAT[action]
+        if _statut(c) != de:
+            raise ValueError("la commande fournisseur %s est au statut %s : « %s » demande le statut %s" % (id, _statut(c), action, de))
+        corps = {"idwarehouse": 0, "notrigger": 0} if route == "validate" else {"secondlevel": 0} if route == "approve" else {"date": _jour_ts(""), "method": 0, "comment": "Passée depuis Cassandra"}
+        ecrire(conf, "POST", "%s/%s/%s" % (DOCUMENTS["commandes_fournisseurs"], id, route), corps)
+        return {"id": int(id), "action": action, "avant": de, "apres": vers}
+
+    def prouver_commande_fournisseur(ctx, res):
+        c = _lire_un(_conf(), DOCUMENTS["commandes_fournisseurs"], res["id"])
+        return isinstance(c, dict) and _statut(c) == res["apres"]
+
+    def defaire_commande_fournisseur(ctx, res):
+        raise PontErreur("l'API de Dolibarr ne remet pas une commande fournisseur validée, approuvée ou passée en brouillon : à défaire dans Dolibarr")
+
+    def _etat_frais(d):
+        for k in ("status", "fk_statut", "statut"):
+            if d.get(k) not in (None, ""):
+                return str(d[k])
+        return ""
+
+    def frais_options(ctx):
+        conf = _conf()
+        types = [{"id": int(x["id"]), "code": str(x.get("code") or ""), "label": str(x.get("label") or "")} for x in _liste(conf, "/setup/dictionary/expensereport_types", {"limit": 200})
+                 if isinstance(x, dict) and str(x.get("active", "1")) == "1"]
+        users = [{"id": int(u["id"]), "login": str(u.get("login") or ""), "nom": ("%s %s" % (u.get("firstname") or "", u.get("lastname") or "")).strip()}
+                 for u in _liste(conf, "/users", {"limit": 200, "properties": "id,login,firstname,lastname,statut"}) if isinstance(u, dict) and str(u.get("statut", "1")) == "1"]
+        return {"types": types, "utilisateurs": users}
+
+    def frais_creer(ctx, auteur, debut, fin, type, lignes, note=""):
+        if not _ID.match(str(auteur)) or not _ID.match(str(type)):
+            raise ValueError("auteur et type : des nombres (frais_options les donne)")
+        if not isinstance(lignes, list) or not 0 < len(lignes) <= MAX_LIGNES:
+            raise ValueError("lignes : une liste de 1 à %d lignes" % MAX_LIGNES)
+        d0, d1 = _jour_ts(debut), _jour_ts(fin)
+        if d1 < d0:
+            raise ValueError("la fin de la période précède son début")
+        sortie, total = [], 0.0
+        for l in lignes:
+            _verifier_champs(l, {"desc", "qty", "subprice", "tva_tx", "date"}, "une ligne de frais")
+            try:
+                qte, pu, taux = float(l.get("qty", 1)), float(l.get("subprice")), float(l.get("tva_tx", 0) or 0)
+            except (TypeError, ValueError):
+                raise ValueError("ligne de frais : qty, subprice et tva_tx sont des nombres")
+            if qte <= 0 or pu < 0 or not 0 <= taux <= 40:
+                raise ValueError("ligne de frais : une quantité positive, un prix positif, une TVA entre 0 et 40")
+            ht = round(qte * pu, 2)
+            tva = round(ht * taux / 100, 2)
+            total += ht + tva
+            sortie.append({"fk_c_type_fees": int(type), "value_unit": pu, "qty": qte, "date": _jour_ts(str(l.get("date") or fin)[:10]), "comments": str(l.get("desc") or "")[:240],
+                           "vatrate": taux, "total_ht": ht, "total_tva": tva, "total_ttc": round(ht + tva, 2)})
+        total = round(total, 2)
+        _garde_agent(total)
+        corps = {"fk_user_author": int(auteur), "date_debut": d0, "date_fin": d1, "lines": sortie}
+        if note:
+            corps["note_public"] = str(note)[:4000]
+        nouvel = _int_id(ecrire(_conf(), "POST", "/expensereports", corps), "la note de frais")
+        return {"id": nouvel, "auteur": int(auteur), "lignes": len(sortie), "total": total}
+
+    def prouver_frais(ctx, res):
+        e = _lire_un(_conf(), "/expensereports", res["id"])
+        return (isinstance(e, dict) and _etat_frais(e) == "0" and len(e.get("lines") or []) == res["lignes"] and abs(float(e.get("total_ttc") or 0) - res["total"]) < 0.01
+                and str(e.get("fk_user_author")) == str(res["auteur"]))
+
+    def defaire_frais(ctx, res):
+        conf = _conf()
+        e = _lire_un(conf, "/expensereports", res["id"])
+        if isinstance(e, dict) and _etat_frais(e) != "0":
+            raise PontErreur("la note de frais n'est plus un brouillon : elle ne se supprime pas")
+        ecrire(conf, "DELETE", "/expensereports/%d" % res["id"])
+
+    ETAPES_FRAIS = {"valider": ("0", "2", "validate"), "approuver": ("2", "5", "approve")}
+
+    def frais_etat(ctx, id, action):
+        if action not in ETAPES_FRAIS:
+            raise ValueError("action : %s" % ", ".join(sorted(ETAPES_FRAIS)))
+        conf = _conf()
+        e = _doc(conf, "/expensereports", id, "la note de frais")
+        de, vers, route = ETAPES_FRAIS[action]
+        if _etat_frais(e) != de:
+            raise ValueError("la note de frais %s est au statut %s : « %s » demande le statut %s" % (id, _etat_frais(e), action, de))
+        ecrire(conf, "POST", "/expensereports/%s/%s" % (id, route), {"notrigger": 0})
+        return {"id": int(id), "action": action, "avant": de, "apres": vers}
+
+    def prouver_frais_etat(ctx, res):
+        e = _lire_un(_conf(), "/expensereports", res["id"])
+        return isinstance(e, dict) and _etat_frais(e) == res["apres"]
+
+    def defaire_frais_etat(ctx, res):
+        conf = _conf()
+        e = _lire_un(conf, "/expensereports", res["id"])
+        if isinstance(e, dict) and _etat_frais(e) == res["avant"]:
+            return
+        ecrire(conf, "POST", "/expensereports/%s/settodraft" % res["id"], {"notrigger": 0})
+        if res["avant"] == "2":                                    # approuvée : on revient à « validée », pas seulement à « brouillon »
+            ecrire(conf, "POST", "/expensereports/%s/validate" % res["id"], {"notrigger": 0})
+
     # --- les dons : saisir, valider
     def don_creer(ctx, montant, date="", nom="", prenom="", societe="", champs=None, recu=False):
         champs_don, champs = champs, None
@@ -1864,6 +2045,14 @@ def brancher(ctx):
     ctx.implementer("modifier_lie", modifier_lie, prouver_modif_liee, defaire_modif_liee, simuler=lambda ctx, type="", id="", **_: "modifierait chez Dolibarr la fiche liée %s %s" % (type, id))
     ctx.implementer("detacher", detacher, prouver_detache, defaire_detache, simuler=lambda ctx, type="", id="", **_: "détacherait %s %s de Dolibarr (les deux copies restent)" % (type, id))
     ctx.implementer("piece_pdf", piece_pdf)
+    ctx.implementer("commande_creer", commande_creer, prouver_brouillon, defaire_brouillon, simuler=lambda ctx, devis="", **_: "préparerait une commande en brouillon depuis le devis signé %s" % devis)
+    ctx.implementer("commande", commande, prouver_commande, defaire_commande, simuler=lambda ctx, id="", action="", **_: "ferait « %s » sur la commande %s" % (action, id))
+    ctx.implementer("facturer_commande", facturer_commande, prouver_brouillon, defaire_brouillon, simuler=lambda ctx, id="", **_: "préparerait une facture en brouillon depuis la commande %s" % id)
+    ctx.implementer("facture_fournisseur_valider", facture_fournisseur_valider, prouver_facture_fournisseur, defaire_facture_fournisseur, simuler=lambda ctx, id="", **_: "validerait la facture fournisseur %s (elle prend son numéro)" % id)
+    ctx.implementer("commande_fournisseur", commande_fournisseur, prouver_commande_fournisseur, defaire_commande_fournisseur, simuler=lambda ctx, id="", action="", **_: "ferait « %s » sur la commande fournisseur %s" % (action, id))
+    ctx.implementer("frais_options", frais_options)
+    ctx.implementer("frais_creer", frais_creer, prouver_frais, defaire_frais, simuler=lambda ctx, auteur="", total="", **_: "préparerait une note de frais en brouillon pour l'utilisateur %s" % auteur)
+    ctx.implementer("frais_etat", frais_etat, prouver_frais_etat, defaire_frais_etat, simuler=lambda ctx, id="", action="", **_: "ferait « %s » sur la note de frais %s" % (action, id))
     ctx.implementer("rib_lister", rib_lister)
     ctx.implementer("rib_creer", rib_creer, prouver_rib, defaire_rib, simuler=lambda ctx, tiers="", iban="", **_: "ajouterait l'IBAN %s…%s au tiers %s" % (str(iban)[:4], str(iban)[-4:], tiers))
     ctx.implementer("documents", documents)
