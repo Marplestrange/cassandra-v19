@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #3dde24
+// VERSION CN : 0.1.0  #a9b3a2
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=3dde24 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=a9b3a2 ▼▼▼
 // Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 (function () {
   "use strict";
@@ -21,7 +21,7 @@
   const { eur, jour, jourCourt, quand, puce, puceEvt, puceCmd, MOYENS, cellule } = H;
   B.choix = B.choix || {};
 
-  const tuile = (n, lib, mod, cible) => '<' + (cible ? 'button class="tuile cl' : 'div class="tuile') + (mod ? " " + mod : "") + '"' + (cible ? ' data-a="va" data-c="' + cible + '"' : "") + "><b>" + esc(n) + "</b><span>" + esc(lib) + "</span></" + (cible ? "button" : "div") + ">";
+  const tuile = (n, lib, mod, cible) => '<' + (cible ? 'button class="stat cl' : 'div class="stat') + (mod ? " " + mod : "") + '"' + (cible ? ' data-a="va" data-c="' + cible + '"' : "") + "><b>" + esc(n) + "</b><span>" + esc(lib) + "</span></" + (cible ? "button" : "div") + ">";
   const jauge = (n, max) => { const p = max ? Math.min(100, Math.round(100 * n / max)) : 0; return '<div class="jauge' + (p >= 100 ? " dg" : p >= 85 ? " al" : "") + '"><i style="width:' + p + '%"></i></div>'; };
   const tableau = (cols, lignes, vide) => '<div class="tw"><table><thead><tr>' + cols.map((c) => '<th class="' + (c[2] === "n" || c[2] === "eur" ? "n" : "") + '">' + esc(c[1]) + "</th>").join("") + "</tr></thead><tbody>" + (lignes.length ? lignes.join("") : '<tr><td colspan="' + cols.length + '" class="vide">' + esc(vide || "Rien pour l’instant.") + "</td></tr>") + "</tbody></table></div>";
   const ouvrir = (ecran, choix) => { if (choix) Object.assign(B.choix, choix); if (CASS.ouvrirEcran) CASS.ouvrirEcran("billetterie:" + ecran, "Billetterie"); };
@@ -90,8 +90,8 @@
     if (nv) alertes.push(["Virements attendus : " + nv, "ventes", "Voir"]);
     if (nc) alertes.push(["Entrées en double à arbitrer : " + nc, "controle", "Arbitrer"]);
     if (ne) alertes.push(["Courriels en échec : " + ne, "argent", "Voir"]);
-    R.innerHTML = S.entetes("Billetterie", "L’essentiel de tes événements, de tes ventes et de ce qui attend une décision.", '<button class="btn pri" data-a="nouvel-evt">+ Nouvel événement</button>') +
-      '<div class="tuiles">' + tuile(evts.length, "événements à venir", "", "evenements") + tuile(vendus, "billets vendus", "", "ventes") + tuile(eur(ca), "encaissé", "", "ventes") + tuile(nr, "retraits à traiter", nr ? "al" : "", "argent") + tuile(((att && att.attente) || []).length, "en liste d’attente", "") + "</div>" +
+    R.innerHTML = S.entetes("Vue d’ensemble", "L’essentiel de tes événements, de tes ventes et de ce qui attend une décision.", '<button class="btn pri" data-a="nouvel-evt">+ Nouvel événement</button>') +
+      '<div class="stats">' + tuile(evts.length, "événements à venir", "", "evenements") + tuile(vendus, "billets vendus", "", "ventes") + tuile(eur(ca), "encaissé", "", "ventes") + tuile(nr, "retraits à traiter", nr ? "al" : "", "argent") + tuile(((att && att.attente) || []).length, "en liste d’attente", "") + "</div>" +
       (alertes.length ? alertes.map((a) => '<div class="alerte"><span class="sp">' + esc(a[0]) + '</span><button class="btn sm" data-a="va" data-c="' + a[1] + '">' + a[2] + "</button></div>").join("") : "") +
       (S.erreur ? '<div class="carte" style="color:var(--danger)">' + esc(S.erreur) + "</div>" : "") +
       (cartes.length ? '<div class="grille">' + cartes.join("") + "</div>" : '<div class="carte vide">Aucun événement à venir. Crée le premier : une date, une salle, un nombre de places, un prix.</div>');
@@ -137,11 +137,11 @@
         (e.motif_annulation ? "<dt>Annulation</dt><dd>" + esc(e.motif_annulation) + "</dd>" : "") + "</dl></div>" +
         (st ? '<div class="carte"><h3>Ventes</h3>' + jauge(st.vendus + st.retenus, st.quota) + '<p class="sub" style="margin:6px 0 10px">' + st.vendus + " vendus · " + st.retenus + " réservés · " + st.restant + " restants sur " + st.quota + "</p>" +
           tableau([["t", "Billet"], ["v", "Vendus", "n"], ["r", "Réservés", "n"], ["q", "Restant", "n"]], st.types.map((t) => "<tr><td>" + esc(t.nom) + '</td><td class="n">' + t.vendus + '</td><td class="n">' + t.retenus + '</td><td class="n">' + (t.restant == null ? "illimité" : t.restant) + "</td></tr>")) + "</div>" : "") +
-        (rent && rent.couts_fixes ? '<div class="carte"><h3>Rentabilité</h3><div class="tuiles" style="margin-bottom:8px">' + tuile(eur(rent.couts_fixes), "coûts fixes (salle " + eur(rent.couts_salle) + ", artistes " + eur(rent.couts_artistes) + ")", "") + tuile(eur(rent.recettes), "recettes (" + rent.vendus + " places)", "") +
+        (rent && rent.couts_fixes ? '<div class="carte"><h3>Rentabilité</h3><div class="stats" style="margin-bottom:8px">' + tuile(eur(rent.couts_fixes), "coûts fixes (salle " + eur(rent.couts_salle) + ", artistes " + eur(rent.couts_artistes) + ")", "") + tuile(eur(rent.recettes), "recettes (" + rent.vendus + " places)", "") +
           tuile(rent.seuil_places == null ? "—" : rent.seuil_places, "places pour s’équilibrer", "") + tuile(eur(rent.resultat), "résultat à ce jour", rent.resultat < 0 ? "al" : "") + "</div><p class=\"" + (rent.decision_due && rent.sous_le_seuil ? "erreur" : "doux") + "\">" + esc(rent.conseil) + "</p></div>" : "") +
         '<div class="row">' + (vend ? '<button class="btn pri" data-a="publier">Mettre en vente</button>' : "") + (e.statut === "en vente" || e.statut === "complet" ? '<button class="btn" data-a="depublier">Retirer de la vente</button>' : "") +
         '<button class="btn" data-a="modifier">Modifier</button>' + (["brouillon", "en vente", "complet"].indexOf(e.statut) >= 0 ? '<button class="btn" data-a="reporter">Reporter…</button><button class="btn dng" data-a="annuler">Annuler l’événement…</button>' : "") +
-        (vend ? '<button class="btn dng" data-a="supprimer">Supprimer</button>' : "") + (e.projet_ref ? '<span class="bp ok">Projet dans le bureau</span>' : (e.date_iso && ["brouillon", "en vente", "complet"].indexOf(e.statut) >= 0 ? '<button class="btn" data-a="projet">Créer le projet dans le bureau</button>' : "")) + "</div>";
+        (vend ? '<button class="btn dng" data-a="supprimer">Supprimer</button>' : "") + (e.projet_ref ? '<span class="p ok">Projet dans le bureau</span>' : (e.date_iso && ["brouillon", "en vente", "complet"].indexOf(e.statut) >= 0 ? '<button class="btn" data-a="projet">Créer le projet dans le bureau</button>' : "")) + "</div>";
     } else if (ong === "billets") {
       corps = '<div class="row" style="margin-bottom:10px"><span class="sp hint">Les billets que l’on peut acheter.</span><button class="btn pri" data-a="type-nouveau">+ Billet</button></div>' +
         tableau([["n", "Billet"], ["p", "Prix", "n"], ["q", "Quota", "n"], ["e", "Entrées", "n"], ["v", "Visible"], ["", ""]], f.types.map((t) => "<tr><td><b>" + esc(t.nom) + '</b><div class="hint">' + esc(t.description) + '</div></td><td class="n">' + eur(t.prix) + '</td><td class="n">' + (t.quota || "illimité") + '</td><td class="n">' + t.entrees + "</td><td>" + (t.visible ? puce("oui", "ok") : puce("masqué", "")) + '</td><td class="n" style="white-space:nowrap"><button class="btn sm" data-a="type-modifier" data-id="' + t.id + '">Modifier</button> <button class="btn sm dng" data-a="type-supprimer" data-id="' + t.id + '">Supprimer</button></td></tr>'));
@@ -319,7 +319,7 @@
   P.personnes = async (S) => {
     const R = S.racine, TABS = [["revendeur", "Revendeurs"], ["artiste", "Artistes"], ["formule", "Formules"], ["salle", "Salles"], ["promo", "Codes promo"], ["legal", "Textes légaux"]];
     S.onglet = TABS.some((t) => t[0] === S.onglet) ? S.onglet : "revendeur";
-    R.innerHTML = S.entetes("Personnes et bases", "Revendeurs, artistes, formules de rémunération, salles et codes promo.") + '<div class="onglets">' + TABS.map((t) => '<button class="' + (t[0] === S.onglet ? "on" : "") + '" data-a="onglet" data-o="' + t[0] + '">' + t[1] + "</button>").join("") + '</div><div id="bz"></div>';
+    R.innerHTML = S.entetes("Revendeurs et artistes", "Revendeurs, artistes, formules de rémunération, salles et codes promo.") + '<div class="onglets">' + TABS.map((t) => '<button class="' + (t[0] === S.onglet ? "on" : "") + '" data-a="onglet" data-o="' + t[0] + '">' + t[1] + "</button>").join("") + '</div><div id="bz"></div>';
     if (S.onglet === "legal") await legalOnglet(S, R.querySelector("#bz"));
     else await crud(S, S.onglet, R.querySelector("#bz"));
     if (S.onglet === "revendeur" || S.onglet === "artiste") R.querySelector("#bz").insertAdjacentHTML("beforeend", '<div class="row" style="margin-top:10px"><button class="btn" data-a="repertoire">Mettre tout le monde dans le répertoire du bureau</button><span class="hint">Un contact par artiste et par revendeur ; ceux qui y sont déjà ne sont pas doublés.</span></div>');
@@ -376,7 +376,7 @@
       const e = await S.lire("dolibarr_etat") || {}, f = await S.lire("dolibarr_file", { limite: 50 }), l = (f && f.file) || [];
       const ETAT = { a_faire: ["à faire", "al"], fait: ["fait", "ok"], echec: ["échec", "dg"], ignore: ["ignorée", ""] }, DOM = { tiers: "tiers clients", factures: "factures", paiements: "règlements", avoirs: "avoirs", commissions: "versements de commissions" };
       corps = '<p class="sub">Le pont facultatif vers Dolibarr (comptabilité) : une écriture par vente, remboursement ou versement, faite en arrière-plan, jamais pendant un paiement. Sans Dolibarr, la billetterie fonctionne seule.</p>' +
-        '<div class="tuiles">' + tuile(e.relie ? "relié" : "non relié", "pont Dolibarr", e.relie ? "" : "al") + tuile(e.a_faire || 0, "écritures à faire", (e.a_faire ? "al" : "")) + tuile(e.faits || 0, "écritures faites", "") + tuile(e.echecs || 0, "en échec", (e.echecs ? "al" : "")) + "</div>" +
+        '<div class="stats">' + tuile(e.relie ? "relié" : "non relié", "pont Dolibarr", e.relie ? "" : "al") + tuile(e.a_faire || 0, "écritures à faire", (e.a_faire ? "al" : "")) + tuile(e.faits || 0, "écritures faites", "") + tuile(e.echecs || 0, "en échec", (e.echecs ? "al" : "")) + "</div>" +
         '<div class="row" style="margin:10px 0"><button class="btn" data-a="reglages-pont">Réglages du pont…</button><button class="btn" data-a="tester-pont">Tester la connexion</button><button class="btn pri" data-a="rattraper"' + (e.relie ? "" : " disabled") + ">Faire les écritures maintenant</button><span class=\"sp\"></span>" +
         Object.keys(e.domaines || {}).map((k) => puce(DOM[k] || k, e.domaines[k] ? "ok" : "")).join(" ") + "</div>" +
         tableau([["c", "Écriture"], ["e", "État"], ["x", "Essais", "n"], ["r", "Dernière raison"], ["", ""]], l.map((x) => "<tr><td><b>" + esc(x.cle) + '</b><div class="hint">' + esc(quand(x.cree_le)) + "</div></td><td>" + puce((ETAT[x.etat] || [x.etat])[0], (ETAT[x.etat] || [])[1]) + '</td><td class="n">' + x.essais + "</td><td>" + esc(x.erreur || x.resultat || "") + '</td><td class="n">' + (x.etat === "echec" ? '<button class="btn sm" data-a="relancer-dol" data-id="' + x.id + '">Relancer</button>' : "") + "</td></tr>"), e.relie ? "Aucune écriture pour l’instant." : "Pont non relié : rien n’est écrit.");

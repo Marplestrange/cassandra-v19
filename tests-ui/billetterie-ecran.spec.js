@@ -50,8 +50,8 @@ test("Billetterie : vue d'ensemble — chiffres, alerte de retrait, carte de l'�
   await simuler(page);
   await monter(page, 'b_vue');
   const R = page.locator('#bl-essai');
-  await expect(R).toContainText('Billetterie');
-  await expect(R.locator('.tuile').first()).toContainText('événements à venir');
+  await expect(R).toContainText('Vue d’ensemble');
+  await expect(R.locator('.stat').first()).toContainText('événements à venir');
   await expect(R.locator('.alerte', { hasText: 'retrait' })).toBeVisible();
   await expect(R.locator('button.evt')).toContainText("Soirée d'hiver");
   await expect(R.locator('button.evt')).toContainText('30 / 120 vendus');
@@ -63,7 +63,7 @@ test("Billetterie : fiche d'un événement — onglets et confirmation d'annulat
   await monter(page, 'b_evenements');
   const R = page.locator('#bl-essai');
   await R.locator('tr[data-a=ouvrir]').click();
-  await expect(R.locator('h2').first()).toContainText("Soirée d'hiver");
+  await expect(R.locator('h1').first()).toContainText("Soirée d'hiver");
   for (const o of ['Billets', 'Programme', 'Revendeurs', 'Invitations', 'Ventes', 'Liste d’attente']) {
     await R.locator('.onglets button', { hasText: o }).click();
     await expect(R.locator('.onglets button.on')).toHaveText(o);

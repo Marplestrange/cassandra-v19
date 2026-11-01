@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #d2c4fb
+// VERSION CN : 0.1.0  #4af3ed
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : l'écran du titulaire (vue d'ensemble, événements, ventes, personnes, argent). Tout passe par les capacités billetterie.* : les règles sont dans le module, jamais ici.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=d2c4fb ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=4af3ed ▼▼▼
 // Billetterie : l'écran du titulaire (vue d'ensemble, événements, ventes, personnes, argent). Tout passe par les capacités billetterie.* : les règles sont dans le module, jamais ici.
 (function () {
   "use strict";
@@ -28,25 +28,23 @@
   const quand = (ts) => (ts ? String(ts).replace("T", " ").slice(0, 16) : "—");
   const ETATS_EVT = { brouillon: ["Brouillon", ""], "en vente": ["En vente", "ok"], complet: ["Complet", "al"], "annulé": ["Annulé", "dg"], "reporté": ["Reporté", "al"], "terminé": ["Terminé", ""] };
   const ETATS_CMD = { retenue: ["Réservée", "al"], en_attente: ["Virement attendu", "al"], payee: ["Payée", "ok"], remboursee: ["Remboursée", "dg"], annulee: ["Annulée", ""], expiree: ["Expirée", ""] };
-  const puce = (t, c) => '<span class="bp ' + (c || "") + '">' + esc(t) + "</span>";
+  const puce = (t, c) => '<span class="p ' + (c || "") + '">' + esc(t) + "</span>";
   const puceEvt = (s) => { const x = ETATS_EVT[s] || [s, ""]; return puce(x[0], x[1]); };
   const puceCmd = (s) => { const x = ETATS_CMD[s] || [s, ""]; return puce(x[0], x[1]); };
   const MOYENS = { especes: "Espèces", carte_terminal: "Terminal carte", carte_declaree: "Carte (déclarée)", offert: "Offert", stripe: "Carte en ligne", virement: "Virement", helloasso: "HelloAsso", paypal: "PayPal" };
 
-  const CSS = ".sh-scene:has(>.sh-corps>.bl){width:100%}.sh-scene:has(>.sh-corps>.bl)>.sh-titre{display:none}.bl{display:grid;gap:14px;color:var(--txt);font:13.5px/1.45 'Inter',system-ui,sans-serif;max-width:1180px}.bl *{box-sizing:border-box}.bl>*{min-width:0}.bl button{font:inherit;color:inherit;cursor:pointer}" +
-    ".bl .carte{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}.bl h2{margin:0 0 3px;font-size:15px}.bl h3{margin:0 0 6px;font-size:13.5px}.bl .sub{color:var(--txt-faint);font-size:12px;margin:0 0 12px}.bl .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.bl .row .sp{flex:1}" +
-    ".bl .tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.bl .tuile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-align:left}.bl .tuile b{display:block;font:650 24px/1.1 ui-monospace,Menlo,monospace}.bl .tuile span{color:var(--txt-soft);font-size:12.5px}" +
-    ".bl .tuile.al{border-color:color-mix(in srgb,var(--warn) 55%,transparent)}.bl .tuile.al b{color:var(--warn)}.bl .tuile.cl{cursor:pointer}.bl .tuile.cl:hover{border-color:var(--accent)}" +
-    ".bl .btn{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));border-radius:10px;padding:6px 12px;font-weight:600;font-size:12.5px;white-space:nowrap}.bl .btn:hover{border-color:var(--accent)}.bl .btn.pri{background:var(--accent);color:var(--on-accent,#fff);border-color:transparent}.bl .btn.sm{padding:3px 9px;font-size:12px}.bl .btn.dng{color:var(--danger)}.bl .btn[disabled]{opacity:.45;cursor:not-allowed}" +
-    ".bl input[type=text],.bl input[type=search],.bl input[type=number],.bl input[type=date],.bl input[type=time],.bl select,.bl textarea{font:inherit;color:var(--txt);background:var(--surface-solid,var(--surface));border:1px solid var(--line-strong,var(--line));border-radius:10px;padding:7px 10px;min-width:0;width:100%}.bl textarea{min-height:80px;resize:vertical}" +
-    ".bl .tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}.bl table{border-collapse:collapse;width:100%;font-size:13px}.bl th{font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--txt-faint);text-align:left;padding:9px 12px;white-space:nowrap}.bl td{padding:8px 12px;border-top:1px solid var(--line);vertical-align:middle}.bl td.n,.bl th.n{text-align:right}.bl tr.cl{cursor:pointer}.bl tr.cl:hover td{background:color-mix(in srgb,var(--accent) 5%,transparent)}" +
-    ".bl .bp{display:inline-flex;font-size:11px;font-weight:600;border-radius:99px;padding:2px 9px;background:var(--surface);color:var(--txt-soft);border:1px solid var(--line);white-space:nowrap}.bl .bp.ok{background:color-mix(in srgb,var(--ok) 13%,transparent);color:var(--ok);border-color:transparent}.bl .bp.al{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn);border-color:transparent}.bl .bp.dg{background:color-mix(in srgb,var(--danger) 13%,transparent);color:var(--danger);border-color:transparent}.bl .bp.ac{background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent);border-color:transparent}" +
-    ".bl .vide{color:var(--txt-faint);padding:18px;text-align:center}.bl .hint{font-size:11.5px;color:var(--txt-faint)}.bl .onglets{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}.bl .onglets button{border:0;background:transparent;padding:9px 14px;font-weight:600;font-size:13px;color:var(--txt-soft);border-bottom:2px solid transparent;white-space:nowrap}.bl .onglets button.on{color:var(--accent);border-bottom-color:var(--accent)}" +
-    ".bl .jauge{height:8px;border-radius:99px;background:var(--line);overflow:hidden}.bl .jauge i{display:block;height:100%;background:var(--accent)}.bl .jauge.al i{background:var(--warn)}.bl .jauge.dg i{background:var(--danger)}.bl .evt{display:grid;gap:6px;text-align:left;width:100%}.bl .evt:hover{border-color:var(--accent)}" +
-    ".bl .grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}.bl .alerte{border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:12px;padding:9px 13px;background:var(--surface);display:flex;gap:10px;align-items:center;flex-wrap:wrap}.bl .alerte.dg{border-left-color:var(--danger)}.bl .alerte .sp{flex:1;min-width:200px}" +
+  // Le style est celui du KIT commun (.kit : cartes, boutons, onglets, pastilles .p, tuiles .stat, alertes, jauges), comme Dolibarr et les autres écrans V19. Ne reste ici que ce qui est propre à la billetterie.
+  const CSS = ".sh-scene:has(>.sh-corps>.bl){width:100%;max-width:none}.sh-scene:has(>.sh-corps>.bl)>.sh-titre{display:none}.bl{width:100%}.bl>*{min-width:0}.bl button{font:inherit;color:inherit;cursor:pointer}" +
+    ".bl .carte h2{font:650 15px/1.25 'Inter',sans-serif;color:var(--txt-strong,var(--txt))}.bl .carte h3{margin:0 0 6px}.bl .sub{color:var(--txt-soft);font-size:12.5px;margin:0}.bl .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.bl .row .sp{flex:1}" +
+    ".bl .stat.cl{cursor:pointer;font:inherit;color:inherit}.bl .stat.cl:hover{border-color:var(--accent)}.bl .stat.al{border-color:color-mix(in srgb,var(--warn) 55%,transparent)}.bl .btn.sm{padding:4px 10px;font-size:12px}" +
+    ".bl input[type=text],.bl input[type=search],.bl input[type=number],.bl input[type=date],.bl input[type=time],.bl select,.bl textarea{font:inherit;color:var(--txt);background:var(--surface-solid,var(--surface));border:1px solid var(--line-strong,var(--line));border-radius:10px;padding:8px 11px;min-width:0;width:100%}.bl textarea{min-height:80px;resize:vertical}" +
+    ".bl .tw{overflow-x:auto;background:var(--surface);backdrop-filter:blur(14px) saturate(150%);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-glass);padding:6px 10px}.bl table{border-collapse:collapse;width:100%;font-size:13px}" +
+    ".bl th{font:600 10.5px 'Inter',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--txt-faint);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}.bl td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}.bl tr:last-child td{border-bottom:0}.bl td.n,.bl th.n{text-align:right}" +
+    ".bl tr.cl{cursor:pointer}.bl tr.cl:hover td{background:color-mix(in srgb,var(--accent) 7%,transparent)}.bl .hint{font-size:12px;color:var(--txt-faint)}.bl .alerte{border-left-color:var(--warn)}.bl .alerte.dg{border-left-color:var(--danger)}" +
+    ".bl .evt{display:grid;gap:6px;text-align:left;width:100%}.bl .evt:hover{border-color:var(--accent)}.bl .grille{grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}" +
     ".bl .champs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.bl .champs label,.bf label{display:grid;gap:3px;font-size:12px;color:var(--txt-soft)}.bl .champs label.large,.bf label.large{grid-column:1/-1}.bl .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;font-size:13px}.bl .kv dt{color:var(--txt-faint)}.bl .kv dd{margin:0}" +
-    ".bf{display:grid;gap:10px}.bf input[type=text],.bf input[type=number],.bf input[type=date],.bf input[type=time],.bf select,.bf textarea{font:inherit;color:var(--txt);background:var(--surface-solid,var(--surface));border:1px solid var(--line-strong,var(--line));border-radius:10px;padding:7px 10px;width:100%;min-width:0}.bf textarea{min-height:70px}.bf .deux{display:grid;grid-template-columns:1fr 1fr;gap:10px}.bf .coche{display:flex;gap:8px;align-items:center}.bf .coche input{width:auto}" +
-    "@media(max-width:640px){.bl .tuiles{grid-template-columns:repeat(2,minmax(0,1fr))}.bf .deux{grid-template-columns:1fr}.bl td,.bl th{padding:7px 8px}}";
+    ".bf{display:grid;gap:10px}.bf input[type=text],.bf input[type=number],.bf input[type=date],.bf input[type=time],.bf select,.bf textarea{font:inherit;color:var(--txt);background:var(--surface-solid,var(--surface));border:1px solid var(--line-strong,var(--line));border-radius:10px;padding:8px 11px;width:100%;min-width:0}.bf textarea{min-height:70px}.bf .deux{display:grid;grid-template-columns:1fr 1fr;gap:10px}.bf .coche{display:flex;gap:8px;align-items:center}.bf .coche input{width:auto}" +
+    "@media(max-width:640px){.bl .stats{grid-template-columns:repeat(2,minmax(0,1fr))}.bf .deux{grid-template-columns:1fr}.bl td,.bl th{padding:7px 6px}}";
 
   // ── un formulaire en fenêtre : champs déclarés, valeurs rendues (ou null si on annule) ──
   // La fenêtre se referme AVANT que la promesse ne rende la main : on relève les valeurs au moment du clic.
@@ -113,7 +111,7 @@
   CASS.sceneSurMesure.billetterie = async function (corps, ctx) {
     K.injecter();
     if (!document.getElementById("bl-css")) { const st = document.createElement("style"); st.id = "bl-css"; st.textContent = CSS; document.head.appendChild(st); }
-    corps.innerHTML = ""; const racine = document.createElement("div"); racine.className = "bl"; corps.appendChild(racine);
+    corps.innerHTML = ""; const racine = document.createElement("div"); racine.className = "kit bl"; corps.appendChild(racine);
     const page = PAGES[String(ctx && ctx.ecran || "").split(":")[1]] || "vue";
     const S = { page: page, racine: racine, erreur: "", cache: {} };
     S.lire = async (cap, args) => { try { return await agir(cap, args || {}); } catch (e) { S.erreur = e.message || String(e); return null; } };
@@ -124,7 +122,7 @@
       if (!f) { racine.innerHTML = '<div class="carte vide">Cet écran n’existe pas.</div>'; return; }
       try { await f(S); } catch (e) { racine.innerHTML = '<div class="carte"><span style="color:var(--danger)">' + esc(e.message || String(e)) + "</span></div>"; }
     };
-    S.entetes = (titre, sous, actions) => '<div class="row"><div style="flex:1 1 260px;min-width:0"><h2 style="font-size:19px">' + esc(titre) + '</h2><p class="sub" style="margin:2px 0 0">' + esc(sous || "") + "</p></div>" + (actions || "") + "</div>";
+    S.entetes = (titre, sous, actions) => '<div class="barre"><div class="titre" style="flex:1 1 260px;min-width:0"><h1>' + esc(titre) + "</h1><p>" + esc(sous || "") + "</p></div>" + (actions || "") + "</div>";
     const onglet = corps.closest(".tab-content");
     if (onglet) { let etait = onglet.classList.contains("active"); new MutationObserver(() => { const a = onglet.classList.contains("active"); if (a && !etait && S.rechargeable !== false) S.rendre(); etait = a; }).observe(onglet, { attributes: true, attributeFilter: ["class"] }); }
     racine.addEventListener("click", (ev) => { const a = ev.target.closest("[data-a]"); if (a && S.clic) S.clic(a.dataset.a, a, ev); });

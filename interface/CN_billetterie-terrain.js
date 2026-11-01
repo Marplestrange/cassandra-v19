@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #091c2f
+// VERSION CN : 0.1.0  #b32811
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : stockage plein ou interdit : on continue sans
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=091c2f ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=b32811 ▼▼▼
 // Billetterie : les écrans du terrain, pensés pour le téléphone (la caisse, le contrôle à l'entrée) et « Mon espace » du revendeur et de l'artiste.
 (function () {
   "use strict";
@@ -67,7 +67,7 @@
     const dessiner = () => {
       const t = total(), rendu = moyen === "especes" && recu ? Math.max(0, recu - t) : 0;
       R.innerHTML = S.entetes("Caisse · " + (fiche ? fiche.evenement.nom : ""), "Caisse " + cais.ref + " · fond " + eur(cais.fond), '<span>' + (navigator.onLine ? puce("en ligne", "ok") : puce("hors ligne", "al")) + (pending.length ? " " + puce(pending.length + " vente(s) à envoyer", "al") : "") + '</span><button class="btn" data-a="sync"' + (pending.length ? "" : " disabled") + ">Envoyer</button>") +
-        '<div class="tuiles"><div class="tuile"><b>' + eur(tot.total) + "</b><span>encaissé</span></div><div class=\"tuile\"><b>" + (tot.billets || 0) + "</b><span>billets</span></div><div class=\"tuile\"><b>" + eur(tot.attendu_especes) + "</b><span>espèces attendues</span></div><div class=\"tuile" + (reserve.length < 5 ? " al" : "") + '"><b>' + reserve.length + "</b><span>numéros en réserve</span></div></div>" +
+        '<div class="stats"><div class="stat"><b>' + eur(tot.total) + "</b><span>encaissé</span></div><div class=\"tuile\"><b>" + (tot.billets || 0) + "</b><span>billets</span></div><div class=\"tuile\"><b>" + eur(tot.attendu_especes) + "</b><span>espèces attendues</span></div><div class=\"tuile" + (reserve.length < 5 ? " al" : "") + '"><b>' + reserve.length + "</b><span>numéros en réserve</span></div></div>" +
         (recuBillets ? '<div class="carte"><h2>Vente enregistrée</h2><p class="sub">' + recuBillets.texte + '</p><div style="display:grid;gap:10px">' + recuBillets.billets.map(billetQr).join("") + '</div><div class="row" style="margin-top:10px"><button class="btn pri gros" data-a="suivant">Vente suivante</button></div></div>' :
           types.map((x) => '<div class="ligne-billet"><div class="sp"><b>' + esc(x.nom) + '</b><span class="hint">' + esc(eur(x.prix)) + (x.entrees > 1 ? " · " + x.entrees + " entrées" : "") + '</span></div><div class="qte"><button data-a="moins" data-t="' + x.id + '" aria-label="Retirer un ' + esc(x.nom) + '">−</button><output>' + (panier[x.id] || 0) + '</output><button data-a="plus" data-t="' + x.id + '" aria-label="Ajouter un ' + esc(x.nom) + '">+</button></div></div>').join("") +
           '<div class="barre-total"><div class="row"><span class="total">' + eur(t) + '</span><span class="sp hint">' + nb() + " billet(s)</span><input type=\"text\" id=\"ca-promo\" placeholder=\"Code promo\" value=\"" + esc(promo) + "\" style=\"max-width:130px\"></div>" +
@@ -143,7 +143,7 @@
     const dessiner = () => {
       const e = etat || {}, enLigne = navigator.onLine;
       R.innerHTML = S.entetes("Contrôle · " + evt.nom, jour(evt.date_iso), '<span>' + (enLigne ? puce("en ligne", "ok") : puce("hors ligne", "al")) + (file.length ? " " + puce(file.length + " entrée(s) à envoyer", "al") : "") + '</span><select id="ct-evt" aria-label="Événement" style="max-width:220px">' + evts.map((x) => '<option value="' + x.id + '"' + (x.id === eid ? " selected" : "") + ">" + esc(x.nom) + "</option>").join("") + "</select>") +
-        '<div class="tuiles"><div class="tuile"><b>' + (e.entrees || 0) + "</b><span>entrés</span></div><div class=\"tuile\"><b>" + (e.restants == null ? "—" : e.restants) + "</b><span>attendus encore</span></div><div class=\"tuile\"><b>" + (e.invites_entres || 0) + "</b><span>invités entrés</span></div><div class=\"tuile" + ((e.refuses || 0) ? " al" : "") + '"><b>' + (e.refuses || 0) + "</b><span>refusés</span></div></div>" +
+        '<div class="stats"><div class="stat"><b>' + (e.entrees || 0) + "</b><span>entrés</span></div><div class=\"tuile\"><b>" + (e.restants == null ? "—" : e.restants) + "</b><span>attendus encore</span></div><div class=\"tuile\"><b>" + (e.invites_entres || 0) + "</b><span>invités entrés</span></div><div class=\"tuile" + ((e.refuses || 0) ? " al" : "") + '"><b>' + (e.refuses || 0) + "</b><span>refusés</span></div></div>" +
         (verdict ? '<div class="verdict ' + esc(verdict.niveau) + '"><h2>' + esc(verdict.titre) + "</h2><div>" + esc(verdict.detail || "") + "</div></div>" : "") +
         '<div class="carte"><div class="saisie-gros"><input type="text" id="ct-q" placeholder="Scanner ou saisir le code du billet" autocomplete="off" autocapitalize="characters" inputmode="text"><button class="btn pri" data-a="valider">Valider</button></div>' +
         '<div class="row" style="margin-top:8px"><button class="btn" data-a="camera">' + (camera ? "Arrêter la caméra" : "📷 Scanner avec la caméra") + '</button><label class="hint">Porte <input type="text" id="ct-porte" value="' + esc(porte) + '" style="width:170px"></label><span class="sp"></span><button class="btn" data-a="telecharger">' + (liste ? "Mettre à jour la liste hors ligne" : "Télécharger pour le hors ligne") + "</button></div>" +
@@ -212,7 +212,7 @@
   };
 
   // ═══ MON ESPACE ═══
-  const portefeuille = (w, qui) => '<div class="tuiles"><div class="tuile"><b>' + eur(Math.max(0, w.disponible)) + "</b><span>retirable maintenant</span></div><div class=\"tuile\"><b>" + eur(w.en_attente) + "</b><span>en attente de date</span></div><div class=\"tuile\"><b>" + eur(w.retraits_en_cours) + "</b><span>retrait demandé</span></div><div class=\"tuile\"><b>" + eur(w.verse) + "</b><span>déjà versé</span></div></div>" +
+  const portefeuille = (w, qui) => '<div class="stats"><div class="stat"><b>' + eur(Math.max(0, w.disponible)) + "</b><span>retirable maintenant</span></div><div class=\"tuile\"><b>" + eur(w.en_attente) + "</b><span>en attente de date</span></div><div class=\"tuile\"><b>" + eur(w.retraits_en_cours) + "</b><span>retrait demandé</span></div><div class=\"tuile\"><b>" + eur(w.verse) + "</b><span>déjà versé</span></div></div>" +
     '<div class="row"><button class="btn pri" data-a="retrait" data-q="' + qui + '"' + (w.disponible > 0 ? "" : " disabled") + ">Demander un retrait</button><span class=\"hint\">Le versement est fait par virement par l’organisateur.</span></div>" +
     (w.retraits.length ? "<h3>Mes demandes</h3>" + tableau([["d", "Demande"], ["m", "Montant", "n"], ["e", "État"]], w.retraits.map((r) => "<tr><td>" + esc(quand(r.demande_le)) + '</td><td class="n">' + eur(r.montant) + "</td><td>" + puce({ demandee: "en attente", validee: "validée", payee: "versée", refusee: "refusée" }[r.etat] || r.etat, r.etat === "payee" ? "ok" : r.etat === "refusee" ? "dg" : "al") + (r.motif ? '<div class="hint">' + esc(r.motif) + "</div>" : "") + "</td></tr>")) : "") +
     (w.mouvements.length ? "<h3>Mon registre</h3>" + tableau([["d", "Date"], ["n", "Nature"], ["m", "Montant", "n"]], w.mouvements.slice(0, 15).map((m) => "<tr><td>" + esc(quand(m.cree_le)) + "</td><td>" + esc(m.note || m.nature) + '</td><td class="n">' + eur(m.montant) + "</td></tr>")) : "");
