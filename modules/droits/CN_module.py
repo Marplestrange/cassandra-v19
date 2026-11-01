@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : droits
 # ZONE       : CN
-# VERSION CN : 0.2.0  #ba4816
+# VERSION CN : 0.2.0  #2657c2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des droits : l'administration des droits des comptes. La DÉCISION, elle, est prise par l'exécuteur (noyau/CN_droits.py).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=ba4816 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=2657c2 ▼▼▼
 """Le module des droits : l'administration des droits des comptes. La DÉCISION, elle, est prise par l'exécuteur (noyau/CN_droits.py).
 
 Chaque écriture rend de quoi se défaire : l'état d'avant et l'état attendu. Rien n'est jamais interdit ici par un plafond codé :
@@ -228,7 +228,12 @@ def brancher(ctx):
                  "detail": "Dernier : %s par %s (%s). Parmi : %s." % (dernier["objet_id"], dernier["acteur"], dernier["donnees"].get("raison"), ", ".join(prets))}]
 
     ctx.detecteur("sans_compte", sans_compte)
+    def mes_droits_a_moi(ctx):
+        """Les droits du compte qui demande (jamais d'un autre) : de quoi cacher les boutons qu'il ne peut pas utiliser. Le serveur refuse de toute façon ce que le compte n'a pas le droit de faire."""
+        return d.detenus(ctx.compte, ctx.societe)
+
     ctx.implementer("mes_droits", mes_droits)
+    ctx.implementer("mes_droits_a_moi", mes_droits_a_moi)
     ctx.implementer("verifier", verifier)
     ctx.implementer("catalogue", catalogue)
     ctx.implementer("etat", etat)

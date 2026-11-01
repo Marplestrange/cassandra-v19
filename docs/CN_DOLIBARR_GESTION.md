@@ -12,7 +12,7 @@
 <!-- RÔLE       : Dolibarr, la gestion complète : ce que le module sait faire, la clé d'API par compte, le compte de mandat, les paliers -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9818cd ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9266c9 ▼▼▼ -->
 # Dolibarr : la gestion complète
 
 Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il écrit, et tout geste a sa **preuve** (relire ce qui a été écrit) et son **retour arrière**.
@@ -58,6 +58,22 @@ Par défaut une fiche de Cassandra reste « Cassandra seulement ». `envoyer_pro
 - **Un compte sans clé propre lit** (avec la clé de mandat) **mais n'écrit pas**. Il ne tombe jamais sur la clé d'un autre. Le réglage `dolibarr.mandat_pour_tous` (désactivé par défaut) en fait le choix de l'administrateur.
 - **La clé de mandat** : `dolibarr.cle_mandat`, ou le fichier `config/dolibarr.key`. Elle sert les moteurs (billetterie, relevé) qui n'ont pas de compte. Un utilisateur Dolibarr aux droits limités vaut mieux qu'un administrateur.
 - **La société attendue** : `dolibarr.societe_attendue`. Rempli, le pont vérifie avant chaque écriture que la clé voit cette société, sinon il refuse (une instance à plusieurs entités peut donner une clé qui écrit dans la mauvaise comptabilité).
+
+## Les droits par métier (Paramètres › Droits)
+
+Tout le monde ne doit pas pouvoir tout faire dans Dolibarr. Le module déclare des droits que l'administrateur accorde (à un compte ou à un groupe) ; les administrateurs les ont tous. Chaque capacité demande l'un d'eux : **le serveur refuse le reste**, et l'écran grise les boutons que le compte ne peut pas utiliser (avec « il te manque le droit … » en infobulle).
+| Droit | Ce qu'il ouvre | Par défaut |
+|---|---|---|
+| `consulter` | lire tiers, factures, devis, dons, adhérents, projets, banque, PDF | oui |
+| `facturer` | brouillons de devis et factures, avoirs, relances, encaisser un règlement, produire un PDF | non |
+| `valider` (sensible) | numéro légal d'une facture (irréversible), valider un don, valider ou clore un projet | non |
+| `tiers` | créer, modifier, restaurer tiers, contacts, produits, projets ; les envoyer à Dolibarr ou les en détacher | non |
+| `dons` | saisir un don, enregistrer une cotisation | non |
+| `tresorerie` (sensible) | virements entre comptes, paiement des factures fournisseurs | non |
+| `libre` (sensible) | requête libre sur l'API | non |
+| `administrer` (sensible) | supprimer, lire la base (en plus : superadministrateur), réglages, pont de la billetterie | non |
+
+Les droits de Cassandra et ceux de la clé Dolibarr du compte s'ajoutent : il faut le droit ici ET que Dolibarr accepte la clé. Sans le droit `tiers`, la fiche d'un tiers ou d'un contact s'ouvre en lecture seule.
 
 ## Les paliers
 

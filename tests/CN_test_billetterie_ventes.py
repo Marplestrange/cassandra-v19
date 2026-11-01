@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1f6c61
+# VERSION CN : 0.1.0  #8e8596
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie, lot 3 : le stock et les places retenues, le prix, les codes promo, les commandes, les billets signés, la commission d'un revendeur (la somme des lignes vaut toujours ce que rapporte la formule), les remboursements, 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1f6c61 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e8596 ▼▼▼
 """Bancs de la billetterie, lot 3 : le stock et les places retenues, le prix, les codes promo, les commandes, les billets signés, la commission d'un revendeur (la somme des lignes
 vaut toujours ce que rapporte la formule), les remboursements, les invitations, les formules figées."""
 import sys
@@ -55,6 +55,35 @@ class Ventes(Monde):
 
     def avance(self, secondes):
         self.t[0] += secondes
+
+
+class Droits(Ventes):
+    """Les droits par page de la billetterie : l'administrateur les accorde dans Paramètres › Droits, le serveur refuse tout le reste."""
+
+    def test_chaque_droit_n_ouvre_que_sa_page(self):
+        self.n.identite.creer("chef@x.fr", "Abcdefgh1!")                        # le premier compte humain est le superadministrateur : paul n'en est donc pas un
+        self.n.identite.creer("paul@x.fr", "Abcdefgh1!")
+        pour = lambda cap, **a: self.n.executeur.executer("billetterie." + cap, "humain", a, compte="paul@x.fr")
+        pages = {"evenements": ("evenements", {}), "ventes": ("commandes", {}), "personnes": ("revendeurs", {}), "argent": ("retraits", {})}
+        for droit, (cap, args) in pages.items():
+            r = pour(cap, **args)
+            self.assertEqual(r["statut"], "refuse", "%s sans le droit %s" % (cap, droit))
+            self.assertIn("billetterie." + droit, r["raison"])
+        for droit, (cap, args) in pages.items():
+            self.n.droits.regler("compte", "paul@x.fr", "billetterie." + droit, "accorde")
+            self.assertEqual(pour(cap, **args)["statut"], "faite", "%s avec le droit %s" % (cap, droit))
+        # le droit d'une page n'ouvre pas celle d'à côté
+        self.n.identite.creer("lea@x.fr", "Abcdefgh1!")
+        self.n.droits.regler("compte", "lea@x.fr", "billetterie.ventes", "accorde")
+        self.assertEqual(self.n.executeur.executer("billetterie.commandes", "humain", {}, compte="lea@x.fr")["statut"], "faite")
+        for cap in ("retraits", "evenements", "revendeurs"):
+            self.assertEqual(self.n.executeur.executer("billetterie." + cap, "humain", {}, compte="lea@x.fr")["statut"], "refuse", cap)
+
+    def test_l_argent_est_un_droit_sensible_et_aucun_droit_n_est_donne_d_office(self):
+        cat = {d["droit"]: d for d in self.n.droits.catalogue() if d["module"] == "billetterie"}
+        self.assertTrue(cat["billetterie.argent"]["sensible"])
+        self.assertEqual({k for k, d in cat.items() if d["defaut"]}, set())
+        self.assertNotIn("billetterie.gerer", cat)
 
 
 class Prix(Ventes):

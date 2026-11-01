@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #8c33bc
+// VERSION CN : 0.1.0  #af7d2b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Le kit commun des écrans V19 : la feuille de style, les icônes, les petits composants (pastille, titre, « il y a »), la fenêtre de confirmation.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=8c33bc ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=af7d2b ▼▼▼
 // Le kit commun des écrans V19 : la feuille de style, les icônes, les petits composants (pastille, titre, « il y a »), la fenêtre de confirmation.
 // Chaque écran se met dans un <div class="kit"> ; la feuille s'injecte UNE fois (id kit-css). La Logithèque l'a inauguré ; les écrans suivants le réemploient.
 (function () {
@@ -104,8 +104,12 @@
     });
   }
   const agir = (c, a) => CASS.agir(c, a || {});
+  // Les droits de MON compte, lus une fois : un écran cache ce que le compte ne peut pas faire. Le serveur refuse de toute façon : ceci n'est qu'une politesse.
+  const MOI = { fait: null, droits: null, admin: false };
+  const droits = () => MOI.fait || (MOI.fait = agir("droits.mes_droits_a_moi").then((r) => { MOI.droits = new Set((r && r.droits) || []); MOI.admin = !!(r && r.admin); return MOI; }, () => MOI));
+  const peut = (droit) => !MOI.droits || MOI.admin || MOI.droits.has(droit);          // pas encore lus, ou illisibles : on laisse faire, le serveur tranche
   const dire = (t, k) => { if (typeof window.toast === "function") window.toast(t, k); };
-  CASS.kit = { esc: esc, I: I, ic: ic, pill: pill, depuis: depuis, titre: titre, injecter: injecter, confirmer: confirmer, agir: agir, dire: dire };
+  CASS.kit = { esc: esc, I: I, ic: ic, pill: pill, depuis: depuis, titre: titre, injecter: injecter, confirmer: confirmer, agir: agir, dire: dire, droits: droits, peut: peut };
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
 

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #4af3ed
+// VERSION CN : 0.1.0  #310eb4
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : l'écran du titulaire (vue d'ensemble, événements, ventes, personnes, argent). Tout passe par les capacités billetterie.* : les règles sont dans le module, jamais ici.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=4af3ed ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=310eb4 ▼▼▼
 // Billetterie : l'écran du titulaire (vue d'ensemble, événements, ventes, personnes, argent). Tout passe par les capacités billetterie.* : les règles sont dans le module, jamais ici.
 (function () {
   "use strict";
@@ -114,9 +114,11 @@
     corps.innerHTML = ""; const racine = document.createElement("div"); racine.className = "kit bl"; corps.appendChild(racine);
     const page = PAGES[String(ctx && ctx.ecran || "").split(":")[1]] || "vue";
     const S = { page: page, racine: racine, erreur: "", cache: {} };
-    S.lire = async (cap, args) => { try { return await agir(cap, args || {}); } catch (e) { S.erreur = e.message || String(e); return null; } };
+    S.peut = (droit) => K.peut("billetterie." + droit);
+    S.lire = async (cap, args, droit) => { if (droit && !S.peut(droit)) return null; try { return await agir(cap, args || {}); } catch (e) { S.erreur = e.message || String(e); return null; } };
     S.geste = async (cap, args, ok) => { try { const r = await agir(cap, args || {}); if (ok) dire(ok, "ok"); return r || true; } catch (e) { dire(e.message || String(e), "err"); return false; } };
     S.rendre = async () => {
+      await K.droits();
       S.erreur = "";
       const f = B.pages[S.page];
       if (!f) { racine.innerHTML = '<div class="carte vide">Cet écran n’existe pas.</div>'; return; }

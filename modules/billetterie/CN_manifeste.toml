@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : billetterie
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ae6c78
+# VERSION CN : 0.1.0  #a866b6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La billetterie : événements, salles, artistes, revendeurs et formules de rémunération, billets, caisse, contrôle à l'entrée, boutique publique et portefeuille des commissions. Le titulaire de l'instance est l'organisateur ; l'argent est tenu en centimes dans un registre en écriture seule ; Dolibarr est facultatif.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ae6c78 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a866b6 ▼▼▼
 [module]
 id = "billetterie"
 nom = "Billetterie"
@@ -37,8 +37,20 @@ secrets = true
 reseau = ["l'API de Stripe (api.stripe.com), pour créer la page de paiement hébergée d'une commande", "les API de PayPal (api-m.paypal.com) et de HelloAsso (api.helloasso.com), pour créer la page de paiement et vérifier le paiement au retour de l'acheteur", "le serveur d'envoi de courrier (SMTP) réglé dans la billetterie, pour expédier les billets et les messages aux acheteurs"]
 
 [[droits]]
-id = "gerer"
-libelle = "Gérer la billetterie (le titulaire de l'instance : événements, formules, revendeurs, argent, réglages)"
+id = "evenements"
+libelle = "Gérer les événements : créer, mettre en vente, programmer, annuler ou reporter un événement, ses billets, ses passages, ses invitations et sa liste d'attente (pages Vue d'ensemble et Événements)"
+
+[[droits]]
+id = "ventes"
+libelle = "Gérer les ventes : voir et créer les commandes, encaisser, rembourser, annuler, réémettre ou transférer un billet, tenir les fiches clients (page Ventes)"
+
+[[droits]]
+id = "personnes"
+libelle = "Gérer les revendeurs, les artistes et les bases : formules de rémunération, salles, codes promo, textes légaux (page Revendeurs et artistes)"
+
+[[droits]]
+id = "argent"
+libelle = "Gérer l'argent : valider et payer les retraits, voir les portefeuilles, émettre des reçus fiscaux, courriels, pont Dolibarr (page Argent)"
 sensible = true
 
 [[droits]]
@@ -464,19 +476,19 @@ portee = "societe"
 id = "salles"
 libelle = "La liste : la salle (recherche par nom ou référence)"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "salle"
 libelle = "Une fiche : la salle"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "salle_save"
 libelle = "Créer ou modifier la salle (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
 risque = "faible"
-droit = "gerer"
+droit = "personnes"
 perimetre = ["la salle"]
 preuve = "la fiche relue"
 retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
@@ -486,7 +498,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "salle_delete"
 libelle = "Supprimer la salle (refusé tant qu'elle sert ailleurs)"
 risque = "faible"
-droit = "gerer"
+droit = "personnes"
 perimetre = ["la salle"]
 preuve = "la fiche n'existe plus"
 retour = "remettre la fiche, avec sa référence"
@@ -496,19 +508,19 @@ paliers = ["raconter", "auto", "maitre"]
 id = "formules"
 libelle = "La liste : la formule de rémunération (recherche par nom ou référence)"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "formule"
 libelle = "Une fiche : la formule de rémunération"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "formule_save"
 libelle = "Créer ou modifier la formule de rémunération (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
 risque = "faible"
-droit = "gerer"
+droit = "personnes"
 perimetre = ["la formule de rémunération"]
 preuve = "la fiche relue"
 retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
@@ -518,7 +530,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "formule_delete"
 libelle = "Supprimer la formule de rémunération (refusé tant qu'elle sert ailleurs)"
 risque = "faible"
-droit = "gerer"
+droit = "personnes"
 perimetre = ["la formule de rémunération"]
 preuve = "la fiche n'existe plus"
 retour = "remettre la fiche, avec sa référence"
@@ -528,19 +540,19 @@ paliers = ["raconter", "auto", "maitre"]
 id = "artistes"
 libelle = "La liste : la fiche artiste (et sa casquette de vendeur) (recherche par nom ou référence)"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "artiste"
 libelle = "Une fiche : la fiche artiste (et sa casquette de vendeur)"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "artiste_save"
 libelle = "Créer ou modifier la fiche artiste (et sa casquette de vendeur) (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
 risque = "faible"
-droit = "gerer"
+droit = "personnes"
 perimetre = ["la fiche artiste (et sa casquette de vendeur)"]
 preuve = "la fiche relue"
 retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
@@ -550,7 +562,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "artiste_delete"
 libelle = "Supprimer la fiche artiste (et sa casquette de vendeur) (refusé tant qu'elle sert ailleurs)"
 risque = "faible"
-droit = "gerer"
+droit = "personnes"
 perimetre = ["la fiche artiste (et sa casquette de vendeur)"]
 preuve = "la fiche n'existe plus"
 retour = "remettre la fiche, avec sa référence"
@@ -560,19 +572,19 @@ paliers = ["raconter", "auto", "maitre"]
 id = "revendeurs"
 libelle = "La liste : le revendeur indépendant (recherche par nom ou référence)"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "revendeur"
 libelle = "Une fiche : le revendeur indépendant"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "revendeur_save"
 libelle = "Créer ou modifier le revendeur indépendant (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
 risque = "faible"
-droit = "gerer"
+droit = "personnes"
 perimetre = ["le revendeur indépendant"]
 preuve = "la fiche relue"
 retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
@@ -582,7 +594,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "revendeur_delete"
 libelle = "Supprimer le revendeur indépendant (refusé tant qu'elle sert ailleurs)"
 risque = "faible"
-droit = "gerer"
+droit = "personnes"
 perimetre = ["le revendeur indépendant"]
 preuve = "la fiche n'existe plus"
 retour = "remettre la fiche, avec sa référence"
@@ -592,19 +604,19 @@ paliers = ["raconter", "auto", "maitre"]
 id = "evenements"
 libelle = "La liste : l'événement (recherche par nom ou référence)"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "evenement"
 libelle = "Une fiche : l'événement"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "evenement_save"
 libelle = "Créer ou modifier l'événement (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
 risque = "faible"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["l'événement"]
 preuve = "la fiche relue"
 retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
@@ -614,7 +626,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "evenement_delete"
 libelle = "Supprimer l'événement (refusé tant qu'elle sert ailleurs)"
 risque = "faible"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["l'événement"]
 preuve = "la fiche n'existe plus"
 retour = "remettre la fiche, avec sa référence"
@@ -624,19 +636,19 @@ paliers = ["raconter", "auto", "maitre"]
 id = "type_billets"
 libelle = "La liste : le type de billet d'un événement (recherche par nom ou référence)"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "type_billet"
 libelle = "Une fiche : le type de billet d'un événement"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "type_billet_save"
 libelle = "Créer ou modifier le type de billet d'un événement (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
 risque = "faible"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["le type de billet d'un événement"]
 preuve = "la fiche relue"
 retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
@@ -646,7 +658,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "type_billet_delete"
 libelle = "Supprimer le type de billet d'un événement (refusé tant qu'elle sert ailleurs)"
 risque = "faible"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["le type de billet d'un événement"]
 preuve = "la fiche n'existe plus"
 retour = "remettre la fiche, avec sa référence"
@@ -656,19 +668,19 @@ paliers = ["raconter", "auto", "maitre"]
 id = "passages"
 libelle = "La liste : un passage au programme (recherche par nom ou référence)"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "passage"
 libelle = "Une fiche : un passage au programme"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "passage_save"
 libelle = "Créer ou modifier un passage au programme (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
 risque = "faible"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["un passage au programme"]
 preuve = "la fiche relue"
 retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
@@ -678,7 +690,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "passage_delete"
 libelle = "Supprimer un passage au programme (refusé tant qu'elle sert ailleurs)"
 risque = "faible"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["un passage au programme"]
 preuve = "la fiche n'existe plus"
 retour = "remettre la fiche, avec sa référence"
@@ -688,19 +700,19 @@ paliers = ["raconter", "auto", "maitre"]
 id = "affectations"
 libelle = "La liste : l'affectation d'un revendeur à un événement (recherche par nom ou référence)"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "affectation"
 libelle = "Une fiche : l'affectation d'un revendeur à un événement"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "affectation_save"
 libelle = "Créer ou modifier l'affectation d'un revendeur à un événement (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
 risque = "faible"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["l'affectation d'un revendeur à un événement"]
 preuve = "la fiche relue"
 retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
@@ -710,7 +722,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "affectation_delete"
 libelle = "Supprimer l'affectation d'un revendeur à un événement (refusé tant qu'elle sert ailleurs)"
 risque = "faible"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["l'affectation d'un revendeur à un événement"]
 preuve = "la fiche n'existe plus"
 retour = "remettre la fiche, avec sa référence"
@@ -720,19 +732,19 @@ paliers = ["raconter", "auto", "maitre"]
 id = "invitations"
 libelle = "La liste : une catégorie d'invités et son quota (recherche par nom ou référence)"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "invitation"
 libelle = "Une fiche : une catégorie d'invités et son quota"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "invitation_save"
 libelle = "Créer ou modifier une catégorie d'invités et son quota (un champ non précisé reste tel quel ; l'argent en centimes ; une référence n'est jamais réutilisée)"
 risque = "faible"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["une catégorie d'invités et son quota"]
 preuve = "la fiche relue"
 retour = "remettre la fiche d'avant, ou retirer la fiche neuve (sa référence reste retirée)"
@@ -742,7 +754,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "invitation_delete"
 libelle = "Supprimer une catégorie d'invités et son quota (refusé tant qu'elle sert ailleurs)"
 risque = "faible"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["une catégorie d'invités et son quota"]
 preuve = "la fiche n'existe plus"
 retour = "remettre la fiche, avec sa référence"
@@ -752,19 +764,19 @@ paliers = ["raconter", "auto", "maitre"]
 id = "evenement_fiche"
 libelle = "L'événement entier : salle, jauge, types de billets, programme, affectations, invitations"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "commission"
 libelle = "Ce que rapporterait une formule pour un nombre de places (calcul du point d'évolution)"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "evenement_publier"
 libelle = "Mettre un événement en vente (date, salle, places et jauge exigées ; deux billets par défaut s'il n'en a aucun)"
 risque = "moyen"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["la mise en vente d'un événement"]
 preuve = "l'événement relu en vente"
 retour = "le remettre en brouillon et retirer les billets créés par défaut"
@@ -774,7 +786,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "evenement_depublier"
 libelle = "Retirer un événement de la vente (retour au brouillon)"
 risque = "moyen"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["la mise en vente d'un événement"]
 preuve = "l'événement relu en brouillon"
 retour = "le remettre en vente"
@@ -784,7 +796,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "programme_ordonner"
 libelle = "Changer l'ordre de passage des artistes d'un événement"
 risque = "faible"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["l'ordre du programme d'un événement"]
 preuve = "l'ordre relu"
 retour = "remettre l'ordre d'avant"
@@ -793,25 +805,25 @@ paliers = ["raconter", "auto", "maitre"]
 id = "portefeuille"
 libelle = "Le portefeuille d'un revendeur ou d'un artiste : ce qui lui est dû, retirable aujourd'hui, en attente de sa date, déjà demandé ou versé, et ses dernières lignes"
 risque = "lecture"
-droit = "gerer"
+droit = "argent"
 
 [[capacites]]
 id = "mouvements"
 libelle = "Le registre des mouvements (écriture seule), filtré par porteur ou par événement"
 risque = "lecture"
-droit = "gerer"
+droit = "argent"
 
 [[capacites]]
 id = "retraits"
 libelle = "Les demandes de retrait, par état ou par porteur"
 risque = "lecture"
-droit = "gerer"
+droit = "argent"
 
 [[capacites]]
 id = "provision"
 libelle = "Inscrire à la main une somme due (commission, fixe, forfait) ou un ajustement dans le registre"
 risque = "faible"
-droit = "gerer"
+droit = "argent"
 perimetre = ["une ligne du registre d'un porteur"]
 preuve = "la ligne relue dans le registre"
 retour = "écrire la ligne contraire (le registre ne se retouche jamais)"
@@ -821,7 +833,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "retrait_demander"
 libelle = "Demander un retrait : le montant est réservé dans le portefeuille (seuil minimal, disponible seulement)"
 risque = "faible"
-droit = "gerer"
+droit = "argent"
 perimetre = ["une demande de retrait et sa réserve"]
 preuve = "la demande relue en attente"
 retour = "refuser la demande : la réserve revient par une ligne contraire"
@@ -831,7 +843,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "retrait_valider"
 libelle = "Valider une demande de retrait (le virement reste à faire, hors de Cassandra)"
 risque = "moyen"
-droit = "gerer"
+droit = "argent"
 perimetre = ["l'état d'une demande de retrait"]
 preuve = "la demande relue validée"
 retour = "la remettre en attente"
@@ -841,7 +853,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "retrait_payer"
 libelle = "Enregistrer que le virement d'une demande validée est parti"
 risque = "moyen"
-droit = "gerer"
+droit = "argent"
 perimetre = ["l'état d'une demande de retrait"]
 preuve = "la demande relue payée"
 retour = "la remettre à validée"
@@ -851,7 +863,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "retrait_refuser"
 libelle = "Refuser une demande de retrait : le montant revient au portefeuille"
 risque = "moyen"
-droit = "gerer"
+droit = "argent"
 perimetre = ["l'état d'une demande de retrait et sa réserve"]
 preuve = "la demande relue refusée"
 retour = "rouvrir la demande si le portefeuille la couvre encore"
@@ -868,19 +880,19 @@ duree_max_s = 30
 id = "promos"
 libelle = "La liste : le code promo (recherche par code ou référence)"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "promo"
 libelle = "Une fiche : le code promo"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "promo_save"
 libelle = "Créer ou modifier le code promo (pourcentage ou euros par billet, événement, plafond d'utilisations, fin ; un code n'est jamais réutilisé)"
 risque = "faible"
-droit = "gerer"
+droit = "personnes"
 perimetre = ["le code promo"]
 preuve = "la fiche relue"
 retour = "remettre la fiche d'avant, ou retirer la fiche neuve (son code reste retiré)"
@@ -890,7 +902,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "promo_delete"
 libelle = "Supprimer le code promo (refusé s'il a servi : on le désactive)"
 risque = "faible"
-droit = "gerer"
+droit = "personnes"
 perimetre = ["le code promo"]
 preuve = "la fiche n'existe plus"
 retour = "remettre la fiche, avec son code"
@@ -900,43 +912,43 @@ paliers = ["raconter", "auto", "maitre"]
 id = "stock"
 libelle = "Les places de l'événement : vendues, retenues le temps de payer, restantes, par type de billet"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "panier_devis"
 libelle = "Chiffrer un panier sans rien écrire : prix de la base, code promo, don, frais sans compte, places disponibles"
 risque = "lecture"
-droit = "gerer"
+droit = "ventes"
 
 [[capacites]]
 id = "commandes"
 libelle = "Les commandes d'un événement (par état, par nom, par courriel ou par référence)"
 risque = "lecture"
-droit = "gerer"
+droit = "ventes"
 
 [[capacites]]
 id = "commande"
 libelle = "Une commande entière : ses lignes et ses billets"
 risque = "lecture"
-droit = "gerer"
+droit = "ventes"
 
 [[capacites]]
 id = "billets"
 libelle = "Les billets d'un événement (par état, par nom, par numéro)"
 risque = "lecture"
-droit = "gerer"
+droit = "ventes"
 
 [[capacites]]
 id = "billet"
 libelle = "Un billet : son numéro de contrôle et le contenu de son QR code"
 risque = "lecture"
-droit = "gerer"
+droit = "ventes"
 
 [[capacites]]
 id = "commande_creer"
 libelle = "Créer une commande à la main ou à la caisse (retient les places ; avec un moyen immédiat, l'encaisse et émet les billets)"
 risque = "moyen"
-droit = "gerer"
+droit = "ventes"
 perimetre = ["une commande, ses places retenues et, si encaissée, ses billets et la commission du revendeur"]
 preuve = "la commande relue (en cours ou payée)"
 retour = "l'annuler, ou la rembourser si elle était encaissée"
@@ -946,7 +958,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "commande_encaisser"
 libelle = "Encaisser une commande en cours (une même référence de paiement ne livre qu'une fois) : émet les billets, écrit la commission du revendeur"
 risque = "moyen"
-droit = "gerer"
+droit = "ventes"
 perimetre = ["la commande, ses billets et la commission"]
 preuve = "la commande relue payée"
 retour = "rembourser par une ligne contraire et remettre la commande en cours"
@@ -956,7 +968,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "commande_rembourser"
 libelle = "Rembourser une commande payée : billets annulés, places rendues, commission retirée (le remboursement chez le prestataire reste à faire)"
 risque = "moyen"
-droit = "gerer"
+droit = "ventes"
 perimetre = ["la commande, ses billets et la commission du revendeur"]
 preuve = "la commande relue remboursée"
 retour = "rouvrir la commande si les places n'ont pas été revendues"
@@ -966,7 +978,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "commande_annuler"
 libelle = "Annuler une commande en cours (les places retenues reviennent)"
 risque = "faible"
-droit = "gerer"
+droit = "ventes"
 perimetre = ["l'état d'une commande en cours"]
 preuve = "la commande relue annulée"
 retour = "la rouvrir si les places sont encore libres"
@@ -976,7 +988,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "billet_reemettre"
 libelle = "Réémettre un billet : un nouveau QR et un nouveau numéro de contrôle, l'ancien ne passe plus"
 risque = "moyen"
-droit = "gerer"
+droit = "ventes"
 perimetre = ["la version d'un billet"]
 preuve = "la version relue"
 retour = "remettre la version d'avant"
@@ -986,7 +998,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "billet_transferer"
 libelle = "Transférer un billet à un autre porteur (nom et courriel)"
 risque = "faible"
-droit = "gerer"
+droit = "ventes"
 perimetre = ["le porteur d'un billet"]
 preuve = "le porteur relu"
 retour = "remettre le porteur d'avant"
@@ -996,7 +1008,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "invitation_emettre"
 libelle = "Émettre une invitation (billet gratuit) dans une catégorie d'invités, dans la limite de son quota"
 risque = "faible"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["un billet d'invitation et le compteur de la catégorie"]
 preuve = "le billet relu valide"
 retour = "annuler le billet et rendre l'invitation au quota"
@@ -1024,7 +1036,7 @@ droit = "controler"
 id = "conflits"
 libelle = "Les conflits d'entrée : un même billet vu à deux portes pendant une coupure"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "controler"
@@ -1050,7 +1062,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "conflit_arbitrer"
 libelle = "Arbitrer un conflit d'entrée : accepter (même personne ou erreur) ou bloquer le billet"
 risque = "moyen"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["l'état d'un conflit et le billet bloqué"]
 preuve = "le conflit relu arbitré"
 retour = "remettre le conflit à arbitrer et le billet valide"
@@ -1159,19 +1171,19 @@ qui = ["anonyme"]
 id = "courriels"
 libelle = "Les courriels préparés par la billetterie (confirmations de commande), à envoyer ou envoyés"
 risque = "lecture"
-droit = "gerer"
+droit = "argent"
 
 [[capacites]]
 id = "evenement_impact"
 libelle = "Les chiffres d'une annulation ou d'un report, avant de confirmer : commandes à rembourser par moyen, commissions à reprendre, artistes et revendeurs à prévenir, salle (rien n'est écrit)"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "evenement_annuler"
 libelle = "Annuler un événement : vente fermée, commandes payées remboursées, invitations annulées, commissions reprises, acheteurs, artistes et revendeurs prévenus (l'argent à rendre chez le prestataire ou à la main est listé)"
 risque = "eleve"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["l'événement, ses commandes, ses billets, le registre des commissions, la boîte d'envoi"]
 preuve = "plus aucun billet valide ni commande ouverte, événement annulé"
 retour = "rouvrir l'événement, rejouer les commandes remboursées ; un courriel déjà parti ne se rappelle pas"
@@ -1181,7 +1193,7 @@ paliers = ["raconter"]
 id = "evenement_reporter"
 libelle = "Reporter un événement à une nouvelle date : les billets restent valables, acheteurs, artistes et revendeurs prévenus, commissions retirables seulement après la nouvelle date"
 risque = "moyen"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["la date de l'événement, la boîte d'envoi, la disponibilité des commissions"]
 preuve = "la date relue"
 retour = "remettre l'ancienne date ; un courriel déjà parti ne se rappelle pas"
@@ -1255,13 +1267,13 @@ qui = ["anonyme"]
 id = "attente_liste"
 libelle = "Lire la liste d'attente d'un événement : qui attend quoi, dans quel ordre, quelles offres sont faites"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "attente_proposer"
 libelle = "Faire maintenant les offres que le stock permet à la liste d'attente (les places sont retenues pour la durée du réglage ; un courriel part)"
 risque = "moyen"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["des commandes en cours qui retiennent des places, la boîte d'envoi, la liste d'attente"]
 preuve = "chaque inscription servie relue offerte"
 retour = "annuler les offres : les places reviennent, les inscrits reprennent leur rang"
@@ -1271,7 +1283,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "recu_fiscal_emettre"
 libelle = "Émettre le reçu fiscal du don d'une commande payée (association éligible seulement, sans Dolibarr ; jamais pour un billet ; numéro continu, contenu figé)"
 risque = "moyen"
-droit = "gerer"
+droit = "argent"
 perimetre = ["un reçu numéroté pour la part don d'une commande"]
 preuve = "le reçu relu en vigueur"
 retour = "annuler le reçu (il garde son numéro : un reçu ne s'efface pas)"
@@ -1281,7 +1293,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "recu_fiscal_annuler"
 libelle = "Annuler un reçu fiscal avec son motif (le numéro reste, le trou s'explique)"
 risque = "moyen"
-droit = "gerer"
+droit = "argent"
 perimetre = ["l'état d'un reçu"]
 preuve = "le reçu relu annulé"
 retour = "rouvrir le reçu s'il n'y en a pas d'autre en vigueur pour la commande"
@@ -1291,19 +1303,19 @@ paliers = ["raconter", "auto"]
 id = "recus_fiscaux"
 libelle = "Lire le registre des reçus fiscaux (par année, par état) et le total des reçus en vigueur"
 risque = "lecture"
-droit = "gerer"
+droit = "argent"
 
 [[capacites]]
 id = "recu_fiscal"
 libelle = "Lire un reçu fiscal complet (organisme, donateur, montant, mention légale)"
 risque = "lecture"
-droit = "gerer"
+droit = "argent"
 
 [[capacites]]
 id = "recus_export"
 libelle = "Exporter le registre des reçus d'une année en CSV (comptabilité, contrôle ; conservation 10 ans)"
 risque = "lecture"
-droit = "gerer"
+droit = "argent"
 
 [[capacites]]
 id = "public_recu_demander"
@@ -1428,7 +1440,7 @@ parent = "billetterie"
 ordre = 10
 role = "utilisateur"
 icone = "panorama"
-droit = "gerer"
+droit = "evenements"
 
 [[menus]]
 id = "b_evenements"
@@ -1438,7 +1450,7 @@ parent = "billetterie"
 ordre = 20
 role = "utilisateur"
 icone = "calendar"
-droit = "gerer"
+droit = "evenements"
 
 [[menus]]
 id = "b_ventes"
@@ -1448,7 +1460,7 @@ parent = "billetterie"
 ordre = 30
 role = "utilisateur"
 icone = "ticket"
-droit = "gerer"
+droit = "ventes"
 
 [[menus]]
 id = "b_personnes"
@@ -1458,7 +1470,7 @@ parent = "billetterie"
 ordre = 40
 role = "utilisateur"
 icone = "contacts"
-droit = "gerer"
+droit = "personnes"
 
 [[menus]]
 id = "b_argent"
@@ -1468,7 +1480,7 @@ parent = "billetterie"
 ordre = 50
 role = "utilisateur"
 icone = "chart"
-droit = "gerer"
+droit = "argent"
 
 [[menus]]
 id = "b_caisse"
@@ -1589,19 +1601,19 @@ masque = ["session"]
 id = "clients"
 libelle = "Lire les clients de la boutique : nom, courriel, compte ou achat sans compte, accord, commandes, suppression demandée"
 risque = "lecture"
-droit = "gerer"
+droit = "ventes"
 
 [[capacites]]
 id = "client_dossier"
 libelle = "Lire tout ce que la billetterie sait d'un client (réponse à une demande d'accès RGPD par courriel)"
 risque = "lecture"
-droit = "gerer"
+droit = "ventes"
 
 [[capacites]]
 id = "client_effacement"
 libelle = "Programmer (ou annuler) l'effacement des données d'un client, par exemple sur sa demande par courriel : même délai que sa propre demande, défaisable jusque-là"
 risque = "moyen"
-droit = "gerer"
+droit = "ventes"
 perimetre = ["la date d'effacement de la fiche d'un client"]
 preuve = "la date d'effacement relue"
 retour = "remettre la date d'avant (annuler la demande)"
@@ -1611,7 +1623,7 @@ paliers = ["raconter"]
 id = "courriels_envoyer"
 libelle = "Expédier maintenant les courriels de la boîte d'envoi par le serveur réglé (rien ne part si l'envoi n'est pas activé ; le frein « envois » l'arrête)"
 risque = "moyen"
-droit = "gerer"
+droit = "argent"
 perimetre = ["la boîte d'envoi de la billetterie et le serveur d'envoi réglé"]
 preuve = "les courriels dus relus envoyés, reportés ou en échec"
 retour = "aucun : un courriel parti ne se rappelle pas ; un échec se relance"
@@ -1622,7 +1634,7 @@ sortant = true
 id = "courriel_relancer"
 libelle = "Remettre un courriel en échec dans la boîte d'envoi pour qu'il soit retenté"
 risque = "faible"
-droit = "gerer"
+droit = "argent"
 perimetre = ["l'état d'un courriel de la boîte d'envoi"]
 preuve = "le courriel relu à envoyer"
 retour = "le remettre en échec"
@@ -1632,7 +1644,7 @@ paliers = ["raconter", "auto", "maitre"]
 id = "courriels_etat"
 libelle = "Où en est l'envoi des courriels : activé ou non, serveur réglé, nombre à envoyer, envoyés, en échec, frein « envois »"
 risque = "lecture"
-droit = "gerer"
+droit = "argent"
 
 [[capacites]]
 id = "public_paiement_verifier"
@@ -1654,31 +1666,31 @@ qui = ["anonyme"]
 id = "commande_pdf"
 libelle = "Les billets d'une commande payée en PDF, pour les imprimer ou les envoyer (une page par billet valide)"
 risque = "lecture"
-droit = "gerer"
+droit = "ventes"
 
 [[capacites]]
 id = "dolibarr_etat"
 libelle = "Le pont Dolibarr : relié ou non, domaines actifs, écritures à faire, faites, ignorées, en échec, et les dernières raisons d'échec"
 risque = "lecture"
-droit = "gerer"
+droit = "argent"
 
 [[capacites]]
 id = "dolibarr_tester"
 libelle = "Interroger Dolibarr (lecture seule) : version, société, comptes bancaires, modes de paiement, taux de TVA, et ce qui manque pour que le pont marche (chaque point dit quoi faire)"
 risque = "lecture"
-droit = "gerer"
+droit = "argent"
 
 [[capacites]]
 id = "dolibarr_file"
 libelle = "La file de rattrapage de Dolibarr : chaque écriture (facture, avoir, versement), son état, ses essais, sa raison d'échec"
 risque = "lecture"
-droit = "gerer"
+droit = "argent"
 
 [[capacites]]
 id = "dolibarr_rattraper"
 libelle = "Faire maintenant les écritures dues dans Dolibarr (tiers, factures validées, règlements, avoirs, versements de commissions) ; chacune retrouve ce qui existe déjà avant de créer"
 risque = "moyen"
-droit = "gerer"
+droit = "argent"
 perimetre = ["la comptabilité de Dolibarr : tiers, factures, règlements, avoirs, factures fournisseurs"]
 preuve = "chaque écriture relue faite, ignorée avec sa raison, ou reportée avec son erreur"
 retour = "aucun automatique : une écriture comptable se corrige dans Dolibarr (avoir, annulation) ; rien n'est jamais écrit deux fois"
@@ -1689,7 +1701,7 @@ sortant = true
 id = "dolibarr_relancer"
 libelle = "Remettre une écriture en échec dans la file de Dolibarr pour qu'elle soit retentée"
 risque = "faible"
-droit = "gerer"
+droit = "argent"
 perimetre = ["l'état d'une ligne de la file de rattrapage"]
 preuve = "la ligne relue à faire"
 retour = "la remettre en échec"
@@ -1699,13 +1711,13 @@ paliers = ["raconter", "auto", "maitre"]
 id = "evenement_rentabilite"
 libelle = "La rentabilité d'un événement : coûts (salle, forfaits et cachets), recettes, commissions dues, seuil de rentabilité en places, date de décision et ce que l'annulation coûterait au plus ; elle éclaire, elle ne décide rien"
 risque = "lecture"
-droit = "gerer"
+droit = "evenements"
 
 [[capacites]]
 id = "evenement_projet"
 libelle = "Créer dans le bureau de Cassandra le projet de l'événement et ses tâches types (contrat de salle, assurance, SACEM, sécurité, buvette, bénévoles, communication, décision, vérifications, solde), échéances calculées sur la date de la soirée"
 risque = "faible"
-droit = "gerer"
+droit = "evenements"
 perimetre = ["un projet et ses tâches dans les modules Projets et Tâches, au nom du compte qui le demande ; le lien « projet » de la fiche de l'événement"]
 preuve = "la fiche de l'événement relue avec son projet"
 retour = "détacher le projet de l'événement ; le projet et ses tâches restent (à archiver depuis Projets)"
@@ -1715,13 +1727,13 @@ paliers = ["raconter", "auto", "maitre"]
 id = "legal_pages"
 libelle = "Les textes légaux de la boutique (conditions de vente, mentions légales, confidentialité) : version, date, publié ou non"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "legal_page_save"
 libelle = "Écrire ou modifier un texte légal de la boutique : sa version monte, les conditions de vente publiées deviennent obligatoires à la commande"
 risque = "moyen"
-droit = "gerer"
+droit = "personnes"
 perimetre = ["un texte légal publié sur la boutique"]
 preuve = "le texte relu à sa nouvelle version"
 retour = "remettre le texte et la version d'avant"
@@ -1731,7 +1743,7 @@ paliers = ["raconter", "auto"]
 id = "legal_modele"
 libelle = "Un squelette de texte légal à compléter avec les données du titulaire (conditions de vente, mentions, confidentialité) ; il ne remplace aucun avis juridique et le dit"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "public_legal"
@@ -1743,7 +1755,7 @@ qui = ["anonyme"]
 id = "dolibarr_adherent"
 libelle = "Empiler l'écriture d'un artiste comme adhérent de Dolibarr (type de membre « Artiste » retrouvé ou créé, tiers fournisseur rattaché, courriel et adresse repris de sa fiche) ; relance une écriture en échec"
 risque = "faible"
-droit = "gerer"
+droit = "argent"
 perimetre = ["une ligne de la file de rattrapage de Dolibarr"]
 preuve = "la ligne relue à faire ou faite"
 retour = "retirer la ligne tant qu'elle n'a pas été tentée"
@@ -1787,13 +1799,13 @@ masque = ["iban"]
 id = "profil_vu"
 libelle = "Le profil d'un revendeur ou d'un artiste vu par le titulaire : complet ou ce qui manque, l'IBAN seulement par sa fin (jamais en entier)"
 risque = "lecture"
-droit = "gerer"
+droit = "personnes"
 
 [[capacites]]
 id = "repertoire_synchroniser"
 libelle = "Créer dans le répertoire du bureau (module Contacts) un contact pour chaque artiste et chaque revendeur qui n'en a pas encore (nom, courriel, téléphone, adresse, étiquettes) ; une fiche déjà liée n'est jamais doublée ; ce que Contacts refuse est dit fiche par fiche"
 risque = "faible"
-droit = "gerer"
+droit = "personnes"
 perimetre = ["des fiches du module Contacts, au nom du compte qui le demande ; le lien fiche-contact de la billetterie"]
 preuve = "chaque fiche créée relue liée à son contact"
 retour = "supprimer les contacts créés par cet appel et défaire leurs liens"

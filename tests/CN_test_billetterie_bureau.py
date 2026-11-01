@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9d0cde
+# VERSION CN : 0.1.0  #4be985
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la billetterie : l'événement dans le bureau (projet et tâches créés dans les VRAIS modules Projets et Tâches, au nom du compte).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9d0cde ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4be985 ▼▼▼
 """Bancs de la billetterie : l'événement dans le bureau (projet et tâches créés dans les VRAIS modules Projets et Tâches, au nom du compte)."""
 import shutil
 import sys
@@ -109,7 +109,7 @@ class Creation(Fond):
         self.autoriser_les_agents()
         self.n.droits.regler_groupe("billet", "Billetterie")
         self.n.droits.regler_membre("gestion@x.fr", "billet", True)
-        self.n.droits.regler("groupe", "billet", "billetterie.gerer", "accorde")
+        self.n.droits.regler("groupe", "billet", "billetterie.evenements", "accorde")
         r = self.n.executeur.executer("billetterie.evenement_projet", "humain", {"evenement_id": self.e["id"]}, compte="gestion@x.fr")
         self.assertEqual(r["statut"], "faite", r)
         pid = r["resultat"]["projet_id"]

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #811ef3
+# VERSION CN : 0.1.0  #5af4ef
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=811ef3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=5af4ef ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import gzip
 import json
@@ -346,6 +346,9 @@ class FauxGestion:
         return R(404, {"error": {"code": 404}})
 
 
+DROITS_DOLIBARR = tuple("dolibarr." + d for d in ("consulter", "facturer", "valider", "tiers", "dons", "tresorerie", "libre", "administrer"))
+
+
 class GestionDolibarr(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -361,10 +364,12 @@ class GestionDolibarr(unittest.TestCase):
         os.environ["CASSANDRA_CONFIG"] = str(self.conf)
         self.addCleanup(lambda: os.environ.__setitem__("CASSANDRA_CONFIG", ancien) if ancien else os.environ.pop("CASSANDRA_CONFIG", None))
         mods = base / "modules"
-        shutil.copytree(RACINE / "modules" / "dolibarr", mods / "dolibarr")
+        for m in ("dolibarr", "droits", "comptes"):
+            shutil.copytree(RACINE / "modules" / m, mods / m, ignore=shutil.ignore_patterns("__pycache__"))
         self.n = moteur.Noyau(base / "d", mods, {}, gerer_modules=True)
         self.n.brancher()
-        self.assertTrue(self.n.activer("dolibarr")["ok"])
+        for m in ("droits", "comptes", "dolibarr"):
+            self.assertTrue(self.n.activer(m)["ok"], m)
         self.e = self.n.executeur.executer
         self.ctx = self.n.executeur.contextes["dolibarr"]
 
@@ -657,6 +662,42 @@ class GestionDolibarr(unittest.TestCase):
         self.assertIn("pas réglée", r["resultat"]["raison"])
         self.assertEqual(self.e("dolibarr.base_requete", "humain", {"nom": "journal_etat"}, compte="chef@x.fr")["statut"], "echec")
 
+    # --- les droits par métier : ce que l'administrateur accorde dans Paramètres › Droits
+    def test_chaque_droit_de_dolibarr_ferme_ses_gestes(self):
+        self.n.identite.creer("chef@x.fr", "Abcdefgh1!", superadmin=True)
+        self.n.identite.creer("paul@x.fr", "Abcdefgh1!")
+        i = self.facture()
+        pour = lambda cap, args: self.e("dolibarr." + cap, "humain", args, compte="paul@x.fr")
+        # sans rien d'accordé, « consulter » (par défaut) suffit à lire, rien d'autre
+        self.assertEqual(pour("lister", {"objet": "tiers"})["statut"], "faite")
+        gestes = {"facturer": ("creer_brouillon", {"objet": "factures", "socid": 1, "lignes": [{"desc": "x", "qty": 1, "subprice": 1}]}),
+                  "valider": ("valider_facture", {"id": i}), "tiers": ("creer", {"objet": "tiers", "champs": {"name": "T", "client": 1}}),
+                  "dons": ("don_creer", {"montant": "5", "nom": "N"}), "tresorerie": ("virement_interne", {"de": 1, "vers": 2, "montant": "1"}),
+                  "libre": ("ecrire_libre", {"methode": "PUT", "chemin": "/thirdparties/1", "corps": {"town": "X"}})}
+        for droit, (cap, args) in gestes.items():
+            r = pour(cap, args)
+            self.assertEqual(r["statut"], "refuse", "%s sans le droit %s : %s" % (cap, droit, r))
+            self.assertIn("dolibarr." + droit, r["raison"])
+            self.n.droits.regler("compte", "paul@x.fr", "dolibarr." + droit, "accorde")
+            self.assertNotEqual(pour(cap, args)["statut"], "refuse", "%s avec le droit %s" % (cap, droit))       # accordé : le geste s'exécute (il peut échouer pour une autre raison)
+        # la lecture de la base reste aux superadministrateurs, même avec « administrer »
+        self.n.droits.regler("compte", "paul@x.fr", "dolibarr.administrer", "accorde")
+        self._base()
+        self.assertEqual(self.e("dolibarr.base_etat", "humain", {}, compte="paul@x.fr")["statut"], "echec")
+
+    def test_mes_droits_a_moi_ne_rend_que_ceux_du_compte_qui_demande(self):
+        self.n.identite.creer("chef@x.fr", "Abcdefgh1!", superadmin=True)
+        self.n.identite.creer("paul@x.fr", "Abcdefgh1!")
+        self.n.droits.regler("compte", "paul@x.fr", "dolibarr.facturer", "accorde")
+        r = self.e("droits.mes_droits_a_moi", "humain", {}, compte="paul@x.fr")
+        if r["statut"] != "faite":
+            self.skipTest("le module des droits n'est pas dans ce banc : %s" % r)
+        d = r["resultat"]
+        self.assertEqual((d["compte"], d["admin"]), ("paul@x.fr", False))
+        self.assertIn("dolibarr.facturer", d["droits"])
+        self.assertIn("dolibarr.consulter", d["droits"])
+        self.assertNotIn("dolibarr.valider", d["droits"])
+
     def test_le_don_porte_les_champs_de_sa_fiche_dolibarr(self):
         r = self.e("dolibarr.don_creer", "humain", {"montant": "20", "date": "2026-11-01", "nom": "Martin", "prenom": "Léa", "societe": "",
                                                     "champs": {"address": "1 rue X", "zip": "44000", "town": "Nantes", "country_id": "1", "email": "lea@exemple.fr", "public": "0", "note_private": "n"}})
@@ -772,7 +813,7 @@ class GestionDolibarr(unittest.TestCase):
     # --- la clé : propre au compte, de mandat, jamais celle d'un autre
     def accorder(self, *comptes):
         for c in comptes:
-            for d in ("dolibarr.utiliser", "dolibarr.administrer"):
+            for d in DROITS_DOLIBARR:
                 self.n.droits.regler("compte", c, d, "accorde")
 
     def poser_cle(self, compte, valeur):
@@ -894,7 +935,7 @@ class LiensDolibarr(unittest.TestCase):
         self.assertTrue(self.n.activer("dolibarr")["ok"])
         self.e = self.n.executeur.executer
         for c in ("drisse", "amandine", "camille"):
-            self.n.droits.regler("compte", c, "dolibarr.utiliser", "accorde")
+            [self.n.droits.regler("compte", c, d, "accorde") for d in DROITS_DOLIBARR]
         # Les fiches de Cassandra : lues par executer_lecture (projets.voir, contacts.voir). Le module projets de ce dépôt ne s'exécute pas ici (son point date_ok importe
         # _strptime, refusé par le bac à sable de Python 3.14) : on rend donc les fiches à la main, dans la forme exacte que ces deux capacités rendent.
         fiches = {"projets.voir": {"projet": {"id": 1, "nom": "Soirée de lancement", "debut": "2026-12-12", "fin": "2026-12-13", "resume": "Équipe de six"}},

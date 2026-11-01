@@ -12,7 +12,7 @@
 <!-- RÔLE       : Billetterie : vente par revendeurs, portefeuille de commissions -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=edfa33 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=596a7a ▼▼▼ -->
 <!-- TITRE : Module billetterie et réglage Titulaire de l'instance -->
 <!-- LICENCE : AGPL-3.0 · AUTEUR : Atek Drisse · MODULE : docs -->
 
@@ -175,6 +175,8 @@ Règle : **les places en vente ne dépassent jamais la capacité retenue** (aler
 | Paiements | état de la commande | règlement sur le compte bancaire Dolibarr |
 | Commissions | relevé par revendeur | facture fournisseur par revendeur |
 | Dons | **aucun reçu fiscal proposé** | don et Cerfa dans Dolibarr (§5 quater) |
+
+**Droits** (Paramètres › Droits) : un droit par page, que l'administrateur accorde seul ou en groupe (une « fonction ») : `evenements` (Vue d'ensemble et Événements), `ventes`, `personnes` (Revendeurs et artistes : formules, salles, codes promo, textes légaux), `argent` (sensible : retraits, portefeuilles, reçus fiscaux, courriels, pont Dolibarr), puis `vendre` (la caisse), `controler` (l'ouvreur), `revendeur` et `artiste` (leurs espaces). Aucun n'est donné d'office. Le serveur refuse ce que le compte n'a pas le droit de faire ; l'écran saute ce qu'il ne peut pas lire (la Vue d'ensemble n'affiche que les chiffres des pages que le compte a).
 
 **Réglages du pont** (écran Titulaire › Réglages, section « Pont Dolibarr ») : un interrupteur **relié / autonome** (l'adresse de l'API et la clé sont celles du module **Dolibarr**, la billetterie n'en garde aucune) ; **un interrupteur par domaine** (identité, clients, fournisseurs, factures, paiements, commissions) pour relier à la carte ; « Tester la connexion » ; « Rapprocher les fiches existantes ». Débrancher le pont ne supprime rien : les écritures attendent dans la file de rattrapage ou repassent en mode autonome. Brancher le pont **rapproche** les fiches par courriel et SIRET **avant** d'en créer (aucun doublon). Les écrans changent de vocabulaire selon le mode (« Facture PDF » ou « Reçu PDF », pas de don sans pont).
 

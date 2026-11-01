@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #d8b665
+# VERSION CN : 0.4.1  #2af7bd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=d8b665 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=2af7bd ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -29,13 +29,40 @@ auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
 
 [[droits]]
-id = "utiliser"
-libelle = "Utiliser Dolibarr : consulter et travailler dans ce module"
+id = "consulter"
+libelle = "Consulter Dolibarr : lire les tiers, factures, devis, dons, adhérents, projets et la banque, et voir ses PDF"
 defaut = true
 
 [[droits]]
+id = "facturer"
+libelle = "Facturer et encaisser : préparer devis, factures (en brouillon) et avoirs, relancer, encaisser un règlement, produire un PDF"
+
+[[droits]]
+id = "valider"
+libelle = "Valider : donner leur numéro légal aux factures (elles ne se défont pas), valider un don, valider ou clore un projet"
+sensible = true
+
+[[droits]]
+id = "tiers"
+libelle = "Gérer les tiers, contacts, produits et projets : créer, modifier, restaurer, les envoyer à Dolibarr ou les en détacher"
+
+[[droits]]
+id = "dons"
+libelle = "Gérer les dons et les adhérents : saisir un don, enregistrer une cotisation"
+
+[[droits]]
+id = "tresorerie"
+libelle = "Trésorerie : virements entre comptes bancaires et paiement des factures fournisseurs"
+sensible = true
+
+[[droits]]
+id = "libre"
+libelle = "Requête libre : lire et écrire dans n'importe quelle route de l'API de Dolibarr"
+sensible = true
+
+[[droits]]
 id = "administrer"
-libelle = "Administrer Dolibarr : réglages et gestes sensibles"
+libelle = "Administrer Dolibarr : supprimer, lire la base (superadministrateurs), réglages et pont de la billetterie"
 sensible = true
 
 [[objets]]
@@ -168,49 +195,49 @@ frequence_s = 60
 id = "resume"
 libelle = "La dernière relève : version, comptes, factures impayées"
 risque = "lecture"
-droit = "utiliser"
+droit = "consulter"
 
 [[capacites]]
 id = "statut"
 libelle = "L'état de Dolibarr à l'instant (version, latence)"
 risque = "lecture"
-droit = "utiliser"
+droit = "consulter"
 
 [[capacites]]
 id = "modules"
 libelle = "Les modules actifs de Dolibarr"
 risque = "lecture"
-droit = "utiliser"
+droit = "consulter"
 
 [[capacites]]
 id = "compter"
 libelle = "Compter les objets d'un type (tiers, factures, devis, commandes, projets, produits, contacts)"
 risque = "lecture"
-droit = "utiliser"
+droit = "consulter"
 
 [[capacites]]
 id = "lister"
 libelle = "Lister des objets, par page, avec des champs bornés (pas de coordonnées personnelles)"
 risque = "lecture"
-droit = "utiliser"
+droit = "consulter"
 
 [[capacites]]
 id = "lire"
 libelle = "Lire un objet par son identifiant, avec des champs bornés"
 risque = "lecture"
-droit = "utiliser"
+droit = "consulter"
 
 [[capacites]]
 id = "impayees"
 libelle = "Les factures impayées : nombre, total TTC, la plus ancienne échéance"
 risque = "lecture"
-droit = "utiliser"
+droit = "consulter"
 
 [[capacites]]
 id = "creer"
 libelle = "Créer un tiers, un contact, un produit ou un projet dans Dolibarr"
 risque = "moyen"
-droit = "utiliser"
+droit = "tiers"
 perimetre = ["tiers, contacts, produits, projets", "champs de la liste permise seulement"]
 preuve = "relire l'objet créé et comparer chaque champ écrit"
 retour = "supprimer l'objet que cet acte vient de créer, et lui seul"
@@ -221,7 +248,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "modifier"
 libelle = "Modifier des champs d'un tiers, d'un contact, d'un produit ou d'un projet"
 risque = "moyen"
-droit = "utiliser"
+droit = "tiers"
 perimetre = ["tiers, contacts, produits, projets", "champs de la liste permise seulement"]
 preuve = "relire l'objet et comparer les champs modifiés"
 retour = "remettre les valeurs d'avant, relevées juste avant l'écriture"
@@ -232,7 +259,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "creer_brouillon"
 libelle = "Créer un brouillon de facture, de devis ou de commande (jamais validé par cet acte)"
 risque = "moyen"
-droit = "utiliser"
+droit = "facturer"
 perimetre = ["factures, devis, commandes à l'état de brouillon"]
 preuve = "relire le document : statut brouillon, nombre de lignes et tiers conformes"
 retour = "supprimer ce brouillon, seulement s'il est encore un brouillon"
@@ -254,7 +281,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "restaurer"
 libelle = "Recréer un objet supprimé, depuis la corbeille"
 risque = "moyen"
-droit = "utiliser"
+droit = "tiers"
 perimetre = ["les objets de la corbeille à l'état supprimé"]
 preuve = "relire l'objet recréé"
 retour = "supprimer l'objet recréé, la copie restant dans la corbeille"
@@ -265,13 +292,13 @@ qui = ["humain", "cassandra", "itare"]
 id = "corbeille"
 libelle = "Lister la corbeille : ce qui a été supprimé et peut être recréé"
 risque = "lecture"
-droit = "utiliser"
+droit = "consulter"
 
 [[capacites]]
 id = "valider_facture"
 libelle = "Valider une facture brouillon : elle prend un numéro légal"
 risque = "eleve"
-droit = "administrer"
+droit = "valider"
 perimetre = ["une facture à l'état de brouillon"]
 preuve = "relire la facture : statut validé"
 retour = "repasser la facture en brouillon (impossible si elle est payée ou comptabilisée)"
@@ -282,25 +309,25 @@ qui = ["humain", "cassandra"]
 id = "base_requete"
 libelle = "Lire la base de Dolibarr par une requête nommée (adresses des dons, champs personnalisés, journal inaltérable, chiffre d'affaires par mois) : superadministrateurs seulement"
 risque = "lecture"
-droit = "utiliser"
+droit = "administrer"
 
 [[capacites]]
 id = "base_etat"
 libelle = "Vérifier la lecture de la base de Dolibarr : connexion, version, tables attendues, et que l'utilisateur SQL n'a que le droit de lire"
 risque = "lecture"
-droit = "utiliser"
+droit = "administrer"
 
 [[capacites]]
 id = "mon_acces"
 libelle = "Qui suis-je dans Dolibarr : la clé utilisée (propre, de mandat ou du fichier), l'utilisateur, la société vue"
 risque = "lecture"
-droit = "utiliser"
+droit = "consulter"
 
 [[capacites]]
 id = "encaisser"
 libelle = "Encaisser un règlement sur une facture validée, sur un compte bancaire"
 risque = "eleve"
-droit = "administrer"
+droit = "facturer"
 perimetre = ["une facture validée et ouverte", "le montant ne dépasse pas le reste dû"]
 preuve = "relire la facture : le reste dû a baissé du montant, et un règlement de plus existe"
 retour = "supprimer ce règlement (Dolibarr le refuse s'il est déjà rapproché en banque)"
@@ -311,7 +338,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "creer_avoir"
 libelle = "Préparer un avoir en brouillon sur une facture validée"
 risque = "moyen"
-droit = "utiliser"
+droit = "facturer"
 perimetre = ["un brouillon d'avoir, jamais validé par cet acte"]
 preuve = "relire l'avoir : brouillon, relié à sa facture, mêmes lignes en négatif"
 retour = "supprimer ce brouillon, seulement s'il l'est encore"
@@ -324,7 +351,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "bil_tiers"
 libelle = "Billetterie : retrouver ou créer le tiers (client, fournisseur ou « Clients divers ») d'une vente ou d'un versement"
 risque = "moyen"
-droit = "utiliser"
+droit = "administrer"
 perimetre = ["un tiers, retrouvé par courriel ou par référence extérieure avant d'être créé"]
 preuve = "relire le tiers par son identifiant"
 retour = "rien : un tiers déjà lié à des pièces ne se supprime pas à la volée, il s'archive dans Dolibarr"
@@ -335,7 +362,7 @@ qui = ["cassandra"]
 id = "bil_facture"
 libelle = "Billetterie : écrire la facture d'une commande payée, la valider (numéro légal) et y poser le règlement"
 risque = "eleve"
-droit = "utiliser"
+droit = "administrer"
 perimetre = ["une facture client par commande, retrouvée par sa référence extérieure ; un seul règlement"]
 preuve = "relire la facture : validée, avec son numéro"
 retour = "une facture validée ne s'efface pas : un avoir la corrige (bil_avoir)"
@@ -346,7 +373,7 @@ qui = ["cassandra"]
 id = "bil_avoir"
 libelle = "Billetterie : écrire et valider l'avoir d'une commande remboursée"
 risque = "eleve"
-droit = "utiliser"
+droit = "administrer"
 perimetre = ["un avoir par remboursement, retrouvé par sa référence extérieure"]
 preuve = "relire l'avoir : de type avoir, validé, avec son numéro"
 retour = "un avoir validé ne s'efface pas : il se corrige dans Dolibarr"
@@ -357,7 +384,7 @@ qui = ["cassandra"]
 id = "bil_versement"
 libelle = "Billetterie : écrire la facture fournisseur d'un versement de commission, la valider et y poser le virement"
 risque = "eleve"
-droit = "utiliser"
+droit = "administrer"
 perimetre = ["une facture fournisseur par versement, retrouvée par sa référence extérieure ; un seul règlement"]
 preuve = "relire la facture fournisseur : validée, avec son numéro"
 retour = "une facture validée ne s'efface pas : elle se corrige dans Dolibarr"
@@ -368,7 +395,7 @@ qui = ["cassandra"]
 id = "bil_adherent"
 libelle = "Billetterie : créer l'adhérent Dolibarr d'un artiste (type « Artiste », créé la première fois)"
 risque = "moyen"
-droit = "utiliser"
+droit = "administrer"
 perimetre = ["un adhérent par artiste, retrouvé par sa référence extérieure"]
 preuve = "relire l'adhérent par son identifiant"
 retour = "se corrige dans Dolibarr (résilier ou supprimer l'adhérent)"
@@ -379,14 +406,14 @@ qui = ["cassandra"]
 id = "bil_tester"
 libelle = "Billetterie : vérifier que Dolibarr est prêt (société, comptes bancaires, modes de paiement, taux de TVA)"
 risque = "lecture"
-droit = "utiliser"
+droit = "consulter"
 qui = ["cassandra", "humain"]
 
 [[capacites]]
 id = "relancer"
 libelle = "Noter une relance de facture dans l'agenda du tiers (le courriel part par le module Mandats)"
 risque = "moyen"
-droit = "utiliser"
+droit = "facturer"
 perimetre = ["une facture validée et ouverte", "le texte est gardé dans Dolibarr ; aucune adresse ne vient de la demande"]
 preuve = "relire l'évènement de l'agenda"
 retour = "supprimer l'évènement que cet acte vient de créer"
@@ -397,7 +424,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "devis"
 libelle = "Valider un devis, le marquer signé ou refusé"
 risque = "moyen"
-droit = "utiliser"
+droit = "facturer"
 perimetre = ["valider : brouillon → ouvert", "signer et refuser : ouvert → signé ou refusé"]
 preuve = "relire le devis : le statut voulu"
 retour = "remettre le devis en brouillon"
@@ -408,7 +435,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "facturer_devis"
 libelle = "Préparer une facture en brouillon depuis un devis signé"
 risque = "moyen"
-droit = "utiliser"
+droit = "facturer"
 perimetre = ["un devis signé, ses lignes recopiées", "la facture reste un brouillon"]
 preuve = "relire la facture : brouillon, tiers et nombre de lignes du devis"
 retour = "supprimer ce brouillon, seulement s'il l'est encore"
@@ -419,7 +446,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "don_creer"
 libelle = "Saisir un don (promesse)"
 risque = "moyen"
-droit = "utiliser"
+droit = "dons"
 perimetre = ["montant, date, donateur"]
 preuve = "relire le don : même montant"
 retour = "supprimer cette promesse, seulement si elle n'est pas validée"
@@ -430,7 +457,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "don_valider"
 libelle = "Valider un don : il prend son numéro"
 risque = "eleve"
-droit = "administrer"
+droit = "valider"
 perimetre = ["une promesse de don"]
 preuve = "relire le don : statut validé"
 retour = "impossible par l'API : Dolibarr ne repasse pas un don validé en promesse, à défaire dans Dolibarr"
@@ -441,7 +468,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "cotisation"
 libelle = "Enregistrer la cotisation d'un adhérent"
 risque = "moyen"
-droit = "utiliser"
+droit = "dons"
 perimetre = ["une cotisation sur un adhérent existant"]
 preuve = "relire les cotisations de l'adhérent : une de plus"
 retour = "supprimer la cotisation que cet acte vient de créer"
@@ -452,7 +479,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "virement_interne"
 libelle = "Virer un montant d'un compte bancaire Dolibarr à un autre"
 risque = "eleve"
-droit = "administrer"
+droit = "tresorerie"
 perimetre = ["deux comptes différents", "le montant est relu sur les deux soldes"]
 preuve = "relire les deux soldes : l'un baisse, l'autre monte du montant"
 retour = "faire le virement inverse"
@@ -463,7 +490,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "projet"
 libelle = "Valider un projet ou le clore"
 risque = "moyen"
-droit = "utiliser"
+droit = "valider"
 perimetre = ["valider : brouillon → ouvert", "clore : ouvert → clos"]
 preuve = "relire le projet : le statut voulu"
 retour = "remettre le statut d'avant"
@@ -474,13 +501,13 @@ qui = ["humain", "cassandra", "itare"]
 id = "lire_libre"
 libelle = "Lire n'importe quel point de l'API de Dolibarr (les secrets sont masqués dans la réponse)"
 risque = "lecture"
-droit = "utiliser"
+droit = "libre"
 
 [[capacites]]
 id = "ecrire_libre"
 libelle = "Écrire n'importe où dans l'API de Dolibarr (POST ou PUT ; une suppression passe par « supprimer »)"
 risque = "eleve"
-droit = "administrer"
+droit = "libre"
 perimetre = ["tous les domaines de l'API de Dolibarr", "POST ou PUT seulement", "le corps est un objet JSON de 16 Ko au plus"]
 preuve = "relire l'objet écrit et comparer les champs (une action sans objet : la réponse de Dolibarr)"
 retour = "PUT : remettre les valeurs d'avant ; POST sur une collection : supprimer ce qui vient d'être créé ; une action n'a pas de retour générique"
@@ -491,13 +518,13 @@ qui = ["humain", "cassandra", "itare"]
 id = "piece_pdf"
 libelle = "Lire le PDF qu'a produit Dolibarr pour un devis ou une facture (pour l'afficher dans Cassandra)"
 risque = "lecture"
-droit = "utiliser"
+droit = "consulter"
 
 [[capacites]]
 id = "produire_pdf"
 libelle = "Faire produire à Dolibarr le PDF d'un devis ou d'une facture qui n'en a pas encore"
 risque = "moyen"
-droit = "utiliser"
+droit = "facturer"
 perimetre = ["devis, factures", "une pièce qui n'a pas encore de PDF"]
 preuve = "relire les documents de la pièce : un PDF existe"
 retour = "supprimer le PDF que cet acte vient de produire"
@@ -508,13 +535,13 @@ qui = ["humain", "cassandra", "itare"]
 id = "liens"
 libelle = "Les fiches de Cassandra (projets, contacts) que j'ai envoyées à Dolibarr, et ce qui les lie"
 risque = "lecture"
-droit = "utiliser"
+droit = "consulter"
 
 [[capacites]]
 id = "envoyer_projet"
 libelle = "Envoyer un projet de Cassandra à Dolibarr : il y est créé et lié, et Dolibarr fait foi pour son titre, ses dates et sa description"
 risque = "moyen"
-droit = "utiliser"
+droit = "tiers"
 perimetre = ["un projet de ce compte, jamais déjà lié", "ses notes, son équipe, ses jalons et ses tâches restent dans Cassandra"]
 preuve = "relire le projet chez Dolibarr : même titre, et le lien existe"
 retour = "supprimer le projet que cet envoi vient de créer chez Dolibarr, et le lien"
@@ -525,7 +552,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "envoyer_contact"
 libelle = "Envoyer un contact de Cassandra à Dolibarr, rattaché à un tiers choisi (ou à un tiers créé pour l'occasion)"
 risque = "moyen"
-droit = "utiliser"
+droit = "tiers"
 perimetre = ["un contact de ce compte, jamais déjà lié", "toujours rattaché à un tiers : un contact ne devient jamais un tiers"]
 preuve = "relire le contact chez Dolibarr : même nom, même tiers, et le lien existe"
 retour = "supprimer le contact créé et le tiers que cet envoi a lui-même créé, et le lien"
@@ -536,7 +563,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "modifier_lie"
 libelle = "Modifier chez Dolibarr la fiche liée (Dolibarr fait foi : la modification part chez lui)"
 risque = "moyen"
-droit = "utiliser"
+droit = "tiers"
 perimetre = ["une fiche déjà liée", "champs de la liste permise seulement"]
 preuve = "relire l'objet chez Dolibarr et comparer les champs"
 retour = "remettre les valeurs d'avant, relevées juste avant l'écriture"
@@ -547,7 +574,7 @@ qui = ["humain", "cassandra", "itare"]
 id = "detacher"
 libelle = "Détacher une fiche de Dolibarr : le lien est rompu, les deux copies restent"
 risque = "moyen"
-droit = "utiliser"
+droit = "tiers"
 perimetre = ["le lien seulement : aucune requête vers Dolibarr"]
 preuve = "le lien n'existe plus"
 retour = "reposer le lien"
@@ -558,13 +585,13 @@ qui = ["humain", "cassandra", "itare"]
 id = "catalogue_api"
 libelle = "Le catalogue de l'API de Dolibarr : les domaines et le nombre d'opérations de chacun (lire, créer, modifier, supprimer)"
 risque = "lecture"
-droit = "utiliser"
+droit = "consulter"
 
 [[capacites]]
 id = "payer_fournisseur"
 libelle = "Payer une facture reçue : Dolibarr règle tout le reste dû, depuis un compte bancaire"
 risque = "eleve"
-droit = "administrer"
+droit = "tresorerie"
 perimetre = ["une facture fournisseur validée et ouverte"]
 preuve = "relire la facture fournisseur : payée"
 retour = "repasser la facture en impayée (la ligne de règlement reste visible chez Dolibarr)"
@@ -698,7 +725,7 @@ ordre = 10
 role = "utilisateur"
 icone = "briefcase"
 badge = "constats"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_afaire"
@@ -708,7 +735,7 @@ parent = "dolibarr"
 ordre = 10
 role = "utilisateur"
 icone = "tasks"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_tiers"
@@ -718,7 +745,7 @@ parent = "dolibarr"
 ordre = 20
 role = "utilisateur"
 icone = "building"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_contacts"
@@ -728,7 +755,7 @@ parent = "dolibarr"
 ordre = 25
 role = "utilisateur"
 icone = "contacts"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_devis"
@@ -738,7 +765,7 @@ parent = "dolibarr"
 ordre = 30
 role = "utilisateur"
 icone = "scroll"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_factures"
@@ -748,7 +775,7 @@ parent = "dolibarr"
 ordre = 40
 role = "utilisateur"
 icone = "archive"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_produits"
@@ -758,7 +785,7 @@ parent = "dolibarr"
 ordre = 50
 role = "utilisateur"
 icone = "star"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_fournisseurs"
@@ -768,7 +795,7 @@ parent = "dolibarr"
 ordre = 60
 role = "utilisateur"
 icone = "repeat"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_banque"
@@ -778,7 +805,7 @@ parent = "dolibarr"
 ordre = 70
 role = "utilisateur"
 icone = "db"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_adherents"
@@ -788,7 +815,7 @@ parent = "dolibarr"
 ordre = 80
 role = "utilisateur"
 icone = "contacts"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_dons"
@@ -798,7 +825,7 @@ parent = "dolibarr"
 ordre = 90
 role = "utilisateur"
 icone = "star"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_projets"
@@ -808,7 +835,7 @@ parent = "dolibarr"
 ordre = 100
 role = "utilisateur"
 icone = "calendar"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_cprojets"
@@ -818,7 +845,7 @@ parent = "dolibarr"
 ordre = 110
 role = "utilisateur"
 icone = "calendar"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_ccontacts"
@@ -828,7 +855,7 @@ parent = "dolibarr"
 ordre = 120
 role = "utilisateur"
 icone = "contacts"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_itare"
@@ -838,7 +865,7 @@ parent = "dolibarr"
 ordre = 130
 role = "utilisateur"
 icone = "spark"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_acces"
@@ -848,7 +875,7 @@ parent = "dolibarr"
 ordre = 140
 role = "utilisateur"
 icone = "lock"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_capacites"
@@ -858,7 +885,7 @@ parent = "dolibarr"
 ordre = 150
 role = "utilisateur"
 icone = "bolt"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_comptes"
@@ -868,7 +895,7 @@ parent = "dolibarr"
 ordre = 160
 role = "admin"
 icone = "groupe"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_instance"
@@ -878,7 +905,7 @@ parent = "dolibarr"
 ordre = 170
 role = "utilisateur"
 icone = "info"
-droit = "utiliser"
+droit = "consulter"
 
 [[menus]]
 id = "m_d_libre"
@@ -888,7 +915,7 @@ parent = "dolibarr"
 ordre = 180
 role = "utilisateur"
 icone = "search"
-droit = "utiliser"
+droit = "libre"
 
 [[widgets]]
 id = "etat"

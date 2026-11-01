@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #0a3add
+// VERSION CN : 0.1.0  #7cce08
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=0a3add ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=7cce08 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -27,7 +27,7 @@
     ".dlb .barre2{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.dlb .t{width:100%;border-collapse:collapse;font-size:13px}.dlb .t th{text-align:left;font:600 10.5px 'Inter',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--txt-faint);padding:6px 8px;border-bottom:1px solid var(--line)}" +
     ".dlb .t td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}.dlb .t tr.clk{cursor:pointer}.dlb .t tr.clk:hover td{background:color-mix(in srgb,var(--accent) 7%,transparent)}.dlb .t .num{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}" +
     ".dlb .defil{overflow-x:auto}.dlb .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.dlb .in,.kit-m .in{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:8px 11px;font:500 13px 'Inter',sans-serif;min-width:0;max-width:100%}" +
-    ".kit-m .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.kit-m .grille2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kit-m [hidden]{display:none!important}.ib{display:inline-flex;align-items:center;gap:5px;outline:none;position:relative}.ib-i{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong,var(--line));color:var(--txt-faint);font:700 10px 'Inter',sans-serif;font-style:normal;text-transform:none;letter-spacing:0;cursor:help;flex:none}.ib:hover .ib-i,.ib:focus .ib-i{color:var(--accent);border-color:var(--accent)}.ib-b{display:none;position:fixed;z-index:100000;background:var(--surface-solid,#fff);color:var(--txt);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px -14px rgba(16,24,40,.38);padding:11px 13px;font:400 12px/1.5 'Inter',sans-serif;letter-spacing:0;text-transform:none;white-space:normal;text-align:left;cursor:default}.ib:hover .ib-b,.ib:focus .ib-b,.ib:focus-within .ib-b{display:block}.ib-b p{margin:0 0 7px}.ib-b p:last-child{margin:0}.ib-b code{font:11px ui-monospace,Menlo,monospace;background:color-mix(in srgb,var(--txt) 8%,transparent);padding:1px 4px;border-radius:4px}.dlb .ib-page{margin:-2px 0 10px;font-size:12px;color:var(--txt-faint)}.kit-m .in{box-sizing:border-box;max-width:100%}.kit-m select.in,.kit-m input.in{width:100%}.kit-m textarea.in{width:100%;resize:vertical}.dlb .code{background:var(--surface);border:1px dashed var(--line-strong,var(--line));border-radius:10px;padding:10px 12px;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}";
+    ".kit-m .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.kit-m .grille2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kit-m [hidden]{display:none!important}.dlb .off,.kit-m .off{opacity:.45;cursor:not-allowed}.ib{display:inline-flex;align-items:center;gap:5px;outline:none;position:relative}.ib-i{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong,var(--line));color:var(--txt-faint);font:700 10px 'Inter',sans-serif;font-style:normal;text-transform:none;letter-spacing:0;cursor:help;flex:none}.ib:hover .ib-i,.ib:focus .ib-i{color:var(--accent);border-color:var(--accent)}.ib-b{display:none;position:fixed;z-index:100000;background:var(--surface-solid,#fff);color:var(--txt);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px -14px rgba(16,24,40,.38);padding:11px 13px;font:400 12px/1.5 'Inter',sans-serif;letter-spacing:0;text-transform:none;white-space:normal;text-align:left;cursor:default}.ib:hover .ib-b,.ib:focus .ib-b,.ib:focus-within .ib-b{display:block}.ib-b p{margin:0 0 7px}.ib-b p:last-child{margin:0}.ib-b code{font:11px ui-monospace,Menlo,monospace;background:color-mix(in srgb,var(--txt) 8%,transparent);padding:1px 4px;border-radius:4px}.dlb .ib-page{margin:-2px 0 10px;font-size:12px;color:var(--txt-faint)}.kit-m .in{box-sizing:border-box;max-width:100%}.kit-m select.in,.kit-m input.in{width:100%}.kit-m textarea.in{width:100%;resize:vertical}.dlb .code{background:var(--surface);border:1px dashed var(--line-strong,var(--line));border-radius:10px;padding:10px 12px;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}";
 
   // ───────── les infobulles : ce que chaque champ, colonne et page veut dire, avec la règle de Dolibarr quand il y en a une. Du texte écrit ici, jamais une donnée : il peut porter du HTML simple.
   const AIDE = {
@@ -206,6 +206,13 @@
     };
     document.addEventListener("mouseover", place); document.addEventListener("focusin", place);
   }
+  // Quel geste demande quel droit de Paramètres › Droits (module Dolibarr). Ce sont ceux des capacités que le geste appelle : le serveur refuse de toute façon, l'écran ne fait que cacher ce que le compte ne peut pas faire.
+  const DROIT_GESTE = { valider: "valider", donvalider: "valider", projet: "valider", encaisser: "facturer", relancer: "facturer", avoir: "facturer", nfacture: "facturer", ndevis: "facturer", devis: "facturer", facturer: "facturer",
+    ntiers: "tiers", ncontact: "tiers", nprod: "tiers", prix: "tiers", nprojet: "tiers", envoyerp: "tiers", envoyerc: "tiers", modifl: "tiers", detacher: "tiers", ndon: "dons", cotis: "dons", virement: "tresorerie", payersup: "tresorerie", libre: "libre" };
+  const LIB_DROIT = { valider: "Valider", facturer: "Facturer et encaisser", tiers: "Gérer les tiers, contacts, produits et projets", dons: "Gérer les dons et les adhérents", tresorerie: "Trésorerie", libre: "Requête libre" };
+  const peutGeste = (a) => { const d = DROIT_GESTE[a]; return !d || K.peut("dolibarr." + d); };
+  const manque = (a) => "Il te manque le droit « " + LIB_DROIT[DROIT_GESTE[a]] + " » (Paramètres › Droits)";
+  const griser = (zone) => zone && zone.querySelectorAll("[data-a]").forEach((b) => { if (peutGeste(b.dataset.a)) return; b.classList.add("off"); b.setAttribute("aria-disabled", "true"); b.title = manque(b.dataset.a); if (b.tagName === "BUTTON") b.disabled = true; });
   const COURANTE = { racine: null };      // la page qui a reçu le dernier clic : à elle les fenêtres qu'elle a ouvertes
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};
   CASS.sceneSurMesure.dolibarr = async function (corps, ctx) {
@@ -275,6 +282,7 @@
     };
     const BESOIN = { afaire: ["factures", "devis", "dons", "tiers"], factures: ["factures", "tiers", "banques"], devis: ["devis", "tiers"], tiers: ["tiers", "factures"], contacts: ["contacts", "tiers"], banque: ["banques"], dons: ["dons"], adherents: ["adherents", "types"], projets: ["projets"], cprojets: ["cp", "liens", "projets"], ccontacts: ["cc", "liens", "tiers"], produits: ["produits"], fournisseurs: ["sup", "tiers", "banques"], instance: ["inst"], capacites: ["cat", "rgl"], comptes: ["cpts"] };
     async function charger(forcer) {
+      await K.droits();
       S.err = ""; const vus = BESOIN[S.onglet] || [];
       await Promise.all(vus.filter((k) => forcer || !S.d[k]).map(async (k) => { try { S.d[k] = await CHARGEURS[k](); } catch (e) { S.err = e.message || String(e); S.d[k] = []; } }));
       if (S.onglet === "acces" && !S.acces) { try { S.acces = await agir("dolibarr.mon_acces"); } catch (e) { S.acces = { erreur: e.message || String(e) }; } }
@@ -413,6 +421,7 @@
       const foc = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.q : null, pos = foc ? document.activeElement.selectionStart : 0;
       racine.innerHTML = K.titre((ONGLETS.find((o) => o[0] === S.onglet) || ["", "Dolibarr"])[1], "Dolibarr · chaque geste est relu, journalisé et défaisable.") + (AIDE.pages[S.onglet] ? '<div class="ib-page">' + ib("À quoi sert cette page ?", "<p><b>" + AIDE.pages[S.onglet][0] + "</b></p>" + AIDE.pages[S.onglet][1]) + "</div>" : "") +
         (S.err ? '<div class="alerte dg"><div class="sp">' + esc(S.err) + "</div></div>" : "") + VUES[S.onglet]();
+      griser(racine);
       if (foc) { const n = racine.querySelector('[data-q="' + foc + '"]'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }
     }
 
@@ -426,7 +435,7 @@
       const clore = (r) => { if (r) { S.v = {}; m.querySelectorAll("[id]").forEach((e) => { S.v[e.id] = e.type === "checkbox" ? e.checked : e.value; }); } v.remove(); m.remove(); fin(r); };
       v.addEventListener("click", () => clore(false)); m.addEventListener("click", (e) => { const b = e.target.closest("[data-c]"); if (b) clore(b.dataset.c === "oui"); });
       m.addEventListener("keydown", (e) => { if (e.key === "Escape") clore(false); });
-      document.body.appendChild(v); document.body.appendChild(m); const f = m.querySelector("input,textarea,select,[data-c=non]"); if (f) f.focus();
+      document.body.appendChild(v); document.body.appendChild(m); griser(m); const f = m.querySelector("input,textarea,select,[data-c=non]"); if (f) f.focus();
     });
     const champ = (id, lib, v, t, x) => '<label class="fld">' + lib + '<input class="in" id="' + id + '" type="' + (t || "text") + '" value="' + esc(v == null ? "" : v) + '" ' + (x || "") + "></label>";
     const sel = (id, lib, opts, v) => '<label class="fld">' + lib + '<select class="in" id="' + id + '">' + opts.map((o) => '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(v) ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select></label>";
@@ -553,7 +562,7 @@
       return '<label class="fld"' + style + ">" + lib + '<input class="in" id="' + id + '" type="' + (f.t || "text") + '" value="' + esc(x) + '"' + (f.ph ? ' placeholder="' + esc(f.ph) + '"' : "") + (f.t === "number" ? ' step="any"' : "") + ">" + aide + "</label>";
     };
     // Le formulaire : il reste ouvert tant que la saisie n'est pas valide ou que Dolibarr la refuse, et dit pourquoi (le message de Dolibarr, tel quel).
-    const formulaire = async (titre, sch, valeurs, enregistrer, oui) => {
+    const formulaire = async (titre, sch, valeurs, enregistrer, oui, lecture) => {
       const v = Object.assign({}, valeurs || {}), pays0 = String(v.country_id || "1");
       const veut = {}; sch.sections.forEach((x) => x[1].forEach((f) => { if (f.dic) veut[f.dic] = 1; if (f.t === "lignes") { veut.produits = 1; veut.tva = 1; } }));
       const opts = { __id: sch.objet || ({ "règlement": "reglement" }[sch.nom] || sch.nom) }; await Promise.all(Object.keys(veut).map(async (n) => { opts[n] = await dico(n, ["departements", "formes"].includes(n) ? pays0 : ""); }));
@@ -583,6 +592,7 @@
           b.disabled = true; dire("");
           try { await enregistrer(saisie); clore(true); } catch (x) { dire(x.message || String(x)); b.disabled = false; }
         });
+        if (lecture) { m.querySelectorAll("input,select,textarea").forEach((x) => { x.disabled = true; }); const ok = m.querySelector("[data-c=oui]"); if (ok) ok.remove(); m.querySelector("[data-c=non]").textContent = "Fermer"; dire("Lecture seule : il te manque le droit « " + LIB_DROIT.tiers + " » (Paramètres › Droits)"); }
         document.body.appendChild(bg); document.body.appendChild(m); const f = m.querySelector("input,textarea,select"); if (f) f.focus();
       });
     };
@@ -615,7 +625,7 @@
       devis: async (p) => { const [id, action] = p.split("|"); if (await modale("Devis : " + action, "<p>Le statut du devis change ; cela se défait (retour en brouillon).</p>", "Faire")) await fait("dolibarr.devis", { id: Number(id), action: action }, "Devis mis à jour"); },
       facturer: async (p) => { if (await modale("Facturer le devis", "<p>Une facture en brouillon est préparée avec les lignes du devis. Rien n’est validé.</p>", "Préparer la facture")) await fait("dolibarr.facturer_devis", { id: Number(p) }, "Facture préparée"); },
       ncontact: async () => { if (await formulaire("Nouveau contact", SCHEMAS.contacts, {}, async (champs) => { await agir("dolibarr.creer", { objet: "contacts", champs: champs }); }, "Créer")) { K.dire("Contact créé"); S.d = {}; await charger(true); } },
-      contact: async (p) => { let c; try { c = await lire("/contacts/" + p); } catch (e) { K.dire(e.message || String(e), "err"); return; } if (!c || c.id == null) { K.dire("Contact introuvable", "err"); return; } if (await formulaire(((c.firstname || "") + " " + (c.lastname || "")).trim(), SCHEMAS.contacts, c, async (champs) => { await agir("dolibarr.modifier", { objet: "contacts", id: Number(p), champs: champs }); }, "Enregistrer")) { K.dire("Contact enregistré"); S.d = {}; await charger(true); } },
+      contact: async (p) => { let c; try { c = await lire("/contacts/" + p); } catch (e) { K.dire(e.message || String(e), "err"); return; } if (!c || c.id == null) { K.dire("Contact introuvable", "err"); return; } if (await formulaire(((c.firstname || "") + " " + (c.lastname || "")).trim(), SCHEMAS.contacts, c, async (champs) => { await agir("dolibarr.modifier", { objet: "contacts", id: Number(p), champs: champs }); }, "Enregistrer", !K.peut("dolibarr.tiers"))) { K.dire("Contact enregistré"); S.d = {}; await charger(true); } },
       ntiers: async () => { if (await formulaire("Nouveau tiers", SCHEMAS.tiers, {}, async (champs) => { await agir("dolibarr.creer", { objet: "tiers", champs: champs }); }, "Créer")) { K.dire("Tiers créé"); S.d = {}; await charger(true); } },
       fichedevis: async (p) => {
         document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
@@ -707,7 +717,7 @@
         const fin = modale("PDF · " + r.nom, '<iframe id="dlb-pdf" title="' + esc(r.nom) + '" style="width:100%;height:70vh;border:0;border-radius:8px;background:#fff"></iframe><div class="note">' + esc(r.ref) + " · " + Math.round(r.taille / 1024) + " Ko · produit par Dolibarr</div>", "Fermer");
         const cadre = document.getElementById("dlb-pdf"); if (cadre) cadre.src = url; fin.then(() => URL.revokeObjectURL(url));
       },
-      tiers: async (p) => { let t; try { t = await lire("/thirdparties/" + p); } catch (e) { K.dire(e.message || String(e), "err"); return; } if (!t || t.id == null) { K.dire("Tiers introuvable", "err"); return; } t = Object.assign({}, t, (t.socialnetworks && !Array.isArray(t.socialnetworks)) ? t.socialnetworks : {}); if (await formulaire(t.name, SCHEMAS.tiers, t, async (champs) => { await agir("dolibarr.modifier", { objet: "tiers", id: Number(p), champs: champs }); }, "Enregistrer")) { K.dire("Tiers enregistré"); S.d = {}; await charger(true); } },
+      tiers: async (p) => { let t; try { t = await lire("/thirdparties/" + p); } catch (e) { K.dire(e.message || String(e), "err"); return; } if (!t || t.id == null) { K.dire("Tiers introuvable", "err"); return; } t = Object.assign({}, t, (t.socialnetworks && !Array.isArray(t.socialnetworks)) ? t.socialnetworks : {}); if (await formulaire(t.name, SCHEMAS.tiers, t, async (champs) => { await agir("dolibarr.modifier", { objet: "tiers", id: Number(p), champs: champs }); }, "Enregistrer", !K.peut("dolibarr.tiers"))) { K.dire("Tiers enregistré"); S.d = {}; await charger(true); } },
       virement: async () => { if (banqueOpts().length < 2) return K.dire("Il faut deux comptes ouverts", "err"); if (await formulaire("Virement entre comptes", SCHEMAS.virement, {}, async (c) => { await agir("dolibarr.virement_interne", { de: Number(c.de), vers: Number(c.vers), montant: c.montant, date: c.date, libelle: c.libelle || "" }); }, "Virer")) { K.dire("Virement fait"); S.d = {}; await charger(true); } },
       ndon: async () => { if (await formulaire("Nouveau don", SCHEMAS.don, {}, async (c) => { const x = Object.assign({}, c), a = { montant: x.montant, date: x.date, nom: x.nom || "", prenom: x.prenom || "", societe: x.societe || "" }; ["montant", "date", "nom", "prenom", "societe"].forEach((k) => delete x[k]); await agir("dolibarr.don_creer", Object.assign(a, { champs: x })); }, "Saisir la promesse")) { K.dire("Promesse saisie"); S.d = {}; await charger(true); } },
       donvalider: async (p) => { if (await modale("Valider le don", "<p>Le don prend son numéro. Dolibarr ne le repasse pas en promesse par l’API.</p>", "Valider")) await fait("dolibarr.don_valider", { id: Number(p) }, "Don validé"); },
@@ -742,6 +752,7 @@
       if (racine.contains(e.target)) { COURANTE.racine = racine; }
       else if (!(e.target.closest(".kit-m") && COURANTE.racine === racine)) return;
       e.preventDefault();
+      if (!peutGeste(b.dataset.a)) { K.dire(manque(b.dataset.a), "err"); return; }
       if (e.target.closest(".kit-m")) document.querySelectorAll(".kit-m,.kit-v").forEach((x) => x.remove());      // un geste lancé depuis une fiche la remplace : sinon la fenêtre de confirmation s'empile sur une fiche qui devient périmée
       GESTES[b.dataset.a](b.dataset.p);
     };

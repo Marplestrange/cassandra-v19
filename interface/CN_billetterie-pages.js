@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #a9b3a2
+// VERSION CN : 0.1.0  #c18bfe
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=a9b3a2 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=c18bfe ▼▼▼
 // Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 (function () {
   "use strict";
@@ -21,7 +21,9 @@
   const { eur, jour, jourCourt, quand, puce, puceEvt, puceCmd, MOYENS, cellule } = H;
   B.choix = B.choix || {};
 
-  const tuile = (n, lib, mod, cible) => '<' + (cible ? 'button class="stat cl' : 'div class="stat') + (mod ? " " + mod : "") + '"' + (cible ? ' data-a="va" data-c="' + cible + '"' : "") + "><b>" + esc(n) + "</b><span>" + esc(lib) + "</span></" + (cible ? "button" : "div") + ">";
+  const PAGE_DROIT = { evenements: 'evenements', ventes: 'ventes', argent: 'argent', controle: 'controler' };
+  const ouvrable = (c) => (c && (!PAGE_DROIT[c] || K.peut('billetterie.' + PAGE_DROIT[c])) ? c : '');
+  const tuile = (n, lib, mod, cible0, cible = ouvrable(cible0)) => '<' + (cible ? 'button class="stat cl' : 'div class="stat') + (mod ? " " + mod : "") + '"' + (cible ? ' data-a="va" data-c="' + cible + '"' : "") + "><b>" + esc(n) + "</b><span>" + esc(lib) + "</span></" + (cible ? "button" : "div") + ">";
   const jauge = (n, max) => { const p = max ? Math.min(100, Math.round(100 * n / max)) : 0; return '<div class="jauge' + (p >= 100 ? " dg" : p >= 85 ? " al" : "") + '"><i style="width:' + p + '%"></i></div>'; };
   const tableau = (cols, lignes, vide) => '<div class="tw"><table><thead><tr>' + cols.map((c) => '<th class="' + (c[2] === "n" || c[2] === "eur" ? "n" : "") + '">' + esc(c[1]) + "</th>").join("") + "</tr></thead><tbody>" + (lignes.length ? lignes.join("") : '<tr><td colspan="' + cols.length + '" class="vide">' + esc(vide || "Rien pour l’instant.") + "</td></tr>") + "</tbody></table></div>";
   const ouvrir = (ecran, choix) => { if (choix) Object.assign(B.choix, choix); if (CASS.ouvrirEcran) CASS.ouvrirEcran("billetterie:" + ecran, "Billetterie"); };
@@ -73,12 +75,12 @@
   // ═══ VUE D'ENSEMBLE ═══
   P.vue = async (S) => {
     const R = S.racine;
-    const [ev, ret, cf, cour, att, vir] = await Promise.all([S.lire("evenements"), S.lire("retraits", { etat: "demandee" }), S.lire("conflits", { etat: "a_arbitrer" }), S.lire("courriels", { etat: "echec" }), S.lire("attente_liste", { etat: "attente" }), S.lire("commandes", { etat: "en_attente" })]);
+    const [ev, ret, cf, cour, att, vir] = await Promise.all([S.lire("evenements", null, "evenements"), S.lire("retraits", { etat: "demandee" }, "argent"), S.lire("conflits", { etat: "a_arbitrer" }, "evenements"), S.lire("courriels", { etat: "echec" }, "argent"), S.lire("attente_liste", { etat: "attente" }, "evenements"), S.lire("commandes", { etat: "en_attente" }, "ventes")]);
     const evts = ((ev && ev.evenements) || []).filter((e) => e.statut !== "terminé" && e.statut !== "annulé").sort((a, b) => String(a.date_iso).localeCompare(String(b.date_iso)));
     const cartes = [];
     let vendus = 0, ca = 0;
     for (const e of evts.slice(0, 8)) {
-      const [st, cm] = await Promise.all([S.lire("stock", { evenement_id: e.id }), S.lire("commandes", { evenement_id: e.id, etat: "payee", limite: 1000 })]);
+      const [st, cm] = await Promise.all([S.lire("stock", { evenement_id: e.id }, "evenements"), S.lire("commandes", { evenement_id: e.id, etat: "payee", limite: 1000 }, "ventes")]);
       const total = ((cm && cm.commandes) || []).reduce((n, c) => n + c.total, 0);
       vendus += st ? st.vendus : 0; ca += total;
       cartes.push('<button class="carte evt" data-a="evt" data-id="' + e.id + '"><div class="row"><b style="font-size:14px">' + esc(e.nom) + '</b><span class="sp"></span>' + puceEvt(e.statut) + '</div><div class="hint">' + esc(jour(e.date_iso)) + "</div>" +

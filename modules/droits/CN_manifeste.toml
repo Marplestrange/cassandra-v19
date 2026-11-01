@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : droits
 # ZONE       : CN
-# VERSION CN : 0.2.0  #e2107c
+# VERSION CN : 0.2.0  #3798ca
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Qui, parmi les comptes, peut utiliser quoi : les modules déclarent leurs droits, on les attribue à des comptes et à des groupes, l'exécuteur les vérifie.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=e2107c ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=3798ca ▼▼▼
 [module]
 id = "droits"
 nom = "Droits"
@@ -59,6 +59,11 @@ id = "mes_droits"
 libelle = "Les droits d'un compte : administrateur ou non, groupes, tout ce qu'il détient"
 risque = "lecture"
 droit = "voir"
+
+[[capacites]]
+id = "mes_droits_a_moi"
+libelle = "Mes droits : ce que détient MON compte (pour qu'un écran cache ce qu'il ne peut pas faire ; le serveur refuse de toute façon)"
+risque = "lecture"
 
 [[capacites]]
 id = "verifier"
