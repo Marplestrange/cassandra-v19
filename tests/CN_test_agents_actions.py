@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7ca1f5
+# VERSION CN : 0.1.0  #fba2da
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des actions de l'équipe d'agents : propositions, carte de confiance, « Pourquoi ? », épreuves de sûreté, Relecteur et sentinelle anti-fuite.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7ca1f5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fba2da ▼▼▼
 """Bancs des actions de l'équipe d'agents : propositions (cloisonnement, exécution à l'acceptation, refus mémorisé, report, mandat des envois, secret masqué), carte de confiance
 (8 validations, essai de 7 jours, recul du noyau), « Pourquoi ? » sans fuite entre comptes, épreuves de sûreté (un modèle piégé échoue), Relecteur et sentinelle anti-fuite."""
 import json
@@ -222,6 +222,8 @@ class Propositions(Actions):
         self.assertEqual(self.props(etat="reportee")[0]["id"], pid)
         self.jour[0] += 24 * 3600
         self.assertEqual([p["id"] for p in self.props()], [pid])                             # l'heure est venue
+        revenue = self.props()[0]
+        self.assertEqual((revenue["etat"], revenue["reporte_jusqua"]), ("attend", 0))         # l'échéance passée n'est plus rendue : elle est à valider
         self.assertEqual(self.decider(pid, "accepter")["etat"], "acceptee")
         for jusqu_a in ("nimporte", "2001-01-01"):
             self.racontee("Autre " + jusqu_a)
@@ -394,7 +396,11 @@ class Pourquoi(Actions):
         self.assertEqual((p["declencheur"]["type"], p["declencheur"]["conversation"]), ("tour", r["conversation_id"]))
         self.assertIn("Quel est le port", p["declencheur"]["extrait"])
         self.assertEqual(p["palier"], "auto")
-        self.assertEqual(p["memoire"], [{"ref": "M:1"}])                                              # des références, relues à la demande
+        self.assertEqual([m["ref"] for m in p["memoire"]], ["M:1"])                                   # la référence reste, et l'écran lit une phrase
+        self.assertIn("8080", p["memoire"][0]["libelle"])
+        self.assertIn("nginx", p["phrases"][1])
+        self.assertTrue(p["phrases"][0].startswith("Sur ta demande"))
+        self.assertEqual(p["issue_texte"], "L'acte a été fait.")
         types = [j["type"] for j in p["journal"]]
         self.assertEqual(types[:3], ["capacite.demandee", "capacite.faite", "capacite.prouvee"])
         d = self.agent("pourquoi", compte=BEA, acte=acte, detail=True)
@@ -424,8 +430,8 @@ class Pourquoi(Actions):
         for compte in (LEO, ROOT):
             self.assertEqual(self.ex("agents.pourquoi", compte=compte, acte=acte)["statut"], "echec", compte)
         self.assertEqual(self.agent("pourquoi", compte=BEA, acte=acte)["acte"], acte)
-        c = self.causer("Crée une note", [self.creer("Machine"), texte("Fait.")], compte=ROOT)
-        acte_c = self.acte(c)
+        c = self.causer("Retiens la config", [appel("memoire__ecrire", {"categorie": "config", "cle": "port", "valeur": "nginx écoute sur le port 8080", "nature": "constat", "provenance": "dit"}), texte("Fait.")], compte=ROOT)
+        acte_c = next(a["evenement"] for a in c["actions"] if a.get("cle") == "memoire.ecrire")
         self.assertEqual(self.agent("pourquoi", compte=ROOT, acte=acte_c)["agent"], "cassandra")
         self.assertEqual(self.ex("agents.pourquoi", compte=BEA, acte=acte_c)["statut"], "echec")
         for faux in (0, 987654, "x"):

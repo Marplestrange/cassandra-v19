@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #f9968f
+# VERSION CN : 0.5.0  #b82380
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les propositions des agents : « À valider » (accepter exécute, refuser se mémorise, reporter), la carte de confiance et « Pourquoi ? ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=f9968f ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=b82380 ▼▼▼
 """Les propositions des agents.
 
 Une proposition est ce qu'un agent veut faire et ne fait pas seul : un geste raconté (palier ou niveau), retenu pour accord (« demander »), ou retenu parce qu'il sort de la maison
@@ -45,6 +45,8 @@ RISQUES_AUTO = ("faible", "moyen")
 CLE_SECRETE = re.compile(r"(?:^|_)(?:mot_de_passe|passwd|password|passe|mdp|jeton|token|secret|cle_secrete|cle_privee|cle_api|api_key|apikey|credential)s?(?:$|_)|^key$", re.I)
 CLE_ADRESSE = ("a", "to", "cc", "bcc", "destinataire", "destinataires", "adresse", "email", "mail")
 REF_SOUVENIR = re.compile(r"\[M:(\d+)\]")
+ISSUES = {"faite": "L'acte a été fait.", "racontee": "L'acte a été raconté, pas fait : il attend ta décision.", "simulee": "L'acte a été simulé : rien n'a été fait.", "echec": "L'acte a échoué."}
+RETOURS = {"annulee": "Il a été annulé tout seul : la preuve n'était pas là.", "annulation_impossible": "Son annulation n'a pas pu se faire.", "defaite": "Tu l'as défait."}
 
 
 def masquer(args) -> tuple:
@@ -106,6 +108,8 @@ def brancher_propositions(ctx, E, o, lecture, reglage):
 
     def publique(p):
         d = E.definitions().get(p["agent"]) or {}
+        if p["etat"] == "reportee" and p["reporte_jusqua"] <= now():             # l'échéance est passée : elle revient à valider, sans promettre une heure révolue
+            p = dict(p, etat="attend", reporte_jusqua=0)
         return {"id": p["id"], "agent": p["agent"], "nom": d.get("nom", p["agent"]), "capacite": p["capacite"], "args": json.loads(p["args"] or "{}"), "titre": p["titre"], "resume": p["resume"],
                 "risque": p["risque"], "pourquoi": p["pourquoi"], "impact": p["impact"], "origine": p["origine"], "etat": p["etat"], "cree": p["cree"], "decidee": p["decidee"], "par": p["par"],
                 "reporte_jusqua": p["reporte_jusqua"], "conversation_id": p["conversation_id"], "mandat": json.loads(p["mandat"] or "{}"), "blocage": p["blocage"],
@@ -394,6 +398,7 @@ def brancher_propositions(ctx, E, o, lecture, reglage):
                 elif s["type"] in ("capacite.annulee", "capacite.annulation_impossible"):
                     preuve, retour = False, "annulee" if s["type"] == "capacite.annulee" else "annulation_impossible"
         decl = {"type": a["declencheur"]}
+        pr = []
         if a["declencheur"] == "proposition":
             pr = db.lire("SELECT id, titre, par, decidee FROM propositions WHERE id=?", (a["proposition_id"],))
             decl.update({"proposition": a["proposition_id"], "accepte_par": pr[0]["par"] if pr else "", "quand": pr[0]["decidee"] if pr else 0})
@@ -404,11 +409,17 @@ def brancher_propositions(ctx, E, o, lecture, reglage):
         res = {"acte": a["evenement"], "agent": a["agent"], "capacite": a["capacite"], "quand": demande["ts"] if demande else a["ts"], "declencheur": decl,
                "memoire": [{"ref": "M:%d" % i} for i in refs], "outil": {"cle": a["capacite"]}, "palier": a["palier"], "niveau": a["niveau"], "confirmer": bool(a["confirmer"]),
                "issue": issue, "preuve": preuve, "retour": retour, "journal": journal, "arguments": (demande or {}).get("donnees", {}).get("args")}
-        if detail:                                               # les souvenirs se lisent à la demande, par le module de la mémoire (qui garde son propre cloisonnement)
-            for m in res["memoire"]:
-                s = (lecture("memoire.lire", id=int(m["ref"][2:])) or {}).get("souvenir")
-                if s:
-                    m.update({"cle": s.get("cle"), "valeur": str(s.get("valeur") or "")[:300], "statut": s.get("statut")})
+        for m in res["memoire"]:                                 # les souvenirs se lisent par le module de la mémoire (qui garde son propre cloisonnement) : l'écran lit une phrase, jamais « M:12 »
+            s = (lecture("memoire.lire", id=int(m["ref"][2:])) or {}).get("souvenir")
+            if s:
+                m.update({"cle": s.get("cle"), "valeur": str(s.get("valeur") or "")[:300], "statut": s.get("statut"), "libelle": "%s — %s" % (s.get("cle") or "souvenir", str(s.get("valeur") or "").strip()[:140])})
+            else:
+                m["libelle"] = "un souvenir qui n'est plus visible (retiré, ou hors de ta portée)"
+        res["defaisable"] = issue == "faite" and retour not in ("defaite", "annulee", "annulation_impossible")                 # le bouton « Défaire » : un acte fait, pas encore défait
+        res["issue_texte"] = ISSUES.get(issue, "sans issue enregistrée")
+        res["retour_texte"] = RETOURS.get(retour, "")
+        res["declencheur"]["phrase"] = ("Sur ta demande : « %s »" % decl["extrait"]) if decl.get("extrait") else ("Après ta validation de la proposition « %s »" % pr[0]["titre"] if a["declencheur"] == "proposition" and pr else "Demandé dans une conversation")
+        res["phrases"] = [res["declencheur"]["phrase"]] + ["Souvenir consulté : %s" % m["libelle"] for m in res["memoire"]] + [res["issue_texte"]] + ([res["retour_texte"]] if res["retour_texte"] else [])
         return res
 
     def defaire(c, acte=0, raison=""):
@@ -429,7 +440,7 @@ def brancher_propositions(ctx, E, o, lecture, reglage):
         r = ctx.defaire_acte(fait["id"], compte)
         if r["statut"] != "defaite":
             raise ValueError(r.get("raison") or "le retour arrière n'a pas pu être joué")
-        return {"acte": a["evenement"], "fait": fait["id"], "agent": a["agent"], "capacite": a["capacite"], "defait": True, "raison": str(raison or "")[:300]}
+        return {"acte": a["evenement"], "fait": fait["id"], "agent": a["agent"], "capacite": a["capacite"], "defait": True, "raison": str(raison or "")[:300], "phrase": "L'acte de %s (%s) est défait." % (E.definitions().get(a["agent"], {}).get("nom", a["agent"]), a["capacite"])}
 
     def prouver_defaite(c, res):
         return any(e.get("cause") == res["fait"] for e in ctx.evenements("capacite.defaite", 5000))

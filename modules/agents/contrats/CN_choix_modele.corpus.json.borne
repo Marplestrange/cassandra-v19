@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #01e8bc
+# VERSION CN : 0.5.0  #01e8bc
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : choix_modele.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

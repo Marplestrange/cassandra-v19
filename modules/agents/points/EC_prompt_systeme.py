@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.4.0)  #cf89df
+# VERSION EC : EC0 (référence 0.5.0)  #cf89df
 # HÔTE CN    : CN_module.py · prompt_systeme @1.0
 # RÔLE       : prompt_systeme.
 # MÉTHODE    : fonction pure extraite automatiquement du nexus : la fermeture est copiée mot pour mot ; le corpus vient des appels littéraux du dépôt et d'une synthèse par type.

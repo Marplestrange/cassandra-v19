@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #a29bc6
+# VERSION CN : 0.5.0  #a29bc6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'Auditeur, un service agentique : il relit le journal et signale les dérives, indépendamment des agents qu'il regarde.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=a29bc6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=a29bc6 ▼▼▼
 """L'Auditeur, un service agentique : il relit le journal et signale les dérives, indépendamment des agents qu'il regarde.
 
   - LECTURE SEULE : aucun outil (`acteur_outils` vide), aucune écriture ; `auditer` est une capacité de lecture réservée à l'administrateur (le journal d'instance, jamais un bureau).

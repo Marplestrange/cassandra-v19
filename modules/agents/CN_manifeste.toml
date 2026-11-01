@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #4bc6dc
+# VERSION CN : 0.5.0  #4c7a48
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=4bc6dc ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=4c7a48 ▼▼▼
 [module]
 id = "agents"
 nom = "Agents"
-version = "0.4.0"
+version = "0.5.0"
 noyau_min = "0.1.0"
 description = "Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul."
 confiance = "interne"
@@ -300,6 +300,68 @@ libelle = "L'Auditeur relit le journal et signale les dérives : un coût qui d�
 risque = "lecture"
 droit = "administrer"
 perimetre = ["lecture seule, aucun outil", "le journal d'instance : administrateur seulement", "plafonds : 30 jours, 5000 lignes, 20 signaux"]
+
+[[capacites]]
+id = "regles"
+libelle = "Les règles communes aux agents : plafond global de coût, palier par défaut, « le dehors passe par Amizo », ordre du journal, vocabulaire (Palier, Pleine autonomie)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "regles_regler"
+libelle = "Régler les règles communes aux agents (administrateur) : plafond global de coût, palier par défaut, « le dehors passe par Amizo », ordre du journal"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["l'administrateur seulement", "agit dans le tour de chaque agent dès qu'elle est posée", "le plafond global est celui de plafond_regler « global »"]
+preuve = "relire les règles : elles disent ce qu'on vient de poser"
+retour = "remettre les règles et le plafond global tels qu'ils étaient"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "retenus_refuses"
+libelle = "La tuile « retenus / refusés » : réponses retenues par le Relecteur, actions refusées par l'utilisateur ou par le noyau, sur une période"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "taches"
+libelle = "Les tâches récurrentes confiées par ce compte à un agent, avec leur prochaine échéance"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "tache_confier"
+libelle = "Confier à un agent une tâche récurrente (horaire, quotidienne, hebdomadaire) : une consigne qui revient"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["vingt tâches actives au plus par compte", "l'agent de l'instance : l'administrateur seulement", "la tâche est du compte qui la confie"]
+preuve = "relire les tâches : la nouvelle y est"
+retour = "supprimer la tâche"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "tache_retirer"
+libelle = "Retirer une tâche récurrente de ce compte"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["une tâche de son compte"]
+preuve = "relire les tâches : elle n'y est plus"
+retour = "remettre la tâche telle qu'elle était"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "tache_lancer"
+libelle = "Jouer maintenant une tâche récurrente : un tour de l'agent sur sa consigne, sous le compte qui la lance"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["une tâche de son compte", "l'agent n'a que ses outils et ses paliers"]
+preuve = "relire les tâches : elle porte l'instant de son dernier passage"
+retour = "remettre l'instant et la conversation d'avant"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
 
 [[capacites]]
 id = "epreuves_lancer"

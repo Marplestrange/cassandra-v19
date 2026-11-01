@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2704ea
+# VERSION CN : 0.1.0  #1f593b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2704ea ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1f593b ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -48,6 +48,7 @@ import os
 import re
 import sys
 import tempfile
+import weakref
 import threading
 import time
 from pathlib import Path
@@ -82,6 +83,7 @@ class Noyau:
     def __init__(self, donnees, modules=None, config=None, actifs=None, extensions=None, lire_actifs=None,
                  gerer_modules=False, amorce=None, exiger_compte=False):
         self.modules = Path(modules or RACINE / "modules")
+        self._signatures = weakref.WeakKeyDictionary()   # fonction de capacité -> ses paramètres (pour dériver les outils d'un agent sans relire la signature de chaque capacité à chaque appel)
         self.extensions = Path(extensions) if extensions else None   # dossier des modules greffés après coup
         self.actifs = actifs         # None : tous les modules du dossier ; sinon la liste des modules actifs
         self.lire_actifs = lire_actifs   # appelable : relit la liste des modules actifs (greffe à chaud)
@@ -236,14 +238,20 @@ class Noyau:
         """Les outils d'un agent, dérivés du catalogue : rien à écrire à la main, un outil de plus = une capacité de plus."""
         import inspect
         sorties = []
+        accords = {}
         for e in self.catalogue.lister():
             c = e.capacite
             if not e.actif or not e.implementee or acteur not in c.qui or c.qui == ("anonyme",) or (e.module == "agents" and e.cle not in OUTILS_DU_MODULE_AGENTS):
                 continue
-            if compte and c.droit and self.droits is not None and not self.droits.raison(compte, c.droit)["accord"]:
-                continue
+            if compte and c.droit and self.droits is not None:
+                if c.droit not in accords:                         # un droit se décide UNE fois par appel : des centaines de capacités n'en nomment que quelques dizaines
+                    accords[c.droit] = self.droits.raison(compte, c.droit)["accord"]
+                if not accords[c.droit]:
+                    continue
             try:
-                params = list(inspect.signature(e.faire).parameters.values())[1:]
+                params = self._signatures.get(e.faire)
+                if params is None:                                  # la signature d'une fonction ne change pas : lue une fois (la clé est la fonction, un module rechargé en apporte une autre)
+                    params = self._signatures[e.faire] = list(inspect.signature(e.faire).parameters.values())[1:]
             except (TypeError, ValueError):
                 continue
             props, requis = {}, []
@@ -272,7 +280,9 @@ class Noyau:
             if c.qui == ("anonyme",) or (compte and c.droit and self.droits is not None and not self.droits.raison(compte, c.droit)["accord"]):
                 continue
             try:
-                params = list(inspect.signature(e.faire).parameters.values())[1:]
+                params = self._signatures.get(e.faire)
+                if params is None:                                  # la signature d'une fonction ne change pas : lue une fois (la clé est la fonction, un module rechargé en apporte une autre)
+                    params = self._signatures[e.faire] = list(inspect.signature(e.faire).parameters.values())[1:]
             except (TypeError, ValueError):
                 params = []
             ps = []

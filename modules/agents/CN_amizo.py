@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #e41e23
+# VERSION CN : 0.5.0  #e41e23
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Amizo, la connaissance : transmettre une information sourcée, recevoir une passation, la traiter.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=e41e23 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=e41e23 ▼▼▼
 """Amizo, la connaissance.
 
   - Amizo est le SEUL agent qui lit le dehors (`web.rechercher`, `web.lire`) ; il n'agit jamais : sa seule écriture est sa bibliothèque (`bibliotheque.noter`, en quarantaine) et ce qu'il TRANSMET.

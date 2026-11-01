@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #808112
+# VERSION CN : 0.5.0  #10f1be
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents, et les services que le tour de conversation emploie (réglage effec
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=808112 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=10f1be ▼▼▼
 """L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents,
 et les services que le tour de conversation emploie (réglage effectif, palier par outil, coût du jour, plafond).
 
@@ -106,6 +106,12 @@ def brancher_equipe(ctx, reglage):
 
     memoire_outils = {}                                           # (acteur, compte) -> (instant, outils) : dériver ~600 outils du catalogue coûte cher, on ne le refait pas à chaque écran
 
+    def dans_sa_famille(agent, cle):
+        """La répartition du catalogue : Cassandra tient l'infrastructure (jamais le bureau), Itare le bureau (jamais l'infrastructure) ; les autres modules sont communs, et Amizo a ses six outils."""
+        r = D.get("repartition", {})
+        interdit = r.get("sans", {}).get(agent)
+        return not interdit or cle.split(".", 1)[0] not in r.get(interdit, [])
+
     def outils_de(d):
         if not d["acteur_outils"]:
             return []
@@ -113,7 +119,7 @@ def brancher_equipe(ctx, reglage):
         hit = memoire_outils.get(cle)
         if hit and time.time() - hit[0] < TTL_OUTILS:
             return hit[1]
-        out = [t for t in ctx.outils(d["acteur_outils"]) if d["acteur_outils"] == "cassandra" or not t["nom"].startswith(tuple(D["interdit_hors_cassandra"]))]
+        out = [t for t in ctx.outils(d["acteur_outils"]) if (d["acteur_outils"] == "cassandra" or not t["nom"].startswith(tuple(D["interdit_hors_cassandra"]))) and dans_sa_famille(d["acteur_outils"], t["cle"])]
         memoire_outils[cle] = (time.time(), out)            # l'instant d'APRÈS la dérivation : sur un catalogue lent elle dure plus que le délai
         return out
 
@@ -385,7 +391,7 @@ def brancher_equipe(ctx, reglage):
     ctx.implementer("plafond_regler", plafond_regler, prouver_plafond, defaire_plafond, simuler=lambda x, portee="", euros=None, **_: "poserait un plafond de %s € par jour sur %s" % (euros, portee))
 
     # ce que le tour de conversation emploie
-    return SimpleNamespace(effectif=effectif, limite=limite, surcharges=surcharges, outils_de=outils_de, compter=compter, verdict=verdict, retenir=retenir, definitions=definitions, palier_outil=palier_outil,
+    return SimpleNamespace(effectif=effectif, limite=limite, surcharges=surcharges, outils_de=outils_de, dans_sa_famille=dans_sa_famille, compter=compter, verdict=verdict, retenir=retenir, definitions=definitions, palier_outil=palier_outil,
                            cible=cible, definition=definition, admin=admin)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

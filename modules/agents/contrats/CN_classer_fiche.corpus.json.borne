@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.4.0  #cfa2ef
+# VERSION CN : 0.5.0  #cfa2ef
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : classer_fiche.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

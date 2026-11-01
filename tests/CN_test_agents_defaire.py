@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2c6130
+# VERSION CN : 0.1.0  #b094df
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Défaire un acte d'agent (`agents.defaire`) et l'Auditeur (service agentique en lecture seule).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2c6130 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b094df ▼▼▼
 """Défaire un acte d'agent (`agents.defaire`) et l'Auditeur (service agentique en lecture seule).
 
   - DÉFAIRE : le retour arrière d'un acte déjà fait, une seule fois, raconté au journal ; le cloisonnement est celui de « Pourquoi ? » ; un acte qui n'a rien fait ne se défait pas ;
@@ -29,7 +29,7 @@ sys.path.insert(0, str(RACINE))
 sys.path.insert(0, str(RACINE / "tests"))
 
 import CN_test_agents_actions as actions                           # noqa: E402
-from CN_test_agents import BEA, LEO, ROOT, texte                  # noqa: E402
+from CN_test_agents import BEA, LEO, ROOT, appel, texte                  # noqa: E402
 
 
 class Defaire(actions.Actions):
@@ -52,7 +52,11 @@ class Defaire(actions.Actions):
     def test_un_acte_se_defait_une_fois_et_se_raconte(self):
         acte = self.acte_de("A défaire")
         self.assertIn("A défaire", self.titres())
+        avant = self.agent("pourquoi", compte=BEA, acte=acte)
+        self.assertTrue(avant["defaisable"])                                                          # l'écran sait s'il montre le bouton
+        self.assertEqual(avant["issue_texte"], "L'acte a été fait.")
         r = self.regler("defaire", compte=BEA, acte=acte, raison="je n'en voulais pas")
+        self.assertEqual(r["phrase"], "L'acte de Itare (notes.creer) est défait.")
         self.assertEqual((r["acte"], r["agent"], r["capacite"], r["defait"]), (acte, "itare", "notes.creer", True))
         self.assertNotIn("A défaire", self.titres())                                                 # le retour arrière de la capacité a joué
         defaites = [e for e in self.evts("capacite.defaite") if e["compte"] == BEA]
@@ -60,6 +64,8 @@ class Defaire(actions.Actions):
         self.assertEqual(defaites[0]["acteur"], "humain")
         p = self.agent("pourquoi", compte=BEA, acte=acte)
         self.assertEqual(p["retour"], "defaite")                                                      # « Pourquoi ? » le dit
+        self.assertFalse(p["defaisable"])
+        self.assertEqual(p["retour_texte"], "Tu l'as défait.")
         self.assertIn("capacite.defaite", [j["type"] for j in p["journal"]])
         deux = self.refuse("defaire", compte=BEA, acte=acte)                                          # une seule fois
         self.assertIn("déjà défait", deux["erreur"])
@@ -75,10 +81,11 @@ class Defaire(actions.Actions):
             self.refuse("defaire", compte=BEA, acte=faux)
 
     def test_l_administrateur_defait_l_acte_de_cassandra(self):
-        acte = self.acte_de("Machine", compte=ROOT)
+        r = self.causer("Retiens la config", [appel("memoire__ecrire", {"categorie": "config", "cle": "port", "valeur": "nginx écoute sur le port 8080", "nature": "constat", "provenance": "dit"}), texte("Fait.")], compte=ROOT)
+        acte = next(a["evenement"] for a in r["actions"] if a.get("cle") == "memoire.ecrire")
         self.assertEqual(self.refuse("defaire", compte=BEA, acte=acte)["statut"], "echec")
         self.assertTrue(self.regler("defaire", compte=ROOT, acte=acte)["defait"])
-        self.assertNotIn("Machine", self.titres(ROOT))
+        self.assertEqual([x for x in self.evts("capacite.defaite") if x["compte"] == ROOT][0]["acteur"], "humain")
 
     def test_un_acte_qui_n_a_rien_fait_ne_se_defait_pas(self):
         self.regler("palier_regler", compte=BEA, agent="itare", outil="notes.creer", palier="raconter")

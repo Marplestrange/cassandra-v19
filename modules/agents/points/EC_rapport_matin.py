@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.4.0)  #e94c59
+# VERSION EC : EC0 (référence 0.5.0)  #e94c59
 # HÔTE CN    : CN_module.py · rapport_matin @1.0
 # RÔLE       : résume en trois phrases au plus, par agent, ce que le journal dit de la période : chaque phrase renvoie à une ligne précise du journal.
 # MÉTHODE    : fonction pure : retient les événements de l'agent dans [debut, fin[, sépare actes, lectures, échecs et gestes restés racontés ou refusés, et bâtit une phrase par groupe qui cite le dernier acte ; la ligne citée est celle de cet acte.

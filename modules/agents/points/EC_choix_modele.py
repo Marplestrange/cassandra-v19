@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.4.0)  #34fff5
+# VERSION EC : EC0 (référence 0.5.0)  #34fff5
 # HÔTE CN    : CN_module.py · choix_modele @1.0
 # RÔLE       : ordonne les rôles de modèle qu'un agent essaie : son modèle réglé, son secours, les rôles d'origine ; au plafond de coût, le secours seul ; un modèle déconseillé par les épreuves de sûreté est écarté.
 # MÉTHODE    : fonction pure : au plafond, le secours seul (Cassandra, sans secours, garde son modèle) ; sinon le modèle réglé, à défaut le rôle d'origine de l'agent, puis le secours ; le rôle vide (le modèle du compte) n'est jamais écarté.

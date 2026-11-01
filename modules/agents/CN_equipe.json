@@ -16,6 +16,11 @@
   },
   "tarif_defaut_cts": {"entree": 100, "sortie": 300},
   "interdit_hors_cassandra": ["coffre__"],
+  "repartition": {
+    "bureau": ["notes", "contacts", "ged", "taches", "projets", "agenda", "courrier", "canvas", "billetterie", "dolibarr", "jour", "mandats", "salon"],
+    "infrastructure": ["fastpanel", "dns", "certificats", "sauvegardes", "securite", "sensorium", "flotte", "coffre", "comptes", "droits", "modules", "evolution", "sites", "mesures", "reglages", "modeles", "societes", "journal", "urgence"],
+    "sans": {"cassandra": "bureau", "itare": "infrastructure"}
+  },
   "services": {
     "relecteur": {
       "role": "Relit une réponse avant qu'elle parte : un secret connu (comparé à son EMPREINTE, jamais à sa valeur), un ordre caché, une affirmation sans source. Ni mémoire propre ni initiative.",
