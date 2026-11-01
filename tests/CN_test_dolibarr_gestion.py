@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f7fab2
+# VERSION CN : 0.1.0  #3c5f23
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f7fab2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3c5f23 ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import gzip
 import json
@@ -544,6 +544,18 @@ class GestionDolibarr(unittest.TestCase):
         self.assertEqual(r["statut"], "faite", msg=str(r))
         self.assertTrue(self.faux.t["proposals"][r["resultat"]["id"]]["date"])
         self.assertEqual(self.e("dolibarr.don_valider", "humain", {"id": 999})["statut"], "echec")
+
+    def test_l_en_tete_d_une_facture_ou_d_un_devis_porte_les_champs_de_la_fiche_dolibarr(self):
+        r = self.e("dolibarr.creer_brouillon", "humain", {"objet": "factures", "socid": 3, "lignes": [{"desc": "x", "qty": 2, "subprice": 5, "tva_tx": 20, "remise_percent": 10}],
+                                                          "champs": {"ref_client": "CMD-42", "date": "2026-11-02", "date_lim_reglement": "2026-12-02", "cond_reglement_id": "4", "mode_reglement_id": 2, "fk_account": "1", "note_public": "Merci"}})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        f = self.faux.t["invoices"][r["resultat"]["id"]]
+        self.assertEqual((f["ref_client"], f["cond_reglement_id"], f["mode_reglement_id"], f["fk_account"], f["note_public"]), ("CMD-42", 4, 2, 1, "Merci"))
+        self.assertEqual((f["date_lim_reglement"] - f["date"]) // 86400, 30)                      # des dates en jours, comme la fiche
+        d = self.e("dolibarr.creer_brouillon", "humain", {"objet": "devis", "socid": 3, "lignes": [{"desc": "x", "qty": 1, "subprice": 1}], "champs": {"duree_validite": "15"}})
+        self.assertEqual(self.faux.t["proposals"][d["resultat"]["id"]]["duree_validite"], 15)
+        for mauvais in ({"inconnu": "1"}, {"fk_account": "abc"}, {"date_lim_reglement": "demain"}):                  # un champ hors fiche, un nombre faux, une date fausse
+            self.assertEqual(self.e("dolibarr.creer_brouillon", "humain", {"objet": "factures", "socid": 3, "lignes": [{"desc": "x", "qty": 1, "subprice": 1}], "champs": mauvais})["statut"], "echec", mauvais)
 
     def test_les_impayees_comptent_ce_qui_reste_du_et_pas_le_total_des_factures(self):
         i = self.facture(total=120.0)

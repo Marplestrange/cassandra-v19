@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #a88f01
+# VERSION CN : 0.4.1  #71ebca
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=a88f01 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=71ebca ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
-version = "0.4.0"
+version = "0.4.1"
 noyau_min = "0.1.0"
 description = "Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur."
 confiance = "interne"
@@ -874,4 +874,12 @@ libelle = "Ce que Dolibarr 24 exige à la CRÉATION et que l'appelant n'a pas à
 contrat = "1.0"
 reference = "points/EC_completer"
 fonction = "point_completer"
+runtime = "python"
+
+[[points_evolution]]
+id = "regles_dolibarr"
+libelle = "Les règles que la fiche de Dolibarr applique avant d'écrire : champs obligatoires, valeurs permises, courriel et adresse web valides, SIREN (9 chiffres) et SIRET (14) pour un tiers français (extrait automatiquement de CN_module.py)"
+contrat = "1.0"
+reference = "points/EC_regles_dolibarr"
+fonction = "point_regles_dolibarr"
 runtime = "python"

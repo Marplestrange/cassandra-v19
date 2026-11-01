@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #356f8b
+// VERSION CN : 0.1.0  #abeeb0
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=356f8b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=abeeb0 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -248,6 +248,30 @@
           { k: "default_lang", l: "Langue par défaut", t: "select", o: LANGUES }, { k: "multicurrency_code", l: "Devise", t: "select", dic: "devises" }]],
         ["Notes", [{ k: "note_public", l: "Note publique", t: "area", large: 1 }, { k: "note_private", l: "Note privée", t: "area", large: 1 }]]] }
     };
+    const LIGNES = { k: "lignes", l: "Lignes", t: "lignes", req: 1, large: 1 };
+    const DOC = (titre, extra) => [
+      ["Pièce", [{ k: "socid", l: "Tiers", t: "select", dic: "tiers", req: 1 }, { k: "ref_client", l: "Réf. client" }, { k: "date", l: "Date", t: "date", d: AUJ, req: 1 }].concat(extra || []).concat([
+        { k: "cond_reglement_id", l: "Conditions de règlement", t: "select", dic: "conditions" }, { k: "mode_reglement_id", l: "Mode de règlement", t: "select", dic: "modes" }])],
+      ["Lignes", [LIGNES]],
+      ["Notes", [{ k: "note_public", l: "Note publique", t: "area", large: 1 }, { k: "note_private", l: "Note privée", t: "area", large: 1 }]]];
+    SCHEMAS.factures = { objet: "factures", nom: "facture", sections: DOC("Facture", [{ k: "date_lim_reglement", l: "Date d'échéance", t: "date" }, { k: "fk_account", l: "Compte bancaire", t: "select", dic: "comptes" }]) };
+    SCHEMAS.devis = { objet: "devis", nom: "devis", sections: DOC("Devis", [{ k: "duree_validite", l: "Durée de validité (jours)", t: "number", d: "30" }]) };
+    SCHEMAS.produits = { objet: "produits", nom: "produit", sections: [
+      ["Produit / Service", [
+        { k: "ref", l: "Réf.", req: 1 }, { k: "label", l: "Libellé", req: 1 }, { k: "type", l: "Nature", t: "select", o: [["0", "Produit"], ["1", "Service"]], d: "1" },
+        { k: "status", l: "État (vente)", t: "select", o: [["1", "En vente"], ["0", "Hors vente"]], d: "1" }, { k: "status_buy", l: "État (achat)", t: "select", o: [["1", "En achat"], ["0", "Hors achat"]], d: "0" },
+        { k: "barcode", l: "Code-barres" }, { k: "url", l: "URL publique", ph: "https://" }, { k: "description", l: "Description", t: "area", large: 1 }]],
+      ["Prix de vente", [{ k: "price_base_type", l: "Base de prix", t: "select", o: [["HT", "Hors taxe"], ["TTC", "TTC"]], d: "HT" }, { k: "price", l: "Prix de vente", t: "number", d: "0" }, { k: "tva_tx", l: "Taux de TVA", t: "select", dic: "tva", d: "0" }]],
+      ["Comptabilité", [{ k: "accountancy_code_sell", l: "Code comptable (vente)" }, { k: "accountancy_code_buy", l: "Code comptable (achat)" }]],
+      ["Notes", [{ k: "note_private", l: "Note privée", t: "area", large: 1 }]]] };
+    SCHEMAS.projets = { objet: "projets", nom: "projet", sections: [
+      ["Projet", [
+        { k: "ref", l: "Réf.", ph: "auto", aide: "Laisser « auto » : Dolibarr le numérote." }, { k: "title", l: "Libellé", req: 1 }, { k: "socid", l: "Tiers", t: "select", dic: "tiers" },
+        { k: "public", l: "Visibilité", t: "select", o: [["0", "Contacts du projet"], ["1", "Tout le monde"]], d: "0" }, { k: "status", l: "État", t: "select", o: [["0", "Brouillon"], ["1", "Ouvert"]], d: "1" },
+        { k: "date_start", l: "Date de début", t: "date" }, { k: "date_end", l: "Date de fin", t: "date" }, { k: "budget_amount", l: "Budget", t: "number" },
+        { k: "usage_opportunity", l: "Suivre une opportunité", t: "select", o: [["0", "Non"], ["1", "Oui"]], d: "0" }, { k: "opp_percent", l: "Probabilité d'opportunité (%)", t: "number" }, { k: "opp_amount", l: "Montant de l'opportunité", t: "number" },
+        { k: "description", l: "Description", t: "area", large: 1 }]],
+      ["Notes", [{ k: "note_public", l: "Note publique", t: "area", large: 1 }, { k: "note_private", l: "Note privée", t: "area", large: 1 }]]] };
     // Les listes de Dolibarr (dictionnaires), lues une fois dans l'instance : [valeur, libellé].
     const DICO = { cache: {} };
     const dico = async (nom, pays) => {
@@ -259,22 +283,34 @@
         else if (nom === "formes") l = liste(await lire("/setup/dictionary/legal_form", "limit=500&country=" + encodeURIComponent(pays || "1"))).map((x) => [String(x.code), x.libelle]);
         else if (nom === "typent") l = liste(await lire("/setup/dictionary/thirdparty_types", "limit=100")).map((x) => [String(x.id), x.label]);
         else if (nom === "effectifs") l = liste(await lire("/setup/dictionary/staff", "limit=100")).map((x) => [String(x.id), x.libelle]);
+        else if (nom === "tiers") l = (S.d.tiers && S.d.tiers.length ? S.d.tiers : liste(await lire("/thirdparties", "limit=500&sortfield=t.nom&sortorder=ASC&properties=id,name"))).map((x) => [String(x.id), x.name]);
+        else if (nom === "conditions") l = liste(await lire("/setup/dictionary/payment_terms", "limit=100")).map((x) => [String(x.id), x.label]);
+        else if (nom === "modes") l = liste(await lire("/setup/dictionary/payment_types", "limit=100")).map((x) => [String(x.id), x.label || x.libelle]);
+        else if (nom === "comptes") l = (S.d.banques && S.d.banques.length ? S.d.banques : liste(await lire("/bankaccounts", "limit=100&properties=id,label,clos"))).filter((b) => String(b.clos) !== "1").map((b) => [String(b.id), b.label]);
+        else if (nom === "tva") l = Array.from(new Set(liste(await lire("/setup/dictionary/vat", "limit=200&country=1")).map((x) => String(Number(x.taux))))).map((t) => [t, t + " %"]);
+        else if (nom === "produits") l = liste(await lire("/products", "limit=200&sortfield=t.ref&sortorder=ASC&properties=id,ref,label,price,tva_tx")).map((x) => [String(x.id), x.ref + " — " + x.label, x]);
         else if (nom === "devises") l = liste(await lire("/setup/dictionary/currencies", "limit=500")).map((x) => [String(x.code_iso), x.code_iso + " — " + x.label]);
       } catch (e) { l = []; }
-      l = [["", ""]].concat(l.filter((o) => o[0] !== ""));
+      l = nom === "tva" ? l : [["", ""]].concat(l.filter((o) => o[0] !== ""));
       DICO.cache[cle] = l; return l;
     };
     const COURRIEL = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
     // Les règles que la fiche de Dolibarr applique avant d'écrire (les mêmes que le module : modules/dolibarr/CN_module.py, _regles_dolibarr).
     const regles = (sch, v, creation) => {
       const e = [];
-      sch.sections.forEach((s) => s[1].forEach((f) => { if (creation && f.req && !String(v[f.k] || "").trim()) e.push(f.l + " : obligatoire"); }));
+      sch.sections.forEach((s) => s[1].forEach((f) => { if (creation && f.req && f.t !== "lignes" && !String(v[f.k] || "").trim()) e.push(f.l + " : obligatoire"); }));
+      if (sch.sections.some((x) => x[1].some((f) => f.t === "lignes"))) { if (!(v.lines || []).length) e.push("Lignes : au moins une ligne"); else if ((v.lines || []).some((l) => !l.desc && !l.fk_product || !l.qty)) e.push("Lignes : une désignation (ou un produit) et une quantité"); }
       if (v.email && !COURRIEL.test(String(v.email).trim())) e.push("Courriel : adresse invalide");
       if (v.url && !/^https?:\/\/[^\s/]+\.[^\s]{2,}/.test(String(v.url).trim())) e.push("Web : une adresse avec http:// ou https://");
       if (sch.objet === "tiers" && String(v.country_id || "1") === "1") [["idprof1", 9, "SIREN"], ["idprof2", 14, "SIRET"]].forEach((x) => { const s = String(v[x[0]] || "").replace(/\s/g, ""); if (s && !(/^\d+$/.test(s) && s.length === x[1])) e.push(x[2] + " : " + x[1] + " chiffres pour un tiers français"); });
       return e;
     };
+    const ligneHtml = (l, opts) => '<tr class="lg"><td><select class="in lg-p">' + (opts.produits || []).map((o) => '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(l.fk_product || "") ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select></td>" +
+      '<td><input class="in lg-d" value="' + esc(l.desc || "") + '" placeholder="Désignation"></td><td><select class="in lg-t">' + (opts.tva || []).map((o) => '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(l.tva_tx == null ? "0" : Number(l.tva_tx)) ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select></td>" +
+      '<td><input class="in lg-q" type="number" step="any" value="' + esc(l.qty == null ? "1" : l.qty) + '" style="width:70px"></td><td><input class="in lg-u" type="number" step="0.01" value="' + esc(l.subprice == null ? "0" : l.subprice) + '" style="width:92px"></td>' +
+      '<td><input class="in lg-r" type="number" step="any" value="' + esc(l.remise_percent || "0") + '" style="width:64px"></td><td><button class="btn mini" data-lg="del" type="button">×</button></td></tr>';
     const champSchema = (f, v, opts) => {
+      if (f.t === "lignes") return '<div class="fld" style="grid-column:1/-1">' + esc(f.l) + (f.req ? " *" : "") + '<div class="defil"><table class="t" id="f-lignes"><thead><tr><th>Produit / service</th><th>Désignation</th><th>TVA</th><th>Qté</th><th>Prix unitaire HT</th><th>Remise %</th><th></th></tr></thead><tbody>' + (v.lines && v.lines.length ? v.lines : [{}]).map((l) => ligneHtml(l, opts)).join("") + '</tbody></table></div><div><button class="btn mini" data-lg="add" type="button">+ Ajouter une ligne</button></div></div>';
       const id = "f-" + f.k, x = v[f.k] != null && v[f.k] !== "" ? v[f.k] : (f.d != null ? f.d : ""), lib = esc(f.l) + (f.req ? " *" : "");
       const style = f.large ? ' style="grid-column:1/-1"' : "";
       const aide = f.aide ? '<span class="note" style="font-weight:400">' + esc(f.aide) + "</span>" : "";
@@ -285,7 +321,8 @@
     // Le formulaire : il reste ouvert tant que la saisie n'est pas valide ou que Dolibarr la refuse, et dit pourquoi (le message de Dolibarr, tel quel).
     const formulaire = async (titre, sch, valeurs, enregistrer, oui) => {
       const v = Object.assign({}, valeurs || {}), pays0 = String(v.country_id || "1");
-      const opts = { pays: await dico("pays"), departements: await dico("departements", pays0), formes: await dico("formes", pays0), typent: await dico("typent"), effectifs: await dico("effectifs"), devises: await dico("devises") };
+      const veut = {}; sch.sections.forEach((x) => x[1].forEach((f) => { if (f.dic) veut[f.dic] = 1; if (f.t === "lignes") { veut.produits = 1; veut.tva = 1; } }));
+      const opts = {}; await Promise.all(Object.keys(veut).map(async (n) => { opts[n] = await dico(n, ["departements", "formes"].includes(n) ? pays0 : ""); }));
       return new Promise((fin) => {
         document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
         const bg = document.createElement("div"); bg.className = "kit-v"; bg.style.zIndex = 9999;
@@ -294,7 +331,10 @@
         m.innerHTML = "<h2>" + esc(titre) + "</h2>" + sch.sections.map((s) => '<h3 style="margin:14px 0 6px;font:600 12px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-faint)">' + esc(s[0]) + '</h3><div class="grille2">' + s[1].map((f) => champSchema(f, v, opts)).join("") + "</div>").join("") +
           '<div class="alerte dg" id="f-err" style="display:none;margin-top:12px"><div class="sp"></div></div><div class="acts"><button class="btn" data-c="non">Annuler</button><button class="btn pri" data-c="oui">' + esc(oui || "Enregistrer") + "</button></div>";
         const clore = (r) => { bg.remove(); m.remove(); fin(r); };
-        const lit = () => { const o = {}; sch.sections.forEach((s) => s[1].forEach((f) => { const e = m.querySelector("#f-" + f.k); if (e && (String(e.value) !== "" || (valeurs && valeurs.id != null && valeurs[f.k] != null && String(valeurs[f.k]) !== ""))) o[f.k] = e.value; })); return o; };
+        const lignesLues = () => [...m.querySelectorAll("#f-lignes tbody tr.lg")].map((tr) => { const q = (c) => tr.querySelector(c).value; const l = { desc: q(".lg-d").trim(), qty: Number(q(".lg-q")) || 0, subprice: Number(q(".lg-u")) || 0, tva_tx: Number(q(".lg-t")) || 0 }; if (q(".lg-p")) l.fk_product = Number(q(".lg-p")); if (Number(q(".lg-r"))) l.remise_percent = Number(q(".lg-r")); return l; }).filter((l) => l.desc || l.fk_product);
+        m.addEventListener("click", (e) => { const b = e.target.closest("[data-lg]"); if (!b) return; e.stopPropagation(); const tb = m.querySelector("#f-lignes tbody"); if (b.dataset.lg === "add") tb.insertAdjacentHTML("beforeend", ligneHtml({}, opts)); else if (tb.querySelectorAll("tr.lg").length > 1) b.closest("tr").remove(); });
+        m.addEventListener("change", (e) => { if (!e.target.classList.contains("lg-p")) return; const tr = e.target.closest("tr"), p = (opts.produits || []).find((o) => String(o[0]) === e.target.value); if (p && p[2]) { tr.querySelector(".lg-d").value = p[2].label || ""; tr.querySelector(".lg-u").value = p[2].price ? Number(p[2].price).toFixed(2) : "0"; const t = String(Number(p[2].tva_tx || 0)), st = tr.querySelector(".lg-t"); if ([...st.options].some((o) => o.value === t)) st.value = t; } });
+        const lit = () => { const o = {}; if (m.querySelector("#f-lignes")) o.lines = lignesLues(); sch.sections.forEach((s) => s[1].forEach((f) => { if (f.t === "lignes") return; const e = m.querySelector("#f-" + f.k); if (e && (String(e.value) !== "" || (valeurs && valeurs.id != null && valeurs[f.k] != null && String(valeurs[f.k]) !== ""))) o[f.k] = e.value; })); return o; };
         const dire = (t) => { const b = m.querySelector("#f-err"); b.style.display = t ? "" : "none"; b.firstChild.textContent = t || ""; };
         const remplir = async (id, nom, pays) => { const e = m.querySelector("#f-" + id); if (!e) return; const cur = e.value, o = await dico(nom, pays); e.innerHTML = o.map((y) => '<option value="' + esc(y[0]) + '"' + (String(y[0]) === cur ? " selected" : "") + ">" + esc(y[1]) + "</option>").join(""); };
         const pays = m.querySelector("#f-country_id"); if (pays) pays.addEventListener("change", () => { remplir("state_id", "departements", pays.value); remplir("forme_juridique_code", "formes", pays.value); });
@@ -311,6 +351,7 @@
       });
     };
     const banqueOpts = () => (S.d.banques || []).filter((b) => String(b.clos) !== "1").map((b) => [b.id, b.label]);
+    const extras = (c) => { const o = {}; Object.keys(c).forEach((k) => { if (!["socid", "lines"].includes(k)) o[k] = c[k]; }); return o; };
     const tiersOpts = () => (S.d.tiers || []).map((t) => [t.id, t.name]);
     const GESTES = {
       onglet: async (p) => {
@@ -338,14 +379,8 @@
         if (await modale("Relance · " + f.ref, '<p class="note">La relance est gardée dans l’agenda du tiers. Le courriel part par le module Mandats, qui seul résout l’adresse.</p><label class="fld">Message<textarea class="in" id="r-msg" rows="8">' + esc(msg) + "</textarea></label>", "Garder la relance")) await fait("dolibarr.relancer", { id: Number(p), message: val("r-msg") }, "Relance gardée");
       },
       avoir: async (p) => { document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove()); if (await modale("Créer un avoir", "<p>Un avoir en BROUILLON, relié à la facture, mêmes lignes en négatif. Rien n’est validé.</p>", "Créer le brouillon")) await fait("dolibarr.creer_avoir", { id: Number(p) }, "Avoir préparé"); },
-      nfacture: async () => {
-        const ok = await modale("Nouvelle facture (brouillon)", '<div class="grille2">' + sel("n-t", "Tiers", tiersOpts(), "") + champ("n-q", "Quantité", "1", "number") + "</div>" + champ("n-d", "Désignation", "") + champ("n-p", "Prix unitaire HT", "0", "number", 'step="0.01"'), "Créer le brouillon");
-        if (ok) await fait("dolibarr.creer_brouillon", { objet: "factures", socid: Number(val("n-t")), lignes: [{ desc: val("n-d") || "Prestation", qty: Number(val("n-q")) || 1, subprice: Number(val("n-p")) || 0, tva_tx: 0 }] }, "Brouillon créé");
-      },
-      ndevis: async () => {
-        const ok = await modale("Nouveau devis (brouillon)", '<div class="grille2">' + sel("n-t", "Tiers", tiersOpts(), "") + champ("n-p", "Montant HT", "0", "number", 'step="0.01"') + "</div>" + champ("n-d", "Désignation", ""), "Créer le brouillon");
-        if (ok) await fait("dolibarr.creer_brouillon", { objet: "devis", socid: Number(val("n-t")), lignes: [{ desc: val("n-d") || "Prestation", qty: 1, subprice: Number(val("n-p")) || 0, tva_tx: 0 }] }, "Devis créé");
-      },
+      nfacture: async () => { if (await formulaire("Nouvelle facture (brouillon)", SCHEMAS.factures, { date: AUJ }, async (c) => { await agir("dolibarr.creer_brouillon", { objet: "factures", socid: Number(c.socid), lignes: c.lines, champs: extras(c) }); }, "Créer le brouillon")) { K.dire("Brouillon créé"); S.d = {}; await charger(true); } },
+      ndevis: async () => { if (await formulaire("Nouveau devis (brouillon)", SCHEMAS.devis, { date: AUJ }, async (c) => { await agir("dolibarr.creer_brouillon", { objet: "devis", socid: Number(c.socid), lignes: c.lines, champs: extras(c) }); }, "Créer le brouillon")) { K.dire("Devis créé"); S.d = {}; await charger(true); } },
       devis: async (p) => { const [id, action] = p.split("|"); if (await modale("Devis : " + action, "<p>Le statut du devis change ; cela se défait (retour en brouillon).</p>", "Faire")) await fait("dolibarr.devis", { id: Number(id), action: action }, "Devis mis à jour"); },
       facturer: async (p) => { if (await modale("Facturer le devis", "<p>Une facture en brouillon est préparée avec les lignes du devis. Rien n’est validé.</p>", "Préparer la facture")) await fait("dolibarr.facturer_devis", { id: Number(p) }, "Facture préparée"); },
       ntiers: async () => { if (await formulaire("Nouveau tiers", SCHEMAS.tiers, {}, async (champs) => { await agir("dolibarr.creer", { objet: "tiers", champs: champs }); }, "Créer")) { K.dire("Tiers créé"); S.d = {}; await charger(true); } },
@@ -409,9 +444,7 @@
           table(["Date", "Libellé", "Mode", "Montant", "Rapprochée"], L.map((l) => "<tr><td>" + jour(l.dateo) + "</td><td>" + esc(l.label || "") + '</td><td class="num">' + esc(l.fk_type || "") + '</td><td class="num" style="color:' + (Number(l.amount) < 0 ? "var(--danger)" : "var(--ok)") + '">' + eur(l.amount) + "</td><td>" + (String(l.rappro) === "1" ? pill("oui" + (l.num_releve ? " · " + esc(l.num_releve) : ""), "ok") : l.fk_type === "SOLD" ? "—" : pill("non", "al")) + "</td></tr>")), "Fermer");
       },
       nprod: async () => {
-        const ok = await modale("Nouveau produit", '<div class="grille2">' + champ("n-r", "Référence", "") + champ("n-p", "Prix HT", "0", "number", 'step="0.01"') + "</div>" + champ("n-l", "Libellé", ""), "Créer");
-        if (ok && val("n-r") && val("n-l")) await fait("dolibarr.creer", { objet: "produits", champs: { ref: val("n-r"), label: val("n-l"), price: Number(val("n-p")) || 0, price_base_type: "HT", type: 1 } }, "Produit créé");
-        else if (ok) K.dire("Référence et libellé sont obligatoires", "err");
+        if (await formulaire("Nouveau produit ou service", SCHEMAS.produits, {}, async (champs) => { await agir("dolibarr.creer", { objet: "produits", champs: champs }); }, "Créer")) { K.dire("Produit créé"); S.d = {}; await charger(true); }
       },
       prix: async (id) => {
         const p = (S.d.produits || []).find((x) => String(x.id) === String(id));
@@ -452,7 +485,7 @@
       ndon: async () => { if (await modale("Nouveau don", champ("n-mt", "Montant", "50", "number", 'step="0.01"') + '<div class="grille2">' + champ("n-nom", "Nom", "") + champ("n-dt", "Date", AUJ, "date") + "</div>", "Saisir la promesse")) await fait("dolibarr.don_creer", { montant: val("n-mt"), nom: val("n-nom"), date: val("n-dt") }, "Promesse saisie"); },
       donvalider: async (p) => { if (await modale("Valider le don", "<p>Le don prend son numéro. Dolibarr ne le repasse pas en promesse par l’API.</p>", "Valider")) await fait("dolibarr.don_valider", { id: Number(p) }, "Don validé"); },
       cotis: async (p) => { if (await modale("Cotisation", '<div class="grille2">' + champ("c-mt", "Montant", "15", "number") + champ("c-d", "Du", AUJ, "date") + "</div>" + champ("c-f", "Au", String(new Date().getFullYear() + 1) + AUJ.slice(4), "date"), "Enregistrer")) await fait("dolibarr.cotisation", { membre: Number(p), montant: val("c-mt"), debut: val("c-d"), fin: val("c-f") }, "Cotisation enregistrée"); },
-      nprojet: async () => { if (await modale("Nouveau projet", champ("n-t", "Titre", ""), "Créer")) await fait("dolibarr.creer", { objet: "projets", champs: { title: val("n-t") || "Nouveau projet" } }, "Projet créé"); },
+      nprojet: async () => { if (await formulaire("Nouveau projet", SCHEMAS.projets, {}, async (champs) => { await agir("dolibarr.creer", { objet: "projets", champs: champs }); }, "Créer")) { K.dire("Projet créé"); S.d = {}; await charger(true); } },
       projet: async (p) => { const [id, action] = p.split("|"); if (await modale("Projet : " + action, "<p>Le statut du projet change ; cela se défait.</p>", "Faire")) await fait("dolibarr.projet", { id: Number(id), action: action }, "Projet mis à jour"); },
       savecle: async () => { const v = val("dlb-cle").trim(); if (!v) return K.dire("Colle d’abord ta clé", "err"); try { await agir("reglages.regler_secret", { cle: "dolibarr.cle_api", valeur: v }); K.dire("Clé enregistrée dans ton coffre"); S.acces = null; await charger(); } catch (e) { K.dire(e.message || String(e), "err"); } },
       rmcle: async () => { if (await modale("Retirer ma clé", "<p>Ni toi ni ton Itare n’écrirez plus dans Dolibarr sous ton nom.</p>", "Retirer")) { try { await agir("reglages.reinitialiser", { cle: "dolibarr.cle_api" }); K.dire("Clé retirée"); S.acces = null; await charger(); } catch (e) { K.dire(e.message || String(e), "err"); } } },

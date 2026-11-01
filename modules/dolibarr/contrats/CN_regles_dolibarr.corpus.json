@@ -1,0 +1,823 @@
+{
+ "point": "dolibarr.regles_dolibarr",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de dolibarr, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "objet": "tiers",
+    "champs": {
+     "name": "Client neuf",
+     "client": 1
+    },
+    "creation": true
+   },
+   "sortie": {
+    "valeur": {
+     "name": "Client neuf",
+     "client": 1
+    }
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "objet": "tiers",
+    "champs": {
+     "name": "ASSOCIATION ESSAI",
+     "name_alias": "Essai",
+     "client": "3",
+     "fournisseur": "0",
+     "status": "1",
+     "address": "1 rue X",
+     "zip": "75010",
+     "town": "PARIS",
+     "country_id": "1",
+     "phone": "0102030405",
+     "phone_mobile": "0601020304",
+     "fax": "",
+     "url": "https://exemple.fr",
+     "email": "essai@exemple.fr",
+     "no_email": "0",
+     "skype": "",
+     "twitter": "@essai",
+     "idprof1": "899 553 093",
+     "idprof2": "899 553 093 00019",
+     "idprof3": "90.01Z",
+     "idprof6": "W751260323",
+     "tva_assuj": "0",
+     "tva_intra": "",
+     "typent_id": "8",
+     "effectif_id": "1",
+     "forme_juridique_code": "9220",
+     "capital": "0",
+     "default_lang": "fr_FR",
+     "multicurrency_code": "EUR",
+     "note_public": "n",
+     "note_private": "p"
+    },
+    "creation": true
+   },
+   "sortie": {
+    "valeur": {
+     "name": "ASSOCIATION ESSAI",
+     "name_alias": "Essai",
+     "client": "3",
+     "fournisseur": "0",
+     "status": "1",
+     "address": "1 rue X",
+     "zip": "75010",
+     "town": "PARIS",
+     "country_id": "1",
+     "phone": "0102030405",
+     "phone_mobile": "0601020304",
+     "fax": "",
+     "url": "https://exemple.fr",
+     "email": "essai@exemple.fr",
+     "no_email": "0",
+     "skype": "",
+     "twitter": "@essai",
+     "idprof1": "899 553 093",
+     "idprof2": "899 553 093 00019",
+     "idprof3": "90.01Z",
+     "idprof6": "W751260323",
+     "tva_assuj": "0",
+     "tva_intra": "",
+     "typent_id": "8",
+     "effectif_id": "1",
+     "forme_juridique_code": "9220",
+     "capital": "0",
+     "default_lang": "fr_FR",
+     "multicurrency_code": "EUR",
+     "note_public": "n",
+     "note_private": "p"
+    }
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "objet": "tiers",
+    "champs": {
+     "name": "À supprimer",
+     "client": 1
+    },
+    "creation": true
+   },
+   "sortie": {
+    "valeur": {
+     "name": "À supprimer",
+     "client": 1
+    }
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "objet": "projets",
+    "champs": {
+     "title": "Cabaret"
+    },
+    "creation": true
+   },
+   "sortie": {
+    "valeur": {
+     "title": "Cabaret"
+    }
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "objet": "tiers",
+    "champs": {
+     "name": "Belge",
+     "country_id": "2",
+     "idprof1": "0123.456.789"
+    },
+    "creation": true
+   },
+   "sortie": {
+    "valeur": {
+     "name": "Belge",
+     "country_id": "2",
+     "idprof1": "0123.456.789"
+    }
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "objet": "contacts",
+    "champs": {
+     "lastname": "Fontaine",
+     "civility_code": "MME",
+     "poste": "Régie",
+     "email": "a@b.fr"
+    },
+    "creation": true
+   },
+   "sortie": {
+    "valeur": {
+     "lastname": "Fontaine",
+     "civility_code": "MME",
+     "poste": "Régie",
+     "email": "a@b.fr"
+    }
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "objet": "produits",
+    "champs": {
+     "label": "Billet",
+     "type": "1",
+     "price_base_type": "HT",
+     "price": "15",
+     "tva_tx": "0",
+     "barcode": "123"
+    },
+    "creation": true
+   },
+   "sortie": {
+    "valeur": {
+     "label": "Billet",
+     "type": "1",
+     "price_base_type": "HT",
+     "price": "15",
+     "tva_tx": "0",
+     "barcode": "123"
+    }
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "objet": "projets",
+    "champs": {
+     "title": "Soirée",
+     "usage_opportunity": "0",
+     "budget_amount": "100"
+    },
+    "creation": true
+   },
+   "sortie": {
+    "valeur": {
+     "title": "Soirée",
+     "usage_opportunity": "0",
+     "budget_amount": "100"
+    }
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "objet": true,
+    "champs": {
+     "success": {
+      "dolibarr_version": "23.0.2",
+      "access_locked": "0"
+     }
+    },
+    "creation": [
+     "invoices"
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "success": {
+      "dolibarr_version": "23.0.2",
+      "access_locked": "0"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "objet": 0.0,
+    "champs": {
+     "error": {
+      "code": 400,
+      "message": "Bad Request: `payment_mode_id` is required."
+     }
+    },
+    "creation": [
+     "api"
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "error": {
+      "code": 400,
+      "message": "Bad Request: `payment_mode_id` is required."
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "objet": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}$",
+    "champs": {
+     "a": 1,
+     "b": "x"
+    },
+    "creation": "tva_assuj"
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1,
+     "b": "x"
+    }
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "objet": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}$",
+    "champs": {
+     "idwarehouse": 0
+    },
+    "creation": "status"
+   },
+   "sortie": {
+    "valeur": {
+     "idwarehouse": 0
+    }
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "objet": 3,
+    "champs": {
+     "delai": "15"
+    },
+    "creation": "status_buy"
+   },
+   "sortie": {
+    "valeur": {
+     "delai": "15"
+    }
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "objet": "tva_assuj",
+    "champs": {
+     "email": {}
+    },
+    "creation": [
+     "explorer",
+     "swagger.json"
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "email": {}
+    }
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "objet": "tva_assuj",
+    "champs": {
+     "statut": "1",
+     "socid": 3,
+     "ref": "PR2610-0001",
+     "lines": []
+    },
+    "creation": {
+     "login": "marple",
+     "admin": "1"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "statut": "1",
+     "socid": 3,
+     "ref": "PR2610-0001",
+     "lines": []
+    }
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "objet": 2,
+    "champs": {
+     "title": "x"
+    },
+    "creation": -1
+   },
+   "sortie": {
+    "valeur": {
+     "title": "x"
+    }
+   }
+  },
+  {
+   "cas": "cas 17",
+   "entree": {
+    "objet": "status_buy",
+    "champs": {
+     "country_id": "email : adresse invalide (ErrorBadEMail dans Dolibarr)",
+     "email": 0
+    },
+    "creation": "type"
+   },
+   "sortie": {
+    "valeur": {
+     "country_id": "email : adresse invalide (ErrorBadEMail dans Dolibarr)",
+     "email": 0
+    }
+   }
+  },
+  {
+   "cas": "cas 18",
+   "entree": {
+    "objet": "status_buy",
+    "champs": {
+     "objet": "tiers",
+     "champs": {
+      "name": "À supprimer",
+      "client": 1
+     }
+    },
+    "creation": {
+     "projets.voir": {
+      "projet": {
+       "id": 1,
+       "nom": "Soirée de lancement",
+       "debut": "2026-12-12",
+       "fin": "2026-12-13",
+       "resume": "Équipe de six"
+      }
+     },
+     "contacts.voir": {
+      "id": 1,
+      "display_name": "Léa Fontaine",
+      "emails": [
+       "lea@exemple.invalid"
+      ],
+      "addr": "lea@exemple.invalid",
+      "phone": "0600000001",
+      "mobile": "",
+      "company": "Cie Les Pierrots",
+      "job_title": ""
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "objet": "tiers",
+     "champs": {
+      "name": "À supprimer",
+      "client": 1
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 19",
+   "entree": {
+    "objet": false,
+    "champs": {
+     "login": "marple",
+     "admin": "1"
+    },
+    "creation": "priv"
+   },
+   "sortie": {
+    "valeur": {
+     "login": "marple",
+     "admin": "1"
+    }
+   }
+  },
+  {
+   "cas": "cas 20",
+   "entree": {
+    "objet": "type",
+    "champs": {
+     "error": {
+      "code": 500,
+      "message": "Internal Server Error: Error creating thirdparty",
+      "1": "ErrorCustomerCodeRequired"
+     }
+    },
+    "creation": "no_email"
+   },
+   "sortie": {
+    "valeur": {
+     "error": {
+      "code": 500,
+      "message": "Internal Server Error: Error creating thirdparty",
+      "1": "ErrorCustomerCodeRequired"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 21",
+   "entree": {
+    "objet": 0,
+    "champs": {
+     "methode": "DELETE",
+     "chemin": "/thirdparties/1"
+    },
+    "creation": {
+     "error": {
+      "code": 404
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "methode": "DELETE",
+     "chemin": "/thirdparties/1"
+    }
+   }
+  },
+  {
+   "cas": "cas 22",
+   "entree": {
+    "objet": "statut",
+    "champs": {
+     "nom": "n",
+     "valeur": 3
+    },
+    "creation": {
+     "projets.voir": {
+      "projet": {
+       "id": 1,
+       "nom": "Soirée de lancement",
+       "debut": "2026-12-12",
+       "fin": "2026-12-13",
+       "resume": "Équipe de six"
+      }
+     },
+     "contacts.voir": {
+      "id": 1,
+      "display_name": "Léa Fontaine",
+      "emails": [
+       "lea@exemple.invalid"
+      ],
+      "addr": "lea@exemple.invalid",
+      "phone": "0600000001",
+      "mobile": "",
+      "company": "Cie Les Pierrots",
+      "job_title": ""
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "nom": "n",
+     "valeur": 3
+    }
+   }
+  },
+  {
+   "cas": "cas 23",
+   "entree": {
+    "objet": "status_buy",
+    "champs": {
+     "a": 1
+    },
+    "creation": [
+     "explorer",
+     "swagger.json"
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "a": 1
+    }
+   }
+  },
+  {
+   "cas": "cas 24",
+   "entree": {
+    "objet": "status_buy",
+    "champs": {
+     "country_id": "label"
+    },
+    "creation": "tva_assuj"
+   },
+   "sortie": {
+    "valeur": {
+     "country_id": "label"
+    }
+   }
+  },
+  {
+   "cas": "cas 25",
+   "entree": {
+    "objet": 3,
+    "champs": {},
+    "creation": true
+   },
+   "sortie": {
+    "valeur": {}
+   }
+  },
+  {
+   "cas": "cas 26",
+   "entree": {
+    "objet": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}$",
+    "champs": {
+     "code": 400,
+     "message": "Bad Request: Parameter fk_element is not allowed in request"
+    },
+    "creation": "priv"
+   },
+   "sortie": {
+    "valeur": {
+     "code": 400,
+     "message": "Bad Request: Parameter fk_element is not allowed in request"
+    }
+   }
+  },
+  {
+   "cas": "cas 27",
+   "entree": {
+    "objet": "type",
+    "champs": {
+     "code": 404
+    },
+    "creation": true
+   },
+   "sortie": {
+    "valeur": {
+     "code": 404
+    }
+   }
+  },
+  {
+   "cas": "cas 28",
+   "entree": {
+    "objet": 0.0,
+    "champs": {
+     "code": 500,
+     "message": "Internal Server Error: Error creating thirdparty",
+     "1": "ErrorCustomerCodeRequired"
+    },
+    "creation": "no_email"
+   },
+   "sortie": {
+    "valeur": {
+     "code": 500,
+     "message": "Internal Server Error: Error creating thirdparty",
+     "1": "ErrorCustomerCodeRequired"
+    }
+   }
+  },
+  {
+   "cas": "cas 29",
+   "entree": {
+    "objet": -1,
+    "champs": {
+     "k": null
+    },
+    "creation": [
+     "explorer",
+     "swagger.json"
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "k": null
+    }
+   }
+  },
+  {
+   "cas": "cas 30",
+   "entree": {
+    "objet": 0,
+    "champs": {
+     "url": null
+    },
+    "creation": "status_buy"
+   },
+   "sortie": {
+    "valeur": {
+     "url": null
+    }
+   }
+  },
+  {
+   "cas": "cas 31",
+   "entree": {
+    "objet": 0.5,
+    "champs": {
+     "objet": "devis",
+     "socid": 3,
+     "lignes": [
+      {
+       "desc": "x",
+       "qty": 1,
+       "subprice": 1
+      }
+     ]
+    },
+    "creation": [
+     "api"
+    ]
+   },
+   "sortie": {
+    "valeur": {
+     "objet": "devis",
+     "socid": 3,
+     "lignes": [
+      {
+       "desc": "x",
+       "qty": 1,
+       "subprice": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "cas": "cas 32",
+   "entree": {
+    "objet": null,
+    "champs": {
+     "montant": 10
+    },
+    "creation": {
+     "login": "cassandra",
+     "admin": "0"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "montant": 10
+    }
+   }
+  },
+  {
+   "cas": "cas 33",
+   "entree": {
+    "objet": "type",
+    "champs": {
+     "error": {
+      "code": 400,
+      "message": "Bad Request: Parameter fk_element is not allowed in request"
+     }
+    },
+    "creation": {
+     "login": "marple",
+     "admin": "1"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "error": {
+      "code": 400,
+      "message": "Bad Request: Parameter fk_element is not allowed in request"
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 34",
+   "entree": {
+    "objet": {
+     "statut": "0",
+     "socid": 3,
+     "ref": "PR2610-0001",
+     "lines": [
+      {
+       "desc": "Spectacle",
+       "qty": 1,
+       "subprice": 500,
+       "tva_tx": 0
+      }
+     ]
+    },
+    "champs": {
+     "objet": "tiers",
+     "champs": {
+      "name": "Client neuf",
+      "client": 1
+     }
+    },
+    "creation": 0.0
+   },
+   "sortie": {
+    "valeur": {
+     "objet": "tiers",
+     "champs": {
+      "name": "Client neuf",
+      "client": 1
+     }
+    }
+   }
+  },
+  {
+   "cas": "cas 35",
+   "entree": {
+    "objet": {
+     "ref": "X"
+    },
+    "champs": {
+     "firstname": "Léa"
+    },
+    "creation": 0
+   },
+   "sortie": {
+    "valeur": {
+     "firstname": "Léa"
+    }
+   }
+  },
+  {
+   "cas": "cas 36",
+   "entree": {
+    "objet": {
+     "projets.voir": {
+      "projet": {
+       "id": 1,
+       "nom": "Soirée de lancement",
+       "debut": "2026-12-12",
+       "fin": "2026-12-13",
+       "resume": "Équipe de six"
+      }
+     },
+     "contacts.voir": {
+      "id": 1,
+      "display_name": "Léa Fontaine",
+      "emails": [
+       "lea@exemple.invalid"
+      ],
+      "addr": "lea@exemple.invalid",
+      "phone": "0600000001",
+      "mobile": "",
+      "company": "Cie Les Pierrots",
+      "job_title": ""
+     }
+    },
+    "champs": {
+     "get": {},
+     "put": {},
+     "delete": {}
+    },
+    "creation": null
+   },
+   "sortie": {
+    "valeur": {
+     "get": {},
+     "put": {},
+     "delete": {}
+    }
+   }
+  }
+ ]
+}

@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #280830
+# VERSION CN : 0.4.1  #280830
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : completer.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

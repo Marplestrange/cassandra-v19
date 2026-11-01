@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #803222
+# VERSION CN : 0.4.1  #8206ef
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=803222 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=8206ef ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -74,6 +74,11 @@ ECRIVABLES = {
 }
 DOCUMENTS = {"factures": "/invoices", "devis": "/proposals", "commandes": "/orders"}     # créés en brouillon, jamais validés ici
 CHAMPS_DOC = {"socid", "date", "note_private", "note_public", "lines"}
+# Les champs de l'en-tête d'une facture (compta/facture/card.php) et d'un devis (comm/propal/card.php) que l'écran peut poser à la création, sous leurs noms de propriété.
+ENTETES = {"factures": {"ref_client", "date", "date_lim_reglement", "cond_reglement_id", "mode_reglement_id", "fk_account", "fk_project", "note_public", "note_private"},
+           "devis": {"ref_client", "date", "duree_validite", "cond_reglement_id", "mode_reglement_id", "fk_project", "note_public", "note_private"}}
+ENTETES_DATES = ("date", "date_lim_reglement")
+ENTETES_ENTIERS = ("cond_reglement_id", "mode_reglement_id", "fk_account", "fk_project", "duree_validite")
 CHAMPS_LIGNE = {"desc", "qty", "subprice", "tva_tx", "fk_product", "product_type", "remise_percent"}
 MAX_CORPS = 16384
 AGENT = "Cassandra-Dolibarr/0.4"      # une identité franche : un pare-feu applicatif (Cloudflare) refuse l'agent par défaut de Python
@@ -412,25 +417,8 @@ _OBLIGATOIRE = {"tiers": ("name",), "contacts": ("lastname",), "produits": ("lab
 
 
 def _regles_dolibarr(objet, champs, creation):
-    """Les règles que la fiche de Dolibarr applique avant d'écrire : champs obligatoires, valeurs permises, courriel et adresse web valides, SIREN (9 chiffres) et SIRET (14) pour un tiers français.
-    Dolibarr les refuse de toute façon ; les dire ICI évite un aller-retour et un « HTTP 500 » muet. Ce qui n'est pas prouvé ici est laissé à Dolibarr, dont le message est rendu tel quel."""
-    if creation:
-        for k in _OBLIGATOIRE.get(objet, ()):
-            if not str(champs.get(k) or "").strip():
-                raise ValueError("%s : obligatoire (comme dans la fiche Dolibarr)" % k)
-    for k, permis in _ENUM.items():
-        if k in champs and str(champs[k]) not in permis and not (champs[k] in (None, "")):
-            raise ValueError("%s : une de ces valeurs : %s" % (k, ", ".join(permis)))
-    if champs.get("email") and not _COURRIEL.match(str(champs["email"]).strip()):
-        raise ValueError("email : adresse invalide (ErrorBadEMail dans Dolibarr)")
-    if champs.get("url") and not re.match(r"^https?://[^\s/]+\.[^\s]{2,}", str(champs["url"]).strip()):
-        raise ValueError("url : adresse web invalide, avec http:// ou https:// (ErrorBadUrl dans Dolibarr)")
-    if objet == "tiers" and str(champs.get("country_id", "1")) == "1":
-        for k, n, nom in (("idprof1", 9, "SIREN"), ("idprof2", 14, "SIRET")):
-            v = re.sub(r"\s", "", str(champs.get(k) or ""))
-            if v and not (v.isdigit() and len(v) == n):
-                raise ValueError("%s (%s) : %d chiffres pour un tiers français" % (k, nom, n))
-    return champs
+    """Les règles que la fiche de Dolibarr applique avant d'écrire : champs obligatoires, valeurs permises, courriel et adresse web valides, SIREN (9 chiffres) et SIRET (14) pour un tiers français. Le calcul est un POINT D'ÉVOLUTION : points/EC_regles_dolibarr.py."""
+    return _appeler_point("regles_dolibarr", {"objet": objet, "champs": champs, "creation": creation})["valeur"]
 
 
 def _champs(objet, champs):
@@ -611,7 +599,7 @@ def brancher(ctx):
             propres.append(l)
         return propres
 
-    def creer_brouillon(ctx, objet, socid, lignes, date=None, note=""):
+    def creer_brouillon(ctx, objet, socid, lignes, date=None, note="", champs=None):
         if objet not in DOCUMENTS:
             raise ValueError("document inconnu : %r (permis : %s)" % (objet, ", ".join(sorted(DOCUMENTS))))
         if not _ID.match(str(socid)):
@@ -619,6 +607,19 @@ def brancher(ctx):
         corps = {"socid": int(socid), "lines": _lignes(lignes), "date": date if date is not None else _jour_ts("")}      # Dolibarr 24 exige la date d'un devis
         if note:
             corps["note_private"] = str(note)[:4000]
+        for k, v in (champs or {}).items():                     # l'en-tête de la fiche Dolibarr : mêmes noms, mêmes types ; rien d'autre n'est transmis
+            if k not in ENTETES[objet]:
+                raise ValueError("champ %r refusé pour %s (permis : %s)" % (k, objet, ", ".join(sorted(ENTETES[objet]))))
+            if v in (None, ""):
+                continue
+            if k in ENTETES_DATES:
+                corps[k] = _jour_ts(str(v)[:10])
+            elif k in ENTETES_ENTIERS:
+                if not _ID.match(str(v)):
+                    raise ValueError("%s : un nombre" % k)
+                corps[k] = int(v)
+            else:
+                corps[k] = str(v)[:4000]
         conf = _conf()
         nouvel = ecrire(conf, "POST", DOCUMENTS[objet], corps)
         if not isinstance(nouvel, int) and not (isinstance(nouvel, str) and _ID.match(nouvel)):
