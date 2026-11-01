@@ -12,7 +12,7 @@
 <!-- RÔLE       : Dolibarr, la gestion complète : ce que le module sait faire, la clé d'API par compte, le compte de mandat, les paliers -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=fa7d1e ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=7a91b6 ▼▼▼ -->
 # Dolibarr : la gestion complète
 
 Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il écrit, et tout geste a sa **preuve** (relire ce qui a été écrit) et son **retour arrière**.
@@ -62,6 +62,13 @@ Par défaut une fiche de Cassandra reste « Cassandra seulement ». `envoyer_pro
 ## Les paliers
 
 Chaque capacité a un palier, choix de l'administrateur : « raconter » (Cassandra ou Itare prépare, un humain approuve) ou « auto ». Aucun geste n'est interdit par le code. `valider_facture` reste réservée aux humains et à Cassandra : elle consomme un numéro légal.
+
+## Des fiches et des listes identiques à celles de Dolibarr 24
+
+Compatibilité d'abord : ce qu'on saisit ici doit se retrouver dans Dolibarr sans perte, et ce qu'on lit doit se lire comme là-bas.
+- **Fiches** (tiers, facture, devis, produit, projet) : les champs de la fiche Dolibarr, sous leurs noms de propriété, dans son ordre et sous ses libellés ; les listes (pays, départements, formes juridiques, types de tiers, effectifs, devises, conditions et modes de règlement, comptes bancaires, taux de TVA, produits) sont lues dans l'instance. Une facture ou un devis porte plusieurs lignes (produit, désignation, TVA, quantité, prix, remise).
+- **Règles** : celles de la fiche (nom ou libellé obligatoire, valeurs permises, courriel, adresse web, SIREN 9 et SIRET 14 chiffres pour un tiers français), dites dans le formulaire AVANT l'envoi et revérifiées par le module (point d'évolution `regles_dolibarr`). Le formulaire reste ouvert et affiche le message de Dolibarr quand il refuse.
+- **Listes** : tiers, factures, devis, produits, adhérents, dons, projets et factures fournisseurs prennent les colonnes des listes de Dolibarr ; ce que Cassandra ajoute (factures et dû d'un tiers, actions) vient après.
 
 ## Le pont de la billetterie (un seul client)
 

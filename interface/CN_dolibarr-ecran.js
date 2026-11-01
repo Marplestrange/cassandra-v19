@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #abeeb0
+// VERSION CN : 0.1.0  #267a0f
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=abeeb0 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=267a0f ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -63,16 +63,16 @@
     const PAGE = "limit=100&sortfield=t.rowid&sortorder=DESC";
     const CHARGEURS = {
       tiers: async () => liste(await lire("/thirdparties", PAGE + "&properties=id,name,name_alias,code_client,code_fournisseur,zip,town,country_code,phone,email,client,fournisseur,status")),
-      factures: async () => liste(await lire("/invoices", PAGE + "&properties=id,ref,socid,date,date_lim_reglement,total_ttc,remaintopay,statut,paye,type")),
-      devis: async () => liste(await lire("/proposals", PAGE + "&properties=id,ref,socid,date,total_ttc,statut")),
-      projets: async () => liste(await lire("/projects", PAGE + "&properties=id,ref,title,statut,date_start,date_end")),
-      produits: async () => liste(await lire("/products", PAGE + "&properties=id,ref,label,price,tva_tx")),
-      dons: async () => liste(await lire("/donations", PAGE + "&properties=id,ref,amount,date,statut")),
-      adherents: async () => liste(await lire("/members", PAGE + "&properties=id,firstname,lastname,typeid,statut,datefin")),
+      factures: async () => liste(await lire("/invoices", PAGE + "&properties=id,ref,ref_client,socid,date,date_lim_reglement,total_ht,total_tva,total_ttc,totalpaid,remaintopay,statut,paye,type")),
+      devis: async () => liste(await lire("/proposals", PAGE + "&properties=id,ref,ref_client,socid,date,fin_validite,total_ht,total_ttc,statut")),
+      projets: async () => liste(await lire("/projects", PAGE + "&properties=id,ref,title,socid,statut,public,date_start,date_end")),
+      produits: async () => liste(await lire("/products", PAGE + "&properties=id,ref,label,type,price,tva_tx,status,status_buy,barcode")),
+      dons: async () => liste(await lire("/donations", PAGE + "&properties=id,ref,lastname,firstname,societe,amount,date,statut")),
+      adherents: async () => liste(await lire("/members", PAGE + "&properties=id,ref,firstname,lastname,login,morphy,typeid,email,statut,datefin")),
       cp: async () => liste((await agir("projets.lister")).projets),
       cc: async () => liste((await agir("contacts.lister", { limite: 200 })).contacts),
       liens: async () => liste(await agir("dolibarr.liens")),
-      sup: async () => liste(await lire("/supplierinvoices", PAGE + "&properties=id,ref,socid,date,total_ttc,statut,paye")),
+      sup: async () => liste(await lire("/supplierinvoices", PAGE + "&properties=id,ref,ref_supplier,socid,date,date_echeance,total_ht,total_ttc,statut,paye")),
       inst: async () => { const [r, m, st] = await Promise.all([agir("dolibarr.resume"), agir("dolibarr.modules"), agir("dolibarr.statut")]); return { r: r || {}, m: m || [], st: st || {} }; },
       cat: async () => await agir("dolibarr.catalogue_api"),
       rgl: async () => { const r = await agir("reglages.lire", { module: "dolibarr" }); const o = {}; (r.reglages || []).forEach((x) => { o[x.cle] = x.valeur; }); return o; },
@@ -115,14 +115,14 @@
       factures() {
         const f = S.f.factures || "ouvertes", F = filtrer(S.d.factures, "factures", (x) => nomTiers(x.socid).toLowerCase().includes((S.q.factures || "~").toLowerCase())).filter((x) => f === "toutes" || (f === "ouvertes" && ouverte(x)) || (f === "retard" && ouverte(x) && retard(x) > 0) || (f === "brouillons" && String(x.statut) === "0") || (f === "payees" && String(x.paye) === "1"));
         return '<div class="carte">' + barre("factures", btn("+ Nouvelle facture", "nfacture", "", "pri")) + seg("factures", [["ouvertes", "Ouvertes"], ["retard", "En retard"], ["brouillons", "Brouillons"], ["payees", "Payées"], ["toutes", "Toutes"]]) +
-          table(["Réf.", "Tiers", "Date", "Échéance", "Total", "Reste", "État"], F.map((x) => '<tr class="clk" data-a="fiche" data-p="' + x.id + '"><td class="num"><b>' + esc(x.ref) + "</b></td><td>" + esc(nomTiers(x.socid)) + "</td><td>" + jour(x.date) + "</td><td>" + (String(x.statut) === "1" ? jour(x.date_lim_reglement) : "—") + '</td><td class="num">' + eur(x.total_ttc) + '</td><td class="num">' + (ouverte(x) ? eur(x.remaintopay) : "—") + "</td><td>" + etatF(x) + "</td></tr>")) +
+          table(["Réf.", "Réf. client", "Date facture", "Date d'échéance", "Tiers", "Montant HT", "Montant TVA", "Montant TTC", "Reçu", "Reste à payer", "Statut"], F.map((x) => '<tr class="clk" data-a="fiche" data-p="' + x.id + '"><td class="num"><b>' + esc(x.ref) + '</b></td><td class="num">' + esc(x.ref_client || "") + "</td><td>" + jour(x.date) + "</td><td>" + (String(x.statut) === "1" ? jour(x.date_lim_reglement) : "—") + "</td><td>" + esc(nomTiers(x.socid)) + '</td><td class="num">' + eur(x.total_ht) + '</td><td class="num">' + eur(x.total_tva) + '</td><td class="num">' + eur(x.total_ttc) + '</td><td class="num">' + (Number(x.totalpaid) ? eur(x.totalpaid) : "—") + '</td><td class="num">' + (ouverte(x) ? eur(x.remaintopay) : "—") + "</td><td>" + etatF(x) + "</td></tr>")) +
           (S.d.factures && S.d.factures.length >= 100 ? '<div class="note">100 lignes affichées : les plus récentes.</div>' : "") + "</div>";
       },
       devis() {
         const L = ["Brouillon", "Ouvert", "Signé", "Refusé", "Facturé"], D = filtrer(S.d.devis, "devis");
-        return '<div class="carte">' + barre("devis", btn("+ Nouveau devis", "ndevis", "", "pri")) + table(["Réf.", "Tiers", "Date", "Total", "État", ""], D.map((d) => {
+        return '<div class="carte">' + barre("devis", btn("+ Nouveau devis", "ndevis", "", "pri")) + table(["Réf.", "Réf. client", "Tiers", "Date", "Fin de validité", "Montant HT", "Montant TTC", "Statut", ""], D.map((d) => {
           const s = String(d.statut); const b = s === "0" ? btn("Valider", "devis", d.id + "|valider") : s === "1" ? btn("Marquer signé", "devis", d.id + "|signer") + btn("Refusé", "devis", d.id + "|refuser") : s === "2" ? btn("Facturer", "facturer", d.id, "pri") : "";
-          return "<tr class=\"clk\" data-a=\"fichedevis\" data-p=\"" + d.id + "\"><td class=\"num\"><b>" + esc(d.ref) + "</b></td><td>" + esc(nomTiers(d.socid)) + "</td><td>" + jour(d.date) + '</td><td class="num">' + eur(d.total_ttc) + "</td><td>" + pill(L[Number(s)] || "Annulé", s === "2" ? "ok" : "") + "</td><td>" + b + "</td></tr>";
+          return "<tr class=\"clk\" data-a=\"fichedevis\" data-p=\"" + d.id + "\"><td class=\"num\"><b>" + esc(d.ref) + "</b></td><td class=\"num\">" + esc(d.ref_client || "") + "</td><td>" + esc(nomTiers(d.socid)) + "</td><td>" + jour(d.date) + "</td><td>" + jour(d.fin_validite) + '</td><td class="num">' + eur(d.total_ht) + '</td><td class="num">' + eur(d.total_ttc) + "</td><td>" + pill(L[Number(s)] || "Annulé", s === "2" ? "ok" : "") + "</td><td>" + b + "</td></tr>";
         })) + "</div>";
       },
       tiers() {
@@ -135,15 +135,15 @@
       },
       dons() {
         const D = S.d.dons || [];
-        return '<div class="carte"><div class="barre2"><h3 style="flex:1">Dons</h3>' + btn("+ Nouveau don", "ndon", "", "pri") + "</div>" + table(["Réf.", "Date", "Montant", "État", ""], D.map((d) => "<tr><td class=\"num\">" + esc(d.ref || d.id) + "</td><td>" + jour(d.date) + '</td><td class="num">' + eur(d.amount) + "</td><td>" + (String(d.statut) === "0" ? pill("Promesse", "al") : pill("Validé", "ok")) + "</td><td>" + (String(d.statut) === "0" ? btn("Valider", "donvalider", d.id) : "—") + "</td></tr>")) + '<div class="note">Le reçu fiscal d’un don se produit dans Dolibarr (fiche du don, « Générer ») : son API ne le propose pas.</div></div>';
+        return '<div class="carte"><div class="barre2"><h3 style="flex:1">Dons</h3>' + btn("+ Nouveau don", "ndon", "", "pri") + "</div>" + table(["Réf.", "Donateur", "Date du don", "Montant", "Statut", ""], D.map((d) => "<tr><td class=\"num\">" + esc(d.ref || d.id) + "</td><td>" + esc((((d.firstname || "") + " " + (d.lastname || "")).trim() || d.societe || "—")) + "</td><td>" + jour(d.date) + '</td><td class="num">' + eur(d.amount) + "</td><td>" + ({ "-1": pill("Annulé"), "0": pill("Promesse à valider", "al"), "1": pill("Promesse validée", "ok"), "2": pill("Don payé", "ok") }[String(d.statut)] || pill(String(d.statut))) + "</td><td>" + (String(d.statut) === "0" ? btn("Valider", "donvalider", d.id) : "—") + "</td></tr>")) + '<div class="note">Le reçu fiscal d’un don se produit dans Dolibarr (fiche du don, « Générer ») : son API ne le propose pas.</div></div>';
       },
       adherents() {
         const T = Object.fromEntries((S.d.types || []).map((t) => [String(t.id), t.label])), A = filtrer(S.d.adherents, "adherents");
-        return '<div class="carte">' + barre("adherents", "") + table(["N°", "Adhérent", "Type", "État", "Fin", ""], A.map((a) => '<tr><td class="num">' + a.id + "</td><td><b>" + esc(((a.firstname || "") + " " + (a.lastname || a.name || "")).trim()) + "</b></td><td>" + esc(T[String(a.typeid)] || a.typeid) + "</td><td>" + (String(a.statut) === "1" ? pill("actif", "ok") : pill("à revoir", "al")) + "</td><td>" + jour(a.datefin) + "</td><td>" + btn("Cotisation", "cotis", a.id) + "</td></tr>")) + "</div>";
+        return '<div class="carte">' + barre("adherents", "") + table(["Réf.", "Prénom", "Nom", "Login", "Nature", "Type d'adhérent", "Courriel", "Fin d'adhésion", "Statut", ""], A.map((a) => '<tr><td class="num">' + esc(a.ref || a.id) + "</td><td>" + esc(a.firstname || "") + "</td><td><b>" + esc(a.lastname || a.name || "") + "</b></td><td>" + esc(a.login || "") + "</td><td>" + (a.morphy === "mor" ? "Personne morale" : a.morphy === "phy" ? "Personne physique" : "") + "</td><td>" + esc(T[String(a.typeid)] || a.typeid) + "</td><td>" + esc(a.email || "") + "</td><td>" + jour(a.datefin) + "</td><td>" + ({ "-2": pill("Exclu"), "-1": pill("Brouillon"), "0": pill("Résilié", "al"), "1": pill("Validé", "ok") }[String(a.statut)] || pill(String(a.statut))) + "</td><td>" + btn("Cotisation", "cotis", a.id) + "</td></tr>")) + "</div>";
       },
       projets() {
         const P = filtrer(S.d.projets, "projets"), L = ["Brouillon", "Ouvert", "Clos"];
-        return '<div class="carte">' + barre("projets", btn("+ Nouveau projet", "nprojet", "", "pri")) + table(["Réf.", "Projet", "Début", "Fin", "État", ""], P.map((p) => "<tr><td class=\"num\">" + esc(p.ref) + "</td><td><b>" + esc(p.title) + "</b></td><td>" + jour(p.date_start) + "</td><td>" + jour(p.date_end) + "</td><td>" + pill(L[Number(p.statut)] || p.statut, String(p.statut) === "1" ? "ok" : "") + "</td><td>" + (String(p.statut) === "0" ? btn("Valider", "projet", p.id + "|valider") : String(p.statut) === "1" ? btn("Clore", "projet", p.id + "|clore") : "") + "</td></tr>")) + "</div>";
+        return '<div class="carte">' + barre("projets", btn("+ Nouveau projet", "nprojet", "", "pri")) + table(["Réf.", "Libellé", "Tiers", "Date de début", "Date de fin", "Visibilité", "Statut", ""], P.map((p) => "<tr><td class=\"num\">" + esc(p.ref) + "</td><td><b>" + esc(p.title) + "</b></td><td>" + (p.socid && String(p.socid) !== "0" ? esc(nomTiers(p.socid)) : "") + "</td><td>" + jour(p.date_start) + "</td><td>" + jour(p.date_end) + "</td><td>" + (String(p.public) === "1" ? "Tout le monde" : "Contacts du projet") + "</td><td>" + pill(L[Number(p.statut)] || p.statut, String(p.statut) === "1" ? "ok" : "") + "</td><td>" + (String(p.statut) === "0" ? btn("Valider", "projet", p.id + "|valider") : String(p.statut) === "1" ? btn("Clore", "projet", p.id + "|clore") : "") + "</td></tr>")) + "</div>";
       },
       cprojets() {
         const lie = (id) => (S.d.liens || []).find((l) => l.type === "projet" && String(l.id) === String(id)), f = S.f.cprojets || "tous";
@@ -162,11 +162,11 @@
       },
       produits() {
         const P = filtrer(S.d.produits, "produits");
-        return '<div class="carte">' + barre("produits", btn("+ Nouveau produit", "nprod", "", "pri")) + table(["Réf.", "Libellé", "Prix HT", "TVA", ""], P.map((p) => '<tr><td class="num">' + esc(p.ref) + "</td><td><b>" + esc(p.label) + '</b></td><td class="num">' + eur(p.price) + '</td><td class="num">' + Number(p.tva_tx || 0) + " %</td><td>" + btn("Modifier le prix", "prix", p.id) + "</td></tr>")) + '<div class="note">Ce sont les pass et services de la billetterie : elle s’y accroche sans rien recréer.</div></div>';
+        return '<div class="carte">' + barre("produits", btn("+ Nouveau produit", "nprod", "", "pri")) + table(["Réf.", "Libellé", "Nature", "Prix de vente HT", "TVA", "État (vente)", "État (achat)", ""], P.map((p) => '<tr><td class="num">' + esc(p.ref) + "</td><td><b>" + esc(p.label) + "</b></td><td>" + (String(p.type) === "0" ? "Produit" : "Service") + '</td><td class="num">' + eur(p.price) + '</td><td class="num">' + Number(p.tva_tx || 0) + " %</td><td>" + (String(p.status) === "1" ? pill("En vente", "ok") : pill("Hors vente")) + "</td><td>" + (String(p.status_buy) === "1" ? pill("En achat", "ok") : pill("Hors achat")) + "</td><td>" + btn("Modifier le prix", "prix", p.id) + "</td></tr>")) + '<div class="note">Ce sont les pass et services de la billetterie : elle s’y accroche sans rien recréer.</div></div>';
       },
       fournisseurs() {
         const F = filtrer(S.d.sup, "fournisseurs");
-        return '<div class="carte">' + barre("fournisseurs", "") + table(["Réf.", "Fournisseur", "Date", "Total", "État", ""], F.map((f) => '<tr><td class="num"><b>' + esc(f.ref) + "</b></td><td>" + esc(nomTiers(f.socid)) + "</td><td>" + jour(f.date) + '</td><td class="num">' + eur(f.total_ttc) + "</td><td>" + (String(f.paye) === "1" || String(f.statut) === "2" ? pill("Payée", "ok") : String(f.statut) === "0" ? pill("Brouillon") : pill("À payer", "al")) + "</td><td>" + (String(f.statut) === "1" && String(f.paye) !== "1" ? btn("Payer", "payersup", f.id, "pri") : "") + "</td></tr>")) + '<div class="note">Pour collecter les factures reçues par courriel, le module emailcollector de Dolibarr doit être actif.</div></div>';
+        return '<div class="carte">' + barre("fournisseurs", "") + table(["Réf.", "Réf. fournisseur", "Fournisseur", "Date", "Date d'échéance", "Montant HT", "Montant TTC", "Statut", ""], F.map((f) => '<tr><td class="num"><b>' + esc(f.ref) + '</b></td><td class="num">' + esc(f.ref_supplier || "") + "</td><td>" + esc(nomTiers(f.socid)) + "</td><td>" + jour(f.date) + "</td><td>" + jour(f.date_echeance) + '</td><td class="num">' + eur(f.total_ht) + '</td><td class="num">' + eur(f.total_ttc) + "</td><td>" + (String(f.paye) === "1" || String(f.statut) === "2" ? pill("Payée", "ok") : String(f.statut) === "0" ? pill("Brouillon") : pill("À payer", "al")) + "</td><td>" + (String(f.statut) === "1" && String(f.paye) !== "1" ? btn("Payer", "payersup", f.id, "pri") : "") + "</td></tr>")) + '<div class="note">Pour collecter les factures reçues par courriel, le module emailcollector de Dolibarr doit être actif.</div></div>';
       },
       instance() {
         const i = S.d.inst || { r: {}, m: [], st: {} }, c = i.r.comptes || {}, imp = i.r.impayees || {};
