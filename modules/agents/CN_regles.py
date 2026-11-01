@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #dcc720
+# VERSION CN : 0.5.0  #c04927
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les règles communes aux agents, la tuile « retenus / refusés » et les tâches récurrentes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=dcc720 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=c04927 ▼▼▼
 """Les règles communes aux agents, la tuile « retenus / refusés » et les tâches récurrentes.
 
   - RÈGLES COMMUNES (administrateur) : le plafond global de coût (le même que `plafond_regler` « global »), le palier par défaut d'un outil que l'agent n'a pas réglé (« raconter » : il raconte
@@ -274,7 +274,7 @@ def brancher_regles(ctx, E, db, compte_agit, converser):
             res = converser(ctx, 0, t["consigne"], t["agent"])
             cid = int(res.get("conversation_id") or 0)
             db.ecrire("UPDATE taches_agents SET conversation_id=? WHERE id=?", (cid, t["id"]))
-            ctx.emettre("tache.lancee", objet=("tache", str(t["id"])), donnees={"tache": t["id"], "agent": t["agent"], "compte": t["compte"], "conversation_id": cid, "automatique": True}, compte=t["compte"])
+            ctx.emettre("tache_agent.lancee", objet=("tache_agent", str(t["id"])), donnees={"tache": t["id"], "agent": t["agent"], "compte": t["compte"], "conversation_id": cid, "automatique": True}, compte=t["compte"])
             return cid
         finally:
             ctx._compte.valeur, ctx._societe.valeur = avant
@@ -291,7 +291,7 @@ def brancher_regles(ctx, E, db, compte_agit, converser):
             try:
                 lancer_tache(t)
             except Exception as ex:                                  # une tâche qui échoue ne ferme pas la passe des autres
-                ctx.emettre("tache.echouee", objet=("tache", str(t["id"])), donnees={"tache": t["id"], "erreur": str(ex)[:200]}, compte=t["compte"])
+                ctx.emettre("tache_agent.echouee", objet=("tache_agent", str(t["id"])), donnees={"tache": t["id"], "erreur": str(ex)[:200]}, compte=t["compte"])
             lancees += 1
 
     ctx.moteur("taches", moteur_taches)

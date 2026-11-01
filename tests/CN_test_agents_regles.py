@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #15bc49
+# VERSION CN : 0.1.0  #9cfd91
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les règles communes aux agents, la tuile « retenus / refusés », les tâches récurrentes, « Pourquoi ? » en phrases et le vocabulaire côté données.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=15bc49 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9cfd91 ▼▼▼
 """Les règles communes aux agents, la tuile « retenus / refusés », les tâches récurrentes, « Pourquoi ? » en phrases et le vocabulaire côté données.
 
 Une règle posée AGIT dans le tour de l'agent : on le prouve par un tour, pas par la relecture de la règle.
@@ -218,10 +218,10 @@ class TachesAutomatiques(actions.Actions):
         cid = fiche["taches"][0]["conversation_id"]
         self.assertIn("Bonjour !", [m["contenu"] for m in self.msgs(cid)])
         self.assertEqual(self.ex("agents.conversation", compte=LEO, id=cid)["statut"], "echec")     # la conversation est celle du compte de la tâche
-        lancees = [e for e in self.evts("tache.lancee") if e["compte"] == BEA]
+        lancees = [e for e in self.evts("tache_agent.lancee") if e["compte"] == BEA]
         self.assertEqual((len(lancees), lancees[0]["donnees"]["automatique"]), (1, True))
         passe()
-        self.assertEqual(len([e for e in self.evts("tache.lancee")]), 1)                    # sa prochaine échéance est demain
+        self.assertEqual(len([e for e in self.evts("tache_agent.lancee")]), 1)                    # sa prochaine échéance est demain
 
     def test_la_tache_obeit_aux_paliers_de_l_agent(self):
         t = self.regler("tache_confier", compte=BEA, agent="itare", consigne="Crée une note", frequence="quotidien")["tache"]
