@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #b1a1da
+// VERSION CN : 0.1.0  #dd17aa
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=b1a1da ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=dd17aa ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -21,7 +21,14 @@
   const CASS = window.CASS, K = CASS.kit, esc = K.esc, ic = K.ic, pill = K.pill, dire = K.dire, confirmer = K.confirmer;
 
   // ── la couche d'appels : tout ce que l'écran demande au module passe ici (un contrat qui change se corrige ici seulement) ──
-  const A = (c, a) => K.agir("agents." + c, a);
+  // une lecture récente n'est pas redemandée au serveur (mono-fil à l'essai, chargé en service) : un seul appel en vol, la même réponse quelques secondes, vidée à la moindre écriture
+  const LECT = new Map(), LISIBLES = { equipe: 8, agent: 8, regles: 8, propositions: 8, couts: 8, retenus_refuses: 8, rapport_matin: 8, passations: 8, taches: 8, conversations: 8, auditer: 8, paliers: 8, confiance: 60 };
+  const A = (c, a) => {
+    if (!LISIBLES[c]) { LECT.clear(); return K.agir("agents." + c, a); }
+    const k = c + "|" + JSON.stringify(a || {}), h = LECT.get(k);
+    if (h && Date.now() - h.t < LISIBLES[c] * 1000) return h.p;
+    const p = K.agir("agents." + c, a); LECT.set(k, { p: p, t: Date.now() }); p.catch(() => LECT.delete(k)); return p;
+  };
   const API = {
     equipe: () => A("equipe"),
     agent: (id) => A("agent", { id: id }),
@@ -67,7 +74,7 @@
   const btnPq = (acte) => (acte ? '<div><button class="btn mini" data-pq="' + esc(acte) + '">Pourquoi ?</button></div><div class="ag-pq" id="pq-' + esc(acte) + '"></div>' : "");
   const manque = (e) => /inconnu|introuvable|n'existe pas|not found|404|capacit/i.test(String((e && e.message) || e));
 
-  const COUL = { cassandra: "#0b7c74", itare: "#6d3fd1", amizo: "#1d6fb8", relecteur: "#b45309", vision: "#be185d", auditeur: "#5b6b8c" };
+  const COUL = { cassandra: "#0b7c74", itare: "#6d3fd1", amizo: "#1d6fb8", relecteur: "#b45309", vision: "#be123c", auditeur: "#5b6b8c" };
   const NIVEAUX = [["observer", "Observer", "Elle constate et raconte ce qu'elle ferait. Rien n'est touché."], ["entretien", "Entretien", "Elle fait le petit et le sûr : lectures, rangement, ce qui se défait."], ["reine", "Pleine autonomie", "Elle conduit seule dans ses paliers ; chaque geste garde sa preuve et son retour."]];
   const ACTIONS = [["secours", "bascule sur le modèle de secours"], ["arret", "arrête les agents (sauf Cassandra) et te prévient"], ["accord", "demande ton accord"]];
   const VOC = { palier: "Palier", outils: { auto: "Automatique", raconter: "À raconter", retire: "Retiré" } };      // les libellés viennent d'agents.regles().vocabulaire ; les codes ne changent pas
@@ -80,6 +87,12 @@
     ["Chaque geste a sa preuve et son retour", "Un acte se relit après coup et se défait ; ce qui ne se défait pas attend ton mot."],
     ["Le plafond le plus bas s'applique", "Plafond d'agent et plafond global : le plus bas retient, avec son action."],
   ];
+  const G = (g) => '<span aria-hidden="true">' + g + "</span> ";                                   // un pictogramme décoratif, devant un texte qui dit déjà tout
+  const pg = (g, t, c) => '<span class="p ' + (c || "") + '">' + G(g) + esc(t) + "</span>";
+  const ETG = { attend: "⏳", reportee: "⏳", acceptee: "✓", refusee: "✕" };
+  const etatTxt = (e) => (ETG[e] ? G(ETG[e]) : "") + esc(ETAT[e] || e);
+  const SQ = '<div class="sq" role="status" aria-label="Ouverture de l\'écran"><div class="r"><i style="height:64px"></i><i style="height:64px"></i><i style="height:64px"></i><i style="height:64px"></i></div><i style="height:130px"></i><i style="height:190px"></i></div>';
+  const SQ_PETIT = '<div class="sq" aria-hidden="true"><i style="height:14px;width:55%"></i><i style="height:14px"></i><i style="height:14px;width:80%"></i></div>';
   const eur = (x) => (x == null ? "—" : Number(x).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: x < 1 && x > 0 ? 2 : 0, maximumFractionDigits: 4 }));
   const initiale = (n) => String(n || "?").trim().slice(0, 1).toUpperCase();
   const av = (a, g) => '<span class="ag-av' + (g ? " g" : "") + '" style="background:' + (COUL[a.id] || "#5b6b8c") + '" aria-hidden="true">' + esc(initiale(a.nom)) + "</span>";
@@ -92,7 +105,7 @@
     ".ag .ag-cartes{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}.ag button.carte.clic{text-align:left;color:inherit;font:inherit;cursor:pointer}.ag button.carte.clic:hover{border-color:var(--accent)}" +
     ".ag .ag-tete{display:flex;gap:12px;align-items:center;min-width:0}.ag .ag-tete>div{min-width:0}.ag .ag-ligne{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-size:12.5px}.ag .ag-ligne .g{color:var(--txt-soft)}" +
     ".ag .ag-ligne b{font-weight:600;text-align:right;overflow-wrap:anywhere}.ag .ag-puces{display:flex;gap:6px;flex-wrap:wrap}.ag .ag-etat{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.ag .ag-etat .sp{flex:1;min-width:220px}" +
-    ".ag .ag-rond{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok);flex:none}.ag .ag-rond.al{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}.ag .ag-rond svg{width:22px;height:22px}" +
+    ".ag .ag-rond{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok);flex:none}.ag .ag-rond.al{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}.ag .ag-rond svg{width:22px;height:22px}.ag .ag-rond{font-size:20px;line-height:1}" +
     ".ag .ag-outil{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}.ag .ag-outil .n{font:600 12.5px ui-monospace,Menlo,Consolas,monospace;overflow-wrap:anywhere}.ag .ag-outil .d{font-size:12px;color:var(--txt-soft)}" +
     ".ag .ag-ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.ag label.ag-conf{display:inline-flex;gap:5px;align-items:center;font-size:12px;color:var(--txt-soft);cursor:pointer}" +
     ".ag .ag-fam{border:1px solid var(--line);border-radius:12px;margin:6px 0;background:var(--surface-2,transparent)}.ag .ag-fam>summary{cursor:pointer;padding:9px 12px;list-style:none;font-size:13px}.ag .ag-fam>summary::-webkit-details-marker{display:none}.ag .ag-fam>summary::before{content:'▸ ';color:var(--txt-faint)}.ag .ag-fam[open]>summary::before{content:'▾ '}.ag .ag-fam-c{padding:0 10px 8px}.ag .ag-fam>summary:focus-visible{outline:2px solid var(--accent,#0b7c74);border-radius:12px}" +
@@ -107,6 +120,7 @@
     ".ag .ag-nb{font:600 9.5px 'Inter',sans-serif;letter-spacing:.07em;text-transform:uppercase;border:1px dashed var(--line-strong,var(--line));border-radius:99px;padding:2px 8px;color:var(--txt-faint);white-space:nowrap}" +
     ".ag .ag-prop{border-top:1px solid var(--line);padding:11px 0;display:flex;flex-direction:column;gap:6px}.ag .ag-prop:first-of-type{border-top:0}.ag .ag-mandat{border:1px solid var(--line);border-radius:12px;padding:8px 11px;background:var(--ag-doux)}.ag .ag-mandat pre{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font:12px ui-monospace,Menlo,monospace;color:var(--txt-soft)}" +
     ".ag .ag-pq{border:1px dashed var(--line);border-radius:12px;padding:8px 11px;margin-top:6px}.ag .ag-pq:empty{display:none}.ag .ag-jauge{display:inline-block;width:90px;height:7px;border-radius:99px;background:var(--line);overflow:hidden;vertical-align:middle}.ag .ag-jauge i{display:block;height:100%;background:var(--accent)}.ag td .ag-puces{margin:0}" +
+    ".ag .sq{display:flex;flex-direction:column;gap:12px}.ag .sq .r{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}.ag .sq i{display:block;border-radius:14px;background:linear-gradient(90deg,var(--line) 0%,color-mix(in srgb,var(--line) 35%,transparent) 50%,var(--line) 100%);background-size:200% 100%;animation:ag-sq 1.3s linear infinite;opacity:.75}@keyframes ag-sq{to{background-position:-200% 0}}@media (prefers-reduced-motion:reduce){.ag .sq i{animation:none}}" +
     "@media (max-width:760px){.ag .ag-conv{grid-template-columns:1fr}.ag .ag-outil{grid-template-columns:1fr}.ag .ag-ctl{justify-content:flex-start}.ag .ag-m{max-width:100%}.ag .ag-ecrire{flex-direction:column}.ag .ag-ecrire textarea{height:70px}.ag table{min-width:420px}}";
 
   // ── l'état de l'écran (une scène, des vues) ────────────────────────────────
@@ -141,7 +155,7 @@
         '<div class="ag-ligne"><span class="g">' + esc(VOC.palier) + '</span><b>' + esc((NIVEAUX.find((x) => x[0] === a.niveau) || [0, a.niveau])[1]) + "</b></div>" +
         '<div class="ag-ligne"><span class="g">Modèle</span><b>' + esc(a.modele || "par défaut") + "</b></div>" +
         '<div class="ag-ligne"><span class="g">Aujourd\'hui</span><b>' + (a.cout_jour && a.cout_jour.euros ? eur(a.cout_jour.euros) : "gratuit") + ' <span class="note">· ' + ((a.cout_jour || {}).appels || 0) + " appels</span></b></div>" +
-        (pc ? pill("plafond atteint", "dg", "warn") : "") + "</button>";
+        (pc ? pg("⚠", "plafond atteint", "dg") : "") + "</button>";
     }
     const nomAg = (id) => ((S.eq.equipe || []).find((a) => a.id === id) || {}).nom || id;
     async function carteRapport() {
@@ -170,27 +184,27 @@
           '<label class="ag-f"><span>Heure</span><input type="time" id="ag-t-h" value="08:00"></label>' +
           '<label class="ag-f"><span>Jour (si chaque semaine)</span><select id="ag-t-j">' + ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"].map((j) => "<option>" + j + "</option>").join("") + "</select></label></div>" +
           '<label class="ag-f"><span>La consigne</span><textarea id="ag-t-c" rows="3" placeholder="Ex. : range mes notes de la semaine et dis-moi ce qui reste."></textarea></label><div class="ag-puces"><button class="btn pri" id="ag-t-go">Confier la tâche</button></div>' : "") +
-        (l.length ? '<div class="liste">' + l.map((t) => '<div class="li"><div class="sp"><b>' + esc(nomAg(t.agent)) + " · " + esc(FREQ[t.frequence] || t.frequence) + " à " + esc(t.heure) + (t.jour ? " (" + esc(t.jour) + ")" : "") + '</b><div class="note">' + esc(t.consigne) + (t.prochaine ? " · prochaine : " + esc(dateFr(t.prochaine)) : "") + (t.derniere ? " · dernière : " + esc(dateFr(t.derniere)) : "") + '</div></div><button class="btn mini" data-tl="' + t.id + '">Lancer maintenant</button><button class="btn mini dng" data-tr="' + t.id + '">Retirer</button></div>').join("") + "</div>" : '<p class="note">Aucune tâche récurrente.</p>') +
+        (l.length ? '<div class="liste">' + l.map((t) => '<div class="li"><div class="sp"><b>' + esc(nomAg(t.agent)) + " · " + esc(FREQ[t.frequence] || t.frequence) + " à " + esc(t.heure) + (t.jour ? " (" + esc(t.jour) + ")" : "") + '</b><div class="note">' + esc(t.consigne) + (t.prochaine ? " · prochaine : " + esc(dateFr(t.prochaine)) : "") + (t.derniere ? " · dernière : " + esc(dateFr(t.derniere)) : "") + '</div></div><button class="btn mini" data-tl="' + t.id + '">' + G("↻") + 'Lancer maintenant</button><button class="btn mini dng" data-tr="' + t.id + '">' + G("✕") + 'Retirer</button></div>').join("") + "</div>" : '<p class="note">Aucune tâche récurrente.</p>') +
         (r.declenchement_automatique ? "" : '<p class="note">Pas de déclenchement automatique pour l\'instant : « Lancer maintenant » joue un tour de l\'agent.</p>') + "</section>";
     }
     async function vEquipe() {
       const eq = S.eq.equipe, agents = eq.filter((a) => a.genre === "agent"), services = eq.filter((a) => a.genre === "service");
-      let cout = null; try { cout = await API.couts("", 1); } catch (e) { cout = null; }
-      let ret = null; try { ret = await API.retenus(1); } catch (e) { ret = null; }
+      const pR = carteRapport(), pP = cartePassations(), pT = carteTaches();
+      const [cout, ret] = await Promise.all([API.couts("", 1).catch(() => null), API.retenus(1).catch(() => null)]);
       const glob = cout && cout.plafonds && cout.plafonds.global;
       const auj = cout ? cout.aujourdhui_euros : null;
       const retenu = eq.some((a) => a.plafond_atteint);
       const pct = glob && glob.euros ? Math.min(100, (auj || 0) / glob.euros * 100) : 0;
-      return '<section class="carte"><div class="ag-etat"><div class="ag-rond' + (retenu ? " al" : "") + '">' + ic(retenu ? "warn" : "check") + '</div><div class="sp"><h3>' + (retenu ? "Un plafond de coût retient un agent" : "Tout va bien") + "</h3>" +
+      return '<section class="carte"><div class="ag-etat"><div class="ag-rond' + (retenu ? " al" : "") + '">' + (retenu ? "⚠" : "✓") + '</div><div class="sp"><h3>' + (retenu ? "Un plafond de coût retient un agent" : "Tout va bien") + "</h3>" +
         '<p class="note">' + (retenu ? "Voir « Coût » dans la fiche de l'agent concerné pour lever, relever ou accorder pour aujourd'hui." : "Les agents agissent seuls dans leurs paliers ; chaque geste garde sa preuve et son retour.") + '</p></div><button class="btn pri" data-agent="cassandra" data-onglet="essai">Demander à un agent…</button></div></section>' +
         '<section class="stats"><div class="stat"><b>' + eq.length + "</b><span>agents et services</span></div>" +
         '<div class="stat ' + (pct > 85 ? "al" : "") + '"><b>' + eur(auj) + "</b><span>dépensé aujourd'hui" + (glob ? " sur " + eur(glob.euros) + " de plafond global" : " · aucun plafond global") + "</span>" + (glob ? '<div class="jauge"><i style="width:' + pct + '%"></i></div>' : "") + "</div>" +
         '<div class="stat"><b>' + (ret ? ret.retenus + ret.refuses : "—") + "</b><span>retenus ou refusés aujourd\'hui · par la règle, pas par oubli</span></div>" +
         '<div class="stat"><b>' + (S.attente == null ? "—" : S.attente) + "</b><span>à valider</span></div></section>" +
-        (await carteRapport()) +
+        (await pR) +
         '<div><div class="note" style="margin:0 2px 8px"><b>L\'équipe</b></div><div class="ag-cartes">' + agents.map(carteAgent).join("") + "</div></div>" +
         '<div><div class="note" style="margin:0 2px 2px"><b>Services agentiques</b></div><div class="note" style="margin:0 2px 8px">Des fonctions, pas des décideurs : une tâche précise, pas de mémoire propre, pas d\'initiative.</div><div class="ag-cartes">' + services.map(carteAgent).join("") + "</div></div>" +
-        (await cartePassations()) + (await carteTaches());
+        (await pP) + (await pT);
     }
 
     // ── la fiche ─────────────────────────────────────────────────────────────
@@ -206,7 +220,7 @@
       const n = f.decompte || {};
       const tete = '<section class="carte"><div class="ag-tete">' + av(a, 1) + '<div style="flex:1"><h2 style="font:650 20px \'Inter\',sans-serif;margin:0">' + esc(S.admin ? a.nom : "Mon Itare") + '</h2><div class="note">' + esc(S.admin ? a.role : "Ton agent du bureau : lui seul voit ton bureau, personne d'autre.") + "</div></div>" +
         (S.admin ? '<select class="sel" id="ag-chg" aria-label="Changer d\'agent">' + S.eq.equipe.map((x) => '<option value="' + esc(x.id) + '"' + (x.id === a.id ? " selected" : "") + ">" + esc(x.nom) + "</option>").join("") + "</select>" : "") + "</div>" +
-        '<div class="ag-puces">' + (service ? pill("service agentique") : "") + pill((NIVEAUX.find((x) => x[0] === a.niveau) || [0, a.niveau])[1], "ac") + pill(a.modele || "modèle par défaut") + (f.plafond_atteint ? pill("plafond atteint : " + f.plafond_atteint.action, "dg", "warn") : "") + pill((n.auto || 0) + " en auto", "ok") + pill((n.raconter || 0) + " racontés", "al") + "</div></section>";
+        '<div class="ag-puces">' + (service ? pill("service agentique") : "") + pill((NIVEAUX.find((x) => x[0] === a.niveau) || [0, a.niveau])[1], "ac") + pill(a.modele || "modèle par défaut") + (f.plafond_atteint ? pg("⚠", "plafond atteint : " + f.plafond_atteint.action, "dg") : "") + pill((n.auto || 0) + " en auto", "ok") + pill((n.raconter || 0) + " racontés", "al") + "</div></section>";
       const ong = '<div class="ag-nav" role="tablist" id="ag-ong">' + tabs.map(([k, l]) => '<button role="tab" data-o="' + k + '" class="' + (S.onglet === k ? "on" : "") + '">' + esc(l) + "</button>").join("") + "</div>";
       const fn = { apercu: oApercu, outils: oOutils, journal: oJournal, essai: oEssai, propose: oPropose, cout: oCout, sur: oSur, memoire: oMemoire, reglages: oReglages }[S.onglet];
       return tete + ong + '<div id="ag-fiche" style="display:flex;flex-direction:column;gap:12px">' + await fn(f) + "</div>";
@@ -214,7 +228,8 @@
     async function oApercu(f) {
       const a = f.agent, n = f.decompte || {};
       S.gestes = null; S.conf = null;
-      API.confiance(a.id).then((c) => { S.conf = carteConfiance(c); peindreGestes(); }).catch((e) => { S.conf = nonBranche("Carte de confiance", String((e && e.message) || e)); peindreGestes(); });
+      const mo = dessin;                                                                    // la carte de confiance est la lecture la plus longue du module : elle part après les gestes, et seulement si on est encore là
+      setTimeout(() => { if (mo !== dessin) return; API.confiance(a.id).then((c) => { S.conf = carteConfiance(c); peindreGestes(); }).catch((e) => { S.conf = nonBranche("Carte de confiance", String((e && e.message) || e)); peindreGestes(); }); }, 900);
       dernierGestes(a).catch(() => null).then((d) => { S.gestes = d && d.length ? d.slice(0, 5).map((x) => '<div class="ag-ligne" style="padding:4px 0"><span>' + esc(x.action) + '</span><span class="g">' + esc(x.ts) + "</span></div>").join("") : '<p class="note">Rien à montrer pour le moment.</p>'; peindreGestes(); });
       return '<div class="g2"><section class="carte"><h3>Qui est ' + esc(a.nom) + '</h3><p class="note">' + esc(a.role) + "</p>" +
         '<div class="ag-ligne"><span class="g">Ton</span><b style="max-width:62%">' + esc(a.ton || "le ton d'origine") + "</b></div>" +
@@ -226,9 +241,9 @@
         NIVEAUX.map(([k, l, t]) => '<button class="radio' + (a.niveau === k ? " on" : "") + '" data-niveau="' + k + '"><i></i><span><b>' + l + '</b><br><span class="note">' + t + "</span></span></button>").join("") + "</div>" +
         '<div class="ag-puces">' + pill((n.auto || 0) + " outils en auto", "ok") + pill((n.raconter || 0) + " racontés", "al") + pill((n.retire || 0) + " retirés") + "</div>" +
         '<p class="note">Le palier est un réglage, pas un interdit codé : il se précise outil par outil (onglet « Outils & palier »). La sûreté vient de la preuve et du retour arrière.</p></section></div>' +
-        '<section class="carte"><h3>Ses derniers gestes</h3><div id="ag-gestes"><p class="note">Chargement…</p></div>' +
+        '<section class="carte"><h3>Ses derniers gestes</h3><div id="ag-gestes">' + SQ_PETIT + '</div>' +
         '<div><button class="btn mini" data-onglet-vers="journal">Tout le journal</button></div></section>' +
-        '<section class="carte" id="ag-conf"><h3>Carte de confiance</h3><p class="note">Chargement…</p></section>';
+        '<section class="carte" id="ag-conf"><h3>Carte de confiance</h3>' + SQ_PETIT + '</section>';
     }
     function peindreGestes() {
       const z = racine.querySelector("#ag-gestes"); if (z && S.gestes) z.innerHTML = S.gestes;
@@ -286,7 +301,7 @@
     }
     async function actes(agent) { const p = await API.propositions("toutes", agent || ""); return (p.propositions || []).filter((x) => x.acte); }
     function ligneActes(l) {
-      return l.length ? '<div class="liste">' + l.map((x) => '<div class="li"><div class="sp"><b>' + esc(x.titre || x.capacite) + '</b><div class="note">' + esc(x.nom || x.agent) + " · " + esc(ETAT[x.etat] || x.etat) + (x.par ? " par " + esc(x.par) : "") + " · " + esc(dateFr(x.decidee || x.cree)) + "</div>" + btnPq(x.acte) + "</div></div>").join("") + "</div>"
+      return l.length ? '<div class="liste">' + l.map((x) => '<div class="li"><div class="sp"><b>' + esc(x.titre || x.capacite) + '</b><div class="note">' + esc(x.nom || x.agent) + " · " + etatTxt(x.etat) + (x.par ? " par " + esc(x.par) : "") + " · " + esc(dateFr(x.decidee || x.cree)) + "</div>" + btnPq(x.acte) + "</div></div>").join("") + "</div>"
         : '<p class="note">Aucun acte décidé pour le moment : ce que l\'agent fait après ton accord apparaît ici, avec son « Pourquoi ? ».</p>';
     }
     function vPourquoi(r) {
@@ -301,13 +316,13 @@
       const defais = r.defaisable !== undefined ? !!r.defaisable : r.issue === "faite" && r.retour !== "annulee";
       return phrases + l("Déclencheur", esc(decl)) + l("Mémoire consultée", mem) + l("Outil", esc((r.outil && r.outil.cle) || r.capacite || "")) + l(esc(VOC.palier), esc(VOC.outils[r.palier] || r.palier || "") + (r.confirmer ? " · à confirmer" : "") + (r.niveau ? " · " + esc((NIVEAUX.find((x) => x[0] === r.niveau) || [0, r.niveau])[1]) : "")) +
         (issueT ? l("Issue", pill(issueT, r.issue === "echec" ? "dg" : r.issue === "faite" ? "ok" : "al")) : "") + l("Preuve", esc(preuve)) + l("Retour", esc(retour)) + ((r.journal || []).length ? l("Lignes du journal", (r.journal || []).length) : "") +
-        (defais ? '<div class="barre" style="margin-top:8px"><button class="btn mini" data-df="' + esc(r.acte) + '" title="Rejoue le retour arrière de ce geste, une seule fois">Défaire</button><span class="note">Rejoue le retour arrière de ce geste, une seule fois.</span></div>' : '<p class="note">' + (r.issue === "faite" || r.defaisable === false ? "Ce geste ne se défait pas (ou l'a déjà été)." : "Ce geste n'a rien fait : il n'y a rien à défaire.") + "</p>");
+        (defais ? '<div class="barre" style="margin-top:8px"><button class="btn mini" data-df="' + esc(r.acte) + '" title="Rejoue le retour arrière de ce geste, une seule fois">' + G("↺") + 'Défaire</button><span class="note">Rejoue le retour arrière de ce geste, une seule fois.</span></div>' : '<p class="note">' + (r.issue === "faite" || r.defaisable === false ? "Ce geste ne se défait pas (ou l'a déjà été)." : "Ce geste n'a rien fait : il n'y a rien à défaire.") + "</p>");
     }
     // « Règles communes » : ce qui vaut pour tous les agents, et les deux réglages qui valent pour tous (le plafond global ; le reste attend son module)
     const bilanMJ = (l) => ((l || []).length ? '<div class="liste">' + l.map((x) => '<div class="li"><div class="sp"><b>' + esc(nomAg(x.agent)) + '</b><div class="note">' + esc(x.capacite) + " · " + x.fois + " fois racontée" + (x.fois > 1 ? "s" : "") + " au lieu d\'être faite" + (x.fois > 1 ? "s" : "") + "</div></div></div>").join("") + "</div>" : '<p class="note">Rien n\'a été raconté à la place d\'un geste.</p>');
     function mauvaisJourCarte(rg) {
       const mj = (rg && rg.mauvais_jour) || {}, bil = S.bilanMJ;
-      return '<section class="carte"><h3>Le mauvais jour</h3><p class="note">Un seul bouton quand quelque chose te semble bizarre : tous les agents passent en « ' + esc(VOC.outils.raconter) + " » pendant une durée choisie, puis reviennent seuls à leurs réglages. Le bilan dit ce qu\'ils ont raconté au lieu de faire.</p>" +
+      return '<section class="carte"><h3>' + G("⏸") + 'Le mauvais jour</h3><p class="note">Un seul bouton quand quelque chose te semble bizarre : tous les agents passent en « ' + esc(VOC.outils.raconter) + " » pendant une durée choisie, puis reviennent seuls à leurs réglages. Le bilan dit ce qu\'ils ont raconté au lieu de faire.</p>" +
         (mj.actif ? '<div class="ag-ligne"><span class="g">En cours</span><b>depuis ' + esc(dateFr(mj.depuis)) + (mj.jusqua ? " · jusqu\'à " + esc(dateFr(mj.jusqua)) : " · jusqu\'à la levée") + '</b></div><div class="note" style="margin:6px 2px 2px"><b>Ce qu\'ils ont raconté depuis</b></div>' + bilanMJ(mj.raconte) + '<div class="ag-puces"><button class="btn" data-mj-lever="1">Lever le mauvais jour</button></div>' :
           '<div class="ag-puces"><button class="btn" data-mj="1">1 heure</button><button class="btn" data-mj="24">24 heures</button><button class="btn" data-mj="0">Jusqu\'à ce que je lève</button></div>') +
         (bil ? '<div class="note" style="margin:8px 2px 2px"><b>Bilan du dernier mauvais jour</b></div>' + bilanMJ(bil) : "") + "</section>";
@@ -349,7 +364,7 @@
         '<div class="ag-ligne"><span class="g">Palier</span><b>aucun : il lit, il signale</b></div>' +
         '<div class="ag-ligne"><span class="g">Aujourd\'hui</span><b>' + (cj.euros ? eur(cj.euros) : "gratuit") + ' <span class="note">· ' + (cj.appels || 0) + " appels</span></b></div>" +
         '<div class="ag-ligne"><span class="g">Carte de confiance</span><b>rien à promouvoir : aucun outil à régler</b></div></section>' +
-        '<section class="carte"><div class="barre"><h3 style="flex:1">Ce qu\'il a vu</h3><div class="seg" id="ag-ja" role="group" aria-label="Période">' + [7, 30].map((j) => '<button data-ja="' + j + '" class="' + (jours === j ? "on" : "") + '">' + j + " j</button>").join("") + "</div></div>" + (sg.length ? '<div class="liste">' + sg.map((x) => '<div class="li"><div class="sp"><b>' + esc(TYPE[x.type] || x.type) + (x.agent ? " · " + esc(x.agent) : "") + '</b><div class="note">' + esc(x.phrase || "") + (x.ref ? " · " + esc(x.ref) : "") + "</div></div></div>").join("") + "</div>" : '<p class="note">Rien à signaler : ni coût qui dérive, ni palier trop large, ni tentative répétée.</p>') +
+        '<section class="carte"><div class="barre"><h3 style="flex:1">Ce qu\'il a vu</h3><div class="seg" id="ag-ja" role="group" aria-label="Période">' + [7, 30].map((j) => '<button data-ja="' + j + '" class="' + (jours === j ? "on" : "") + '">' + j + " j</button>").join("") + "</div></div>" + (sg.length ? '<div class="liste">' + sg.map((x) => '<div class="li"><div class="sp"><b>' + esc(TYPE[x.type] || x.type) + (x.agent ? " · " + esc(x.agent) : "") + '</b><div class="note">' + esc(x.phrase || "") + (x.ref ? " · " + esc(x.ref) : "") + "</div></div></div>").join("") + "</div>" : '<p class="note">' + G("🛡") + 'Rien à signaler : ni coût qui dérive, ni palier trop large, ni tentative répétée.</p>') +
         '<p class="note">Il regarde : ' + (r.regards || []).map((g) => esc((TYPE[g] || g).toLowerCase())).join(", ") + ". Le geste reste à l\'administrateur.</p></section>";
     }
     async function oJournal(f) {
@@ -379,12 +394,12 @@
       const m = p.mandat && p.mandat.id ? p.mandat : null, a = p.args || {};
       const k = ["corps", "texte", "message", "body", "brouillon"].find((x) => a[x]), brouillon = k ? tx(a[k]) : "";
       const attend = p.etat === "attend" || p.etat === "reportee", l = (t, v) => '<div class="ag-ligne"><span class="g">' + t + "</span><b>" + esc(v) + "</b></div>";
-      return '<div class="ag-prop"><div class="barre"><b style="flex:1;min-width:0;overflow-wrap:anywhere">' + esc(p.titre || p.capacite || "Proposition") + "</b>" + pill(p.nom || p.agent, "ac") + pill(p.risque || "risque ?", RISQUE[p.risque] || "") + (attend ? "" : pill(ETAT[p.etat] || p.etat, p.etat === "acceptee" ? "ok" : "")) + "</div>" +
+      return '<div class="ag-prop"><div class="barre"><b style="flex:1;min-width:0;overflow-wrap:anywhere">' + esc(p.titre || p.capacite || "Proposition") + "</b>" + pill(p.nom || p.agent, "ac") + pill(p.risque || "risque ?", RISQUE[p.risque] || "") + (attend ? "" : pg(ETG[p.etat] || "", ETAT[p.etat] || p.etat, p.etat === "acceptee" ? "ok" : "")) + "</div>" +
         (p.resume ? '<p class="note">' + esc(p.resume) + "</p>" : "") + (p.pourquoi ? l("Pourquoi", p.pourquoi) : "") + (p.impact ? l("Impact", p.impact) : "") +
         (m ? '<div class="ag-mandat"><div class="ag-mod">Mandat d\'envoi</div>' + l("Mandat", m.nom || "") + l("De", m.de || (S.eq && S.eq.compte) || "") + l("À", m.a || "") + l("Objet", m.objet || "") + l("Validité", tx(m.validite)) + (brouillon ? '<div class="note">Brouillon</div><pre>' + esc(brouillon) + "</pre>" : "") + "</div>" : "") +
         (p.blocage ? '<p class="note" style="color:var(--danger)">' + esc(p.blocage) + "</p>" : "") +
         (p.etat === "reportee" && p.reporte_jusqua && Number(p.reporte_jusqua) > Date.now() / 1000 ? '<p class="note">Reportée jusqu\'au ' + esc(dateFr(p.reporte_jusqua)) + ".</p>" : "") +
-        (attend ? '<div class="ag-puces"><button class="btn pri mini" data-prop="' + esc(p.id) + '" data-d="accepter"' + (p.executable === false ? ' disabled title="' + esc(p.blocage || "Cette proposition ne peut pas être exécutée") + '"' : "") + '>Accepter</button><button class="btn mini" data-prop="' + esc(p.id) + '" data-d="refuser">Refuser</button><button class="btn mini" data-prop="' + esc(p.id) + '" data-d="reporter">Plus tard</button><button class="btn mini" data-prop="' + esc(p.id) + '" data-d="reporter" data-jusqu="demain">Demain</button></div>' : (p.resultat ? '<p class="note">' + esc(tx(p.resultat).slice(0, 220)) + "</p>" : "")) +
+        (attend ? '<div class="ag-puces"><button class="btn pri mini" data-prop="' + esc(p.id) + '" data-d="accepter"' + (p.executable === false ? ' disabled title="' + esc(p.blocage || "Cette proposition ne peut pas être exécutée") + '"' : "") + '>Accepter</button><button class="btn mini" data-prop="' + esc(p.id) + '" data-d="refuser">' + G("✕") + 'Refuser</button><button class="btn mini" data-prop="' + esc(p.id) + '" data-d="reporter">Plus tard</button><button class="btn mini" data-prop="' + esc(p.id) + '" data-d="reporter" data-jusqu="demain">Demain</button></div>' : (p.resultat ? '<p class="note">' + esc(tx(p.resultat).slice(0, 220)) + "</p>" : "")) +
         btnPq(p.acte) + "</div>";
     }
     async function decider(id, d, jusqu) {
@@ -418,7 +433,7 @@
       ["Itare", "non", "aucun outil de secret", "son bureau, lui seul", "non"],
       ["Amizo", "non", "aucun outil de secret", "non", "ce qui est partagé ; écrit sa bibliothèque seule"],
       ["Relecteur", "non", "reconnaît un secret par son empreinte, ne le garde pas", "relit chaque réponse finale", "non"],
-      ["Vision", "non", "aucun outil de secret", "pièces jointes (pas encore branché)", "non"],
+      ["Vision", "non", "aucun outil de secret", "📎 pièces jointes (pas encore branché)", "non"],
     ];
     function vEpreuve(r) {
       const cas = (r.cas || []).map((c) => '<div class="li"><div class="sp"><b>' + esc(c.titre || c.id) + '</b><div class="note">' + esc(c.detail || "") + "</div></div>" + pill(c.reussi ? "réussi" : "échoué", c.reussi ? "ok" : "dg") + "</div>").join("");
@@ -430,7 +445,7 @@
         try { const r = await API.epreuvesResultats(); res = r.resultats || []; cor = r.corpus || []; } catch (e) { err = String((e && e.message) || e); }
         try { sen = await API.sentinelle(); } catch (e) { sen = null; }
       }
-      const regles = '<section class="carte"><h3>Les règles non négociables</h3>' + REGLES.map((r) => '<details style="border-top:1px solid var(--line);padding:7px 0"><summary style="cursor:pointer;font-weight:600">' + esc(r[0]) + '</summary><p class="note" style="margin-top:6px">' + esc(r[1]) + "</p></details>").join("") + "</section>";
+      const regles = '<section class="carte"><h3>' + G("🛡") + 'Les règles non négociables</h3>' + REGLES.map((r) => '<details style="border-top:1px solid var(--line);padding:7px 0"><summary style="cursor:pointer;font-weight:600">' + esc(r[0]) + '</summary><p class="note" style="margin-top:6px">' + esc(r[1]) + "</p></details>").join("") + "</section>";
       const matrice = '<section class="carte"><h3>Qui voit quoi</h3><div class="ag-tw"><table><tr><th>Agent</th><th>La machine</th><th>Les secrets</th><th>Un bureau</th><th>La connaissance</th></tr>' + MATRICE.map((r) => "<tr>" + r.map((c, i) => (i ? "<td>" : "<td><b>") + esc(c) + (i ? "</td>" : "</b></td>")).join("") + "</tr>").join("") + "</table></div>" +
         '<p class="note">Un compte ne règle et ne lit que son Itare ; administrer n\'est pas voir le bureau d\'un autre.</p></section>';
       if (!S.admin) return regles + matrice;
@@ -472,7 +487,7 @@
       if (S.conv.id) {
         const d = await API.conversation(S.conv.id);
         const fil = d.messages.filter((m) => m.role !== "tool" || true).map((m) => {
-          if (m.role === "tool") return '<div class="ag-m outil">↳ ' + esc(m.nom || "outil") + (m.statut ? " · " + esc(m.statut) : "") + (m.evenement ? btnPq(m.evenement) : "") + "</div>";
+          if (m.role === "tool") return '<div class="ag-m outil">' + G("⚙") + esc(m.nom || "outil") + (m.statut ? " · " + esc(m.statut) : "") + (m.evenement ? btnPq(m.evenement) : "") + "</div>";
           if (m.role === "panne") return '<div class="ag-m outil" style="color:var(--danger)">' + esc(m.contenu) + "</div>";
           if (!m.contenu && m.appels) return '<div class="ag-m outil">appelle ' + esc((m.appels || []).map((c) => (c.function && c.function.name) || c.nom || "outil").join(", ")) + "</div>";
           return '<div class="ag-m' + (m.role === "user" ? " moi" : "") + '">' + esc(m.contenu) + (m.actions || []).filter((x) => x && x.evenement).map((x) => '<div class="note">↳ ' + esc(x.outil || x.capacite || "geste") + btnPq(x.evenement) + "</div>").join("") + "</div>";
@@ -511,16 +526,24 @@
     }
 
     // ── modèles et clés ──────────────────────────────────────────────────────
-    async function vModeles() {
+    function registreHtml(reg) {
       const eq = S.eq.equipe;
-      let reg = null; try { reg = await API.registre(); } catch (e) { reg = null; }
       const ms = (reg && reg.modeles) || [], roles = (reg && reg.roles) || {}, nomM = (m) => esc(m.nom || m.id || m.modele || "modèle"), tm = (v) => (v && typeof v === "object" ? (v.modele || v.nom || v.id || "") : v || "");
-      const chaine = eq.filter((a) => a.genre === "agent").map((a) => '<div class="ag-ligne"><span class="g">' + esc(a.nom) + "</span><b>" + esc(a.modele || tm(roles[a.id]) || "rôle par défaut") + " <span class=\'note\'>→</span> " + esc(a.secours || "pas de secours") + " <span class=\'note\'>→</span> " + (a.plafond_atteint ? "plafond atteint : le secours seul" : "arrêt propre, jamais un silence") + "</b></div>").join("");
-      const registre = '<section class="carte"><div class="barre"><h3 style="flex:1">Le registre des modèles</h3><button class="btn" id="ag-reg">Ouvrir le registre des modèles</button></div>' +
+      const chaine = eq.filter((a) => a.genre === "agent").map((a) => '<div class="ag-ligne"><span class="g">' + esc(a.nom) + "</span><b>" + esc(a.modele || tm(roles[a.id]) || "rôle par défaut") + ' <span class="note">→</span> ' + esc(a.secours || "pas de secours") + ' <span class="note">→</span> ' + (a.plafond_atteint ? "plafond atteint : le secours seul" : "arrêt propre, jamais un silence") + "</b></div>").join("");
+      return '<section class="carte"><div class="barre"><h3 style="flex:1">Le registre des modèles</h3><button class="btn" id="ag-reg">Ouvrir le registre des modèles</button></div>' +
         (reg ? (ms.length ? '<div class="liste">' + ms.map((m) => '<div class="li"><div class="sp"><b>' + nomM(m) + '</b><div class="note">' + esc([m.fournisseur, m.modele && m.modele !== m.nom ? m.modele : "", m.cle === false || m.cle_presente === false ? "clé manquante" : ""].filter(Boolean).join(" · ")) + "</div></div></div>").join("") + "</div>" : '<p class="note">Aucun modèle enregistré pour l\'instant : ajoute un fournisseur et sa clé dans le registre. Les clés sont des réglages « secret » du noyau, jamais relues ici.</p>') : '<p class="note">Le registre n\'a pas répondu.</p>') +
         (Object.keys(roles).length ? '<div class="note" style="margin:8px 2px 2px"><b>Rôles</b></div>' + Object.keys(roles).sort().map((k) => '<div class="ag-ligne"><span class="g">' + esc(k) + "</span><b>" + esc(tm(roles[k])) + "</b></div>").join("") : "") + "</section>" +
         '<section class="carte"><h3>La chaîne de secours</h3><p class="note">Ce que chaque agent essaie, dans l\'ordre. Un modèle déconseillé aux épreuves de sûreté n\'est pas employé quand l\'exigence est active.</p>' + chaine + "</section>";
-      return registre + '<section class="carte"><div class="barre"><h3 style="flex:1">Quel modèle fait parler qui</h3></div>' +
+    }
+    // le registre des modèles est lent à lire (il sonde le serveur local) : la page s'ouvre sur ce qu'on sait déjà, il se peint dès qu'il arrive
+    function peindreRegistre() {
+      const z = racine.querySelector("#ag-mreg"); if (!z || typeof S.reg !== "string") return;
+      z.innerHTML = S.reg; sur("#ag-reg", "click", () => { if (CASS.ouvrirConsole) CASS.ouvrirConsole("modeles", "Modèles"); });
+    }
+    async function vModeles() {
+      const eq = S.eq.equipe; S.reg = null; const moi = dessin;
+      API.registre().then((r) => r, () => null).then((reg) => { if (moi !== dessin) return; S.reg = registreHtml(reg); peindreRegistre(); });
+      return '<div id="ag-mreg" style="display:flex;flex-direction:column;gap:12px"><section class="carte"><h3>Le registre des modèles</h3>' + SQ_PETIT + "</section></div>" + '<section class="carte"><div class="barre"><h3 style="flex:1">Quel modèle fait parler qui</h3></div>' +
         '<div class="ag-tw"><table><tr><th>Agent</th><th>Modèle</th><th>Secours</th><th>Coût du jour</th></tr>' + eq.map((a) => "<tr><td>" + esc(a.nom) + "</td><td>" + esc(a.modele || "par défaut") + "</td><td>" + esc(a.secours || "aucun") + "</td><td>" + (a.cout_jour && a.cout_jour.euros ? eur(a.cout_jour.euros) : "gratuit") + "</td></tr>").join("") + "</table></div>" +
         '<p class="note">Le registre (fournisseurs, clés, tarifs) reste dans le module Modèles ; les clés sont des réglages « secret » du noyau, jamais lues ici. Le modèle d\'un agent se règle dans sa fiche, onglet « Réglages ».</p></section>';
     }
@@ -538,18 +561,21 @@
     async function dessinerVraiment() {
       let html; const moi = ++dessin;
       const v0 = racine.querySelector("#ag-vue");
-      if (v0) v0.style.opacity = ".5"; else racine.innerHTML = '<div class="vide" role="status">Chargement…</div>';
+      if (v0) v0.style.opacity = ".5"; else racine.innerHTML = SQ;
       try {
-        S.eq = S.eq || await equipe(); S.lu = S.lu || Date.now();
-        if (!MEM.regles) { try { MEM.regles = await API.regles(); } catch (e) { MEM.regles = {}; } }
+        const pEq = S.eq ? Promise.resolve(S.eq) : equipe();
+        const pRg = MEM.regles ? Promise.resolve() : API.regles().then((r) => { MEM.regles = r; }, () => { MEM.regles = {}; });
+        const pAt = S.attente === undefined ? API.propositions().then((r) => (r && r.propositions) || [], () => null) : null;
+        S.eq = S.eq || await pEq; S.lu = S.lu || Date.now();
+        await pRg;
         appliquerVoc(MEM.regles);
         S.admin = !!S.eq.administrateur;
         if (!S.vue) S.vue = S.admin ? "equipe" : "fiche";
         if (!S.admin && !["fiche", "conv", "boite", "journal"].includes(S.vue)) S.vue = "fiche";
-        if (S.attente === undefined) { try { S.attente = ((await API.propositions()).propositions || []).filter((x) => S.admin || x.agent === "itare").length; } catch (e) { S.attente = null; } }
+        if (pAt) { const l = await pAt; S.attente = l ? l.filter((x) => S.admin || x.agent === "itare").length : null; }
         const f = { equipe: vEquipe, fiche: vFiche, conv: vConv, boite: vBoite, journal: vJournal, auditeur: vAuditeur, maison: vMaison, modeles: vModeles }[S.vue];
         const mj = (MEM.regles || {}).mauvais_jour;
-        html = '<div id="ag-vue" style="display:flex;flex-direction:column;gap:12px">' + (mj && mj.actif ? '<section class="carte" role="status" style="border-color:var(--warn,#b45309)"><div class="barre"><div class="sp"><b>Mauvais jour en cours</b><div class="note">Tous les agents racontent au lieu de faire' + (mj.jusqua ? " jusqu\'à " + esc(dateFr(mj.jusqua)) : " jusqu\'à ce que tu lèves") + ".</div></div>" + (S.admin ? '<button class="btn" data-mj-lever="1">Lever</button>' : "") + "</div></section>" : "") + await f() + "</div>";
+        html = '<div id="ag-vue" style="display:flex;flex-direction:column;gap:12px">' + (mj && mj.actif ? '<section class="carte" role="status" style="border-color:var(--warn,#b45309)"><div class="barre"><div class="sp"><b>' + G("⏸") + 'Mauvais jour en cours</b><div class="note">Tous les agents racontent au lieu de faire' + (mj.jusqua ? " jusqu\'à " + esc(dateFr(mj.jusqua)) : " jusqu\'à ce que tu lèves") + ".</div></div>" + (S.admin ? '<button class="btn" data-mj-lever="1">Lever</button>' : "") + "</div></section>" : "") + await f() + "</div>";
       } catch (e) { html = '<div class="vide">' + esc((e && e.message) || e) + "</div>"; }
       if (moi !== dessin) return;                                                     // un dessin plus récent est parti : il écrira seul
       racine.innerHTML = html; brancher();
@@ -571,7 +597,7 @@
     });
 
     function brancher() {
-      peindreGestes();
+      peindreGestes(); peindreRegistre();
       sur("[data-agent]", "click", (b) => (b.dataset.agent === "auditeur" ? aller("auditeur") : aller("fiche", b.dataset.agent, b.dataset.onglet || "apercu")));
       sur("#ag-ong [data-o]", "click", (b) => { S.onglet = b.dataset.o; dessiner(); });
       sur("[data-onglet-vers]", "click", (b) => { S.onglet = b.getAttribute("data-onglet-vers"); dessiner(); });
@@ -636,7 +662,6 @@
         const z = racine.querySelector("#ag-ep-r"); z.innerHTML = '<p class="note" role="status">Épreuves en cours : huit cas, jusqu\'à une demi-minute…</p>'; b0(true);
         try { z.innerHTML = vEpreuve(await API.epreuvesLancer(m)); } finally { b0(false); }
       }));
-      sur("#ag-reg", "click", () => { if (CASS.ouvrirConsole) CASS.ouvrirConsole("modeles", "Modèles"); });
       // essai en direct (une conversation à part, tenue dans la fiche)
       sur("#ag-essai-go", "click", () => lancer(async () => {
         const t = racine.querySelector("#ag-essai-t"), fil = racine.querySelector("#ag-essai-fil"), m = t.value.trim(); if (!m) return;

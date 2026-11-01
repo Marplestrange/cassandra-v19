@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #dabe86
+# VERSION CN : 0.1.0  #57cf37
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les modèles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=dabe86 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=57cf37 ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -34,6 +34,7 @@ from __future__ import annotations
 import json
 import re
 import secrets
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -141,11 +142,28 @@ def brancher(ctx):
         rows = [dict(r) for r in db.lire("SELECT * FROM modeles WHERE portee='instance' OR compte=? ORDER BY cree, id", (compte,))]
         out = {"modeles": [publique(m, roles if m["portee"] == "instance" else None, choisi) for m in rows], "choix": choisi, "ton": str(ctx.reglage("ton", compte) or "")[:4000]}
         out["roles"] = {r["role"]: r["modele_id"] for r in db.lire("SELECT * FROM roles")} if maison() else {}
-        try:
-            out["locaux"] = [m["name"] for m in lister_locaux()]
-        except Exception:
-            out["locaux"] = []
+        out["locaux"] = noms_locaux()
         return out
+
+    _sonde = {"t": 0.0, "noms": [], "en_cours": False}
+
+    def _sonder_locaux(hote):
+        try:
+            j = lire_json(hote + "/api/tags", timeout=3)
+            _sonde["noms"] = [m.get("name", "") for m in (j.get("models") or []) if m.get("name")]
+        except Exception:
+            _sonde["noms"] = []
+        _sonde["t"] = time.time()
+        _sonde["en_cours"] = False
+
+    def noms_locaux():
+        """Les modèles du serveur local. Le serveur local est sondé une première fois en attendant, puis relu en arrière-plan toutes les 30 s : un serveur local absent ou lent coûtait jusqu'à 3 s à CHAQUE lecture de la liste, et le noyau n'a qu'un fil."""
+        if _sonde["t"] == 0.0:
+            _sonder_locaux(hote_ollama())
+        elif time.time() - _sonde["t"] > 30 and not _sonde["en_cours"]:
+            _sonde["en_cours"] = True
+            threading.Thread(target=_sonder_locaux, args=(hote_ollama(),), daemon=True).start()     # l'hôte se lit ici, dans le fil du noyau : le fil de fond ne touche qu'au réseau
+        return list(_sonde["noms"])
 
     def lister_locaux():
         j = lire_json(hote_ollama() + "/api/tags", timeout=3)
@@ -156,6 +174,7 @@ def brancher(ctx):
             modeles, repond, raison = lister_locaux(), True, ""
         except Exception as e:
             modeles, repond, raison = [], False, str(e)[:120]
+        _sonde["noms"], _sonde["t"] = [m["name"] for m in modeles], time.time()     # la sonde explicite rafraîchit aussi la liste que « lister » sert pendant 30 s
         pulls = [dict(r) for r in db.lire("SELECT id, nom, etat, detail, pourcent, ts FROM pulls ORDER BY id DESC LIMIT 20")]
         return {"repond": repond, "raison": raison, "modeles": modeles, "telechargements": pulls}
 

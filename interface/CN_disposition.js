@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #253f78
+// VERSION CN : 0.1.0  #faf252
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=253f78 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=faf252 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -230,6 +230,12 @@
   // l'état de chaque section de la Vue d'ensemble (« panne », « 7 att. »…) : l'ancienne interface l'écrit dans ses éléments d'origine, on le recopie dans le menu
   const SECTIONS_ETAT = ["verdict", "gestes", "cass", "sites", "flotte", "fil", "machine"];
   // une icône en trait par vue du Panorama (à la place du point) ; l'état, lui, s'écrit en mots dans une pastille de couleur
+  // Les pictogrammes d'Agents IA et de son groupe : copiés de la maquette (docs/maquettes/CN_maquette-agents.html), jamais devinés. « • » reste pour ce que la maquette n'illustre pas.
+  const GL_ENT = { "agents-ia": "▣", evolution: "⚘", proactivite: "ϟ", memoire: "◐" };
+  const GL_VUE = { equipe: "◎", conv: "✎", boite: "✓", journal: "☰", modeles: "◇", maison: "⚖" };
+  const GL_AGENT = { cassandra: "#0b7c74", itare: "#6d3fd1", amizo: "#1d6fb8", relecteur: "#b45309", vision: "#be123c", auditeur: "#5b6b8c" };     // la puce « ● » prend la couleur de l'agent
+  const glEnt = (eid) => (GL_ENT[eid] ? '<i class="d19-gl" aria-hidden="true">' + GL_ENT[eid] + "</i>" : "");
+  const glVue = (eid, vid) => (eid !== "agents-ia" ? "" : GL_VUE[vid] ? '<i class="d19-gl" aria-hidden="true">' + GL_VUE[vid] + "</i>" : GL_AGENT[vid] ? '<i class="d19-gl" aria-hidden="true" style="color:' + GL_AGENT[vid] + '">●</i>' : "");
   const EMO_PANORAMA = { verdict: "pv_verdict", gestes: "pv_gestes", cass: "pv_cass", sites: "pv_sites", flotte: "pv_flotte", fil: "pv_fil", machine: "pv_machine", systeme: "pv_systeme" };
   const INFO_PANORAMA = { verdict: "Le verdict global de l'instance", gestes: "Les gestes que Cassandra attend de vous", cass: "L'état de Cassandra et son palier d'autonomie", sites: "Les sites hébergés : combien, et s'ils répondent",
     flotte: "Les machines du parc et leur connexion", fil: "Ce qui a changé récemment", machine: "La machine qui héberge Cassandra", systeme: "Les détails techniques du système" };
@@ -450,14 +456,14 @@
     for (const e of g.entrees) {
       const aEnfants = e.enfants.length > 0 || e.id === "flotte";
       const ouv = E.ouv.has(e.id) && aEnfants, actif = E.actif && E.e === e.id && E.g === g.id;
-      h += '<button class="d19-si ent' + (actif && (!ouv || rail) ? " on" : "") + '" data-tip="' + esc(e.libelle) + '" data-e="' + esc(e.id) + '">' + ico(e.icone) + "<span>" + esc(e.libelle) + "</span>" + (!ouv ? nbDe(e) : "") + (aEnfants ? chev(ouv) : "") + "</button>";
+      h += '<button class="d19-si ent' + (actif && (!ouv || rail) ? " on" : "") + '" data-tip="' + esc(e.libelle) + '" data-e="' + esc(e.id) + '">' + (glEnt(e.id) || ico(e.icone)) + "<span>" + esc(e.libelle) + "</span>" + (!ouv ? nbDe(e) : "") + (aEnfants ? chev(ouv) : "") + "</button>";
       if (ouv) {
         if (e.id === "flotte") {
           h += rendreFlotteRail();
         } else {
           h += e.enfants.map((f) => {
-            const vid = f.vue || f.id, etat = e.id === "panorama" && SECTIONS_ETAT.indexOf(vid) >= 0, emo = e.id === "panorama" ? EMO_PANORAMA[vid] : "", ik = icoSub(e, f);
-            return (e.id === "agents-ia" && vid === "relecteur" ? '<div class="d19-lbl">Services agentiques</div>' : "") + (e.id === "agents-ia" && vid === "conv" && e.enfants.some((x) => x.vue === "relecteur" || x.vue === "vision") ? '<hr class="d19-sep d19-sepsrv">' : "") + '<button class="d19-si sub' + (ik ? " ic" : "") + (emo ? " emo" : "") + (actif && E.vue === vid ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(vid) + '"' + (emo && INFO_PANORAMA[vid] ? ' title="' + esc(INFO_PANORAMA[vid]) + '"' : "") + '>' + (ik ? ico(ik) : '<span class="pt"></span>') + "<span>" + esc(f.libelle) + "</span>" + (etat ? '<span class="mx-st" data-mst="' + vid + '" hidden></span>' : "") + nbDe(f) + "</button>";
+            const vid = f.vue || f.id, etat = e.id === "panorama" && SECTIONS_ETAT.indexOf(vid) >= 0, emo = e.id === "panorama" ? EMO_PANORAMA[vid] : "", ik = icoSub(e, f), gl = glVue(e.id, vid);
+            return (e.id === "agents-ia" && vid === "relecteur" ? '<div class="d19-lbl">Services agentiques</div>' : "") + (e.id === "agents-ia" && vid === "conv" && e.enfants.some((x) => x.vue === "relecteur" || x.vue === "vision") ? '<hr class="d19-sep d19-sepsrv">' : "") + '<button class="d19-si sub' + (ik || gl ? " ic" : "") + (emo ? " emo" : "") + (actif && E.vue === vid ? " on" : "") + '" data-e="' + esc(e.id) + '" data-v="' + esc(vid) + '"' + (emo && INFO_PANORAMA[vid] ? ' title="' + esc(INFO_PANORAMA[vid]) + '"' : "") + '>' + (gl || (ik ? ico(ik) : '<span class="pt"></span>')) + "<span>" + esc(f.libelle) + "</span>" + (etat ? '<span class="mx-st" data-mst="' + vid + '" hidden></span>' : "") + nbDe(f) + "</button>";
           }).join("");
         }
       }
@@ -512,8 +518,8 @@
       el.innerHTML = fil + (E.lateral ? '<div class="pills" id="d19-pills">' + E.lateral.items.map((i) => '<button class="pl' + (i.id === E.lateral.actif ? " on" : "") + '" data-lat="' + esc(i.id) + '">' + esc(i.libelle) + "</button>").join("") + "</div>" : "");
     } else {
       el.innerHTML = fil + '<button class="pin' + (estPin() ? " on" : "") + '" data-pin="1" title="Épingler cette page" aria-label="Épingler cette page">' + ico("star") + "</button>"
-        + '<button class="tit" data-ms="1" aria-label="Changer d’entrée">' + ico(e.icone) + "<span>" + esc(e.libelle) + "</span>" + ico("down") + "</button>"
-        + '<div class="pills" id="d19-pills">' + e.enfants.map((f) => '<button class="pl' + (E.vue === (f.vue || f.id) ? " on" : "") + '" data-sx="' + esc(f.vue || f.id) + '">' + (icoSub(e, f) ? ico(icoSub(e, f)) : "") + esc(f.libelle) + "</button>").join("") + "</div>";
+        + '<button class="tit" data-ms="1" aria-label="Changer d’entrée">' + (glEnt(e.id) || ico(e.icone)) + "<span>" + esc(e.libelle) + "</span>" + ico("down") + "</button>"
+        + '<div class="pills" id="d19-pills">' + e.enfants.map((f) => '<button class="pl' + (E.vue === (f.vue || f.id) ? " on" : "") + '" data-sx="' + esc(f.vue || f.id) + '">' + (glVue(e.id, f.vue || f.id) || (icoSub(e, f) ? ico(icoSub(e, f)) : "")) + esc(f.libelle) + "</button>").join("") + "</div>";
     }
     const on = $(".pl.on", el), pc = $("#d19-pills");
     if (on && pc) pc.scrollLeft = Math.max(0, on.offsetLeft - 70);
@@ -598,13 +604,13 @@
   function idees(maintenant) {
     clearTimeout(ideesT);
     ideesT = setTimeout(async function () {
-      if (!E.d) return;
+      if (!E.d || document.hidden) return;
       try {
         const g = ent(), e = entree();
         E.idees = await agir("affichage.lire_idees", { mode: mode() === "inv" ? "" : mode(), groupe: g ? g.id : "", entree: e ? e.id : "", sous: E.vue, page: chemin(), heure: heure(), faits: Array.from(E.faits), refuses: Array.from(E.refuses) });
         rendreHaut(); if (E.panel) rendrePanel();
       } catch (er) {}
-    }, maintenant ? 0 : 400);
+    }, maintenant ? 0 : 1500);                                     // le clic d'abord : l'idée se lit après les écrans, jamais devant eux sur le serveur
   }
 
   // ── le rendu : panneau ─────────────────────────────────────────────────────
@@ -1138,7 +1144,7 @@
     setTimeout(pouls, 2500);                                       // juste après une connexion, la disposition peut encore changer (entrées de l'avatar) : on la relit sans attendre 15 s
     if (!lance) {
       lance = true;
-      setInterval(pouls, 15000); document.addEventListener("visibilitychange", pouls);
+      setInterval(pouls, 30000); document.addEventListener("visibilitychange", pouls);
       setInterval(function () { if (token() && !document.hidden && E.d) idees(); }, 60000);
       const sw = window.switchTab;
       const bs = window.buSeg;

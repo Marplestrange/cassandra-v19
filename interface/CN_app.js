@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #686712
+// VERSION CN : 0.1.0  #76edf2
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=686712 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=76edf2 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -35048,7 +35048,13 @@ function _initWebSocket(){
             // Fallback polling pendant la reconnexion (plus lent quand le flux push n'existe pas)
             if(_abandon && _wsFallbackTimer){ clearInterval(_wsFallbackTimer); _wsFallbackTimer = null; }
             if(!_wsFallbackTimer){
-                _wsFallbackTimer = setInterval(()=>{ loadMetrics(); loadProcesses(); }, _abandon ? 15000 : 3000);
+                // sans flux push, on interroge — mais seulement si l'onglet est devant et si les chiffres sont à l'écran (30 s) : chaque lecture occupe le serveur
+                _wsFallbackTimer = setInterval(()=>{
+                    if(document.hidden) return;
+                    const c=document.getElementById('cpu-val'); if(c && c.offsetParent===null) return;
+                    loadMetrics();
+                    const p=document.getElementById('processes-list'); if(p && p.offsetParent!==null) loadProcesses();
+                }, _abandon ? 30000 : 3000);
             }
             if(_abandon) return;
             setTimeout(_initWebSocket, _wsReconnectDelay);

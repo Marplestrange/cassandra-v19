@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #db5aac
+// VERSION CN : 0.1.0  #646b38
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Pont V18 -> noyau V19.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=db5aac ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=646b38 ▼▼▼
 /* Pont V18 -> noyau V19.
 
 L'interface V18 parle à ~615 routes (/api/...). Le noyau V19 n'en a qu'une porte : POST /api/agir/<module>.<capacité>.
@@ -68,10 +68,23 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
     if (soc) e["X-Societe"] = soc;
     return e;
   }
+  // Les lectures du noyau : le démarrage de l'ancienne interface redemande la même chose quatre fois (modèles, compte, agenda, projets) et le serveur d'essai répond un appel à la fois.
+  // Une même lecture déjà en vol n'est donc posée qu'une fois, sa réponse sert 3 s, et la moindre écriture vide tout : on ne relit jamais un état d'avant son propre geste.
+  const LECTURES = new Map(), LECTURE_SEC = 3000;
+  const EST_LECTURE = /^(\/api\/agir\/[a-z_]+\.(lister|lire|lire_[a-z_]+|etat|moi|compteurs|calendrier|evenements|caldav_etat|aujourdhui|fournisseurs|locaux|mes_droits_a_moi|metriques|sante)|\/api\/moi|\/api\/menu)(\?|$)/;
   async function v19(methode, chemin, corps, init) {
     const opt = { method: methode, headers: entetesV19(init), credentials: "same-origin" };
     if (methode !== "GET") opt.body = JSON.stringify(corps || {});
-    return natif(chemin, opt);
+    if (!EST_LECTURE.test(chemin)) { if (chemin.indexOf("/api/agir/") === 0 || chemin.indexOf("/api/deconnexion") === 0) LECTURES.clear(); return natif(chemin, opt); }
+    const cle = methode + " " + chemin + " " + (opt.body || "") + " " + (opt.headers["Authorization"] || "") + " " + (opt.headers["X-Societe"] || "");
+    let h = LECTURES.get(cle);
+    if (!h || Date.now() - h.t > LECTURE_SEC) {
+      const p = natif(chemin, opt).then(async (r) => ({ status: r.status, texte: await r.text(), type: r.headers.get("Content-Type") || "application/json" }));
+      h = { t: Date.now(), p: p }; LECTURES.set(cle, h);
+      p.then((c) => { if (c.status !== 200 && LECTURES.get(cle) === h) LECTURES.delete(cle); }, () => { if (LECTURES.get(cle) === h) LECTURES.delete(cle); });
+    }
+    const c = await h.p;
+    return new Response(c.texte, { status: c.status, headers: { "Content-Type": c.type } });
   }
 
   // Un résultat de capacité devient la réponse que l'écran V18 lit.
