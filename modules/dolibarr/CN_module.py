@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #8206ef
+# VERSION CN : 0.4.1  #fd8cdd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=8206ef ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=fd8cdd ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -80,6 +80,7 @@ ENTETES = {"factures": {"ref_client", "date", "date_lim_reglement", "cond_reglem
 ENTETES_DATES = ("date", "date_lim_reglement")
 ENTETES_ENTIERS = ("cond_reglement_id", "mode_reglement_id", "fk_account", "fk_project", "duree_validite")
 CHAMPS_LIGNE = {"desc", "qty", "subprice", "tva_tx", "fk_product", "product_type", "remise_percent"}
+DON_CHAMPS = {"address", "zip", "town", "country_id", "email", "phone", "public", "note_public", "note_private"}
 MAX_CORPS = 16384
 AGENT = "Cassandra-Dolibarr/0.4"      # une identité franche : un pare-feu applicatif (Cloudflare) refuse l'agent par défaut de Python
 MODES_PAIEMENT = ("VIR", "CHQ", "LIQ", "CB", "PRE")      # les codes du dictionnaire « modes de règlement » de Dolibarr
@@ -268,7 +269,10 @@ def _garde_societe(conf):
 def _dit_dolibarr(e):
     """Ce que Dolibarr répond pour expliquer son refus (« ErrorBadEMail », « ErrorFieldRequired »…), pour que l'écran le dise au lieu d'un « HTTP 500 » muet. Jamais l'en-tête de la requête."""
     try:
-        corps = json.loads(e.read().decode("utf-8", "replace"))
+        brut = e.read()
+        if brut[:2] == b"\x1f\x8b":                                 # la réponse d'erreur peut être compressée comme les autres
+            brut = gzip.decompress(brut)
+        corps = json.loads(brut.decode("utf-8", "replace"))
         err = corps.get("error") if isinstance(corps, dict) else None
         msg = (err.get("message") if isinstance(err, dict) else err) or (corps.get("message") if isinstance(corps, dict) else "") or ""
         return " : " + re.sub(r"\s+", " ", str(msg))[:240] if msg else ""
@@ -421,6 +425,11 @@ def _regles_dolibarr(objet, champs, creation):
     return _appeler_point("regles_dolibarr", {"objet": objet, "champs": champs, "creation": creation})["valeur"]
 
 
+def _numeriques(champs):
+    """Un formulaire rend tout en texte : les identifiants (socid, country_id, typent_id…) repartent en nombres, comme Dolibarr les lit."""
+    return {k: (int(v) if (k == "socid" or k.endswith("_id")) and isinstance(v, str) and _ID.match(v) else v) for k, v in champs.items()}
+
+
 def _champs(objet, champs):
     if not champs:
         return CHAMPS_DEFAUT[objet]
@@ -555,6 +564,7 @@ def brancher(ctx):
             raise ValueError("objet inconnu : %r (permis : %s)" % (objet, ", ".join(sorted(ECRIVABLES))))
         _verifier_champs(champs, ECRIVABLES[objet]["champs"], objet)
         _regles_dolibarr(objet, champs, True)
+        champs = _numeriques(champs)
         conf = _conf()
         nouvel = ecrire(conf, "POST", ECRIVABLES[objet]["chemin"], _completer(objet, champs))
         if not isinstance(nouvel, int) and not (isinstance(nouvel, str) and _ID.match(nouvel)):
@@ -568,6 +578,7 @@ def brancher(ctx):
             raise ValueError("id : un nombre")
         _verifier_champs(champs, ECRIVABLES[objet]["champs"], objet)
         _regles_dolibarr(objet, champs, False)
+        champs = _numeriques(champs)
         conf = _conf()
         courant = _lire_un(conf, ECRIVABLES[objet]["chemin"], id)
         if not isinstance(courant, dict):
@@ -1199,7 +1210,8 @@ def brancher(ctx):
         return {"document": "factures", "id": nouvel, "socid": socid, "lignes": len(lignes), "devis": int(id)}
 
     # --- les dons : saisir, valider
-    def don_creer(ctx, montant, date="", nom="", prenom="", societe=""):
+    def don_creer(ctx, montant, date="", nom="", prenom="", societe="", champs=None):
+        champs_don, champs = champs, None
         montant = _montant(montant)
         _garde_agent(montant)
         conf = _conf()
@@ -1207,6 +1219,11 @@ def brancher(ctx):
         for k, v in (("lastname", nom), ("firstname", prenom), ("societe", societe)):
             if v:
                 champs[k] = str(v)[:120]
+        for k, v in (champs_don or {}).items():                  # le reste de la fiche don de Dolibarr (don/card.php) : adresse, courriel, visibilité, notes
+            if k not in DON_CHAMPS:
+                raise ValueError("champ %r refusé pour un don (permis : %s)" % (k, ", ".join(sorted(DON_CHAMPS))))
+            if v not in (None, ""):
+                champs[k] = str(v)[:2000]
         nouvel = _int_id(ecrire(conf, "POST", "/donations", champs), "le don")
         return {"id": nouvel, "montant": montant}
 

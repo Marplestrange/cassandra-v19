@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #71ebca
+# VERSION CN : 0.4.1  #1fa13d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=71ebca ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=1fa13d ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -542,6 +542,12 @@ domaine = "gestion"
 gabarit = "libre"
 
 [[ecrans]]
+id = "d_contacts"
+libelle = "Contacts"
+domaine = "gestion"
+gabarit = "libre"
+
+[[ecrans]]
 id = "d_devis"
 libelle = "Devis"
 domaine = "gestion"
@@ -664,6 +670,16 @@ parent = "dolibarr"
 ordre = 20
 role = "utilisateur"
 icone = "building"
+droit = "utiliser"
+
+[[menus]]
+id = "m_d_contacts"
+libelle = "Contacts"
+ecran = "d_contacts"
+parent = "dolibarr"
+ordre = 25
+role = "utilisateur"
+icone = "contacts"
 droit = "utiliser"
 
 [[menus]]

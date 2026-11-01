@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3c5f23
+# VERSION CN : 0.1.0  #6a6771
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3c5f23 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6a6771 ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import gzip
 import json
@@ -40,7 +40,7 @@ class FauxGestion:
     def __init__(self):
         self.journal, self.societe = [], "Maison Bohème"
         self.utilisateurs = {CLE_MANDAT: {"login": "cassandra", "admin": "0"}, CLE_DRISSE: {"login": "marple", "admin": "1"}, CLE_AMANDINE: {"login": "amandine", "admin": "0"}}
-        self.t = {c: {} for c in ("thirdparties", "invoices", "proposals", "projects", "donations", "members", "agendaevents", "subscriptions", "paiements", "contacts", "supplierinvoices")}
+        self.t = {c: {} for c in ("thirdparties", "invoices", "proposals", "projects", "donations", "members", "agendaevents", "subscriptions", "paiements", "contacts", "supplierinvoices", "products")}
         self.suivant = {c: 1 for c in self.t}
         self.paiements = {}                  # id de facture -> [ids de règlements]
         self.banques = {1: 1000.0, 2: 50.0}
@@ -288,6 +288,17 @@ class FauxGestion:
                 self.t["supplierinvoices"][i].update(paye="0", statut="1")
                 return R(200, dict(self.t["supplierinvoices"][i]))
             return R(200, dict(self.t["supplierinvoices"][i]))
+        if p[0] == "products":
+            if len(p) == 1 and m == "POST":
+                if not corps.get("ref") or not corps.get("label"):                                    # comme Dolibarr : la réf. et le libellé
+                    return R(400, {"error": {"code": 400, "message": "Bad Request: ref field missing"}})
+                return R(200, self.nouveau("products", corps))
+            i = int(p[1])
+            if i not in self.t["products"]:
+                return R(404, {})
+            if m == "PUT":
+                self.t["products"][i].update(corps)
+            return R(200, dict(self.t["products"][i]))
         if p[0] == "contacts":
             if len(p) == 1 and m == "POST":
                 if not corps.get("socid") or corps["socid"] not in self.t["thirdparties"]:
@@ -514,6 +525,36 @@ class GestionDolibarr(unittest.TestCase):
             self.assertIn(dit, json.dumps(self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": refuse}), ensure_ascii=False), refuse)
         # hors de France, les identifiants ne sont pas contrôlés comme un SIREN
         self.assertEqual(self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": {"name": "Belge", "country_id": "2", "idprof1": "0123.456.789"}})["statut"], "faite")
+
+    def test_les_charges_que_l_ecran_envoie_sont_acceptees_et_se_relisent(self):
+        """Les charges relevées dans l'écran (tous champs remplis, valeurs en texte comme un formulaire les donne) : le module les accepte et Dolibarr les garde."""
+        tiers = self.faux.nouveau("thirdparties", {"name": "T", "client": 1})
+        for objet, champs, cle in (
+                ("produits", {"ref": "ESS-1", "label": "Essai", "type": "1", "status": "1", "status_buy": "0", "barcode": "123", "url": "https://exemple.fr", "description": "d", "price_base_type": "HT", "price": "0",
+                              "tva_tx": "0", "accountancy_code_sell": "706", "accountancy_code_buy": "607", "note_private": "n"}, "products"),
+                ("projets", {"title": "Essai", "socid": str(tiers), "public": "0", "status": "1", "date_start": "2026-11-02", "date_end": "2026-11-03", "budget_amount": "10", "usage_opportunity": "0", "opp_percent": "10",
+                             "opp_amount": "10", "description": "d", "note_public": "n", "note_private": "n"}, "projects"),
+                ("contacts", {"civility_code": "MME", "lastname": "Fontaine", "firstname": "Léa", "socid": str(tiers), "poste": "Régie", "statut": "1", "priv": "0", "address": "1 rue X", "zip": "44000", "town": "Nantes",
+                              "country_id": "1", "phone_pro": "0102030405", "phone_mobile": "0601020304", "email": "a@b.fr", "no_email": "0", "birthday": "1990-01-01", "default_lang": "fr_FR", "note_public": "n"}, "contacts")):
+            r = self.e("dolibarr.creer", "humain", {"objet": objet, "champs": champs})
+            self.assertEqual(r["statut"], "faite", msg="%s : %s" % (objet, r))
+            self.assertEqual(self.faux.t[cle][r["resultat"]["id"]]["label" if objet == "produits" else ("title" if objet == "projets" else "lastname")], champs.get("label") or champs.get("title") or champs["lastname"])
+        # un refus de Dolibarr arrive jusqu'à l'écran AVEC son message (ici : un contact sans tiers)
+        r = self.e("dolibarr.creer", "humain", {"objet": "contacts", "champs": {"lastname": "Sans tiers"}})
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("ErrorFieldRequired socid", r["erreur"]) if "ErrorFieldRequired" in r["erreur"] else self.assertIn("Error creating contact", r["erreur"])
+        # un règlement avec tous les champs de la fiche : numéro, commentaire, date
+        i = self.facture()
+        r = self.e("dolibarr.encaisser", "humain", {"id": i, "montant": "120.0", "banque": 1, "mode": "CHQ", "date": "2026-11-02", "numero": "CHQ-1234", "note": "Merci"})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+
+    def test_le_don_porte_les_champs_de_sa_fiche_dolibarr(self):
+        r = self.e("dolibarr.don_creer", "humain", {"montant": "20", "date": "2026-11-01", "nom": "Martin", "prenom": "Léa", "societe": "",
+                                                    "champs": {"address": "1 rue X", "zip": "44000", "town": "Nantes", "country_id": "1", "email": "lea@exemple.fr", "public": "0", "note_private": "n"}})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        d = self.faux.t["donations"][r["resultat"]["id"]]
+        self.assertEqual((d["lastname"], d["firstname"], d["town"], d["email"], d["public"]), ("Martin", "Léa", "Nantes", "lea@exemple.fr", "0"))
+        self.assertEqual(self.e("dolibarr.don_creer", "humain", {"montant": "5", "champs": {"inconnu": "x"}})["statut"], "echec")           # un champ hors fiche est refusé
 
     def test_les_autres_fiches_ont_leurs_champs_et_leurs_obligations(self):
         for objet, ok, ko in (("contacts", {"lastname": "Fontaine", "civility_code": "MME", "poste": "Régie", "email": "a@b.fr"}, {"firstname": "Léa"}),

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #267a0f
+// VERSION CN : 0.1.0  #1c864e
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=267a0f ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=1c864e ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -40,6 +40,7 @@
     const PAGES = {
     d_afaire: "afaire",
     d_tiers: "tiers",
+    d_contacts: "contacts",
     d_devis: "devis",
     d_factures: "factures",
     d_produits: "produits",
@@ -63,6 +64,7 @@
     const PAGE = "limit=100&sortfield=t.rowid&sortorder=DESC";
     const CHARGEURS = {
       tiers: async () => liste(await lire("/thirdparties", PAGE + "&properties=id,name,name_alias,code_client,code_fournisseur,zip,town,country_code,phone,email,client,fournisseur,status")),
+      contacts: async () => liste(await lire("/contacts", PAGE + "&properties=id,civility_code,lastname,firstname,socid,poste,phone_pro,phone_mobile,email,statut")),
       factures: async () => liste(await lire("/invoices", PAGE + "&properties=id,ref,ref_client,socid,date,date_lim_reglement,total_ht,total_tva,total_ttc,totalpaid,remaintopay,statut,paye,type")),
       devis: async () => liste(await lire("/proposals", PAGE + "&properties=id,ref,ref_client,socid,date,fin_validite,total_ht,total_ttc,statut")),
       projets: async () => liste(await lire("/projects", PAGE + "&properties=id,ref,title,socid,statut,public,date_start,date_end")),
@@ -80,7 +82,7 @@
       types: async () => liste(await lire("/members/types", "limit=100")),
       banques: async () => { const l = liste(await lire("/bankaccounts", "limit=100&properties=id,label,clos")); await Promise.all(l.map(async (b) => { try { b.solde = Number((await lire("/bankaccounts/" + b.id + "/balance")) || 0); } catch (e) { b.solde = null; } })); return l; },
     };
-    const BESOIN = { afaire: ["factures", "devis", "dons", "tiers"], factures: ["factures", "tiers", "banques"], devis: ["devis", "tiers"], tiers: ["tiers", "factures"], banque: ["banques"], dons: ["dons"], adherents: ["adherents", "types"], projets: ["projets"], cprojets: ["cp", "liens", "projets"], ccontacts: ["cc", "liens", "tiers"], produits: ["produits"], fournisseurs: ["sup", "tiers", "banques"], instance: ["inst"], capacites: ["cat", "rgl"], comptes: ["cpts"] };
+    const BESOIN = { afaire: ["factures", "devis", "dons", "tiers"], factures: ["factures", "tiers", "banques"], devis: ["devis", "tiers"], tiers: ["tiers", "factures"], contacts: ["contacts", "tiers"], banque: ["banques"], dons: ["dons"], adherents: ["adherents", "types"], projets: ["projets"], cprojets: ["cp", "liens", "projets"], ccontacts: ["cc", "liens", "tiers"], produits: ["produits"], fournisseurs: ["sup", "tiers", "banques"], instance: ["inst"], capacites: ["cat", "rgl"], comptes: ["cpts"] };
     async function charger(forcer) {
       S.err = ""; const vus = BESOIN[S.onglet] || [];
       await Promise.all(vus.filter((k) => forcer || !S.d[k]).map(async (k) => { try { S.d[k] = await CHARGEURS[k](); } catch (e) { S.err = e.message || String(e); S.d[k] = []; } }));
@@ -128,6 +130,10 @@
       tiers() {
         const T = filtrer(S.d.tiers, "tiers");
         return '<div class="carte">' + barre("tiers", btn("+ Nouveau tiers", "ntiers", "", "pri")) + table(["Nom du tiers", "Alias", "Code client", "Code fournisseur", "Code postal", "Ville", "Pays", "Téléphone", "Courriel", "Prospect / Client", "Fournisseur", "État", "Factures", "Dû"], T.map((t) => { const f = (S.d.factures || []).filter((x) => String(x.socid) === String(t.id)), du = f.filter(ouverte).reduce((s, x) => s + Number(x.remaintopay), 0); return '<tr class="clk" data-a="tiers" data-p="' + t.id + '"><td><b>' + esc(t.name) + "</b></td><td>" + esc(t.name_alias || "") + '</td><td class="num">' + esc(t.code_client || "") + '</td><td class="num">' + esc(t.code_fournisseur || "") + "</td><td>" + esc(t.zip || "") + "</td><td>" + esc(t.town || "") + "</td><td>" + esc(t.country_code || "") + "</td><td>" + esc(t.phone || "") + "</td><td>" + esc(t.email || "") + "</td><td>" + pill((NATURE.find((n) => n[0] === String(t.client)) || [0, "—"])[1], String(t.client) !== "0" ? "ac" : "") + "</td><td>" + (String(t.fournisseur) === "1" ? pill("Oui") : "Non") + "</td><td>" + (String(t.status) === "0" ? pill("Fermé") : pill("Ouvert", "ok")) + '</td><td class="num">' + f.length + '</td><td class="num">' + (du ? eur(du) : "—") + "</td></tr>"; })) + "</div>";
+      },
+      contacts() {
+        const C = filtrer(S.d.contacts, "contacts", (x) => nomTiers(x.socid).toLowerCase().includes((S.q.contacts || "~").toLowerCase()));
+        return '<div class="carte">' + barre("contacts", btn("+ Nouveau contact", "ncontact", "", "pri")) + table(["Nom", "Prénom", "Tiers", "Poste", "Téléphone pro", "Mobile", "Courriel", "Statut"], C.map((c) => '<tr class="clk" data-a="contact" data-p="' + c.id + '"><td><b>' + esc(c.lastname || "") + "</b></td><td>" + esc(c.firstname || "") + "</td><td>" + (c.socid && String(c.socid) !== "0" ? esc(nomTiers(c.socid)) : "") + "</td><td>" + esc(c.poste || "") + "</td><td>" + esc(c.phone_pro || "") + "</td><td>" + esc(c.phone_mobile || "") + "</td><td>" + esc(c.email || "") + "</td><td>" + (String(c.statut) === "0" ? pill("Inactif") : pill("Actif", "ok")) + "</td></tr>")) + '<div class="note">Les contacts de Cassandra sont dans « Contacts de Cassandra » : tu choisis lesquels envoyer ici.</div></div>';
       },
       banque() {
         const B = (S.d.banques || []).filter((b) => String(b.clos) !== "1");
@@ -199,7 +205,7 @@
         return '<div class="carte"><h3>Requête libre</h3><div class="note">Tout le catalogue de Dolibarr : par exemple <span class="mono">GET /thirdparties/12</span> ou <span class="mono">PUT /products/3 {"price": 12}</span>. Les secrets sont masqués ; une suppression passe par la corbeille du module.</div><div class="barre2"><input class="in mono" id="dlb-req" style="flex:1 1 320px" value="' + esc(S.libre || "GET /thirdparties?limit=5") + '"><button class="btn pri" data-a="libre">Lancer</button></div>' + (S.libreRep ? '<pre class="code">' + esc(typeof S.libreRep === "string" ? S.libreRep : JSON.stringify(S.libreRep, null, 1)) + "</pre>" : "") + "</div>";
       },
     };
-    const ONGLETS = [["afaire", "À faire"], ["factures", "Factures"], ["devis", "Devis"], ["tiers", "Tiers"], ["banque", "Banque"], ["dons", "Dons"], ["adherents", "Adhérents"], ["projets", "Projets"], ["cprojets", "Projets de Cassandra"], ["ccontacts", "Contacts de Cassandra"], ["produits", "Produits"], ["fournisseurs", "Fournisseurs"], ["itare", "Itare"], ["capacites", "Capacités"], ["comptes", "Comptes"], ["instance", "Instance"], ["acces", "Mon accès"], ["libre", "Requête libre"]];
+    const ONGLETS = [["afaire", "À faire"], ["factures", "Factures"], ["devis", "Devis"], ["tiers", "Tiers"], ["contacts", "Contacts"], ["banque", "Banque"], ["dons", "Dons"], ["adherents", "Adhérents"], ["projets", "Projets"], ["cprojets", "Projets de Cassandra"], ["ccontacts", "Contacts de Cassandra"], ["produits", "Produits"], ["fournisseurs", "Fournisseurs"], ["itare", "Itare"], ["capacites", "Capacités"], ["comptes", "Comptes"], ["instance", "Instance"], ["acces", "Mon accès"], ["libre", "Requête libre"]];
     function dessiner() {
       const foc = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.q : null, pos = foc ? document.activeElement.selectionStart : 0;
       racine.innerHTML = K.titre((ONGLETS.find((o) => o[0] === S.onglet) || ["", "Dolibarr"])[1], "Dolibarr · chaque geste est relu, journalisé et défaisable.") +
@@ -254,6 +260,28 @@
         { k: "cond_reglement_id", l: "Conditions de règlement", t: "select", dic: "conditions" }, { k: "mode_reglement_id", l: "Mode de règlement", t: "select", dic: "modes" }])],
       ["Lignes", [LIGNES]],
       ["Notes", [{ k: "note_public", l: "Note publique", t: "area", large: 1 }, { k: "note_private", l: "Note privée", t: "area", large: 1 }]]];
+    SCHEMAS.contacts = { objet: "contacts", nom: "contact", sections: [
+      ["Contact", [
+        { k: "civility_code", l: "Civilité", t: "select", dic: "civilites" }, { k: "lastname", l: "Nom", req: 1 }, { k: "firstname", l: "Prénom" }, { k: "socid", l: "Tiers", t: "select", dic: "tiers" },
+        { k: "poste", l: "Poste / Fonction" }, { k: "statut", l: "État", t: "select", o: [["1", "Actif"], ["0", "Inactif"]], d: "1" }, { k: "priv", l: "Visibilité", t: "select", o: [["0", "Public (partagé)"], ["1", "Privé (personnel)"]], d: "0" }]],
+      ["Coordonnées", [
+        { k: "address", l: "Adresse", t: "area", large: 1 }, { k: "zip", l: "Code postal" }, { k: "town", l: "Ville" }, { k: "country_id", l: "Pays", t: "select", dic: "pays", d: "1" }, { k: "state_id", l: "Département / Canton", t: "select", dic: "departements" },
+        { k: "phone_pro", l: "Téléphone professionnel" }, { k: "phone_perso", l: "Téléphone personnel" }, { k: "phone_mobile", l: "Téléphone mobile" }, { k: "fax", l: "Fax" }, { k: "email", l: "Courriel" },
+        { k: "no_email", l: "Refuser les courriels de masse", t: "select", o: [["0", "Non"], ["1", "Oui"]], d: "0" }, { k: "birthday", l: "Date de naissance", t: "date" }, { k: "default_lang", l: "Langue par défaut", t: "select", o: LANGUES }]],
+      ["Notes", [{ k: "note_public", l: "Note publique", t: "area", large: 1 }, { k: "note_private", l: "Note privée", t: "area", large: 1 }]]] };
+    const REGL = (avecMontant) => ({ nom: "règlement", sections: [["Règlement", [
+      { k: "date", l: "Date de règlement", t: "date", d: AUJ, req: 1 }, { k: "mode", l: "Mode de règlement", t: "select", dic: "modescode", d: "VIR", req: 1 }, { k: "banque", l: "Compte bancaire", t: "select", dic: "comptes", req: 1 }]
+      .concat(avecMontant ? [{ k: "montant", l: "Montant", t: "number", req: 1 }] : []).concat([{ k: "numero", l: "N° de chèque ou de transaction" }, { k: "note", l: "Commentaire", t: "area", large: 1 }])]] });
+    SCHEMAS.reglement = REGL(true); SCHEMAS.reglementSup = REGL(false);
+    SCHEMAS.virement = { nom: "virement", sections: [["Virement entre comptes", [
+      { k: "de", l: "Compte à débiter", t: "select", dic: "comptes", req: 1 }, { k: "vers", l: "Compte à créditer", t: "select", dic: "comptes", req: 1 }, { k: "date", l: "Date", t: "date", d: AUJ, req: 1 },
+      { k: "montant", l: "Montant", t: "number", req: 1 }, { k: "libelle", l: "Description", d: "Virement interne", large: 1 }]]] };
+    SCHEMAS.don = { nom: "don", sections: [
+      ["Don", [{ k: "date", l: "Date du don", t: "date", d: AUJ, req: 1 }, { k: "montant", l: "Montant", t: "number", d: "50", req: 1 }, { k: "public", l: "Don public", t: "select", o: [["0", "Non"], ["1", "Oui"]], d: "0" }]],
+      ["Donateur", [{ k: "nom", l: "Nom" }, { k: "prenom", l: "Prénom" }, { k: "societe", l: "Société" }, { k: "email", l: "Courriel" }, { k: "address", l: "Adresse", t: "area", large: 1 }, { k: "zip", l: "Code postal" }, { k: "town", l: "Ville" }, { k: "country_id", l: "Pays", t: "select", dic: "pays", d: "1" }]],
+      ["Notes", [{ k: "note_public", l: "Note publique", t: "area", large: 1 }, { k: "note_private", l: "Note privée", t: "area", large: 1 }]]] };
+    SCHEMAS.cotisation = { nom: "cotisation", sections: [["Cotisation", [
+      { k: "debut", l: "Date de début de cotisation", t: "date", d: AUJ, req: 1 }, { k: "fin", l: "Date de fin de cotisation", t: "date", d: String(new Date().getFullYear() + 1) + AUJ.slice(4) }, { k: "montant", l: "Montant", t: "number", d: "15", req: 1 }, { k: "libelle", l: "Libellé", d: "Cotisation", large: 1 }]]] };
     SCHEMAS.factures = { objet: "factures", nom: "facture", sections: DOC("Facture", [{ k: "date_lim_reglement", l: "Date d'échéance", t: "date" }, { k: "fk_account", l: "Compte bancaire", t: "select", dic: "comptes" }]) };
     SCHEMAS.devis = { objet: "devis", nom: "devis", sections: DOC("Devis", [{ k: "duree_validite", l: "Durée de validité (jours)", t: "number", d: "30" }]) };
     SCHEMAS.produits = { objet: "produits", nom: "produit", sections: [
@@ -289,9 +317,11 @@
         else if (nom === "comptes") l = (S.d.banques && S.d.banques.length ? S.d.banques : liste(await lire("/bankaccounts", "limit=100&properties=id,label,clos"))).filter((b) => String(b.clos) !== "1").map((b) => [String(b.id), b.label]);
         else if (nom === "tva") l = Array.from(new Set(liste(await lire("/setup/dictionary/vat", "limit=200&country=1")).map((x) => String(Number(x.taux))))).map((t) => [t, t + " %"]);
         else if (nom === "produits") l = liste(await lire("/products", "limit=200&sortfield=t.ref&sortorder=ASC&properties=id,ref,label,price,tva_tx")).map((x) => [String(x.id), x.ref + " — " + x.label, x]);
+        else if (nom === "civilites") l = liste(await lire("/setup/dictionary/civilities", "limit=100")).map((x) => [String(x.code), x.label]);
+        else if (nom === "modescode") l = liste(await lire("/setup/dictionary/payment_types", "limit=100")).filter((x) => ["VIR", "CHQ", "LIQ", "CB", "PRE"].includes(String(x.code).toUpperCase())).map((x) => [String(x.code).toUpperCase(), x.label || x.libelle]);
         else if (nom === "devises") l = liste(await lire("/setup/dictionary/currencies", "limit=500")).map((x) => [String(x.code_iso), x.code_iso + " — " + x.label]);
       } catch (e) { l = []; }
-      l = nom === "tva" ? l : [["", ""]].concat(l.filter((o) => o[0] !== ""));
+      l = nom === "tva" || nom === "modescode" ? l : [["", ""]].concat(l.filter((o) => o[0] !== ""));
       DICO.cache[cle] = l; return l;
     };
     const COURRIEL = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
@@ -366,12 +396,7 @@
           (String(f.statut) === "0" ? btn("Valider", "valider", f.id, "pri") : "") + (ouverte(f) ? btn("Encaisser", "encaisser", f.id, "pri") + btn("Relancer", "relancer", f.id) : "") + (String(f.statut) !== "0" ? btn("Créer un avoir", "avoir", f.id) : "") + (String(f.statut) !== "0" ? btn("Voir le PDF", "pdf", "factures|" + f.id) : "") + "</div>";
         modale("Facture " + f.ref, corpsF, "Fermer");
       },
-      encaisser: async (p) => {
-        document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
-        const f = (S.d.factures || []).find((x) => String(x.id) === String(p));
-        const ok = await modale("Encaisser · " + f.ref, '<p class="note">Reste dû : ' + eur(f.remaintopay) + '</p><div class="grille2">' + champ("e-mt", "Montant", f.remaintopay, "number", 'step="0.01"') + sel("e-bk", "Compte", banqueOpts(), "") + sel("e-md", "Mode", [["VIR", "Virement"], ["CHQ", "Chèque"], ["LIQ", "Espèces"], ["CB", "Carte"]], "VIR") + champ("e-dt", "Date", AUJ, "date") + "</div>", "Encaisser");
-        if (ok) await fait("dolibarr.encaisser", { id: Number(p), montant: val("e-mt"), banque: Number(val("e-bk")), mode: val("e-md"), date: val("e-dt") }, "Règlement enregistré");
-      },
+      encaisser: async (p) => { const f = (S.d.factures || []).find((x) => String(x.id) === String(p)); if (await formulaire("Règlement · " + f.ref, SCHEMAS.reglement, { montant: f.remaintopay }, async (c) => { await agir("dolibarr.encaisser", { id: Number(p), montant: c.montant, banque: Number(c.banque), mode: c.mode, date: c.date, numero: c.numero || "", note: c.note || "" }); }, "Enregistrer le règlement")) { K.dire("Règlement enregistré"); S.d = {}; await charger(true); } },
       relancer: async (p) => {
         document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
         const f = (S.d.factures || []).find((x) => String(x.id) === String(p));
@@ -383,6 +408,8 @@
       ndevis: async () => { if (await formulaire("Nouveau devis (brouillon)", SCHEMAS.devis, { date: AUJ }, async (c) => { await agir("dolibarr.creer_brouillon", { objet: "devis", socid: Number(c.socid), lignes: c.lines, champs: extras(c) }); }, "Créer le brouillon")) { K.dire("Devis créé"); S.d = {}; await charger(true); } },
       devis: async (p) => { const [id, action] = p.split("|"); if (await modale("Devis : " + action, "<p>Le statut du devis change ; cela se défait (retour en brouillon).</p>", "Faire")) await fait("dolibarr.devis", { id: Number(id), action: action }, "Devis mis à jour"); },
       facturer: async (p) => { if (await modale("Facturer le devis", "<p>Une facture en brouillon est préparée avec les lignes du devis. Rien n’est validé.</p>", "Préparer la facture")) await fait("dolibarr.facturer_devis", { id: Number(p) }, "Facture préparée"); },
+      ncontact: async () => { if (await formulaire("Nouveau contact", SCHEMAS.contacts, {}, async (champs) => { await agir("dolibarr.creer", { objet: "contacts", champs: champs }); }, "Créer")) { K.dire("Contact créé"); S.d = {}; await charger(true); } },
+      contact: async (p) => { let c; try { c = await lire("/contacts/" + p); } catch (e) { K.dire(e.message || String(e), "err"); return; } if (!c || c.id == null) { K.dire("Contact introuvable", "err"); return; } if (await formulaire(((c.firstname || "") + " " + (c.lastname || "")).trim(), SCHEMAS.contacts, c, async (champs) => { await agir("dolibarr.modifier", { objet: "contacts", id: Number(p), champs: champs }); }, "Enregistrer")) { K.dire("Contact enregistré"); S.d = {}; await charger(true); } },
       ntiers: async () => { if (await formulaire("Nouveau tiers", SCHEMAS.tiers, {}, async (champs) => { await agir("dolibarr.creer", { objet: "tiers", champs: champs }); }, "Créer")) { K.dire("Tiers créé"); S.d = {}; await charger(true); } },
       fichedevis: async (p) => {
         document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
@@ -450,10 +477,7 @@
         const p = (S.d.produits || []).find((x) => String(x.id) === String(id));
         if (await modale("Prix de " + p.label, champ("n-p", "Nouveau prix HT", Number(p.price), "number", 'step="0.01"'), "Modifier")) await fait("dolibarr.modifier", { objet: "produits", id: Number(id), champs: { price: Number(val("n-p")), price_base_type: "HT" } }, "Prix modifié");
       },
-      payersup: async (id) => {
-        const f = (S.d.sup || []).find((x) => String(x.id) === String(id));
-        if (await modale("Payer " + f.ref, '<p class="note">Dolibarr règle tout le reste dû : ' + eur(f.total_ttc) + '.</p><div class="grille2">' + sel("p-bk", "Compte", banqueOpts(), "") + sel("p-md", "Mode", [["VIR", "Virement"], ["CHQ", "Chèque"], ["CB", "Carte"], ["LIQ", "Espèces"]], "VIR") + "</div>", "Payer")) await fait("dolibarr.payer_fournisseur", { id: Number(id), banque: Number(val("p-bk")), mode: val("p-md") }, "Facture payée");
-      },
+      payersup: async (id) => { const f = (S.d.sup || []).find((x) => String(x.id) === String(id)); if (await formulaire("Règlement · " + f.ref + " (Dolibarr règle tout le reste dû : " + eur(f.total_ttc) + ")", SCHEMAS.reglementSup, {}, async (c) => { await agir("dolibarr.payer_fournisseur", { id: Number(id), banque: Number(c.banque), mode: c.mode, date: c.date, numero: c.numero || "", note: c.note || "" }); }, "Payer")) { K.dire("Facture payée"); S.d = {}; await charger(true); } },
       savegarde: async () => {
         const off = document.getElementById("g-off").checked, seuil = Number(document.getElementById("g-seuil").value) || 0;
         try { await agir("reglages.regler", { cle: "dolibarr.itare_ecrire", valeur: off ? "desactive" : "libre" }); await agir("reglages.regler", { cle: "dolibarr.itare_seuil", valeur: seuil }); K.dire("Réglages enregistrés"); S.d.rgl = null; await charger(true); } catch (e) { K.dire(e.message || String(e), "err"); }
@@ -478,13 +502,10 @@
         const cadre = document.getElementById("dlb-pdf"); if (cadre) cadre.src = url; fin.then(() => URL.revokeObjectURL(url));
       },
       tiers: async (p) => { let t; try { t = await lire("/thirdparties/" + p); } catch (e) { K.dire(e.message || String(e), "err"); return; } if (!t || t.id == null) { K.dire("Tiers introuvable", "err"); return; } if (await formulaire(t.name, SCHEMAS.tiers, t, async (champs) => { await agir("dolibarr.modifier", { objet: "tiers", id: Number(p), champs: champs }); }, "Enregistrer")) { K.dire("Tiers enregistré"); S.d = {}; await charger(true); } },
-      virement: async () => {
-        const o = banqueOpts(); if (o.length < 2) return K.dire("Il faut deux comptes ouverts", "err");
-        if (await modale("Virement entre comptes", '<div class="grille2">' + sel("v-de", "De", o, o[0][0]) + sel("v-vers", "Vers", o, o[1][0]) + champ("v-mt", "Montant", "100", "number", 'step="0.01"') + champ("v-dt", "Date", AUJ, "date") + "</div>" + champ("v-l", "Libellé", "Virement interne"), "Virer")) await fait("dolibarr.virement_interne", { de: Number(val("v-de")), vers: Number(val("v-vers")), montant: val("v-mt"), date: val("v-dt"), libelle: val("v-l") }, "Virement fait");
-      },
-      ndon: async () => { if (await modale("Nouveau don", champ("n-mt", "Montant", "50", "number", 'step="0.01"') + '<div class="grille2">' + champ("n-nom", "Nom", "") + champ("n-dt", "Date", AUJ, "date") + "</div>", "Saisir la promesse")) await fait("dolibarr.don_creer", { montant: val("n-mt"), nom: val("n-nom"), date: val("n-dt") }, "Promesse saisie"); },
+      virement: async () => { if (banqueOpts().length < 2) return K.dire("Il faut deux comptes ouverts", "err"); if (await formulaire("Virement entre comptes", SCHEMAS.virement, {}, async (c) => { await agir("dolibarr.virement_interne", { de: Number(c.de), vers: Number(c.vers), montant: c.montant, date: c.date, libelle: c.libelle || "" }); }, "Virer")) { K.dire("Virement fait"); S.d = {}; await charger(true); } },
+      ndon: async () => { if (await formulaire("Nouveau don", SCHEMAS.don, {}, async (c) => { const x = Object.assign({}, c), a = { montant: x.montant, date: x.date, nom: x.nom || "", prenom: x.prenom || "", societe: x.societe || "" }; ["montant", "date", "nom", "prenom", "societe"].forEach((k) => delete x[k]); await agir("dolibarr.don_creer", Object.assign(a, { champs: x })); }, "Saisir la promesse")) { K.dire("Promesse saisie"); S.d = {}; await charger(true); } },
       donvalider: async (p) => { if (await modale("Valider le don", "<p>Le don prend son numéro. Dolibarr ne le repasse pas en promesse par l’API.</p>", "Valider")) await fait("dolibarr.don_valider", { id: Number(p) }, "Don validé"); },
-      cotis: async (p) => { if (await modale("Cotisation", '<div class="grille2">' + champ("c-mt", "Montant", "15", "number") + champ("c-d", "Du", AUJ, "date") + "</div>" + champ("c-f", "Au", String(new Date().getFullYear() + 1) + AUJ.slice(4), "date"), "Enregistrer")) await fait("dolibarr.cotisation", { membre: Number(p), montant: val("c-mt"), debut: val("c-d"), fin: val("c-f") }, "Cotisation enregistrée"); },
+      cotis: async (p) => { if (await formulaire("Cotisation", SCHEMAS.cotisation, {}, async (c) => { await agir("dolibarr.cotisation", { membre: Number(p), montant: c.montant, debut: c.debut, fin: c.fin || "", libelle: c.libelle || "" }); }, "Enregistrer")) { K.dire("Cotisation enregistrée"); S.d = {}; await charger(true); } },
       nprojet: async () => { if (await formulaire("Nouveau projet", SCHEMAS.projets, {}, async (champs) => { await agir("dolibarr.creer", { objet: "projets", champs: champs }); }, "Créer")) { K.dire("Projet créé"); S.d = {}; await charger(true); } },
       projet: async (p) => { const [id, action] = p.split("|"); if (await modale("Projet : " + action, "<p>Le statut du projet change ; cela se défait.</p>", "Faire")) await fait("dolibarr.projet", { id: Number(id), action: action }, "Projet mis à jour"); },
       savecle: async () => { const v = val("dlb-cle").trim(); if (!v) return K.dire("Colle d’abord ta clé", "err"); try { await agir("reglages.regler_secret", { cle: "dolibarr.cle_api", valeur: v }); K.dire("Clé enregistrée dans ton coffre"); S.acces = null; await charger(); } catch (e) { K.dire(e.message || String(e), "err"); } },
@@ -514,7 +535,9 @@
       if (!racine.isConnected) { document.removeEventListener("click", clic); return; }
       if (racine.contains(e.target)) { COURANTE.racine = racine; }
       else if (!(e.target.closest(".kit-m") && COURANTE.racine === racine)) return;
-      e.preventDefault(); GESTES[b.dataset.a](b.dataset.p);
+      e.preventDefault();
+      if (e.target.closest(".kit-m")) document.querySelectorAll(".kit-m,.kit-v").forEach((x) => x.remove());      // un geste lancé depuis une fiche la remplace : sinon la fenêtre de confirmation s'empile sur une fiche qui devient périmée
+      GESTES[b.dataset.a](b.dataset.p);
     };
     document.addEventListener("click", clic);
     racine.addEventListener("click", (e) => { const o = e.target.closest("[data-o]"); if (o) { GESTES.onglet(o.dataset.o); return; } const f = e.target.closest("[data-f]"); if (f) { const [k, v] = f.dataset.f.split("|"); S.f[k] = v; dessiner(); } });
