@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e12cef
+# VERSION CN : 0.1.0  #f7fab2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e12cef ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f7fab2 ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import gzip
 import json
@@ -498,6 +498,39 @@ class GestionDolibarr(unittest.TestCase):
         r2 = self.e("dolibarr.creer", "humain", {"objet": "projets", "champs": {"title": "Cabaret"}})
         self.assertEqual(r2["statut"], "faite", msg=str(r2))
         self.assertEqual(self.faux.t["projects"][r2["resultat"]["id"]]["ref"], "auto")
+
+    # --- les fiches de Dolibarr : mêmes champs, mêmes règles
+    def test_la_fiche_tiers_porte_les_champs_de_dolibarr_et_ses_regles(self):
+        complet = {"name": "ASSOCIATION ESSAI", "name_alias": "Essai", "client": "3", "fournisseur": "0", "status": "1", "address": "1 rue X", "zip": "75010", "town": "PARIS", "country_id": "1",
+                   "phone": "0102030405", "phone_mobile": "0601020304", "fax": "", "url": "https://exemple.fr", "email": "essai@exemple.fr", "no_email": "0", "skype": "", "twitter": "@essai",
+                   "idprof1": "899 553 093", "idprof2": "899 553 093 00019", "idprof3": "90.01Z", "idprof6": "W751260323", "tva_assuj": "0", "tva_intra": "", "typent_id": "8", "effectif_id": "1",
+                   "forme_juridique_code": "9220", "capital": "0", "default_lang": "fr_FR", "multicurrency_code": "EUR", "note_public": "n", "note_private": "p"}
+        r = self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": complet})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        recu = self.faux.t["thirdparties"][r["resultat"]["id"]]
+        self.assertEqual((recu["idprof1"], recu["forme_juridique_code"], recu["client"], recu["code_client"]), ("899 553 093", "9220", "3", "auto"))          # tel quel, et le code que Dolibarr numérote
+        for refuse, dit in (({"client": 1}, "name"), ({"name": "X", "email": "pasunmail"}, "email"), ({"name": "X", "url": "exemple.fr"}, "url"), ({"name": "X", "client": "5"}, "client"),
+                            ({"name": "X", "idprof1": "123"}, "SIREN"), ({"name": "X", "idprof2": "123"}, "SIRET"), ({"name": "X", "inconnu": "1"}, "refusé")):
+            self.assertIn(dit, json.dumps(self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": refuse}), ensure_ascii=False), refuse)
+        # hors de France, les identifiants ne sont pas contrôlés comme un SIREN
+        self.assertEqual(self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": {"name": "Belge", "country_id": "2", "idprof1": "0123.456.789"}})["statut"], "faite")
+
+    def test_les_autres_fiches_ont_leurs_champs_et_leurs_obligations(self):
+        for objet, ok, ko in (("contacts", {"lastname": "Fontaine", "civility_code": "MME", "poste": "Régie", "email": "a@b.fr"}, {"firstname": "Léa"}),
+                              ("produits", {"label": "Billet", "type": "1", "price_base_type": "HT", "price": "15", "tva_tx": "0", "barcode": "123"}, {"ref": "X"}),
+                              ("projets", {"title": "Soirée", "usage_opportunity": "0", "budget_amount": "100"}, {"description": "x"})):
+            self.assertNotIn("obligatoire", json.dumps(self.e("dolibarr.creer", "humain", {"objet": objet, "champs": ok}), ensure_ascii=False), objet)
+            self.assertIn("obligatoire", json.dumps(self.e("dolibarr.creer", "humain", {"objet": objet, "champs": ko}), ensure_ascii=False), objet)
+
+    def test_le_refus_de_dolibarr_est_dit_avec_son_message(self):
+        import io, urllib.error
+        import importlib.util as iu
+        sp = iu.spec_from_file_location("dolibarr_mod_msg", RACINE / "modules" / "dolibarr" / "CN_module.py")
+        mod = iu.module_from_spec(sp)
+        sp.loader.exec_module(mod)
+        e = urllib.error.HTTPError("u", 500, "x", {}, io.BytesIO('{"error":{"code":500,"message":"ErrorBadEMail essai"}}'.encode()))
+        self.assertEqual(mod._dit_dolibarr(e), " : ErrorBadEMail essai")
+        self.assertEqual(mod._dit_dolibarr(urllib.error.HTTPError("u", 500, "x", {}, io.BytesIO(b"pas du json"))), "")
 
     def test_un_tiers_supprime_se_recree_avec_son_code(self):
         r = self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": {"name": "À supprimer", "client": 1}})

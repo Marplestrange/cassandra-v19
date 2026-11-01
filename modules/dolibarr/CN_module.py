@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.0  #805e3c
+# VERSION CN : 0.4.0  #803222
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=805e3c ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=803222 ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -59,13 +59,18 @@ _CHAMP = re.compile(r"^[a-z_]{1,40}$")
 
 # Ce qu'on peut ÉCRIRE : par objet, la route, les champs permis (rien d'autre n'est transmis), et comment on le défait.
 ECRIVABLES = {
-    "tiers": {"chemin": "/thirdparties", "champs": {"name", "name_alias", "client", "fournisseur", "email", "phone", "address", "zip", "town",
-                                                       "country_id", "url", "note_private", "note_public", "tva_intra", "status"}},
-    "contacts": {"chemin": "/contacts", "champs": {"socid", "firstname", "lastname", "email", "phone_pro", "phone_mobile", "poste", "address", "zip",
-                                                      "town", "note_private"}},
-    "produits": {"chemin": "/products", "champs": {"ref", "label", "description", "price", "price_base_type", "tva_tx", "type", "status",
-                                                      "status_buy"}},
-    "projets": {"chemin": "/projects", "champs": {"title", "description", "socid", "date_start", "date_end", "public"}},
+    # Les champs de chaque fiche de Dolibarr 24, sous leurs NOMS DE PROPRIÉTÉ (société/card.php, contact/card.php, product/card.php, projet/card.php) : ni plus, ni moins,
+    # pour que ce qu'on écrit se retrouve dans Dolibarr à l'identique. Les libellés, listes et règles de l'écran sont dans interface/CN_dolibarr-schemas.js, tirés des mêmes fiches.
+    "tiers": {"chemin": "/thirdparties", "champs": {"name", "name_alias", "client", "fournisseur", "code_client", "code_fournisseur", "status", "address", "zip", "town", "state_id",
+                                                       "country_id", "phone", "phone_mobile", "fax", "url", "email", "no_email", "skype", "twitter", "facebook", "linkedin",
+                                                       "idprof1", "idprof2", "idprof3", "idprof4", "idprof5", "idprof6", "tva_assuj", "tva_intra", "typent_id", "effectif_id",
+                                                       "forme_juridique_code", "capital", "default_lang", "multicurrency_code", "note_private", "note_public"}},
+    "contacts": {"chemin": "/contacts", "champs": {"socid", "civility_code", "lastname", "firstname", "poste", "address", "zip", "town", "state_id", "country_id", "phone_pro",
+                                                      "phone_perso", "phone_mobile", "fax", "email", "no_email", "priv", "birthday", "default_lang", "statut", "note_public", "note_private"}},
+    "produits": {"chemin": "/products", "champs": {"ref", "label", "description", "type", "status", "status_buy", "price_base_type", "price", "tva_tx", "barcode", "url", "weight",
+                                                       "weight_units", "accountancy_code_sell", "accountancy_code_buy", "note_private"}},
+    "projets": {"chemin": "/projects", "champs": {"ref", "title", "description", "socid", "date_start", "date_end", "public", "status", "usage_opportunity", "opp_status", "opp_percent",
+                                                     "opp_amount", "budget_amount", "usage_task", "usage_bill_time", "note_private", "note_public"}},
 }
 DOCUMENTS = {"factures": "/invoices", "devis": "/proposals", "commandes": "/orders"}     # créés en brouillon, jamais validés ici
 CHAMPS_DOC = {"socid", "date", "note_private", "note_public", "lines"}
@@ -255,6 +260,17 @@ def _garde_societe(conf):
         raise PontErreur("la clé voit la société « %s », pas « %s » : rien n'est écrit" % (nom, conf["societe_attendue"]), genre="mauvaise_societe")
 
 
+def _dit_dolibarr(e):
+    """Ce que Dolibarr répond pour expliquer son refus (« ErrorBadEMail », « ErrorFieldRequired »…), pour que l'écran le dise au lieu d'un « HTTP 500 » muet. Jamais l'en-tête de la requête."""
+    try:
+        corps = json.loads(e.read().decode("utf-8", "replace"))
+        err = corps.get("error") if isinstance(corps, dict) else None
+        msg = (err.get("message") if isinstance(err, dict) else err) or (corps.get("message") if isinstance(corps, dict) else "") or ""
+        return " : " + re.sub(r"\s+", " ", str(msg))[:240] if msg else ""
+    except Exception:
+        return ""
+
+
 # ------------------------------------------------------------------ le client : un GET, rien d'autre
 def appeler(conf, chemin, parametres=None):
     """GET sur l'API. Rend le JSON décodé. Aucune autre méthode n'existe dans ce module."""
@@ -271,7 +287,7 @@ def appeler(conf, chemin, parametres=None):
     except urllib.error.HTTPError as e:
         if e.code in (401, 403):
             raise PontErreur("Dolibarr refuse l'accès (HTTP %d)" % e.code, e.code, "acces_refuse")
-        raise PontErreur("Dolibarr répond HTTP %d" % e.code, e.code)
+        raise PontErreur("Dolibarr répond HTTP %d%s" % (e.code, _dit_dolibarr(e)), e.code)
     except (urllib.error.URLError, OSError) as e:
         raise PontErreur("Dolibarr est injoignable (%s)" % type(getattr(e, "reason", e)).__name__, genre="injoignable")
     if brut[:2] == b"\x1f\x8b":                       # certains serveurs compressent sans qu'on l'ait demandé
@@ -302,7 +318,7 @@ def ecrire(conf, methode, chemin, corps=None):
     except urllib.error.HTTPError as e:
         if e.code in (401, 403):
             raise PontErreur("Dolibarr refuse l'accès (HTTP %d)" % e.code, e.code, "acces_refuse")
-        raise PontErreur("Dolibarr répond HTTP %d" % e.code, e.code)
+        raise PontErreur("Dolibarr répond HTTP %d%s" % (e.code, _dit_dolibarr(e)), e.code)
     except (urllib.error.URLError, OSError) as e:
         raise PontErreur("Dolibarr est injoignable (%s)" % type(getattr(e, "reason", e)).__name__, genre="injoignable")
     if brut[:2] == b"\x1f\x8b":
@@ -386,6 +402,35 @@ def _verifier_champs(champs, permis, ce_quon_fait):
             raise ValueError("champ %r : un texte ou un nombre" % k)
         if isinstance(v, str) and len(v) > 4000:
             raise ValueError("champ %r : 4000 caractères au plus" % k)
+
+
+_COURRIEL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")
+_ENUM = {"client": ("0", "1", "2", "3"), "fournisseur": ("0", "1"), "status": ("0", "1"), "tva_assuj": ("0", "1"), "no_email": ("0", "1"), "type": ("0", "1"), "priv": ("0", "1"),
+         "statut": ("0", "1"), "status_buy": ("0", "1"), "price_base_type": ("HT", "TTC"), "usage_opportunity": ("0", "1"), "usage_task": ("0", "1"), "usage_bill_time": ("0", "1"),
+         "public": ("0", "1")}
+_OBLIGATOIRE = {"tiers": ("name",), "contacts": ("lastname",), "produits": ("label",), "projets": ("title",)}
+
+
+def _regles_dolibarr(objet, champs, creation):
+    """Les règles que la fiche de Dolibarr applique avant d'écrire : champs obligatoires, valeurs permises, courriel et adresse web valides, SIREN (9 chiffres) et SIRET (14) pour un tiers français.
+    Dolibarr les refuse de toute façon ; les dire ICI évite un aller-retour et un « HTTP 500 » muet. Ce qui n'est pas prouvé ici est laissé à Dolibarr, dont le message est rendu tel quel."""
+    if creation:
+        for k in _OBLIGATOIRE.get(objet, ()):
+            if not str(champs.get(k) or "").strip():
+                raise ValueError("%s : obligatoire (comme dans la fiche Dolibarr)" % k)
+    for k, permis in _ENUM.items():
+        if k in champs and str(champs[k]) not in permis and not (champs[k] in (None, "")):
+            raise ValueError("%s : une de ces valeurs : %s" % (k, ", ".join(permis)))
+    if champs.get("email") and not _COURRIEL.match(str(champs["email"]).strip()):
+        raise ValueError("email : adresse invalide (ErrorBadEMail dans Dolibarr)")
+    if champs.get("url") and not re.match(r"^https?://[^\s/]+\.[^\s]{2,}", str(champs["url"]).strip()):
+        raise ValueError("url : adresse web invalide, avec http:// ou https:// (ErrorBadUrl dans Dolibarr)")
+    if objet == "tiers" and str(champs.get("country_id", "1")) == "1":
+        for k, n, nom in (("idprof1", 9, "SIREN"), ("idprof2", 14, "SIRET")):
+            v = re.sub(r"\s", "", str(champs.get(k) or ""))
+            if v and not (v.isdigit() and len(v) == n):
+                raise ValueError("%s (%s) : %d chiffres pour un tiers français" % (k, nom, n))
+    return champs
 
 
 def _champs(objet, champs):
@@ -521,6 +566,7 @@ def brancher(ctx):
         if objet not in ECRIVABLES:
             raise ValueError("objet inconnu : %r (permis : %s)" % (objet, ", ".join(sorted(ECRIVABLES))))
         _verifier_champs(champs, ECRIVABLES[objet]["champs"], objet)
+        _regles_dolibarr(objet, champs, True)
         conf = _conf()
         nouvel = ecrire(conf, "POST", ECRIVABLES[objet]["chemin"], _completer(objet, champs))
         if not isinstance(nouvel, int) and not (isinstance(nouvel, str) and _ID.match(nouvel)):
@@ -533,6 +579,7 @@ def brancher(ctx):
         if not _ID.match(str(id)):
             raise ValueError("id : un nombre")
         _verifier_champs(champs, ECRIVABLES[objet]["champs"], objet)
+        _regles_dolibarr(objet, champs, False)
         conf = _conf()
         courant = _lire_un(conf, ECRIVABLES[objet]["chemin"], id)
         if not isinstance(courant, dict):

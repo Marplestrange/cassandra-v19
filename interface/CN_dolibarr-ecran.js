@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ab4b4b
+// VERSION CN : 0.1.0  #356f8b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ab4b4b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=356f8b ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -27,7 +27,7 @@
     ".dlb .barre2{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.dlb .t{width:100%;border-collapse:collapse;font-size:13px}.dlb .t th{text-align:left;font:600 10.5px 'Inter',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--txt-faint);padding:6px 8px;border-bottom:1px solid var(--line)}" +
     ".dlb .t td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}.dlb .t tr.clk{cursor:pointer}.dlb .t tr.clk:hover td{background:color-mix(in srgb,var(--accent) 7%,transparent)}.dlb .t .num{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}" +
     ".dlb .defil{overflow-x:auto}.dlb .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.dlb .in,.kit-m .in{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:8px 11px;font:500 13px 'Inter',sans-serif;min-width:0;max-width:100%}" +
-    ".kit-m .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.kit-m .grille2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kit-m textarea.in{width:100%;resize:vertical}.dlb .code{background:var(--surface);border:1px dashed var(--line-strong,var(--line));border-radius:10px;padding:10px 12px;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}";
+    ".kit-m .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.kit-m .grille2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kit-m .in{box-sizing:border-box;max-width:100%}.kit-m select.in,.kit-m input.in{width:100%}.kit-m textarea.in{width:100%;resize:vertical}.dlb .code{background:var(--surface);border:1px dashed var(--line-strong,var(--line));border-radius:10px;padding:10px 12px;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}";
 
   const COURANTE = { racine: null };      // la page qui a reçu le dernier clic : à elle les fenêtres qu'elle a ouvertes
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};
@@ -62,7 +62,7 @@
     const liste = (r) => (Array.isArray(r) ? r : []);
     const PAGE = "limit=100&sortfield=t.rowid&sortorder=DESC";
     const CHARGEURS = {
-      tiers: async () => liste(await lire("/thirdparties", PAGE + "&properties=id,name,client,fournisseur,town")),
+      tiers: async () => liste(await lire("/thirdparties", PAGE + "&properties=id,name,name_alias,code_client,code_fournisseur,zip,town,country_code,phone,email,client,fournisseur,status")),
       factures: async () => liste(await lire("/invoices", PAGE + "&properties=id,ref,socid,date,date_lim_reglement,total_ttc,remaintopay,statut,paye,type")),
       devis: async () => liste(await lire("/proposals", PAGE + "&properties=id,ref,socid,date,total_ttc,statut")),
       projets: async () => liste(await lire("/projects", PAGE + "&properties=id,ref,title,statut,date_start,date_end")),
@@ -127,7 +127,7 @@
       },
       tiers() {
         const T = filtrer(S.d.tiers, "tiers");
-        return '<div class="carte">' + barre("tiers", btn("+ Nouveau tiers", "ntiers", "", "pri")) + table(["Nom", "Type", "Ville", "Factures", "Dû"], T.map((t) => { const f = (S.d.factures || []).filter((x) => String(x.socid) === String(t.id)), du = f.filter(ouverte).reduce((s, x) => s + Number(x.remaintopay), 0); return '<tr class="clk" data-a="tiers" data-p="' + t.id + '"><td><b>' + esc(t.name) + "</b></td><td>" + (String(t.client) !== "0" ? pill("client", "ac") : "") + " " + (String(t.fournisseur) === "1" ? pill("fournisseur") : "") + "</td><td>" + esc(t.town || "") + '</td><td class="num">' + f.length + '</td><td class="num">' + (du ? eur(du) : "—") + "</td></tr>"; })) + "</div>";
+        return '<div class="carte">' + barre("tiers", btn("+ Nouveau tiers", "ntiers", "", "pri")) + table(["Nom du tiers", "Alias", "Code client", "Code fournisseur", "Code postal", "Ville", "Pays", "Téléphone", "Courriel", "Prospect / Client", "Fournisseur", "État", "Factures", "Dû"], T.map((t) => { const f = (S.d.factures || []).filter((x) => String(x.socid) === String(t.id)), du = f.filter(ouverte).reduce((s, x) => s + Number(x.remaintopay), 0); return '<tr class="clk" data-a="tiers" data-p="' + t.id + '"><td><b>' + esc(t.name) + "</b></td><td>" + esc(t.name_alias || "") + '</td><td class="num">' + esc(t.code_client || "") + '</td><td class="num">' + esc(t.code_fournisseur || "") + "</td><td>" + esc(t.zip || "") + "</td><td>" + esc(t.town || "") + "</td><td>" + esc(t.country_code || "") + "</td><td>" + esc(t.phone || "") + "</td><td>" + esc(t.email || "") + "</td><td>" + pill((NATURE.find((n) => n[0] === String(t.client)) || [0, "—"])[1], String(t.client) !== "0" ? "ac" : "") + "</td><td>" + (String(t.fournisseur) === "1" ? pill("Oui") : "Non") + "</td><td>" + (String(t.status) === "0" ? pill("Fermé") : pill("Ouvert", "ok")) + '</td><td class="num">' + f.length + '</td><td class="num">' + (du ? eur(du) : "—") + "</td></tr>"; })) + "</div>";
       },
       banque() {
         const B = (S.d.banques || []).filter((b) => String(b.clos) !== "1");
@@ -222,6 +222,94 @@
     const champ = (id, lib, v, t, x) => '<label class="fld">' + lib + '<input class="in" id="' + id + '" type="' + (t || "text") + '" value="' + esc(v == null ? "" : v) + '" ' + (x || "") + "></label>";
     const sel = (id, lib, opts, v) => '<label class="fld">' + lib + '<select class="in" id="' + id + '">' + opts.map((o) => '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(v) ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select></label>";
     const val = (id) => { if (S.v && id in S.v) return S.v[id]; const e = document.getElementById(id); return e ? e.value : ""; };
+    // ───────── les fiches de Dolibarr 24 : mêmes champs, mêmes libellés, même ordre, mêmes règles (société/card.php). Ce qu'on écrit se retrouve dans Dolibarr à l'identique.
+    const NATURE = [["0", "Ni prospect, ni client"], ["1", "Client"], ["2", "Prospect"], ["3", "Prospect / Client"]];
+    const LANGUES = [["", ""], ["fr_FR", "Français (France)"], ["en_US", "Anglais (États-Unis)"], ["en_GB", "Anglais (Royaume-Uni)"], ["es_ES", "Espagnol"], ["de_DE", "Allemand"], ["it_IT", "Italien"], ["pt_PT", "Portugais"], ["nl_NL", "Néerlandais"], ["ar_SA", "Arabe"]];
+    const SCHEMAS = {
+      tiers: { objet: "tiers", chemin: "/thirdparties", nom: "tiers", sections: [
+        ["Tiers", [
+          { k: "name", l: "Nom du tiers", req: 1 }, { k: "name_alias", l: "Alias" },
+          { k: "client", l: "Nature du tiers", t: "select", o: NATURE, d: "1" }, { k: "fournisseur", l: "Fournisseur", t: "select", o: [["0", "Non"], ["1", "Oui"]], d: "0" },
+          { k: "code_client", l: "Code client", ph: "auto", aide: "Laisser « auto » : Dolibarr le numérote." }, { k: "code_fournisseur", l: "Code fournisseur", ph: "auto", aide: "Laisser « auto » : Dolibarr le numérote." },
+          { k: "status", l: "État", t: "select", o: [["1", "Ouvert"], ["0", "Fermé"]], d: "1" }]],
+        ["Coordonnées", [
+          { k: "address", l: "Adresse", t: "area", large: 1 }, { k: "zip", l: "Code postal" }, { k: "town", l: "Ville" },
+          { k: "country_id", l: "Pays", t: "select", dic: "pays", d: "1" }, { k: "state_id", l: "Département / Canton", t: "select", dic: "departements" },
+          { k: "phone", l: "Téléphone" }, { k: "phone_mobile", l: "Téléphone mobile" }, { k: "fax", l: "Fax" }, { k: "url", l: "Web", ph: "https://" }, { k: "email", l: "Courriel", ph: "nom@exemple.fr" },
+          { k: "no_email", l: "Refuser les courriels de masse", t: "select", o: [["0", "Non"], ["1", "Oui"]], d: "0" }]],
+        ["Réseaux sociaux", [{ k: "skype", l: "Skype" }, { k: "twitter", l: "X (Twitter)" }, { k: "facebook", l: "Facebook" }, { k: "linkedin", l: "LinkedIn" }]],
+        ["Identifiants professionnels", [
+          { k: "idprof1", l: "Id. prof. 1 (SIREN)", ph: "9 chiffres" }, { k: "idprof2", l: "Id. prof. 2 (SIRET)", ph: "14 chiffres" }, { k: "idprof3", l: "Id. prof. 3 (NAF-APE)" },
+          { k: "idprof4", l: "Id. prof. 4 (RCS/RM)" }, { k: "idprof5", l: "Id. prof. 5 (numéro EORI)" }, { k: "idprof6", l: "Id. prof. 6 (numéro RNA)" }]],
+        ["TVA", [{ k: "tva_assuj", l: "Assujetti à la TVA", t: "select", o: [["1", "Oui"], ["0", "Non"]], d: "1" }, { k: "tva_intra", l: "Numéro de TVA" }]],
+        ["Société", [
+          { k: "forme_juridique_code", l: "Type d'entité légale", t: "select", dic: "formes" }, { k: "typent_id", l: "Type de tiers", t: "select", dic: "typent" },
+          { k: "effectif_id", l: "Effectifs", t: "select", dic: "effectifs" }, { k: "capital", l: "Capital", t: "number" },
+          { k: "default_lang", l: "Langue par défaut", t: "select", o: LANGUES }, { k: "multicurrency_code", l: "Devise", t: "select", dic: "devises" }]],
+        ["Notes", [{ k: "note_public", l: "Note publique", t: "area", large: 1 }, { k: "note_private", l: "Note privée", t: "area", large: 1 }]]] }
+    };
+    // Les listes de Dolibarr (dictionnaires), lues une fois dans l'instance : [valeur, libellé].
+    const DICO = { cache: {} };
+    const dico = async (nom, pays) => {
+      const cle = nom + "|" + (pays || ""); if (DICO.cache[cle]) return DICO.cache[cle];
+      let l = [];
+      try {
+        if (nom === "pays") l = liste(await lire("/setup/dictionary/countries", "limit=500&sortfield=label&sortorder=ASC")).map((x) => [String(x.id), x.label]);
+        else if (nom === "departements") l = liste(await lire("/setup/dictionary/states", "limit=500&country=" + encodeURIComponent(pays || "1"))).map((x) => [String(x.id), (x.code_departement ? x.code_departement + " " : "") + (x.name || x.nom || "")]);
+        else if (nom === "formes") l = liste(await lire("/setup/dictionary/legal_form", "limit=500&country=" + encodeURIComponent(pays || "1"))).map((x) => [String(x.code), x.libelle]);
+        else if (nom === "typent") l = liste(await lire("/setup/dictionary/thirdparty_types", "limit=100")).map((x) => [String(x.id), x.label]);
+        else if (nom === "effectifs") l = liste(await lire("/setup/dictionary/staff", "limit=100")).map((x) => [String(x.id), x.libelle]);
+        else if (nom === "devises") l = liste(await lire("/setup/dictionary/currencies", "limit=500")).map((x) => [String(x.code_iso), x.code_iso + " — " + x.label]);
+      } catch (e) { l = []; }
+      l = [["", ""]].concat(l.filter((o) => o[0] !== ""));
+      DICO.cache[cle] = l; return l;
+    };
+    const COURRIEL = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
+    // Les règles que la fiche de Dolibarr applique avant d'écrire (les mêmes que le module : modules/dolibarr/CN_module.py, _regles_dolibarr).
+    const regles = (sch, v, creation) => {
+      const e = [];
+      sch.sections.forEach((s) => s[1].forEach((f) => { if (creation && f.req && !String(v[f.k] || "").trim()) e.push(f.l + " : obligatoire"); }));
+      if (v.email && !COURRIEL.test(String(v.email).trim())) e.push("Courriel : adresse invalide");
+      if (v.url && !/^https?:\/\/[^\s/]+\.[^\s]{2,}/.test(String(v.url).trim())) e.push("Web : une adresse avec http:// ou https://");
+      if (sch.objet === "tiers" && String(v.country_id || "1") === "1") [["idprof1", 9, "SIREN"], ["idprof2", 14, "SIRET"]].forEach((x) => { const s = String(v[x[0]] || "").replace(/\s/g, ""); if (s && !(/^\d+$/.test(s) && s.length === x[1])) e.push(x[2] + " : " + x[1] + " chiffres pour un tiers français"); });
+      return e;
+    };
+    const champSchema = (f, v, opts) => {
+      const id = "f-" + f.k, x = v[f.k] != null && v[f.k] !== "" ? v[f.k] : (f.d != null ? f.d : ""), lib = esc(f.l) + (f.req ? " *" : "");
+      const style = f.large ? ' style="grid-column:1/-1"' : "";
+      const aide = f.aide ? '<span class="note" style="font-weight:400">' + esc(f.aide) + "</span>" : "";
+      if (f.t === "area") return '<label class="fld"' + style + ">" + lib + '<textarea class="in" id="' + id + '" rows="3">' + esc(x) + "</textarea></label>";
+      if (f.t === "select") { const o = f.o || (opts && opts[f.dic]) || []; const dej = o.some((y) => String(y[0]) === String(x)); return '<label class="fld"' + style + ">" + lib + '<select class="in" id="' + id + '">' + (dej || x === "" ? "" : '<option value="' + esc(x) + '" selected>' + esc(x) + "</option>") + o.map((y) => '<option value="' + esc(y[0]) + '"' + (String(y[0]) === String(x) ? " selected" : "") + ">" + esc(y[1]) + "</option>").join("") + "</select></label>"; }
+      return '<label class="fld"' + style + ">" + lib + '<input class="in" id="' + id + '" type="' + (f.t || "text") + '" value="' + esc(x) + '"' + (f.ph ? ' placeholder="' + esc(f.ph) + '"' : "") + (f.t === "number" ? ' step="any"' : "") + ">" + aide + "</label>";
+    };
+    // Le formulaire : il reste ouvert tant que la saisie n'est pas valide ou que Dolibarr la refuse, et dit pourquoi (le message de Dolibarr, tel quel).
+    const formulaire = async (titre, sch, valeurs, enregistrer, oui) => {
+      const v = Object.assign({}, valeurs || {}), pays0 = String(v.country_id || "1");
+      const opts = { pays: await dico("pays"), departements: await dico("departements", pays0), formes: await dico("formes", pays0), typent: await dico("typent"), effectifs: await dico("effectifs"), devises: await dico("devises") };
+      return new Promise((fin) => {
+        document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
+        const bg = document.createElement("div"); bg.className = "kit-v"; bg.style.zIndex = 9999;
+        const m = document.createElement("div"); m.className = "kit-m"; m.setAttribute("role", "dialog"); m.setAttribute("aria-modal", "true"); m.setAttribute("aria-label", titre);
+        m.style.cssText = "max-height:88vh;overflow:auto;width:min(860px,94vw)";
+        m.innerHTML = "<h2>" + esc(titre) + "</h2>" + sch.sections.map((s) => '<h3 style="margin:14px 0 6px;font:600 12px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-faint)">' + esc(s[0]) + '</h3><div class="grille2">' + s[1].map((f) => champSchema(f, v, opts)).join("") + "</div>").join("") +
+          '<div class="alerte dg" id="f-err" style="display:none;margin-top:12px"><div class="sp"></div></div><div class="acts"><button class="btn" data-c="non">Annuler</button><button class="btn pri" data-c="oui">' + esc(oui || "Enregistrer") + "</button></div>";
+        const clore = (r) => { bg.remove(); m.remove(); fin(r); };
+        const lit = () => { const o = {}; sch.sections.forEach((s) => s[1].forEach((f) => { const e = m.querySelector("#f-" + f.k); if (e && (String(e.value) !== "" || (valeurs && valeurs.id != null && valeurs[f.k] != null && String(valeurs[f.k]) !== ""))) o[f.k] = e.value; })); return o; };
+        const dire = (t) => { const b = m.querySelector("#f-err"); b.style.display = t ? "" : "none"; b.firstChild.textContent = t || ""; };
+        const remplir = async (id, nom, pays) => { const e = m.querySelector("#f-" + id); if (!e) return; const cur = e.value, o = await dico(nom, pays); e.innerHTML = o.map((y) => '<option value="' + esc(y[0]) + '"' + (String(y[0]) === cur ? " selected" : "") + ">" + esc(y[1]) + "</option>").join(""); };
+        const pays = m.querySelector("#f-country_id"); if (pays) pays.addEventListener("change", () => { remplir("state_id", "departements", pays.value); remplir("forme_juridique_code", "formes", pays.value); });
+        bg.addEventListener("click", () => clore(false)); m.addEventListener("keydown", (e) => { if (e.key === "Escape") clore(false); });
+        m.addEventListener("click", async (e) => {
+          const b = e.target.closest("[data-c]"); if (!b) return;
+          if (b.dataset.c === "non") return clore(false);
+          const saisie = lit(), err = regles(sch, saisie, !valeurs || valeurs.id == null);
+          if (err.length) { dire(err.join(" · ")); return; }
+          b.disabled = true; dire("");
+          try { await enregistrer(saisie); clore(true); } catch (x) { dire(x.message || String(x)); b.disabled = false; }
+        });
+        document.body.appendChild(bg); document.body.appendChild(m); const f = m.querySelector("input,textarea,select"); if (f) f.focus();
+      });
+    };
     const banqueOpts = () => (S.d.banques || []).filter((b) => String(b.clos) !== "1").map((b) => [b.id, b.label]);
     const tiersOpts = () => (S.d.tiers || []).map((t) => [t.id, t.name]);
     const GESTES = {
@@ -260,10 +348,7 @@
       },
       devis: async (p) => { const [id, action] = p.split("|"); if (await modale("Devis : " + action, "<p>Le statut du devis change ; cela se défait (retour en brouillon).</p>", "Faire")) await fait("dolibarr.devis", { id: Number(id), action: action }, "Devis mis à jour"); },
       facturer: async (p) => { if (await modale("Facturer le devis", "<p>Une facture en brouillon est préparée avec les lignes du devis. Rien n’est validé.</p>", "Préparer la facture")) await fait("dolibarr.facturer_devis", { id: Number(p) }, "Facture préparée"); },
-      ntiers: async () => {
-        const ok = await modale("Nouveau tiers", champ("n-n", "Nom", "") + '<div class="grille2">' + champ("n-v", "Ville", "") + sel("n-ty", "Type", [["cli", "Client"], ["fou", "Fournisseur"], ["les2", "Les deux"]], "cli") + "</div>", "Créer");
-        if (ok && !val("n-n")) K.dire("Le nom du tiers est obligatoire", "err"); else if (ok) { const t = val("n-ty"); await fait("dolibarr.creer", { objet: "tiers", champs: { name: val("n-n"), town: val("n-v"), client: t !== "fou" ? 1 : 0, fournisseur: t !== "cli" ? 1 : 0 } }, "Tiers créé"); }
-      },
+      ntiers: async () => { if (await formulaire("Nouveau tiers", SCHEMAS.tiers, {}, async (champs) => { await agir("dolibarr.creer", { objet: "tiers", champs: champs }); }, "Créer")) { K.dire("Tiers créé"); S.d = {}; await charger(true); } },
       fichedevis: async (p) => {
         document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
         const d = (S.d.devis || []).find((x) => String(x.id) === String(p)); if (!d) return;
@@ -359,7 +444,7 @@
         const fin = modale("PDF · " + r.nom, '<iframe id="dlb-pdf" title="' + esc(r.nom) + '" style="width:100%;height:70vh;border:0;border-radius:8px;background:#fff"></iframe><div class="note">' + esc(r.ref) + " · " + Math.round(r.taille / 1024) + " Ko · produit par Dolibarr</div>", "Fermer");
         const cadre = document.getElementById("dlb-pdf"); if (cadre) cadre.src = url; fin.then(() => URL.revokeObjectURL(url));
       },
-      tiers: async (p) => { const t = (S.d.tiers || []).find((x) => String(x.id) === String(p)); const f = (S.d.factures || []).filter((x) => String(x.socid) === String(p)); modale(t.name, '<div class="note">' + f.length + " factures · dû " + eur(f.filter(ouverte).reduce((s, x) => s + Number(x.remaintopay), 0)) + "</div>" + f.slice(0, 8).map((x) => '<div class="li"><div class="sp mono">' + esc(x.ref) + '</div><div class="note">' + eur(x.total_ttc) + "</div>" + etatF(x) + "</div>").join(""), "Fermer"); },
+      tiers: async (p) => { let t; try { t = await lire("/thirdparties/" + p); } catch (e) { K.dire(e.message || String(e), "err"); return; } if (!t || t.id == null) { K.dire("Tiers introuvable", "err"); return; } if (await formulaire(t.name, SCHEMAS.tiers, t, async (champs) => { await agir("dolibarr.modifier", { objet: "tiers", id: Number(p), champs: champs }); }, "Enregistrer")) { K.dire("Tiers enregistré"); S.d = {}; await charger(true); } },
       virement: async () => {
         const o = banqueOpts(); if (o.length < 2) return K.dire("Il faut deux comptes ouverts", "err");
         if (await modale("Virement entre comptes", '<div class="grille2">' + sel("v-de", "De", o, o[0][0]) + sel("v-vers", "Vers", o, o[1][0]) + champ("v-mt", "Montant", "100", "number", 'step="0.01"') + champ("v-dt", "Date", AUJ, "date") + "</div>" + champ("v-l", "Libellé", "Virement interne"), "Virer")) await fait("dolibarr.virement_interne", { de: Number(val("v-de")), vers: Number(val("v-vers")), montant: val("v-mt"), date: val("v-dt"), libelle: val("v-l") }, "Virement fait");
