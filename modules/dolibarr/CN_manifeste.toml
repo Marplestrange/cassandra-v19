@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #2af7bd
+# VERSION CN : 0.4.1  #218874
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=2af7bd ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=218874 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -496,6 +496,12 @@ preuve = "relire le projet : le statut voulu"
 retour = "remettre le statut d'avant"
 paliers = ["raconter", "auto"]
 qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "lire_ecran"
+libelle = "Lire ce que l'écran Dolibarr affiche : listes, fiches et dictionnaires (tiers, contacts, factures, devis, produits, banque, dons, adhérents, projets), sans les utilisateurs ni la configuration"
+risque = "lecture"
+droit = "consulter"
 
 [[capacites]]
 id = "lire_libre"

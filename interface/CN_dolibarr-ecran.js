@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #7cce08
+// VERSION CN : 0.1.0  #2b6f44
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
-// MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
+// MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_ecran (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=7cce08 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=2b6f44 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -243,7 +243,7 @@
     d_libre: "libre" };
     const S = { v: {}, onglet: PAGES[String((ctx && ctx.ecran) || "").split(":")[1]] || "afaire", d: {}, q: {}, f: { factures: "ouvertes" }, err: "", occupe: false, acces: null, libre: "", libreRep: null };
 
-    async function lire(chemin, params) { return (await agir("dolibarr.lire_libre", { chemin: chemin, parametres: params || "" })).reponse || []; }
+    async function lire(chemin, params) { return (await agir("dolibarr.lire_ecran", { chemin: chemin, parametres: params || "" })).reponse || []; }
     const liste = (r) => (Array.isArray(r) ? r : []);
     const PAGE = "limit=100&sortfield=t.rowid&sortorder=DESC";
     const CHARGEURS = {
@@ -630,7 +630,7 @@
       fichedevis: async (p) => {
         document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
         const d = (S.d.devis || []).find((x) => String(x.id) === String(p)); if (!d) return;
-        let full = {}; try { full = (await agir("dolibarr.lire_libre", { chemin: "/proposals/" + p })).reponse || {}; } catch (e) { K.dire(e.message || String(e), "err"); }
+        let full = {}; try { full = (await agir("dolibarr.lire_ecran", { chemin: "/proposals/" + p })).reponse || {}; } catch (e) { K.dire(e.message || String(e), "err"); }
         const L = ["Brouillon", "Ouvert", "Signé", "Refusé", "Facturé"], s = String(d.statut), nb = (n) => Number(n || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const lignes = (full.lines || []).map((l) => "<tr><td>" + esc(String(l.desc || l.description || l.product_label || "").replace(/<br\s*\/?>/gi, " ").replace(/\s+/g, " ").trim()) + '</td><td class="num">' + nb(l.qty) + '</td><td class="num">' + nb(l.subprice) + '</td><td class="num">' + nb(l.tva_tx) + ' %</td><td class="num">' + nb(l.total_ttc) + " €</td></tr>");
         const gestes = s === "0" ? btn("Valider", "devis", d.id + "|valider", "pri") : s === "1" ? btn("Marquer signé", "devis", d.id + "|signer", "pri") + btn("Refusé", "devis", d.id + "|refuser") : s === "2" ? btn("Facturer", "facturer", d.id, "pri") : "";
@@ -679,7 +679,7 @@
       lignesb: async (id) => {
         document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
         const b = (S.d.banques || []).find((x) => String(x.id) === String(id)); let L;
-        try { L = liste((await agir("dolibarr.lire_libre", { chemin: "/bankaccounts/" + id + "/lines", parametres: "limit=100&sortfield=rowid&sortorder=DESC" })).reponse); } catch (e) { return K.dire(e.message || String(e), "err"); }
+        try { L = liste((await agir("dolibarr.lire_ecran", { chemin: "/bankaccounts/" + id + "/lines", parametres: "limit=100&sortfield=rowid&sortorder=DESC" })).reponse); } catch (e) { return K.dire(e.message || String(e), "err"); }
         L.sort((x, y) => Number(y.dateo) - Number(x.dateo) || Number(y.id) - Number(x.id));
         L = L.slice(0, 300);
         const nonR = L.filter((l) => String(l.rappro) !== "1" && l.fk_type !== "SOLD").length;

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #c18bfe
+// VERSION CN : 0.1.0  #76c923
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=c18bfe ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=76c923 ▼▼▼
 // Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 (function () {
   "use strict";
@@ -93,7 +93,7 @@
     if (nc) alertes.push(["Entrées en double à arbitrer : " + nc, "controle", "Arbitrer"]);
     if (ne) alertes.push(["Courriels en échec : " + ne, "argent", "Voir"]);
     R.innerHTML = S.entetes("Vue d’ensemble", "L’essentiel de tes événements, de tes ventes et de ce qui attend une décision.", '<button class="btn pri" data-a="nouvel-evt">+ Nouvel événement</button>') +
-      '<div class="stats">' + tuile(evts.length, "événements à venir", "", "evenements") + tuile(vendus, "billets vendus", "", "ventes") + tuile(eur(ca), "encaissé", "", "ventes") + tuile(nr, "retraits à traiter", nr ? "al" : "", "argent") + tuile(((att && att.attente) || []).length, "en liste d’attente", "") + "</div>" +
+      '<div class="stats">' + tuile(evts.length, "événements à venir", "", "evenements") + (S.peut("ventes") ? tuile(vendus, "billets vendus", "", "ventes") + tuile(eur(ca), "encaissé", "", "ventes") : "") + (S.peut("argent") ? tuile(nr, "retraits à traiter", nr ? "al" : "", "argent") : "") + tuile(((att && att.attente) || []).length, "en liste d’attente", "") + "</div>" +
       (alertes.length ? alertes.map((a) => '<div class="alerte"><span class="sp">' + esc(a[0]) + '</span><button class="btn sm" data-a="va" data-c="' + a[1] + '">' + a[2] + "</button></div>").join("") : "") +
       (S.erreur ? '<div class="carte" style="color:var(--danger)">' + esc(S.erreur) + "</div>" : "") +
       (cartes.length ? '<div class="grille">' + cartes.join("") + "</div>" : '<div class="carte vide">Aucun événement à venir. Crée le premier : une date, une salle, un nombre de places, un prix.</div>');

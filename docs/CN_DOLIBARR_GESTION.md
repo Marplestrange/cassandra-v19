@@ -12,7 +12,7 @@
 <!-- RÔLE       : Dolibarr, la gestion complète : ce que le module sait faire, la clé d'API par compte, le compte de mandat, les paliers -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=9266c9 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=bb164d ▼▼▼ -->
 # Dolibarr : la gestion complète
 
 Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il écrit, et tout geste a sa **preuve** (relire ce qui a été écrit) et son **retour arrière**.
@@ -64,13 +64,13 @@ Par défaut une fiche de Cassandra reste « Cassandra seulement ». `envoyer_pro
 Tout le monde ne doit pas pouvoir tout faire dans Dolibarr. Le module déclare des droits que l'administrateur accorde (à un compte ou à un groupe) ; les administrateurs les ont tous. Chaque capacité demande l'un d'eux : **le serveur refuse le reste**, et l'écran grise les boutons que le compte ne peut pas utiliser (avec « il te manque le droit … » en infobulle).
 | Droit | Ce qu'il ouvre | Par défaut |
 |---|---|---|
-| `consulter` | lire tiers, factures, devis, dons, adhérents, projets, banque, PDF | oui |
+| `consulter` | lire tiers, factures, devis, dons, adhérents, projets, banque, PDF ; l'écran lit par `lire_ecran`, borné à ce qu'il affiche (pas les utilisateurs ni la configuration de Dolibarr) | oui |
 | `facturer` | brouillons de devis et factures, avoirs, relances, encaisser un règlement, produire un PDF | non |
 | `valider` (sensible) | numéro légal d'une facture (irréversible), valider un don, valider ou clore un projet | non |
 | `tiers` | créer, modifier, restaurer tiers, contacts, produits, projets ; les envoyer à Dolibarr ou les en détacher | non |
 | `dons` | saisir un don, enregistrer une cotisation | non |
 | `tresorerie` (sensible) | virements entre comptes, paiement des factures fournisseurs | non |
-| `libre` (sensible) | requête libre sur l'API | non |
+| `libre` (sensible) | requête libre sur l'API, en lecture (`lire_libre`, tous les domaines) comme en écriture | non |
 | `administrer` (sensible) | supprimer, lire la base (en plus : superadministrateur), réglages, pont de la billetterie | non |
 
 Les droits de Cassandra et ceux de la clé Dolibarr du compte s'ajoutent : il faut le droit ici ET que Dolibarr accepte la clé. Sans le droit `tiers`, la fiche d'un tiers ou d'un contact s'ouvre en lecture seule.

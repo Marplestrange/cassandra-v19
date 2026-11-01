@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #d1141c
+# VERSION CN : 0.4.1  #5e7269
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=d1141c ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=5e7269 ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -107,6 +107,7 @@ DOMAINES = ("accountancy", "agendaevents", "bankaccounts", "categories", "contac
             "objectlinks", "orders", "paiements", "partnerships", "productlots", "products", "projects", "proposals", "recruitments", "salaries",
             "setup", "shipments", "status", "stockmovements", "subscriptions", "supplierinvoices", "supplierorders", "supplierproposals", "tasks",
             "thirdparties", "tickets", "users", "warehouses")
+DOMAINES_ECRAN = ("bankaccounts", "contacts", "donations", "invoices", "members", "products", "projects", "proposals", "setup", "supplierinvoices", "thirdparties")     # ce que l'écran affiche : la lecture « consulter » n'atteint rien d'autre
 _CHEMIN_LIBRE = re.compile(r"^/[a-z]{3,30}(/[A-Za-z0-9_.@-]{1,60}){0,4}$")
 _REQUETE = re.compile(r"^[A-Za-z0-9_.,=&%+:*()\[\]-]{0,400}$")
 _SECRET = re.compile(r"(pass|api_key|apikey|token|secret|signature|private_key|cle_)", re.I)
@@ -1413,6 +1414,17 @@ def brancher(ctx):
         return chemin
 
     def lire_libre(ctx, chemin, parametres=""):
+        return _lire_chemin(chemin, parametres)
+
+    def lire_ecran(ctx, chemin, parametres=""):
+        """Ce que l'ÉCRAN lit (listes, fiches, dictionnaires) : les mêmes lectures que la requête libre, mais bornées aux domaines que l'écran affiche. Un compte qui ne peut que consulter n'atteint ni les utilisateurs ni la configuration de Dolibarr."""
+        chemin = _chemin_libre(chemin)
+        dom = chemin.split("/")[1]
+        if dom not in DOMAINES_ECRAN or (dom == "setup" and not chemin.startswith("/setup/dictionary/")):
+            raise PermissionError("cette lecture demande le droit « requête libre » (dolibarr.libre) : l'écran ne lit que ses listes, ses fiches et ses dictionnaires")
+        return _lire_chemin(chemin, parametres)
+
+    def _lire_chemin(chemin, parametres):
         chemin = _chemin_libre(chemin)
         if not _REQUETE.match(str(parametres or "")):
             raise ValueError("parametres : une chaîne de requête simple (limit=5&page=0)")
@@ -1747,6 +1759,7 @@ def brancher(ctx):
                     simuler=lambda ctx, de="", vers="", montant="", **_: "virerait %s € du compte %s au compte %s" % (montant, de, vers))
     ctx.implementer("projet", projet, prouver_projet, defaire_projet, simuler=lambda ctx, id="", action="", **_: "ferait « %s » sur le projet %s" % (action, id))
     ctx.implementer("lire_libre", lire_libre)
+    ctx.implementer("lire_ecran", lire_ecran)
     ctx.implementer("ecrire_libre", ecrire_libre, prouver_libre, defaire_libre, simuler=lambda ctx, methode="", chemin="", **_: "ferait %s %s" % (methode, chemin))
 
     ctx.moteur("releve", releve)

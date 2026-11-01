@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5af4ef
+# VERSION CN : 0.1.0  #957bba
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5af4ef ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=957bba ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import gzip
 import json
@@ -684,6 +684,19 @@ class GestionDolibarr(unittest.TestCase):
         self.n.droits.regler("compte", "paul@x.fr", "dolibarr.administrer", "accorde")
         self._base()
         self.assertEqual(self.e("dolibarr.base_etat", "humain", {}, compte="paul@x.fr")["statut"], "echec")
+
+    def test_consulter_suffit_a_l_ecran_mais_pas_a_la_requete_libre(self):
+        self.n.identite.creer("chef@x.fr", "Abcdefgh1!", superadmin=True)
+        self.n.identite.creer("paul@x.fr", "Abcdefgh1!")
+        i = self.facture()
+        pour = lambda cap, args: self.e("dolibarr." + cap, "humain", args, compte="paul@x.fr")
+        self.assertEqual(pour("lire_ecran", {"chemin": "/invoices/%d" % i})["statut"], "faite")        # l'écran lit ses fiches
+        self.assertEqual(pour("lire_ecran", {"chemin": "/setup/dictionary/countries"})["statut"], "faite")
+        self.assertNotEqual(pour("lire_ecran", {"chemin": "/users"})["statut"], "faite")                # pas les utilisateurs de Dolibarr
+        self.assertNotEqual(pour("lire_ecran", {"chemin": "/setup/modules"})["statut"], "faite")        # ni sa configuration
+        r = pour("lire_libre", {"chemin": "/users"})
+        self.assertEqual(r["statut"], "refuse")                                                          # la requête libre reste un droit à part
+        self.assertIn("dolibarr.libre", r["raison"])
 
     def test_mes_droits_a_moi_ne_rend_que_ceux_du_compte_qui_demande(self):
         self.n.identite.creer("chef@x.fr", "Abcdefgh1!", superadmin=True)
