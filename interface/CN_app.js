@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #1baf24
+// VERSION CN : 0.1.0  #686712
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=1baf24 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=686712 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -34997,6 +34997,7 @@ async function startApp(){
 let _ws = null;
 let _wsReconnectDelay = 1000;
 let _wsFallbackTimer  = null;
+let _wsOuvert = false, _wsEchecs = 0;       // la passerelle V19 ne sert pas /ws : sans une seule connexion réussie, on abandonne après 3 essais
 
 function _initWebSocket(){
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -35005,7 +35006,7 @@ function _initWebSocket(){
         _ws = new WebSocket(url);
         _ws.onopen = () => {
             console.log('[WS] Connecté — polling désactivé');
-            _wsReconnectDelay = 1000;
+            _wsReconnectDelay = 1000; _wsOuvert = true; _wsEchecs = 0;
             // Annuler le fallback polling si actif
             if(_wsFallbackTimer){ clearInterval(_wsFallbackTimer); _wsFallbackTimer = null; }
             // Indicateur visuel (titre)
@@ -35040,12 +35041,16 @@ function _initWebSocket(){
         };
         _ws.onerror = () => {};
         _ws.onclose = () => {
-            _titreMaj('Cassandra (reconnexion...)');
-            console.log(`[WS] Déconnecté — retry dans ${_wsReconnectDelay}ms`);
-            // Fallback polling pendant la reconnexion
+            _wsEchecs++;
+            const _abandon = !_wsOuvert && _wsEchecs >= 3;
+            if(!_abandon) _titreMaj('Cassandra (reconnexion...)'); else _titreMaj('Cassandra');
+            console.log(_abandon ? '[WS] Aucun flux push disponible — lecture par interrogation' : `[WS] Déconnecté — retry dans ${_wsReconnectDelay}ms`);
+            // Fallback polling pendant la reconnexion (plus lent quand le flux push n'existe pas)
+            if(_abandon && _wsFallbackTimer){ clearInterval(_wsFallbackTimer); _wsFallbackTimer = null; }
             if(!_wsFallbackTimer){
-                _wsFallbackTimer = setInterval(()=>{ loadMetrics(); loadProcesses(); }, 3000);
+                _wsFallbackTimer = setInterval(()=>{ loadMetrics(); loadProcesses(); }, _abandon ? 15000 : 3000);
             }
+            if(_abandon) return;
             setTimeout(_initWebSocket, _wsReconnectDelay);
             _wsReconnectDelay = Math.min(_wsReconnectDelay * 2, 30000);
         };
