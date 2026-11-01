@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f98188
+# VERSION CN : 0.1.0  #64b03a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f98188 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=64b03a ▼▼▼
 """L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 
 Le contrat de souveraineté tient ici, en un seul endroit :
@@ -38,7 +38,7 @@ log = logging.getLogger("noyau.CN_executeur")
 
 
 class Executeur:
-    def __init__(self, catalogue, bus, crise, droits=None, identite=None, exiger_compte=False, freins=None):
+    def __init__(self, catalogue, bus, crise, droits=None, identite=None, exiger_compte=False, freins=None, prudence=None):
         self.identite = identite
         self.exiger_compte = exiger_compte   # vrai en service : un acte SANS compte, ou au nom d'un compte inconnu, est refusé ET surveillé
         self.droits = droits          # le service des droits (noyau/CN_droits.py) ; None : aucun droit n'est vérifié
@@ -46,6 +46,7 @@ class Executeur:
         self.bus = bus
         self.crise = crise            # appelable : True quand le noyau est en crise (seule la lecture passe)
         self.freins = freins          # appelable : l'ensemble des freins posés (« gel » : les agents n'écrivent plus ; « envois » : plus rien ne sort de la maison)
+        self.prudence = prudence      # appelable (module, capacité, compte) : vrai si CE compte veut que ses agents « racontent » cette capacité au lieu de la faire seuls
         self.contextes = {}           # module -> Contexte
 
     @staticmethod
@@ -139,6 +140,8 @@ class Executeur:
                 return {"statut": "simulee", "simulation": sim, "evenement": demande}
 
             palier = self.catalogue.savoir(cle)["palier"]
+            if acteur != "humain" and palier != "raconter" and compte and self.prudence is not None and self.prudence(e.module, cle.split(".", 1)[-1], compte):
+                palier = "raconter"             # le compte est plus prudent que le palier : jamais plus large, seulement plus strict
             if acteur != "humain" and palier == "raconter":
                 self._evt("capacite.racontee", e, acteur, demande, {"palier": palier, "args": self._masquer(args, c.masque)}, compte)
                 return {"statut": "racontee", "evenement": demande}

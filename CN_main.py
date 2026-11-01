@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d2ed73
+# VERSION CN : 0.1.0  #2704ea
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d2ed73 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2704ea ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -113,7 +113,7 @@ class Noyau:
         self._files_async, self._fils_async, self._verrou_async = {}, {}, threading.Lock()      # les moteurs asynchrones sur événement : leur file, leur fil
         self._stop_async = False   # posé par `arreter` : les moteurs asynchrones s'arrêtent proprement
         self.passerelle = None     # l'API HTTP, posée par `demarrer`
-        self.executeur = Executeur(self.catalogue, self.bus, self.en_crise, self.droits, self.identite, exiger_compte, freins=self.freins)
+        self.executeur = Executeur(self.catalogue, self.bus, self.en_crise, self.droits, self.identite, exiger_compte, freins=self.freins, prudence=self._prudence)
         self.detecteurs = []       # (module, Detecteur, fonction)
         self._derniere = {}        # (module, detecteur) -> dernier passage
         self._pannes = {}          # (module, detecteur) -> pannes de suite
@@ -798,6 +798,16 @@ class Noyau:
     def crise(self, active: bool, raison: str = "", acteur: str = "cassandra") -> None:
         self.base.ecrire("INSERT INTO etat_noyau(cle, valeur) VALUES ('crise', ?) ON CONFLICT(cle) DO UPDATE SET valeur=excluded.valeur", ("1" if active else "0",))
         self.bus.emettre("noyau.crise" if active else "noyau.crise_levee", source="noyau", acteur=acteur, donnees={"raison": raison})
+
+    def _prudence(self, module: str, capacite: str, compte: str) -> bool:
+        """Les capacités qu'un COMPTE veut voir « racontées » (jamais faites seules) par ses agents : son réglage « <module>.prudence », une liste d'identifiants séparés par des
+        virgules, ou « * » pour toutes. C'est plus strict que le palier, jamais plus large : un compte ne peut pas donner à ses agents ce que l'administrateur leur refuse."""
+        try:
+            v = self.reglages.valeur("%s.prudence" % module, compte)
+        except Exception:                 # le module ne déclare pas ce réglage : aucune prudence demandée
+            return False
+        choisies = {x.strip() for x in str(v or "").split(",") if x.strip()}
+        return "*" in choisies or capacite in choisies
 
     # ---------- les freins : deux gestes d'urgence plus fins que la crise ----------
     FREINS = ("gel", "envois")
