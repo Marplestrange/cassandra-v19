@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #0b06a9
+// VERSION CN : 0.1.0  #13cffc
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=0b06a9 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=13cffc ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -45,6 +45,15 @@
     epreuvesResultats: (modele) => A("epreuves_resultats", { modele: modele || "" }),
     sentinelle: () => A("sentinelle_etat"),
     registre: () => K.agir("modeles.lister", {}),
+    regles: () => A("regles"),
+    reglesRegler: (a) => A("regles_regler", a),
+    passations: () => A("passations", { limite: 30 }),
+    taches: () => A("taches"),
+    tacheConfier: (a) => A("tache_confier", a),
+    tacheRetirer: (id) => A("tache_retirer", { id: id }),
+    tacheLancer: (id) => A("tache_lancer", { id: id }),
+    retenus: (jours) => A("retenus_refuses", { jours: jours || 1 }),
+    rapport: () => A("rapport_matin", {}),
     defaire: (acte, raison) => A("defaire", { acte: acte, raison: raison || "" }),
     auditer: (jours) => A("auditer", { jours: jours || 7 }),
     journal: (acteur, n) => K.agir("journal.flux", { acteur: acteur || "", limit: n || 60, bruit: false }),
@@ -57,8 +66,10 @@
   const manque = (e) => /inconnu|introuvable|n'existe pas|not found|404|capacit/i.test(String((e && e.message) || e));
 
   const COUL = { cassandra: "#0b7c74", itare: "#6d3fd1", amizo: "#1d6fb8", relecteur: "#b45309", vision: "#be185d", auditeur: "#5b6b8c" };
-  const NIVEAUX = [["observer", "Observer", "Elle constate et raconte ce qu'elle ferait. Rien n'est touché."], ["entretien", "Entretien", "Elle fait le petit et le sûr : lectures, rangement, ce qui se défait."], ["reine", "Reine", "Elle conduit seule dans ses paliers ; chaque geste garde sa preuve et son retour."]];
+  const NIVEAUX = [["observer", "Observer", "Elle constate et raconte ce qu'elle ferait. Rien n'est touché."], ["entretien", "Entretien", "Elle fait le petit et le sûr : lectures, rangement, ce qui se défait."], ["reine", "Pleine autonomie", "Elle conduit seule dans ses paliers ; chaque geste garde sa preuve et son retour."]];
   const ACTIONS = [["secours", "bascule sur le modèle de secours"], ["arret", "arrête les agents (sauf Cassandra) et te prévient"], ["accord", "demande ton accord"]];
+  const VOC = { palier: "Palier", outils: { auto: "Automatique", raconter: "À raconter", retire: "Retiré" } };      // les libellés viennent d'agents.regles().vocabulaire ; les codes ne changent pas
+  const appliquerVoc = (r) => { const v = (r && r.vocabulaire) || {}; if (v.palier_agent) VOC.palier = v.palier_agent; if (v.niveaux) NIVEAUX.forEach((n) => { if (v.niveaux[n[0]]) n[1] = v.niveaux[n[0]]; }); if (v.paliers_outil) Object.assign(VOC.outils, v.paliers_outil); };
   const RISQUES = ["lecture", "faible", "moyen", "élevé"];
   const REGLES = [
     ["Aucun outil de secret pour Itare, Amizo, ni les services", "Seule Cassandra gère le Coffre. La valeur d'un secret n'entre jamais dans le contexte d'un modèle."],
@@ -125,14 +136,45 @@
       const n = a.outils || {}; const pc = a.plafond_atteint;
       return '<button class="carte clic" data-agent="' + esc(a.id) + '"><div class="ag-tete">' + av(a) + '<div><h3>' + esc(a.nom) + '</h3><div class="note">' + esc(a.role) + "</div></div></div>" +
         '<div class="ag-puces">' + pill((n.auto || 0) + " en auto", "ok") + pill((n.raconter || 0) + " racontés", "al") + (n.retire ? pill(n.retire + " retirés") : "") + pill((n.lecture || 0) + " lectures") + "</div>" +
-        '<div class="ag-ligne"><span class="g">Niveau</span><b>' + esc((NIVEAUX.find((x) => x[0] === a.niveau) || [0, a.niveau])[1]) + "</b></div>" +
+        '<div class="ag-ligne"><span class="g">' + esc(VOC.palier) + '</span><b>' + esc((NIVEAUX.find((x) => x[0] === a.niveau) || [0, a.niveau])[1]) + "</b></div>" +
         '<div class="ag-ligne"><span class="g">Modèle</span><b>' + esc(a.modele || "par défaut") + "</b></div>" +
         '<div class="ag-ligne"><span class="g">Aujourd\'hui</span><b>' + (a.cout_jour && a.cout_jour.euros ? eur(a.cout_jour.euros) : "gratuit") + ' <span class="note">· ' + ((a.cout_jour || {}).appels || 0) + " appels</span></b></div>" +
         (pc ? pill("plafond atteint", "dg", "warn") : "") + "</button>";
     }
+    const nomAg = (id) => ((S.eq.equipe || []).find((a) => a.id === id) || {}).nom || id;
+    async function carteRapport() {
+      let r; try { r = await API.rapport(); } catch (e) { return nonBranche("Le rapport du matin", String((e && e.message) || e)); }
+      const long = !!S.rapLong;
+      const corps = (r.agents || []).map((a) => { const p = a.phrases || [], aff = long ? p : p.slice(0, 3);
+        return '<div class="li"><div class="sp"><b>' + esc(a.nom) + "</b>" + (aff.length ? aff.map((x) => '<div class="note">' + esc(x.phrase) + (x.journal ? ' <span class="mono">· ligne ' + esc(x.journal) + "</span>" : "") + "</div>").join("") : '<div class="note">Rien à signaler.</div>') + "</div></div>"; }).join("");
+      return '<section class="carte"><div class="barre"><h3 style="flex:1">Le rapport du matin</h3><div class="seg" role="group" aria-label="Longueur du rapport"><button data-rap="court" class="' + (long ? "" : "on") + '">En bref</button><button data-rap="long" class="' + (long ? "on" : "") + '">Détaillé</button></div></div><div class="liste">' + corps + "</div>" +
+        '<p class="note">Chaque matin, chaque agent écrit ce qu\'il a fait, ce qu\'il a refusé et ce qui reste — tiré du journal, jamais inventé : chaque phrase renvoie à une ligne du journal.</p></section>';
+    }
+    async function cartePassations() {
+      let r; try { r = await API.passations(); } catch (e) { return nonBranche("Passations", String((e && e.message) || e)); }
+      const l = r.passations || [];
+      return '<section class="carte"><h3>Passations : qui demande quoi à qui</h3>' + (l.length ? '<div class="liste">' + l.map((p) => '<div class="li"><div class="sp"><b>' + esc(nomAg(p.de)) + " → " + esc(nomAg(p.vers)) + '</b><div class="note">' + esc(p.demande || "") + " · " + esc(p.etat || "") + " · " + esc(dateFr(p.cree)) + "</div></div></div>").join("") + "</div>" : '<p class="note">Aucune passation pour le moment.</p>') +
+        '<p class="note">Itare tient le bureau, Cassandra la machine, Amizo la connaissance : quand l\'un n\'a pas l\'outil, il le dit et passe la main. La passation est visible au lieu d\'être un secret entre agents. Tout ce qui vient du dehors passe par Amizo, qui n\'a aucun outil qui sort.</p></section>';
+    }
+    const FREQ = { horaire: "toutes les heures", quotidien: "chaque jour", hebdomadaire: "chaque semaine" };
+    async function carteTaches() {
+      let r; try { r = await API.taches(); } catch (e) { return nonBranche("Tâches récurrentes", String((e && e.message) || e)); }
+      const l = r.taches || [], F = S.tForm;
+      const choix = (S.eq.equipe || []).filter((a) => a.genre === "agent" && a.id !== "amizo").filter((a) => S.admin || a.portee === "compte");
+      return '<section class="carte"><div class="barre"><h3 style="flex:1">Tâches récurrentes</h3><button class="btn pri mini" id="ag-t-new">' + (F ? "Fermer" : "Confier une tâche récurrente") + "</button></div>" +
+        '<p class="note">Une consigne qui revient, confiée à l\'un des agents. Pas un agent de plus : la tâche utilise ses outils, sa mémoire et son palier, et reste lisible dans son journal.</p>' +
+        (F ? '<div class="ag-champs"><label class="ag-f"><span>Confiée à</span><select id="ag-t-ag">' + choix.map((a) => '<option value="' + esc(a.id) + '">' + esc(a.nom) + "</option>").join("") + "</select></label>" +
+          '<label class="ag-f"><span>Fréquence</span><select id="ag-t-fr">' + Object.keys(FREQ).map((k) => '<option value="' + k + '"' + (k === "quotidien" ? " selected" : "") + ">" + FREQ[k] + "</option>").join("") + "</select></label>" +
+          '<label class="ag-f"><span>Heure</span><input type="time" id="ag-t-h" value="08:00"></label>' +
+          '<label class="ag-f"><span>Jour (si chaque semaine)</span><select id="ag-t-j">' + ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"].map((j) => "<option>" + j + "</option>").join("") + "</select></label></div>" +
+          '<label class="ag-f"><span>La consigne</span><textarea id="ag-t-c" rows="3" placeholder="Ex. : range mes notes de la semaine et dis-moi ce qui reste."></textarea></label><div class="ag-puces"><button class="btn pri" id="ag-t-go">Confier la tâche</button></div>' : "") +
+        (l.length ? '<div class="liste">' + l.map((t) => '<div class="li"><div class="sp"><b>' + esc(nomAg(t.agent)) + " · " + esc(FREQ[t.frequence] || t.frequence) + " à " + esc(t.heure) + (t.jour ? " (" + esc(t.jour) + ")" : "") + '</b><div class="note">' + esc(t.consigne) + (t.prochaine ? " · prochaine : " + esc(dateFr(t.prochaine)) : "") + (t.derniere ? " · dernière : " + esc(dateFr(t.derniere)) : "") + '</div></div><button class="btn mini" data-tl="' + t.id + '">Lancer maintenant</button><button class="btn mini dng" data-tr="' + t.id + '">Retirer</button></div>').join("") + "</div>" : '<p class="note">Aucune tâche récurrente.</p>') +
+        (r.declenchement_automatique ? "" : '<p class="note">Pas de déclenchement automatique pour l\'instant : « Lancer maintenant » joue un tour de l\'agent.</p>') + "</section>";
+    }
     async function vEquipe() {
       const eq = S.eq.equipe, agents = eq.filter((a) => a.genre === "agent"), services = eq.filter((a) => a.genre === "service");
       let cout = null; try { cout = await API.couts("", 1); } catch (e) { cout = null; }
+      let ret = null; try { ret = await API.retenus(1); } catch (e) { ret = null; }
       const glob = cout && cout.plafonds && cout.plafonds.global;
       const auj = cout ? cout.aujourdhui_euros : null;
       const retenu = eq.some((a) => a.plafond_atteint);
@@ -141,10 +183,12 @@
         '<p class="note">' + (retenu ? "Voir « Coût » dans la fiche de l'agent concerné pour lever, relever ou accorder pour aujourd'hui." : "Les agents agissent seuls dans leurs paliers ; chaque geste garde sa preuve et son retour.") + '</p></div><button class="btn pri" data-agent="cassandra" data-onglet="essai">Demander à un agent…</button></div></section>' +
         '<section class="stats"><div class="stat"><b>' + eq.length + "</b><span>agents et services</span></div>" +
         '<div class="stat ' + (pct > 85 ? "al" : "") + '"><b>' + eur(auj) + "</b><span>dépensé aujourd'hui" + (glob ? " sur " + eur(glob.euros) + " de plafond global" : " · aucun plafond global") + "</span>" + (glob ? '<div class="jauge"><i style="width:' + pct + '%"></i></div>' : "") + "</div>" +
+        '<div class="stat"><b>' + (ret ? ret.retenus + ret.refuses : "—") + "</b><span>retenus ou refusés aujourd\'hui · par la règle, pas par oubli</span></div>" +
         '<div class="stat"><b>' + (S.attente == null ? "—" : S.attente) + "</b><span>à valider</span></div></section>" +
+        (await carteRapport()) +
         '<div><div class="note" style="margin:0 2px 8px"><b>L\'équipe</b></div><div class="ag-cartes">' + agents.map(carteAgent).join("") + "</div></div>" +
         '<div><div class="note" style="margin:0 2px 2px"><b>Services agentiques</b></div><div class="note" style="margin:0 2px 8px">Des fonctions, pas des décideurs : une tâche précise, pas de mémoire propre, pas d\'initiative.</div><div class="ag-cartes">' + services.map(carteAgent).join("") + "</div></div>" +
-        nonBranche("Le rapport du matin", "Chaque matin, ce que chaque agent a fait, refusé et laissé : trois phrases tirées du journal. Pas encore construit.");
+        (await cartePassations()) + (await carteTaches());
     }
 
     // ── la fiche ─────────────────────────────────────────────────────────────
@@ -176,10 +220,10 @@
         '<div class="ag-ligne"><span class="g">Modèle de secours</span><b>' + esc(a.secours || "aucun") + "</b></div>" +
         '<div class="ag-ligne"><span class="g">Porte</span><b>' + (a.portee === "compte" ? "le bureau d'un compte, le sien" : "toute l'instance") + "</b></div>" +
         '<div class="ag-puces"><button class="btn" data-onglet-vers="reglages">Modifier le ton et le modèle</button>' + (f.agent.id !== "amizo" && f.agent.genre === "agent" ? '<button class="btn" data-onglet-vers="essai">L\'essayer</button>' : "") + "</div></section>" +
-        '<section class="carte"><h3>Son niveau d\'autonomie</h3><div id="ag-niv" style="display:flex;flex-direction:column;gap:8px">' +
+        '<section class="carte"><h3>Son ' + esc(VOC.palier.toLowerCase()) + '</h3><div id="ag-niv" style="display:flex;flex-direction:column;gap:8px">' +
         NIVEAUX.map(([k, l, t]) => '<button class="radio' + (a.niveau === k ? " on" : "") + '" data-niveau="' + k + '"><i></i><span><b>' + l + '</b><br><span class="note">' + t + "</span></span></button>").join("") + "</div>" +
         '<div class="ag-puces">' + pill((n.auto || 0) + " outils en auto", "ok") + pill((n.raconter || 0) + " racontés", "al") + pill((n.retire || 0) + " retirés") + "</div>" +
-        '<p class="note">Le niveau est un réglage, pas un interdit codé : il se précise outil par outil (onglet « Outils & palier »). La sûreté vient de la preuve et du retour arrière.</p></section></div>' +
+        '<p class="note">Le palier est un réglage, pas un interdit codé : il se précise outil par outil (onglet « Outils & palier »). La sûreté vient de la preuve et du retour arrière.</p></section></div>' +
         '<section class="carte"><h3>Ses derniers gestes</h3><div id="ag-gestes"><p class="note">Chargement…</p></div>' +
         '<div><button class="btn mini" data-onglet-vers="journal">Tout le journal</button></div></section>' +
         '<section class="carte" id="ag-conf"><h3>Carte de confiance</h3><p class="note">Chargement…</p></section>';
@@ -226,7 +270,7 @@
       const ligne = (o) => {
         const lect = o.risque === "lecture";
         const cur = o.retire ? "retire" : o.palier;
-        const seg = lect ? [["lecture", "Lecture"], ["retire", "Retirer"]] : [["auto", "Auto"], ["raconter", "Raconter"], ["retire", "Retirer"]];
+        const seg = lect ? [["lecture", "Lecture"], ["retire", "Retirer"]] : [["auto", VOC.outils.auto], ["raconter", VOC.outils.raconter], ["retire", VOC.outils.retire]];
         return '<div class="ag-outil"><div><div class="n">' + esc(o.cle) + '</div><div class="d">' + esc(o.description || "") + '</div><div class="ag-puces" style="margin-top:3px">' + pill(o.risque, o.risque === "moyen" ? "al" : o.risque === "élevé" ? "dg" : "") + (o.pose ? pill("réglé par toi", "ac") : "") + (o.defaut && o.pose ? pill("catalogue : " + o.defaut) : "") + "</div></div>" +
           '<div class="ag-ctl"><div class="seg" role="group" aria-label="Palier de ' + esc(o.cle) + '">' + seg.map(([k, l]) => '<button data-outil="' + esc(o.cle) + '" data-p="' + k + '" class="' + (cur === k ? "on" : "") + '">' + l + "</button>").join("") + "</div>" +
           (lect ? "" : '<label class="ag-conf"><input type="checkbox" data-conf="' + esc(o.cle) + '"' + (o.confirmer ? " checked" : "") + (o.retire ? " disabled" : "") + '> demander</label>') +
@@ -245,18 +289,22 @@
     }
     function vPourquoi(r) {
       const d = r.declencheur || {};
-      const decl = d.type === "tour" ? "un message dans une conversation" + (d.extrait ? " : « " + d.extrait + " »" : "") : d.type === "proposition" ? "une proposition acceptée" + (d.accepte_par ? " par " + d.accepte_par : "") : "—";
-      const mem = (r.memoire || []).map((m) => '<button class="btn mini" data-chez="memory" data-q="' + esc(m.ref) + '" title="' + esc(m.valeur ? tx(m.valeur) : "Ouvrir la Mémoire") + '">' + esc(m.cle ? String(m.cle).replace(/_/g, " ") : "souvenir n° " + String(m.ref).replace(/^\D+/, "")) + "</button>").join(" ") || "aucun souvenir consulté";
+      const decl = d.phrase ? d.phrase : d.type === "tour" ? "un message dans une conversation" + (d.extrait ? " : « " + d.extrait + " »" : "") : d.type === "proposition" ? "une proposition acceptée" + (d.accepte_par ? " par " + d.accepte_par : "") : "—";
+      const mem = (r.memoire || []).map((m) => '<button class="btn mini" data-chez="memory" data-q="' + esc(m.ref) + '" title="' + esc(m.valeur ? tx(m.valeur) : "Ouvrir la Mémoire") + '">' + esc(m.libelle || (m.cle ? String(m.cle).replace(/_/g, " ") : "souvenir n° " + String(m.ref).replace(/^\D+/, ""))) + "</button>").join(" ") || "aucun souvenir consulté";
       const preuve = r.preuve === true ? "prouvé" : r.preuve === false ? "preuve manquante" : "sans objet";
-      const retour = r.retour === "annulee" ? "annulé par le noyau" : r.retour === "annulation_impossible" ? "annulation impossible" : "aucun retour nécessaire";
+      const retour = r.retour_texte ? r.retour_texte : r.retour === "annulee" ? "annulé par le noyau" : r.retour === "annulation_impossible" ? "annulation impossible" : "aucun retour nécessaire";
       const l = (k, v) => '<div class="ag-ligne"><span class="g">' + k + "</span><b>" + v + "</b></div>";
-      return l("Déclencheur", esc(decl)) + l("Mémoire consultée", mem) + l("Outil", esc((r.outil && r.outil.cle) || r.capacite || "")) + l("Palier", esc(r.palier || "") + (r.confirmer ? " · à confirmer" : "") + (r.niveau ? " · niveau " + esc(r.niveau) : "")) +
-        (ISSUE[r.issue] ? l("Issue", pill(ISSUE[r.issue], r.issue === "echec" ? "dg" : r.issue === "faite" ? "ok" : "al")) : "") + l("Preuve", esc(preuve)) + l("Retour", esc(retour)) + ((r.journal || []).length ? l("Lignes du journal", (r.journal || []).length) : "") +
-        (r.issue === "faite" && r.retour !== "annulee" ? '<div class="barre" style="margin-top:8px"><button class="btn mini" data-df="' + esc(r.acte) + '" title="Rejoue le retour arrière de ce geste, une seule fois">Défaire</button><span class="note">Rejoue le retour arrière de ce geste, une seule fois.</span></div>' : '<p class="note">' + (r.issue === "faite" ? "Ce geste a déjà été annulé." : "Ce geste n'a rien fait : il n'y a rien à défaire.") + "</p>");
+      const phrases = (r.phrases || []).length ? '<div style="margin:2px 0 8px">' + r.phrases.map((x) => '<p style="margin:3px 0">' + esc(x) + "</p>").join("") + "</div>" : "";
+      const issueT = r.issue === "inconnue" && !r.issue_texte ? "" : (r.issue_texte || ISSUE[r.issue] || "");
+      const defais = r.defaisable !== undefined ? !!r.defaisable : r.issue === "faite" && r.retour !== "annulee";
+      return phrases + l("Déclencheur", esc(decl)) + l("Mémoire consultée", mem) + l("Outil", esc((r.outil && r.outil.cle) || r.capacite || "")) + l(esc(VOC.palier), esc(VOC.outils[r.palier] || r.palier || "") + (r.confirmer ? " · à confirmer" : "") + (r.niveau ? " · " + esc((NIVEAUX.find((x) => x[0] === r.niveau) || [0, r.niveau])[1]) : "")) +
+        (issueT ? l("Issue", pill(issueT, r.issue === "echec" ? "dg" : r.issue === "faite" ? "ok" : "al")) : "") + l("Preuve", esc(preuve)) + l("Retour", esc(retour)) + ((r.journal || []).length ? l("Lignes du journal", (r.journal || []).length) : "") +
+        (defais ? '<div class="barre" style="margin-top:8px"><button class="btn mini" data-df="' + esc(r.acte) + '" title="Rejoue le retour arrière de ce geste, une seule fois">Défaire</button><span class="note">Rejoue le retour arrière de ce geste, une seule fois.</span></div>' : '<p class="note">' + (r.issue === "faite" || r.defaisable === false ? "Ce geste ne se défait pas (ou l'a déjà été)." : "Ce geste n'a rien fait : il n'y a rien à défaire.") + "</p>");
     }
     // « Règles communes » : ce qui vaut pour tous les agents, et les deux réglages qui valent pour tous (le plafond global ; le reste attend son module)
     async function vMaison() {
       let c = null; try { c = await API.couts("", 1); } catch (e) { c = null; }
+      let rg = null; try { rg = await API.regles(); } catch (e) { rg = null; }
       const glob = c && c.plafonds && c.plafonds.global, auj = c ? c.aujourdhui_euros : null, pct = glob && auj != null ? Math.min(100, Math.round(auj / glob.euros * 100)) : 0;
       const somme = (S.eq.equipe || []).reduce((t, a) => t + ((c && c.plafonds && c.plafonds[a.id] && c.plafonds[a.id].euros) || 0), 0);
       return '<section class="carte"><h3>Les règles communes</h3><p class="note">Valent pour tous les agents. Ce ne sont pas des interdits de plus : ce sont les garanties qui permettent de les laisser agir.</p><div class="liste">' +
@@ -268,9 +316,13 @@
         '<div class="ag-champs"><label class="ag-f"><span>Montant par jour (€)</span><input type="number" min="0.01" step="0.01" id="ag-gl-e" value="' + (glob ? glob.euros : "") + '"></label>' +
         '<label class="ag-f"><span>À l\'atteinte</span><select id="ag-gl-a">' + ACTIONS.map(([k, l]) => '<option value="' + k + '"' + (glob && glob.action === k ? " selected" : "") + ">" + esc(l) + "</option>").join("") + "</select></label></div>" +
         '<div class="ag-puces"><button class="btn pri" id="ag-gl-poser">Poser le plafond global</button>' + (glob ? '<button class="btn dng" id="ag-gl-lever">Lever</button>' : "") + "</div></section>" +
-        '<section class="carte"><h3>Le dehors passe par un seul agent</h3><p class="note">Seul Amizo lit le web, et il n\'a aucun outil qui sort. Cassandra et Itare, qui agissent, ne lisent jamais le dehors eux-mêmes : ils le lui demandent et reçoivent un résumé étiqueté « externe ». Une page piégée n\'atteint donc jamais un agent capable d\'agir.</p></section>' +
-        nonBranche("Le palier par défaut", "Le point de départ de tout nouvel agent. Le réglage commun n\'existe pas encore côté module : chaque agent se règle, outil par outil, dans sa fiche.") +
-        nonBranche("Le journal à l\'envers : le mode « mauvais jour »", "Un seul bouton pour faire passer tous les agents en « raconter » pendant une durée choisie. Pas encore construit côté module.");
+        (rg ? '<section class="carte"><h3>Le ' + esc(VOC.palier.toLowerCase()) + ' par défaut</h3><p class="note">Le point de départ de tout outil qu\'un agent n\'a pas réglé. Chaque agent se règle ensuite outil par outil.</p><div class="seg" id="ag-rg-p" role="radiogroup" aria-label="Palier par défaut">' +
+          ["auto", "raconter"].map((k) => '<button data-rgp="' + k + '" role="radio" aria-checked="' + (rg.palier_defaut === k) + '" class="' + (rg.palier_defaut === k ? "on" : "") + '">' + esc(VOC.outils[k]) + "</button>").join("") + '</div><p class="note">« ' + esc(VOC.outils.raconter) + " » : l\'agent dit ce qu\'il ferait, sans le faire, tant que tu n\'as pas réglé l\'outil. Défaut prudent, capacité complète : rien n\'est interdit, tout est réglable.</p></section>" +
+          '<section class="carte"><h3>Le dehors passe par un seul agent</h3><label class="ag-conf"><input type="checkbox" id="ag-rg-d"' + (rg.dehors_par_amizo ? " checked" : "") + '> Seul Amizo lit le dehors</label><p class="note">Seul Amizo lit le web, et il n\'a aucun outil qui sort. Cassandra et Itare, qui agissent, ne lisent jamais le dehors eux-mêmes : ils le lui demandent et reçoivent un résumé étiqueté « externe ». Une page piégée n\'atteint donc jamais un agent capable d\'agir.</p></section>' +
+          '<section class="carte"><h3>L\'ordre du journal</h3><p class="note">Le journal des agents s\'ouvre sur le plus récent, ou sur le plus ancien pour relire une journée depuis son début.</p><div class="seg" id="ag-rg-o" role="radiogroup" aria-label="Ordre du journal">' +
+          [["recent", "Le plus récent d\'abord"], ["ancien", "Le plus ancien d\'abord"]].map(([k, l]) => '<button data-rgo="' + k + '" role="radio" aria-checked="' + (rg.ordre_journal === k) + '" class="' + (rg.ordre_journal === k ? "on" : "") + '">' + l + "</button>").join("") + "</div></section>" :
+          nonBranche("Les règles réglables", "Le module n\'a pas répondu : palier par défaut, dehors par Amizo et ordre du journal sont indisponibles.")) +
+        "";
     }
     async function vAuditeur() {
       const jours = S.jauditeur || 7;
@@ -282,7 +334,7 @@
       return '<section class="carte"><div class="ag-tete">' + av({ id: "auditeur", nom: "Auditeur" }) + '<div><h3>Auditeur</h3><div class="note">Relit le journal et signale les dérives. Indépendant des agents qu\'il regarde ; il signale, il ne corrige pas.</div></div></div>' +
         '<div class="ag-puces">' + pill("lecture seule") + pill("sans palier : aucun outil qui agit") + pill(sg.length + (sg.length > 1 ? " signaux" : " signal"), sg.length ? "al" : "ok") + "</div></section>" +
         '<section class="carte"><h3>Sa fiche</h3>' +
-        '<div class="ag-ligne"><span class="g">Niveau</span><b>' + esc((NIVEAUX.find((x) => x[0] === ag.niveau) || [0, ag.niveau || "observer"])[1]) + "</b></div>" +
+        '<div class="ag-ligne"><span class="g">' + esc(VOC.palier) + '</span><b>' + esc((NIVEAUX.find((x) => x[0] === ag.niveau) || [0, ag.niveau || "observer"])[1]) + "</b></div>" +
         '<div class="ag-ligne"><span class="g">Modèle</span><b>' + esc(ag.modele || "par défaut") + "</b></div>" +
         '<div class="ag-ligne"><span class="g">Palier</span><b>aucun : il lit, il signale</b></div>' +
         '<div class="ag-ligne"><span class="g">Aujourd\'hui</span><b>' + (cj.euros ? eur(cj.euros) : "gratuit") + ' <span class="note">· ' + (cj.appels || 0) + " appels</span></b></div>" +
@@ -433,9 +485,11 @@
 
     // ── journal ──────────────────────────────────────────────────────────────
     async function vJournal() {
+      const ord = (x) => ((MEM.regles || {}).ordre_journal === "ancien" ? x.slice().reverse() : x);
       let l = []; const F = S.jf = S.jf || { ag: "tous", q: "", n: 8 }, q = F.q.toLowerCase();
       let ac; try {
         const tous = (await actes("")).filter((x) => (F.ag === "tous" || x.agent === F.ag) && (!q || ((x.titre || "") + " " + (x.resume || "") + " " + (x.pourquoi || "")).toLowerCase().includes(q)));
+        if ((MEM.regles || {}).ordre_journal === "ancien") tous.reverse();
         ac = ligneActes(tous.slice(0, F.n)) + (tous.length > F.n ? '<div class="ag-puces"><span class="note">' + F.n + " sur " + tous.length + ' affichés</span><button class="btn mini" id="jf-plus">Voir plus</button></div>' : "");
       } catch (e) { ac = nonBranche("Actes", String((e && e.message) || e)); }
       const filtres = '<div class="barre">' + (S.admin ? '<select class="sel" id="jf-a"><option value="tous">Tous les agents</option>' + (S.eq.equipe || []).filter((a) => a.genre === "agent").map((a) => '<option value="' + esc(a.id) + '"' + (F.ag === a.id ? " selected" : "") + ">" + esc(a.nom) + "</option>").join("") + "</select>" : "") + '<input type="search" id="jf-q" placeholder="Chercher dans le journal…" value="' + esc(F.q) + '"></div>';
@@ -443,7 +497,7 @@
       if (!S.admin) return '<section class="carte"><h3>Ce que ton Itare a fait</h3>' + filtres + ac + "</section>";
       try { l = (await API.journal("", 80)).entrees.filter(mien); } catch (e) { return nonBranche("Journal", String(e.message || e)); }
       if (S.admin) l = l.filter((e) => /cassandra|itare|amizo|agent|relecteur|vision/i.test((e.acteur || "") + " " + (e.source || "") + " " + (e.label || "")));
-      return '<section class="carte"><div class="barre"><h3 style="flex:1">Ce que les agents ont fait</h3>' + lien("journal", "Ouvrir les Journaux") + "</div>" + filtres + ac + '<div class="note" style="margin:10px 2px 2px"><b>Dans le journal du noyau</b></div>' + ligneJournal(q ? l.filter((e) => ((e.action || "") + " " + (e.sujet || "") + " " + (e.label || "")).toLowerCase().includes(q)) : l) + "</section>";
+      return '<section class="carte"><div class="barre"><h3 style="flex:1">Ce que les agents ont fait</h3>' + lien("journal", "Ouvrir les Journaux") + "</div>" + filtres + ac + '<div class="note" style="margin:10px 2px 2px"><b>Dans le journal du noyau</b></div>' + ligneJournal(ord(q ? l.filter((e) => ((e.action || "") + " " + (e.sujet || "") + " " + (e.label || "")).toLowerCase().includes(q)) : l)) + "</section>";
     }
 
     // ── modèles et clés ──────────────────────────────────────────────────────
@@ -477,6 +531,8 @@
       if (v0) v0.style.opacity = ".5"; else racine.innerHTML = '<div class="vide" role="status">Chargement…</div>';
       try {
         S.eq = S.eq || await equipe(); S.lu = S.lu || Date.now();
+        if (!MEM.regles) { try { MEM.regles = await API.regles(); } catch (e) { MEM.regles = {}; } }
+        appliquerVoc(MEM.regles);
         S.admin = !!S.eq.administrateur;
         if (!S.vue) S.vue = S.admin ? "equipe" : "fiche";
         if (!S.admin && !["fiche", "conv", "boite", "journal"].includes(S.vue)) S.vue = "fiche";
@@ -490,7 +546,7 @@
       const sc = corps.closest(".sh-scene"), ti = sc && sc.querySelector(".sh-titre");           // le titre suit la page choisie dans le menu
       if (ti) ti.textContent = { equipe: "L’équipe", conv: "Conversations", boite: "À valider", journal: "Journal", auditeur: "Auditeur", maison: "Règles communes", modeles: "Modèles & clés" }[S.vue] || ((S.eq && S.eq.equipe.find((x) => x.id === S.agent) || {}).nom || "Agents IA");
     }
-    const recharger = (eq) => { if (eq) { S.eq = null; S.lu = 0; MEM.eq = null; } return dessiner(); };
+    const recharger = (eq) => { if (eq) { S.eq = null; S.lu = 0; MEM.eq = null; MEM.regles = null; } return dessiner(); };
     const aller = (v, agent, onglet) => { S.vue = v; if (agent) S.agent = agent; if (onglet) S.onglet = onglet; if (v === "conv") S.conv.liste = null; dessiner(); };
     const sur = (sel, ev, fn) => racine.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, (e) => fn(el, e)));
     const b0 = (off) => { const b = racine.querySelector("#ag-ep-go"); if (b) b.disabled = off; };
@@ -510,7 +566,7 @@
       sur("[data-onglet-vers]", "click", (b) => { S.onglet = b.getAttribute("data-onglet-vers"); dessiner(); });
       sur("[data-chez]", "click", (b) => chez(b.dataset.chez, b.dataset.q));
       sur("#ag-chg", "change", (s) => aller("fiche", s.value));
-      sur("[data-niveau]", "click", (b) => lancer(async () => { const avant = S.fiche.agent.niveau; await API.niveau(S.agent, b.dataset.niveau); dire("Niveau réglé : " + b.dataset.niveau + " (avant : " + avant + ")", "ok"); await recharger(true); }));
+      sur("[data-niveau]", "click", (b) => lancer(async () => { const avant = S.fiche.agent.niveau; await API.niveau(S.agent, b.dataset.niveau); dire("Palier réglé : " + b.dataset.niveau + " (avant : " + avant + ")", "ok"); await recharger(true); }));
       if (!racine.__outils) { racine.__outils = 1; racine.addEventListener("click", (ev) => { const b = ev.target.closest("[data-outil]"); if (b) outilClic(b); const t = ev.target.closest("[data-fam-tout]"); if (t) { S.ouv = S.ouv.size ? new Set() : new Set(Object.keys(S.grp || {})); dessiner(); } });
         racine.addEventListener("change", (ev) => { const c = ev.target.closest("[data-conf]"); if (c) lancer(async () => { await API.palier(S.agent, c.dataset.conf, "", c.checked); await recharger(true); }); });
         racine.addEventListener("toggle", (ev) => { const d = ev.target; if (!d.matches || !d.matches("details[data-fam]")) return; const m = d.dataset.fam; S.ouv = S.ouv || new Set();
@@ -522,6 +578,11 @@
       });
       sur("#ag-q", "input", (i) => { S.filtre.q = i.value; clearTimeout(S.tq); S.tq = setTimeout(async () => { const pos = i.selectionStart; await dessiner(); const n = racine.querySelector("#ag-q"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }, 250); });
       sur("#ag-r", "change", (s) => { S.filtre.risque = s.value; dessiner(); });
+      sur("[data-rap]", "click", (b) => { S.rapLong = b.dataset.rap === "long"; dessiner(); });
+      sur("#ag-t-new", "click", () => { S.tForm = !S.tForm; dessiner(); });
+      sur("#ag-t-go", "click", () => lancer(async () => { const g = (id) => racine.querySelector(id).value; await API.tacheConfier({ agent: g("#ag-t-ag"), consigne: g("#ag-t-c"), frequence: g("#ag-t-fr"), heure: g("#ag-t-h"), jour: g("#ag-t-j") }); S.tForm = false; await dessiner(); }, "Tâche confiée"));
+      sur("[data-tr]", "click", (b) => lancer(async () => { if (!(await confirmer("Retirer cette tâche ?", '<p class="note">Elle ne reviendra plus. Tu pourras la confier de nouveau.</p>', "Retirer", true))) return; await API.tacheRetirer(Number(b.dataset.tr)); await dessiner(); }, "Tâche retirée"));
+      sur("[data-tl]", "click", (b) => lancer(async () => { b.disabled = true; const r = await API.tacheLancer(Number(b.dataset.tl)); dire("Tour joué" + (r && r.conversation_id ? " : la conversation " + r.conversation_id + " est dans Conversations" : ""), "ok"); await dessiner(); }));
       sur("#ag-ja [data-ja]", "click", (b) => { S.jauditeur = +b.dataset.ja; dessiner(); });
       sur("#ag-jours [data-j]", "click", (b) => { S.jours = +b.dataset.j; dessiner(); });
       sur("#ag-sauve", "click", () => lancer(async () => {
@@ -533,6 +594,9 @@
         await API.regler(S.agent, { limites: lim }); await recharger(true);
       }, "Limites enregistrées"));
       sur("#ag-pl-poser", "click", () => lancer(async () => { const e = parseFloat(racine.querySelector("#ag-pl-e").value); if (!(e > 0)) throw new Error("un montant positif est requis"); await API.plafond(S.agent, e, racine.querySelector("#ag-pl-a").value); await recharger(true); }, "Plafond posé"));
+      sur("[data-rgp]", "click", (b) => lancer(async () => { await API.reglesRegler({ palier_defaut: b.dataset.rgp }); MEM.regles = null; await dessiner(); }, "Réglage posé"));
+      sur("[data-rgo]", "click", (b) => lancer(async () => { await API.reglesRegler({ ordre_journal: b.dataset.rgo }); MEM.regles = null; await dessiner(); }, "Réglage posé"));
+      sur("#ag-rg-d", "change", (c) => lancer(async () => { await API.reglesRegler({ dehors_par_amizo: c.checked }); MEM.regles = null; await dessiner(); }, "Réglage posé"));
       sur("#ag-gl-poser", "click", () => lancer(async () => { const e = parseFloat(racine.querySelector("#ag-gl-e").value); if (!(e > 0)) throw new Error("un montant positif est requis"); await API.plafond("global", e, racine.querySelector("#ag-gl-a").value); await recharger(true); }, "Plafond global posé"));
       sur("#ag-gl-lever", "click", () => lancer(async () => { if (!(await confirmer("Lever le plafond global ?", '<p class="note">Les agents ne seront plus retenus que par leur propre plafond.</p>', "Lever", true))) return; await API.plafond("global", null, "secours"); await recharger(true); }, "Plafond global levé"));
       sur("#ag-pl-g", "click", () => lancer(async () => { const e = parseFloat(racine.querySelector("#ag-pl-e").value); if (!(e > 0)) throw new Error("un montant positif est requis"); await API.plafond("global", e, racine.querySelector("#ag-pl-a").value); await recharger(true); }, "Plafond global posé"));
