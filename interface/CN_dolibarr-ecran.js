@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #70e7d5
+// VERSION CN : 0.1.0  #058f92
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_ecran (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=70e7d5 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=058f92 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -210,7 +210,7 @@
   }
   // Quel geste demande quel droit de Paramètres › Droits (module Dolibarr). Ce sont ceux des capacités que le geste appelle : le serveur refuse de toute façon, l'écran ne fait que cacher ce que le compte ne peut pas faire.
   const DROIT_GESTE = { valider: "valider", donvalider: "valider", projet: "valider", encaisser: "facturer", relancer: "facturer", avoir: "facturer", nfacture: "facturer", ndevis: "facturer", devis: "facturer", facturer: "facturer",
-    ntiers: "tiers", ncontact: "tiers", nprod: "tiers", prix: "tiers", nprojet: "tiers", envoyerp: "tiers", envoyerc: "tiers", modifl: "tiers", detacher: "tiers", ndon: "dons", cotis: "dons", pjajout: "facturer", cmdcreer: "facturer", cmd: "facturer", cmdfacturer: "facturer", ndfourn: "facturer", lignes: "facturer", lgadd: "facturer", lgmod: "facturer", lgsup: "facturer", ncmdf: "facturer", ffvalider: "valider", cmdf: "tresorerie", nfrais: "tresorerie", frais: "valider", rib: "tresorerie", ribajout: "tresorerie", virement: "tresorerie", payersup: "tresorerie", libre: "libre" };
+    ntiers: "tiers", ncontact: "tiers", nprod: "tiers", prix: "tiers", nprojet: "tiers", envoyerp: "tiers", envoyerc: "tiers", modifl: "tiers", detacher: "tiers", ndon: "dons", cotis: "dons", pjajout: "facturer", reglagesbase: "administrer", cmdcreer: "facturer", cmd: "facturer", cmdfacturer: "facturer", ndfourn: "facturer", lignes: "facturer", lgadd: "facturer", lgmod: "facturer", lgsup: "facturer", ncmdf: "facturer", ffvalider: "valider", cmdf: "tresorerie", nfrais: "tresorerie", frais: "valider", rib: "tresorerie", ribajout: "tresorerie", virement: "tresorerie", payersup: "tresorerie", libre: "libre" };
   const LIB_DROIT = { valider: "Valider", facturer: "Facturer et encaisser", tiers: "Gérer les tiers, contacts, produits et projets", dons: "Gérer les dons et les adhérents", tresorerie: "Trésorerie", libre: "Requête libre" };
   const peutGeste = (a) => { const d = DROIT_GESTE[a]; return !d || K.peut("dolibarr." + d); };
   const manque = (a) => "Il te manque le droit « " + LIB_DROIT[DROIT_GESTE[a]] + " » (Paramètres › Droits)";
@@ -317,7 +317,7 @@
     const baseCartes = (b) => {
       if (!b) return "";
       const e = b.etat || {};
-      if (!e.actif) return '<div class="carte"><h3>' + ib('Base de données', AIDE.base.carte) + '</h3><div class="note">' + esc(e.raison || "La lecture de la base n'est pas réglée.") + "</div></div>";
+      if (!e.actif) return '<div class="carte"><h3>' + ib('Base de données', AIDE.base.carte) + '</h3><div class="note">' + esc(e.raison || "La lecture de la base n'est pas réglée.") + '</div><div style="margin-top:8px">' + btn("Régler la base de données", "reglagesbase", "", "pri") + "</div></div>";
       const j = b.journal || {}, parObjet = {};
       (b.champs || []).forEach((c) => { (parObjet[c.objet] = parObjet[c.objet] || []).push(c); });
       return '<div class="g2"><div class="carte"><h3>' + ib('Base de données', AIDE.base.carte) + '</h3><dl class="kv"><dt>Serveur</dt><dd>' + esc(e.version || "?") + "</dd><dt>Accès</dt><dd>" + (e.lecture_seule ? pill("lecture seule", "ok") : pill("droits en trop : " + esc((e.droits_en_trop || []).join(", ")), "al")) + "</dd><dt>Tables</dt><dd>" + ((e.tables_manquantes || []).length ? pill("manque : " + esc(e.tables_manquantes.join(", ")), "al") : pill("toutes là", "ok")) + "</dd></dl></div>" +
@@ -460,7 +460,14 @@
     }
 
     // ───────── les gestes : une confirmation, puis la capacité
-    const fait = async (cap, args, dit, recharge) => { try { await agir(cap, args); K.dire(dit); } catch (e) { K.dire(e.message || String(e), "err"); } if (recharge !== false) { S.d = {}; await charger(true); } };
+    // Écrire dans Dolibarr se fait toujours sous la clé de la personne connectée : sans clé, on le dit et on mène à « Mon accès ».
+    const SANS_CLE = /clé Dolibarr de ce compte n.est pas renseignée/;
+    const erreurGeste = async (e) => {
+      const t = e.message || String(e);
+      if (!SANS_CLE.test(t)) return K.dire(t, "err");
+      if (await modale("Il te manque ta clé Dolibarr", "<p>Cassandra lit Dolibarr avec sa clé de service, mais <b>écrit toujours sous ton nom</b> : produire un PDF, encaisser ou valider demande ta clé d’API personnelle.</p><p>Tu la colles une fois dans <b>Mon accès</b> ; elle est chiffrée et jamais réaffichée.</p>", "Ouvrir Mon accès")) GESTES.onglet("acces");
+    };
+    const fait = async (cap, args, dit, recharge) => { try { await agir(cap, args); K.dire(dit); } catch (e) { await erreurGeste(e); } if (recharge !== false) { S.d = {}; await charger(true); } };
     // Comme K.confirmer, mais rend aussi ce qui a été saisi : la fenêtre se retire avant que la promesse ne reprenne, on relève donc les champs au clic.
     const modale = (titre, corps, oui) => new Promise((fin) => {
       const v = document.createElement("div"); v.className = "kit-v"; v.style.zIndex = 9999;
@@ -794,6 +801,10 @@
       ribajout: async (p) => {
         if (await formulaire("Nouveau RIB", SCHEMAS.rib, {}, async (c) => { await agir("dolibarr.rib_creer", { tiers: Number(p), label: c.label, iban: c.iban, bic: c.bic || "", banque: c.banque || "", titulaire: c.titulaire || "", defaut: String(c.defaut) === "1" }); }, "Enregistrer le RIB")) K.dire("RIB enregistré");
         return GESTES.rib(p);
+      },
+      reglagesbase: async () => {
+        if (typeof CASS.ouvrirConsole !== "function") return K.dire("La console du module n’est pas disponible ici", "err");
+        CASS.ouvrirConsole("dolibarr", "Dolibarr", "reglages");
       },
       lignes: async (p) => {
         const [objet, id] = p.split("|"), chemin = { factures: "/invoices/", devis: "/proposals/" }[objet];
