@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #5e7269
+# VERSION CN : 0.4.1  #4d5547
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=5e7269 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=4d5547 ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -33,6 +33,7 @@ Réglage : config/dolibarr.conf, des lignes « cle = valeur » :
     delai        = 15                                             (facultatif) secondes
 La clé elle-même n'est JAMAIS dans la configuration, ne se logue pas, ne figure dans aucun événement ni aucun objet.
 """
+import base64
 import calendar
 import gzip
 import json
@@ -114,6 +115,12 @@ _SECRET = re.compile(r"(pass|api_key|apikey|token|secret|signature|private_key|c
 # Les pièces dont on lit ou produit le PDF : objet -> (chemin de l'objet, « modulepart » de Dolibarr). Le PDF est celui que Dolibarr a produit : Cassandra le lit, elle ne le recompose pas.
 PIECES = {"devis": ("/proposals", "propal"), "factures": ("/invoices", "facture")}
 MAX_PDF = 8 * 1024 * 1024
+MAX_PJ = 5 * 1024 * 1024        # un document joint : 5 Mo (6,7 Mo une fois encodé en base64)
+# Les pièces auxquelles on joint des documents : (chemin de l'API, « modulepart » des documents, champ qui porte la référence)
+PIECES_JOINTES = {"factures": ("/invoices", "facture", "ref"), "devis": ("/proposals", "propal", "ref"), "tiers": ("/thirdparties", "societe", "name"), "dons": ("/donations", "donation", "ref"),
+             "fournisseurs": ("/supplierinvoices", "invoice_supplier", "ref"), "projets": ("/projects", "project", "ref"), "commandes": ("/orders", "commande", "ref"),
+             "commandes_fournisseurs": ("/supplierorders", "order_supplier", "ref"), "notes_de_frais": ("/expensereports", "expensereport", "ref"), "adherents": ("/members", "member", "ref")}
+EXT_PJ = ("pdf", "png", "jpg", "jpeg", "gif", "webp", "txt", "csv", "xlsx", "xls", "ods", "odt", "docx", "doc", "xml", "zip", "eml")      # jamais de page ou de script : Dolibarr range ces fichiers dans son dossier de documents
 MAX_LIBRE = 100             # lignes rendues par une lecture libre
 MAX_LIGNES = 50
 
@@ -353,14 +360,14 @@ def appeler(conf, chemin, parametres=None):
         raise PontErreur("Dolibarr a répondu autre chose que du JSON")
 
 
-def ecrire(conf, methode, chemin, corps=None):
+def ecrire(conf, methode, chemin, corps=None, limite=MAX_CORPS):
     """LA porte d'écriture : POST, PUT ou DELETE, jamais autre chose. Rend le JSON décodé (ou None). Utilisée seulement par les capacités déclarées à
     risque moyen ou élevé, qui ont toutes leur preuve et leur retour arrière."""
     if methode not in ("POST", "PUT", "DELETE"):
         raise PontErreur("méthode refusée : %s" % methode)
     donnees = json.dumps(corps, ensure_ascii=False).encode("utf-8") if corps is not None else None
-    if donnees is not None and len(donnees) > MAX_CORPS:
-        raise ValueError("le corps de la requête dépasse %d octets" % MAX_CORPS)
+    if donnees is not None and len(donnees) > limite:
+        raise ValueError("le corps de la requête dépasse %d octets" % limite)
     _garde_agent()
     _garde_societe(conf)
     en_tetes = {"DOLAPIKEY": _cle(conf, ecriture=True), "Accept": "application/json", "Content-Type": "application/json", "User-Agent": AGENT}
@@ -544,7 +551,8 @@ def brancher(ctx):
         t0 = time.time()
         s = appeler(conf, "/status")
         s = s.get("success", s) if isinstance(s, dict) else {}
-        return {"version": s.get("dolibarr_version", "?"), "latence_ms": int((time.time() - t0) * 1000), "verrouille": str(s.get("access_locked", "0")) != "0"}
+        return {"version": s.get("dolibarr_version", "?"), "latence_ms": int((time.time() - t0) * 1000), "verrouille": str(s.get("access_locked", "0")) != "0",
+                "site": conf["url"].split("/api/")[0].rstrip("/")}          # la racine de Dolibarr : de quoi ouvrir une fiche dans Dolibarr
 
     def modules(ctx):
         conf = lire_conf()
@@ -920,6 +928,110 @@ def brancher(ctx):
             raise ValueError("le PDF dépasse %d Mo : ouvrez-le dans Dolibarr" % (MAX_PDF // 2 ** 20))
         return {"objet": objet, "id": int(id), "ref": ref, "nom": nom, "type": "application/pdf", "taille": int(rep.get("filesize") or 0), "donnees_b64": str(rep["content"])}
 
+    # --- les documents joints d'une pièce, d'un tiers ou d'un don : les lister, en lire un, en joindre un
+    def _pj(objet, id):
+        if objet not in PIECES_JOINTES:
+            raise ValueError("objet : %s" % ", ".join(sorted(PIECES_JOINTES)))
+        conf = _conf()
+        chemin, part, champ = PIECES_JOINTES[objet]
+        d = _doc(conf, chemin, id, "la fiche")
+        return conf, part, d, str(d.get(champ) or d.get("ref") or d.get("name") or id)
+
+    def _nom_pj(nom):
+        nom = str(nom or "").strip()
+        if "/" in nom or "\\" in nom or ".." in nom:
+            raise ValueError("nom de fichier : un nom seul, sans dossier")
+        if not nom or nom.startswith(".") or not re.match(r"^[\w .()\[\]+@,'’-]{1,120}\.[A-Za-z0-9]{2,5}$", nom):
+            raise ValueError("nom de fichier : des lettres, chiffres, espaces, tirets, et une extension (par exemple facture.pdf)")
+        if nom.rsplit(".", 1)[1].lower() not in EXT_PJ:
+            raise ValueError("ce type de fichier n'est pas accepté (permis : %s)" % ", ".join(EXT_PJ))
+        return nom
+
+    def documents(ctx, objet, id):
+        conf, part, d, ref = _pj(objet, id)
+        out = []
+        for x in _liste(conf, "/documents", {"modulepart": part, "id": id}):
+            if isinstance(x, dict) and x.get("name"):
+                out.append({"nom": str(x["name"]), "relatif": str(x.get("relativename") or "%s/%s" % (ref, x["name"])), "taille": int(x.get("size") or 0), "date": x.get("date")})
+        return {"objet": objet, "id": int(id), "ref": ref, "documents": sorted(out, key=lambda z: z["nom"].lower())}
+
+    def document_lire(ctx, objet, id, nom):
+        conf, part, d, ref = _pj(objet, id)
+        nom = _nom_pj(nom)
+        trouve = [x for x in documents(ctx, objet, id)["documents"] if x["nom"] == nom]
+        if not trouve:
+            raise ValueError("%s %s n'a pas de document « %s »" % (objet, ref, nom))
+        rep = appeler(conf, "/documents/download", {"modulepart": part, "original_file": trouve[0]["relatif"]})
+        if not isinstance(rep, dict) or not rep.get("content"):
+            raise PontErreur("Dolibarr n'a pas rendu le contenu du document")
+        if int(rep.get("filesize") or 0) > MAX_PJ:
+            raise ValueError("le document dépasse %d Mo : ouvrez-le dans Dolibarr" % (MAX_PJ // 2 ** 20))
+        return {"objet": objet, "id": int(id), "ref": ref, "nom": nom, "type": str(rep.get("content-type", "application/octet-stream")).split(";")[0], "taille": int(rep.get("filesize") or 0), "donnees_b64": str(rep["content"])}
+
+    def document_ajouter(ctx, objet, id, nom, donnees_b64):
+        conf, part, d, ref = _pj(objet, id)
+        nom = _nom_pj(nom)
+        try:
+            brut = base64.b64decode(str(donnees_b64), validate=True)
+        except Exception:
+            raise ValueError("donnees_b64 : le contenu du fichier encodé en base64")
+        if not brut or len(brut) > MAX_PJ:
+            raise ValueError("le fichier doit peser entre 1 octet et %d Mo" % (MAX_PJ // 2 ** 20))
+        if nom in [x["nom"] for x in documents(ctx, objet, id)["documents"]]:
+            raise ValueError("%s %s a déjà un document « %s » : change son nom" % (objet, ref, nom))
+        ecrire(conf, "POST", "/documents/upload", {"filename": nom, "modulepart": part, "ref": ref, "subdir": "", "filecontent": base64.b64encode(brut).decode(), "fileencoding": "base64", "overwriteifexists": 0}, limite=MAX_PJ * 4 // 3 + 4096)
+        return {"objet": objet, "id": int(id), "ref": ref, "nom": nom, "taille": len(brut)}
+
+    def prouver_document(ctx, res):
+        return res["nom"] in [x["nom"] for x in documents(ctx, res["objet"], res["id"])["documents"]]
+
+    def defaire_document(ctx, res):
+        conf, part, d, ref = _pj(res["objet"], res["id"])
+        for x in documents(ctx, res["objet"], res["id"])["documents"]:
+            if x["nom"] == res["nom"]:
+                ecrire(conf, "DELETE", "/documents?" + urllib.parse.urlencode({"modulepart": part, "original_file": x["relatif"]}))
+
+    # --- les coordonnées bancaires (RIB) d'un tiers : pour payer un fournisseur ou un artiste sans ressaisir son IBAN
+    def _iban_net(v):
+        v = re.sub(r"\s+", "", str(v or "")).upper()
+        if not re.match(r"^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$", v):
+            raise ValueError("IBAN : deux lettres, deux chiffres, puis 11 à 30 caractères (par exemple FR76…)")
+        t = v[4:] + v[:4]
+        if int("".join(str(int(c, 36)) for c in t)) % 97 != 1:
+            raise ValueError("IBAN : la clé de contrôle ne correspond pas (une faute de frappe ?)")
+        return v
+
+    def _rib_dit(x):
+        return {"id": int(x.get("id") or x.get("rowid") or 0), "label": str(x.get("label") or ""), "banque": str(x.get("bank") or ""), "titulaire": str(x.get("proprio") or x.get("owner_name") or ""),
+                "iban": str(x.get("iban") or x.get("iban_prefix") or ""), "bic": str(x.get("bic") or ""), "defaut": str(x.get("default_rib") or "0") == "1"}
+
+    def rib_lister(ctx, tiers):
+        conf = _conf()
+        _doc(conf, "/thirdparties", tiers, "le tiers")
+        return {"tiers": int(tiers), "ribs": [_rib_dit(x) for x in _liste(conf, "/thirdparties/%d/bankaccounts" % int(tiers)) if isinstance(x, dict)]}
+
+    def rib_creer(ctx, tiers, label, iban, bic="", banque="", titulaire="", defaut=False):
+        conf = _conf()
+        t = _doc(conf, "/thirdparties", tiers, "le tiers")
+        iban = _iban_net(iban)
+        bic = re.sub(r"\s+", "", str(bic or "")).upper()
+        if bic and not re.match(r"^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$", bic):
+            raise ValueError("BIC : 8 ou 11 caractères (par exemple BNPAFRPP)")
+        label = str(label or "").strip()[:30]
+        if not label:
+            raise ValueError("label : un nom pour ce compte (par exemple « Compte principal »)")
+        if iban in [x["iban"].replace(" ", "").upper() for x in rib_lister(ctx, tiers)["ribs"]]:
+            raise ValueError("ce tiers a déjà cet IBAN")
+        corps = {"label": label, "iban": iban, "bic": bic, "bank": str(banque or "")[:60], "proprio": str(titulaire or t.get("name") or "")[:60], "default_rib": 1 if defaut else 0}
+        nouveau = _int_id(ecrire(conf, "POST", "/thirdparties/%d/bankaccounts" % int(tiers), corps), "le RIB")
+        return {"tiers": int(tiers), "id": nouveau, "iban": iban}
+
+    def prouver_rib(ctx, res):
+        return any(x["id"] == res["id"] and x["iban"].replace(" ", "").upper() == res["iban"] for x in rib_lister(ctx, res["tiers"])["ribs"])
+
+    def defaire_rib(ctx, res):
+        ecrire(_conf(), "DELETE", "/thirdparties/%d/bankaccounts/%d" % (res["tiers"], res["id"]))
+
     def produire_pdf(ctx, objet, id):
         conf, chemin, part, d, ref = _piece(objet, id)
         if _pdfs(conf, part, id):
@@ -1286,10 +1398,17 @@ def brancher(ctx):
         return {"document": "factures", "id": nouvel, "socid": socid, "lignes": len(lignes), "devis": int(id)}
 
     # --- les dons : saisir, valider
-    def don_creer(ctx, montant, date="", nom="", prenom="", societe="", champs=None):
+    def don_creer(ctx, montant, date="", nom="", prenom="", societe="", champs=None, recu=False):
         champs_don, champs = champs, None
         montant = _montant(montant)
         _garde_agent(montant)
+        if recu:                                                  # un reçu fiscal : Dolibarr exige l'identité complète du donateur (sinon il ne peut pas le produire)
+            vu = champs_don or {}
+            exigences = ((str(nom or "").strip() or str(societe or "").strip(), "un nom ou une société"), (str(vu.get("address") or "").strip(), "l'adresse"),
+                         (str(vu.get("zip") or "").strip(), "le code postal"), (str(vu.get("town") or "").strip(), "la ville"), (str(vu.get("email") or "").strip(), "le courriel"))
+            manque = [lib for v, lib in exigences if not v]
+            if manque:
+                raise ValueError("pour un reçu fiscal, Dolibarr exige : %s" % ", ".join(manque))
         conf = _conf()
         champs = {"amount": montant, "date": _jour_ts(date)}
         for k, v in (("lastname", nom), ("firstname", prenom), ("societe", societe)):
@@ -1745,6 +1864,11 @@ def brancher(ctx):
     ctx.implementer("modifier_lie", modifier_lie, prouver_modif_liee, defaire_modif_liee, simuler=lambda ctx, type="", id="", **_: "modifierait chez Dolibarr la fiche liée %s %s" % (type, id))
     ctx.implementer("detacher", detacher, prouver_detache, defaire_detache, simuler=lambda ctx, type="", id="", **_: "détacherait %s %s de Dolibarr (les deux copies restent)" % (type, id))
     ctx.implementer("piece_pdf", piece_pdf)
+    ctx.implementer("rib_lister", rib_lister)
+    ctx.implementer("rib_creer", rib_creer, prouver_rib, defaire_rib, simuler=lambda ctx, tiers="", iban="", **_: "ajouterait l'IBAN %s…%s au tiers %s" % (str(iban)[:4], str(iban)[-4:], tiers))
+    ctx.implementer("documents", documents)
+    ctx.implementer("document_lire", document_lire)
+    ctx.implementer("document_ajouter", document_ajouter, prouver_document, defaire_document, simuler=lambda ctx, objet="", id="", nom="", **_: "joindrait le fichier « %s » à %s %s" % (nom, objet, id))
     ctx.implementer("produire_pdf", produire_pdf, prouver_produire, defaire_produire, simuler=lambda ctx, objet="", id="", **_: "produirait le PDF de %s %s" % (objet, id))
     ctx.implementer("encaisser", encaisser, prouver_encaisser, defaire_encaisser,
                     simuler=lambda ctx, id="", montant="", **_: "encaisserait %s € sur la facture %s" % (montant, id))

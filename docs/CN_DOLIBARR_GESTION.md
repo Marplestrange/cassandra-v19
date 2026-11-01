@@ -12,7 +12,7 @@
 <!-- RÔLE       : Dolibarr, la gestion complète : ce que le module sait faire, la clé d'API par compte, le compte de mandat, les paliers -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=bb164d ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d838e6 ▼▼▼ -->
 # Dolibarr : la gestion complète
 
 Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il écrit, et tout geste a sa **preuve** (relire ce qui a été écrit) et son **retour arrière**.
@@ -27,6 +27,8 @@ Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il �
 | Valider, signer, refuser un devis | `devis` | remettre le devis en brouillon |
 | Facturer un devis signé (brouillon) | `facturer_devis` | supprimer ce brouillon |
 | Saisir, valider un don | `don_creer`, `don_valider` | supprimer la promesse ; un don validé ne se défait pas par l'API |
+| Joindre un fichier à une facture, un devis, un tiers ou un don (5 Mo, pdf, images, tableurs, textes : jamais une page ni un script) ; les lister, en lire un | `document_ajouter`, `documents`, `document_lire` | supprimer le fichier joint |
+| Ajouter le RIB d'un tiers (l'IBAN est vérifié par sa clé de contrôle ; un utilisateur seulement, jamais un agent) ; le lire | `rib_creer`, `rib_lister` | supprimer ce RIB |
 | Enregistrer une cotisation | `cotisation` | supprimer cette cotisation |
 | Virer d'un compte bancaire à un autre | `virement_interne` | le virement inverse |
 | Ouvrir, clore un projet | `projet` | remettre le statut d'avant |
@@ -65,11 +67,11 @@ Tout le monde ne doit pas pouvoir tout faire dans Dolibarr. Le module déclare d
 | Droit | Ce qu'il ouvre | Par défaut |
 |---|---|---|
 | `consulter` | lire tiers, factures, devis, dons, adhérents, projets, banque, PDF ; l'écran lit par `lire_ecran`, borné à ce qu'il affiche (pas les utilisateurs ni la configuration de Dolibarr) | oui |
-| `facturer` | brouillons de devis et factures, avoirs, relances, encaisser un règlement, produire un PDF | non |
+| `facturer` | brouillons de devis et factures, avoirs, relances, encaisser un règlement, produire un PDF, joindre un document | non |
 | `valider` (sensible) | numéro légal d'une facture (irréversible), valider un don, valider ou clore un projet | non |
 | `tiers` | créer, modifier, restaurer tiers, contacts, produits, projets ; les envoyer à Dolibarr ou les en détacher | non |
 | `dons` | saisir un don, enregistrer une cotisation | non |
-| `tresorerie` (sensible) | virements entre comptes, paiement des factures fournisseurs | non |
+| `tresorerie` (sensible) | virements entre comptes, paiement des factures fournisseurs, RIB des tiers (lire, ajouter) | non |
 | `libre` (sensible) | requête libre sur l'API, en lecture (`lire_libre`, tous les domaines) comme en écriture | non |
 | `administrer` (sensible) | supprimer, lire la base (en plus : superadministrateur), réglages, pont de la billetterie | non |
 

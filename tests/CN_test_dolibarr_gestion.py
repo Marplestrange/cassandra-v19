@@ -6,14 +6,15 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #957bba
+# VERSION CN : 0.1.0  #b56c22
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=957bba ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b56c22 ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
+import base64
 import gzip
 import json
 import os
@@ -216,6 +217,27 @@ class FauxGestion:
                 del self.t["donations"][i]
                 return R(200, {"success": {}})
         if p[0] == "documents":
+            pj = self.__dict__.setdefault("pj", {})                                                     # les documents joints : {(modulepart, ref): {nom: contenu b64}}
+            if p[1:] == ["upload"] and m == "POST":
+                if "/" in corps["filename"] or ".." in corps["filename"]:
+                    return R(400, {"error": {"message": "bad filename"}})
+                pj.setdefault((corps["modulepart"], corps["ref"]), {})[corps["filename"]] = corps["filecontent"]
+                return R(200, "%s/%s" % (corps["ref"], corps["filename"]))
+            if p[1:] == ["download"] and m == "GET" and any(q["original_file"] == "%s/%s" % (k[1], n) for k, v in pj.items() for n in v):
+                ref, nom = q["original_file"].split("/", 1)
+                c = next(v[nom] for k, v in pj.items() if k[1] == ref and nom in v)
+                return R(200, {"filename": nom, "content-type": "application/octet-stream", "filesize": len(base64.b64decode(c)), "content": c, "encoding": "base64"})
+            if len(p) == 1 and m == "GET" and any(k[0] == q["modulepart"] for k in pj):
+                ref = next((str(v.get("ref") or v.get("name")) for coll in self.t.values() if isinstance(coll, dict) for i, v in coll.items() if str(i) == str(q["id"]) and isinstance(v, dict) and (v.get("ref") or v.get("name"))), None)
+                fichiers = pj.get((q["modulepart"], ref), {})
+                if fichiers:
+                    return R(200, [{"name": n, "relativename": "%s/%s" % (ref, n), "size": len(base64.b64decode(c)), "date": 1} for n, c in fichiers.items()])
+            if len(p) == 1 and m == "DELETE" and any(q["original_file"] == "%s/%s" % (k[1], n) for k, v in pj.items() for n in v):
+                ref, nom = q["original_file"].split("/", 1)
+                for k, v in pj.items():
+                    if k[1] == ref:
+                        v.pop(nom, None)
+                return R(200, {"success": {}})
             if p[1:] == ["builddoc"] and m == "PUT" and corps["modulepart"] != "donation":
                 coll = {"propal": "proposals", "facture": "invoices"}[corps["modulepart"]]
                 ref = corps["original_file"].split("/")[0]
@@ -223,7 +245,6 @@ class FauxGestion:
                 self.pdfs.setdefault((corps["modulepart"], i), []).append(corps["original_file"])
                 return R(200, {"filename": corps["original_file"]})
             if p[1:] == ["download"] and m == "GET":
-                import base64
                 contenu = b"%PDF-1.4 faux"
                 return R(200, {"filename": q["original_file"].split("/")[-1], "content-type": "application/pdf", "filesize": self.taille_pdf or len(contenu), "content": base64.b64encode(contenu).decode(), "encoding": "base64"})
             if len(p) == 1 and m == "GET" and q.get("modulepart") != "donation":
@@ -337,6 +358,16 @@ class FauxGestion:
             i = int(p[1]) if len(p) > 1 else 0
             if i not in self.t["thirdparties"]:
                 return R(404, {})
+            if p[2:3] == ["bankaccounts"]:
+                ribs = self.__dict__.setdefault("ribs", {}).setdefault(i, {})
+                if m == "POST":
+                    n = max([0] + list(ribs)) + 1
+                    ribs[n] = dict(corps, id=str(n))
+                    return R(200, n)
+                if m == "DELETE":
+                    ribs.pop(int(p[3]), None)
+                    return R(200, {"success": {}})
+                return R(200, list(ribs.values()))
             if m == "PUT":
                 self.t["thirdparties"][i].update(corps)
             if m == "DELETE":
@@ -718,6 +749,85 @@ class GestionDolibarr(unittest.TestCase):
         d = self.faux.t["donations"][r["resultat"]["id"]]
         self.assertEqual((d["lastname"], d["firstname"], d["town"], d["email"], d["public"]), ("Martin", "Léa", "Nantes", "lea@exemple.fr", "0"))
         self.assertEqual(self.e("dolibarr.don_creer", "humain", {"montant": "5", "champs": {"inconnu": "x"}})["statut"], "echec")           # un champ hors fiche est refusé
+
+    def test_on_joint_un_document_a_une_facture_on_le_relit_et_on_le_retire(self):
+        i = self.facture()
+        contenu = base64.b64encode(b"%PDF-1.4 note du benevole").decode()
+        r = self.e("dolibarr.document_ajouter", "humain", {"objet": "factures", "id": i, "nom": "justificatif.pdf", "donnees_b64": contenu})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        liste = self.e("dolibarr.documents", "humain", {"objet": "factures", "id": i})["resultat"]
+        self.assertEqual([d["nom"] for d in liste["documents"]], ["justificatif.pdf"])
+        lu = self.e("dolibarr.document_lire", "humain", {"objet": "factures", "id": i, "nom": "justificatif.pdf"})
+        self.assertEqual(lu["statut"], "faite", msg=str(lu))
+        self.assertEqual(base64.b64decode(lu["resultat"]["donnees_b64"]), b"%PDF-1.4 note du benevole")
+        # le même nom deux fois : refusé, jamais écrasé
+        self.assertEqual(self.e("dolibarr.document_ajouter", "humain", {"objet": "factures", "id": i, "nom": "justificatif.pdf", "donnees_b64": contenu})["statut"], "echec")
+        # un retour arrière retire exactement ce fichier
+        self.retour("document_ajouter", r["resultat"])
+        self.assertEqual(self.e("dolibarr.documents", "humain", {"objet": "factures", "id": i})["resultat"]["documents"], [])
+
+    def test_un_document_joint_refuse_ce_qui_ressemble_a_une_page_ou_un_script(self):
+        i = self.facture()
+        ok = base64.b64encode(b"x").decode()
+        for nom in ("shell.php", "page.html", "../../x.pdf", "a/b.pdf", ".htaccess", "sans_extension", "script.js", "image.svg"):
+            r = self.e("dolibarr.document_ajouter", "humain", {"objet": "factures", "id": i, "nom": nom, "donnees_b64": ok})
+            self.assertEqual(r["statut"], "echec", nom)
+        self.assertEqual(self.e("dolibarr.document_ajouter", "humain", {"objet": "factures", "id": i, "nom": "a.pdf", "donnees_b64": "pas du base64 !"})["statut"], "echec")
+        self.assertEqual(self.e("dolibarr.document_ajouter", "humain", {"objet": "factures", "id": i, "nom": "a.pdf", "donnees_b64": base64.b64encode(b"0" * (5 * 2 ** 20 + 1)).decode()})["statut"], "echec")
+        self.assertEqual(self.e("dolibarr.document_ajouter", "humain", {"objet": "inconnu", "id": i, "nom": "a.pdf", "donnees_b64": ok})["statut"], "echec")
+
+    def test_joindre_un_document_demande_le_droit_de_facturer(self):
+        self.n.identite.creer("chef@x.fr", "Abcdefgh1!", superadmin=True)
+        self.n.identite.creer("paul@x.fr", "Abcdefgh1!")
+        i = self.facture()
+        pour = lambda cap, args: self.e("dolibarr." + cap, "humain", args, compte="paul@x.fr")
+        self.assertEqual(pour("documents", {"objet": "factures", "id": i})["statut"], "faite")            # consulter : lire la liste
+        r = pour("document_ajouter", {"objet": "factures", "id": i, "nom": "a.pdf", "donnees_b64": base64.b64encode(b"x").decode()})
+        self.assertEqual(r["statut"], "refuse")
+        self.assertIn("dolibarr.facturer", r["raison"])
+
+    def test_un_rib_se_verifie_se_range_et_se_retire(self):
+        t = self.faux.nouveau("thirdparties", {"name": "Cie Les Pierrots", "fournisseur": 1})
+        iban = "FR76 3000 6000 0112 3456 7890 189"                 # l'IBAN d'exemple de la Banque de France : la clé de contrôle est bonne
+        r = self.e("dolibarr.rib_creer", "humain", {"tiers": t, "label": "Compte principal", "iban": iban, "bic": "agrifrpp", "banque": "Crédit Agricole"})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        liste = self.e("dolibarr.rib_lister", "humain", {"tiers": 1})["resultat"]["ribs"]
+        self.assertEqual([(x["iban"], x["bic"]) for x in liste], [("FR7630006000011234567890189", "AGRIFRPP")])
+        self.assertEqual(self.e("dolibarr.rib_creer", "humain", {"tiers": t, "label": "Autre", "iban": iban})["statut"], "echec")          # jamais deux fois le même IBAN
+        for mauvais in ("FR7630006000011234567890188", "FR76", "1234", "FR76 ABCD !!!!"):
+            self.assertEqual(self.e("dolibarr.rib_creer", "humain", {"tiers": t, "label": "X", "iban": mauvais})["statut"], "echec", mauvais)
+        self.assertEqual(self.e("dolibarr.rib_creer", "humain", {"tiers": t, "label": "X", "iban": "DE89370400440532013000", "bic": "faux"})["statut"], "echec")
+        self.assertEqual(self.e("dolibarr.rib_creer", "humain", {"tiers": 999, "label": "X", "iban": "DE89370400440532013000"})["statut"], "echec")
+        self.retour("rib_creer", r["resultat"])
+        self.assertEqual(self.e("dolibarr.rib_lister", "humain", {"tiers": 1})["resultat"]["ribs"], [])
+
+    def test_un_rib_ne_se_change_que_par_un_humain_avec_le_droit_de_tresorerie(self):
+        self.n.identite.creer("chef@x.fr", "Abcdefgh1!", superadmin=True)
+        self.n.identite.creer("paul@x.fr", "Abcdefgh1!")
+        t = self.faux.nouveau("thirdparties", {"name": "Cie Les Pierrots", "fournisseur": 1})
+        args = {"tiers": t, "label": "X", "iban": "DE89370400440532013000"}
+        r = self.e("dolibarr.rib_creer", "humain", args, compte="paul@x.fr")
+        self.assertEqual(r["statut"], "refuse")
+        self.assertIn("dolibarr.tresorerie", r["raison"])
+        self.assertEqual(self.e("dolibarr.rib_lister", "humain", {"tiers": 1}, compte="paul@x.fr")["statut"], "refuse")                      # même la lecture : un IBAN est sensible
+        self.assertNotEqual(self.e("dolibarr.rib_creer", "itare", args, compte="chef@x.fr")["statut"], "faite")                             # un agent ne change jamais un RIB
+
+    def test_un_don_avec_recu_fiscal_exige_l_identite_complete_du_donateur(self):
+        complet = {"address": "1 rue X", "zip": "44000", "town": "Nantes", "email": "lea@exemple.fr"}
+        r = self.e("dolibarr.don_creer", "humain", {"montant": "20", "nom": "Martin", "recu": True, "champs": {"zip": "44000"}})
+        self.assertEqual(r["statut"], "echec")
+        for mot in ("l'adresse", "la ville", "le courriel"):
+            self.assertIn(mot, json.dumps(r, ensure_ascii=False))
+        self.assertNotIn("code postal", json.dumps(r, ensure_ascii=False))                                                    # ce qui est donné ne se réclame pas
+        self.assertEqual(self.e("dolibarr.don_creer", "humain", {"montant": "20", "recu": True, "champs": complet})["statut"], "echec")        # ni nom ni société
+        self.assertEqual(self.e("dolibarr.don_creer", "humain", {"montant": "20", "societe": "Cie Les Pierrots", "recu": True, "champs": complet})["statut"], "faite")
+        self.assertEqual(self.e("dolibarr.don_creer", "humain", {"montant": "5"})["statut"], "faite")                                         # un don anonyme reste possible
+
+    def test_le_statut_donne_la_racine_de_dolibarr_pour_ouvrir_une_fiche(self):
+        r = self.e("dolibarr.statut", "humain", {})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        self.assertNotIn("/api", r["resultat"]["site"])
+        self.assertTrue(r["resultat"]["site"].startswith("http"))
 
     def test_les_autres_fiches_ont_leurs_champs_et_leurs_obligations(self):
         for objet, ok, ko in (("contacts", {"lastname": "Fontaine", "civility_code": "MME", "poste": "Régie", "email": "a@b.fr"}, {"firstname": "Léa"}),

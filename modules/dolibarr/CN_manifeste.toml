@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #218874
+# VERSION CN : 0.4.1  #1de075
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=218874 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=1de075 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -525,6 +525,47 @@ id = "piece_pdf"
 libelle = "Lire le PDF qu'a produit Dolibarr pour un devis ou une facture (pour l'afficher dans Cassandra)"
 risque = "lecture"
 droit = "consulter"
+
+[[capacites]]
+id = "rib_lister"
+libelle = "Lire les coordonnées bancaires (RIB, IBAN, BIC) d'un tiers"
+risque = "lecture"
+droit = "tresorerie"
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "rib_creer"
+libelle = "Ajouter un RIB (IBAN vérifié par sa clé de contrôle, BIC) à un tiers : pour payer un fournisseur ou un artiste par virement sans ressaisir ses coordonnées"
+risque = "moyen"
+droit = "tresorerie"
+perimetre = ["un tiers existant", "un IBAN dont la clé de contrôle est bonne", "jamais deux fois le même IBAN"]
+preuve = "relire les RIB du tiers : le nouveau y est, avec le même IBAN"
+retour = "supprimer le RIB que cet acte vient d'ajouter"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "documents"
+libelle = "Lister les documents joints à une facture, un devis, un tiers, un don, un projet, une commande, une note de frais ou un adhérent"
+risque = "lecture"
+droit = "consulter"
+
+[[capacites]]
+id = "document_lire"
+libelle = "Lire un document joint (son contenu, pour l'afficher ou l'enregistrer)"
+risque = "lecture"
+droit = "consulter"
+
+[[capacites]]
+id = "document_ajouter"
+libelle = "Joindre un fichier (pdf, image, tableur, texte : 5 Mo au plus) à une facture, un devis, un tiers, un don, un projet, une commande, une note de frais ou un adhérent"
+risque = "moyen"
+droit = "facturer"
+perimetre = ["une pièce ou une fiche existante", "5 Mo au plus", "pdf, images, tableurs, textes : jamais une page ni un script"]
+preuve = "relire les documents de la fiche : le fichier y est"
+retour = "supprimer le fichier que cet acte vient de joindre"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
 
 [[capacites]]
 id = "produire_pdf"
