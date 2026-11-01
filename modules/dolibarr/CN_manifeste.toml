@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #c3d0c7
+# VERSION CN : 0.4.1  #2a751f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=c3d0c7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=2a751f ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -164,6 +164,11 @@ choix = ["libre", "desactive"]
 defaut = "libre"
 portee = "compte"
 [[reglages]]
+id = "prudence"
+libelle = "Gestes que mon Itare ne fait jamais seul : il les prépare, je les approuve (identifiants séparés par des virgules, ou * pour tous)"
+aide = "Plus strict que le palier de l'administrateur, jamais plus large. Exemple : encaisser,payer_fournisseur,frais_payer."
+portee = "compte"
+[[reglages]]
 id = "itare_seuil"
 libelle = "Seuil en euros : au-dessus, mon Itare ne règle, ne vire, ne cotise ni ne saisit un don (0 : pas de seuil)"
 type = "entier"
@@ -190,6 +195,11 @@ frequence_s = 60
 id = "acces_refuse"
 libelle = "Dolibarr refuse la clé d'API"
 frequence_s = 60
+
+[[detecteurs]]
+id = "nouveautes"
+libelle = "Une facture payée ou un don arrivé chez Dolibarr (affiché sept jours dans la cloche)"
+frequence_s = 300
 
 [[capacites]]
 id = "resume"
@@ -528,10 +538,10 @@ droit = "consulter"
 
 [[capacites]]
 id = "ligne"
-libelle = "Modifier un brouillon ligne par ligne : ajouter, modifier ou supprimer une ligne d'une facture, d'un devis ou d'une commande"
+libelle = "Modifier un brouillon ligne par ligne : ajouter, modifier ou supprimer une ligne d'une facture, d'un devis, d'une commande ou d'une facture fournisseur"
 risque = "moyen"
 droit = "facturer"
-perimetre = ["factures, devis, commandes", "un brouillon seulement : jamais une pièce validée"]
+perimetre = ["factures, devis, commandes, factures fournisseurs", "un brouillon seulement : jamais une pièce validée"]
 preuve = "relire la pièce : la ligne est ajoutée, modifiée ou absente"
 retour = "supprimer la ligne ajoutée, remettre les valeurs d'avant, ou recréer la ligne supprimée"
 paliers = ["raconter", "auto"]
@@ -583,10 +593,10 @@ qui = ["humain", "cassandra", "itare"]
 
 [[capacites]]
 id = "commande_fournisseur"
-libelle = "Faire avancer une commande fournisseur : valider, approuver, puis la passer au fournisseur"
+libelle = "Faire avancer une commande fournisseur : valider, approuver, la passer au fournisseur, puis la recevoir dans un entrepôt"
 risque = "eleve"
 droit = "tresorerie"
-perimetre = ["valider : brouillon vers validée", "approuver : validée vers approuvée", "commander : approuvée vers passée"]
+perimetre = ["valider : brouillon vers validée", "approuver : validée vers approuvée", "commander : approuvée vers passée", "recevoir : passée vers reçue, dans l'entrepôt choisi (les stocks bougent)"]
 preuve = "relire la commande : le statut a changé"
 retour = "aucun par l'API de Dolibarr : une commande validée, approuvée ou passée se défait dans Dolibarr"
 paliers = ["raconter"]
@@ -617,6 +627,67 @@ droit = "valider"
 perimetre = ["valider : brouillon vers validée", "approuver : validée vers approuvée"]
 preuve = "relire la note : le statut a changé"
 retour = "remettre la note dans son statut d'avant"
+paliers = ["raconter"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "chercher"
+libelle = "Chercher dans TOUT Dolibarr (pas seulement les 100 dernières lignes) : tiers, contacts, factures, devis, commandes, produits, projets, dons, adhérents, factures et commandes fournisseurs, notes de frais ; trié par date ou par nom"
+risque = "lecture"
+droit = "consulter"
+
+[[capacites]]
+id = "tache_creer"
+libelle = "Ajouter une tâche à un projet (nom, période, charge prévue en heures)"
+risque = "moyen"
+droit = "tiers"
+perimetre = ["un projet existant", "la référence suit celle du projet"]
+preuve = "relire la tâche : même projet, même nom"
+retour = "supprimer la tâche, tant qu'elle n'a pas de temps passé"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "temps_ajouter"
+libelle = "Noter du temps passé sur une tâche (en minutes, avec une date et un mot)"
+risque = "moyen"
+droit = "tiers"
+perimetre = ["une tâche existante", "de 1 minute à 24 heures", "sous l'utilisateur de la clé qui agit"]
+preuve = "relire le temps passé de la tâche : la nouvelle ligne y est, avec la même durée"
+retour = "supprimer cette ligne de temps"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "rib_modifier"
+libelle = "Modifier un RIB d'un tiers (nom, IBAN vérifié, BIC, banque, titulaire, compte par défaut)"
+risque = "moyen"
+droit = "tresorerie"
+perimetre = ["un RIB existant", "IBAN dont la clé de contrôle est bonne"]
+preuve = "relire les RIB du tiers : les valeurs y sont"
+retour = "remettre les valeurs d'avant"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "rib_supprimer"
+libelle = "Supprimer un RIB d'un tiers"
+risque = "moyen"
+droit = "tresorerie"
+perimetre = ["un RIB existant"]
+preuve = "relire les RIB du tiers : il n'y est plus"
+retour = "recréer le RIB avec ses valeurs d'avant"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "frais_payer"
+libelle = "Payer une note de frais approuvée (virement, chèque, espèces…) depuis un compte bancaire de Dolibarr"
+risque = "eleve"
+droit = "tresorerie"
+perimetre = ["une note approuvée", "le total de la note, en une fois"]
+preuve = "relire la note : elle est payée"
+retour = "aucun par l'API de Dolibarr : le paiement et sa ligne bancaire se défont dans Dolibarr"
 paliers = ["raconter"]
 qui = ["humain", "cassandra", "itare"]
 

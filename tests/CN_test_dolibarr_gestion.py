@@ -6,17 +6,18 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fddf3b
+# VERSION CN : 0.1.0  #a05131
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fddf3b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a05131 ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import base64
 import gzip
 import json
+import re
 import os
 import shutil
 import sys
@@ -69,6 +70,7 @@ class FauxGestion:
                 q = {k: v[0] for k, v in parse_qs(u.query).items()}
                 cle = self.headers.get("DOLAPIKEY", "")
                 faux.journal.append((methode, chemin, cle))
+                faux.__dict__.setdefault("requetes", []).append((methode, chemin, dict(q)))
                 longueur = int(self.headers.get("Content-Length") or 0)
                 corps = json.loads(self.rfile.read(longueur) or b"null") if longueur else None
                 if cle not in faux.utilisateurs:
@@ -111,10 +113,85 @@ class FauxGestion:
     def route(self, h, m, chemin, q, corps, cle):
         R = h._rep
         p = chemin.strip("/").split("/")
+        if p[0] == "expensereports" and p[2:3] == ["payments"] and m == "POST":
+            i = int(p[1])
+            if not all(k in corps for k in ("datep", "fk_typepayment", "amounts")):                  # comme Dolibarr 24 : « datep field missing »…
+                return R(400, {"error": {"code": 400, "message": "Bad Request: %s field missing" % next(k for k in ("datep", "fk_typepayment", "amounts") if k not in corps)}})
+            self.t["expensereports"][i].update(status=6, statut="6", paid=1)
+            return R(200, self.nouveau("paiements", {"amount": corps["amount"], "expensereport": i}))
+        if p[0] == "supplierorders" and p[2:3] == ["receive"] and m == "POST":
+            if any(not l.get("warehouse") for l in corps["lines"]):                                      # comme Dolibarr 24
+                return R(500, {"error": {"code": 500, "message": "Internal Server Error: Error dispatch order line 1: ErrorBadValueForParameterWarehouse"}})
+            self.t["supplierorders"][int(p[1])].update(statut="4", status=4)
+            return R(200, {"success": {"code": 200, "message": "Order received"}})
+        if p[0] == "supplierinvoices" and p[2:3] == ["lines"] and p[1].isdigit() and int(p[1]) in self.t["supplierinvoices"]:
+            piece = self.t["supplierinvoices"][int(p[1])]
+            piece.setdefault("lines", [])
+            if len(p) == 3 and m == "POST":
+                n = max([0] + [int(x.get("id") or 0) for x in piece["lines"]]) + 1
+                piece["lines"].append({"id": str(n), "desc": corps.get("description", ""), "description": corps.get("description", ""), "qty": str(corps["qty"]), "subprice": str(corps["pu_ht"]), "pu_ht": str(corps["pu_ht"]), "tva_tx": str(corps["tva_tx"])})
+                return R(200, n)
+            li = next((x for x in piece["lines"] if str(x.get("id")) == p[3]), None)
+            if li is None:
+                return R(404, {})
+            if m == "PUT":
+                li.update(desc=corps["description"], description=corps["description"], qty=str(corps["qty"]), subprice=str(corps["pu_ht"]), pu_ht=str(corps["pu_ht"]), tva_tx=str(corps["tva_tx"]))
+            if m == "DELETE":
+                piece["lines"].remove(li)
+            return R(200, dict(piece))
+        if p[0] == "thirdparties" and p[2:3] == ["bankaccounts"] and len(p) == 4 and m in ("PUT", "DELETE"):
+            ribs = self.__dict__.setdefault("ribs", {}).setdefault(int(p[1]), {})
+            if int(p[3]) not in ribs:
+                return R(404, {})
+            if m == "PUT":
+                ribs[int(p[3])].update(corps)
+                return R(200, dict(ribs[int(p[3])]))
+            del ribs[int(p[3])]
+            return R(200, {"success": {}})
+        if p[0] == "tasks" or (p == ["tasks"]):
+            taches = self.__dict__.setdefault("taches", {})
+            temps = self.__dict__.setdefault("temps", {})
+            if p == ["tasks"] and m == "POST":
+                if not corps.get("ref"):
+                    return R(400, {"error": {"code": 400, "message": "Bad Request: ref field missing"}})
+                n = max([0] + list(taches)) + 1
+                taches[n] = dict(corps, id=str(n), duration_effective="0")
+                return R(200, n)
+            if p == ["tasks"] and m == "GET":
+                f = q.get("sqlfilters", "")
+                pid = f.split(":=:")[-1].rstrip(")") if ":=:" in f else None
+                ls = [dict(t) for t in taches.values() if pid is None or str(t["fk_project"]) == pid]
+                return R(200, ls) if ls else R(404, {})
+            i = int(p[1]) if len(p) > 1 and p[1].isdigit() else None
+            if i not in taches:
+                return R(404, {})
+            if p[2:3] == ["addtimespent"] and m == "POST":
+                if not re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$", str(corps.get("date"))):                  # comme Dolibarr 24
+                    return R(400, {"error": {"code": 400, "message": "Bad Request: Invalid value specified for `date`"}})
+                n = max([0] + [int(x["timespent_line_id"]) for l in temps.values() for x in l]) + 1
+                temps.setdefault(i, []).append({"timespent_line_id": str(n), "timespent_line_duration": str(corps["duration"]), "timespent_line_note": corps["note"]})
+                taches[i]["duration_effective"] = str(sum(int(x["timespent_line_duration"]) for x in temps[i]))
+                return R(200, {"success": {"code": 200, "message": "Time spent added"}})
+            if p[2:3] == ["timespent"] and len(p) == 3:
+                return R(200, list(temps.get(i, []))) if temps.get(i) else R(404, {})
+            if p[2:3] == ["timespent"] and len(p) == 4 and m == "DELETE":
+                temps[i] = [x for x in temps.get(i, []) if x["timespent_line_id"] != p[3]]
+                taches[i]["duration_effective"] = str(sum(int(x["timespent_line_duration"]) for x in temps[i]))
+                return R(200, {"success": {}})
+            if len(p) == 2 and m == "DELETE":
+                if int(taches[i]["duration_effective"]) > 0:
+                    return R(500, {"error": {"code": 500, "message": "cannot delete"}})
+                del taches[i]
+                return R(200, {"success": {}})
+            return R(200, dict(taches[i]))
+        if p == ["thirdparties"] and m == "GET":
+            return R(200, [dict(v) for v in self.t["thirdparties"].values()]) if self.t["thirdparties"] else R(404, {})
         if chemin == "/setup/extrafields":
             return R(200, {"societe": {"blocage_client": {"type": "boolean", "label": "Blocage client", "required": "0", "param": "", "pos": "1"},
-                                       "categorie": {"type": "select", "label": "Catégorie", "required": "0", "param": {"options": {"1": "Commercial", "2": "Technique"}}, "pos": "2"},
-                                       "secret": {"type": "password", "label": "Secret", "required": "0", "param": "", "pos": "3"}},
+                                       "categorie": {"type": "select", "label": "Catégorie", "required": "1" if self.__dict__.get("extra_requis") else "0", "param": {"options": {"1": "Commercial", "2": "Technique"}}, "pos": "2"},
+                                       "secret": {"type": "password", "label": "Secret", "required": "0", "param": "", "pos": "3"},
+                                       "cases": {"type": "checkbox", "label": "Cases", "required": "0", "param": {"options": {"a": "A", "b": "B"}}, "pos": "4"},
+                                       "lien": {"type": "link", "label": "Lien", "required": "0", "param": "", "pos": "5"}},
                            "product": {"last_date_price": {"type": "date", "label": "Dernier prix", "required": "0", "param": "", "pos": "1"}}})
         if chemin == "/setup/dictionary/expensereport_types":
             return R(200, [{"id": "29", "code": "EX_KME", "label": "Frais kilométriques", "active": "1"}, {"id": "30", "code": "EX_OLD", "label": "Ancien", "active": "0"}])
@@ -418,7 +495,7 @@ class FauxGestion:
                 if m == "POST":
                     n = max([0] + list(ribs)) + 1
                     ribs[n] = dict(corps, id=str(n))
-                    return R(200, n)
+                    return R(200, dict(ribs[n], id=n, entity=None))                                        # comme Dolibarr 24 : la fiche du RIB, pas son numéro
                 if m == "DELETE":
                     ribs.pop(int(p[3]), None)
                     return R(200, {"success": {}})
@@ -942,7 +1019,7 @@ class GestionDolibarr(unittest.TestCase):
     def test_les_champs_personnalises_se_lisent_s_ecrivent_et_se_defont(self):
         d = self.e("dolibarr.champs_perso", "humain", {"objet": "tiers"})
         self.assertEqual(d["statut"], "faite", msg=str(d))
-        self.assertEqual([c["cle"] for c in d["resultat"]["champs"]], ["options_blocage_client", "options_categorie"])                  # le champ « mot de passe » n'est pas proposé
+        self.assertEqual([c["cle"] for c in d["resultat"]["champs"]], ["options_blocage_client", "options_categorie", "options_cases", "options_lien"])                  # le champ « mot de passe » n'est pas proposé
         self.assertEqual(d["resultat"]["champs"][1]["options"], [["1", "Commercial"], ["2", "Technique"]])
         r = self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": {"name": "Cie", "client": "0", "options_blocage_client": "oui", "options_categorie": "2"}})
         self.assertEqual(r["statut"], "faite", msg=str(r))
@@ -958,6 +1035,11 @@ class GestionDolibarr(unittest.TestCase):
         vide = self.e("dolibarr.modifier", "humain", {"objet": "tiers", "id": tid, "champs": {"options_categorie": ""}})             # une valeur vide efface le champ
         self.assertEqual(vide["statut"], "faite", msg=str(vide))
         self.assertIsNone(self.faux.t["thirdparties"][tid]["array_options"]["options_categorie"])
+        c = self.e("dolibarr.modifier", "humain", {"objet": "tiers", "id": tid, "champs": {"options_cases": "a, b", "options_lien": "12"}})
+        self.assertEqual(c["statut"], "faite", msg=str(c))
+        self.assertEqual((self.faux.t["thirdparties"][tid]["array_options"]["options_cases"], self.faux.t["thirdparties"][tid]["array_options"]["options_lien"]), ("a,b", "12"))
+        for mauvais in ({"options_cases": "a,z"}, {"options_lien": "12; drop"}):
+            self.assertEqual(self.e("dolibarr.modifier", "humain", {"objet": "tiers", "id": tid, "champs": mauvais})["statut"], "echec", mauvais)
         p = self.e("dolibarr.creer", "humain", {"objet": "produits", "champs": {"ref": "P1", "label": "Billet", "options_last_date_price": "2026-11-01"}})
         self.assertEqual(p["statut"], "faite", msg=str(p))
         self.assertEqual(self.e("dolibarr.creer", "humain", {"objet": "produits", "champs": {"ref": "P2", "label": "x", "options_last_date_price": "demain"}})["statut"], "echec")
@@ -975,8 +1057,14 @@ class GestionDolibarr(unittest.TestCase):
         self.assertEqual(sorted(e for e, _ in ann), ["dolibarr.don_recu", "dolibarr.facture_payee"])
         self.assertEqual([c["id"] for e, c in ann if e == "dolibarr.facture_payee"], [a])
         self.assertEqual([c["id"] for e, c in ann if e == "dolibarr.don_recu"], [don])
-        ann, _ = mod._nouveautes(conf, vus2)
+        ann, vus3 = mod._nouveautes(conf, vus2)
         self.assertEqual(ann, [])                                                                       # rien de nouveau : rien d'annoncé
+        # la cloche : ce qui vient d'arriver reste un constat « info » sept jours, puis disparaît
+        titres = sorted(c["titre"] for c in mod._constats_nouveautes(vus3))
+        self.assertEqual(titres, ["Don reçu : 25 €", "Facture payée : %s" % self.faux.t["invoices"][a].get("ref", "")] if False else titres)
+        self.assertEqual(len(titres), 2)
+        self.assertTrue(all(c["niveau"] == "info" and len(c["objet"]) == 2 for c in mod._constats_nouveautes(vus3)))
+        self.assertEqual(mod._constats_nouveautes(vus3, maintenant=__import__("time").time() + 8 * 86400), [])
 
     def test_un_brouillon_se_modifie_ligne_par_ligne_et_se_defait(self):
         t = self.faux.nouveau("thirdparties", {"name": "Cie", "client": 1})
@@ -999,6 +1087,123 @@ class GestionDolibarr(unittest.TestCase):
         self.retour("ligne", m["resultat"])
         self.retour("ligne", a["resultat"])
         self.assertEqual([x["desc"] for x in self.faux.t["invoices"][brouillon]["lines"]], ["Ligne A"])
+
+    def test_une_note_de_frais_approuvee_se_paie_et_ne_se_defait_pas_par_l_api(self):
+        args = {"auteur": 7, "debut": "2026-10-01", "fin": "2026-10-31", "type": 29, "lignes": [{"desc": "Trajet", "qty": 1, "subprice": 10, "tva_tx": 0}]}
+        fid = self.e("dolibarr.frais_creer", "humain", args)["resultat"]["id"]
+        self.assertEqual(self.e("dolibarr.frais_payer", "humain", {"id": fid, "banque": 1})["statut"], "echec")                     # pas avant l'approbation
+        self.e("dolibarr.frais_etat", "humain", {"id": fid, "action": "valider"})
+        self.e("dolibarr.frais_etat", "humain", {"id": fid, "action": "approuver"})
+        self.assertEqual(self.e("dolibarr.frais_payer", "humain", {"id": fid, "banque": "x"})["statut"], "echec")
+        r = self.e("dolibarr.frais_payer", "humain", {"id": fid, "banque": 1, "mode": "VIR", "numero": "V-1"})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        self.assertEqual((r["resultat"]["montant"], self.faux.t["expensereports"][fid]["status"]), (10.0, 6))
+        self.assertEqual(self.e("dolibarr.frais_payer", "humain", {"id": fid, "banque": 1})["statut"], "echec")                     # déjà payée
+        with self.assertRaises(Exception):
+            self.retour("frais_payer", r["resultat"])
+
+    def test_une_commande_fournisseur_se_recoit_dans_un_entrepot(self):
+        t = self.faux.nouveau("thirdparties", {"name": "Imprimerie", "fournisseur": 1})
+        oid = self.e("dolibarr.creer_brouillon", "humain", {"objet": "commandes_fournisseurs", "socid": t, "lignes": [{"desc": "Scène", "qty": 2, "subprice": 50, "tva_tx": 0}]})["resultat"]["id"]
+        for action in ("valider", "approuver", "commander"):
+            self.assertEqual(self.e("dolibarr.commande_fournisseur", "humain", {"id": oid, "action": action})["statut"], "faite")
+        self.faux.t["supplierorders"][oid]["lines"] = [{"id": "3", "qty": "2", "fk_product": None}]
+        self.assertEqual(self.e("dolibarr.commande_fournisseur", "humain", {"id": oid, "action": "recevoir"})["statut"], "echec")            # il faut un entrepôt
+        r = self.e("dolibarr.commande_fournisseur", "humain", {"id": oid, "action": "recevoir", "entrepot": 5})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        self.assertEqual(self.faux.t["supplierorders"][oid]["statut"], "4")
+
+    def test_les_lignes_d_une_facture_fournisseur_se_modifient_sous_les_noms_de_dolibarr(self):
+        t = self.faux.nouveau("thirdparties", {"name": "Imprimerie", "fournisseur": 1})
+        fid = self.e("dolibarr.creer_brouillon", "humain", {"objet": "fournisseurs", "socid": t, "lignes": [{"desc": "A", "qty": 1, "subprice": 10, "tva_tx": 0}], "champs": {"ref_supplier": "F-1"}})["resultat"]["id"]
+        self.faux.t["supplierinvoices"][fid]["lines"] = [{"id": "1", "desc": "A", "description": "A", "qty": "1", "subprice": "10", "pu_ht": "10", "tva_tx": "0"}]
+        a = self.e("dolibarr.ligne", "humain", {"objet": "fournisseurs", "id": fid, "action": "ajouter", "ligne": {"desc": "B", "qty": 2, "subprice": 5, "tva_tx": 20}})
+        self.assertEqual(a["statut"], "faite", msg=str(a))
+        self.assertEqual(self.faux.t["supplierinvoices"][fid]["lines"][-1]["description"], "B")                                      # « description » et « pu_ht », pas « desc » et « subprice »
+        m = self.e("dolibarr.ligne", "humain", {"objet": "fournisseurs", "id": fid, "action": "modifier", "ligne_id": a["resultat"]["ligne_id"], "ligne": {"qty": 3}})
+        self.assertEqual(m["statut"], "faite", msg=str(m))
+        self.retour("ligne", m["resultat"])
+        self.retour("ligne", a["resultat"])
+        self.assertEqual(len(self.faux.t["supplierinvoices"][fid]["lines"]), 1)
+
+    def test_un_rib_se_modifie_se_supprime_et_revient(self):
+        t = self.faux.nouveau("thirdparties", {"name": "Cie", "fournisseur": 1})
+        r = self.e("dolibarr.rib_creer", "humain", {"tiers": t, "label": "Principal", "iban": "FR76 3000 6000 0112 3456 7890 189", "banque": "CA"})
+        rid = r["resultat"]["id"]
+        self.assertEqual(self.e("dolibarr.rib_modifier", "humain", {"tiers": t, "rib_id": rid, "champs": {"titulaire": "X"}})["statut"], "echec")        # le titulaire ne se relit pas : refusé
+        m = self.e("dolibarr.rib_modifier", "humain", {"tiers": t, "rib_id": rid, "champs": {"label": "Secondaire", "banque": "LCL", "defaut": 1}})
+        self.assertEqual(m["statut"], "faite", msg=str(m))
+        self.assertEqual(self.e("dolibarr.rib_lister", "humain", {"tiers": t})["resultat"]["ribs"][0]["label"], "Secondaire")
+        self.retour("rib_modifier", m["resultat"])
+        self.assertEqual(self.e("dolibarr.rib_lister", "humain", {"tiers": t})["resultat"]["ribs"][0]["label"], "Principal")
+        s = self.e("dolibarr.rib_supprimer", "humain", {"tiers": t, "rib_id": rid})
+        self.assertEqual(s["statut"], "faite", msg=str(s))
+        self.assertEqual(self.e("dolibarr.rib_lister", "humain", {"tiers": t})["resultat"]["ribs"], [])
+        self.retour("rib_supprimer", s["resultat"])
+        self.assertEqual([x["label"] for x in self.e("dolibarr.rib_lister", "humain", {"tiers": t})["resultat"]["ribs"]], ["Principal"])
+        self.assertEqual(self.e("dolibarr.rib_supprimer", "humain", {"tiers": t, "rib_id": 99})["statut"], "echec")
+
+    def test_une_tache_s_ajoute_a_un_projet_avec_son_temps_passe(self):
+        projet = self.faux.nouveau("projects", {"ref": "PJ2611-0001", "title": "Soirée", "statut": "1"})
+        t = self.e("dolibarr.tache_creer", "humain", {"projet": projet, "label": "Régie", "debut": "2026-11-02", "fin": "2026-11-05", "heures": 3})
+        self.assertEqual(t["statut"], "faite", msg=str(t))
+        tid = t["resultat"]["id"]
+        self.assertEqual(self.faux.taches[tid]["ref"], "PJ2611-0001-T01")                                                           # la référence suit celle du projet
+        self.assertEqual(self.faux.taches[tid]["planned_workload"], 10800)
+        t2 = self.e("dolibarr.tache_creer", "humain", {"projet": projet, "label": "Sono"})
+        self.assertEqual(self.faux.taches[t2["resultat"]["id"]]["ref"], "PJ2611-0001-T02")
+        for mauvais in ({"projet": projet, "label": ""}, {"projet": projet, "label": "x", "debut": "2026-11-05", "fin": "2026-11-02"}, {"projet": 999, "label": "x"}):
+            self.assertEqual(self.e("dolibarr.tache_creer", "humain", mauvais)["statut"], "echec", mauvais)
+        tm = self.e("dolibarr.temps_ajouter", "humain", {"tache": tid, "minutes": 90, "date": "2026-11-03", "note": "montage"})
+        self.assertEqual(tm["statut"], "faite", msg=str(tm))
+        self.assertEqual(self.faux.taches[tid]["duration_effective"], "5400")
+        for mauvais in ({"tache": tid, "minutes": 0}, {"tache": tid, "minutes": 2000}, {"tache": tid, "minutes": "x"}, {"tache": 999, "minutes": 10}):
+            self.assertEqual(self.e("dolibarr.temps_ajouter", "humain", mauvais)["statut"], "echec", mauvais)
+        with self.assertRaises(Exception):
+            self.retour("tache_creer", t["resultat"])                                                                               # du temps y est passé : elle ne se supprime pas
+        self.retour("temps_ajouter", tm["resultat"])
+        self.assertEqual(self.faux.taches[tid]["duration_effective"], "0")
+        self.retour("tache_creer", t["resultat"])
+        self.assertNotIn(tid, self.faux.taches)
+
+    def test_la_recherche_serveur_construit_elle_meme_son_filtre(self):
+        self.faux.nouveau("thirdparties", {"name": "MONARCH", "client": 1})
+        r = self.e("dolibarr.chercher", "humain", {"chemin": "/thirdparties", "parametres": "limit=50&properties=id,name", "terme": "mona'rch; DROP TABLE x --", "tri": "az"})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        _, _, q = [x for x in self.faux.requetes if x[1] == "/thirdparties"][-1]
+        self.assertNotIn("'; ", q["sqlfilters"])                                                                                     # les guillemets du terme ont disparu : il ne peut pas sortir de son filtre
+        self.assertNotIn(";", q["sqlfilters"])
+        self.assertIn("t.nom:like:'%monarch DROP TABLE x --%'", q["sqlfilters"])
+        self.assertEqual((q["sortfield"], q["sortorder"]), ("t.nom", "ASC"))
+        for mauvais in ({"chemin": "/users", "terme": "x"}, {"chemin": "/thirdparties", "terme": "x", "tri": "n'importe"}, {"chemin": "/thirdparties", "parametres": "limit=5;DROP", "terme": "x"}):
+            self.assertEqual(self.e("dolibarr.chercher", "humain", mauvais)["statut"], "echec", mauvais)
+
+    def test_un_champ_personnalise_obligatoire_l_est_aussi_pour_un_humain(self):
+        self.faux.__dict__["extra_requis"] = True
+        r = self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": {"name": "Cie", "client": "0"}})
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("obligatoire", json.dumps(r, ensure_ascii=False))
+        ok = self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": {"name": "Cie", "client": "0", "options_categorie": "1"}})
+        self.assertEqual(ok["statut"], "faite", msg=str(ok))
+        self.assertNotEqual(self.e("dolibarr.creer", "itare", {"objet": "tiers", "champs": {"name": "Cie 2", "client": "0"}})["statut"], "echec")        # un agent n'est pas bloqué
+
+    def test_un_compte_prudent_fait_raconter_ses_agents_pour_les_gestes_qu_il_choisit(self):
+        self.n.identite.creer("chef@x.fr", "Abcdefgh1!", superadmin=True)
+        self.n.identite.creer("paul@x.fr", "Abcdefgh1!")
+        i = self.facture()
+        args = {"id": i, "montant": 20, "banque": 1, "mode": "VIR"}
+        self.n.droits.regler("compte", "paul@x.fr", "dolibarr.facturer", "accorde")
+        for cap in ("encaisser", "relancer"):
+            self.n.catalogue.regler_palier("dolibarr." + cap, "auto")                                     # l'administrateur a laissé ces gestes à l'agent : seule la prudence du compte peut le retenir
+        self.n.reglages.poser("dolibarr.prudence", "encaisser", compte="paul@x.fr")
+        r = self.e("dolibarr.encaisser", "itare", args, compte="paul@x.fr")
+        self.assertEqual(r["statut"], "racontee", msg=str(r))                                          # le compte l'a demandé : l'agent prépare, il n'écrit pas
+        self.assertEqual(self.faux.paiements.get(i), None)
+        self.assertNotEqual(self.e("dolibarr.encaisser", "humain", args, compte="paul@x.fr")["statut"], "racontee")      # l'humain n'est jamais retenu par un palier
+        self.n.reglages.poser("dolibarr.prudence", "*", compte="paul@x.fr")
+        self.assertEqual(self.e("dolibarr.relancer", "itare", {"id": i}, compte="paul@x.fr")["statut"], "racontee")  # « * » : tout est raconté
+        self.n.reglages.poser("dolibarr.prudence", "", compte="paul@x.fr")
+        self.assertNotEqual(self.e("dolibarr.relancer", "itare", {"id": i}, compte="paul@x.fr")["statut"], "racontee")  # sans réglage : le palier de l'administrateur
 
     def test_un_rib_se_verifie_se_range_et_se_retire(self):
         t = self.faux.nouveau("thirdparties", {"name": "Cie Les Pierrots", "fournisseur": 1})

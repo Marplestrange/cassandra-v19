@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #058f92
+// VERSION CN : 0.1.0  #5623c0
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_ecran (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=058f92 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=5623c0 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -210,11 +210,15 @@
   }
   // Quel geste demande quel droit de Paramètres › Droits (module Dolibarr). Ce sont ceux des capacités que le geste appelle : le serveur refuse de toute façon, l'écran ne fait que cacher ce que le compte ne peut pas faire.
   const DROIT_GESTE = { valider: "valider", donvalider: "valider", projet: "valider", encaisser: "facturer", relancer: "facturer", avoir: "facturer", nfacture: "facturer", ndevis: "facturer", devis: "facturer", facturer: "facturer",
-    ntiers: "tiers", ncontact: "tiers", nprod: "tiers", prix: "tiers", nprojet: "tiers", envoyerp: "tiers", envoyerc: "tiers", modifl: "tiers", detacher: "tiers", ndon: "dons", cotis: "dons", pjajout: "facturer", reglagesbase: "administrer", cmdcreer: "facturer", cmd: "facturer", cmdfacturer: "facturer", ndfourn: "facturer", lignes: "facturer", lgadd: "facturer", lgmod: "facturer", lgsup: "facturer", ncmdf: "facturer", ffvalider: "valider", cmdf: "tresorerie", nfrais: "tresorerie", frais: "valider", rib: "tresorerie", ribajout: "tresorerie", virement: "tresorerie", payersup: "tresorerie", libre: "libre" };
+    ntiers: "tiers", ncontact: "tiers", nprod: "tiers", prix: "tiers", nprojet: "tiers", envoyerp: "tiers", envoyerc: "tiers", modifl: "tiers", detacher: "tiers", ndon: "dons", cotis: "dons", pjajout: "facturer", reglagesbase: "administrer", fpayer: "tresorerie", ribmod: "tresorerie", ribsup: "tresorerie", ntache: "tiers", temps: "tiers", rech: "consulter", cmdcreer: "facturer", cmd: "facturer", cmdfacturer: "facturer", ndfourn: "facturer", lignes: "facturer", lgadd: "facturer", lgmod: "facturer", lgsup: "facturer", ncmdf: "facturer", ffvalider: "valider", cmdf: "tresorerie", nfrais: "tresorerie", frais: "valider", rib: "tresorerie", ribajout: "tresorerie", virement: "tresorerie", payersup: "tresorerie", libre: "libre" };
   const LIB_DROIT = { valider: "Valider", facturer: "Facturer et encaisser", tiers: "Gérer les tiers, contacts, produits et projets", dons: "Gérer les dons et les adhérents", tresorerie: "Trésorerie", libre: "Requête libre" };
   const peutGeste = (a) => { const d = DROIT_GESTE[a]; return !d || K.peut("dolibarr." + d); };
   const manque = (a) => "Il te manque le droit « " + LIB_DROIT[DROIT_GESTE[a]] + " » (Paramètres › Droits)";
   const griser = (zone) => zone && zone.querySelectorAll("[data-a]").forEach((b) => { if (peutGeste(b.dataset.a)) return; b.classList.add("off"); b.setAttribute("aria-disabled", "true"); b.title = manque(b.dataset.a); if (b.tagName === "BUTTON") b.disabled = true; });
+  const PRUDENCES = [["", "Aucun : le palier de l’administrateur"], ["*", "Tous les gestes d’écriture"],
+    ["encaisser,payer_fournisseur,virement_interne,frais_payer,frais_creer,frais_etat,commande_fournisseur,facture_fournisseur_valider,rib_creer,rib_modifier,rib_supprimer", "Les gestes d’argent : règlements, virements, notes de frais, achats, RIB"],
+    ["valider_facture,don_valider,projet,facture_fournisseur_valider,frais_etat,creer_avoir", "Les gestes à numéro légal : validations et avoirs"]];
+  const prudences = (v) => { v = String(v || ""); const l = PRUDENCES.slice(); if (!l.some((o) => o[0] === v)) l.push([v, "Ma liste : " + v]); return l.map((o) => '<option value="' + K.esc(o[0]) + '"' + (o[0] === v ? " selected" : "") + ">" + K.esc(o[1]) + "</option>").join(""); };
   const COURANTE = { racine: null };      // la page qui a reçu le dernier clic : à elle les fenêtres qu'elle a ouvertes
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};
   CASS.sceneSurMesure.dolibarr = async function (corps, ctx) {
@@ -247,7 +251,11 @@
     d_libre: "libre" };
     const S = { v: {}, onglet: PAGES[String((ctx && ctx.ecran) || "").split(":")[1]] || "afaire", d: {}, q: {}, f: { factures: "ouvertes" }, err: "", occupe: false, acces: null, libre: "", libreRep: null };
 
-    async function lire(chemin, params) { return (await agir("dolibarr.lire_ecran", { chemin: chemin, parametres: (params || "") + (S.pageSuivante ? "&page=" + S.pageSuivante : "") })).reponse || []; }
+    const CHEMINS_RECHERCHE = new Set(["/thirdparties", "/contacts", "/invoices", "/proposals", "/orders", "/products", "/projects", "/donations", "/members", "/supplierinvoices", "/supplierorders", "/expensereports"]);
+    async function lire(chemin, params) {
+      if (S.rech && CHEMINS_RECHERCHE.has(chemin)) return (await agir("dolibarr.chercher", { chemin: chemin, parametres: (params || "").replace(/&?sortfield=[^&]*|&?sortorder=[^&]*/g, ""), terme: S.rech.terme, tri: S.rech.tri })).reponse || [];
+      return (await agir("dolibarr.lire_ecran", { chemin: chemin, parametres: (params || "") + (S.pageSuivante ? "&page=" + S.pageSuivante : "") })).reponse || [];
+    }
     const liste = (r) => (Array.isArray(r) ? r : []);
     const PAGE = "limit=100&sortfield=t.rowid&sortorder=DESC";
     const CHARGEURS = {
@@ -304,7 +312,7 @@
     const filtrer = (l, k, f) => (l || []).filter((x) => !S.q[k] || JSON.stringify(x).toLowerCase().includes(S.q[k].toLowerCase()) || (f && f(x)));
     const CLE_DONNEES = { fournisseurs: "sup" };          // la page « fournisseurs » garde ses factures sous « sup »
     const pleine = (k) => { const dk = CLE_DONNEES[k] || k, n = (S.d[dk] || []).length; return n > 0 && n >= 100 * ((S.pg && S.pg[dk]) || 1); };
-    const barre = (k, droite) => '<div class="barre2"><input type="search" class="in" data-q="' + k + '" placeholder="Chercher…" value="' + esc(S.q[k] || "") + '" style="flex:1 1 220px"><span style="flex:1"></span>' + (droite || "") + (pleine(k) ? btn("Charger les 100 suivantes", "plus", CLE_DONNEES[k] || k) : "") + btn("Exporter (CSV)", "csv", k) + "</div>";
+    const barre = (k, droite) => '<div class="barre2"><input type="search" class="in" data-q="' + k + '" placeholder="Chercher…" value="' + esc(S.q[k] || "") + '" style="flex:1 1 220px"><span style="flex:1"></span>' + (droite || "") + ((pleine(k) || (S.rr && S.rr[CLE_DONNEES[k] || k])) ? '<select class="in" data-rtri="' + k + '" style="flex:0 0 auto;width:auto" title="Ordre de la recherche dans tout Dolibarr">' + [["recent", "Plus récents"], ["ancien", "Plus anciens"], ["az", "Nom A → Z"], ["za", "Nom Z → A"]].map((o) => '<option value="' + o[0] + '"' + ((S.tri && S.tri[k]) === o[0] ? " selected" : "") + ">" + o[1] + "</option>").join("") + "</select>" + btn("Chercher dans tout Dolibarr", "rech", k) : "") + ((S.rr && S.rr[CLE_DONNEES[k] || k]) ? pill("Résultats pour « " + esc(S.rr[CLE_DONNEES[k] || k]) + " »", "ac") + btn("Effacer", "rechfin", k) : "") + (pleine(k) && !(S.rr && S.rr[CLE_DONNEES[k] || k]) ? btn("Charger les 100 suivantes", "plus", CLE_DONNEES[k] || k) : "") + btn("Exporter (CSV)", "csv", k) + "</div>";
     const seg = (k, opts) => '<div class="seg">' + opts.map((o) => '<button data-f="' + k + '|' + o[0] + '" class="' + ((S.f[k] || opts[0][0]) === o[0] ? "on" : "") + '">' + o[1] + "</button>").join("") + "</div>";
     const etatF = (f) => { const s = String(f.statut); if (s === "0") return pill("Brouillon"); if (s === "3") return pill("Abandonnée"); if (s === "2" || String(f.paye) === "1") return pill("Payée", "ok"); const r = retard(f); return r > 0 ? pill("En retard · " + r + " j", r > 365 ? "dg" : "al") : pill("À encaisser", "ac"); };
     const etiq = (o) => (o.venu ? pill("Venu de Dolibarr", "ac") : o.lien ? pill("Dolibarr · lié", "ok") + ' <span class="note">le ' + jour(o.lien.le) + "</span>" : pill("Cassandra seulement", ""));
@@ -348,9 +356,9 @@
       frais() {
         const L = { "0": "Brouillon", "2": "Validée", "4": "Annulée", "5": "Approuvée", "6": "Payée", "99": "Refusée" }, D = filtrer(S.d.frais, "frais");
         return '<div class="carte">' + barre("frais", btn("+ Note de frais", "nfrais", "", "pri")) + table(["Réf.", "Utilisateur", "Du", "Au", "Montant HT", "Montant TTC", "Statut", ""], D.map((e) => {
-          const s = String(e.status != null ? e.status : e.fk_statut), b = s === "0" ? btn("Valider", "frais", e.id + "|valider") : s === "2" ? btn("Approuver", "frais", e.id + "|approuver", "pri") : "";
+          const s = String(e.status != null ? e.status : e.fk_statut), b = s === "0" ? btn("Valider", "frais", e.id + "|valider") : s === "2" ? btn("Approuver", "frais", e.id + "|approuver", "pri") : s === "5" ? btn("Payer", "fpayer", e.id, "pri") : "";
           return '<tr><td class="num"><b>' + esc(e.ref) + "</b></td><td>" + esc((S.fraisU || {})[String(e.fk_user_author)] || "Utilisateur " + e.fk_user_author) + "</td><td>" + jour(e.date_debut) + "</td><td>" + jour(e.date_fin) + '</td><td class="num">' + eur(e.total_ht) + '</td><td class="num">' + eur(e.total_ttc) + "</td><td>" + pill(L[s] || s, s === "5" || s === "6" ? "ok" : "") + "</td><td>" + b + "</td></tr>";
-        })) + '<div class="note">Le remboursement d’une note approuvée se saisit dans Dolibarr (fiche de la note, « Payer »).</div></div>';
+        })) + '<div class="note">« Payer » règle le total d’une note approuvée depuis un compte bancaire ; ce geste ne se défait pas par l’API de Dolibarr.</div></div>';
       },
       commandes() {
         const L = { "-1": "Annulée", "0": "Brouillon", "1": "Validée", "2": "En cours", "3": "Livrée" }, D = filtrer(S.d.commandes, "commandes");
@@ -389,7 +397,7 @@
       },
       projets() {
         const P = filtrer(S.d.projets, "projets"), L = ["Brouillon", "Ouvert", "Clos"];
-        return '<div class="carte">' + barre("projets", btn("+ Nouveau projet", "nprojet", "", "pri")) + table(["Réf.", "Libellé", "Tiers", "Date de début", "Date de fin", "Visibilité", "Statut", ""], P.map((p) => "<tr><td class=\"num\">" + esc(p.ref) + "</td><td><b>" + esc(p.title) + "</b></td><td>" + (p.socid && String(p.socid) !== "0" ? esc(nomTiers(p.socid)) : "") + "</td><td>" + jour(p.date_start) + "</td><td>" + jour(p.date_end) + "</td><td>" + (String(p.public) === "1" ? "Tout le monde" : "Contacts du projet") + "</td><td>" + pill(L[Number(p.statut)] || p.statut, String(p.statut) === "1" ? "ok" : "") + "</td><td>" + (String(p.statut) === "0" ? btn("Valider", "projet", p.id + "|valider") : String(p.statut) === "1" ? btn("Clore", "projet", p.id + "|clore") : "") + "</td></tr>")) + "</div>";
+        return '<div class="carte">' + barre("projets", btn("+ Nouveau projet", "nprojet", "", "pri")) + table(["Réf.", "Libellé", "Tiers", "Date de début", "Date de fin", "Visibilité", "Statut", ""], P.map((p) => "<tr><td class=\"num\">" + esc(p.ref) + "</td><td><b>" + esc(p.title) + "</b></td><td>" + (p.socid && String(p.socid) !== "0" ? esc(nomTiers(p.socid)) : "") + "</td><td>" + jour(p.date_start) + "</td><td>" + jour(p.date_end) + "</td><td>" + (String(p.public) === "1" ? "Tout le monde" : "Contacts du projet") + "</td><td>" + pill(L[Number(p.statut)] || p.statut, String(p.statut) === "1" ? "ok" : "") + "</td><td>" + (String(p.statut) === "0" ? btn("Valider", "projet", p.id + "|valider") : String(p.statut) === "1" ? btn("Clore", "projet", p.id + "|clore") : "") + btn("Tâches", "taches", p.id) + "</td></tr>")) + "</div>";
       },
       cprojets() {
         const lie = (id) => (S.d.liens || []).find((l) => l.type === "projet" && String(l.id) === String(id)), f = S.f.cprojets || "tous";
@@ -414,10 +422,10 @@
         const F = filtrer(S.d.sup, "fournisseurs");
         const LC = { "-1": "Annulée", "0": "Brouillon", "1": "Validée", "2": "Approuvée", "3": "Commandée", "4": "Reçue en partie", "5": "Reçue", "6": "Annulée", "7": "Annulée", "9": "Refusée" }, CF = filtrer(S.d.cf, "fournisseurs");
         const cmdf = '<div class="carte" style="margin-top:12px"><div class="barre2"><h3 style="flex:1">Commandes fournisseurs</h3>' + btn("+ Commande fournisseur", "ncmdf", "") + "</div>" + (CF.length ? table(["Réf.", "Réf. fournisseur", "Fournisseur", "Date", "Montant HT", "Montant TTC", "Statut", ""], CF.map((c) => {
-          const s = String(c.statut), b = s === "0" ? btn("Valider", "cmdf", c.id + "|valider") : s === "1" ? btn("Approuver", "cmdf", c.id + "|approuver") : s === "2" ? btn("Passer commande", "cmdf", c.id + "|commander", "pri") : "";
+          const s = String(c.statut), b = s === "0" ? btn("Valider", "cmdf", c.id + "|valider") : s === "1" ? btn("Approuver", "cmdf", c.id + "|approuver") : s === "2" ? btn("Passer commande", "cmdf", c.id + "|commander", "pri") : s === "3" ? btn("Recevoir", "cmdf", c.id + "|recevoir", "pri") : "";
           return '<tr><td class="num"><b>' + esc(c.ref) + '</b></td><td class="num">' + esc(c.ref_supplier || "") + "</td><td>" + esc(nomTiers(c.socid)) + "</td><td>" + jour(c.date) + '</td><td class="num">' + eur(c.total_ht) + '</td><td class="num">' + eur(c.total_ttc) + "</td><td>" + pill(LC[s] || s, s === "3" ? "ok" : "") + "</td><td>" + b + "</td></tr>";
         })) : '<div class="note">Aucune commande fournisseur.</div>') + '<div class="note">Valider, approuver et passer commande ne se défont pas par l’API de Dolibarr : à défaire dans Dolibarr.</div></div>';
-        return '<div class="carte">' + barre("fournisseurs", btn("+ Facture fournisseur", "ndfourn", "", "pri")) + table(["Réf.", "Réf. fournisseur", "Fournisseur", "Date", "Date d'échéance", "Montant HT", "Montant TTC", "Statut", ""], F.map((f) => '<tr><td class="num"><b>' + esc(f.ref) + '</b></td><td class="num">' + esc(f.ref_supplier || "") + "</td><td>" + esc(nomTiers(f.socid)) + "</td><td>" + jour(f.date) + "</td><td>" + jour(f.date_echeance) + '</td><td class="num">' + eur(f.total_ht) + '</td><td class="num">' + eur(f.total_ttc) + "</td><td>" + (String(f.paye) === "1" || String(f.statut) === "2" ? pill("Payée", "ok") : String(f.statut) === "0" ? pill("Brouillon") : pill("À payer", "al")) + "</td><td>" + (String(f.statut) === "0" ? btn("Valider", "ffvalider", f.id) : "") + (String(f.statut) === "1" && String(f.paye) !== "1" ? btn("Payer", "payersup", f.id, "pri") : "") + "</td></tr>")) + '<div class="note">Pour collecter les factures reçues par courriel, le module emailcollector de Dolibarr doit être actif.</div></div>' + cmdf;
+        return '<div class="carte">' + barre("fournisseurs", btn("+ Facture fournisseur", "ndfourn", "", "pri")) + table(["Réf.", "Réf. fournisseur", "Fournisseur", "Date", "Date d'échéance", "Montant HT", "Montant TTC", "Statut", ""], F.map((f) => '<tr><td class="num"><b>' + esc(f.ref) + '</b></td><td class="num">' + esc(f.ref_supplier || "") + "</td><td>" + esc(nomTiers(f.socid)) + "</td><td>" + jour(f.date) + "</td><td>" + jour(f.date_echeance) + '</td><td class="num">' + eur(f.total_ht) + '</td><td class="num">' + eur(f.total_ttc) + "</td><td>" + (String(f.paye) === "1" || String(f.statut) === "2" ? pill("Payée", "ok") : String(f.statut) === "0" ? pill("Brouillon") : pill("À payer", "al")) + "</td><td>" + (String(f.statut) === "0" ? btn("Valider", "ffvalider", f.id) + btn("Lignes", "lignes", "fournisseurs|" + f.id) : "") + (String(f.statut) === "1" && String(f.paye) !== "1" ? btn("Payer", "payersup", f.id, "pri") : "") + "</td></tr>")) + '<div class="note">Pour collecter les factures reçues par courriel, le module emailcollector de Dolibarr doit être actif.</div></div>' + cmdf;
       },
       instance() {
         const i = S.d.inst || { r: {}, m: [], st: {} }, c = i.r.comptes || {}, imp = i.r.impayees || {};
@@ -429,6 +437,7 @@
         return '<div class="stats"><div class="stat"><b>' + c.operations + "</b><span>opérations dans l’API (" + c.domaines.length + ' domaines)</span></div><div class="stat"><b>' + T[0] + '</b><span>pour lire</span></div><div class="stat"><b>' + T[1] + '</b><span>pour créer ou modifier</span></div><div class="stat"><b>' + T[2] + "</b><span>pour supprimer</span></div></div>" +
           '<div class="carte"><h3>Ce que mon Itare peut faire seul</h3><div class="note">Le palier de chaque geste (« raconter » ou « auto ») est choisi par l’administrateur. Tes deux réglages ci-dessous sont plus stricts : ils ne sont jamais plus larges que lui.</div>' +
           '<label class="fld"><span><input type="checkbox" id="g-off"' + (g["dolibarr.itare_ecrire"] === "desactive" ? " checked" : "") + "> Mon Itare n’écrit jamais dans Dolibarr (il lit seulement)</span></label>" + champ("g-seuil", "Seuil en euros : au-dessus, mon Itare ne règle, ne vire ni ne cotise (0 : pas de seuil)", Number(g["dolibarr.itare_seuil"] || 0), "number") +
+          '<label class="fld">Gestes que mon Itare prépare sans les faire seul (je les approuve)<select class="in" id="g-prud">' + prudences(g["dolibarr.prudence"]) + "</select></label>" +
           '<div style="display:flex;gap:6px;flex-wrap:wrap">' + btn("Enregistrer mes réglages", "savegarde", "", "pri") + btn("Régler les paliers (administrateur)", "paliers") + "</div></div>" +
           '<div class="carte"><h3>Le catalogue de l’API</h3>' + table(["Domaine", "Lire", "Créer", "Modifier", "Supprimer"], c.domaines.map((d) => "<tr><td><b>/" + esc(d.domaine) + '</b></td><td class="num">' + d.lire + '</td><td class="num">' + d.creer + '</td><td class="num">' + d.modifier + '</td><td class="num">' + d.supprimer + "</td></tr>")) + '<div class="note">Tout passe par la requête libre, et chaque geste a sa preuve et son retour arrière quand l’acte le permet.</div></div>';
       },
@@ -546,6 +555,10 @@
       ["Note de frais", [{ k: "auteur", l: "Pour (utilisateur Dolibarr)", t: "select", dic: "fraisusers", req: 1 }, { k: "type", l: "Type de frais", t: "select", dic: "fraistypes", req: 1 }, { k: "debut", l: "Du", t: "date", d: AUJ, req: 1 }, { k: "fin", l: "Au", t: "date", d: AUJ, req: 1 }]],
       ["Lignes", [LIGNES]], ["Notes", [{ k: "note", l: "Note", t: "area", large: 1 }]]] };
     SCHEMAS.ligne = { nom: "ligne", sections: [["Ligne", [{ k: "desc", l: "Désignation", t: "area", large: 1, req: 1 }, { k: "qty", l: "Quantité", t: "number", d: "1", req: 1 }, { k: "subprice", l: "Prix unitaire HT", t: "number", req: 1 }, { k: "tva_tx", l: "Taux de TVA", t: "select", dic: "tva", d: "0" }]]] };
+    SCHEMAS.ribmod = { nom: "rib", sections: [["Compte bancaire", [{ k: "label", l: "Nom du compte", req: 1 }, { k: "banque", l: "Banque" }, { k: "iban", l: "IBAN", req: 1 }, { k: "bic", l: "BIC" }, { k: "defaut", l: "Compte par défaut", t: "select", o: [["0", "Non"], ["1", "Oui"]] }]]] };
+    SCHEMAS.reception = { nom: "réception", sections: [["Réception", [{ k: "entrepot", l: "Entrepôt qui reçoit", t: "select", dic: "entrepots", req: 1 }]]] };
+    SCHEMAS.tache = { nom: "tâche", sections: [["Tâche", [{ k: "label", l: "Nom de la tâche", req: 1, large: 1 }, { k: "debut", l: "Début", t: "date" }, { k: "fin", l: "Fin", t: "date" }, { k: "heures", l: "Charge prévue (heures)", t: "number", d: "0" }, { k: "description", l: "Description", t: "area", large: 1 }]]] };
+    SCHEMAS.temps = { nom: "temps", sections: [["Temps passé", [{ k: "date", l: "Jour", t: "date", d: AUJ, req: 1 }, { k: "minutes", l: "Durée (minutes)", t: "number", d: "60", req: 1 }, { k: "note", l: "Note", large: 1 }]]] };
     SCHEMAS.cotisation = { nom: "cotisation", sections: [["Cotisation", [
       { k: "debut", l: "Date de début de cotisation", t: "date", d: AUJ, req: 1 }, { k: "fin", l: "Date de fin de cotisation", t: "date", d: String(new Date().getFullYear() + 1) + AUJ.slice(4) }, { k: "montant", l: "Montant", t: "number", d: "15", req: 1 }, { k: "libelle", l: "Libellé", d: "Cotisation", large: 1 }]]] };
     SCHEMAS.factures = { objet: "factures", nom: "facture", sections: DOC("Facture", [{ k: "date_lim_reglement", l: "Date d'échéance", t: "date" }, { k: "fk_account", l: "Compte bancaire", t: "select", dic: "comptes" }]) };
@@ -589,6 +602,7 @@
         else if (nom === "fournisseurs") l = liste(await lire("/thirdparties", "limit=500&sortfield=t.nom&sortorder=ASC&properties=id,name&sqlfilters=(t.fournisseur:=:1)")).map((x) => [String(x.id), x.name]);
         else if (nom === "fraisusers") l = (await frais()).utilisateurs.map((u) => [String(u.id), (u.nom || u.login) + " (" + u.login + ")"]);
         else if (nom === "fraistypes") l = (await frais()).types.map((t) => [String(t.id), t.label]);
+        else if (nom === "entrepots") l = liste(await lire("/warehouses", "limit=100&properties=id,ref,lieu,statut")).filter((x) => String(x.statut) !== "0").map((x) => [String(x.id), x.ref + (x.lieu ? " — " + x.lieu : "")]);
         else if (nom === "devises") l = liste(await lire("/setup/dictionary/currencies", "limit=500")).map((x) => [String(x.code_iso), x.code_iso + " — " + x.label]);
       } catch (e) { l = []; }
       l = nom === "tva" || nom === "modescode" ? l : [["", ""]].concat(l.filter((o) => o[0] !== ""));
@@ -632,6 +646,8 @@
       if (c.genre === "select" || c.genre === "radio") return Object.assign(f, { t: "select", o: [["", ""]].concat(c.options) });
       if (["int", "double", "price"].includes(c.genre)) return Object.assign(f, { t: "number" });
       if (c.genre === "date") return Object.assign(f, { t: "date" });
+      if (c.genre === "checkbox") return Object.assign(f, { ph: (c.options || []).map((o) => o[0]).join(", "), l: c.libelle + " (valeurs séparées par des virgules : " + (c.options || []).map((o) => o[0] + " = " + o[1]).join(" ; ") + ")" });
+      if (["link", "sellist", "chkbxlst"].includes(c.genre)) return Object.assign(f, { l: c.libelle + " (identifiant)" });
       if (c.genre === "text" || c.genre === "html") return Object.assign(f, { t: "area", large: 1 });
       return f;
     };
@@ -702,8 +718,20 @@
       ndfourn: async () => { if (await formulaire("Nouvelle facture fournisseur (brouillon)", SCHEMAS.achatf, { date: AUJ }, async (c) => { await agir("dolibarr.creer_brouillon", { objet: "fournisseurs", socid: Number(c.socid), lignes: c.lines, champs: extras(c) }); }, "Créer le brouillon")) { K.dire("Facture fournisseur créée"); S.d = {}; await charger(true); } },
       ncmdf: async () => { if (await formulaire("Nouvelle commande fournisseur (brouillon)", SCHEMAS.achatc, { date: AUJ }, async (c) => { await agir("dolibarr.creer_brouillon", { objet: "commandes_fournisseurs", socid: Number(c.socid), lignes: c.lines, champs: extras(c) }); }, "Créer le brouillon")) { K.dire("Commande fournisseur créée"); S.d = {}; await charger(true); } },
       ffvalider: async (p) => { if (await modale("Valider la facture fournisseur", "<p>Elle prend son numéro. Cela se défait tant qu’elle n’est ni payée ni comptabilisée.</p>", "Valider")) await fait("dolibarr.facture_fournisseur_valider", { id: Number(p) }, "Facture fournisseur validée"); },
-      cmdf: async (p) => { const [id, action] = p.split("|"), dit = { valider: "Valider la commande fournisseur", approuver: "Approuver la commande fournisseur", commander: "Passer la commande au fournisseur" }[action]; if (await modale(dit, "<p><b>Ce geste ne se défait pas par l’API de Dolibarr</b> : il faudrait le défaire dans Dolibarr.</p>", dit)) await fait("dolibarr.commande_fournisseur", { id: Number(id), action: action }, "Commande fournisseur : " + action); },
+      cmdf: async (p) => {
+        const [id, action] = p.split("|");
+        if (action === "recevoir") {
+          if (await formulaire("Recevoir la commande fournisseur", SCHEMAS.reception, {}, async (c) => { await agir("dolibarr.commande_fournisseur", { id: Number(id), action: "recevoir", entrepot: Number(c.entrepot) }); }, "Recevoir")) { K.dire("Commande reçue"); S.d = {}; await charger(true); }
+          return;
+        }
+        return GESTES.cmdf0(p);
+      },
+      cmdf0: async (p) => { const [id, action] = p.split("|"), dit = { valider: "Valider la commande fournisseur", approuver: "Approuver la commande fournisseur", commander: "Passer la commande au fournisseur" }[action]; if (await modale(dit, "<p><b>Ce geste ne se défait pas par l’API de Dolibarr</b> : il faudrait le défaire dans Dolibarr.</p>", dit)) await fait("dolibarr.commande_fournisseur", { id: Number(id), action: action }, "Commande fournisseur : " + action); },
       nfrais: async () => { if (await formulaire("Nouvelle note de frais (brouillon)", SCHEMAS.frais, { debut: AUJ, fin: AUJ }, async (c) => { await agir("dolibarr.frais_creer", { auteur: Number(c.auteur), type: Number(c.type), debut: c.debut, fin: c.fin, note: c.note || "", lignes: (c.lines || []).map((l) => ({ desc: l.desc || "", qty: l.qty, subprice: l.subprice, tva_tx: l.tva_tx || 0 })) }); }, "Créer le brouillon")) { K.dire("Note de frais créée"); S.d = {}; await charger(true); } },
+      fpayer: async (id) => {
+        const e = (S.d.frais || []).find((x) => String(x.id) === String(id)) || {};
+        if (await formulaire("Paiement · " + (e.ref || id) + " (le total, " + eur(e.total_ttc) + ")", SCHEMAS.reglementSup, {}, async (c) => { await agir("dolibarr.frais_payer", { id: Number(id), banque: Number(c.banque), mode: c.mode, date: c.date, numero: c.numero || "" }); }, "Payer")) { K.dire("Note de frais payée"); S.d = {}; await charger(true); }
+      },
       frais: async (p) => { const [id, action] = p.split("|"), dit = action === "valider" ? "Valider la note de frais" : "Approuver la note de frais"; if (await modale(dit, "<p>Le geste se défait : la note revient à son statut d’avant.</p>", dit)) await fait("dolibarr.frais_etat", { id: Number(id), action: action }, action === "valider" ? "Note de frais validée" : "Note de frais approuvée"); },
       cmdcreer: async (p) => { if (await modale("Créer la commande", "<p>Une commande en brouillon est préparée avec les lignes du devis signé. Rien n’est validé ; le geste se défait.</p>", "Préparer la commande")) await fait("dolibarr.commande_creer", { devis: Number(p) }, "Commande préparée"); },
       cmd: async (p) => { const [id, action] = p.split("|"); const dit = action === "valider" ? "Valider la commande" : "Marquer la commande livrée"; if (await modale(dit, action === "valider" ? "<p>La commande prend son numéro. Le geste se défait.</p>" : "<p>La commande est classée « livrée ». Le geste se défait.</p>", dit)) await fait("dolibarr.commande", { id: Number(id), action: action }, action === "valider" ? "Commande validée" : "Commande livrée"); },
@@ -778,10 +806,18 @@
         const p = (S.d.produits || []).find((x) => String(x.id) === String(id));
         if (await modale("Prix de " + p.label, champ("n-p", "Nouveau prix HT", Number(p.price), "number", 'step="0.01"'), "Modifier")) await fait("dolibarr.modifier", { objet: "produits", id: Number(id), champs: { price: Number(val("n-p")), price_base_type: "HT" } }, "Prix modifié");
       },
-      payersup: async (id) => { const f = (S.d.sup || []).find((x) => String(x.id) === String(id)); if (await formulaire("Règlement · " + f.ref + " (Dolibarr règle tout le reste dû : " + eur(f.total_ttc) + ")", SCHEMAS.reglementSup, {}, async (c) => { await agir("dolibarr.payer_fournisseur", { id: Number(id), banque: Number(c.banque), mode: c.mode, date: c.date, numero: c.numero || "", note: c.note || "" }); }, "Payer")) { K.dire("Facture payée"); S.d = {}; await charger(true); } },
+      payersup: async (id) => { const f = (S.d.sup || []).find((x) => String(x.id) === String(id));
+        if (K.peut("dolibarr.tresorerie")) setTimeout(async () => {                   // le RIB du fournisseur, rappelé sous le titre : de quoi faire le virement sans le ressaisir
+          try {
+            const r = await agir("dolibarr.rib_lister", { tiers: Number(f.socid) }), m = document.querySelector(".kit-m"); if (!m || !m.querySelector("h2") || m.querySelector("#dlb-rib")) return;
+            const ribs = (r.ribs || []).sort((a, b) => (b.defaut ? 1 : 0) - (a.defaut ? 1 : 0));
+            m.querySelector("h2").insertAdjacentHTML("afterend", '<div id="dlb-rib" class="note" style="margin:6px 0 10px">' + (ribs.length ? "RIB du fournisseur : " + ribs.map((x) => "<b>" + esc(x.label) + "</b> " + esc(String(x.iban).replace(/\s+/g, "").replace(/(.{4})/g, "$1 ").trim()) + (x.bic ? " · " + esc(x.bic) : "")).join(" ; ") : "Aucun RIB enregistré pour ce fournisseur.") + "</div>");
+          } catch (e) { /* sans RIB lisible, le formulaire reste tel quel */ }
+        }, 900);
+        if (await formulaire("Règlement · " + f.ref + " (Dolibarr règle tout le reste dû : " + eur(f.total_ttc) + ")", SCHEMAS.reglementSup, {}, async (c) => { await agir("dolibarr.payer_fournisseur", { id: Number(id), banque: Number(c.banque), mode: c.mode, date: c.date, numero: c.numero || "", note: c.note || "" }); }, "Payer")) { K.dire("Facture payée"); S.d = {}; await charger(true); } },
       savegarde: async () => {
         const off = document.getElementById("g-off").checked, seuil = Number(document.getElementById("g-seuil").value) || 0;
-        try { await agir("reglages.regler", { cle: "dolibarr.itare_ecrire", valeur: off ? "desactive" : "libre" }); await agir("reglages.regler", { cle: "dolibarr.itare_seuil", valeur: seuil }); K.dire("Réglages enregistrés"); S.d.rgl = null; await charger(true); } catch (e) { K.dire(e.message || String(e), "err"); }
+        try { await agir("reglages.regler", { cle: "dolibarr.itare_ecrire", valeur: off ? "desactive" : "libre" }); await agir("reglages.regler", { cle: "dolibarr.itare_seuil", valeur: seuil }); await agir("reglages.regler", { cle: "dolibarr.prudence", valeur: document.getElementById("g-prud").value }); K.dire("Réglages enregistrés"); S.d.rgl = null; await charger(true); } catch (e) { K.dire(e.message || String(e), "err"); }
       },
       itareenvoi: async () => {
         const e = document.getElementById("dlb-msg"), m = (e && e.value || "").trim(); if (!m) return;
@@ -794,20 +830,46 @@
         let r; try { r = await agir("dolibarr.rib_lister", { tiers: Number(p) }); } catch (e) { return K.dire(e.message || String(e), "err"); }
         const nom = ((S.d.tiers || []).find((t) => String(t.id) === String(p)) || {}).name || "tiers " + p;
         const groupes = (v) => String(v || "").replace(/\s+/g, "").replace(/(.{4})/g, "$1 ").trim();
-        const liste = (r.ribs || []).length ? table(["Nom", "Titulaire", "Banque", "IBAN", "BIC", ""], r.ribs.map((x) => "<tr><td>" + esc(x.label) + "</td><td>" + esc(x.titulaire) + "</td><td>" + esc(x.banque) + '</td><td class="num">' + esc(groupes(x.iban)) + '</td><td class="num">' + esc(x.bic) + "</td><td>" + (x.defaut ? pill("Par défaut", "ok") : "") + "</td></tr>")) : '<div class="note">Aucun RIB enregistré pour ce tiers.</div>';
+        const liste = (r.ribs || []).length ? table(["Nom", "Titulaire", "Banque", "IBAN", "BIC", ""], r.ribs.map((x) => "<tr><td>" + esc(x.label) + "</td><td>" + esc(x.titulaire) + "</td><td>" + esc(x.banque) + '</td><td class="num">' + esc(groupes(x.iban)) + '</td><td class="num">' + esc(x.bic) + "</td><td>" + (x.defaut ? pill("Par défaut", "ok") + " " : "") + btn("Modifier", "ribmod", p + "|" + x.id) + btn("Supprimer", "ribsup", p + "|" + x.id) + "</td></tr>")) : '<div class="note">Aucun RIB enregistré pour ce tiers.</div>';
         document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
         modale("RIB · " + nom, liste + '<div style="margin-top:10px">' + btn("Ajouter un RIB", "ribajout", p, "pri") + '</div><div class="note">L’IBAN est vérifié par sa clé de contrôle avant d’être envoyé à Dolibarr. Seul un utilisateur peut ajouter un RIB : jamais un agent.</div>', "Fermer");
+      },
+      ribmod: async (p) => {
+        const [tid, rid] = p.split("|"); let r; try { r = await agir("dolibarr.rib_lister", { tiers: Number(tid) }); } catch (e) { return K.dire(e.message || String(e), "err"); }
+        const x = (r.ribs || []).find((y) => String(y.id) === rid) || {};
+        if (await formulaire("Modifier le RIB", SCHEMAS.ribmod, { label: x.label, banque: x.banque, iban: x.iban, bic: x.bic, defaut: x.defaut ? "1" : "0" }, async (c) => { await agir("dolibarr.rib_modifier", { tiers: Number(tid), rib_id: Number(rid), champs: { label: c.label, banque: c.banque || "", iban: c.iban, bic: c.bic || "", defaut: c.defaut } }); }, "Enregistrer")) K.dire("RIB modifié");
+        return GESTES.rib(tid);
+      },
+      ribsup: async (p) => {
+        const [tid, rid] = p.split("|");
+        if (await modale("Supprimer le RIB", "<p>Le RIB est retiré du tiers. Le geste se défait : le RIB revient avec ses valeurs.</p>", "Supprimer")) { try { await agir("dolibarr.rib_supprimer", { tiers: Number(tid), rib_id: Number(rid) }); K.dire("RIB supprimé"); } catch (e) { K.dire(e.message || String(e), "err"); } }
+        return GESTES.rib(tid);
       },
       ribajout: async (p) => {
         if (await formulaire("Nouveau RIB", SCHEMAS.rib, {}, async (c) => { await agir("dolibarr.rib_creer", { tiers: Number(p), label: c.label, iban: c.iban, bic: c.bic || "", banque: c.banque || "", titulaire: c.titulaire || "", defaut: String(c.defaut) === "1" }); }, "Enregistrer le RIB")) K.dire("RIB enregistré");
         return GESTES.rib(p);
+      },
+      taches: async (p) => {
+        let t; try { t = liste(await lire("/tasks", "limit=100&sqlfilters=(t.fk_projet:=:" + Number(p) + ")&properties=id,ref,label,progress,planned_workload,duration_effective,date_start,date_end")); } catch (e) { return K.dire(e.message || String(e), "err"); }
+        const pr = (S.d.projets || []).find((x) => String(x.id) === String(p)) || {}, h = (s) => (Number(s || 0) / 3600).toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+        document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
+        modale("Tâches · " + esc(pr.ref || p), (t.length ? table(["Réf.", "Tâche", "Prévu (h)", "Passé (h)", "Avancement", ""], t.map((x) => "<tr><td class=\"num\">" + esc(x.ref) + "</td><td>" + esc(x.label) + '</td><td class="num">' + h(x.planned_workload) + '</td><td class="num">' + h(x.duration_effective) + '</td><td class="num">' + esc(x.progress || 0) + " %</td><td>" + btn("+ Temps", "temps", x.id + "|" + p) + "</td></tr>")) : '<div class="note">Aucune tâche pour ce projet.</div>') + '<div style="margin-top:10px">' + btn("+ Tâche", "ntache", p, "pri") + "</div>", "Fermer");
+      },
+      ntache: async (p) => {
+        if (await formulaire("Nouvelle tâche", SCHEMAS.tache, {}, async (c) => { await agir("dolibarr.tache_creer", { projet: Number(p), label: c.label, debut: c.debut || "", fin: c.fin || "", heures: Number(c.heures || 0), description: c.description || "" }); }, "Créer la tâche")) K.dire("Tâche créée");
+        return GESTES.taches(p);
+      },
+      temps: async (p) => {
+        const [tid, pid] = p.split("|");
+        if (await formulaire("Temps passé", SCHEMAS.temps, { date: AUJ }, async (c) => { await agir("dolibarr.temps_ajouter", { tache: Number(tid), minutes: Number(c.minutes), date: c.date, note: c.note || "" }); }, "Noter le temps")) K.dire("Temps noté");
+        return GESTES.taches(pid);
       },
       reglagesbase: async () => {
         if (typeof CASS.ouvrirConsole !== "function") return K.dire("La console du module n’est pas disponible ici", "err");
         CASS.ouvrirConsole("dolibarr", "Dolibarr", "reglages");
       },
       lignes: async (p) => {
-        const [objet, id] = p.split("|"), chemin = { factures: "/invoices/", devis: "/proposals/" }[objet];
+        const [objet, id] = p.split("|"), chemin = { factures: "/invoices/", devis: "/proposals/", fournisseurs: "/supplierinvoices/" }[objet];
         let piece; try { piece = (await agir("dolibarr.lire_ecran", { chemin: chemin + id })).reponse || {}; } catch (e) { return K.dire(e.message || String(e), "err"); }
         const nb = (n) => Number(n || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const propre = (x) => String(x.desc || x.description || x.product_label || "").replace(/<br\s*\/?>/gi, " ").replace(/\s+/g, " ").trim();
@@ -857,6 +919,15 @@
         try { await agir("dolibarr.document_ajouter", { objet: objet, id: Number(id), nom: f.name, donnees_b64: b64 }); } catch (e) { return K.dire(e.message || String(e), "err"); }
         K.dire("Fichier joint"); return GESTES.docs(p);
       },
+      rech: async (k) => {
+        const dk = CLE_DONNEES[k] || k, terme = ((racine.querySelector('[data-q="' + k + '"]') || {}).value || "").trim(), tri = ((racine.querySelector('[data-rtri="' + k + '"]') || {}).value) || "recent";
+        S.tri = S.tri || {}; S.tri[k] = tri; S.rr = S.rr || {}; S.pg = S.pg || {};
+        S.rech = { terme: terme, tri: tri }; let l = [];
+        try { l = await CHARGEURS[dk](); } catch (e) { K.dire(e.message || String(e), "err"); } finally { S.rech = null; }
+        S.d[dk] = l; S.pg[dk] = 1e6; S.rr[dk] = terme || "(tout)"; S.q[k] = ""; dessiner();
+        K.dire(l.length + " résultat" + (l.length > 1 ? "s" : ""));
+      },
+      rechfin: async (k) => { const dk = CLE_DONNEES[k] || k; if (S.rr) delete S.rr[dk]; if (S.pg) S.pg[dk] = 1; if (S.tri) delete S.tri[k]; S.d = {}; await charger(true); },
       plus: async (dk) => {
         S.pg = S.pg || {}; const n = (S.pg[dk] || 1) + 1, ancien = S.adrdons;
         S.pageSuivante = n; let suite = [];
@@ -931,7 +1002,7 @@
     // le tiroir de fiche (K.confirmer) ne porte pas nos boutons : on délègue sur tout le document pour ses data-a
     // Chaque page montée garde son gestionnaire sur le document (le shell garde les pages cachées) : sans cette garde, UN clic déclenchait le geste dans TOUTES les pages montées,
     // donc plusieurs écritures. Seule répond la page qui a reçu le clic, ou qui a ouvert la fenêtre où il a eu lieu.
-    const SANS_FERMER = new Set(["pjajout", "dldoc", "plus", "csv"]);                  // ces gestes agissent DANS la fenêtre des documents : la fermer perdrait le fichier choisi
+    const SANS_FERMER = new Set(["pjajout", "dldoc", "plus", "csv", "rech", "rechfin"]);                  // ces gestes agissent DANS la fenêtre des documents : la fermer perdrait le fichier choisi
     const clic = (e) => {
       const b = e.target.closest("[data-a]"); if (!b || !GESTES[b.dataset.a]) return;
       if (!racine.isConnected) { document.removeEventListener("click", clic); return; }

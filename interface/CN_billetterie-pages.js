@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #76c923
+// VERSION CN : 0.1.0  #87d274
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=76c923 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=87d274 ▼▼▼
 // Billetterie : les pages du titulaire (vue d'ensemble, événements et leur fiche, ventes, personnes, argent).
 (function () {
   "use strict";
@@ -244,7 +244,7 @@
   P.ventes = async (S) => {
     const R = S.racine;
     S.f = S.f || { evenement: "", etat: "", q: "" };
-    const [ev, r] = await Promise.all([S.lire("evenements"), S.lire("commandes", { evenement_id: S.f.evenement ? Number(S.f.evenement) : 0, etat: S.f.etat, q: S.f.q, limite: 300 })]);
+    const [ev, r] = await Promise.all([S.lire("evenements", null, "evenements"), S.lire("commandes", { evenement_id: S.f.evenement ? Number(S.f.evenement) : 0, etat: S.f.etat, q: S.f.q, limite: 300 })]);
     const evts = (ev && ev.evenements) || [], noms = {}; evts.forEach((e) => { noms[e.id] = e.nom; });
     const l = (r && r.commandes) || [];
     let detail = "";

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #269679
+# VERSION CN : 0.4.1  #68178e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=269679 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=68178e ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -110,7 +110,12 @@ DOMAINES = ("accountancy", "agendaevents", "bankaccounts", "categories", "contac
             "objectlinks", "orders", "paiements", "partnerships", "productlots", "products", "projects", "proposals", "recruitments", "salaries",
             "setup", "shipments", "status", "stockmovements", "subscriptions", "supplierinvoices", "supplierorders", "supplierproposals", "tasks",
             "thirdparties", "tickets", "users", "warehouses")
-DOMAINES_ECRAN = ("bankaccounts", "contacts", "donations", "invoices", "members", "orders", "products", "projects", "proposals", "setup", "supplierinvoices", "supplierorders", "expensereports", "thirdparties")     # ce que l'écran affiche : la lecture « consulter » n'atteint rien d'autre
+DOMAINES_ECRAN = ("bankaccounts", "contacts", "donations", "invoices", "members", "orders", "products", "projects", "proposals", "setup", "supplierinvoices", "supplierorders", "expensereports", "tasks", "thirdparties", "warehouses")     # ce que l'écran affiche : la lecture « consulter » n'atteint rien d'autre
+RECHERCHES = {"/thirdparties": (("t.nom", "t.name_alias", "t.code_client", "t.code_fournisseur", "t.town", "t.email"), "t.nom"), "/contacts": (("t.lastname", "t.firstname", "t.email"), "t.lastname"),
+              "/invoices": (("t.ref", "t.ref_client"), "t.ref"), "/proposals": (("t.ref", "t.ref_client"), "t.ref"), "/orders": (("t.ref", "t.ref_client"), "t.ref"),
+              "/products": (("t.ref", "t.label"), "t.ref"), "/projects": (("t.ref", "t.title"), "t.ref"), "/donations": (("t.lastname", "t.firstname", "t.societe"), "t.lastname"),
+              "/members": (("t.lastname", "t.firstname", "t.login", "t.email"), "t.lastname"), "/supplierinvoices": (("t.ref", "t.ref_supplier"), "t.ref"),
+              "/supplierorders": (("t.ref", "t.ref_supplier"), "t.ref"), "/expensereports": (("t.ref",), "t.ref")}
 _CHEMIN_LIBRE = re.compile(r"^/[a-z]{3,30}(/[A-Za-z0-9_.@-]{1,60}){0,4}$")
 _REQUETE = re.compile(r"^[A-Za-z0-9_.,=&%+:*()\[\]-]{0,400}$")
 _SECRET = re.compile(r"(pass|api_key|apikey|token|secret|signature|private_key|cle_)", re.I)
@@ -120,7 +125,7 @@ MAX_PDF = 8 * 1024 * 1024
 # Les champs personnalisés (extrafields) : le type d'élément que Dolibarr leur donne, et les types que l'écran sait saisir
 ELEMENTS_PERSO = {"tiers": "societe", "contacts": "socpeople", "produits": "product", "projets": "projet", "factures": "facture", "devis": "propal", "commandes": "commande",
                   "fournisseurs": "facture_fourn", "commandes_fournisseurs": "commande_fournisseur", "adherents": "adherent"}
-TYPES_PERSO = ("varchar", "text", "html", "mail", "url", "phone", "int", "double", "price", "boolean", "date", "select", "radio")
+TYPES_PERSO = ("varchar", "text", "html", "mail", "url", "phone", "int", "double", "price", "boolean", "date", "select", "radio", "checkbox", "link", "sellist", "chkbxlst")      # jamais « password » : un secret ne passe pas par un formulaire de fiche
 MAX_PJ = 5 * 1024 * 1024        # un document joint : 5 Mo (6,7 Mo une fois encodé en base64)
 # Les pièces auxquelles on joint des documents : (chemin de l'API, « modulepart » des documents, champ qui porte la référence)
 PIECES_JOINTES = {"factures": ("/invoices", "facture", "ref"), "devis": ("/proposals", "propal", "ref"), "tiers": ("/thirdparties", "societe", "name"), "dons": ("/donations", "donation", "ref"),
@@ -436,6 +441,16 @@ def _date(v):
     return t
 
 
+DUREE_NOUVEAUTE = 7 * 86400
+
+
+def _constats_nouveautes(vus, maintenant=None):
+    """Les nouveautés encore fraîches, au format d'un constat : le centre de notifications en fait une cloche, qui se referme d'elle-même au bout de sept jours."""
+    maintenant = time.time() if maintenant is None else maintenant
+    return [{"objet": ["dolibarr", r["cle"]], "titre": r["titre"], "detail": r.get("detail", ""), "niveau": "info"}
+            for r in ((vus or {}).get("recentes") or []) if maintenant - float(r.get("t") or 0) <= DUREE_NOUVEAUTE]
+
+
 def _nouveautes(conf, vus):
     """Ce qui est arrivé chez Dolibarr depuis la dernière passe : des factures payées, des dons. Dolibarr ne prévient pas Cassandra : elle va voir.
     Rend (annonces, vus). À la première passe on note l'état sans rien annoncer ; au plus 10 annonces par passe."""
@@ -466,6 +481,14 @@ def _nouveautes(conf, vus):
         if int(x["id"]) > dernier and "don_max" in vus:
             annonces.append(("dolibarr.don_recu", {"id": int(x["id"]), "ref": str(x.get("ref") or ""), "montant": x.get("amount")}))
     vus["don_max"] = max([dernier] + [int(x["id"]) for x in dons])
+    maintenant = time.time()
+    recentes = [r for r in (vus.get("recentes") or []) if maintenant - float(r.get("t") or 0) <= DUREE_NOUVEAUTE]
+    for evenement, corps in annonces:                  # ce qui vient d'arriver reste affiché sept jours comme constat (la cloche du centre de notifications)
+        if evenement == "dolibarr.facture_payee":
+            recentes.append({"t": maintenant, "cle": "facture-%s" % corps["id"], "titre": "Facture payée : %s" % corps["ref"], "detail": ("%s € reçus" % corps["total_ttc"]) if corps.get("total_ttc") not in (None, "") else ""})
+        else:
+            recentes.append({"t": maintenant, "cle": "don-%s" % corps["id"], "titre": "Don reçu : %s €" % corps["montant"], "detail": "Réf. %s : à valider dans Dolibarr" % corps["ref"]})
+    vus["recentes"] = recentes[-50:]
     return annonces[:10], vus
 
 
@@ -659,11 +682,16 @@ def brancher(ctx):
         return appeler(conf, "%s/%s" % (chemin, id))
 
     # --- les champs personnalisés : on les lit chez Dolibarr (/setup/extrafields), on ne les devine pas
-    def _defs_perso(objet):
+    def _defs_perso(objet, tolerant=False):
         el = ELEMENTS_PERSO.get(objet)
         if not el:
             return {}
-        tout = appeler(_conf(), "/setup/extrafields")
+        try:
+            tout = appeler(_conf(), "/setup/extrafields")
+        except PontErreur:
+            if tolerant:
+                return {}
+            raise
         defs = (tout.get(el) if isinstance(tout, dict) else None) or {}
         return {n: d for n, d in defs.items() if isinstance(d, dict) and str(d.get("type")) in TYPES_PERSO and not d.get("computed")}
 
@@ -696,29 +724,48 @@ def brancher(ctx):
                 if o and str(v) not in o:
                     raise ValueError
                 return str(v)
+            if t == "checkbox":                                    # plusieurs valeurs de la liste, séparées par des virgules
+                o, choisis = _options_perso(d), [x.strip() for x in str(v).split(",") if x.strip()]
+                if not choisis or (o and any(x not in o for x in choisis)):
+                    raise ValueError
+                return ",".join(choisis)
+            if t in ("link", "sellist", "chkbxlst"):               # une valeur qui désigne une ligne d'une autre table de Dolibarr : on garde l'identifiant tel quel
+                if not re.match(r"^[0-9A-Za-z_,:.-]{1,200}$", str(v)):
+                    raise ValueError
+                return str(v)
         except ValueError:
             raise ValueError("%s : valeur refusée (%s)" % (lib, {"int": "un entier", "double": "un nombre", "price": "un nombre", "boolean": "oui ou non", "date": "AAAA-MM-JJ",
-                                                              "select": "une valeur de la liste", "radio": "une valeur de la liste"}.get(t, "valeur")))
+                                                              "select": "une valeur de la liste", "radio": "une valeur de la liste", "checkbox": "des valeurs de la liste, séparées par des virgules",
+                                                              "link": "un identifiant", "sellist": "un identifiant", "chkbxlst": "des identifiants séparés par des virgules"}.get(t, "valeur")))
         return str(v)[:2000]
 
     def _perso(objet, champs, creation):
-        """Sépare les champs « options_… » (personnalisés) des champs de la fiche ; vérifie leur nom et leur type contre ce que Dolibarr déclare. Rend (champs de la fiche, array_options)."""
+        """Sépare les champs « options_… » (personnalisés) des champs de la fiche. Rend (champs de la fiche, valider, présent) : « valider() » interroge Dolibarr (ce qu'il déclare) et rend
+        les array_options. On l'appelle APRÈS avoir vérifié le reste : une demande invalide ne doit jamais faire partir une requête."""
         if not isinstance(champs, dict):
-            return champs, {}
+            return champs, (lambda: {}), False
         entrants = {k: v for k, v in champs.items() if str(k).startswith("options_")}
-        if not entrants:
-            return champs, {}
-        defs = _defs_perso(objet)
-        sortie = {}
-        for k, v in entrants.items():
-            n = k[len("options_"):]
-            if n not in defs:
-                raise ValueError("champ personnalisé inconnu pour %s : %s" % (objet, n))
-            val = _valeur_perso(n, defs[n], v)
-            if val is None and creation:
-                continue
-            sortie[k] = val                                     # à la modification, une valeur vide efface le champ
-        return {k: v for k, v in champs.items() if k not in entrants}, sortie
+        humain = creation and _CTX is not None and str(getattr(_CTX, "acteur", "") or "") == "humain"
+
+        def valider():
+            if not entrants and not humain:
+                return {}
+            defs = _defs_perso(objet, tolerant=not entrants)
+            sortie = {}
+            for k, v in entrants.items():
+                n = k[len("options_"):]
+                if n not in defs:
+                    raise ValueError("champ personnalisé inconnu pour %s : %s" % (objet, n))
+                val = _valeur_perso(n, defs[n], v)
+                if val is None and creation:
+                    continue
+                sortie[k] = val                                 # à la modification, une valeur vide efface le champ
+            if humain:
+                manque = [str(d.get("label") or n) for n, d in defs.items() if str(d.get("required")) == "1" and ("options_" + n) not in sortie]
+                if manque:
+                    raise ValueError("champ personnalisé obligatoire chez Dolibarr : %s" % ", ".join(manque))
+            return sortie
+        return {k: v for k, v in champs.items() if k not in entrants}, valider, bool(entrants)
 
     def champs_perso(ctx, objet):
         if objet not in ELEMENTS_PERSO:
@@ -732,10 +779,11 @@ def brancher(ctx):
     def creer(ctx, objet, champs):
         if objet not in ECRIVABLES:
             raise ValueError("objet inconnu : %r (permis : %s)" % (objet, ", ".join(sorted(ECRIVABLES))))
-        champs, perso = _perso(objet, champs, True)
+        champs, valider, _ = _perso(objet, champs, True)
         _verifier_champs(champs, ECRIVABLES[objet]["champs"], objet)
         _regles_dolibarr(objet, champs, True)
         champs = _reunir_sociaux(_numeriques(champs), None)
+        perso = valider()
         conf = _conf()
         corps = _completer(objet, champs)
         if perso:
@@ -762,11 +810,12 @@ def brancher(ctx):
             raise ValueError("objet inconnu : %r (permis : %s)" % (objet, ", ".join(sorted(ECRIVABLES))))
         if not _ID.match(str(id)):
             raise ValueError("id : un nombre")
-        champs, perso = _perso(objet, champs, False)
-        if champs or not perso:
+        champs, valider, present = _perso(objet, champs, False)
+        if champs or not present:
             _verifier_champs(champs, ECRIVABLES[objet]["champs"], objet)
         _regles_dolibarr(objet, champs, False)
         champs = _numeriques(champs)
+        perso = valider()
         conf = _conf()
         courant = _lire_un(conf, ECRIVABLES[objet]["chemin"], id)
         if not isinstance(courant, dict):
@@ -830,9 +879,7 @@ def brancher(ctx):
         corps = {"socid": int(socid), "lines": _lignes(lignes), "date": date if date is not None else _jour_ts("")}      # Dolibarr 24 exige la date d'un devis
         if note:
             corps["note_private"] = str(note)[:4000]
-        champs, perso = _perso(objet, champs, True)
-        if perso:
-            corps["array_options"] = perso
+        champs, valider, _ = _perso(objet, champs, True)
         for k, v in (champs or {}).items():                     # l'en-tête de la fiche Dolibarr : mêmes noms, mêmes types ; rien d'autre n'est transmis
             if k not in ENTETES[objet]:
                 raise ValueError("champ %r refusé pour %s (permis : %s)" % (k, objet, ", ".join(sorted(ENTETES[objet]))))
@@ -848,6 +895,9 @@ def brancher(ctx):
                 corps[k] = str(v)[:4000]
         if objet == "fournisseurs" and not corps.get("ref_supplier"):
             raise ValueError("ref_supplier est obligatoire : le numéro de la facture, tel que le fournisseur l'a écrit")
+        perso = valider()
+        if perso:
+            corps["array_options"] = perso
         conf = _conf()
         nouvel = ecrire(conf, "POST", DOCUMENTS[objet], corps)
         if not isinstance(nouvel, int) and not (isinstance(nouvel, str) and _ID.match(nouvel)):
@@ -1162,14 +1212,180 @@ def brancher(ctx):
         if iban in [x["iban"].replace(" ", "").upper() for x in rib_lister(ctx, tiers)["ribs"]]:
             raise ValueError("ce tiers a déjà cet IBAN")
         corps = {"label": label, "iban": iban, "bic": bic, "bank": str(banque or "")[:60], "proprio": str(titulaire or t.get("name") or "")[:60], "default_rib": 1 if defaut else 0}
-        nouveau = _int_id(ecrire(conf, "POST", "/thirdparties/%d/bankaccounts" % int(tiers), corps), "le RIB")
+        rep = ecrire(conf, "POST", "/thirdparties/%d/bankaccounts" % int(tiers), corps)
+        nouveau = _int_id(rep.get("id") if isinstance(rep, dict) else rep, "le RIB")          # Dolibarr 24 rend ici la fiche entière du RIB, pas son seul numéro
         return {"tiers": int(tiers), "id": nouveau, "iban": iban}
+
+    # Le titulaire (« proprio ») s'écrit à la création mais l'API de Dolibarr ne le rend jamais : on ne peut ni le relire ni le remettre, donc on ne le modifie pas.
+    _RIB_CHAMPS = {"label": "label", "iban": "iban", "bic": "bic", "banque": "bank", "defaut": "default_rib"}
+
+    def rib_modifier(ctx, tiers, rib_id, champs):
+        if not isinstance(champs, dict) or not champs or any(k not in _RIB_CHAMPS for k in champs):
+            raise ValueError("champs : %s" % ", ".join(sorted(_RIB_CHAMPS)))
+        conf = _conf()
+        avant = next((x for x in rib_lister(ctx, tiers)["ribs"] if str(x["id"]) == str(rib_id)), None)
+        if avant is None:
+            raise ValueError("le tiers %s n'a pas de RIB %s" % (tiers, rib_id))
+        corps = {}
+        for k, v in champs.items():
+            if k == "iban":
+                v = _iban_net(v)
+            elif k == "bic":
+                v = re.sub(r"\s+", "", str(v or "")).upper()
+                if v and not re.match(r"^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$", v):
+                    raise ValueError("BIC : 8 ou 11 caractères (par exemple BNPAFRPP)")
+            elif k == "defaut":
+                v = 1 if str(v) in ("1", "True", "true", "oui") else 0
+            else:
+                v = str(v or "")[:60]
+            corps[_RIB_CHAMPS[k]] = v
+        ecrire(conf, "PUT", "/thirdparties/%d/bankaccounts/%d" % (int(tiers), int(rib_id)), corps)
+        return {"tiers": int(tiers), "id": int(rib_id), "avant": {k: avant[k] for k in champs}, "apres": {k: (corps[_RIB_CHAMPS[k]]) for k in champs}}
+
+    def prouver_rib_modifie(ctx, res):
+        x = next((y for y in rib_lister(ctx, res["tiers"])["ribs"] if y["id"] == res["id"]), None)
+        if x is None:
+            return False
+        for k, v in res["apres"].items():
+            if k == "defaut":
+                ok = bool(x[k]) == bool(int(v)) if str(v).lstrip("-").isdigit() else bool(x[k]) == bool(v)
+            elif k in ("iban", "bic"):
+                ok = str(x[k]).replace(" ", "").upper() == str(v).replace(" ", "").upper()
+            else:
+                ok = str(x[k]) == str(v)
+            if not ok:
+                return False
+        return True
+
+    def defaire_rib_modifie(ctx, res):
+        corps = {}
+        for k, v in res["avant"].items():
+            corps[_RIB_CHAMPS[k]] = (1 if v else 0) if k == "defaut" else v
+        ecrire(_conf(), "PUT", "/thirdparties/%d/bankaccounts/%d" % (res["tiers"], res["id"]), corps)
+
+    def rib_supprimer(ctx, tiers, rib_id):
+        conf = _conf()
+        avant = next((x for x in rib_lister(ctx, tiers)["ribs"] if str(x["id"]) == str(rib_id)), None)
+        if avant is None:
+            raise ValueError("le tiers %s n'a pas de RIB %s" % (tiers, rib_id))
+        ecrire(conf, "DELETE", "/thirdparties/%d/bankaccounts/%d" % (int(tiers), int(rib_id)))
+        return {"tiers": int(tiers), "id": int(rib_id), "avant": avant}
+
+    def prouver_rib_supprime(ctx, res):
+        return all(x["id"] != res["id"] for x in rib_lister(ctx, res["tiers"])["ribs"])
+
+    def defaire_rib_supprime(ctx, res):
+        a = res["avant"]
+        ecrire(_conf(), "POST", "/thirdparties/%d/bankaccounts" % res["tiers"], {"label": a["label"], "iban": a["iban"], "bic": a["bic"], "bank": a["banque"], "proprio": a["titulaire"], "default_rib": 1 if a["defaut"] else 0})
 
     def prouver_rib(ctx, res):
         return any(x["id"] == res["id"] and x["iban"].replace(" ", "").upper() == res["iban"] for x in rib_lister(ctx, res["tiers"])["ribs"])
 
     def defaire_rib(ctx, res):
         ecrire(_conf(), "DELETE", "/thirdparties/%d/bankaccounts/%d" % (res["tiers"], res["id"]))
+
+    # --- les tâches d'un projet et le temps passé (lecture : l'écran lit /tasks ; ici, les gestes)
+    def _taches_du_projet(conf, projet):
+        try:
+            return appeler(conf, "/tasks", {"limit": 100, "sqlfilters": "(t.fk_projet:=:%d)" % int(projet), "properties": "id,ref,label"}) or []
+        except PontErreur as ex:
+            if ex.code == 404:
+                return []
+            raise
+
+    def tache_creer(ctx, projet, label, debut="", fin="", heures=0, description=""):
+        conf = _conf()
+        p = _doc(conf, "/projects", projet, "le projet")
+        label = str(label or "").strip()[:200]
+        if not label:
+            raise ValueError("label : le nom de la tâche")
+        try:
+            charge = float(heures or 0)
+        except (TypeError, ValueError):
+            raise ValueError("heures : un nombre (la charge prévue)")
+        if charge < 0 or charge > 5000:
+            raise ValueError("heures : de 0 à 5000")
+        d0, d1 = (_jour_ts(debut) if debut else None), (_jour_ts(fin) if fin else None)
+        if d0 and d1 and d1 < d0:
+            raise ValueError("la fin de la tâche précède son début")
+        n = len(_taches_du_projet(conf, projet)) + 1
+        corps = {"fk_project": int(projet), "ref": "%s-T%02d" % (p.get("ref") or projet, n), "label": label, "description": str(description or "")[:4000], "planned_workload": int(charge * 3600), "progress": 0}
+        if d0:
+            corps["date_start"] = d0
+        if d1:
+            corps["date_end"] = d1
+        nouvelle = _int_id(ecrire(conf, "POST", "/tasks", corps), "la tâche")
+        return {"id": nouvelle, "projet": int(projet), "label": label}
+
+    def prouver_tache(ctx, res):
+        t = _lire_un(_conf(), "/tasks", res["id"])
+        return isinstance(t, dict) and str(t.get("fk_project")) == str(res["projet"]) and str(t.get("label")) == res["label"]
+
+    def defaire_tache(ctx, res):
+        conf = _conf()
+        t = _lire_un(conf, "/tasks", res["id"])
+        if isinstance(t, dict) and float(t.get("duration_effective") or 0) > 0:
+            raise PontErreur("la tâche a du temps passé : elle ne se supprime pas (retire d'abord ce temps)")
+        ecrire(conf, "DELETE", "/tasks/%d" % res["id"])
+
+    def _temps_de(conf, tache):
+        try:
+            return [x for x in (appeler(conf, "/tasks/%d/timespent" % int(tache)) or []) if isinstance(x, dict)]
+        except PontErreur as ex:
+            if ex.code == 404:
+                return []
+            raise
+
+    def temps_ajouter(ctx, tache, minutes, date="", note=""):
+        conf = _conf()
+        _doc(conf, "/tasks", tache, "la tâche")
+        try:
+            m = int(float(minutes))
+        except (TypeError, ValueError):
+            raise ValueError("minutes : un nombre")
+        if not 0 < m <= 24 * 60:
+            raise ValueError("minutes : de 1 à 1440")
+        jour = date or time.strftime("%Y-%m-%d")
+        _jour_ts(jour)
+        avant = [str(x.get("timespent_line_id")) for x in _temps_de(conf, tache)]
+        ecrire(conf, "POST", "/tasks/%d/addtimespent" % int(tache), {"date": jour + " 12:00:00", "duration": m * 60, "user_id": 0, "note": str(note or "")[:500]})
+        return {"tache": int(tache), "minutes": m, "date": jour, "note": str(note or "")[:500], "avant": avant}
+
+    def _nouvelle_ligne_temps(res):
+        return [x for x in _temps_de(_conf(), res["tache"]) if str(x.get("timespent_line_id")) not in res["avant"]]
+
+    def prouver_temps(ctx, res):
+        return any(str(x.get("timespent_line_duration")) == str(res["minutes"] * 60) for x in _nouvelle_ligne_temps(res))
+
+    def defaire_temps(ctx, res):
+        for x in _nouvelle_ligne_temps(res):
+            if str(x.get("timespent_line_duration")) == str(res["minutes"] * 60):
+                ecrire(_conf(), "DELETE", "/tasks/%d/timespent/%s" % (res["tache"], x["timespent_line_id"]))
+                return
+
+    # --- la recherche côté serveur : une liste de 100 lignes ne dit pas tout ; ici Dolibarr cherche dans tout
+    def chercher(ctx, chemin, parametres="", terme="", tri="recent"):
+        if chemin not in RECHERCHES:
+            raise ValueError("chemin : %s" % ", ".join(sorted(RECHERCHES)))
+        if not _REQUETE.match(str(parametres or "")):
+            raise ValueError("parametres : une chaîne de requête simple")
+        colonnes, col_nom = RECHERCHES[chemin]
+        p = dict(urllib.parse.parse_qsl(str(parametres or ""))) if parametres else {}
+        p["limit"] = str(max(1, min(int(p.get("limit", MAX_LIBRE)), MAX_LIBRE)))
+        mot = re.sub(r"[^\w .@-]", "", str(terme or ""), flags=re.UNICODE).strip()[:40]
+        if mot:
+            p["sqlfilters"] = " or ".join("(%s:like:'%%%s%%')" % (c, mot) for c in colonnes)
+        sort = {"recent": ("t.rowid", "DESC"), "ancien": ("t.rowid", "ASC"), "az": (col_nom, "ASC"), "za": (col_nom, "DESC")}.get(str(tri or "recent"))
+        if sort is None:
+            raise ValueError("tri : recent, ancien, az, za")
+        p["sortfield"], p["sortorder"] = sort
+        try:
+            rep = appeler(_conf(), chemin, p)
+        except PontErreur as ex:
+            if ex.code == 404:
+                return {"reponse": [], "terme": mot}
+            raise
+        return {"reponse": _nettoyer(rep) if isinstance(rep, list) else [], "terme": mot}
 
     def produire_pdf(ctx, objet, id):
         conf, chemin, part, d, ref = _piece(objet, id)
@@ -1537,11 +1753,20 @@ def brancher(ctx):
         return {"document": "factures", "id": nouvel, "socid": socid, "lignes": len(lignes), "devis": int(id)}
 
     # --- un brouillon se modifie ligne par ligne : ajouter, modifier, supprimer une ligne (factures, devis, commandes ; jamais une pièce validée)
-    PIECES_LIGNES = ("factures", "devis", "commandes")
+    PIECES_LIGNES = ("factures", "devis", "commandes", "fournisseurs")
     CHAMPS_RELUS = ("desc", "qty", "subprice", "tva_tx", "remise_percent", "product_type", "fk_product")
 
     def _propre(l):
         return {k: l[k] for k in CHAMPS_RELUS if l.get(k) not in (None, "")}
+
+    def _corps_ligne(objet, l):
+        if objet != "fournisseurs":
+            return l
+        out = {"description": l.get("desc") or l.get("description") or "", "qty": l.get("qty"), "pu_ht": l.get("subprice", l.get("pu_ht")), "tva_tx": l.get("tva_tx", 0), "product_type": l.get("product_type", 1)}
+        for k in ("remise_percent", "fk_product"):
+            if l.get(k) not in (None, ""):
+                out[k] = l[k]
+        return out
 
     def ligne(ctx, objet, id, action, ligne=None, ligne_id=None):
         if objet not in PIECES_LIGNES:
@@ -1555,7 +1780,7 @@ def brancher(ctx):
         base = "%s/%s/lines" % (DOCUMENTS[objet], id)
         if action == "ajouter":
             l = _lignes([ligne])[0]
-            nouvelle = _int_id(ecrire(conf, "POST", base, l), "la ligne")
+            nouvelle = _int_id(ecrire(conf, "POST", base, _corps_ligne(objet, l)), "la ligne")
             return {"objet": objet, "id": int(id), "action": action, "ligne_id": nouvelle, "apres": l}
         if not _ID.match(str(ligne_id or "")):
             raise ValueError("ligne_id : le numéro de la ligne (relire la pièce pour le connaître)")
@@ -1566,7 +1791,7 @@ def brancher(ctx):
         if action == "modifier":
             _verifier_champs(ligne, CHAMPS_LIGNE, "une ligne")
             apres = dict(avant, **ligne)
-            ecrire(conf, "PUT", "%s/%s" % (base, ligne_id), apres)
+            ecrire(conf, "PUT", "%s/%s" % (base, ligne_id), _corps_ligne(objet, apres))
             return {"objet": objet, "id": int(id), "action": action, "ligne_id": int(ligne_id), "avant": avant, "apres": apres}
         ecrire(conf, "DELETE", "%s/%s" % (base, ligne_id))
         return {"objet": objet, "id": int(id), "action": action, "ligne_id": int(ligne_id), "avant": avant}
@@ -1602,9 +1827,9 @@ def brancher(ctx):
             x = _retrouver_ligne(res, res["apres"])
             if x is None:
                 raise PontErreur("la ligne modifiée n'existe plus : rien à remettre")
-            ecrire(conf, "PUT", "%s/%s" % (base, x["id"]), res["avant"])
+            ecrire(conf, "PUT", "%s/%s" % (base, x["id"]), _corps_ligne(res["objet"], res["avant"]))
         else:
-            ecrire(conf, "POST", base, res["avant"])
+            ecrire(conf, "POST", base, _corps_ligne(res["objet"], res["avant"]))
 
     # --- la commande : l'étape entre le devis signé et la facture (devis → commande → facture). Dolibarr la numérote à la validation.
     ETATS_COMMANDE = {"valider": ("0", "1"), "livrer": ("1", "3")}
@@ -1680,9 +1905,9 @@ def brancher(ctx):
             return
         ecrire(conf, "POST", "%s/%s/settodraft" % (DOCUMENTS["fournisseurs"], res["id"]), {"idwarehouse": 0})
 
-    ETAPES_ACHAT = {"valider": ("0", "1", "validate"), "approuver": ("1", "2", "approve"), "commander": ("2", "3", "makeorder")}
+    ETAPES_ACHAT = {"valider": ("0", "1", "validate"), "approuver": ("1", "2", "approve"), "commander": ("2", "3", "makeorder"), "recevoir": ("3", "4", "receive")}
 
-    def commande_fournisseur(ctx, id, action):
+    def commande_fournisseur(ctx, id, action, entrepot=None):
         if action not in ETAPES_ACHAT:
             raise ValueError("action : %s" % ", ".join(sorted(ETAPES_ACHAT)))
         conf = _conf()
@@ -1690,13 +1915,21 @@ def brancher(ctx):
         de, vers, route = ETAPES_ACHAT[action]
         if _statut(c) != de:
             raise ValueError("la commande fournisseur %s est au statut %s : « %s » demande le statut %s" % (id, _statut(c), action, de))
-        corps = {"idwarehouse": 0, "notrigger": 0} if route == "validate" else {"secondlevel": 0} if route == "approve" else {"date": _jour_ts(""), "method": 0, "comment": "Passée depuis Cassandra"}
+        if route == "receive":
+            if not _ID.match(str(entrepot or "")):
+                raise ValueError("entrepot : l'identifiant de l'entrepôt qui reçoit (Dolibarr range la marchandise reçue dans un entrepôt)")
+            lignes = [{"id": int(l["id"]), "fk_product": int(l.get("fk_product") or 0), "qty": float(l.get("qty") or 0), "warehouse": int(entrepot)} for l in (c.get("lines") or [])]
+            if not lignes:
+                raise ValueError("la commande %s n'a pas de lignes" % id)
+            corps = {"closeopenorder": 1, "comment": "Reçue depuis Cassandra", "lines": lignes}
+        else:
+            corps = {"idwarehouse": 0, "notrigger": 0} if route == "validate" else {"secondlevel": 0} if route == "approve" else {"date": _jour_ts(""), "method": 0, "comment": "Passée depuis Cassandra"}
         ecrire(conf, "POST", "%s/%s/%s" % (DOCUMENTS["commandes_fournisseurs"], id, route), corps)
-        return {"id": int(id), "action": action, "avant": de, "apres": vers}
+        return {"id": int(id), "action": action, "avant": de, "apres": vers, "apres_ok": [vers, "5"] if route == "receive" else [vers]}
 
     def prouver_commande_fournisseur(ctx, res):
         c = _lire_un(_conf(), DOCUMENTS["commandes_fournisseurs"], res["id"])
-        return isinstance(c, dict) and _statut(c) == res["apres"]
+        return isinstance(c, dict) and _statut(c) in res.get("apres_ok", [res["apres"]])
 
     def defaire_commande_fournisseur(ctx, res):
         raise PontErreur("l'API de Dolibarr ne remet pas une commande fournisseur validée, approuvée ou passée en brouillon : à défaire dans Dolibarr")
@@ -1769,6 +2002,29 @@ def brancher(ctx):
             raise ValueError("la note de frais %s est au statut %s : « %s » demande le statut %s" % (id, _etat_frais(e), action, de))
         ecrire(conf, "POST", "/expensereports/%s/%s" % (id, route), {"notrigger": 0})
         return {"id": int(id), "action": action, "avant": de, "apres": vers}
+
+    def frais_payer(ctx, id, banque, mode="VIR", date="", numero=""):
+        if not _ID.match(str(banque)):
+            raise ValueError("banque : l'identifiant du compte bancaire Dolibarr")
+        conf = _conf()
+        e = _doc(conf, "/expensereports", id, "la note de frais")
+        if _etat_frais(e) != "5":
+            raise ValueError("seule une note approuvée se paie (la note %s est au statut %s)" % (id, _etat_frais(e)))
+        total = round(float(e.get("total_ttc") or 0), 2)
+        if total <= 0:
+            raise ValueError("la note de frais %s n'a rien à payer" % id)
+        _garde_agent(total)
+        corps = {"datep": _jour_ts(date), "fk_typepayment": _mode_id(conf, str(mode).upper()), "amounts": {str(int(id)): total}, "amount": total,
+                 "bank_account": int(banque), "accountid": int(banque), "num_payment": str(numero)[:60]}
+        paiement = _int_id(ecrire(conf, "POST", "/expensereports/%s/payments" % id, corps), "le paiement")
+        return {"id": int(id), "paiement": paiement, "montant": total}
+
+    def prouver_frais_paye(ctx, res):
+        e = _lire_un(_conf(), "/expensereports", res["id"])
+        return isinstance(e, dict) and (_etat_frais(e) == "6" or str(e.get("paid")) == "1")
+
+    def defaire_frais_paye(ctx, res):
+        raise PontErreur("l'API de Dolibarr ne retire pas le paiement d'une note de frais (ni sa ligne bancaire) : à défaire dans Dolibarr")
 
     def prouver_frais_etat(ctx, res):
         e = _lire_un(_conf(), "/expensereports", res["id"])
@@ -2260,6 +2516,12 @@ def brancher(ctx):
     ctx.implementer("frais_creer", frais_creer, prouver_frais, defaire_frais, simuler=lambda ctx, auteur="", total="", **_: "préparerait une note de frais en brouillon pour l'utilisateur %s" % auteur)
     ctx.implementer("frais_etat", frais_etat, prouver_frais_etat, defaire_frais_etat, simuler=lambda ctx, id="", action="", **_: "ferait « %s » sur la note de frais %s" % (action, id))
     ctx.implementer("champs_perso", champs_perso)
+    ctx.implementer("chercher", chercher)
+    ctx.implementer("tache_creer", tache_creer, prouver_tache, defaire_tache, simuler=lambda ctx, projet="", label="", **_: "préparerait la tâche « %s » du projet %s" % (label, projet))
+    ctx.implementer("temps_ajouter", temps_ajouter, prouver_temps, defaire_temps, simuler=lambda ctx, tache="", minutes="", **_: "noterait %s minutes sur la tâche %s" % (minutes, tache))
+    ctx.implementer("rib_modifier", rib_modifier, prouver_rib_modifie, defaire_rib_modifie, simuler=lambda ctx, tiers="", **_: "modifierait un RIB du tiers %s" % tiers)
+    ctx.implementer("rib_supprimer", rib_supprimer, prouver_rib_supprime, defaire_rib_supprime, simuler=lambda ctx, tiers="", **_: "supprimerait un RIB du tiers %s" % tiers)
+    ctx.implementer("frais_payer", frais_payer, prouver_frais_paye, defaire_frais_paye, simuler=lambda ctx, id="", **_: "paierait la note de frais approuvée %s" % id)
     ctx.implementer("rib_lister", rib_lister)
     ctx.implementer("rib_creer", rib_creer, prouver_rib, defaire_rib, simuler=lambda ctx, tiers="", iban="", **_: "ajouterait l'IBAN %s…%s au tiers %s" % (str(iban)[:4], str(iban)[-4:], tiers))
     ctx.implementer("documents", documents)
@@ -2285,6 +2547,7 @@ def brancher(ctx):
     ctx.moteur("releve", releve)
     ctx.detecteur("injoignable", lambda ctx: constat_si(ctx, "injoignable", "Dolibarr ne répond plus"))
     ctx.detecteur("acces_refuse", lambda ctx: constat_si(ctx, "refuse", "Dolibarr refuse la clé d'API"))
+    ctx.detecteur("nouveautes", lambda ctx: _constats_nouveautes(((instance(ctx) or {}).get("donnees") or {}).get("vus")))
     ctx.implementer("resume", resume)
     ctx.implementer("statut", statut)
     ctx.implementer("modules", modules)

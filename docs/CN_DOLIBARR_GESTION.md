@@ -12,7 +12,7 @@
 <!-- RÔLE       : Dolibarr, la gestion complète : ce que le module sait faire, la clé d'API par compte, le compte de mandat, les paliers -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=04ec72 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=ba3a2b ▼▼▼ -->
 # Dolibarr : la gestion complète
 
 Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il écrit, et tout geste a sa **preuve** (relire ce qui a été écrit) et son **retour arrière**.
@@ -35,6 +35,11 @@ Le module `dolibarr` pilote une instance Dolibarr par son API REST. Il lit, il �
 | Saisir une note de frais (par exemple d'un bénévole : période, type de frais, lignes avec TVA, totaux calculés), la valider, l'approuver | `frais_options`, `frais_creer`, `frais_etat` | supprimer le brouillon ; remettre la note dans son statut d'avant |
 | Modifier un brouillon (facture, devis, commande) ligne par ligne : ajouter, modifier, supprimer | `ligne` | supprimer la ligne ajoutée, remettre les valeurs d'avant, recréer la ligne supprimée |
 | Lire les champs personnalisés d'une fiche et les écrire avec elle (tiers, contact, produit, projet, facture, devis, commande) | `champs_perso`, puis `creer`, `modifier`, `creer_brouillon` avec des clés `options_…` | remettre les valeurs d'avant (un champ vidé redevient vide) |
+| Payer une note de frais approuvée | `frais_payer` | aucun par l'API de Dolibarr : se défait dans Dolibarr |
+| Recevoir une commande fournisseur dans un entrepôt (après valider, approuver, commander) | `commande_fournisseur` (action `recevoir`) | aucun par l'API de Dolibarr |
+| Modifier ou supprimer un RIB (le titulaire s'écrit à la création, Dolibarr ne le rend pas) | `rib_modifier`, `rib_supprimer` | remettre les valeurs d'avant ; recréer le RIB |
+| Ajouter une tâche à un projet et y noter du temps passé | `tache_creer`, `temps_ajouter` | supprimer la tâche (sans temps passé) ; supprimer la ligne de temps |
+| Chercher dans tout Dolibarr, trié par date ou par nom (au-delà des 100 premières lignes) | `chercher` | (lecture) |
 | Enregistrer une cotisation | `cotisation` | supprimer cette cotisation |
 | Virer d'un compte bancaire à un autre | `virement_interne` | le virement inverse |
 | Ouvrir, clore un projet | `projet` | remettre le statut d'avant |
@@ -75,9 +80,9 @@ Tout le monde ne doit pas pouvoir tout faire dans Dolibarr. Le module déclare d
 | `consulter` | lire tiers, factures, devis, dons, adhérents, projets, banque, PDF ; l'écran lit par `lire_ecran`, borné à ce qu'il affiche (pas les utilisateurs ni la configuration de Dolibarr) | oui |
 | `facturer` | brouillons de devis et factures, avoirs, relances, encaisser un règlement, produire un PDF, joindre un document, modifier un brouillon ligne par ligne | non |
 | `valider` (sensible) | numéro légal d'une facture (irréversible), valider un don, valider ou clore un projet, valider une facture fournisseur, valider et approuver une note de frais | non |
-| `tiers` | créer, modifier, restaurer tiers, contacts, produits, projets ; les envoyer à Dolibarr ou les en détacher | non |
+| `tiers` | créer, modifier, restaurer tiers, contacts, produits, projets ; les envoyer à Dolibarr ou les en détacher ; tâches et temps passé des projets | non |
 | `dons` | saisir un don, enregistrer une cotisation | non |
-| `tresorerie` (sensible) | virements entre comptes, paiement des factures fournisseurs, RIB des tiers (lire, ajouter), commandes fournisseurs (valider, approuver, passer), saisie des notes de frais | non |
+| `tresorerie` (sensible) | virements entre comptes, paiement des factures fournisseurs et des notes de frais, RIB des tiers (lire, ajouter, modifier, supprimer), commandes fournisseurs (valider, approuver, passer, recevoir), saisie des notes de frais | non |
 | `libre` (sensible) | requête libre sur l'API, en lecture (`lire_libre`, tous les domaines) comme en écriture | non |
 | `administrer` (sensible) | supprimer, lire la base (en plus : superadministrateur), réglages, pont de la billetterie | non |
 
