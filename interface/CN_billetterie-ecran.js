@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #718b4a
+// VERSION CN : 0.1.0  #d2c4fb
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Billetterie : l'écran du titulaire (vue d'ensemble, événements, ventes, personnes, argent). Tout passe par les capacités billetterie.* : les règles sont dans le module, jamais ici.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=718b4a ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=d2c4fb ▼▼▼
 // Billetterie : l'écran du titulaire (vue d'ensemble, événements, ventes, personnes, argent). Tout passe par les capacités billetterie.* : les règles sont dans le module, jamais ici.
 (function () {
   "use strict";
@@ -33,7 +33,7 @@
   const puceCmd = (s) => { const x = ETATS_CMD[s] || [s, ""]; return puce(x[0], x[1]); };
   const MOYENS = { especes: "Espèces", carte_terminal: "Terminal carte", carte_declaree: "Carte (déclarée)", offert: "Offert", stripe: "Carte en ligne", virement: "Virement", helloasso: "HelloAsso", paypal: "PayPal" };
 
-  const CSS = ".sh-scene:has(>.sh-corps>.bl){width:100%}.bl{display:grid;gap:14px;color:var(--txt);font:13.5px/1.45 'Inter',system-ui,sans-serif;max-width:1180px}.bl *{box-sizing:border-box}.bl>*{min-width:0}.bl button{font:inherit;color:inherit;cursor:pointer}" +
+  const CSS = ".sh-scene:has(>.sh-corps>.bl){width:100%}.sh-scene:has(>.sh-corps>.bl)>.sh-titre{display:none}.bl{display:grid;gap:14px;color:var(--txt);font:13.5px/1.45 'Inter',system-ui,sans-serif;max-width:1180px}.bl *{box-sizing:border-box}.bl>*{min-width:0}.bl button{font:inherit;color:inherit;cursor:pointer}" +
     ".bl .carte{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}.bl h2{margin:0 0 3px;font-size:15px}.bl h3{margin:0 0 6px;font-size:13.5px}.bl .sub{color:var(--txt-faint);font-size:12px;margin:0 0 12px}.bl .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.bl .row .sp{flex:1}" +
     ".bl .tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.bl .tuile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-align:left}.bl .tuile b{display:block;font:650 24px/1.1 ui-monospace,Menlo,monospace}.bl .tuile span{color:var(--txt-soft);font-size:12.5px}" +
     ".bl .tuile.al{border-color:color-mix(in srgb,var(--warn) 55%,transparent)}.bl .tuile.al b{color:var(--warn)}.bl .tuile.cl{cursor:pointer}.bl .tuile.cl:hover{border-color:var(--accent)}" +
