@@ -8,12 +8,12 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.7.0)  #eb0984
+# VERSION EC : EC0 (référence 0.7.0)  #5af2f5
 # HÔTE CN    : CN_module.py · disposition @1.0
 # RÔLE       : range les entrées de menu que les modules déclarent en groupes (barre du haut), entrées et sous-entrées (colonne de gauche), et en entrées du menu de l'avatar ; dit le pire niveau d'alerte de chaque entrée, de chaque groupe et du tout.
 # MÉTHODE    : fonction pure : une table de groupes, un repli par famille, un pont vers les onglets de l'ancienne interface ; chaque entrée reçue paraît une seule fois, rien n'est inventé, un groupe sans entrée n'existe pas.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=eb0984 ▼▼▼
+# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=5af2f5 ▼▼▼
 
 # Les groupes de la barre du haut : (id, libellé, icône, ordre, interlocuteur par défaut du panneau).
 GROUPES = (
@@ -93,7 +93,7 @@ PONT = (
     {"id": "agents-ia", "libelle": "Agents IA", "groupe": "auto", "icone": "bot", "onglet": "", "modules": ("agents", "modules"), "ordre": 5, "role": "utilisateur", "ecran": "agents:equipe", "vues": (
         ("equipe", "L’équipe", "admin"), ("cassandra", "Cassandra", "admin"), ("itare", "Itare"), ("amizo", "Amizo", "admin"),
         ("relecteur", "Relecteur", "admin"), ("vision", "Vision", "admin"), ("auditeur", "Auditeur", "admin"),
-        ("conv", "Conversations"), ("boite", "À valider"), ("journal", "Journal"), ("modeles", "Modèles & clés", "admin")
+        ("conv", "Conversations"), ("boite", "À valider"), ("journal", "Journal"), ("modeles", "Modèles & clés", "admin"), ("maison", "Règles communes", "admin")
     )},
     {"id": "evolution", "libelle": "Évolution", "groupe": "auto", "icone": "evo", "onglet": "evolution", "modules": ("evolution",), "ordre": 10, "role": "admin", "vues": ()},
     {"id": "proactivite", "libelle": "Proactivité", "groupe": "auto", "icone": "bolt", "onglet": "proactive", "modules": ("proactif",), "ordre": 20, "role": "admin", "vues": ()},

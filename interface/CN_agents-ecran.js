@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #f71851
+// VERSION CN : 0.1.0  #0b06a9
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=f71851 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=0b06a9 ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -44,6 +44,7 @@
     epreuvesLancer: (modele) => A("epreuves_lancer", { modele: modele }),
     epreuvesResultats: (modele) => A("epreuves_resultats", { modele: modele || "" }),
     sentinelle: () => A("sentinelle_etat"),
+    registre: () => K.agir("modeles.lister", {}),
     defaire: (acte, raison) => A("defaire", { acte: acte, raison: raison || "" }),
     auditer: (jours) => A("auditer", { jours: jours || 7 }),
     journal: (acteur, n) => K.agir("journal.flux", { acteur: acteur || "", limit: n || 60, bruit: false }),
@@ -109,7 +110,7 @@
     const pageMenu = () => (S.vue === "fiche" ? (S.admin ? S.agent : "itare") : S.vue);
     const depuisMenu = (id) => {
       if (["cassandra", "itare", "amizo", "relecteur", "vision"].includes(id)) { S.vue = "fiche"; S.agent = id; S.onglet = "apercu"; }
-      else if (["equipe", "conv", "boite", "journal", "modeles", "auditeur"].includes(id)) S.vue = id;
+      else if (["equipe", "conv", "boite", "journal", "modeles", "auditeur", "maison"].includes(id)) S.vue = id;
       if (S.vue === "conv") S.conv.liste = null;
     };
     const nonBranche = (titre, texte) => '<section class="carte"><div class="barre"><h3 style="flex:1">' + esc(titre) + '</h3><span class="ag-nb">non branché</span></div><p class="note">' + esc(texte) + "</p></section>";
@@ -253,13 +254,40 @@
         (ISSUE[r.issue] ? l("Issue", pill(ISSUE[r.issue], r.issue === "echec" ? "dg" : r.issue === "faite" ? "ok" : "al")) : "") + l("Preuve", esc(preuve)) + l("Retour", esc(retour)) + ((r.journal || []).length ? l("Lignes du journal", (r.journal || []).length) : "") +
         (r.issue === "faite" && r.retour !== "annulee" ? '<div class="barre" style="margin-top:8px"><button class="btn mini" data-df="' + esc(r.acte) + '" title="Rejoue le retour arrière de ce geste, une seule fois">Défaire</button><span class="note">Rejoue le retour arrière de ce geste, une seule fois.</span></div>' : '<p class="note">' + (r.issue === "faite" ? "Ce geste a déjà été annulé." : "Ce geste n'a rien fait : il n'y a rien à défaire.") + "</p>");
     }
+    // « Règles communes » : ce qui vaut pour tous les agents, et les deux réglages qui valent pour tous (le plafond global ; le reste attend son module)
+    async function vMaison() {
+      let c = null; try { c = await API.couts("", 1); } catch (e) { c = null; }
+      const glob = c && c.plafonds && c.plafonds.global, auj = c ? c.aujourdhui_euros : null, pct = glob && auj != null ? Math.min(100, Math.round(auj / glob.euros * 100)) : 0;
+      const somme = (S.eq.equipe || []).reduce((t, a) => t + ((c && c.plafonds && c.plafonds[a.id] && c.plafonds[a.id].euros) || 0), 0);
+      return '<section class="carte"><h3>Les règles communes</h3><p class="note">Valent pour tous les agents. Ce ne sont pas des interdits de plus : ce sont les garanties qui permettent de les laisser agir.</p><div class="liste">' +
+        REGLES.map((r, i) => '<div class="li"><div class="sp"><b>' + (i + 1) + ". " + esc(r[0]) + '</b><div class="note">' + esc(r[1]) + "</div></div></div>").join("") + "</div></section>" +
+        '<section class="carte"><h3>Le plafond global de coût</h3><p class="note">En plus du plafond de chaque agent : une limite pour tout ce que les agents dépensent en une journée. Le plus bas des deux s\'applique.</p>' +
+        '<div class="ag-ligne"><span class="g">Plafond global</span><b>' + (glob ? eur(glob.euros) + " par jour · " + esc((ACTIONS.find((x) => x[0] === glob.action) || [0, glob.action])[1]) : "aucun") + "</b></div>" +
+        (glob ? '<div class="ag-barres" style="height:14px" role="img" aria-label="' + pct + ' % du plafond global"><i style="height:100%;width:' + pct + '%;background:var(--accent,#0b7c74);border-radius:99px"></i></div><p class="note">Aujourd\'hui : <b>' + eur(auj) + "</b> sur " + eur(glob.euros) + " (" + pct + " %).</p>" : "") +
+        (glob && somme > glob.euros ? '<p class="note">La somme des plafonds par agent (' + eur(somme) + ") dépasse le plafond global : c\'est le global qui gagne.</p>" : "") +
+        '<div class="ag-champs"><label class="ag-f"><span>Montant par jour (€)</span><input type="number" min="0.01" step="0.01" id="ag-gl-e" value="' + (glob ? glob.euros : "") + '"></label>' +
+        '<label class="ag-f"><span>À l\'atteinte</span><select id="ag-gl-a">' + ACTIONS.map(([k, l]) => '<option value="' + k + '"' + (glob && glob.action === k ? " selected" : "") + ">" + esc(l) + "</option>").join("") + "</select></label></div>" +
+        '<div class="ag-puces"><button class="btn pri" id="ag-gl-poser">Poser le plafond global</button>' + (glob ? '<button class="btn dng" id="ag-gl-lever">Lever</button>' : "") + "</div></section>" +
+        '<section class="carte"><h3>Le dehors passe par un seul agent</h3><p class="note">Seul Amizo lit le web, et il n\'a aucun outil qui sort. Cassandra et Itare, qui agissent, ne lisent jamais le dehors eux-mêmes : ils le lui demandent et reçoivent un résumé étiqueté « externe ». Une page piégée n\'atteint donc jamais un agent capable d\'agir.</p></section>' +
+        nonBranche("Le palier par défaut", "Le point de départ de tout nouvel agent. Le réglage commun n\'existe pas encore côté module : chaque agent se règle, outil par outil, dans sa fiche.") +
+        nonBranche("Le journal à l\'envers : le mode « mauvais jour »", "Un seul bouton pour faire passer tous les agents en « raconter » pendant une durée choisie. Pas encore construit côté module.");
+    }
     async function vAuditeur() {
-      let r; try { r = await API.auditer(S.jours > 30 ? 30 : 7); } catch (e) { return nonBranche("Auditeur", String((e && e.message) || e)); }
+      const jours = S.jauditeur || 7;
+      let r; try { r = await API.auditer(jours); } catch (e) { return nonBranche("Auditeur", String((e && e.message) || e)); }
+      let fiche = null; try { fiche = await API.agent("auditeur"); } catch (e) { fiche = null; }
+      const ag = (fiche && fiche.agent) || {}, cj = (fiche && fiche.cout_jour) || {};
       const TYPE = { cout_derive: "Un coût qui dérive", palier_large: "Un palier trop généreux", injection_repetee: "Des tentatives d\'injection répétées" };
       const sg = r.signaux || [];
       return '<section class="carte"><div class="ag-tete">' + av({ id: "auditeur", nom: "Auditeur" }) + '<div><h3>Auditeur</h3><div class="note">Relit le journal et signale les dérives. Indépendant des agents qu\'il regarde ; il signale, il ne corrige pas.</div></div></div>' +
-        '<div class="ag-puces">' + pill("lecture seule") + pill(r.jours + " derniers jours") + pill(sg.length + (sg.length > 1 ? " signaux" : " signal"), sg.length ? "al" : "ok") + "</div></section>" +
-        '<section class="carte"><h3>Ce qu\'il a vu</h3>' + (sg.length ? '<div class="liste">' + sg.map((x) => '<div class="li"><div class="sp"><b>' + esc(TYPE[x.type] || x.type) + (x.agent ? " · " + esc(x.agent) : "") + '</b><div class="note">' + esc(x.phrase || "") + (x.ref ? " · " + esc(x.ref) : "") + "</div></div></div>").join("") + "</div>" : '<p class="note">Rien à signaler : ni coût qui dérive, ni palier trop large, ni tentative répétée.</p>') +
+        '<div class="ag-puces">' + pill("lecture seule") + pill("sans palier : aucun outil qui agit") + pill(sg.length + (sg.length > 1 ? " signaux" : " signal"), sg.length ? "al" : "ok") + "</div></section>" +
+        '<section class="carte"><h3>Sa fiche</h3>' +
+        '<div class="ag-ligne"><span class="g">Niveau</span><b>' + esc((NIVEAUX.find((x) => x[0] === ag.niveau) || [0, ag.niveau || "observer"])[1]) + "</b></div>" +
+        '<div class="ag-ligne"><span class="g">Modèle</span><b>' + esc(ag.modele || "par défaut") + "</b></div>" +
+        '<div class="ag-ligne"><span class="g">Palier</span><b>aucun : il lit, il signale</b></div>' +
+        '<div class="ag-ligne"><span class="g">Aujourd\'hui</span><b>' + (cj.euros ? eur(cj.euros) : "gratuit") + ' <span class="note">· ' + (cj.appels || 0) + " appels</span></b></div>" +
+        '<div class="ag-ligne"><span class="g">Carte de confiance</span><b>rien à promouvoir : aucun outil à régler</b></div></section>' +
+        '<section class="carte"><div class="barre"><h3 style="flex:1">Ce qu\'il a vu</h3><div class="seg" id="ag-ja" role="group" aria-label="Période">' + [7, 30].map((j) => '<button data-ja="' + j + '" class="' + (jours === j ? "on" : "") + '">' + j + " j</button>").join("") + "</div></div>" + (sg.length ? '<div class="liste">' + sg.map((x) => '<div class="li"><div class="sp"><b>' + esc(TYPE[x.type] || x.type) + (x.agent ? " · " + esc(x.agent) : "") + '</b><div class="note">' + esc(x.phrase || "") + (x.ref ? " · " + esc(x.ref) : "") + "</div></div></div>").join("") + "</div>" : '<p class="note">Rien à signaler : ni coût qui dérive, ni palier trop large, ni tentative répétée.</p>') +
         '<p class="note">Il regarde : ' + (r.regards || []).map((g) => esc((TYPE[g] || g).toLowerCase())).join(", ") + ". Le geste reste à l\'administrateur.</p></section>";
     }
     async function oJournal(f) {
@@ -376,8 +404,8 @@
       if (!S.conv.liste) S.conv.liste = (await API.conversations()).conversations || [];
       const L = S.conv.liste;
       const choix = (S.admin ? ["cassandra", "itare"] : ["itare"]);
-      const liste = '<section class="carte"><div class="barre"><h3 style="flex:1">Conversations</h3>' + (S.admin ? '<select class="sel" id="cv-ag">' + choix.map((x) => '<option value="' + x + '"' + (S.conv.agent === x ? " selected" : "") + ">avec " + x + "</option>").join("") + "</select>" : "") + '<button class="btn pri mini" id="cv-neuve">Nouvelle</button></div>' +
-        (L.length ? L.map((c) => '<button class="ag-sel' + (S.conv.id === c.id ? " on" : "") + '" data-cv="' + c.id + '"><div class="sp"><b>' + esc(c.titre || "Sans titre") + '</b><div class="note">' + esc(c.agent) + " · " + c.n + " messages · " + esc(dateFr(c.maj)) + "</div></div></button>").join("") : '<div class="vide">Aucune conversation.</div>') + "</section>";
+      const liste = '<section class="carte"><div class="barre"><h3 style="flex:1">Conversations</h3>' + (S.admin ? '<select class="sel" id="cv-ag">' + choix.map((x) => '<option value="' + x + '"' + (S.conv.agent === x ? " selected" : "") + ">avec " + x + "</option>").join("") + "</select>" : "") + '<button class="btn pri mini" id="cv-neuve">Nouvelle</button></div><input type="search" id="cv-q" placeholder="Chercher une conversation…" value="' + esc(S.conv.q || "") + '">' +
+        (L.length ? L.filter((c) => !S.conv.q || (c.titre || "Sans titre").toLowerCase().includes(S.conv.q.toLowerCase())).map((c) => '<button class="ag-sel' + (S.conv.id === c.id ? " on" : "") + '" data-cv="' + c.id + '"><div class="sp"><b>' + esc(c.titre || "Sans titre") + '</b><div class="note">' + esc(c.agent) + " · " + c.n + " messages · " + esc(dateFr(c.maj)) + "</div></div></button>").join("") : '<div class="vide">Aucune conversation.</div>') + "</section>";
       let droite = '<section class="carte"><div class="vide">Choisis une conversation, ou ouvres-en une nouvelle.</div></section>';
       if (S.conv.id) {
         const d = await API.conversation(S.conv.id);
@@ -405,19 +433,30 @@
 
     // ── journal ──────────────────────────────────────────────────────────────
     async function vJournal() {
-      let l = [];
-      let ac; try { ac = ligneActes(await actes("")); } catch (e) { ac = nonBranche("Actes", String((e && e.message) || e)); }
+      let l = []; const F = S.jf = S.jf || { ag: "tous", q: "", n: 8 }, q = F.q.toLowerCase();
+      let ac; try {
+        const tous = (await actes("")).filter((x) => (F.ag === "tous" || x.agent === F.ag) && (!q || ((x.titre || "") + " " + (x.resume || "") + " " + (x.pourquoi || "")).toLowerCase().includes(q)));
+        ac = ligneActes(tous.slice(0, F.n)) + (tous.length > F.n ? '<div class="ag-puces"><span class="note">' + F.n + " sur " + tous.length + ' affichés</span><button class="btn mini" id="jf-plus">Voir plus</button></div>' : "");
+      } catch (e) { ac = nonBranche("Actes", String((e && e.message) || e)); }
+      const filtres = '<div class="barre">' + (S.admin ? '<select class="sel" id="jf-a"><option value="tous">Tous les agents</option>' + (S.eq.equipe || []).filter((a) => a.genre === "agent").map((a) => '<option value="' + esc(a.id) + '"' + (F.ag === a.id ? " selected" : "") + ">" + esc(a.nom) + "</option>").join("") + "</select>" : "") + '<input type="search" id="jf-q" placeholder="Chercher dans le journal…" value="' + esc(F.q) + '"></div>';
       // le flux du module journal n'est pas cloisonné par compte (journaux système compris) : un compte ordinaire lit ses actes par les propositions, jamais le flux
-      if (!S.admin) return '<section class="carte"><h3>Ce que ton Itare a fait</h3>' + ac + "</section>";
+      if (!S.admin) return '<section class="carte"><h3>Ce que ton Itare a fait</h3>' + filtres + ac + "</section>";
       try { l = (await API.journal("", 80)).entrees.filter(mien); } catch (e) { return nonBranche("Journal", String(e.message || e)); }
       if (S.admin) l = l.filter((e) => /cassandra|itare|amizo|agent|relecteur|vision/i.test((e.acteur || "") + " " + (e.source || "") + " " + (e.label || "")));
-      return '<section class="carte"><div class="barre"><h3 style="flex:1">Ce que les agents ont fait</h3>' + lien("journal", "Ouvrir les Journaux") + "</div>" + ac + '<div class="note" style="margin:10px 2px 2px"><b>Dans le journal du noyau</b></div>' + ligneJournal(l) + "</section>";
+      return '<section class="carte"><div class="barre"><h3 style="flex:1">Ce que les agents ont fait</h3>' + lien("journal", "Ouvrir les Journaux") + "</div>" + filtres + ac + '<div class="note" style="margin:10px 2px 2px"><b>Dans le journal du noyau</b></div>' + ligneJournal(q ? l.filter((e) => ((e.action || "") + " " + (e.sujet || "") + " " + (e.label || "")).toLowerCase().includes(q)) : l) + "</section>";
     }
 
     // ── modèles et clés ──────────────────────────────────────────────────────
-    function vModeles() {
+    async function vModeles() {
       const eq = S.eq.equipe;
-      return '<section class="carte"><div class="barre"><h3 style="flex:1">Quel modèle fait parler qui</h3><button class="btn" id="ag-reg">Ouvrir le registre des modèles</button></div>' +
+      let reg = null; try { reg = await API.registre(); } catch (e) { reg = null; }
+      const ms = (reg && reg.modeles) || [], roles = (reg && reg.roles) || {}, nomM = (m) => esc(m.nom || m.id || m.modele || "modèle"), tm = (v) => (v && typeof v === "object" ? (v.modele || v.nom || v.id || "") : v || "");
+      const chaine = eq.filter((a) => a.genre === "agent").map((a) => '<div class="ag-ligne"><span class="g">' + esc(a.nom) + "</span><b>" + esc(a.modele || tm(roles[a.id]) || "rôle par défaut") + " <span class=\'note\'>→</span> " + esc(a.secours || "pas de secours") + " <span class=\'note\'>→</span> " + (a.plafond_atteint ? "plafond atteint : le secours seul" : "arrêt propre, jamais un silence") + "</b></div>").join("");
+      const registre = '<section class="carte"><div class="barre"><h3 style="flex:1">Le registre des modèles</h3><button class="btn" id="ag-reg">Ouvrir le registre des modèles</button></div>' +
+        (reg ? (ms.length ? '<div class="liste">' + ms.map((m) => '<div class="li"><div class="sp"><b>' + nomM(m) + '</b><div class="note">' + esc([m.fournisseur, m.modele && m.modele !== m.nom ? m.modele : "", m.cle === false || m.cle_presente === false ? "clé manquante" : ""].filter(Boolean).join(" · ")) + "</div></div></div>").join("") + "</div>" : '<p class="note">Aucun modèle enregistré pour l\'instant : ajoute un fournisseur et sa clé dans le registre. Les clés sont des réglages « secret » du noyau, jamais relues ici.</p>') : '<p class="note">Le registre n\'a pas répondu.</p>') +
+        (Object.keys(roles).length ? '<div class="note" style="margin:8px 2px 2px"><b>Rôles</b></div>' + Object.keys(roles).sort().map((k) => '<div class="ag-ligne"><span class="g">' + esc(k) + "</span><b>" + esc(tm(roles[k])) + "</b></div>").join("") : "") + "</section>" +
+        '<section class="carte"><h3>La chaîne de secours</h3><p class="note">Ce que chaque agent essaie, dans l\'ordre. Un modèle déconseillé aux épreuves de sûreté n\'est pas employé quand l\'exigence est active.</p>' + chaine + "</section>";
+      return registre + '<section class="carte"><div class="barre"><h3 style="flex:1">Quel modèle fait parler qui</h3></div>' +
         '<div class="ag-tw"><table><tr><th>Agent</th><th>Modèle</th><th>Secours</th><th>Coût du jour</th></tr>' + eq.map((a) => "<tr><td>" + esc(a.nom) + "</td><td>" + esc(a.modele || "par défaut") + "</td><td>" + esc(a.secours || "aucun") + "</td><td>" + (a.cout_jour && a.cout_jour.euros ? eur(a.cout_jour.euros) : "gratuit") + "</td></tr>").join("") + "</table></div>" +
         '<p class="note">Le registre (fournisseurs, clés, tarifs) reste dans le module Modèles ; les clés sont des réglages « secret » du noyau, jamais lues ici. Le modèle d\'un agent se règle dans sa fiche, onglet « Réglages ».</p></section>';
     }
@@ -442,14 +481,14 @@
         if (!S.vue) S.vue = S.admin ? "equipe" : "fiche";
         if (!S.admin && !["fiche", "conv", "boite", "journal"].includes(S.vue)) S.vue = "fiche";
         if (S.attente === undefined) { try { S.attente = ((await API.propositions()).propositions || []).filter((x) => S.admin || x.agent === "itare").length; } catch (e) { S.attente = null; } }
-        const f = { equipe: vEquipe, fiche: vFiche, conv: vConv, boite: vBoite, journal: vJournal, auditeur: vAuditeur, modeles: async () => vModeles() }[S.vue];
+        const f = { equipe: vEquipe, fiche: vFiche, conv: vConv, boite: vBoite, journal: vJournal, auditeur: vAuditeur, maison: vMaison, modeles: vModeles }[S.vue];
         html = '<div id="ag-vue" style="display:flex;flex-direction:column;gap:12px">' + await f() + "</div>";
       } catch (e) { html = '<div class="vide">' + esc((e && e.message) || e) + "</div>"; }
       if (moi !== dessin) return;                                                     // un dessin plus récent est parti : il écrira seul
       racine.innerHTML = html; brancher();
       if (typeof window.agentsSuivre === "function") window.agentsSuivre(pageMenu(), S.attente == null ? 0 : S.attente);
       const sc = corps.closest(".sh-scene"), ti = sc && sc.querySelector(".sh-titre");           // le titre suit la page choisie dans le menu
-      if (ti) ti.textContent = { equipe: "L’équipe", conv: "Conversations", boite: "À valider", journal: "Journal", auditeur: "Auditeur", modeles: "Modèles & clés" }[S.vue] || ((S.eq && S.eq.equipe.find((x) => x.id === S.agent) || {}).nom || "Agents IA");
+      if (ti) ti.textContent = { equipe: "L’équipe", conv: "Conversations", boite: "À valider", journal: "Journal", auditeur: "Auditeur", maison: "Règles communes", modeles: "Modèles & clés" }[S.vue] || ((S.eq && S.eq.equipe.find((x) => x.id === S.agent) || {}).nom || "Agents IA");
     }
     const recharger = (eq) => { if (eq) { S.eq = null; S.lu = 0; MEM.eq = null; } return dessiner(); };
     const aller = (v, agent, onglet) => { S.vue = v; if (agent) S.agent = agent; if (onglet) S.onglet = onglet; if (v === "conv") S.conv.liste = null; dessiner(); };
@@ -483,6 +522,7 @@
       });
       sur("#ag-q", "input", (i) => { S.filtre.q = i.value; clearTimeout(S.tq); S.tq = setTimeout(async () => { const pos = i.selectionStart; await dessiner(); const n = racine.querySelector("#ag-q"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }, 250); });
       sur("#ag-r", "change", (s) => { S.filtre.risque = s.value; dessiner(); });
+      sur("#ag-ja [data-ja]", "click", (b) => { S.jauditeur = +b.dataset.ja; dessiner(); });
       sur("#ag-jours [data-j]", "click", (b) => { S.jours = +b.dataset.j; dessiner(); });
       sur("#ag-sauve", "click", () => lancer(async () => {
         const g = (id) => racine.querySelector(id).value;
@@ -493,6 +533,8 @@
         await API.regler(S.agent, { limites: lim }); await recharger(true);
       }, "Limites enregistrées"));
       sur("#ag-pl-poser", "click", () => lancer(async () => { const e = parseFloat(racine.querySelector("#ag-pl-e").value); if (!(e > 0)) throw new Error("un montant positif est requis"); await API.plafond(S.agent, e, racine.querySelector("#ag-pl-a").value); await recharger(true); }, "Plafond posé"));
+      sur("#ag-gl-poser", "click", () => lancer(async () => { const e = parseFloat(racine.querySelector("#ag-gl-e").value); if (!(e > 0)) throw new Error("un montant positif est requis"); await API.plafond("global", e, racine.querySelector("#ag-gl-a").value); await recharger(true); }, "Plafond global posé"));
+      sur("#ag-gl-lever", "click", () => lancer(async () => { if (!(await confirmer("Lever le plafond global ?", '<p class="note">Les agents ne seront plus retenus que par leur propre plafond.</p>', "Lever", true))) return; await API.plafond("global", null, "secours"); await recharger(true); }, "Plafond global levé"));
       sur("#ag-pl-g", "click", () => lancer(async () => { const e = parseFloat(racine.querySelector("#ag-pl-e").value); if (!(e > 0)) throw new Error("un montant positif est requis"); await API.plafond("global", e, racine.querySelector("#ag-pl-a").value); await recharger(true); }, "Plafond global posé"));
       sur("[data-plaf]", "click", (b) => lancer(async () => {
         if (b.dataset.plaf === "accorder") { await API.plafond(S.agent, null, "accord", true); }
@@ -528,6 +570,10 @@
       // conversations
       sur("[data-cv]", "click", (b) => { S.conv.id = +b.dataset.cv; dessiner(); });
       sur("#cv-ag", "change", (s) => { S.conv.agent = s.value; });
+      sur("#jf-a", "change", (x) => { S.jf.ag = x.value; S.jf.n = 8; dessiner(); });
+      sur("#jf-plus", "click", () => { S.jf.n += 8; dessiner(); });
+      sur("#jf-q", "input", (i) => { S.jf.q = i.value; S.jf.n = 8; clearTimeout(S.tq); S.tq = setTimeout(async () => { const pos = i.selectionStart; await dessiner(); const n = racine.querySelector("#jf-q"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }, 250); });
+      sur("#cv-q", "input", (i) => { S.conv.q = i.value; clearTimeout(S.tq); S.tq = setTimeout(async () => { const pos = i.selectionStart; await dessiner(); const n = racine.querySelector("#cv-q"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }, 200); });
       sur("#cv-neuve", "click", () => lancer(async () => { const r = await API.creer(S.conv.agent); S.conv.id = r.id; S.conv.liste = null; await dessiner(); }));
       sur("#cv-ren", "click", () => lancer(async () => { const t = window.prompt("Nouveau titre"); if (t == null) return; await API.renommer(S.conv.id, t); S.conv.liste = null; await dessiner(); }));
       sur("#cv-sup", "click", () => lancer(async () => { if (!(await confirmer("Supprimer la conversation ?", '<p class="note">Elle disparaît avec ses messages.</p>', "Supprimer", true))) return; await API.supprimer(S.conv.id); S.conv.id = 0; S.conv.liste = null; await dessiner(); }));
