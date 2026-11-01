@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #fd8cdd
+# VERSION CN : 0.4.1  #d1141c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=fd8cdd ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=d1141c ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -38,6 +38,7 @@ import gzip
 import json
 import os
 import re
+import subprocess
 import time
 import urllib.error
 import urllib.parse
@@ -80,6 +81,22 @@ ENTETES = {"factures": {"ref_client", "date", "date_lim_reglement", "cond_reglem
 ENTETES_DATES = ("date", "date_lim_reglement")
 ENTETES_ENTIERS = ("cond_reglement_id", "mode_reglement_id", "fk_account", "fk_project", "duree_validite")
 CHAMPS_LIGNE = {"desc", "qty", "subprice", "tva_tx", "fk_product", "product_type", "remise_percent"}
+# La lecture de la BASE de Dolibarr (en plus de son API) : pour ce que l'API cache ou ne sait pas compter. Réservée aux superadministrateurs, en lecture seule, par des requêtes NOMMÉES.
+BASE_REQUETES = {
+    "don_adresses": ("SELECT d.rowid AS id, d.address AS adresse, d.zip AS code_postal, d.town AS ville, COALESCE(NULLIF(d.country, ''), c.label) AS pays, d.email AS courriel, d.phone AS telephone "
+                     "FROM {p}don d LEFT JOIN {p}c_country c ON c.rowid = d.fk_country WHERE d.entity = {entite} AND d.rowid IN ({ids}) ORDER BY d.rowid",
+                     ("entite", "ids")),
+    "champs_perso": ("SELECT elementtype AS objet, name AS nom, label AS libelle, type AS genre, size AS taille, fieldrequired AS obligatoire, pos AS rang, param AS parametres, `list` AS affichage, "
+                     "alwayseditable AS toujours_modifiable, fielddefault AS defaut, fieldunique AS unicite, help AS aide, ishidden AS cache FROM {p}extrafields WHERE entity IN (0, {entite}) ORDER BY elementtype, pos",
+                     ("entite",)),
+    "journal_etat": ("SELECT COUNT(*) AS enregistrements, MAX(rowid) AS dernier, MAX(date_creation) AS derniere_date FROM {p}blockedlog WHERE entity = {entite}", ("entite",)),
+    "ca_par_mois": ("SELECT DATE_FORMAT(datef, '%Y-%m') AS mois, COUNT(*) AS factures, ROUND(SUM(total_ht), 2) AS ht, ROUND(SUM(total_tva), 2) AS tva, ROUND(SUM(total_ttc), 2) AS ttc "
+                    "FROM {p}facture WHERE entity = {entite} AND fk_statut IN (1, 2) AND datef >= '{du}' AND datef < '{au}' GROUP BY 1 ORDER BY 1", ("entite", "du", "au")),
+}
+BASE_TABLES = {"don", "extrafields", "blockedlog", "facture"}
+EXEC_SQL = {"run": subprocess.run}          # remplaçable : les bancs n'ont pas de vrai serveur SQL
+MAX_LIGNES_BASE = 1000
+SOCIAUX = ("skype", "twitter", "facebook", "linkedin")
 DON_CHAMPS = {"address", "zip", "town", "country_id", "email", "phone", "public", "note_public", "note_private"}
 MAX_CORPS = 16384
 AGENT = "Cassandra-Dolibarr/0.4"      # une identité franche : un pare-feu applicatif (Cloudflare) refuse l'agent par défaut de Python
@@ -264,6 +281,34 @@ def _garde_societe(conf):
         _SOCIETES[k] = (time.time(), nom)
     if nom.strip().lower() != voulu:
         raise PontErreur("la clé voit la société « %s », pas « %s » : rien n'est écrit" % (nom, conf["societe_attendue"]), genre="mauvaise_societe")
+
+
+def _sql_lire(base, sql):
+    """Exécute UNE requête de lecture par le client « mysql » : session en lecture seule, mot de passe dans l'environnement du processus (jamais dans la ligne de commande), délai court.
+    Rend la liste des lignes, chacune un dictionnaire. Aucun message ne porte le mot de passe."""
+    cmd = [base["client"], "--batch", "--connect-timeout=5", "--default-character-set=utf8mb4", "-h", base["hote"], "-P", base["port"], "-u", base["utilisateur"], base["nom"],
+           "-e", "SET SESSION TRANSACTION READ ONLY; " + sql]
+    env = {"PATH": os.environ.get("PATH", ""), "MYSQL_PWD": base["motdepasse"], "LANG": "C.UTF-8"}
+    try:
+        p = EXEC_SQL["run"](cmd, capture_output=True, timeout=20, env=env)
+    except FileNotFoundError:
+        raise PontErreur("le client « %s » est introuvable : installez-le ou réglez « base_client »" % base["client"], genre="non_configure")
+    except subprocess.TimeoutExpired:
+        raise PontErreur("la base de Dolibarr n'a pas répondu à temps", genre="injoignable")
+    if p.returncode != 0:
+        dit = (p.stderr or b"").decode("utf-8", "replace").strip().splitlines()
+        raise PontErreur("la base de Dolibarr refuse : %s" % (re.sub(r"\s+", " ", dit[-1])[:200] if dit else "code %d" % p.returncode), genre="injoignable")
+    lignes = (p.stdout or b"").decode("utf-8", "replace").split("\n")
+    if lignes and lignes[-1] == "":
+        lignes.pop()
+    if not lignes:
+        return []
+    entete = lignes[0].split("\t")
+    sortie = []
+    for l in lignes[1:MAX_LIGNES_BASE + 1]:
+        champs = [None if v == "NULL" else re.sub(r"\\(.)", lambda m: {"t": "\t", "n": "\n"}.get(m.group(1), m.group(1)), v) for v in l.split("\t")]
+        sortie.append(dict(zip(entete, champs)))
+    return sortie
 
 
 def _dit_dolibarr(e):
@@ -564,12 +609,23 @@ def brancher(ctx):
             raise ValueError("objet inconnu : %r (permis : %s)" % (objet, ", ".join(sorted(ECRIVABLES))))
         _verifier_champs(champs, ECRIVABLES[objet]["champs"], objet)
         _regles_dolibarr(objet, champs, True)
-        champs = _numeriques(champs)
+        champs = _reunir_sociaux(_numeriques(champs), None)
         conf = _conf()
         nouvel = ecrire(conf, "POST", ECRIVABLES[objet]["chemin"], _completer(objet, champs))
         if not isinstance(nouvel, int) and not (isinstance(nouvel, str) and _ID.match(nouvel)):
             raise PontErreur("Dolibarr n'a pas rendu l'identifiant de l'objet créé")
         return {"objet": objet, "id": int(nouvel), "champs": champs, "cree": True}
+
+    def _reunir_sociaux(champs, courant):
+        """Skype, X, Facebook, LinkedIn : Dolibarr 24 les range dans « socialnetworks » (un objet) ; à la modification on garde ceux qu'on ne touche pas."""
+        if not any(k in champs for k in SOCIAUX):
+            return champs
+        base = (courant or {}).get("socialnetworks")
+        reseaux = dict(base) if isinstance(base, dict) else {}
+        reseaux.update({k: champs[k] for k in SOCIAUX if k in champs})
+        corps = {k: v for k, v in champs.items() if k not in SOCIAUX}
+        corps["socialnetworks"] = reseaux
+        return corps
 
     def modifier(ctx, objet, id, champs):
         if objet not in ECRIVABLES:
@@ -583,6 +639,7 @@ def brancher(ctx):
         courant = _lire_un(conf, ECRIVABLES[objet]["chemin"], id)
         if not isinstance(courant, dict):
             raise PontErreur("l'objet %s %s est introuvable" % (objet, id))
+        champs = _reunir_sociaux(champs, courant)
         avant = {k: courant.get(k) for k in champs}
         ecrire(conf, "PUT", "%s/%s" % (ECRIVABLES[objet]["chemin"], id), champs)
         return {"objet": objet, "id": int(id), "avant": avant, "apres": champs, "cree": False}
@@ -591,7 +648,19 @@ def brancher(ctx):
         conf = _conf()
         o = _lire_un(conf, ECRIVABLES[res["objet"]]["chemin"], res["id"])
         attendu = res["champs"] if res["cree"] else res["apres"]
-        return isinstance(o, dict) and all(_egaux(o.get(k), v) for k, v in attendu.items())
+
+        def concorde(k, v):
+            lu = o.get(k) if k in o else o.get("statut" if k == "status" else k)
+            if k == "multicurrency_code":
+                return True                                              # sans le module multidevise, Dolibarr ne garde pas ce champ
+            if isinstance(v, dict):                                      # « socialnetworks » : chaque réseau posé se retrouve
+                return isinstance(lu, dict) and all(_egaux(lu.get(a), b) for a, b in v.items())
+            if re.match(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$", str(v)) and str(lu).lstrip("-").isdigit():
+                return abs(int(lu) - _jour_ts(str(v))) <= 86400          # une date AAAA-MM-JJ, que Dolibarr garde en secondes
+            if str(k).startswith("accountancy_code"):
+                return str(lu or "").rstrip("0") == str(v or "").rstrip("0")      # Dolibarr tronque les zéros de fin selon la longueur des comptes
+            return _egaux(lu, v)
+        return isinstance(o, dict) and all(concorde(k, v) for k, v in attendu.items())
 
     def defaire_objet(ctx, res):
         conf = _conf()
@@ -1081,11 +1150,13 @@ def brancher(ctx):
                 "utilisateur": str(info.get("login") or ""), "administrateur": str(info.get("admin")) == "1", "entite": str(info.get("entity") or ""), "societe": societe}
 
     # --- encaisser un règlement
-    def encaisser(ctx, id, montant, banque, mode="VIR", date="", numero="", note=""):
+    def encaisser(ctx, id, montant, banque, mode="VIR", date="", numero="", note="", emetteur="", banque_cheque=""):
         montant = _montant(montant)
         _garde_agent(montant)
         if not _ID.match(str(banque)):
             raise ValueError("banque : l'identifiant du compte bancaire Dolibarr")
+        if str(mode).upper() == "CHQ" and not str(emetteur).strip():
+            raise ValueError("émetteur du chèque : obligatoire pour un chèque (règle de Dolibarr : « Emetteur is mandatory when payment code is CHQ »)")
         conf = _conf()
         f = _doc(conf, DOCUMENTS["factures"], id, "la facture")
         if _statut(f) != "1" or str(f.get("paye")) == "1":
@@ -1097,6 +1168,10 @@ def brancher(ctx):
         # « paymentsdistributed » : le seul point qui accepte un MONTANT (le point /payments d'une facture règle toujours tout le reste dû). Dolibarr 24 refuse « amount » ET « multicurrency_amount » ensemble.
         corps = {"arrayofamounts": {str(int(id)): {"amount": montant}}, "datepaye": _jour_ts(date), "paymentid": _mode_id(conf, str(mode).upper()),
                  "closepaidinvoices": "yes" if montant >= reste - 0.005 else "no", "accountid": int(banque), "num_payment": str(numero)[:60], "comment": str(note)[:500]}
+        if str(emetteur).strip():
+            corps["chqemetteur"] = str(emetteur).strip()[:100]
+        if str(banque_cheque).strip():
+            corps["chqbank"] = str(banque_cheque).strip()[:100]
         rep = ecrire(conf, "POST", "/invoices/paymentsdistributed", corps)
         pid = int(rep) if isinstance(rep, int) and not isinstance(rep, bool) or (isinstance(rep, str) and _ID.match(rep)) else None
         return {"id": int(id), "montant": montant, "reste_avant": reste, "paiements_avant": avant, "paiement": pid}
@@ -1575,6 +1650,79 @@ def brancher(ctx):
     ctx.implementer("bil_adherent", _differable(bil_adherent), _prouve_ou_differe(prouver_pont_adherent), retour_comptable, simuler=lambda ctx, ref="", **_: "créerait l'adhérent %s" % ref)
     ctx.implementer("bil_tester", bil_tester)
 
+    # ------------------------------------------------------------------ la lecture de la BASE de Dolibarr : superadministrateurs seulement, en lecture seule, requêtes nommées
+    def _garde_base(ctx):
+        compte = str(ctx.compte or "")
+        if not compte or not ctx.est_superadmin(compte):
+            raise PontErreur("la lecture de la base de Dolibarr est réservée aux superadministrateurs", genre="refuse_compte")
+
+    def _base_conf():
+        base = {"hote": _reglage_texte("base_hote"), "port": _reglage_texte("base_port") or "3306", "nom": _reglage_texte("base_nom"), "utilisateur": _reglage_texte("base_utilisateur"),
+                "motdepasse": _reglage_texte("base_motdepasse"), "prefixe": _reglage_texte("base_prefixe") or "llx_", "client": _reglage_texte("base_client") or "mysql"}
+        if not (base["hote"] and base["nom"] and base["utilisateur"]):
+            raise PontErreur("la lecture de la base n'est pas réglée (Réglages › Dolibarr › Base de données : hôte, base, utilisateur, mot de passe)", genre="non_configure")
+        for cle, motif in (("hote", r"^[A-Za-z0-9_.:-]{1,253}$"), ("port", r"^[0-9]{1,5}$"), ("nom", r"^[A-Za-z0-9_.$-]{1,64}$"), ("utilisateur", r"^[A-Za-z0-9_.$@-]{1,64}$"),
+                           ("prefixe", r"^[A-Za-z0-9_]{1,20}$"), ("client", r"^[A-Za-z0-9_./:\\-]{1,200}$")):
+            if not re.match(motif, base[cle]):
+                raise PontErreur("le réglage « base_%s » n'a pas la forme attendue" % cle, genre="non_configure")
+        return base
+
+    def _param_base(nom, valeur):
+        if nom in ("entite",):
+            if not _ID.match(str(valeur)):
+                raise ValueError("entite : un nombre")
+            return str(int(valeur))
+        if nom == "ids":
+            if not isinstance(valeur, list) or not valeur or len(valeur) > 500 or not all(_ID.match(str(i)) for i in valeur):
+                raise ValueError("ids : de 1 à 500 identifiants (des nombres)")
+            return ", ".join(str(int(i)) for i in valeur)
+        if nom in ("du", "au"):
+            if not re.match(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$", str(valeur)):
+                raise ValueError("%s : AAAA-MM-JJ" % nom)
+            return str(valeur)
+        raise ValueError("paramètre inconnu : %s" % nom)
+
+    def base_requete(ctx, nom, parametres=None):
+        _garde_base(ctx)
+        if nom not in BASE_REQUETES:
+            raise ValueError("requête inconnue : %r (permises : %s)" % (nom, ", ".join(sorted(BASE_REQUETES))))
+        sql, attendus = BASE_REQUETES[nom]
+        p = dict(parametres or {})
+        inconnus = [k for k in p if k not in attendus]
+        if inconnus:
+            raise ValueError("paramètres refusés pour %s : %s (permis : %s)" % (nom, ", ".join(inconnus), ", ".join(attendus)))
+        p.setdefault("entite", 1)
+        if "du" in attendus:
+            p.setdefault("du", time.strftime("%Y-%m-01", time.gmtime(time.time() - 335 * 86400)))      # douze mois glissants
+        if "au" in attendus:
+            p.setdefault("au", time.strftime("%Y-%m-%d", time.gmtime(time.time() + 86400)))
+        base = _base_conf()
+        valeurs = {k: _param_base(k, p[k]) for k in attendus if k in p}
+        for k in attendus:
+            if k not in valeurs:
+                raise ValueError("paramètre obligatoire : %s" % k)
+        lignes = _sql_lire(base, sql.format(p=base["prefixe"], **valeurs))
+        return {"nom": nom, "lignes": lignes, "total": len(lignes)}
+
+    def base_etat(ctx):
+        _garde_base(ctx)
+        try:
+            base = _base_conf()
+        except PontErreur as ex:
+            return {"actif": False, "raison": str(ex)}
+        version = (_sql_lire(base, "SELECT VERSION() AS version") or [{}])[0].get("version")
+        tables = {l["t"].lower() for l in _sql_lire(base, "SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATABASE()")}
+        manquantes = sorted(t for t in BASE_TABLES if (base["prefixe"] + t).lower() not in tables)
+        en_trop = []
+        for g in _sql_lire(base, "SHOW GRANTS FOR CURRENT_USER()"):
+            texte = " ".join(str(v) for v in g.values())
+            m = re.match(r"^GRANT (.+?) ON ", texte)
+            if m:
+                en_trop += [x.strip() for x in m.group(1).split(",") if x.strip().upper() not in ("SELECT", "USAGE")]
+        return {"actif": True, "version": version, "tables_manquantes": manquantes, "droits_en_trop": sorted(set(en_trop)), "lecture_seule": not en_trop}
+
+    ctx.implementer("base_requete", base_requete)
+    ctx.implementer("base_etat", base_etat)
     ctx.implementer("mon_acces", mon_acces)
     ctx.implementer("catalogue_api", catalogue_api)
     ctx.implementer("payer_fournisseur", payer_fournisseur, prouver_paiement_fournisseur, defaire_paiement_fournisseur,

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #1c864e
+// VERSION CN : 0.1.0  #e51b59
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=1c864e ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=e51b59 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -27,7 +27,7 @@
     ".dlb .barre2{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.dlb .t{width:100%;border-collapse:collapse;font-size:13px}.dlb .t th{text-align:left;font:600 10.5px 'Inter',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--txt-faint);padding:6px 8px;border-bottom:1px solid var(--line)}" +
     ".dlb .t td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}.dlb .t tr.clk{cursor:pointer}.dlb .t tr.clk:hover td{background:color-mix(in srgb,var(--accent) 7%,transparent)}.dlb .t .num{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}" +
     ".dlb .defil{overflow-x:auto}.dlb .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.dlb .in,.kit-m .in{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:8px 11px;font:500 13px 'Inter',sans-serif;min-width:0;max-width:100%}" +
-    ".kit-m .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.kit-m .grille2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kit-m .in{box-sizing:border-box;max-width:100%}.kit-m select.in,.kit-m input.in{width:100%}.kit-m textarea.in{width:100%;resize:vertical}.dlb .code{background:var(--surface);border:1px dashed var(--line-strong,var(--line));border-radius:10px;padding:10px 12px;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}";
+    ".kit-m .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.kit-m .grille2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kit-m [hidden]{display:none!important}.kit-m .in{box-sizing:border-box;max-width:100%}.kit-m select.in,.kit-m input.in{width:100%}.kit-m textarea.in{width:100%;resize:vertical}.dlb .code{background:var(--surface);border:1px dashed var(--line-strong,var(--line));border-radius:10px;padding:10px 12px;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}";
 
   const COURANTE = { racine: null };      // la page qui a reçu le dernier clic : à elle les fenêtres qu'elle a ouvertes
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};
@@ -69,13 +69,27 @@
       devis: async () => liste(await lire("/proposals", PAGE + "&properties=id,ref,ref_client,socid,date,fin_validite,total_ht,total_ttc,statut")),
       projets: async () => liste(await lire("/projects", PAGE + "&properties=id,ref,title,socid,statut,public,date_start,date_end")),
       produits: async () => liste(await lire("/products", PAGE + "&properties=id,ref,label,type,price,tva_tx,status,status_buy,barcode")),
-      dons: async () => liste(await lire("/donations", PAGE + "&properties=id,ref,lastname,firstname,societe,amount,date,statut")),
+      dons: async () => {
+        const l = liste(await lire("/donations", PAGE + "&properties=id,ref,lastname,firstname,societe,amount,date,statut"));
+        S.adrdons = null;                                                   // sans lecture de la base (réglage absent, ou compte non superadministrateur) : pas de colonne
+        if (l.length) { try { const r = await agir("dolibarr.base_requete", { nom: "don_adresses", parametres: { ids: l.map((d) => Number(d.id)) } }); S.adrdons = {}; (r.lignes || []).forEach((x) => { S.adrdons[String(x.id)] = x; }); } catch (e) { S.adrdons = null; } }
+        return l;
+      },
       adherents: async () => liste(await lire("/members", PAGE + "&properties=id,ref,firstname,lastname,login,morphy,typeid,email,statut,datefin")),
       cp: async () => liste((await agir("projets.lister")).projets),
       cc: async () => liste((await agir("contacts.lister", { limite: 200 })).contacts),
       liens: async () => liste(await agir("dolibarr.liens")),
       sup: async () => liste(await lire("/supplierinvoices", PAGE + "&properties=id,ref,ref_supplier,socid,date,date_echeance,total_ht,total_ttc,statut,paye")),
-      inst: async () => { const [r, m, st] = await Promise.all([agir("dolibarr.resume"), agir("dolibarr.modules"), agir("dolibarr.statut")]); return { r: r || {}, m: m || [], st: st || {} }; },
+      inst: async () => {
+        const [r, m, st] = await Promise.all([agir("dolibarr.resume"), agir("dolibarr.modules"), agir("dolibarr.statut")]);
+        const o = { r: r || {}, m: m || [], st: st || {}, base: null };
+        try {                                                               // la base : superadministrateurs seulement ; les autres ne voient simplement pas ces cartes
+          const e = await agir("dolibarr.base_etat");
+          if (e && e.actif) { const [j, c, ca] = await Promise.all([agir("dolibarr.base_requete", { nom: "journal_etat" }), agir("dolibarr.base_requete", { nom: "champs_perso" }), agir("dolibarr.base_requete", { nom: "ca_par_mois" })]); o.base = { etat: e, journal: (j.lignes || [])[0] || {}, champs: c.lignes || [], ca: ca.lignes || [] }; }
+          else if (e) o.base = { etat: e };
+        } catch (e) { o.base = null; }
+        return o;
+      },
       cat: async () => await agir("dolibarr.catalogue_api"),
       rgl: async () => { const r = await agir("reglages.lire", { module: "dolibarr" }); const o = {}; (r.reglages || []).forEach((x) => { o[x.cle] = x.valeur; }); return o; },
       cpts: async () => { const l = (await agir("comptes.lister")); const cs = liste(l.comptes || l); return await Promise.all(cs.map(async (c) => { const id = c.id || c.compte || c.login || c; let cle = null; try { const r = await agir("reglages.lire", { module: "dolibarr", pour_compte: id }); const x = (r.reglages || []).find((y) => y.cle === "dolibarr.cle_api"); cle = !!(x && (x.valeur || x.defini || x.pose)); } catch (e) { cle = null; } return { id: id, nom: c.nom || c.display_name || id, cle: cle }; })); },
@@ -100,6 +114,18 @@
     const btn = (t, a, p, c) => '<button class="btn mini ' + (c || "") + '" data-a="' + a + '" data-p="' + esc(p == null ? "" : p) + '">' + t + "</button>";
 
     // ───────── les onglets
+    // Les cartes que la lecture de la base ajoute à la page Instance (superadministrateurs).
+    const baseCartes = (b) => {
+      if (!b) return "";
+      const e = b.etat || {};
+      if (!e.actif) return '<div class="carte"><h3>Base de données</h3><div class="note">' + esc(e.raison || "La lecture de la base n'est pas réglée.") + "</div></div>";
+      const j = b.journal || {}, parObjet = {};
+      (b.champs || []).forEach((c) => { (parObjet[c.objet] = parObjet[c.objet] || []).push(c); });
+      return '<div class="g2"><div class="carte"><h3>Base de données</h3><dl class="kv"><dt>Serveur</dt><dd>' + esc(e.version || "?") + "</dd><dt>Accès</dt><dd>" + (e.lecture_seule ? pill("lecture seule", "ok") : pill("droits en trop : " + esc((e.droits_en_trop || []).join(", ")), "al")) + "</dd><dt>Tables</dt><dd>" + ((e.tables_manquantes || []).length ? pill("manque : " + esc(e.tables_manquantes.join(", ")), "al") : pill("toutes là", "ok")) + "</dd></dl></div>" +
+        '<div class="carte"><h3>Journal inaltérable</h3><dl class="kv"><dt>Enregistrements</dt><dd class="num">' + esc(j.enregistrements || "0") + "</dd><dt>Dernier</dt><dd class=\"num\">" + esc(j.dernier || "—") + "</dd><dt>Date</dt><dd>" + esc(j.derniere_date || "—") + "</dd></dl></div></div>" +
+        '<div class="carte"><h3>Chiffre d\'affaires par mois (factures validées)</h3>' + table(["Mois", "Factures", "Montant HT", "TVA", "Montant TTC"], (b.ca || []).map((x) => "<tr><td>" + esc(x.mois) + '</td><td class="num">' + esc(x.factures) + '</td><td class="num">' + eur(x.ht) + '</td><td class="num">' + eur(x.tva) + '</td><td class="num">' + eur(x.ttc) + "</td></tr>")) + "</div>" +
+        '<div class="carte"><h3>Champs personnalisés de cette instance (' + (b.champs || []).length + ')</h3>' + (Object.keys(parObjet).length ? Object.keys(parObjet).sort().map((o) => '<div style="margin:6px 0"><b>' + esc(o) + "</b> : " + parObjet[o].map((c) => pill(esc(c.libelle || c.nom) + (String(c.obligatoire) === "1" ? " *" : ""))).join(" ") + "</div>").join("") : '<div class="note">Aucun.</div>') + "</div>";
+    };
     const VUES = {
       afaire() {
         const F = S.d.factures || [], ouv = F.filter(ouverte), ret = ouv.filter((f) => retard(f) > 0), rec = ret.filter((f) => retard(f) <= 365), vie = ret.filter((f) => retard(f) > 365);
@@ -141,7 +167,7 @@
       },
       dons() {
         const D = S.d.dons || [];
-        return '<div class="carte"><div class="barre2"><h3 style="flex:1">Dons</h3>' + btn("+ Nouveau don", "ndon", "", "pri") + "</div>" + table(["Réf.", "Donateur", "Date du don", "Montant", "Statut", ""], D.map((d) => "<tr><td class=\"num\">" + esc(d.ref || d.id) + "</td><td>" + esc((((d.firstname || "") + " " + (d.lastname || "")).trim() || d.societe || "—")) + "</td><td>" + jour(d.date) + '</td><td class="num">' + eur(d.amount) + "</td><td>" + ({ "-1": pill("Annulé"), "0": pill("Promesse à valider", "al"), "1": pill("Promesse validée", "ok"), "2": pill("Don payé", "ok") }[String(d.statut)] || pill(String(d.statut))) + "</td><td>" + (String(d.statut) === "0" ? btn("Valider", "donvalider", d.id) : "—") + "</td></tr>")) + '<div class="note">Le reçu fiscal d’un don se produit dans Dolibarr (fiche du don, « Générer ») : son API ne le propose pas.</div></div>';
+        return '<div class="carte"><div class="barre2"><h3 style="flex:1">Dons</h3>' + btn("+ Nouveau don", "ndon", "", "pri") + "</div>" + table(["Réf.", "Donateur"].concat(S.adrdons ? ["Adresse", "Courriel"] : []).concat(["Date du don", "Montant", "Statut", ""]), D.map((d) => { const a = (S.adrdons || {})[String(d.id)] || {}; return "<tr><td class=\"num\">" + esc(d.ref || d.id) + "</td><td>" + esc((((d.firstname || "") + " " + (d.lastname || "")).trim() || d.societe || "—")) + "</td>" + (S.adrdons ? "<td>" + esc([a.adresse, ((a.code_postal || "") + " " + (a.ville || "")).trim()].filter(Boolean).join(", ") || "—") + "</td><td>" + esc(a.courriel || "") + "</td>" : "") + "<td>" + jour(d.date) + '</td><td class="num">' + eur(d.amount) + "</td><td>" + ({ "-1": pill("Annulé"), "0": pill("Promesse à valider", "al"), "1": pill("Promesse validée", "ok"), "2": pill("Don payé", "ok") }[String(d.statut)] || pill(String(d.statut))) + "</td><td>" + (String(d.statut) === "0" ? btn("Valider", "donvalider", d.id) : "—") + "</td></tr>"; })) + '<div class="note">Le reçu fiscal d’un don se produit dans Dolibarr (fiche du don, « Générer ») : son API ne le propose pas.</div></div>';
       },
       adherents() {
         const T = Object.fromEntries((S.d.types || []).map((t) => [String(t.id), t.label])), A = filtrer(S.d.adherents, "adherents");
@@ -177,7 +203,7 @@
       instance() {
         const i = S.d.inst || { r: {}, m: [], st: {} }, c = i.r.comptes || {}, imp = i.r.impayees || {};
         return '<div class="g2"><div class="carte"><h3>Connexion</h3><dl class="kv"><dt>Version</dt><dd>Dolibarr ' + esc(i.st.version || i.r.version || "?") + "</dd><dt>Réponse</dt><dd>" + (i.st.latence_ms != null ? i.st.latence_ms + " ms" : "—") + "</dd><dt>État</dt><dd>" + pill(i.r.etat === "ok" ? "joignable" : esc(i.r.etat || "inconnu"), i.r.etat === "ok" ? "ok" : "al") + "</dd><dt>Impayées</dt><dd>" + (imp.n != null ? imp.n + " · " + eur(imp.total_ttc) : "—") + '</dd></dl></div><div class="carte"><h3>Données</h3><dl class="kv">' + Object.keys(c).map((k) => "<dt>" + esc(k) + '</dt><dd class="num">' + c[k] + "</dd>").join("") + "</dl></div></div>" +
-          '<div class="carte"><h3>' + (i.m || []).length + ' modules actifs</h3><div style="display:flex;gap:6px;flex-wrap:wrap">' + (i.m || []).map((m) => pill(m)).join("") + "</div></div>";
+          '<div class="carte"><h3>' + (i.m || []).length + ' modules actifs</h3><div style="display:flex;gap:6px;flex-wrap:wrap">' + (i.m || []).map((m) => pill(m)).join("") + "</div></div>" + baseCartes(i.base);
       },
       capacites() {
         const c = S.d.cat || { domaines: [], operations: 0 }, g = S.d.rgl || {}, T = c.domaines.reduce((a, d) => [a[0] + d.lire, a[1] + d.creer + d.modifier, a[2] + d.supprimer], [0, 0, 0]);
@@ -251,7 +277,7 @@
         ["Société", [
           { k: "forme_juridique_code", l: "Type d'entité légale", t: "select", dic: "formes" }, { k: "typent_id", l: "Type de tiers", t: "select", dic: "typent" },
           { k: "effectif_id", l: "Effectifs", t: "select", dic: "effectifs" }, { k: "capital", l: "Capital", t: "number" },
-          { k: "default_lang", l: "Langue par défaut", t: "select", o: LANGUES }, { k: "multicurrency_code", l: "Devise", t: "select", dic: "devises" }]],
+          { k: "default_lang", l: "Langue par défaut", t: "select", o: LANGUES }]],
         ["Notes", [{ k: "note_public", l: "Note publique", t: "area", large: 1 }, { k: "note_private", l: "Note privée", t: "area", large: 1 }]]] }
     };
     const LIGNES = { k: "lignes", l: "Lignes", t: "lignes", req: 1, large: 1 };
@@ -271,7 +297,7 @@
       ["Notes", [{ k: "note_public", l: "Note publique", t: "area", large: 1 }, { k: "note_private", l: "Note privée", t: "area", large: 1 }]]] };
     const REGL = (avecMontant) => ({ nom: "règlement", sections: [["Règlement", [
       { k: "date", l: "Date de règlement", t: "date", d: AUJ, req: 1 }, { k: "mode", l: "Mode de règlement", t: "select", dic: "modescode", d: "VIR", req: 1 }, { k: "banque", l: "Compte bancaire", t: "select", dic: "comptes", req: 1 }]
-      .concat(avecMontant ? [{ k: "montant", l: "Montant", t: "number", req: 1 }] : []).concat([{ k: "numero", l: "N° de chèque ou de transaction" }, { k: "note", l: "Commentaire", t: "area", large: 1 }])]] });
+      .concat(avecMontant ? [{ k: "montant", l: "Montant", t: "number", req: 1 }] : []).concat([{ k: "numero", l: "N° de chèque ou de transaction" }]).concat(avecMontant ? [{ k: "emetteur", l: "Émetteur du chèque", si: ["mode", "CHQ"], req: 1 }, { k: "banque_cheque", l: "Banque du chèque", si: ["mode", "CHQ"] }] : []).concat([{ k: "note", l: "Commentaire", t: "area", large: 1 }])]] });
     SCHEMAS.reglement = REGL(true); SCHEMAS.reglementSup = REGL(false);
     SCHEMAS.virement = { nom: "virement", sections: [["Virement entre comptes", [
       { k: "de", l: "Compte à débiter", t: "select", dic: "comptes", req: 1 }, { k: "vers", l: "Compte à créditer", t: "select", dic: "comptes", req: 1 }, { k: "date", l: "Date", t: "date", d: AUJ, req: 1 },
@@ -328,7 +354,7 @@
     // Les règles que la fiche de Dolibarr applique avant d'écrire (les mêmes que le module : modules/dolibarr/CN_module.py, _regles_dolibarr).
     const regles = (sch, v, creation) => {
       const e = [];
-      sch.sections.forEach((s) => s[1].forEach((f) => { if (creation && f.req && f.t !== "lignes" && !String(v[f.k] || "").trim()) e.push(f.l + " : obligatoire"); }));
+      sch.sections.forEach((s) => s[1].forEach((f) => { if (creation && f.req && f.t !== "lignes" && (!f.si || String(v[f.si[0]]) === f.si[1]) && !String(v[f.k] || "").trim()) e.push(f.l + " : obligatoire"); }));
       if (sch.sections.some((x) => x[1].some((f) => f.t === "lignes"))) { if (!(v.lines || []).length) e.push("Lignes : au moins une ligne"); else if ((v.lines || []).some((l) => !l.desc && !l.fk_product || !l.qty)) e.push("Lignes : une désignation (ou un produit) et une quantité"); }
       if (v.email && !COURRIEL.test(String(v.email).trim())) e.push("Courriel : adresse invalide");
       if (v.url && !/^https?:\/\/[^\s/]+\.[^\s]{2,}/.test(String(v.url).trim())) e.push("Web : une adresse avec http:// ou https://");
@@ -342,7 +368,7 @@
     const champSchema = (f, v, opts) => {
       if (f.t === "lignes") return '<div class="fld" style="grid-column:1/-1">' + esc(f.l) + (f.req ? " *" : "") + '<div class="defil"><table class="t" id="f-lignes"><thead><tr><th>Produit / service</th><th>Désignation</th><th>TVA</th><th>Qté</th><th>Prix unitaire HT</th><th>Remise %</th><th></th></tr></thead><tbody>' + (v.lines && v.lines.length ? v.lines : [{}]).map((l) => ligneHtml(l, opts)).join("") + '</tbody></table></div><div><button class="btn mini" data-lg="add" type="button">+ Ajouter une ligne</button></div></div>';
       const id = "f-" + f.k, x = v[f.k] != null && v[f.k] !== "" ? v[f.k] : (f.d != null ? f.d : ""), lib = esc(f.l) + (f.req ? " *" : "");
-      const style = f.large ? ' style="grid-column:1/-1"' : "";
+      const style = (f.large ? ' style="grid-column:1/-1"' : "") + (f.si ? ' data-si="' + f.si[0] + "|" + f.si[1] + '"' : "");
       const aide = f.aide ? '<span class="note" style="font-weight:400">' + esc(f.aide) + "</span>" : "";
       if (f.t === "area") return '<label class="fld"' + style + ">" + lib + '<textarea class="in" id="' + id + '" rows="3">' + esc(x) + "</textarea></label>";
       if (f.t === "select") { const o = f.o || (opts && opts[f.dic]) || []; const dej = o.some((y) => String(y[0]) === String(x)); return '<label class="fld"' + style + ">" + lib + '<select class="in" id="' + id + '">' + (dej || x === "" ? "" : '<option value="' + esc(x) + '" selected>' + esc(x) + "</option>") + o.map((y) => '<option value="' + esc(y[0]) + '"' + (String(y[0]) === String(x) ? " selected" : "") + ">" + esc(y[1]) + "</option>").join("") + "</select></label>"; }
@@ -364,9 +390,11 @@
         const lignesLues = () => [...m.querySelectorAll("#f-lignes tbody tr.lg")].map((tr) => { const q = (c) => tr.querySelector(c).value; const l = { desc: q(".lg-d").trim(), qty: Number(q(".lg-q")) || 0, subprice: Number(q(".lg-u")) || 0, tva_tx: Number(q(".lg-t")) || 0 }; if (q(".lg-p")) l.fk_product = Number(q(".lg-p")); if (Number(q(".lg-r"))) l.remise_percent = Number(q(".lg-r")); return l; }).filter((l) => l.desc || l.fk_product);
         m.addEventListener("click", (e) => { const b = e.target.closest("[data-lg]"); if (!b) return; e.stopPropagation(); const tb = m.querySelector("#f-lignes tbody"); if (b.dataset.lg === "add") tb.insertAdjacentHTML("beforeend", ligneHtml({}, opts)); else if (tb.querySelectorAll("tr.lg").length > 1) b.closest("tr").remove(); });
         m.addEventListener("change", (e) => { if (!e.target.classList.contains("lg-p")) return; const tr = e.target.closest("tr"), p = (opts.produits || []).find((o) => String(o[0]) === e.target.value); if (p && p[2]) { tr.querySelector(".lg-d").value = p[2].label || ""; tr.querySelector(".lg-u").value = p[2].price ? Number(p[2].price).toFixed(2) : "0"; const t = String(Number(p[2].tva_tx || 0)), st = tr.querySelector(".lg-t"); if ([...st.options].some((o) => o.value === t)) st.value = t; } });
-        const lit = () => { const o = {}; if (m.querySelector("#f-lignes")) o.lines = lignesLues(); sch.sections.forEach((s) => s[1].forEach((f) => { if (f.t === "lignes") return; const e = m.querySelector("#f-" + f.k); if (e && (String(e.value) !== "" || (valeurs && valeurs.id != null && valeurs[f.k] != null && String(valeurs[f.k]) !== ""))) o[f.k] = e.value; })); return o; };
+        const lit = () => { const o = {}; if (m.querySelector("#f-lignes")) o.lines = lignesLues(); sch.sections.forEach((s) => s[1].forEach((f) => { if (f.t === "lignes") return; const e = m.querySelector("#f-" + f.k); if (e && !e.closest("[hidden]") && (String(e.value) !== "" || (valeurs && valeurs.id != null && valeurs[f.k] != null && String(valeurs[f.k]) !== ""))) o[f.k] = e.value; })); return o; };
         const dire = (t) => { const b = m.querySelector("#f-err"); b.style.display = t ? "" : "none"; b.firstChild.textContent = t || ""; };
         const remplir = async (id, nom, pays) => { const e = m.querySelector("#f-" + id); if (!e) return; const cur = e.value, o = await dico(nom, pays); e.innerHTML = o.map((y) => '<option value="' + esc(y[0]) + '"' + (String(y[0]) === cur ? " selected" : "") + ">" + esc(y[1]) + "</option>").join(""); };
+        const majSi = () => m.querySelectorAll("[data-si]").forEach((l) => { const [k, vv] = l.dataset.si.split("|"), c = m.querySelector("#f-" + k); l.hidden = !(c && c.value === vv); });
+        m.addEventListener("change", majSi); majSi();
         const pays = m.querySelector("#f-country_id"); if (pays) pays.addEventListener("change", () => { remplir("state_id", "departements", pays.value); remplir("forme_juridique_code", "formes", pays.value); });
         bg.addEventListener("click", () => clore(false)); m.addEventListener("keydown", (e) => { if (e.key === "Escape") clore(false); });
         m.addEventListener("click", async (e) => {
@@ -396,7 +424,7 @@
           (String(f.statut) === "0" ? btn("Valider", "valider", f.id, "pri") : "") + (ouverte(f) ? btn("Encaisser", "encaisser", f.id, "pri") + btn("Relancer", "relancer", f.id) : "") + (String(f.statut) !== "0" ? btn("Créer un avoir", "avoir", f.id) : "") + (String(f.statut) !== "0" ? btn("Voir le PDF", "pdf", "factures|" + f.id) : "") + "</div>";
         modale("Facture " + f.ref, corpsF, "Fermer");
       },
-      encaisser: async (p) => { const f = (S.d.factures || []).find((x) => String(x.id) === String(p)); if (await formulaire("Règlement · " + f.ref, SCHEMAS.reglement, { montant: f.remaintopay }, async (c) => { await agir("dolibarr.encaisser", { id: Number(p), montant: c.montant, banque: Number(c.banque), mode: c.mode, date: c.date, numero: c.numero || "", note: c.note || "" }); }, "Enregistrer le règlement")) { K.dire("Règlement enregistré"); S.d = {}; await charger(true); } },
+      encaisser: async (p) => { const f = (S.d.factures || []).find((x) => String(x.id) === String(p)); if (await formulaire("Règlement · " + f.ref, SCHEMAS.reglement, { montant: f.remaintopay }, async (c) => { await agir("dolibarr.encaisser", { id: Number(p), montant: c.montant, banque: Number(c.banque), mode: c.mode, date: c.date, numero: c.numero || "", note: c.note || "", emetteur: c.emetteur || "", banque_cheque: c.banque_cheque || "" }); }, "Enregistrer le règlement")) { K.dire("Règlement enregistré"); S.d = {}; await charger(true); } },
       relancer: async (p) => {
         document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
         const f = (S.d.factures || []).find((x) => String(x.id) === String(p));
@@ -501,7 +529,7 @@
         const fin = modale("PDF · " + r.nom, '<iframe id="dlb-pdf" title="' + esc(r.nom) + '" style="width:100%;height:70vh;border:0;border-radius:8px;background:#fff"></iframe><div class="note">' + esc(r.ref) + " · " + Math.round(r.taille / 1024) + " Ko · produit par Dolibarr</div>", "Fermer");
         const cadre = document.getElementById("dlb-pdf"); if (cadre) cadre.src = url; fin.then(() => URL.revokeObjectURL(url));
       },
-      tiers: async (p) => { let t; try { t = await lire("/thirdparties/" + p); } catch (e) { K.dire(e.message || String(e), "err"); return; } if (!t || t.id == null) { K.dire("Tiers introuvable", "err"); return; } if (await formulaire(t.name, SCHEMAS.tiers, t, async (champs) => { await agir("dolibarr.modifier", { objet: "tiers", id: Number(p), champs: champs }); }, "Enregistrer")) { K.dire("Tiers enregistré"); S.d = {}; await charger(true); } },
+      tiers: async (p) => { let t; try { t = await lire("/thirdparties/" + p); } catch (e) { K.dire(e.message || String(e), "err"); return; } if (!t || t.id == null) { K.dire("Tiers introuvable", "err"); return; } t = Object.assign({}, t, (t.socialnetworks && !Array.isArray(t.socialnetworks)) ? t.socialnetworks : {}); if (await formulaire(t.name, SCHEMAS.tiers, t, async (champs) => { await agir("dolibarr.modifier", { objet: "tiers", id: Number(p), champs: champs }); }, "Enregistrer")) { K.dire("Tiers enregistré"); S.d = {}; await charger(true); } },
       virement: async () => { if (banqueOpts().length < 2) return K.dire("Il faut deux comptes ouverts", "err"); if (await formulaire("Virement entre comptes", SCHEMAS.virement, {}, async (c) => { await agir("dolibarr.virement_interne", { de: Number(c.de), vers: Number(c.vers), montant: c.montant, date: c.date, libelle: c.libelle || "" }); }, "Virer")) { K.dire("Virement fait"); S.d = {}; await charger(true); } },
       ndon: async () => { if (await formulaire("Nouveau don", SCHEMAS.don, {}, async (c) => { const x = Object.assign({}, c), a = { montant: x.montant, date: x.date, nom: x.nom || "", prenom: x.prenom || "", societe: x.societe || "" }; ["montant", "date", "nom", "prenom", "societe"].forEach((k) => delete x[k]); await agir("dolibarr.don_creer", Object.assign(a, { champs: x })); }, "Saisir la promesse")) { K.dire("Promesse saisie"); S.d = {}; await charger(true); } },
       donvalider: async (p) => { if (await modale("Valider le don", "<p>Le don prend son numéro. Dolibarr ne le repasse pas en promesse par l’API.</p>", "Valider")) await fait("dolibarr.don_valider", { id: Number(p) }, "Don validé"); },

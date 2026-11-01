@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6a6771
+# VERSION CN : 0.1.0  #811ef3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte
 # MÉTHODE    : un Dolibarr de poche avec des clés, des règlements et des soldes ; chaque geste avec sa preuve et son retour arrière
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6a6771 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=811ef3 ▼▼▼
 """Bancs de la gestion Dolibarr : règlements, avoirs, relances, devis, dons, cotisations, virements, projets, requête libre, clé par compte."""
 import gzip
 import json
@@ -133,6 +133,8 @@ class FauxGestion:
         if p[0] == "invoices" and p[1:] == ["paymentsdistributed"] and m == "POST":
             if corps["accountid"] not in self.banques:
                 return R(400, {"error": {"message": "compte inconnu"}})
+            if corps["paymentid"] == 7 and not corps.get("chqemetteur"):                              # comme Dolibarr 24
+                return R(400, {"error": {"code": 400, "message": "Bad Request: Emetteur is mandatory when payment code is CHQ"}})
             pid = None
             for k, v in corps["arrayofamounts"].items():
                 if "amount" in v and "multicurrency_amount" in v:                                       # comme Dolibarr 24
@@ -545,8 +547,115 @@ class GestionDolibarr(unittest.TestCase):
         self.assertIn("ErrorFieldRequired socid", r["erreur"]) if "ErrorFieldRequired" in r["erreur"] else self.assertIn("Error creating contact", r["erreur"])
         # un règlement avec tous les champs de la fiche : numéro, commentaire, date
         i = self.facture()
-        r = self.e("dolibarr.encaisser", "humain", {"id": i, "montant": "120.0", "banque": 1, "mode": "CHQ", "date": "2026-11-02", "numero": "CHQ-1234", "note": "Merci"})
+        r = self.e("dolibarr.encaisser", "humain", {"id": i, "montant": "120.0", "banque": 1, "mode": "CHQ", "date": "2026-11-02", "numero": "CHQ-1234", "note": "Merci", "emetteur": "Jean Dupont", "banque_cheque": "Banque Postale"})
         self.assertEqual(r["statut"], "faite", msg=str(r))
+
+    def test_ce_que_l_epreuve_d_une_vraie_instance_a_appris(self):
+        """Trouvé sur une copie de Dolibarr 24 : un chèque exige son émetteur ; les réseaux sociaux vont dans « socialnetworks » ; la preuve relit comme Dolibarr garde (dates en secondes, codes comptables tronqués)."""
+        i = self.facture()
+        r = self.e("dolibarr.encaisser", "humain", {"id": i, "montant": 10, "banque": 1, "mode": "CHQ"})
+        self.assertEqual(r["statut"], "echec")
+        self.assertIn("émetteur", r["erreur"])
+        self.assertFalse([1 for m, _, _ in self.faux.journal if m == "POST" and "paymentsdistributed" in str(_)])                    # refusé avant d'écrire
+        r = self.e("dolibarr.encaisser", "humain", {"id": i, "montant": 10, "banque": 1, "mode": "CHQ", "numero": "CHQ-1", "emetteur": "Jean Dupont", "banque_cheque": "Banque Postale"})
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        t = self.e("dolibarr.creer", "humain", {"objet": "tiers", "champs": {"name": "Réseaux", "client": "1", "skype": "s", "twitter": "@x", "town": "Nantes"}})
+        self.assertEqual(t["statut"], "faite", msg=str(t))
+        o = self.faux.t["thirdparties"][t["resultat"]["id"]]
+        self.assertEqual((o["socialnetworks"], "skype" in o, "twitter" in o), ({"skype": "s", "twitter": "@x"}, False, False))
+        m = self.e("dolibarr.modifier", "humain", {"objet": "tiers", "id": t["resultat"]["id"], "champs": {"linkedin": "in/x"}})
+        self.assertEqual(self.faux.t["thirdparties"][t["resultat"]["id"]]["socialnetworks"], {"skype": "s", "twitter": "@x", "linkedin": "in/x"})      # ce qu'on ne touche pas est gardé
+        prod = self.e("dolibarr.creer", "humain", {"objet": "produits", "champs": {"ref": "R", "label": "L", "accountancy_code_sell": "706000"}})
+        self.faux.t["products"][prod["resultat"]["id"]]["accountancy_code_sell"] = "706"                                            # Dolibarr tronque les zéros de fin
+        self.assertTrue(self.n.catalogue.get("dolibarr.creer").prouver(self.ctx, prod["resultat"]))
+        con = self.e("dolibarr.creer", "humain", {"objet": "contacts", "champs": {"lastname": "N", "socid": 1, "birthday": "1990-01-02"}}) if self.faux.t["thirdparties"] else None
+        if con and con["statut"] == "faite":
+            self.faux.t["contacts"][con["resultat"]["id"]]["birthday"] = 631238400                                                   # Dolibarr garde la date en secondes
+            self.assertTrue(self.n.catalogue.get("dolibarr.creer").prouver(self.ctx, con["resultat"]))
+
+    # --- la lecture de la BASE de Dolibarr : superadministrateurs seulement, en lecture seule, requêtes nommées
+    def _base(self, grants="GRANT SELECT ON `dolibarr`.* TO `cassandra_ro`@`localhost`"):
+        """Un faux client « mysql » : il vérifie la session en lecture seule et le mot de passe hors de la ligne de commande, et répond selon la requête."""
+        vus = []
+
+        class R:
+            def __init__(s, sortie, code=0, err=b""):
+                s.stdout, s.returncode, s.stderr = sortie.encode(), code, err
+
+        def faux(cmd, **kw):
+            sql = cmd[-1]
+            vus.append((cmd, kw, sql))
+            if "SET SESSION TRANSACTION READ ONLY" not in sql or "motdepasse-sql" in " ".join(cmd) or kw["env"].get("MYSQL_PWD") != "motdepasse-sql":
+                return R("", 1, "ERROR : session ou mot de passe mal passes".encode())
+            if "FROM llx_don d" in sql:
+                return R("id\tadresse\tcode_postal\tville\tpays\tcourriel\ttelephone\n7\t3 rue du Don\\nBat. B\t75010\tParis\tNULL\tdonateur@exemple.fr\t\n")
+            if "VERSION()" in sql:
+                return R("version\n8.0.46\n")
+            if "information_schema" in sql:
+                return R("t\nllx_don\nllx_extrafields\nllx_blockedlog\nllx_facture\n")
+            if "SHOW GRANTS" in sql:
+                return R("Grants for cassandra_ro@localhost\n" + grants + "\n")
+            if "FROM llx_blockedlog" in sql:
+                return R("enregistrements\tdernier\tderniere_date\n184\t100079\t2026-10-31 05:20:37\n")
+            return R("", 1, b"requete inconnue")
+        g = self.n.catalogue.get("dolibarr.base_requete").faire.__globals__
+        ancien = g["EXEC_SQL"]["run"]
+        g["EXEC_SQL"]["run"] = faux
+        self.addCleanup(g["EXEC_SQL"].__setitem__, "run", ancien)
+        for cle, val in (("base_hote", "127.0.0.1"), ("base_nom", "dolibarr"), ("base_utilisateur", "cassandra_ro"), ("base_motdepasse", "motdepasse-sql")):
+            self.n.reglages.poser("dolibarr." + cle, val, "")
+        return vus
+
+    def _comptes(self):
+        self.n.identite.creer("chef@x.fr", "Abcdefgh1!", superadmin=True)
+        self.n.identite.creer("admin@x.fr", "Abcdefgh1!")
+        self.n.droits.regler_admin("admin@x.fr", True)
+
+    def test_la_base_se_lit_en_lecture_seule_et_pour_les_superadministrateurs_seulement(self):
+        vus = self._base()
+        self._comptes()
+        r = self.e("dolibarr.base_requete", "humain", {"nom": "don_adresses", "parametres": {"ids": [7]}}, compte="chef@x.fr")
+        self.assertEqual(r["statut"], "faite", msg=str(r))
+        self.assertEqual(r["resultat"]["lignes"], [{"id": "7", "adresse": "3 rue du Don\nBat. B", "code_postal": "75010", "ville": "Paris", "pays": None, "courriel": "donateur@exemple.fr", "telephone": ""}])
+        cmd, kw, sql = vus[-1]
+        self.assertIn("SET SESSION TRANSACTION READ ONLY", sql)
+        self.assertEqual(kw["env"]["MYSQL_PWD"], "motdepasse-sql")
+        self.assertNotIn("motdepasse-sql", " ".join(cmd))                                         # jamais dans la ligne de commande
+        self.assertIn("d.rowid IN (7)", sql)
+        # un simple administrateur, un compte sans nom, un moteur : refusés, et rien n'est lancé
+        avant = len(vus)
+        for compte in ("admin@x.fr", ""):
+            r = self.e("dolibarr.base_requete", "humain", {"nom": "journal_etat"}, compte=compte)
+            self.assertEqual(r["statut"], "echec", compte)
+            self.assertIn("superadministrateurs", r["erreur"])
+        self.assertEqual(len(vus), avant)
+
+    def test_la_base_n_accepte_que_des_requetes_nommees_aux_parametres_controles(self):
+        vus = self._base()
+        self._comptes()
+        for args in ({"nom": "DROP TABLE llx_don"}, {"nom": "don_adresses", "parametres": {"ids": ["1; DROP TABLE llx_don"]}}, {"nom": "don_adresses", "parametres": {"ids": []}},
+                     {"nom": "don_adresses", "parametres": {"ids": [1], "tri": "x"}}, {"nom": "ca_par_mois", "parametres": {"du": "2026-01-01' OR 1=1 --"}}, {"nom": "don_adresses"}):
+            r = self.e("dolibarr.base_requete", "humain", args, compte="chef@x.fr")
+            self.assertEqual(r["statut"], "echec", args)
+        self.assertEqual(vus, [])                                                                    # aucune n'a atteint le serveur
+        r = self.e("dolibarr.base_requete", "humain", {"nom": "journal_etat"}, compte="chef@x.fr")
+        self.assertEqual((r["statut"], r["resultat"]["lignes"][0]["enregistrements"]), ("faite", "184"))
+
+    def test_l_etat_de_la_base_dit_si_l_utilisateur_sql_n_a_que_le_droit_de_lire(self):
+        self._base()
+        self._comptes()
+        r = self.e("dolibarr.base_etat", "humain", {}, compte="chef@x.fr")["resultat"]
+        self.assertEqual((r["actif"], r["version"], r["lecture_seule"], r["tables_manquantes"], r["droits_en_trop"]), (True, "8.0.46", True, [], []))
+        self._base(grants="GRANT SELECT, INSERT, DELETE ON `dolibarr`.* TO `cassandra_ro`@`localhost`")
+        r = self.e("dolibarr.base_etat", "humain", {}, compte="chef@x.fr")["resultat"]
+        self.assertEqual((r["lecture_seule"], r["droits_en_trop"]), (False, ["DELETE", "INSERT"]))
+
+    def test_sans_reglage_la_base_est_coupee_et_le_dit(self):
+        self._comptes()
+        r = self.e("dolibarr.base_etat", "humain", {}, compte="chef@x.fr")
+        self.assertEqual((r["statut"], r["resultat"]["actif"]), ("faite", False))
+        self.assertIn("pas réglée", r["resultat"]["raison"])
+        self.assertEqual(self.e("dolibarr.base_requete", "humain", {"nom": "journal_etat"}, compte="chef@x.fr")["statut"], "echec")
 
     def test_le_don_porte_les_champs_de_sa_fiche_dolibarr(self):
         r = self.e("dolibarr.don_creer", "humain", {"montant": "20", "date": "2026-11-01", "nom": "Martin", "prenom": "Léa", "societe": "",

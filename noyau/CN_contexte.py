@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d34b75
+# VERSION CN : 0.1.0  #7518f8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d34b75 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7518f8 ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire
@@ -171,6 +171,12 @@ class Contexte:
         """Ce compte est-il administrateur ? Une question d'étendue (qui voit le partagé), jamais un droit : aucune permission à demander."""
         d = self._intro["droits"]
         return bool(compte) and compte not in ("cassandra", "itare", "noyau", "operateur") and bool(d.est_admin(compte))
+
+    def est_superadmin(self, compte: str) -> bool:
+        """Ce compte est-il superadministrateur ? Plus étroit qu'`est_admin` : un administrateur passe tous les contrôles de droits, un geste réservé au superadministrateur ne peut donc pas se dire par un droit.
+        Une question d'étendue, jamais un droit : aucune permission à demander ; un compte système ou un agent ne l'est jamais."""
+        i = self._intro["identite"]
+        return bool(compte) and compte not in ("cassandra", "itare", "noyau", "operateur") and bool(i.est_superadmin(compte))
 
     def identite(self):
         """Le service d'identité des comptes (mots de passe, sessions), pour le module qui les administre ([permissions] identite)."""
