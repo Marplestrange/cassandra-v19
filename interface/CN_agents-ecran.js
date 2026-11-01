@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #6513d3
+// VERSION CN : 0.1.0  #ee43e0
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=6513d3 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=ee43e0 ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -411,12 +411,15 @@
     }
 
     // ── le dessin et les gestes ──────────────────────────────────────────────
+    // l'équipe se lit lentement à froid : un seul appel en vol pour tous ceux qui l'attendent, et seul le dernier dessin compte (ouverture + clic du menu + retour d'onglet arrivent ensemble)
+    let eqEnVol = null, dessin = 0;
+    const equipe = () => eqEnVol || (eqEnVol = API.equipe().finally(() => { eqEnVol = null; }));
     async function dessiner() {
-      let html;
+      let html; const moi = ++dessin;
       const v0 = racine.querySelector("#ag-vue");
       if (v0) v0.style.opacity = ".5"; else racine.innerHTML = '<div class="vide" role="status">Chargement…</div>';
       try {
-        S.eq = S.eq || await API.equipe();
+        S.eq = S.eq || await equipe();
         S.admin = !!S.eq.administrateur;
         if (!S.vue) S.vue = S.admin ? "equipe" : "fiche";
         if (!S.admin && !["fiche", "conv", "boite", "journal"].includes(S.vue)) S.vue = "fiche";
@@ -424,6 +427,7 @@
         const f = { equipe: vEquipe, fiche: vFiche, conv: vConv, boite: vBoite, journal: vJournal, auditeur: vAuditeur, modeles: async () => vModeles() }[S.vue];
         html = '<div id="ag-vue" style="display:flex;flex-direction:column;gap:12px">' + await f() + "</div>";
       } catch (e) { html = '<div class="vide">' + esc((e && e.message) || e) + "</div>"; }
+      if (moi !== dessin) return;                                                     // un dessin plus récent est parti : il écrira seul
       racine.innerHTML = html; brancher();
       if (typeof window.agentsSuivre === "function") window.agentsSuivre(pageMenu(), S.attente == null ? 0 : S.attente);
       const sc = corps.closest(".sh-scene"), ti = sc && sc.querySelector(".sh-titre");           // le titre suit la page choisie dans le menu
