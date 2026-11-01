@@ -19,6 +19,7 @@
   "repartition": {
     "bureau": ["notes", "contacts", "ged", "taches", "projets", "agenda", "courrier", "canvas", "billetterie", "dolibarr", "jour", "mandats", "salon"],
     "infrastructure": ["fastpanel", "dns", "certificats", "sauvegardes", "securite", "sensorium", "flotte", "coffre", "comptes", "droits", "modules", "evolution", "sites", "mesures", "reglages", "modeles", "societes", "journal", "urgence"],
+    "dehors": ["web"],
     "sans": {"cassandra": "bureau", "itare": "infrastructure"}
   },
   "services": {

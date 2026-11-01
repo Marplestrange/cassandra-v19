@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #837b86
+# VERSION CN : 0.5.0  #feb136
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=837b86 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=feb136 ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -332,7 +332,7 @@ def brancher(ctx):
                     pass
             cfg = E.effectif(agent, cle_cfg(agent, compte))
             retires = {k for k, v in E.surcharges(agent, cle_cfg(agent, compte)).items() if v["palier"] == "retire"}
-            tous = [t for t in ctx.outils(agent) if t["cle"] not in retires and E.dans_sa_famille(agent, t["cle"]) and not (agent != "amizo" and t["externe"] and regle("dehors_par_amizo") == "1") and (agent == "cassandra" or not t["nom"].startswith("coffre__"))]     # Cassandra seule tient le coffre : jamais un outil de secret pour les autres
+            tous = [t for t in ctx.outils(agent) if t["cle"] not in retires and E.dans_sa_famille(agent, t["cle"]) and not (agent != "amizo" and t["externe"] and t["cle"].split(".", 1)[0] in eq_dehors and regle("dehors_par_amizo") == "1") and (agent == "cassandra" or not t["nom"].startswith("coffre__"))]     # Cassandra seule tient le coffre : jamais un outil de secret pour les autres
             par_cle = {t["cle"]: t for t in tous}
             pres = o.choisir_outils(tous, message, int(reglage("max_outils", 60)))
             index = {t["nom"]: t for t in tous}                    # tout ce qui est permis s'appelle par son nom, présenté ou non : le modèle peut s'en souvenir d'un tour précédent
@@ -437,6 +437,7 @@ def brancher(ctx):
     # ------------------------------------------------------------------ inscription
     A = brancher_amizo(ctx, E, o, lecture, db, compte_agit, stocker, lambda *a, **k: converser(*a, **k))          # Amizo : transmettre, passer la main, traiter une passation
     brancher_auditeur(ctx, E, db, compte_agit)      # l'Auditeur : lecture seule du journal, il signale les dérives
+    eq_dehors = set(E.repartition().get("dehors", []))                  # ce que « le dehors » veut dire : l'Internet (le web), pas le courrier de la personne
     R = brancher_regles(ctx, E, db, compte_agit, lambda *a, **k: converser(*a, **k))      # règles communes, tuile « retenus / refusés », tâches récurrentes
     regle = R.regle
     c = ctx

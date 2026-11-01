@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #10f1be
+# VERSION CN : 0.5.0  #2eedb5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents, et les services que le tour de conversation emploie (réglage effec
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=10f1be ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=2eedb5 ▼▼▼
 """L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents,
 et les services que le tour de conversation emploie (réglage effectif, palier par outil, coût du jour, plafond).
 
@@ -391,7 +391,7 @@ def brancher_equipe(ctx, reglage):
     ctx.implementer("plafond_regler", plafond_regler, prouver_plafond, defaire_plafond, simuler=lambda x, portee="", euros=None, **_: "poserait un plafond de %s € par jour sur %s" % (euros, portee))
 
     # ce que le tour de conversation emploie
-    return SimpleNamespace(effectif=effectif, limite=limite, surcharges=surcharges, outils_de=outils_de, dans_sa_famille=dans_sa_famille, compter=compter, verdict=verdict, retenir=retenir, definitions=definitions, palier_outil=palier_outil,
+    return SimpleNamespace(effectif=effectif, limite=limite, surcharges=surcharges, outils_de=outils_de, dans_sa_famille=dans_sa_famille, repartition=lambda: D.get("repartition", {}), compter=compter, verdict=verdict, retenir=retenir, definitions=definitions, palier_outil=palier_outil,
                            cible=cible, definition=definition, admin=admin)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

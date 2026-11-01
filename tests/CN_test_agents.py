@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2a1f1a
+# VERSION CN : 0.1.0  #932b88
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module agents, avec les vrais modules notes, modeles et memoire et un faux modèle qui appelle des outils.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2a1f1a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=932b88 ▼▼▼
 """Bancs du module agents, avec les vrais modules notes, modeles et memoire et un faux modèle qui appelle des outils."""
 import json
 import shutil
@@ -93,6 +93,11 @@ class Monde(unittest.TestCase):
             self.n.catalogue.regler_palier(cap, "auto")
         self.ctx = self.n.executeur.contextes["agents"]
         self.db = self.ctx.stockage
+
+    def lier_itare(self):
+        """Itare parle par son propre rôle (itare_citadelle) : les bancs qui le font agir sur le bureau lui lient le même faux serveur de modèle."""
+        mid = self.ex("modeles.instance_ajouter", compte=ROOT, fournisseur="personnalise", nom="citadelle", cle=CLE_ROLE, base_url=self.faux.url)["resultat"]["id"]
+        self.ex("modeles.role_lier", compte=ROOT, role="itare_citadelle", modele_id=mid)
 
     def ex(self, capacite, compte=BEA, acteur="humain", **args):
         return self.n.executeur.executer(capacite, acteur, args, compte=compte)
@@ -196,18 +201,24 @@ class Conversation(Monde):
 
 
 class Outils(Monde):
+    def setUp(self):
+        super().setUp()
+        self.lier_itare()
+
     def test_les_outils_derivent_du_catalogue_et_respectent_les_droits_du_compte(self):
         noms = {t["cle"] for t in self.agent("outils")["outils"]}
         self.assertIn("notes.creer", noms)
         self.assertIn("memoire.rappeler", noms)
         self.assertNotIn("modeles.usage", noms)                             # le droit d'administrer manque à Bea
         self.assertNotIn("agents.converser", noms)                          # un agent n'appelle pas les agents
-        self.assertIn("modeles.usage", {t["cle"] for t in self.agent("outils", compte=ROOT)["outils"]})
+        self.assertIn("modeles.usage", {t["cle"] for t in self.n._outils(ROOT, "cassandra")})            # l'infrastructure est à Cassandra, avec le droit…
+        self.assertNotIn("modeles.usage", {t["cle"] for t in self.n._outils(BEA, "cassandra")})        # … et le droit manque à Bea
+        self.assertNotIn("modeles.usage", {t["cle"] for t in self.agent("outils", compte=ROOT)["outils"]})  # le bureau d'Itare n'a pas l'infrastructure
         t = {x["cle"]: x for x in self.agent("outils")["outils"]}["notes.creer"]
         self.assertEqual((t["risque"], t["palier"], "titre" in t["arguments"]), ("faible", "auto", True))
 
     def test_un_outil_appele_agit_au_nom_du_compte_et_le_resultat_revient_au_modele(self):
-        r = self.causer("Crée une note « Courses » avec du lait", [appel("notes__creer", {"titre": "Courses", "corps": "du lait"}), texte("C'est fait : la note Courses existe.")])
+        r = self.causer("Crée une note « Courses » avec du lait", [appel("notes__creer", {"titre": "Courses", "corps": "du lait"}), texte("C'est fait : la note Courses existe.")], agent="itare")
         self.assertEqual(r["texte"], "C'est fait : la note Courses existe.")
         self.assertEqual([(n["titre"], n["id"]) for n in self.notes()], [("Courses", "N-0001")])
         self.assertEqual(self.notes(LEO), [])                                # la note est à Bea
@@ -221,12 +232,12 @@ class Outils(Monde):
         m = self.msgs(r["conversation_id"])
         self.assertEqual([x["role"] for x in m], ["user", "assistant", "tool", "assistant"])
         self.assertEqual((m[1]["appels"][0]["function"]["name"], m[2]["nom"], m[2]["statut"]), ("notes__creer", "notes__creer", "faite"))
-        j = [e for e in self.n.bus.recents(portee="*", limite=500) if e["type"] == "capacite.demandee" and e["acteur"] == "cassandra" and e["objet_id"] == "notes.creer"]
+        j = [e for e in self.n.bus.recents(portee="*", limite=500) if e["type"] == "capacite.demandee" and e["acteur"] == "itare" and e["objet_id"] == "notes.creer"]
         self.assertEqual((len(j), j[0]["compte"]), (1, BEA))                 # l'acte est au journal, de l'agent, au nom de Bea
 
     def test_un_outil_au_palier_raconter_n_a_rien_fait_et_l_agent_le_sait(self):
         self.n.catalogue.regler_palier("notes.creer", "raconter")
-        r = self.causer("Crée une note Courses", [appel("notes__creer", {"titre": "Courses"}), texte("Je ne l'ai pas créée : l'outil est seulement raconté.")])
+        r = self.causer("Crée une note Courses", [appel("notes__creer", {"titre": "Courses"}), texte("Je ne l'ai pas créée : l'outil est seulement raconté.")], agent="itare")
         self.assertEqual(self.notes(), [])
         tool = self.faux.requetes[1]["corps"]["messages"][-1]["content"]
         self.assertIn("Non exécuté", tool)
@@ -241,7 +252,7 @@ class Outils(Monde):
                 {"id": "b", "type": "function", "function": {"name": "notes__creer", "arguments": "{pas du json"}},
                 {"id": "c", "type": "function", "function": {"name": "notes__creer", "arguments": json.dumps({"titre": "  "})}},
                 {"id": "d", "type": "function", "function": {"name": "notes__creer", "arguments": json.dumps({"titre": "ok", "inconnu": 1})}}]}, "finish_reason": "tool_calls"}]}),
-            texte("J'ai corrigé.")])
+            texte("J'ai corrigé.")], agent="itare")
         tools = [m for m in self.faux.requetes[1]["corps"]["messages"] if m["role"] == "tool"]
         self.assertEqual([t["tool_call_id"] for t in tools], ["a", "b", "c", "d"])
         self.assertIn("Outil inconnu", tools[0]["content"])
@@ -254,7 +265,7 @@ class Outils(Monde):
     def test_outil_cherche_et_outil_appeler_atteignent_toute_la_surface(self):
         self.n.reglages.poser("agents.max_outils", 10, "")
         r = self.causer("Fais un truc", [appel("outil_cherche", {"requete": "créer une note"}),
-                                          appel("outil_appeler", {"cle": "notes.creer", "arguments": {"titre": "Via la meta"}}, ident="call_2"), texte("Fait.")])
+                                          appel("outil_appeler", {"cle": "notes.creer", "arguments": {"titre": "Via la meta"}}, ident="call_2"), texte("Fait.")], agent="itare")
         trouve = json.loads(self.faux.requetes[1]["corps"]["messages"][-1]["content"])
         self.assertIn("notes.creer", [t["cle"] for t in trouve])
         self.assertEqual([n["titre"] for n in self.notes()], ["Via la meta"])
@@ -276,6 +287,7 @@ class Outils(Monde):
 class Teinte(Monde):
     def setUp(self):
         super().setUp()
+        self.lier_itare()
         # notes.lister vient de l'extérieur, le partage sort de la maison : les drapeaux que portent courrier et telegram
         object.__setattr__(self.n.catalogue.get("notes.lister").capacite, "externe", True)
         object.__setattr__(self.n.catalogue.get("notes.partage_creer").capacite, "sortant", True)
@@ -286,7 +298,7 @@ class Teinte(Monde):
         self.ex("notes.creer", acteur="humain", titre="À partager", corps="x")
 
     def test_apres_une_lecture_exterieure_ce_qui_sort_ne_part_pas_seul(self):
-        r = self.causer("Partage ma note", [appel("notes__lister", {}), appel("notes__partage_creer", {"ref": "N-0001"}, ident="call_2"), texte("Je n'ai rien partagé : il faut ta confirmation.")])
+        r = self.causer("Partage ma note", [appel("notes__lister", {}), appel("notes__partage_creer", {"ref": "N-0001"}, ident="call_2"), texte("Je n'ai rien partagé : il faut ta confirmation.")], agent="itare")
         tool = self.faux.requetes[2]["corps"]["messages"][-1]["content"]
         self.assertIn("Non exécuté : ce tour a lu du contenu venu de l'extérieur (notes.lister)", tool)
         self.assertEqual(self.ex("notes.partages")["resultat"]["liens"], [])
@@ -294,21 +306,25 @@ class Teinte(Monde):
         self.assertEqual([a["statut"] for a in r["actions"]], ["faite", "retenue"])
 
     def test_au_tour_suivant_la_personne_confirme_et_ca_part(self):
-        c = self.causer("Partage ma note", [appel("notes__lister", {}), appel("notes__partage_creer", {"ref": "N-0001"}, ident="call_2"), texte("Il faut ta confirmation.")])
-        self.causer("Oui, partage-la", [appel("notes__partage_creer", {"ref": "N-0001"}), texte("Partagée.")], conversation_id=c["conversation_id"])
+        c = self.causer("Partage ma note", [appel("notes__lister", {}), appel("notes__partage_creer", {"ref": "N-0001"}, ident="call_2"), texte("Il faut ta confirmation.")], agent="itare")
+        self.causer("Oui, partage-la", [appel("notes__partage_creer", {"ref": "N-0001"}), texte("Partagée.")], agent="itare", conversation_id=c["conversation_id"])
         self.assertEqual(len(self.ex("notes.partages")["resultat"]["liens"]), 1)
 
     def test_sans_lecture_exterieure_le_partage_part_au_palier_choisi(self):
-        self.causer("Partage ma note", [appel("notes__partage_creer", {"ref": "N-0001"}), texte("Partagée.")])
+        self.causer("Partage ma note", [appel("notes__partage_creer", {"ref": "N-0001"}), texte("Partagée.")], agent="itare")
         self.assertEqual(len(self.ex("notes.partages")["resultat"]["liens"]), 1)
 
     def test_une_ecriture_a_risque_moyen_est_aussi_retenue_apres_une_lecture_etrangere(self):
         self.n.catalogue.regler_palier("notes.supprimer", "auto")
-        self.causer("Nettoie", [appel("notes__lister", {}), appel("outil_appeler", {"cle": "notes.vider_corbeille", "arguments": {}}, ident="call_2"), texte("Retenu.")])
+        self.causer("Nettoie", [appel("notes__lister", {}), appel("outil_appeler", {"cle": "notes.vider_corbeille", "arguments": {}}, ident="call_2"), texte("Retenu.")], agent="itare")
         self.assertIn("Non exécuté", self.faux.requetes[2]["corps"]["messages"][-1]["content"])
 
 
 class Pannes(Monde):
+    def setUp(self):
+        super().setUp()
+        self.lier_itare()
+
     def test_une_panne_du_modele_est_gardee_a_part_et_ne_revient_pas_dans_le_contexte(self):
         self.faux.reponses.append((500, {"error": "boom"}))
         r = self.causer("Bonjour")
@@ -329,32 +345,32 @@ class Pannes(Monde):
 
     def test_trop_d_etapes_arrete_le_tour_en_le_disant(self):
         self.n.reglages.poser("agents.max_tours", 3, "")
-        r = self.causer("Boucle", [appel("notes__lister", {}, ident="c%d" % i) for i in range(5)])
+        r = self.causer("Boucle", [appel("notes__lister", {}, ident="c%d" % i) for i in range(5)], agent="itare")
         m = self.msgs(r["conversation_id"])
         self.assertEqual(m[-1]["role"], "panne")
         self.assertIn("Trop d'étapes", m[-1]["contenu"])
         self.assertEqual(len([x for x in m if x["role"] == "tool"]), 3)
 
     def test_des_outils_puis_rien_le_modele_est_prie_de_conclure_une_fois(self):
-        r = self.causer("Liste", [appel("notes__lister", {}), texte(""), texte("Voilà : aucune note.")])
+        r = self.causer("Liste", [appel("notes__lister", {}), texte(""), texte("Voilà : aucune note.")], agent="itare")
         self.assertEqual(r["texte"], "Voilà : aucune note.")
         dernier = self.faux.requetes[-1]["corps"]["messages"][-1]
         self.assertEqual(dernier["role"], "user")
         self.assertIn("Conclus maintenant en clair", dernier["content"])
 
     def test_arreter_est_lu_entre_deux_etapes_et_une_action_lancee_finit(self):
-        cid = self.agent("conversation_creer")["id"]
+        cid = self.agent("conversation_creer", agent="itare")["id"]
 
         def demander_l_arret():
             self.ex("agents.arreter", id=cid)
             return appel("notes__creer", {"titre": "Lancée avant l'arrêt"})
-        r = self.causer("Crée puis continue", [demander_l_arret, texte("Ne devrait pas être lu.")], conversation_id=cid)
+        r = self.causer("Crée puis continue", [demander_l_arret, texte("Ne devrait pas être lu.")], agent="itare", conversation_id=cid)
         self.assertEqual([n["titre"] for n in self.notes()], ["Lancée avant l'arrêt"])          # l'action en cours a fini
         self.assertEqual(r["texte"], "")
         self.assertEqual(r["actions"][-1]["statut"], "arrete")
         self.assertEqual(self.msgs(cid)[-1]["contenu"], "Tour arrêté à ta demande.")
         self.assertEqual(len(self.faux.requetes), 1)                                        # le modèle n'a pas été rappelé
-        self.causer("Reprenons", [texte("Reprise.")], conversation_id=cid)                  # la demande d'arrêt s'efface au début du tour suivant
+        self.causer("Reprenons", [texte("Reprise.")], agent="itare", conversation_id=cid)                  # la demande d'arrêt s'efface au début du tour suivant
 
     def test_le_fil_incoherent_est_remis_en_ordre_avant_l_envoi(self):
         o = self.n.catalogue.get("agents.converser").faire.__globals__["o"]
