@@ -31,8 +31,11 @@ test("Agents IA : l'entrée est ouverte à tous, Mon Itare a quitté le Desk, l'
   // le compte d'essai est administrateur : les pages sont des sous-entrées du menu de gauche (plus des onglets dans la page), l'équipe, ses cartes, ses services
   expect(await page.evaluate(() => document.querySelectorAll('#tab-mod-agents-equipe .ag-nav[role=tablist]:not(#ag-ong)').length)).toBe(0);
   const sous = await page.evaluate(() => [...document.querySelectorAll('.d19-si.sub[data-e="agents-ia"]')].map((b) => b.textContent.trim().replace(/\d+$/, '')));
-  expect(sous.join('|')).toMatch(/^L.équipe\|Cassandra\|Itare\|Amizo\|Relecteur\|Vision\|Conversations\|À valider\|Journal\|Modèles & clés$/);
+  expect(sous.join('|')).toMatch(/^L.équipe\|Cassandra\|Itare\|Amizo\|Relecteur\|Vision\|Auditeur\|Conversations\|À valider\|Journal\|Modèles & clés$/);
   expect(await page.evaluate(() => [...document.querySelectorAll('.d19-lbl')].map((x) => x.textContent))).toEqual(['Services agentiques']);
+  // l'Auditeur : une page en lecture seule, sous « Services agentiques »
+  await page.click('.d19-si.sub[data-e="agents-ia"][data-v="auditeur"]');
+  await expect(page.locator('#tab-mod-agents-equipe')).toContainText('lecture seule', { timeout: 30000 });
   // un clic sur « Conversations » dans le menu change de page, sans autre onglet de module
   await page.click('.d19-si.sub[data-e="agents-ia"][data-v="conv"]');
   await expect.poll(() => page.evaluate(() => !!document.querySelector('#tab-mod-agents-equipe #cv-t, #tab-mod-agents-equipe .vide'))).toBe(true);

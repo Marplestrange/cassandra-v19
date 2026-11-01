@@ -21,8 +21,8 @@ module.exports = defineConfig({
     command: `python ${JSON.stringify(path.join(__dirname, 'preparer_serveur.py'))}`,
     cwd: path.resolve(__dirname, '..'),
     url: `http://127.0.0.1:${PORT}/api/sante`,
-    reuseExistingServer: false,
-    timeout: 180000,
+    reuseExistingServer: !!process.env.UI_REUSE,       // UI_REUSE=1 : un serveur d'essai déjà lancé à la main sur UI_PORT
+    timeout: Number(process.env.UI_DELAI) || 180000,  // machine chargée : UI_DELAI=600000
     env: { UI_PORT: PORT, UI_COMPTE: process.env.UI_COMPTE, UI_MDP: process.env.UI_MDP, PYTHONIOENCODING: 'utf-8' },
   },
   projects: [{ name: 'Mobile Chrome', use: { ...devices['Pixel 5'] } }],

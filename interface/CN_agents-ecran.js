@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #f3fa06
+// VERSION CN : 0.1.0  #6513d3
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=f3fa06 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=6513d3 ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -44,6 +44,8 @@
     epreuvesLancer: (modele) => A("epreuves_lancer", { modele: modele }),
     epreuvesResultats: (modele) => A("epreuves_resultats", { modele: modele || "" }),
     sentinelle: () => A("sentinelle_etat"),
+    defaire: (acte, raison) => A("defaire", { acte: acte, raison: raison || "" }),
+    auditer: (jours) => A("auditer", { jours: jours || 7 }),
     journal: (acteur, n) => K.agir("journal.flux", { acteur: acteur || "", limit: n || 60, bruit: false }),
   };
   const RISQUE = { faible: "ok", moyen: "al", eleve: "dg", haut: "dg", fort: "dg" };
@@ -52,7 +54,7 @@
   const btnPq = (acte) => (acte ? '<div><button class="btn mini" data-pq="' + esc(acte) + '">Pourquoi ?</button></div><div class="ag-pq" id="pq-' + esc(acte) + '"></div>' : "");
   const manque = (e) => /inconnu|introuvable|n'existe pas|not found|404|capacit/i.test(String((e && e.message) || e));
 
-  const COUL = { cassandra: "#0b7c74", itare: "#6d3fd1", amizo: "#1d6fb8", relecteur: "#b45309", vision: "#be185d" };
+  const COUL = { cassandra: "#0b7c74", itare: "#6d3fd1", amizo: "#1d6fb8", relecteur: "#b45309", vision: "#be185d", auditeur: "#5b6b8c" };
   const NIVEAUX = [["observer", "Observer", "Elle constate et raconte ce qu'elle ferait. Rien n'est touché."], ["entretien", "Entretien", "Elle fait le petit et le sûr : lectures, rangement, ce qui se défait."], ["reine", "Reine", "Elle conduit seule dans ses paliers ; chaque geste garde sa preuve et son retour."]];
   const ACTIONS = [["secours", "bascule sur le modèle de secours"], ["arret", "arrête les agents (sauf Cassandra) et te prévient"], ["accord", "demande ton accord"]];
   const RISQUES = ["lecture", "faible", "moyen", "élevé"];
@@ -73,7 +75,7 @@
     ".ag .ag-nav button.on{color:var(--accent);border-bottom-color:var(--accent)}.ag .ag-n{background:var(--accent);color:var(--on-accent,#fff);border-radius:99px;font:700 10.5px/1 'Inter',sans-serif;padding:3px 6px}" +
     ".ag .ag-av{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#fff;font:700 17px 'Inter',sans-serif;flex:none}.ag .ag-av.g{width:48px;height:48px;font-size:20px}" +
     ".ag .ag-cartes{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}.ag button.carte.clic{text-align:left;color:inherit;font:inherit;cursor:pointer}.ag button.carte.clic:hover{border-color:var(--accent)}" +
-    ".ag .ag-tete{display:flex;gap:12px;align-items:center;min-width:0}.ag .ag-tete>div{min-width:0}.ag .ag-ligne{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-size:12.5px}.ag .ag-ligne .g{color:var(--txt-faint)}" +
+    ".ag .ag-tete{display:flex;gap:12px;align-items:center;min-width:0}.ag .ag-tete>div{min-width:0}.ag .ag-ligne{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-size:12.5px}.ag .ag-ligne .g{color:var(--txt-soft)}" +
     ".ag .ag-ligne b{font-weight:600;text-align:right;overflow-wrap:anywhere}.ag .ag-puces{display:flex;gap:6px;flex-wrap:wrap}.ag .ag-etat{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.ag .ag-etat .sp{flex:1;min-width:220px}" +
     ".ag .ag-rond{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok);flex:none}.ag .ag-rond.al{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}.ag .ag-rond svg{width:22px;height:22px}" +
     ".ag .ag-outil{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}.ag .ag-outil .n{font:600 12.5px ui-monospace,Menlo,Consolas,monospace;overflow-wrap:anywhere}.ag .ag-outil .d{font-size:12px;color:var(--txt-soft)}" +
@@ -104,7 +106,7 @@
     const pageMenu = () => (S.vue === "fiche" ? (S.admin ? S.agent : "itare") : S.vue);
     const depuisMenu = (id) => {
       if (["cassandra", "itare", "amizo", "relecteur", "vision"].includes(id)) { S.vue = "fiche"; S.agent = id; S.onglet = "apercu"; }
-      else if (["equipe", "conv", "boite", "journal", "modeles"].includes(id)) S.vue = id;
+      else if (["equipe", "conv", "boite", "journal", "modeles", "auditeur"].includes(id)) S.vue = id;
       if (S.vue === "conv") S.conv.liste = null;
     };
     const nonBranche = (titre, texte) => '<section class="carte"><div class="barre"><h3 style="flex:1">' + esc(titre) + '</h3><span class="ag-nb">non branché</span></div><p class="note">' + esc(texte) + "</p></section>";
@@ -237,7 +239,16 @@
       const l = (k, v) => '<div class="ag-ligne"><span class="g">' + k + "</span><b>" + v + "</b></div>";
       return l("Déclencheur", esc(decl)) + l("Mémoire consultée", mem) + l("Outil", esc((r.outil && r.outil.cle) || r.capacite || "")) + l("Palier", esc(r.palier || "") + (r.confirmer ? " · à confirmer" : "") + (r.niveau ? " · niveau " + esc(r.niveau) : "")) +
         l("Issue", pill(r.issue || "?", r.issue === "echec" ? "dg" : r.issue === "faite" ? "ok" : "al")) + l("Preuve", esc(preuve)) + l("Retour", esc(retour)) + l("Lignes du journal", (r.journal || []).length) +
-        '<p class="note">Défaire : le module n\'offre pas encore de geste direct ; le noyau annule seul quand la preuve échoue (« Retour » ci-dessus).</p>';
+        (r.issue === "faite" && r.retour !== "annulee" ? '<div class="barre" style="margin-top:8px"><button class="btn mini" data-df="' + esc(r.acte) + '" title="Rejoue le retour arrière de ce geste, une seule fois">Défaire</button><span class="note">Rejoue le retour arrière de ce geste, une seule fois.</span></div>' : '<p class="note">' + (r.issue === "faite" ? "Ce geste a déjà été annulé." : "Ce geste n'a rien fait : il n'y a rien à défaire.") + "</p>");
+    }
+    async function vAuditeur() {
+      let r; try { r = await API.auditer(S.jours > 30 ? 30 : 7); } catch (e) { return nonBranche("Auditeur", String((e && e.message) || e)); }
+      const TYPE = { cout_derive: "Un coût qui dérive", palier_large: "Un palier trop généreux", injection_repetee: "Des tentatives d\'injection répétées" };
+      const sg = r.signaux || [];
+      return '<section class="carte"><div class="ag-tete">' + av({ id: "auditeur", nom: "Auditeur" }) + '<div><h3>Auditeur</h3><div class="note">Relit le journal et signale les dérives. Indépendant des agents qu\'il regarde ; il signale, il ne corrige pas.</div></div></div>' +
+        '<div class="ag-puces">' + pill("lecture seule") + pill(r.jours + " derniers jours") + pill(sg.length + (sg.length > 1 ? " signaux" : " signal"), sg.length ? "al" : "ok") + "</div></section>" +
+        '<section class="carte"><h3>Ce qu\'il a vu</h3>' + (sg.length ? '<div class="liste">' + sg.map((x) => '<div class="li"><div class="sp"><b>' + esc(TYPE[x.type] || x.type) + (x.agent ? " · " + esc(x.agent) : "") + '</b><div class="note">' + esc(x.phrase || "") + (x.ref ? " · " + esc(x.ref) : "") + "</div></div></div>").join("") + "</div>" : '<p class="note">Rien à signaler : ni coût qui dérive, ni palier trop large, ni tentative répétée.</p>') +
+        '<p class="note">Il regarde : ' + (r.regards || []).map((g) => esc((TYPE[g] || g).toLowerCase())).join(", ") + ". Le geste reste à l\'administrateur.</p></section>";
     }
     async function oJournal(f) {
       const a = f.agent; let l = [], ac = "";
@@ -410,13 +421,13 @@
         if (!S.vue) S.vue = S.admin ? "equipe" : "fiche";
         if (!S.admin && !["fiche", "conv", "boite", "journal"].includes(S.vue)) S.vue = "fiche";
         if (S.attente === undefined) { try { S.attente = ((await API.propositions()).propositions || []).filter((x) => S.admin || x.agent === "itare").length; } catch (e) { S.attente = null; } }
-        const f = { equipe: vEquipe, fiche: vFiche, conv: vConv, boite: vBoite, journal: vJournal, modeles: async () => vModeles() }[S.vue];
+        const f = { equipe: vEquipe, fiche: vFiche, conv: vConv, boite: vBoite, journal: vJournal, auditeur: vAuditeur, modeles: async () => vModeles() }[S.vue];
         html = '<div id="ag-vue" style="display:flex;flex-direction:column;gap:12px">' + await f() + "</div>";
       } catch (e) { html = '<div class="vide">' + esc((e && e.message) || e) + "</div>"; }
       racine.innerHTML = html; brancher();
       if (typeof window.agentsSuivre === "function") window.agentsSuivre(pageMenu(), S.attente == null ? 0 : S.attente);
       const sc = corps.closest(".sh-scene"), ti = sc && sc.querySelector(".sh-titre");           // le titre suit la page choisie dans le menu
-      if (ti) ti.textContent = { equipe: "L’équipe", conv: "Conversations", boite: "À valider", journal: "Journal", modeles: "Modèles & clés" }[S.vue] || ((S.eq && S.eq.equipe.find((x) => x.id === S.agent) || {}).nom || "Agents IA");
+      if (ti) ti.textContent = { equipe: "L’équipe", conv: "Conversations", boite: "À valider", journal: "Journal", auditeur: "Auditeur", modeles: "Modèles & clés" }[S.vue] || ((S.eq && S.eq.equipe.find((x) => x.id === S.agent) || {}).nom || "Agents IA");
     }
     const recharger = (eq) => { if (eq) S.eq = null; return dessiner(); };
     const aller = (v, agent, onglet) => { S.vue = v; if (agent) S.agent = agent; if (onglet) S.onglet = onglet; if (v === "conv") S.conv.liste = null; dessiner(); };
@@ -433,7 +444,7 @@
 
     function brancher() {
       peindreGestes();
-      sur("[data-agent]", "click", (b) => aller("fiche", b.dataset.agent, b.dataset.onglet || "apercu"));
+      sur("[data-agent]", "click", (b) => (b.dataset.agent === "auditeur" ? aller("auditeur") : aller("fiche", b.dataset.agent, b.dataset.onglet || "apercu")));
       sur("#ag-ong [data-o]", "click", (b) => { S.onglet = b.dataset.o; dessiner(); });
       sur("[data-onglet-vers]", "click", (b) => { S.onglet = b.getAttribute("data-onglet-vers"); dessiner(); });
       sur("[data-chez]", "click", (b) => chez(b.dataset.chez, b.dataset.q));
@@ -470,6 +481,12 @@
         z.innerHTML = '<p class="note">Lecture…</p>'; z.innerHTML = vPourquoi(await API.pourquoi(Number(b.dataset.pq)));
         z.querySelectorAll("[data-chez]").forEach((x) => x.addEventListener("click", () => chez(x.dataset.chez, x.dataset.q)));
       }));
+      if (!racine.__df) { racine.__df = 1; racine.addEventListener("click", (ev) => { const b = ev.target.closest("[data-df]"); if (!b) return; lancer(async () => {
+        const acte = Number(b.dataset.df);
+        if (!(await confirmer("Défaire ce geste ?", '<p class="note">Le retour arrière de la capacité est rejoué, une seule fois, et le journal le raconte. On ne peut pas le rejouer ensuite.</p>', "Défaire", true))) return;
+        await API.defaire(acte, "demandé depuis l'écran"); dire("Geste défait", "ok");
+        const z = racine.querySelector("#pq-" + acte); if (z) z.innerHTML = vPourquoi(await API.pourquoi(acte));
+      }); }); }
       sur("#ag-ep-go", "click", () => lancer(async () => {
         const m = racine.querySelector("#ag-ep-m").value.trim(); if (!m) throw new Error("indique le modèle à éprouver");
         const z = racine.querySelector("#ag-ep-r"); z.innerHTML = '<p class="note" role="status">Épreuves en cours : huit cas, jusqu\'à une demi-minute…</p>'; b0(true);
