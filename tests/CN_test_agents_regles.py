@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6c3044
+# VERSION CN : 0.1.0  #f75fad
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les règles communes aux agents, la tuile « retenus / refusés », les tâches récurrentes, « Pourquoi ? » en phrases et le vocabulaire côté données.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6c3044 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f75fad ▼▼▼
 """Les règles communes aux agents, la tuile « retenus / refusés », les tâches récurrentes, « Pourquoi ? » en phrases et le vocabulaire côté données.
 
 Une règle posée AGIT dans le tour de l'agent : on le prouve par un tour, pas par la relecture de la règle.
@@ -248,6 +248,27 @@ class TachesAutomatiques(actions.Actions):
         self.faux.reponses += [(500, {"error": "panne"}), (500, {"error": "panne"}), (500, {"error": "panne"}), texte("Seconde faite.")]
         self.moteur()()
         self.assertTrue(all(t["derniere"] for t in self.agent("taches", compte=BEA)["taches"]))     # les deux ont été tentées
+
+
+class ConfianceRapide(actions.Actions):
+    def compteur(self):
+        o = self.n.catalogue.get("agents.converser").faire.__globals__["o"]
+        appels = []
+        vrai = o._point
+        o._point = lambda point, entree: (appels.append(point), vrai(point, entree))[1]
+        self.addCleanup(setattr, o, "_point", vrai)
+        return appels
+
+    def test_la_carte_ne_fait_tourner_le_point_que_pour_un_outil_deja_decide(self):
+        appels = self.compteur()
+        self.assertEqual(self.agent("confiance", compte=BEA, agent="itare")["outils"], [])
+        self.assertEqual(appels, [])                                                              # aucune décision : aucun appel (avant : un par outil à écrire)
+        self.racontee()
+        self.decider(self.props()[0]["id"], "accepter")
+        avant = len(appels)
+        carte = self.agent("confiance", compte=BEA, agent="itare")
+        self.assertEqual(appels[avant:], ["proposer_promotion"])                                          # un seul outil a une série
+        self.assertEqual([(t["cle"], t["validations"]) for t in carte["outils"]], [("notes.creer", 1)])
 
 
 if __name__ == "__main__":
