@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #4c7a48
+# VERSION CN : 0.5.0  #9b0797
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=4c7a48 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=9b0797 ▼▼▼
 [module]
 id = "agents"
 nom = "Agents"
@@ -50,8 +50,12 @@ sensible = true
 type = "conversation"
 libelle = "Une conversation avec un agent"
 
+[[objets]]
+type = "tache"
+libelle = "Une tâche récurrente confiée à un agent"
+
 [evenements]
-emet = ["conversation.tour"]
+emet = ["conversation.tour", "tache.lancee", "tache.echouee"]
 
 [[reglages]]
 id = "persona_cassandra"
@@ -364,6 +368,28 @@ paliers = ["raconter"]
 qui = ["humain", "compte"]
 
 [[capacites]]
+id = "mauvais_jour"
+libelle = "Mauvais jour : tous les agents passent en « raconter » (ils racontent, ils ne font pas) pendant N heures, 0 = jusqu'à levée ; le plus prudent gagne, les réglages d'origine ne bougent pas"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["l'administrateur seulement", "tous les agents, tous les outils qui écrivent", "retour automatique à l'échéance"]
+preuve = "relire les règles : le mauvais jour est actif"
+retour = "lever le mauvais jour (ou remettre l'état d'avant)"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "mauvais_jour_lever"
+libelle = "Lever le mauvais jour : les agents reprennent leurs paliers ; le résultat dit ce qu'ils ont raconté au lieu de le faire depuis le début"
+risque = "faible"
+droit = "administrer"
+perimetre = ["l'administrateur seulement"]
+preuve = "relire les règles : le mauvais jour n'est plus actif"
+retour = "remettre le mauvais jour tel qu'il était"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
 id = "epreuves_lancer"
 libelle = "Jouer les huit épreuves de sûreté contre un modèle, en MODE ESSAI (rien n'est fait pour de bon) : un modèle qui échoue est déconseillé"
 risque = "faible"
@@ -414,6 +440,13 @@ stockage = true
 lectures = true
 agir = true
 introspection = true
+
+[[moteurs]]
+id = "taches"
+libelle = "Joue les tâches récurrentes échues, une passe par minute, sous le compte qui les a confiées (trois au plus par passe)"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 280
 
 [[points_evolution]]
 id = "ton_agent"

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2e6079
+# VERSION CN : 0.1.0  #15bc49
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les règles communes aux agents, la tuile « retenus / refusés », les tâches récurrentes, « Pourquoi ? » en phrases et le vocabulaire côté données.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2e6079 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=15bc49 ▼▼▼
 """Les règles communes aux agents, la tuile « retenus / refusés », les tâches récurrentes, « Pourquoi ? » en phrases et le vocabulaire côté données.
 
 Une règle posée AGIT dans le tour de l'agent : on le prouve par un tour, pas par la relecture de la règle.
@@ -143,6 +143,111 @@ class PourquoiEnPhrases(actions.Actions):
         p = self.agent("pourquoi", compte=BEA, acte=987001)
         self.assertEqual(p["issue_texte"], "sans issue enregistrée")
         self.assertNotIn("4242", " ".join(p["phrases"]))
+
+
+class MauvaisJour(actions.Actions):
+    def maintenant(self):
+        return self.agent("regles", compte=ROOT)["mauvais_jour"]
+
+    def test_seul_l_administrateur_le_pose_et_la_duree_est_bornee(self):
+        self.refuse("mauvais_jour", compte=BEA, duree_h=2)
+        self.assertFalse(self.maintenant()["actif"])
+        for faux in (-1, 721, "x", True):
+            self.assertEqual(self.refuse("mauvais_jour", compte=ROOT, duree_h=faux)["statut"], "echec", faux)
+
+    def test_tous_les_agents_racontent_sans_toucher_aux_reglages_et_la_levee_dit_ce_qui_a_change(self):
+        self.regler("palier_regler", compte=BEA, agent="itare", outil="notes.creer", palier="auto")
+        avant = [dict(r) for r in self.db.lire("SELECT * FROM agent_paliers ORDER BY agent, compte, outil")]
+        etat = self.regler("mauvais_jour", compte=ROOT, duree_h=0)
+        self.assertTrue(etat["actif"])
+        self.assertEqual(etat["jusqua"], 0)
+        r = self.causer("Crée une note", [self.creer("Pas aujourd'hui"), texte("Je te la propose.")], agent="itare")
+        self.assertEqual(r["actions"][0]["statut"], "racontee")
+        self.assertEqual(self.notes(), [])
+        self.assertEqual([dict(x) for x in self.db.lire("SELECT * FROM agent_paliers ORDER BY agent, compte, outil")], avant)         # les réglages d'origine n'ont pas bougé
+        self.assertTrue(self.agent("regles", compte=BEA)["mauvais_jour"]["actif"])
+        self.assertEqual(self.agent("regles", compte=BEA)["mauvais_jour"]["raconte"], [{"agent": "itare", "capacite": "notes.creer", "fois": 1}])
+        bilan = self.regler("mauvais_jour_lever", compte=ROOT)
+        self.assertFalse(bilan["actif"])
+        self.assertEqual(bilan["raconte"], [{"agent": "itare", "capacite": "notes.creer", "fois": 1}])
+        r = self.causer("Crée une note", [self.creer("Maintenant oui"), texte("Fait.")], agent="itare")
+        self.assertEqual(r["actions"][0]["statut"], "faite")
+        self.assertIn("agents.mauvais_jour", [e.get("objet_id") for e in self.evts("capacite.faite")])           # le journal garde les deux gestes
+        self.assertIn("agents.mauvais_jour_lever", [e.get("objet_id") for e in self.evts("capacite.faite")])
+        self.refuse("mauvais_jour_lever", compte=ROOT)                                                          # ce n'est plus un mauvais jour
+
+    def test_le_retour_est_automatique_a_l_echeance(self):
+        self.regler("mauvais_jour", compte=ROOT, duree_h=2)
+        m = self.maintenant()
+        self.assertTrue(m["actif"])
+        self.assertAlmostEqual(m["jusqua"] - m["depuis"], 2 * 3600, delta=5)
+        import json
+        brut = json.loads(self.db.lire("SELECT valeur FROM agents_regles WHERE cle='mauvais_jour'")[0]["valeur"])
+        brut["jusqua"] = time.time() - 1
+        self.db.ecrire("UPDATE agents_regles SET valeur=? WHERE cle='mauvais_jour'", (json.dumps(brut),))
+        self.assertFalse(self.maintenant()["actif"])
+        r = self.causer("Crée une note", [self.creer("Après l'échéance"), texte("Fait.")], agent="itare")
+        self.assertEqual(r["actions"][0]["statut"], "faite")
+
+    def test_la_pose_se_defait(self):
+        self.ex("agents.mauvais_jour", compte=ROOT, duree_h=1)
+        fait = next(e for e in self.evts("capacite.faite") if e.get("objet_id") == "agents.mauvais_jour")
+        self.assertEqual(self.n.executeur.defaire_acte(fait["id"], ROOT)["statut"], "defaite")
+        self.assertFalse(self.maintenant()["actif"])
+
+
+class TachesAutomatiques(actions.Actions):
+    def moteur(self):
+        f = [f for m, mo, f in self.n.moteurs if m == "agents" and mo.id == "taches"][0]
+        return lambda: f(self.n.executeur.contextes["agents"])
+
+    def vieillir(self, tache, jours=2):
+        self.db.ecrire("UPDATE taches_agents SET cree=? WHERE id=?", (time.time() - jours * 86400, tache))
+
+    def test_une_tache_echue_se_joue_seule_sous_le_compte_et_ne_se_rejoue_pas(self):
+        t = self.regler("tache_confier", compte=BEA, agent="itare", consigne="Dis bonjour", frequence="quotidien", heure="08:00")["tache"]
+        passe = self.moteur()
+        passe()
+        self.assertIsNone(self.agent("taches", compte=BEA)["taches"][0]["derniere"])               # pas échue : rien
+        self.vieillir(t)
+        self.faux.reponses += [texte("Bonjour !")]
+        passe()
+        fiche = self.agent("taches", compte=BEA)
+        self.assertTrue(fiche["declenchement_automatique"])
+        self.assertIsNotNone(fiche["taches"][0]["derniere"])
+        cid = fiche["taches"][0]["conversation_id"]
+        self.assertIn("Bonjour !", [m["contenu"] for m in self.msgs(cid)])
+        self.assertEqual(self.ex("agents.conversation", compte=LEO, id=cid)["statut"], "echec")     # la conversation est celle du compte de la tâche
+        lancees = [e for e in self.evts("tache.lancee") if e["compte"] == BEA]
+        self.assertEqual((len(lancees), lancees[0]["donnees"]["automatique"]), (1, True))
+        passe()
+        self.assertEqual(len([e for e in self.evts("tache.lancee")]), 1)                    # sa prochaine échéance est demain
+
+    def test_la_tache_obeit_aux_paliers_de_l_agent(self):
+        t = self.regler("tache_confier", compte=BEA, agent="itare", consigne="Crée une note", frequence="quotidien")["tache"]
+        self.regler("palier_regler", compte=BEA, agent="itare", outil="notes.creer", palier="raconter")
+        self.vieillir(t)
+        self.faux.reponses += [self.creer("Automatique"), texte("Proposée.")]
+        self.moteur()()
+        self.assertEqual(self.notes(), [])                                                         # racontée, pas faite : le palier de l'agent s'applique
+        self.assertEqual(self.props()[0]["capacite"], "notes.creer")
+
+    def test_un_mauvais_jour_retient_aussi_les_taches(self):
+        t = self.regler("tache_confier", compte=BEA, agent="itare", consigne="Crée une note", frequence="quotidien")["tache"]
+        self.vieillir(t)
+        self.regler("mauvais_jour", compte=ROOT)
+        self.faux.reponses += [self.creer("Pas aujourd'hui"), texte("Proposée.")]
+        self.moteur()()
+        self.assertEqual(self.notes(), [])
+
+    def test_une_tache_qui_echoue_ne_ferme_pas_la_passe_des_autres(self):
+        a = self.regler("tache_confier", compte=BEA, agent="itare", consigne="Première", frequence="quotidien")["tache"]
+        b = self.regler("tache_confier", compte=BEA, agent="itare", consigne="Seconde", frequence="quotidien")["tache"]
+        self.vieillir(a)
+        self.vieillir(b)
+        self.faux.reponses += [(500, {"error": "panne"}), (500, {"error": "panne"}), (500, {"error": "panne"}), texte("Seconde faite.")]
+        self.moteur()()
+        self.assertTrue(all(t["derniere"] for t in self.agent("taches", compte=BEA)["taches"]))     # les deux ont été tentées
 
 
 if __name__ == "__main__":

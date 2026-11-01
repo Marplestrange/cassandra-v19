@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #d810a1
+# VERSION CN : 0.5.0  #837b86
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=d810a1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=837b86 ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -268,7 +268,7 @@ def brancher(ctx):
                 return refusee(prop)
             return ("Non exécuté : ce tour a lu du contenu venu de l'extérieur (%s). Une action qui sort de la maison, ou qui engage fortement, ne part pas seule après une lecture étrangère : "
                     "dis à la personne ce que tu ferais et demande-lui de confirmer dans un nouveau message." % ", ".join(sorted(set(etat["teinte"])))), {"cle": t["cle"], "statut": "retenue"}
-        if t["risque"] != "lecture" and (sur.get("confirmer") or etat["niveau"] == "observer" or (sur.get("palier") or (regle("palier_defaut") if regle("palier_defaut") == "raconter" else "")) == "raconter"):
+        if t["risque"] != "lecture" and (sur.get("confirmer") or etat["niveau"] == "observer" or (R.mauvais_jour_actif() or (sur.get("palier") or (regle("palier_defaut") if regle("palier_defaut") == "raconter" else "")) == "raconter")):
             if sur.get("confirmer"):                                   # « demander » : un accord posé sur « auto », retenu jusqu'à ce qu'on décide
                 attente = E.retenir(agent, compte, "confirmer", t["cle"], args)
                 prop = proposer("confirmer", attente=attente)
@@ -437,7 +437,8 @@ def brancher(ctx):
     # ------------------------------------------------------------------ inscription
     A = brancher_amizo(ctx, E, o, lecture, db, compte_agit, stocker, lambda *a, **k: converser(*a, **k))          # Amizo : transmettre, passer la main, traiter une passation
     brancher_auditeur(ctx, E, db, compte_agit)      # l'Auditeur : lecture seule du journal, il signale les dérives
-    regle = brancher_regles(ctx, E, db, compte_agit, lambda *a, **k: converser(*a, **k))      # règles communes, tuile « retenus / refusés », tâches récurrentes
+    R = brancher_regles(ctx, E, db, compte_agit, lambda *a, **k: converser(*a, **k))      # règles communes, tuile « retenus / refusés », tâches récurrentes
+    regle = R.regle
     c = ctx
     for cid, f in (("conversations", conversations), ("conversation", conversation), ("outils", outils)):
         c.implementer(cid, f)
