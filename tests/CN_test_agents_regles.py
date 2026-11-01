@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9cfd91
+# VERSION CN : 0.1.0  #6c3044
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les règles communes aux agents, la tuile « retenus / refusés », les tâches récurrentes, « Pourquoi ? » en phrases et le vocabulaire côté données.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9cfd91 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6c3044 ▼▼▼
 """Les règles communes aux agents, la tuile « retenus / refusés », les tâches récurrentes, « Pourquoi ? » en phrases et le vocabulaire côté données.
 
 Une règle posée AGIT dans le tour de l'agent : on le prouve par un tour, pas par la relecture de la règle.
@@ -89,7 +89,7 @@ class Taches(actions.Actions):
         liste = self.agent("taches", compte=BEA)
         self.assertEqual([(t["id"], t["agent"], t["frequence"], t["heure"]) for t in liste["taches"]], [(r["tache"], "itare", "quotidien", "07:30")])
         self.assertGreater(liste["taches"][0]["prochaine"], time.time())
-        self.assertFalse(liste["declenchement_automatique"])
+        self.assertTrue(liste["declenchement_automatique"])
         self.assertEqual(self.agent("taches", compte=LEO)["taches"], [])                                 # la tâche d'un compte n'est qu'à lui
         self.assertEqual(self.refuse("tache_retirer", compte=LEO, id=r["tache"])["statut"], "echec")
         self.regler("tache_retirer", compte=BEA, id=r["tache"])

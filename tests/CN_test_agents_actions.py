@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fba2da
+# VERSION CN : 0.1.0  #651387
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des actions de l'équipe d'agents : propositions, carte de confiance, « Pourquoi ? », épreuves de sûreté, Relecteur et sentinelle anti-fuite.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fba2da ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=651387 ▼▼▼
 """Bancs des actions de l'équipe d'agents : propositions (cloisonnement, exécution à l'acceptation, refus mémorisé, report, mandat des envois, secret masqué), carte de confiance
 (8 validations, essai de 7 jours, recul du noyau), « Pourquoi ? » sans fuite entre comptes, épreuves de sûreté (un modèle piégé échoue), Relecteur et sentinelle anti-fuite."""
 import json
@@ -164,7 +164,8 @@ class Propositions(Actions):
         self.assertEqual(self.notes(), [])
 
     def test_les_propositions_d_un_agent_d_instance_sont_a_l_administrateur_seul(self):
-        self.racontee(agent="cassandra", compte=ROOT)
+        self.regler("palier_regler", compte=ROOT, agent="cassandra", outil="memoire.ecrire", palier="raconter")          # le bureau n'est plus à Cassandra : elle raconte un geste de sa famille
+        self.causer("Retiens la config", [appel("memoire__ecrire", {"categorie": "config", "cle": "port", "valeur": "nginx écoute sur le port 8080", "nature": "constat", "provenance": "dit"}), texte("Je te le propose.")], agent="cassandra", compte=ROOT)
         (p,) = self.props(compte=ROOT)
         self.assertEqual(p["agent"], "cassandra")
         self.assertEqual(self.props(compte=BEA), [])
