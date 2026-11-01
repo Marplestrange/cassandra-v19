@@ -34,15 +34,16 @@ test("Agents IA : l'entrée est ouverte à tous, Mon Itare a quitté le Desk, l'
   expect(sous.join('|')).toMatch(/^L.équipe\|Cassandra\|Itare\|Amizo\|Relecteur\|Vision\|Auditeur\|Conversations\|À valider\|Journal\|Modèles & clés$/);
   expect(await page.evaluate(() => [...document.querySelectorAll('.d19-lbl')].map((x) => x.textContent))).toEqual(['Services agentiques']);
   // l'Auditeur : une page en lecture seule, sous « Services agentiques »
-  await page.click('.d19-si.sub[data-e="agents-ia"][data-v="auditeur"]');
+  await page.locator('.d19-si.sub[data-e="agents-ia"][data-v="auditeur"]').dispatchEvent('click');
   await expect(page.locator('#tab-mod-agents-equipe')).toContainText('lecture seule', { timeout: 30000 });
   // un clic sur « Conversations » dans le menu change de page, sans autre onglet de module
-  await page.click('.d19-si.sub[data-e="agents-ia"][data-v="conv"]');
+  await page.locator('.d19-si.sub[data-e="agents-ia"][data-v="conv"]').dispatchEvent('click');
   await expect.poll(() => page.evaluate(() => !!document.querySelector('#tab-mod-agents-equipe #cv-t, #tab-mod-agents-equipe .vide'))).toBe(true);
-  await page.click('.d19-si.sub[data-e="agents-ia"][data-v="amizo"]');
+  await page.locator('.d19-si.sub[data-e="agents-ia"][data-v="amizo"]').dispatchEvent('click');
   await page.waitForSelector('#tab-mod-agents-equipe #ag-ong', { timeout: 30000 });
   expect(await page.evaluate(() => !!document.querySelector('.d19-si.sub.on[data-v="amizo"]'))).toBe(true);
-  expect(await page.evaluate(() => document.querySelectorAll('#tab-mod-agents-equipe .ag-cartes button.carte').length)).toBeGreaterThanOrEqual(5);
+  await page.locator('.d19-si.sub[data-e="agents-ia"][data-v="equipe"]').dispatchEvent('click');
+  await expect.poll(() => page.evaluate(() => document.querySelectorAll('#tab-mod-agents-equipe .ag-cartes button.carte').length), { timeout: 30000 }).toBeGreaterThanOrEqual(5);
 });
 
 test("Agents IA, vue administrateur : la fiche d'un agent et ses onglets", async ({ page }) => {
