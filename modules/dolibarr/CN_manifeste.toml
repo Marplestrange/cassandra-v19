@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #d15afd
+# VERSION CN : 0.4.1  #d8b665
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=d15afd ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=d8b665 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -83,32 +83,38 @@ portee = "societe"
 [[reglages]]
 id = "base_hote"
 libelle = "Base de données de Dolibarr : hôte (lecture seule, superadministrateurs)"
-aide = "Vide : la lecture de la base est coupée. Il faut un utilisateur SQL qui n'a que le droit SELECT sur la base de Dolibarr."
+aide = "Adresse du serveur MySQL ou MariaDB de Dolibarr (127.0.0.1 s'il tourne sur la même machine). Vide : la lecture de la base est coupée et le module marche comme avant. Réservé aux superadministrateurs ; tout est en lecture seule."
 portee = "societe"
 [[reglages]]
 id = "base_port"
 libelle = "Base de données de Dolibarr : port (3306 par défaut)"
+aide = "Le port du serveur SQL. 3306 si tu n'as rien changé."
 portee = "societe"
 [[reglages]]
 id = "base_nom"
 libelle = "Base de données de Dolibarr : nom de la base"
+aide = "Le nom de la base de Dolibarr (la valeur de dolibarr_main_db_name dans conf/conf.php)."
 portee = "societe"
 [[reglages]]
 id = "base_utilisateur"
 libelle = "Base de données de Dolibarr : utilisateur SQL (SELECT seulement)"
+aide = "Crée un utilisateur qui n'a QUE le droit SELECT : CREATE USER 'cassandra_ro'@'localhost' IDENTIFIED BY '…'; GRANT SELECT ON dolibarr.* TO 'cassandra_ro'@'localhost'; N'utilise jamais l'utilisateur de Dolibarr lui-même : la capacité « base_etat » dit si l'utilisateur choisi a plus que le droit de lire."
 portee = "societe"
 [[reglages]]
 id = "base_motdepasse"
 libelle = "Base de données de Dolibarr : mot de passe de cet utilisateur"
+aide = "Rangé chiffré. Il passe au client SQL par l'environnement du processus, jamais par la ligne de commande, et n'apparaît dans aucun message."
 type = "secret"
 portee = "societe"
 [[reglages]]
 id = "base_prefixe"
 libelle = "Base de données de Dolibarr : préfixe des tables (llx_ par défaut)"
+aide = "Le préfixe des tables de Dolibarr (la valeur de dolibarr_main_db_prefix dans conf/conf.php). llx_ si tu n'as rien changé."
 portee = "societe"
 [[reglages]]
 id = "base_client"
 libelle = "Base de données de Dolibarr : programme client (mysql par défaut)"
+aide = "Le programme en ligne de commande qui parle au serveur SQL : « mysql » (ou « mariadb »). Il doit être installé sur la machine de Cassandra."
 portee = "societe"
 [[reglages]]
 id = "mandat_pour_tous"

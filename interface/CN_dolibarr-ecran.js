@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #e51b59
+// VERSION CN : 0.1.0  #2a08d8
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : l'écran de gestion du module dolibarr : à faire, factures, devis, tiers, banque, dons, adhérents, projets, ma clé, requête libre
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.dolibarr) ; toutes les listes se lisent par dolibarr.lire_libre (une page de 100 lignes), tous les gestes passent par les capacités du module, après une confirmation sur place ; tout texte dynamique est échappé
 // ═════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=e51b59 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=2a08d8 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -27,8 +27,185 @@
     ".dlb .barre2{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.dlb .t{width:100%;border-collapse:collapse;font-size:13px}.dlb .t th{text-align:left;font:600 10.5px 'Inter',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--txt-faint);padding:6px 8px;border-bottom:1px solid var(--line)}" +
     ".dlb .t td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}.dlb .t tr.clk{cursor:pointer}.dlb .t tr.clk:hover td{background:color-mix(in srgb,var(--accent) 7%,transparent)}.dlb .t .num{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}" +
     ".dlb .defil{overflow-x:auto}.dlb .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.dlb .in,.kit-m .in{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:8px 11px;font:500 13px 'Inter',sans-serif;min-width:0;max-width:100%}" +
-    ".kit-m .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.kit-m .grille2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kit-m [hidden]{display:none!important}.kit-m .in{box-sizing:border-box;max-width:100%}.kit-m select.in,.kit-m input.in{width:100%}.kit-m textarea.in{width:100%;resize:vertical}.dlb .code{background:var(--surface);border:1px dashed var(--line-strong,var(--line));border-radius:10px;padding:10px 12px;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}";
+    ".kit-m .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt-faint);font-weight:600}.kit-m .grille2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kit-m [hidden]{display:none!important}.ib{display:inline-flex;align-items:center;gap:5px;outline:none;position:relative}.ib-i{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--line-strong,var(--line));color:var(--txt-faint);font:700 10px 'Inter',sans-serif;font-style:normal;text-transform:none;letter-spacing:0;cursor:help;flex:none}.ib:hover .ib-i,.ib:focus .ib-i{color:var(--accent);border-color:var(--accent)}.ib-b{display:none;position:fixed;z-index:100000;background:var(--surface-solid,#fff);color:var(--txt);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px -14px rgba(16,24,40,.38);padding:11px 13px;font:400 12px/1.5 'Inter',sans-serif;letter-spacing:0;text-transform:none;white-space:normal;text-align:left;cursor:default}.ib:hover .ib-b,.ib:focus .ib-b,.ib:focus-within .ib-b{display:block}.ib-b p{margin:0 0 7px}.ib-b p:last-child{margin:0}.ib-b code{font:11px ui-monospace,Menlo,monospace;background:color-mix(in srgb,var(--txt) 8%,transparent);padding:1px 4px;border-radius:4px}.dlb .ib-page{margin:-2px 0 10px;font-size:12px;color:var(--txt-faint)}.kit-m .in{box-sizing:border-box;max-width:100%}.kit-m select.in,.kit-m input.in{width:100%}.kit-m textarea.in{width:100%;resize:vertical}.dlb .code{background:var(--surface);border:1px dashed var(--line-strong,var(--line));border-radius:10px;padding:10px 12px;font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}";
 
+  // ───────── les infobulles : ce que chaque champ, colonne et page veut dire, avec la règle de Dolibarr quand il y en a une. Du texte écrit ici, jamais une donnée : il peut porter du HTML simple.
+  const AIDE = {
+    champs: {
+      "name": "<p>Raison sociale ou nom d'usage du tiers : une société, une association ou un particulier (saisis alors « Prénom Nom »).</p><p><b>Obligatoire</b> dans Dolibarr.</p>",
+      "name_alias": "<p>Nom commercial ou sigle, affiché à côté du nom. Facultatif ; Dolibarr s'en sert aussi dans ses recherches.</p>",
+      "client": "<p>La nature du tiers pour Dolibarr :</p><p><b>Client</b> : il a acheté ou achète. <b>Prospect</b> : contact commercial, pas encore client. <b>Prospect / Client</b> : les deux. <b>Ni l'un ni l'autre</b> : par exemple un fournisseur seul.</p><p>Un client reçoit un code client.</p>",
+      "fournisseur": "<p><b>Oui</b> si tu achètes à ce tiers : il reçoit un code fournisseur et peut porter des factures d'achat. Un tiers peut être client <i>et</i> fournisseur.</p>",
+      "code_client": "<p>Dolibarr le numérote lui-même (par exemple <code>CU2611-00131</code> : CU, l'année et le mois, un numéro).</p><p>Laisse <code>auto</code> ou vide : Cassandra envoie « auto », sans quoi Dolibarr refuse la création (<code>ErrorCustomerCodeRequired</code>).</p>",
+      "code_fournisseur": "<p>Numéroté par Dolibarr (par exemple <code>SU2611-00049</code>). Laisse <code>auto</code> ou vide.</p>",
+      "tiers.status": "<p><b>Ouvert</b> : le tiers apparaît dans les listes et peut servir sur une pièce.</p><p><b>Fermé</b> : il est gardé avec tout son historique, mais n'est plus proposé.</p>",
+      "address": "<p>Adresse postale (rue, numéro, bâtiment). Elle s'imprime sur les devis et factures du tiers.</p>",
+      "zip": "<p>Code postal. Avec la ville, il complète l'adresse imprimée sur les pièces.</p>",
+      "country_id": "<p>Le pays <b>change les règles</b> : pour la France, le SIREN doit avoir 9 chiffres et le SIRET 14, la liste des départements et celle des formes juridiques sont celles de la France.</p><p>Liste lue dans ton Dolibarr.</p>",
+      "state_id": "<p>Département (France) ou région/canton selon le pays. Liste lue dans Dolibarr pour le pays choisi.</p>",
+      "phone": "<p>Téléphone fixe. Libre : Dolibarr ne le contrôle pas.</p>",
+      "phone_mobile": "<p>Téléphone mobile. Libre.</p>",
+      "url": "<p>Adresse du site, <b>avec</b> <code>http://</code> ou <code>https://</code>. Dolibarr refuse une adresse sans cela (<code>ErrorBadUrl</code>).</p>",
+      "email": "<p>Adresse de courriel valide. Dolibarr refuse une adresse mal formée (<code>ErrorBadEMail</code>). Elle sert à envoyer les factures.</p>",
+      "no_email": "<p><b>Oui</b> : ce tiers ne reçoit pas les envois de masse (mailings) de Dolibarr. Les courriels d'une facture ne sont pas concernés.</p>",
+      "town": "<p>Ville. Avec le code postal, elle complète l'adresse imprimée sur les pièces.</p>",
+      "fax": "<p>Numéro de fax. Libre : Dolibarr ne le contrôle pas.</p>",
+      "twitter": "<p>Identifiant X (anciennement Twitter), sans l'adresse. Rangé avec les autres réseaux sociaux (<code>socialnetworks</code>).</p>",
+      "facebook": "<p>Identifiant ou nom de page Facebook. Rangé avec les autres réseaux sociaux (<code>socialnetworks</code>).</p>",
+      "linkedin": "<p>Identifiant ou nom de page LinkedIn. Rangé avec les autres réseaux sociaux (<code>socialnetworks</code>).</p>",
+      "skype": "<p>Identifiant Skype. Dolibarr 24 le range avec les autres réseaux sociaux (<code>socialnetworks</code>).</p>",
+      "idprof1": "<p><b>SIREN</b> : 9 chiffres, l'identifiant de l'entreprise ou de l'association (Insee). Les espaces sont tolérés.</p><p>Contrôlé pour un tiers français. Le SIRET, lui, va dans l'identifiant 2.</p>",
+      "idprof2": "<p><b>SIRET</b> : 14 chiffres, le SIREN suivi de 5 chiffres qui désignent l'établissement.</p><p>Contrôlé pour un tiers français.</p>",
+      "idprof3": "<p><b>Code NAF/APE</b> : l'activité principale (par exemple <code>90.01Z</code>, arts du spectacle vivant).</p>",
+      "idprof4": "<p><b>RCS ou RM</b> : inscription au registre du commerce ou au répertoire des métiers. Vide pour une association.</p>",
+      "idprof5": "<p><b>Numéro EORI</b> : opérateurs de douane de l'Union européenne. Utile seulement pour l'import et l'export.</p>",
+      "idprof6": "<p><b>Numéro RNA</b> : le répertoire national des associations (la lettre W suivie de 9 chiffres).</p>",
+      "tva_assuj": "<p><b>Oui</b> : ce tiers est assujetti à la TVA. <b>Non</b> : il ne l'est pas (par exemple une association non assujettie).</p><p>Dolibarr s'en sert pour choisir la TVA des pièces de ce tiers.</p>",
+      "tva_intra": "<p>Numéro de TVA intracommunautaire (en France : <code>FR</code> + 11 caractères). Facultatif.</p>",
+      "forme_juridique_code": "<p>Le type d'entité légale (SARL, SAS, association loi 1901 : code 92…). Liste lue dans Dolibarr pour le pays choisi.</p>",
+      "typent_id": "<p>Le type de tiers (grande entreprise, PME, administration, association, particulier…). Sert aux statistiques et aux filtres.</p>",
+      "effectif_id": "<p>La tranche d'effectifs du tiers. Facultatif.</p>",
+      "capital": "<p>Capital social, en euros. Vide pour une association.</p>",
+      "default_lang": "<p>La langue des documents et des courriels envoyés à ce tiers. Vide : celle de Dolibarr.</p>",
+      "note_public": "<p>Note visible par tous les utilisateurs qui ouvrent la fiche ; Dolibarr peut la reprendre sur certaines pièces selon le modèle d'impression.</p>",
+      "note_private": "<p>Note <b>interne</b> : réservée aux utilisateurs de Dolibarr, jamais imprimée.</p>",
+      "contacts.civility_code": "<p>Madame, Monsieur, Docteur… Liste lue dans Dolibarr.</p>",
+      "lastname": "<p>Nom de famille. <b>Obligatoire</b> dans Dolibarr.</p>",
+      "firstname": "<p>Prénom. Facultatif.</p>",
+      "contacts.socid": "<p>Le tiers (société, association) auquel ce contact est rattaché. Un contact Dolibarr est normalement rattaché à un tiers ; sans lui il reste un contact isolé.</p>",
+      "poste": "<p>Fonction du contact dans son organisation (régie, présidente, comptable…).</p>",
+      "contacts.statut": "<p><b>Actif</b> : proposé dans les listes. <b>Inactif</b> : gardé mais non proposé.</p>",
+      "priv": "<p><b>Public (partagé)</b> : visible par tous les utilisateurs de Dolibarr. <b>Privé (personnel)</b> : visible seulement par l'utilisateur qui l'a créé.</p>",
+      "phone_pro": "<p>Téléphone professionnel du contact.</p>",
+      "phone_perso": "<p>Téléphone personnel du contact.</p>",
+      "birthday": "<p>Date de naissance. Dolibarr la garde en secondes ; Cassandra la compare comme une date.</p>",
+      "ref": "<p>Référence unique. Pour un <b>produit</b>, elle est obligatoire. Pour un <b>projet</b>, laisse <code>auto</code> : Dolibarr le numérote (par exemple <code>PJ2611-0036</code>).</p>",
+      "label": "<p>Le libellé affiché sur les devis et factures. <b>Obligatoire</b>.</p>",
+      "produits.type": "<p><b>Produit</b> : un bien. <b>Service</b> : une prestation (billetterie, cachet, location).</p>",
+      "produits.status": "<p><b>En vente</b> : le produit peut figurer sur un devis ou une facture. <b>Hors vente</b> : il est gardé mais plus proposé.</p>",
+      "status_buy": "<p><b>En achat</b> : le produit peut figurer sur une commande ou une facture fournisseur.</p>",
+      "barcode": "<p>Code-barres. Facultatif ; unique dans Dolibarr s'il est rempli.</p>",
+      "price_base_type": "<p>Le prix saisi est <b>hors taxe</b> (HT) ou <b>toutes taxes comprises</b> (TTC). Dolibarr calcule l'autre à partir du taux de TVA.</p>",
+      "price": "<p>Prix de vente unitaire, dans la base choisie.</p>",
+      "tva_tx": "<p>Taux de TVA appliqué par défaut à ce produit. Liste des taux lue dans Dolibarr pour la France.</p>",
+      "accountancy_code_sell": "<p>Compte comptable des ventes de ce produit.</p><p>Attention : Dolibarr <b>tronque les zéros de fin</b> selon la longueur de compte réglée (<code>706000</code> devient <code>706</code>).</p>",
+      "accountancy_code_buy": "<p>Compte comptable des achats de ce produit. Même règle de troncature que pour la vente.</p>",
+      "weight": "<p>Poids, dans l'unité choisie. Facultatif.</p>",
+      "projets.public": "<p><b>Contacts du projet</b> : visible des personnes qui y sont affectées. <b>Tout le monde</b> : visible de tous les utilisateurs.</p>",
+      "projets.status": "<p><b>Brouillon</b> : pas encore ouvert ; il prendra sa référence à la validation. <b>Ouvert</b> : actif, on peut y rattacher des pièces et du temps.</p>",
+      "date_start": "<p>Date de début. Dolibarr la garde en secondes ; Cassandra l'envoie comme une date (AAAA-MM-JJ).</p>",
+      "date_end": "<p>Date de fin prévue.</p>",
+      "budget_amount": "<p>Budget prévu du projet, en euros.</p>",
+      "usage_opportunity": "<p><b>Oui</b> : le projet suit une opportunité commerciale (probabilité et montant). Utile pour prévoir un chiffre d'affaires.</p>",
+      "opp_percent": "<p>Probabilité (en %) que l'opportunité se réalise.</p>",
+      "opp_amount": "<p>Montant attendu si l'opportunité se réalise.</p>",
+      "socid": "<p>Le tiers concerné. <b>Obligatoire</b> sur une facture ou un devis.</p>",
+      "ref_client": "<p>La référence que <b>le client</b> donne à sa commande (bon de commande, numéro d'engagement). Elle s'imprime sur la pièce et aide au rapprochement.</p>",
+      "date": "<p>Date de la pièce (facture, devis) ou du règlement. Sur une facture, elle ouvre le délai de paiement.</p>",
+      "date_lim_reglement": "<p>Date limite de paiement. Vide : Dolibarr la calcule d'après les conditions de règlement.</p>",
+      "cond_reglement_id": "<p>Les conditions de règlement (à réception, 30 jours fin de mois…). Elles fixent l'échéance quand elle n'est pas saisie. Liste lue dans Dolibarr.</p>",
+      "mode_reglement_id": "<p>Le mode de règlement proposé au client (virement, chèque, carte…). Liste lue dans Dolibarr.</p>",
+      "fk_account": "<p>Le compte bancaire à indiquer sur la facture pour être payé par virement.</p>",
+      "duree_validite": "<p>Nombre de jours pendant lesquels le devis reste valable. La date de fin de validité est la date du devis plus cette durée.</p>",
+      "lignes": "<p>Les lignes de la pièce. Choisir un <b>produit</b> reprend sa désignation, son prix et sa TVA ; tu peux les changer.</p><p>Une <b>remise</b> peut être une ligne à prix négatif, ou un pourcentage sur la ligne. Les montants sont <b>hors taxe</b> ; Dolibarr calcule la TVA et le total.</p>",
+      "reglement.date": "<p>La date de valeur du règlement. Le solde du compte ne la compte qu'<b>à partir de cette date</b> : un règlement daté du futur n'apparaît pas encore dans le solde.</p>",
+      "reglement.mode": "<p>Le mode de règlement (virement, chèque, espèces, carte, prélèvement). Liste lue dans Dolibarr.</p><p>Pour un <b>chèque</b>, Dolibarr exige l'émetteur.</p>",
+      "reglement.banque": "<p>Le compte bancaire <b>crédité</b> par ce règlement.</p>",
+      "montant": "<p>Le montant, en euros. Pour un règlement : au plus le reste dû ; un montant partiel laisse la facture ouverte, le solde la clôture.</p>",
+      "numero": "<p>Le numéro du chèque, ou la référence de la transaction pour un virement ou une carte. Garde-le : il sert au rapprochement bancaire.</p>",
+      "emetteur": "<p>Qui a signé le chèque. <b>Obligatoire pour un chèque</b> : Dolibarr refuse sinon (<code>Emetteur is mandatory when payment code is CHQ</code>).</p>",
+      "banque_cheque": "<p>La banque sur laquelle le chèque est tiré. Facultatif.</p>",
+      "note": "<p>Commentaire gardé sur le règlement, visible dans Dolibarr.</p>",
+      "de": "<p>Le compte qui est <b>débité</b>.</p>",
+      "vers": "<p>Le compte qui est <b>crédité</b>. Doit être différent du premier.</p>",
+      "virement.date": "<p>Date du virement. Comme pour un règlement, le solde ne la compte qu'à partir de cette date.</p>",
+      "libelle": "<p>Le libellé inscrit sur les deux lignes bancaires du virement.</p>",
+      "don.date": "<p>Date du don.</p>",
+      "don.public": "<p><b>Oui</b> : le donateur accepte d'être cité publiquement.</p>",
+      "nom": "<p>Nom du donateur.</p><p>Pour le <b>reçu fiscal</b>, Dolibarr exige : un nom ou une société, <b>l'adresse, le code postal, la ville et le courriel</b>. Cassandra ne l'impose pas ici : sans eux, le reçu sera impossible à produire.</p>",
+      "prenom": "<p>Prénom du donateur.</p>",
+      "societe": "<p>Société ou association donatrice. Remplace le nom si le donateur est une personne morale.</p>",
+      "don.address": "<p>Adresse du donateur, nécessaire au reçu fiscal.</p><p>Dolibarr l'enregistre mais son API ne la rend pas à la relecture : un superadministrateur la voit dans la liste, lue directement dans la base.</p>",
+      "cotisation.debut": "<p>Début de la période couverte par la cotisation.</p>",
+      "fin": "<p>Fin de la période couverte. Dolibarr en fait la <b>fin d'adhésion</b> du membre.</p>",
+      "cotisation.libelle": "<p>Le libellé de la cotisation, tel qu'il apparaît chez Dolibarr (par exemple « Cotisation 2026 »).</p>",
+      "cotisation.montant": "<p>Montant de la cotisation, en euros.</p>"
+    },
+    cols: {
+      "Réf. client": "La référence que le client a donnée à sa commande.",
+      "Date facture": "La date de la facture ; elle ouvre le délai de paiement.",
+      "Date d'échéance": "La date limite de paiement. Une facture ouverte dont l'échéance est passée est « en retard ».",
+      "Montant HT": "Hors taxe : avant TVA.",
+      "Montant TVA": "La TVA de la pièce, calculée par Dolibarr ligne par ligne.",
+      "Montant TTC": "Toutes taxes comprises : ce que le client doit au total.",
+      "Reçu": "La somme déjà réglée sur la facture (tous les règlements comptés).",
+      "Reste à payer": "Ce qui reste dû : le total TTC moins ce qui a été reçu. Vide pour une facture soldée ou en brouillon.",
+      "Statut": "L'état de la pièce dans Dolibarr : brouillon (modifiable, sans numéro légal), validée (numérotée, figée), payée, abandonnée…",
+      "Fin de validité": "Jusqu'à quand le devis reste valable : sa date plus la durée de validité.",
+      "Prospect / Client": "La nature du tiers : client, prospect, ou les deux.",
+      "Code client": "Le code attribué par Dolibarr à un client (CU + année et mois + numéro).",
+      "Code fournisseur": "Le code attribué par Dolibarr à un fournisseur (SU + année et mois + numéro).",
+      "Factures": "Ajout de Cassandra : le nombre de factures de ce tiers dans Dolibarr.",
+      "Dû": "Ajout de Cassandra : ce que ce tiers doit encore sur ses factures ouvertes.",
+      "Nature": "Produit (un bien) ou service (une prestation), ou pour un adhérent : personne physique ou morale.",
+      "Prix de vente HT": "Le prix de vente unitaire hors taxe.",
+      "État (vente)": "En vente : le produit peut figurer sur un devis ou une facture.",
+      "État (achat)": "En achat : le produit peut figurer sur une commande ou une facture fournisseur.",
+      "Type d'adhérent": "Le type de membre (par exemple « Artiste ») : il fixe la cotisation et la durée.",
+      "Fin d'adhésion": "La date jusqu'à laquelle la cotisation couvre le membre. Une cotisation enregistrée la repousse.",
+      "Donateur": "Le nom, le prénom ou la société du donateur.",
+      "Adresse": "Lue directement dans la base de Dolibarr, car son API ne rend pas l'adresse d'un don. Visible des superadministrateurs seulement.",
+      "Date du don": "La date à laquelle le don a été fait ou promis.",
+      "Visibilité": "Qui voit le projet : les contacts du projet, ou tout le monde.",
+      "Date de début": "Le début du projet.",
+      "Date de fin": "La fin prévue du projet.",
+      "Réf. fournisseur": "La référence que le fournisseur donne à sa facture.",
+      "Poste": "La fonction du contact dans son organisation.",
+      "Mois": "Le mois de la date de facture.",
+      "Enregistrements": "Le nombre de lignes du journal inaltérable : chaque facture validée et chaque règlement y laissent une trace signée."
+    },
+    pages: {
+      afaire: ["À faire", "<p>Ce qui attend un geste : factures en retard à relancer, brouillons à valider, devis signés à facturer, dons à valider.</p><p>Tout est lu dans Dolibarr à l'instant ; chaque bouton ouvre une fenêtre qui te montre ce qui va être écrit avant de le faire.</p>"],
+      factures: ["Factures", "<p>Les factures clients de Dolibarr, les plus récentes d'abord. Les colonnes sont celles de la liste de Dolibarr.</p><p>Clique une facture pour la valider, l'encaisser, la relancer, créer un avoir ou voir son PDF. <b>Valider</b> donne le numéro légal et la fige : cela s'inscrit au journal inaltérable et ne se défait pas.</p>"],
+      devis: ["Devis", "<p>Les propositions commerciales de Dolibarr. Un devis passe de brouillon à validé, puis à signé, puis se transforme en facture (en brouillon : rien n'est validé à ta place).</p>"],
+      tiers: ["Tiers", "<p>Les sociétés, associations et particuliers de Dolibarr : clients, prospects et fournisseurs. La fiche reprend exactement celle de Dolibarr, avec ses règles.</p><p>Les colonnes « Factures » et « Dû » sont un ajout de Cassandra.</p>"],
+      contacts: ["Contacts", "<p>Les personnes rattachées aux tiers dans Dolibarr. Les contacts de Cassandra sont dans « Contacts de Cassandra » : tu choisis lesquels envoyer ici.</p>"],
+      produits: ["Produits", "<p>Les produits et services de Dolibarr : ceux que la billetterie utilise pour ses factures. Modifier un prix se défait.</p>"],
+      fournisseurs: ["Fournisseurs", "<p>Les factures reçues de tes fournisseurs. « Payer » règle <b>tout le reste dû</b> sur un compte bancaire, à la date et avec le numéro que tu donnes.</p>"],
+      banque: ["Banque", "<p>Les comptes bancaires de Dolibarr et leur solde. Un virement entre deux comptes crée deux écritures ; un contre-virement le défait.</p><p>Le rapprochement bancaire ligne à ligne reste dans Dolibarr : son API ne le permet pas.</p>"],
+      adherents: ["Adhérents", "<p>Les membres de l'association dans Dolibarr. « Cotisation » enregistre une cotisation et repousse la fin d'adhésion.</p>"],
+      dons: ["Dons", "<p>Les dons saisis dans Dolibarr : d'abord une promesse, puis validée (elle prend son numéro). Le reçu fiscal se produit dans Dolibarr, sur la fiche du don : son API ne le propose pas.</p>"],
+      projets: ["Projets", "<p>Les projets de Dolibarr. Valider un projet lui donne sa référence ; le clore le termine.</p>"],
+      cprojets: ["Projets de Cassandra", "<p>Les projets que tu tiens dans Cassandra. Ils restent chez Cassandra tant que tu ne les envoies pas ; envoyé, Dolibarr fait foi pour son titre, ses dates et sa description.</p>"],
+      ccontacts: ["Contacts de Cassandra", "<p>Les contacts de ton carnet. Un contact envoyé à Dolibarr y est rattaché à un tiers que tu choisis : il ne devient jamais un tiers tout seul.</p>"],
+      itare: ["Itare", "<p>Itare répond sur Dolibarr avec <b>ta clé</b> : il agit sous ton nom, avec tes droits, dans les limites que tu as réglées (« Mon accès »).</p>"],
+      acces: ["Mon accès", "<p>La clé d'API de ton utilisateur Dolibarr, rangée dans ton coffre. Avec elle, ce que tu fais et ce que fait ton Itare passe sous ton nom. Sans elle, tu peux lire mais pas écrire (sauf réglage de l'administrateur).</p>"],
+      capacites: ["Capacités", "<p>Ce que Cassandra sait faire dans Dolibarr, geste par geste, et le <b>palier</b> de chacun : « raconter » (on prépare, tu approuves) ou « auto ». C'est le choix de l'administrateur.</p>"],
+      comptes: ["Comptes", "<p>Qui a une clé personnelle Dolibarr. Réservé aux administrateurs.</p>"],
+      instance: ["Instance", "<p>L'état de ta connexion à Dolibarr : version, délai de réponse, nombre d'objets, modules actifs.</p><p>Les superadministrateurs voient en plus des cartes lues <b>directement dans la base</b> : le journal inaltérable, le chiffre d'affaires par mois et les champs personnalisés.</p>"],
+      libre: ["Requête libre", "<p>Pour les gestes que l'écran n'a pas encore. <code>GET /chemin</code> lit ; <code>POST</code> ou <code>PUT</code> écrit, après une confirmation, avec relecture. Le chemin doit être dans l'API de Dolibarr ; <code>DELETE</code> n'existe pas ici.</p>"]
+    },
+    base: {
+      carte: "<p>Lu <b>directement dans la base</b> de Dolibarr, en lecture seule, par un utilisateur SQL qui n'a que le droit de lire. Réservé aux <b>superadministrateurs</b>.</p><p>Aucune écriture ne passe par là : elles restent dans l'API de Dolibarr, qui applique ses règles et ses droits.</p>",
+      journal: "<p>Le journal inaltérable enchaîne chaque facture validée et chaque règlement avec une signature : une ligne modifiée ou retirée est détectée. Ici : le nombre d'enregistrements, le dernier numéro et sa date.</p><p>Si ce nombre n'avance plus alors que tu valides des factures, le journal est cassé : à regarder tout de suite.</p>",
+      ca: "<p>Le total des factures <b>validées ou payées</b>, mois par mois, sur les douze derniers mois (date de facture). Les brouillons et les abandonnées ne comptent pas. Les avoirs sont comptés avec leur signe.</p>",
+      champs: "<p>Les champs ajoutés à ton Dolibarr (par les modules ou par toi), par type d'objet. Une étoile * : champ obligatoire.</p><p>Cassandra les lit pour pouvoir, plus tard, les proposer à l'identique dans ses formulaires.</p>"
+    }
+  };
+  // L'infobulle : un « i » qui montre le texte au survol ou au clavier. La bulle se place en « fixed » (elle ne se laisse pas couper par une fenêtre qui défile) et se retourne si elle manque de place.
+  const ib = (texte, aide, droite) => '<span class="ib" tabindex="0">' + (texte ? texte + " " : "") + '<span class="ib-i" aria-hidden="true">i</span><span class="ib-b" role="tooltip">' + aide + "</span></span>";
+  if (!window.__dlbIb) {
+    window.__dlbIb = true;
+    const place = (e) => {
+      const w = e.target && e.target.closest ? e.target.closest(".ib") : null; if (!w) return;
+      const b = w.querySelector(".ib-b"); if (!b) return;
+      const r = w.getBoundingClientRect(), L = Math.min(360, window.innerWidth - 24);
+      b.style.width = L + "px"; b.style.left = Math.max(12, Math.min(r.left, window.innerWidth - L - 12)) + "px";
+      b.style.top = "auto"; b.style.bottom = "auto";
+      if (window.innerHeight - r.bottom > 180 || r.top < 200) { b.style.top = Math.min(r.bottom + 8, window.innerHeight - 60) + "px"; } else { b.style.bottom = (window.innerHeight - r.top + 8) + "px"; }
+    };
+    document.addEventListener("mouseover", place); document.addEventListener("focusin", place);
+  }
   const COURANTE = { racine: null };      // la page qui a reçu le dernier clic : à elle les fenêtres qu'elle a ouvertes
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};
   CASS.sceneSurMesure.dolibarr = async function (corps, ctx) {
@@ -110,7 +287,7 @@
     const etatF = (f) => { const s = String(f.statut); if (s === "0") return pill("Brouillon"); if (s === "3") return pill("Abandonnée"); if (s === "2" || String(f.paye) === "1") return pill("Payée", "ok"); const r = retard(f); return r > 0 ? pill("En retard · " + r + " j", r > 365 ? "dg" : "al") : pill("À encaisser", "ac"); };
     const etiq = (o) => (o.venu ? pill("Venu de Dolibarr", "ac") : o.lien ? pill("Dolibarr · lié", "ok") + ' <span class="note">le ' + jour(o.lien.le) + "</span>" : pill("Cassandra seulement", ""));
     const ouverte = (f) => String(f.statut) === "1" && String(f.paye) !== "1" && Number(f.remaintopay) > 0.005;
-    const table = (cols, rows) => '<div class="defil"><table class="t"><thead><tr>' + cols.map((c) => "<th>" + c + "</th>").join("") + "</tr></thead><tbody>" + (rows.join("") || '<tr><td colspan="' + cols.length + '" class="note">Rien ne correspond.</td></tr>') + "</tbody></table></div>";
+    const table = (cols, rows) => '<div class="defil"><table class="t"><thead><tr>' + cols.map((c) => "<th>" + (AIDE.cols[c] ? ib(esc(c), "<p>" + AIDE.cols[c] + "</p>") : c) + "</th>").join("") + "</tr></thead><tbody>" + (rows.join("") || '<tr><td colspan="' + cols.length + '" class="note">Rien ne correspond.</td></tr>') + "</tbody></table></div>";
     const btn = (t, a, p, c) => '<button class="btn mini ' + (c || "") + '" data-a="' + a + '" data-p="' + esc(p == null ? "" : p) + '">' + t + "</button>";
 
     // ───────── les onglets
@@ -118,13 +295,13 @@
     const baseCartes = (b) => {
       if (!b) return "";
       const e = b.etat || {};
-      if (!e.actif) return '<div class="carte"><h3>Base de données</h3><div class="note">' + esc(e.raison || "La lecture de la base n'est pas réglée.") + "</div></div>";
+      if (!e.actif) return '<div class="carte"><h3>' + ib('Base de données', AIDE.base.carte) + '</h3><div class="note">' + esc(e.raison || "La lecture de la base n'est pas réglée.") + "</div></div>";
       const j = b.journal || {}, parObjet = {};
       (b.champs || []).forEach((c) => { (parObjet[c.objet] = parObjet[c.objet] || []).push(c); });
-      return '<div class="g2"><div class="carte"><h3>Base de données</h3><dl class="kv"><dt>Serveur</dt><dd>' + esc(e.version || "?") + "</dd><dt>Accès</dt><dd>" + (e.lecture_seule ? pill("lecture seule", "ok") : pill("droits en trop : " + esc((e.droits_en_trop || []).join(", ")), "al")) + "</dd><dt>Tables</dt><dd>" + ((e.tables_manquantes || []).length ? pill("manque : " + esc(e.tables_manquantes.join(", ")), "al") : pill("toutes là", "ok")) + "</dd></dl></div>" +
-        '<div class="carte"><h3>Journal inaltérable</h3><dl class="kv"><dt>Enregistrements</dt><dd class="num">' + esc(j.enregistrements || "0") + "</dd><dt>Dernier</dt><dd class=\"num\">" + esc(j.dernier || "—") + "</dd><dt>Date</dt><dd>" + esc(j.derniere_date || "—") + "</dd></dl></div></div>" +
-        '<div class="carte"><h3>Chiffre d\'affaires par mois (factures validées)</h3>' + table(["Mois", "Factures", "Montant HT", "TVA", "Montant TTC"], (b.ca || []).map((x) => "<tr><td>" + esc(x.mois) + '</td><td class="num">' + esc(x.factures) + '</td><td class="num">' + eur(x.ht) + '</td><td class="num">' + eur(x.tva) + '</td><td class="num">' + eur(x.ttc) + "</td></tr>")) + "</div>" +
-        '<div class="carte"><h3>Champs personnalisés de cette instance (' + (b.champs || []).length + ')</h3>' + (Object.keys(parObjet).length ? Object.keys(parObjet).sort().map((o) => '<div style="margin:6px 0"><b>' + esc(o) + "</b> : " + parObjet[o].map((c) => pill(esc(c.libelle || c.nom) + (String(c.obligatoire) === "1" ? " *" : ""))).join(" ") + "</div>").join("") : '<div class="note">Aucun.</div>') + "</div>";
+      return '<div class="g2"><div class="carte"><h3>' + ib('Base de données', AIDE.base.carte) + '</h3><dl class="kv"><dt>Serveur</dt><dd>' + esc(e.version || "?") + "</dd><dt>Accès</dt><dd>" + (e.lecture_seule ? pill("lecture seule", "ok") : pill("droits en trop : " + esc((e.droits_en_trop || []).join(", ")), "al")) + "</dd><dt>Tables</dt><dd>" + ((e.tables_manquantes || []).length ? pill("manque : " + esc(e.tables_manquantes.join(", ")), "al") : pill("toutes là", "ok")) + "</dd></dl></div>" +
+        '<div class="carte"><h3>' + ib('Journal inaltérable', AIDE.base.journal) + '</h3><dl class="kv"><dt>Enregistrements</dt><dd class="num">' + esc(j.enregistrements || "0") + "</dd><dt>Dernier</dt><dd class=\"num\">" + esc(j.dernier || "—") + "</dd><dt>Date</dt><dd>" + esc(j.derniere_date || "—") + "</dd></dl></div></div>" +
+        '<div class="carte"><h3>' + ib('Chiffre d\'affaires par mois', AIDE.base.ca) + '</h3>' + table(["Mois", "Factures", "Montant HT", "TVA", "Montant TTC"], (b.ca || []).map((x) => "<tr><td>" + esc(x.mois) + '</td><td class="num">' + esc(x.factures) + '</td><td class="num">' + eur(x.ht) + '</td><td class="num">' + eur(x.tva) + '</td><td class="num">' + eur(x.ttc) + "</td></tr>")) + "</div>" +
+        '<div class="carte"><h3>' + ib('Champs personnalisés de cette instance (' + (b.champs || []).length + ')', AIDE.base.champs) + '</h3>' + (Object.keys(parObjet).length ? Object.keys(parObjet).sort().map((o) => '<div style="margin:6px 0"><b>' + esc(o) + "</b> : " + parObjet[o].map((c) => pill(esc(c.libelle || c.nom) + (String(c.obligatoire) === "1" ? " *" : ""))).join(" ") + "</div>").join("") : '<div class="note">Aucun.</div>') + "</div>";
     };
     const VUES = {
       afaire() {
@@ -234,7 +411,7 @@
     const ONGLETS = [["afaire", "À faire"], ["factures", "Factures"], ["devis", "Devis"], ["tiers", "Tiers"], ["contacts", "Contacts"], ["banque", "Banque"], ["dons", "Dons"], ["adherents", "Adhérents"], ["projets", "Projets"], ["cprojets", "Projets de Cassandra"], ["ccontacts", "Contacts de Cassandra"], ["produits", "Produits"], ["fournisseurs", "Fournisseurs"], ["itare", "Itare"], ["capacites", "Capacités"], ["comptes", "Comptes"], ["instance", "Instance"], ["acces", "Mon accès"], ["libre", "Requête libre"]];
     function dessiner() {
       const foc = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.q : null, pos = foc ? document.activeElement.selectionStart : 0;
-      racine.innerHTML = K.titre((ONGLETS.find((o) => o[0] === S.onglet) || ["", "Dolibarr"])[1], "Dolibarr · chaque geste est relu, journalisé et défaisable.") +
+      racine.innerHTML = K.titre((ONGLETS.find((o) => o[0] === S.onglet) || ["", "Dolibarr"])[1], "Dolibarr · chaque geste est relu, journalisé et défaisable.") + (AIDE.pages[S.onglet] ? '<div class="ib-page">' + ib("À quoi sert cette page ?", "<p><b>" + AIDE.pages[S.onglet][0] + "</b></p>" + AIDE.pages[S.onglet][1]) + "</div>" : "") +
         (S.err ? '<div class="alerte dg"><div class="sp">' + esc(S.err) + "</div></div>" : "") + VUES[S.onglet]();
       if (foc) { const n = racine.querySelector('[data-q="' + foc + '"]'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }
     }
@@ -365,9 +542,10 @@
       '<td><input class="in lg-d" value="' + esc(l.desc || "") + '" placeholder="Désignation"></td><td><select class="in lg-t">' + (opts.tva || []).map((o) => '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(l.tva_tx == null ? "0" : Number(l.tva_tx)) ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select></td>" +
       '<td><input class="in lg-q" type="number" step="any" value="' + esc(l.qty == null ? "1" : l.qty) + '" style="width:70px"></td><td><input class="in lg-u" type="number" step="0.01" value="' + esc(l.subprice == null ? "0" : l.subprice) + '" style="width:92px"></td>' +
       '<td><input class="in lg-r" type="number" step="any" value="' + esc(l.remise_percent || "0") + '" style="width:64px"></td><td><button class="btn mini" data-lg="del" type="button">×</button></td></tr>';
+    const aideChamp = (f, opts, lib) => { const a = AIDE.champs[((opts && opts.__id) ? opts.__id + "." : "") + f.k] || AIDE.champs[f.k]; return a ? ib(lib, a) : lib; };
     const champSchema = (f, v, opts) => {
-      if (f.t === "lignes") return '<div class="fld" style="grid-column:1/-1">' + esc(f.l) + (f.req ? " *" : "") + '<div class="defil"><table class="t" id="f-lignes"><thead><tr><th>Produit / service</th><th>Désignation</th><th>TVA</th><th>Qté</th><th>Prix unitaire HT</th><th>Remise %</th><th></th></tr></thead><tbody>' + (v.lines && v.lines.length ? v.lines : [{}]).map((l) => ligneHtml(l, opts)).join("") + '</tbody></table></div><div><button class="btn mini" data-lg="add" type="button">+ Ajouter une ligne</button></div></div>';
-      const id = "f-" + f.k, x = v[f.k] != null && v[f.k] !== "" ? v[f.k] : (f.d != null ? f.d : ""), lib = esc(f.l) + (f.req ? " *" : "");
+      if (f.t === "lignes") return '<div class="fld" style="grid-column:1/-1">' + aideChamp(f, opts, esc(f.l) + (f.req ? " *" : "")) + '<div class="defil"><table class="t" id="f-lignes"><thead><tr><th>Produit / service</th><th>Désignation</th><th>TVA</th><th>Qté</th><th>Prix unitaire HT</th><th>Remise %</th><th></th></tr></thead><tbody>' + (v.lines && v.lines.length ? v.lines : [{}]).map((l) => ligneHtml(l, opts)).join("") + '</tbody></table></div><div><button class="btn mini" data-lg="add" type="button">+ Ajouter une ligne</button></div></div>';
+      const id = "f-" + f.k, x = v[f.k] != null && v[f.k] !== "" ? v[f.k] : (f.d != null ? f.d : ""), lib = aideChamp(f, opts, esc(f.l) + (f.req ? " *" : ""));
       const style = (f.large ? ' style="grid-column:1/-1"' : "") + (f.si ? ' data-si="' + f.si[0] + "|" + f.si[1] + '"' : "");
       const aide = f.aide ? '<span class="note" style="font-weight:400">' + esc(f.aide) + "</span>" : "";
       if (f.t === "area") return '<label class="fld"' + style + ">" + lib + '<textarea class="in" id="' + id + '" rows="3">' + esc(x) + "</textarea></label>";
@@ -378,7 +556,7 @@
     const formulaire = async (titre, sch, valeurs, enregistrer, oui) => {
       const v = Object.assign({}, valeurs || {}), pays0 = String(v.country_id || "1");
       const veut = {}; sch.sections.forEach((x) => x[1].forEach((f) => { if (f.dic) veut[f.dic] = 1; if (f.t === "lignes") { veut.produits = 1; veut.tva = 1; } }));
-      const opts = {}; await Promise.all(Object.keys(veut).map(async (n) => { opts[n] = await dico(n, ["departements", "formes"].includes(n) ? pays0 : ""); }));
+      const opts = { __id: sch.objet || ({ "règlement": "reglement" }[sch.nom] || sch.nom) }; await Promise.all(Object.keys(veut).map(async (n) => { opts[n] = await dico(n, ["departements", "formes"].includes(n) ? pays0 : ""); }));
       return new Promise((fin) => {
         document.querySelectorAll(".kit-m,.kit-v").forEach((e) => e.remove());
         const bg = document.createElement("div"); bg.className = "kit-v"; bg.style.zIndex = 9999;
