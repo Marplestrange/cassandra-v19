@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.1.0  #08f26d
+# VERSION CN : 0.1.0  #b12462
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Pose, pour le service de Cassandra, une copie en lecture de la base SQLite de FastPanel (qui n'est lisible que par root).
 # MÉTHODE    : lancé par une minuterie systemd en root ; l'API de sauvegarde de SQLite donne une copie cohérente même si la base est en WAL.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=08f26d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b12462 ▼▼▼
 """python CN_copie_panneau.py SOURCE DESTINATION UTILISATEUR : copie SOURCE vers DESTINATION (0640, root:UTILISATEUR), remplacée d'un coup."""
 import grp
 import os
@@ -29,6 +29,7 @@ src = sqlite3.connect("file:%s?mode=ro" % source, uri=True, timeout=10)
 dst = sqlite3.connect(temporaire)
 with dst:
     src.backup(dst)
+dst.execute("PRAGMA journal_mode=DELETE")      # une copie en WAL ne se lirait pas sans droit d'écrire à côté d'elle (le fichier -shm)
 dst.close()
 src.close()
 os.chown(temporaire, 0, grp.getgrnam(utilisateur).gr_gid)
