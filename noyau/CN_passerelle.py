@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #52336b
+# VERSION CN : 0.1.0  #6e2c0a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=52336b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6e2c0a ▼▼▼
 """La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 
 Un module n'écrit aucune route. Il déclare des capacités, et la passerelle les rend toutes joignables par la même URL :
@@ -30,12 +30,15 @@ Sécurité de base : écoute locale par défaut, corps limité à 1 Mo, JSON seu
 """
 from __future__ import annotations
 
+import hmac
 import json
 import logging
 import mimetypes
 import os
 import re
+import secrets
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
 
@@ -88,6 +91,7 @@ class Passerelle:
         self.cookie_secure = cookie_secure_effectif(cookie_secure, self.hote, self.proxy)
         self.serveur = None
         self.fil = None
+        self._verrou_premier, self._premier_echecs, self._premier_pause = threading.Lock(), 0, 0.0
         passerelle = self
 
         class Gestionnaire(BaseHTTPRequestHandler):
@@ -240,6 +244,8 @@ class Passerelle:
                 return self._repondre(h, 200, {"ok": True, "version": self.noyau.etat()["version"]})
             if methode == "POST" and chemin == "/api/connexion":
                 return self._connexion(h)
+            if chemin == "/api/premier" and methode in ("GET", "POST"):
+                return self._premier(h, methode)
             if chemin.startswith("/api/public/"):
                 return self._public(h, methode, chemin[len("/api/public/"):])
             if methode == "GET" and not chemin.startswith("/api/"):
@@ -324,6 +330,63 @@ class Passerelle:
         if avert:
             corps["avertissement"] = avert
         return self._repondre(h, 200, corps, cookie=cookie)
+
+    # ---- le premier compte (assistant de l'écran de connexion) ----
+    FICHIER_PREMIER = "premier-compte.jeton"
+
+    def _premier_libre(self) -> bool:
+        return not self.noyau.identite.base.lire("SELECT 1 FROM comptes WHERE type='humain' LIMIT 1")
+
+    def _premier_jeton(self, creer: bool = True) -> str:
+        """Le jeton d'installation : un fichier de la machine (lisible par root et le service seulement). Qui atteint la page sans l'avoir lu ne devient pas
+        superadministrateur : un serveur neuf est joignable avant que son propriétaire ait eu le temps de s'y connecter."""
+        f = self.noyau._donnees / self.FICHIER_PREMIER
+        try:
+            t = f.read_text(encoding="utf-8").strip()
+            if t:
+                return t
+        except OSError:
+            pass
+        if not creer:
+            return ""
+        t = secrets.token_hex(8)
+        fd = os.open(str(f), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as g:
+            g.write(t + "\n")
+        return t
+
+    def _premier(self, h, methode):
+        """GET /api/premier : l'installation attend-elle son premier compte ?  POST /api/premier {compte, mot_de_passe, jeton} : il se crée (superadministrateur)
+        et la session s'ouvre. Une seule fois dans la vie de l'installation : dès qu'un compte humain existe, la route ne répond plus que « déjà fait »."""
+        f = self.noyau._donnees / self.FICHIER_PREMIER
+        with self._verrou_premier:
+            if not self._premier_libre():
+                try:
+                    f.unlink()
+                except OSError:
+                    pass
+                return self._repondre(h, 200 if methode == "GET" else 403, {"libre": False, "erreur": "L'installation a déjà son premier compte"})
+            if methode == "GET":
+                self._premier_jeton()
+                return self._repondre(h, 200, {"libre": True, "fichier": str(f)})
+            corps = self._corps(h)
+            maintenant = time.time()
+            if maintenant < self._premier_pause:
+                return self._repondre(h, 429, {"erreur": "Trop d'essais : réessayez dans %d s" % int(self._premier_pause - maintenant + 1)})
+            if not hmac.compare_digest(str(corps.get("jeton") or "").strip().lower().encode(), self._premier_jeton().lower().encode()):
+                self._premier_echecs += 1
+                if self._premier_echecs >= 5:
+                    self._premier_echecs, self._premier_pause = 0, maintenant + 60
+                return self._repondre(h, 403, {"erreur": "Jeton d'installation incorrect : il est dans le fichier %s de la machine" % f})
+            compte, mdp = str(corps.get("compte") or ""), str(corps.get("mot_de_passe") or "")
+            r = self.noyau.identite.creer(compte, mdp)
+            if not r.get("ok"):
+                return self._repondre(h, 400, {"erreur": r.get("error", "refusé"), "manque": r.get("manque")})
+            try:
+                f.unlink()
+            except OSError:
+                pass
+        return self._repondre(h, 200, {"ok": True, "compte": r["compte"]})
 
     def _sensible(self, e, acteur) -> bool:
         """Un geste sensible : une capacité à risque « eleve », ou qui exige un droit que son module déclare sensible. Il ne concerne que la session d'un utilisateur."""

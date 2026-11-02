@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #da9473
+# VERSION CN : 0.1.0  #ff81bc
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=da9473 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ff81bc ▼▼▼
 # CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 #
 #   ./CN_install.sh                         le noyau seul, dans UN dossier : /var/cassandra
@@ -64,6 +64,7 @@ done
 calculer_chemins
 
 [ "$(id -u)" -eq 0 ] || echouer "à lancer en root"
+banniere
 
 # ---------------------------------------------------------------- prérequis
 verifier_python() {
@@ -281,6 +282,9 @@ if [ "$SANS_SERVICE" -eq 0 ]; then
   as_service python3 "$PREFIXE/current/CN_main.py" etat
 fi
 dire "terminé : noyau $STAMP${MODULES[*]:+, modules : ${MODULES[*]}}"
+JETON_PREMIER=""
+[ "$SANS_SERVICE" -ne 0 ] || JETON_PREMIER="$(as_service python3 "$PREFIXE/current/exploitation/CN_premier_jeton.py" "$DONNEES" 2>/dev/null || true)"
+boite_finale "$JETON_PREMIER"
 [ "${#ECHECS[@]}" -eq 0 ] || avertir "modules non installés (le noyau tourne sans eux) : ${ECHECS[*]} ; corrigez la cause puis : ./CN_install.sh --module <nom>"
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

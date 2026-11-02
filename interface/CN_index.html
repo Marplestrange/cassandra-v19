@@ -13,7 +13,7 @@
 <!-- RÔLE       : la page unique de l'interface : le corps de la V18 et la liste des scripts. -->
 <!-- MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=2b0e91 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=c438de ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -83,6 +83,33 @@
       <div class="login-note" id="login-passkey-note" style="display:none">Sans mot de passe, si vous avez déjà enregistré une clé depuis votre compte.</div>
       <div id="login-info" class="login-info" hidden></div>
       <p class="login-pied">Mot de passe oublié ? L'administrateur de cette machine vous envoie un lien pour en choisir un autre.</p>
+    </div>
+
+    <!-- LE PREMIER COMPTE : une installation neuve n'a encore personne. Visible seulement tant que /api/premier répond « libre ». -->
+    <div class="login-vue" id="login-v-premier" hidden>
+      <div class="login-marque"><span class="marque-toit" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5l8-7 8 7"></path><path d="M6.5 20h11"></path><circle cx="12" cy="14.5" r="2.4" fill="currentColor" stroke="none"></circle></svg></span><span class="login-nom">CASSANDRA</span><span class="etat-pt" aria-hidden="true"></span><span class="logo-badge">19.0</span></div>
+      <p class="login-mot"><b>Bienvenue.</b> Cette installation est neuve : créez le compte du superadministrateur.</p>
+      <form class="login-form" onsubmit="loginPremier();return false;">
+        <div class="login-champ">
+          <label class="s-label" for="premier-jeton">Jeton d'installation</label>
+          <input class="s-input mono" type="text" id="premier-jeton" autocomplete="off" spellcheck="false" placeholder="affiché à la fin de l'installation">
+        </div>
+        <div class="login-champ">
+          <label class="s-label" for="premier-compte">Votre adresse e-mail</label>
+          <input class="s-input" type="email" id="premier-compte" autocomplete="email" placeholder="vous@exemple.fr">
+        </div>
+        <div class="login-champ" id="premier-champ-mdp">
+          <label class="s-label" for="premier-mdp">Mot de passe</label>
+          <input class="s-input mono" type="password" id="premier-mdp" autocomplete="new-password" placeholder="12 caractères ou plus">
+        </div>
+        <div class="login-champ">
+          <label class="s-label" for="premier-mdp2">Le même, une seconde fois</label>
+          <input class="s-input mono" type="password" id="premier-mdp2" autocomplete="new-password">
+          <div id="premier-erreur" class="login-error" role="alert"></div>
+        </div>
+        <button type="submit" class="btn-x pri login-go" id="premier-go">Créer mon compte</button>
+      </form>
+      <p class="login-pied">Le jeton est dans le dernier encadré de l'installation, ou dans le fichier <code>premier-compte.jeton</code> du dossier de données de la machine. Il ne sert qu'une fois.</p>
     </div>
 
     <!-- DEUXIÈME ÉTAPE : le mot de passe est bon, la clé de sécurité doit répondre -->

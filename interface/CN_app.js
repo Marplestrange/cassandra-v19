@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #76edf2
+// VERSION CN : 0.1.0  #45a849
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=76edf2 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=45a849 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -124,9 +124,42 @@ function _loginDire(texte, genre){
 const LOGIN_T = {cle: null, attente: null};
 function _loginCleArret(){ if (LOGIN_T.cle) { clearInterval(LOGIN_T.cle); LOGIN_T.cle = null; } }
 function loginVue(v){
-    ['porte', 'cle', 'secours'].forEach(function(k){ const z = document.getElementById('login-v-' + k); if (z) z.hidden = (k !== v); });
+    ['porte', 'cle', 'secours', 'premier'].forEach(function(k){ const z = document.getElementById('login-v-' + k); if (z) z.hidden = (k !== v); });
     if (v === 'porte') { _loginCleArret(); const p = document.getElementById('login-password'); if (p) { p.value = ''; setTimeout(function(){ p.focus(); }, 30); } }
 }
+// LE PREMIER COMPTE : tant que l'installation n'a aucun compte, la porte propose de le créer (jeton d'installation, adresse, mot de passe).
+async function loginPremierSonder(){
+    try {
+        const r = await fetch('/api/premier');
+        const d = await r.json();
+        if (d && d.libre) { loginVue('premier'); const j = document.getElementById('premier-jeton'); if (j) setTimeout(function(){ j.focus(); }, 30); }
+    } catch (e) {}
+}
+async function loginPremier(){
+    const v = function(i){ const z = document.getElementById(i); return z ? z.value : ''; };
+    const e = document.getElementById('premier-erreur'), go = document.getElementById('premier-go');
+    const dire = function(t){ if (e) { e.innerHTML = t ? (LOGIN_ALERTE + '<span>' + t + '</span>') : ''; e.classList.toggle('on', !!t); } };
+    dire('');
+    const compte = v('premier-compte').trim(), mdp = v('premier-mdp');
+    if (!v('premier-jeton').trim()) { dire('Le jeton d'installation est affiché à la fin de l'installation.'); return; }
+    if (!compte) { dire('Entrez votre adresse e-mail.'); return; }
+    if (mdp !== v('premier-mdp2')) { dire('Les deux mots de passe ne sont pas identiques.'); return; }
+    if (go) { go.disabled = true; go.textContent = 'Création…'; }
+    try {
+        const r = await fetch('/api/premier', {method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({jeton: v('premier-jeton').trim(), compte: compte, mot_de_passe: mdp})});
+        const d = await r.json();
+        if (!d.ok) { dire(escapeHtml(d.erreur || 'Création refusée')); return; }
+        document.getElementById('login-username').value = compte;
+        document.getElementById('login-password').value = mdp;
+        loginVue('porte');
+        document.getElementById('login-username').value = compte;
+        document.getElementById('login-password').value = mdp;
+        await login();
+    } catch (x) { dire('Le serveur ne répond pas. Réessayez dans un instant.'); }
+    finally { if (go) { go.disabled = false; go.textContent = 'Créer mon compte'; } }
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loginPremierSonder); else loginPremierSonder();
 function loginOeil(){
     const p = document.getElementById('login-password'), b = document.getElementById('login-oeil'); if (!p) return;
     const voir = (p.type === 'password'); p.type = voir ? 'text' : 'password';
@@ -6596,7 +6629,8 @@ const SN_FAMILLES = [
   ['reseau','Réseau','interface.|port.'], ['stockage','Stockage','stockage.'], ['securite','Sécurité','security.'],
   ['maj','Mises à jour','maj.'], ['courriel','Courriel','courriel.|domaine_courriel.'], ['acces','Accès et pare-feu','ssh.|cle_ssh.|pare_feu.|fail2ban.|prison.'],
   ['cron','Tâches planifiées','cron.'], ['fastpanel','FastPanel','fastpanel.'], ['erreurs','Erreurs des journaux','erreurs.|journaux.'],
-  ['certbot','Renouvellement des certificats','certbot.'], ['box','La box','box.|dns_local'], ['outils','Outils de sécurité','outil_secu.'], ['tailnet','Tailnet','tailnet.'], ['capteur','Capteurs','capteur.'], ['sante','Santé','health.']
+  ['certbot','Renouvellement des certificats','certbot.'], ['box','La box','box.|dns_local'], ['outils','Outils de sécurité','outil_secu.'], ['tailnet','Tailnet','tailnet.'], ['capteur','Capteurs','capteur.'], ['sante','Santé','health.'],
+  ['noyau','Noyau de Cassandra','noyau.|module_noyau.|cassandra.'], ['store','Bases de Cassandra','store.'], ['code','Code scellé','code.'], ['courtier','Courtier racine','courtier.']
 ];
 function _snE(t){ return (typeof flE==='function') ? flE(t) : String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function _snFam(wk){ for(const f of SN_FAMILLES){ if(f[2].split('|').some(p=>wk.startsWith(p))) return f[0]; } return 'autre'; }

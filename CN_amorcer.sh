@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #99bf62
+# VERSION CN : 0.1.0  #ce5f46
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Amorçage de Cassandra V19 en UNE commande, sur un serveur Linux neuf (Debian, Ubuntu, Fedora, openSUSE, Arch, Alpine).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=99bf62 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ce5f46 ▼▼▼
 # Amorçage de Cassandra V19 en UNE commande, sur un serveur Linux neuf (Debian, Ubuntu, Fedora, openSUSE, Arch, Alpine).
 #
 #   curl -fsSL https://raw.githubusercontent.com/Marplestrange/cassandra-v19/main/CN_amorcer.sh | sudo bash
@@ -33,8 +33,33 @@ DEPOT="${CASSANDRA_DEPOT:-https://github.com/Marplestrange/cassandra-v19.git}"
 BRANCHE="${CASSANDRA_BRANCHE:-main}"
 SOURCES="${CASSANDRA_SOURCES:-/opt/cassandra-sources}"
 
-dire() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
-echouer() { printf '\n\033[31mÉchec : %s\033[0m\n' "$*" >&2; exit 1; }
+# --- habillage (comme l'installateur de la V18) ---
+if [ -t 1 ] && [ "${NO_COLOR:-0}" != "1" ]; then
+  c_off="\033[0m"; c_bold="\033[1m"; c_dim="\033[2m"; c_ok="\033[1;38;5;48m"; c_warn="\033[1;38;5;214m"; c_err="\033[1;38;5;203m"
+  c_inf="\033[38;5;111m"; c_acc="\033[1;38;5;147m"
+  L1="\033[38;5;141m"; L2="\033[38;5;134m"; L3="\033[38;5;105m"; L4="\033[38;5;75m"; L5="\033[38;5;81m"; L6="\033[38;5;51m"
+else
+  c_off=""; c_bold=""; c_dim=""; c_ok=""; c_warn=""; c_err=""; c_inf=""; c_acc=""; L1=""; L2=""; L3=""; L4=""; L5=""; L6=""
+fi
+banniere() {
+  [ "${CASSANDRA_BANNIERE_FAITE:-0}" = "1" ] && return 0
+  export CASSANDRA_BANNIERE_FAITE=1
+  echo ""
+  echo -e "${L1}      ██████╗ █████╗ ███████╗███████╗ █████╗ ███╗   ██╗██████╗ ██████╗  █████╗ ${c_off}"
+  echo -e "${L2}     ██╔════╝██╔══██╗██╔════╝██╔════╝██╔══██╗████╗  ██║██╔══██╗██╔══██╗██╔══██╗${c_off}"
+  echo -e "${L3}     ██║     ███████║███████╗███████╗███████║██╔██╗ ██║██║  ██║██████╔╝███████║${c_off}"
+  echo -e "${L4}     ██║     ██╔══██║╚════██║╚════██║██╔══██║██║╚██╗██║██║  ██║██╔══██╗██╔══██║${c_off}"
+  echo -e "${L5}     ╚██████╗██║  ██║███████║███████║██║  ██║██║ ╚████║██████╔╝██║  ██║██║  ██║${c_off}"
+  echo -e "${L6}      ╚═════╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝${c_off}"
+  echo ""
+  echo -e "        ${c_bold}IA souveraine d'administration système${c_off}  ${c_dim}·${c_off}  ${c_acc}modulaire${c_off}  ${c_dim}·  v19${c_off}"
+  echo -e "${c_dim}      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c_off}"
+  echo ""
+}
+_T0="$(date +%s)"; export _T0
+dire() { echo -e "${c_acc}  ┃${c_off} ${c_bold}$*${c_off}"; }
+echouer() { echo -e "\n   ${c_err}✘ $*${c_off}\n" >&2; exit 1; }
+banniere
 
 [ "$(id -u)" -eq 0 ] || echouer "à lancer en root (sudo bash …)"
 command -v systemctl >/dev/null 2>&1 || echouer "systemd est nécessaire : Cassandra s'installe comme un service"
@@ -76,22 +101,8 @@ else
   ./CN_install.sh --tous
 fi
 
-cat <<'FIN'
-
-──────────────────────────────────────────────────────────────────────────────
-Cassandra est installée et tourne comme un service (systemctl status cassandra-noyau).
-
-Pour l'ouvrir : elle écoute sur 127.0.0.1:9000, donc pas depuis l'extérieur.
-  - depuis votre poste :    ssh -L 9000:127.0.0.1:9000 UTILISATEUR@CE_SERVEUR
-                            puis ouvrez http://127.0.0.1:9000
-  - ou derrière un proxy HTTPS (nginx, Caddy) qui renvoie vers 127.0.0.1:9000.
-
-Le PREMIER compte créé sur l'écran de connexion devient le superadministrateur :
-créez-le tout de suite, avec un mot de passe solide.
-
-Mises à jour : relancez la même commande (ou ./CN_deploy.sh dans /opt/cassandra-sources).
-──────────────────────────────────────────────────────────────────────────────
-FIN
+echo -e "${c_dim}   Mises à jour : relancez la même commande (ou ./CN_deploy.sh dans $SOURCES).${c_off}"
+echo ""
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
