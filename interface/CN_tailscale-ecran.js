@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #f9a202
+// VERSION CN : 0.1.0  #ec9597
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Tailscale » du module tailscale : où en est la machine, la connexion (par un lien à ouvrir ou par une clé), la déconnexion, SSH par Tailscale et les machines du réseau.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.tailscale) ; tout vient de tailscale.etat ; pendant une identification en attente, l’écran relit l’état toutes les 2,5 s et s’arrête seul quand il quitte la page.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=f9a202 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=ec9597 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -134,7 +134,7 @@
         (e.etat === "connecte" ? '<div><span class="lib">Cette machine</span><span class="gros">' + esc(e.nom || "—") + '</span><span class="note mono">' + esc(e.dns) + "</span></div>" +
           '<div><span class="lib">Adresse</span><span class="gros">' + esc(e.ip4 || "—") + '</span><span class="note mono">' + esc(e.ip6) + "</span></div>" +
           '<div><span class="lib">Réseau</span><span class="gros" style="font-size:16px">' + esc(e.reseau || "—") + '</span><span class="note">client ' + esc(e.version) + "</span></div>" : "") + "</div></div>";
-      if (e.en_attente || (e.etat === "a_identifier" && e.lien)) h += e.lien ? carteLien(e) : '<div class="carte attente">Tailscale prépare le lien de connexion…</div>';
+      if (e.en_attente) h += e.lien ? carteLien(e) : '<div class="carte attente">Tailscale prépare le lien de connexion…</div>';
       else if (e.etat === "a_approuver") h += '<div class="carte"><p>La machine est identifiée mais l’administrateur de ton réseau Tailscale doit l’approuver (login.tailscale.com › Machines).</p></div>';
       else if (e.etat === "connecte") h += carteReseau(e) + carteGestes(e);
       else h += carteConnexion(e);
