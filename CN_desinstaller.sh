@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #59e040
+# VERSION CN : 0.1.0  #177898
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Retire Cassandra d'une machine, proprement : les modules par leur propre retrait, les services, puis le dossier ; sans toucher à FastPanel ni aux sites.
 # MÉTHODE    : chaque module se retire par SON CN_retirer.sh ; ce que l'installateur a posé AUTOUR (conteneurs, Ollama, outils de sécurité, swap) ne part qu'avec --tout.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=59e040 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=177898 ▼▼▼
 # CN_desinstaller.sh [--oui] [--tout] [--garder-donnees]
 #
 #   (sans option)        retire Cassandra : ses services, ses modules, son dossier (/var/cassandra) et son utilisateur ; DEMANDE confirmation
@@ -77,7 +77,7 @@ for u in /etc/systemd/system/cassandra-secu-* /etc/systemd/system/cassandra-cour
   systemctl disable --now "$(basename "$u")" >/dev/null 2>&1 || true
   rm -f "$u"
 done
-rm -rf /usr/libexec/cassandra /var/lib/cassandra-securite
+rm -rf /usr/libexec/cassandra /var/lib/cassandra-securite /run/sensorium
 systemctl daemon-reload
 
 # ---------------------------------------------------------------- ce qui est posé autour (--tout)

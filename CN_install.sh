@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #cd9cf7
+# VERSION CN : 0.1.0  #108259
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=cd9cf7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=108259 ▼▼▼
 # CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 #
 #   ./CN_install.sh                         le noyau seul, dans UN dossier : /var/cassandra
@@ -312,6 +312,15 @@ if [ "$TOUS" -eq 1 ]; then
   mapfile -t MODULES < <(cd "$DEST" && CASSANDRA_EXTENSIONS="" python3 CN_main.py ordre)
 elif [ "${#MODULES[@]}" -gt 0 ]; then
   mapfile -t MODULES < <(cd "$DEST" && CASSANDRA_EXTENSIONS="" python3 CN_main.py ordre "${MODULES[@]}")
+fi
+# Les modules ESSENTIELS d'abord (droits, comptes, réglages…) : les moteurs des autres les lisent dès leur premier battement, et se plaindraient d'une lecture introuvable.
+if [ "${#MODULES[@]}" -gt 1 ]; then
+  ESSENTIELS="$(cd "$DEST" && grep -l '^essentiel = true' modules/*/CN_manifeste.toml 2>/dev/null | cut -d/ -f2)"
+  PREMIERS=(); SUITE=()
+  for m in "${MODULES[@]}"; do
+    if printf '%s\n' "$ESSENTIELS" | grep -qx "$m"; then PREMIERS+=("$m"); else SUITE+=("$m"); fi
+  done
+  MODULES=(${PREMIERS[@]+"${PREMIERS[@]}"} ${SUITE[@]+"${SUITE[@]}"})
 fi
 # Un module qui échoue ne fait pas tomber le noyau : il est retiré et le noyau continue avec les précédents.
 ECHECS=()

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #3caba1
+# VERSION CN : 0.2.0  #e6a597
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont FastPanel.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=3caba1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=e6a597 ▼▼▼
 """Le pont FastPanel.
 
 Deux voies, chacune pour ce qu'elle fait de mieux :
@@ -300,7 +300,8 @@ def chemin_base():
                     return m.group(1)
         except OSError:
             continue
-    for p in CHEMINS_BASE:
+    copie = os.path.join(os.environ.get("CASSANDRA_DONNEES", ""), "panneau", "fastpanel.db")      # la copie que pose l'installation (le noyau ne lit pas la base de root)
+    for p in (copie,) + CHEMINS_BASE:
         if os.path.isfile(p) and os.access(p, os.R_OK):
             return p
     return ""

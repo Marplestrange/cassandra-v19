@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.1.0  #de1ccb
+# VERSION CN : 0.1.0  #282544
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Donne au service de Cassandra la lecture de la base de FastPanel, par une copie rafraîchie chaque minute (la base d'origine reste à root).
 # MÉTHODE    : une minuterie systemd lance CN_copie_panneau.py en root ; le réglage « base_panneau » désigne la copie. Sans FastPanel : rien à faire.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=de1ccb ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=282544 ▼▼▼
 set -eu
 : "${CASSANDRA_DONNEES:?}" "${CASSANDRA_CONFIG:?}" "${CASSANDRA_UTILISATEUR:?}" "${CASSANDRA_MODULE_DIR:?}" "${CASSANDRA_PREFIXE:?}"
 panneau=""
@@ -49,11 +49,7 @@ WantedBy=timers.target
 EOF
 systemctl daemon-reload
 systemctl enable --now cassandra-panneau.timer >/dev/null 2>&1
-# le réglage qui désigne la copie : par la ligne de commande de l'opérateur local
-runuser -u "$CASSANDRA_UTILISATEUR" -- env CASSANDRA_DONNEES="$CASSANDRA_DONNEES" CASSANDRA_CONFIG="$CASSANDRA_CONFIG" \
-  CASSANDRA_EXTENSIONS="${CASSANDRA_RACINE:-/var/cassandra}/extensions" python3 "$CASSANDRA_PREFIXE/current/CN_main.py" \
-  agir reglages.regler cle=fastpanel.base_panneau "valeur=$copie/fastpanel.db" >/dev/null
-echo "fastpanel : base du panneau copiée chaque minute dans $copie (réglage base_panneau posé)"
+echo "fastpanel : base du panneau copiée chaque minute dans $copie (le module la retrouve seul)"
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
