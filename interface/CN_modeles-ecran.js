@@ -142,9 +142,10 @@
     }
 
     function carteRoles() {
-      const ms = declares().filter((m) => m.portee === "instance"), roles = (S.l.roles || {}), dico = Object.assign({}, RANG, S.roles || {}), noms = Object.keys(dico);
+      const ms = declares().filter((m) => m.portee === "instance"), roles = (S.l.roles || {}), dico = Object.assign({}, RANG, S.roles || {}), noms = Object.keys(dico), vides = noms.filter((r) => !roles[r]);
       if (!Object.prototype.hasOwnProperty.call(S.l, "roles") || !ms.length) return "";
-      return '<div class="carte"><h2>Qui parle avec quoi</h2><p class="note">Chaque agent et chaque service cherche son modèle par son rôle. Un rôle sans modèle prend celui de la maison (le modèle local).</p>' +
+      return '<div class="carte"><h2>Qui parle avec quoi</h2><p class="note">Chaque agent et chaque service cherche son modèle par son rôle. <b>Un rôle sans modèle ne répond pas</b> : lie chacun à l’un des modèles déclarés ci-dessus.</p>' +
+        (vides.length ? '<div class="acts"><span class="pastille al">' + vides.length + " rôle(s) sans modèle</span><select id=\"md-tout\" style=\"width:auto;flex:1 1 220px\">" + ms.map((m) => '<option value="' + esc(m.id) + '">' + esc(m.nom) + " (" + esc(m.fournisseur) + ")</option>").join("") + '</select><button class="btn pri" data-a="tout-lier"' + (S.occupe ? " disabled" : "") + ">Lier tous les rôles sans modèle à celui-ci</button></div>" : "") +'
         noms.map((r) => '<div class="rang"><div><span class="nom">' + esc(r) + '</span><br><span class="note">' + esc(dico[r] || "") + '</span></div><div class="m"><select data-role="' + esc(r) + '"><option value="">— celui de la maison —</option>' +
           ms.map((m) => '<option value="' + esc(m.id) + '"' + (roles[r] === m.id ? " selected" : "") + ">" + esc(m.nom) + " (" + esc(m.fournisseur) + ")</option>").join("") + '</select></div><div></div></div>').join("") + "</div>";
     }
@@ -174,6 +175,11 @@
     async function geste(b) {
       const a = b.dataset.a;
       if (a === "console") { racine.remove(); if (CASS.console) CASS.console("modeles", corps); return; }
+      if (a === "tout-lier") {
+        const id = String((racine.querySelector("#md-tout") || {}).value || ""), vides = Object.keys(Object.assign({}, RANG, S.roles || {})).filter((r) => !(S.l.roles || {})[r]);
+        if (!id) return;
+        return faire(async () => { for (const r of vides) await agir("modeles.role_lier", { role: r, modele_id: id }); }, "Rôles liés : " + vides.join(", "));
+      }
       if (a === "retirer") { S.retirer = b.dataset.id; dessiner(); return; }
       if (a === "retirer-non") { S.retirer = ""; dessiner(); return; }
       if (a === "retirer-oui") return faire(() => retirerModele(b.dataset.id), "Modèle retiré.");
