@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #dba719
+# VERSION CN : 0.1.0  #307ce7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : reçoit des variantes d'un moteur de recherche, ne retient que celles que l'évaluateur prouve, les met en service sans risque et vérifie le gain plus tard.
 # MÉTHODE    : le moteur ne propose que du texte ; ici tout est déterministe : évaluation, pièges, écriture de l'EC, ombre, paliers, retour, chaîne d'empreintes, tombes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=dba719 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=307ce7 ▼▼▼
 """L'évolution (docs/CN_EVOLUTION.md) : le côté NEXUS. Le moteur de recherche (Orfan, ou un autre par le contrat d'adaptateur) ne fait que PROPOSER du texte ;
 tout ce qui décide est ici, en code déterministe :
 
@@ -29,18 +29,23 @@ from __future__ import annotations
 import ast
 import contextlib
 import hashlib
+import hmac
 import json
+import os
 import sqlite3
+import threading
 import time
 from pathlib import Path
 
 SEUILS = {"gain_min_pct": 5.0,          # un gain en dessous n'en est pas un (le bruit de mesure)
           "pieges_min": 0.85,           # part des variantes fausses que le corpus doit attraper avant qu'on lui fasse confiance
           "ombre_appels": 200,          # appels comparés en ombre, sans un écart, avant le premier palier
+          "ombre_distincts": 30,        # ... dont autant d'entrées DISTINCTES : deux cents fois la même entrée ne prouvent rien
           "paliers": (10, 50, 100),     # la part du trafic, étape par étape
-          "appels_par_palier": 200,     # appels réels sur un palier avant le suivant
-          "visite_jours": 30,           # le gain est revérifié après ce délai de service complet
-          "gain_confirme": 0.5}         # à la visite, le gain doit valoir au moins cette part du gain annoncé
+          "appels_par_palier": 200,     # appels SERVIS PAR L'EC sur un palier avant le suivant (à 10 %, il faut donc dix fois plus de trafic)
+          "visite_jours": 30,           # le gain est revérifié après ce délai de service complet, puis à chaque échéance
+          "gain_confirme": 0.5,         # à la visite, le gain doit valoir au moins cette part du gain annoncé
+          "propositions_par_jour": 20}  # tentatives de proposition par jour et par instance (le coût d'un modèle ne s'emballe pas)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS pieces(id INTEGER PRIMARY KEY AUTOINCREMENT, gid TEXT NOT NULL, num INTEGER NOT NULL, fichier TEXT NOT NULL, empreinte TEXT NOT NULL, ast TEXT NOT NULL,
@@ -49,6 +54,7 @@ CREATE TABLE IF NOT EXISTS pieces(id INTEGER PRIMARY KEY AUTOINCREMENT, gid TEXT
 CREATE TABLE IF NOT EXISTS tombes(gid TEXT NOT NULL, ast TEXT NOT NULL, raison TEXT NOT NULL, ts REAL NOT NULL, PRIMARY KEY(gid, ast));
 CREATE TABLE IF NOT EXISTS chaine(seq INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL NOT NULL, gid TEXT NOT NULL, verbe TEXT NOT NULL, details TEXT NOT NULL,
   previous_hash TEXT NOT NULL, hash TEXT NOT NULL UNIQUE);
+CREATE TABLE IF NOT EXISTS tentatives(id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL NOT NULL, gid TEXT NOT NULL, moteur TEXT NOT NULL);
 """
 ETATS_VIVANTS = ("ombre", "palier_10", "palier_50", "en_service")
 
@@ -63,14 +69,25 @@ def _empreinte_borne(texte: str) -> str:
 
 
 class Evolution:
-    def __init__(self, points, rejeu, evaluateur, chemin_base, horloge=time.time, seuils: dict | None = None):
+    def __init__(self, points, rejeu, evaluateur, chemin_base, horloge=time.time, seuils: dict | None = None, cle: bytes | None = None):
+        """`cle` : la clé qui scelle la chaîne (HMAC) ; sans elle, celle du service des points quand il exige le sceau, sinon la chaîne est seulement chaînée (détecte l'accident, pas l'attaque)."""
         self.points, self.rejeu, self.evaluateur, self._horloge = points, rejeu, evaluateur, horloge
         self.seuils = dict(SEUILS, **(seuils or {}))
         self.chemin = Path(chemin_base)
         self.chemin.parent.mkdir(parents=True, exist_ok=True)
+        self._cle = cle if cle is not None else (points._cle() if getattr(points, "exiger_sceau", False) else None)
+        self._tete = self.chemin.with_name(self.chemin.stem + ".tete")      # la tête de chaîne, hors de la base : une troncature de la base se voit
+        self._local = threading.local()                       # la tête due est propre à chaque fil : une transaction ne publie jamais la tête d'une autre
         self._pieges: dict = {}                               # le score des pièges d'un point, calculé une fois par état du corpus
+        self._verrous: dict = {}
+        self._verrou_verrous = threading.Lock()
         with self._con() as c:
             c.executescript(SCHEMA)
+
+    def _verrou_point(self, gid: str):
+        """Un verrou par point : une proposition, un palier, une visite ou un retour d'un même point ne s'entrecroisent jamais."""
+        with self._verrou_verrous:
+            return self._verrous.setdefault(gid, threading.RLock())
 
     @contextlib.contextmanager
     def _con(self):
@@ -79,32 +96,58 @@ class Evolution:
         try:
             yield c
             c.commit()
+            tete, self._local.tete_due = getattr(self._local, "tete_due", None), None
+            if tete is not None:
+                try:
+                    self._tete.write_text(json.dumps(tete), encoding="utf-8")
+                except OSError:
+                    pass
         except Exception:
+            self._local.tete_due = None
             c.rollback()
             raise
         finally:
             c.close()
 
     # ── la chaîne : une rupture se voit ──────────────────────────────────
+    def _sceau(self, prev: str, ts, gid: str, verbe: str, corps: str) -> str:
+        brut = ("%s|%r|%s|%s|%s" % (prev, ts, gid, verbe, corps)).encode("utf-8")
+        if self._cle is not None:
+            return hmac.new(self._cle, brut, hashlib.sha256).hexdigest()
+        return hashlib.sha256(brut).hexdigest()
+
+    def _mac_tete(self, seq: int, h: str) -> str:
+        return hmac.new(self._cle, ("%d|%s" % (seq, h)).encode("utf-8"), hashlib.sha256).hexdigest() if self._cle is not None else ""
+
     def _noter(self, c, gid: str, verbe: str, details: dict) -> str:
         ts = self._horloge()
         dernier = c.execute("SELECT hash FROM chaine ORDER BY seq DESC LIMIT 1").fetchone()
         prev = dernier["hash"] if dernier else "0" * 64
         corps = json.dumps(details, ensure_ascii=False, sort_keys=True)
-        h = hashlib.sha256(("%s|%r|%s|%s|%s" % (prev, ts, gid, verbe, corps)).encode("utf-8")).hexdigest()
-        c.execute("INSERT INTO chaine(ts,gid,verbe,details,previous_hash,hash) VALUES(?,?,?,?,?,?)", (ts, gid, verbe, corps, prev, h))
+        h = self._sceau(prev, ts, gid, verbe, corps)
+        cur = c.execute("INSERT INTO chaine(ts,gid,verbe,details,previous_hash,hash) VALUES(?,?,?,?,?,?)", (ts, gid, verbe, corps, prev, h))
+        self._local.tete_due = {"seq": cur.lastrowid, "hash": h, "mac": self._mac_tete(cur.lastrowid, h)}
         return h
 
     def verifier_chaine(self) -> dict:
-        """Rejoue la chaîne : la première maille dont l'empreinte ne se recalcule pas est une rupture (docs/CN_EVOLUTION.md : rupture = tout s'arrête)."""
+        """Rejoue la chaîne : la première maille dont l'empreinte ne se recalcule pas est une rupture (docs/CN_EVOLUTION.md : rupture = tout s'arrête).
+        Avec une clé, il faut la connaître pour refaire une maille ; la tête, gardée hors de la base, dit si la fin de la chaîne a été coupée."""
         with self._con() as c:
-            prev = "0" * 64
+            prev, dernier = "0" * 64, (0, "0" * 64)
             for r in c.execute("SELECT * FROM chaine ORDER BY seq"):
-                h = hashlib.sha256(("%s|%r|%s|%s|%s" % (prev, r["ts"], r["gid"], r["verbe"], r["details"])).encode("utf-8")).hexdigest()
-                if r["previous_hash"] != prev or r["hash"] != h:
+                h = self._sceau(prev, r["ts"], r["gid"], r["verbe"], r["details"])
+                if r["previous_hash"] != prev or not hmac.compare_digest(r["hash"], h):
                     return {"ok": False, "rupture_a": r["seq"], "mailles": r["seq"]}
-                prev = h
+                prev, dernier = h, (r["seq"], h)
             n = c.execute("SELECT COUNT(*) FROM chaine").fetchone()[0]
+        try:
+            tete = json.loads(self._tete.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {"ok": True, "mailles": n}                    # pas de tête encore (première chaîne, ou base d'avant les têtes)
+        if self._cle is not None and not hmac.compare_digest(str(tete.get("mac", "")), self._mac_tete(int(tete.get("seq", 0)), str(tete.get("hash", "")))):
+            return {"ok": False, "rupture_a": int(tete.get("seq", 0)), "mailles": n, "raison": "tête de chaîne falsifiée"}
+        if (tete.get("seq"), tete.get("hash")) != dernier and int(tete.get("seq", 0)) >= dernier[0]:
+            return {"ok": False, "rupture_a": dernier[0] + 1, "mailles": n, "raison": "la fin de la chaîne a été coupée"}
         return {"ok": True, "mailles": n}
 
     def chaine(self, gid: str | None = None, limite: int = 50) -> list:
@@ -133,10 +176,29 @@ class Evolution:
     def _tomber(self, c, gid: str, ast_h: str, raison: str):
         c.execute("INSERT OR REPLACE INTO tombes(gid,ast,raison,ts) VALUES(?,?,?,?)", (gid, ast_h, raison, self._horloge()))
 
+    # ── le budget : le coût d'une recherche ne s'emballe pas ─────────────
+    def tentatives_depuis(self, secondes: float = 86400.0) -> int:
+        with self._con() as c:
+            return c.execute("SELECT COUNT(*) FROM tentatives WHERE ts>=?", (self._horloge() - secondes,)).fetchone()[0]
+
+    def _compter_tentative(self, gid: str, moteur) -> None:
+        with self._con() as c:
+            c.execute("INSERT INTO tentatives(ts,gid,moteur) VALUES(?,?,?)", (self._horloge(), gid, str(getattr(moteur, "nom", type(moteur).__name__))))
+
     # ── proposer ─────────────────────────────────────────────────────────
     def proposer(self, module: str, point: str, moteur, budget: int = 5) -> dict:
-        """Demande des variantes au moteur, ne retient que la meilleure PROUVÉE, l'écrit au format universel et la met en OMBRE. Rien n'est jamais servi à ce stade."""
+        """Demande des variantes au moteur, ne retient que la meilleure PROUVÉE, l'écrit au format universel et la met en OMBRE. Rien n'est jamais servi à ce stade.
+        Un seul `proposer` à la fois par point (un verrou) ; plafonné en tentatives par jour."""
         ref = self.points.reference(module, point)
+        gid = ref["gid"]
+        with self._verrou_point(gid):
+            if self.tentatives_depuis() >= int(self.seuils["propositions_par_jour"]):
+                return {"ok": False, "raison": "plafond de %d propositions par jour atteint : la recherche reprend demain (seuil propositions_par_jour)" % int(self.seuils["propositions_par_jour"]),
+                        "essais": [], "piece": None}
+            self._compter_tentative(gid, moteur)
+            return self._proposer(module, point, moteur, budget, ref)
+
+    def _proposer(self, module: str, point: str, moteur, budget: int, ref: dict) -> dict:
         gid = ref["gid"]
         source = ref["fichier"].read_text(encoding="utf-8")
         visibles = self.rejeu.corpus(gid, "visible")
@@ -155,7 +217,7 @@ class Evolution:
             hypothese = "" if isinstance(cand, str) else str(cand.get("hypothese", ""))
             try:
                 h = empreinte_ast(texte)
-            except SyntaxError:
+            except (SyntaxError, ValueError):
                 essais.append({"ast": None, "verdict": "illisible", "gain_pct": None})
                 continue
             if h == reference_ast or h in tombes:
@@ -170,7 +232,10 @@ class Evolution:
             if r["verdict"] != "equivalente":
                 continue                                                      # corpus trop étroit : on ne promeut pas sur un jeu mince (le motif est rendu plus bas)
             bruit = r.get("bruit_pct") or 0
-            if (r["gain_pct"] or 0) < self.seuils["gain_min_pct"] or r["gain_pct"] <= 2 * bruit or r["gain_tient"] is False:
+            if r["gain_tient"] is None:                                  # aucun cas réservé n'a pu dire si le gain tient : on ne promeut pas sur un jeu muet
+                essais[-1]["verdict"] = "corpus_trop_etroit"
+                continue
+            if (r["gain_pct"] or 0) < self.seuils["gain_min_pct"] or r["gain_pct"] <= 2 * bruit or r["gain_tient"] is not True:
                 with self._con() as c:
                     self._tomber(c, gid, h, "gain insuffisant, dans le bruit de mesure (%s %%) ou qui ne tient pas hors du vu : %s %%" % (round(bruit, 1), r["gain_pct"]))
                 continue
@@ -192,38 +257,61 @@ class Evolution:
         return {"ok": True, "raison": "", "essais": essais, "piece": piece, "pieges": {"score": p["score"], "mutants": p["mutants"]}}
 
     def _ecrire(self, module: str, point: str, ref: dict, meilleur: dict) -> dict:
+        """Écrit la pièce dans cet ORDRE, pour qu'il n'existe jamais un instant où une EC non prouvée sert : le fichier, la ligne en base, le sceau, la fin d'une éventuelle suspension,
+        le routage en OMBRE, et seulement alors ACTIVE. Si une étape échoue, tout ce qui précède est défait. Une pièce encore vivante est remplacée (jamais deux sur un même point)."""
         gid = ref["gid"]
         stock = self.points.stock
         if stock is None:
             raise ValueError("aucun stock d'EC : rien à écrire")
-        with self._con() as c:
-            num = (c.execute("SELECT COALESCE(MAX(num),0) FROM pieces WHERE gid=?", (gid,)).fetchone()[0]) + 1
-        dossier = Path(stock) / module / point
-        dossier.mkdir(parents=True, exist_ok=True)
-        nom = "EC_%s__EC%d.py" % (point.replace(".", "_"), num)
-        h = _empreinte_borne(meilleur["texte"])
-        contrat = ref["version_contrat"]
-        lignes = ["# " + "═" * 78, "# TITRE      : %s : variante EC%d (générée par l'évolution)" % (point, num), "# LICENCE    : AGPL-3.0", "# AUTEUR     : Atek Drisse",
-                  "# GIT        : github.com/Marplestrange", "# MAIL       : marplestrange@cassandra.center", "# MODULE     : " + module, "# ZONE       : EC", "# RUNTIME    : python",
-                  "# VERSION CN : néant", "# VERSION EC : EC%d  #%s" % (num, h), "# HÔTE CN    : façade de %s · %s @%s" % (module, point, contrat),
-                  "# NEXUS VISÉ : %s (contrat %s)" % (module, contrat), "# CONTRAT PROUVÉ : @%s" % contrat,
-                  "# RÔLE       : variante prouvée équivalente à la référence sur le corpus de rejeu, gain annoncé %s %%." % meilleur["eval"]["gain_pct"],
-                  "# MÉTHODE    : %s" % (meilleur["hypothese"] or "variante proposée par le moteur de recherche, jugée par l'évaluateur du noyau."), "# " + "═" * 78,
-                  "# ▼▼▼ BORNE EC point=%s contrat=@%s version=EC%d empreinte=%s ▼▼▼" % (point, contrat, num, h)]
-        pied = ["# ▲▲▲ FIN BORNE EC ▲▲▲", "", "# ═══ EXPLICATIF CN / EC " + "═" * 55,
-                "# EC : variante EC%d du point %s ; remplaçable, retirable en un geste (routage), jamais détruite." % (num, point),
-                "# CN : appelée par la façade du module par ctx.point, sous le contrat et le disjoncteur du noyau."]
-        texte = "\n".join(lignes + meilleur["texte"].rstrip("\n").split("\n") + pied) + "\n"
-        (dossier / nom).write_text(texte, encoding="utf-8", newline="\n")
-        (dossier / "ACTIVE").write_text(nom, encoding="utf-8")
-        self.points.router(module, point, "ombre")
-        now = self._horloge()
-        etat = self.points.etat(module, point)
-        with self._con() as c:
-            c.execute("INSERT INTO pieces(gid,num,fichier,empreinte,ast,etat,gain_annonce,evaluation,cree,etape,appels_etape) VALUES(?,?,?,?,?,'ombre',?,?,?,?,?)",
-                      (gid, num, nom, h, meilleur["ast"], meilleur["eval"]["gain_pct"], json.dumps({k: v for k, v in meilleur["eval"].items() if k != "fautes"}, default=str), now, now, etat["appels"]))
-            self._noter(c, gid, "proposee", {"ec": "EC%d" % num, "ast": meilleur["ast"], "gain_pct": meilleur["eval"]["gain_pct"], "empreinte": h})
-            self._noter(c, gid, "ombre", {"ec": "EC%d" % num})
+        with self._verrou_point(gid):
+            for vieille in self.pieces(gid, ETATS_VIVANTS):
+                self._retirer(vieille, "remplacée par une pièce neuve", tombe=False)
+            with self._con() as c:
+                num = (c.execute("SELECT COALESCE(MAX(num),0) FROM pieces WHERE gid=?", (gid,)).fetchone()[0]) + 1
+            dossier = Path(stock) / module / point
+            dossier.mkdir(parents=True, exist_ok=True)
+            nom = "EC_%s__EC%d.py" % (point.replace(".", "_"), num)
+            h = _empreinte_borne(meilleur["texte"])
+            contrat = ref["version_contrat"]
+            lignes = ["# " + "═" * 78, "# TITRE      : %s : variante EC%d (générée par l'évolution)" % (point, num), "# LICENCE    : AGPL-3.0", "# AUTEUR     : Atek Drisse",
+                      "# GIT        : github.com/Marplestrange", "# MAIL       : marplestrange@cassandra.center", "# MODULE     : " + module, "# ZONE       : EC", "# RUNTIME    : python",
+                      "# VERSION CN : néant", "# VERSION EC : EC%d  #%s" % (num, h), "# HÔTE CN    : façade de %s · %s @%s" % (module, point, contrat),
+                      "# NEXUS VISÉ : %s (contrat %s)" % (module, contrat), "# CONTRAT PROUVÉ : @%s" % contrat,
+                      "# RÔLE       : variante prouvée équivalente à la référence sur le corpus de rejeu, gain annoncé %s %%." % meilleur["eval"]["gain_pct"],
+                      "# MÉTHODE    : %s" % (meilleur["hypothese"] or "variante proposée par le moteur de recherche, jugée par l'évaluateur du noyau."), "# " + "═" * 78,
+                      "# ▼▼▼ BORNE EC point=%s contrat=@%s version=EC%d empreinte=%s ▼▼▼" % (point, contrat, num, h)]
+            pied = ["# ▲▲▲ FIN BORNE EC ▲▲▲", "", "# ═══ EXPLICATIF CN / EC " + "═" * 55,
+                    "# EC : variante EC%d du point %s ; remplaçable, retirable en un geste (routage), jamais détruite." % (num, point),
+                    "# CN : appelée par la façade du module par ctx.point, sous le contrat et le disjoncteur du noyau."]
+            texte = "\n".join(lignes + meilleur["texte"].rstrip("\n").split("\n") + pied) + "\n"
+            etat = self.points.etat(module, point)
+            (dossier / nom).write_text(texte, encoding="utf-8", newline="\n")
+            now = self._horloge()
+            with self._con() as c:
+                c.execute("INSERT INTO pieces(gid,num,fichier,empreinte,ast,etat,gain_annonce,evaluation,cree,etape,appels_etape) VALUES(?,?,?,?,?,'ombre',?,?,?,?,?)",
+                          (gid, num, nom, h, meilleur["ast"], meilleur["eval"]["gain_pct"], json.dumps({k: v for k, v in meilleur["eval"].items() if k != "fautes"}, default=str), now, now,
+                           etat.get("ec_appels", 0)))
+                self._noter(c, gid, "proposee", {"ec": "EC%d" % num, "ast": meilleur["ast"], "gain_pct": meilleur["eval"]["gain_pct"], "empreinte": h})
+            try:
+                if hasattr(self.points, "sceller"):
+                    self.points.sceller(module, point, nom)
+                if hasattr(self.points, "reactiver"):
+                    self.points.reactiver(module, point)              # une suspension ne frappe que l'EC qui l'a méritée : la pièce neuve repart d'un compte de fautes vide
+                self.points.router(module, point, "ombre")
+                tmp = dossier / "ACTIVE.tmp"
+                tmp.write_text(nom, encoding="utf-8")
+                tmp.replace(dossier / "ACTIVE")
+            except BaseException:
+                with contextlib.suppress(Exception):
+                    (dossier / "ACTIVE").unlink()
+                with contextlib.suppress(Exception):
+                    self.points.router(module, point, "arret")
+                with self._con() as c:
+                    c.execute("UPDATE pieces SET etat='retiree' WHERE gid=? AND num=?", (gid, num))
+                    self._noter(c, gid, "retiree", {"ec": "EC%d" % num, "raison": "la mise en place a échoué"})
+                raise
+            with self._con() as c:
+                self._noter(c, gid, "ombre", {"ec": "EC%d" % num})
         return {"gid": gid, "ec": "EC%d" % num, "num": num, "fichier": nom, "gain_annonce_pct": meilleur["eval"]["gain_pct"], "etat": "ombre"}
 
     # ── la mise en service par paliers ───────────────────────────────────
@@ -246,20 +334,26 @@ class Evolution:
         faits = []
         for p in self.pieces(etats=ETATS_VIVANTS):
             module, point = p["gid"].split(".", 1)
-            etat = self.points.etat(module, point)
-            if etat["suspendue"]:
-                faits.append(self._retirer(p, "suspendue par le disjoncteur : %s" % etat["suspendue"]["raison"]))
-                continue
-            if p["etat"] == "ombre":
-                o = etat["ombre"] or {"appels": 0, "ecarts": 0, "erreurs": 0}
-                if o["appels"] >= self.seuils["ombre_appels"] and o["ecarts"] == 0 and o["erreurs"] == 0:
-                    faits.append(self._palier(p, module, point, self.seuils["paliers"][0], etat))
-            elif p["etat"].startswith("palier_"):
-                part = int(p["etat"].split("_")[1])
-                if etat["appels"] - p["appels_etape"] >= self.seuils["appels_par_palier"]:
-                    suivants = [x for x in self.seuils["paliers"] if x > part]
-                    if suivants:
-                        faits.append(self._palier(p, module, point, suivants[0], etat))
+            with self._verrou_point(p["gid"]):
+                courante = [x for x in self.pieces(p["gid"], ETATS_VIVANTS) if x["id"] == p["id"]]
+                if not courante:
+                    continue                                              # retirée entre-temps
+                p = courante[0]
+                etat = self.points.etat(module, point)
+                if etat["suspendue"]:
+                    faits.append(self._retirer(p, "suspendue par le disjoncteur : %s" % etat["suspendue"]["raison"]))
+                    continue
+                if p["etat"] == "ombre":
+                    o = etat["ombre"] or {"appels": 0, "ecarts": 0, "erreurs": 0, "distincts": 0}
+                    if (o["appels"] >= self.seuils["ombre_appels"] and o.get("distincts", 0) >= self.seuils["ombre_distincts"]
+                            and o["ecarts"] == 0 and o["erreurs"] == 0):
+                        faits.append(self._palier(p, module, point, self.seuils["paliers"][0], etat))
+                elif p["etat"].startswith("palier_"):
+                    part = int(p["etat"].split("_")[1])
+                    if etat["ec_appels"] - p["appels_etape"] >= self.seuils["appels_par_palier"]:
+                        suivants = [x for x in self.seuils["paliers"] if x > part]
+                        if suivants:
+                            faits.append(self._palier(p, module, point, suivants[0], etat))
         return faits
 
     def _palier(self, p: dict, module: str, point: str, part: int, etat: dict) -> dict:
@@ -268,48 +362,60 @@ class Evolution:
         now = self._horloge()
         with self._con() as c:
             c.execute("UPDATE pieces SET etat=?, etape=?, appels_etape=?, mise_en_service=CASE WHEN ?='en_service' THEN ? ELSE mise_en_service END WHERE id=?",
-                      (nouveau, now, etat["appels"], nouveau, now, p["id"]))
+                      (nouveau, now, etat.get("ec_appels", 0), nouveau, now, p["id"]))
             self._noter(c, p["gid"], nouveau, {"ec": "EC%d" % p["num"], "part": part})
         return {"point": p["gid"], "ec": "EC%d" % p["num"], "etat": nouveau, "part": part}
 
     def _retirer(self, p: dict, raison: str, tombe: bool = True) -> dict:
         module, point = p["gid"].split(".", 1)
-        try:
-            self.points.router(module, point, "arret")
-        except ValueError:
-            pass
-        with self._con() as c:
-            c.execute("UPDATE pieces SET etat='retiree' WHERE id=?", (p["id"],))
-            if tombe:
-                self._tomber(c, p["gid"], p["ast"], raison)
-            self._noter(c, p["gid"], "retiree", {"ec": "EC%d" % p["num"], "raison": raison})
+        with self._verrou_point(p["gid"]):
+            try:
+                self.points.router(module, point, "arret")
+            except ValueError:
+                pass
+            with self._con() as c:
+                c.execute("UPDATE pieces SET etat='retiree' WHERE id=?", (p["id"],))
+                if tombe:
+                    self._tomber(c, p["gid"], p["ast"], raison)
+                self._noter(c, p["gid"], "retiree", {"ec": "EC%d" % p["num"], "raison": raison})
         return {"point": p["gid"], "ec": "EC%d" % p["num"], "etat": "retiree", "raison": raison}
 
     def retour(self, gid: str, raison: str = "retour demandé") -> list:
         """Le retour instantané : un aiguillage vers la référence ; l'EC reste dans le stock et sa tombe est gardée avec la raison."""
-        return [self._retirer(p, raison) for p in self.pieces(gid, ETATS_VIVANTS)]
+        with self._verrou_point(gid):
+            return [self._retirer(p, raison) for p in self.pieces(gid, ETATS_VIVANTS)]
 
     # ── la visite : le gain est-il resté ? ───────────────────────────────
-    def visiter(self, piece_id: int | None = None) -> list:
-        """Pour chaque pièce en service depuis assez longtemps, rejoue l'EC contre la référence sur le corpus d'AUJOURD'HUI. Un gain qui n'est pas resté la retire."""
+    def visiter(self, piece_id: int | None = None, maximum: int | None = None) -> list:
+        """Pour chaque pièce en service dont l'échéance est venue (30 jours après la mise en service, puis 30 jours après chaque visite), rejoue l'EC contre la référence sur le corpus
+        d'AUJOURD'HUI. Un gain qui n'est pas resté la retire. Un corpus devenu trop étroit pour juger ne retire rien (et ne laisse pas de tombe) : la visite est refaite le lendemain.
+        `maximum` : au plus ce nombre de visites par appel (une visite est une évaluation entière : le moteur périodique n'en fait qu'une à la fois)."""
         now = self._horloge()
         sortie = []
         for p in self.pieces(etats=("en_service",)):
             if piece_id is not None and p["id"] != piece_id:
                 continue
-            if p["visite"] or now - (p["mise_en_service"] or now) < self.seuils["visite_jours"] * 86400:
+            if maximum is not None and len(sortie) >= maximum:
+                break
+            derniere = json.loads(p["visite"]) if p["visite"] else {}
+            echeance = derniere.get("prochaine") or ((derniere.get("ts") or p["mise_en_service"] or now) + self.seuils["visite_jours"] * 86400)
+            if now < echeance:
                 continue
             module, point = p["gid"].split(".", 1)
-            fichier = Path(self.points.stock) / module / point / p["fichier"]
-            bloc = self._corps_ec(fichier.read_text(encoding="utf-8"))
-            r = self.evaluateur.evaluer(module, point, bloc)
-            tenu = r["verdict"] == "equivalente" and (r["gain_pct"] or 0) >= self.seuils["gain_confirme"] * (p["gain_annonce"] or 0)
-            verdict = {"tenu": bool(tenu), "gain_annonce_pct": p["gain_annonce"], "gain_mesure_pct": r["gain_pct"], "verdict": r["verdict"]}
-            with self._con() as c:
-                c.execute("UPDATE pieces SET visite=? WHERE id=?", (json.dumps(verdict), p["id"]))
-                self._noter(c, p["gid"], "visite", dict(verdict, ec="EC%d" % p["num"]))
-            if not tenu:
-                verdict["retrait"] = self._retirer(p, "visite : annoncé %s %%, mesuré %s %% (%s)" % (p["gain_annonce"], r["gain_pct"], r["verdict"]))
+            with self._verrou_point(p["gid"]):
+                fichier = Path(self.points.stock) / module / point / p["fichier"]
+                bloc = self._corps_ec(fichier.read_text(encoding="utf-8"))
+                r = self.evaluateur.evaluer(module, point, bloc)
+                injugeable = r["verdict"] == "corpus_trop_etroit"
+                tenu = None if injugeable else (r["verdict"] == "equivalente" and (r["gain_pct"] or 0) >= self.seuils["gain_confirme"] * (p["gain_annonce"] or 0))
+                verdict = {"tenu": tenu, "gain_annonce_pct": p["gain_annonce"], "gain_mesure_pct": r["gain_pct"], "verdict": r["verdict"], "ts": now}
+                if injugeable:
+                    verdict["prochaine"] = now + 86400
+                with self._con() as c:
+                    c.execute("UPDATE pieces SET visite=? WHERE id=?", (json.dumps(verdict), p["id"]))
+                    self._noter(c, p["gid"], "visite", dict(verdict, ec="EC%d" % p["num"]))
+                if tenu is False:
+                    verdict["retrait"] = self._retirer(p, "visite : annoncé %s %%, mesuré %s %% (%s)" % (p["gain_annonce"], r["gain_pct"], r["verdict"]))
             sortie.append(dict(verdict, point=p["gid"], ec="EC%d" % p["num"]))
         return sortie
 

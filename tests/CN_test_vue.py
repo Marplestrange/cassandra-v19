@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7def45
+# VERSION CN : 0.1.0  #511f88
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7def45 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=511f88 ▼▼▼
 """Bancs de la vue d'ensemble : le verdict est composé, et une source muette n'est jamais comptée « tranquille »."""
 import sys
 import unittest
@@ -133,6 +133,7 @@ class PointDEvolution(unittest.TestCase):
         (d / "ACTIVE").write_text("EC_verdict_composer__EC1.py", encoding="utf-8")
         svc = ServicePoints(tmp)
         svc.declarer(_manifeste.charger(DOSSIER / "CN_manifeste.toml"), DOSSIER)
+        svc.router("vue", "verdict.composer", "service", 100)       # sans routage posé, une EC ne sert pas : ce banc veut une EC qui sert, et qui se trompe
         sortie = _facade.composer(True, "root", sources(metriques=None), "t", appeler=lambda p, e: svc.appeler("vue", p, e))
         self.assertEqual(sortie["niveau"], "inconnu")                      # la vérité de la référence, pas le « stable » mensonger de l'EC
         self.assertEqual(svc.etat("vue", "verdict.composer")["fautes_recentes"], 1)

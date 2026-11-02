@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a8a2f2
+# VERSION CN : 0.1.0  #8e32be
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Évolution : ses capacités dans un vrai noyau, avec un module « labo » qui déclare un point d'évolution et un faux module « modeles ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a8a2f2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e32be ▼▼▼
 """Bancs du module Évolution : ses capacités dans un vrai noyau, avec un module « labo » qui déclare un point d'évolution et un faux module « modeles »."""
 import json
 import shutil
@@ -95,7 +95,7 @@ class Banc(unittest.TestCase):
         modeles.mkdir()
         (modeles / "CN_manifeste.toml").write_text(MODELES, encoding="utf-8")
         (modeles / "CN_module.py").write_text("def brancher(ctx):\n    ctx.implementer('completer', lambda c, **kw: {'ok': True, 'texte': %r, 'modele': 'faux'})\n" % self.REPONSE, encoding="utf-8")
-        cfg = {"rejeu": {"minimum": 20}, "evolution": {"seuils": {"pieges_min": 0.3, "ombre_appels": 20, "appels_par_palier": 20}}}
+        cfg = {"rejeu": {"minimum": 20}, "evolution": {"seuils": {"pieges_min": 0.3, "ombre_appels": 20, "ombre_distincts": 10, "appels_par_palier": 20}}}
         self.n = moteur.Noyau(base / "d", mods, cfg, gerer_modules=True)
         self.n.brancher()
         for m in ("droits", "comptes", "modeles", "labo", "evolution"):

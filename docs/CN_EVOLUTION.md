@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution V19 — note de conception -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=c08dec ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=950667 ▼▼▼ -->
 # Évolution V19 — note de conception
 
 Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le moteur V18 (diff d'un fichier unique `cassandra.py`), qui n'a plus d'objet.
@@ -135,7 +135,7 @@ Conséquence du contrat neutre : si l'EC est une fonction pure `entrée JSON →
 - l'analyse refuse tout nom ou attribut `__xxx__` (seul `super().__init__(…)` est toléré), `__builtins__`, `getattr`, `setattr`, `delattr`, `vars`, `dir`, `type`, `object`, `breakpoint`, `help`, `hasattr`, les cadres d'exécution (`f_*`, `gi_*`, `tb_*`, `co_*`…), `attrgetter`/`methodcaller`/`Formatter`/`format_map`/`ForwardRef`/`get_type_hints`, `.format` sur autre chose qu'une chaîne littérale (ou dont la chaîne lit un attribut), `import *`, les décorateurs, les métaclasses et les fonctions asynchrones ;
 - l'EC s'exécute avec un `__builtins__` en LISTE BLANCHE (pas d'`open`, d'`eval`, de `type`…) et un `import` filtré : seuls les modules de `STDLIB_PURE`, rendus en vues qui n'exposent pas les modules que ces modules ont eux-mêmes importés (`email.utils.os`, `functools.sys`).
 
-**Non corrigé** : l'EC tourne toujours DANS le processus du noyau, et le délai de l'évaluateur est tenu par `sys.settrace` dans ce même processus. Une liste noire d'analyse et une liste blanche de natives réduisent la surface, elles ne font pas un bac à sable (un oubli de la liste est une évasion). **Tant que les candidats évolués ne tournent pas dans un processus séparé, le moteur Évolution ne doit charger que des EC de référence signées** ; un candidat généré par un modèle ne doit pas être chargé dans le noyau.
+**Non corrigé au 31-10 (processus à part depuis le 01-11 : voir 2 nonies, il manque encore l'espace de noms réseau/fichiers)** : l'EC tournait DANS le processus du noyau, et le délai de l'évaluateur est tenu par `sys.settrace` dans ce même processus. Une liste noire d'analyse et une liste blanche de natives réduisent la surface, elles ne font pas un bac à sable (un oubli de la liste est une évasion). **Tant que les candidats évolués ne tournent pas dans un processus séparé, le moteur Évolution ne doit charger que des EC de référence signées** ; un candidat généré par un modèle ne doit pas être chargé dans le noyau.
 
 **Plan du processus séparé (non codé)** :
 1. un exécuteur `CN_ec_hote.py`, lancé par une unité systemd transitoire (`systemd-run --pipe --collect`) : `DynamicUser=yes`, `PrivateNetwork=yes` (aucun réseau), `PrivateTmp`, `ProtectSystem=strict`, `ProtectHome=yes`, `InaccessiblePaths=` des données et clés, `NoNewPrivileges`, `CapabilityBoundingSet=` vide, `MemoryMax`, `CPUQuota`, `RuntimeMaxSec` (le délai est alors tenu par systemd, plus par `settrace`), `SystemCallFilter=@system-service ~@privileged @resources @mount @network-io`, `RestrictAddressFamilies=AF_UNIX` ;
@@ -143,6 +143,23 @@ Conséquence du contrat neutre : si l'EC est une fonction pure `entrée JSON →
 3. l'évaluateur appelle l'hôte par lots (un démarrage par candidat et par échantillon complet, pas par appel) ; une sortie hors contrat, un code de sortie non nul ou un dépassement comptent une faute, comme aujourd'hui ;
 4. les EC servies en production gardent la voie actuelle seulement si elles sont signées par la clé racine du registre (empreinte du texte vérifiée avant `executer_ec`) ; les autres passent par l'hôte séparé, y compris en service ;
 5. un test d'intégration sur un serveur Linux (le banc Windows ne peut pas l'éprouver) : le candidat qui tente un `socket`, un `open` ou un `fork` meurt sans effet.
+
+## 2 nonies. Audit d'Évolution (01-11) : ce qui est corrigé, ce qui reste
+
+Deux passages d'audit sur `CN_points`, `CN_evaluateur`, `CN_evolution`, `CN_rejeu`, le module et le câblage ; chaque défaut a son banc dans `tests/CN_test_evolution_audit.py`.
+
+**Corrigé :**
+- **Les EC ne tournent plus dans le serveur** : un processus par fichier d'EC (`noyau/CN_ec_worker.py`, lancé par `HoteProcessus`), `python -I`, environnement vidé, mémoire plafonnée (POSIX), stdout détourné. Le DÉLAI TUE le processus : une boucle sans fin, une expression régulière catastrophique ou un chargement qui boucle ne figent plus ni la requête, ni la référence, ni l'évaluateur. L'évaluateur charge, appelle et CHRONOMÈTRE les candidats dans leur processus (`CandidatIsole`).
+- **Échec fermé du routage** : sans `ROUTAGE.json` (ou illisible, ou de signature fausse) l'EC ne sert pas. L'écriture d'une pièce suit un ordre qui ne laisse aucun instant où une EC non prouvée sert : fichier, base, sceau, fin de suspension, routage en ombre, puis ACTIVE ; une étape qui échoue défait les précédentes.
+- **Une seule pièce vivante par point** et un verrou par point : deux propositions simultanées se suivent ; une pièce neuve remplace la vivante (sans tombe). Une suspension ne tue plus le point : la pièce neuve repart d'un compte de fautes vide.
+- **Sceau et signature** : le service (avec `exiger_sceau`) ne sert qu'une EC scellée (HMAC du nom et de l'empreinte, posé par l'évolution) et ne croit qu'un routage signé ; la chaîne d'évolution est scellée par la même clé (`<stock>.cle`, 0600), sa tête vit hors de la base (une troncature se voit). Les fichiers du stock modifiables par d'autres sont refusés (POSIX).
+- **Preuves** : statistiques d'appels et d'ombre écrites à côté (un fichier par processus, sommées par tous : le démon du Sensorium compte), qui survivent au redémarrage ; l'ombre exige des entrées DISTINCTES ; un palier se juge sur les appels SERVIS PAR L'EC ; la comparaison à la référence en service est en marche (1 appel sur 50) ; l'égalité est celle du TEXTE JSON (1 ≠ 1.0, True ≠ 1, l'ordre des clés compte) ; un cas où la référence échoue et le candidat répond est une divergence ; « le gain tient » exige des cas réservés.
+- **Contrat** : un point sans contrat refuse d'exister ; le schéma valide toute la liste, `maxItems`, `maxLength`, `additionalProperties`.
+- **Visites** : à chaque échéance (30 jours, puis 30 jours après chacune) ; un corpus devenu trop étroit pour juger ne retire rien et ne laisse pas de tombe ; une visite par passage du moteur.
+- **Budget et droits** : plafond de propositions par jour (`propositions_par_jour`), `retour` ouvert aux agents, moteur de recherche importable seulement dans le paquet `orfan.*`, `ec_api` retiré de la liste blanche.
+- **Corpus** : entrée plafonnée (64 Ko), points exclus par motif (`[rejeu] exclus`), borne appliquée à chaque point, base en 0600.
+
+**Reste, à dire franchement :** le processus de l'EC est un processus à part, pas un bac à sable du système : pas encore d'espace de noms réseau/fichiers (`systemd-run`, voir le plan ci-dessus) ; le plafond mémoire n'existe que sous POSIX ; le corpus garde des entrées réelles de tous les comptes, sans cloisonnement par compte (les exclusions par motif sont à poser sur les points qui portent du courrier, des contacts, des notes) ; le démon du Sensorium doit pouvoir lire `<stock>.cle`, sinon ses EC sont refusées (la référence sert).
 
 ## 3. Rôles (pas de nouvel agent)
 

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b2b81b
+# VERSION CN : 0.1.0  #305959
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'évolution : du texte proposé par un moteur jusqu'à l'EC en service, sans jamais servir ce qui n'est pas prouvé ; le retour, la visite à 30 jours, la chaîne.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b2b81b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=305959 ▼▼▼
 """Bancs de l'évolution : du texte proposé par un moteur jusqu'à l'EC en service, sans jamais servir ce qui n'est pas prouvé ; le retour, la visite à 30 jours, la chaîne."""
 import json
 import shutil
@@ -68,10 +68,20 @@ class Banc(unittest.TestCase):
         self.t = [1_000_000.0]
         self.ev = EV.Evaluateur(self.svc, self.rejeu, minimum=20)
         self.evo = E.Evolution(self.svc, self.rejeu, self.ev, self.tmp / "evolution.db", horloge=lambda: self.t[0],
-                               seuils={"pieges_min": 0.5, "ombre_appels": 20, "appels_par_palier": 20})
+                               seuils={"pieges_min": 0.5, "ombre_appels": 20, "ombre_distincts": 10, "appels_par_palier": 20})
 
     def proposer(self, *candidats, **kw):
         return self.evo.proposer("essai", "doubler", MoteurSimule(*candidats), **kw)
+
+    def avancer(self, etat, tours=80):
+        """Du trafic et des ticks jusqu'à ce que la pièce atteigne `etat` (à 10 % du trafic, il en faut dix fois plus pour que l'EC serve assez d'appels)."""
+        for _ in range(tours):
+            self.trafic(20)
+            self.evo.tick()
+            ps = self.evo.pieces("essai.doubler")
+            if ps and ps[-1]["etat"] == etat:
+                return
+        self.fail("la pièce n'a pas atteint %s : %s" % (etat, [p["etat"] for p in self.evo.pieces()]))
 
     def trafic(self, n):
         for i in range(n):
@@ -86,6 +96,7 @@ class Cibler(Banc):
         self.assertFalse(c[0]["muet"])
 
     def test_un_point_sans_mesure_est_dit_muet_et_range_en_dernier(self):
+        (self.tmp / "modules" / "essai" / "contrats" / "CN_rien.json").write_text(json.dumps(CONTRAT), encoding="utf-8")
         self.svc.declarer(types.SimpleNamespace(id="autre", points_evolution=(M.PointEvolution("rien", "Rien", "1.0", "points/EC_doubler", "doubler"),)), self.tmp / "modules" / "essai")
         c = self.evo.cibles()
         self.assertEqual(c[-1]["point"], "autre.rien")
@@ -172,7 +183,7 @@ class Proposer(Banc):
         evo = E.Evolution(self.svc, faible, EV.Evaluateur(self.svc, faible, minimum=0), self.tmp / "e3.db", seuils={"pieges_min": 0.85})
         r = evo.proposer("essai", "doubler", MoteurSimule(RAPIDE))
         self.assertFalse(r["ok"], r)
-        self.assertIn("corpus trop faible", r["raison"])
+        self.assertIn("corpus trop", r["raison"])                             # trop étroit pour dire que le gain tient, ou trop faible pour juger : jamais promu
 
     def test_un_moteur_qui_echoue_ne_casse_rien(self):
         class Casse:
@@ -192,11 +203,9 @@ class Paliers(Banc):
     def test_l_ombre_sans_ecart_ouvre_le_premier_palier_puis_la_suite(self):
         f = self.monter()
         self.assertEqual((f[0]["etat"], f[0]["part"]), ("palier_10", 10))
-        self.assertEqual(self.evo.tick(), [])                                    # pas assez d'appels sur ce palier : on attend
-        self.trafic(20)
-        self.assertEqual(self.evo.tick()[0]["etat"], "palier_50")
-        self.trafic(20)
-        self.assertEqual(self.evo.tick()[0]["etat"], "en_service")
+        self.assertEqual(self.evo.tick(), [])                                    # pas assez d'appels SERVIS PAR L'EC sur ce palier : on attend
+        self.avancer("palier_50")
+        self.avancer("en_service")
         self.assertEqual(self.svc.etat("essai", "doubler")["routage"], {"mode": "service", "part": 100})
 
     def test_un_ecart_en_ombre_bloque_la_promotion(self):
@@ -233,9 +242,7 @@ class Paliers(Banc):
 class Visite(Banc):
     def en_service(self):
         self.proposer(RAPIDE)
-        for _ in range(3):
-            self.trafic(20)
-            self.evo.tick()
+        self.avancer("en_service")
         self.assertEqual(self.evo.pieces("essai.doubler")[0]["etat"], "en_service")
 
     def test_pas_de_visite_avant_le_delai(self):

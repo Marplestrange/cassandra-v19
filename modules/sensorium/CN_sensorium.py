@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.10  #b89056
+# VERSION CN : 0.1.11  #b89056
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.10 empreinte=b89056 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.11 empreinte=b89056 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -1903,7 +1903,7 @@ def _log_errors_journald(conn, maintenant):
             continue
         dernier = e.get("__CURSOR") or dernier
         unite = e.get("_SYSTEMD_UNIT") or ""
-        if unite.startswith("cassandra.service"):
+        if unite.startswith(UNITES_NOYAU):
             continue
         service = str(e.get("SYSLOG_IDENTIFIER") or unite or "système")[:60]
         try:
@@ -3708,7 +3708,8 @@ def _cassandra_demarrages() -> list:
     """Les démarrages du service Cassandra dans l'heure (heure locale), lus au journal de systemd."""
     out = []
     try:
-        t = run_cmd(["journalctl", "-u", "cassandra", "--since", "-65min", "-o", "short-iso", "--no-pager",
+        unite = (_unite_noyau() or "cassandra.service").replace(".service", "")
+        t = run_cmd(["journalctl", "-u", unite, "--since", "-65min", "-o", "short-iso", "--no-pager",
                      "-g", "Started"], timeout=8) or ""
         for l in t.splitlines():
             m = re.match(r"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)", l)
@@ -3923,6 +3924,513 @@ def collect_securite_historique() -> list:
     return []
 
 
+# ============================================================
+# CASSANDRA V19, VUE DU DEHORS (31-10)
+# ============================================================
+# Le noyau V19 n'a ni cassandra.service ni cassandra_memory.db : il tourne en cassandra-noyau.service, range ses bases dans
+# <données>/noyau.db et <données>/modules/<module>.db, et se déploie par versions (<racine>/releases/…, lien « current »).
+# Le démon tourne en root à côté du noyau : il voit ce que le noyau ne peut pas dire de lui-même — qu'il est arrêté, figé ou
+# remplacé, que ses bases sont abîmées, que le code en service n'est plus celui qui a été scellé, que le courtier root est
+# intact. Chaque relevé garde sa clé (noyau.*, store.*, code.*, courtier.*) : une clé qui disparaît se voit au changelog.
+UNITES_NOYAU = tuple(u.strip() for u in (os.environ.get("SENSORIUM_UNITE_NOYAU") or "cassandra-noyau.service,cassandra.service").split(",") if u.strip())
+RACINE_V19 = os.environ.get("SENSORIUM_RACINE_V19") or "/var/cassandra"
+DONNEES_V19 = os.environ.get("SENSORIUM_DONNEES_V19") or os.path.join(RACINE_V19, "donnees")
+CONFIG_V19 = os.environ.get("SENSORIUM_CONFIG_V19") or os.path.join(RACINE_V19, "config")
+UTILISATEURS_V19 = os.environ.get("SENSORIUM_UTILISATEURS_V19") or "/var/www"
+LIBEXEC_V19 = os.environ.get("SENSORIUM_LIBEXEC_V19") or "/usr/libexec/cassandra"
+URL_NOYAU_FORCEE = (os.environ.get("SENSORIUM_URL_NOYAU") or "").rstrip("/")
+V19_VERIF_BASE_S = 6 * 3600          # une base se revérifie (PRAGMA quick_check) au plus toutes les 6 h
+V19_VERIF_BUDGET_S = 25              # le temps qu'une passe peut y consacrer
+V19_VERIF_MAX_OCTETS = 2 << 30       # au-delà de 2 Gio, on ne la parcourt pas d'ici : l'en-tête et la taille parlent
+V19_CODE_PERIODE_S = 1800            # le code scellé se revérifie toutes les 30 min, et à chaque changement de version
+
+_V19_UNITE = {"t": 0.0, "u": None}
+_V19_VERIF: dict = {}                # chemin -> (heure de la vérification, résultat)
+_V19_CODE = {"t": 0.0, "release": None, "res": None, "verrou": threading.Lock()}
+
+
+def _v19_age(sec) -> str:
+    sec = max(0, int(sec))
+    if sec < 90:
+        return "%d s" % sec
+    if sec < 5400:
+        return "%d min" % round(sec / 60)
+    if sec < 172800:
+        return "%d h" % round(sec / 3600)
+    return "%d j" % round(sec / 86400)
+
+
+def _v19_octets(n) -> str:
+    n = float(n)
+    if n < 1024:
+        return "%d o" % n
+    for u in ("Ko", "Mo", "Go"):
+        n /= 1024
+        if n < 1024 or u == "Go":
+            return ("%.1f %s" % (n, u)).replace(".", ",")
+
+
+def _unite_noyau():
+    """Le nom de l'unité systemd du noyau : cassandra-noyau.service (V19), à défaut cassandra.service (V18) — la première qui existe, None sinon."""
+    if time.time() - _V19_UNITE["t"] < 300:
+        return _V19_UNITE["u"]
+    trouvee = None
+    for u in UNITES_NOYAU:
+        rc, out, _ = run_cmd_ex(["systemctl", "show", u, "-p", "LoadState", "--value"], timeout=5)
+        if rc == 0 and out.strip() == "loaded":
+            trouvee = u
+            break
+    _V19_UNITE["t"], _V19_UNITE["u"] = time.time(), trouvee
+    return trouvee
+
+
+def _props_unite(unite, noms) -> dict:
+    rc, out, _ = run_cmd_ex(["systemctl", "show", unite, "-p", ",".join(noms)], timeout=5)
+    if rc != 0:
+        return {}
+    return dict(l.split("=", 1) for l in out.splitlines() if "=" in l)
+
+
+def _url_noyau(unite) -> str:
+    """Où le noyau écoute : $SENSORIUM_URL_NOYAU, sinon CASSANDRA_ECOUTE de son unité, sinon 127.0.0.1:9000."""
+    if URL_NOYAU_FORCEE:
+        return URL_NOYAU_FORCEE
+    env = _props_unite(unite, ("Environment",)).get("Environment", "") if unite else ""
+    m = re.search(r"CASSANDRA_ECOUTE=([^\s\"']+)", env)
+    hote, _, port = (m.group(1) if m else "127.0.0.1:9000").rpartition(":")
+    if hote in ("", "0.0.0.0", "::", "[::]"):
+        hote = "127.0.0.1"
+    return "http://%s:%s" % (hote, port if port.isdigit() else "9000")
+
+
+def _sonde_http(url, timeout=5):
+    """(code HTTP ou None, millisecondes, corps lu (64 Kio au plus), erreur)."""
+    import urllib.request
+    import urllib.error
+    t = time.monotonic()
+    ouvreur = urllib.request.build_opener(urllib.request.ProxyHandler({}))       # le noyau est local : jamais par un proxy
+    try:
+        with ouvreur.open(urllib.request.Request(url, headers={"User-Agent": "sensorium"}), timeout=timeout) as r:
+            return r.status, int((time.monotonic() - t) * 1000), r.read(65536), ""
+    except urllib.error.HTTPError as e:
+        return e.code, int((time.monotonic() - t) * 1000), b"", ""
+    except Exception as e:
+        return None, int((time.monotonic() - t) * 1000), b"", str(e)[:120]
+
+
+def _release_courante() -> str:
+    """Le nom de la version en service : la cible du lien <racine>/current (releases/<nom>)."""
+    try:
+        return os.path.basename(os.path.realpath(os.path.join(RACINE_V19, "current")))
+    except OSError:
+        return ""
+
+
+def _noyau_v19_present() -> bool:
+    return _unite_noyau() is not None
+
+
+def collect_noyau_v19() -> list:
+    """Le noyau, vu du dehors : son unité, sa réponse HTTP, sa version, ses redémarrages, l'activité de sa base, la place qui lui reste."""
+    out = []
+    unite = _unite_noyau()
+    if not unite:
+        return [_mesure("noyau.service", "application", "aucune unité de Cassandra trouvée (%s) : le noyau est-il installé ?" % ", ".join(UNITES_NOYAU),
+                        "warning" if os.path.isdir(os.path.join(RACINE_V19, "current")) else "info")]
+    p = _props_unite(unite, ("ActiveState", "SubState", "Result", "MainPID", "MemoryCurrent", "NRestarts", "ActiveEnterTimestamp"))
+    actif = p.get("ActiveState") == "active"
+    try:
+        mo = int(p.get("MemoryCurrent", "")) / 1048576.0
+        mo = mo if mo < 1 << 40 else 0          # « [not set] » vaut 2^64 - 1
+    except ValueError:
+        mo = 0
+    nrest = int(p["NRestarts"]) if str(p.get("NRestarts", "")).isdigit() else 0
+    morceaux = ["%s (%s)" % (p.get("ActiveState", "?"), p.get("SubState", "?"))]
+    if actif:
+        if str(p.get("MainPID", "0")) not in ("", "0"):
+            morceaux.append("PID %s" % p["MainPID"])
+        if mo:
+            morceaux.append("%.0f Mo de RAM" % mo)
+        morceaux.append("%d redémarrage(s) automatique(s)" % nrest)
+        if p.get("ActiveEnterTimestamp"):
+            morceaux.append("démarrée %s" % p["ActiveEnterTimestamp"][:30])
+    elif p.get("Result") not in (None, "", "success"):
+        morceaux.append("résultat : %s" % p["Result"])
+    out.append(_mesure("noyau.service", "application", " · ".join(morceaux) + " · unité %s" % unite,
+                       "warning" if (not actif or nrest >= 3 or mo >= 4096) else "info"))
+    if actif:
+        url = _url_noyau(unite)
+        code, ms, corps, err = _sonde_http(url + "/api/sante")
+        version, ok = "", False
+        if code == 200:
+            try:
+                d = json.loads(corps.decode("utf-8", "replace"))
+                ok, version = bool(d.get("ok")), str(d.get("version") or "")[:40]
+            except (ValueError, AttributeError):
+                pass
+        if ok:
+            out.append(_mesure("noyau.http", "application", "répond en %d ms (%s)" % (ms, url), "warning" if ms >= 3000 else "info"))
+        elif code is None:
+            out.append(_mesure("noyau.http", "application", "ne répond pas sur %s : %s" % (url, err or "délai dépassé"), "warning"))
+        else:
+            out.append(_mesure("noyau.http", "application", "répond %s sur %s/api/sante, au lieu d'un 200 lisible" % (code, url), "warning"))
+        rel = _release_courante()
+        out.append(_mesure("noyau.version", "application", "noyau %s · version déployée %s" % (version or "inconnu", rel or "inconnue"), "info"))
+        code, ms, corps, err = _sonde_http(url + "/")
+        if code == 200 and b"<html" in corps.lower():
+            out.append(_mesure("noyau.page", "application", "la page de connexion se sert en %d ms" % ms, "warning" if ms >= 3000 else "info"))
+        else:
+            out.append(_mesure("noyau.page", "application", "la page de connexion ne se sert pas : %s" % (("code %s" % code) if code else (err or "pas de réponse")), "warning"))
+    # démarrages dans l'heure : un noyau qui repart en boucle répond parfois juste assez pour que la sonde passe
+    dem = _cassandra_demarrages()
+    out.append(_mesure("noyau.demarrages", "application", "%d démarrage(s) dans l'heure" % len(dem), "warning" if len(dem) >= 3 else "info"))
+    # l'activité de sa base : un noyau dont rien n'est écrit depuis des heures ne fait plus rien
+    f = os.path.join(DONNEES_V19, "noyau.db")
+    try:
+        recent = max(os.stat(x).st_mtime for x in (f, f + "-wal") if os.path.exists(x))
+        age = time.time() - recent
+        out.append(_mesure("noyau.activite", "application", "dernière écriture dans la base du noyau il y a %s" % _v19_age(age),
+                           "warning" if (actif and age > 6 * 3600) else "info"))
+    except (OSError, ValueError):
+        if os.path.isdir(DONNEES_V19):
+            out.append(_mesure("noyau.activite", "application", "la base du noyau (%s) est introuvable" % f, "warning"))
+    # la place qui reste là où il écrit
+    try:
+        st = os.statvfs(DONNEES_V19)
+        libre, total = st.f_bavail * st.f_frsize, st.f_blocks * st.f_frsize
+        pct = 100.0 * libre / total if total else 100.0
+        out.append(_mesure("noyau.espace", "application", "%s libres sur %s (%.0f %%)" % (_v19_octets(libre), _v19_octets(total), pct),
+                           "warning" if (libre < 2 << 30 or pct < 8) else "info"))
+    except (OSError, AttributeError):
+        pass
+    # les copies de sauvegarde des données de Cassandra
+    d = os.path.join(DONNEES_V19, "sauvegardes")
+    if os.path.isdir(d):
+        try:
+            fs = [os.stat(os.path.join(d, n)) for n in os.listdir(d)]
+            if fs:
+                age = time.time() - max(s.st_mtime for s in fs)
+                out.append(_mesure("noyau.sauvegarde", "application", "dernière copie des données de Cassandra il y a %s" % _v19_age(age), "warning" if age > 72 * 3600 else "info"))
+            else:
+                out.append(_mesure("noyau.sauvegarde", "application", "aucune copie dans %s" % d, "info"))
+        except OSError:
+            pass
+    return out
+
+
+# ---------- les bases de Cassandra ----------
+def _bases_v19() -> list:
+    """[(clé, chemin)] : la base du noyau, celles du rejeu et de l'évolution, puis une par module."""
+    res = []
+    d = Path(DONNEES_V19)
+    for nom in ("noyau", "rejeu", "evolution"):
+        if (d / (nom + ".db")).is_file():
+            res.append(("store." + nom, d / (nom + ".db")))
+    if (d / "modules").is_dir():
+        for f in sorted((d / "modules").glob("*.db")):
+            res.append(("store.module." + f.stem, f))
+    return res
+
+
+def _inspecter_base(f) -> dict:
+    """Ce qu'on lit d'une base SANS la rouvrir : taille, journal WAL, âge, et son en-tête (SQLite format 3, taille de page, fichier tronqué ?)."""
+    f = Path(f)
+    st = f.stat()
+    r = {"taille": st.st_size, "wal": 0, "mtime": st.st_mtime, "defaut": ""}
+    try:
+        w = os.stat(str(f) + "-wal")
+        r["wal"], r["mtime"] = w.st_size, max(r["mtime"], w.st_mtime)
+    except OSError:
+        pass
+    try:
+        with open(f, "rb") as fh:
+            h = fh.read(100)
+    except OSError as e:
+        r["defaut"] = "illisible : %s" % str(e)[:80]
+        return r
+    if st.st_size == 0:
+        r["defaut"] = "vide (0 octet)"
+    elif len(h) < 100 or h[:16] != b"SQLite format 3\x00":
+        r["defaut"] = "l'en-tête SQLite est absent ou abîmé"
+    else:
+        ps = int.from_bytes(h[16:18], "big")
+        ps = 65536 if ps == 1 else ps
+        pages = int.from_bytes(h[28:32], "big")
+        if ps < 512 or ps & (ps - 1):
+            r["defaut"] = "taille de page invalide (%d)" % ps
+        elif pages and not r["wal"] and st.st_size < pages * ps:
+            r["defaut"] = "fichier tronqué : %s pour %d pages de %d octets" % (_v19_octets(st.st_size), pages, ps)
+    return r
+
+
+def _quick_check(f, delai=20) -> str:
+    """'ok', ou le premier défaut trouvé ; '' quand la base ne peut pas se vérifier d'ici (occupée, ouverte en lecture seule impossible, budget dépassé)."""
+    try:
+        c = sqlite3.connect(Path(f).resolve().as_uri() + "?mode=ro", uri=True, timeout=5)
+        try:
+            t0 = time.monotonic()
+            c.set_progress_handler(lambda: 1 if time.monotonic() - t0 > delai else 0, 100000)
+            rows = c.execute("PRAGMA quick_check(5)").fetchall()
+        finally:
+            c.close()
+    except sqlite3.OperationalError as e:
+        m = str(e).lower()
+        if any(x in m for x in ("interrupted", "locked", "busy", "unable to open", "readonly", "read-only")):
+            return ""
+        return "illisible : %s" % str(e)[:100]
+    except sqlite3.DatabaseError as e:
+        return "illisible : %s" % str(e)[:100]
+    txt = "; ".join(str(r[0]) for r in rows)
+    return "ok" if txt.strip() == "ok" else txt[:200]
+
+
+def _agreger_bases(motif_racines) -> dict:
+    """Les bases des sociétés ou des utilisateurs, en un seul relevé : combien, quel poids, lesquelles ont un défaut d'en-tête."""
+    n, total, defauts = 0, 0, []
+    for f in motif_racines:
+        try:
+            r = _inspecter_base(f)
+        except OSError:
+            continue
+        n += 1
+        total += r["taille"] + r["wal"]
+        if r["defaut"]:
+            defauts.append("%s : %s" % (Path(f).name, r["defaut"]))
+        if n >= 3000:
+            break
+    return {"n": n, "total": total, "defauts": defauts}
+
+
+def collect_stores_v19() -> list:
+    """Chaque base de Cassandra : poids, journal WAL, dernière écriture, état de l'en-tête et, de temps en temps, PRAGMA quick_check."""
+    out = []
+    bases = _bases_v19()
+    debut, total = time.monotonic(), 0
+    for cle, f in bases:
+        try:
+            r = _inspecter_base(f)
+        except OSError as e:
+            out.append(_mesure(cle, "application", "illisible : %s" % str(e)[:100], "warning"))
+            continue
+        total += r["taille"] + r["wal"]
+        k = str(f)
+        v = _V19_VERIF.get(k)
+        if (not r["defaut"] and r["taille"] <= V19_VERIF_MAX_OCTETS and (v is None or time.time() - v[0] >= V19_VERIF_BASE_S)
+                and time.monotonic() - debut < V19_VERIF_BUDGET_S):
+            res = _quick_check(f)
+            v = _V19_VERIF[k] = (time.time(), res) if res else (time.time(), v[1] if v else "")
+        morceaux = [_v19_octets(r["taille"])]
+        if r["wal"]:
+            morceaux.append("WAL %s" % _v19_octets(r["wal"]))
+        morceaux.append("écrite il y a %s" % _v19_age(time.time() - r["mtime"]))
+        sev = "info"
+        if r["defaut"]:
+            morceaux.append(r["defaut"])
+            sev = "warning"
+        elif v and v[1] == "ok":
+            morceaux.append("intégrité ok (vérifiée il y a %s)" % _v19_age(time.time() - v[0]))
+        elif v and v[1]:
+            morceaux.append("INTÉGRITÉ : %s" % v[1])
+            sev = "warning"
+        else:
+            morceaux.append("intégrité non vérifiable d'ici")
+        if r["wal"] > 512 << 20 or (r["wal"] > 64 << 20 and r["wal"] > 4 * max(r["taille"], 1)):
+            morceaux.append("journal WAL démesuré : les points de contrôle sont-ils bloqués ?")
+            sev = "warning"
+        out.append(_mesure(cle, "application", " · ".join(morceaux), sev))
+    if bases:
+        out.append(_mesure("store.total", "application", "%d bases · %s au total" % (len(bases), _v19_octets(total)), "info"))
+    for cle, lib, motif in (("store.societes", "bases de sociétés", Path(RACINE_V19, "societes").rglob("*.db") if Path(RACINE_V19, "societes").is_dir() else []),
+                            ("store.utilisateurs", "bases d'utilisateurs", Path(UTILISATEURS_V19).glob("*/data/cassandra/*/*.db") if Path(UTILISATEURS_V19).is_dir() else [])):
+        a = _agreger_bases(motif)
+        if a["n"]:
+            out.append(_mesure(cle, "application", "%d %s · %s%s" % (a["n"], lib, _v19_octets(a["total"]), (" · " + " ; ".join(a["defauts"][:4])) if a["defauts"] else ""),
+                               "warning" if a["defauts"] else "info"))
+    return out
+
+
+# ---------- le code en service ----------
+def _code_scelle_travail(courant, release):
+    """Lance outils/CN_bornes.py de la version en service (dans son processus : il lit les fichiers, n'en modifie aucun) et en tire {etat, fichiers, erreurs, ecarts}."""
+    outil = os.path.join(courant, "outils", "CN_bornes.py")
+    if not os.path.isfile(outil):
+        res = {"etat": "absent"}
+    else:
+        rc, out, err = run_cmd_ex([sys.executable, outil, "--detail"], timeout=240)
+        m = re.search(r"^TOTAL\s+(\d+)\s+(\d+)\s+(\d+)", out or "", re.M)
+        if rc is None or not m:
+            res = {"etat": "muet", "erreur": (err or out or "pas de réponse")[:120]}
+        else:
+            ecarts, courant_f = [], ""
+            for ligne in out.splitlines():
+                mf = re.match(r"^(\S.*?)  \[zone", ligne)
+                if mf:
+                    courant_f = mf.group(1)
+                    continue
+                me = re.match(r"^\s+ERREUR\s+(.*)$", ligne)
+                if me:
+                    ecarts.append((courant_f, me.group(1).strip()))
+            res = {"etat": "ok", "fichiers": int(m.group(1)), "erreurs": int(m.group(3)), "ecarts": ecarts[:8]}
+    with _V19_CODE["verrou"]:
+        _V19_CODE["res"], _V19_CODE["t"], _V19_CODE["release"] = res, time.time(), release
+
+
+def collect_code_v19() -> list:
+    """Le code déployé est-il celui qui a été scellé ? Relevé en arrière-plan (des centaines de fichiers) ; ce passage rend le dernier résultat."""
+    courant = os.path.realpath(os.path.join(RACINE_V19, "current"))
+    if not os.path.isdir(courant):
+        return []
+    release = os.path.basename(courant)
+    with _V19_CODE["verrou"]:
+        du = (time.time() - _V19_CODE["t"] >= V19_CODE_PERIODE_S) or _V19_CODE["release"] != release
+        deja = _V19_CODE.get("travail") is not None and _V19_CODE["travail"].is_alive()
+        if du and not deja:
+            _V19_CODE["travail"] = threading.Thread(target=_code_scelle_travail, args=(courant, release), daemon=True, name="code-scelle")
+            _V19_CODE["travail"].start()
+        res = _V19_CODE["res"]
+    if res is None:
+        return [_mesure("code.scelle", "application", "première vérification en cours (version %s)" % release, "info")]
+    age = _v19_age(time.time() - _V19_CODE["t"])
+    if res["etat"] == "absent":
+        return [_mesure("code.scelle", "application", "les outils de scellé ne sont pas déployés avec la version %s : l'intégrité du code n'est pas vérifiable" % release, "info")]
+    if res["etat"] == "muet":
+        return [_mesure("code.scelle", "application", "la vérification du scellé n'a pas abouti : %s" % res.get("erreur", ""), "warning")]
+    if res["erreurs"]:
+        det = " ; ".join("%s : %s" % e for e in res["ecarts"][:5])
+        return [_mesure("code.scelle", "application", "%d écart(s) au scellé sur %d fichiers (version %s, vérifié il y a %s) : %s" % (res["erreurs"], res["fichiers"], release, age, det), "warning")]
+    return [_mesure("code.scelle", "application", "%d fichiers conformes au scellé (version %s, vérifié il y a %s)" % (res["fichiers"], release, age), "info")]
+
+
+# ---------- le courtier racine ----------
+def _racines_declarees() -> dict:
+    """{module: {commandes déclarées}} lu dans les manifestes de la version en service ([[racine]])."""
+    res = {}
+    base = Path(RACINE_V19, "current", "modules")
+    if not base.is_dir():
+        return res
+    try:
+        import tomllib
+    except ImportError:
+        tomllib = None
+    for m in sorted(base.glob("*/CN_manifeste.toml")):
+        try:
+            texte = m.read_text(encoding="utf-8")
+            if "[[racine]]" not in texte:
+                continue
+            if tomllib:
+                ids = {str(x.get("id")) for x in (tomllib.loads(texte).get("racine") or []) if x.get("id")}
+            else:
+                ids = set(re.findall(r"\[\[racine\]\][^\[]*?\bid\s*=\s*\"([^\"]+)\"", texte))
+        except (OSError, ValueError):
+            continue
+        if ids:
+            res[m.parent.name] = ids
+    return res
+
+
+def _sur_root(chemin, dossier) -> str:
+    """'' si le chemin est à root et que personne d'autre ne peut l'écrire, sinon pourquoi pas."""
+    try:
+        st = os.lstat(chemin)
+    except OSError:
+        return "absent"
+    import stat as _stat
+    if _stat.S_ISLNK(st.st_mode):
+        return "est un lien"
+    if dossier and not _stat.S_ISDIR(st.st_mode):
+        return "n'est pas un dossier"
+    if not dossier and (not _stat.S_ISREG(st.st_mode) or not st.st_mode & 0o100):
+        return "n'est pas un programme exécutable"
+    if st.st_uid != 0:
+        return "n'appartient pas à root (uid %d)" % st.st_uid
+    if st.st_mode & 0o022:
+        return "modifiable par un autre que root (mode %o)" % (st.st_mode & 0o7777)
+    return ""
+
+
+def collect_courtier_v19() -> list:
+    """Le courtier root : ses unités, sa file de demandes, et surtout les commandes qu'il lance en root — chacune doit être déclarée, à root, non modifiable."""
+    out = []
+    p = _props_unite("cassandra-courtier.path", ("LoadState", "ActiveState"))
+    s = _props_unite("cassandra-courtier.service", ("LoadState", "ActiveState", "Result"))
+    libexec = Path(LIBEXEC_V19)
+    if p.get("LoadState") != "loaded" and not libexec.is_dir():
+        return [_mesure("courtier.etat", "application", "pas de courtier racine installé (aucune commande root à surveiller)", "info")]
+    if p.get("LoadState") != "loaded":
+        out.append(_mesure("courtier.etat", "application", "des commandes root existent dans %s mais le courtier n'est pas installé" % libexec, "warning"))
+    else:
+        etat_s = s.get("Result", "") if s.get("ActiveState") == "failed" else ""
+        ok = p.get("ActiveState") in ("active", "waiting", "running") and s.get("ActiveState") != "failed"
+        out.append(_mesure("courtier.etat", "application", "déclencheur %s · service %s%s" % (p.get("ActiveState", "?"), s.get("ActiveState", "?"), (" (" + etat_s + ")") if etat_s else ""),
+                           "info" if ok else "warning"))
+    # la file : des demandes qui attendent depuis longtemps = un courtier qui ne répond plus
+    spool = Path(DONNEES_V19, "courtier")
+    if spool.is_dir():
+        try:
+            att = [os.stat(spool / n).st_mtime for n in os.listdir(spool) if n.endswith(".json")]
+            mode = os.stat(spool).st_mode & 0o777
+            pb = []
+            if att and time.time() - min(att) > 120:
+                pb.append("la plus ancienne attend depuis %s" % _v19_age(time.time() - min(att)))
+            if mode & 0o077:
+                pb.append("le dossier des demandes est ouvert à d'autres que son propriétaire (mode %o)" % mode)
+            out.append(_mesure("courtier.file", "application", "%d demande(s) en attente%s" % (len(att), (" · " + " ; ".join(pb)) if pb else ""), "warning" if pb else "info"))
+        except OSError:
+            pass
+    # les commandes posées contre celles que les manifestes déclarent
+    decl = _racines_declarees()
+    anomalies, posees, modules = [], 0, 0
+    if libexec.is_dir():
+        r = _sur_root(libexec, True)
+        if r:
+            anomalies.append("%s %s" % (libexec, r))
+        try:
+            dossiers = sorted(x for x in os.listdir(libexec))
+        except OSError:
+            dossiers = []
+        for mod in dossiers:
+            d = libexec / mod
+            if not d.is_dir():
+                anomalies.append("%s : fichier inattendu" % d)
+                continue
+            modules += 1
+            r = _sur_root(d, True)
+            if r:
+                anomalies.append("%s %s" % (d, r))
+            attendues = decl.get(mod)
+            try:
+                presentes = sorted(os.listdir(d))
+            except OSError:
+                presentes = []
+            for c in presentes:
+                posees += 1
+                if attendues is None or c not in attendues:
+                    anomalies.append("%s/%s n'est déclarée par aucun manifeste" % (mod, c))
+                r = _sur_root(d / c, False)
+                if r:
+                    anomalies.append("%s/%s %s" % (mod, c, r))
+            for c in sorted((attendues or set()) - set(presentes)):
+                anomalies.append("%s/%s est déclarée mais pas posée" % (mod, c))
+        out.append(_mesure("courtier.commandes", "application", "%d commande(s) root pour %d module(s)%s" % (
+            posees, modules, (" · " + " ; ".join(anomalies[:6]) + (" …" if len(anomalies) > 6 else "")) if anomalies else ", toutes déclarées, à root, non modifiables"),
+            "warning" if anomalies else "info"))
+    return out
+
+
+def collect_cassandra_v19() -> list:
+    """Tout ce que le démon voit de Cassandra V19. Une panne d'un relevé se dit, elle n'efface pas les autres."""
+    out = []
+    if not _noyau_v19_present() and not os.path.isdir(RACINE_V19):
+        return out                       # une machine sans Cassandra : rien à dire
+    for fn in (collect_noyau_v19, collect_stores_v19, collect_code_v19, collect_courtier_v19):
+        try:
+            out.extend(fn() or [])
+        except Exception as e:
+            print(f"[V19] {fn.__name__} : {e}", file=sys.stderr)
+            out.append(_mesure("noyau.releve_" + fn.__name__.replace("collect_", "").replace("_v19", ""), "application", "le relevé a échoué : %s" % str(e)[:150], "warning"))
+    return out
+
+
 def collect_sante_applicative() -> list:
     out = []
     # Trafic et erreurs par site : journaux FastPanel (un par site), puis ceux de nginx et d'apache
@@ -3953,7 +4461,15 @@ def collect_sante_applicative() -> list:
                                "warning" if int(m.group(1)) >= 140 else "info"))
         elif st:
             out.append(_mesure("mysql.etat", "application", "injoignable : %s" % st.strip()[:120], "warning"))
-    # Cassandra elle-même : ses modèles d'IA (2 dernières heures) et sa mémoire
+    out.extend(collect_cassandra_v19())
+    if _unite_noyau() in (None, "cassandra.service"):
+        out.extend(_sante_cassandra_v18())
+    return out
+
+
+def _sante_cassandra_v18() -> list:
+    """Cassandra V18 : ses modèles d'IA (2 dernières heures), sa mémoire, son processus (unité cassandra.service, cassandra_memory.db)."""
+    out = []
     mem = os.path.join(os.path.dirname(DB_PATH), "cassandra_memory.db")
     if os.path.exists(mem):
         try:

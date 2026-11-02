@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3ef4c1
+# VERSION CN : 0.1.0  #90793d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : garde, par point d'évolution, les ENTRÉES réellement reçues (distinctes, comptées), avec une partition réservée que le générateur ne voit jamais.
 # MÉTHODE    : une table SQLite ; l'entrée est identifiée par son empreinte ; la partition réservée se décide par l'empreinte (déterministe) ; borne par point, les cas dorés jamais évincés.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3ef4c1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=90793d ▼▼▼
 """Le corpus de rejeu (docs/CN_EVOLUTION.md §2) : la matière du banc d'essai de toute évolution.
 
 On ne garde que les ENTRÉES : la sortie de référence est recalculée par la référence du dépôt à chaque évaluation, car c'est elle la spécification
@@ -27,8 +27,10 @@ fédération) passera par une anonymisation, jamais par ce fichier tel quel. Seu
 from __future__ import annotations
 
 import contextlib
+import fnmatch
 import hashlib
 import json
+import os
 import sqlite3
 import threading
 import time
@@ -37,6 +39,7 @@ from pathlib import Path
 PART_RESERVEE = 5                  # un cas sur N est réservé
 MAX_PAR_POINT = 2000               # entrées distinctes gardées par point (les cas dorés ne sont jamais évincés)
 PURGE_TOUS_LES = 100               # on vérifie la borne tous les N enregistrements
+MAX_ENTREE_OCTETS = 65536          # une entrée plus grosse n'est pas gardée : ce n'est pas un cas de test, c'est un fichier ou une pièce jointe (et c'est une donnée privée en clair)
 
 SCHEMA = """CREATE TABLE IF NOT EXISTS appels(
   gid TEXT NOT NULL, h TEXT NOT NULL, entree TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 1, origine TEXT NOT NULL DEFAULT 'reel', reserve INTEGER NOT NULL,
@@ -55,13 +58,20 @@ def est_reserve(h: str) -> bool:
 
 
 class Rejeu:
-    def __init__(self, chemin, max_par_point: int = MAX_PAR_POINT, actif: bool = True):
+    def __init__(self, chemin, max_par_point: int = MAX_PAR_POINT, actif: bool = True, exclus=()):
+        """`exclus` : des motifs de points (« courrier.* ») dont les entrées ne sont JAMAIS gardées (des données trop privées pour dormir en clair dans un corpus)."""
         self.chemin, self.max_par_point, self.actif = Path(chemin), int(max_par_point), bool(actif)
+        self.exclus = tuple(str(x) for x in exclus)
         self._verrou = threading.Lock()
         self._compte = 0
         self.chemin.parent.mkdir(parents=True, exist_ok=True)
         with self._con() as c:
             c.executescript(SCHEMA)
+        if os.name == "posix":
+            try:
+                os.chmod(self.chemin, 0o600)                       # des entrées réelles : lisibles du seul service
+            except OSError:
+                pass
 
     @contextlib.contextmanager
     def _con(self):
@@ -80,23 +90,24 @@ class Rejeu:
     # ── l'écriture ───────────────────────────────────────────────────────
     def enregistrer(self, gid: str, entree, sortie=None, duree_ms: float = 0.0, source: str = "reference") -> None:
         """Compatible avec `enregistreur` de ServicePoints. La sortie n'est pas gardée (voir plus haut) ; la durée sert aux statistiques du trafic réel."""
-        if not self.actif:
+        if not self.actif or any(fnmatch.fnmatchcase(gid, m) for m in self.exclus):
             return
         h = empreinte(entree)
         t = time.time()
         corps = json.dumps(entree, ensure_ascii=False, sort_keys=True)
+        if len(corps.encode("utf-8")) > MAX_ENTREE_OCTETS:
+            return
         with self._verrou, self._con() as c:
             c.execute("INSERT INTO appels(gid,h,entree,reserve,premier,dernier,ms_somme,ms_n) VALUES(?,?,?,?,?,?,?,1) "
                       "ON CONFLICT(gid,h) DO UPDATE SET n=n+1, dernier=excluded.dernier, ms_somme=ms_somme+excluded.ms_somme, ms_n=ms_n+1",
                       (gid, h, corps, 1 if est_reserve(h) else 0, t, t, float(duree_ms)))
             self._compte += 1
             if self._compte % PURGE_TOUS_LES == 0:
-                self._borner(c, gid)
+                self._borner(c)
 
-    def _borner(self, c, gid: str) -> None:
-        """Au-delà de la borne, on évince les entrées les moins fréquentes puis les plus anciennes. Un cas doré n'est jamais évincé."""
-        n = c.execute("SELECT COUNT(*) FROM appels WHERE gid=?", (gid,)).fetchone()[0]
-        if n > self.max_par_point:
+    def _borner(self, c) -> None:
+        """Au-delà de la borne, on évince les entrées les moins fréquentes puis les plus anciennes, POUR CHAQUE point (pas seulement celui du dernier enregistrement). Un cas doré n'est jamais évincé."""
+        for gid, n in c.execute("SELECT gid, COUNT(*) FROM appels GROUP BY gid HAVING COUNT(*) > ?", (self.max_par_point,)).fetchall():
             c.execute("DELETE FROM appels WHERE rowid IN (SELECT rowid FROM appels WHERE gid=? AND origine!='dore' ORDER BY n ASC, dernier ASC LIMIT ?)",
                       (gid, n - self.max_par_point))
 

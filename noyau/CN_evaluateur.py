@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f37d63
+# VERSION CN : 0.1.0  #6d5dda
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : dit si une variante d'un point d'évolution est équivalente à la référence, plus rapide, et si son gain tient hors de ce que le générateur a vu.
 # MÉTHODE    : code déterministe (jamais un modèle) ; évaluation par paliers avec arrêt à la première divergence ; partition réservée ; contrôle de sa propre solidité par des variantes fausses.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f37d63 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6d5dda ▼▼▼
 """L'évaluateur (docs/CN_EVOLUTION.md §2, docs/CN_NEXUS.md §4 : un juge ne s'évolue pas).
 
   - DÉTERMINISTE : aucune note donnée par un modèle ; une comparaison de données et des mesures de durée ;
@@ -34,6 +34,8 @@ import time
 import types
 
 from . import CN_points as P
+
+RESERVE_MIN = 5            # cas réservés équivalents en dessous desquels « le gain tient » ne se dit pas
 
 
 class Impur(ValueError):
@@ -88,24 +90,49 @@ def _gain(ref, cand):
 
 
 class Evaluateur:
-    def __init__(self, points, rejeu, minimum: int = 200):
+    def __init__(self, points, rejeu, minimum: int = 200, memoire_mo: int = P.MEMOIRE_EC_MO):
         """`minimum` : en dessous de ce nombre d'entrées distinctes, le corpus est dit TROP ÉTROIT : on ne promeut pas sur un jeu trop mince."""
-        self.points, self.rejeu, self.minimum = points, rejeu, int(minimum)
+        self.points, self.rejeu, self.minimum, self.memoire_mo = points, rejeu, int(minimum), int(memoire_mo)
 
-    def evaluer(self, module: str, point: str, candidat: str, paliers=(0.05, 0.25, 1.0), repetitions: int = 3, minimum: int | None = None) -> dict:
-        """`repetitions` : le nombre de PASSES à froid du chronométrage (voir _chronometrer)."""
+    def evaluer(self, module: str, point: str, candidat: str, paliers=(0.05, 0.25, 1.0), repetitions: int = 3, minimum: int | None = None, chrono: bool = True, _isole=None) -> dict:
+        """`_isole` : un processus déjà prêt (voir pieges) ; `repetitions` : le nombre de PASSES à froid du chronométrage (voir CN_ec_worker._chrono). Le candidat n'est JAMAIS exécuté dans le serveur : il vit dans un processus
+        à part (chargement, appels et chronométrage ont un délai ; au délai le processus est tué). `chrono` faux : l'équivalence seule (les variantes fausses des pièges)."""
         ref = self.points.reference(module, point)
         gid = ref["gid"]
         res = {"point": gid, "verdict": "", "corpus": {}, "palier_atteint": 0.0, "evalues": 0, "divergence": None, "erreur": "", "latence_ms": {}, "gain_pct": None,
                "gain_visible_pct": None, "gain_reserve_pct": None, "gain_tient": None, "refs_en_echec": 0, "bruit_pct": None}
         try:
-            cand = charger_texte(candidat, ref["fonction"])
-        except Impur as e:
-            res.update(verdict="impure", erreur=str(e), fautes=e.fautes)
+            ast.parse(candidat)                                      # une syntaxe illisible lève SyntaxError : c'est « illisible », pas « impur »
+        except SyntaxError as e:
+            res.update(verdict="illisible", erreur="SyntaxError : %s" % e)
+            return res
+        fautes = P.analyser_purete(candidat)
+        if fautes:
+            res.update(verdict="impure", erreur="; ".join(fautes[:3]), fautes=fautes)
+            return res
+        delai_ms = int(ref["contrat"].get("delai_ms") or 2000)
+        propre = _isole is None
+        try:
+            if propre:
+                cand = P.CandidatIsole(candidat, ref["fonction"], delai_ms, self.memoire_mo)
+            else:
+                cand = _isole
+                cand.charger(candidat, ref["fonction"])
+        except P.DelaiEC as e:                                       # une boucle au chargement lui-même
+            res.update(verdict="erreur", erreur="DelaiEC : %s" % e)
             return res
         except Exception as e:                                       # un candidat illisible ou sans la fonction n'est pas un candidat
-            res.update(verdict="illisible", erreur="%s : %s" % (type(e).__name__, e))
+            msg = str(e)
+            res.update(verdict="impure" if msg.startswith("impure") else "illisible", erreur="%s : %s" % (type(e).__name__, msg))
             return res
+        try:
+            return self._evaluer(ref, res, cand, candidat, paliers, repetitions, minimum, chrono)
+        finally:
+            if propre:
+                cand.fermer()
+
+    def _evaluer(self, ref: dict, res: dict, cand, candidat: str, paliers, repetitions: int, minimum, chrono: bool) -> dict:
+        gid = ref["gid"]
         visibles, reserves = self.rejeu.corpus(gid, "visible"), self.rejeu.corpus(gid, "reserve")
         corpus = visibles + reserves                                  # ce que le générateur voit d'abord ; le réservé en dernier
         n = len(corpus)
@@ -115,7 +142,6 @@ class Evaluateur:
         t_ref2 = []                                          # la référence chronométrée une seconde fois : l'écart avec elle-même est le BRUIT de la machine
         cas_ok = []                                          # les cas où le candidat a répondu comme la référence : ce sont eux qu'on chronomètre
         sortie_contrat = ref["contrat"].get("sortie")
-        delai_s = float(ref["contrat"].get("delai_ms") or 2000) / 1000.0
         fait = 0
         arret = False
         for frac in paliers:
@@ -125,17 +151,27 @@ class Evaluateur:
                 try:
                     attendue = P._copie(ref["appelable"](P._copie(cas["entree"])))
                 except Exception:
-                    res["refs_en_echec"] += 1                          # la spécification elle-même échoue sur ce cas : on ne le compte ni pour ni contre
+                    res["refs_en_echec"] += 1                          # la spécification elle-même échoue sur ce cas : un candidat qui y répond autre chose qu'une erreur n'est pas équivalent
                     fait += 1
-                    continue
+                    try:
+                        cand(P._copie(cas["entree"]))
+                    except P.DelaiEC as e:
+                        res.update(verdict="erreur", erreur="DelaiEC : %s" % e, divergence={"h": cas["h"], "partition": part})
+                        arret = True
+                        break
+                    except Exception:
+                        continue                                       # la référence échoue, le candidat aussi : même comportement
+                    res.update(verdict="divergente", divergence={"h": cas["h"], "partition": part, "contrat": ["la référence échoue sur ce cas, le candidat répond"]})
+                    arret = True
+                    break
                 try:
-                    obtenue = P._copie(appel_borne(cand, P._copie(cas["entree"]), delai_s))
+                    obtenue = P._copie(cand(P._copie(cas["entree"])))
                 except Exception as e:
                     res.update(verdict="erreur", erreur="%s : %s" % (type(e).__name__, e), divergence={"h": cas["h"], "partition": part})
                     arret = True
                     break
                 ecarts = P.valider(sortie_contrat, obtenue)
-                if ecarts or obtenue != attendue:
+                if ecarts or P._canon(obtenue) != P._canon(attendue):          # le même TEXTE JSON : 1 et 1.0, True et 1, deux ordres de clés ne sont pas la même réponse
                     res.update(verdict="divergente", divergence={"h": cas["h"], "partition": part, "contrat": ecarts[:2]})
                     arret = True
                     break
@@ -145,8 +181,12 @@ class Evaluateur:
             res["palier_atteint"] = round(fait / n, 3) if n else 0.0
             if arret:
                 break
-        if cas_ok and not arret:                              # le temps ne se mesure que d'un candidat équivalent : un faux plus rapide n'est pas un gain
-            t_ref, t_cand, t_ref2 = self._chronometrer(ref, candidat, cas_ok, repetitions)
+        if cas_ok and not arret and chrono and ref["runtime"] == "python":      # le temps ne se mesure que d'un candidat équivalent : un faux plus rapide n'est pas un gain
+            try:
+                t_ref, t_cand, t_ref2 = self._chronometrer(ref, cand, candidat, cas_ok, repetitions)
+            except (P.DelaiEC, P.ErreurEC) as e:
+                res.update(verdict="erreur", erreur="chronométrage : %s" % e)
+                return res
         rv, cv, rr, cr = _mediane(t_ref["visible"]), _mediane(t_cand["visible"]), _mediane(t_ref["reserve"]), _mediane(t_cand["reserve"])
         res["latence_ms"] = {"reference_visible": rv, "candidat_visible": cv, "reference_reserve": rr, "candidat_reserve": cr}
         res["gain_visible_pct"], res["gain_reserve_pct"] = _gain(rv, cv), _gain(rr, cr)
@@ -154,47 +194,34 @@ class Evaluateur:
         res["gain_pct"] = _gain(_mediane(toutes_ref), _mediane(tous_cand))
         bruit = _gain(_mediane(toutes_ref), _mediane(t_ref2))
         res["bruit_pct"] = abs(bruit) if bruit is not None else None      # un gain qui ne dépasse pas ce que la référence « gagne » sur elle-même n'est pas un gain
+        seuil = self.minimum if minimum is None else int(minimum)
         if res["gain_visible_pct"] is not None and res["gain_reserve_pct"] is not None:
-            # le gain « tient » s'il subsiste, aux trois quarts au moins, sur ce que le générateur n'a jamais vu
-            res["gain_tient"] = True if res["gain_visible_pct"] <= 0 else res["gain_reserve_pct"] >= 0.75 * res["gain_visible_pct"]
+            # le gain « tient » s'il subsiste, aux trois quarts au moins, sur ce que le générateur n'a jamais vu ; sans gain visible il n'y a rien qui tienne
+            res["gain_tient"] = res["gain_visible_pct"] > 0 and res["gain_reserve_pct"] >= 0.75 * res["gain_visible_pct"]
+            if len(t_ref["reserve"]) < RESERVE_MIN:
+                res["gain_tient"] = None                          # un jeu réservé trop mince ne prouve rien : « tient » ne se dit pas sur quelques cas
         if not res["verdict"]:
-            res["verdict"] = "corpus_trop_etroit" if n < (self.minimum if minimum is None else int(minimum)) else "equivalente"
+            res["verdict"] = "corpus_trop_etroit" if n < seuil else "equivalente"
         return res
 
     @staticmethod
-    def _chronometrer(ref: dict, candidat: str, cas_ok: list, passes: int):
-        """Mesure le temps en PASSES À FROID : à chaque passe, la référence (deux fois, pour le bruit) et le candidat sont rechargés à neuf, puis chaque entrée est jouée UNE fois.
-        Pourquoi pas « trois essais de la même entrée, le meilleur gagne » : une variante qui mémorise ses résultats (lru_cache) serait chaude dès le deuxième essai, et son gain
-        serait gonflé. Ici une entrée n'est jamais rejouée dans une même instance ; seul demeure l'effet d'un cache d'une entrée à la suivante, qui est celui du trafic réel.
-        Le temps retenu pour chaque entrée est le plus bas des passes (le moins perturbé par le reste de la machine). L'ordre des trois appels tourne d'une passe à l'autre."""
+    def _chronometrer(ref: dict, cand, candidat: str, cas_ok: list, passes: int):
+        """Mesure le temps en PASSES À FROID, DANS le processus du candidat (voir CN_ec_worker._chrono) : à chaque passe, la référence (deux fois, pour le bruit) et le candidat sont
+        rechargés à neuf, puis chaque entrée est jouée UNE fois. Pourquoi pas « trois essais de la même entrée, le meilleur gagne » : une variante qui mémorise ses résultats
+        (lru_cache) serait chaude dès le deuxième essai, et son gain serait gonflé. Le temps retenu pour chaque entrée est le plus bas des passes ; l'ordre des trois appels tourne."""
         source_ref = ref["fichier"].read_text(encoding="utf-8")
         passes = max(1, int(passes))
-        meilleur: dict = {}
-        for p in range(passes):
-            if ref["runtime"] == "python":
-                ref_a, ref_b = charger_texte(source_ref, ref["fonction"]), charger_texte(source_ref, ref["fonction"])
-            else:
-                ref_a = ref_b = ref["appelable"]
-            cand = charger_texte(candidat, ref["fonction"])
-            appelants = [("ref", ref_a), ("cand", cand), ("ref2", ref_b)]
-            for i, cas in enumerate(cas_ok):
-                k = (p + i) % 3
-                for nom, f in appelants[k:] + appelants[:k]:
-                    e = P._copie(cas["entree"])
-                    t0 = time.perf_counter_ns()
-                    f(e)
-                    d = (time.perf_counter_ns() - t0) / 1e6
-                    cle = (cas["h"], nom)
-                    if cle not in meilleur or d < meilleur[cle]:
-                        meilleur[cle] = d
+        delai_s = float(ref["contrat"].get("delai_ms") or 2000) / 1000.0
+        total = min(600.0, 30.0 + 3.0 * passes * len(cas_ok) * delai_s * 0.1)
+        lignes = cand.chrono(source_ref, candidat, ref["fonction"], [c["entree"] for c in cas_ok], passes, total)
         t_ref = {"visible": [], "reserve": []}
         t_cand = {"visible": [], "reserve": []}
         t_ref2 = []
-        for cas in cas_ok:
+        for cas, (a, b, c2) in zip(cas_ok, lignes):
             part = "reserve" if cas["reserve"] else "visible"
-            t_ref[part].append(meilleur[(cas["h"], "ref")])
-            t_cand[part].append(meilleur[(cas["h"], "cand")])
-            t_ref2.append(meilleur[(cas["h"], "ref2")])
+            t_ref[part].append(a)
+            t_cand[part].append(b)
+            t_ref2.append(c2)
         return t_ref, t_cand, t_ref2
 
     # ── l'évaluateur évalué ──────────────────────────────────────────────
@@ -204,8 +231,16 @@ class Evaluateur:
         ref = self.points.reference(module, point)
         source = ref["fichier"].read_text(encoding="utf-8")
         detectes, survivants, valides = 0, [], 0
+        isole = P.CandidatIsole(None, ref["fonction"], int(ref["contrat"].get("delai_ms") or 2000), self.memoire_mo)       # un seul processus pour les quarante variantes
+        try:
+            return self._pieges(module, point, ref, source, maximum, isole)
+        finally:
+            isole.fermer()
+
+    def _pieges(self, module: str, point: str, ref: dict, source: str, maximum: int, isole) -> dict:
+        detectes, survivants, valides = 0, [], 0
         for texte, description, ligne in mutants(source, maximum):
-            r = self.evaluer(module, point, texte, paliers=(1.0,), repetitions=1, minimum=0)
+            r = self.evaluer(module, point, texte, paliers=(1.0,), repetitions=1, minimum=0, chrono=False, _isole=isole)
             if r["verdict"] in ("impure", "illisible"):
                 continue                                                # un mutant qui ne se charge pas n'éprouve rien
             valides += 1

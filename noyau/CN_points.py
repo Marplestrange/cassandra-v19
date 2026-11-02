@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #765e97
+# VERSION CN : 0.1.0  #cae4f1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=765e97 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cae4f1 ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -29,21 +29,35 @@ Aucune EC n'existe encore : le stock est vide, c'est la référence qui sert. Le
 from __future__ import annotations
 
 import ast
+import atexit
 import hashlib
+import hmac
 import json
+import os
+import queue
 import re
 import statistics
+import subprocess
+import sys
+import tempfile
 import threading
 import types
 import time
+import uuid
 from collections import deque
 from pathlib import Path
 
 SEUIL_FAUTES = 3                   # fautes d'une EC avant suspension
 FENETRE_S = 600                    # ... dans cette fenêtre (dix minutes)
+MAX_ELEMENTS_VALIDES = 1000        # éléments d'une liste vérifiés un à un (au-delà : une faute, jamais un « conforme » partiel)
+MEMOIRE_EC_MO = 1024               # plafond d'adresses d'un travailleur d'EC (POSIX)
+DEMARRAGE_EC_S = 5.0               # temps minimal laissé à un travailleur pour démarrer et charger l'EC (au moins le double du délai d'un appel)
+FLUSH_STATS_S = 1.0                # une statistique d'appels est écrite au plus toutes les secondes
+DISTINCTS_MAX = 400                # entrées distinctes retenues par l'ombre (empreintes)
+ECHANTILLON_DEFAUT = 50            # en service, un appel sur N est comparé à la référence (dérive de sens que le schéma ne voit pas)
 
 STDLIB_PURE = {"__future__", "math", "re", "json", "itertools", "functools", "collections", "dataclasses", "typing", "enum", "fractions", "decimal", "string",
-               "textwrap", "unicodedata", "operator", "copy", "heapq", "bisect", "statistics", "hashlib", "base64", "struct", "ec_api", "abc", "numbers", "ipaddress", "datetime", "shlex", "email", "html", "quopri", "binascii"}
+               "textwrap", "unicodedata", "operator", "copy", "heapq", "bisect", "statistics", "hashlib", "base64", "struct", "abc", "numbers", "ipaddress", "datetime", "shlex", "email", "html", "quopri", "binascii"}
 # Une horloge ou un hasard lu par un attribut (datetime.now(), random.choice…) rendrait l'EC non déterministe : refusé même si le module est pur.
 ATTRIBUTS_INTERDITS = {"now", "today", "utcnow", "fromtimestamp", "utcfromtimestamp", "monotonic", "perf_counter", "random", "randint", "choice", "shuffle", "uuid4", "urandom"}
 NOMS_INTERDITS = {"ctx", "self", "cls", "open", "print", "input", "exec", "eval", "__import__", "compile", "globals", "locals",
@@ -69,6 +83,14 @@ class ContratViole(ValueError):
 
 class PointDefaillant(RuntimeError):
     """La RÉFÉRENCE du dépôt échoue ou viole son propre contrat : un défaut du dépôt, jamais masqué."""
+
+
+class DelaiEC(RuntimeError):
+    """Une EC n'a pas rendu la main dans son délai : son processus a été tué (une boucle sans fin, une expression régulière catastrophique)."""
+
+
+class ErreurEC(RuntimeError):
+    """L'EC, dans son processus, a échoué (impure au chargement, exception, mémoire épuisée)."""
 
 
 # ── le contrat : un sous-ensemble volontairement petit de JSON Schema ─────────
@@ -100,12 +122,22 @@ def valider(schema, valeur, chemin: str = "$") -> list:
         for k in schema.get("required", []):
             if k not in valeur:
                 fautes.append("%s.%s : champ obligatoire absent" % (chemin, k))
-        for k, sous in (schema.get("properties") or {}).items():
+        propres = schema.get("properties") or {}
+        for k, sous in propres.items():
             if k in valeur:
                 fautes += valider(sous, valeur[k], "%s.%s" % (chemin, k))
-    if isinstance(valeur, list) and schema.get("items"):
-        for i, x in enumerate(valeur[:50]):
-            fautes += valider(schema["items"], x, "%s[%d]" % (chemin, i))
+        if schema.get("additionalProperties") is False:
+            fautes += ["%s.%s : champ non prévu par le contrat" % (chemin, k) for k in valeur if k not in propres][:3]
+    if isinstance(valeur, list):
+        if "maxItems" in schema and len(valeur) > schema["maxItems"]:
+            fautes.append("%s : %d éléments pour un maximum de %s" % (chemin, len(valeur), schema["maxItems"]))
+        if schema.get("items"):
+            for i, x in enumerate(valeur[:MAX_ELEMENTS_VALIDES]):
+                fautes += valider(schema["items"], x, "%s[%d]" % (chemin, i))
+            if len(valeur) > MAX_ELEMENTS_VALIDES:
+                fautes.append("%s : %d éléments, trop pour être validés (plafond %d)" % (chemin, len(valeur), MAX_ELEMENTS_VALIDES))
+    if isinstance(valeur, str) and "maxLength" in schema and len(valeur) > schema["maxLength"]:
+        fautes.append("%s : %d caractères pour un maximum de %s" % (chemin, len(valeur), schema["maxLength"]))
     return fautes
 
 
@@ -295,12 +327,193 @@ class HotePython:
             return self._cache[cle]
 
 
+class _Travailleur:
+    """Un processus Python à part qui a chargé UNE EC. Un seul échange à la fois ; au délai, le processus est tué (jamais attendu)."""
+
+    def __init__(self, memoire_mo: int):
+        racine = Path(__file__).resolve().parent
+        self._dossier = tempfile.mkdtemp(prefix="cn_ec_")
+        env = {k: v for k, v in os.environ.items() if k in ("SYSTEMROOT", "PATH", "TEMP", "TMP", "LANG", "LC_ALL")}      # rien d'autre du serveur : pas de clé, pas de jeton
+        self.proc = subprocess.Popen([sys.executable, "-I", str(racine / "CN_ec_worker.py"), str(racine / "CN_points.py"), str(int(memoire_mo) * 1024 * 1024)],
+                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, cwd=self._dossier, env=env, bufsize=0)
+        self._q: queue.Queue = queue.Queue()
+        self._verrou = threading.Lock()
+        threading.Thread(target=self._lire, daemon=True, name="ec-lecteur").start()
+
+    def _lire(self):
+        try:
+            for ligne in iter(self.proc.stdout.readline, b""):
+                self._q.put(ligne)
+        except Exception:
+            pass
+        self._q.put(None)
+
+    def vivant(self) -> bool:
+        return self.proc.poll() is None
+
+    def echange(self, msg: dict, delai_s: float) -> dict:
+        with self._verrou:
+            if not self.vivant():
+                raise ErreurEC("le processus de l'EC n'est plus là")
+            try:
+                self.proc.stdin.write((json.dumps(msg) + "\n").encode("ascii"))
+            except (OSError, ValueError) as e:
+                self.tuer()
+                raise ErreurEC("le processus de l'EC ne répond plus (%s)" % e)
+            try:
+                ligne = self._q.get(timeout=max(0.05, delai_s))
+            except queue.Empty:
+                self.tuer()
+                raise DelaiEC("délai de %.1f s dépassé : processus de l'EC tué" % delai_s)
+            if ligne is None:
+                raise ErreurEC("le processus de l'EC s'est arrêté (mémoire épuisée ou fin brutale)")
+            return json.loads(ligne.decode("utf-8"))
+
+    def tuer(self):
+        try:
+            self.proc.kill()
+            self.proc.wait(timeout=5)
+        except Exception:
+            pass
+        try:
+            self.proc.stdin.close()
+            self.proc.stdout.close()
+        except Exception:
+            pass
+        try:
+            os.rmdir(self._dossier)
+        except OSError:
+            pass
+
+
+class HoteProcessus:
+    """L'hôte des EC dans un PROCESSUS À PART par fichier d'EC : la seule vraie frontière entre ce que le noyau exécute et ce qu'un modèle a écrit.
+    Délai tenu par la mort du processus, mémoire plafonnée (POSIX), environnement vidé. Même interface que HotePython."""
+
+    def __init__(self, memoire_mo: int = MEMOIRE_EC_MO):
+        self.memoire_mo = int(memoire_mo)
+        self._delai_s = 2.0
+        self._travailleurs: dict = {}
+        self._verrou = threading.RLock()
+        atexit.register(self.fermer)
+
+    def appelable_verifie(self, chemin: Path, fonction: str, empreinte: str, delai_ms: int = 2000):
+        return self._appelable(chemin, fonction, empreinte, delai_ms)
+
+    def appelable(self, chemin: Path, fonction: str, delai_ms: int = 2000):
+        return self._appelable(chemin, fonction, "", delai_ms)
+
+    def _travailleur(self, chemin: Path, fonction: str, attendue: str) -> tuple:
+        cle = (str(chemin), attendue)
+        with self._verrou:
+            t = self._travailleurs.get(cle) if attendue else None
+            if t is not None and t.vivant():
+                return cle, t
+        octets = chemin.read_bytes()
+        emp = hashlib.sha256(octets).hexdigest()
+        if attendue and emp != attendue:
+            raise RuntimeError("le fichier d'EC a changé entre sa vérification et son chargement")
+        cle = (str(chemin), emp)
+        with self._verrou:
+            t = self._travailleurs.get(cle)
+            if t is not None and t.vivant():
+                return cle, t
+            for autre in [k for k in self._travailleurs if k[0] == str(chemin) and k != cle]:        # une autre version du même fichier : l'ancienne s'en va
+                self._travailleurs.pop(autre).tuer()
+            t = _Travailleur(self.memoire_mo)
+            try:
+                r = t.echange({"op": "charger", "texte": octets.decode("utf-8"), "fonction": fonction}, max(DEMARRAGE_EC_S, 2 * self._delai_s))
+            except Exception:
+                t.tuer()
+                raise
+            if not r.get("ok"):
+                t.tuer()
+                raise ErreurEC(r.get("erreur") or "chargement refusé")
+            self._travailleurs[cle] = t
+            return cle, t
+
+    def _appelable(self, chemin: Path, fonction: str, attendue: str, delai_ms: int):
+        delai_s = max(0.05, float(delai_ms) / 1000.0)
+        self._delai_s = delai_s
+        cle, t = self._travailleur(chemin, fonction, attendue)           # le démarrage se paie ici, hors du délai de l'appel
+
+        def appeler(entree):
+            nonlocal t
+            if not t.vivant():                                           # tué au dernier délai : un neuf, chargé du même texte
+                _, t = self._travailleur(chemin, fonction, cle[1])
+            try:
+                r = t.echange({"op": "appeler", "entree": entree}, delai_s)
+            except DelaiEC:
+                with self._verrou:
+                    self._travailleurs.pop(cle, None)
+                raise
+            if not r.get("ok"):
+                raise ErreurEC(r.get("erreur") or "échec de l'EC")
+            return r["sortie"]
+        return appeler
+
+    def fermer(self):
+        with self._verrou:
+            for t in list(self._travailleurs.values()):
+                t.tuer()
+            self._travailleurs.clear()
+
+
+class CandidatIsole:
+    """Un candidat (du texte que personne n'a relu) chargé dans son PROCESSUS, pour l'évaluateur : jamais exécuté dans le serveur.
+    Le chargement, chaque appel et le chronométrage ont un délai ; au délai, le processus est tué. `fermer()` le libère toujours."""
+
+    def __init__(self, texte: str | None = None, fonction: str = "", delai_ms: int = 2000, memoire_mo: int = MEMOIRE_EC_MO):
+        """Sans `texte`, ne fait que préparer le processus : `charger` y met ensuite des candidats l'un après l'autre (les pièges en essaient quarante)."""
+        self.delai_s = max(0.05, float(delai_ms) / 1000.0)
+        self._memoire = memoire_mo
+        self._t = _Travailleur(memoire_mo)
+        if texte is not None:
+            try:
+                self.charger(texte, fonction)
+            except Exception:
+                self.fermer()
+                raise
+
+    def charger(self, texte: str, fonction: str) -> None:
+        """Charge un candidat (le précédent est oublié). Un processus tué au dernier délai est remplacé par un neuf. Lève DelaiEC (boucle au chargement) ou ErreurEC (impur, illisible)."""
+        if not self._t.vivant():
+            self._t = _Travailleur(self._memoire)
+        r = self._t.echange({"op": "charger", "texte": texte, "fonction": fonction}, max(DEMARRAGE_EC_S, 2 * self.delai_s))
+        if not r.get("ok"):
+            raise ErreurEC(r.get("erreur") or "chargement refusé")
+
+    def __call__(self, entree):
+        if not self._t.vivant():
+            raise ErreurEC("le processus du candidat est mort")
+        r = self._t.echange({"op": "appeler", "entree": entree}, self.delai_s)
+        if not r.get("ok"):
+            raise ErreurEC(r.get("erreur") or "échec du candidat")
+        return r["sortie"]
+
+    def chrono(self, ref: str, cand: str, fonction: str, entrees: list, passes: int, delai_total_s: float) -> list:
+        """Les durées (référence, candidat, référence bis) de chaque entrée, en ms, mesurées À FROID dans le processus du candidat."""
+        r = self._t.echange({"op": "chrono", "ref": ref, "cand": cand, "fonction": fonction, "entrees": entrees, "passes": int(passes)}, delai_total_s)
+        if not r.get("ok"):
+            raise ErreurEC(r.get("erreur") or "chronométrage refusé")
+        return r["t"]
+
+    def fermer(self):
+        self._t.tuer()
+
+
 HOTES = {"python": HotePython}
+HOTES_ISOLES = {"python": HoteProcessus}
 
 
 def _tranche(entree) -> int:
     """Une tranche de 0 à 99, STABLE pour une entrée donnée : le routage par part envoie toujours la même entrée du même côté."""
     return int(hashlib.sha256(json.dumps(entree, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()[:8], 16) % 100
+
+
+def _canon(valeur) -> str:
+    """Le texte JSON d'une valeur, ordre des clés CONSERVÉ : deux sorties sont les mêmes si elles s'écrivent pareil (1 et 1.0, True et 1, deux ordres de clés ne le sont pas)."""
+    return json.dumps(valeur, ensure_ascii=False, separators=(",", ":"))
 
 
 def _copie(valeur):
@@ -315,20 +528,97 @@ class _Declare:
         self.fautes = deque()
         self.suspendue = None
         self.appels = 0
+        self.ec_appels = 0
         self.refus = ""
+        self.ombre = None                  # {"gen", "appels", "ecarts", "erreurs", "ms_ref", "ms_ec", "distincts"} de CE processus, pour la génération d'ombre en cours
+        self.dernier_flush = 0.0
+        self.flushe = False                # ce processus a-t-il écrit son fichier de statistiques ?
+
+
+def _vide_ombre(gen) -> dict:
+    return {"gen": gen, "appels": 0, "ecarts": 0, "erreurs": 0, "ms_ref": deque(maxlen=100), "ms_ec": deque(maxlen=100), "distincts": []}
 
 
 class ServicePoints:
-    def __init__(self, stock=None, enregistreur=None, alerte=None, horloge=time.monotonic, echantillon: int = 0):
+    def __init__(self, stock=None, enregistreur=None, alerte=None, horloge=time.monotonic, echantillon: int = 0, isolation: str = "processus",
+                 memoire_mo: int = MEMOIRE_EC_MO, exiger_sceau: bool = False, cle: bytes | None = None):
         """`stock` : le dossier des EC (jamais dans modules/). `enregistreur(gid, entree, sortie, duree_ms, source)` : la matière du rejeu.
-        `alerte(gid, texte)` : appelé à la suspension d'une EC. `echantillon` : un appel sur N compare l'EC à la référence (0 : jamais)."""
+        `alerte(gid, texte)` : appelé à la suspension d'une EC. `echantillon` : un appel sur N compare l'EC à la référence (0 : jamais).
+        `isolation` : « processus » (une EC tourne dans un processus à part, tué au délai) ou « fil » (dans le serveur : pour des EC de référence signées et des bancs).
+        `exiger_sceau` : une EC ne sert que si elle porte le sceau (HMAC) posé par l'évolution, et le routage n'est cru que signé ; la clé est `cle` ou <stock>.cle."""
         self.stock = Path(stock) if stock else None
         self.enregistreur, self.alerte, self._horloge, self.echantillon = enregistreur, alerte, horloge, int(echantillon)
+        self.isolation, self.memoire_mo, self.exiger_sceau = isolation, int(memoire_mo), bool(exiger_sceau)
+        self._cle_val = cle
+        self._ident = "%d-%s" % (os.getpid(), uuid.uuid4().hex[:8])        # une instance = un fichier de statistiques à elle (deux processus, ou deux démarrages, ne s'écrasent pas)
         self._points: dict = {}
         self._erreurs: dict = {}
         self._hotes: dict = {}
+        self._hotes_ec: dict = {}
         self._verrou = threading.RLock()
-        self._verifiees: dict = {}
+        self._vstat = threading.Lock()
+        self._decisions: dict = {}
+        self._routes: dict = {}
+
+    def fermer(self):
+        """Arrête les processus d'EC (à l'arrêt du serveur, ou quand on veut repartir de zéro)."""
+        for h in list(self._hotes_ec.values()):
+            h.fermer()
+        self._hotes_ec.clear()
+
+    # ── la clé et les sceaux : ce qui lie un fichier du stock à la décision de l'évolution ──
+    def _cle(self):
+        if self._cle_val is not None:
+            return self._cle_val
+        if not (self.exiger_sceau and self.stock):
+            return None
+        f = self.stock.parent / (self.stock.name + ".cle")
+        try:
+            self._cle_val = f.read_bytes()
+        except OSError:
+            f.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                fd = os.open(str(f), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                with os.fdopen(fd, "wb") as h:
+                    h.write(os.urandom(32))
+            except FileExistsError:
+                pass
+            self._cle_val = f.read_bytes()
+        return self._cle_val
+
+    def _mac(self, *parties) -> str:
+        return hmac.new(self._cle(), "|".join(str(x) for x in parties).encode("utf-8"), hashlib.sha256).hexdigest()
+
+    def sceller(self, module: str, point: str, nom: str) -> dict:
+        """Pose le sceau d'un fichier d'EC du stock : son nom et l'empreinte de son contenu, signés. Appelé par l'évolution qui vient de le prouver."""
+        d = self._points.get("%s.%s" % (module, point))
+        if d is None:
+            raise PointInconnu("%s.%s" % (module, point))
+        s = self._dossier_stock(d)
+        emp = hashlib.sha256((s / nom).read_bytes()).hexdigest()
+        sceau = {"fichier": nom, "sha256": emp, "mac": self._mac("sceau", d.gid, nom, emp) if self._cle() is not None else ""}
+        self._ecrire_atomique(s / "SCEAU.json", json.dumps(sceau))
+        return sceau
+
+    def _sceau_ok(self, d: _Declare, s: Path, nom: str, emp: str) -> str:
+        """Vide si le sceau convient, sinon la raison du refus."""
+        if not self.exiger_sceau:
+            return ""
+        try:
+            sc = json.loads((s / "SCEAU.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return "aucun sceau : cette EC n'a pas été posée par l'évolution"
+        if sc.get("fichier") != nom or sc.get("sha256") != emp:
+            return "le fichier d'EC n'est pas celui qui a été prouvé (sceau)"
+        if not hmac.compare_digest(str(sc.get("mac", "")), self._mac("sceau", d.gid, nom, emp)):
+            return "sceau invalide"
+        return ""
+
+    @staticmethod
+    def _ecrire_atomique(chemin: Path, texte: str):
+        tmp = chemin.with_name(chemin.name + ".tmp")
+        tmp.write_text(texte, encoding="utf-8")
+        tmp.replace(chemin)
 
     # ── déclaration ──────────────────────────────────────────────────────
     def declarer(self, manifeste, dossier) -> list:
@@ -342,7 +632,11 @@ class ServicePoints:
             try:
                 if len(ref) != 1:
                     raise PointDefaillant("%s : la référence « %s.* » doit être UN fichier (trouvé %d)" % (gid, p.reference, len(ref)))
-                contrat = json.loads(fichier_contrat.read_text(encoding="utf-8")) if fichier_contrat.exists() else {}
+                if not fichier_contrat.exists():
+                    raise PointDefaillant("%s : contrat introuvable (%s) : sans contrat rien ne se vérifie, le point refuse d'exister" % (gid, fichier_contrat.name))
+                contrat = json.loads(fichier_contrat.read_text(encoding="utf-8"))
+                if not isinstance(contrat, dict) or not contrat.get("sortie"):
+                    raise PointDefaillant("%s : le contrat doit décrire une sortie" % gid)
                 self._points[gid] = _Declare(manifeste.id, p, dossier, contrat, ref[0])
                 self._erreurs.pop(gid, None)
             except (PointDefaillant, ValueError) as e:
@@ -365,35 +659,60 @@ class ServicePoints:
     def _dossier_stock(self, d: _Declare):
         return self.stock / d.module / d.p.id if self.stock else None
 
+    @staticmethod
+    def _stat_cle(chemin: Path):
+        try:
+            st = chemin.stat()
+            return (st.st_mtime_ns, st.st_size, getattr(st, "st_ino", 0))
+        except OSError:
+            return None
+
     def _ec_en_service(self, d: _Declare):
-        """Rend (fichier, hote, version) de l'EC à servir, ou None. Toute raison de ne pas la servir est gardée dans d.refus (visible par etat())."""
+        """Rend (fichier, version, runtime, empreinte) de l'EC à servir, ou None. Toute raison de ne pas la servir est gardée dans d.refus (visible par etat()).
+        La décision est mémorisée tant que ni l'EC, ni son sceau, ni son contrat ne bougent (un appel ne relit pas et ne rehache pas le fichier)."""
         d.refus = ""
         s = self._dossier_stock(d)
-        if s is None or not (s / "ACTIVE").exists():
+        if s is None:
+            return None
+        try:
+            nom = (s / "ACTIVE").read_text(encoding="utf-8").strip()
+        except OSError:
             return None
         if d.suspendue or (s / "SUSPENDUE.json").exists():
             d.refus = "suspendue"
             return None
-        nom = (s / "ACTIVE").read_text(encoding="utf-8").strip()
         if not nom or Path(nom).name != nom:
             d.refus = "ACTIVE désigne un chemin qui sort du dossier de l'EC"
             return None
         f = s / nom
-        if not f.is_file():
+        sf = self._stat_cle(f)
+        if sf is None or not f.is_file():
             d.refus = "le fichier d'EC désigné est introuvable"
             return None
+        ck = (str(f), sf, self._stat_cle(s / "SCEAU.json"), d.p.contrat)
+        dec = self._decisions.get(d.gid)
+        if dec is not None and dec[0] == ck:
+            d.refus = dec[2]
+            return dec[1]
+        resultat, refus = self._decider(d, s, nom, f)
+        self._decisions[d.gid] = (ck, resultat, refus)
+        d.refus = refus
+        return resultat
+
+    def _decider(self, d: _Declare, s: Path, nom: str, f: Path):
+        if os.name == "posix" and f.stat().st_mode & 0o022:
+            return None, "le fichier d'EC est modifiable par d'autres que son propriétaire"
         octets = f.read_bytes()
         emp = hashlib.sha256(octets).hexdigest()
-        cle = (str(f), emp, d.p.contrat)                 # la vérification est liée au CONTENU, pas à une date : une EC réécrite est revérifiée
-        if cle not in self._verifiees:
-            self._verifiees[cle] = self._verifier_ec(d, f, octets)
-        ok, raison, version, runtime = self._verifiees[cle]
+        ok, raison, version, runtime = self._verifier_ec(d, f, octets)
+        if ok:
+            raison = self._sceau_ok(d, s, nom, emp)
+            ok = not raison
         if not ok:
-            d.refus = raison
             if raison.startswith("impure"):
                 self._suspendre(d, raison, version)
-            return None
-        return f, version, runtime, emp
+            return None, raison
+        return (f, version, runtime, emp), ""
 
     def _verifier_ec(self, d: _Declare, f: Path, octets: bytes):
         try:
@@ -417,12 +736,20 @@ class ServicePoints:
         return (True, "", version, runtime)
 
     # ── l'appel ──────────────────────────────────────────────────────────
-    def _executer(self, d: _Declare, fichier: Path, runtime: str, empreinte: str = ""):
-        """L'appelable d'un fichier. Avec `empreinte` (celle du contenu VÉRIFIÉ), l'hôte refuse un fichier qui a changé entre la vérification et le chargement."""
+    def _executer(self, d: _Declare, fichier: Path, runtime: str, empreinte: str = "", ec: bool = False):
+        """L'appelable d'un fichier. Pour une EC (`ec`) en mode « processus », c'est un appel vers SON processus, tué au délai du contrat.
+        Avec `empreinte` (celle du contenu VÉRIFIÉ), l'hôte refuse un fichier qui a changé entre la vérification et le chargement."""
+        if ec and self.isolation == "processus" and runtime in HOTES_ISOLES:       # un autre langage a son hôte, derrière la même interface
+            hote = self._hotes_ec.get(runtime) or self._hotes_ec.setdefault(runtime, HOTES_ISOLES[runtime](self.memoire_mo))
+            return hote.appelable_verifie(fichier, d.p.fonction, empreinte, self._delai(d)) if empreinte else hote.appelable(fichier, d.p.fonction, self._delai(d))
         hote = self._hotes.get(runtime) or self._hotes.setdefault(runtime, HOTES[runtime]())
         if empreinte and hasattr(hote, "appelable_verifie"):
             return hote.appelable_verifie(fichier, d.p.fonction, empreinte)
         return hote.appelable(fichier, d.p.fonction)
+
+    @staticmethod
+    def _delai(d: _Declare) -> int:
+        return int(d.contrat.get("delai_ms") or d.p.delai_ms)
 
     def appeler(self, module: str, point: str, entree):
         gid = "%s.%s" % (module, point)
@@ -446,14 +773,16 @@ class ServicePoints:
         servir_ec = bool(ec) and route["mode"] == "service" and (route["part"] >= 100 or _tranche(entree) < route["part"])      # une tranche STABLE : la même entrée va toujours du même côté
         if servir_ec:
             fichier, version, runtime, emp = ec
+            with self._vstat:
+                d.ec_appels += 1
             try:
-                brute = self._executer(d, fichier, runtime, emp)(_copie(entree))
+                brute = self._executer(d, fichier, runtime, emp, ec=True)(_copie(entree))
                 candidate = _copie(brute)
                 ecarts = valider(d.contrat.get("sortie"), candidate)
                 if ecarts:
                     raise ContratViole("sortie hors contrat : " + " ; ".join(ecarts[:3]))
                 ms = (time.perf_counter() - t0) * 1000
-                delai = d.contrat.get("delai_ms") or d.p.delai_ms
+                delai = self._delai(d)
                 if ms > delai:
                     self._faute(d, "délai dépassé : %d ms pour un plafond de %d ms" % (ms, delai), version)
                 sortie, source = candidate, version
@@ -472,10 +801,13 @@ class ServicePoints:
             source = "reference"
         ms_ref = (time.perf_counter() - t0) * 1000
         if ec and route["mode"] == "ombre":                       # l'ombre : la RÉFÉRENCE a répondu ; l'EC calcule à côté sur le même appel et on compare
-            self._ombre(d, ec, entree, sortie, ms_ref)
-        d.appels += 1
-        if source != "reference" and self.echantillon and d.appels % self.echantillon == 0:
+            self._ombre(d, ec, entree, sortie, ms_ref, route.get("gen"))
+        with self._vstat:
+            d.appels += 1
+            n = d.appels
+        if source != "reference" and self.echantillon and n % self.echantillon == 0:
             self._comparer(d, entree, sortie, source)
+        self._flush(d)
         ms = (time.perf_counter() - t0) * 1000
         if self.enregistreur:
             try:
@@ -487,21 +819,32 @@ class ServicePoints:
     # ── le routage : ombre, puis une part croissante du trafic ──────────────
     def _routage(self, d: _Declare) -> dict:
         """Où en est la mise en service de l'EC : « ombre » (elle calcule, la référence répond), « service » avec une part de 0 à 100 % des appels, ou « arret ».
-        Sans fichier de routage : l'EC en service sert tout (le comportement des premiers bancs). Un fichier illisible n'ouvre rien : « arret »."""
+        Sans fichier de routage, un fichier illisible ou un fichier au sceau faux : « arret ». Une EC n'est jamais servie sans qu'on l'ait dit (échec fermé)."""
         s = self._dossier_stock(d)
-        f = s / "ROUTAGE.json" if s is not None else None
-        if f is None or not f.exists():
-            return {"mode": "service", "part": 100}
+        if s is None:
+            return {"mode": "arret", "part": 0, "gen": None}
+        f = s / "ROUTAGE.json"
+        sf = self._stat_cle(f)
+        if sf is None:
+            return {"mode": "arret", "part": 0, "gen": None}
+        cache = self._routes.get(d.gid)
+        if cache is not None and cache[0] == sf:
+            return cache[1]
         try:
             r = json.loads(f.read_text(encoding="utf-8"))
             if r.get("mode") not in ("ombre", "service", "arret"):
                 raise ValueError("mode")
-            return {"mode": r["mode"], "part": max(0, min(100, int(r.get("part", 0))))}
+            res = {"mode": r["mode"], "part": max(0, min(100, int(r.get("part", 0)))), "gen": r.get("gen")}
+            if self.exiger_sceau and not hmac.compare_digest(str(r.get("mac", "")), self._mac("routage", d.gid, res["mode"], res["part"], res["gen"])):
+                raise ValueError("signature")
         except (OSError, ValueError, TypeError):
-            return {"mode": "arret", "part": 0}
+            res = {"mode": "arret", "part": 0, "gen": None}
+        self._routes[d.gid] = (sf, res)
+        return res
 
     def router(self, module: str, point: str, mode: str, part: int = 0) -> dict:
-        """Pose le routage (écriture atomique) : la mise en service par paliers, et le RETOUR INSTANTANÉ (« arret » ou part 0) : un aiguillage, rien à restaurer."""
+        """Pose le routage (écriture atomique, signée si le sceau est exigé) : la mise en service par paliers, et le RETOUR INSTANTANÉ (« arret » ou part 0) : un aiguillage, rien à restaurer.
+        Une GÉNÉRATION d'ombre (un identifiant) naît à chaque passage en ombre : les statistiques de l'ombre ne mélangent jamais deux pièces."""
         d = self._points.get("%s.%s" % (module, point))
         if d is None:
             raise PointInconnu("%s.%s" % (module, point))
@@ -510,36 +853,107 @@ class ServicePoints:
         s = self._dossier_stock(d)
         if s is None:
             raise ValueError("aucun stock d'EC : rien à router")
-        s.mkdir(parents=True, exist_ok=True)
-        r = {"mode": mode, "part": max(0, min(100, int(part))), "depuis": time.strftime("%Y-%m-%d %H:%M:%S")}
-        tmp = s / "ROUTAGE.json.tmp"
-        tmp.write_text(json.dumps(r), encoding="utf-8")
-        tmp.replace(s / "ROUTAGE.json")
+        self._dossier_prive(s)
+        part = max(0, min(100, int(part)))
+        gen = uuid.uuid4().hex[:12] if mode == "ombre" else (self._routage(d).get("gen") or uuid.uuid4().hex[:12])
+        r = {"mode": mode, "part": part, "gen": gen, "depuis": time.strftime("%Y-%m-%d %H:%M:%S")}
+        if self._cle() is not None:
+            r["mac"] = self._mac("routage", d.gid, mode, part, gen)
+        self._ecrire_atomique(s / "ROUTAGE.json", json.dumps(r))
+        self._routes.pop(d.gid, None)
         if mode == "ombre":
-            with self._verrou:
-                d.ombre = {"appels": 0, "ecarts": 0, "erreurs": 0, "ms_ref": deque(maxlen=300), "ms_ec": deque(maxlen=300)}
-        return r
+            with self._vstat:
+                d.ombre = _vide_ombre(gen)
+            self._flush(d, force=True)
+        return {"mode": mode, "part": part, "gen": gen, "depuis": r["depuis"]}
 
-    def _ombre(self, d: _Declare, ec, entree, sortie_ref, ms_ref: float):
-        fichier, version, runtime, emp = ec
-        if not hasattr(d, "ombre"):
-            d.ombre = {"appels": 0, "ecarts": 0, "erreurs": 0, "ms_ref": deque(maxlen=300), "ms_ec": deque(maxlen=300)}
-        o = d.ombre
-        t = time.perf_counter()
+    @staticmethod
+    def _dossier_prive(s: Path):
+        """Le dossier d'une EC n'est ni lisible ni modifiable par d'autres que le serveur (POSIX)."""
+        s.mkdir(parents=True, exist_ok=True)
+        if os.name == "posix":
+            for p in (s, s.parent, s.parent.parent):
+                try:
+                    os.chmod(p, 0o700)
+                except OSError:
+                    pass
+
+    # ── les statistiques : en mémoire, écrites à côté, lues par tous les processus ──
+    def _flush(self, d: _Declare, force: bool = False):
+        s = self._dossier_stock(d)
+        if s is None or not s.exists():
+            return
+        maintenant = time.monotonic()
+        if not force and maintenant - d.dernier_flush < FLUSH_STATS_S:
+            return
+        d.dernier_flush = maintenant
+        with self._vstat:
+            o = d.ombre
+            doc = {"appels": d.appels, "ec": d.ec_appels, "ombre": None if o is None else {"gen": o["gen"], "appels": o["appels"], "ecarts": o["ecarts"], "erreurs": o["erreurs"],
+                                                                                           "ms_ref": list(o["ms_ref"]), "ms_ec": list(o["ms_ec"]), "distincts": list(o["distincts"])}}
         try:
-            candidate = _copie(self._executer(d, fichier, runtime, emp)(_copie(entree)))
+            self._ecrire_atomique(s / ("STATS-%s.json" % self._ident), json.dumps(doc))
+            d.flushe = True
+        except OSError:
+            pass
+
+    def _cumul(self, d: _Declare) -> dict:
+        """Ce que tous les processus qui servent ce point ont fait (le serveur et le démon du Sensorium), toutes instances confondues, ombre de la génération en cours seulement."""
+        self._flush(d, force=True)
+        s = self._dossier_stock(d)
+        gen = self._routage(d).get("gen") if s is not None else None
+        appels = ec = 0
+        o = {"appels": 0, "ecarts": 0, "erreurs": 0, "ms_ref": [], "ms_ec": [], "distincts": set()}
+        vu = False
+        if s is not None:
+            for f in sorted(s.glob("STATS-*.json")):
+                try:
+                    doc = json.loads(f.read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    continue
+                appels += int(doc.get("appels", 0))
+                ec += int(doc.get("ec", 0))
+                x = doc.get("ombre")
+                if x and gen and x.get("gen") == gen:
+                    vu = True
+                    for k in ("appels", "ecarts", "erreurs"):
+                        o[k] += int(x.get(k, 0))
+                    o["ms_ref"] += x.get("ms_ref", [])
+                    o["ms_ec"] += x.get("ms_ec", [])
+                    o["distincts"] |= set(x.get("distincts", []))
+        if not d.flushe:                                    # ce processus n'a pas (encore) de fichier : ses compteurs en mémoire comptent
+            appels += d.appels
+            ec += d.ec_appels
+        return {"appels": appels, "ec": ec, "ombre": o if vu else None}
+
+    def _ombre(self, d: _Declare, ec, entree, sortie_ref, ms_ref: float, gen=None):
+        fichier, version, runtime, emp = ec
+        with self._vstat:
+            if d.ombre is None or d.ombre["gen"] != gen:                  # une autre pièce est passée par là (un autre processus a posé une ombre neuve) : on repart de zéro
+                d.ombre = _vide_ombre(gen)
+            o = d.ombre
+        t = time.perf_counter()
+        h = hashlib.sha256(json.dumps(entree, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()[:12]
+        try:
+            candidate = _copie(self._executer(d, fichier, runtime, emp, ec=True)(_copie(entree)))
             ms_ec = (time.perf_counter() - t) * 1000
             ecarts = valider(d.contrat.get("sortie"), candidate)
-            o["appels"] += 1
-            o["ms_ref"].append(ms_ref)
-            o["ms_ec"].append(ms_ec)
-            if ecarts or candidate != sortie_ref:
-                o["ecarts"] += 1
+            with self._vstat:
+                o["appels"] += 1
+                o["ms_ref"].append(ms_ref)
+                o["ms_ec"].append(ms_ec)
+                if h not in o["distincts"] and len(o["distincts"]) < DISTINCTS_MAX:
+                    o["distincts"].append(h)
+            if ecarts or _canon(candidate) != _canon(sortie_ref):
+                with self._vstat:
+                    o["ecarts"] += 1
                 self._faute(d, "ombre : " + ("sortie hors contrat" if ecarts else "la sortie diffère de celle de la référence"), version)
         except Exception as e:                                    # une EC qui plante en ombre ne touche personne, mais elle est comptée
-            o["appels"] += 1
-            o["erreurs"] += 1
+            with self._vstat:
+                o["appels"] += 1
+                o["erreurs"] += 1
             self._faute(d, "ombre : %s : %s" % (type(e).__name__, e), version)
+        self._flush(d, force=True)
 
     def _comparer(self, d: _Declare, entree, sortie, source: str):
         """La couche 5 : un échantillon d'appels est confronté à la référence. Une différence est une dérive de SENS que le schéma ne voit pas."""
@@ -547,7 +961,7 @@ class ServicePoints:
             ref = _copie(self._executer(d, d.reference, d.p.runtime)(_copie(entree)))
         except Exception:
             return
-        if ref != sortie:
+        if _canon(ref) != _canon(sortie):
             self._faute(d, "dérive de sens : la sortie diffère de celle de la référence", source)
 
     # ── le disjoncteur ───────────────────────────────────────────────────
@@ -568,7 +982,7 @@ class ServicePoints:
             s = self._dossier_stock(d)
             if s is not None:
                 try:
-                    s.mkdir(parents=True, exist_ok=True)
+                    self._dossier_prive(s)
                     (s / "SUSPENDUE.json").write_text(json.dumps(d.suspendue, ensure_ascii=False), encoding="utf-8")
                 except OSError:
                     pass
@@ -579,7 +993,7 @@ class ServicePoints:
                 pass
 
     def reactiver(self, module: str, point: str) -> bool:
-        """Lève la suspension d'une EC (la réparation, ou la décision de l'admin) : le compte des fautes repart de zéro."""
+        """Lève la suspension d'une EC (la réparation, la décision de l'admin, ou l'arrivée d'une pièce neuve) : le compte des fautes repart de zéro."""
         d = self._points.get("%s.%s" % (module, point))
         if d is None:
             raise PointInconnu("%s.%s" % (module, point))
@@ -589,8 +1003,10 @@ class ServicePoints:
             s = self._dossier_stock(d)
             if s is not None and (s / "SUSPENDUE.json").exists():
                 (s / "SUSPENDUE.json").unlink()
-            self._verifiees.clear()
+            self._decisions.clear()
+            self._routes.clear()
             self._hotes.clear()                              # un hôte garde le fichier chargé : une EC réécrite sous le même nom, dans la même fraction de seconde, ne doit pas servir l'ancienne
+            self.fermer()
         return True
 
     def etat(self, module: str, point: str) -> dict:
@@ -602,19 +1018,21 @@ class ServicePoints:
         suspendue = d.suspendue
         if suspendue is None and s is not None and (s / "SUSPENDUE.json").exists():
             suspendue = json.loads((s / "SUSPENDUE.json").read_text(encoding="utf-8"))
+        cumul = self._cumul(d)
+        r = self._routage(d) if (s is not None and (s / "ACTIVE").exists()) else None
         return {"point": d.gid, "contrat": d.p.contrat, "runtime": d.p.runtime, "sert": ec[1] if ec else "reference", "ec_refusee": getattr(d, "refus", ""),
-                "suspendue": suspendue, "fautes_recentes": len(d.fautes), "appels": d.appels,
-                "routage": self._routage(d) if (s is not None and (s / "ACTIVE").exists()) else None, "ombre": self._resume_ombre(d)}
+                "suspendue": suspendue, "fautes_recentes": len(d.fautes), "appels": cumul["appels"], "ec_appels": cumul["ec"], "isolation": self.isolation,
+                "routage": None if r is None else {"mode": r["mode"], "part": r["part"]}, "ombre": self._resume_ombre(cumul["ombre"])}
 
     @staticmethod
-    def _resume_ombre(d: _Declare):
-        o = getattr(d, "ombre", None)
+    def _resume_ombre(o):
         if not o:
             return None
         mr = statistics.median(o["ms_ref"]) if o["ms_ref"] else None
         me = statistics.median(o["ms_ec"]) if o["ms_ec"] else None
-        return {"appels": o["appels"], "ecarts": o["ecarts"], "erreurs": o["erreurs"], "ref_ms": mr, "ec_ms": me,
+        return {"appels": o["appels"], "ecarts": o["ecarts"], "erreurs": o["erreurs"], "distincts": len(o["distincts"]), "ref_ms": mr, "ec_ms": me,
                 "gain_pct": round((mr - me) / mr * 100, 1) if mr and me is not None else None}
+
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

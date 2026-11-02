@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.10  #79144c
+# VERSION CN : 0.1.11  #8969c7
 # VERSION EC : néant
 # EC LIÉES   : points/EC_*.py (les points du Sensorium)
 # RÔLE       : donne au démon du Sensorium (un processus à part, sans noyau) l'accès aux points d'évolution de son module : le même service que le noyau, la même pile de sûreté.
 # MÉTHODE    : charge le service des points du noyau (disjoncteur, ombre, routage) sur le stock d'EC du noyau, en lecture ; garde ses appels dans son propre fichier de rejeu, que le noyau absorbe ; si ce service ne se charge pas, exécute la référence du dépôt directement : jamais de mesure perdue.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.10 empreinte=79144c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.11 empreinte=8969c7 ▼▼▼
 """Le démon du Sensorium tourne seul : il n'a ni noyau, ni contexte, ni `ctx.point`. Ce module lui en tient lieu.
 
    - Le stock d'EC est celui du noyau (<données>/ec) : une EC mise en service par l'évolution sert aussi le démon, et son routage (ombre, paliers) le suit.
@@ -41,11 +41,11 @@ def _charger(donnees):
     if str(_RACINE) not in sys.path:
         sys.path.insert(0, str(_RACINE))
     from noyau.CN_manifeste import charger
-    from noyau.CN_points import ServicePoints
+    from noyau.CN_points import ECHANTILLON_DEFAUT, ServicePoints
     from noyau.CN_rejeu import Rejeu
     donnees = Path(donnees)
     manifeste = charger(_ICI / "CN_manifeste.toml")
-    svc = ServicePoints(donnees.parent / "ec")
+    svc = ServicePoints(donnees.parent / "ec", echantillon=ECHANTILLON_DEFAUT, exiger_sceau=True)       # le stock et la clé du serveur : une EC ne sert ici que scellée par l'évolution, dans son processus
     defauts = svc.declarer(manifeste, _ICI)
     if defauts:
         raise RuntimeError("points du Sensorium mal déclarés : %s" % defauts)

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.2.0  #bc519c
+# VERSION CN : 0.3.0  #9a4578
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=bc519c ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=9a4578 ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -21,6 +21,9 @@ Ce module ne fait que donner à ces gestes leurs droits, leur preuve et leur ret
 from __future__ import annotations
 
 import importlib
+import re
+
+_MOTEUR_PERMIS = re.compile(r"^orfan(\.[A-Za-z_][A-Za-z0-9_]*)+$")      # un moteur se trouve DANS le paquet orfan : un réglage n'importe pas n'importe quel module du serveur
 
 
 def brancher(ctx):
@@ -42,7 +45,10 @@ def brancher(ctx):
         return r.get("texte") or ""
 
     def moteur_de_recherche(choix):
-        orfan = importlib.import_module(str(reglage("moteur_orfan", "orfan.CN_orfan")))
+        nom = str(reglage("moteur_orfan", "orfan.CN_orfan"))
+        if not _MOTEUR_PERMIS.match(nom):
+            raise ValueError("moteur de recherche refusé : « %s » (un moteur vit dans le paquet orfan, par ex. orfan.CN_orfan)" % nom)
+        orfan = importlib.import_module(nom)
         if choix == "modele":
             return orfan.MoteurModele(appeler_modele)
         if choix == "les_deux":
@@ -82,7 +88,7 @@ def brancher(ctx):
         choix = str(moteur or reglage("moteur_defaut", "deterministe"))
         if choix not in ("deterministe", "modele", "les_deux"):
             raise ValueError("moteur inconnu : « %s » (deterministe, modele, les_deux)" % choix)
-        r = evo.proposer(m, p, moteur_de_recherche(choix), int(budget) or int(reglage("budget_essais", 3)))
+        r = evo.proposer(m, p, moteur_de_recherche(choix), max(1, min(10, int(budget) or int(reglage("budget_essais", 3)))))
         r["moteur"] = choix
         return r
 
@@ -119,7 +125,7 @@ def brancher(ctx):
     def tick(c):
         absorber_externes()
         avances = evo.tick()
-        visites = evo.visiter()
+        visites = evo.visiter(maximum=1)                       # une visite est une évaluation entière : une seule par passage
         return {"avances": avances, "visites": visites}
 
     ctx.implementer("cibles", cibles)

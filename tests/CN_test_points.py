@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e3f637
+# VERSION CN : 0.1.0  #741fb1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e3f637 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=741fb1 ▼▼▼
 """Bancs des points d'évolution : le contrat, le résolveur de compatibilité, le disjoncteur, la pureté, l'ouverture à d'autres formats."""
 import json
 import shutil
@@ -52,11 +52,13 @@ class Banc(unittest.TestCase):
         self.m = types.SimpleNamespace(id="essai", points_evolution=(PointEvolution("doubler", "Double", "1.3", "points/EC_doubler", "doubler"),))
         self.defauts = self.svc.declarer(self.m, self.mod)
 
-    def poser_ec(self, texte, nom="EC_doubler__EC21.py"):
+    def poser_ec(self, texte, nom="EC_doubler__EC21.py", routage=True):
         d = self.stock / "essai" / "doubler"
         d.mkdir(parents=True, exist_ok=True)
         (d / nom).write_text(texte, encoding="utf-8")
         (d / "ACTIVE").write_text(nom, encoding="utf-8")
+        if routage:
+            self.svc.router("essai", "doubler", "service", 100)       # sans routage posé, une EC ne sert pas (échec fermé) : ces bancs veulent une EC qui sert
 
     def appeler(self, x=2):
         return self.svc.appeler("essai", "doubler", {"x": x})

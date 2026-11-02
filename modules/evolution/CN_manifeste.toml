@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.2.0  #42b55a
+# VERSION CN : 0.3.0  #a618e2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=42b55a ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=a618e2 ▼▼▼
 [module]
 id = "evolution"
 nom = "Évolution"
-version = "0.2.0"
+version = "0.3.0"
 noyau_min = "0.1.0"
 description = "Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau."
 confiance = "interne"
@@ -71,14 +71,14 @@ perimetre = ["le routage du point visé et ses pièces vivantes"]
 preuve = "le routage du point est à l'arrêt"
 retour = "proposer de nouveau une variante : une pièce retirée ne se remet pas en service seule"
 paliers = ["raconter", "auto"]
-qui = ["humain", "compte"]
+qui = ["humain", "compte", "cassandra", "itare"]
 
 [[capacites]]
 id = "visiter"
 libelle = "La visite : rejouer chaque variante en service depuis assez longtemps contre la référence, sur le corpus d'aujourd'hui ; un gain qui n'est pas resté la retire"
 risque = "moyen"
 droit = "agir"
-perimetre = ["les pièces en service depuis plus de 30 jours, une fois chacune"]
+perimetre = ["les pièces en service, à chaque échéance (30 jours après la mise en service, puis après chaque visite)"]
 preuve = "chaque pièce visitée porte son verdict"
 retour = "aucun : une pièce retirée à la visite se propose de nouveau"
 paliers = ["raconter", "auto"]
@@ -130,7 +130,7 @@ maximum = 10
 
 [[reglages]]
 id = "moteur_orfan"
-libelle = "Le moteur de recherche (chemin d'import)"
+libelle = "Le moteur de recherche (chemin d'import, dans le paquet orfan)"
 type = "texte"
 defaut = "orfan.CN_orfan"
 aide = "Le contrat d'adaptateur : un module qui fournit MoteurDeterministe, MoteurModele et MoteurComposite. Orfan par défaut ; tout moteur qui respecte le contrat peut le remplacer."

@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1f593b
+# VERSION CN : 0.1.0  #0d974e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1f593b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0d974e ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -59,7 +59,7 @@ from noyau.CN_base import Base
 from noyau.CN_bus import TOUT, Bus
 from noyau.CN_catalogue import Catalogue
 from noyau.CN_contexte import Contexte
-from noyau.CN_points import ServicePoints
+from noyau.CN_points import ECHANTILLON_DEFAUT, MEMOIRE_EC_MO, ServicePoints
 from noyau.CN_rejeu import Rejeu
 from noyau.CN_evaluateur import Evaluateur
 from noyau.CN_evolution import Evolution
@@ -98,12 +98,15 @@ class Noyau:
         self.catalogue = Catalogue(self.base)
         self._donnees = Path(donnees)
         self.cycle = cycle.Cycle(self.extensions, self._donnees, _cles(), lambda: list(self._connus()[0].values()), self._ids_actifs)
-        self.points = ServicePoints(self._donnees / "ec", alerte=lambda gid, texte: self.bus.emettre("noyau.point_suspendu", source="noyau", donnees={"point": gid, "texte": texte}))
+        evo_cfg = self.config.get("evolution") or {}
+        self.points = ServicePoints(self._donnees / "ec", alerte=lambda gid, texte: self.bus.emettre("noyau.point_suspendu", source="noyau", donnees={"point": gid, "texte": texte}),
+                                    echantillon=int(evo_cfg.get("echantillon", ECHANTILLON_DEFAUT)), isolation=str(evo_cfg.get("isolation", "processus")),
+                                    memoire_mo=int(evo_cfg.get("memoire_mo", MEMOIRE_EC_MO)), exiger_sceau=True)       # une EC ne sert que scellée par l'évolution, dans son processus, comparée à la référence 1 fois sur N
         rejeu_cfg = self.config.get("rejeu") or {}
-        self.rejeu = Rejeu(self._donnees / "rejeu.db", max_par_point=int(rejeu_cfg.get("max_par_point", 2000)), actif=bool(rejeu_cfg.get("actif", True)))
+        self.rejeu = Rejeu(self._donnees / "rejeu.db", max_par_point=int(rejeu_cfg.get("max_par_point", 2000)), actif=bool(rejeu_cfg.get("actif", True)), exclus=rejeu_cfg.get("exclus") or ())
         self.points.enregistreur = self.rejeu.enregistrer           # chaque appel d'un point nourrit le corpus de rejeu (les entrées seulement, sur cette instance)
-        self.evaluateur = Evaluateur(self.points, self.rejeu, minimum=int(rejeu_cfg.get("minimum", 200)))
-        self.evolution = Evolution(self.points, self.rejeu, self.evaluateur, self._donnees / "evolution.db", seuils=(self.config.get("evolution") or {}).get("seuils"))
+        self.evaluateur = Evaluateur(self.points, self.rejeu, minimum=int(rejeu_cfg.get("minimum", 200)), memoire_mo=int(evo_cfg.get("memoire_mo", MEMOIRE_EC_MO)))
+        self.evolution = Evolution(self.points, self.rejeu, self.evaluateur, self._donnees / "evolution.db", seuils=evo_cfg.get("seuils"))
         self._stockages = {}       # module -> son Stockage, ouvert une fois
         self.droits = Droits(self.base)
         self.reglages = Reglages(self.base, Path(donnees) / "secrets.cle", bus=self.bus)      # la clé qui chiffre les secrets : hors des données si on l'y met (docs/CN_SECRETS.md), sinon ce fichier de repli
@@ -606,6 +609,10 @@ class Noyau:
         """Fermeture propre : arrête les moteurs asynchrones (et tout moteur encore en train de tourner) et attend qu'ils
         finissent. Sans cela, un fil laisse sa base ouverte et le dossier des données ne se supprime pas net (tests, retrait)."""
         self._stop_async = True
+        try:
+            self.points.fermer()                               # les processus des EC ne survivent pas au serveur
+        except Exception:
+            pass
         with self._verrou_async:
             asyncs = [t for t in self._fils_async.values() if t.is_alive()]
         fils = asyncs + [t for t in self._fils_moteurs.values() if t.is_alive()]
