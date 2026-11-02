@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ec9597
+// VERSION CN : 0.1.0  #065892
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Tailscale » du module tailscale : où en est la machine, la connexion (par un lien à ouvrir ou par une clé), la déconnexion, SSH par Tailscale et les machines du réseau.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.tailscale) ; tout vient de tailscale.etat ; pendant une identification en attente, l’écran relit l’état toutes les 2,5 s et s’arrête seul quand il quitte la page.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ec9597 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=065892 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -79,7 +79,7 @@
       finally { S.occupe = false; S.quitter = false; await charger(); }
     };
 
-    function pastille(e) { const p = ETAT[e.etat] || ["mu", e.etat]; return '<span class="pastille ' + p[0] + '">' + esc(p[1]) + "</span>"; }
+    function pastille(e) { const p = (e.etat === "a_identifier" && !e.en_attente) ? ["mu", "Non connectée"] : (ETAT[e.etat] || ["mu", e.etat]); return '<span class="pastille ' + p[0] + '">' + esc(p[1]) + "</span>"; }
 
     function carteLien(e) {
       const sur = LIEN_SUR.test(e.lien || "");
