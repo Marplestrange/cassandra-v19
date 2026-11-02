@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution V19 — note de conception -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=828dc9 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=a29630 ▼▼▼ -->
 # Évolution V19 — note de conception
 
 Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le moteur V18 (diff d'un fichier unique `cassandra.py`), qui n'a plus d'objet.
@@ -161,7 +161,7 @@ Deux passages d'audit sur `CN_points`, `CN_evaluateur`, `CN_evolution`, `CN_reje
 
 **Ajouts du 02-11 :**
 - **Bac à sable système (Linux)** : le processus d'EC est lancé dans `bwrap` (tous les espaces de noms : réseau, pid, ipc, uts, utilisateur ; système de fichiers en lecture seule limité à Python et au noyau ; `/tmp` vide) ou, à défaut, `unshare` (réseau, pid, ipc, uts, utilisateur ; `--kill-child`). Un bac n'est cru qu'après avoir fait tourner Python dedans. Réglage `[evolution] bac_os` : `auto` (le meilleur qui marche, sinon aucun, et `etat.bac` le dit), `requis` (pas de bac, pas d'EC : la référence répond, sans faute ni tombe, l'évaluateur rend `indisponible`), `aucun`. Dans le processus : plus de cœur, plus d'écriture de fichier, 32 descripteurs, aucun nouveau processus, `NO_NEW_PRIVS`. **Éprouvé ici seulement par la logique de choix** (la machine de développement est sous Windows) : à lancer sous Linux, `python -m unittest tests.CN_test_evolution_audit.BacOS` (le banc réel ne s'y saute plus).
-- **Corpus rattaché aux comptes** : chaque entrée garde les comptes qui l'ont produite (`appels_comptes`) ; `evolution.purger_compte` (droit `agir`) efface les rattachements et les entrées réelles qui n'appartenaient qu'à ce compte ; celles d'un autre compte, celles du noyau et les cas dorés restent. Les points dont l'entrée EST un contenu privé (`courrier`, `coffre`, `memoire`, `notes`, `salon`, `ged`, `contacts`, `agents`, `agenda`, `canvas`) sont **exclus par défaut** : seule leur mesure (appels, durée) est gardée, donc ils restent ciblables mais leur corpus n'est que celui des cas dorés. `[rejeu] exclus = []` rend tout, `exclus = [...]` fixe la liste : c'est un choix de l'admin.
+- **Corpus rattaché aux comptes** : chaque entrée garde les comptes qui l'ont produite (`appels_comptes`) ; `evolution.purger_compte` (droit `agir`) efface les rattachements et les entrées réelles qui n'appartenaient qu'à ce compte ; celles d'un autre compte, celles du noyau et les cas dorés restent. Les points dont l'entrée EST un contenu privé (`courrier`, `coffre`, `memoire`, `notes`, `salon`, `ged`, `agenda`, `canvas`) ; `contacts` et `agents` n'y sont PAS (leurs gains se mesurent sur le trafic réel, rattaché aux comptes et purgeable) sont **exclus par défaut** : seule leur mesure (appels, durée) est gardée, donc ils restent ciblables mais leur corpus n'est que celui des cas dorés. `[rejeu] exclus = []` rend tout, `exclus = [...]` fixe la liste : c'est un choix de l'admin.
 
 **Reste, à dire franchement :** le bac à sable n'a pas été éprouvé sous Linux ; le plafond mémoire n'existe que sous POSIX ; la suppression d'un compte n'appelle pas encore `purger_compte` toute seule (à brancher dans le module des comptes) ; le démon du Sensorium doit pouvoir lire `<stock>.cle`, sinon ses EC sont refusées (la référence sert) ; l'ombre reste synchrone et l'écriture du corpus se fait à chaque appel.
 

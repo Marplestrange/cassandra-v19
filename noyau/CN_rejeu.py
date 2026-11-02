@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #57de15
+# VERSION CN : 0.1.0  #091b69
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : garde, par point d'évolution, les ENTRÉES réellement reçues (distinctes, comptées), avec une partition réservée que le générateur ne voit jamais.
 # MÉTHODE    : une table SQLite ; l'entrée est identifiée par son empreinte ; la partition réservée se décide par l'empreinte (déterministe) ; borne par point, les cas dorés jamais évincés.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=57de15 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=091b69 ▼▼▼
 """Le corpus de rejeu (docs/CN_EVOLUTION.md §2) : la matière du banc d'essai de toute évolution.
 
 On ne garde que les ENTRÉES : la sortie de référence est recalculée par la référence du dépôt à chaque évaluation, car c'est elle la spécification
@@ -38,7 +38,7 @@ from pathlib import Path
 
 PART_RESERVEE = 5                  # un cas sur N est réservé
 MAX_PAR_POINT = 2000               # entrées distinctes gardées par point (les cas dorés ne sont jamais évincés)
-EXCLUS_PRIVES = ("courrier.*", "coffre.*", "memoire.*", "notes.*", "salon.*", "ged.*", "contacts.*", "agents.*", "agenda.*", "canvas.*")      # les points dont l'entrée EST le contenu privé d'un compte : par défaut, seule leur mesure est gardée
+EXCLUS_PRIVES = ("courrier.*", "coffre.*", "memoire.*", "notes.*", "salon.*", "ged.*", "agenda.*", "canvas.*")      # les points dont l'entrée EST le contenu privé d'un compte : par défaut, seule leur mesure est gardée
 PURGE_TOUS_LES = 100               # on vérifie la borne tous les N enregistrements
 MAX_ENTREE_OCTETS = 65536          # une entrée plus grosse n'est pas gardée : ce n'est pas un cas de test, c'est un fichier ou une pièce jointe (et c'est une donnée privée en clair)
 
