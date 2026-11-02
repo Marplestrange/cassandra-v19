@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #42a470
+// VERSION CN : 0.1.0  #1e669f
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Sites : /api/sites/* (V18) -> capacités sites.* du noyau. Le module garde les formes de la V18 (sites, vigilances, portée) :
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=42a470 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=1e669f ▼▼▼
 /* Sites : /api/sites/* (V18) -> capacités sites.* du noyau. Le module garde les formes de la V18 (sites, vigilances, portée) :
    la lecture passe telle quelle ; les gestes rendent {ok, reason} comme l'écran les lit.
    /api/sites/act (redémarrer, vider le cache… un site, par FastPanel) attend le module fastpanel : il répond « pas encore porté ». */
@@ -48,6 +48,12 @@
   P("/api/sites/transferer", "sites.transferer", { args: (r) => ({ domaine: dom(r.body), vers: String(r.body.vers || "").trim() }), sortie: ok });
   P("/api/sites/demander", "sites.demander", { args: (r) => ({ domaine: dom(r.body), message: String(r.body.message || "") }), sortie: ok });
   P("/api/sites/demande/repondre", "sites.repondre_demande", { args: (r) => ({ id: +r.body.id, decision: String(r.body.decision || ""), reponse: String(r.body.reponse || "") }), sortie: ok });
+
+  // L'accord de restauration (le propriétaire autorise un administrateur pour quelques heures) et les rattachements d'un site (projet, contact, client…).
+  const quand = (t) => (t ? new Date(t * 1000).toISOString().replace("T", " ").slice(0, 19) : "");
+  P("/api/site/accord", "sites.accorder", { args: (r) => ({ domaine: dom(r.body), geste: String(r.body.geste || "restaurer"), heures: +(r.body.heures || 24) }), sortie: (x) => ok(Object.assign({}, x, { jusqu_a: quand(x.jusqu_a) })) });
+  P("/api/site/link/save", "sites.lier", { args: (r) => ({ domaine: dom(r.body), genre: String(r.body.kind || ""), ref: String(r.body.ref || ""), note: String(r.body.note || "") }), sortie: ok });
+  P("/api/site/link/delete", "sites.delier", { args: (r) => ({ domaine: dom(r.body), genre: String(r.body.kind || ""), ref: String(r.body.ref || "") }), sortie: ok });
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
 

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.2  #d123b5
+# VERSION CN : 0.1.3  #d123b5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=d123b5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=d123b5 ▼▼▼
 """Les outils PURS du courrier : aucun réseau, aucune base. Noms de dossiers IMAP (UTF-7 modifié), analyse des messages, nettoyage du HTML.
 
 Le nettoyage du HTML est une LISTE BLANCHE bâtie sur un vrai analyseur (html.parser), pas une série d'expressions régulières qui retirent ce qu'on

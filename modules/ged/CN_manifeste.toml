@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : ged
 # ZONE       : CN
-# VERSION CN : 0.1.0  #327514
+# VERSION CN : 0.1.1  #c1454b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La GED : les documents d'un compte, classés par sources (locales, avec cloisonnement par propriétaire), un index, des règles de classement, le dépôt, la fiche, l'aperçu en ligne (liste blanche stricte), la corbeille par racine. Différé : distants rclone/OAuth, montages, OCR/vignettes, extraction des pièces jointes (dépend du courrier).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=327514 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=c1454b ▼▼▼
 [module]
 id = "ged"
 nom = "Documents"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "La GED : les documents d'un compte, classés par sources (locales, avec cloisonnement par propriétaire), un index, des règles de classement, le dépôt, la fiche, l'aperçu en ligne (liste blanche stricte), la corbeille par racine. Différé : distants rclone/OAuth, montages, OCR/vignettes, extraction des pièces jointes (dépend du courrier)."
 confiance = "interne"
@@ -179,6 +179,12 @@ perimetre = ["le libellé d'une racine déclarée"]
 preuve = "le libellé relu"
 retour = "remettre le libellé d'avant"
 paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "source_deplacer_apercu"
+libelle = "Ce que renommer un répertoire ferait, sans rien faire : le répertoire d'avant et d'après, et le nombre de fichiers de l'index qui suivraient"
+risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "source_deplacer"

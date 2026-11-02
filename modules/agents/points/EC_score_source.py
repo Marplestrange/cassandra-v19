@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.5.0)  #6e6f36
+# VERSION EC : EC0 (référence 0.5.1)  #6e6f36
 # HÔTE CN    : CN_module.py · score_source @1.0
 # RÔLE       : estime la confiance qu'on peut accorder à une adresse : bloquée = zéro, posée par un utilisateur = celle-là, sinon une estimation par l'hôte et par ce que la bibliothèque en a déjà fait vérifier.
 # MÉTHODE    : fonction pure : base 0,3 ; https +0,1 ; hôte institutionnel +0,3 ; +0,1 par fiche vérifiée du même hôte (0,3 au plus) ; niveau haute dès 0,75, moyenne dès 0,5, faible au-dessus de zéro.

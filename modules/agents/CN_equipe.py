@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #b578ea
+# VERSION CN : 0.5.1  #2b5146
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'équipe des agents : qui ils sont (des DONNÉES : CN_equipe.json), comment chacun est réglé, ce qu'il dépense, et le plafond qui le retient.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=b578ea ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=2b5146 ▼▼▼
 """L'équipe des agents : qui ils sont (des DONNÉES : CN_equipe.json), comment chacun est réglé, ce qu'il dépense, et le plafond qui le retient.
 
 Règles tenues ici :
@@ -32,6 +32,17 @@ SYSTEME = ("cassandra", "itare", "noyau", "operateur")
 CHAMPS_TEXTE = {"nom_affiche": 40, "ton": 2000, "modele": 80, "secours": 80}
 MODELE_OK = re.compile(r"^[A-Za-z0-9_.:/\-]*$")
 maintenant = time.time                       # un banc le remplace pour changer de jour
+
+
+def entier(valeur, defaut: int, mini: int, maxi: int, nom: str = "valeur") -> int:
+    """Un nombre entier demandé par un appelant (l'écran, un agent) : vide → le défaut, hors bornes → ramené aux bornes, illisible → une erreur qui le dit (pas le « invalid literal » de Python)."""
+    if valeur in (None, "", 0):
+        return defaut
+    try:
+        n = int(valeur)
+    except (TypeError, ValueError):
+        raise ValueError("%s : un nombre entier est attendu" % nom)
+    return max(mini, min(n, maxi))
 
 
 def jour() -> str:

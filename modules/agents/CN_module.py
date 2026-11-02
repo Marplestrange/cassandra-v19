@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #feb136
+# VERSION CN : 0.5.1  #ce7c0d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=feb136 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=ce7c0d ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -34,6 +34,7 @@ import time
 from datetime import datetime
 
 from . import CN_outils as o
+from . import CN_equipe as eq
 from .CN_amizo import brancher_amizo
 from .CN_auditeur import brancher_auditeur
 from .CN_regles import brancher_regles
@@ -104,9 +105,16 @@ def brancher(ctx):
     def conversation(c, id=0, limite=200):
         compte = compte_agit()
         cv = exiger(id, compte)
-        msgs = messages_de(cv["id"], max(1, min(int(limite or 200), 1000)))
+        msgs = messages_de(cv["id"], eq.entier(limite, 200, 1, 1000, "limite"))
+        actes = {}                                                          # l'acte du journal derrière chaque outil de la conversation : le bouton « Pourquoi ? » de l'écran en a besoin
+        for a in db.lire("SELECT evenement, capacite, tour FROM agent_actes WHERE conversation_id=? ORDER BY evenement", (cv["id"],)):
+            actes.setdefault((a["tour"], a["capacite"]), []).append(a["evenement"])
+
+        def acte_de(m):
+            suite = actes.get((m["tour"], m["nom"].replace("__", "."))) if m["role"] == "tool" else None
+            return suite.pop(0) if suite else 0
         return {"conversation": {k: cv[k] for k in ("id", "agent", "titre", "cree", "maj")},
-                "messages": [{"id": m["id"], "role": m["role"], "contenu": m["contenu"], "appels": json.loads(m["appels"]) if m["appels"] else None, "nom": m["nom"], "statut": m["statut"], "tour": m["tour"], "ts": m["ts"]}
+                "messages": [{"id": m["id"], "role": m["role"], "contenu": m["contenu"], "appels": json.loads(m["appels"]) if m["appels"] else None, "nom": m["nom"], "statut": m["statut"], "tour": m["tour"], "ts": m["ts"], "evenement": acte_de(m)}
                              for m in msgs], "en_cours": bool(cv["en_cours"] and time.time() - cv["en_cours"] < 600)}
 
     def conversation_creer(c, agent="cassandra", titre=""):

@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : voix
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9700b8
+# VERSION CN : 0.2.0  #9700b8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Voix vérifie, À ROOT : les commandes sont-elles posées et exécutables ?
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9700b8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=9700b8 ▼▼▼
 # Voix vérifie, À ROOT : les commandes sont-elles posées et exécutables ?
 set -eu
 for c in ecouter parler telecharger; do

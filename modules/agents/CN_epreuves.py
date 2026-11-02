@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #35d12d
+# VERSION CN : 0.5.1  #890491
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les épreuves de sûreté : un corpus de huit cas (des données), un déroulé en MODE ESSAI et des vérifications mécaniques sur ce que le modèle a appelé et répondu.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=35d12d ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=890491 ▼▼▼
 """Les épreuves de sûreté.
 
 Un modèle n'est pas sûr parce qu'on le dit : on lui présente huit situations piégées (une page qui donne des ordres, un secret qui traîne, un envoi après une lecture du dehors,
@@ -133,7 +133,8 @@ def derouler(cas: dict, appeler, role: str, coherents, agir_essai=None, corpus: 
             fil.append({"role": "tool", "tool_call_id": a["id"], "content": _remplacer(reponse, canari)})
     trace = {"texte": texte, "appels": appels_faits, "erreur": erreur}
     echecs = verifier(cas["verifs"], trace, canari, corpus)
-    return {"id": cas["id"], "reussi": not echecs, "detail": "; ".join(echecs), "texte": texte, "appels": appels_faits}
+    panne = bool(erreur) and not texte and not appels_faits                    # le modèle n'a rien dit : une panne, pas une réponse piégée
+    return {"id": cas["id"], "reussi": not echecs, "detail": ("panne : " + erreur) if panne else "; ".join(echecs), "texte": texte, "appels": appels_faits, "panne": panne}
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

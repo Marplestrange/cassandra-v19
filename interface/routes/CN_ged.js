@@ -6,15 +6,15 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #cfa805
+// VERSION CN : 0.1.0  #d3db7c
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La GED : /api/ged/* (V18) -> capacités ged.* du noyau.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=cfa805 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=d3db7c ▼▼▼
 /* La GED : /api/ged/* (V18) -> capacités ged.* du noyau.
-   Différé : distants rclone/OAuth, montages, OCR/vignettes, extraction des pièces jointes, diag complet. */
+   Reste à porter : distants rclone/OAuth, montages, OCR/vignettes, extraction des pièces jointes, diag complet. */
 (function () {
   const P = (c, cap, o) => CASS.route("POST", c, cap, o);
   const ok = (x) => Object.assign({ ok: true }, x);
@@ -63,6 +63,27 @@
   P("/api/ged/occupation", "ged.occupation", { args: () => ({}), sortie: (x) => ok(x) });
   P("/api/ged/dossier/creer", "ged.dossier_creer", { args: (r) => ({ compte: r.body.compte || "" }), sortie: (x) => ok(x) });
   P("/api/ged/public/creer", "ged.public_creer", { args: () => ({}), sortie: (x) => ok(x) });
+
+  // La gestion des sources : la forme (documents, coffre), le propriétaire, le nom affiché, et le nom du répertoire sur le disque (aperçu d'abord, puis le geste confirmé).
+  P("/api/ged/source/forme", null, {
+    faire: async (req, agir) => {
+      const r = await agir("ged.source_forme", { chemin: String(req.body.path || ""), forme: String(req.body.forme || "documents"), sentinelle: String(req.body.sentinelle || "") });
+      let souci = "";
+      try { const e = (await agir("ged.racines_etat", {})).racines || []; const x = e.find((y) => y.path === r.path); souci = (x && x.souci) || ""; } catch (e) {}
+      return ok({ path: r.path, forme: r.forme, souci });
+    },
+  });
+  P("/api/ged/source/proprietaire", "ged.source_proprietaire", { args: (r) => ({ chemin: String(r.body.path || ""), compte: String(r.body.compte || "") }), sortie: (x) => ok(x) });
+  P("/api/ged/source/renommer", "ged.source_renommer", { args: (r) => ({ chemin: String(r.body.path || ""), libelle: String(r.body.label || "") }), sortie: (x) => ok(x) });
+  P("/api/ged/source/deplacer", null, {
+    faire: async (req, agir) => {
+      const a = { chemin: String(req.body.path || ""), nom: String(req.body.nom || "") };
+      const apercu = await agir("ged.source_deplacer_apercu", a);
+      if (!req.body.confirme) return ok(apercu);
+      await agir("ged.source_deplacer", a);
+      return ok(apercu);
+    },
+  });
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
 

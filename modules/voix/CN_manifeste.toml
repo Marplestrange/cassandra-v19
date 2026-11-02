@@ -6,19 +6,19 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : voix
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9a1d4d
+# VERSION CN : 0.2.0  #6a2f6b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La voix : ce qui est installé (l'écoute par faster-whisper, la parole par piper), le catalogue des voix, et le choix par compte. Différé : l'écoute (transcription), la parole (synthèse) et le téléchargement des voix — des modèles de plusieurs centaines de mégaoctets, par le courtier.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9a1d4d ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=6a2f6b ▼▼▼
 [module]
 id = "voix"
 nom = "Voix"
-version = "0.1.0"
+version = "0.2.0"
 noyau_min = "0.1.0"
-description = "La voix : ce qui est installé (l'écoute par faster-whisper, la parole par piper), le catalogue des voix, et le choix par compte. Différé : l'écoute (transcription), la parole (synthèse) et le téléchargement des voix — des modèles de plusieurs centaines de mégaoctets, par le courtier."
+description = "La voix : ce qui est installé (l'écoute par faster-whisper, la parole par piper), le catalogue des voix, et le choix par compte. L'écoute, la parole et le téléchargement des voix sont des modèles de plusieurs centaines de mégaoctets : ils passent par le courtier. Le modèle de dictée et le lexique (les mots propres à la maison) se règlent."
 confiance = "interne"
 famille = "echanges"
 importance = "optionnel"
@@ -42,9 +42,21 @@ libelle = "Une préférence de voix"
 stockage = true
 racine = true
 
+[[reglages]]
+id = "modele_dictee"
+libelle = "Le modèle de dictée (faster-whisper) : plus gros, plus juste, plus lent"
+type = "choix"
+defaut = "small"
+choix = ["tiny", "base", "small", "medium"]
+
+[[reglages]]
+id = "lexique"
+libelle = "Le lexique de la dictée : les noms propres et les mots de la maison que la dictée doit connaître (séparés par des virgules)"
+defaut = ""
+
 [[racine]]
 id = "ecouter"
-libelle = "Transcrire un fichier audio en texte (faster-whisper)"
+libelle = "Transcrire un fichier audio en texte (faster-whisper), avec le modèle et le lexique réglés"
 
 [[racine]]
 id = "parler"
@@ -67,13 +79,14 @@ droit = "utiliser"
 
 [[capacites]]
 id = "parler"
-libelle = "Synthétiser un texte en audio (par le courtier)"
+libelle = "Synthétiser un texte en audio (par le courtier) : le son est rendu à l'appelant, le fichier temporaire est effacé"
 risque = "faible"
 droit = "utiliser"
-perimetre = ["un fichier audio temporaire"]
-preuve = "le fichier existe"
-retour = "effacer le fichier"
+perimetre = ["un fichier audio temporaire, effacé aussitôt"]
+preuve = "le son est rendu"
+retour = "aucun : rien ne reste sur le disque"
 paliers = ["raconter", "auto", "maitre"]
+masque = ["audio_b64"]
 
 [[capacites]]
 id = "telecharger"

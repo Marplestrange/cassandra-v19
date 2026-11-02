@@ -6,19 +6,19 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : mandats
 # ZONE       : CN
-# VERSION CN : 0.1.0  #38b621
+# VERSION CN : 0.2.0  #cd8a2a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les mandats d'envoi : l'autorisation d'envoyer, avec ses bornes (à qui, quand, combien, sous quel contrôle). La règle d'or : l'adresse ne vient JAMAIS de la demande. Différé : la résolution du destinataire et l'envoi réel (dépendent du courrier et des contacts).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=38b621 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=cd8a2a ▼▼▼
 [module]
 id = "mandats"
 nom = "Mandats"
-version = "0.1.0"
+version = "0.2.0"
 noyau_min = "0.1.0"
-description = "Les mandats d'envoi : l'autorisation d'envoyer, avec ses bornes (à qui, quand, combien, sous quel contrôle). La règle d'or : l'adresse ne vient JAMAIS de la demande. Différé : la résolution du destinataire et l'envoi réel (dépendent du courrier et des contacts)."
+description = "Les mandats d'envoi : l'autorisation d'envoyer, avec ses bornes (à qui, quand, combien, sous quel contrôle). La règle d'or : l'adresse ne vient JAMAIS de la demande — elle se déréférence depuis le carnet, le courrier ou une liste fermée. Un envoi attend l'accord d'un humain, ou une minuterie que l'on peut arrêter, ou part seul ; il est posté par le courrier, qui ne reçoit qu'un numéro d'envoi."
 confiance = "interne"
 famille = "echanges"
 importance = "important"
@@ -40,6 +40,15 @@ libelle = "Un mandat d'envoi"
 
 [permissions]
 stockage = true
+lectures = true
+agir = true
+
+[[moteurs]]
+id = "minuterie"
+libelle = "Fait partir les envois différés dont la minuterie est écoulée (sauf si on les a arrêtés), et clôt ceux qu'un accord a laissés sans issue"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 120
 
 [[capacites]]
 id = "mandats"
@@ -87,6 +96,63 @@ droit = "utiliser"
 perimetre = ["la suspension d'un mandat"]
 preuve = "la suspension relue"
 retour = "remettre la suspension d'avant"
+paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "essai"
+libelle = "L'essai à blanc d'un mandat : tous les verrous joués (origine, destinataire déréférencé, variables, pièce, limites), rien mis en file, rien envoyé"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "envoi_a_poster"
+libelle = "L'envoi autorisé tel qu'il doit partir : réservé au courrier, qui ne reçoit de l'appelant qu'un numéro"
+risque = "lecture"
+droit = "utiliser"
+qui = ["humain", "compte", "cassandra"]
+
+[[capacites]]
+id = "declencher"
+libelle = "Déclencher un mandat : l'envoi part seul, attend une minuterie ou attend l'accord d'un humain, selon le contrôle du mandat (le destinataire vient du mandat, jamais de la demande)"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["un mandat d'envoi", "ses quotas, sa plage horaire, son destinataire déréférencé"]
+preuve = "l'envoi est consigné au journal des envois"
+retour = "arrêter l'envoi tant qu'il attend ; un message parti ne se rappelle pas"
+paliers = ["raconter", "auto"]
+sortant = true
+
+[[capacites]]
+id = "accord"
+libelle = "Donner l'accord à un envoi qui attend : réservé à un humain"
+risque = "eleve"
+droit = "utiliser"
+perimetre = ["un envoi en attente"]
+preuve = "l'envoi est autorisé"
+retour = "remettre l'envoi en attente tant que le courrier ne l'a pas posté"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+sortant = true
+
+[[capacites]]
+id = "sortie"
+libelle = "Déclarer l'issue d'un envoi autorisé : parti (avec le message) ou échoué (avec la raison)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["l'issue d'un envoi autorisé"]
+preuve = "l'état de l'envoi relu"
+retour = "aucun : c'est le constat de ce que le courrier a fait"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "annuler"
+libelle = "Arrêter un envoi qui attend (accord ou minuterie)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un envoi en attente"]
+preuve = "l'envoi est annulé"
+retour = "remettre l'envoi en attente"
 paliers = ["raconter", "auto", "maitre"]
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

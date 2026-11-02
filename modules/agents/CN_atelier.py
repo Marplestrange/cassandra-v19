@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #2eedb5
+# VERSION CN : 0.5.1  #ed1bd8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents, et les services que le tour de conversation emploie (réglage effec
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=2eedb5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=ed1bd8 ▼▼▼
 """L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents,
 et les services que le tour de conversation emploie (réglage effectif, palier par outil, coût du jour, plafond).
 
@@ -223,7 +223,7 @@ def brancher_equipe(ctx, reglage):
 
     def couts(c, id="", jours=7):
         compte = compte_agit()
-        jours = max(1, min(int(jours or 7), 90))
+        jours = eq.entier(jours, 7, 1, 90, "jours")
         voit_tout = admin(compte)
         if id:
             d = definition(id)

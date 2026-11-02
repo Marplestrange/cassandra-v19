@@ -6,15 +6,15 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #68fd14
+// VERSION CN : 0.1.0  #62cb63
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Les sauvegardes : /api/sauv/* (V18) -> capacités sauvegardes.* du noyau.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=68fd14 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=62cb63 ▼▼▼
 /* Les sauvegardes : /api/sauv/* (V18) -> capacités sauvegardes.* du noyau.
-   Différé : plan/run, purger, verifier, restaurer (rclone par le courtier). */
+   Reste à porter : purger, verifier, restaurer (rclone par le courtier). */
 (function () {
   const P = (c, cap, o) => CASS.route("POST", c, cap, o);
   const ok = (x) => Object.assign({ ok: true }, x);
@@ -25,6 +25,8 @@
   P("/api/sauv/historique", "sauvegardes.copies", { args: (r) => ({ plan_id: +(r.body.plan_id || r.body.id || 0) }), sortie: (x) => ok(x) });
   P("/api/sauv/destinations", "sauvegardes.destinations", { args: () => ({}), sortie: (x) => ok(x) });
   P("/api/sauv/couverture", "sauvegardes.couverture", { args: () => ({}), sortie: (x) => ok(x) });
+  // Lancer un plan : à blanc pour essayer, sinon pour de bon (l'écran a demandé confirmation).
+  P("/api/sauv/plan/run", "sauvegardes.plan_run", { args: (r) => ({ pid: +r.body.id, blanc: !!r.body.blanc }), sortie: (x) => ok(x) });
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
 

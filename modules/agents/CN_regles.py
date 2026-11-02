@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #c04927
+# VERSION CN : 0.5.1  #2dd550
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les règles communes aux agents, la tuile « retenus / refusés » et les tâches récurrentes.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=c04927 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=2dd550 ▼▼▼
 """Les règles communes aux agents, la tuile « retenus / refusés » et les tâches récurrentes.
 
   - RÈGLES COMMUNES (administrateur) : le plafond global de coût (le même que `plafond_regler` « global »), le palier par défaut d'un outil que l'agent n'a pas réglé (« raconter » : il raconte
@@ -31,6 +31,8 @@ import json
 import time
 from datetime import datetime, timedelta
 from types import SimpleNamespace
+
+from . import CN_equipe as eq
 
 ORDRES = ("recent", "ancien")
 PALIERS = ("auto", "raconter")
@@ -178,7 +180,7 @@ def brancher_regles(ctx, E, db, compte_agit, converser):
 
     def retenus_refuses(c, jours=7):
         compte = compte_agit()
-        jours = max(1, min(int(jours or 7), 90))
+        jours = eq.entier(jours, 7, 1, 90, "jours")
         debut = time.time() - jours * 86400
         admin = E.admin(compte)
         filtre = "" if admin else " AND compte=?"
@@ -203,6 +205,8 @@ def brancher_regles(ctx, E, db, compte_agit, converser):
         d = E.definitions().get(str(agent or "").strip().lower())
         if not d or d["genre"] != "agent":
             raise ValueError("agent : un agent de l'équipe (pas un service)")
+        if d["id"] == "amizo":
+            raise ValueError("agent : Amizo répond quand on le sollicite, il n'a pas de tâche récurrente")
         if d["portee"] != "compte" and not E.admin(compte):
             raise PermissionError("cet agent est celui de l'instance : l'administrateur seulement")
         consigne = " ".join(str(consigne or "").split())
@@ -230,7 +234,7 @@ def brancher_regles(ctx, E, db, compte_agit, converser):
 
     def tache_retirer(c, id=0):
         compte = compte_agit()
-        r = db.lire("SELECT * FROM taches_agents WHERE id=? AND compte=?", (int(id or 0), compte))
+        r = db.lire("SELECT * FROM taches_agents WHERE id=? AND compte=?", (eq.entier(id, 0, 0, 2**62, "id"), compte))
         if not r:
             raise ValueError("tâche introuvable")
         db.ecrire("DELETE FROM taches_agents WHERE id=?", (r[0]["id"],))
@@ -246,7 +250,7 @@ def brancher_regles(ctx, E, db, compte_agit, converser):
 
     def tache_lancer(c, id=0):
         compte = compte_agit()
-        r = db.lire("SELECT * FROM taches_agents WHERE id=? AND compte=?", (int(id or 0), compte))
+        r = db.lire("SELECT * FROM taches_agents WHERE id=? AND compte=?", (eq.entier(id, 0, 0, 2**62, "id"), compte))
         if not r:
             raise ValueError("tâche introuvable")
         t = r[0]

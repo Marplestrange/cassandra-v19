@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #dd17aa
+// VERSION CN : 0.1.0  #a2c54d
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=dd17aa ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=a2c54d ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -136,7 +136,7 @@
     // l'identifiant de la page dans le menu de gauche (sous-entrées d'« Agents IA ») et sa traduction en vue de l'écran
     const pageMenu = () => (S.vue === "fiche" ? (S.admin ? S.agent : "itare") : S.vue);
     const depuisMenu = (id) => {
-      if (["cassandra", "itare", "amizo", "relecteur", "vision"].includes(id)) { S.vue = "fiche"; S.agent = id; S.onglet = "apercu"; }
+      if (["cassandra", "itare", "amizo", "relecteur", "vision"].includes(id)) { S.vue = "fiche"; if (S.agent !== id) S.essaiId = 0; S.agent = id; S.onglet = "apercu"; }
       else if (["equipe", "conv", "boite", "journal", "modeles", "auditeur", "maison"].includes(id)) S.vue = id;
       if (S.vue === "conv") S.conv.liste = null;
     };
@@ -236,7 +236,7 @@
         '<div class="ag-ligne"><span class="g">Modèle principal</span><b>' + esc(a.modele || "par défaut") + "</b></div>" +
         '<div class="ag-ligne"><span class="g">Modèle de secours</span><b>' + esc(a.secours || "aucun") + "</b></div>" +
         '<div class="ag-ligne"><span class="g">Porte</span><b>' + (a.portee === "compte" ? "le bureau d'un compte, le sien" : "toute l'instance") + "</b></div>" +
-        '<div class="ag-puces"><button class="btn" data-onglet-vers="reglages">Modifier le ton et le modèle</button>' + (f.agent.id !== "amizo" && f.agent.genre === "agent" ? '<button class="btn" data-onglet-vers="essai">L\'essayer</button>' : "") + "</div></section>" +
+        '<div class="ag-puces"><button class="btn" data-onglet-vers="reglages">Modifier le ton et le modèle</button>' + ((f.agent.id !== "amizo" || S.admin) && f.agent.genre === "agent" ? '<button class="btn" data-onglet-vers="essai">L\'essayer</button>' : "") + "</div></section>" +
         '<section class="carte"><h3>Son ' + esc(VOC.palier.toLowerCase()) + '</h3><div id="ag-niv" style="display:flex;flex-direction:column;gap:8px">' +
         NIVEAUX.map(([k, l, t]) => '<button class="radio' + (a.niveau === k ? " on" : "") + '" data-niveau="' + k + '"><i></i><span><b>' + l + '</b><br><span class="note">' + t + "</span></span></button>").join("") + "</div>" +
         '<div class="ag-puces">' + pill((n.auto || 0) + " outils en auto", "ok") + pill((n.raconter || 0) + " racontés", "al") + pill((n.retire || 0) + " retirés") + "</div>" +
@@ -379,7 +379,7 @@
     }
     async function oEssai(f) {
       const a = f.agent;
-      if (!["cassandra", "itare"].includes(a.id)) return nonBranche("Essai en direct", a.nom + " ne converse pas directement : on lui confie une tâche ou on l'essaie par les services qui l'emploient.");
+      if (!["cassandra", "itare"].concat(S.admin ? ["amizo"] : []).includes(a.id)) return nonBranche("Essai en direct", a.nom + " ne converse pas directement : on l'essaie par les services qui l'emploient.");
       return '<section class="carte"><h3>Essayer ' + esc(a.nom) + '</h3><p class="note">Une vraie conversation : chaque outil que l\'agent appelle traverse l\'exécuteur (droits, palier, preuve, retour, journal).</p><div class="ag-fil" id="ag-essai-fil" aria-live="polite"><div class="vide">Écris-lui pour commencer.</div></div>' +
         '<div class="ag-ecrire"><textarea id="ag-essai-t" placeholder="Demande-lui quelque chose…" aria-label="Message"></textarea><button class="btn pri" id="ag-essai-go">Envoyer</button></div></section>';
     }
@@ -437,7 +437,7 @@
     ];
     function vEpreuve(r) {
       const cas = (r.cas || []).map((c) => '<div class="li"><div class="sp"><b>' + esc(c.titre || c.id) + '</b><div class="note">' + esc(c.detail || "") + "</div></div>" + pill(c.reussi ? "réussi" : "échoué", c.reussi ? "ok" : "dg") + "</div>").join("");
-      return '<div class="ag-puces">' + pill(r.reussies + "/" + r.total + " réussies", r.ok ? "ok" : "dg") + (r.deconseille ? pill("modèle déconseillé", "dg") : r.sert ? pill("peut servir", "ok") : "") + '<span class="note">' + esc(r.modele || "") + (r.quand ? " · " + esc(dateFr(r.quand)) : "") + "</span></div>" + (cas ? '<div class="liste">' + cas + "</div>" : "");
+      return '<div class="ag-puces">' + pill(r.reussies + "/" + r.total + " réussies", r.ok ? "ok" : "dg") + (r.injoignable ? pill("modèle injoignable : rien n'a été éprouvé", "dg") : r.deconseille ? pill("modèle déconseillé", "dg") : r.sert ? pill("peut servir", "ok") : "") + '<span class="note">' + esc(r.modele || "") + (r.quand ? " · " + esc(dateFr(r.quand)) : "") + "</span></div>" + (cas ? '<div class="liste">' + cas + "</div>" : "");
     }
     async function oSur(f) {
       let res = null, cor = [], sen = null, err = "";
@@ -451,7 +451,7 @@
       if (!S.admin) return regles + matrice;
       if (err) return regles + matrice + nonBranche("Les épreuves de sûreté", err);
       const modele = f && f.agent ? f.agent.modele || "" : "";
-      const hist = res.length ? '<div class="liste">' + res.map((r) => '<div class="li"><div class="sp"><b>' + esc(r.modele) + '</b><div class="note">' + esc(dateFr(r.quand || r.ts)) + "</div></div>" + pill(r.reussies + "/" + r.total, r.ok ? "ok" : "dg") + (r.deconseille ? pill("déconseillé", "dg") : "") + "</div>").join("") + "</div>" : '<p class="note">Aucun modèle n\'a encore passé les épreuves.</p>';
+      const hist = res.length ? '<div class="liste">' + res.map((r) => '<div class="li"><div class="sp"><b>' + esc(r.modele) + '</b><div class="note">' + esc(dateFr(r.quand || r.ts)) + "</div></div>" + pill(r.reussies + "/" + r.total, r.ok ? "ok" : "dg") + (r.injoignable ? pill("injoignable", "dg") : r.deconseille ? pill("déconseillé", "dg") : "") + "</div>").join("") + "</div>" : '<p class="note">Aucun modèle n\'a encore passé les épreuves.</p>';
       const epr = '<section class="carte"><h3>Les épreuves de sûreté</h3><p class="note">Huit pièges rejoués à blanc, avec des outils-bouchons : rien n\'est touché. À faire avant de confier un agent à un autre modèle.</p>' +
         '<div class="ag-ecrire"><input type="text" id="ag-ep-m" value="' + esc(modele) + '" placeholder="rôle ou nom du modèle" aria-label="Modèle à éprouver"><button class="btn pri" id="ag-ep-go">Lancer les épreuves</button></div><div id="ag-ep-r" style="margin-top:8px"></div>' +
         '<div class="note" style="margin:10px 2px 2px"><b>Derniers passages</b></div>' + hist +
@@ -480,13 +480,13 @@
     async function vConv() {
       if (!S.conv.liste) S.conv.liste = (await API.conversations()).conversations || [];
       const L = S.conv.liste;
-      const choix = (S.admin ? ["cassandra", "itare"] : ["itare"]);
+      const choix = (S.admin ? ["cassandra", "itare", "amizo"] : ["itare"]);
       const liste = '<section class="carte"><div class="barre"><h3 style="flex:1">Conversations</h3>' + (S.admin ? '<select class="sel" id="cv-ag">' + choix.map((x) => '<option value="' + x + '"' + (S.conv.agent === x ? " selected" : "") + ">avec " + x + "</option>").join("") + "</select>" : "") + '<button class="btn pri mini" id="cv-neuve">Nouvelle</button></div><input type="search" id="cv-q" placeholder="Chercher une conversation…" value="' + esc(S.conv.q || "") + '">' +
         (L.length ? L.filter((c) => !S.conv.q || (c.titre || "Sans titre").toLowerCase().includes(S.conv.q.toLowerCase())).map((c) => '<button class="ag-sel' + (S.conv.id === c.id ? " on" : "") + '" data-cv="' + c.id + '"><div class="sp"><b>' + esc(c.titre || "Sans titre") + '</b><div class="note">' + esc(c.agent) + " · " + c.n + " messages · " + esc(dateFr(c.maj)) + "</div></div></button>").join("") : '<div class="vide">Aucune conversation.</div>') + "</section>";
       let droite = '<section class="carte"><div class="vide">Choisis une conversation, ou ouvres-en une nouvelle.</div></section>';
       if (S.conv.id) {
         const d = await API.conversation(S.conv.id);
-        const fil = d.messages.filter((m) => m.role !== "tool" || true).map((m) => {
+        const fil = d.messages.map((m) => {
           if (m.role === "tool") return '<div class="ag-m outil">' + G("⚙") + esc(m.nom || "outil") + (m.statut ? " · " + esc(m.statut) : "") + (m.evenement ? btnPq(m.evenement) : "") + "</div>";
           if (m.role === "panne") return '<div class="ag-m outil" style="color:var(--danger)">' + esc(m.contenu) + "</div>";
           if (!m.contenu && m.appels) return '<div class="ag-m outil">appelle ' + esc((m.appels || []).map((c) => (c.function && c.function.name) || c.nom || "outil").join(", ")) + "</div>";
@@ -677,7 +677,7 @@
       sur("#jf-q", "input", (i) => { S.jf.q = i.value; S.jf.n = 8; clearTimeout(S.tq); S.tq = setTimeout(async () => { const pos = i.selectionStart; await dessiner(); const n = racine.querySelector("#jf-q"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }, 250); });
       sur("#cv-q", "input", (i) => { S.conv.q = i.value; clearTimeout(S.tq); S.tq = setTimeout(async () => { const pos = i.selectionStart; await dessiner(); const n = racine.querySelector("#cv-q"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }, 200); });
       sur("#cv-neuve", "click", () => lancer(async () => { const r = await API.creer(S.conv.agent); S.conv.id = r.id; S.conv.liste = null; await dessiner(); }));
-      sur("#cv-ren", "click", () => lancer(async () => { const t = window.prompt("Nouveau titre"); if (t == null) return; await API.renommer(S.conv.id, t); S.conv.liste = null; await dessiner(); }));
+      sur("#cv-ren", "click", () => lancer(async () => { const ok = confirmer("Renommer la conversation", '<input type="text" id="cv-titre" maxlength="120" value="' + esc(((S.conv.liste || []).find((c) => c.id === S.conv.id) || {}).titre || "") + '" aria-label="Nouveau titre">', "Renommer"), champ = document.querySelector(".kit-m #cv-titre"); if (champ) champ.focus(); if (!(await ok) || !champ || !champ.value.trim()) return; await API.renommer(S.conv.id, champ.value.trim()); S.conv.liste = null; await dessiner(); }));
       sur("#cv-sup", "click", () => lancer(async () => { if (!(await confirmer("Supprimer la conversation ?", '<p class="note">Elle disparaît avec ses messages.</p>', "Supprimer", true))) return; await API.supprimer(S.conv.id); S.conv.id = 0; S.conv.liste = null; await dessiner(); }));
       sur("#cv-go", "click", () => lancer(async () => {
         const t = racine.querySelector("#cv-t"), m = t.value.trim(); if (!m || S.conv.occupe) return; S.conv.occupe = true; t.disabled = true;

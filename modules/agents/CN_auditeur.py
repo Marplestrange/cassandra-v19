@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #a29bc6
+# VERSION CN : 0.5.1  #dfffbf
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'Auditeur, un service agentique : il relit le journal et signale les dérives, indépendamment des agents qu'il regarde.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=a29bc6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=dfffbf ▼▼▼
 """L'Auditeur, un service agentique : il relit le journal et signale les dérives, indépendamment des agents qu'il regarde.
 
   - LECTURE SEULE : aucun outil (`acteur_outils` vide), aucune écriture ; `auditer` est une capacité de lecture réservée à l'administrateur (le journal d'instance, jamais un bureau).
@@ -27,6 +27,7 @@ import json
 import time
 from datetime import datetime, timedelta, timezone
 
+from . import CN_equipe as eq
 from .CN_equipe import DONNEES
 
 PLAFONDS_DEFAUT = {"jours_max": 30, "lignes_max": 5000, "signaux_max": 20}
@@ -80,7 +81,7 @@ def brancher_auditeur(ctx, E, db, compte_agit):
         compte = compte_agit()
         if not E.admin(compte):
             raise PermissionError("l'Auditeur lit le journal d'instance : administrateur seulement")
-        jours = max(1, min(int(jours or 7), int(p["jours_max"])))
+        jours = eq.entier(jours, 7, 1, int(p["jours_max"]), "jours")
         debut = time.time() - jours * 86400
         premier = (datetime.now(timezone.utc) - timedelta(days=jours)).strftime("%Y-%m-%d")
         couts = db.lire("SELECT jour, agent, centimes FROM agent_couts WHERE jour>=? ORDER BY jour LIMIT ?", (premier, int(p["lignes_max"])))

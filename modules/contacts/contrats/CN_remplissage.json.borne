@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.2  #88f4db
+# VERSION CN : 0.3.3  #88f4db
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : remplissage.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

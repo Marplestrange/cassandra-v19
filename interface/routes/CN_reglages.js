@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #08a0e0
+// VERSION CN : 0.1.0  #30db5f
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran Réglages de la V18 : ses lectures et ses écritures sur les modules V19 (comptes, modèles, courrier, webauthn, coffre, mémoire, proactif).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=08a0e0 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=30db5f ▼▼▼
 /* L'écran Réglages de la V18 : ses lectures et ses écritures sur les modules V19 (comptes, modèles, courrier, webauthn, coffre, mémoire, proactif).
    Ce que la V18 rangeait dans UN config.json, la V19 le range par module (reglages.*) : cette table traduit, et dit « non porté » quand un réglage n'a
    pas (ou plus) d'équivalent, au lieu d'écrire dans le vide. Les réglages de chaque module sont aussi dans Réglages › Modules (modules-ui.js). */
@@ -30,6 +30,32 @@
       const hum = l.filter((c) => c.type !== "systeme" && c.type !== "agent");
       return { users: hum.map((c) => c.compte).sort(), records: hum.map((c) => ({ email: c.compte, role: c.admin ? "admin" : "user", sites: c.sites || [], display_name: c.display_name || "", role_label: c.role_label || "" })) };
     },
+  });
+  // Créer, régler les sites, supprimer (V18 : /api/users/set|access|delete) : le module comptes. Le rôle administrateur ne se donne pas d'ici (Utilisateurs et groupes), ni un mot de passe changé sur un compte qui existe.
+  const sitesDe = (b) => (Array.isArray(b.sites) ? b.sites : []).map((x) => String(x).trim()).filter(Boolean);
+  P("/api/users/set", null, {
+    faire: async (req, agir) => {
+      const b = req.body || {}, compte = String(b.username || "").trim().toLowerCase();
+      if (b.role === "admin") return { ok: false, error: "le rôle administrateur se donne dans Utilisateurs et groupes" };
+      const l = ((await agir("comptes.lister", {})) || {}).comptes || [];
+      if (l.some((x) => x.compte === compte)) return { ok: false, error: "ce compte existe déjà : ses sites se règlent ici (Accès), son mot de passe depuis sa fiche" };
+      await agir("comptes.creer", { compte, mot_de_passe: String(b.password || ""), sites: sitesDe(b) });
+      return { ok: true, role: "user" };
+    },
+  });
+  P("/api/users/access", null, {
+    faire: async (req, agir) => {
+      const b = req.body || {}, compte = String(b.username || "").trim().toLowerCase();
+      const l = ((await agir("comptes.lister", {})) || {}).comptes || [];
+      const c = l.find((x) => x.compte === compte);
+      if (!c) return { ok: false, error: "compte inconnu" };
+      if ((b.role === "admin") !== !!c.admin) return { ok: false, error: "le rôle se change dans Utilisateurs et groupes" };
+      await agir("comptes.modifier", { compte, sites: sitesDe(b) });
+      return { ok: true };
+    },
+  });
+  P("/api/users/delete", null, {
+    faire: async (req, agir) => { await agir("comptes.supprimer", { compte: String((req.body || {}).username || "").trim().toLowerCase() }); return { ok: true }; },
   });
   P("/api/mdp/regles", "comptes.regles_mdp", { args: () => ({}), sortie: (x) => ok(x) });
 

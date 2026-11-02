@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : voix
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8788f2
+# VERSION CN : 0.2.0  #8788f2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Voix pose, À ROOT : les trois commandes (écouter, parler, télécharger) que le courtier peut lancer.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8788f2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=8788f2 ▼▼▼
 # Voix pose, À ROOT : les trois commandes (écouter, parler, télécharger) que le courtier peut lancer.
 set -eu
 D="${CASSANDRA_MODULE_DIR:?le dossier du module}"

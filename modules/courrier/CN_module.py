@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.2  #f3bbf4
+# VERSION CN : 0.1.3  #82028d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=f3bbf4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=82028d ▼▼▼
 """Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 
 Porté de la V18 (`_imap_*`, `itare_mail_*`, `mail_*`, `_courrier_*`), avec ses leçons :
@@ -36,7 +36,9 @@ from __future__ import annotations
 
 import base64
 import email
+import hashlib
 import imaplib
+import mimetypes
 import re
 import smtplib
 import threading
@@ -752,7 +754,7 @@ def brancher(ctx):
             lignes.append(str(carte["web"]))
         return "\n".join(lignes)
 
-    def construire(compte, a, objet, texte, cc="", repond_a_message="", references=""):
+    def construire(compte, a, objet, texte, cc="", repond_a_message="", references="", pieces=()):
         destinataires, copies = liste_adresses(a, "destinataire"), liste_adresses(cc, "copie")
         if not destinataires:
             raise ValueError("un destinataire au moins")
@@ -777,6 +779,11 @@ def brancher(ctx):
             msg["In-Reply-To"] = repond_a_message
             msg["References"] = references or repond_a_message
         msg.set_content(corps)
+        for chemin, nom in pieces:
+            with open(chemin, "rb") as f:
+                donnees = f.read()
+            typ = (mimetypes.guess_type(nom)[0] or "application/octet-stream").split("/", 1)
+            msg.add_attachment(donnees, maintype=typ[0], subtype=typ[1] if len(typ) > 1 else "octet-stream", filename=nom)
         return msg, destinataires + copies
 
     def brouillon_creer(c, a="", objet="", texte="", cc="", repond_a_message="", references=""):
@@ -819,13 +826,34 @@ def brancher(ctx):
                   (time.time(), compte, str(a)[:300], str(cc)[:300], str(objet)[:300], str(texte)[:500], 1 if ok else 0, str(raison)[:300]))
 
     def envoyer(c, a="", objet="", texte="", cc="", repond_a_message="", references=""):
+        return poster(a, objet, texte, cc, repond_a_message, references)
+
+    def envoyer_mandat(c, envoi=0):
+        """Poste, tel quel, un envoi que l'accord (ou le mandat, en mode automatique) a autorisé. L'appelant ne fournit AUCUN contenu : seulement le numéro. Le destinataire,
+        l'objet, le corps et la pièce viennent de la file des mandats ; la pièce est relue par le carnet de fichiers (confinement des racines) et sa signature recomparée."""
+        e = ctx.executer_lecture("mandats.envoi_a_poster", envoi=int(envoi or 0))
+        if not e:
+            raise ValueError("cet envoi n'est pas autorisé à partir (ni accord, ni mandat automatique)")
+        pieces = []
+        if e.get("pj_source"):
+            d = ctx.executer_lecture("ged.telecharger", source=e["pj_source"], chemin=e["pj_chemin"])
+            if not d or not d.get("chemin"):
+                raise ValueError("la pièce jointe n'existe plus")
+            with open(d["chemin"], "rb") as f:
+                signature = hashlib.sha256(f.read()).hexdigest()[:16]
+            if e.get("pj_empreinte") and signature != e["pj_empreinte"]:
+                raise ValueError("la pièce jointe a changé depuis sa préparation : relancez le mandat pour la revoir")
+            pieces.append((d["chemin"], d.get("nom") or "piece"))
+        return poster(e["destinataire"], e["objet"], e["corps"], "", "", "", pieces)
+
+    def poster(a, objet, texte, cc, repond_a_message, references, pieces=()):
         compte = compte_agit()
         hote = str(reglage("smtp_hote", compte)).strip()
         ident = str(reglage("smtp_identifiant", compte) or reglage("imap_identifiant", compte)).strip()
         mdp = str(reglage("smtp_mot_de_passe", compte) or reglage("imap_mot_de_passe", compte))
         if not hote or not ident or not mdp:
             raise ValueError("le serveur d'envoi n'est pas réglé (réglages courrier.smtp_*)")
-        msg, destinataires = construire(compte, a, objet, texte, cc, repond_a_message, references)
+        msg, destinataires = construire(compte, a, objet, texte, cc, repond_a_message, references, pieces)
         port = int(reglage("smtp_port", compte, 587))
         try:
             srv, tls = smtp_ouvrir(hote, port, entier("delai_s", 20))
@@ -989,6 +1017,7 @@ def brancher(ctx):
     c.implementer("dossier_renommer", dossier_renommer, prouver_renomme, defaire_renomme, simuler=lambda x, ancien="", nouveau="", **_: "renommerait %s en %s" % (ancien, nouveau))
     c.implementer("brouillon_creer", brouillon_creer, prouver_brouillon, defaire_brouillon, simuler=lambda x, objet="", **_: "préparerait le brouillon « %s »" % objet)
     c.implementer("envoyer", envoyer, prouver_envoye, defaire_envoye, simuler=lambda x, a="", objet="", **_: "enverrait « %s » à %s" % (objet, a))
+    c.implementer("envoyer_mandat", envoyer_mandat, prouver_envoye, defaire_envoye, simuler=lambda x, envoi=0, **_: "posterait l'envoi autorisé n° %s" % envoi)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

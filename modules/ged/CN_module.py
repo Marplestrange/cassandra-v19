@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : ged
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d3f62f
+# VERSION CN : 0.1.1  #4080b0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La GED : les documents d'un compte, par sources, avec un index et des règles de classement.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d3f62f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=4080b0 ▼▼▼
 """La GED : les documents d'un compte, par sources, avec un index et des règles de classement.
 
 Porté de la V18 (`ged_*`), avec ses leçons :
@@ -856,7 +856,8 @@ def brancher(ctx):
                 x["label"] = res["avant"]
         _cfg_ecrire("racines", racines)
 
-    def source_deplacer(c, chemin="", nom=""):
+    def _deplacement_permis(chemin, nom):
+        """Les verrous d'un renommage de répertoire, partagés par l'aperçu et le geste : (racines, source, p, dst)."""
         if not ctx.est_admin(_moi()):
             raise PermissionError("seul un administrateur peut renommer un répertoire")
         p = os.path.abspath(str(chemin or "").strip())
@@ -878,6 +879,16 @@ def brancher(ctx):
         dst = os.path.join(os.path.dirname(p), n)
         if os.path.exists(dst):
             raise ValueError("« %s » existe déjà à côté" % n)
+        return racines, src, p, dst
+
+    def source_deplacer_apercu(c, chemin="", nom=""):
+        """Ce que le renommage ferait, sans rien faire : le répertoire d'avant, celui d'après, et combien de fichiers de l'index suivraient."""
+        _r, _s, p, dst = _deplacement_permis(chemin, nom)
+        n = db.lire("SELECT COUNT(*) AS n FROM ged_fichiers WHERE chemin LIKE ?", (p + os.sep + "%",))[0]["n"]
+        return {"de": p, "vers": dst, "fichiers": n}
+
+    def source_deplacer(c, chemin="", nom=""):
+        racines, src, p, dst = _deplacement_permis(chemin, nom)
         avant_label = src.get("label")
         os.rename(p, dst)
         for r in racines:
@@ -1231,6 +1242,7 @@ def brancher(ctx):
                     simuler=lambda x, chemin="", **_: "changerait le propriétaire de %s" % chemin)
     ctx.implementer("source_renommer", source_renommer, prouver_source_renommer, defaire_source_renommer,
                     simuler=lambda x, chemin="", **_: "renommerait la source %s" % chemin)
+    ctx.implementer("source_deplacer_apercu", source_deplacer_apercu)
     ctx.implementer("source_deplacer", source_deplacer, prouver_source_deplacer, defaire_source_deplacer,
                     simuler=lambda x, chemin="", nom="", **_: "renommerait le répertoire %s en %s" % (chemin, nom))
     ctx.implementer("deposer", deposer, prouver_deposer, defaire_deposer,

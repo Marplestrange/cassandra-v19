@@ -8,7 +8,7 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.5.0)  #cfb89f
+# VERSION EC : EC0 (référence 0.5.1)  #cfb89f
 # HÔTE CN    : CN_module.py · planifier_recherche @1.0
 # RÔLE       : décide, pour une demande, des requêtes à lancer, du nombre de sources à lire et de l'arrêt ; ne propose rien quand la bibliothèque sait déjà.
 # MÉTHODE    : fonction pure : une requête est la demande elle-même, une autre ses mots-clés, les autres les expressions entre guillemets ; bornée par le budget ; rien du tout quand tous les mots de la demande sont déjà dans les titres connus.

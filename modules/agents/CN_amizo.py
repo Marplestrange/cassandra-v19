@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #e41e23
+# VERSION CN : 0.5.1  #4a2945
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Amizo, la connaissance : transmettre une information sourcée, recevoir une passation, la traiter.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=e41e23 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=4a2945 ▼▼▼
 """Amizo, la connaissance.
 
   - Amizo est le SEUL agent qui lit le dehors (`web.rechercher`, `web.lire`) ; il n'agit jamais : sa seule écriture est sa bibliothèque (`bibliotheque.noter`, en quarantaine) et ce qu'il TRANSMET.
@@ -26,6 +26,8 @@ from __future__ import annotations
 import re
 import time
 from types import SimpleNamespace
+
+from . import CN_equipe as eq
 
 DESTINATAIRES = ("itare", "cassandra", "utilisateur")
 CONFIANCES = ("haute", "moyenne", "faible", "aucune")
@@ -213,7 +215,7 @@ def brancher_amizo(ctx, E, o, lecture, db, compte_agit, stocker, converser):
             sql += " AND etat=?"
             a.append(str(etat))
         sql += " ORDER BY id DESC LIMIT ?"
-        a.append(max(1, min(int(limite or 50), 200)))
+        a.append(eq.entier(limite, 50, 1, 200, "limite"))
         lignes = db.lire(sql, a)
         return {"passations": [{"id": r["id"], "de": r["de"], "vers": r["vers"], "compte": r["compte"] if admin else compte, "demande": r["demande"], "etat": r["etat"],
                                 "cree": r["cree"], "traitee": r["traitee"], "conversation_id": r["conversation_id"]} for r in lignes], "administrateur": admin}
@@ -245,7 +247,7 @@ def brancher_amizo(ctx, E, o, lecture, db, compte_agit, stocker, converser):
                 raise ValueError("passation introuvable ou pas en attente")
             lot = [p]
         else:
-            lot = [dict(r) for r in db.lire("SELECT * FROM passations WHERE etat='attend' ORDER BY id LIMIT ?", (max(1, min(int(limite or 3), 10)),))]
+            lot = [dict(r) for r in db.lire("SELECT * FROM passations WHERE etat='attend' ORDER BY id LIMIT ?", (eq.entier(limite, 3, 1, 10, "limite"),))]
         faites = []
         for p in lot:
             try:
@@ -266,7 +268,7 @@ def brancher_amizo(ctx, E, o, lecture, db, compte_agit, stocker, converser):
     def rapport_matin(c, jours=1):
         """Trois phrases au plus par agent, tirées du journal ; chacune renvoie à une ligne précise du journal (id, type, instant). Le journal d'un autre compte n'est jamais lu."""
         compte = compte_agit()
-        jours = max(1, min(int(jours or 1), 30))
+        jours = eq.entier(jours, 1, 1, 30, "jours")
         fin = time.time() + 1
         debut = fin - jours * 86400
         admin = E.admin(compte)

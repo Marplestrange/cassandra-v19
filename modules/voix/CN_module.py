@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : voix
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3ff96c
+# VERSION CN : 0.2.0  #6f87d3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La voix : ce qui est installé, le catalogue, et le choix par compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3ff96c ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=6f87d3 ▼▼▼
 """La voix : ce qui est installé, le catalogue, et le choix par compte.
 
 Porté de la V18 (`vx_*`), avec ses leçons :
@@ -21,8 +21,8 @@ Porté de la V18 (`vx_*`), avec ses leçons :
   - la voix de chacun est PAR COMPTE : deux personnes n'entendent pas la même chose du même agent ;
   - une voix jugée « robotique » l'est souvent parce qu'elle parle trop vite pour ses moyens (le débit).
 
-Différé proprement : l'écoute (faster-whisper), la parole (piper) et le téléchargement des voix — des modèles
-lourds, par le courtier racine.
+L'écoute (faster-whisper), la parole (piper) et le téléchargement des voix sont des modèles lourds : ils passent par le courtier racine.
+La parole est rendue à l'appelant (en base64) puis le fichier temporaire est effacé ; la dictée suit le modèle et le lexique réglés (`modele_dictee`, `lexique`).
 """
 from __future__ import annotations
 
@@ -33,6 +33,15 @@ CATALOGUE = [
     {"id": "fr_FR-upmc-medium", "nom": "UPMC", "genre": "deux voix", "d": "Jessica (0) et Pierre (1)",
      "locuteurs": [["0", "Jessica"], ["1", "Pierre"]]},
     {"id": "fr_FR-siwis-low", "nom": "Siwis légère", "genre": "femme", "d": "la même, plus rapide et plus sourde"},
+]
+
+
+DOSSIER_VOIX = "/usr/libexec/cassandra/voix/voix"
+MODELES_DICTEE = [
+    {"id": "tiny", "d": "très rapide, approximatif (≈ 75 Mo)"},
+    {"id": "base", "d": "rapide, correct pour des phrases simples (≈ 145 Mo)"},
+    {"id": "small", "d": "le bon compromis (≈ 480 Mo)"},
+    {"id": "medium", "d": "le plus juste, plus lent (≈ 1,5 Go)"},
 ]
 
 
@@ -59,7 +68,7 @@ def brancher(ctx):
         with os.fdopen(fd, "wb") as f:
             f.write(octets)
         try:
-            r = ctx.racine("ecouter", [chemin, langue or "fr"], delai=300)
+            r = ctx.racine("ecouter", [chemin, langue or "fr", str(ctx.reglage("modele_dictee") or "small"), str(ctx.reglage("lexique") or "")[:600]], delai=300)
             if not r.get("ok"):
                 raise ValueError(r.get("erreur") or "écoute impossible")
             return {"texte": (r.get("sortie") or "").strip()}
@@ -80,13 +89,17 @@ def brancher(ctx):
             r = ctx.racine("parler", [texte, voix, sortie, locuteur or "", debit or ""], delai=300)
             if not r.get("ok"):
                 raise ValueError(r.get("erreur") or "parole impossible")
-            return {"chemin": sortie}
-        except Exception:
+            import base64
+            with open(sortie, "rb") as f:
+                audio = f.read()
+            if not audio:
+                raise ValueError("la parole est vide")
+            return {"audio_b64": base64.b64encode(audio).decode("ascii"), "octets": len(audio), "type": "audio/wav"}
+        finally:
             try:
-                os.unlink(sortie)
+                os.unlink(sortie)                    # le son est rendu à l'appelant puis effacé : une voix synthétisée ne s'entasse pas sur le disque
             except Exception:
                 pass
-            raise
 
     def telecharger(c, voix_id=""):
         if not voix_id:
@@ -97,19 +110,14 @@ def brancher(ctx):
         return {"voix_id": voix_id}
 
     def prouver_parler(c, res):
-        import os
-        return os.path.isfile(res["chemin"])
+        return bool(res.get("audio_b64")) and int(res.get("octets") or 0) > 44        # un WAV porte au moins son en-tête
 
     def defaire_parler(c, res):
-        import os
-        try:
-            os.unlink(res["chemin"])
-        except Exception:
-            pass
+        return None                                                                  # rien ne reste sur le disque : il n'y a rien à retirer
 
     def prouver_telecharger(c, res):
         import os
-        return os.path.isdir("/usr/libexec/cassandra/voix/voix/%s" % res["voix_id"])
+        return os.path.isdir("%s/%s" % (DOSSIER_VOIX, res["voix_id"]))
 
     def defaire_telecharger(c, res):
         import shutil
@@ -133,13 +141,21 @@ def brancher(ctx):
                 quoi.append("la LECTURE demande « pip install piper-tts » et une voix française posée")
         return {"ecoute": ecoute, "parle": parle, "quoi": quoi}
 
+    def _posee(vid):
+        import os
+        return os.path.isfile(os.path.join(DOSSIER_VOIX, vid, "%s.onnx" % vid))
+
+    def _catalogue():
+        return [dict(v, pose=_posee(v["id"])) for v in CATALOGUE]
+
     def catalogue(c):
-        return {"catalogue": CATALOGUE}
+        return {"catalogue": _catalogue()}
 
     def reglages(c):
         compte = (ctx.compte or "").strip().lower()
         p = _pref(compte) or {"voix_nom": "", "voix_locuteur": "", "voix_auto": 1, "voix_debit": "", "voix_mode": 0}
-        return {"reglages": p, "catalogue": CATALOGUE}
+        return {"reglages": p, "catalogue": _catalogue(), "modeles": MODELES_DICTEE, "modele": str(ctx.reglage("modele_dictee") or "small"),
+                "lexique": str(ctx.reglage("lexique") or ""), "dossier": DOSSIER_VOIX}
 
     def choisir(c, voix_nom="", voix_locuteur="", voix_auto=None, voix_debit="", voix_mode=None):
         compte = (ctx.compte or "").strip().lower()

@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.2  #3ca768
+# VERSION CN : 0.1.3  #9dd594
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La boîte mail de chaque compte, par IMAP : dossiers, messages (cache des en-têtes et du texte des trois derniers mois), lecture avec un HTML nettoyé par liste blanche (rien ne s'exécute, aucune image distante n'est chargée sans accord), gestes réversibles (lu, suivi, déplacer, archiver, corbeille, copier, dossiers), brouillons, et envoi par SMTP réservé à un humain. Les identifiants sont des réglages secrets PAR COMPTE, chiffrés : une boîte appartient à une personne, jamais au serveur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.2 empreinte=3ca768 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.3 empreinte=9dd594 ▼▼▼
 [module]
 id = "courrier"
 nom = "Courrier"
-version = "0.1.2"
+version = "0.1.3"
 noyau_min = "0.1.0"
 description = "La boîte mail de chaque compte, par IMAP : dossiers, messages (cache des en-têtes et du texte des trois derniers mois), lecture avec un HTML nettoyé par liste blanche (rien ne s'exécute, aucune image distante n'est chargée sans accord), gestes réversibles (lu, suivi, déplacer, archiver, corbeille, copier, dossiers), brouillons, et envoi par SMTP réservé à un humain. Les identifiants sont des réglages secrets PAR COMPTE, chiffrés : une boîte appartient à une personne, jamais au serveur."
 confiance = "interne"
@@ -286,6 +286,18 @@ preuve = "l'envoi est consigné au journal des envois"
 retour = "aucun : un courriel parti ne se rappelle pas ; d'où le brouillon à relire avant"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
+sortant = true
+
+[[capacites]]
+id = "envoyer_mandat"
+libelle = "Poster un envoi qu'un mandat a autorisé (accord d'un humain, minuterie écoulée ou mandat automatique) : l'appelant ne donne qu'un numéro, le destinataire, l'objet, le corps et la pièce viennent de la file des mandats"
+risque = "eleve"
+droit = "utiliser"
+perimetre = ["mon propre serveur d'envoi", "un seul destinataire, celui du mandat", "la pièce relue par le carnet de fichiers"]
+preuve = "l'envoi est consigné au journal des envois"
+retour = "aucun : un courriel parti ne se rappelle pas ; d'où l'accord ou la minuterie arrêtable avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "itare", "cassandra"]
 sortant = true
 
 [[capacites]]

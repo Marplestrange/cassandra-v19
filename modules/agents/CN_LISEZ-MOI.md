@@ -6,13 +6,13 @@
 <!-- MAIL       : marplestrange@cassandra.center -->
 <!-- MODULE     : agents -->
 <!-- ZONE       : CN -->
-<!-- VERSION CN : 0.5.0  #000000 -->
+<!-- VERSION CN : 0.5.1  #000000 -->
 <!-- VERSION EC : néant -->
 <!-- EC LIÉES   : néant -->
 <!-- RÔLE       : Agents -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.5.0 empreinte=2486d7 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.5.1 empreinte=cca10d ▼▼▼ -->
 # Agents
 
 Cassandra (la machine) et Itare (le bureau) en conversation. Un tour : mémoire → modèle → outils → réponse en clair.
@@ -30,6 +30,7 @@ Cassandra (la machine) et Itare (le bureau) en conversation. Un tour : mémoire 
 - **Coûts et plafonds** : chaque réponse du modèle est comptée par jour et par agent ; plafond par agent et global, le plus bas atteint donne l'action (`secours`, `arret` sauf Cassandra, `accord`).
 - **Cloisonnement** : un compte ordinaire n'agit que sur SON Itare ; l'administrateur règle Cassandra, Amizo et les services, et ne lit jamais le bureau d'un autre compte. Les réglages sont refusés à tout agent. Aucun outil `coffre__*` pour un autre agent que Cassandra.
 - Contrat des capacités : `equipe`, `agent`, `couts`, `paliers` (lecture), `agent_regler`, `palier_regler`, `niveau_regler`, `plafond_regler` (écriture, avec preuve et retour).
+- **La trace** : `actes` liste ce que les agents ont fait pour le compte (les gestes qui écrivent, avec leur issue et s'ils se défont) ; elle nourrit la trace d'Itare du bureau (routes V18 `/api/itare/traces` et `/api/itare/trace/annuler`, qui passent par `defaire`). `conversation` rend, pour chaque outil, l'acte du journal (`evenement`) : le bouton « Pourquoi ? ».
 
 ## Non porté
 Le flux de jetons (le tour rend sa réponse entière : l'écran sondera la conversation), le salon multi-agents, les pièces jointes de conversation (« lab »), le mode plan, la compression de l'historique (les épisodes de la mémoire la remplacent), le comparateur solo.

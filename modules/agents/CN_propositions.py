@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #8874d1
+# VERSION CN : 0.5.1  #88105f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les propositions des agents : « À valider » (accepter exécute, refuser se mémorise, reporter), la carte de confiance et « Pourquoi ? ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=8874d1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=88105f ▼▼▼
 """Les propositions des agents.
 
 Une proposition est ce qu'un agent veut faire et ne fait pas seul : un geste raconté (palier ou niveau), retenu pour accord (« demander »), ou retenu parce qu'il sort de la maison
@@ -185,7 +185,7 @@ def brancher_propositions(ctx, E, o, lecture, reglage):
     def propositions(c, etat="a_valider", agent="", limite=100):
         compte = compte_agit()
         perimer()
-        limite = max(1, min(int(limite or 100), 500))
+        limite = eq.entier(limite, 100, 1, 500, "limite")
         sql, a = "SELECT * FROM propositions WHERE 1=1", []
         if etat == "a_valider":
             sql += " AND (etat='attend' OR (etat='reportee' AND reporte_jusqua<=?))"
@@ -422,6 +422,37 @@ def brancher_propositions(ctx, E, o, lecture, reglage):
         res["phrases"] = [res["declencheur"]["phrase"]] + ["Souvenir consulté : %s" % m["libelle"] for m in res["memoire"]] + [res["issue_texte"]] + ([res["retour_texte"]] if res["retour_texte"] else [])
         return res
 
+    def actes(c, agent="", limite=30):
+        """Ce que les agents ont fait pour CE compte, le plus récent d'abord, avec de quoi le défaire : la trace du bureau. Seuls les gestes qui écrivent ; l'acte d'un autre compte n'existe pas, administrateur compris."""
+        compte = compte_agit()
+        limite = eq.entier(limite, 30, 1, 100, "limite")
+        sql, a = "SELECT * FROM agent_actes WHERE compte=?", [compte]
+        if agent:
+            sql += " AND agent=?"
+            a.append(E.definition(agent)["id"])
+        lignes = db.lire(sql + " ORDER BY ts DESC LIMIT ?", a + [limite * 4])
+        if not lignes:
+            return {"actes": [], "n": 0, "compte": compte}
+        par_cause = {}
+        for e in ctx.evenements("capacite.", 5000):
+            if e.get("compte") in (compte, ""):
+                par_cause.setdefault(e.get("cause"), []).append(e)
+        sortie = []
+        for l in lignes:
+            directs = par_cause.get(l["evenement"], [])
+            if any((e.get("donnees") or {}).get("lecture") for e in directs):
+                continue
+            issue, retour = "inconnue", None
+            for e in sorted(directs, key=lambda x: x["id"]):
+                issue = {"capacite.faite": "faite", "capacite.racontee": "racontee", "capacite.simulee": "simulee", "capacite.echouee": "echec"}.get(e["type"], issue)
+                for s in par_cause.get(e["id"], []):
+                    retour = {"capacite.defaite": "defaite", "capacite.annulee": "annulee", "capacite.annulation_impossible": "annulation_impossible"}.get(s["type"], retour)
+            sortie.append({"acte": l["evenement"], "agent": l["agent"], "nom": E.definitions().get(l["agent"], {}).get("nom", l["agent"]), "capacite": l["capacite"], "ts": l["ts"], "issue": issue, "retour": retour,
+                           "defaisable": issue == "faite" and retour not in ("defaite", "annulee", "annulation_impossible")})
+            if len(sortie) >= limite:
+                break
+        return {"actes": sortie, "n": len(sortie), "compte": compte}
+
     def defaire(c, acte=0, raison=""):
         """Le retour arrière d'un acte d'agent déjà fait : le bouton « Défaire » du journal. Le cloisonnement est celui de `pourquoi` : l'acte d'un autre compte n'existe pas, administrateur compris.
         Ce que le retour n'a pas pu défaire se dit (le module et le noyau le racontent au journal) ; un acte qui n'a pas été fait ne se défait pas."""
@@ -454,6 +485,7 @@ def brancher_propositions(ctx, E, o, lecture, reglage):
                   simuler=lambda x, id="", decision="", **_: "%s la proposition %s" % ({"accepter": "accepterait (et ferait)", "refuser": "refuserait", "reporter": "reporterait"}.get(decision, "déciderait"), id))
     c.implementer("confiance", confiance)
     c.implementer("pourquoi", pourquoi)
+    c.implementer("actes", actes)
     c.implementer("defaire", defaire, prouver_defaite, defaire_defaite, simuler=lambda x, acte=0, **_: "défairait l'acte %s (le retour arrière de sa capacité, une seule fois)" % acte)
     return SimpleNamespace(proposer=proposer, tracer=tracer, observer_outils=observer_outils, perimer=perimer)
 # ▲▲▲ FIN BORNE CN ▲▲▲

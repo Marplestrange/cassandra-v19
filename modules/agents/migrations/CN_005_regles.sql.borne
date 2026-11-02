@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #11ff4c
+# VERSION CN : 0.5.1  #11ff4c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Migration 005_regles.sql (fichier sans commentaires possibles ou immuable : en-tête porté ici)

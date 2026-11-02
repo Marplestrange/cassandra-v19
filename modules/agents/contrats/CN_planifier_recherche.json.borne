@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #95cc67
+# VERSION CN : 0.5.1  #95cc67
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : planifier_recherche.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

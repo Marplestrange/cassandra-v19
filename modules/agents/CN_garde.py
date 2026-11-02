@@ -6,19 +6,19 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.0  #1a501c
+# VERSION CN : 0.5.1  #b9c6a2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La garde des agents : la sentinelle anti-fuite (empreintes des secrets), le Relecteur qui retient une réponse, et les épreuves de sûreté d'un modèle.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=1a501c ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=b9c6a2 ▼▼▼
 """La garde des agents.
 
   - Sentinelle : le module ne garde des secrets connus que leur EMPREINTE (HMAC sous une clé propre à l'instance) et leur longueur — jamais la valeur. On l'apprend d'un secret
     (`sentinelle_apprendre`, la valeur est masquée au journal et ne ressort nulle part) ; on peut l'oublier. Aucun agent n'a ces capacités.
   - Relecteur : avant qu'une réponse parte, il la compare aux empreintes et cherche un ordre caché ; il retient la réponse et n'en garde que les MOTIFS.
-  - Épreuves : huit situations piégées jouées contre un modèle en MODE ESSAI ; un modèle qui échoue est déconseillé (et écarté si le réglage `epreuves_exigees` est posé).
+  - Épreuves : huit situations piégées jouées contre un modèle en MODE ESSAI ; un modèle qui échoue est déconseillé (et écarté si le réglage `epreuves_exigees` est posé) ; un modèle qui n'a répondu à aucun cas (panne) est dit « injoignable », pas déconseillé.
 """
 from __future__ import annotations
 
@@ -131,8 +131,14 @@ def brancher_garde(ctx, E, o, lecture, reglage):
         titres = {c["id"]: c["titre"] for c in ep.CORPUS["cas"]}
         return [{"id": r["cas"], "titre": titres.get(r["cas"], r["cas"]), "reussi": bool(r["reussi"]), "detail": r["detail"]} for r in db.lire("SELECT * FROM epreuves_cas WHERE run_id=? ORDER BY rowid", (run["id"],))]
 
+    def injoignable(run):
+        """Le modèle n'a répondu à AUCUN cas (panne, quota, réseau) : ce run n'éprouve rien, il ne juge pas le modèle."""
+        n = db.lire("SELECT COUNT(*) AS n FROM epreuves_cas WHERE run_id=? AND detail LIKE 'panne : %'", (run["id"],))[0]["n"]
+        return run["total"] > 0 and n == run["total"]
+
     def forme(run):
-        return {"modele": run["modele"], "run": run["id"], "quand": run["ts"], "ok": bool(run["ok"]), "reussies": run["reussies"], "total": run["total"], "sert": bool(run["ok"]), "deconseille": not run["ok"], "cas": cas_du_run(run)}
+        sans = injoignable(run)
+        return {"modele": run["modele"], "run": run["id"], "quand": run["ts"], "ok": bool(run["ok"]), "reussies": run["reussies"], "total": run["total"], "sert": bool(run["ok"]), "deconseille": not run["ok"] and not sans, "injoignable": sans, "cas": cas_du_run(run)}
 
     def epreuves_lancer(c, modele=""):
         compte = exiger_admin()
@@ -173,7 +179,7 @@ def brancher_garde(ctx, E, o, lecture, reglage):
     def deconseille(role):
         """Ce modèle a-t-il échoué à ses dernières épreuves ? (Sans épreuve jouée : non — on ne juge pas ce qu'on n'a pas éprouvé.)"""
         run = dernier_run(role)
-        return bool(run) and not run["ok"]
+        return bool(run) and not run["ok"] and not injoignable(run)           # une panne n'est pas un verdict
 
     c = ctx
     c.implementer("sentinelle_apprendre", sentinelle_apprendre, prouver_apprise, defaire_apprise, simuler=lambda x, etiquette="", **_: "apprendrait l'empreinte du secret « %s »" % etiquette)

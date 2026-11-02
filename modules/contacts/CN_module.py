@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : contacts
 # ZONE       : CN
-# VERSION CN : 0.3.2  #534613
+# VERSION CN : 0.3.3  #abaf54
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le carnet d'adresses.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.2 empreinte=534613 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.3 empreinte=abaf54 ▼▼▼
 """Le carnet d'adresses.
 
 Porté de la V18 (`contact_*`, `contacts_*`, vCard, CSV), avec ses leçons :
@@ -917,8 +917,24 @@ def brancher(ctx):
         f["emails"] = [x["addr"] for x in bd.lire("SELECT addr FROM emails WHERE contact_id=? ORDER BY is_primary DESC, addr", (f["id"],))]
         return {"depuis": str(depuis), "contact": f}
 
+    def adresses_pour_mandat(c, reference=""):
+        """Ce que le mandat d'envoi peut ADRESSER : jusqu'à six fiches qui répondent à une désignation (un nom, une société, ou une adresse déjà au carnet), avec leurs adresses.
+        L'adresse donne la fiche, jamais l'inverse : une adresse inconnue du carnet n'adresse rien."""
+        compte = compte_agit()
+        ref = str(reference or "").strip().lower()
+        if not ref:
+            raise ValueError("une désignation est requise")
+        fiches = avec_adresses(db.lire("SELECT * FROM contacts WHERE compte=? AND supprime_at IS NULL AND archive=0", (compte,)))
+        if "@" in ref:
+            choisies = [x for x in fiches if ref in [a.lower() for a in x["emails"]]]
+        else:
+            choisies = [x for x in fiches if ref in (" ".join([x["display_name"], x["company"]])).lower()]
+        choisies.sort(key=lambda x: (0 if x["favorite"] else 1, x["display_name"].lower()))
+        return {"fiches": [{"id": x["id"], "display_name": x["display_name"], "company": x["company"], "emails": x["emails"]} for x in choisies[:6]]}
+
     # ------------------------------------------------------------------ inscription
     c = ctx
+    c.implementer("adresses_pour_mandat", adresses_pour_mandat)
     for cid, f in (("lister", lister), ("voir", voir), ("pour_adresse", pour_adresse), ("dossiers", dossiers), ("pour_cible", pour_cible), ("doublons", doublons),
                    ("vcard_exporter", vcard_exporter), ("csv_apercu", csv_apercu)):
         c.implementer(cid, f)
