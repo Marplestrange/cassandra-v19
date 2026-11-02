@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #d25c47
+// VERSION CN : 0.1.0  #08a0e0
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran Réglages de la V18 : ses lectures et ses écritures sur les modules V19 (comptes, modèles, courrier, webauthn, coffre, mémoire, proactif).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=d25c47 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=08a0e0 ▼▼▼
 /* L'écran Réglages de la V18 : ses lectures et ses écritures sur les modules V19 (comptes, modèles, courrier, webauthn, coffre, mémoire, proactif).
    Ce que la V18 rangeait dans UN config.json, la V19 le range par module (reglages.*) : cette table traduit, et dit « non porté » quand un réglage n'a
    pas (ou plus) d'équivalent, au lieu d'écrire dans le vide. Les réglages de chaque module sont aussi dans Réglages › Modules (modules-ui.js). */
@@ -156,7 +156,7 @@
     faire: async (req, agir) => {
       try {
         const m = (CASS.moi && CASS.moi.compte) || "";
-        const x = (await agir("journal.flux_recent", { limite: 30 })) || {};
+        const x = (await agir("journal.flux_recent", { n: 30 })) || {};
         const l = x.lignes || x.flux || x.evenements || [];
         return ok({ events: l.slice(0, 30).map((e) => ({ ts: e.ts || e.date || "", who: e.acteur && e.acteur !== "humain" ? "agent" : "user", action: e.action || e.type || "", detail: e.detail || e.resume || "" })), compte: m });
       } catch (e) { return ok({ events: [] }); }

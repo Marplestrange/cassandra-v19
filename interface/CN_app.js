@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #00832f
+// VERSION CN : 0.1.0  #5329ae
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=00832f ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=5329ae ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -135,6 +135,29 @@ async function loginPremierSonder(){
         if (d && d.libre) { loginVue('premier'); const j = document.getElementById('premier-jeton'); if (j) setTimeout(function(){ j.focus(); }, 30); }
     } catch (e) {}
 }
+// Le modèle de Cassandra : sans lui elle ne répond à personne. Choisi ici, il est déclaré modèle de l'instance et lié au rôle « principal ».
+const PREMIER_IA = {deepseek: 'deepseek-flash', openrouter: 'google/gemini-2.5-flash', openai: 'gpt-4o-mini', google: 'gemini-2.5-flash', groq: 'llama-3.3-70b-versatile', ollama: 'qwen2.5:3b', personnalise: ''};
+function loginPremierIA(){
+    const f = document.getElementById('premier-ia').value, z = document.getElementById('premier-ia-champs');
+    if (z) z.hidden = !f;
+    if (!f) return;
+    const nom = document.getElementById('premier-ia-nom'); if (nom) nom.value = PREMIER_IA[f] || '';
+    const b = document.getElementById('premier-ia-base-champ'); if (b) b.hidden = (f !== 'personnalise' && f !== 'ollama');
+    const c = document.getElementById('premier-ia-cle-champ'); if (c) c.hidden = (f === 'ollama');
+}
+async function loginPremierModele(dire){
+    const v = function(i){ const z = document.getElementById(i); return z ? z.value.trim() : ''; };
+    const f = v('premier-ia'); if (!f) return;
+    const corps = function(o){ return {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(o)}; };
+    try {
+        const r = await fetch('/api/modeles/ajouter', corps({fournisseur: f, nom: v('premier-ia-nom'), cle: v('premier-ia-cle'), base_url: v('premier-ia-base')}));
+        const d = await r.json();
+        const id = d && (d.id || (d.resultat && d.resultat.id));
+        if (!r.ok || !id) { alert("Le compte est créé, mais le modèle n'a pas été déclaré : " + ((d && (d.error || d.erreur)) || 'refusé') + "\nReprenez-le dans Réglages › Modèles."); return; }
+        await fetch('/api/modeles/role', corps({role: 'principal', id: id}));
+        await fetch('/api/modeles/essai', corps({id: id}));
+    } catch (x) { alert("Le compte est créé, mais le modèle n'a pas pu être déclaré. Reprenez-le dans Réglages › Modèles."); }
+}
 async function loginPremier(){
     const v = function(i){ const z = document.getElementById(i); return z ? z.value : ''; };
     const e = document.getElementById('premier-erreur'), go = document.getElementById('premier-go');
@@ -144,6 +167,7 @@ async function loginPremier(){
     if (!v('premier-jeton').trim()) { dire("Le jeton d'installation est affiché à la fin de l'installation."); return; }
     if (!compte) { dire('Entrez votre adresse e-mail.'); return; }
     if (mdp !== v('premier-mdp2')) { dire('Les deux mots de passe ne sont pas identiques.'); return; }
+    if (v('premier-ia') && v('premier-ia') !== 'ollama' && v('premier-ia') !== 'personnalise' && !v('premier-ia-cle').trim()) { dire("Collez la clé d'API du modèle, ou choisissez « Plus tard »."); return; }
     if (go) { go.disabled = true; go.textContent = 'Création…'; }
     try {
         const r = await fetch('/api/premier', {method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -156,6 +180,7 @@ async function loginPremier(){
         document.getElementById('login-username').value = compte;
         document.getElementById('login-password').value = mdp;
         await login();
+        await loginPremierModele(dire);
     } catch (x) { dire('Le serveur ne répond pas. Réessayez dans un instant.'); }
     finally { if (go) { go.disabled = false; go.textContent = 'Créer mon compte'; } }
 }

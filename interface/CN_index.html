@@ -13,7 +13,7 @@
 <!-- RÔLE       : la page unique de l'interface : le corps de la V18 et la liste des scripts. -->
 <!-- MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=c438de ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=620cb6 ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -106,6 +106,24 @@
           <label class="s-label" for="premier-mdp2">Le même, une seconde fois</label>
           <input class="s-input mono" type="password" id="premier-mdp2" autocomplete="new-password">
           <div id="premier-erreur" class="login-error" role="alert"></div>
+        </div>
+        <div class="login-champ">
+          <label class="s-label" for="premier-ia">Le modèle de Cassandra (clé d'API)</label>
+          <select class="s-input" id="premier-ia" onchange="loginPremierIA()">
+            <option value="">Plus tard (Réglages › Modèles)</option>
+            <option value="deepseek">DeepSeek</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="openai">OpenAI</option>
+            <option value="google">Google (Gemini)</option>
+            <option value="groq">Groq</option>
+            <option value="ollama">Ollama (local, sans clé)</option>
+            <option value="personnalise">Personnalisé (compatible OpenAI)</option>
+          </select>
+        </div>
+        <div id="premier-ia-champs" hidden>
+          <div class="login-champ"><label class="s-label" for="premier-ia-nom">Nom du modèle</label><input class="s-input mono" type="text" id="premier-ia-nom" autocomplete="off" spellcheck="false"></div>
+          <div class="login-champ" id="premier-ia-base-champ" hidden><label class="s-label" for="premier-ia-base">Adresse du serveur</label><input class="s-input mono" type="text" id="premier-ia-base" autocomplete="off" spellcheck="false" placeholder="https://…/v1"></div>
+          <div class="login-champ" id="premier-ia-cle-champ"><label class="s-label" for="premier-ia-cle">Clé d'API</label><input class="s-input mono" type="password" id="premier-ia-cle" autocomplete="off" placeholder="sk-…"></div>
         </div>
         <button type="submit" class="btn-x pri login-go" id="premier-go">Créer mon compte</button>
       </form>

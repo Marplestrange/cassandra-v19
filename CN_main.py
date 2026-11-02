@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #71300d
+# VERSION CN : 0.1.0  #4b231a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=71300d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4b231a ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -361,7 +361,7 @@ class Noyau:
                     front.append(i)
         if not voulus:
             return []
-        ordre = manifeste.ordre_installation([connus[i][0] for i in voulus | {mid} if i in connus])
+        ordre = [i for i in manifeste.ordre_installation([m for m, _ in connus.values()]) if i in voulus | {mid}]      # l'ordre de TOUS les modules connus : un dépendant a d'autres requis que `mid`, absents d'un sous-ensemble
         return [i for i in reversed(ordre) if i in voulus]
 
     def _plan_desactivation(self, mid: str, cascade: bool = False, forcer: bool = False) -> dict:
