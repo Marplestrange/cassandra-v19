@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b3e49e
+# VERSION CN : 0.1.0  #cd9cf7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b3e49e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cd9cf7 ▼▼▼
 # CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 #
 #   ./CN_install.sh                         le noyau seul, dans UN dossier : /var/cassandra
@@ -72,7 +72,7 @@ while [ $# -gt 0 ]; do
     --sans-services) SANS_SERVICES=1; shift ;;
     --sans-controle) SANS_CONTROLE=1; shift ;;
     --controle|--statut) CONTROLE_SEUL=1; shift ;;
-    --desinstaller) shift; exec "$SRC/CN_desinstaller.sh" "$@" ;;
+    --desinstaller) shift; exec bash "$SRC/CN_desinstaller.sh" "$@" ;;
     -h|--aide)      aide ;;
     *)              echouer "option inconnue : $1 (voir --aide)" ;;
   esac
