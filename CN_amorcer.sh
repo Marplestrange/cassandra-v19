@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #da8ced
+# VERSION CN : 0.1.0  #204b17
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Amorçage de Cassandra V19 en UNE commande, sur un serveur Linux neuf (Debian, Ubuntu, Fedora, openSUSE, Arch, Alpine).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=da8ced ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=204b17 ▼▼▼
 # Amorçage de Cassandra V19 en UNE commande, sur un serveur Linux neuf (Debian, Ubuntu, Fedora, openSUSE, Arch, Alpine).
 #
 #   curl -fsSL https://raw.githubusercontent.com/Marplestrange/cassandra-v19/main/CN_amorcer.sh | sudo bash
@@ -117,6 +117,12 @@ else
   fi
 fi
 
+# Le script qu'on vient de télécharger peut dater de quelques minutes (le réseau de GitHub garde les fichiers en cache) alors que le dépôt vient d'être
+# récupéré à jour : on poursuit avec la copie DU DÉPÔT, jamais avec une version périmée de nous-mêmes.
+if [ -z "${CASSANDRA_REEXEC:-}" ] && [ -f "$SOURCES/CN_amorcer.sh" ]; then
+  export CASSANDRA_REEXEC=1
+  exec bash "$SOURCES/CN_amorcer.sh" "$@"
+fi
 cd "$SOURCES"
 chmod +x CN_install.sh
 dire "installation (noyau et modules)"
