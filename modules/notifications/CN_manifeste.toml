@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : notifications
 # ZONE       : CN
-# VERSION CN : 0.2.0  #d99cf5
+# VERSION CN : 0.3.0  #c8676a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le Centre de notifications : ce qui mérite l'attention de quelqu'un. Une notification ouverte par clé (elle se répète, elle ne s'empile pas), lue et prise en compte PAR PERSONNE, cloisonnée par compte, qui se referme seule quand la cause disparaît.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=d99cf5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=c8676a ▼▼▼
 [module]
 id = "notifications"
 nom = "Notifications"
-version = "0.2.0"
+version = "0.3.0"
 noyau_min = "0.1.0"
 description = "Le Centre de notifications : ce qui mérite l'attention de quelqu'un. Une notification ouverte par clé (elle se répète, elle ne s'empile pas), lue et prise en compte PAR PERSONNE, cloisonnée par compte, qui se referme seule quand la cause disparaît."
 confiance = "interne"
@@ -144,6 +144,68 @@ id = "signal_jour"
 libelle = "Les décisions qui m'attendent, pour le bureau du jour"
 risque = "lecture"
 
+[[capacites]]
+id = "politique"
+libelle = "Les réglages de la cloche : ma politique de canaux par gravité, celle de la machine, mes heures calmes et mon fuseau, mes sourdines, l'état de chaque canal et de son dernier essai"
+risque = "lecture"
+
+[[capacites]]
+id = "sources"
+libelle = "Les sources qui ont écrit dans la cloche : dernier cri, lignes, ouvertes (administrateur)"
+risque = "lecture"
+droit = "gerer"
+
+[[capacites]]
+id = "prefs"
+libelle = "Régler mes préférences de notification : fuseau (lu du navigateur), heures calmes"
+risque = "faible"
+perimetre = ["la ligne notif_prefs du compte qui agit", "un fuseau connu, des heures HH:MM"]
+preuve = "relire les préférences et comparer"
+retour = "remettre les préférences d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "politique_ecrire"
+libelle = "Choisir les canaux d'une gravité (pour moi, ou pour la machine si je suis administrateur) ; la cloche reçoit toujours"
+risque = "faible"
+perimetre = ["une ligne notif_politique : la mienne, ou celle de la machine pour un administrateur"]
+preuve = "relire la politique de cette gravité"
+retour = "remettre les canaux d'avant, ou retirer la ligne si elle n'existait pas"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "sourdine"
+libelle = "Taire une source ou une notification pour N heures (1 h à 30 j) ou lever la sourdine ; seuls les canaux se taisent, la cloche reçoit toujours"
+risque = "faible"
+perimetre = ["une ligne notif_sourdines du compte qui agit"]
+preuve = "la sourdine est posée, ou levée"
+retour = "remettre la sourdine d'avant (ou aucune)"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "webhook_ecrire"
+libelle = "Déclarer ou retirer le webhook de la machine (administrateur) : son adresse est un secret, chiffrée, que seul ce module relit"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["la ligne unique notif_webhook", "une adresse http(s)"]
+preuve = "relire l'état du webhook (actif ou non)"
+retour = "remettre la ligne d'avant, adresse chiffrée comprise"
+paliers = ["raconter", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "essai"
+libelle = "Essayer un canal et écrire son résultat ; seule la cloche part pour l'instant, les autres canaux disent qu'ils n'envoient pas encore"
+risque = "faible"
+perimetre = ["une notification d'essai pour moi", "une ligne notif_essais"]
+preuve = "le résultat de l'essai est écrit"
+retour = "supprimer la notification d'essai et le résultat"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
 [[signaux]]
 id = "decisions"
 libelle = "Décisions"
@@ -153,6 +215,7 @@ capacite = "signal_jour"
 stockage = true
 droits = true
 introspection = true
+secrets = true
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
