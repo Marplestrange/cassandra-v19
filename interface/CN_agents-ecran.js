@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #a2c54d
+// VERSION CN : 0.1.0  #83f507
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=a2c54d ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=83f507 ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -465,10 +465,13 @@
     }
     async function oReglages(f) {
       const a = f.agent, L = a.limites || {};
+      let declares = []; try { declares = (await CASS.agir("modeles.lister")).modeles || []; } catch (e) { /* le registre est lent ou fermé : la liste de suggestions se réduit aux rôles */ }
+      const sug = '<datalist id="ag-sugg">' + ["principal", "itare_citadelle", "vision", "relecteur", "second_avis"].map((r) => '<option value="' + r + '">rôle</option>').join("") + declares.map((m) => '<option value="' + esc(m.id) + '">' + esc(m.nom + " (" + m.fournisseur + ")") + "</option>").join("") + "</datalist>";
       const num = (k, lib, def) => '<label class="ag-f"><span>' + lib + '</span><input type="number" data-lim="' + k + '" value="' + (L[k] != null ? L[k] : "") + '" placeholder="' + def + '"></label>';
       return '<section class="carte"><h3>Nom, ton et modèle</h3><div class="ag-champs"><label class="ag-f"><span>Nom affiché</span><input type="text" id="ag-nom" maxlength="40" value="' + esc(a.nom) + '"></label>' +
-        '<label class="ag-f"><span>Modèle principal</span><input type="text" id="ag-mod" maxlength="80" value="' + esc(a.modele) + '" placeholder="rôle ou modèle"></label>' +
-        '<label class="ag-f"><span>Modèle de secours</span><input type="text" id="ag-sec" maxlength="80" value="' + esc(a.secours) + '" placeholder="aucun"></label></div>' +
+        '<label class="ag-f"><span>Modèle principal</span><input type="text" id="ag-mod" list="ag-sugg" maxlength="80" value="' + esc(a.modele) + '" placeholder="rôle ou modèle"></label>' +
+        '<label class="ag-f"><span>Modèle de secours</span><input type="text" id="ag-sec" list="ag-sugg" maxlength="80" value="' + esc(a.secours) + '" placeholder="aucun"></label></div>' + sug +
+        '<p class="note">Un rôle (principal, vision…) ou un modèle déclaré. Les clés d’API et les modèles locaux se gèrent dans <button class="btn" id="ag-modeles" type="button" style="padding:3px 10px">Modèles et clés</button></p>' +
         '<label class="ag-f"><span>Ton</span><textarea id="ag-ton" maxlength="2000" placeholder="vide : le ton d\'origine">' + esc(a.ton) + "</textarea></label>" +
         '<div><button class="btn pri" id="ag-sauve">Enregistrer</button></div></section>' +
         '<section class="carte"><h3>Limites d\'un tour</h3><div class="ag-champs">' + num("max_tours", "Étapes d'outils", "défaut du module") + num("max_jetons", "Jetons par réponse", "défaut du module") + num("taille_fil", "Messages relus", "défaut du module") + num("tarif_entree_cts", "Tarif entrée (cts / M jetons)", String((a.tarifs_cts || [])[0])) + num("tarif_sortie_cts", "Tarif sortie (cts / M jetons)", String((a.tarifs_cts || [])[1])) + "</div>" +
@@ -622,6 +625,7 @@
       sur("[data-tl]", "click", (b) => lancer(async () => { b.disabled = true; const r = await API.tacheLancer(Number(b.dataset.tl)); dire("Tour joué" + (r && r.conversation_id ? " : la conversation " + r.conversation_id + " est dans Conversations" : ""), "ok"); await dessiner(); }));
       sur("#ag-ja [data-ja]", "click", (b) => { S.jauditeur = +b.dataset.ja; dessiner(); });
       sur("#ag-jours [data-j]", "click", (b) => { S.jours = +b.dataset.j; dessiner(); });
+      sur("#ag-modeles", "click", () => { if (CASS.ouvrirConsole) CASS.ouvrirConsole("modeles", "Modèles"); });
       sur("#ag-sauve", "click", () => lancer(async () => {
         const g = (id) => racine.querySelector(id).value;
         await API.regler(S.agent, { nom_affiche: g("#ag-nom"), modele: g("#ag-mod"), secours: g("#ag-sec"), ton: g("#ag-ton") }); await recharger(true);
