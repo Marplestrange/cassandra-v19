@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #542c69
+// VERSION CN : 0.1.0  #26d717
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Modèles et clés » du module modeles : les modèles en ligne (fournisseur, clé d’API, essai), le catalogue des modèles locaux (Ollama : installer, déclarer, supprimer) et les rôles.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) ; tout passe par les capacités modeles.* ; une clé saisie part au noyau et n’est jamais relue ni réaffichée.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=542c69 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=26d717 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -96,8 +96,12 @@
     const enLigne = () => declares().filter((m) => m.en_ligne);
     const localDecl = () => declares().filter((m) => !m.en_ligne);
 
+    function essaiPastille(m) {
+      const e = S.essais[m.id] || m.essai;
+      return e ? (e.ok ? '<span class="pastille ok">a répondu en ' + esc(e.secondes) + " s</span>" : '<span class="pastille dg" title="' + esc(e.message || e.erreur) + '">a échoué</span>') : "";
+    }
     function ligneModele(m) {
-      const e = m.essai || S.essais[m.id];
+      const e = S.essais[m.id] || m.essai;
       const essai = e ? (e.ok ? '<span class="pastille ok">a répondu en ' + esc(e.secondes) + " s</span>" : '<span class="pastille dg" title="' + esc(e.message || e.erreur) + '">a échoué</span>') + ' <span class="note">' + esc(e.quand || "") + "</span>" : '<span class="pastille mu">pas encore essayé</span>';
       return '<div class="rang"><div><span class="nom">' + esc(m.nom) + '</span><br><span class="note">' + esc((S.f.find((x) => x.id === m.fournisseur) || {}).nom || m.fournisseur) + (m.base_url ? " · " + esc(m.base_url) : "") + "</span></div>" +
         '<div class="m">' + (m.a_cle ? '<span class="pastille ok">clé enregistrée</span> ' : '<span class="pastille mu">sans clé</span> ') + (m.roles || []).map((r) => '<span class="pastille al">' + esc(r) + "</span>").join(" ") + "<br>" + essai + "</div>" +
@@ -122,12 +126,12 @@
     }
 
     function carteLocale() {
-      const loc = S.loc || {}, inst = loc.modeles || [], decl = new Set(localDecl().map((m) => m.nom)), pulls = (loc.telechargements || []).filter((p) => p.etat === "attente" || p.etat === "en cours");
+      const loc = S.loc || {}, inst = loc.modeles || [], dm = {}, decl = new Set(localDecl().map((m) => { dm[m.nom] = m; return m.nom; })), pulls = (loc.telechargements || []).filter((p) => p.etat === "attente" || p.etat === "en cours");
       const noms = new Set(inst.map((m) => m.name));
       let h = '<div class="carte"><div class="bar"><h2>Modèles locaux (Ollama)</h2>' + (loc.repond ? '<span class="pastille ok">Ollama répond</span>' : '<span class="pastille dg" title="' + esc(loc.raison || "") + '">Ollama ne répond pas</span>') + "</div>";
       if (!loc.repond) h += '<p class="note err">' + esc(loc.raison || "Ollama est arrêté") + ' — sur la machine : <span class="mono">systemctl start ollama</span> (ou relancer l’installateur avec WITH_OLLAMA=1).</p>';
-      h += inst.length ? inst.map((m) => '<div class="rang"><div><span class="nom">' + esc(m.name) + '</span><br><span class="note">' + octets(m.taille) + " sur le disque</span></div><div class=\"m\">" + (decl.has(m.name) ? '<span class="pastille ok">déclaré</span>' : '<span class="pastille mu">installé, pas déclaré</span>') + '</div><div class="acts">' +
-        (decl.has(m.name) ? "" : '<button class="btn mini pri" data-a="declarer" data-n="' + esc(m.name) + '"' + (S.occupe ? " disabled" : "") + ">Utiliser</button>") +
+      h += inst.length ? inst.map((m) => '<div class="rang"><div><span class="nom">' + esc(m.name) + '</span><br><span class="note">' + octets(m.taille) + " sur le disque</span></div><div class=\"m\">" + (decl.has(m.name) ? '<span class="pastille ok">déclaré</span> ' + essaiPastille(dm[m.name]) : '<span class="pastille mu">installé, pas déclaré</span>') + '</div><div class="acts">' +
+        (decl.has(m.name) ? '<button class="btn mini" data-a="essayer" data-id="' + esc(dm[m.name].id) + '"' + (S.occupe ? " disabled" : "") + ">Essayer</button>" : '<button class="btn mini pri" data-a="declarer" data-n="' + esc(m.name) + '"' + (S.occupe ? " disabled" : "") + ">Utiliser</button>") +
         (S.suppr === m.name ? '<span class="confirme">Supprimer ? <button class="btn mini dng" data-a="suppr-oui" data-n="' + esc(m.name) + '">Oui</button><button class="btn mini" data-a="suppr-non">Non</button></span>' : '<button class="btn mini dng" data-a="suppr" data-n="' + esc(m.name) + '">Supprimer</button>') + "</div></div>").join("")
         : (loc.repond ? '<p class="note">Aucun modèle installé.</p>' : "");
       if (pulls.length) h += '<h3 style="font:650 13px Inter,sans-serif;margin-top:6px">Téléchargements en cours</h3>' + pulls.map((p) => '<div><span class="mono">' + esc(p.nom) + '</span> <span class="note">' + esc(p.detail || p.etat) + '</span><div class="barre"><i style="width:' + Math.max(3, Math.min(100, p.pourcent || 3)) + '%"></i></div></div>').join("");
