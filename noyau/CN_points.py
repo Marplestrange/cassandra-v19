@@ -36,6 +36,8 @@ import json
 import os
 import queue
 import re
+import shutil
+import signal
 import statistics
 import subprocess
 import sys
@@ -327,15 +329,71 @@ class HotePython:
             return self._cache[cle]
 
 
+class BacIndisponible(ErreurEC):
+    """Le bac à sable exigé (mode « requis ») n'existe pas sur cette machine : l'EC ne sert pas, la référence répond. Ce n'est pas une faute de l'EC."""
+
+
+_BAC: dict = {}
+
+
+def _candidats_bac() -> list:
+    """Les enveloppes Linux possibles, de la plus stricte à la plus simple : (nom, préfixe de commande). Rien d'autre que des outils déjà là (pas d'installation, pas de root)."""
+    racine = str(Path(__file__).resolve().parent)
+    out = []
+    b = shutil.which("bwrap")
+    if b:
+        lie, vus = [], set()
+        for p in (sys.base_prefix, sys.prefix, sys.exec_prefix, "/usr", "/lib", "/lib64", "/bin", "/etc/alternatives", racine):
+            if p not in vus and os.path.exists(p):
+                vus.add(p)
+                lie += ["--ro-bind", p, p]
+        out.append(("bwrap", [b, "--unshare-all", "--die-with-parent", "--new-session", "--clearenv", *lie, "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--chdir", "/tmp"]))
+    u = shutil.which("unshare")
+    if u:
+        out.append(("unshare", [u, "--user", "--map-root-user", "--net", "--ipc", "--uts", "--pid", "--fork", "--kill-child"]))
+    return out
+
+
+def _bac_marche(prefixe: list) -> bool:
+    """Un bac n'est cru qu'après avoir fait tourner Python dedans : un outil présent mais inutilisable (noyau sans espaces de noms, conteneur) ne compte pas."""
+    try:
+        r = subprocess.run([*prefixe, sys.executable, "-I", "-c", "print(41 + 1)"], capture_output=True, timeout=20)
+        return r.returncode == 0 and b"42" in r.stdout
+    except Exception:
+        return False
+
+
+def bac_os(mode: str = "auto") -> tuple:
+    """(préfixe de commande, nom du bac). `mode` : « aucun » (rien), « auto » (le meilleur qui marche, sinon rien), « requis » (le meilleur qui marche, sinon BacIndisponible :
+    l'EC ne s'exécute pas sans). Linux seulement ; ailleurs, seuls le processus à part, le délai et le plafond de ressources gardent."""
+    if mode not in ("aucun", "auto", "requis"):
+        raise ValueError("bac_os inconnu : %r (aucun, auto, requis)" % (mode,))
+    if mode == "aucun":
+        return [], "aucun"
+    if "choisi" not in _BAC:
+        _BAC["choisi"] = ([], "aucun")
+        if sys.platform.startswith("linux"):
+            for nom, prefixe in _candidats_bac():
+                if _bac_marche(prefixe):
+                    _BAC["choisi"] = (prefixe, nom)
+                    break
+    prefixe, nom = _BAC["choisi"]
+    if mode == "requis" and nom == "aucun":
+        raise BacIndisponible("bac à sable requis, introuvable (bwrap ou unshare utilisables, sous Linux) : l'EC ne s'exécute pas")
+    return list(prefixe), nom
+
+
 class _Travailleur:
     """Un processus Python à part qui a chargé UNE EC. Un seul échange à la fois ; au délai, le processus est tué (jamais attendu)."""
 
-    def __init__(self, memoire_mo: int):
+    def __init__(self, memoire_mo: int, bac: str = "auto"):
         racine = Path(__file__).resolve().parent
+        prefixe, self.bac = bac_os(bac)                                   # lève BacIndisponible AVANT de créer quoi que ce soit si le bac exigé manque
         self._dossier = tempfile.mkdtemp(prefix="cn_ec_")
         env = {k: v for k, v in os.environ.items() if k in ("SYSTEMROOT", "PATH", "TEMP", "TMP", "LANG", "LC_ALL")}      # rien d'autre du serveur : pas de clé, pas de jeton
-        self.proc = subprocess.Popen([sys.executable, "-I", str(racine / "CN_ec_worker.py"), str(racine / "CN_points.py"), str(int(memoire_mo) * 1024 * 1024)],
-                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, cwd=self._dossier, env=env, bufsize=0)
+        self.proc = subprocess.Popen([*prefixe, sys.executable, "-I", str(racine / "CN_ec_worker.py"), str(racine / "CN_points.py"), str(int(memoire_mo) * 1024 * 1024)],
+                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, cwd=self._dossier, env=env, bufsize=0,
+                                     start_new_session=(os.name == "posix"))       # son propre groupe : on tue aussi ce que l'enveloppe a lancé
         self._q: queue.Queue = queue.Queue()
         self._verrou = threading.Lock()
         threading.Thread(target=self._lire, daemon=True, name="ec-lecteur").start()
@@ -371,6 +429,11 @@ class _Travailleur:
 
     def tuer(self):
         try:
+            if os.name == "posix":
+                try:
+                    os.killpg(self.proc.pid, signal.SIGKILL)
+                except OSError:
+                    pass
             self.proc.kill()
             self.proc.wait(timeout=5)
         except Exception:
@@ -390,8 +453,9 @@ class HoteProcessus:
     """L'hôte des EC dans un PROCESSUS À PART par fichier d'EC : la seule vraie frontière entre ce que le noyau exécute et ce qu'un modèle a écrit.
     Délai tenu par la mort du processus, mémoire plafonnée (POSIX), environnement vidé. Même interface que HotePython."""
 
-    def __init__(self, memoire_mo: int = MEMOIRE_EC_MO):
+    def __init__(self, memoire_mo: int = MEMOIRE_EC_MO, bac: str = "auto"):
         self.memoire_mo = int(memoire_mo)
+        self.bac = bac
         self._delai_s = 2.0
         self._travailleurs: dict = {}
         self._verrou = threading.RLock()
@@ -420,7 +484,7 @@ class HoteProcessus:
                 return cle, t
             for autre in [k for k in self._travailleurs if k[0] == str(chemin) and k != cle]:        # une autre version du même fichier : l'ancienne s'en va
                 self._travailleurs.pop(autre).tuer()
-            t = _Travailleur(self.memoire_mo)
+            t = _Travailleur(self.memoire_mo, self.bac)
             try:
                 r = t.echange({"op": "charger", "texte": octets.decode("utf-8"), "fonction": fonction}, max(DEMARRAGE_EC_S, 2 * self._delai_s))
             except Exception:
@@ -463,11 +527,11 @@ class CandidatIsole:
     """Un candidat (du texte que personne n'a relu) chargé dans son PROCESSUS, pour l'évaluateur : jamais exécuté dans le serveur.
     Le chargement, chaque appel et le chronométrage ont un délai ; au délai, le processus est tué. `fermer()` le libère toujours."""
 
-    def __init__(self, texte: str | None = None, fonction: str = "", delai_ms: int = 2000, memoire_mo: int = MEMOIRE_EC_MO):
+    def __init__(self, texte: str | None = None, fonction: str = "", delai_ms: int = 2000, memoire_mo: int = MEMOIRE_EC_MO, bac: str = "auto"):
         """Sans `texte`, ne fait que préparer le processus : `charger` y met ensuite des candidats l'un après l'autre (les pièges en essaient quarante)."""
         self.delai_s = max(0.05, float(delai_ms) / 1000.0)
-        self._memoire = memoire_mo
-        self._t = _Travailleur(memoire_mo)
+        self._memoire, self._bac = memoire_mo, bac
+        self._t = _Travailleur(memoire_mo, bac)
         if texte is not None:
             try:
                 self.charger(texte, fonction)
@@ -478,7 +542,7 @@ class CandidatIsole:
     def charger(self, texte: str, fonction: str) -> None:
         """Charge un candidat (le précédent est oublié). Un processus tué au dernier délai est remplacé par un neuf. Lève DelaiEC (boucle au chargement) ou ErreurEC (impur, illisible)."""
         if not self._t.vivant():
-            self._t = _Travailleur(self._memoire)
+            self._t = _Travailleur(self._memoire, self._bac)
         r = self._t.echange({"op": "charger", "texte": texte, "fonction": fonction}, max(DEMARRAGE_EC_S, 2 * self.delai_s))
         if not r.get("ok"):
             raise ErreurEC(r.get("erreur") or "chargement refusé")
@@ -541,14 +605,15 @@ def _vide_ombre(gen) -> dict:
 
 class ServicePoints:
     def __init__(self, stock=None, enregistreur=None, alerte=None, horloge=time.monotonic, echantillon: int = 0, isolation: str = "processus",
-                 memoire_mo: int = MEMOIRE_EC_MO, exiger_sceau: bool = False, cle: bytes | None = None):
+                 memoire_mo: int = MEMOIRE_EC_MO, exiger_sceau: bool = False, cle: bytes | None = None, bac_os: str = "auto"):
         """`stock` : le dossier des EC (jamais dans modules/). `enregistreur(gid, entree, sortie, duree_ms, source)` : la matière du rejeu.
         `alerte(gid, texte)` : appelé à la suspension d'une EC. `echantillon` : un appel sur N compare l'EC à la référence (0 : jamais).
         `isolation` : « processus » (une EC tourne dans un processus à part, tué au délai) ou « fil » (dans le serveur : pour des EC de référence signées et des bancs).
+        `bac_os` : l'enveloppe du système autour du processus d'EC (« auto », « requis » = pas de bac, pas d'EC, « aucun »).
         `exiger_sceau` : une EC ne sert que si elle porte le sceau (HMAC) posé par l'évolution, et le routage n'est cru que signé ; la clé est `cle` ou <stock>.cle."""
         self.stock = Path(stock) if stock else None
         self.enregistreur, self.alerte, self._horloge, self.echantillon = enregistreur, alerte, horloge, int(echantillon)
-        self.isolation, self.memoire_mo, self.exiger_sceau = isolation, int(memoire_mo), bool(exiger_sceau)
+        self.isolation, self.memoire_mo, self.exiger_sceau, self.bac_os = isolation, int(memoire_mo), bool(exiger_sceau), bac_os
         self._cle_val = cle
         self._ident = "%d-%s" % (os.getpid(), uuid.uuid4().hex[:8])        # une instance = un fichier de statistiques à elle (deux processus, ou deux démarrages, ne s'écrasent pas)
         self._points: dict = {}
@@ -740,7 +805,7 @@ class ServicePoints:
         """L'appelable d'un fichier. Pour une EC (`ec`) en mode « processus », c'est un appel vers SON processus, tué au délai du contrat.
         Avec `empreinte` (celle du contenu VÉRIFIÉ), l'hôte refuse un fichier qui a changé entre la vérification et le chargement."""
         if ec and self.isolation == "processus" and runtime in HOTES_ISOLES:       # un autre langage a son hôte, derrière la même interface
-            hote = self._hotes_ec.get(runtime) or self._hotes_ec.setdefault(runtime, HOTES_ISOLES[runtime](self.memoire_mo))
+            hote = self._hotes_ec.get(runtime) or self._hotes_ec.setdefault(runtime, HOTES_ISOLES[runtime](self.memoire_mo, self.bac_os))
             return hote.appelable_verifie(fichier, d.p.fonction, empreinte, self._delai(d)) if empreinte else hote.appelable(fichier, d.p.fonction, self._delai(d))
         hote = self._hotes.get(runtime) or self._hotes.setdefault(runtime, HOTES[runtime]())
         if empreinte and hasattr(hote, "appelable_verifie"):
@@ -751,7 +816,8 @@ class ServicePoints:
     def _delai(d: _Declare) -> int:
         return int(d.contrat.get("delai_ms") or d.p.delai_ms)
 
-    def appeler(self, module: str, point: str, entree):
+    def appeler(self, module: str, point: str, entree, compte: str | None = None):
+        """`compte` : le compte au nom duquel on appelle (rien si c'est le noyau) ; il n'est transmis qu'au corpus de rejeu, pour que ses entrées restent rattachées à qui les a produites."""
         gid = "%s.%s" % (module, point)
         with self._verrou:
             d = self._points.get(gid)
@@ -786,6 +852,8 @@ class ServicePoints:
                 if ms > delai:
                     self._faute(d, "délai dépassé : %d ms pour un plafond de %d ms" % (ms, delai), version)
                 sortie, source = candidate, version
+            except BacIndisponible:                      # le bac exigé manque : ce n'est pas la faute de l'EC, la référence répond
+                sortie = None
             except Exception as e:                       # toute faute d'une EC, de quelque nature : la référence répond DANS LE MÊME APPEL
                 self._faute(d, "%s : %s" % (type(e).__name__, e), version)
                 sortie = None
@@ -811,7 +879,12 @@ class ServicePoints:
         ms = (time.perf_counter() - t0) * 1000
         if self.enregistreur:
             try:
-                self.enregistreur(gid, entree, sortie, ms, source)
+                try:
+                    self.enregistreur(gid, entree, sortie, ms, source, compte=compte)
+                except TypeError as e:
+                    if "compte" not in str(e):
+                        raise
+                    self.enregistreur(gid, entree, sortie, ms, source)          # un enregistreur d'avant les comptes
             except Exception:
                 pass
         return sortie
@@ -948,6 +1021,8 @@ class ServicePoints:
                 with self._vstat:
                     o["ecarts"] += 1
                 self._faute(d, "ombre : " + ("sortie hors contrat" if ecarts else "la sortie diffère de celle de la référence"), version)
+        except BacIndisponible:
+            return                                                # sans le bac exigé, l'ombre ne tourne pas : rien à compter
         except Exception as e:                                    # une EC qui plante en ombre ne touche personne, mais elle est comptée
             with self._vstat:
                 o["appels"] += 1
@@ -1021,8 +1096,14 @@ class ServicePoints:
         cumul = self._cumul(d)
         r = self._routage(d) if (s is not None and (s / "ACTIVE").exists()) else None
         return {"point": d.gid, "contrat": d.p.contrat, "runtime": d.p.runtime, "sert": ec[1] if ec else "reference", "ec_refusee": getattr(d, "refus", ""),
-                "suspendue": suspendue, "fautes_recentes": len(d.fautes), "appels": cumul["appels"], "ec_appels": cumul["ec"], "isolation": self.isolation,
+                "suspendue": suspendue, "fautes_recentes": len(d.fautes), "appels": cumul["appels"], "ec_appels": cumul["ec"], "isolation": self.isolation, "bac": self._nom_bac(),
                 "routage": None if r is None else {"mode": r["mode"], "part": r["part"]}, "ombre": self._resume_ombre(cumul["ombre"])}
+
+    def _nom_bac(self) -> str:
+        try:
+            return bac_os(self.bac_os)[1] if self.isolation == "processus" else "aucun"
+        except BacIndisponible:
+            return "indisponible"
 
     @staticmethod
     def _resume_ombre(o):

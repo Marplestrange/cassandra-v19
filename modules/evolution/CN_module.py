@@ -121,6 +121,17 @@ def brancher(ctx):
     def prouver_visite(c, res):
         return all(v.get("verdict") for v in res["visites"])
 
+    def purger_compte(c, compte=""):
+        compte = str(compte or "").strip()
+        if not compte:
+            raise ValueError("quel compte ? (purger_compte compte=…)")
+        r = evo.rejeu.purger_compte(compte)
+        r["compte"] = compte
+        return r
+
+    def prouver_purge(c, res):
+        return evo.rejeu.comptes().get(res["compte"], 0) == 0
+
     # ── le moteur périodique : les paliers avancent seulement si les preuves le permettent ──
     def tick(c):
         absorber_externes()
@@ -133,6 +144,7 @@ def brancher(ctx):
     ctx.implementer("proposer", proposer, prouver_proposition, defaire_proposition)
     ctx.implementer("retour", retour, prouver_retour, sans_retour)
     ctx.implementer("visiter", visiter, prouver_visite, sans_retour)
+    ctx.implementer("purger_compte", purger_compte, prouver_purge, sans_retour)
     ctx.moteur("tick", tick)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 

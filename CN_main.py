@@ -60,7 +60,7 @@ from noyau.CN_bus import TOUT, Bus
 from noyau.CN_catalogue import Catalogue
 from noyau.CN_contexte import Contexte
 from noyau.CN_points import ECHANTILLON_DEFAUT, MEMOIRE_EC_MO, ServicePoints
-from noyau.CN_rejeu import Rejeu
+from noyau.CN_rejeu import EXCLUS_PRIVES, Rejeu
 from noyau.CN_evaluateur import Evaluateur
 from noyau.CN_evolution import Evolution
 from noyau.CN_droits import Droits
@@ -101,11 +101,11 @@ class Noyau:
         evo_cfg = self.config.get("evolution") or {}
         self.points = ServicePoints(self._donnees / "ec", alerte=lambda gid, texte: self.bus.emettre("noyau.point_suspendu", source="noyau", donnees={"point": gid, "texte": texte}),
                                     echantillon=int(evo_cfg.get("echantillon", ECHANTILLON_DEFAUT)), isolation=str(evo_cfg.get("isolation", "processus")),
-                                    memoire_mo=int(evo_cfg.get("memoire_mo", MEMOIRE_EC_MO)), exiger_sceau=True)       # une EC ne sert que scellée par l'évolution, dans son processus, comparée à la référence 1 fois sur N
+                                    memoire_mo=int(evo_cfg.get("memoire_mo", MEMOIRE_EC_MO)), exiger_sceau=True, bac_os=str(evo_cfg.get("bac_os", "auto")))       # une EC ne sert que scellée par l'évolution, dans son processus, comparée à la référence 1 fois sur N
         rejeu_cfg = self.config.get("rejeu") or {}
-        self.rejeu = Rejeu(self._donnees / "rejeu.db", max_par_point=int(rejeu_cfg.get("max_par_point", 2000)), actif=bool(rejeu_cfg.get("actif", True)), exclus=rejeu_cfg.get("exclus") or ())
+        self.rejeu = Rejeu(self._donnees / "rejeu.db", max_par_point=int(rejeu_cfg.get("max_par_point", 2000)), actif=bool(rejeu_cfg.get("actif", True)), exclus=EXCLUS_PRIVES if rejeu_cfg.get("exclus") is None else rejeu_cfg.get("exclus"))       # [rejeu] exclus = [] : tout est gardé, par choix de l'admin
         self.points.enregistreur = self.rejeu.enregistrer           # chaque appel d'un point nourrit le corpus de rejeu (les entrées seulement, sur cette instance)
-        self.evaluateur = Evaluateur(self.points, self.rejeu, minimum=int(rejeu_cfg.get("minimum", 200)), memoire_mo=int(evo_cfg.get("memoire_mo", MEMOIRE_EC_MO)))
+        self.evaluateur = Evaluateur(self.points, self.rejeu, minimum=int(rejeu_cfg.get("minimum", 200)), memoire_mo=int(evo_cfg.get("memoire_mo", MEMOIRE_EC_MO)), bac_os=str(evo_cfg.get("bac_os", "auto")))
         self.evolution = Evolution(self.points, self.rejeu, self.evaluateur, self._donnees / "evolution.db", seuils=evo_cfg.get("seuils"))
         self._stockages = {}       # module -> son Stockage, ouvert une fois
         self.droits = Droits(self.base)

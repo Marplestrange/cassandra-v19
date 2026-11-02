@@ -84,6 +84,17 @@ retour = "aucun : une pièce retirée à la visite se propose de nouveau"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte", "cassandra"]
 
+[[capacites]]
+id = "purger_compte"
+libelle = "Effacer du corpus de rejeu tout ce qu'un compte y a laissé (suppression du compte, demande d'effacement) : ses rattachements et les entrées réelles qui n'appartenaient qu'à lui"
+risque = "moyen"
+droit = "agir"
+perimetre = ["les entrées de rejeu rattachées à ce compte ; celles d'un autre compte et celles du noyau restent"]
+preuve = "plus aucune entrée du corpus n'est rattachée à ce compte"
+retour = "aucun : les entrées se reforment du trafic à venir ; la mesure d'un point exclu n'est pas touchée"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
 [[ecrans]]
 id = "cockpit"
 libelle = "Évolution"

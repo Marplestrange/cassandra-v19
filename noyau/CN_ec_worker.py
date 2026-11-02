@@ -33,9 +33,19 @@ import types
 
 
 def _limiter(octets):
+    """POSIX seulement : sous Windows le délai tient seul la garde. Mémoire, aucun cœur, aucun fichier écrit, peu de descripteurs, aucun nouveau processus, aucun privilège gagné."""
     try:
-        import resource                                          # POSIX seulement : sous Windows le délai tient seul la garde
-        resource.setrlimit(resource.RLIMIT_AS, (octets, octets))
+        import resource
+    except Exception:
+        return
+    for nom, valeur in (("RLIMIT_AS", octets), ("RLIMIT_CORE", 0), ("RLIMIT_FSIZE", 0), ("RLIMIT_NOFILE", 32), ("RLIMIT_NPROC", 0)):
+        try:
+            resource.setrlimit(getattr(resource, nom), (valeur, valeur))
+        except Exception:
+            pass
+    try:
+        import ctypes
+        ctypes.CDLL(None).prctl(38, 1, 0, 0, 0)                  # PR_SET_NO_NEW_PRIVS
     except Exception:
         pass
 
@@ -79,12 +89,18 @@ def _chrono(P, msg):
 
 
 def main():
+    sys.dont_write_bytecode = True                                # aucun fichier n'est écrit (la limite de taille de fichier est zéro)
     chemin_points, memoire = sys.argv[1], int(sys.argv[2])
     entree = sys.stdin.buffer
     sortie = os.fdopen(os.dup(1), "wb", buffering=0)
     os.dup2(os.open(os.devnull, os.O_WRONLY), 1)                  # rien de ce que l'EC ou une bibliothèque écrirait ne corrompt le canal
     sys.stdin = io.StringIO("")                                   # une bibliothèque qui lit « l'entrée standard » (shlex.shlex(None)) trouve une entrée vide, jamais le canal du serveur
     sys.stdout = sys.stderr = io.StringIO()
+    try:
+        import signal
+        signal.signal(signal.SIGXFSZ, signal.SIG_IGN)               # une écriture refusée rend une erreur, elle ne tue pas le travailleur
+    except Exception:
+        pass
     _limiter(memoire)
     P = _points(chemin_points)
     f = None

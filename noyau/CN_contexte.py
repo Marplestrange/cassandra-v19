@@ -149,7 +149,12 @@ class Contexte:
     def point(self, point: str, entree):
         """Appelle un point d'évolution de CE module ([[points_evolution]]) : des DONNÉES en entrée, des DONNÉES en sortie, quel que soit le langage de l'EC qui le sert
         (docs/CN_NEXUS.md). Rend la sortie, conforme au contrat : si une EC faillit, la référence du dépôt répond dans le même appel."""
-        return self._intro["point"](self.module, point, entree)
+        try:
+            return self._intro["point"](self.module, point, entree, compte=self.compte)
+        except TypeError as e:
+            if "compte" not in str(e):
+                raise
+            return self._intro["point"](self.module, point, entree)
 
     def droits(self):
         """Le service des droits des comptes, pour le module qui les administre ([permissions] droits). Les autres n'en ont pas besoin :

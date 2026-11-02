@@ -129,6 +129,16 @@ class Lectures(Banc):
 
 
 class Gestes(Banc):
+    def test_purger_un_compte_efface_ses_entrees_du_corpus(self):
+        self.n.points.appeler("labo", "somme_min", {"v": [1, 2, 3]}, compte="bea@x.fr")
+        self.n.points.appeler("labo", "somme_min", {"v": [4, 5, 6]}, compte="leo@x.fr")
+        self.assertEqual(self.n.rejeu.comptes("labo.somme_min"), {"bea@x.fr": 1, "leo@x.fr": 1})
+        r = self.ex("purger_compte", {"compte": "bea@x.fr"})
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertEqual(r["resultat"]["entrees"], 1)
+        self.assertEqual(self.n.rejeu.comptes("labo.somme_min"), {"leo@x.fr": 1})
+        self.assertNotEqual(self.ex("purger_compte", {})["statut"], "faite")                    # sans compte : refusé
+
     def test_proposer_avec_orfan_deterministe_ecrit_une_piece_en_ombre(self):
         r = self.ex("proposer", {"point": "labo.somme_min", "moteur": "deterministe"})
         self.assertEqual(r["statut"], "faite", r)

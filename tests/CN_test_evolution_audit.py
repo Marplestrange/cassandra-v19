@@ -382,6 +382,146 @@ class Corpus(unittest.TestCase):
         self.assertLessEqual(r.stats("b.deux")["distincts"], 5)
 
 
+class BacOS(Banc):
+    """L'enveloppe du système autour du processus d'EC (Linux). Ici, sans Linux : la logique de choix, l'échec fermé, l'absence de tombe."""
+
+    def setUp(self):
+        super().setUp()
+        self._cache = dict(P._BAC)
+        self.addCleanup(lambda: (P._BAC.clear(), P._BAC.update(self._cache)))
+
+    def sans_bac(self):
+        P._BAC.clear()
+        P._BAC["choisi"] = ([], "aucun")
+
+    def test_un_mode_inconnu_est_refuse(self):
+        with self.assertRaises(ValueError):
+            P.bac_os("peut-etre")
+
+    def test_auto_sans_bac_tourne_quand_meme_et_le_dit(self):
+        self.sans_bac()
+        self.assertEqual(P.bac_os("auto"), ([], "aucun"))
+        self.assertEqual(P.bac_os("aucun"), ([], "aucun"))
+
+    def test_requis_sans_bac_echoue_ferme(self):
+        self.sans_bac()
+        with self.assertRaises(P.BacIndisponible):
+            P.bac_os("requis")
+        with self.assertRaises(P.BacIndisponible):
+            P._Travailleur(256, "requis")                                                       # rien n'est lancé
+
+    def test_un_candidat_n_est_pas_juge_ni_grave_en_tombe_sans_le_bac_exige(self):
+        self.sans_bac()
+        self.ev.bac_os = "requis"
+        r = self.ev.evaluer("essai", "doubler", RAPIDE, chrono=False)
+        self.assertEqual(r["verdict"], "indisponible", r)
+        self.assertEqual(self.evo.tombes("essai.doubler"), set())
+
+    def test_une_ec_ne_sert_pas_sans_le_bac_exige_mais_sans_faute(self):
+        self.sans_bac()
+        d = self.tmp / "ec" / "essai" / "doubler"
+        d.mkdir(parents=True)
+        (d / "EC_doubler__EC1.py").write_text(TP.ec("def doubler(entree):\n    return {'y': 6, 'par': 'EC'}\n", version="EC1"), encoding="utf-8")
+        (d / "ACTIVE").write_text("EC_doubler__EC1.py", encoding="utf-8")
+        self.svc.router("essai", "doubler", "service", 100)
+        self.svc.bac_os = "requis"
+        self.svc._hotes_ec.clear()
+        for _ in range(5):
+            self.assertEqual(self.svc.appeler("essai", "doubler", {"x": 3}), {"y": 6})        # la référence (x * 2)
+        e = self.svc.etat("essai", "doubler")
+        self.assertEqual((e["fautes_recentes"], e["suspendue"], e["bac"]), (0, None, "indisponible"))
+
+    def test_les_enveloppes_sont_construites_sans_rien_inventer(self):
+        import shutil as sh
+        vrai = sh.which
+        sh.which = lambda n: "/usr/bin/" + n if n in ("bwrap", "unshare") else None
+        try:
+            noms = [n for n, _ in P._candidats_bac()]
+            cmd = dict(P._candidats_bac())
+        finally:
+            sh.which = vrai
+        self.assertEqual(noms, ["bwrap", "unshare"])                                            # la plus stricte d'abord
+        self.assertIn("--unshare-all", cmd["bwrap"])                                           # réseau, pid, ipc, uts, utilisateur : tout
+        self.assertIn("--die-with-parent", cmd["bwrap"])
+        self.assertIn("--net", cmd["unshare"])
+        self.assertIn("--kill-child", cmd["unshare"])                                          # tuer l'enveloppe tue le processus d'EC
+
+    @unittest.skipUnless(sys.platform.startswith("linux") and P.bac_os("auto")[1] != "aucun", "bac à sable Linux indisponible ici")
+    def test_sous_linux_le_processus_d_ec_tourne_dans_le_bac(self):
+        t = P._Travailleur(256, "requis")
+        self.addCleanup(t.tuer)
+        self.assertIn(t.bac, ("bwrap", "unshare"))
+        self.assertTrue(t.echange({"op": "charger", "texte": "def f(x):\n    return {'a': 1}\n", "fonction": "f"}, 20)["ok"])
+        self.assertEqual(t.echange({"op": "appeler", "entree": {}}, 10)["sortie"], {"a": 1})
+
+
+class Comptes(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        import shutil
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.r = R.Rejeu(self.tmp / "r.db")
+
+    def test_une_entree_part_avec_le_compte_qui_l_a_produite(self):
+        self.r.enregistrer("a.b", {"x": 1}, None, 1.0, compte="bea@x.fr")
+        self.r.enregistrer("a.b", {"x": 2}, None, 1.0, compte="bea@x.fr")
+        self.r.enregistrer("a.b", {"x": 2}, None, 1.0, compte="leo@x.fr")                      # partagée
+        self.r.enregistrer("a.b", {"x": 3}, None, 1.0)                                          # le noyau : sans compte
+        self.assertEqual(self.r.comptes("a.b"), {"bea@x.fr": 2, "leo@x.fr": 1})
+        self.assertEqual(self.r.purger_compte("bea@x.fr"), {"rattachements": 2, "entrees": 1})  # {"x": 1} n'était qu'à elle
+        self.assertEqual(sorted(c["entree"]["x"] for c in self.r.corpus("a.b")), [2, 3])         # la partagée et celle du noyau restent
+        self.assertEqual(self.r.comptes("a.b"), {"leo@x.fr": 1})
+
+    def test_les_cas_dores_ne_partent_jamais_avec_un_compte(self):
+        self.r.importer("a.b", [{"entree": {"x": 9}}])
+        self.r.enregistrer("a.b", {"x": 9}, None, 1.0, compte="bea@x.fr")
+        self.r.purger_compte("bea@x.fr")
+        self.assertEqual([c["entree"]["x"] for c in self.r.corpus("a.b")], [9])
+
+    def test_un_point_exclu_ne_garde_que_sa_mesure(self):
+        r = R.Rejeu(self.tmp / "e.db", exclus=R.EXCLUS_PRIVES)
+        for i in range(4):
+            r.enregistrer("courrier.corps", {"texte": "secret %d" % i}, None, 2.0, compte="bea@x.fr")
+        self.assertEqual(r.corpus("courrier.corps"), [])                                        # aucun contenu
+        s = r.stats("courrier.corps")
+        self.assertEqual((s["appels"], s["duree_moyenne_ms"]), (4, 2.0))                        # mais le point reste ciblable (valeur = appels × durée)
+        self.assertEqual(r.comptes(), {})
+
+    def test_une_base_d_avant_les_comptes_se_met_a_niveau(self):
+        import sqlite3
+        c = sqlite3.connect(str(self.tmp / "vieux.db"))
+        c.execute("CREATE TABLE appels(gid TEXT NOT NULL, h TEXT NOT NULL, entree TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 1, origine TEXT NOT NULL DEFAULT 'reel', reserve INTEGER NOT NULL, "
+                  "premier REAL NOT NULL, dernier REAL NOT NULL, ms_somme REAL NOT NULL DEFAULT 0, ms_n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(gid, h))")
+        c.commit()
+        c.close()
+        r = R.Rejeu(self.tmp / "vieux.db")
+        r.enregistrer("a.b", {"x": 1}, None, 1.0, compte="bea@x.fr")
+        self.assertEqual(r.purger_compte("bea@x.fr")["entrees"], 1)
+
+    def test_le_service_transmet_le_compte_et_tolere_un_enregistreur_d_avant(self):
+        import shutil
+        import tempfile
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp, True)
+        mod = tmp / "modules" / "essai"
+        (mod / "points").mkdir(parents=True)
+        (mod / "contrats").mkdir()
+        (mod / "points" / "EC_doubler.py").write_text(T.LENTE, encoding="utf-8")
+        (mod / "contrats" / "CN_doubler.json").write_text(json.dumps(T.CONTRAT), encoding="utf-8")
+        svc = P.ServicePoints(tmp / "ec")
+        svc.declarer(types.SimpleNamespace(id="essai", points_evolution=(M.PointEvolution("doubler", "Double", "1.0", "points/EC_doubler", "doubler"),)), mod)
+        vus = []
+        svc.enregistreur = lambda gid, entree, sortie, ms, source, compte=None: vus.append(compte)
+        svc.appeler("essai", "doubler", {"x": 1}, compte="bea@x.fr")
+        svc.appeler("essai", "doubler", {"x": 2})
+        self.assertEqual(vus, ["bea@x.fr", None])
+        vieux = []
+        svc.enregistreur = lambda gid, entree, sortie, ms, source: vieux.append(gid)           # sans paramètre compte
+        svc.appeler("essai", "doubler", {"x": 3}, compte="bea@x.fr")
+        self.assertEqual(vieux, ["essai.doubler"])
+
+
 class Moteur(unittest.TestCase):
     def test_un_reglage_n_importe_pas_n_importe_quoi(self):
         import importlib.util

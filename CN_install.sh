@@ -94,11 +94,11 @@ installer_paquets() { # paquets... ; non fatal : rend 1 si l'installation échou
 }
 paquets_systeme() { # noms selon la famille : cryptography, outils système
   case "$GEST" in
-    apt-get) echo "python3-cryptography openssl sudo cron iptables openssh-client curl sshpass" ;;
-    dnf|yum) echo "python3-cryptography openssl sudo cronie iptables openssh-clients curl sshpass" ;;
-    zypper)  echo "python3-cryptography openssl sudo cron iptables openssh-clients curl sshpass" ;;
-    pacman)  echo "python-cryptography openssl sudo cronie iptables openssh curl sshpass" ;;
-    apk)     echo "py3-cryptography openssl sudo dcron iptables openssh-client curl sshpass" ;;
+    apt-get) echo "python3-cryptography openssl sudo cron iptables openssh-client curl sshpass rclone" ;;
+    dnf|yum) echo "python3-cryptography openssl sudo cronie iptables openssh-clients curl sshpass rclone" ;;
+    zypper)  echo "python3-cryptography openssl sudo cron iptables openssh-clients curl sshpass rclone" ;;
+    pacman)  echo "python-cryptography openssl sudo cronie iptables openssh curl sshpass rclone" ;;
+    apk)     echo "py3-cryptography openssl sudo dcron iptables openssh-client curl sshpass rclone" ;;
   esac
 }
 
@@ -273,13 +273,15 @@ elif [ "${#MODULES[@]}" -gt 0 ]; then
   mapfile -t MODULES < <(cd "$DEST" && CASSANDRA_EXTENSIONS="" python3 CN_main.py ordre "${MODULES[@]}")
 fi
 # Un module qui échoue ne fait pas tomber le noyau : il est retiré et le noyau continue avec les précédents.
-for m in "${MODULES[@]}"; do installer_module "$m"; done
+ECHECS=()
+for m in "${MODULES[@]}"; do ( installer_module "$m" ) || ECHECS+=("$m"); done
 
 if [ "$SANS_SERVICE" -eq 0 ]; then
   dire "état du noyau"
   as_service python3 "$PREFIXE/current/CN_main.py" etat
 fi
 dire "terminé : noyau $STAMP${MODULES[*]:+, modules : ${MODULES[*]}}"
+[ "${#ECHECS[@]}" -eq 0 ] || avertir "modules non installés (le noyau tourne sans eux) : ${ECHECS[*]} ; corrigez la cause puis : ./CN_install.sh --module <nom>"
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

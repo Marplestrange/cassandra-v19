@@ -90,9 +90,9 @@ def _gain(ref, cand):
 
 
 class Evaluateur:
-    def __init__(self, points, rejeu, minimum: int = 200, memoire_mo: int = P.MEMOIRE_EC_MO):
+    def __init__(self, points, rejeu, minimum: int = 200, memoire_mo: int = P.MEMOIRE_EC_MO, bac_os: str = "auto"):
         """`minimum` : en dessous de ce nombre d'entrées distinctes, le corpus est dit TROP ÉTROIT : on ne promeut pas sur un jeu trop mince."""
-        self.points, self.rejeu, self.minimum, self.memoire_mo = points, rejeu, int(minimum), int(memoire_mo)
+        self.points, self.rejeu, self.minimum, self.memoire_mo, self.bac_os = points, rejeu, int(minimum), int(memoire_mo), bac_os
 
     def evaluer(self, module: str, point: str, candidat: str, paliers=(0.05, 0.25, 1.0), repetitions: int = 3, minimum: int | None = None, chrono: bool = True, _isole=None) -> dict:
         """`_isole` : un processus déjà prêt (voir pieges) ; `repetitions` : le nombre de PASSES à froid du chronométrage (voir CN_ec_worker._chrono). Le candidat n'est JAMAIS exécuté dans le serveur : il vit dans un processus
@@ -114,10 +114,13 @@ class Evaluateur:
         propre = _isole is None
         try:
             if propre:
-                cand = P.CandidatIsole(candidat, ref["fonction"], delai_ms, self.memoire_mo)
+                cand = P.CandidatIsole(candidat, ref["fonction"], delai_ms, self.memoire_mo, self.bac_os)
             else:
                 cand = _isole
                 cand.charger(candidat, ref["fonction"])
+        except P.BacIndisponible as e:                               # le bac exigé manque : on ne juge pas, et on ne grave pas de tombe
+            res.update(verdict="indisponible", erreur=str(e))
+            return res
         except P.DelaiEC as e:                                       # une boucle au chargement lui-même
             res.update(verdict="erreur", erreur="DelaiEC : %s" % e)
             return res
@@ -231,7 +234,7 @@ class Evaluateur:
         ref = self.points.reference(module, point)
         source = ref["fichier"].read_text(encoding="utf-8")
         detectes, survivants, valides = 0, [], 0
-        isole = P.CandidatIsole(None, ref["fonction"], int(ref["contrat"].get("delai_ms") or 2000), self.memoire_mo)       # un seul processus pour les quarante variantes
+        isole = P.CandidatIsole(None, ref["fonction"], int(ref["contrat"].get("delai_ms") or 2000), self.memoire_mo, self.bac_os)       # un seul processus pour les quarante variantes
         try:
             return self._pieges(module, point, ref, source, maximum, isole)
         finally:

@@ -38,6 +38,7 @@ from pathlib import Path
 
 PART_RESERVEE = 5                  # un cas sur N est réservé
 MAX_PAR_POINT = 2000               # entrées distinctes gardées par point (les cas dorés ne sont jamais évincés)
+EXCLUS_PRIVES = ("courrier.*", "coffre.*", "memoire.*", "notes.*", "salon.*", "ged.*", "contacts.*", "agents.*", "agenda.*", "canvas.*")      # les points dont l'entrée EST le contenu privé d'un compte : par défaut, seule leur mesure est gardée
 PURGE_TOUS_LES = 100               # on vérifie la borne tous les N enregistrements
 MAX_ENTREE_OCTETS = 65536          # une entrée plus grosse n'est pas gardée : ce n'est pas un cas de test, c'est un fichier ou une pièce jointe (et c'est une donnée privée en clair)
 
@@ -45,6 +46,9 @@ SCHEMA = """CREATE TABLE IF NOT EXISTS appels(
   gid TEXT NOT NULL, h TEXT NOT NULL, entree TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 1, origine TEXT NOT NULL DEFAULT 'reel', reserve INTEGER NOT NULL,
   premier REAL NOT NULL, dernier REAL NOT NULL, ms_somme REAL NOT NULL DEFAULT 0, ms_n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(gid, h));
 CREATE INDEX IF NOT EXISTS appels_gid ON appels(gid, reserve);
+CREATE TABLE IF NOT EXISTS appels_comptes(gid TEXT NOT NULL, h TEXT NOT NULL, compte TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(gid, h, compte));
+CREATE INDEX IF NOT EXISTS appels_comptes_c ON appels_comptes(compte);
+CREATE TABLE IF NOT EXISTS mesures(gid TEXT PRIMARY KEY, appels INTEGER NOT NULL DEFAULT 0, ms_somme REAL NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS absorbes(source TEXT NOT NULL, gid TEXT NOT NULL, h TEXT NOT NULL, n INTEGER NOT NULL, ms_somme REAL NOT NULL, ms_n INTEGER NOT NULL, PRIMARY KEY(source, gid, h));"""
 
 
@@ -67,6 +71,10 @@ class Rejeu:
         self.chemin.parent.mkdir(parents=True, exist_ok=True)
         with self._con() as c:
             c.executescript(SCHEMA)
+            try:
+                c.execute("ALTER TABLE appels ADD COLUMN attribue INTEGER NOT NULL DEFAULT 0")      # une base d'avant les comptes
+            except sqlite3.OperationalError:
+                pass
         if os.name == "posix":
             try:
                 os.chmod(self.chemin, 0o600)                       # des entrées réelles : lisibles du seul service
@@ -88,9 +96,14 @@ class Rejeu:
             c.close()
 
     # ── l'écriture ───────────────────────────────────────────────────────
-    def enregistrer(self, gid: str, entree, sortie=None, duree_ms: float = 0.0, source: str = "reference") -> None:
-        """Compatible avec `enregistreur` de ServicePoints. La sortie n'est pas gardée (voir plus haut) ; la durée sert aux statistiques du trafic réel."""
-        if not self.actif or any(fnmatch.fnmatchcase(gid, m) for m in self.exclus):
+    def enregistrer(self, gid: str, entree, sortie=None, duree_ms: float = 0.0, source: str = "reference", compte: str | None = None) -> None:
+        """Compatible avec `enregistreur` de ServicePoints. La sortie n'est pas gardée (voir plus haut) ; la durée sert aux statistiques du trafic réel.
+        `compte` : à qui appartient l'entrée (elle part avec lui à `purger_compte`). Un point EXCLU ne garde que sa mesure (combien d'appels, combien de temps) : jamais son contenu."""
+        if not self.actif:
+            return
+        if any(fnmatch.fnmatchcase(gid, m) for m in self.exclus):
+            with self._verrou, self._con() as c:
+                c.execute("INSERT INTO mesures(gid,appels,ms_somme) VALUES(?,1,?) ON CONFLICT(gid) DO UPDATE SET appels=appels+1, ms_somme=ms_somme+excluded.ms_somme", (gid, float(duree_ms)))
             return
         h = empreinte(entree)
         t = time.time()
@@ -98,9 +111,11 @@ class Rejeu:
         if len(corps.encode("utf-8")) > MAX_ENTREE_OCTETS:
             return
         with self._verrou, self._con() as c:
-            c.execute("INSERT INTO appels(gid,h,entree,reserve,premier,dernier,ms_somme,ms_n) VALUES(?,?,?,?,?,?,?,1) "
-                      "ON CONFLICT(gid,h) DO UPDATE SET n=n+1, dernier=excluded.dernier, ms_somme=ms_somme+excluded.ms_somme, ms_n=ms_n+1",
-                      (gid, h, corps, 1 if est_reserve(h) else 0, t, t, float(duree_ms)))
+            c.execute("INSERT INTO appels(gid,h,entree,reserve,premier,dernier,ms_somme,ms_n,attribue) VALUES(?,?,?,?,?,?,?,1,?) "
+                      "ON CONFLICT(gid,h) DO UPDATE SET n=n+1, dernier=excluded.dernier, ms_somme=ms_somme+excluded.ms_somme, ms_n=ms_n+1, attribue=MAX(attribue, excluded.attribue)",
+                      (gid, h, corps, 1 if est_reserve(h) else 0, t, t, float(duree_ms), 1 if compte else 0))
+            if compte:
+                c.execute("INSERT INTO appels_comptes(gid,h,compte,n) VALUES(?,?,?,1) ON CONFLICT(gid,h,compte) DO UPDATE SET n=n+1", (gid, h, str(compte)))
             self._compte += 1
             if self._compte % PURGE_TOUS_LES == 0:
                 self._borner(c)
@@ -165,11 +180,28 @@ class Rejeu:
             lignes = c.execute("SELECT h, entree, n, origine, reserve FROM appels WHERE gid=?" + cond + " ORDER BY h", (gid,)).fetchall()
         return [{"h": r["h"], "entree": json.loads(r["entree"]), "n": r["n"], "origine": r["origine"], "reserve": bool(r["reserve"])} for r in lignes]
 
+    def purger_compte(self, compte: str) -> dict:
+        """Le compte s'en va (suppression, demande d'effacement) : ses rattachements disparaissent, et toute entrée réelle qui n'appartenait QU'À lui avec. Une entrée partagée par un autre compte reste ; une entrée sans compte (trafic du noyau) aussi."""
+        with self._verrou, self._con() as c:
+            rattaches = c.execute("DELETE FROM appels_comptes WHERE compte=?", (str(compte),)).rowcount
+            entrees = c.execute("DELETE FROM appels WHERE origine='reel' AND attribue=1 AND NOT EXISTS (SELECT 1 FROM appels_comptes k WHERE k.gid=appels.gid AND k.h=appels.h)").rowcount
+        return {"rattachements": rattaches, "entrees": entrees}
+
+    def comptes(self, gid: str | None = None) -> dict:
+        """Combien d'entrées distinctes chaque compte a nourries (pour le dire à l'administrateur, jamais pour les lui montrer)."""
+        with self._con() as c:
+            q, a = "SELECT compte, COUNT(*) FROM appels_comptes", []
+            if gid:
+                q, a = q + " WHERE gid=?", [gid]
+            return {r[0]: r[1] for r in c.execute(q + " GROUP BY compte", a)}
+
     def stats(self, gid: str) -> dict:
         with self._con() as c:
+            m = c.execute("SELECT appels, ms_somme FROM mesures WHERE gid=?", (gid,)).fetchone()
             r = c.execute("SELECT COUNT(*) d, COALESCE(SUM(ms_n),0) a, COALESCE(SUM(reserve),0) r, COALESCE(SUM(origine='dore'),0) o, "
                           "COALESCE(SUM(ms_somme),0) ms, COALESCE(SUM(ms_n),0) mn FROM appels WHERE gid=?", (gid,)).fetchone()
-        return {"distincts": r["d"], "appels": r["a"], "reserve": r["r"], "visible": r["d"] - r["r"], "dores": r["o"], "duree_moyenne_ms": round(r["ms"] / r["mn"], 3) if r["mn"] else None}
+        appels, ms, mn = r["a"] + (m["appels"] if m else 0), r["ms"] + (m["ms_somme"] if m else 0.0), r["mn"] + (m["appels"] if m else 0)      # un point exclu n'a que sa mesure
+        return {"distincts": r["d"], "appels": appels, "reserve": r["r"], "visible": r["d"] - r["r"], "dores": r["o"], "duree_moyenne_ms": round(ms / mn, 3) if mn else None}
 
     def points(self) -> list:
         with self._con() as c:
