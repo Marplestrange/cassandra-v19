@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0d974e
+# VERSION CN : 0.1.0  #71300d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0d974e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=71300d ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes

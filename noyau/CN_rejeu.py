@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #90793d
+# VERSION CN : 0.1.0  #57de15
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : garde, par point d'évolution, les ENTRÉES réellement reçues (distinctes, comptées), avec une partition réservée que le générateur ne voit jamais.
 # MÉTHODE    : une table SQLite ; l'entrée est identifiée par son empreinte ; la partition réservée se décide par l'empreinte (déterministe) ; borne par point, les cas dorés jamais évincés.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=90793d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=57de15 ▼▼▼
 """Le corpus de rejeu (docs/CN_EVOLUTION.md §2) : la matière du banc d'essai de toute évolution.
 
 On ne garde que les ENTRÉES : la sortie de référence est recalculée par la référence du dépôt à chaque évaluation, car c'est elle la spécification

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7518f8
+# VERSION CN : 0.1.0  #7f3488
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7518f8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7f3488 ▼▼▼
 """Le contexte : tout ce qu'un module voit du noyau, et RIEN d'autre.
 
 Un module ne reçoit qu'un `ctx` à son branchement. Il ne peut ni importer un autre module, ni écrire

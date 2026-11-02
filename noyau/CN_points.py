@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #cae4f1
+# VERSION CN : 0.1.0  #bb8a3a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=cae4f1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=bb8a3a ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans

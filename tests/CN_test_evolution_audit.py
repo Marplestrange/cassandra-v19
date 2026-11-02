@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #280754
+# VERSION CN : 0.1.0  #cbdcb7
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'audit d'Évolution : chaque défaut trouvé à l'audit (deux passages) a ici le banc qui le rejoue.
 # MÉTHODE    : les bancs de l'évolution (Banc de CN_test_evolution) et des points (Banc de CN_test_points), un banc par défaut trouvé ; les EC qui bouclent sont de vraies EC dans de vrais processus.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=280754 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cbdcb7 ▼▼▼
 """Bancs de l'audit d'Évolution : chaque défaut trouvé à l'audit (deux passages) a ici le banc qui le rejoue.
 
 Isolation (le délai tue l'EC), échec fermé du routage, une seule pièce vivante par point, suspension qui ne tue pas le point, course entre deux propositions,

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8e32be
+# VERSION CN : 0.1.0  #414649
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Évolution : ses capacités dans un vrai noyau, avec un module « labo » qui déclare un point d'évolution et un faux module « modeles ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e32be ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=414649 ▼▼▼
 """Bancs du module Évolution : ses capacités dans un vrai noyau, avec un module « labo » qui déclare un point d'évolution et un faux module « modeles »."""
 import json
 import shutil

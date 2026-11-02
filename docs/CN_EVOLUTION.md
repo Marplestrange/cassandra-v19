@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution V19 — note de conception -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=950667 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=828dc9 ▼▼▼ -->
 # Évolution V19 — note de conception
 
 Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le moteur V18 (diff d'un fichier unique `cassandra.py`), qui n'a plus d'objet.

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #da8928
+# VERSION CN : 0.1.0  #9b1f07
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le travailleur d'une EC : un processus à part, sans rien du serveur, qui charge UNE EC et répond à des lignes JSON.
 # MÉTHODE    : un processus lancé en mode isolé (-I), environnement vidé, mémoire plafonnée (POSIX), stdout détourné ; il relit la cage de CN_points (pureté, builtins restreints) et répond à des lignes JSON ; le serveur le tue au délai.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=da8928 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9b1f07 ▼▼▼
 """Le travailleur d'une EC : un processus à part, sans rien du serveur, qui charge UNE EC et répond à des lignes JSON.
 
 Lancé par noyau/CN_points.py avec `python -I CN_ec_worker.py <CN_points.py> <mémoire en octets>`. Il ne partage avec le serveur ni mémoire, ni clés, ni descripteurs :
