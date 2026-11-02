@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8ba4f0
+# VERSION CN : 0.1.0  #998435
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface.
 # MÉTHODE    : le client `tailscale` local ; l'état se lit dans `status --json`, jamais déduit.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ba4f0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=998435 ▼▼▼
 """Tailscale : voir où en est le réseau privé de la machine et le connecter depuis l'interface.
 
 Deux façons de connecter, comme sur tailscale.com :
@@ -132,14 +132,18 @@ def brancher(ctx):
         r["cle_enregistree"] = bool(str(ctx.reglage("cle_auth", "") or "").strip())
         return r
 
-    def attendre(etats, delai):
+    def attendre(etats, delai, sauf_lien=""):
+        """Relit l'état jusqu'à l'un des `etats`. `sauf_lien` : un lien d'identification déjà là AVANT le geste est celui d'une tentative abandonnée ; le nouveau le remplace
+        quelques secondes plus tard, et c'est lui que la personne doit ouvrir."""
         fin = time.time() + delai
         r = None
         while time.time() < fin:
             d, _ = lire_statut()
             if d is not None:
                 r = resume(d)
-                if r["etat"] in etats or (r["etat"] == "a_identifier" and r["lien"] and "a_identifier" in etats):
+                if r["etat"] == "connecte" and "connecte" in etats:
+                    return r
+                if r["etat"] == "a_identifier" and r["lien"] and r["lien"] != sauf_lien and "a_identifier" in etats:
                     return r
             time.sleep(0.7)
         return r
@@ -170,6 +174,7 @@ def brancher(ctx):
         if ssh:
             args.append("--ssh")
         abandonner_attente()
+        ancien_lien = resume(d)["lien"]
         if avec_cle:
             cle = str(ctx.reglage("cle_auth", "") or "").strip()
             if not CLE.match(cle):
@@ -192,7 +197,7 @@ def brancher(ctx):
                                                    start_new_session=True)
         except FileNotFoundError:
             raise ValueError("Tailscale n'est pas installé")
-        r = attendre({"connecte", "a_identifier"}, 14)
+        r = attendre({"connecte", "a_identifier"}, 14, ancien_lien)
         p = _EN_ATTENTE["proc"]
         if (r is None or not r["lien"]) and (r is None or r["etat"] != "connecte") and p is not None and p.poll() not in (None, 0):
             erreur = _erreur((p.stderr.read() or b"").decode("utf-8", "replace") if p.stderr else "")
@@ -208,8 +213,13 @@ def brancher(ctx):
 
     # Chaque geste qui écrit rend ce qu'il faut pour être PROUVÉ (relire l'état) et DÉFAIT (revenir à l'état d'avant).
     def prouver_connecter(c, res):
-        m = maintenant()
-        return bool(m and (m["etat"] == "connecte" or (m["etat"] == "a_identifier" and m["lien"])))
+        """Connectée, ou un lien d'identification en attente. Quelques lectures : le lien se renouvelle un instant quand une tentative en remplace une autre."""
+        for _ in range(8):
+            m = maintenant()
+            if m and (m["etat"] == "connecte" or (m["etat"] == "a_identifier" and m["lien"])):
+                return True
+            time.sleep(0.8)
+        return False
 
     def defaire_connecter(c, res):
         abandonner_attente()
