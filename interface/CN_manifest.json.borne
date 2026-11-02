@@ -1,0 +1,15 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : manifest.json
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : interface
+# ZONE       : CN
+# VERSION CN : 0.1.0  #000000
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : manifest.json : la déclaration de l application installable (nom, couleurs, icône)
+# MÉTHODE    : à compléter par l'auteur
+# ══════════════════════════════════════════════════════════════════════════════
+# FICHIER    : CN_manifest.json  (empreinte du contenu #000000)
