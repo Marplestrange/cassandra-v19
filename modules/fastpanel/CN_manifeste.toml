@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #624d7e
+# VERSION CN : 0.2.0  #4ed3ea
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers le panneau d'hébergement FastPanel. Lit le parc (comptes, sites, certificats, bases, FTP, courrier, DNS, sauvegardes, services) dans la base du panneau, ouverte en lecture seule, et agit par son API : services, certificats, bases, stockages et plans de sauvegarde, avec preuve et retour arrière. Surveille les services tombés, les certificats proches de l'échéance, les sauvegardes absentes ou périmées et les versions de PHP en fin de support. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=624d7e ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=4ed3ea ▼▼▼
 [module]
 id = "fastpanel"
 nom = "FastPanel"
@@ -25,6 +25,10 @@ importance = "important"
 sans = "Plus de lien avec le panneau d'hébergement : sites, bases et sauvegardes de l'hébergeur ne sont plus lus ni pilotés."
 auteur = "Drisse ATEK"
 licence = "AGPL-3.0-or-later"
+
+[installation]
+script = "CN_installer.sh"
+retrait = "CN_retirer.sh"
 
 [[droits]]
 id = "voir"
