@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : bibliotheque
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5ec969
+# VERSION CN : 0.1.0  #99124f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La bibliothèque.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5ec969 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=99124f ▼▼▼
 [module]
 id = "bibliotheque"
 nom = "Bibliothèque"
@@ -61,6 +61,13 @@ type = "entier"
 defaut = 90
 minimum = 7
 maximum = 3650
+
+[[moteurs]]
+id = "vecteurs"
+libelle = "Calcule les vecteurs des passages (la recherche par le sens), par petits lots"
+mode = "periodique"
+toutes_les_s = 120
+duree_max_s = 100
 
 [[capacites]]
 id = "chercher"

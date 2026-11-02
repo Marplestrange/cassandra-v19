@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #35a35e
+# VERSION CN : 0.1.0  #d09701
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module bibliotheque.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=35a35e ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d09701 ▼▼▼
 """Bancs du module bibliotheque : états et transitions, déduplication, cloisonnement par société, cohérence de l'index FTS, écriture réservée à Amizo."""
 import shutil
 import sqlite3
@@ -365,6 +365,50 @@ class Index(Monde):
         self.assertEqual(self.ok("etagere")["index"]["vecteurs"]["calcules"], 0)
         self.assertEqual(rattraper(), 1)
         self.coherent()
+
+
+class FauxEncodeur:
+    """Un encodeur de banc : « fibre » et « ftth » veulent dire la même chose (le premier axe), tout le reste est ailleurs."""
+    nom = "intfloat/multilingual-e5-large"
+
+    def pret(self):
+        return True
+
+    def encoder(self, textes, genre="passage"):
+        return [[1.0, 0.0, 0.0] if ("fibre" in t.lower() or "ftth" in t.lower()) else [0.0, 1.0, 0.0] for t in textes]
+
+
+class Sens(Monde):
+    def setUp(self):
+        super().setUp()
+        self.avant = self.glob["_VECTEURS"]["fournisseur"]
+        self.glob["_VECTEURS"]["fournisseur"] = FauxEncodeur()
+        self.addCleanup(lambda: self.glob["_VECTEURS"].__setitem__("fournisseur", self.avant))
+
+    def test_sans_vecteur_la_recherche_reste_en_plein_texte(self):
+        self.noter(etagere="interne", source="finance:tarifs/fibre.md")
+        r = self.chercher("abonnement fibre")
+        self.assertEqual(r["mode"], "plein_texte")
+
+    def test_le_sens_retrouve_ce_que_les_mots_ne_trouvent_pas(self):
+        self.noter(etagere="interne", source="finance:raccordement.md", titre="Raccordement", corps="Le raccordement FTTH de la maison se fait en deux jours, sans frais de mise en service.")
+        self.assertEqual(self.chercher("zzzinconnu")["total"], 0)
+        self.assertGreaterEqual(self.glob["brancher"].rattraper_vecteurs(), 1)
+        r = self.chercher("la fibre")
+        self.assertEqual(r["mode"], "hybride")
+        self.assertEqual(r["total"], 1)
+        self.assertGreater(r["resultats"][0]["sens"], 0.9)
+
+    def test_une_question_sans_rapport_ne_ramene_rien_par_le_sens(self):
+        self.noter(etagere="interne", source="finance:raccordement.md", titre="Raccordement", corps="Le raccordement FTTH de la maison se fait en deux jours.")
+        self.glob["brancher"].rattraper_vecteurs()
+        self.assertEqual(self.chercher("recette cuisine")["total"], 0)
+
+    def test_les_vecteurs_d_une_autre_societe_ne_repondent_pas(self):
+        self.noter(etagere="interne", source="finance:raccordement.md", titre="Raccordement", corps="Le raccordement FTTH de la maison se fait en deux jours.", compte=AMIZO)
+        self.glob["brancher"].rattraper_vecteurs()
+        r = self.ok("chercher", q="la fibre", compte=LEO)
+        self.assertEqual(r["total"], 0)
 
 
 class EcritureReservee(Monde):

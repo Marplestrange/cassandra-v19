@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : bibliotheque
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6aa0e4
+# VERSION CN : 0.1.0  #6dd851
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La bibliothèque.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ═══════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6aa0e4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6dd851 ▼▼▼
 """La bibliothèque d'Amizo : la connaissance SOURCÉE, dans sa propre base.
 
   - une fiche est un document avec sa provenance (adresse, date de lecture), découpé en passages dont la position est gardée ; un souvenir (module Mémoire) est
@@ -114,6 +114,12 @@ def brancher_vecteurs(fournisseur):
 
 
 def brancher(ctx):
+    if _VECTEURS["fournisseur"] is None:            # le service d'encodage partagé du noyau ; sans sa bibliothèque, il se dit indisponible et la recherche reste en plein texte
+        try:
+            from noyau import CN_encodage
+            brancher_vecteurs(CN_encodage.service())
+        except Exception:
+            pass
     global _point
     _point = ctx.point
     db = ctx.stockage
@@ -398,7 +404,7 @@ def brancher(ctx):
     def chercher(c, q="", etagere="", etats=None, limite=10):
         """Plein texte classé : pertinence (bm25), fraîcheur, confiance de la source. Par défaut seules les fiches vérifiées répondent ; quarantaine et périmées sur demande ; une fiche bloquée jamais."""
         mots = requete_fts(q)
-        if not mots:
+        if not mots and not str(q or "").strip():
             raise ValueError("une question est obligatoire")
         if isinstance(etats, str):
             etats = [e for e in re.split(r"[,\s]+", etats) if e]
@@ -408,31 +414,46 @@ def brancher(ctx):
         if etagere and etagere not in ETAGERES:
             raise ValueError("étagère : interne ou externe")
         limite = max(1, min(int(limite or 10), 50))
-        sql = ("SELECT p.id AS pid, p.position, p.texte, f.*, bm25(passages_fts, 3.0, 1.0) AS r FROM passages_fts JOIN passages p ON p.id = passages_fts.rowid "
-               "JOIN fiches f ON f.id = p.fiche_id WHERE passages_fts MATCH ? AND f.societe=? AND f.retire_le IS NULL AND f.etat<>'bloque'"
-               + (" AND f.etagere=?" if etagere else "") + " ORDER BY r LIMIT 120")
-        lignes = db.lire(sql, (mots, soc()) + ((etagere,) if etagere else ()))
         now, j = maintenant(), jours()
-        meilleurs = {}
-        for r in lignes:
-            if etat_effectif(r["etat"], r["lu_le"], now, j) in etats and (r["id"] not in meilleurs or r["r"] < meilleurs[r["id"]]["r"]):
-                meilleurs[r["id"]] = r
-        if not meilleurs:
-            return {"resultats": [], "total": 0, "mode": "plein_texte"}
-        pic = max(-m["r"] for m in meilleurs.values())
-        pic = pic if pic > 0 else 1.0
+        cand = {}                                        # fiche -> {"ligne", "fts", "sens"} : le meilleur passage de chaque voie
+        if mots:
+            sql = ("SELECT p.id AS pid, p.position, p.texte, f.*, bm25(passages_fts, 3.0, 1.0) AS r FROM passages_fts JOIN passages p ON p.id = passages_fts.rowid "
+                   "JOIN fiches f ON f.id = p.fiche_id WHERE passages_fts MATCH ? AND f.societe=? AND f.retire_le IS NULL AND f.etat<>'bloque'"
+                   + (" AND f.etagere=?" if etagere else "") + " ORDER BY r LIMIT 120")
+            lignes = db.lire(sql, (mots, soc()) + ((etagere,) if etagere else ()))
+            meilleurs = {}
+            for r in lignes:
+                if etat_effectif(r["etat"], r["lu_le"], now, j) in etats and (r["id"] not in meilleurs or r["r"] < meilleurs[r["id"]]["r"]):
+                    meilleurs[r["id"]] = r
+            pic = max([-m["r"] for m in meilleurs.values()] or [1.0])
+            pic = pic if pic > 0 else 1.0
+            for fid, m in meilleurs.items():
+                cand[fid] = {"ligne": m, "fts": max(0.0, -m["r"]) / pic, "sens": 0.0}
+        sens_actif = False
+        qv = vecteur_requete(q) if str(q or "").strip() else None
+        if qv is not None:
+            sens_actif = True
+            for fid, (ligne, sim) in passages_proches(qv, etagere, etats, now, j).items():
+                if fid in cand:
+                    cand[fid]["sens"] = sim
+                else:
+                    cand[fid] = {"ligne": dict(ligne, r=0.0), "fts": 0.0, "sens": sim}
+        if not cand:
+            return {"resultats": [], "total": 0, "mode": "hybride" if sens_actif else "plein_texte"}
         sources_ = {s["domaine"]: s for s in db.lire("SELECT * FROM sources WHERE societe=?", (soc(),))}
         out = []
-        for m in meilleurs.values():
+        for m, fts, sens in ((x["ligne"], x["fts"], x["sens"]) for x in cand.values()):
             conf = 1.0 if m["etagere"] == "interne" else float(sources_.get(m["domaine"], {"confiance": CONFIANCE["inconnue"]})["confiance"]) * (1.0 if m["etat"] == "verifie" else 0.5)
             age = (now - m["lu_le"]) / 86400.0
-            pert = max(0.0, -m["r"]) / pic
+            pert = min(1.0, max(fts, sens) + 0.15 * min(fts, sens))
             v = vue(m, now)
             v.update({"passage": {"position": m["position"], "texte": m["texte"][:600]}, "pertinence": round(pert, 4), "confiance": round(conf, 3),
                       "fraicheur": round(0.5 ** (max(0.0, age) / j), 3), "score": note_de(pert, age, conf, j), "fiable": v["etat"] == "verifie"})
+            if sens_actif:
+                v["sens"] = round(sens, 4)
             out.append(v)
         out.sort(key=lambda x: -x["score"])
-        return {"resultats": out[:limite], "total": len(out), "mode": "plein_texte"}
+        return {"resultats": out[:limite], "total": len(out), "mode": "hybride" if sens_actif else "plein_texte"}
 
     def fiche(c, ref=""):
         f = fiche_de(ref)
@@ -462,7 +483,7 @@ def brancher(ctx):
         limite, decalage = max(1, min(int(limite or 50), 200)), max(0, int(decalage or 0))
         return {"comptes": comptes, "total": len(gardees), "fiches": gardees[decalage:decalage + limite],
                 "index": {"passages": db.lire("SELECT COUNT(*) AS n FROM passages")[0]["n"], "recherche": "plein_texte",
-                          "vecteurs": {"modele": meta("modele_vecteurs"), "calcules": db.lire("SELECT COUNT(*) AS n FROM vecteurs")[0]["n"], "actif": False, "pret": vecteurs_prets()}}}
+                          "vecteurs": {"modele": meta("modele_vecteurs"), "calcules": db.lire("SELECT COUNT(*) AS n FROM vecteurs")[0]["n"], "actif": vecteurs_prets(), "pret": vecteurs_prets()}}}
 
     def sources(c, statut="", limite=100):
         if statut and statut not in CONFIANCE:
@@ -485,6 +506,33 @@ def brancher(ctx):
         except Exception:
             return False
 
+    def vecteur_requete(q):
+        """Le vecteur de la question, SEULEMENT si le sens sert déjà (des passages ont leur vecteur, le modèle est prêt) ; sinon None : plein texte."""
+        if not vecteurs_prets() or not db.lire("SELECT 1 FROM vecteurs WHERE modele=? LIMIT 1", (_VECTEURS["fournisseur"].nom,)):
+            return None
+        try:
+            return _VECTEURS["fournisseur"].encoder([str(q)[:512]], "query")[0]
+        except Exception:
+            return None
+
+    def passages_proches(qv, etagere, etats, now, j, seuil=0.78, plafond=0.2):
+        """Par fiche, le passage le plus proche de la question : (ligne, similarité ramenée à 0..1 : 0 au seuil, 1 à seuil+plafond). Tout vient de la société qui agit."""
+        sql = ("SELECT v.vecteur, p.id AS pid, p.position, p.texte, f.* FROM vecteurs v JOIN passages p ON p.id = v.passage_id JOIN fiches f ON f.id = p.fiche_id "
+               "WHERE v.modele=? AND f.societe=? AND f.retire_le IS NULL AND f.etat<>'bloque'" + (" AND f.etagere=?" if etagere else ""))
+        best = {}
+        for r in db.lire(sql, (_VECTEURS["fournisseur"].nom, soc()) + ((etagere,) if etagere else ())):
+            if etat_effectif(r["etat"], r["lu_le"], now, j) not in etats:
+                continue
+            v = array.array("f")
+            v.frombytes(r["vecteur"])
+            if len(v) != len(qv):
+                continue
+            cos = sum(a * b for a, b in zip(qv, v))
+            sim = (cos - seuil) / plafond
+            if sim > 0 and (r["id"] not in best or sim > best[r["id"]][1]):
+                best[r["id"]] = (r, min(1.0, sim))
+        return best
+
     def rattraper_vecteurs(lot=32):
         """Calcule les vecteurs des passages qui n'en ont pas, SEULEMENT quand le modèle est prêt (le premier usage le charge ; avant, rien ne se calcule)."""
         if not vecteurs_prets():
@@ -500,6 +548,11 @@ def brancher(ctx):
                     cx.execute("INSERT OR REPLACE INTO vecteurs(passage_id, modele, dim, vecteur, ts) VALUES(?,?,?,?,?)", (r["id"], f.nom, len(v), array.array("f", v).tobytes(), maintenant()))
             fait += len(reste)
 
+    def moteur_vecteurs(c):
+        """Calcule les vecteurs qui manquent, par petits lots : le modèle ne se charge que s'il y a des passages à encoder."""
+        return {"calcules": rattraper_vecteurs(16)}
+
+    ctx.moteur("vecteurs", moteur_vecteurs)
     brancher.rattraper_vecteurs = rattraper_vecteurs   # le moteur qui rattrape l'appellera quand le service d'encodage dira « prêt »
 
     # ------------------------------------------------------------------ inscription
