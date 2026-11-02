@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9dc8b7
+# VERSION CN : 0.1.0  #deb334
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module tailscale : le client est simulé (un faux `tailscale` qui répond comme le vrai), le reste tourne dans un vrai noyau.
 # MÉTHODE    : on remplace `_lancer` du module ; on vérifie les états, le lien d'identification, la clé qui ne traîne nulle part, et les refus dits en clair.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9dc8b7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=deb334 ▼▼▼
 """Bancs du module tailscale : le client est simulé, le reste tourne dans un vrai noyau."""
 import json
 import shutil
@@ -137,6 +137,7 @@ class Gestes(Monde):
         up = [a for a in self.appels if a[0] == "up"][0]
         self.assertTrue(all(CLE not in x for x in up))
         self.assertIn("--ssh", up)
+        self.assertTrue([x for x in up if x.startswith("--operator=")], "--reset sans --operator ferait perdre à Cassandra le droit de piloter Tailscale")
         self.assertIn("--hostname=argos", up)
         self.assertEqual(self.cle_lue, CLE)
         if sys.platform != "win32":                       # Windows ne connaît pas les droits POSIX

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a171dd
+# VERSION CN : 0.1.0  #8ba4f0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface.
 # MÉTHODE    : le client `tailscale` local ; l'état se lit dans `status --json`, jamais déduit.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a171dd ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ba4f0 ▼▼▼
 """Tailscale : voir où en est le réseau privé de la machine et le connecter depuis l'interface.
 
 Deux façons de connecter, comme sur tailscale.com :
@@ -63,6 +63,15 @@ def _erreur(sortie, cle=""):
         return "tailscaled ne tourne pas : `sudo systemctl enable --now tailscaled`."
     lignes = [x for x in t.splitlines() if x.strip()]
     return (lignes[-1] if lignes else "le client n'a rien répondu")[:300]
+
+
+def utilisateur():
+    """Le compte sous lequel tourne le noyau : celui que l'installateur a fait opérateur du client."""
+    try:
+        import pwd
+        return pwd.getpwuid(os.getuid()).pw_name
+    except Exception:                               # noqa: BLE001
+        return os.environ.get("CASSANDRA_UTILISATEUR", "cassandra")
 
 
 def lire_statut():
@@ -154,7 +163,8 @@ def brancher(ctx):
         nom = str(nom or "").strip().lower()
         if nom and not NOM.match(nom):
             raise ValueError("Nom de machine invalide : lettres, chiffres et tirets seulement")
-        args = ["up", "--reset"]
+        # --reset remet TOUT à zéro, l'opérateur compris : sans --operator, la connexion réussit une fois puis Cassandra n'a plus le droit de rien piloter
+        args = ["up", "--reset", "--operator=" + utilisateur()]
         if nom:
             args.append("--hostname=" + nom)
         if ssh:
