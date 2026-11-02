@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ad2e97
+// VERSION CN : 0.1.0  #264edf
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Modèles et clés » du module modeles : les modèles en ligne (fournisseur, clé d’API, essai), le catalogue des modèles locaux (Ollama : installer, déclarer, supprimer) et les rôles.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) ; tout passe par les capacités modeles.* ; une clé saisie part au noyau et n’est jamais relue ni réaffichée.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ad2e97 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=264edf ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -146,7 +146,7 @@
       if (!Object.prototype.hasOwnProperty.call(S.l, "roles") || !ms.length) return "";
       return '<div class="carte"><h2>Qui parle avec quoi</h2><p class="note">Chaque agent et chaque service cherche son modèle par son rôle. <b>Un rôle sans modèle ne répond pas</b> : lie chacun à l’un des modèles déclarés ci-dessus.</p>' +
         (vides.length ? '<div class="acts"><span class="pastille al">' + vides.length + " rôle(s) sans modèle</span><select id=\"md-tout\" style=\"width:auto;flex:1 1 220px\">" + ms.map((m) => '<option value="' + esc(m.id) + '">' + esc(m.nom) + " (" + esc(m.fournisseur) + ")</option>").join("") + '</select><button class="btn pri" data-a="tout-lier"' + (S.occupe ? " disabled" : "") + ">Lier tous les rôles sans modèle à celui-ci</button></div>" : "") +
-        noms.map((r) => '<div class="rang"><div><span class="nom">' + esc(r) + '</span><br><span class="note">' + esc(dico[r] || "") + '</span></div><div class="m"><select data-role="' + esc(r) + '"><option value="">— celui de la maison —</option>' +
+        noms.map((r) => '<div class="rang"><div><span class="nom">' + esc(r) + '</span><br><span class="note">' + esc(dico[r] || "") + '</span></div><div class="m"><select data-role="' + esc(r) + '"><option value="">— aucun : ce rôle ne répond pas —</option>' +
           ms.map((m) => '<option value="' + esc(m.id) + '"' + (roles[r] === m.id ? " selected" : "") + ">" + esc(m.nom) + " (" + esc(m.fournisseur) + ")</option>").join("") + '</select></div><div></div></div>').join("") + "</div>";
     }
 
