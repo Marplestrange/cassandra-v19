@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.11  #f267f3
+# VERSION CN : 0.1.12  #f70de9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : sensorium.service.in
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.11 empreinte=f267f3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=f70de9 ▼▼▼
 [Unit]
 Description=Sensorium de Cassandra (le collecteur)
 After=network-online.target
@@ -33,6 +33,11 @@ Environment=SENSORIUM_DNS_LOCAL_CONF=@CONFIG@/dns-local.conf
 Environment=SENSORIUM_DNS_LOCAL_NOMS=@DONNEES@/sensorium/dns-local/noms.hosts
 Environment=SENSORIUM_HORSSITE_OK=@DONNEES@/horssite.ok
 Environment=SENSORIUM_PAREFEU_SOCLE=@CONFIG@/parefeu-socle.conf
+Environment=SENSORIUM_UNITE_NOYAU=@UNITE@
+Environment=SENSORIUM_RACINE_V19=@RACINE@
+Environment=SENSORIUM_DONNEES_V19=@DONNEES@
+Environment=SENSORIUM_CONFIG_V19=@CONFIG@
+Environment=SENSORIUM_UTILISATEURS_V19=@UTILISATEURS@
 ExecStart=/usr/bin/python3 @RACINE@/current/modules/sensorium/CN_sensorium.py
 # Le collecteur ferme son socket à root seul ; le noyau (qui ne l'est pas) y accède par groupe, et par ce socket seulement.
 ExecStartPost=/bin/sh @RACINE@/current/modules/sensorium/CN_ouvrir-socket.sh /run/sensorium @UTILISATEUR@

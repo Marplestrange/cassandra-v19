@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.11  #def9e2
+# VERSION CN : 0.1.12  #fad6bb
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Installe le Sensorium : son dossier, son unité (dans le dossier de Cassandra, liée dans systemd), puis le démarre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.11 empreinte=def9e2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=fad6bb ▼▼▼
 # Installe le Sensorium : son dossier, son unité (dans le dossier de Cassandra, liée dans systemd), puis le démarre.
 # Idempotent : relancé (par CN_deploy.sh quand le module change), il remet l'unité à jour et redémarre le collecteur.
 set -euo pipefail
@@ -21,7 +21,7 @@ set -euo pipefail
 unite="sensorium.service"
 install -d -o root -g root -m 0700 "$CASSANDRA_DONNEES/sensorium"
 sed -e "s|@RACINE@|$CASSANDRA_RACINE|g" -e "s|@DONNEES@|$CASSANDRA_DONNEES|g" -e "s|@CONFIG@|$CASSANDRA_CONFIG|g" \
-    -e "s|@UTILISATEUR@|$CASSANDRA_UTILISATEUR|g" "$CASSANDRA_MODULE_DIR/CN_sensorium.service.in" > "$CASSANDRA_CONFIG/$unite.new"
+    -e "s|@UTILISATEUR@|$CASSANDRA_UTILISATEUR|g" -e "s|@UNITE@|${CASSANDRA_UNITE:-cassandra-noyau.service}|g"     -e "s|@UTILISATEURS@|${CASSANDRA_UTILISATEURS:-/var/www}|g" "$CASSANDRA_MODULE_DIR/CN_sensorium.service.in" > "$CASSANDRA_CONFIG/$unite.new"
 chmod 0644 "$CASSANDRA_CONFIG/$unite.new"
 mv "$CASSANDRA_CONFIG/$unite.new" "$CASSANDRA_CONFIG/$unite"
 if [ "$(readlink "/etc/systemd/system/$unite" 2>/dev/null)" != "$CASSANDRA_CONFIG/$unite" ]; then

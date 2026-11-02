@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.11  #03e804
+# VERSION CN : 0.1.12  #5aabe3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.11 empreinte=03e804 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=5aabe3 ▼▼▼
 """Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 
 Le collecteur mesure la machine et son monde. Ce module ne mesure rien : il le questionne par son socket (une requête texte, une réponse
@@ -104,6 +104,52 @@ def brancher(ctx):
             etat["t"] = time.time()
         etat["etat"] = sante
 
+    # ------------------------------------------------------------------ la santé des modules du noyau
+    suivi = {"modules": None, "erreur": "", "t": 0.0, "verdicts": {}, "admins": None}
+
+    def releve_modules(ctx):
+        """Relève ce que le noyau mesure déjà de CHAQUE module (moteurs, détecteurs suspendus, refus, constats) : un verdict par module. Un module qui tombe en échec se dit une fois ; son retour aussi.
+        Ce que le démon ne peut pas voir de dedans, c'est ici qu'on le sait ; ce que le noyau ne peut pas dire de lui-même, c'est le démon qui le dit (voir CN_sensorium.collect_cassandra_v19)."""
+        try:
+            r = ctx.executer_lecture("modules.sante")
+        except (PermissionError, ValueError, KeyError) as ex:
+            suivi.update(modules=None, erreur="la santé des modules n'est pas lisible : %s" % str(ex)[:150], t=time.time())
+            return
+        mods = r.get("modules") if isinstance(r, dict) else None
+        if not isinstance(mods, dict):
+            suivi.update(modules=None, erreur="le noyau n'a rien rendu de la santé des modules", t=time.time())
+            return
+        avant, apres = suivi["verdicts"], {}
+        for mid in sorted(mods):
+            s = mods[mid] if isinstance(mods[mid], dict) else {}
+            v = str(s.get("verdict") or "inconnu")
+            apres[mid] = v
+            if v == "en_echec" and avant.get(mid) != "en_echec":
+                ctx.emettre("module_noyau.en_echec", objet=("module_noyau", mid), donnees={"en_echec": [str(x) for x in (s.get("en_echec") or [])[:6]]})
+            elif v != "en_echec" and avant.get(mid) == "en_echec":
+                ctx.emettre("module_noyau.retabli", objet=("module_noyau", mid), donnees={"verdict": v})
+        suivi.update(modules=mods, erreur="", t=time.time(), verdicts=apres)
+        try:                                                              # le dernier administrateur : sans lui, plus rien ne s'administre
+            d = ctx.executer_lecture("droits.etat")
+            suivi["admins"] = [str(a) for a in d.get("admins", [])] if isinstance(d, dict) else None
+        except (PermissionError, ValueError, KeyError):
+            suivi["admins"] = None
+
+    def modules_en_echec(ctx):
+        if suivi["modules"] is None:
+            return [{"objet": MACHINE, "titre": "La santé des modules ne se lit plus", "detail": suivi["erreur"]}] if suivi["erreur"] else []
+        res = []
+        for mid, s in sorted(suivi["modules"].items()):
+            if isinstance(s, dict) and s.get("verdict") == "en_echec":
+                res.append({"objet": ("module_noyau", mid), "titre": "Le module « %s » est en échec" % mid,
+                            "detail": ", ".join(str(x) for x in (s.get("en_echec") or [])) or "un moteur ou un détecteur est suspendu"})
+        return res
+
+    def sans_administrateur(ctx):
+        if suivi["admins"] is not None and not suivi["admins"]:
+            return [{"objet": ("module_noyau", "droits"), "titre": "Aucun administrateur", "detail": "Personne ne peut plus administrer Cassandra : ni comptes, ni modules, ni réglages."}]
+        return []
+
     def collecteur_muet(ctx):
         m = machine(ctx)
         if m and m["etat"] == "muet":
@@ -129,6 +175,12 @@ def brancher(ctx):
             return json_de("GET_METRICS", 10)
         except (OSError, ValueError, RuntimeError) as ex:
             return {"muet": True, "erreur": str(ex)[:200]}
+
+    def modules_lus(ctx):
+        """La santé de chaque module telle que le noyau la mesure : verdict, moteurs, détecteurs coupés, ce que ses capacités ont fait en 24 h ; et les administrateurs."""
+        if suivi["modules"] is None:
+            return {"muet": True, "erreur": suivi["erreur"] or "pas encore relevée"}
+        return {"muet": False, "lu_a": suivi["t"], "modules": suivi["modules"], "administrateurs": suivi["admins"]}
 
     def monde(ctx, prefixe=""):
         if prefixe and not _CLE.match(prefixe):
@@ -166,10 +218,14 @@ def brancher(ctx):
         return json_de("GET_CHANGES" + (":" + str(depuis) if depuis else ""), 10)
 
     ctx.moteur("releve", releve)
+    ctx.moteur("sante_modules", releve_modules)
+    ctx.detecteur("modules_en_echec", modules_en_echec)
+    ctx.detecteur("sans_administrateur", sans_administrateur)
     ctx.detecteur("collecteur_muet", collecteur_muet)
     ctx.detecteur("unites_en_echec", unites_en_echec)
     ctx.implementer("sante", sante_lue)
     ctx.implementer("metriques", metriques)
+    ctx.implementer("modules", modules_lus)
     ctx.implementer("monde", monde)
     ctx.implementer("entite", entite)
     ctx.implementer("historique", historique)

@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.11  #1b7c5b
+# VERSION CN : 0.1.12  #7c4625
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.11 empreinte=1b7c5b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=7c4625 ▼▼▼
 [module]
 id = "sensorium"
 nom = "Sensorium"
-version = "0.1.11"
+version = "0.1.12"
 noyau_min = "0.1.0"
 description = "Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles."
 confiance = "interne"
@@ -31,8 +31,12 @@ licence = "AGPL-3.0-or-later"
 type = "machine"
 libelle = "Une machine observée par le Sensorium"
 
+[[objets]]
+type = "module_noyau"
+libelle = "Un module du noyau de Cassandra, dont le Sensorium suit la santé"
+
 [evenements]
-emet = ["machine.sante_change", "machine.muette", "machine.reprise"]
+emet = ["machine.sante_change", "machine.muette", "machine.reprise", "module_noyau.en_echec", "module_noyau.retabli"]
 
 [[moteurs]]
 id = "releve"
@@ -40,6 +44,23 @@ libelle = "Relève la santé et les ressources auprès du collecteur"
 mode = "periodique"
 toutes_les_s = 30
 duree_max_s = 20
+
+[[moteurs]]
+id = "sante_modules"
+libelle = "Relève la santé de chaque module du noyau (verdict, moteurs et détecteurs suspendus)"
+mode = "periodique"
+toutes_les_s = 120
+duree_max_s = 30
+
+[[detecteurs]]
+id = "modules_en_echec"
+libelle = "Un module du noyau est en échec (moteur ou détecteur suspendu, ou santé illisible)"
+frequence_s = 120
+
+[[detecteurs]]
+id = "sans_administrateur"
+libelle = "Plus aucun administrateur : personne ne peut plus administrer Cassandra"
+frequence_s = 300
 
 [[detecteurs]]
 id = "collecteur_muet"
@@ -54,6 +75,11 @@ frequence_s = 60
 [[capacites]]
 id = "sante"
 libelle = "La dernière relève : score de santé, ressources, unités en échec"
+risque = "lecture"
+
+[[capacites]]
+id = "modules"
+libelle = "La santé de chaque module du noyau, telle que le noyau la mesure (verdict, moteurs, détecteurs coupés, refus)"
 risque = "lecture"
 
 [[capacites]]
@@ -120,6 +146,7 @@ rafraichir_s = 30
 accent = "#4a56c8"
 
 [permissions]
+lectures = true
 privileges = ["installer : le service sensorium.service tourne en root, pour tout voir"]
 ecritures = ["/run/sensorium"]
 

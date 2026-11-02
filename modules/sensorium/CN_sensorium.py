@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.11  #b89056
+# VERSION CN : 0.1.12  #1b32e1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.11 empreinte=b89056 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=1b32e1 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -3940,13 +3940,15 @@ UTILISATEURS_V19 = os.environ.get("SENSORIUM_UTILISATEURS_V19") or "/var/www"
 LIBEXEC_V19 = os.environ.get("SENSORIUM_LIBEXEC_V19") or "/usr/libexec/cassandra"
 URL_NOYAU_FORCEE = (os.environ.get("SENSORIUM_URL_NOYAU") or "").rstrip("/")
 V19_VERIF_BASE_S = 6 * 3600          # une base se revérifie (PRAGMA quick_check) au plus toutes les 6 h
-V19_VERIF_BUDGET_S = 25              # le temps qu'une passe peut y consacrer
+V19_VERIF_BASE_MAX_S = 300           # le temps qu'une base peut prendre (en arrière-plan : jamais sur le chemin d'un relevé)
+V19_VERIF_TOTAL_S = 1500             # et toutes ensemble, par passe
 V19_VERIF_MAX_OCTETS = 2 << 30       # au-delà de 2 Gio, on ne la parcourt pas d'ici : l'en-tête et la taille parlent
 V19_CODE_PERIODE_S = 1800            # le code scellé se revérifie toutes les 30 min, et à chaque changement de version
 
 _V19_UNITE = {"t": 0.0, "u": None}
 _V19_VERIF: dict = {}                # chemin -> (heure de la vérification, résultat)
 _V19_CODE = {"t": 0.0, "release": None, "res": None, "verrou": threading.Lock()}
+_V19_INTEGRITE = {"verrou": threading.Lock(), "travail": None}
 
 
 def _v19_age(sec) -> str:
@@ -4163,7 +4165,7 @@ def _inspecter_base(f) -> dict:
     return r
 
 
-def _quick_check(f, delai=20) -> str:
+def _quick_check(f, delai=V19_VERIF_BASE_MAX_S) -> str:
     """'ok', ou le premier défaut trouvé ; '' quand la base ne peut pas se vérifier d'ici (occupée, ouverte en lecture seule impossible, budget dépassé)."""
     try:
         c = sqlite3.connect(Path(f).resolve().as_uri() + "?mode=ro", uri=True, timeout=5)
@@ -4182,6 +4184,32 @@ def _quick_check(f, delai=20) -> str:
         return "illisible : %s" % str(e)[:100]
     txt = "; ".join(str(r[0]) for r in rows)
     return "ok" if txt.strip() == "ok" else txt[:200]
+
+
+def _integrite_travail(cibles):
+    """Vérifie les bases une à une, la plus petite d'abord, dans un fil à part : une base de 450 Mo se parcourt en dizaines de secondes, et le relevé qui l'attendrait
+    ferait perdre toutes les autres mesures de sa passe. Le résultat se dépose dans _V19_VERIF ; le prochain relevé le lit."""
+    debut = time.monotonic()
+    for _, f in sorted(cibles, key=lambda x: x[0]):
+        if time.monotonic() - debut > V19_VERIF_TOTAL_S:
+            break
+        try:
+            res = _quick_check(f)
+        except Exception as e:
+            res = "illisible : %s" % str(e)[:100]
+        ancien = _V19_VERIF.get(str(f))
+        _V19_VERIF[str(f)] = (time.time(), res if res else (ancien[1] if ancien else ""))
+
+
+def _lancer_integrite(cibles):
+    if not cibles:
+        return
+    with _V19_INTEGRITE["verrou"]:
+        t = _V19_INTEGRITE["travail"]
+        if t is not None and t.is_alive():
+            return
+        _V19_INTEGRITE["travail"] = threading.Thread(target=_integrite_travail, args=(list(cibles),), daemon=True, name="integrite-bases")
+        _V19_INTEGRITE["travail"].start()
 
 
 def _agreger_bases(motif_racines) -> dict:
@@ -4205,7 +4233,7 @@ def collect_stores_v19() -> list:
     """Chaque base de Cassandra : poids, journal WAL, dernière écriture, état de l'en-tête et, de temps en temps, PRAGMA quick_check."""
     out = []
     bases = _bases_v19()
-    debut, total = time.monotonic(), 0
+    total, dues = 0, []
     for cle, f in bases:
         try:
             r = _inspecter_base(f)
@@ -4215,10 +4243,8 @@ def collect_stores_v19() -> list:
         total += r["taille"] + r["wal"]
         k = str(f)
         v = _V19_VERIF.get(k)
-        if (not r["defaut"] and r["taille"] <= V19_VERIF_MAX_OCTETS and (v is None or time.time() - v[0] >= V19_VERIF_BASE_S)
-                and time.monotonic() - debut < V19_VERIF_BUDGET_S):
-            res = _quick_check(f)
-            v = _V19_VERIF[k] = (time.time(), res) if res else (time.time(), v[1] if v else "")
+        if not r["defaut"] and r["taille"] <= V19_VERIF_MAX_OCTETS and (v is None or time.time() - v[0] >= V19_VERIF_BASE_S):
+            dues.append((r["taille"], f))
         morceaux = [_v19_octets(r["taille"])]
         if r["wal"]:
             morceaux.append("WAL %s" % _v19_octets(r["wal"]))
@@ -4232,12 +4258,15 @@ def collect_stores_v19() -> list:
         elif v and v[1]:
             morceaux.append("INTÉGRITÉ : %s" % v[1])
             sev = "warning"
+        elif v is None:
+            morceaux.append("première vérification d'intégrité en cours")
         else:
             morceaux.append("intégrité non vérifiable d'ici")
         if r["wal"] > 512 << 20 or (r["wal"] > 64 << 20 and r["wal"] > 4 * max(r["taille"], 1)):
             morceaux.append("journal WAL démesuré : les points de contrôle sont-ils bloqués ?")
             sev = "warning"
         out.append(_mesure(cle, "application", " · ".join(morceaux), sev))
+    _lancer_integrite(dues)
     if bases:
         out.append(_mesure("store.total", "application", "%d bases · %s au total" % (len(bases), _v19_octets(total)), "info"))
     for cle, lib, motif in (("store.societes", "bases de sociétés", Path(RACINE_V19, "societes").rglob("*.db") if Path(RACINE_V19, "societes").is_dir() else []),
@@ -4270,7 +4299,11 @@ def _code_scelle_travail(courant, release):
                 me = re.match(r"^\s+ERREUR\s+(.*)$", ligne)
                 if me:
                     ecarts.append((courant_f, me.group(1).strip()))
-            res = {"etat": "ok", "fichiers": int(m.group(1)), "erreurs": int(m.group(3)), "ecarts": ecarts[:8]}
+                    continue
+                mi = re.match(r"^\s+info\s+(empreinte à recalculer.*)$", ligne)       # le corps d'une borne n'est plus celui qui a été scellé : l'outil ne le compte que comme « info »
+                if mi:
+                    ecarts.append((courant_f, mi.group(1).strip()))
+            res = {"etat": "ok", "fichiers": int(m.group(1)), "erreurs": max(len(ecarts), int(m.group(3))), "ecarts": ecarts[:8]}
     with _V19_CODE["verrou"]:
         _V19_CODE["res"], _V19_CODE["t"], _V19_CODE["release"] = res, time.time(), release
 
