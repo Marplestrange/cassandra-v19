@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : coffre
 # ZONE       : CN
-# VERSION CN : 0.1.0  #94d52c
+# VERSION CN : 0.1.0  #bcf8fe
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le coffre Vaultwarden : le magasin de secrets de Cassandra (statut, liste des noms sans jamais les valeurs, lecture, écriture réversible, retrait). Un compte Cassandra = un compte Vault natif (même identifiant). Différé : la fiche complète d'un secret (chiffrement fin), le provisionnement des comptes, les clés d'API personnelles, le TOTP.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=94d52c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=bcf8fe ▼▼▼
 [module]
 id = "coffre"
 nom = "Coffre fort"
@@ -59,7 +59,7 @@ stockage = true
 
 [[reglages]]
 id = "vault_url"
-libelle = "L'adresse du serveur Vaultwarden (vide : http://127.0.0.1:8087)"
+libelle = "L'adresse du serveur Vaultwarden (vide : http://127.0.0.1:8088, le service bw serve)"
 type = "texte"
 defaut = ""
 

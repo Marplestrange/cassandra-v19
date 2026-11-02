@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ff81bc
+# VERSION CN : 0.1.0  #2138f1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ff81bc ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=2138f1 ▼▼▼
 # CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 #
 #   ./CN_install.sh                         le noyau seul, dans UN dossier : /var/cassandra
@@ -36,6 +36,8 @@ set -euo pipefail
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=exploitation/CN_commun.sh
 . "$SRC/exploitation/CN_commun.sh"
+# shellcheck source=exploitation/CN_services.sh
+. "$SRC/exploitation/CN_services.sh"
 MODULES=()
 EXTENSIONS=()
 RETIRER=""
@@ -57,6 +59,7 @@ while [ $# -gt 0 ]; do
     --admin)        [ $# -ge 2 ] || echouer "--admin attend un nom d'utilisateur"; CASSANDRA_ADMIN="$2"; shift 2 ;;
     --non-signe)    NON_SIGNE=1; shift ;;
     --sans-service) SANS_SERVICE=1; shift ;;
+    --sans-services) SANS_SERVICES=1; shift ;;
     -h|--aide)      aide ;;
     *)              echouer "option inconnue : $1 (voir --aide)" ;;
   esac
@@ -282,6 +285,11 @@ if [ "$SANS_SERVICE" -eq 0 ]; then
   as_service python3 "$PREFIXE/current/CN_main.py" etat
 fi
 dire "terminé : noyau $STAMP${MODULES[*]:+, modules : ${MODULES[*]}}"
+# Ce que la V18 posait autour : swap, OCR des documents, Docker, coffre Vaultwarden, recherche web. Non fatal : chaque échec est dit.
+if [ "$SANS_SERVICE" -eq 0 ] && [ "${SANS_SERVICES:-0}" -eq 0 ]; then
+  services_de_base
+  [ -z "${SEARX_URL:-}" ] || as_service python3 "$PREFIXE/current/CN_main.py" agir reglages.regler cle=web.moteur_url "valeur=$SEARX_URL" >/dev/null 2>&1     || avertir "web.moteur_url non réglé : à saisir dans Réglages (${SEARX_URL})"
+fi
 JETON_PREMIER=""
 [ "$SANS_SERVICE" -ne 0 ] || JETON_PREMIER="$(as_service python3 "$PREFIXE/current/exploitation/CN_premier_jeton.py" "$DONNEES" 2>/dev/null || true)"
 boite_finale "$JETON_PREMIER"

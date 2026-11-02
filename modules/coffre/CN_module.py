@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : coffre
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2c9593
+# VERSION CN : 0.1.0  #b4ceec
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le coffre Vaultwarden : le magasin de secrets de Cassandra.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2c9593 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b4ceec ▼▼▼
 """Le coffre Vaultwarden : le magasin de secrets de Cassandra.
 
 Chaque compte ne voit QUE ses espaces : le sien (« u:<compte> »), puis ceux de société où on l'a fait entrer (« s:<société> »)
@@ -38,7 +38,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-DEFAULT_URL = "http://127.0.0.1:8087"
+DEFAULT_URL = "http://127.0.0.1:8088"      # bw serve (le service du coffre) ; Vaultwarden lui-même écoute sur 8087
 
 
 ROLES = ("admin", "membre", "contrib", "lecture")
