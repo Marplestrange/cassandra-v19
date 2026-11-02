@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #dee5ac
+# VERSION CN : 0.1.12  #fe9b54
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=dee5ac ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=fe9b54 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -3138,7 +3138,7 @@ def calculer_projections() -> list:
                 continue
             if a > 0.05 and r2 >= 0.6:
                 jours = libre / a
-                sev = "warning" if jours <= PROJ_DISQUE_JOURS_ALERTE else "info"
+                sev = "warning" if jours <= _seuil("disque_jours") else "info"
                 val = "plein dans ~%d jours (+%.1f Go/jour, %.0f Go libres)" % (jours, a, libre)
             else:
                 sev, val = "info", "stable (%+.2f Go/jour)" % a
@@ -3159,7 +3159,7 @@ def calculer_projections() -> list:
                                       % (a, pts[-1][0] - pts[0][0], pts[-1][1])})
         # Certificats : un renouvellement automatique se fait à 30 jours ; à moins de 21, il a raté
         for dom, dl, iss in conn.execute("SELECT domain, days_left, issuer FROM ssl_certificates WHERE days_left IS NOT NULL").fetchall():
-            if dl is not None and dl < 21:
+            if dl is not None and dl < _seuil("certificat_jours"):
                 auto = "let's encrypt" in (iss or "").lower() or "zerossl" in (iss or "").lower() or "r3" == (iss or "").lower()
                 if dl <= 0:
                     # Un certificat DÉJÀ expiré sortait de la prévision (0 < dl) et du compteur du tableau de bord : la panne la plus nette
@@ -3977,6 +3977,25 @@ V19_VERIF_BASE_MAX_S = 300           # le temps qu'une base peut prendre (en arr
 V19_VERIF_TOTAL_S = 1500             # et toutes ensemble, par passe
 V19_VERIF_MAX_OCTETS = 2 << 30       # au-delà de 2 Gio, on ne la parcourt pas d'ici : l'en-tête et la taille parlent
 V19_CODE_PERIODE_S = 1800            # le code scellé se revérifie toutes les 30 min, et à chaque changement de version
+# Les seuils réglés depuis l'écran : le module les pose, par le courtier, dans ce fichier (écrit par root) ; le démon le relit quand il change. Défauts = ce que le démon faisait avant.
+SEUILS_FICHIER = os.environ.get("SENSORIUM_SEUILS") or os.path.join(CONFIG_V19, "sensorium-seuils.json")
+SEUILS_BORNES = {"certificat_jours": (21, 3, 90), "disque_jours": (30, 1, 120), "lenteur_ms": (3000, 500, 30000), "espace_min_pct": (8, 1, 50), "sauvegarde_max_h": (72, 6, 720), "activite_max_h": (6, 1, 72)}
+_SEUILS = {"mtime": None, "v": {}}
+
+
+def _seuil(nom: str) -> int:
+    """La valeur d'un seuil : celle du fichier si elle est entière et dans ses bornes, sinon le défaut. Un fichier absent, illisible ou à moitié faux ne dérègle rien."""
+    defaut, lo, hi = SEUILS_BORNES[nom]
+    try:
+        mt = os.stat(SEUILS_FICHIER).st_mtime
+        if mt != _SEUILS["mtime"]:
+            with open(SEUILS_FICHIER, encoding="utf-8") as f:
+                brut = json.load(f)
+            _SEUILS.update(mtime=mt, v=brut if isinstance(brut, dict) else {})
+    except (OSError, ValueError):
+        _SEUILS.update(mtime=None, v={})
+    v = _SEUILS["v"].get(nom, defaut)
+    return v if isinstance(v, int) and not isinstance(v, bool) and lo <= v <= hi else defaut
 
 _V19_UNITE = {"t": 0.0, "u": None}
 _V19_VERIF: dict = {}                # chemin -> (heure de la vérification, résultat)
@@ -4104,7 +4123,7 @@ def collect_noyau_v19() -> list:
             except (ValueError, AttributeError):
                 pass
         if ok:
-            out.append(_mesure("noyau.http", "application", "répond en %d ms (%s)" % (ms, url), "warning" if ms >= 3000 else "info"))
+            out.append(_mesure("noyau.http", "application", "répond en %d ms (%s)" % (ms, url), "warning" if ms >= _seuil("lenteur_ms") else "info"))
         elif code is None:
             out.append(_mesure("noyau.http", "application", "ne répond pas sur %s : %s" % (url, err or "délai dépassé"), "warning"))
         else:
@@ -4113,7 +4132,7 @@ def collect_noyau_v19() -> list:
         out.append(_mesure("noyau.version", "application", "noyau %s · version déployée %s" % (version or "inconnu", rel or "inconnue"), "info"))
         code, ms, corps, err = _sonde_http(url + "/")
         if code == 200 and b"<html" in corps.lower():
-            out.append(_mesure("noyau.page", "application", "la page de connexion se sert en %d ms" % ms, "warning" if ms >= 3000 else "info"))
+            out.append(_mesure("noyau.page", "application", "la page de connexion se sert en %d ms" % ms, "warning" if ms >= _seuil("lenteur_ms") else "info"))
         else:
             out.append(_mesure("noyau.page", "application", "la page de connexion ne se sert pas : %s" % (("code %s" % code) if code else (err or "pas de réponse")), "warning"))
     # démarrages dans l'heure : un noyau qui repart en boucle répond parfois juste assez pour que la sonde passe
@@ -4125,7 +4144,7 @@ def collect_noyau_v19() -> list:
         recent = max(os.stat(x).st_mtime for x in (f, f + "-wal") if os.path.exists(x))
         age = time.time() - recent
         out.append(_mesure("noyau.activite", "application", "dernière écriture dans la base du noyau il y a %s" % _v19_age(age),
-                           "warning" if (actif and age > 6 * 3600) else "info"))
+                           "warning" if (actif and age > _seuil("activite_max_h") * 3600) else "info"))
     except (OSError, ValueError):
         if os.path.isdir(DONNEES_V19):
             out.append(_mesure("noyau.activite", "application", "la base du noyau (%s) est introuvable" % f, "warning"))
@@ -4135,7 +4154,7 @@ def collect_noyau_v19() -> list:
         libre, total = st.f_bavail * st.f_frsize, st.f_blocks * st.f_frsize
         pct = 100.0 * libre / total if total else 100.0
         out.append(_mesure("noyau.espace", "application", "%s libres sur %s (%.0f %%)" % (_v19_octets(libre), _v19_octets(total), pct),
-                           "warning" if (libre < 2 << 30 or pct < 8) else "info"))
+                           "warning" if (libre < 2 << 30 or pct < _seuil("espace_min_pct")) else "info"))
     except (OSError, AttributeError):
         pass
     # les copies de sauvegarde des données de Cassandra
@@ -4145,7 +4164,7 @@ def collect_noyau_v19() -> list:
             fs = [os.stat(os.path.join(d, n)) for n in os.listdir(d)]
             if fs:
                 age = time.time() - max(s.st_mtime for s in fs)
-                out.append(_mesure("noyau.sauvegarde", "application", "dernière copie des données de Cassandra il y a %s" % _v19_age(age), "warning" if age > 72 * 3600 else "info"))
+                out.append(_mesure("noyau.sauvegarde", "application", "dernière copie des données de Cassandra il y a %s" % _v19_age(age), "warning" if age > _seuil("sauvegarde_max_h") * 3600 else "info"))
             else:
                 out.append(_mesure("noyau.sauvegarde", "application", "aucune copie dans %s" % d, "info"))
         except OSError:

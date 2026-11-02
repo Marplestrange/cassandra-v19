@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9be855
+# VERSION CN : 0.1.0  #cdb3cd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le Sensorium voit la V19 elle-même (unité cassandra-noyau, sonde HTTP, bases, code scellé, courtier root) et que le module relève la santé de chaque module du noyau.
 # MÉTHODE    : charge CN_sensorium.py sur une base temporaire, simule systemctl et l'API HTTP (aucun réseau, aucune commande système), fabrique de vraies bases SQLite (saines, abîmées, tronquées) et une version scellée, puis monte un vrai noyau avec ses modules pour la santé de dedans.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9be855 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cdb3cd ▼▼▼
 import importlib.util
 import json
 import os
@@ -834,6 +834,198 @@ class ModuleDansUnNoyau(unittest.TestCase):
         self.assertNotEqual(r["statut"], "faite", r)
         self.assertEqual(appels, [])
 
+    # ---- phase 2 : gravité, seuils, gestes, témoin
+    def regler(self, nom, valeur):
+        self.n.reglages.poser("sensorium." + nom, valeur, "", "root@exemple.test")
+        defauts = {"constat_critique": True, "constat_avoir": True, "constat_info": True, "releves_avant_constat": 2, "certificat_jours": 21, "disque_jours": 30, "lenteur_ms": 3000,
+                   "espace_min_pct": 8, "sauvegarde_max_h": 72, "activite_max_h": 6, "temoin_url_publique": "", "temoin_url_lan": ""}
+        self.addCleanup(lambda: self.n.reglages.poser("sensorium." + nom, defauts[nom], "", "root@exemple.test"))
+
+    def niveaux(self):
+        return {e["objet_id"]: json.loads(e["donnees"]).get("niveau") for e in self.n.base.lire("SELECT objet_id, donnees FROM evenements WHERE type='constat.ouvert' AND source='sensorium' ORDER BY id DESC LIMIT 30")}
+
+    def repartir(self, rows=None):
+        """Un monde sans alerte d'abord : les comptes de relevés repartent de zéro et les constats d'avant se ferment."""
+        self.monde([r for r in MONDE if r["severity"] != "warning"])
+        self.n.lancer("sensorium.monde")
+        self.tick()
+        self.monde(rows)
+
+    def test_un_constat_porte_la_gravite_de_sa_mesure(self):
+        sshs = MONDE + [{"wkey": "cle_ssh.deploy.4f2a", "value": "clé nouvelle", "severity": "warning", "observed_at": "x", "detail": ""}]
+        self.repartir(sshs)
+        try:
+            self.tick_monde(1)                                          # un seul relevé : la sécurité n'attend pas, les autres si
+            c = self.constats()
+            self.assertIn("cle_ssh.deploy.4f2a", c, "une clé SSH apparue se dit tout de suite")
+            self.assertNotIn("ssl.exemple.org", c)
+            self.tick_monde(1)
+            self.assertEqual(self.niveaux().get("disk./var.usage"), "info")      # le disque n'est pas dans la liste des pannes critiques : « disk. » n'est pas « stockage. »
+            self.assertEqual(self.niveaux().get("cle_ssh.deploy.4f2a"), "avoir")
+            self.assertEqual(self.niveaux().get("ssl.exemple.org"), "info")
+        finally:
+            self.nettoyer()
+
+    def test_une_gravite_coupee_n_ouvre_pas_de_constat_mais_la_mesure_reste_lisible(self):
+        self.regler("constat_info", False)
+        self.repartir()
+        try:
+            self.tick_monde(3)
+            self.assertEqual(self.constats(), {})
+            e = self.etat()
+            self.assertTrue(next(x for x in e["rows"] if x["wkey"] == "ssl.exemple.org")["severity"] == "warning")
+            self.assertFalse(next(g for g in e["gravites"] if g["id"] == "info")["ouvre"])
+        finally:
+            self.nettoyer()
+
+    def test_le_nombre_de_releves_avant_un_constat_se_regle(self):
+        self.regler("releves_avant_constat", 1)
+        self.repartir()
+        try:
+            self.tick_monde(1)
+            self.assertIn("ssl.exemple.org", self.constats())
+        finally:
+            self.nettoyer()
+
+    def test_l_etat_dit_les_gestes_les_seuils_et_les_gravites(self):
+        rows = MONDE + [{"wkey": "service.nginx", "value": "failed", "severity": "warning", "observed_at": "x", "detail": ""}]
+        self.monde([r for r in rows if r["wkey"] != "service.nginx"] + [rows[-1]])
+        e = self.etat()
+        nginx = next(r for r in e["rows"] if r["wkey"] == "service.nginx")
+        self.assertEqual(nginx["gestes"], [{"id": "redemarrer", "libelle": "Redémarrer nginx"}])
+        self.assertNotIn("gestes", next(r for r in e["rows"] if r["wkey"] == "ssl.exemple.org"))
+        self.assertEqual({x["id"]: x["valeur"] for x in e["seuils"]["liste"]}["certificat_jours"], 21)
+        self.assertEqual([g["id"] for g in e["gravites"]], ["critique", "avoir", "info"])
+
+    def test_reparer_passe_par_le_courtier_et_se_journalise(self):
+        ctx = self.n.executeur.contextes["sensorium"]
+        appels = []
+
+        def courtier(commande, args=(), stdin=None, delai=30):
+            appels.append((commande, list(args), delai))
+            return {"ok": True, "code": 0, "sortie": json.dumps({"ok": True, "op": "service", "verifie": True, "sortie": "nginx.service redémarrée"}), "erreur": ""}
+        self.monde(avec([{"wkey": "service.nginx", "value": "failed", "severity": "warning", "observed_at": "x", "detail": ""}]))
+        self.n.lancer("sensorium.monde")
+        with mock.patch.object(ctx, "racine", courtier):
+            r = self.ex("sensorium.reparer", wkey="service.nginx", geste="redemarrer")
+            self.assertEqual(r["statut"], "faite", r)
+            self.assertEqual(appels, [("reparer", ["service", "nginx"], 150)])
+            self.assertTrue(r["resultat"]["verifie"])
+            j = self.ex("sensorium.gestes_journal")["resultat"]["gestes"]
+        self.assertEqual((j[0]["wkey"], j[0]["ok"], j[0]["qui"]), ("service.nginx", 1, "root@exemple.test"))
+
+    def test_un_geste_qui_ne_correspond_pas_est_refuse_avant_le_courtier(self):
+        ctx = self.n.executeur.contextes["sensorium"]
+        appels = []
+        self.monde()
+        self.n.lancer("sensorium.monde")
+        with mock.patch.object(ctx, "racine", lambda *a, **k: appels.append(a)):
+            for args in ({"wkey": "ssl.exemple.org", "geste": "redemarrer"}, {"wkey": "service.nginx", "geste": "redemarrer"}, {"wkey": "n.existe.pas", "geste": "maj"},
+                         {"wkey": "service.nginx", "geste": "rm -rf"}):
+                r = self.ex("sensorium.reparer", **args)
+                self.assertNotEqual(r["statut"], "faite", args)
+        self.assertEqual(appels, [])
+
+    def test_un_geste_qui_echoue_se_journalise_et_se_dit(self):
+        ctx = self.n.executeur.contextes["sensorium"]
+        courtier = lambda commande, args=(), stdin=None, delai=30: {"ok": False, "code": 1, "sortie": json.dumps({"ok": False, "erreur": "nginx -t : unexpected end of file"}), "erreur": ""}
+        self.monde(MONDE + [{"wkey": "web.exemple.org", "value": "ne répond pas", "severity": "warning", "observed_at": "x", "detail": ""}])
+        self.n.lancer("sensorium.monde")
+        with mock.patch.object(ctx, "racine", courtier):
+            r = self.ex("sensorium.reparer", wkey="web.exemple.org", geste="nginx")
+            self.assertNotEqual(r["statut"], "faite", r)
+            j = self.ex("sensorium.gestes_journal")["resultat"]["gestes"]
+        self.assertEqual(j[0]["ok"], 0)
+        self.assertIn("unexpected end of file", j[0]["sortie"])
+
+    def test_une_alerte_acceptee_n_a_plus_de_geste(self):
+        self.monde(avec([{"wkey": "service.nginx", "value": "failed", "severity": "warning", "observed_at": "x", "detail": ""}]))
+        try:
+            self.ex("sensorium.accepter", wkey="service.nginx", raison="arrêt voulu", jours=1)
+            ctx = self.n.executeur.contextes["sensorium"]
+            with mock.patch.object(ctx, "racine", lambda *a, **k: self.fail("le courtier ne doit pas être appelé")):
+                r = self.ex("sensorium.reparer", wkey="service.nginx", geste="redemarrer")
+            self.assertNotEqual(r["statut"], "faite", r)
+        finally:
+            self.ex("sensorium.retirer_acceptation", wkey="service.nginx")
+
+    def test_les_seuils_du_demon_sont_poses_par_le_courtier_puis_reposes_quand_ils_changent(self):
+        ctx = self.n.executeur.contextes["sensorium"]
+        appels = []
+
+        def courtier(commande, args=(), stdin=None, delai=30):
+            appels.append((commande, json.loads(stdin)))
+            return {"ok": True, "code": 0, "sortie": json.dumps({"ok": True, "ecrit": json.loads(stdin)}), "erreur": ""}
+        g = self.n.catalogue.get("sensorium.etat").faire.__globals__
+        with mock.patch.object(ctx, "racine", courtier):
+            self.regler("certificat_jours", 45)
+            self.n.lancer("sensorium.seuils")
+            self.assertEqual(appels[-1][0], "seuils")
+            self.assertEqual(appels[-1][1]["certificat_jours"], 45)
+            self.assertEqual(set(appels[-1][1]), {"certificat_jours", "disque_jours", "lenteur_ms", "espace_min_pct", "sauvegarde_max_h", "activite_max_h"}, "ni seuil du module, ni inconnu")
+            n = len(appels)
+            self.n.lancer("sensorium.seuils")
+            self.assertEqual(len(appels), n, "rien n'a changé : rien n'est reposé")
+            self.regler("certificat_jours", 30)
+            self.n.lancer("sensorium.seuils")
+            self.assertEqual(appels[-1][1]["certificat_jours"], 30)
+            self.monde()
+            pose = self.etat()["seuils"]["pose"]
+        self.assertEqual(pose["poses"]["certificat_jours"], 30)
+        self.assertEqual(pose["erreur"], "")
+
+    def test_les_seuils_se_posent_tout_de_suite_a_la_demande_de_l_ecran(self):
+        ctx = self.n.executeur.contextes["sensorium"]
+        appels = []
+
+        def courtier(commande, args=(), stdin=None, delai=30):
+            appels.append((commande, json.loads(stdin)))
+            return {"ok": True, "code": 0, "sortie": json.dumps({"ok": True, "ecrit": json.loads(stdin)}), "erreur": ""}
+        with mock.patch.object(ctx, "racine", courtier):
+            self.regler("disque_jours", 14)
+            r = self.ex("sensorium.seuils_pousser")
+            self.assertEqual(r["statut"], "faite", r)
+            self.assertTrue(r["resultat"]["pose"])
+            self.assertEqual(appels[-1][1]["disque_jours"], 14)
+
+    def test_un_module_qui_n_ecoute_aucun_evenement_d_un_autre_se_branche_seul(self):
+        """Le noyau refuse un module qui écoute un événement qu'aucun module actif n'émet : le Sensorium ne doit dépendre d'aucun émetteur (une install minimale le charge)."""
+        texte = (DOSSIER / "CN_manifeste.toml").read_text(encoding="utf-8")
+        self.assertNotIn("ecoute", texte.split("[evenements]")[1].split("[[")[0])
+
+    def test_un_courtier_qui_refuse_les_seuils_se_dit_sans_rien_casser(self):
+        ctx = self.n.executeur.contextes["sensorium"]
+        courtier = lambda commande, args=(), stdin=None, delai=30: {"ok": False, "code": 1, "sortie": json.dumps({"ok": False, "erreur": "« lenteur_ms » : un entier entre 500 et 30000 est attendu"}), "erreur": ""}
+        self.n.executeur.contextes["sensorium"]
+        g = self.n.catalogue.get("sensorium.etat").faire.__globals__
+        with mock.patch.object(ctx, "racine", courtier):
+            self.regler("lenteur_ms", 600)
+            self.n.lancer("sensorium.seuils")
+            self.monde()
+            pose = self.etat()["seuils"]["pose"]
+        self.assertIsNone(pose["poses"])
+        self.assertIn("lenteur_ms", pose["erreur"])
+
+    def test_un_seuil_hors_bornes_ne_s_enregistre_pas_comme_reglage(self):
+        with self.assertRaises(Exception):
+            self.n.reglages.poser("sensorium.certificat_jours", 5000, "", "root@exemple.test")
+
+    def test_le_temoin_demande_d_abord_l_adresse_puis_donne_le_script_sans_secret(self):
+        self.regler("temoin_url_publique", "")
+        self.regler("temoin_url_lan", "")
+        t = self.ex("sensorium.temoin")["resultat"]
+        self.assertEqual(t["manque"], ["temoin_url_publique"])
+        self.assertNotIn("script", t)
+        self.regler("temoin_url_publique", "https://c.exemple.fr/")
+        self.regler("temoin_url_lan", "http://10.0.0.5:9000/")
+        t = self.ex("sensorium.temoin")["resultat"]
+        self.assertEqual(t["manque"], [])
+        self.assertEqual(t["urls"], ["https://c.exemple.fr/", "http://10.0.0.5:9000/"])
+        self.assertIn("URLS='https://c.exemple.fr/ http://10.0.0.5:9000/'", t["config"])
+        self.assertIn("TOKEN=''", t["config"])
+        self.assertIn("ExecStart=%h/.cassandra-temoin/temoin.sh", t["unite"])
+        self.assertIn("api.telegram.org", t["script"])
+
     def test_sans_administrateur_c_est_un_constat(self):
         admins = list(self.n.droits.etat()["admins"])                    # l'administrateur d'amorçage (fastuser) compte aussi
         for a in admins:
@@ -859,6 +1051,12 @@ MONDE = [
     {"wkey": "service.nginx", "value": "active (running)", "severity": "info", "observed_at": "2026-11-02T08:00:00Z", "detail": ""},
     {"wkey": "health.score", "value": "92 · un certificat", "severity": "warning", "observed_at": "2026-11-02T08:00:00Z", "detail": ""},
 ]
+
+
+def avec(extra):
+    """Le monde d'essai où ces lignes REMPLACENT celles de même clé (deux lignes de même clé : la première gagnerait)."""
+    cles = {x["wkey"] for x in extra}
+    return [r for r in MONDE if r["wkey"] not in cles] + extra
 
 
 class Lecture(unittest.TestCase):
@@ -928,6 +1126,46 @@ class Lecture(unittest.TestCase):
         dom = [{"id": 4, "portee": "domaine:certificats", "debut": "2026-11-02 01:00:00", "fin": "2026-11-02 03:00:00"}]
         self.assertEqual(d("ssl.exemple.org", dom, "2026-11-02 02:00:00")["id"], 4)
         self.assertIsNone(d("service.nginx", dom, "2026-11-02 02:00:00"))
+
+    def test_la_gravite_d_une_alerte_vient_de_sa_nature(self):
+        g = self.lec.gravite
+        self.assertEqual(g("stockage.disk./var"), "critique")
+        self.assertEqual(g("web.exemple.org"), "critique")
+        self.assertEqual(g("cle_ssh.deploy.4f2a"), "avoir")
+        self.assertEqual(g("ssl.exemple.org"), "info")
+        self.assertTrue(self.lec.immediat("cle_ssh.deploy.4f2a"))
+        self.assertTrue(self.lec.immediat("box.redirection.tcp_22"))
+        self.assertFalse(self.lec.immediat("ssl.exemple.org"))
+        self.assertEqual([x[0] for x in self.lec.GRAVITES], ["critique", "avoir", "info"])
+
+    def test_les_gestes_ne_viennent_que_d_une_alerte_et_disent_leur_operation(self):
+        g = self.lec.gestes
+        w = lambda k, v, sev="warning": {"wkey": k, "value": v, "severity": sev}
+        self.assertEqual([(x["id"], x["op"], x["arg"]) for x in g(w("service.nginx", "failed"))], [("redemarrer", "service", "nginx")])
+        self.assertEqual(g(w("service.nginx", "active", "info")), [])
+        self.assertEqual([x["op"] for x in g(w("web.exemple.org", "ne répond pas"))], ["nginx"])
+        self.assertEqual(g(w("web.exemple.org", "200 en 100 ms")), [])
+        self.assertEqual([(x["op"], x["arg"]) for x in g(w("docker.sondes", "arrêté"))], [("compose", "sondes")])
+        self.assertEqual([x["op"] for x in g(w("journaux.journald", "4 Go"))], ["journal"])
+        self.assertEqual([x["op"] for x in g(w("maj.paquets", "11 paquets"))], ["maj"])
+        self.assertEqual(g(w("ssl.exemple.org", "expire dans 12 jours")), [], "aucun geste inventé pour une mesure sans geste")
+
+    def test_les_seuils_hors_bornes_retombent_sur_leur_defaut(self):
+        v = self.lec.seuils_valides({"certificat_jours": 500, "disque_jours": 45, "lenteur_ms": True, "espace_min_pct": "8", "inconnu": 3})
+        self.assertEqual((v["certificat_jours"], v["disque_jours"], v["lenteur_ms"], v["espace_min_pct"]), (21, 45, 3000, 8))
+        self.assertNotIn("inconnu", v)
+        self.assertNotIn("releves_avant_constat", v, "les seuils du module ne sont pas ceux du démon")
+        self.assertEqual(self.lec.seuils_valides({}, "module"), {"releves_avant_constat": 2})
+
+    def test_la_configuration_du_temoin_ne_contient_jamais_de_secret_et_filtre_les_adresses(self):
+        c = self.lec.temoin_config(["https://c.exemple.fr/", "javascript:alert(1)", "http://10.0.0.5:9000/", "https://x y"], "hôte'; rm -rf /")
+        self.assertIn("TOKEN=''", c)
+        self.assertIn("CHAT=''", c)
+        self.assertIn("URLS='https://c.exemple.fr/ http://10.0.0.5:9000/'", c)
+        self.assertNotIn("javascript", c)
+        self.assertNotIn("'; rm", c)
+        self.assertIn("api.telegram.org", self.lec.TEMOIN_SCRIPT)
+        self.assertNotIn("bot123", self.lec.TEMOIN_SCRIPT)
 
     def test_une_reponse_du_collecteur_se_lit_sous_ses_formes(self):
         self.assertEqual(len(self.lec.lignes_du_monde(MONDE)), 5)
@@ -1103,6 +1341,252 @@ class Branchement(unittest.TestCase):
             self.skipTest("node n'est pas installé")
         r = subprocess.run(["node", "--check", str(RACINE / "interface" / "CN_sensorium-ecran.js")], capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stderr)
+
+
+def charger_script(nom):
+    from importlib.machinery import SourceFileLoader
+    return SourceFileLoader("sensorium_" + nom, str(DOSSIER / "commandes" / ("CN_" + nom))).load_module()
+
+
+class CommandeReparer(unittest.TestCase):
+    def setUp(self):
+        self.c = charger_script("reparer")
+        self.appels = []
+        self.reponses = []                                             # (code, sortie) à la suite ; le dernier se répète
+        self.c.time = mock.Mock(monotonic=lambda: 0.0, sleep=lambda s: None)
+        self.c.run = self._run
+
+    def _run(self, args, timeout=60, cwd=None, env=None):
+        self.appels.append((list(args), cwd))
+        return self.reponses.pop(0) if len(self.reponses) > 1 else (self.reponses[0] if self.reponses else (0, ""))
+
+    def lance(self, *argv):
+        self.c.sys = mock.Mock(argv=["reparer"] + list(argv), exit=lambda n: (_ for _ in ()).throw(SystemExit(n)))
+        lignes = []
+        with mock.patch("builtins.print", lambda *a, **k: lignes.append(a[0])):
+            try:
+                self.c.main()
+                code = None
+            except SystemExit as e:
+                code = e.code
+        return code, json.loads(lignes[-1])
+
+    def test_une_operation_hors_table_ou_un_argument_de_trop_est_refuse_sans_rien_lancer(self):
+        for argv in ((), ("rm",), ("service",), ("service", "a", "b"), ("nginx", "x"), ("journal", "x"), ("maj", "x"), ("compose",)):
+            code, d = self.lance(*argv)
+            self.assertEqual(code, 1, argv)
+            self.assertFalse(d["ok"])
+        self.assertEqual(self.appels, [])
+
+    def test_une_unite_dangereuse_ou_mal_ecrite_est_refusee(self):
+        for u in ("sshd", "ssh.service", "networking", "NetworkManager", "dbus", "tailscaled", "sensorium", "cassandra-noyau", "cassandra-courtier.service", "systemd-logind",
+                  "nginx; rm -rf /", "../x", "a b", "$(id)"):
+            code, d = self.lance("service", u)
+            self.assertEqual(code, 1, u)
+            self.assertFalse(d["ok"], u)
+        self.assertEqual(self.appels, [], "rien n'est lancé pour une unité refusée")
+
+    def test_une_unite_inconnue_est_refusee(self):
+        self.reponses = [(0, "not-found")]
+        code, d = self.lance("service", "fantome")
+        self.assertEqual(code, 1)
+        self.assertIn("inconnue", d["erreur"])
+        self.assertEqual([a[0][1] for a in self.appels], ["show"])
+
+    def test_un_redemarrage_reussi_est_verifie(self):
+        self.reponses = [(0, "loaded"), (0, ""), (0, "active")]
+        code, d = self.lance("service", "nginx")
+        self.assertEqual(code, 0, d)
+        self.assertTrue(d["ok"] and d["verifie"])
+        self.assertEqual([a[0][:2] for a in self.appels], [["systemctl", "show"], ["systemctl", "restart"], ["systemctl", "is-active"]])
+        self.assertEqual(self.appels[1][0], ["systemctl", "restart", "nginx.service"])
+
+    def test_une_unite_qui_ne_redevient_pas_active_est_dite_non_verifiee(self):
+        self.reponses = [(0, "loaded"), (0, ""), (3, "failed")]
+        n = [0]
+        self.c.time = mock.Mock(monotonic=lambda: n.__setitem__(0, n[0] + 11) or n[0], sleep=lambda s: None)
+        code, d = self.lance("service", "nginx")
+        self.assertTrue(d["ok"])
+        self.assertFalse(d["verifie"])
+
+    def test_un_systemctl_qui_echoue_est_un_echec(self):
+        self.reponses = [(0, "loaded"), (1, "Job failed")]
+        code, d = self.lance("service", "nginx")
+        self.assertEqual(code, 1)
+        self.assertIn("a échoué", d["erreur"])
+
+    def test_nginx_n_est_pas_redemarre_si_sa_configuration_ne_passe_pas(self):
+        self.reponses = [(1, "nginx: [emerg] unexpected end of file")]
+        code, d = self.lance("nginx")
+        self.assertEqual(code, 1)
+        self.assertFalse(d["ok"])
+        self.assertEqual([a[0][0] for a in self.appels], ["nginx"], "le test seul : rien n'est redémarré")
+
+    def test_nginx_redemarre_apres_son_test(self):
+        self.reponses = [(0, "syntax is ok"), (0, ""), (0, "active")]
+        code, d = self.lance("nginx")
+        self.assertEqual(code, 0, d)
+        self.assertEqual([a[0][:2] for a in self.appels], [["nginx", "-t"], ["systemctl", "restart"], ["systemctl", "is-active"]])
+
+    def test_un_conteneur_hors_compose_est_refuse_et_son_nom_est_valide(self):
+        self.c.os = mock.Mock(path=mock.Mock(isabs=lambda p: p.startswith("/"), isdir=lambda p: True), environ={})
+        for nom in ("x; id", "-rf", "a b", ""):
+            code, d = self.lance("compose", nom)
+            self.assertEqual(code, 1, nom)
+        self.assertEqual(self.appels, [])
+        self.reponses = [(0, "<no value>")]
+        code, d = self.lance("compose", "sondes")
+        self.assertEqual(code, 1)
+        self.assertIn("docker compose", d["erreur"])
+
+    def test_un_projet_compose_est_relance_dans_son_dossier_lu_sur_le_conteneur(self):
+        self.c.os = mock.Mock(path=mock.Mock(isabs=lambda p: p.startswith("/"), isdir=lambda p: True), environ={})
+        self.reponses = [(0, "/srv/sondes"), (0, "Container sondes Started"), (0, "true")]
+        code, d = self.lance("compose", "sondes")
+        self.assertEqual(code, 0, d)
+        self.assertTrue(d["verifie"])
+        self.assertEqual(self.appels[1][0], ["docker", "compose", "up", "-d"])
+        self.assertEqual(self.appels[1][1], "/srv/sondes")
+
+    def test_un_dossier_de_projet_qui_remonte_est_refuse(self):
+        self.c.os = mock.Mock(path=mock.Mock(isabs=lambda p: p.startswith("/"), isdir=lambda p: True), environ={})
+        self.reponses = [(0, "/srv/../etc")]
+        code, d = self.lance("compose", "sondes")
+        self.assertEqual(code, 1)
+
+    def test_le_journal_est_reduit_a_deux_cents_mo(self):
+        self.reponses = [(0, "Vacuuming done")]
+        code, d = self.lance("journal")
+        self.assertEqual(code, 0)
+        self.assertEqual(self.appels[0][0], ["journalctl", "--vacuum-size=200M"])
+
+    def test_les_mises_a_jour_se_font_dans_l_ordre_et_sans_question(self):
+        self.c.os = mock.Mock(environ={"PATH": "/usr/bin"})
+        self.reponses = [(0, "Hit"), (0, "0 upgraded")]
+        code, d = self.lance("maj")
+        self.assertEqual(code, 0, d)
+        self.assertEqual([a[0][1] for a in self.appels], ["update", "-y"])
+        self.assertIn("--force-confold", self.appels[1][0][3])
+        self.reponses = [(1, "E: Unable to lock")]
+        self.appels.clear()
+        code, d = self.lance("maj")
+        self.assertEqual(code, 1)
+        self.assertEqual(len(self.appels), 1, "un update qui échoue n'est pas suivi d'un upgrade")
+
+
+class CommandeSeuils(unittest.TestCase):
+    def setUp(self):
+        self.c = charger_script("seuils")
+        self.dossier = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.dossier, True)
+        self.c.CONFIG = str(self.dossier)
+
+    def lance(self, texte):
+        self.c.sys = mock.Mock(stdin=mock.Mock(read=lambda n=-1: texte), exit=lambda n: (_ for _ in ()).throw(SystemExit(n)))
+        lignes = []
+        with mock.patch("builtins.print", lambda *a, **k: lignes.append(a[0])):
+            try:
+                self.c.main()
+                code = None
+            except SystemExit as e:
+                code = e.code
+        return code, json.loads(lignes[-1])
+
+    def fichier(self):
+        return self.dossier / "sensorium-seuils.json"
+
+    def test_des_seuils_valides_sont_poses_d_un_coup(self):
+        code, d = self.lance(json.dumps({"certificat_jours": 30, "disque_jours": 14}))
+        self.assertEqual(code, 0, d)
+        self.assertEqual(json.loads(self.fichier().read_text(encoding="utf-8")), {"certificat_jours": 30, "disque_jours": 14})
+        self.assertEqual([p.name for p in self.dossier.iterdir()], ["sensorium-seuils.json"], "aucun fichier temporaire ne reste")
+
+    def test_un_seuil_hors_bornes_inconnu_ou_mal_type_est_refuse_et_rien_n_est_ecrit(self):
+        for brut in ({"certificat_jours": 500}, {"certificat_jours": 1}, {"certificat_jours": True}, {"certificat_jours": 21.5}, {"certificat_jours": "21"},
+                     {"inconnu": 3}, {"chemin": "/etc/passwd"}, [1, 2], "x"):
+            code, d = self.lance(json.dumps(brut))
+            self.assertEqual(code, 1, brut)
+            self.assertFalse(d["ok"])
+        self.assertFalse(self.fichier().exists())
+
+    def test_ce_qui_n_est_pas_du_json_est_refuse(self):
+        code, d = self.lance("pas du json")
+        self.assertEqual(code, 1)
+
+    def test_la_commande_ne_prend_aucun_chemin_et_ignore_le_dossier_fourni(self):
+        src = (DOSSIER / "commandes" / "CN_seuils").read_text(encoding="utf-8")
+        self.assertIn('CONFIG = "@CONFIG@"', src, "l'installation grave le dossier : c'est ce que la commande sed remplace")
+        self.assertNotIn("sys.argv", src)
+
+    def test_un_dossier_absent_est_une_erreur_dite(self):
+        self.c.CONFIG = str(self.dossier / "absent")
+        code, d = self.lance(json.dumps({"certificat_jours": 30}))
+        self.assertEqual(code, 1)
+        self.assertIn("n'existe pas", d["erreur"])
+
+    def test_les_bornes_de_la_commande_sont_celles_de_la_table_et_du_demon(self):
+        sys.path.insert(0, str(DOSSIER))
+        import CN_lecture
+        table = {n: (d[1], d[2]) for n, d in CN_lecture.SEUILS.items() if d[4] == "demon"}
+        self.assertEqual(self.c.SEUILS, table)
+
+
+class SeuilsDuDemon(Demon):
+    def ecrire(self, d):
+        f = self.tmp / "seuils.json"
+        f.write_text(json.dumps(d) if not isinstance(d, str) else d, encoding="utf-8")
+        os.utime(f, (time.time() + self._n, time.time() + self._n))
+        self._n += 5
+        return f
+
+    def setUp(self):
+        super().setUp()
+        self._n = 1
+        self.m._SEUILS.update(mtime=None, v={})
+
+    def test_sans_fichier_le_demon_garde_ses_defauts(self):
+        with mock.patch.object(self.m, "SEUILS_FICHIER", str(self.tmp / "absent.json")):
+            self.assertEqual([self.m._seuil(n) for n in ("certificat_jours", "disque_jours", "lenteur_ms", "espace_min_pct", "sauvegarde_max_h", "activite_max_h")], [21, 30, 3000, 8, 72, 6])
+
+    def test_le_demon_lit_le_fichier_et_le_relit_quand_il_change(self):
+        f = self.ecrire({"certificat_jours": 40})
+        with mock.patch.object(self.m, "SEUILS_FICHIER", str(f)):
+            self.assertEqual(self.m._seuil("certificat_jours"), 40)
+            self.assertEqual(self.m._seuil("disque_jours"), 30, "un seuil absent du fichier garde son défaut")
+            self.ecrire({"certificat_jours": 10})
+            self.assertEqual(self.m._seuil("certificat_jours"), 10)
+
+    def test_un_fichier_a_moitie_faux_ne_deregle_que_ce_qui_est_faux(self):
+        f = self.ecrire({"certificat_jours": 9999, "disque_jours": 45, "lenteur_ms": True, "espace_min_pct": "8"})
+        with mock.patch.object(self.m, "SEUILS_FICHIER", str(f)):
+            self.assertEqual((self.m._seuil("certificat_jours"), self.m._seuil("disque_jours"), self.m._seuil("lenteur_ms"), self.m._seuil("espace_min_pct")), (21, 45, 3000, 8))
+        g = self.ecrire("pas du json")
+        with mock.patch.object(self.m, "SEUILS_FICHIER", str(g)):
+            self.assertEqual(self.m._seuil("certificat_jours"), 21)
+
+    def test_les_seuils_changent_ce_que_le_demon_signale(self):
+        self.racine.mkdir(parents=True, exist_ok=True)
+        props = {"cassandra-noyau.service": {"ActiveState": "active", "SubState": "running", "Result": "success", "MainPID": "1", "MemoryCurrent": "1048576", "NRestarts": "0"}}
+        sonde = lambda url, timeout=5: (200, 600, b'{"ok": true, "version": "x"}', "") if url.endswith("/api/sante") else (200, 10, b"<html>", "")
+        with self.systemctl(props), mock.patch.object(self.m, "_sonde_http", sonde), mock.patch.object(self.m, "_cassandra_demarrages", lambda: []):
+            with mock.patch.object(self.m, "SEUILS_FICHIER", str(self.tmp / "absent.json")):
+                self.assertEqual(self.valeurs(self.m.collect_noyau_v19())["noyau.http"]["severite"], "info")          # 600 ms : sous le seuil par défaut
+            self._n = 1
+            f = self.ecrire({"lenteur_ms": 500})
+            with mock.patch.object(self.m, "SEUILS_FICHIER", str(f)):
+                self.assertEqual(self.valeurs(self.m.collect_noyau_v19())["noyau.http"]["severite"], "warning")      # 600 ms : au-dessus du seuil réglé
+
+    def test_le_seuil_des_certificats_et_des_disques_gouverne_les_projections(self):
+        src = (DOSSIER / "CN_sensorium.py").read_text(encoding="utf-8")
+        self.assertIn('dl < _seuil("certificat_jours")', src)
+        self.assertIn('jours <= _seuil("disque_jours")', src)
+        self.assertNotIn("dl < 21", src)
+
+    def test_les_bornes_du_demon_sont_celles_de_la_table(self):
+        sys.path.insert(0, str(DOSSIER))
+        import CN_lecture
+        table = {n: (d[0], d[1], d[2]) for n, d in CN_lecture.SEUILS.items() if d[4] == "demon"}
+        self.assertEqual(self.m.SEUILS_BORNES, table)
 
 
 class ModuleSansNoyau(unittest.TestCase):

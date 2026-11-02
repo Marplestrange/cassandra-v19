@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #81eea6
+# VERSION CN : 0.1.12  #2d405b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=81eea6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=2d405b ▼▼▼
 """Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 
 Le collecteur mesure la machine et son monde. Ce module ne mesure rien : il le questionne par son socket (une requête texte, une réponse
@@ -128,7 +128,20 @@ def brancher(ctx):
 
     # ------------------------------------------------------------------ le monde : ce que le collecteur sait, accepté et en maintenance déduits
     monde_c = {"t": 0.0, "rows": None, "erreur": "", "vus": {}}
-    PERSISTANCE = 2                              # une mesure doit être en alerte à deux relevés de suite pour ouvrir un constat : un battement de cil n'est pas une panne
+    def reglage_entier(ctx, nom):
+        """Un seuil réglé (entier dans ses bornes), ou son défaut : un réglage illisible n'arrête rien."""
+        d = lec.SEUILS[nom]
+        try:
+            v = ctx.reglage(nom)
+        except Exception:
+            return d[0]
+        return v if isinstance(v, int) and not isinstance(v, bool) and d[1] <= v <= d[2] else d[0]
+
+    def gravite_permise(ctx, g):
+        try:
+            return ctx.reglage("constat_" + g) is not False
+        except Exception:
+            return True
 
     def releve_monde(ctx):
         """Une lecture du modèle du monde, gardée : l'écran, les constats et la recherche la partagent au lieu de la redemander chacun."""
@@ -165,16 +178,20 @@ def brancher(ctx):
             return []                            # le collecteur muet a son propre constat : on n'invente pas de pannes à partir de rien
         hote, n = hote_de(rows), _maintenant()
         acq, fen = acceptations(ctx), fenetres_en_cours(ctx)
+        attente = reglage_entier(ctx, "releves_avant_constat")
+        permises = {g[0]: gravite_permise(ctx, g[0]) for g in lec.GRAVITES}
         res = []
         for r in lec.appliquer_acquits(rows, acq):
             wk = r["wkey"]
-            if r.get("severity") != "warning" or wk.startswith("health.") or monde_c["vus"].get(wk, 0) < PERSISTANCE or lec.dans_fenetre(wk, fen, n, hote):
+            if r.get("severity") != "warning" or wk.startswith("health.") or lec.dans_fenetre(wk, fen, n, hote):
+                continue
+            if not permises[lec.gravite(wk)] or monde_c["vus"].get(wk, 0) < (1 if lec.immediat(wk) else attente):
                 continue
             try:
                 causes = (json.loads(r.get("detail") or "{}") or {}).get("causes_probables") or []
             except (ValueError, AttributeError):
                 causes = []
-            res.append({"objet": ("mesure", wk), "titre": "%s : %s" % (lec.libelle(wk), str(r.get("value") or "")[:140]), "detail": str(causes[0]) if causes else ""})
+            res.append({"objet": ("mesure", wk), "titre": "%s : %s" % (lec.libelle(wk), str(r.get("value") or "")[:140]), "detail": str(causes[0]) if causes else "", "niveau": lec.gravite(wk)})
         if len(res) > 60:                        # une panne générale ne fait pas soixante constats : un seul, qui dit combien
             res = res[:59] + [{"objet": ("mesure", "(autres)"), "titre": "%d autres mesures en alerte" % (len(res) - 59), "detail": "Voir le Sensorium."}]
         return res
@@ -189,7 +206,10 @@ def brancher(ctx):
         hote, fen = hote_de(rows), fenetres_en_cours(ctx)
         sortie = []
         for r in lec.appliquer_acquits(rows, acceptations(ctx)):
-            r = dict(r, libelle=lec.libelle(r["wkey"]), famille=lec.famille_de(r["wkey"]))
+            r = dict(r, libelle=lec.libelle(r["wkey"]), famille=lec.famille_de(r["wkey"]), gravite=lec.gravite(r["wkey"]))
+            g = [{"id": x["id"], "libelle": x["libelle"]} for x in lec.gestes(r)]
+            if g:
+                r["gestes"] = g
             o = lec.objet_de(r["wkey"], hote)
             if o:
                 r["objet"] = {"genre": o[0], "nom": o[1]}
@@ -207,7 +227,42 @@ def brancher(ctx):
             corr = []                            # un démon d'avant cette lecture répond « ERROR » : pas de corrélations, pas d'erreur
         return {"ok": True, "muet": False, "source": "collecteur", "rows": sortie, "changes": changes if isinstance(changes, list) else [],
                 "correlations": corr if isinstance(corr, list) else [], "hote": hote, "fenetres": fen, "maintenant": n, "lu_a": monde_c["t"],
-                "familles": [[i, l] for i, l, _ in lec.FAMILLES], "domaines": [[i, l, list(fs)] for i, l, fs in lec.DOMAINES], "genres": list(lec.GENRES)}
+                "familles": [[i, l] for i, l, _ in lec.FAMILLES], "domaines": [[i, l, list(fs)] for i, l, fs in lec.DOMAINES], "genres": list(lec.GENRES),
+                "seuils": seuils_lus(ctx), "gravites": [{"id": g[0], "libelle": g[1], "dit": g[2], "ouvre": gravite_permise(ctx, g[0])} for g in lec.GRAVITES]}
+
+    def seuils_lus(ctx):
+        """Chaque seuil : son nom, son libellé, sa valeur, son défaut, ses bornes, et qui l'applique ; et où en est la pose chez le démon."""
+        liste = [{"id": n, "libelle": d[3], "valeur": reglage_entier(ctx, n), "defaut": d[0], "min": d[1], "max": d[2], "qui": d[4]} for n, d in lec.SEUILS.items()]
+        return {"liste": liste, "pose": monde_c.get("seuils") or {"poses": None, "erreur": "pas encore posés", "t": 0}}
+
+    def pousser_seuils(ctx):
+        """Les seuils du démon, réglés ici, sont posés dans son fichier par la commande root « seuils » : une fois au départ, puis à chaque changement ; un échec se redit toutes les cinq minutes."""
+        voulus = {n: reglage_entier(ctx, n) for n, d in lec.SEUILS.items() if d[4] == "demon"}
+        etat = monde_c.get("seuils")
+        if etat and etat.get("poses") == voulus:
+            return
+        if etat and etat.get("erreur") and etat.get("voulus") == voulus and time.time() - etat.get("t", 0) < 300:
+            return                                               # le même essai a échoué il y a moins de cinq minutes ; un seuil changé, lui, est tenté tout de suite
+        try:
+            r = ctx.racine("seuils", [], stdin=json.dumps(voulus), delai=15)
+            sortie = json.loads((r.get("sortie") or "").strip().splitlines()[-1])
+        except Exception as ex:                                  # la commande n'est pas posée (banc, installation en cours) : on le dit, on réessaiera
+            monde_c["seuils"] = {"poses": None, "erreur": str(ex)[:160] or "la commande « seuils » ne répond pas", "t": time.time(), "voulus": voulus}
+            return
+        if r.get("ok") and sortie.get("ok"):
+            monde_c["seuils"] = {"poses": voulus, "erreur": "", "t": time.time()}
+        else:
+            monde_c["seuils"] = {"poses": None, "erreur": str(sortie.get("erreur") or r.get("erreur") or "refusés")[:160], "t": time.time(), "voulus": voulus}
+
+    def releve_seuils(ctx):
+        pousser_seuils(ctx)
+
+    def seuils_pousser(ctx):
+        """Les seuils réglés sont posés chez le démon TOUT DE SUITE (l'écran le demande après avoir enregistré). Dit où en est la pose."""
+        monde_c["seuils"] = None
+        pousser_seuils(ctx)
+        e = monde_c.get("seuils") or {}
+        return {"pose": bool(e.get("poses")), "erreur": e.get("erreur", "")}
 
     def accepter(ctx, wkey="", raison="", jours=30):
         wkey = str(wkey or "").strip()[:200]
@@ -295,6 +350,47 @@ def brancher(ctx):
         vivantes = sorted((f for f in tout if not f["annulee"] and f["fin"] > n), key=lambda f: f["debut"])
         finies = [f for f in tout if f["annulee"] or f["fin"] <= n][:10]
         return {"maintenant": n, "vivantes": vivantes, "finies": finies}
+
+    # ------------------------------------------------------------------ réparer en un clic : la table fermée est celle de la commande root
+    DELAIS_GESTE = {"service": 150, "nginx": 120, "compose": 360, "journal": 150, "maj": 1000}
+
+    def reparer(ctx, wkey="", geste=""):
+        r = next((x for x in (monde_frais(ctx) or []) if x["wkey"] == str(wkey or "")), None)
+        if r is None:
+            raise ValueError("mesure inconnue : « %s »" % str(wkey)[:80])
+        g = next((x for x in lec.gestes(lec.appliquer_acquits([r], acceptations(ctx))[0]) if x["id"] == str(geste or "")), None)
+        if g is None:
+            raise ValueError("ce geste ne s'applique pas (ou plus) à cette mesure")
+        qui = ctx.compte or ctx.acteur or ""
+        try:
+            rep_ = ctx.racine("reparer", [g["op"]] + ([g["arg"]] if g["arg"] else []), delai=DELAIS_GESTE[g["op"]])
+            sortie = json.loads((rep_.get("sortie") or "").strip().splitlines()[-1])
+        except (ValueError, IndexError, KeyError, OSError, PermissionError) as ex:
+            rep_, sortie = {"ok": False, "erreur": str(ex)}, {}
+        ok = bool(rep_.get("ok") and sortie.get("ok"))
+        texte = (sortie.get("sortie") if ok else (sortie.get("erreur") or rep_.get("erreur") or "le geste a échoué")) or ""
+        ctx.stockage.ecrire("INSERT INTO sensorium_gestes(qui, wkey, geste, op, ok, sortie) VALUES (?,?,?,?,?,?)", (qui, r["wkey"], g["libelle"], g["op"], 1 if ok else 0, str(texte)[:600]))
+        if not ok:
+            raise ValueError(str(texte)[:300])
+        return {"geste": g["libelle"], "op": g["op"], "verifie": bool(sortie.get("verifie")), "sortie": str(texte)[:600]}
+
+    def gestes_journal(ctx):
+        return {"gestes": [dict(x) for x in ctx.stockage.lire("SELECT ts, qui, wkey, geste, ok, sortie FROM sensorium_gestes ORDER BY id DESC LIMIT 20")]}
+
+    def temoin(ctx):
+        """Ce qu'il faut poser sur une AUTRE machine : le script, sa configuration (jeton et destinataire à remplir LÀ-BAS : Cassandra ne les connaît pas), et les pas. Rien n'est lancé d'ici."""
+        def lu(nom):
+            try:
+                return str(ctx.reglage(nom) or "").strip()
+            except Exception:
+                return ""
+        urls = [u for u in (lu("temoin_url_publique"), lu("temoin_url_lan")) if u]
+        hote = hote_de(monde_c["rows"]) or socket.gethostname()
+        sortie = {"urls": urls, "manque": [] if urls else ["temoin_url_publique"], "nom": hote}
+        if urls:
+            sortie.update(script=lec.TEMOIN_SCRIPT, config=lec.temoin_config(urls, hote), dossier="~/.cassandra-temoin",
+                          unite="[Unit]\nDescription=Témoin de Cassandra\n\n[Service]\nExecStart=%h/.cassandra-temoin/temoin.sh\nRestart=always\n\n[Install]\nWantedBy=default.target\n")
+        return sortie
 
     # ------------------------------------------------------------------ le démon : son état, son redémarrage
     def demon_lu(ctx):
@@ -447,6 +543,7 @@ def brancher(ctx):
 
     ctx.moteur("releve", releve)
     ctx.moteur("monde", releve_monde)
+    ctx.moteur("seuils", releve_seuils)
     ctx.detecteur("alertes_du_monde", alertes_du_monde)
     ctx.moteur("sante_modules", releve_modules)
     ctx.detecteur("modules_en_echec", modules_en_echec)
@@ -458,6 +555,10 @@ def brancher(ctx):
     ctx.implementer("modules", modules_lus)
     ctx.implementer("etat", etat_lu)
     ctx.implementer("demon", demon_lu)
+    ctx.implementer("reparer", reparer, lambda c, res: bool(res.get("verifie")), lambda c, res: None)
+    ctx.implementer("gestes_journal", gestes_journal)
+    ctx.implementer("seuils_pousser", seuils_pousser, lambda c, res: bool(res.get("pose")), lambda c, res: None)
+    ctx.implementer("temoin", temoin)
     ctx.implementer("redemarrer", redemarrer, redemarre_prouve, lambda c, res: None)
     ctx.implementer("fenetres", fenetres_lues)
     ctx.implementer("accepter", accepter, accepte_prouve, accepte_defait)

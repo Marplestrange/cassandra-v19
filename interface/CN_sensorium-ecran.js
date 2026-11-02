@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #79699c
+// VERSION CN : 0.1.0  #dd7b28
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Sensorium à la ressemblance de docs/maquettes/CN_maquette-sensorium.html : une seule colonne de menu (celle de l'application), une recherche, des pages.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.sensorium) qui remplace l'onglet V18 ; tout vient des capacités sensorium.* (etat, demon, modules, fenetres, changements, historique, accepter, retirer_acceptation, fenetre_poser, fenetre_annuler, redemarrer) ; tout texte dynamique est échappé ; ce qui n'est pas encore branché le dit.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=79699c ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=dd7b28 ▼▼▼
 /* La navigation est celle de la maquette validée : le menu vertical est celui de l'application (les vues du Sensorium en sont les sous-entrées), la page a une recherche et un
    bloc « Parcourir ». Aucune colonne de familles, aucune rangée de pilules. Règle : un chiffre affiché vient de sensorium.etat ; ce qui n'a pas de moteur garde la pastille « non branché ». */
 (function () {
@@ -158,12 +158,13 @@
     const w = alerte(r), c = causes(r), a = r.acquit, m = r.maintenance;
     const boutons = w ? '<button class="btn pt" data-a="acc:' + esc(r.wkey) + '" title="Je sais, c\'est normal : se taire jusqu\'à l\'échéance (revient si ça empire)">Accepter…</button>'
       : a ? '<button class="btn pt" data-a="ret:' + esc(r.wkey) + '">Ne plus accepter</button>' : "";
+    const reps = (r.gestes || []).map((x) => '<button class="btn pt" data-a="rep:' + esc(r.wkey) + "|" + esc(x.id) + '" title="Le geste passe par la commande root du courtier, se vérifie et s\'écrit au journal">' + esc(x.libelle) + "</button>").join("");
     return '<div class="row"><span class="dot ' + (w ? "warn" : a ? "mu" : "ok") + '"></span><div class="rt"><b class="cl" data-a="histo:' + esc(r.wkey) + '" title="' + esc(r.wkey) + ' — son histoire sur 30 jours">' + esc(r.libelle || r.wkey) +
       (a ? ' <span class="puce mu">acceptée</span>' : "") + (m ? ' <span class="puce al">en maintenance</span>' : "") + "</b><span>" + esc(r.value) + "</span>" +
       (a ? "<span>acceptée : " + esc(a.raison || "sans raison") + (a.jusqua ? " · jusqu'au " + esc(String(a.jusqua).slice(0, 10)) : "") + "</span>" : "") +
       (m ? "<span>maintenance jusqu'à " + esc(String(m.fin).slice(5, 16)) + (m.motif ? " : " + esc(m.motif) : "") + "</span>" : "") +
       (c.length ? '<span class="cause">cause probable : ' + esc(c[0]) + (c.length > 1 ? " (+" + (c.length - 1) + ")" : "") + "</span>" : "") +
-      '</div><div class="gest"><span class="age" title="' + esc(r.observed_at || "") + '">il y a ' + age(r.observed_at) + "</span>" + boutons + "</div></div>";
+      '</div><div class="gest"><span class="age" title="' + esc(r.observed_at || "") + '">il y a ' + age(r.observed_at) + "</span>" + reps + boutons + "</div></div>";
   }
   const liste = (rs) => rs.length ? '<div class="rows">' + rs.map(ligne).join("") + "</div>" : '<div class="note">Rien à montrer ici.</div>';
   const section = (titre, corps, droite) => '<section class="verre sec"><div class="eb"><h2>' + titre + "</h2>" + (droite || "") + "</div>" + corps + "</section>";
@@ -305,8 +306,20 @@
     return section("Ce que tu as accepté", acc.length ? '<div class="rows">' + acc.map((r) => '<div class="row"><span class="dot mu"></span><div class="rt"><b>' + esc(r.libelle || r.wkey) + ' <span class="puce mu">acceptée</span></b><span>« ' + esc(r.acquit.raison || "sans raison") + " » · " + (r.acquit.jusqua ? "jusqu'au " + esc(String(r.acquit.jusqua).slice(0, 10)) : "sans échéance") + " · revient si le chiffre monte</span></div>" +
       '<div class="gest"><button class="btn pt" data-a="ret:' + esc(r.wkey) + '">Ne plus accepter</button></div></div>').join("") + "</div>" : '<div class="note">Aucune alerte acceptée.</div>') +
       section("Fenêtres de maintenance en cours", f.vivantes.length ? '<div class="rows">' + f.vivantes.map((x) => '<div class="row"><span class="dot warn"></span><div class="rt"><b>' + esc(String(x.debut).slice(5, 16)) + " → " + esc(String(x.fin).slice(5, 16)) + '</b><span>' + esc(x.portee === "*" ? "toute la machine" : x.portee) + (x.motif ? " · " + esc(x.motif) : "") + "</span></div></div>").join("") + "</div>" : '<div class="note">Aucune. <a style="color:var(--accent);cursor:pointer" data-a="vue:maintenance">En planifier une</a></div>') +
-      '<div class="cols2">' + section("Seuils " + puceNB, '<p class="vs">Les seuils (certificat à 21 jours, disque plein dans 21 jours, écart à l\'habitude de 60 %) sont ceux du collecteur et d\'« Aujourd\'hui › Ce qui brûle ». Les rendre réglables depuis ici est à brancher : aucun réglage n\'est affiché tant qu\'il n\'a pas de moteur.</p>') +
-      section("Qui est prévenu, et comment " + puceNB, '<p class="vs">Une mesure en alerte depuis deux relevés ouvre un constat (le centre de notifications le montre, le badge du menu le compte) ; accepter l\'alerte ou poser une fenêtre le referme. Le choix des canaux par gravité est à brancher.</p>') + "</div>";
+      pSeuils() + pGravites();
+  }
+  function pSeuils() {
+    const sg = (S.etat && S.etat.seuils) || { liste: [], pose: {} }, pose = sg.pose || {};
+    const champ = (x) => '<div class="champ"><label for="sx-s-' + esc(x.id) + '">' + esc(x.libelle) + '</label><input id="sx-s-' + esc(x.id) + '" data-seuil="' + esc(x.id) + '" type="number" min="' + x.min + '" max="' + x.max + '" value="' + x.valeur + '"><span class="note">défaut ' + x.defaut + " · de " + x.min + " à " + x.max + (x.qui === "demon" ? " · appliqué par le démon" : "") + "</span></div>";
+    const etat = pose.poses ? '<span class="puce ok">posés chez le démon</span>' : '<span class="puce al" title="' + esc(pose.erreur || "") + '">pas encore posés chez le démon</span>';
+    return section("Seuils", '<p class="vs">Ce qui fait passer une mesure en alerte. Les changer repose le fichier du démon tout de suite (commande root du courtier) ; un seuil hors de ses bornes est refusé.</p><div class="cols2">' + sg.liste.map(champ).join("") + "</div>" +
+      '<div class="err" id="sx-se">' + esc(S.erreurSeuils || "") + '</div><div class="gest" style="justify-content:flex-start"><button class="btn prim" data-a="seuils-ok">Enregistrer les seuils</button>' + etat + "</div>");
+  }
+  function pGravites() {
+    const gr = (S.etat && S.etat.gravites) || [];
+    return section("Qui est prévenu, et comment", '<p class="vs">Une mesure en alerte ouvre un <b>constat</b> (la cloche le montre, le badge du menu le compte) quand sa gravité le permet, après le nombre de relevés réglé ci-dessus ; accepter l\'alerte ou poser une fenêtre le referme. ' +
+      "Où la notification part ensuite (Telegram, courriel…) se règle par compte, dans les canaux : le Sensorium ne choisit que la gravité.</p>" +
+      '<div class="rows">' + gr.map((g) => '<div class="row"><span class="dot ' + (g.id === "critique" ? "dg" : g.id === "avoir" ? "warn" : "ok") + '"></span><div class="rt"><b>' + esc(g.libelle) + "</b><span>" + esc(g.dit) + '</span></div><div class="gest"><label class="chip' + (g.ouvre ? " on" : "") + '" style="cursor:pointer"><input type="checkbox" data-grav="' + esc(g.id) + '" ' + (g.ouvre ? "checked" : "") + ' style="margin-right:6px">ouvre un constat</label></div></div>').join("") + "</div>");
   }
 
   // ── les fenêtres ──────────────────────────────────────────────────────────────
@@ -315,6 +328,22 @@
     const fin = (corps, act) => '<div class="voile" data-a="voile"><div class="modal" role="dialog" aria-modal="true">' + corps + '<div class="act">' + act + "</div></div></div>";
     if (m.type === "accepter") return fin("<h2>Pourquoi « " + esc(m.lib) + " » est-elle normale ?</h2><p class=\"vs\">Elle se taira, et reviendra si son chiffre monte.</p><div class=\"champ\"><label for=\"sx-r\">Raison</label><textarea id=\"sx-r\" rows=\"2\" placeholder=\"par exemple : volume d'archive, plein par conception\"></textarea></div>" +
       '<div class="champ"><label for="sx-j">Pendant combien de jours ? (0 = sans échéance)</label><input id="sx-j" value="30"></div><div class="err">' + esc(m.erreur || "") + "</div>", '<button class="btn" data-a="fermer">Annuler</button><button class="btn prim" data-a="acc-ok">Accepter</button>');
+    if (m.type === "reparer") {
+      if (m.occupe) return fin("<h2>" + esc(m.libelle) + "</h2>", '<div class="attente"><i></i><span>Le geste tourne à root, je vérifie ensuite… Au plus quelques minutes ; ne ferme pas la page.</span></div>');
+      if (m.resultat) return fin('<h2>' + esc(m.libelle) + '</h2><div class="verdict"><span class="vmark ' + (m.resultat.verifie ? "stable" : "") + '"></span><div><p class="vt">' + (m.resultat.verifie ? "Fait, et vérifié" : "Fait, mais pas vérifié") + '</p><p class="vs">' + esc(m.resultat.sortie || "") + "</p></div></div>", '<button class="btn prim" data-a="fermer">Fermer</button>');
+      return fin("<h2>" + esc(m.libelle) + " ?</h2><p class=\"vs\">« " + esc(m.lib) + " » — le geste est dans une table fermée, lancé à root par le courtier, vérifié, et écrit au journal. Il ne se défait pas.</p><div class=\"err\">" + esc(m.erreur || "") + "</div>", '<button class="btn" data-a="fermer">Annuler</button><button class="btn prim" data-a="rep-ok">' + esc(m.libelle) + "</button>");
+    }
+    if (m.type === "temoin") {
+      const t = m.t;
+      if (!t) return fin("<h2>Témoin extérieur</h2><div class=\"attente\"><i></i><span>Lecture…</span></div>", "");
+      const zone = (id, texte) => '<div class="champ"><textarea id="sx-t-' + id + '" rows="' + Math.min(14, texte.split("\n").length + 1) + '" readonly style="font-family:' + MONO + ';font-size:11.5px">' + esc(texte) + '</textarea><div class="gest" style="justify-content:flex-start"><button class="btn pt" data-a="copier:' + id + '">Copier</button></div></div>';
+      if (t.manque && t.manque.length) return fin("<h2>Témoin extérieur</h2><p class=\"vs\">Un témoin est un petit script sur UNE AUTRE machine : il interroge ce serveur chaque minute et, après dix minutes de silence, écrit sur Telegram (puis retire son message au retour). Dis-lui d'abord où ce serveur répond.</p>" +
+        '<div class="champ"><label for="sx-tu">Adresse publique de Cassandra</label><input id="sx-tu" placeholder="https://cassandra.exemple.fr/"></div><div class="champ"><label for="sx-tl">Adresse sur le réseau local (facultatif)</label><input id="sx-tl" placeholder="http://192.168.1.10:9000/"></div><div class="err">' + esc(m.erreur || "") + "</div>",
+        '<button class="btn" data-a="fermer">Annuler</button><button class="btn prim" data-a="temoin-url-ok">Continuer</button>');
+      return fin("<h2>Témoin extérieur</h2><p class=\"vs\">Il surveille " + t.urls.map(esc).join(" et ") + ". À poser sur une machine Linux avec <b>curl</b>, qui n'est pas ce serveur. Le jeton de ton robot Telegram et ton identifiant de conversation se remplissent <b>là-bas</b> : Cassandra ne les connaît pas et ne les copie jamais.</p>" +
+        '<div class="lib">1 · le dossier</div>' + zone("d", "mkdir -p ~/.cassandra-temoin && chmod 700 ~/.cassandra-temoin") + '<div class="lib">2 · le script (temoin.sh)</div>' + zone("s", t.script) + '<div class="lib">3 · la configuration (config), à remplir : TOKEN et CHAT</div>' + zone("c", t.config) +
+        '<div class="lib">4 · le lancer, et le garder en vie (unité systemd utilisateur)</div>' + zone("u", t.unite) + '<div class="note">chmod 700 ~/.cassandra-temoin/temoin.sh · systemctl --user enable --now temoin (après avoir posé l\'unité dans ~/.config/systemd/user/temoin.service). Le battement du témoin n\'est pas relu d\'ici : il se lit sur sa machine (~/.cassandra-temoin/etat).</div>', '<button class="btn prim" data-a="fermer">Fermer</button>');
+    }
     if (m.type === "redem") {
       if (m.occupe) return fin("<h2>Redémarrage du démon</h2>", '<div class="attente"><i></i><span>' + (m.quand === "maintenant" ? "Arrêt et relance…" : "J\'attends la fin de la passe en cours, puis je relance…") + " Au plus quelques minutes ; ne ferme pas la page.</span></div>");
       if (m.resultat) return fin("<h2>Redémarrage du démon</h2><div class=\"verdict\"><span class=\"vmark stable\"></span><div><p class=\"vt\">Revenu</p><p class=\"vs\">Silence de " + esc(m.resultat.silence_s) + " s" + (m.resultat.attendu_s ? " · " + esc(m.resultat.attendu_s) + " s d'attente de la passe" : "") + " · processus " + esc((m.resultat.avant || {}).pid) + " → " + esc((m.resultat.apres || {}).pid) + " · version " + esc((m.resultat.apres || {}).version) + "</p></div></div>", '<button class="btn prim" data-a="fermer">Fermer</button>');
@@ -352,7 +381,7 @@
     const sx = racine.querySelector("#sx"); if (!sx) return;
     const focus = document.activeElement && document.activeElement.id, q = S.q;
     sx.innerHTML = '<div class="entete"><div><h1>Sensorium</h1><div class="note">' + esc((S.etat && S.etat.hote) || "") + (S.etat && S.etat.lu_a ? " · relevé il y a " + age(new Date(S.etat.lu_a * 1000).toISOString()) : "") + "</div></div>" +
-      '<div class="d"><button class="btn" data-a="relever">Relever la flotte</button><button class="btn" disabled title="Installer un témoin sur une autre machine : à brancher">Témoin extérieur ' + puceNB + "</button></div></div>" + fil() +
+      '<div class="d"><button class="btn" data-a="relever">Relever la flotte</button><button class="btn" data-a="temoin" title="Un script à poser sur une autre machine : il sonne si ce serveur se tait">Témoin extérieur</button></div></div>' + fil() +
       '<div class="rech"><div class="cherche"><input id="sx-q-in" placeholder="Chercher un site, une machine, une mesure, une vue…" autocomplete="off" aria-label="Chercher" value="' + esc(q) + '">' + htmlRecherche() + '</div><button class="btn" data-a="toutes" style="border-radius:12px;padding:10px 14px">Toutes les familles ▾</button></div>' +
       page() + htmlModal();
     if (focus === "sx-q-in" && S.ouvrir === "q") { const i = sx.querySelector("#sx-q-in"); if (i) { i.focus(); i.setSelectionRange(q.length, q.length); } }       // le focus ne revient que si la recherche est ouverte : sinon son retour la rouvrirait
@@ -392,6 +421,42 @@
     }
     if (k === "fen-annuler") { const e = await agirEtRecharger("sensorium.fenetre_annuler", { id: Number(v) }); S.erreur = e; S.fen = await agir("sensorium.fenetres").catch(() => null); return dessiner(); }
     if (k === "comp") { S.avant = v; S.comp = null; dessiner(); await chargerComparaison(); return dessiner(); }
+    if (k === "rep") {
+      const [wk, g] = v.split("|"), r = rows().find((x) => x.wkey === wk), geste = r && (r.gestes || []).find((x) => x.id === g);
+      S.modal = { type: "reparer", wkey: wk, geste: g, lib: r ? r.libelle : wk, libelle: geste ? geste.libelle : g }; return dessiner();
+    }
+    if (k === "rep-ok") {
+      const m = S.modal; S.modal = { type: "reparer", occupe: true, libelle: m.libelle }; dessiner();
+      try { S.modal = { type: "reparer", libelle: m.libelle, resultat: await agir("sensorium.reparer", { wkey: m.wkey, geste: m.geste }) }; }
+      catch (e) { S.modal = Object.assign({}, m, { erreur: e.message || String(e) }); }
+      await charger(); return dessiner();
+    }
+    if (k === "grav") return;
+    if (k === "seuils-ok") {
+      const champs = Array.from(racine.querySelectorAll("[data-seuil]")), faits = [];
+      let erreur = "";
+      for (const c of champs) {
+        const x = ((S.etat.seuils || {}).liste || []).find((y) => y.id === c.dataset.seuil), n = parseInt(c.value, 10);
+        if (!x || n === x.valeur) continue;
+        if (isNaN(n) || n < x.min || n > x.max) { erreur = x.libelle + " : un entier entre " + x.min + " et " + x.max + " est attendu"; break; }
+        faits.push([x.id, n]);
+      }
+      if (!erreur) for (const f of faits) { try { await agir("reglages.regler", { cle: "sensorium." + f[0], valeur: f[1] }); } catch (e) { erreur = e.message || String(e); break; } }
+      if (!erreur && faits.length) { try { await agir("sensorium.seuils_pousser"); } catch (e) { erreur = "enregistrés, mais pas posés chez le démon : " + (e.message || e); } }
+      S.erreurSeuils = erreur; await charger(); return dessiner();
+    }
+    if (k === "temoin") { S.modal = { type: "temoin" }; dessiner(); try { S.modal = { type: "temoin", t: await agir("sensorium.temoin") }; } catch (e) { S.modal = { type: "temoin", t: { manque: ["temoin_url_publique"], urls: [] }, erreur: e.message || String(e) }; } return dessiner(); }
+    if (k === "temoin-url-ok") {
+      const u = (racine.querySelector("#sx-tu") || {}).value || "", l = (racine.querySelector("#sx-tl") || {}).value || "";
+      try { await agir("reglages.regler", { cle: "sensorium.temoin_url_publique", valeur: u.trim() }); await agir("reglages.regler", { cle: "sensorium.temoin_url_lan", valeur: l.trim() }); S.modal = { type: "temoin", t: await agir("sensorium.temoin") }; }
+      catch (e) { S.modal.erreur = e.message || String(e); }
+      return dessiner();
+    }
+    if (k === "copier") {
+      const z = racine.querySelector("#sx-t-" + v); if (!z) return;
+      try { await navigator.clipboard.writeText(z.value); if (CASS.kit && CASS.kit.dire) CASS.kit.dire("Copié", "ok"); } catch (e) { z.focus(); z.select(); }
+      return;
+    }
     if (k === "redem") { S.modal = { type: "redem" }; return dessiner(); }
     if (k === "redem-ok") {
       const quandR = (racine.querySelector("#sx-q") || {}).value || "apres_passe", motif = (racine.querySelector("#sx-m") || {}).value || "";
@@ -407,6 +472,11 @@
       if (!b || !racine.contains(b)) { if (S.ouvrir && !ev.target.closest(".cherche")) { S.ouvrir = ""; dessiner(); } return; }
       if (b.dataset.a === "voile" && ev.target !== b) return;                 // un clic dans la fenêtre ne la ferme pas
       ev.preventDefault(); clic(b.dataset.a);
+    });
+    racine.addEventListener("change", async (ev) => {
+      const c = ev.target.closest("[data-grav]"); if (!c) return;
+      try { await agir("reglages.regler", { cle: "sensorium.constat_" + c.dataset.grav, valeur: !!c.checked }); } catch (e) { S.erreur = e.message || String(e); }
+      await charger(); dessiner();
     });
     racine.addEventListener("input", (ev) => { if (ev.target.id === "sx-q-in") { S.q = ev.target.value; S.ouvrir = "q"; dessiner(); } });
     racine.addEventListener("focusin", (ev) => { if (ev.target.id === "sx-q-in" && S.ouvrir !== "q") { S.ouvrir = "q"; dessiner(); } });
@@ -439,6 +509,6 @@
 
 // ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
 // CN : tout ce fichier est du nexus : l'écran du module Sensorium. Il n'appelle que les capacités du module (etat, demon, modules, fenetres, changements, historique, accepter, retirer_acceptation, fenetre_poser, fenetre_annuler, redemarrer, + flotte.parc) et n'invente aucune donnée :
-//      ce qui n'a pas de moteur (témoin extérieur, seuils réglables, canaux par gravité) garde la pastille « non branché » et aucun chiffre.
+//      ce qui n'a pas de moteur garde la pastille « non branché » et aucun chiffre (aujourd'hui : rien).
 // EC : néant. Une vue évolutive serait déclarative (jamais du script) : docs/CN_NEXUS.md §5 bis.
 // LIEN : modules/sensorium (le module et son démon), docs/maquettes/CN_maquette-sensorium.html (la maquette), interface/CN_shell.js (le crochet CASS.sceneSurMesure et remplacerV18).

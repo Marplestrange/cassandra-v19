@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #f70de9
+# VERSION CN : 0.1.12  #02f4a5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : sensorium.service.in
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=f70de9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=02f4a5 ▼▼▼
 [Unit]
 Description=Sensorium de Cassandra (le collecteur)
 After=network-online.target
@@ -34,6 +34,7 @@ Environment=SENSORIUM_DNS_LOCAL_NOMS=@DONNEES@/sensorium/dns-local/noms.hosts
 Environment=SENSORIUM_HORSSITE_OK=@DONNEES@/horssite.ok
 Environment=SENSORIUM_PAREFEU_SOCLE=@CONFIG@/parefeu-socle.conf
 Environment=SENSORIUM_UNITE_NOYAU=@UNITE@
+Environment=SENSORIUM_SEUILS=@CONFIG@/sensorium-seuils.json
 Environment=SENSORIUM_RACINE_V19=@RACINE@
 Environment=SENSORIUM_DONNEES_V19=@DONNEES@
 Environment=SENSORIUM_CONFIG_V19=@CONFIG@

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #d7b620
+# VERSION CN : 0.1.12  #94f89a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=d7b620 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=94f89a ▼▼▼
 [module]
 id = "sensorium"
 nom = "Sensorium"
@@ -45,12 +45,101 @@ mode = "periodique"
 toutes_les_s = 30
 duree_max_s = 20
 
+[[reglages]]
+id = "certificat_jours"
+libelle = "Un certificat est signalé quand il lui reste moins de … jours"
+type = "entier"
+defaut = 21
+minimum = 3
+maximum = 90
+
+[[reglages]]
+id = "disque_jours"
+libelle = "Un disque est signalé quand il sera plein dans moins de … jours"
+type = "entier"
+defaut = 30
+minimum = 1
+maximum = 120
+
+[[reglages]]
+id = "lenteur_ms"
+libelle = "Le noyau est dit lent au-delà de … millisecondes de réponse"
+type = "entier"
+defaut = 3000
+minimum = 500
+maximum = 30000
+
+[[reglages]]
+id = "espace_min_pct"
+libelle = "L'espace libre des données est signalé sous … % (ou sous 2 Go)"
+type = "entier"
+defaut = 8
+minimum = 1
+maximum = 50
+
+[[reglages]]
+id = "sauvegarde_max_h"
+libelle = "La dernière copie des données est signalée au-delà de … heures"
+type = "entier"
+defaut = 72
+minimum = 6
+maximum = 720
+
+[[reglages]]
+id = "activite_max_h"
+libelle = "La base du noyau est dite figée quand rien n'y est écrit depuis … heures"
+type = "entier"
+defaut = 6
+minimum = 1
+maximum = 72
+
+[[reglages]]
+id = "releves_avant_constat"
+libelle = "Une alerte ouvre un constat après … relevés de suite (la sécurité n'attend pas)"
+type = "entier"
+defaut = 2
+minimum = 1
+maximum = 10
+
+[[reglages]]
+id = "constat_critique"
+libelle = "Une alerte critique (panne : disque, site, unité en échec) ouvre un constat, donc une notification"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "constat_avoir"
+libelle = "Une alerte « à voir » (ce qui ouvre la maison : clé SSH, redirection, virus) ouvre un constat"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "constat_info"
+libelle = "Les autres alertes (information) ouvrent un constat ; sinon elles ne se lisent que dans le Sensorium"
+type = "booleen"
+defaut = true
+
+[[reglages]]
+id = "temoin_url_publique"
+libelle = "Adresse publique de Cassandra, que le témoin extérieur interroge (https://…)"
+
+[[reglages]]
+id = "temoin_url_lan"
+libelle = "Adresse de Cassandra sur le réseau local, si elle y écoute (http://IP:9000/) — vide sinon"
+
 [[moteurs]]
 id = "monde"
 libelle = "Relit le modèle du monde du collecteur, une fois pour l'écran, les constats et la recherche"
 mode = "periodique"
 toutes_les_s = 60
 duree_max_s = 30
+
+[[moteurs]]
+id = "seuils"
+libelle = "Pose les seuils du démon dans son fichier (commande root « seuils »), au départ puis tant qu'un échec dure"
+mode = "periodique"
+toutes_les_s = 300
+duree_max_s = 40
 
 [[moteurs]]
 id = "sante_modules"
@@ -88,6 +177,39 @@ frequence_s = 60
 id = "sante"
 libelle = "La dernière relève : score de santé, ressources, unités en échec"
 risque = "lecture"
+
+[[capacites]]
+id = "reparer"
+libelle = "Réparer en un clic : le geste du catalogue qui répond à l'alerte (redémarrer une unité, nginx, relancer un conteneur compose, alléger le journal, appliquer les mises à jour), par la commande root du courtier, vérifié"
+risque = "eleve"
+droit = "agir"
+perimetre = ["la machine : une unité, nginx, un projet docker compose, le journal système ou les paquets, selon le geste"]
+preuve = "la commande root relit l'état après le geste (unité active, conteneur qui tourne) et le dit"
+retour = "aucun : un geste de réparation ne se défait pas ; il est écrit au journal des gestes"
+paliers = ["raconter"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "seuils_pousser"
+libelle = "Poser maintenant les seuils réglés dans le fichier du démon (commande root « seuils »), sans attendre le tour de cinq minutes"
+risque = "faible"
+droit = "agir"
+perimetre = ["le fichier des seuils du démon (sensorium-seuils.json)"]
+preuve = "le courtier a répondu ok et le fichier porte les seuils réglés"
+retour = "aucun besoin : le prochain tour repose les seuils réglés ; remettre l'ancien réglage puis pousser rétablit l'ancien fichier"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "gestes_journal"
+libelle = "Les derniers gestes de réparation faits depuis le Sensorium : qui, quoi, résultat"
+risque = "lecture"
+
+[[capacites]]
+id = "temoin"
+libelle = "Le témoin extérieur : le script et la configuration à poser sur UNE AUTRE machine, qui sonne sur Telegram si ce serveur se tait dix minutes (le jeton de ton robot n'en sort jamais : il se remplit sur la machine témoin)"
+risque = "lecture"
+droit = "agir"
 
 [[capacites]]
 id = "demon"
@@ -233,6 +355,14 @@ stockage = true
 racine = true
 privileges = ["installer : le service sensorium.service tourne en root, pour tout voir"]
 ecritures = ["/run/sensorium"]
+
+[[racine]]
+id = "reparer"
+libelle = "Exécuter UN geste de réparation de la table fermée (redémarrer une unité, nginx, relancer un conteneur compose, alléger le journal, appliquer les mises à jour), puis le vérifier"
+
+[[racine]]
+id = "seuils"
+libelle = "Poser le fichier des seuils du démon (certificats, disques, lenteur, espace, sauvegarde, activité) : des entiers dans leurs bornes, dans un dossier gravé à l'installation"
 
 [[racine]]
 id = "redemarrer"

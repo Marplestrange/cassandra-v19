@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+"""Les gestes de réparation du Sensorium, exécutés À ROOT par le courtier, un par un, en TABLE FERMÉE.
+Usage : reparer <service|nginx|compose|journal|maj> [<argument>]   ->   une ligne de JSON : {"ok": true|false, "op": ..., "verifie": true|false, "sortie": "...", "erreur": "..."}
+
+Ce programme ne fait confiance à rien de ce qu'on lui passe : l'opération est dans une table de cinq mots, chaque argument est validé ici (nom d'unité, nom de conteneur),
+rien ne passe par un shell. Chaque geste se VÉRIFIE avant de répondre ok :
+  - service : l'unité doit exister ; sshd, le réseau, systemd, le noyau de Cassandra et le démon du Sensorium sont REFUSÉS (on ne se coupe pas la branche) ; elle doit être « active » ensuite ;
+  - nginx : la configuration est testée (nginx -t) AVANT de redémarrer ; il doit être actif ensuite ;
+  - compose : le dossier du projet est lu sur le conteneur lui-même (jamais fourni), « docker compose up -d » y est lancé, le conteneur doit tourner ensuite ;
+  - journal : le journal système est réduit à 200 Mo ;
+  - maj : « apt-get update » puis « apt-get upgrade » sans question, les fichiers de configuration modifiés sont gardés."""
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+RE_UNITE = re.compile(r"^[A-Za-z0-9_.@:-]{1,100}$")
+RE_CONTENEUR = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$")
+INTERDITES = re.compile(r"^(ssh|sshd|dbus|networking|NetworkManager|tailscaled|sensorium|cassandra-.+|systemd-.+|getty@.*|user@.*)\.service$")
+OPS = ("service", "nginx", "compose", "journal", "maj")
+
+
+def run(args, timeout=60, cwd=None, env=None):
+    """(code, sortie) ; (None, raison) si la commande ne se lance pas ou dépasse son délai."""
+    try:
+        r = subprocess.run(args, capture_output=True, text=True, timeout=timeout, errors="replace", cwd=cwd, env=env)
+        return r.returncode, ((r.stdout or "") + (r.stderr or "")).strip()
+    except Exception as e:
+        return None, "%s : %s" % (type(e).__name__, e)
+
+
+def echo(d):
+    print(json.dumps(d, ensure_ascii=False))
+    sys.exit(0 if d.get("ok") else 1)
+
+
+def refus(op, raison):
+    echo({"ok": False, "op": op, "erreur": raison})
+
+
+def queue(t, n=600):
+    return (t or "")[-n:]
+
+
+def actif(unite, attente=20):
+    t0 = time.monotonic()
+    while True:
+        rc, out = run(["systemctl", "is-active", unite], 10)
+        if rc == 0 and out.strip() == "active":
+            return True
+        if time.monotonic() - t0 >= attente:
+            return False
+        time.sleep(1)
+
+
+def op_service(arg):
+    unite = arg if arg.endswith(".service") else arg + ".service"
+    if not RE_UNITE.match(unite):
+        refus("service", "nom d'unité illisible")
+    if INTERDITES.match(unite):
+        refus("service", "« %s » ne se redémarre pas d'ici : ce serait se couper la branche" % unite)
+    rc, out = run(["systemctl", "show", unite, "-p", "LoadState", "--value"], 10)
+    if rc != 0 or out.strip() != "loaded":
+        refus("service", "unité inconnue : %s" % unite)
+    rc, out = run(["systemctl", "restart", unite], 120)
+    if rc != 0:
+        echo({"ok": False, "op": "service", "erreur": "systemctl restart a échoué : " + queue(out, 300)})
+    echo({"ok": True, "op": "service", "verifie": actif(unite), "sortie": "%s redémarrée" % unite})
+
+
+def op_nginx():
+    rc, out = run(["nginx", "-t"], 20)
+    if rc != 0:
+        echo({"ok": False, "op": "nginx", "erreur": "la configuration de nginx ne passe pas son test, rien n'est redémarré : " + queue(out, 300)})
+    rc, out = run(["systemctl", "restart", "nginx.service"], 60)
+    if rc != 0:
+        echo({"ok": False, "op": "nginx", "erreur": "systemctl restart nginx a échoué : " + queue(out, 300)})
+    echo({"ok": True, "op": "nginx", "verifie": actif("nginx.service"), "sortie": "nginx redémarré (configuration testée)"})
+
+
+def op_compose(arg):
+    if not RE_CONTENEUR.match(arg):
+        refus("compose", "nom de conteneur illisible")
+    rc, out = run(["docker", "inspect", "-f", '{{index .Config.Labels "com.docker.compose.project.working_dir"}}', arg], 15)
+    dossier = out.strip() if rc == 0 else ""
+    if not dossier or dossier == "<no value>" or not os.path.isabs(dossier) or ".." in dossier.split("/") or not os.path.isdir(dossier):
+        refus("compose", "ce conteneur ne vient pas d'un projet docker compose (ou son dossier a disparu)")
+    rc, out = run(["docker", "compose", "up", "-d"], 330, cwd=dossier)
+    if rc != 0:
+        echo({"ok": False, "op": "compose", "erreur": "docker compose up a échoué : " + queue(out, 300)})
+    t0, tourne = time.monotonic(), False
+    while time.monotonic() - t0 < 20:
+        rc, o = run(["docker", "inspect", "-f", "{{.State.Running}}", arg], 10)
+        if rc == 0 and o.strip() == "true":
+            tourne = True
+            break
+        time.sleep(1)
+    echo({"ok": True, "op": "compose", "verifie": tourne, "sortie": queue(out)})
+
+
+def op_journal():
+    rc, out = run(["journalctl", "--vacuum-size=200M"], 120)
+    if rc != 0:
+        echo({"ok": False, "op": "journal", "erreur": "journalctl a échoué : " + queue(out, 300)})
+    echo({"ok": True, "op": "journal", "verifie": True, "sortie": queue(out)})
+
+
+def op_maj():
+    env = dict(os.environ, DEBIAN_FRONTEND="noninteractive")
+    rc, out = run(["apt-get", "update"], 240, env=env)
+    if rc != 0:
+        echo({"ok": False, "op": "maj", "erreur": "apt-get update a échoué : " + queue(out, 300)})
+    rc, out = run(["apt-get", "-y", "-o", "Dpkg::Options::=--force-confold", "upgrade"], 900, env=env)
+    if rc != 0:
+        echo({"ok": False, "op": "maj", "erreur": "apt-get upgrade a échoué : " + queue(out, 300)})
+    echo({"ok": True, "op": "maj", "verifie": True, "sortie": queue(out)})
+
+
+def main():
+    argv = sys.argv[1:]
+    if not argv or argv[0] not in OPS or len(argv) > 2:
+        refus(argv[0] if argv else "", "usage : reparer <%s> [<argument>]" % "|".join(OPS))
+    op, arg = argv[0], (argv[1] if len(argv) == 2 else "")
+    if op in ("service", "compose") and not arg:
+        refus(op, "« %s » demande un argument" % op)
+    if op in ("nginx", "journal", "maj") and arg:
+        refus(op, "« %s » ne prend pas d'argument" % op)
+    if op == "service":
+        op_service(arg)
+    elif op == "nginx":
+        op_nginx()
+    elif op == "compose":
+        op_compose(arg)
+    elif op == "journal":
+        op_journal()
+    else:
+        op_maj()
+
+
+if __name__ == "__main__":
+    main()

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #a08e08
+# VERSION CN : 0.1.12  #a70920
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La lecture du Sensorium, sans contexte : le nom d'une mesure en français, son domaine et son objet, les alertes acceptées, les fenêtres de maintenance.
 # MÉTHODE    : des fonctions pures sur des listes de lignes {wkey, value, severity…} : le module (CN_module.py) leur donne les lignes du collecteur et les lignes de sa base ; rien ici ne touche au disque, au réseau ni à l'horloge.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=a08e08 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=a70920 ▼▼▼
 """La lecture du Sensorium : tout ce que l'écran dit d'une mesure vient d'ici, et rien ici n'a d'effet de bord.
 
 Une ligne du collecteur est {wkey, value, severity, observed_at, detail}. Sa clé (« ssl.exemple.org », « service.nginx ») dit sa famille ; la famille dit son domaine ;
@@ -190,6 +190,110 @@ def dans_fenetre(wkey, fenetres, maintenant: str, hote="") -> dict:
                 or (p.startswith("machine:") and obj and obj[0] == "Machines" and obj[1].lower() == p[8:].lower()):
             return f
     return None
+
+
+# ---------- la gravité d'une alerte (ce qui part dans la cloche, et avec quel poids) ----------
+# La sécurité n'attend pas : une clé SSH apparue, une redirection de la box, un virus se disent tout de suite. Une panne (disque, site, unité) est critique. Le reste est une info.
+IMMEDIAT = ("cle_ssh.", "box.redirection.", "box.upnp", "box.dmz", "box.acces_distant", "tailnet.nouveau.", "tailnet.partage", "pare_feu.socle", "outil_secu.clamav")
+CRITIQUES = ("stockage.", "montage.", "web.", "controle.tls.", "systemd.failed_units")
+GRAVITES = (("critique", "Critique", "une panne : disque, site, unité en échec"), ("avoir", "À voir", "ce qui ouvre la maison : clé SSH, redirection, virus"), ("info", "Information", "le reste des alertes"))
+
+
+def immediat(wkey) -> bool:
+    return str(wkey or "").startswith(IMMEDIAT)
+
+
+def gravite(wkey) -> str:
+    w = str(wkey or "")
+    return "critique" if w.startswith(CRITIQUES) else ("avoir" if immediat(w) else "info")
+
+
+# ---------- les seuils : (défaut, minimum, maximum, libellé, qui les applique) ----------
+# Les cinq premiers sont ceux du DÉMON (il les relit dans son fichier, que le module lui pose par le courtier) ; les autres sont ceux du module.
+SEUILS = {
+    "certificat_jours": (21, 3, 90, "Un certificat est signalé quand il lui reste moins de … jours", "demon"),
+    "disque_jours": (30, 1, 120, "Un disque est signalé quand il sera plein dans moins de … jours", "demon"),
+    "lenteur_ms": (3000, 500, 30000, "Le noyau est dit lent au-delà de … millisecondes de réponse", "demon"),
+    "espace_min_pct": (8, 1, 50, "L'espace libre des données est signalé sous … % (ou sous 2 Go)", "demon"),
+    "sauvegarde_max_h": (72, 6, 720, "La dernière copie des données est signalée au-delà de … heures", "demon"),
+    "activite_max_h": (6, 1, 72, "La base du noyau est dite figée quand rien n'y est écrit depuis … heures", "demon"),
+    "releves_avant_constat": (2, 1, 10, "Une alerte ouvre un constat après … relevés de suite (la sécurité n'attend pas)", "module"),
+}
+
+
+def seuils_valides(brut: dict, qui: str = "demon") -> dict:
+    """Ne garde que les seuils connus de `qui`, entiers et dans leurs bornes. Un seuil absent, hors bornes ou illisible retombe sur son défaut : jamais d'erreur, jamais de valeur folle."""
+    sortie = {}
+    for nom, (defaut, lo, hi, _, q) in SEUILS.items():
+        if q != qui:
+            continue
+        v = (brut or {}).get(nom, defaut)
+        v = v if isinstance(v, int) and not isinstance(v, bool) and lo <= v <= hi else defaut
+        sortie[nom] = v
+    return sortie
+
+
+# ---------- ce qu'on répare d'un clic : une table fermée, que la commande root rejoue et vérifie ----------
+def gestes(row: dict) -> list:
+    """Les gestes du catalogue qui répondent à cette alerte. Rien que pour une ligne EN ALERTE ; chaque geste dit ce qu'il fera, la commande root le valide encore."""
+    wk, val = str(row.get("wkey") or ""), str(row.get("value") or "")
+    if row.get("severity") != "warning":
+        return []
+    if wk.startswith("service."):
+        u = wk[8:]
+        return [{"id": "redemarrer", "libelle": "Redémarrer %s" % u, "op": "service", "arg": u}]
+    if wk.startswith("web.") and ("ne répond" in val or val.startswith("erreur")):
+        return [{"id": "nginx", "libelle": "Redémarrer nginx", "op": "nginx", "arg": ""}]
+    if wk.startswith("docker."):
+        return [{"id": "relancer", "libelle": "Relancer le conteneur (docker compose up)", "op": "compose", "arg": wk[7:]}]
+    if wk == "journaux.journald":
+        return [{"id": "alleger", "libelle": "Réduire le journal système à 200 Mo", "op": "journal", "arg": ""}]
+    if wk == "maj.paquets":
+        return [{"id": "maj", "libelle": "Appliquer les mises à jour", "op": "maj", "arg": ""}]
+    return []
+
+
+# ---------- le témoin extérieur : un script sur UNE AUTRE machine, qui sonne si celle-ci se tait ----------
+TEMOIN_SCRIPT = r"""#!/bin/sh
+# Témoin de Cassandra : toutes les minutes, ce serveur répond-il ? Dix minutes de silence : un message sur Telegram ; au retour, le message est retiré.
+D="${TEMOIN_DOSSIER:-$HOME/.cassandra-temoin}"
+. "$D/config"
+etat=ok; depuis=0
+[ -f "$D/message" ] && etat=alerte
+while true; do
+  date +%s > "$D/battement"
+  ok=0
+  for u in $URLS; do curl -sfk -o /dev/null --max-time 10 "$u" && ok=1 && break; done
+  maint=$(date +%s)
+  if [ "$ok" = 0 ]; then
+    [ "$depuis" = 0 ] && depuis=$maint
+    if [ "$etat" = ok ] && [ $((maint - depuis)) -ge 600 ]; then
+      mid=$(curl -s --max-time 15 "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="$CHAT" \
+            --data-urlencode text="$NOM ne répond plus depuis 10 minutes (vu par le témoin $TEMOIN). Aucune de ces adresses : $URLS" \
+            | sed -n 's/.*"message_id":\([0-9]*\).*/\1/p')
+      [ -n "$mid" ] && echo "$mid" > "$D/message"
+      etat=alerte
+    fi
+  else
+    if [ "$etat" = alerte ] && [ -f "$D/message" ]; then
+      r=$(curl -s --max-time 15 "https://api.telegram.org/bot$TOKEN/deleteMessage" -d chat_id="$CHAT" -d message_id="$(cat "$D/message")")
+      echo "$r" | grep -q '"ok":true' || curl -s --max-time 15 "https://api.telegram.org/bot$TOKEN/editMessageText" -d chat_id="$CHAT" \
+           -d message_id="$(cat "$D/message")" --data-urlencode text="$NOM répond de nouveau." >/dev/null
+      rm -f "$D/message"
+    fi
+    etat=ok; depuis=0
+  fi
+  echo "$etat $depuis" > "$D/etat"
+  sleep 60
+done
+"""
+
+
+def temoin_config(urls, nom, temoin="le témoin") -> str:
+    """Le fichier de configuration du témoin. Le jeton et le destinataire sont À REMPLIR sur la machine témoin : Cassandra ne les connaît pas et ne les copie jamais (le jeton de ton robot n'en sort pas)."""
+    nettes = [u for u in (str(x).strip() for x in urls) if re.match(r"^https?://[A-Za-z0-9._:/\[\]-]{1,200}$", u)]
+    q = lambda t: str(t).replace("'", "")
+    return "TOKEN=''\nCHAT=''\nURLS='%s'\nNOM='%s'\nTEMOIN='%s'\n" % (q(" ".join(nettes)), q(nom), q(temoin))
 
 
 def lignes_du_monde(brut) -> list:

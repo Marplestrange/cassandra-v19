@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""Pose les seuils du démon du Sensorium, À ROOT, par le courtier. Usage : seuils   (le JSON des seuils arrive sur l'entrée standard)
+Rend UNE ligne de JSON : {"ok": true, "ecrit": {"certificat_jours": 21, ...}}.
+
+Le module (qui n'est pas root) garde les seuils dans ses réglages ; le démon, lui, les relit dans un fichier qu'il ne peut pas se faire écrire par un autre que root.
+Ce programme ne prend AUCUN chemin : le dossier est celui que l'installation a gravé ici (@CONFIG@), le nom du fichier est fixe. Il ne garde que les seuils de sa table, entiers et dans leurs bornes
+(les mêmes que celles du module et du démon) : une valeur hors bornes est REFUSÉE ici, pas corrigée en silence. Le fichier est posé d'un coup (écrit à côté, puis renommé)."""
+import json
+import os
+import sys
+
+CONFIG = "@CONFIG@"
+FICHIER = "sensorium-seuils.json"
+SEUILS = {"certificat_jours": (3, 90), "disque_jours": (1, 120), "lenteur_ms": (500, 30000), "espace_min_pct": (1, 50), "sauvegarde_max_h": (6, 720), "activite_max_h": (1, 72)}
+
+
+def echo(d):
+    print(json.dumps(d, ensure_ascii=False))
+    sys.exit(0 if d.get("ok") else 1)
+
+
+def dossier():
+    return CONFIG if os.path.isabs(CONFIG) else (os.environ.get("CASSANDRA_CONFIG") or "/var/cassandra/config")
+
+
+def main():
+    try:
+        brut = json.loads(sys.stdin.read(65536) or "{}")
+    except ValueError:
+        echo({"ok": False, "erreur": "les seuils ne sont pas du JSON"})
+    if not isinstance(brut, dict):
+        echo({"ok": False, "erreur": "un objet JSON est attendu"})
+    ecrit = {}
+    for nom, v in brut.items():
+        if nom not in SEUILS:
+            echo({"ok": False, "erreur": "seuil inconnu : « %s »" % str(nom)[:40]})
+        lo, hi = SEUILS[nom]
+        if isinstance(v, bool) or not isinstance(v, int) or not lo <= v <= hi:
+            echo({"ok": False, "erreur": "« %s » : un entier entre %d et %d est attendu" % (nom, lo, hi)})
+        ecrit[nom] = v
+    d = dossier()
+    if not os.path.isdir(d):
+        echo({"ok": False, "erreur": "le dossier de configuration n'existe pas : %s" % d})
+    cible, tmp = os.path.join(d, FICHIER), os.path.join(d, "." + FICHIER + ".tmp")
+    try:
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0), 0o644)      # ne suit pas un lien posé à la place du fichier temporaire (Linux ; l'option n'existe pas ailleurs)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(ecrit, f, ensure_ascii=False, sort_keys=True)
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, cible)
+    except OSError as e:
+        echo({"ok": False, "erreur": "écriture impossible : %s" % e})
+    echo({"ok": True, "ecrit": ecrit})
+
+
+if __name__ == "__main__":
+    main()
