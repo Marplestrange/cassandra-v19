@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ce5f46
+# VERSION CN : 0.1.0  #b50828
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Amorçage de Cassandra V19 en UNE commande, sur un serveur Linux neuf (Debian, Ubuntu, Fedora, openSUSE, Arch, Alpine).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ce5f46 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b50828 ▼▼▼
 # Amorçage de Cassandra V19 en UNE commande, sur un serveur Linux neuf (Debian, Ubuntu, Fedora, openSUSE, Arch, Alpine).
 #
 #   curl -fsSL https://raw.githubusercontent.com/Marplestrange/cassandra-v19/main/CN_amorcer.sh | sudo bash
@@ -25,13 +25,16 @@
 #   curl -fsSL .../CN_amorcer.sh | sudo bash -s -- --racine /srv/cassandra
 #   curl -fsSL .../CN_amorcer.sh | sudo bash -s -- --module billetterie     (le noyau et ce module seulement, au lieu de tous)
 #
-# Variables : CASSANDRA_DEPOT (autre dépôt), CASSANDRA_BRANCHE (défaut main), CASSANDRA_SOURCES (défaut /opt/cassandra-sources).
+# Variables : CASSANDRA_DEPOT (autre dépôt), CASSANDRA_BRANCHE (défaut main), CASSANDRA_COMMIT (une version précise, par son empreinte), CASSANDRA_SOURCES (défaut /opt/cassandra-sources).
+# Tout ce qui s'affiche est aussi écrit dans /var/log/cassandra-install.log. Contrôle seul, à tout moment : sudo /opt/cassandra-sources/CN_install.sh --controle
 # Idempotent : relancé, il met à jour les sources et pose une nouvelle version à côté de l'ancienne (CN_install.sh).
 set -euo pipefail
 
 DEPOT="${CASSANDRA_DEPOT:-https://github.com/Marplestrange/cassandra-v19.git}"
 BRANCHE="${CASSANDRA_BRANCHE:-main}"
 SOURCES="${CASSANDRA_SOURCES:-/opt/cassandra-sources}"
+COMMIT="${CASSANDRA_COMMIT:-}"
+export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1        # aucune question en route : ni apt, ni « redémarrer les services ? »
 
 # --- habillage (comme l'installateur de la V18) ---
 if [ -t 1 ] && [ "${NO_COLOR:-0}" != "1" ]; then
@@ -62,6 +65,22 @@ echouer() { echo -e "\n   ${c_err}✘ $*${c_off}\n" >&2; exit 1; }
 banniere
 
 [ "$(id -u)" -eq 0 ] || echouer "à lancer en root (sudo bash …)"
+JOURNAL_INSTALL=/var/log/cassandra-install.log
+if [ -z "${CASSANDRA_JOURNALISE:-}" ]; then
+  export CASSANDRA_JOURNALISE=1
+  printf '\n======== %s : amorçage ========\n' "$(date '+%Y-%m-%d %H:%M:%S')" >> "$JOURNAL_INSTALL"
+  exec > >(tee -a "$JOURNAL_INSTALL") 2>&1
+fi
+if command -v flock >/dev/null 2>&1; then
+  exec 9>/var/lock/cassandra-install.lock
+  flock -n 9 || echouer "une autre installation de Cassandra tourne déjà (verrou /var/lock/cassandra-install.lock)"
+fi
+# Si quelque chose s'arrête en route : dire où lire, et que relancer est sans danger (chaque étape se reprend là où elle en est).
+fin_amorcage() {
+  local rc=$?
+  [ "$rc" -eq 0 ] || echo -e "\n   ${c_err}✘ L'installation s'est arrêtée (code $rc).${c_off}\n   ${c_dim}Le journal : $JOURNAL_INSTALL · relancer la même commande est sans danger : elle reprend où elle en était.${c_off}\n" >&2
+}
+trap fin_amorcage EXIT
 command -v systemctl >/dev/null 2>&1 || echouer "systemd est nécessaire : Cassandra s'installe comme un service"
 
 manque=()
@@ -84,12 +103,17 @@ fi
 
 dire "sources dans $SOURCES"
 if [ -d "$SOURCES/.git" ]; then
-  git -C "$SOURCES" fetch --quiet origin "$BRANCHE"
-  git -C "$SOURCES" checkout --quiet "$BRANCHE"
-  git -C "$SOURCES" reset --quiet --hard "origin/$BRANCHE"
+  git -C "$SOURCES" fetch --quiet origin "${COMMIT:-$BRANCHE}" || echouer "le dépôt $DEPOT est injoignable ou la version « ${COMMIT:-$BRANCHE} » n'existe pas"
+  if [ -n "$COMMIT" ]; then git -C "$SOURCES" reset --quiet --hard FETCH_HEAD
+  else git -C "$SOURCES" checkout --quiet "$BRANCHE" && git -C "$SOURCES" reset --quiet --hard "origin/$BRANCHE"; fi
 else
   rm -rf "$SOURCES"
-  git clone --quiet --depth 1 --branch "$BRANCHE" "$DEPOT" "$SOURCES"
+  if [ -n "$COMMIT" ]; then
+    git init --quiet "$SOURCES" && git -C "$SOURCES" fetch --quiet --depth 1 "$DEPOT" "$COMMIT" && git -C "$SOURCES" reset --quiet --hard FETCH_HEAD \
+      || echouer "impossible de récupérer la version $COMMIT de $DEPOT"
+  else
+    git clone --quiet --depth 1 --branch "$BRANCHE" "$DEPOT" "$SOURCES" || echouer "impossible de cloner $DEPOT (réseau ? dépôt privé ?)"
+  fi
 fi
 
 cd "$SOURCES"

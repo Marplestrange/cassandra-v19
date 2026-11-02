@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2138f1
+# VERSION CN : 0.1.0  #b3e49e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2138f1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b3e49e ▼▼▼
 # CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 #
 #   ./CN_install.sh                         le noyau seul, dans UN dossier : /var/cassandra
@@ -24,6 +24,12 @@
 #                                        CN_deploy.sh ne touche jamais), prouvé, activé ; le noyau le branche sans redémarrer
 #   ./CN_install.sh --extension mod.cmod [--non-signe]   un PAQUET : vérifié (intégrité, signature d'une clé de config/cles/) avant tout
 #   ./CN_install.sh --racine /srv/cassandra    un autre dossier racine ;  --admin NOM : le premier administrateur (défaut : fastuser)
+#   ./CN_install.sh --controle              ne change rien : dit point par point si l'installation tient (code 1 s'il y a un ✘)
+#   ./CN_install.sh --desinstaller [--oui] [--tout] [--garder-donnees]    retire Cassandra (voir CN_desinstaller.sh --aide)
+#   --sans-services : le noyau et les modules seulement, sans Docker, coffre, recherche, IA locale ni outils de sécurité ;  --sans-controle
+#
+# Variables (1 par défaut, 0 coupe) : WITH_SWAP, WITH_VAULT, WITH_SEARXNG, WITH_SEMANTIQUE, WITH_OLLAMA ; WITH_SECU=defaut|aucun|lynis,trivy,clamav,crowdsec ;
+# OLLAMA_MODELE (qwen2.5:3b), SWAP_SIZE (4G), TAILSCALE_AUTHKEY. Une machine petite ou à court de disque n'installe pas d'office le sens, Ollama et ClamAV.
 #
 # La disposition (un dossier pour Cassandra, les dossiers des utilisateurs à la manière de FastPanel) est décrite dans
 # exploitation/CN_commun.sh. Une ancienne installation (/opt, /var/lib, /etc) est migrée dans le dossier unique.
@@ -38,14 +44,18 @@ SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SRC/exploitation/CN_commun.sh"
 # shellcheck source=exploitation/CN_services.sh
 . "$SRC/exploitation/CN_services.sh"
+# shellcheck source=exploitation/CN_controle.sh
+. "$SRC/exploitation/CN_controle.sh"
 MODULES=()
 EXTENSIONS=()
 RETIRER=""
 TOUS=0
 SANS_SERVICE=0
 NON_SIGNE=0
+CONTROLE_SEUL=0
+SANS_CONTROLE=0
 
-aide() { sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0; }
+aide() { sed -n '/^# CN_install.sh : installe/,/^set -euo/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -60,6 +70,9 @@ while [ $# -gt 0 ]; do
     --non-signe)    NON_SIGNE=1; shift ;;
     --sans-service) SANS_SERVICE=1; shift ;;
     --sans-services) SANS_SERVICES=1; shift ;;
+    --sans-controle) SANS_CONTROLE=1; shift ;;
+    --controle|--statut) CONTROLE_SEUL=1; shift ;;
+    --desinstaller) shift; exec "$SRC/CN_desinstaller.sh" "$@" ;;
     -h|--aide)      aide ;;
     *)              echouer "option inconnue : $1 (voir --aide)" ;;
   esac
@@ -67,6 +80,13 @@ done
 calculer_chemins
 
 [ "$(id -u)" -eq 0 ] || echouer "à lancer en root"
+if [ "$CONTROLE_SEUL" -eq 1 ]; then
+  banniere
+  controle_final
+  exit $?
+fi
+journaliser "$0 $*"
+verrouiller
 banniere
 
 # ---------------------------------------------------------------- prérequis
@@ -236,6 +256,7 @@ if [ "${#EXTENSIONS[@]}" -gt 0 ]; then
 fi
 
 # ---------------------------------------------------------------- le noyau
+verifier_machine
 verifier_python
 assurer_dependances
 migrer_ancienne_disposition
@@ -245,6 +266,12 @@ preparer_dossiers
 creer_premier_admin
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
+COMMIT=""
+if [ -d "$SRC/.git" ] && command -v git >/dev/null 2>&1; then
+  COMMIT="$(git -C "$SRC" rev-parse --short=10 HEAD 2>/dev/null || true) ($(git -C "$SRC" log -1 --format=%cd --date=format:%Y-%m-%d 2>/dev/null || true))"
+  dire "sources : commit $COMMIT"
+fi
+ANCIEN="$(readlink "$RACINE/current" 2>/dev/null || true)"          # la version qui tourne aujourd'hui : on y revient si la nouvelle ne démarre pas
 DEST="$RACINE/releases/$STAMP"
 dire "version $STAMP"
 mkdir -p "$DEST"
@@ -256,16 +283,26 @@ if ! SORTIE="$(cd "$DEST" && python3 CN_main.py verifier 2>&1)"; then
   printf '%s\n' "$SORTIE" >&2; rm -rf "$DEST"; echouer "manifestes invalides : rien n'est installé"
 fi
 
+instantane_base "$STAMP"
 basculer "$DEST"
 
 dire "service systemd (l'unité vit dans $CONFIG, liée depuis /etc/systemd/system)"
 poser_unite "$DEST"
 poser_courtier "$DEST"
 
+# Le noyau nouveau doit démarrer ET répondre ; sinon la version d'avant est remise en place, et on le dit.
 demarrer() {
   [ "$SANS_SERVICE" -eq 0 ] || return 0
   systemctl enable "$UNITE" >/dev/null 2>&1
-  systemctl restart "$UNITE" || { journalctl -u "$UNITE" -n 25 --no-pager >&2; echouer "le noyau ne démarre pas"; }
+  if systemctl restart "$UNITE" && attendre_http "http://127.0.0.1:${CASSANDRA_PORT:-9000}/api/sante" 60; then return 0; fi
+  journalctl -u "$UNITE" -n 25 --no-pager >&2
+  if [ -n "$ANCIEN" ] && [ -d "$RACINE/$ANCIEN" ]; then
+    avertir "la nouvelle version ne démarre pas : retour à $ANCIEN"
+    ln -sfn "$ANCIEN" "$RACINE/current.new" && mv -T "$RACINE/current.new" "$RACINE/current"
+    systemctl restart "$UNITE" || true
+    echouer "le noyau $STAMP ne démarre pas ; la version précédente ($ANCIEN) est remise en service. Cause : journalctl -u $UNITE"
+  fi
+  echouer "le noyau ne démarre pas (journalctl -u $UNITE)"
 }
 
 dire "démarrage du noyau (le service annonce lui-même qu'il est prêt)"
@@ -292,7 +329,9 @@ if [ "$SANS_SERVICE" -eq 0 ] && [ "${SANS_SERVICES:-0}" -eq 0 ]; then
 fi
 JETON_PREMIER=""
 [ "$SANS_SERVICE" -ne 0 ] || JETON_PREMIER="$(as_service python3 "$PREFIXE/current/exploitation/CN_premier_jeton.py" "$DONNEES" 2>/dev/null || true)"
-boite_finale "$JETON_PREMIER"
+purger_releases
+if [ "$SANS_SERVICE" -eq 0 ] && [ "$SANS_CONTROLE" -eq 0 ]; then controle_final || avertir "le contrôle final a trouvé un ✘ : lis les lignes ci-dessus (relancer : CN_install.sh --controle)"; fi
+boite_finale "$JETON_PREMIER" "$COMMIT"
 [ "${#ECHECS[@]}" -eq 0 ] || avertir "modules non installés (le noyau tourne sans eux) : ${ECHECS[*]} ; corrigez la cause puis : ./CN_install.sh --module <nom>"
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
