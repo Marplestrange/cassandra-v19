@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : bibliotheque
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6dd851
+# VERSION CN : 0.1.0  #450ecb
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La bibliothèque.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ═══════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6dd851 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=450ecb ▼▼▼
 """La bibliothèque d'Amizo : la connaissance SOURCÉE, dans sa propre base.
 
   - une fiche est un document avec sa provenance (adresse, date de lecture), découpé en passages dont la position est gardée ; un souvenir (module Mémoire) est
@@ -515,8 +515,8 @@ def brancher(ctx):
         except Exception:
             return None
 
-    def passages_proches(qv, etagere, etats, now, j, seuil=0.78, plafond=0.2):
-        """Par fiche, le passage le plus proche de la question : (ligne, similarité ramenée à 0..1 : 0 au seuil, 1 à seuil+plafond). Tout vient de la société qui agit."""
+    def passages_proches(qv, etagere, etats, now, j, seuil=0.815, plafond=0.06):
+        """Par fiche, le passage le plus proche de la question : (ligne, similarité ramenée à 0..1 : 0 au seuil, 1 à seuil+plafond ; seuil MESURÉ sur multilingual-e5-large : le bruit monte à 0,81, un vrai rapport dépasse 0,82). Tout vient de la société qui agit."""
         sql = ("SELECT v.vecteur, p.id AS pid, p.position, p.texte, f.* FROM vecteurs v JOIN passages p ON p.id = v.passage_id JOIN fiches f ON f.id = p.fiche_id "
                "WHERE v.modele=? AND f.societe=? AND f.retire_le IS NULL AND f.etat<>'bloque'" + (" AND f.etagere=?" if etagere else ""))
         best = {}
