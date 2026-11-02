@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b50828
+# VERSION CN : 0.1.0  #da8ced
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Amorçage de Cassandra V19 en UNE commande, sur un serveur Linux neuf (Debian, Ubuntu, Fedora, openSUSE, Arch, Alpine).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b50828 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=da8ced ▼▼▼
 # Amorçage de Cassandra V19 en UNE commande, sur un serveur Linux neuf (Debian, Ubuntu, Fedora, openSUSE, Arch, Alpine).
 #
 #   curl -fsSL https://raw.githubusercontent.com/Marplestrange/cassandra-v19/main/CN_amorcer.sh | sudo bash
@@ -74,6 +74,7 @@ fi
 if command -v flock >/dev/null 2>&1; then
   exec 9>/var/lock/cassandra-install.lock
   flock -n 9 || echouer "une autre installation de Cassandra tourne déjà (verrou /var/lock/cassandra-install.lock)"
+  export CASSANDRA_VERROU=1          # CN_install.sh, que nous lançons, ne le reprend pas
 fi
 # Si quelque chose s'arrête en route : dire où lire, et que relancer est sans danger (chaque étape se reprend là où elle en est).
 fin_amorcage() {
