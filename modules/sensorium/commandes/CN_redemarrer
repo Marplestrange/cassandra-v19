@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""Redémarre le démon du Sensorium, À ROOT, par le courtier. Usage : redemarrer <maintenant|apres_passe>
+Rend UNE ligne de JSON : {"ok": true, "silence_s": 6.2, "attendu_s": 38.0, "avant": {"pid": 812}, "apres": {"pid": 977, "version": "6.1-opt"}}.
+
+Ce programme ne fait confiance à rien de ce qu'on lui passe : le mode est dans une table fermée de deux mots, l'unité est écrite ici, rien ne passe par un shell.
+« apres_passe » attend (120 s au plus) qu'aucune passe de relevés ne soit en cours, pour ne pas couper une mesure en deux ; « maintenant » n'attend rien.
+Il se VÉRIFIE avant de répondre ok : le démon doit répondre sur sa socket avec un AUTRE processus. Sinon : ok faux, et le silence mesuré est dit quand même."""
+import json
+import socket
+import subprocess
+import sys
+import time
+
+UNITE = "sensorium.service"
+SOCKET = "/run/sensorium/knowledge.sock"
+MODES = ("maintenant", "apres_passe")
+
+
+def demander(requete, delai=5):
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.settimeout(delai)
+    try:
+        s.connect(SOCKET)
+        s.sendall(requete.encode())
+        morceaux = []
+        while True:
+            d = s.recv(65536)
+            if not d:
+                break
+            morceaux.append(d)
+        return b"".join(morceaux).decode("utf-8", "replace")
+    finally:
+        s.close()
+
+
+def etat():
+    """L'état que le démon dit de lui (GET_DAEMON), ou None : il ne répond pas, ou c'est un démon d'avant cette commande."""
+    try:
+        d = json.loads(demander("GET_DAEMON"))
+        return d if isinstance(d, dict) else None
+    except Exception:
+        return None
+
+
+def echo(d):
+    print(json.dumps(d, ensure_ascii=False))
+    sys.exit(0 if d.get("ok") else 1)
+
+
+def main():
+    if len(sys.argv) != 2 or sys.argv[1] not in MODES:
+        echo({"ok": False, "erreur": "usage : redemarrer <maintenant|apres_passe>"})
+    mode = sys.argv[1]
+    avant = etat()
+    attendu = 0.0
+    if mode == "apres_passe":
+        t0 = time.monotonic()
+        while time.monotonic() - t0 < 120:
+            e = etat()
+            if e is None or not any(p.get("en_cours") for p in (e.get("passes") or {}).values()):
+                break
+            time.sleep(1)
+        attendu = round(time.monotonic() - t0, 1)
+    t1 = time.monotonic()
+    try:
+        r = subprocess.run(["systemctl", "restart", UNITE], capture_output=True, text=True, timeout=120, errors="replace")
+    except Exception as e:
+        echo({"ok": False, "erreur": "systemctl restart : %s" % e})
+    if r.returncode != 0:
+        echo({"ok": False, "erreur": ("systemctl restart a échoué : " + (r.stderr or r.stdout or "")).strip()[:300]})
+    apres = None
+    while time.monotonic() - t1 < 90:
+        e = etat()
+        if e and (not avant or e.get("pid") != avant.get("pid")):
+            apres = e
+            break
+        time.sleep(0.5)
+    silence = round(time.monotonic() - t1, 1)
+    if apres is None:
+        echo({"ok": False, "erreur": "le démon n'est pas revenu au bout de 90 s (journalctl -u %s)" % UNITE, "silence_s": silence})
+    echo({"ok": True, "silence_s": silence, "attendu_s": attendu, "avant": {"pid": (avant or {}).get("pid")}, "apres": {"pid": apres.get("pid"), "version": apres.get("version")}})
+
+
+if __name__ == "__main__":
+    main()

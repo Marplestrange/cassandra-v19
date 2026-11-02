@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4c9e27
+# VERSION CN : 0.1.0  #3f6f1b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve les garanties du démon du Sensorium que l'audit de novembre 2026 a corrigées : un échec de commande n'est pas « rien à signaler », un socket muet est lâché ou fait arrêter le collecteur, un jeton FastPanel expiré est renouvelé, un certificat expiré se compte, un journal d'accès se lit par blocs, une redirection rouverte alerte.
 # MÉTHODE    : charge CN_sensorium.py comme module sur une base et un socket temporaires, simule les commandes et l'API HTTP (aucun réseau, aucune commande système), puis appelle les fonctions du démon.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4c9e27 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3f6f1b ▼▼▼
 import gzip
 import importlib.util
 import json
@@ -516,7 +516,7 @@ class CapacitesDuModule(Base):
         mod.SOCKET = str(self.tmp / "absent.sock")
         implementees = {}
         ctx = mock.MagicMock()
-        ctx.implementer.side_effect = lambda nom, fn: implementees.__setitem__(nom, fn)
+        ctx.implementer.side_effect = lambda nom, fn, *autres: implementees.__setitem__(nom, fn)
         mod.brancher(ctx)
         return mod, implementees, ctx
 

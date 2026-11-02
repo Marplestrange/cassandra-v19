@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #faf252
+// VERSION CN : 0.1.0  #359512
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=faf252 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=359512 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -190,6 +190,7 @@
       }
     }
     if (entreeId === "securite") suivreSecurite();
+    if (entreeId === "sensorium" && typeof window.sxAller === "function") setTimeout(function () { window.sxAller(vue || "maintenant"); }, 80);         // l'écran du Sensorium lit la vue demandée par le menu
     if (entreeId === "securite" && typeof window.scAller === "function" && vue) {
       setTimeout(function() { window.scAller(vue); }, 80);
     }

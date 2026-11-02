@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #1b32e1
+# VERSION CN : 0.1.12  #dee5ac
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=1b32e1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=dee5ac ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -337,6 +337,39 @@ def run_json(cmd, defaut, timeout=10):
 # LE BATTEMENT (sd_notify). Sous WatchdogSec, systemd relance un collecteur qui ne donne plus signe de vie : un blocage
 # (fils pendus, base verrouillée) n'est pas un plantage, `Restart=on-failure` ne le voyait pas. Sans NOTIFY_SOCKET, rien.
 _BATTEMENT = {"t": 0.0}
+_DEMARRE = time.time()
+VERSION_DEMON = "6.1-opt"
+_PASSES = {"rapide": {"fin": 0.0, "duree": 0.0, "n": 0, "en_cours": False}, "complete": {"fin": 0.0, "duree": 0.0, "n": 0, "en_cours": False}}
+
+
+def _noter_passe(nom: str, t0: float):
+    """Une passe de relevés vient de finir : quand, et en combien de temps (ce que l'écran du démon montre)."""
+    p = _PASSES[nom]
+    p["fin"], p["duree"], p["n"], p["en_cours"] = time.time(), round(time.monotonic() - t0, 2), p["n"] + 1, False
+
+
+def etat_du_demon() -> dict:
+    """L'état du démon, dit par lui-même : processus, âge, mémoire, base, battement du watchdog, durée de ses passes."""
+    rss = 0
+    try:
+        with open("/proc/self/status", encoding="utf-8") as f:
+            for l in f:
+                if l.startswith("VmRSS:"):
+                    rss = int(l.split()[1]) // 1024
+    except (OSError, ValueError):
+        pass
+    base = 0
+    for suffixe in ("", "-wal"):
+        try:
+            base += os.path.getsize(DB_PATH + suffixe)
+        except OSError:
+            pass
+    maintenant = time.time()
+    return {"version": VERSION_DEMON, "pid": os.getpid(), "demarre": datetime.fromtimestamp(_DEMARRE, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "duree_s": int(maintenant - _DEMARRE), "rss_mo": rss, "base_octets": base, "watchdog_s": int(os.environ.get("WATCHDOG_USEC", "0") or 0) // 1000000,
+            "battement_il_y_a_s": int(maintenant - _BATTEMENT["t"]) if _BATTEMENT["t"] else None,
+            "passes": {k: dict(v, il_y_a_s=int(maintenant - v["fin"]) if v["fin"] else None) for k, v in _PASSES.items()},
+            "retention_jours": RETENTION_CHANGELOG_DAYS}
 
 
 def _notifier(etat: str):
@@ -5832,7 +5865,7 @@ class SharedMemorySocket:
             with self._cache_lock:
                 self.cache = {
                     "timestamp":      datetime.now().isoformat(),
-                    "version":        "6.1-opt",
+                    "version":        VERSION_DEMON,
                     "sites":          conn.execute("SELECT COUNT(*) FROM web_sites WHERE status='active'").fetchone()[0],
                     "ssl_expiring":   conn.execute("SELECT COUNT(*) FROM ssl_certificates WHERE days_left <= 30").fetchone()[0],   # les certificats DÉJÀ expirés comptent aussi
                     "fail2ban_banned":conn.execute("SELECT COUNT(*) FROM fail2ban_banned_ips").fetchone()[0],
@@ -5999,6 +6032,16 @@ class SharedMemorySocket:
                     client.sendall(json.dumps([dict(r) for r in rows]).encode())
                 except Exception:
                     client.sendall(b"[]")
+            elif data == "GET_DAEMON":
+                client.sendall(json.dumps(etat_du_demon()).encode())
+            elif data == "GET_CORRELATIONS":
+                try:
+                    conn = get_conn()
+                    rows = conn.execute("SELECT ts, entite, alerte, causes FROM correlations ORDER BY id DESC LIMIT 30").fetchall()
+                    conn.close()
+                    client.sendall(json.dumps([dict(r) for r in rows]).encode())
+                except Exception:
+                    client.sendall(b"[]")
             elif data == "GET_CHANGES" or data.startswith("GET_CHANGES:"):
                 since = data.split(":", 1)[1].strip() if ":" in data else ""
                 try:
@@ -6006,7 +6049,7 @@ class SharedMemorySocket:
                     if since:
                         rows = conn.execute(
                             "SELECT ts, entity_type, entity_name, change_type, old_value, new_value, severity "
-                            "FROM changelog WHERE ts >= ? ORDER BY id DESC LIMIT 100", (since,)).fetchall()
+                            "FROM changelog WHERE ts >= ? ORDER BY id DESC LIMIT 500", (since,)).fetchall()
                     else:
                         rows = conn.execute(
                             "SELECT ts, entity_type, entity_name, change_type, old_value, new_value, severity "
@@ -6423,6 +6466,8 @@ class KnowledgeCollector:
 
                     if now - self.last_quick >= 30:
                         self.last_quick = now
+                        _t_rapide = time.monotonic()
+                        _PASSES["rapide"]["en_cours"] = True
                         quick_tasks = [
                             ("system_services", collect_system_services),
                             ("interfaces",      collect_interfaces),
@@ -6434,9 +6479,12 @@ class KnowledgeCollector:
                         ]
                         for table, data in self._run_parallel(quick_tasks, max_workers=5, periode_s=30, delai=60).items():
                             save_many(table, data)
+                        _noter_passe("rapide", _t_rapide)
 
                     if now - self.last_full >= 300:
                         self.last_full = now
+                        _t_complete = time.monotonic()
+                        _PASSES["complete"]["en_cours"] = True
                         full_tasks = [
                             ("web_sites",              collect_web_sites),
                             ("ssl_certificates",       collect_ssl_certificates),
@@ -6495,6 +6543,7 @@ class KnowledgeCollector:
                             sum(1 for e in _oom_now if e.get("recent")), len(_fail_now)
                         )
                         save_health_score(health)
+                        _noter_passe("complete", _t_complete)
                         try:
                             collect_log_errors()
                         except Exception as _le:

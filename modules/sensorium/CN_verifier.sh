@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #0806c6
+# VERSION CN : 0.1.12  #a0def4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La preuve que le Sensorium fonctionne : le service est actif, le collecteur répond, ET le noyau (qui n'est pas root) l'entend aussi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=0806c6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=a0def4 ▼▼▼
 # La preuve que le Sensorium fonctionne : le service est actif, le collecteur répond, ET le noyau (qui n'est pas root) l'entend aussi.
 set -u
 sock="/run/sensorium/knowledge.sock"
@@ -28,7 +28,9 @@ python3 -c "$ping" "$sock" || { echo "sensorium : le collecteur ne répond pas �
 if [ -n "${CASSANDRA_UTILISATEUR:-}" ]; then
   runuser -u "$CASSANDRA_UTILISATEUR" -- python3 -c "$ping" "$sock" || { echo "sensorium : le noyau (utilisateur $CASSANDRA_UTILISATEUR) ne peut pas joindre le socket" >&2; exit 1; }
 fi
-echo "sensorium : le collecteur répond, au noyau aussi"
+p="/usr/libexec/cassandra/sensorium/redemarrer"
+[ -x "$p" ] && [ "$(stat -c %U "$p")" = "root" ] || { echo "sensorium : $p absent ou pas à root" >&2; exit 1; }
+echo "sensorium : le collecteur répond, au noyau aussi, et sa commande de redémarrage est posée"
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

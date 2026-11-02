@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #7c4625
+# VERSION CN : 0.1.12  #d7b620
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=7c4625 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=d7b620 ▼▼▼
 [module]
 id = "sensorium"
 nom = "Sensorium"
@@ -46,11 +46,23 @@ toutes_les_s = 30
 duree_max_s = 20
 
 [[moteurs]]
+id = "monde"
+libelle = "Relit le modèle du monde du collecteur, une fois pour l'écran, les constats et la recherche"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 30
+
+[[moteurs]]
 id = "sante_modules"
 libelle = "Relève la santé de chaque module du noyau (verdict, moteurs et détecteurs suspendus)"
 mode = "periodique"
 toutes_les_s = 120
 duree_max_s = 30
+
+[[detecteurs]]
+id = "alertes_du_monde"
+libelle = "Une mesure du collecteur est en alerte depuis deux relevés (ni acceptée, ni en maintenance)"
+frequence_s = 60
 
 [[detecteurs]]
 id = "modules_en_echec"
@@ -76,6 +88,76 @@ frequence_s = 60
 id = "sante"
 libelle = "La dernière relève : score de santé, ressources, unités en échec"
 risque = "lecture"
+
+[[capacites]]
+id = "demon"
+libelle = "L'état du démon, dit par lui : processus, âge, mémoire, base, battement du watchdog, durée de ses passes ; et l'historique de ses redémarrages"
+risque = "lecture"
+
+[[capacites]]
+id = "redemarrer"
+libelle = "Redémarrer le démon du Sensorium (après la passe en cours, ou tout de suite) : quelques secondes de silence, aucune mesure perdue"
+risque = "moyen"
+droit = "agir"
+perimetre = ["le démon du Sensorium (sensorium.service), par la commande root « redemarrer » du courtier"]
+preuve = "le démon répond sur sa socket avec un autre processus"
+retour = "aucun : un redémarrage ne se défait pas, il se vérifie (si le démon ne revient pas, le watchdog de systemd le relance)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte", "cassandra"]
+
+[[capacites]]
+id = "etat"
+libelle = "Tout ce que l'écran du Sensorium lit : les mesures nommées en français (famille, objet, alerte acceptée, maintenance), les changements, les corrélations, les fenêtres"
+risque = "lecture"
+
+[[capacites]]
+id = "fenetres"
+libelle = "Les fenêtres de maintenance : en cours, à venir, et les dix dernières"
+risque = "lecture"
+
+[[capacites]]
+id = "accepter"
+libelle = "Accepter une alerte : « je sais, c'est normal ». Elle se tait jusqu'à l'échéance, et revient si son chiffre monte"
+risque = "faible"
+droit = "agir"
+perimetre = ["une ligne d'alerte acceptée (la mesure, la raison, l'échéance, la valeur d'alors)"]
+preuve = "la ligne existe"
+retour = "remettre l'acceptation d'avant, ou la retirer"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "retirer_acceptation"
+libelle = "Ne plus accepter une alerte : elle redevient une alerte"
+risque = "faible"
+droit = "agir"
+perimetre = ["une ligne d'alerte acceptée"]
+preuve = "la ligne n'existe plus"
+retour = "remettre la ligne retirée"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "fenetre_poser"
+libelle = "Poser une fenêtre de maintenance : les mesures qu'elle couvre se taisent le temps voulu (les relevés continuent), puis reviennent"
+risque = "faible"
+droit = "agir"
+perimetre = ["une ligne de fenêtre de maintenance"]
+preuve = "la fenêtre existe et n'est pas annulée"
+retour = "annuler la fenêtre"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "fenetre_annuler"
+libelle = "Annuler une fenêtre de maintenance : ses mesures reparlent aussitôt"
+risque = "faible"
+droit = "agir"
+perimetre = ["une ligne de fenêtre de maintenance"]
+preuve = "la fenêtre est marquée annulée"
+retour = "rouvrir la fenêtre"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
 
 [[capacites]]
 id = "modules"
@@ -147,8 +229,14 @@ accent = "#4a56c8"
 
 [permissions]
 lectures = true
+stockage = true
+racine = true
 privileges = ["installer : le service sensorium.service tourne en root, pour tout voir"]
 ecritures = ["/run/sensorium"]
+
+[[racine]]
+id = "redemarrer"
+libelle = "Redémarrer le démon du Sensorium (sensorium.service), après la passe en cours ou tout de suite, puis vérifier qu'il répond avec un autre processus"
 
 [installation]
 script = "CN_installer.sh"
@@ -246,6 +334,11 @@ unite = "/h"
 famille = "Système hôte"
 vide = "rien_a_signaler"
 description = "Processus tués faute de mémoire. Une seule occurrence est déjà une alerte."
+
+[[droits]]
+id = "agir"
+libelle = "Agir depuis le Sensorium : accepter une alerte, poser une fenêtre de maintenance, redémarrer le démon"
+sensible = true
 
 [[droits]]
 id = "voir_securite"

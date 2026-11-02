@@ -6,23 +6,30 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #5aabe3
+# VERSION CN : 0.1.12  #81eea6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=5aabe3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=81eea6 ▼▼▼
 """Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 
 Le collecteur mesure la machine et son monde. Ce module ne mesure rien : il le questionne par son socket (une requête texte, une réponse
 JSON), en fait des objets, des constats et des tuiles, et le tient à l'oeil. Un collecteur muet se voit : c'est un constat, jamais un silence.
 """
+import html
 import json
 import os
 import re
 import socket
 import time
+from datetime import datetime, timedelta, timezone
+
+try:
+    from . import CN_lecture as lec
+except ImportError:                        # chargé hors de son paquet (les bancs, l'outil de scellé) : le dossier est sur le chemin
+    import CN_lecture as lec
 
 SOCKET = os.environ.get("SENSORIUM_SOCKET") or "/run/sensorium/knowledge.sock"
 DELAI = 5.0
@@ -56,6 +63,21 @@ def json_de(requete, delai=DELAI):
     if brut == "ERROR":
         raise RuntimeError("le collecteur a refusé la requête « %s »" % requete.split(":")[0])
     return json.loads(brut)
+
+
+def _maintenant() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+
+_PORTEE = re.compile(r"^(\*|famille:[a-z0-9_]{1,30}|domaine:[a-z]{1,20}|machine:[A-Za-z0-9._-]{1,60})$")
+_INSTANT = re.compile(r"^\d{4}-\d\d-\d\d[ T]\d\d:\d\d(:\d\d)?$")
+
+
+def _instant(t, nom) -> str:
+    t = str(t or "").strip().replace("T", " ")[:19]
+    if not _INSTANT.match(t):
+        raise ValueError("%s : un instant « AAAA-MM-JJ HH:MM » (heure UTC) est attendu" % nom)
+    return t if len(t) == 19 else t + ":00"
 
 
 def _arrondi(d, cle):
@@ -103,6 +125,212 @@ def brancher(ctx):
             ctx.poser(*MACHINE, libelle, etat=sante, donnees=donnees)
             etat["t"] = time.time()
         etat["etat"] = sante
+
+    # ------------------------------------------------------------------ le monde : ce que le collecteur sait, accepté et en maintenance déduits
+    monde_c = {"t": 0.0, "rows": None, "erreur": "", "vus": {}}
+    PERSISTANCE = 2                              # une mesure doit être en alerte à deux relevés de suite pour ouvrir un constat : un battement de cil n'est pas une panne
+
+    def releve_monde(ctx):
+        """Une lecture du modèle du monde, gardée : l'écran, les constats et la recherche la partagent au lieu de la redemander chacun."""
+        try:
+            rows = lec.lignes_du_monde(json_de("GET_WORLD", 20))
+        except (OSError, ValueError, RuntimeError) as ex:
+            monde_c.update(rows=None, erreur=str(ex)[:200], t=time.time())
+            return
+        vus = monde_c["vus"]
+        monde_c.update(rows=rows, erreur="", t=time.time(), vus={r["wkey"]: vus.get(r["wkey"], 0) + 1 for r in rows if r.get("severity") == "warning"})
+
+    def monde_frais(ctx):
+        if monde_c["rows"] is None or time.time() - monde_c["t"] > 45:
+            releve_monde(ctx)
+        return monde_c["rows"]
+
+    def acceptations(ctx):
+        """Les alertes acceptées encore valables (une échéance passée les efface)."""
+        db = ctx.stockage
+        db.ecrire("DELETE FROM sensorium_acceptations WHERE jusqua <> '' AND jusqua < ?", (_maintenant(),))
+        return {r["wkey"]: dict(r, raison=html.unescape(str(r["raison"] or ""))) for r in db.lire("SELECT * FROM sensorium_acceptations")}
+
+    def fenetres_en_cours(ctx, tout=False):
+        n = _maintenant()
+        sql = "SELECT * FROM sensorium_fenetres WHERE annulee = ''" + ("" if tout else " AND fin > ?") + " ORDER BY debut"
+        return [dict(r) for r in ctx.stockage.lire(sql, () if tout else (n,))]
+
+    def hote_de(rows):
+        return next((str(r.get("value") or "") for r in rows or [] if r.get("wkey") == "system.hostname"), "")
+
+    def alertes_du_monde(ctx):
+        rows = monde_c["rows"]
+        if rows is None:
+            return []                            # le collecteur muet a son propre constat : on n'invente pas de pannes à partir de rien
+        hote, n = hote_de(rows), _maintenant()
+        acq, fen = acceptations(ctx), fenetres_en_cours(ctx)
+        res = []
+        for r in lec.appliquer_acquits(rows, acq):
+            wk = r["wkey"]
+            if r.get("severity") != "warning" or wk.startswith("health.") or monde_c["vus"].get(wk, 0) < PERSISTANCE or lec.dans_fenetre(wk, fen, n, hote):
+                continue
+            try:
+                causes = (json.loads(r.get("detail") or "{}") or {}).get("causes_probables") or []
+            except (ValueError, AttributeError):
+                causes = []
+            res.append({"objet": ("mesure", wk), "titre": "%s : %s" % (lec.libelle(wk), str(r.get("value") or "")[:140]), "detail": str(causes[0]) if causes else ""})
+        if len(res) > 60:                        # une panne générale ne fait pas soixante constats : un seul, qui dit combien
+            res = res[:59] + [{"objet": ("mesure", "(autres)"), "titre": "%d autres mesures en alerte" % (len(res) - 59), "detail": "Voir le Sensorium."}]
+        return res
+
+    def etat_lu(ctx):
+        """Tout ce que l'écran lit en une fois : les lignes du monde (nom en français, famille, objet, alerte acceptée, maintenance), les changements, les corrélations, les fenêtres."""
+        rows = monde_frais(ctx)
+        n = _maintenant()
+        if rows is None:
+            return {"ok": True, "muet": True, "erreur": monde_c["erreur"], "rows": [], "changes": [], "correlations": [], "fenetres": fenetres_en_cours(ctx), "maintenant": n,
+                    "familles": [[i, l] for i, l, _ in lec.FAMILLES], "domaines": [[i, l, list(fs)] for i, l, fs in lec.DOMAINES], "genres": list(lec.GENRES)}
+        hote, fen = hote_de(rows), fenetres_en_cours(ctx)
+        sortie = []
+        for r in lec.appliquer_acquits(rows, acceptations(ctx)):
+            r = dict(r, libelle=lec.libelle(r["wkey"]), famille=lec.famille_de(r["wkey"]))
+            o = lec.objet_de(r["wkey"], hote)
+            if o:
+                r["objet"] = {"genre": o[0], "nom": o[1]}
+            f = lec.dans_fenetre(r["wkey"], fen, n, hote)
+            if f:
+                r["maintenance"] = {"id": f["id"], "fin": f["fin"], "motif": f["motif"]}
+            sortie.append(r)
+        try:
+            changes = json_de("GET_CHANGES", 10)
+        except (OSError, ValueError, RuntimeError):
+            changes = []
+        try:
+            corr = json_de("GET_CORRELATIONS", 10)
+        except (OSError, ValueError, RuntimeError):
+            corr = []                            # un démon d'avant cette lecture répond « ERROR » : pas de corrélations, pas d'erreur
+        return {"ok": True, "muet": False, "source": "collecteur", "rows": sortie, "changes": changes if isinstance(changes, list) else [],
+                "correlations": corr if isinstance(corr, list) else [], "hote": hote, "fenetres": fen, "maintenant": n, "lu_a": monde_c["t"],
+                "familles": [[i, l] for i, l, _ in lec.FAMILLES], "domaines": [[i, l, list(fs)] for i, l, fs in lec.DOMAINES], "genres": list(lec.GENRES)}
+
+    def accepter(ctx, wkey="", raison="", jours=30):
+        wkey = str(wkey or "").strip()[:200]
+        r = next((x for x in (monde_frais(ctx) or []) if x["wkey"] == wkey), None)
+        if r is None:
+            raise ValueError("mesure inconnue : « %s »" % wkey)
+        try:
+            j = max(0, min(365, int(jours or 0)))
+        except (TypeError, ValueError):
+            j = 30
+        jusqua = (datetime.now(timezone.utc) + timedelta(days=j)).strftime("%Y-%m-%d %H:%M:%S") if j else ""
+        db = ctx.stockage
+        avant = db.lire("SELECT * FROM sensorium_acceptations WHERE wkey=?", (wkey,))
+        db.ecrire("INSERT INTO sensorium_acceptations(wkey, raison, jusqua, valeur, par) VALUES (?,?,?,?,?) ON CONFLICT(wkey) DO UPDATE SET raison=excluded.raison, "
+                  "jusqua=excluded.jusqua, valeur=excluded.valeur, par=excluded.par, ts=datetime('now')",
+                  (wkey, html.unescape(str(raison or ""))[:300], jusqua, str(r.get("value") or "")[:300], ctx.compte or ctx.acteur or ""))
+        return {"wkey": wkey, "jusqua": jusqua, "avant": dict(avant[0]) if avant else None}
+
+    def accepte_prouve(ctx, res):
+        return bool(ctx.stockage.lire("SELECT 1 FROM sensorium_acceptations WHERE wkey=?", (res["wkey"],)))
+
+    def accepte_defait(ctx, res):
+        a = res.get("avant")
+        if a:
+            ctx.stockage.ecrire("INSERT OR REPLACE INTO sensorium_acceptations(wkey, raison, jusqua, valeur, par, ts) VALUES (?,?,?,?,?,?)",
+                                (a["wkey"], a["raison"], a["jusqua"], a["valeur"], a["par"], a["ts"]))
+        else:
+            ctx.stockage.ecrire("DELETE FROM sensorium_acceptations WHERE wkey=?", (res["wkey"],))
+
+    def retirer_acceptation(ctx, wkey=""):
+        wkey = str(wkey or "").strip()[:200]
+        avant = ctx.stockage.lire("SELECT * FROM sensorium_acceptations WHERE wkey=?", (wkey,))
+        ctx.stockage.ecrire("DELETE FROM sensorium_acceptations WHERE wkey=?", (wkey,))
+        return {"wkey": wkey, "retire": bool(avant), "avant": dict(avant[0]) if avant else None}
+
+    def retire_prouve(ctx, res):
+        return not ctx.stockage.lire("SELECT 1 FROM sensorium_acceptations WHERE wkey=?", (res["wkey"],))
+
+    def retire_defait(ctx, res):
+        a = res.get("avant")
+        if a:
+            ctx.stockage.ecrire("INSERT OR REPLACE INTO sensorium_acceptations(wkey, raison, jusqua, valeur, par, ts) VALUES (?,?,?,?,?,?)",
+                                (a["wkey"], a["raison"], a["jusqua"], a["valeur"], a["par"], a["ts"]))
+
+    def fenetre_poser(ctx, portee="*", debut="", fin="", motif="", redemarrer=False):
+        portee = str(portee or "*").strip()
+        if not _PORTEE.match(portee):
+            raise ValueError("portée illisible : « * », « famille:<id> », « domaine:<id> » ou « machine:<nom> »")
+        d, f = _instant(debut, "début"), _instant(fin, "fin")
+        if f <= d:
+            raise ValueError("la fenêtre finit avant de commencer")
+        if datetime.strptime(f, "%Y-%m-%d %H:%M:%S") - datetime.strptime(d, "%Y-%m-%d %H:%M:%S") > timedelta(days=14):
+            raise ValueError("une fenêtre de maintenance ne dépasse pas quatorze jours")
+        db = ctx.stockage
+        db.ecrire("INSERT INTO sensorium_fenetres(portee, debut, fin, motif, redemarrer, par) VALUES (?,?,?,?,?,?)",
+                  (portee, d, f, html.unescape(str(motif or ""))[:200], 1 if redemarrer else 0, ctx.compte or ctx.acteur or ""))
+        return {"id": db.lire("SELECT MAX(id) AS i FROM sensorium_fenetres")[0]["i"], "portee": portee, "debut": d, "fin": f}
+
+    def fenetre_prouvee(ctx, res):
+        return bool(ctx.stockage.lire("SELECT 1 FROM sensorium_fenetres WHERE id=? AND annulee=''", (res["id"],)))
+
+    def fenetre_defaite(ctx, res):
+        ctx.stockage.ecrire("UPDATE sensorium_fenetres SET annulee=? WHERE id=?", (_maintenant(), res["id"]))
+
+    def fenetre_annuler(ctx, id=0):
+        try:
+            i = int(id)
+        except (TypeError, ValueError):
+            raise ValueError("fenêtre illisible")
+        if not ctx.stockage.lire("SELECT 1 FROM sensorium_fenetres WHERE id=?", (i,)):
+            raise ValueError("fenêtre inconnue")
+        ctx.stockage.ecrire("UPDATE sensorium_fenetres SET annulee=? WHERE id=? AND annulee=''", (_maintenant(), i))
+        return {"id": i}
+
+    def annulee_prouvee(ctx, res):
+        return bool(ctx.stockage.lire("SELECT 1 FROM sensorium_fenetres WHERE id=? AND annulee<>''", (res["id"],)))
+
+    def annulee_defaite(ctx, res):
+        ctx.stockage.ecrire("UPDATE sensorium_fenetres SET annulee='' WHERE id=?", (res["id"],))
+
+    def fenetres_lues(ctx):
+        """Les fenêtres en cours, à venir, et les dix dernières finies ou annulées."""
+        n = _maintenant()
+        tout = [dict(r) for r in ctx.stockage.lire("SELECT * FROM sensorium_fenetres ORDER BY id DESC LIMIT 60")]
+        vivantes = sorted((f for f in tout if not f["annulee"] and f["fin"] > n), key=lambda f: f["debut"])
+        finies = [f for f in tout if f["annulee"] or f["fin"] <= n][:10]
+        return {"maintenant": n, "vivantes": vivantes, "finies": finies}
+
+    # ------------------------------------------------------------------ le démon : son état, son redémarrage
+    def demon_lu(ctx):
+        """L'état que le démon dit de lui-même (GET_DAEMON), et l'histoire de ses redémarrages. Un démon d'avant cette lecture répond « refusée » : on le dit, on ne le dit pas muet."""
+        histoire = [dict(r) for r in ctx.stockage.lire("SELECT ts, qui, motif, silence_s, resultat FROM sensorium_redemarrages ORDER BY id DESC LIMIT 12")]
+        try:
+            d = json_de("GET_DAEMON", 8)
+        except RuntimeError:
+            return {"muet": False, "ancien": True, "redemarrages": histoire, "socket": SOCKET}
+        except (OSError, ValueError) as ex:
+            return {"muet": True, "erreur": str(ex)[:200], "redemarrages": histoire, "socket": SOCKET}
+        return dict(d if isinstance(d, dict) else {}, muet=False, redemarrages=histoire, socket=SOCKET)
+
+    def redemarrer(ctx, quand="apres_passe", motif=""):
+        quand = str(quand or "apres_passe")
+        if quand not in ("maintenant", "apres_passe"):
+            raise ValueError("« maintenant » ou « apres_passe »")
+        qui = ctx.compte or ctx.acteur or ""
+        motif = html.unescape(str(motif or ""))[:200]
+        r = ctx.racine("redemarrer", [quand], delai=240)
+        try:
+            sortie = json.loads((r.get("sortie") or "").strip().splitlines()[-1])
+        except (ValueError, IndexError):
+            sortie = {}
+        if not r.get("ok") or not sortie.get("ok"):
+            raison = str(sortie.get("erreur") or r.get("erreur") or "le redémarrage a échoué")[:200]
+            ctx.stockage.ecrire("INSERT INTO sensorium_redemarrages(qui, motif, silence_s, resultat) VALUES (?,?,?,?)", (qui, motif, sortie.get("silence_s"), "échec : " + raison))
+            raise ValueError(raison)
+        ctx.stockage.ecrire("INSERT INTO sensorium_redemarrages(qui, motif, silence_s, resultat) VALUES (?,?,?,?)", (qui, motif, sortie.get("silence_s"), "revenu"))
+        return {"silence_s": sortie.get("silence_s"), "attendu_s": sortie.get("attendu_s"), "avant": sortie.get("avant"), "apres": sortie.get("apres")}
+
+    def redemarre_prouve(ctx, res):
+        try:
+            return json_de("GET_DAEMON", 8).get("pid") == (res.get("apres") or {}).get("pid")
+        except (OSError, ValueError, RuntimeError, AttributeError):
+            return False
 
     # ------------------------------------------------------------------ la santé des modules du noyau
     suivi = {"modules": None, "erreur": "", "t": 0.0, "verdicts": {}, "admins": None}
@@ -218,6 +446,8 @@ def brancher(ctx):
         return json_de("GET_CHANGES" + (":" + str(depuis) if depuis else ""), 10)
 
     ctx.moteur("releve", releve)
+    ctx.moteur("monde", releve_monde)
+    ctx.detecteur("alertes_du_monde", alertes_du_monde)
     ctx.moteur("sante_modules", releve_modules)
     ctx.detecteur("modules_en_echec", modules_en_echec)
     ctx.detecteur("sans_administrateur", sans_administrateur)
@@ -226,6 +456,14 @@ def brancher(ctx):
     ctx.implementer("sante", sante_lue)
     ctx.implementer("metriques", metriques)
     ctx.implementer("modules", modules_lus)
+    ctx.implementer("etat", etat_lu)
+    ctx.implementer("demon", demon_lu)
+    ctx.implementer("redemarrer", redemarrer, redemarre_prouve, lambda c, res: None)
+    ctx.implementer("fenetres", fenetres_lues)
+    ctx.implementer("accepter", accepter, accepte_prouve, accepte_defait)
+    ctx.implementer("retirer_acceptation", retirer_acceptation, retire_prouve, retire_defait)
+    ctx.implementer("fenetre_poser", fenetre_poser, fenetre_prouvee, fenetre_defaite)
+    ctx.implementer("fenetre_annuler", fenetre_annuler, annulee_prouvee, annulee_defaite)
     ctx.implementer("monde", monde)
     ctx.implementer("entite", entite)
     ctx.implementer("historique", historique)

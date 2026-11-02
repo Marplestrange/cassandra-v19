@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #29ca35
+# VERSION CN : 0.1.0  #9be855
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le Sensorium voit la V19 elle-même (unité cassandra-noyau, sonde HTTP, bases, code scellé, courtier root) et que le module relève la santé de chaque module du noyau.
 # MÉTHODE    : charge CN_sensorium.py sur une base temporaire, simule systemctl et l'API HTTP (aucun réseau, aucune commande système), fabrique de vraies bases SQLite (saines, abîmées, tronquées) et une version scellée, puis monte un vrai noyau avec ses modules pour la santé de dedans.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=29ca35 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9be855 ▼▼▼
 import importlib.util
 import json
 import os
@@ -608,6 +608,232 @@ class ModuleDansUnNoyau(unittest.TestCase):
         self.assertFalse([c for c in ouverts if c["objet_id"] == "casse"])
         self.assertTrue(self.n.base.lire("SELECT 1 FROM evenements WHERE type='module_noyau.retabli'"))
 
+    # ---- l'écran : etat, acceptations, fenêtres, constats du monde
+    def monde(self, rows=None, changes=None):
+        """Un collecteur simulé : GET_WORLD rend `rows`, GET_CHANGES `changes`, GET_CORRELATIONS refuse (un démon d'avant)."""
+        rows = MONDE if rows is None else rows
+
+        def faux(requete, delai=5.0):
+            if requete.startswith("GET_WORLD"):
+                return json.loads(json.dumps(rows))
+            if requete.startswith("GET_CHANGES"):
+                return changes or []
+            raise RuntimeError("le collecteur a refusé la requête")
+        g = self.n.catalogue.get("sensorium.etat").faire.__globals__
+        p = mock.patch.dict(g, {"json_de": faux})
+        p.start()
+        self.addCleanup(p.stop)
+
+    def ex(self, cap, **args):
+        return self.n.executeur.executer(cap, "humain", args, compte="root@exemple.test")
+
+    def etat(self):
+        self.n.lancer("sensorium.monde")
+        r = self.ex("sensorium.etat")
+        self.assertEqual(r["statut"], "faite", r)
+        return r["resultat"]
+
+    def tick_monde(self, fois=2):
+        for _ in range(fois):
+            self.n.lancer("sensorium.monde")
+        return self.tick()
+
+    def constats(self):
+        return {c["objet_id"]: c for c in self.n.base.lire("SELECT objet_id, titre, etat FROM constats WHERE module='sensorium' AND detecteur='alertes_du_monde' AND etat='ouvert'")}
+
+    def nettoyer(self):
+        for w in ("ssl.exemple.org", "disk./var.usage"):
+            self.ex("sensorium.retirer_acceptation", wkey=w)
+        for f in self.ex("sensorium.fenetres")["resultat"]["vivantes"]:
+            self.ex("sensorium.fenetre_annuler", id=f["id"])
+
+    def test_l_etat_donne_a_chaque_mesure_son_nom_sa_famille_et_son_objet(self):
+        self.monde()
+        e = self.etat()
+        self.assertFalse(e["muet"])
+        ssl = next(r for r in e["rows"] if r["wkey"] == "ssl.exemple.org")
+        self.assertEqual((ssl["libelle"], ssl["famille"], ssl["objet"]), ("Certificat exemple.org", "ssl", {"genre": "Sites", "nom": "exemple.org"}))
+        self.assertEqual(e["hote"], "hote")
+        disque = next(r for r in e["rows"] if r["wkey"] == "disk./var.usage")
+        self.assertEqual(disque["objet"], {"genre": "Machines", "nom": "hote"})
+        self.assertEqual(e["correlations"], [])                          # un démon d'avant la lecture des corrélations : aucune erreur
+
+    def test_un_collecteur_muet_donne_un_etat_muet_pas_une_erreur(self):
+        def casse(requete, delai=5.0):
+            raise OSError("pas de socket")
+        g = self.n.catalogue.get("sensorium.etat").faire.__globals__
+        with mock.patch.dict(g, {"json_de": casse}):
+            self.n.lancer("sensorium.monde")
+            r = self.ex("sensorium.etat")
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertTrue(r["resultat"]["muet"])
+        self.assertIn("pas de socket", r["resultat"]["erreur"])
+
+    def test_une_alerte_acceptee_se_tait_puis_revient_quand_le_chiffre_monte(self):
+        self.monde()
+        try:
+            r = self.ex("sensorium.accepter", wkey="disk./var.usage", raison="volume d'archive", jours=30)
+            self.assertEqual(r["statut"], "faite", r)
+            e = self.etat()
+            d = next(x for x in e["rows"] if x["wkey"] == "disk./var.usage")
+            self.assertEqual(d["severity"], "info")
+            self.assertEqual(d["acquit"]["raison"], "volume d'archive")
+            plus = [dict(x, value="90 %") if x["wkey"] == "disk./var.usage" else x for x in MONDE]
+            self.monde(plus)
+            d = next(x for x in self.etat()["rows"] if x["wkey"] == "disk./var.usage")
+            self.assertEqual(d["severity"], "warning")                    # pire qu'au moment où on l'a acceptée
+            self.assertNotIn("acquit", d)
+        finally:
+            self.nettoyer()
+
+    def test_accepter_une_mesure_inconnue_est_refuse(self):
+        self.monde()
+        r = self.ex("sensorium.accepter", wkey="n.existe.pas", raison="x")
+        self.assertNotEqual(r["statut"], "faite", r)
+
+    def test_retirer_une_acceptation_la_fait_revenir(self):
+        self.monde()
+        try:
+            self.ex("sensorium.accepter", wkey="ssl.exemple.org", raison="x", jours=0)
+            self.assertEqual(next(x for x in self.etat()["rows"] if x["wkey"] == "ssl.exemple.org")["severity"], "info")
+            self.assertEqual(self.ex("sensorium.retirer_acceptation", wkey="ssl.exemple.org")["statut"], "faite")
+            self.assertEqual(next(x for x in self.etat()["rows"] if x["wkey"] == "ssl.exemple.org")["severity"], "warning")
+        finally:
+            self.nettoyer()
+
+    def test_une_acceptation_perimee_s_efface(self):
+        self.monde()
+        try:
+            self.ex("sensorium.accepter", wkey="ssl.exemple.org", raison="x", jours=30)
+            self.n.executeur.contextes["sensorium"].stockage.ecrire("UPDATE sensorium_acceptations SET jusqua='2020-01-01 00:00:00'")
+            self.assertEqual(next(x for x in self.etat()["rows"] if x["wkey"] == "ssl.exemple.org")["severity"], "warning")
+        finally:
+            self.nettoyer()
+
+    def test_les_mesures_en_alerte_ouvrent_des_constats_apres_deux_releves(self):
+        self.monde([r for r in MONDE if r["severity"] != "warning"])
+        self.n.lancer("sensorium.monde")
+        self.tick()                                          # ce que les bancs d'avant ont laissé d'ouvert se referme, et le compte des relevés en alerte repart de zéro
+        self.monde()
+        try:
+            self.tick_monde(1)
+            self.assertEqual(self.constats(), {}, "un seul relevé en alerte : pas encore un constat")
+            self.tick_monde(1)
+            c = self.constats()
+            self.assertIn("ssl.exemple.org", c)
+            self.assertIn("Certificat exemple.org : expire dans 12 jours", c["ssl.exemple.org"]["titre"])
+            self.assertIn("disk./var.usage", c)
+            self.assertNotIn("health.score", c, "un total de santé n'est pas une panne")
+            self.assertNotIn("service.nginx", c)
+        finally:
+            self.nettoyer()
+
+    def test_accepter_ferme_le_constat_et_une_maintenance_le_fait_taire(self):
+        self.monde()
+        try:
+            self.tick_monde(2)
+            self.assertIn("ssl.exemple.org", self.constats())
+            self.ex("sensorium.accepter", wkey="ssl.exemple.org", raison="renouvellement en cours", jours=7)
+            self.tick_monde(1)
+            self.assertNotIn("ssl.exemple.org", self.constats())
+            self.ex("sensorium.retirer_acceptation", wkey="ssl.exemple.org")
+            self.tick_monde(1)
+            self.assertIn("ssl.exemple.org", self.constats())
+            r = self.ex("sensorium.fenetre_poser", portee="famille:ssl", debut=time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() - 3600)),
+                        fin=time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + 3600)), motif="mise à jour du noyau")
+            self.assertEqual(r["statut"], "faite", r)
+            self.tick_monde(1)
+            self.assertNotIn("ssl.exemple.org", self.constats())
+            self.assertIn("disk./var.usage", self.constats(), "la fenêtre ne couvre que sa portée")
+            ligne = next(x for x in self.etat()["rows"] if x["wkey"] == "ssl.exemple.org")
+            self.assertEqual(ligne["maintenance"]["motif"], "mise à jour du noyau")
+            self.assertEqual(ligne["severity"], "warning", "les relevés continuent : la mesure reste en alerte, c'est le constat qui se tait")
+            self.ex("sensorium.fenetre_annuler", id=r["resultat"]["id"])
+            self.tick_monde(1)
+            self.assertIn("ssl.exemple.org", self.constats())
+        finally:
+            self.nettoyer()
+
+    def test_une_fenetre_mal_formee_est_refusee(self):
+        maintenant = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+        demain = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + 86400))
+        for args in ({"portee": "tout le monde", "debut": maintenant, "fin": demain}, {"portee": "*", "debut": demain, "fin": maintenant},
+                     {"portee": "*", "debut": "hier", "fin": demain},
+                     {"portee": "*", "debut": maintenant, "fin": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + 40 * 86400))}):
+            r = self.ex("sensorium.fenetre_poser", **args)
+            self.assertNotEqual(r["statut"], "faite", args)
+
+    def test_les_fenetres_se_lisent_en_cours_a_venir_et_finies(self):
+        t = time.time()
+        f = lambda dt: time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(t + dt))
+        try:
+            a = self.ex("sensorium.fenetre_poser", portee="*", debut=f(-60), fin=f(3600), motif="en cours")["resultat"]["id"]
+            b = self.ex("sensorium.fenetre_poser", portee="*", debut=f(7200), fin=f(10800), motif="à venir")["resultat"]["id"]
+            l = self.ex("sensorium.fenetres")["resultat"]
+            self.assertEqual([x["motif"] for x in l["vivantes"] if x["id"] in (a, b)], ["en cours", "à venir"])
+            self.ex("sensorium.fenetre_annuler", id=a)
+            l = self.ex("sensorium.fenetres")["resultat"]
+            self.assertIn(a, [x["id"] for x in l["finies"]])
+            self.assertNotIn(a, [x["id"] for x in l["vivantes"]])
+        finally:
+            self.nettoyer()
+
+    def test_le_demon_se_lit_et_un_ancien_demon_se_reconnait(self):
+        g = self.n.catalogue.get("sensorium.demon").faire.__globals__
+        etat = {"version": "6.1-opt", "pid": 812, "duree_s": 500000, "passes": {"rapide": {"duree": 0.8}, "complete": {"duree": 52.0}}}
+        with mock.patch.dict(g, {"json_de": lambda r, d=5.0: dict(etat)}):
+            r = self.ex("sensorium.demon")["resultat"]
+        self.assertFalse(r["muet"])
+        self.assertEqual((r["pid"], r["passes"]["complete"]["duree"]), (812, 52.0))
+
+        def ancien(requete, delai=5.0):
+            raise RuntimeError("le collecteur a refusé la requête")
+        with mock.patch.dict(g, {"json_de": ancien}):
+            r = self.ex("sensorium.demon")["resultat"]
+        self.assertTrue(r["ancien"] and not r["muet"])
+
+        def muet(requete, delai=5.0):
+            raise OSError("pas de socket")
+        with mock.patch.dict(g, {"json_de": muet}):
+            r = self.ex("sensorium.demon")["resultat"]
+        self.assertTrue(r["muet"])
+        self.assertIn("pas de socket", r["erreur"])
+
+    def test_un_redemarrage_passe_par_le_courtier_et_se_raconte(self):
+        ctx = self.n.executeur.contextes["sensorium"]
+        appels = []
+
+        def courtier(commande, args=(), stdin=None, delai=30):
+            appels.append((commande, list(args), delai))
+            return {"ok": True, "code": 0, "sortie": json.dumps({"ok": True, "silence_s": 6.2, "attendu_s": 38.0, "avant": {"pid": 10}, "apres": {"pid": 77, "version": "6.1-opt"}}), "erreur": ""}
+        g = self.n.catalogue.get("sensorium.redemarrer").faire.__globals__
+        with mock.patch.object(ctx, "racine", courtier), mock.patch.dict(g, {"json_de": lambda r, d=5.0: {"pid": 77}}):
+            r = self.ex("sensorium.redemarrer", quand="apres_passe", motif="déploiement de la 0.1.12")
+            self.assertEqual(r["statut"], "faite", r)
+            self.assertEqual(appels, [("redemarrer", ["apres_passe"], 240)])
+            self.assertEqual(r["resultat"]["silence_s"], 6.2)
+            h = self.ex("sensorium.demon")["resultat"]["redemarrages"]
+        self.assertEqual((h[0]["motif"], h[0]["resultat"], h[0]["qui"]), ("déploiement de la 0.1.12", "revenu", "root@exemple.test"))
+
+    def test_un_redemarrage_qui_echoue_se_raconte_aussi(self):
+        ctx = self.n.executeur.contextes["sensorium"]
+        courtier = lambda commande, args=(), stdin=None, delai=30: {"ok": False, "code": 1, "sortie": json.dumps({"ok": False, "erreur": "le démon n'est pas revenu", "silence_s": 90.1}), "erreur": ""}
+        g = self.n.catalogue.get("sensorium.redemarrer").faire.__globals__
+        with mock.patch.object(ctx, "racine", courtier), mock.patch.dict(g, {"json_de": lambda r, d=5.0: {"pid": 0}}):
+            r = self.ex("sensorium.redemarrer", quand="maintenant", motif="essai")
+            self.assertNotEqual(r["statut"], "faite", r)
+            h = self.ex("sensorium.demon")["resultat"]["redemarrages"]
+        self.assertTrue(h[0]["resultat"].startswith("échec : le démon n'est pas revenu"), h[0])
+        self.assertEqual(h[0]["silence_s"], 90.1)
+
+    def test_un_mode_de_redemarrage_inconnu_est_refuse_avant_le_courtier(self):
+        ctx = self.n.executeur.contextes["sensorium"]
+        appels = []
+        with mock.patch.object(ctx, "racine", lambda *a, **k: appels.append(a)):
+            r = self.ex("sensorium.redemarrer", quand="sans attendre")
+        self.assertNotEqual(r["statut"], "faite", r)
+        self.assertEqual(appels, [])
+
     def test_sans_administrateur_c_est_un_constat(self):
         admins = list(self.n.droits.etat()["admins"])                    # l'administrateur d'amorçage (fastuser) compte aussi
         for a in admins:
@@ -623,6 +849,260 @@ class ModuleDansUnNoyau(unittest.TestCase):
         self.n.lancer("sensorium.sante_modules")
         self.tick()
         self.assertFalse(self.n.base.lire("SELECT 1 FROM constats WHERE module='sensorium' AND detecteur='sans_administrateur' AND etat='ouvert'"))
+
+
+MONDE = [
+    {"wkey": "system.hostname", "value": "hote", "severity": "info", "observed_at": "2026-11-02T08:00:00Z", "detail": ""},
+    {"wkey": "ssl.exemple.org", "value": "expire dans 12 jours", "severity": "warning", "observed_at": "2026-11-02T08:00:00Z",
+     "detail": json.dumps({"causes_probables": ["le port 80 est fermé"]})},
+    {"wkey": "disk./var.usage", "value": "82 %", "severity": "warning", "observed_at": "2026-11-02T08:00:00Z", "detail": ""},
+    {"wkey": "service.nginx", "value": "active (running)", "severity": "info", "observed_at": "2026-11-02T08:00:00Z", "detail": ""},
+    {"wkey": "health.score", "value": "92 · un certificat", "severity": "warning", "observed_at": "2026-11-02T08:00:00Z", "detail": ""},
+]
+
+
+class Lecture(unittest.TestCase):
+    def setUp(self):
+        sys.path.insert(0, str(DOSSIER))
+        import CN_lecture
+        self.lec = CN_lecture
+
+    def test_une_mesure_se_dit_en_francais(self):
+        l = self.lec.libelle
+        self.assertEqual(l("ssl.exemple.org"), "Certificat exemple.org")
+        self.assertEqual(l("service.nginx"), "Service nginx")
+        self.assertEqual(l("machine.nas.mises_a_jour"), "Nas — mises à jour")
+        self.assertEqual(l("outil_secu.trivy"), "Trivy — failles des images Docker")
+        self.assertEqual(l("store.module.agenda"), "Base du module agenda")
+        self.assertEqual(l("noyau.service"), "Noyau service")
+
+    def test_chaque_mesure_a_sa_famille_et_son_domaine(self):
+        f = self.lec.famille_de
+        self.assertEqual(f("ssl.exemple.org"), "ssl")
+        self.assertEqual(f("noyau.http"), "noyau")
+        self.assertEqual(f("store.noyau"), "store")
+        self.assertEqual(f("inconnu.x"), "autre")
+        self.assertEqual(self.lec.domaine_de("ssl"), "certificats")
+        self.assertEqual(self.lec.domaine_de("noyau"), "cassandra")
+        tous = {fid for fid, _, _ in self.lec.FAMILLES}
+        rangees = {fid for _, _, fs in self.lec.DOMAINES for fid in fs}
+        self.assertEqual(tous, rangees, "chaque famille est dans un domaine, et un seul")
+
+    def test_l_objet_dont_une_mesure_parle(self):
+        o = self.lec.objet_de
+        self.assertEqual(o("ssl.exemple.org"), ("Sites", "exemple.org"))
+        self.assertEqual(o("ssl.*.exemple.org"), ("Sites", "exemple.org"))
+        self.assertEqual(o("web.exemple.org"), ("Sites", "exemple.org"))
+        self.assertEqual(o("service.nginx.service"), ("Services", "nginx"))
+        self.assertEqual(o("docker.sondes"), ("Conteneurs", "sondes"))
+        self.assertEqual(o("machine.nas.disque.D:"), ("Machines", "nas"))
+        self.assertEqual(o("cle_ssh.deploy.4f2a"), ("Comptes et clés SSH", "deploy"))
+        self.assertEqual(o("disk./var.usage", "hote"), ("Machines", "hote"))
+        self.assertIsNone(o("disk./var.usage"))
+        self.assertEqual(o("store.noyau")[0], "Cassandra")
+
+    def test_une_alerte_acceptee_revient_quand_le_chiffre_monte(self):
+        r = {"wkey": "disk./var.usage", "value": "82 %", "severity": "warning"}
+        acq = {"disk./var.usage": {"valeur": "82 %", "raison": "archive", "jusqua": "", "par": "x"}}
+        self.assertEqual(self.lec.appliquer_acquits([r], acq)[0]["severity"], "info")
+        self.assertEqual(self.lec.appliquer_acquits([r], acq)[0]["acquit"]["raison"], "archive")
+        self.assertEqual(self.lec.appliquer_acquits([dict(r, value="85 %")], acq)[0]["severity"], "warning")
+        self.assertEqual(self.lec.appliquer_acquits([dict(r, value="70 %")], acq)[0]["severity"], "info")
+        texte = {"service.x": {"valeur": "inactive"}}
+        self.assertEqual(self.lec.appliquer_acquits([{"wkey": "service.x", "value": "inactive", "severity": "warning"}], texte)[0]["severity"], "info")
+        self.assertEqual(self.lec.appliquer_acquits([{"wkey": "service.x", "value": "failed", "severity": "warning"}], texte)[0]["severity"], "warning")
+        self.assertEqual(self.lec.appliquer_acquits([dict(r, severity="info")], acq)[0].get("acquit"), None)
+
+    def test_une_fenetre_couvre_sa_portee_et_seulement_elle(self):
+        f = [{"id": 1, "portee": "famille:ssl", "debut": "2026-11-02 01:00:00", "fin": "2026-11-02 03:00:00"},
+             {"id": 2, "portee": "machine:nas", "debut": "2026-11-02 01:00:00", "fin": "2026-11-02 03:00:00"}]
+        d = self.lec.dans_fenetre
+        self.assertEqual(d("ssl.exemple.org", f, "2026-11-02 02:00:00")["id"], 1)
+        self.assertIsNone(d("ssl.exemple.org", f, "2026-11-02 04:00:00"))              # finie
+        self.assertIsNone(d("ssl.exemple.org", f, "2026-11-02 00:59:59"))              # pas commencée
+        self.assertIsNone(d("service.nginx", f, "2026-11-02 02:00:00"))
+        self.assertEqual(d("machine.nas.disque", f, "2026-11-02 02:00:00")["id"], 2)
+        self.assertIsNone(d("machine.autre.disque", f, "2026-11-02 02:00:00"))
+        tout = [{"id": 3, "portee": "*", "debut": "2026-11-02 01:00:00", "fin": "2026-11-02 03:00:00"}]
+        self.assertEqual(d("service.nginx", tout, "2026-11-02 02:00:00")["id"], 3)
+        dom = [{"id": 4, "portee": "domaine:certificats", "debut": "2026-11-02 01:00:00", "fin": "2026-11-02 03:00:00"}]
+        self.assertEqual(d("ssl.exemple.org", dom, "2026-11-02 02:00:00")["id"], 4)
+        self.assertIsNone(d("service.nginx", dom, "2026-11-02 02:00:00"))
+
+    def test_une_reponse_du_collecteur_se_lit_sous_ses_formes(self):
+        self.assertEqual(len(self.lec.lignes_du_monde(MONDE)), 5)
+        self.assertEqual(len(self.lec.lignes_du_monde({"rows": MONDE})), 5)
+        self.assertEqual(self.lec.lignes_du_monde("ERROR"), [])
+        self.assertEqual(self.lec.lignes_du_monde([{"sans": "cle"}]), [])
+
+
+class EtatDuDemon(Demon):
+    def test_le_demon_dit_ce_qu_il_est(self):
+        e = self.m.etat_du_demon()
+        for cle in ("version", "pid", "demarre", "duree_s", "rss_mo", "base_octets", "passes", "retention_jours"):
+            self.assertIn(cle, e)
+        self.assertEqual(e["pid"], os.getpid())
+        self.assertEqual(set(e["passes"]), {"rapide", "complete"})
+        self.assertIsNone(e["passes"]["rapide"]["il_y_a_s"])               # aucune passe encore
+        json.dumps(e)                                                      # et tout se sérialise : c'est la réponse d'une socket
+
+    def test_une_passe_terminee_se_mesure(self):
+        self.m._PASSES["complete"]["en_cours"] = True
+        t0 = time.monotonic() - 3.0
+        self.m._noter_passe("complete", t0)
+        p = self.m.etat_du_demon()["passes"]["complete"]
+        self.assertGreaterEqual(p["duree"], 3.0)
+        self.assertEqual(p["n"], 1)
+        self.assertFalse(p["en_cours"])
+        self.assertLessEqual(p["il_y_a_s"], 1)
+
+    def test_les_deux_nouvelles_commandes_repondent_sur_la_socket(self):
+        """GET_DAEMON et GET_CORRELATIONS, par le vrai serveur de socket, sur un faux client (pas de socket Unix sous Windows)."""
+        class Client:
+            def __init__(self, requete):
+                self.requete, self.envoye = requete.encode(), b""
+
+            def settimeout(self, t):
+                pass
+
+            def recv(self, n):
+                r, self.requete = self.requete, b""
+                return r
+
+            def sendall(self, d):
+                self.envoye += d
+
+            def close(self):
+                pass
+        srv = self.m.SharedMemorySocket()
+        c = Client("GET_DAEMON")
+        srv.handle_client(c)
+        self.assertEqual(json.loads(c.envoye)["pid"], os.getpid())
+        c = Client("GET_CORRELATIONS")
+        srv.handle_client(c)
+        self.assertIsInstance(json.loads(c.envoye), list)
+        c = Client("GET_N_IMPORTE_QUOI")
+        srv.handle_client(c)
+        self.assertEqual(c.envoye, b"ERROR")                                # un démon d'avant une lecture répond ainsi : le module le reconnaît
+
+
+def charger_commande():
+    from importlib.machinery import SourceFileLoader
+    chemin = str(DOSSIER / "commandes" / "CN_redemarrer")
+    return SourceFileLoader("sensorium_redemarrer", chemin).load_module()
+
+
+class CommandeRedemarrer(unittest.TestCase):
+    def setUp(self):
+        self.c = charger_commande()
+        self.t = [0.0]
+        self.sorties = []
+        self.c.time = mock.Mock(monotonic=self._horloge, sleep=lambda s: self.t.__setitem__(0, self.t[0] + s))
+        self.etats = []                                                      # ce que le démon répond, à la suite
+        self.c.etat = lambda: self.etats.pop(0) if len(self.etats) > 1 else (self.etats[0] if self.etats else None)
+        self.commandes = []
+
+    def _horloge(self):
+        self.t[0] += 0.3
+        return self.t[0]
+
+    def lance(self, mode, rc=0, sortie=""):
+        self.c.sys = mock.Mock(argv=["redemarrer"] + ([mode] if mode else []), exit=lambda n: (_ for _ in ()).throw(SystemExit(n)))
+        self.c.subprocess = mock.Mock(run=lambda args, **kw: (self.commandes.append(args), mock.Mock(returncode=rc, stdout=sortie, stderr=sortie))[1])
+        lignes = []
+        with mock.patch("builtins.print", lambda *a, **k: lignes.append(a[0])):
+            try:
+                self.c.main()
+            except SystemExit as e:
+                code = e.code
+            else:
+                code = None
+        return code, json.loads(lignes[-1])
+
+    def test_un_mode_hors_de_la_table_est_refuse_sans_rien_lancer(self):
+        for mode in (None, "tout", "maintenant; rm -rf /", "../x"):
+            code, d = self.lance(mode)
+            self.assertEqual(code, 1)
+            self.assertFalse(d["ok"])
+        self.assertEqual(self.commandes, [])
+
+    def test_un_redemarrage_reussi_dit_le_silence_et_les_deux_processus(self):
+        self.etats = [{"pid": 10, "passes": {"rapide": {"en_cours": False}}}, {"pid": 10, "passes": {}}, {"pid": 77, "version": "6.1-opt", "passes": {}}]
+        code, d = self.lance("maintenant")
+        self.assertEqual(code, 0, d)
+        self.assertTrue(d["ok"])
+        self.assertEqual((d["avant"]["pid"], d["apres"]["pid"]), (10, 77))
+        self.assertEqual(self.commandes, [["systemctl", "restart", "sensorium.service"]])
+
+    def test_apres_la_passe_il_attend_qu_elle_finisse(self):
+        en_cours = {"pid": 10, "passes": {"complete": {"en_cours": True}}}
+        fini = {"pid": 10, "passes": {"complete": {"en_cours": False}}}
+        self.etats = [en_cours, en_cours, en_cours, fini, {"pid": 99, "version": "x", "passes": {}}]
+        code, d = self.lance("apres_passe")
+        self.assertEqual(code, 0, d)
+        self.assertGreaterEqual(d["attendu_s"], 2.0)
+        self.assertEqual(len(self.commandes), 1)
+
+    def test_un_demon_qui_ne_revient_pas_est_un_echec_qui_dit_le_silence(self):
+        self.etats = [{"pid": 10, "passes": {}}, {"pid": 10, "passes": {}}, None]
+        code, d = self.lance("maintenant")
+        self.assertEqual(code, 1)
+        self.assertFalse(d["ok"])
+        self.assertIn("pas revenu", d["erreur"])
+        self.assertGreater(d["silence_s"], 60)
+
+    def test_un_systemctl_qui_echoue_est_un_echec(self):
+        self.etats = [{"pid": 10, "passes": {}}]
+        code, d = self.lance("maintenant", rc=1, sortie="Failed to restart")
+        self.assertEqual(code, 1)
+        self.assertIn("a échoué", d["erreur"])
+
+    def test_un_demon_d_avant_qui_ne_dit_pas_son_etat_revient_quand_meme(self):
+        self.etats = [None, None, {"pid": 5, "version": "x", "passes": {}}]
+        code, d = self.lance("maintenant")
+        self.assertEqual(code, 0, d)
+
+
+class Branchement(unittest.TestCase):
+    """L'écran du Sensorium est bien branché : son script est servi, le menu lui donne ses sous-entrées, le shell remplace l'onglet V18."""
+    def lire(self, *chemin):
+        return (RACINE.joinpath(*chemin)).read_text(encoding="utf-8")
+
+    def test_le_script_est_charge_par_la_page_et_par_l_assembleur(self):
+        self.assertIn('<script src="/sensorium-ecran.js"></script>', self.lire("interface", "CN_index.html"))
+        self.assertIn('<script src="/sensorium-ecran.js"></script>', self.lire("outils", "ui", "CN_assembler.py"))
+        self.assertTrue((RACINE / "interface" / "CN_sensorium-ecran.js").is_file())
+
+    def test_le_shell_remplace_l_onglet_v18_sans_le_supprimer(self):
+        shell = self.lire("interface", "CN_shell.js")
+        self.assertIn('remplacerV18("sensorium", "sensorium")', shell)
+        self.assertIn("CASS.sceneSurMesure.sensorium", self.lire("interface", "CN_sensorium-ecran.js"))
+        self.assertIn("function snRendre", self.lire("interface", "CN_app.js"), "le code V18 reste en place : rien n'est retiré sans validation")
+
+    def test_le_menu_donne_au_sensorium_toutes_ses_vues(self):
+        sys.path.insert(0, str(RACINE / "modules" / "affichage" / "points"))
+        import importlib
+        spec = importlib.util.spec_from_file_location("ec_disposition_sensorium", RACINE / "modules" / "affichage" / "points" / "EC_disposition.py")
+        ec = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ec)
+        entree = next(e for e in ec.ENTREES if e["id"] == "sensorium") if hasattr(ec, "ENTREES") else None
+        if entree is None:
+            texte = self.lire("modules", "affichage", "points", "EC_disposition.py")
+            for v in ("maintenant", "changements", "capteurs", "carte", "demon", "maintenance", "comparer", "alertes"):
+                self.assertIn('("%s", ' % v, texte[texte.index('"id": "sensorium"'):texte.index('"id": "historique"')])
+        else:
+            self.assertEqual([v[0] for v in entree["vues"]], ["maintenant", "changements", "capteurs", "carte", "demon", "maintenance", "comparer", "alertes"])
+
+    def test_les_vues_du_menu_sont_celles_que_l_ecran_connait(self):
+        ecran = self.lire("interface", "CN_sensorium-ecran.js")
+        for v in ("maintenant", "changements", "capteurs", "carte", "demon", "maintenance", "comparer", "alertes"):
+            self.assertIn('["%s", ' % v, ecran)
+
+    def test_le_script_a_une_syntaxe_valide(self):
+        if not shutil.which("node"):
+            self.skipTest("node n'est pas installé")
+        r = subprocess.run(["node", "--check", str(RACINE / "interface" / "CN_sensorium-ecran.js")], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
 
 
 class ModuleSansNoyau(unittest.TestCase):

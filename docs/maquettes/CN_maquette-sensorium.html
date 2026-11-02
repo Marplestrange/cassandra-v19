@@ -1,0 +1,647 @@
+<!doctype html>
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : maquette-sensorium.html -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : maquette-sensorium.html -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=23ba83 ▼▼▼ -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cassandra — Sensorium (maquette)</title>
+<style>
+:root{
+--sol:#eef1f5;--halo:#e9edf3;--verre:rgba(255,255,255,.66);--verre-fort:rgba(255,255,255,.88);
+--encre:#101828;--encre-2:#475467;--encre-3:#7a8595;--filet:rgba(16,24,40,.10);
+--accent:#0b7c74;--accent-doux:rgba(11,124,116,.10);--accent-encre:#fff;
+--idee:#6d3fd1;--idee-doux:rgba(109,63,209,.10);
+--ok:#047857;--ok-doux:rgba(4,120,87,.10);--alerte:#b45309;--alerte-doux:rgba(180,83,9,.11);--danger:#be123c;--danger-doux:rgba(190,18,60,.09);
+--ombre:0 1px 2px rgba(16,24,40,.05),0 8px 24px rgba(16,24,40,.06);
+--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;--sans:"Inter","Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+:root[data-theme="dark"]{
+--sol:#0d1117;--halo:#111a24;--verre:rgba(26,33,44,.66);--verre-fort:rgba(30,38,50,.92);
+--encre:#e6ebf2;--encre-2:#aab4c3;--encre-3:#7d8999;--filet:rgba(230,235,242,.11);
+--accent:#34b3a8;--accent-doux:rgba(52,179,168,.15);--accent-encre:#06201d;
+--idee:#b49cff;--idee-doux:rgba(180,156,255,.14);
+--ok:#3ecf9a;--ok-doux:rgba(62,207,154,.12);--alerte:#e7a14c;--alerte-doux:rgba(231,161,76,.13);--danger:#ff6b8b;--danger-doux:rgba(255,107,139,.12);
+--ombre:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+}
+:root[data-theme="ardoise"]{
+--sol:#1c2128;--halo:#222a33;--verre:rgba(45,51,59,.72);--verre-fort:rgba(52,59,68,.94);
+--encre:#e2e8ef;--encre-2:#b3bdc9;--encre-3:#8793a1;--filet:rgba(226,232,239,.12);
+--accent:#6cb6ff;--accent-doux:rgba(108,182,255,.15);--accent-encre:#0a1a2b;
+--idee:#c3a8ff;--idee-doux:rgba(195,168,255,.15);
+--ok:#57d6a3;--ok-doux:rgba(87,214,163,.12);--alerte:#eab25a;--alerte-doux:rgba(234,178,90,.14);--danger:#ff7d99;--danger-doux:rgba(255,125,153,.13);
+--ombre:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1100px 520px at 50% -25%,var(--halo),var(--sol));background-color:var(--sol);color:var(--encre);font:14px/1.5 var(--sans);min-height:100vh;padding:16px 16px 70px;overflow-x:hidden}
+.page{min-width:0;width:100%;max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.verre{background:var(--verre);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--filet);border-radius:16px;box-shadow:var(--ombre)}
+.mono{font-family:var(--mono)}
+.lib{font:650 10.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--encre-3)}
+h1,h2,h3,p{margin:0}
+h1{font:650 20px/1.2 var(--sans)}
+h2{font:650 13px/1.2 var(--sans);letter-spacing:.01em}
+h3{font:650 12.5px/1.3 var(--sans)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--filet);background:var(--verre-fort);border-radius:10px;padding:7px 12px;font:600 12px var(--sans);white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.prim{background:var(--accent);color:var(--accent-encre);border-color:transparent}
+.btn.dng{color:var(--danger);border-color:var(--danger)}
+.btn.pt{padding:4px 9px;font-size:11.5px;border-radius:8px}
+.btn[disabled]{opacity:.45;cursor:default}
+.puce{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;font:600 10.8px var(--sans);background:var(--accent-doux);color:var(--accent);white-space:nowrap}
+.puce.ok{background:var(--ok-doux);color:var(--ok)}.puce.al{background:var(--alerte-doux);color:var(--alerte)}.puce.dg{background:var(--danger-doux);color:var(--danger)}.puce.mu{background:var(--filet);color:var(--encre-3)}
+.idee{display:inline-flex;align-items:center;gap:4px;border-radius:6px;padding:1px 7px;font:700 9.5px var(--sans);letter-spacing:.07em;text-transform:uppercase;background:var(--idee-doux);color:var(--idee);border:1px solid color-mix(in srgb,var(--idee) 35%,transparent);white-space:nowrap;vertical-align:middle}
+body.sans-idees .idee-bloc{display:none!important}
+.idee-bloc{border:1.5px dashed color-mix(in srgb,var(--idee) 55%,transparent)!important}
+.note{font-size:11.8px;color:var(--encre-3)}
+.muet{color:var(--encre-2)}
+/* barre haute */
+.haut{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 14px}
+.haut .g{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.haut select,.haut label{font:600 12px var(--sans)}
+.haut select{border:1px solid var(--filet);background:var(--verre-fort);border-radius:8px;padding:5px 8px;color:inherit}
+/* en-tête et scènes */
+.tete{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.tete .l1{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.scenes{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.scenes .lab{font:650 10.5px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--encre-3);margin-right:2px}
+.sc{border:1px solid var(--filet);background:transparent;border-radius:999px;padding:5px 12px;font:600 12px var(--sans);display:inline-flex;gap:6px;align-items:center}
+.sc.on{background:var(--accent);color:var(--accent-encre);border-color:transparent}
+.sc:hover:not(.on){border-color:var(--accent)}
+.sep{width:1px;height:18px;background:var(--filet);margin:0 4px}
+.bandeau{display:flex;gap:10px;align-items:center;padding:9px 14px;border-radius:12px;background:var(--alerte-doux);color:var(--alerte);font:600 12.5px var(--sans)}
+/* corps */
+.corps{display:grid;grid-template-columns:250px minmax(0,1fr);gap:14px;align-items:start}
+.rail{padding:12px;display:flex;flex-direction:column;gap:8px;position:sticky;top:12px;max-height:calc(100vh - 40px);overflow:auto}
+.rail .rh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.rail input{width:100%;border:1px solid var(--filet);background:var(--verre-fort);border-radius:8px;padding:6px 9px;font:12px var(--sans);color:inherit}
+.rail>*{flex-shrink:0}
+body.nav-epuree .rail,body.nav-epuree #scenes{display:none}
+body.nav-epuree .corps{grid-template-columns:1fr}
+body:not(.nav-epuree) .rech-ligne{display:none}
+.rech-ligne{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.rech-ligne .cherche{flex:1;min-width:240px}
+.tete{position:relative;z-index:20}
+.cherche{position:relative;max-width:640px;width:100%}
+.cherche input{width:100%;border:1px solid var(--filet);background:var(--verre-fort);border-radius:12px;padding:10px 44px 10px 38px;font:13.5px var(--sans);color:inherit}
+.cherche .loupe{position:absolute;left:13px;top:9px;color:var(--encre-3);font-size:15px;pointer-events:none}
+.cherche kbd{position:absolute;right:10px;top:10px;font:600 11px var(--mono);border:1px solid var(--filet);border-radius:6px;padding:0 6px;color:var(--encre-3)}
+.cres{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--verre-fort);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--filet);border-radius:14px;box-shadow:0 18px 50px rgba(16,24,40,.22);padding:6px;max-height:60vh;overflow:auto;z-index:40;display:none}
+.cres.on{display:block}
+.cres .gt{font:650 10px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--encre-3);padding:8px 10px 3px}
+.cres button{display:flex;gap:10px;width:100%;border:0;background:transparent;border-radius:9px;padding:7px 10px;text-align:left;font:600 12.5px var(--sans)}
+.cres button:hover,.cres button.sel{background:var(--accent-doux)}
+.cres button .s{margin-left:auto;font:400 11.5px var(--sans);color:var(--encre-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%}
+.cres button .s.w{color:var(--alerte)}
+.seg{display:inline-flex;border:1px solid var(--filet);border-radius:9px;overflow:hidden;align-self:flex-start;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:4px 10px;font:600 11.5px var(--sans);color:var(--encre-2)}
+.seg button.on{background:var(--accent);color:var(--accent-encre)}
+.seg button.idee-bloc{border:0!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--idee) 45%,transparent)}
+.dom{display:flex;align-items:center;gap:8px;border:0;background:transparent;border-radius:9px;padding:7px 8px;width:100%;text-align:left;font:650 12.5px var(--sans);margin-top:4px}
+.dom:hover{background:var(--accent-doux)}
+.dom .car{width:10px;color:var(--encre-3)}.dom .ic{width:16px;text-align:center;opacity:.8}.dom .nm{flex:1;min-width:0}
+.dom .ct{font:600 11px var(--mono);color:var(--encre-3)}.dom .ct.w{color:var(--alerte)}
+.domc{display:flex;flex-direction:column;gap:1px;margin-left:14px;border-left:1px solid var(--filet);padding-left:6px}
+.tuiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tuile{border:1px solid var(--filet);border-radius:14px;background:var(--verre-fort);padding:10px 12px;display:flex;flex-direction:column;gap:2px;text-align:left}
+.tuile:hover{border-color:var(--accent)}
+.tuile.w{border-color:var(--alerte);background:var(--alerte-doux);grid-column:span 2}
+.tuile .nm{font:600 12.5px var(--sans)}.tuile b{font:650 20px var(--mono)}.tuile.w b{color:var(--alerte)}
+.tuile svg{width:100%;height:22px;margin-top:2px}
+.fam{display:flex;align-items:center;gap:8px;border:0;background:transparent;border-radius:9px;padding:6px 8px;text-align:left;width:100%;font:500 12.5px var(--sans)}
+.fam:hover{background:var(--accent-doux)}
+.fam.on{background:var(--accent-doux);color:var(--accent);font-weight:650}
+.fam .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fam .ct{font:600 11px var(--mono);color:var(--encre-3)}
+.fam .ct.w{color:var(--alerte)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--encre-3);flex:none;display:inline-block}
+.dot.ok{background:var(--ok)}.dot.warn{background:var(--alerte)}.dot.dg{background:var(--danger)}.dot.mu{background:var(--encre-3);opacity:.5}
+.main{display:flex;flex-direction:column;gap:14px;min-width:0}
+.sec{padding:16px;display:flex;flex-direction:column;gap:12px}
+.sec>.eb{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.verdict{display:flex;gap:14px;align-items:flex-start}
+.vmark{width:12px;height:12px;border-radius:50%;margin-top:7px;flex:none;background:var(--alerte);box-shadow:0 0 0 5px var(--alerte-doux)}
+.vmark.stable{background:var(--ok);box-shadow:0 0 0 5px var(--ok-doux)}
+.vmark.panne{background:var(--danger);box-shadow:0 0 0 5px var(--danger-doux)}
+.vt{font:650 19px/1.25 var(--sans)}
+.vs{font-size:12.5px;color:var(--encre-2)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{border:1px solid var(--filet);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;background:var(--verre-fort)}
+.kpi span{font:650 10px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--encre-3)}
+.kpi b{font:650 20px var(--mono)}
+.kpi em{font-style:normal;font-size:11px;color:var(--encre-3)}
+.kpi svg{margin-top:4px;width:100%;height:22px}
+.rows{display:flex;flex-direction:column}
+.row{display:flex;gap:10px;align-items:flex-start;padding:10px 4px;border-top:1px solid var(--filet)}
+.row:first-child{border-top:0}
+.row .dot{margin-top:7px}
+.rt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rt b{font:600 13px var(--sans)}
+.rt b.cl{cursor:pointer}.rt b.cl:hover{color:var(--accent)}
+.rt span{font-size:12.5px;color:var(--encre-2)}
+.rt .cause{color:var(--alerte)}
+.gest{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.age{font:11px var(--mono);color:var(--encre-3);white-space:nowrap}
+.cols2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.carte{border:1px solid var(--filet);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;background:var(--verre-fort)}
+.carte .gros{font:650 18px var(--mono)}
+.tab{width:100%;border-collapse:collapse;font-size:12.5px}
+.tab th{font:650 10px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--encre-3);text-align:left;padding:6px 8px}
+.tab td{padding:8px;border-top:1px solid var(--filet);vertical-align:middle}
+.tab td.m{font-family:var(--mono);font-size:12px}
+.tabw{overflow:auto}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--filet);background:transparent;border-radius:999px;padding:3px 10px;font:600 11.5px var(--sans)}
+.chip.on{background:var(--accent-doux);color:var(--accent);border-color:var(--accent)}
+.foot{display:flex;gap:14px;flex-wrap:wrap;font-size:11.8px;color:var(--encre-3)}
+.chart{width:100%;height:150px}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--encre-3)}
+.leg i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+/* formulaires */
+.champ{display:flex;flex-direction:column;gap:4px}
+.champ label{font:650 11px var(--sans);color:var(--encre-2)}
+.champ input,.champ select,.champ textarea{border:1px solid var(--filet);background:var(--verre-fort);border-radius:10px;padding:8px 10px;font:13px var(--sans);color:inherit}
+.interrupteur{display:flex;gap:10px;align-items:flex-start}
+.interrupteur input{margin-top:3px;accent-color:var(--accent)}
+/* modal et toast */
+.voile{position:fixed;inset:0;background:rgba(16,24,40,.36);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.voile.on{display:flex}
+.modal{background:var(--verre-fort);backdrop-filter:blur(22px);border:1px solid var(--filet);border-radius:18px;box-shadow:0 24px 70px rgba(16,24,40,.28);width:100%;max-width:520px;max-height:92vh;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:14px}
+.modal h2{font-size:15px}
+.modal .act{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--encre);color:var(--sol);border-radius:12px;padding:9px 16px;font:600 12.5px var(--sans);opacity:0;transition:.25s;z-index:60;pointer-events:none;max-width:90vw}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+/* déroulé d'un redémarrage */
+.etapes{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}
+.etapes li{display:flex;gap:10px;align-items:center;padding:6px 2px;color:var(--encre-3);font-size:12.5px}
+.etapes li .pastille{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--filet);display:grid;place-items:center;font:700 10px var(--sans);flex:none}
+.etapes li.en{color:var(--encre)}
+.etapes li.en .pastille{border-color:var(--accent);border-top-color:transparent;animation:tourne .8s linear infinite}
+.etapes li.fait{color:var(--encre)}
+.etapes li.fait .pastille{background:var(--ok);border-color:var(--ok);color:#fff}
+.etapes li .t{margin-left:auto;font:11px var(--mono);color:var(--encre-3)}
+@keyframes tourne{to{transform:rotate(360deg)}}
+.pouls{width:10px;height:10px;border-radius:50%;background:var(--ok);display:inline-block;animation:bat 1.6s ease-in-out infinite}
+@keyframes bat{0%,100%{box-shadow:0 0 0 0 var(--ok-doux)}50%{box-shadow:0 0 0 7px transparent}}
+@media (prefers-reduced-motion:reduce){.pouls,.etapes li.en .pastille{animation:none}}
+.coque{display:grid;grid-template-columns:232px minmax(0,1fr);gap:16px;max-width:1560px;margin:0 auto;align-items:start}
+.menu{position:sticky;top:16px;padding:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 32px);overflow:auto}
+.menu a{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:10px;color:var(--encre-2);text-decoration:none;font:600 12.8px var(--sans);cursor:pointer}
+.menu a:hover{background:var(--accent-doux)}.menu a.on{background:var(--accent-doux);color:var(--accent)}
+.menu a .n{margin-left:auto;background:var(--danger);color:#fff;border-radius:99px;font:700 10px var(--sans);padding:1px 6px}
+.menu .ic{width:16px;text-align:center;opacity:.8}
+.menu .grp{display:flex;gap:10px;align-items:center;padding:12px}
+.menu .gi{width:36px;height:36px;border-radius:11px;background:var(--accent-doux);color:var(--accent);display:grid;place-items:center;position:relative;font-size:16px}
+.menu .pastille{position:absolute;right:-3px;top:-3px;width:10px;height:10px;border-radius:50%;background:var(--alerte);border:2px solid var(--sol)}
+.menu .pastille.rouge{background:var(--danger)}
+.menu .liste{padding:10px;display:flex;flex-direction:column;gap:2px}
+.menu .liste a.sub{margin-left:20px;font-weight:550;font-size:12.3px;padding:6px 10px;position:relative}
+.menu .liste a.sub::before{content:"";position:absolute;left:-10px;top:0;bottom:0;width:1px;background:var(--filet)}
+.menu .liste a.tetem{font-weight:700}
+.menu .liste .lbl{font:650 10px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--encre-3);padding:8px 10px 2px 20px}
+.burger{display:none}
+.voileMenu{display:none;position:fixed;inset:0;background:rgba(10,14,20,.5);z-index:29}.voileMenu.on{display:block}
+.barre-app{display:flex;gap:6px;align-items:center;padding:8px 12px;background:linear-gradient(90deg,#0f8b80,#0b7c74);border-radius:16px;max-width:1560px;margin:0 auto 14px;overflow-x:auto}
+.barre-app .bi{width:34px;height:34px;display:grid;place-items:center;color:#fff;border-radius:10px;font-size:16px;flex:none}.barre-app .bi.home{background:rgba(255,255,255,.18)}.barre-app .bi.dim{opacity:.45}
+.barre-app .sep{width:10px;flex:none}.barre-app .bg{width:44px;height:36px;display:grid;place-items:center;color:#fff;border-radius:10px;background:rgba(255,255,255,.14);flex:none}.barre-app .bg.on{background:rgba(255,255,255,.34);box-shadow:inset 0 0 0 1px rgba(255,255,255,.5)}
+.fil{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--encre-3);padding:2px 4px;flex-wrap:wrap}.fil b{color:var(--encre);background:var(--verre-fort);border:1px solid var(--filet);border-radius:9px;padding:3px 10px;font-weight:600}
+@media (max-width:900px){
+ .coque{grid-template-columns:1fr}
+ .menu{display:none;position:fixed;inset:0 auto 0 0;width:min(280px,86vw);max-height:none;z-index:30;border-radius:0 16px 16px 0;background:var(--verre-fort)}.menu.ouvert{display:flex}.burger{display:inline-flex}
+ .barre-app .bg:nth-of-type(n+3){display:none}
+ .corps{grid-template-columns:1fr}
+ .rail{position:static;max-height:none}
+ .rail .liste{max-height:260px;overflow:auto}
+ .tuile.w{grid-column:span 1}
+ .cols2,.cols3{grid-template-columns:1fr}
+ .row{flex-wrap:wrap}.gest{justify-content:flex-start}
+ body{padding:10px 10px 70px}
+}
+</style>
+</head>
+<body>
+<div class="barre-app" aria-hidden="true"><span class="bi home">⌂</span><span class="bi">≡</span><span class="bi">‹</span><span class="bi dim">›</span><span class="bi">↻</span><span class="sep"></span>
+  <span class="bg">▤</span><span class="bg">▥</span><span class="bg on">◉</span><span class="bg">⛨</span><span class="bg">✦</span><span class="bg">▦</span></div>
+<div class="coque">
+<aside class="menu" id="menu" aria-label="Menu du groupe Supervision">
+  <div class="verre grp"><span class="gi">◉<i class="pastille" id="grp-pastille"></i></span><div><b>Supervision</b><div class="note" id="grp-etat">4 points à regarder</div></div></div>
+  <div class="verre liste" id="menu-liste"></div>
+</aside>
+<div class="voileMenu" id="voileMenu"></div>
+<div class="page">
+<div class="fil" id="fil"></div>
+
+<!-- barre de la maquette (hors produit) -->
+<div class="verre haut">
+  <div class="g"><button class="btn burger" id="burger" aria-label="Ouvrir le menu">☰</button><b class="mono" style="font-size:12px">MAQUETTE · Sensorium V19</b><span class="note">Trait plein = ce qui existe aujourd'hui (V18 portée en V19). Pointillé violet = idée nouvelle. Les données sont fictives.</span></div>
+  <div class="g">
+    <label><input type="checkbox" id="tgIdees" checked> Montrer les idées</label>
+    <select id="tgTheme" aria-label="Thème"><option value="">Clair</option><option value="dark">Sombre</option><option value="ardoise">Ardoise</option></select>
+    <select id="tgNav" aria-label="Navigation"><option value="epuree">Navigation épurée</option><option value="ancienne">Navigation précédente</option></select>
+    <select id="tgEtat" aria-label="État simulé"><option value="ok">Démon en marche</option><option value="muet">Démon muet</option></select>
+  </div>
+</div>
+
+<div class="verre tete">
+  <div class="l1">
+    <div><h1>Sensorium</h1><div class="note" id="tPied">hote-principal · Debian 12 · allumée depuis 6 j 4 h · 4 812 relevés</div></div>
+    <div class="scenes" id="actions">
+      <button class="sc" onclick="releverFlotte()">Relever la flotte</button>
+      <button class="sc" onclick="ouvrir('mTemoin')" title="Une autre machine surveille ce serveur et vous écrit s'il tombe">Témoin extérieur</button>
+    </div>
+  </div>
+  <div class="rech-ligne"><div class="cherche"><span class="loupe" aria-hidden="true">⌕</span><input id="cherche-in" placeholder="Chercher un site, une machine, un relevé, une vue…" autocomplete="off" aria-label="Chercher"><kbd>/</kbd><div class="cres" id="cherche-res" role="listbox"></div></div><button class="btn" id="btn-fam" style="padding:10px 14px;border-radius:12px" aria-haspopup="listbox">Toutes les familles ▾</button></div>
+  <nav class="scenes" id="scenes" aria-label="Vues"></nav>
+  <div id="bandeau"></div>
+</div>
+
+<div class="corps">
+  <aside class="verre rail" aria-label="Familles">
+    <div class="rh"><h2 id="railTitre">Familles</h2><span class="note" id="railNote">un clic ouvre la famille</span></div><div class="seg" id="modes" role="group" aria-label="Organiser par"></div>
+    <input id="recherche" placeholder="Chercher un relevé (clé, mot, valeur)…" aria-label="Chercher"><span class="idee idee-bloc" style="border:0;align-self:flex-start">idée · recherche sur tout le modèle du monde</span>
+    <div class="liste" id="liste" style="display:flex;flex-direction:column;gap:1px"></div>
+  </aside>
+  <main class="main" id="page"></main>
+</div>
+</div>
+</div><!-- /page -->
+</div><!-- /coque -->
+
+<!-- fenêtres -->
+<div class="voile" id="voile" onclick="if(event.target===this)fermer()"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const E=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const IDEE='<span class="idee">idée</span>';
+let vue='maintenant', fam=null, histo=null, obj=null, mode='domaines', ouv={}, muet=false, flt='tous';
+
+/* ───────── données fictives (la forme est celle du collecteur : wkey, libellé, valeur, âge, gestes) ───────── */
+const FAMILLES=[['system','Système',9,0],['ressources','Ressources',14,1],['service','Services',31,0],['docker','Conteneurs',12,0],['web','Sites',18,0],['controle','Contrôles de bout en bout',6,0],['ssl','Certificats',7,1],['sauvegarde','Sauvegardes',5,0],['prevision','Ce qui va arriver',3,0],['flotte','Flotte',9,2],['config','Config de Cassandra',8,0],['logiciel','Logiciels',44,0],['reseau','Réseau',16,0],['stockage','Stockage',7,0],['securite','Sécurité',11,0],['maj','Mises à jour',4,0],['courriel','Courriel',5,0],['acces','Accès et pare-feu',13,1],['cron','Tâches planifiées',10,0],['fastpanel','FastPanel',9,0],['erreurs','Erreurs des journaux',6,0],['certbot','Renouvellement des certificats',3,1],['box','La box',4,1],['outils','Outils de sécurité',4,0],['tailnet','Tailnet',6,0],['capteur','Capteurs',22,2],['sante','Santé',2,0]];
+const ALERTES=[
+ {wk:'ssl.exemple.org',lib:'Certificat exemple.org',val:'expire dans 12 jours (Let\'s Encrypt)',age:'41 s',cause:'renouvellement échoué le 28-10 : le port 80 ne répond plus depuis le 26-10 (règle de pare-feu changée)',g:['Renouveler maintenant'],idees:['Rouvrir le port 80 (annulable)']},
+ {wk:'stockage.disk./var',lib:'Disque /var',val:'82 % utilisé, +2,1 points par semaine',age:'41 s',cause:'journaux nginx : 31 Go en 9 jours, un robot sur /wp-login.php',g:['Voir ce qui pèse','Purger les journaux anciens'],idees:[]},
+ {wk:'service.cassandra-sauvegarde',lib:'Unité cassandra-sauvegarde.service',val:'en échec depuis 02:10',age:'41 s',cause:'',g:['Relancer','Journal de l\'unité'],idees:[]},
+ {wk:'cle_ssh.deploy.4f2a',lib:'Clé SSH nouvelle (compte deploy)',val:'apparue ce matin à 06:48, jamais vue avant',age:'3 min',cause:'',g:[],idees:['Voir qui s\'est connecté avec']}
+];
+const PREV=[['Disque /var plein','dans environ 41 jours au rythme actuel','2 min'],['Certificat exemple.org','expire dans 12 jours','2 min'],['Mises à jour de sécurité','11 paquets, dont 2 critiques','2 h']];
+const FLOTTE=[
+ {m:'nas',v:'joignable',det:'disque D: 67 % · mises à jour il y a 2 j · antivirus actif',w:false,age:'38 s'},
+ {m:'poste-bureau',v:'joignable',det:'3 services en échec · échecs au démarrage 2',w:true,age:'38 s'},
+ {m:'vps-secours',v:'sans réponse depuis 2 h',det:'dernière mesure : disque / 41 %',w:true,age:'2 h'}
+];
+const CAPTEURS=[
+ ['Mesures de la machine','collect_metrics','ok','4 s','0,3 s','30 s',0],['Domaines et sites','collect_web_sites','ok','41 s','1,2 s','5 min',0],['Certificats','collect_ssl_certificates','ok','41 s','2,8 s','5 min',0],
+ ['Conteneurs','collect_docker_containers','ok','41 s','0,6 s','5 min',0],['Sauvegardes','collect_backups','ok','41 s','0,9 s','15 min',0],['Journaux d\'erreurs','collect_log_errors','lent','41 s','34 s','5 min',2],
+ ['La box','collect_box','muet','3 h','—','15 min',14],['Tailnet','collect_tailnet','ok','41 s','0,4 s','5 min',0],['Exposition vue de l\'extérieur','collect_exposition','ok','12 min','18 s','1 h',0],
+ ['Outils de sécurité','collect_outils_securite','ok','1 h','3,1 s','6 h',0],['Courriel','collect_courriel_domaines','ok','41 s','1,1 s','15 min',0],['Flotte (SSH)','collect_system_state','ok','38 s','5,6 s','1 min',0]
+];
+const CHANGES=[
+ ['cle_ssh.deploy.4f2a','Clé SSH (deploy)','apparue','nouvelle clé ssh-ed25519 · empreinte 4f2a…','06:48','warning'],
+ ['service.nginx','nginx','changé','active (running) → active (reloading)','06:02',''],
+ ['ssl.exemple.org','Certificat exemple.org','changé','21 → 12 jours restants','00:00','warning'],
+ ['logiciel.php8.2','PHP 8.2','changé','8.2.24 → 8.2.26','Hier 23:15',''],
+ ['acces.fail2ban','Fail2ban','changé','17 → 24 adresses bannies','Hier 19:40',''],
+ ['docker.sondes','Conteneur « sondes »','disparu','arrêté, non relancé','Hier 11:02','warning'],
+ ['reseau.port.8443','Port 8443','apparu','écoute sur 127.0.0.1 (processus node)','Hier 09:30','']
+];
+const CORR=[['Certificat exemple.org','expire dans 12 jours',['Règle de pare-feu modifiée le 26-10 à 14:12 : le port 80 est fermé','Dernier renouvellement certbot échoué le 28-10 (« connection timed out »)']],['Disque /var','82 % utilisé',['Journaux nginx : 31 Go en 9 jours']]];
+const REDEM=[
+ ['Hier 03:12','Cassandra (seule)','pas de battement pendant 300 s','silence de 7,4 s','retour correct'],
+ ['28-10 16:40','Vous','après déploiement de la version 6.1-opt','silence de 6,1 s','retour correct'],
+ ['21-10 09:05','Le watchdog','le démon ne répondait plus à la socket','silence de 12 s','retour correct'],
+];
+
+/* ───────── petits dessins ───────── */
+function spark(v,coul){const w=100,h=22,mx=Math.max(...v),mn=Math.min(...v),d=(mx-mn)||1;const p=v.map((y,i)=>(i*w/(v.length-1)).toFixed(1)+','+(h-2-((y-mn)/d)*(h-4)).toFixed(1)).join(' ');return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${p}" fill="none" stroke="${coul||'var(--accent)'}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`}
+function courbe(){ /* 30 jours, avec des trous montrés (jamais reliés) */
+ const n=60,vals=[];for(let i=0;i<n;i++){const t=(i>=22&&i<=27)?null:60+Math.sin(i/5)*8+i*0.35;vals.push(t)}
+ const W=700,H=150,mx=100,mn=40;let seg=[],cur=[],hach='';
+ vals.forEach((v,i)=>{if(v==null){if(cur.length)seg.push(cur);cur=[]}else cur.push((i*W/(n-1)).toFixed(1)+','+(H-10-((v-mn)/(mx-mn))*(H-20)).toFixed(1))});if(cur.length)seg.push(cur);
+ hach=`<rect x="${(22*W/(n-1)-4).toFixed(0)}" y="0" width="${(6*W/(n-1)+8).toFixed(0)}" height="${H}" fill="url(#h)"/>`;
+ return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Courbe sur 30 jours"><defs><pattern id="h" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="6" fill="var(--encre-3)" opacity=".35"/></pattern></defs>
+ ${[0,1,2,3].map(i=>`<line x1="0" x2="${W}" y1="${10+i*43}" y2="${10+i*43}" stroke="var(--filet)"/>`).join('')}${hach}
+ ${seg.map(s=>`<polyline points="${s.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="1.8" vector-effect="non-scaling-stroke"/>`).join('')}
+ <line x1="${(40*W/(n-1)).toFixed(0)}" x2="${(40*W/(n-1)).toFixed(0)}" y1="0" y2="${H}" stroke="var(--idee)" stroke-dasharray="3 3"/></svg>`}
+
+/* ───────── pièces communes ───────── */
+function ligne(r){
+ const ges=r.g.map((g,i)=>`<button class="btn pt" onclick="confirmerGeste('${E(r.lib)}','${E(g)}')">${E(g)}</button>`).join('');
+ const id=r.idees.map(g=>`<button class="btn pt idee-bloc" title="Idée" onclick="toast('Idée : ${E(g)}')">${E(g)}</button>`).join('');
+ return `<div class="row"><span class="dot warn"></span><div class="rt"><b class="cl" title="${E(r.wk)} — son histoire sur 30 jours" onclick="ouvrirHisto('${E(r.wk)}','${E(r.lib)}')">${E(r.lib)}</b><span>${E(r.val)}</span>${r.cause?`<span class="cause">cause probable : ${E(r.cause)}</span>`:''}</div>
+ <div class="gest"><span class="age">il y a ${r.age}</span>${ges}${id}<button class="btn pt" title="Je sais, c'est normal : se taire jusqu'à l'échéance (revient si ça empire)" onclick="accepter('${E(r.lib)}')">Accepter…</button></div></div>`}
+function kpi(l,v,em,s,c){return `<div class="kpi"><span>${l}</span><b>${v}</b>${em?`<em>${em}</em>`:''}${s?spark(s,c):''}</div>`}
+
+/* ───────── scènes ───────── */
+const SCENES=[['maintenant','Maintenant',0],['changements','Ce qui a changé',0],['capteurs','Les capteurs',0],['carte','Carte de santé',1],['demon','Le démon',1],['maintenance','Maintenance',1],['comparer','Comparer deux moments',1],['alertes','Alertes et seuils',1]];
+function scenes(){
+ $('#scenes').innerHTML='<span class="lab">Vue</span>'+SCENES.map(([k,l,nv])=>`<button class="sc${vue===k&&!fam&&!histo&&!obj?' on':''}${nv?' idee-bloc':''}" onclick="aller('${k}')">${l}${nv?' '+IDEE:''}</button>`).join('');
+ $('#bandeau').innerHTML=muet?`<div class="bandeau" style="background:var(--danger-doux);color:var(--danger)"><span class="dot dg"></span>Le démon ne répond plus : ce qui est affiché date d'avant, et vieillit. <button class="btn pt" onclick="aller('demon')">Voir le démon</button></div>`:'';
+}
+const DOMAINES=[['Machine','◉',['system','ressources','stockage','maj','logiciel','erreurs','prevision']],['Services et sites','⚙',['service','docker','web','controle','fastpanel','cron']],['Sécurité et accès','⛨',['securite','acces','outils']],['Certificats et sauvegardes','⌘',['ssl','certbot','sauvegarde']],['Réseau et flotte','⇄',['reseau','box','tailnet','flotte','courriel']],['Cassandra elle-même','✦',['config','capteur','sante']]];
+const OBJETS=[['Machines','▥',[['hote-principal',1],['nas',0],['poste-bureau',1],['vps-secours',1]]],['Sites','◍',[['exemple.org',1],['boutique.exemple.org',0],['blog.exemple.net',0]]],['Services','⚙',[['nginx',0],['cassandra-sauvegarde',1],['php-fpm 8.2',0],['redis',0]]],['Conteneurs','▣',[['sondes',1],['base-donnees',0]]],['Comptes et clés SSH','⚿',[['deploy',1],['root',0]]],['Domaines de courriel','✉',[['exemple.org',0],['exemple.net',0]]]];
+function rail(){
+ const q=($('#recherche').value||'').toLowerCase();
+ $('#modes').innerHTML=[['liste','Liste',0],['domaines','Domaines',1],['objets','Objets',1]].map(([k,l,nv])=>`<button class="${mode===k?'on':''}${nv?' idee-bloc':''}" onclick="mode='${k}';rail()">${l}</button>`).join('');
+ $('#railTitre').textContent={liste:'Familles',domaines:'Domaines',objets:'Objets'}[mode];
+ $('#railNote').textContent=mode==='objets'?'un clic ouvre la fiche':'un clic ouvre la famille';
+ const fb=f=>`<button class="fam${fam===f[0]?' on':''}" onclick="ouvrirFam('${f[0]}')"><span class="dot ${f[3]?'warn':'ok'}"></span><span class="nm">${f[1]}</span><span class="ct${f[3]?' w':''}">${f[3]?f[3]+' ⚠':f[2]}</span></button>`;
+ let h='';
+ if(mode==='liste')h=FAMILLES.filter(f=>!q||f[1].toLowerCase().includes(q)).map(fb).join('');
+ else if(mode==='domaines')h=DOMAINES.map((d,i)=>{
+  const fs=d[2].map(id=>FAMILLES.find(x=>x[0]===id)).filter(f=>f&&(!q||f[1].toLowerCase().includes(q)));if(!fs.length)return '';
+  const w=fs.reduce((a,f)=>a+f[3],0),n=fs.reduce((a,f)=>a+f[2],0),o=q?true:(i in ouv?ouv[i]:w>0);
+  return `<button class="dom" aria-expanded="${o}" onclick="ouv[${i}]=${!o};rail()"><span class="car">${o?'▾':'▸'}</span><span class="ic">${d[1]}</span><span class="nm">${d[0]}</span><span class="ct${w?' w':''}">${w?w+' ⚠':n}</span></button>`+(o?`<div class="domc">${fs.map(fb).join('')}</div>`:'')}).join('');
+ else h=OBJETS.map((g,gi)=>{
+  const os=g[2].map((o,oi)=>[o,oi]).filter(([o])=>!q||o[0].toLowerCase().includes(q)||g[0].toLowerCase().includes(q));if(!os.length)return '';
+  const w=os.reduce((a,[o])=>a+o[1],0);
+  return `<div class="dom" style="cursor:default"><span class="ic">${g[1]}</span><span class="nm">${g[0]}</span><span class="ct${w?' w':''}">${w?w+' ⚠':os.length}</span></div><div class="domc">${os.map(([o,oi])=>`<button class="fam${obj&&obj.genre===g[0]&&obj.nom===o[0]?' on':''}" onclick="ouvrirObjet(${gi},${oi})"><span class="dot ${o[1]?'warn':'ok'}"></span><span class="nm">${E(o[0])}</span><span class="ct${o[1]?' w':''}">${o[1]?'⚠':''}</span></button>`).join('')}</div>`}).join('');
+ $('#liste').innerHTML=h||'<div class="note">rien de relevé</div>';
+}
+function ouvrirObjet(g,o){const G=OBJETS[g],O=G[2][o];obj={genre:G[0],nom:O[0],w:O[1]};fam=null;histo=null;dessiner()}
+const FICHES={'exemple.org':[
+ ['Certificat','ssl',[['Certificat exemple.org','expire dans 12 jours (Let\'s Encrypt)',1,'41 s'],['Renouvellement (certbot)','échoué le 28-10 : connection timed out',1,'2 h']]],
+ ['Disponibilité','web',[['Réponse HTTP','200 en 180 ms',0,'41 s'],['Contrôle de bout en bout',"page d'accueil lue, formulaire de contact accepté",0,'5 min']]],
+ ['Sauvegarde','sauvegarde',[['Dernière sauvegarde','cette nuit 02:10 · 1,4 Go · restaurable',0,'6 h']]],
+ ['Journaux','erreurs',[['Erreurs 5xx','0 sur 24 h',0,'41 s'],['Robots','/wp-login.php : 2 140 requêtes en 24 h',0,'41 s']]]]};
+function fiche(o){
+ if(FICHES[o.nom])return FICHES[o.nom];
+ const base=[['État','system',[[o.nom+' — présence','relevée, sans écart',0,'41 s'],['Dernier changement','il y a 3 jours',0,'3 j']]],['Journaux','erreurs',[['Erreurs sur 24 h','0',0,'41 s']]]];
+ if(o.w)base.unshift(['À regarder','securite',[[o.nom+' — point ouvert','voir « Ce qui demande un regard »',1,'41 s']]]);
+ return base}
+function vObjet(){
+ const secs=fiche(obj),nr=secs.reduce((a,x)=>a+x[2].length,0),w=secs.some(x=>x[2].some(r=>r[2]));
+ return `<section class="verre sec idee-bloc"><div class="eb"><span class="lib">${E(obj.genre)} › ${E(obj.nom)} ${IDEE}</span><button class="btn pt" onclick="toast('Relevé de « ${E(obj.nom)} » lancé')">Relever maintenant</button></div>
+ <div class="verdict"><span class="vmark ${w?'':'stable'}"></span><div><p class="vt">${E(obj.nom)} — ${w?'demande un regard':'tout va bien'}</p><p class="vs">${nr} relevés dans ${secs.length} familles de capteurs, réunis ici : on regarde l'objet, pas le capteur.</p></div></div>
+ <div class="chips">${secs.map(x=>`<button class="chip" onclick="ouvrirFam('${x[1]}')" title="Ouvrir toute la famille">${E(x[0])} ›</button>`).join('')}</div></section>`
+ +secs.map(x=>`<section class="verre sec"><div class="eb"><h2>${E(x[0])}</h2></div><div class="rows">${x[2].map(r=>`<div class="row"><span class="dot ${r[2]?'warn':'ok'}"></span><div class="rt"><b class="cl" onclick="ouvrirHisto('${E(r[0])}','${E(r[0])}')">${E(r[0])}</b><span>${E(r[1])}</span></div><div class="gest"><span class="age">il y a ${r[3]}</span>${r[2]?`<button class="btn pt" onclick="accepter('${E(r[0])}')">Accepter…</button>`:''}</div></div>`).join('')}</div></section>`).join('')}
+function vCarte(){
+ const gr=id=>{let t=0;for(const c of id)t+=c.charCodeAt(0);return Array.from({length:10},(_,i)=>50+Math.sin((t+i*3)/4)*14)};
+ return `<section class="verre sec idee-bloc"><div class="eb"><h2>Carte de santé ${IDEE}</h2><span class="note">une case par famille : elle s'élargit quand elle alerte, un clic l'ouvre</span></div>
+ ${DOMAINES.map(d=>`<div><div class="lib" style="margin:8px 0">${d[1]} ${d[0]}</div><div class="tuiles">${d[2].map(id=>{const f=FAMILLES.find(x=>x[0]===id);return `<button class="tuile${f[3]?' w':''}" onclick="ouvrirFam('${id}')"><span class="nm">${f[1]}</span><b>${f[3]?f[3]+' ⚠':f[2]}</b><span class="note">${f[3]?'à regarder':'relevés'}</span>${spark(gr(id),f[3]?'var(--alerte)':'var(--ok)')}</button>`}).join('')}</div></div>`).join('')}</section>`}
+function menu(){
+ const sub=(v,l,ic,extra,nv)=>`<a class="sub${vue===v&&!fam&&!histo&&!obj?' on':''}${nv?' idee-bloc':''}" data-v="${v}"><span class="ic">${ic}</span>${l}${nv?' '+IDEE:''}${extra||''}</a>`;
+ const autre=(t,i)=>`<a data-x="1"><span class="ic">${i}</span>${t}</a>`;
+ $('#menu-liste').innerHTML=`<a class="tetem" data-v="maintenant"><span class="ic">◉</span>Sensorium<span class="n">${muet?'!':'4'}</span></a>`
+  +sub('maintenant','Maintenant','◎')+sub('changements','Ce qui a changé','⇄')+sub('capteurs','Les capteurs','⌁','<span class="n" style="background:var(--alerte)">2</span>')
+  +sub('carte','Carte de santé','▦','',1)+sub('demon','Le démon','⏻','',1)+sub('maintenance','Maintenance','⚒','',1)+sub('comparer','Comparer deux moments','⇋','',1)+sub('alertes','Alertes et seuils','♫','',1)
+  +'<div class="lbl">Autres entrées du groupe</div>'+autre("Vue d'ensemble",'▤')+autre('Historique','◔')+autre('Sécurité','⛨')+autre('Flotte','▥')+autre('Tâches planifiées','⏱')+autre('Journal','☰');
+ document.querySelectorAll('#menu-liste [data-v]').forEach(b=>b.onclick=()=>{aller(b.dataset.v);fermerMenu()});
+ document.querySelectorAll('#menu-liste [data-x]').forEach(b=>b.onclick=()=>{toast('Autre entrée du groupe Supervision : hors de cette maquette');fermerMenu()});
+ $('#grp-etat').textContent=muet?'Le démon ne répond plus':'4 points à regarder';
+ $('#grp-pastille').className='pastille'+(muet?' rouge':'');
+ const nom={maintenant:'Maintenant',changements:'Ce qui a changé',capteurs:'Les capteurs',carte:'Carte de santé',demon:'Le démon',maintenance:'Maintenance',comparer:'Comparer deux moments',alertes:'Alertes et seuils'}[vue];
+ const f=fam?FAMILLES.find(x=>x[0]===fam)[1]:null;
+ const gi=obj?OBJETS.findIndex(g=>g[0]===obj.genre):-1, di=fam?DOMAINES.findIndex(d=>d[2].includes(fam)):-1;
+ const lien=(t,fn)=>`<a style="cursor:pointer;color:var(--accent)" onclick="${fn}">${E(t)}</a> › `;
+ let ch=lien('Sensorium',"aller('maintenant')");
+ if(fam&&di>=0)ch+=lien(DOMAINES[di][0],'ouvrirDomaine('+di+')');
+ if(obj&&gi>=0)ch+=lien(obj.genre,'ouvrirGenre('+gi+')');
+ if(histo&&obj)ch+=lien(obj.nom,'histo=null;dessiner()');
+ if(histo&&fam&&!obj)ch+=lien(f,'histo=null;dessiner()');
+ const cur=histo?histo.lib:obj?obj.nom:f?f:vue==='domaine'?DOMAINES[dom][0]:vue==='genre'?OBJETS[gen][0]:nom;
+ $('#fil').innerHTML='Supervision › '+ch+`<b>${E(cur)}</b>`;
+}
+function ouvrirMenu(){$('#menu').classList.add('ouvert');$('#voileMenu').classList.add('on')}
+function fermerMenu(){$('#menu').classList.remove('ouvert');$('#voileMenu').classList.remove('on')}
+function aller(v){vue=v;fam=null;histo=null;obj=null;dessiner()}
+function ouvrirFam(f){fam=f;histo=null;obj=null;dessiner()}
+function ouvrirHisto(wk,lib){histo={wk,lib};dessiner()}
+
+function parcourir(){
+ const wd=d=>d[2].reduce((a,id)=>a+FAMILLES.find(x=>x[0]===id)[3],0), wg=g=>g[2].reduce((a,o)=>a+o[1],0);
+ return `<section class="verre sec idee-bloc"><div class="eb"><h2>Parcourir ${IDEE}</h2><span class="note">ou cherche en haut : un site, une machine, un relevé</span></div>
+ <div class="cols2"><div class="carte"><span class="lib">Par domaine</span><div class="chips">${DOMAINES.map((d,i)=>`<button class="chip" onclick="ouvrirDomaine(${i})">${d[1]} ${d[0]}${wd(d)?` <b style="color:var(--alerte)">${wd(d)} ⚠</b>`:''}</button>`).join('')}</div></div>
+ <div class="carte"><span class="lib">Par objet</span><div class="chips">${OBJETS.map((g,i)=>`<button class="chip" onclick="ouvrirGenre(${i})">${g[1]} ${g[0]}${wg(g)?` <b style="color:var(--alerte)">${wg(g)} ⚠</b>`:''}</button>`).join('')}</div></div></div></section>`}
+let dom=0, gen=0;
+function ouvrirDomaine(i){dom=i;vue='domaine';fam=null;histo=null;obj=null;dessiner()}
+function ouvrirGenre(i){gen=i;vue='genre';fam=null;histo=null;obj=null;dessiner()}
+function vDomaine(){
+ const d=DOMAINES[dom],gr=id=>{let t=0;for(const c of id)t+=c.charCodeAt(0);return Array.from({length:10},(_,i)=>50+Math.sin((t+i*3)/4)*14)};
+ return `<section class="verre sec idee-bloc"><div class="eb"><h2>${d[1]} ${d[0]} ${IDEE}</h2><span class="note">${d[2].length} familles de capteurs</span></div><div class="tuiles">${d[2].map(id=>{const f=FAMILLES.find(x=>x[0]===id);return `<button class="tuile${f[3]?' w':''}" onclick="ouvrirFam('${id}')"><span class="nm">${f[1]}</span><b>${f[3]?f[3]+' ⚠':f[2]}</b><span class="note">${f[3]?'à regarder':'relevés'}</span>${spark(gr(id),f[3]?'var(--alerte)':'var(--ok)')}</button>`}).join('')}</div></section>`}
+function vGenre(){
+ const g=OBJETS[gen];
+ return `<section class="verre sec idee-bloc"><div class="eb"><h2>${g[1]} ${g[0]} ${IDEE}</h2><span class="note">un clic ouvre la fiche de l'objet</span></div><div class="rows">${g[2].map((o,oi)=>`<div class="row"><span class="dot ${o[1]?'warn':'ok'}"></span><div class="rt"><b class="cl" onclick="ouvrirObjet(${gen},${oi})">${E(o[0])}</b><span>${o[1]?'demande un regard':'tout va bien'}</span></div><div class="gest"><button class="btn pt" onclick="ouvrirObjet(${gen},${oi})">Ouvrir la fiche</button></div></div>`).join('')}</div></section>`}
+function vMaintenant(){return vMaintenant0()+parcourir()}
+function vMaintenant0(){
+ return `<section class="verre sec"><div class="verdict"><span class="vmark"></span><div><p class="vt">4 points demandent un regard</p>
+ <p class="vs">hote-principal · Debian 12 · allumée depuis 6 j 4 h · 4 812 relevés · <a style="color:var(--alerte);cursor:pointer" onclick="aller('capteurs')">2 capteurs en défaut</a></p></div></div>
+ <div class="kpis">${kpi('Santé','92','−8 : un certificat, une unité',[96,95,95,94,93,92,92,92],'var(--alerte)')}${kpi('Disque /','64 %','',[60,60,61,61,62,63,63,64])}${kpi('RAM','48 %','',[44,50,47,52,49,48,46,48])}${kpi('Charge','0,42','CPU 11 %',[.3,.5,.4,.9,.5,.4,.4,.42])}${kpi('Température','54 °C','',[50,52,53,55,54,54,53,54])}${kpi('Mises à jour','11 paquets','dont 2 critiques')}</div></section>
+ <section class="verre sec idee-bloc"><div class="eb"><h2>Les 24 dernières heures ${IDEE}</h2><span class="note">chaque trait = un événement ; un clic ouvre « ce moment »</span></div>
+  <svg class="chart" style="height:64px" viewBox="0 0 700 64" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="22" width="700" height="20" rx="6" fill="var(--ok-doux)"/><rect x="418" y="22" width="14" height="20" fill="var(--alerte-doux)"/><rect x="560" y="22" width="40" height="20" fill="var(--alerte-doux)"/>${[110,300,420,455,570,640].map(x=>`<line x1="${x}" x2="${x}" y1="12" y2="52" stroke="var(--idee)" stroke-dasharray="3 3"/>`).join('')}</svg>
+  <div class="leg"><span><i style="background:var(--ok-doux)"></i>tout va bien</span><span><i style="background:var(--alerte-doux)"></i>au moins un point à regarder</span><span><i style="background:var(--idee)"></i>événement (déploiement, redémarrage, clé, règle)</span></div></section>
+ <section class="verre sec"><div class="eb"><h2>Ce qui demande un regard</h2></div><div class="rows">${ALERTES.map(ligne).join('')}</div></section>
+ <section class="verre sec"><div class="eb"><h2>Ce qui va arriver</h2></div><div class="rows">${PREV.map(p=>`<div class="row"><span class="dot ok"></span><div class="rt"><b>${p[0]}</b><span>${p[1]}</span></div><span class="age">il y a ${p[2]}</span></div>`).join('')}</div></section>
+ <section class="verre sec"><div class="eb"><h2>La flotte</h2><button class="btn pt idee-bloc" onclick="ouvrir('mAjout')">Ajouter une machine ${IDEE}</button></div><div class="rows">${FLOTTE.map(f=>`<div class="row"><span class="dot ${f.w?'warn':'ok'}"></span><div class="rt"><b>${f.m}</b><span>${f.v} · ${f.det}</span></div><span class="age">il y a ${f.age}</span></div>`).join('')}</div></section>`}
+
+function vFamille(){
+ const f=FAMILLES.find(x=>x[0]===fam);
+ const lignes=[['Instance principale','active (running) depuis 6 j',0,'12 s'],['Redis','active (running)',0,'12 s'],['PHP-FPM 8.2','active · 4 pools',0,'12 s'],['cassandra-sauvegarde.service','en échec depuis 02:10',1,'12 s'],['nginx','active (running)',0,'12 s']];
+ return `<section class="verre sec"><div class="eb"><h2>${f[1]} · ${f[2]} relevés</h2><div class="chips idee-bloc"><button class="chip on">Tous</button><button class="chip">À regarder</button><button class="chip">Acceptés</button><button class="chip">Plus vieux que 1 h</button> ${IDEE}</div></div>
+ <div class="rows">${lignes.map(l=>`<div class="row"><span class="dot ${l[2]?'warn':'ok'}"></span><div class="rt"><b class="cl" onclick="ouvrirHisto('${fam}.${E(l[0])}','${E(l[0])}')">${E(l[0])}</b><span>${E(l[1])}</span></div><div class="gest"><span class="age">il y a ${l[3]}</span>${l[2]?`<button class="btn pt" onclick="confirmerGeste('${E(l[0])}','Relancer')">Relancer</button><button class="btn pt" onclick="accepter('${E(l[0])}')">Accepter…</button>`:''}</div></div>`).join('')}</div></section>`}
+
+function vHisto(){
+ return `<section class="verre sec"><div class="eb"><span class="lib"><a style="cursor:pointer;color:var(--accent)" onclick="histo=null;dessiner()">← retour</a> · ${E(histo.lib)}</span><div class="chips"><button class="chip">24 h</button><button class="chip">7 j</button><button class="chip on">30 j</button></div></div>
+ <div class="verdict"><span class="vmark stable"></span><div><p class="vt">${E(histo.lib)} — va bien</p><p class="vs">Disponibilité sur 30 jours : <b>99,6 %</b> · 3 changements en 30 jours</p></div></div>
+ ${courbe()}<div class="leg"><span><i style="background:var(--accent)"></i>mesuré</span><span><i style="background:repeating-linear-gradient(45deg,var(--encre-3) 0 2px,transparent 2px 5px);opacity:.5"></i>pas de mesure : on ne relie pas les trous</span><span class="idee-bloc"><i style="background:var(--idee)"></i>événement (clic : ce moment dans le journal) ${IDEE}</span></div></section>
+ <section class="verre sec"><div class="eb"><h2>Son histoire</h2></div><div class="rows">${[['a changé','21 → 12 jours restants','avant : 21 jours','Hier 00:00','warn'],['a changé','35 → 21 jours restants','avant : 35 jours','21-10 00:00','ok'],['apparue','certificat Let\'s Encrypt, 90 jours','','24-09 03:14','ok']].map(c=>`<div class="row"><span class="dot ${c[4]}"></span><div class="rt"><b>${c[0]}</b><span>${c[1]}</span>${c[2]?`<span class="age">${c[2]}</span>`:''}</div><span class="age">${c[3]}</span></div>`).join('')}</div></section>`}
+
+function vChangements(){
+ const f=c=>flt==='tous'||(flt==='warn'&&c[5]==='warning');
+ return `<section class="verre sec"><div class="eb"><h2>Alertes et leur cause probable</h2></div><div class="rows">${CORR.map(c=>`<div class="row"><span class="dot warn"></span><div class="rt"><b>${c[0]}</b><span>${c[1]}</span>${c[2].map(x=>`<span>↳ ${x}</span>`).join('')}</div><span class="age">aujourd'hui</span></div>`).join('')}</div></section>
+ <section class="verre sec"><div class="eb"><h2>Derniers changements</h2><div class="chips idee-bloc">${IDEE}<button class="chip${flt==='tous'?' on':''}" onclick="flt='tous';dessiner()">Tous</button><button class="chip${flt==='warn'?' on':''}" onclick="flt='warn';dessiner()">Seulement ceux qui alertent</button><button class="chip">Par machine</button><button class="chip">Par famille</button></div></div>
+ <div class="rows">${CHANGES.filter(f).map(c=>`<div class="row"><span class="dot ${c[5]?'warn':'ok'}"></span><div class="rt"><b>${c[1]} <span class="puce mu">${c[2]}</span></b><span>${c[3]}</span></div><span class="age">${c[4]}</span></div>`).join('')}</div>
+ <div class="foot"><span>Le changelog garde 180 jours ; les alertes et leurs causes aussi.</span></div></section>
+ <section class="verre sec idee-bloc"><div class="eb"><h2>Dérive de configuration ${IDEE}</h2><span class="note">ce qui a bougé dans les fichiers surveillés — les secrets sont masqués</span></div>
+ <div class="tabw"><table class="tab"><tr><th>Fichier</th><th>Avant</th><th>Après</th><th>Quand</th><th></th></tr>
+ <tr><td class="m">/etc/nginx/sites/exemple.conf</td><td class="m">listen 443;</td><td class="m">listen 8443;</td><td>Hier 09:30</td><td><button class="btn pt" onclick="toast('Ouvre la comparaison complète')">Comparer</button></td></tr>
+ <tr><td class="m">/etc/cassandra/config.json</td><td class="m">jeton: ***a1b2c3</td><td class="m">jeton: ***d9e8f7</td><td>28-10</td><td><button class="btn pt" onclick="toast('Le secret n\'est jamais montré, seulement son empreinte')">Comparer</button></td></tr></table></div></section>`}
+
+function vCapteurs(){
+ const p={ok:['ok','EN MARCHE'],lent:['al','LENT'],muet:['dg','MUET']};
+ return `<section class="verre sec"><div class="eb"><h2>Les capteurs eux-mêmes · 2 en défaut</h2></div><p class="vs">Un capteur en panne ou muet ne mesure plus : ce qu'il avait relevé vieillit sans le dire. On le dit ici.</p>
+ <div class="tabw"><table class="tab"><tr><th>Capteur</th><th>État</th><th>Dernier relevé</th><th class="idee-bloc">Durée ${IDEE}</th><th class="idee-bloc">Période ${IDEE}</th><th class="idee-bloc">Erreurs 24 h ${IDEE}</th><th></th></tr>
+ ${CAPTEURS.map(c=>`<tr><td><b>${c[0]}</b><div class="note mono">${c[1]}</div></td><td><span class="puce ${p[c[2]][0]}">${p[c[2]][1]}</span></td><td class="m">il y a ${c[3]}</td><td class="m idee-bloc" style="border-left:0">${c[4]}</td><td class="m idee-bloc">${c[5]}</td><td class="m idee-bloc">${c[6]}</td>
+ <td class="gest idee-bloc" style="border-top:1px solid var(--filet)"><button class="btn pt" onclick="toast('Relevé de « ${E(c[0])} » lancé')">Relever</button><button class="btn pt" onclick="toast('Capteur suspendu 1 h, noté au journal')">Suspendre</button></td></tr>`).join('')}</table></div>
+ <div class="foot"><span>La box : le jeton est refusé depuis 3 h (« 401 »). Le démon redemande un jeton neuf tout seul, puis l'écrit ici s'il ne réussit pas.</span></div></section>`}
+
+function vDemon(){
+ const ok=!muet;
+ return `<section class="verre sec idee-bloc"><div class="eb"><h2>Le démon du Sensorium ${IDEE}</h2><span class="puce ${ok?'ok':'dg'}">${ok?'<span class="pouls"></span> en marche':'muet depuis 7 min'}</span></div>
+ <div class="verdict"><span class="vmark ${ok?'stable':'panne'}"></span><div><p class="vt">${ok?'Il tourne, il bat, il répond':'Il ne bat plus : le watchdog va le relancer'}</p><p class="vs">cassandra-sensorium.service · ${ok?'actif depuis 6 j 4 h':'dernier battement il y a 7 min (limite 5 min)'} · version 6.1-opt (la version déployée est la même que celle du dépôt)</p></div></div>
+ <div class="kpis">${kpi('Battement','il y a '+(ok?'4 s':'7 min'),'limite du watchdog : 300 s')}${kpi('Processus','812',ok?'146 Mo · 0,6 % CPU':'—')}${kpi('Socket',ok?'2 / 32':'—','clients · 0600 · root')}${kpi('Base','214 Mo','WAL · 4 812 relevés')}${kpi('Conservation','180 j','changelog et corrélations')}</div>
+ <div class="gest" style="justify-content:flex-start"><button class="btn prim" onclick="ouvrir('mRedem')">Redémarrer le démon…</button><button class="btn" onclick="toast('Passe rapide lancée')">Relever maintenant</button><button class="btn" onclick="toast('Passe complète lancée (≈ 1 min)')">Passe complète</button><button class="btn" onclick="ouvrir('mJournal')">Journal du démon</button><button class="btn" onclick="toast('Configuration relue, sans redémarrer')">Recharger la configuration</button><button class="btn" onclick="toast('Mode diagnostic 15 min : journal détaillé, remis seul ensuite')">Mode diagnostic 15 min</button></div></section>
+ <div class="cols2 idee-bloc" style="border:0!important">
+  <section class="verre sec idee-bloc"><div class="eb"><h2>Redémarrages ${IDEE}</h2></div><div class="rows">${REDEM.map(r=>`<div class="row"><span class="dot ok"></span><div class="rt"><b>${r[1]}</b><span>${r[2]}</span><span class="age">${r[3]} · ${r[4]}</span></div><span class="age">${r[0]}</span></div>`).join('')}</div></section>
+  <section class="verre sec idee-bloc"><div class="eb"><h2>Ce que Cassandra peut faire seule ${IDEE}</h2></div>
+   <label class="interrupteur"><input type="checkbox" checked><span><b>Redémarrer le démon s'il ne bat plus</b><br><span class="note">Après 300 s sans battement. Au plus 3 fois par heure, puis elle vous prévient et s'arrête. Chaque redémarrage est écrit au journal.</span></span></label>
+   <label class="interrupteur"><input type="checkbox" checked><span><b>Relancer un capteur muet</b><br><span class="note">Avant de le déclarer en panne.</span></span></label>
+   <label class="interrupteur"><input type="checkbox"><span><b>Déployer une mise à jour du démon</b><br><span class="note">Test d'abord, redémarrage après la passe, retour à l'ancienne version si le premier battement tarde.</span></span></label>
+   <div class="note">Ces paliers sont des réglages de l'administrateur, jamais des interdits codés.</div></section></div>
+ <section class="verre sec idee-bloc"><div class="eb"><h2>Les passes ${IDEE}</h2><span class="note">chaque passe rapide, complète et la lecture des journaux : durée et résultat</span></div>
+ <div class="cols3"><div class="carte"><span class="lib">Passe rapide</span><span class="gros">0,8 s</span><span class="note">toutes les 30 s · dernière il y a 4 s</span>${spark([.7,.8,.9,.8,1.1,.8,.8,.7],'var(--ok)')}</div>
+ <div class="carte"><span class="lib">Passe complète</span><span class="gros">52 s</span><span class="note">toutes les 5 min · prochaine dans 2 min</span>${spark([48,50,49,55,60,52,51,52],'var(--ok)')}</div>
+ <div class="carte"><span class="lib">Vigie des journaux</span><span class="gros">à l'écoute</span><span class="note">fichiers sensibles : 14 · journal système : suivi</span></div></div></section>`}
+
+function vMaintenance(){return `<section class="verre sec idee-bloc"><div class="eb"><h2>Fenêtres de maintenance ${IDEE}</h2></div>
+ <p class="vs">Pendant une fenêtre, les relevés continuent mais les alertes se taisent. À la fin, tout ce qui a empiré revient d'un coup, avec ce qui a changé pendant la fenêtre.</p>
+ <div class="cols2"><div class="carte"><h3>Planifier</h3>
+  <div class="champ"><label>Ce qui se tait</label><select><option>Toute la machine hote-principal</option><option>La famille « Services »</option><option>La machine « vps-secours »</option></select></div>
+  <div class="champ"><label>Du / jusqu'à</label><input value="Demain 02:00 → 03:00"></div>
+  <div class="champ"><label>Pourquoi</label><input value="Mise à jour du noyau et redémarrage"></div>
+  <label class="interrupteur"><input type="checkbox" checked><span>Redémarrer le démon à la fin de la fenêtre</span></label>
+  <div class="gest" style="justify-content:flex-start"><button class="btn prim" onclick="toast('Fenêtre enregistrée : demain 02:00 → 03:00')">Planifier</button></div></div>
+  <div class="carte"><h3>En cours et à venir</h3><div class="rows"><div class="row"><span class="dot ok"></span><div class="rt"><b>Demain 02:00 → 03:00</b><span>hote-principal · mise à jour du noyau</span></div><button class="btn pt" onclick="toast('Fenêtre annulée')">Annuler</button></div><div class="row"><span class="dot mu"></span><div class="rt"><b>Terminée hier 23:00 → 23:20</b><span>vps-secours · 1 alerte revenue à la fin (disque)</span></div></div></div></div></div></section>`}
+
+function vComparer(){return `<section class="verre sec idee-bloc"><div class="eb"><h2>Comparer deux moments ${IDEE}</h2><span class="note">le modèle du monde tel qu'il était, contre maintenant</span></div>
+ <div class="gest" style="justify-content:flex-start"><div class="champ"><label>Avant</label><select><option>Hier 08:00</option><option>Il y a 7 jours</option><option>Avant le dernier déploiement</option></select></div><span class="muet">contre</span><div class="champ"><label>Après</label><select><option>Maintenant</option></select></div></div>
+ <div class="kpis"><div class="kpi"><span>Apparus</span><b>3</b></div><div class="kpi"><span>Disparus</span><b>1</b></div><div class="kpi"><span>Changés</span><b>6</b></div><div class="kpi"><span>Alertes nées</span><b>2</b></div></div>
+ <div class="rows">${CHANGES.slice(0,5).map(c=>`<div class="row"><span class="dot ${c[5]?'warn':'ok'}"></span><div class="rt"><b>${c[1]} <span class="puce mu">${c[2]}</span></b><span>${c[3]}</span></div></div>`).join('')}</div>
+ <div class="note">Utile après un incident (« qu'est-ce qui a bougé entre l'heure où tout allait bien et maintenant ? ») ou après un déploiement.</div></section>`}
+
+function vAlertes(){return `<section class="verre sec idee-bloc"><div class="eb"><h2>Alertes et seuils ${IDEE}</h2><span class="note">mêmes seuils que « Aujourd'hui › Ce qui brûle »</span></div>
+ <div class="cols2"><div class="carte"><h3>Seuils</h3>
+  <div class="champ"><label>Certificat : prévenir à partir de</label><input value="21 jours">  </div>
+  <div class="champ"><label>Disque : prévenir quand il sera plein dans</label><input value="21 jours"></div>
+  <div class="champ"><label>Écart à l'habitude</label><input value="60 %"></div>
+  <div class="champ"><label>Un relevé est « périmé » après</label><input value="3 passes manquées"></div>
+  <div class="gest" style="justify-content:flex-start"><button class="btn prim" onclick="toast('Seuils enregistrés')">Enregistrer</button></div></div>
+  <div class="carte"><h3>Qui est prévenu, et comment</h3><div class="tabw"><table class="tab"><tr><th>Gravité</th><th>Notification</th><th>Telegram</th><th>Courriel</th></tr>
+  <tr><td>À regarder</td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+  <tr><td>Urgent</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td></tr>
+  <tr><td>Le démon muet</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td></tr></table></div>
+  <div class="note">Le destinataire est le « Contact sécurité » de la société. Heures calmes : 23:00 → 07:00, sauf « Urgent ».</div>
+  <div class="gest" style="justify-content:flex-start"><button class="btn" onclick="toast('Message d\'essai envoyé')">Envoyer un message d'essai</button></div></div></div>
+ <div class="carte"><h3>Ce que vous avez accepté</h3><div class="rows"><div class="row"><span class="dot"></span><div class="rt"><b>Disque D: du nas <span class="puce mu">acceptée</span></b><span>« volume d'archive, plein par conception » · jusqu'au 30-11 · revient si le chiffre monte</span></div><button class="btn pt" onclick="toast('Acceptation retirée')">Ne plus accepter</button></div><div class="row"><span class="dot"></span><div class="rt"><b>Clé SSH « deploy.1c9d » <span class="puce mu">acceptée</span></b><span>« clé du poste de Drisse » · sans échéance</span></div><button class="btn pt" onclick="toast('Acceptation retirée')">Ne plus accepter</button></div></div></div></section>`}
+
+function dessiner(){
+ scenes();rail();menu();
+ let h;
+ if(histo)h=vHisto();else if(obj)h=vObjet();else if(fam)h=vFamille();else h={maintenant:vMaintenant,changements:vChangements,capteurs:vCapteurs,carte:vCarte,domaine:vDomaine,genre:vGenre,demon:vDemon,maintenance:vMaintenance,comparer:vComparer,alertes:vAlertes}[vue]();
+ $('#page').innerHTML=h;
+}
+
+/* ───────── fenêtres ───────── */
+const MODAUX={
+ mTemoin:()=>`<h2>Témoin extérieur</h2><p class="vs">Une autre machine Linux de la flotte vérifie chaque minute que ce serveur répond, et vous écrit sur Telegram s'il se tait 10 minutes (puis retire le message à son retour).</p>
+  <div class="champ"><label>Machine du témoin</label><select><option>nas</option><option>vps-secours</option></select></div>
+  <div class="carte"><span class="lib">Aujourd'hui</span><span><span class="dot ok"></span> installé sur nas · surveille l'adresse du réseau local et l'adresse publique · dernier contrôle il y a 41 s</span></div>
+  <div class="note">Le jeton du robot Telegram y est copié, lisible par son seul propriétaire.</div>
+  <div class="act"><button class="btn" onclick="fermer()">Fermer</button><button class="btn prim" onclick="fermer();toast('Témoin installé sur nas')">Installer</button></div>`,
+ mAjout:()=>`<h2>Ajouter une machine à la flotte ${IDEE}</h2><div class="champ"><label>Adresse ou nom</label><input placeholder="par exemple 100.64.0.12"></div><div class="champ"><label>Système</label><select><option>Linux (SSH)</option><option>Windows (WinRM)</option></select></div>
+  <div class="note">Un test de connexion se fait avant d'enregistrer ; la clé est créée neuve et n'est copiée que sur cette machine.</div><div class="act"><button class="btn" onclick="fermer()">Annuler</button><button class="btn prim" onclick="fermer();toast('Test de connexion lancé')">Tester puis ajouter</button></div>`,
+ mJournal:()=>`<h2>Journal du démon ${IDEE}</h2><div class="champ"><label>Filtre</label><select><option>Les 200 dernières lignes</option><option>Seulement les erreurs</option><option>Depuis le dernier redémarrage</option></select></div>
+  <pre class="mono" style="margin:0;padding:12px;border-radius:12px;background:var(--halo);font-size:11.5px;line-height:1.5;overflow:auto;max-height:260px">06:48:02 INFO  vigie  /home/deploy/.ssh/authorized_keys modifié
+06:48:02 WARN  cle_ssh  clé nouvelle ssh-ed25519 4f2a… (deploy)
+06:50:41 INFO  passe rapide 0,8 s
+06:55:12 INFO  passe complète 52 s · 2 capteurs lents
+07:02:09 WARN  collect_box  401 : jeton renouvelé, nouvel essai
+07:02:10 ERROR collect_box  échec après renouvellement</pre>
+  <div class="act"><button class="btn" onclick="toast('Copié')">Copier</button><button class="btn prim" onclick="fermer()">Fermer</button></div>`,
+ mRedem:()=>`<h2>Redémarrer le démon du Sensorium ${IDEE}</h2>
+  <p class="vs">Le démon reprend sa passe au redémarrage ; aucune mesure n'est perdue. L'écran reste ouvert, il affiche « le démon revient » pendant environ 7 secondes.</p>
+  <div class="carte"><span class="lib">Avant de redémarrer</span>
+   <span><span class="dot ok"></span> aucun client de la socket en train de lire (2 en attente)</span>
+   <span><span class="dot warn"></span> une passe complète est en cours : fin dans environ 38 s</span>
+   <span><span class="dot ok"></span> 0 mesure en mémoire non écrite</span></div>
+  <div class="champ"><label>Quand</label><select id="rdQuand"><option value="apres">Après la fin de la passe en cours (recommandé)</option><option value="maintenant">Maintenant, la passe en cours est coupée</option></select></div>
+  <label class="interrupteur"><input type="checkbox" checked><span>M'écrire sur Telegram si le démon n'est pas revenu au bout de 60 s</span></label>
+  <label class="interrupteur"><input type="checkbox"><span>Poser une fenêtre de maintenance de 5 minutes (les alertes se taisent le temps du retour)</span></label>
+  <div class="champ"><label>Mot de passe de Cassandra</label><input type="password" placeholder="demandé car le geste est sensible" autocomplete="off"></div>
+  <div class="note">Un redémarrage ne se défait pas, il se vérifie : la fenêtre suivante montre chaque étape et le temps de silence.</div>
+  <div class="act"><button class="btn" onclick="fermer()">Annuler</button><button class="btn prim" onclick="lancerRedem()">Redémarrer</button></div>`,
+};
+function ouvrir(k){$('#modal').innerHTML=MODAUX[k]();$('#voile').classList.add('on')}
+function fermer(){$('#voile').classList.remove('on')}
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2600)}
+function confirmerGeste(lib,g){
+ $('#modal').innerHTML=`<h2>${E(g)} ?</h2><p class="vs">« ${E(lib)} » — le geste passe par le catalogue sécurisé de Cassandra et s'écrit au journal.</p><div class="act"><button class="btn" onclick="fermer()">Annuler</button><button class="btn prim" onclick="fermer();toast('Fait : ${E(g)}')">${E(g)}</button></div>`;$('#voile').classList.add('on')}
+function accepter(lib){
+ $('#modal').innerHTML=`<h2>Pourquoi « ${E(lib)} » est-elle normale ?</h2><p class="vs">Elle se taira, et reviendra si son chiffre empire.</p>
+ <div class="champ"><label>Raison</label><textarea rows="2" placeholder="par exemple : volume d'archive, plein par conception"></textarea></div>
+ <div class="champ"><label>Pendant combien de jours ? (0 = sans échéance)</label><input value="30"></div>
+ <div class="act"><button class="btn" onclick="fermer()">Annuler</button><button class="btn prim" onclick="fermer();toast('Acceptée pendant 30 jours')">Accepter</button></div>`;$('#voile').classList.add('on')}
+function releverFlotte(){const p=$('#page');p.insertAdjacentHTML('afterbegin','<div class="verre sec"><div class="vs">Relevé de la flotte lancé : les machines répondent en moins d\'une minute. Rouvrez la page pour voir leurs mesures.</div></div>');toast('Relevé de la flotte lancé')}
+function lancerRedem(){
+ const apres=($('#rdQuand')||{}).value!=='maintenant';
+ const E1=[apres?['Attente de la fin de la passe en cours','38 s']:null,['Demande écrite au journal','0,1 s'],['Arrêt propre : écritures finies, vigies reposées','1,2 s'],['systemctl restart du service','2,0 s'],['Premier battement du watchdog','3,4 s'],['La socket répond','5,1 s'],['Premier relevé frais','6,9 s']].filter(Boolean);
+ $('#modal').innerHTML=`<h2>Redémarrage du démon</h2><ol class="etapes" id="etapes">${E1.map(e=>`<li><span class="pastille"></span><span>${e[0]}</span><span class="t"></span></li>`).join('')}</ol><div id="fin"></div><div class="act" id="actFin"><button class="btn" onclick="fermer()" disabled>Fermer</button></div>`;
+ const li=[...document.querySelectorAll('#etapes li')];let i=0;
+ (function pas(){ if(i>0){li[i-1].className='fait';li[i-1].querySelector('.pastille').textContent='✓';li[i-1].querySelector('.t').textContent=E1[i-1][1]}
+  if(i<li.length){li[i].className='en';i++;setTimeout(pas,i===1&&apres?1500:750)}
+  else{ $('#fin').innerHTML='<div class="carte"><span class="lib">Verdict</span><span><span class="dot ok"></span> <b>Revenu en 6,9 s</b> · silence de 6,2 s · 0 mesure manquante · 14 vigies reposées · version 6.1-opt</span></div>';
+   $('#actFin').innerHTML='<button class="btn" onclick="fermer();aller(\'demon\')">Voir le démon</button><button class="btn prim" onclick="fermer()">Fermer</button>';REDEM.unshift(['À l\'instant','Vous','demandé depuis cet écran','silence de 6,2 s','retour correct']);if(vue==='demon')dessiner();} })();
+}
+
+/* ───────── réglages de la maquette ───────── */
+$('#tgIdees').onchange=e=>document.body.classList.toggle('sans-idees',!e.target.checked);
+$('#tgTheme').onchange=e=>{if(e.target.value)document.documentElement.setAttribute('data-theme',e.target.value);else document.documentElement.removeAttribute('data-theme')};
+$('#tgEtat').onchange=e=>{muet=e.target.value==='muet';dessiner()};
+$('#recherche').oninput=rail;
+$('#burger').onclick=ouvrirMenu;$('#voileMenu').onclick=fermerMenu;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){fermer();fermerMenu()}});
+
+let IDX=[];
+function indexer(){
+ IDX=[];
+ SCENES.forEach(([k,l,nv])=>IDX.push({g:'Vues',lib:l,sub:nv?'idée':'',go:()=>aller(k)}));
+ DOMAINES.forEach((d,i)=>IDX.push({g:'Domaines',lib:d[0],sub:d[2].length+' familles',go:()=>ouvrirDomaine(i)}));
+ OBJETS.forEach((G,gi)=>G[2].forEach((o,oi)=>IDX.push({g:G[0],lib:o[0],sub:o[1]?'à regarder':'',w:o[1],go:()=>ouvrirObjet(gi,oi)})));
+ FAMILLES.forEach(f=>IDX.push({g:'Familles',lib:f[1],sub:f[3]?f[3]+' à regarder':f[2]+' relevés',w:f[3],go:()=>ouvrirFam(f[0])}));
+ ALERTES.forEach(r=>IDX.push({g:'Relevés',lib:r.lib,sub:r.val,w:1,go:()=>ouvrirHisto(r.wk,r.lib)}));
+}
+function chercher(){
+ if(!IDX.length)indexer();
+ const q=$('#cherche-in').value.trim().toLowerCase(),box=$('#cherche-res');
+ let items;
+ if(!q)items=IDX.map((x,i)=>[x,i]).filter(([x])=>x.g==='Relevés'||(x.w&&x.g!=='Familles')).slice(0,7).map(([x,i])=>[Object.assign({},x,{g:'À regarder'}),i]);
+ else items=IDX.map((x,i)=>[x,i]).filter(([x])=>(x.lib+' '+x.sub+' '+x.g).toLowerCase().includes(q)).slice(0,12);
+ let h='',g='';
+ items.forEach(([x,i])=>{if(x.g!==g){g=x.g;h+=`<div class="gt">${E(g)}</div>`}h+=`<button data-i="${i}" onclick="choisir(${i})"><span>${E(x.lib)}</span><span class="s${x.w?' w':''}">${E(x.sub)}</span></button>`});
+ box.dataset.mode='q';box.innerHTML=h||'<div class="gt">Rien ne correspond</div>';box.classList.add('on');
+ box.querySelectorAll('button')[0]&&box.querySelectorAll('button')[0].classList.add('sel');
+}
+function toutesFamilles(){
+ if(!IDX.length)indexer();
+ const box=$('#cherche-res');let h='';
+ DOMAINES.forEach(d=>{const fs=d[2].map(id=>FAMILLES.find(x=>x[0]===id));const w=fs.reduce((a,f)=>a+f[3],0);
+  h+=`<div class="gt">${d[1]} ${E(d[0])}${w?` · <span style="color:var(--alerte)">${w} à regarder</span>`:''}</div>`;
+  fs.forEach(f=>{const i=IDX.findIndex(x=>x.g==='Familles'&&x.lib===f[1]);h+=`<button data-i="${i}" onclick="choisir(${i})"><span><span class="dot ${f[3]?'warn':'ok'}" style="margin-right:8px"></span>${E(f[1])}</span><span class="s${f[3]?' w':''}">${f[3]?f[3]+' à regarder':f[2]+' relevés'}</span></button>`})});
+ box.dataset.mode='fam';box.innerHTML=h;box.classList.add('on');$('#cherche-in').value='';
+}
+$('#btn-fam').onclick=e=>{e.stopPropagation();const box=$('#cherche-res');if(box.classList.contains('on')&&box.dataset.mode==='fam')box.classList.remove('on');else toutesFamilles()};
+function choisir(i){const x=IDX[i];$('#cherche-res').classList.remove('on');$('#cherche-in').value='';$('#cherche-in').blur();x.go()}
+$('#cherche-in').oninput=chercher;$('#cherche-in').onfocus=chercher;
+$('#cherche-in').onkeydown=e=>{if(e.key==='Enter'){const b=$('#cherche-res button.sel')||$('#cherche-res button');if(b)choisir(+b.dataset.i)}else if(e.key==='Escape'){$('#cherche-res').classList.remove('on');e.target.blur()}else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const bs=[...$('#cherche-res').querySelectorAll('button')];let k=bs.findIndex(b=>b.classList.contains('sel'));bs.forEach(b=>b.classList.remove('sel'));k=(k+(e.key==='ArrowDown'?1:-1)+bs.length)%bs.length;if(bs[k]){bs[k].classList.add('sel');bs[k].scrollIntoView({block:'nearest'})}}};
+document.addEventListener('click',e=>{if(!e.target.closest('.cherche'))$('#cherche-res').classList.remove('on')});
+document.addEventListener('keydown',e=>{if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test((e.target.tagName||''))){e.preventDefault();$('#cherche-in').focus()}});
+document.body.classList.add('nav-epuree');
+$('#tgNav').onchange=e=>document.body.classList.toggle('nav-epuree',e.target.value==='epuree');
+dessiner();
+</script>
+</body>
+</html>
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->
