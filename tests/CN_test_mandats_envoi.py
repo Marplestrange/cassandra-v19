@@ -1,3 +1,18 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Bancs de l'envoi par mandat
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tests
+# ZONE       : CN
+# VERSION CN : 0.1.0  #382b6b
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Bancs de l'envoi par mandat : destinataire déréférencé, accord, courrier qui ne poste que la file, minuterie.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=382b6b ▼▼▼
 """Bancs de l'envoi par mandat : le destinataire déréférencé depuis le carnet, l'accord d'un humain, le courrier qui ne poste que ce que la file contient, la minuterie.
 Un vrai noyau, les modules mandats, courrier et contacts, un serveur IMAP et un serveur SMTP de poche."""
 import shutil
@@ -207,3 +222,9 @@ class Automatique(Monde):
 
 if __name__ == "__main__":
     unittest.main()
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : Monde, Destinataire, Accord, Automatique
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)

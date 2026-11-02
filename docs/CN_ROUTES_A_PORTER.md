@@ -1,3 +1,18 @@
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : Routes V18 sans équivalent branché en V19 -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : Le relevé, par domaine, des routes V18 encore à porter en V19. -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=174317 ▼▼▼ -->
 # Routes V18 sans équivalent branché en V19
 
 Relevé du 02-11-2026 : les écrans repris de la V18 (`interface/CN_app.js`) appellent des routes `/api/…` que la couche de compatibilité (`interface/CN_compat.js` + `interface/routes/CN_*.js`) ne branche pas encore ; elles répondent 501 « pas encore porté ».
@@ -77,3 +92,10 @@ Modules V19 proches : evolution, ged. Fonctions : pilotage de l'évolution (cade
 
 - `/api/evolution` (20) : `/cadence`, `/comptes`, `/journal`, `/lecon`, `/mesures`, `/moteurs`, `/pause`, `/piece`, `/piece/appliquer`, `/piece/refuser`, `/pieces`, `/regime`, `/rollback`, `/run_now`, `/status`, `/toxique`, `/unfreeze`, `/wish`, `/wish/delete`, `/wishlist`
 - `/api/ged` (21) : `/apercu`, `/apercu/texte`, `/corbeille/vider`, `/dedoublonner`, `/extraire`, `/montage/add`, `/montage/remove`, `/op`, `/piece/apercu`, `/piece/voir`, `/preparer`, `/recettes`, `/remote/coller`, `/remote/create`, `/remote/delete`, `/remote/oauth`, `/remote/oauth/finir`, `/remote/tester`, `/remote/types`, `/scanner`, `/texte`
+
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->
