@@ -1,0 +1,123 @@
+# ══════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Tailscale
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : tailscale
+# ZONE       : CN
+# VERSION CN : 0.1.0  #7382f8
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale.
+# MÉTHODE    : le client `tailscale` local, par son socket ; l'installateur donne à l'utilisateur de Cassandra le droit de le piloter (--operator), jamais de root.
+# ══════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7382f8 ▼▼▼
+[module]
+id = "tailscale"
+nom = "Tailscale"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale."
+confiance = "interne"
+famille = "reseau"
+importance = "optionnel"
+sans = "Plus de connexion à Tailscale depuis l'interface : il faudra la faire en ligne de commande (tailscale up)."
+auteur = "Drisse ATEK"
+licence = "AGPL-3.0-or-later"
+
+[[droits]]
+id = "utiliser"
+libelle = "Voir l'état de Tailscale sur cette machine"
+defaut = true
+
+[[droits]]
+id = "administrer"
+libelle = "Connecter ou déconnecter la machine du réseau Tailscale, activer SSH par Tailscale"
+sensible = true
+
+[[objets]]
+type = "reseau_prive"
+libelle = "La connexion Tailscale de la machine"
+
+[permissions]
+reseau = ["le client Tailscale local (son socket) ; login.tailscale.com par ce client"]
+
+[[reglages]]
+id = "cle_auth"
+libelle = "Clé d'authentification Tailscale (tskey-auth-…), le temps d'une connexion : l'écran l'efface aussitôt"
+type = "secret"
+
+[installation]
+script = "CN_installer.sh"
+verification = "CN_verifier.sh"
+retrait = "CN_retirer.sh"
+
+[[capacites]]
+id = "etat"
+libelle = "Où en est Tailscale sur cette machine : installé ou non, connecté ou non, lien de connexion en attente, adresse, nom, machines du réseau"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "connecter"
+libelle = "Connecter la machine à un réseau Tailscale : sans clé, rend un lien à ouvrir pour s'identifier ; avec une clé d'authentification, se connecte seule"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["la connexion Tailscale de cette machine", "le client local seulement, jamais le panneau d'administration du réseau"]
+preuve = "l'état du client est « connecté » (tailscale status)"
+retour = "déconnecter la machine (tailscale down)"
+
+[[capacites]]
+id = "annuler"
+libelle = "Abandonner une connexion commencée et jamais terminée (le lien ouvert reste sans effet)"
+risque = "faible"
+droit = "administrer"
+perimetre = ["une connexion commencée et pas terminée"]
+preuve = "plus aucune connexion en attente et le client est coupé"
+retour = "relancer la connexion (aucune identification n'a eu lieu)"
+
+[[capacites]]
+id = "deconnecter"
+libelle = "Couper Tailscale sur cette machine sans l'oublier : elle se reconnecte d'un clic, sans nouvelle identification"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["la connexion Tailscale de cette machine"]
+preuve = "l'état du client n'est plus « connecté »"
+retour = "reconnecter la machine : elle garde son identité, sans nouvelle identification"
+
+[[capacites]]
+id = "quitter"
+libelle = "Retirer la machine du réseau Tailscale (déconnexion complète : une nouvelle identification sera demandée)"
+risque = "eleve"
+droit = "administrer"
+perimetre = ["la connexion Tailscale de cette machine"]
+preuve = "l'état du client demande une nouvelle identification"
+retour = "se reconnecter : une nouvelle identification est demandée (la machine peut changer d'adresse dans le réseau)"
+
+[[capacites]]
+id = "ssh_regler"
+libelle = "Activer ou couper SSH par Tailscale (entrer sur la machine depuis le réseau privé sans clé)"
+risque = "moyen"
+droit = "administrer"
+perimetre = ["l'option SSH du client Tailscale de cette machine"]
+preuve = "relire les préférences du client : RunSSH a la valeur demandée"
+retour = "remettre l'option à sa valeur précédente"
+
+[[ecrans]]
+id = "vue_tailscale"
+libelle = "Tailscale"
+domaine = "reseau"
+gabarit = "tableau"
+
+[theme]
+accent = "#1d6fa5"
+
+[[menus]]
+id = "tailscale"
+libelle = "Tailscale"
+ecran = "vue_tailscale"
+ordre = 20
+role = "admin"
+icone = "globe"
+# ▲▲▲ FIN BORNE CN ▲▲▲
