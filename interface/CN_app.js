@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #5329ae
+// VERSION CN : 0.1.0  #a459d6
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=5329ae ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=a459d6 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -158,6 +158,15 @@ async function loginPremierModele(dire){
         await fetch('/api/modeles/essai', corps({id: id}));
     } catch (x) { alert("Le compte est créé, mais le modèle n'a pas pu être déclaré. Reprenez-le dans Réglages › Modèles."); }
 }
+// Le domaine des clés de sécurité : celui par lequel on vient d'entrer (une clé est liée à un domaine ; sans lui, aucune clé ne s'enregistre).
+async function loginPremierDomaine(){
+    const h = location.hostname;
+    if (!h || h === 'localhost' || /^[0-9.]+$/.test(h) || h.indexOf(':') >= 0 || h.indexOf('.') < 0) return;
+    try {
+        await fetch('/api/agir/reglages.regler', {method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({args: {cle: 'webauthn.rp_id', valeur: h}})});
+    } catch (x) {}
+}
 async function loginPremier(){
     const v = function(i){ const z = document.getElementById(i); return z ? z.value : ''; };
     const e = document.getElementById('premier-erreur'), go = document.getElementById('premier-go');
@@ -180,6 +189,7 @@ async function loginPremier(){
         document.getElementById('login-username').value = compte;
         document.getElementById('login-password').value = mdp;
         await login();
+        await loginPremierDomaine();
         await loginPremierModele(dire);
     } catch (x) { dire('Le serveur ne répond pas. Réessayez dans un instant.'); }
     finally { if (go) { go.disabled = false; go.textContent = 'Créer mon compte'; } }
