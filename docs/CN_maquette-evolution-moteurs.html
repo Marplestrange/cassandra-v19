@@ -1,0 +1,561 @@
+<!doctype html>
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : maquette-evolution-moteurs.html -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : la maquette de la gestion des moteurs d'Évolution (parc, course, affectations, budget, pièces, preuves, branchement, journal) -->
+<!-- MÉTHODE    : une page autonome, données de démonstration en JavaScript, chaque élément dit s'il est construit ou à construire ; jetons de design de Cassandra -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=49b988 ▼▼▼ -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cassandra — Évolution : les moteurs (maquette)</title>
+<style>
+:root{
+--sol:#eef1f5;--halo:#e9edf3;--verre:rgba(255,255,255,.66);--verre-fort:rgba(255,255,255,.88);
+--encre:#101828;--encre-2:#475467;--encre-3:#7a8595;--filet:rgba(16,24,40,.09);
+--accent:#0b7c74;--accent-doux:rgba(11,124,116,.10);--accent-encre:#fff;
+--ok:#047857;--ok-doux:rgba(4,120,87,.10);--alerte:#b45309;--alerte-doux:rgba(180,83,9,.11);--danger:#be123c;--danger-doux:rgba(190,18,60,.09);
+--ombre:0 1px 2px rgba(16,24,40,.05),0 8px 24px rgba(16,24,40,.06);
+--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;--sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+--c1:#0b7c74;--c2:#7c5cc4;--c3:#c2410c;--c4:#2563eb;--c5:#a16207;--c6:#be123c;
+}
+:root[data-theme="dark"]{
+--sol:#0d1117;--halo:#111a24;--verre:rgba(26,33,44,.66);--verre-fort:rgba(30,38,50,.9);
+--encre:#e6ebf2;--encre-2:#aab4c3;--encre-3:#7d8999;--filet:rgba(230,235,242,.10);
+--accent:#34b3a8;--accent-doux:rgba(52,179,168,.14);--accent-encre:#06201d;
+--ok:#3ecf9a;--ok-doux:rgba(62,207,154,.12);--alerte:#e7a14c;--alerte-doux:rgba(231,161,76,.13);--danger:#ff6b8b;--danger-doux:rgba(255,107,139,.12);
+--ombre:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+--c1:#34b3a8;--c2:#a58be6;--c3:#f08a4b;--c4:#6ea0ff;--c5:#e0b64e;--c6:#ff6b8b;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1100px 520px at 50% -25%,var(--halo),var(--sol));background-color:var(--sol);color:var(--encre);font:14px/1.5 var(--sans);min-height:100vh}
+.mono{font-family:var(--mono)}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);gap:14px;max-width:1560px;margin:0 auto;padding:14px 16px 40px}
+.verre{background:var(--verre);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--filet);border-radius:16px;box-shadow:var(--ombre)}
+.lib{font:600 10.5px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--encre-3)}
+h1,h2,h3{margin:0;font-weight:600;text-wrap:balance}
+h1{font:600 19px/1.2 var(--mono)}
+h2{font:600 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--encre-2)}
+h3{font:600 14px/1.3 var(--mono)}
+.note{color:var(--encre-2);font-size:12.5px}
+.btn{border:1px solid var(--filet);background:var(--verre-fort);border-radius:10px;padding:7px 12px;font:600 12px var(--mono);white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn:focus-visible,.nav button:focus-visible,.carte:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.prim{background:var(--accent);color:var(--accent-encre);border-color:transparent}
+.btn.dng{color:var(--danger);border-color:var(--danger)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.puce{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 9px;font:600 10.5px var(--mono);background:var(--accent-doux);color:var(--accent);white-space:nowrap}
+.puce.ok{background:var(--ok-doux);color:var(--ok)}.puce.al{background:var(--alerte-doux);color:var(--alerte)}.puce.dg{background:var(--danger-doux);color:var(--danger)}.puce.gr{background:var(--filet);color:var(--encre-2)}
+.pt{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
+/* rail */
+.rail{position:sticky;top:14px;align-self:start;padding:14px 10px;display:flex;flex-direction:column;gap:4px}
+.rail .marque{padding:4px 10px 12px;display:flex;flex-direction:column;gap:6px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:10px;border:0;background:transparent;text-align:left;padding:9px 10px;border-radius:10px;font:600 12.5px var(--mono);color:var(--encre-2)}
+.nav button:hover{background:var(--accent-doux)}
+.nav button[aria-current="page"]{background:var(--accent-doux);color:var(--accent)}
+.nav .n{margin-left:auto;font:600 10.5px var(--mono);color:var(--encre-3)}
+.nav svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rail .pied{margin-top:10px;padding:10px;border-top:1px solid var(--filet);display:flex;flex-direction:column;gap:8px}
+/* scène */
+.scene{display:flex;flex-direction:column;gap:14px;min-width:0}
+.avis{padding:10px 14px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;border-left:3px solid var(--alerte)}
+.tete{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:0 2px}
+.tete .d{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bandeau{display:flex;flex-wrap:wrap;gap:1px;background:var(--filet);overflow:hidden;padding:0}
+.bandeau>div{background:var(--verre-fort);padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0;flex:1 1 180px}
+.bandeau .v{font:600 18px/1.1 var(--mono)}
+.barre{height:6px;border-radius:99px;background:var(--filet);overflow:hidden}.barre i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .4s}
+.cadre{padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px}
+.deux{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px}
+.trois{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+/* cartes moteur */
+.carte{padding:14px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--filet);border-radius:16px;background:var(--verre-fort);text-align:left;cursor:pointer;transition:border-color .15s, transform .15s;min-width:0}
+.carte:hover{border-color:var(--accent);transform:translateY(-1px)}
+.carte .ligne1{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.coul{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.carte h3{display:flex;align-items:center;gap:8px}
+.carte .ligne1>div:first-child{min-width:0;flex:1}
+.carte .mesures{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mes{display:flex;flex-direction:column;gap:3px}.mes b{font:600 15px/1.1 var(--mono)}
+.carte .actions{display:flex;gap:6px;flex-wrap:wrap}
+.etiquettes{display:flex;gap:6px;flex-wrap:wrap}
+/* tables */
+.tw{overflow-x:auto;border:1px solid var(--filet);border-radius:12px;background:var(--verre-fort)}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--filet);font-size:13px;vertical-align:middle}
+th{font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--encre-3);background:var(--accent-doux)}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-family:var(--mono);white-space:nowrap}
+select,input[type=text],input[type=number]{border:1px solid var(--filet);background:var(--verre-fort);border-radius:10px;padding:7px 10px;min-width:0;max-width:100%}
+.champ{display:flex;flex-direction:column;gap:6px;min-width:0}
+.champs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.inter{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--filet);border-radius:12px;background:var(--verre-fort)}
+.inter input{margin-top:3px;accent-color:var(--accent)}
+.inter .t{display:flex;flex-direction:column;gap:2px}
+.onglets{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--filet);padding-bottom:6px}
+.onglets button{border:0;background:transparent;padding:7px 12px;border-radius:9px;font:600 12px var(--mono);color:var(--encre-2)}
+.onglets button[aria-selected="true"]{background:var(--accent-doux);color:var(--accent)}
+.code{font:12px/1.55 var(--mono);background:var(--encre);color:#e6ebf2;border-radius:12px;padding:14px;overflow-x:auto;white-space:pre}
+:root[data-theme="dark"] .code{background:#070b10}
+.code .k{color:#7dd3c8}.code .c{color:#8b95a3}.code .s{color:#f2c579}
+.etapes{display:flex;gap:6px;flex-wrap:wrap}
+.etape{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--filet);font:600 11px var(--mono);color:var(--encre-3);background:var(--verre-fort)}
+.etape.on{color:var(--accent);border-color:var(--accent);background:var(--accent-doux)}.etape.fait{color:var(--ok)}
+.liste{display:flex;flex-direction:column;gap:8px}
+.verif{display:flex;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--filet);border-radius:12px;background:var(--verre-fort)}
+.verif .ic{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font:700 11px var(--mono);flex:none;background:var(--filet);color:var(--encre-3)}
+.verif.ok .ic{background:var(--ok-doux);color:var(--ok)}.verif.ko .ic{background:var(--danger-doux);color:var(--danger)}.verif.cours .ic{background:var(--accent-doux);color:var(--accent);animation:pls 1s infinite}
+@keyframes pls{50%{opacity:.35}}
+.course{display:flex;flex-direction:column;gap:10px}
+.piste{display:grid;grid-template-columns:130px minmax(0,1fr) 92px;gap:10px;align-items:center}
+.piste .nom{font:600 12px var(--mono);display:flex;align-items:center;gap:8px;min-width:0}
+.piste .rail2{height:12px;border-radius:99px;background:var(--filet);overflow:hidden;position:relative}
+.piste .rail2 i{position:absolute;inset:0 auto 0 0;width:0;border-radius:99px;transition:width .25s linear}
+.pipe{display:grid;grid-template-columns:repeat(5,minmax(190px,1fr));gap:10px;overflow-x:auto;padding-bottom:4px}
+.col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.col h2{padding:0 2px}
+.piece{padding:10px 12px;border:1px solid var(--filet);border-radius:12px;background:var(--verre-fort);display:flex;flex-direction:column;gap:6px}
+.piece .pr{display:flex;justify-content:space-between;gap:6px;align-items:center}
+.chaine{display:flex;flex-direction:column;gap:0}
+.maille{display:grid;grid-template-columns:70px 1fr auto;gap:10px;padding:8px 2px;border-bottom:1px dashed var(--filet);font-size:12.5px;align-items:center}
+.maille .h{font:11px var(--mono);color:var(--encre-3)}
+.tiroir{position:fixed;inset:0 0 0 auto;width:min(520px,100vw);background:var(--verre-fort);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-left:1px solid var(--filet);box-shadow:var(--ombre);padding:18px;display:none;flex-direction:column;gap:12px;z-index:30;overflow-y:auto}
+.tiroir.on{display:flex}
+.voile{position:fixed;inset:0;background:rgba(16,24,40,.28);display:none;z-index:20}.voile.on{display:block}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--encre);color:var(--sol);padding:10px 16px;border-radius:12px;font:600 12px var(--mono);opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:92vw}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.vide{padding:22px;text-align:center;color:var(--encre-3)}
+.leg{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.ordre{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--filet);border-radius:12px;background:var(--verre-fort)}
+.ordre .rg{font:700 13px var(--mono);color:var(--accent);width:22px}
+svg.spark{width:100%;height:34px;display:block}
+.cle{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13px}
+.cle dt{color:var(--encre-3);font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding-top:3px}.cle dd{margin:0;min-width:0;overflow-wrap:anywhere}
+@media (max-width:980px){
+ .app{grid-template-columns:1fr;padding:10px 12px 90px}
+ .rail{position:fixed;inset:auto 0 0 0;top:auto;z-index:25;flex-direction:row;padding:6px;border-radius:16px 16px 0 0;overflow-x:auto}
+ .rail .marque,.rail .pied{display:none}
+ .nav{flex-direction:row;gap:2px}.nav button{flex-direction:column;gap:3px;padding:7px 10px;font-size:10px;min-width:64px;text-align:center}.nav .n{display:none}
+ .deux,.trois{grid-template-columns:1fr}
+ .piste{grid-template-columns:96px minmax(0,1fr) 70px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+ <nav class="rail verre" aria-label="Évolution">
+  <div class="marque"><h1>Évolution</h1><span class="note">les moteurs de recherche</span></div>
+  <div class="nav" id="nav"></div>
+  <div class="pied">
+   <button class="btn" id="theme">Thème sombre</button>
+   <span class="note">Maquette. Chiffres de démonstration, rien n'est relié au serveur.</span>
+  </div>
+ </nav>
+ <main class="scene" id="scene" tabindex="-1"></main>
+</div>
+<div class="voile" id="voile"></div>
+<aside class="tiroir" id="tiroir" aria-label="Détail"></aside>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ═════ les données de démonstration ═════ */
+var ICONES = {
+ parc:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>',
+ course:'<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>',
+ aff:'<svg viewBox="0 0 24 24"><path d="M4 6h10M4 12h16M4 18h8"/><circle cx="18" cy="6" r="2"/><circle cx="14" cy="18" r="2"/></svg>',
+ budget:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1 1-1.7 3-1.7s3 .7 3 1.7-1 1.5-3 2-3 1-3 2.2 1 1.8 3 1.8 3-.7 3-1.8"/></svg>',
+ pieces:'<svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h10M4 19h6"/><path d="m17 15 2 2 3-4"/></svg>',
+ preuves:'<svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.3 7.8 8 9 4.7-1.2 8-4.5 8-9V6l-8-3z"/><path d="m9 12 2 2 4-4"/></svg>',
+ brancher:'<svg viewBox="0 0 24 24"><path d="M9 3v6M15 3v6M7 9h10v3a5 5 0 0 1-10 0V9zM12 17v4"/></svg>',
+ journal:'<svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>'
+};
+var VUES = [
+ {id:'parc', nom:'Parc des moteurs', ic:'parc'},
+ {id:'course', nom:'Course des moteurs', ic:'course'},
+ {id:'aff', nom:'Affectations', ic:'aff'},
+ {id:'budget', nom:'Budget et modèles', ic:'budget'},
+ {id:'pieces', nom:'Pièces en vol', ic:'pieces'},
+ {id:'preuves', nom:'Preuves et cage', ic:'preuves'},
+ {id:'brancher', nom:'Brancher un moteur', ic:'brancher'},
+ {id:'journal', nom:'Journal', ic:'journal'}
+];
+var MOTEURS = [
+ {id:'orfan', nom:'Orfan', couleur:'var(--c1)', genre:'Code · prompts · politiques', etat:'defaut', existe:true, version:'0.1.0', licence:'AGPL-3.0', runtime:'Python 3.11, bibliothèque standard seule',
+  desc:'Le moteur de Cassandra. Natif, sans dépendance. Règles déterministes gratuites d’abord, modèle seulement sur ce qu’elles n’ont pas résolu, profil par lignes exécutées, doublons par arbre syntaxique.',
+  essais:142, adoptes:23, gain:31, jetons:410, equiv:64, spark:[3,5,4,8,9,7,12,14,13,17,16,19],
+  reglages:[['regles','Optimisations déterministes (zéro jeton)',true,'cinq règles : liste intermédiaire, tri pour extremum, test de vide, list(générateur), constructeurs vides'],['profil','Profil par lignes exécutées',true,'le modèle reçoit « la ligne 12 fait 61 % du travail », pas tout le fichier'],['tombes','Redonner les tombes au modèle',true,'ne pas reproposer ce qui a déjà échoué'],['strat','Stratège fort puis exécutant économe',false,'deux rôles du registre de modèles']],
+  champs:[['Budget d’essais par proposition','number',3],['Variantes du modèle par essai','number',2],['Rôle de modèle','text','evolution']],
+  garde:'Aucun accès au noyau, au disque ni au réseau : il rend du texte.'},
+ {id:'openevolve', nom:'OpenEvolve', couleur:'var(--c2)', genre:'Code', etat:'prevu', existe:false, version:'0.2.x', licence:'Apache-2.0', runtime:'Python 3.11, paquet openevolve',
+  desc:'Le plus répandu. Îlots de population, grille MAP-Elites, multi-objectifs, évaluation parallèle. Cassandra ne lui prête que sa population : le juge reste celui du noyau.',
+  essais:38, adoptes:6, gain:38, jetons:5200, equiv:51, spark:[0,2,3,3,5,4,6,5,7,6,8,9],
+  reglages:[['iles','Îlots de population',true,'migration périodique entre îlots'],['mapelites','Grille MAP-Elites (qualité-diversité)',true,'garde des variantes différentes, pas seulement la plus rapide'],['multi','Objectif multiple (latence, taille, mémoire)',false,'le noyau ne juge que latence et équivalence aujourd’hui'],['parallele','Évaluation parallèle',false,'le juge du noyau reste séquentiel et déterministe']],
+  champs:[['Îlots','number',4],['Population par îlot','number',20],['Itérations par proposition','number',30]],
+  garde:'Processus séparé, aucune clé : le moteur ne voit jamais le corpus réservé.'},
+ {id:'shinka', nom:'ShinkaEvolve', couleur:'var(--c3)', genre:'Code', etat:'prevu', existe:false, version:'0.1.x', licence:'Apache-2.0', runtime:'Python 3.11, paquet shinka',
+  desc:'Sobre en essais. Rejet des variantes trop proches (nouveauté), sélection de parents adaptative, modèles locaux possibles, mutation par agent en ligne de commande.',
+  essais:21, adoptes:4, gain:34, jetons:2100, equiv:57, spark:[0,0,1,2,2,3,4,4,5,5,6,7],
+  reglages:[['nouveaute','Rejet des variantes trop proches',true,'économise l’évaluation'],['parents','Sélection de parents adaptative',true,''],['agent','Mutation par agent en ligne de commande',false,'exige un agent installé ; hors cage par nature, donc refusé par défaut']],
+  champs:[['Essais maximum','number',40],['Seuil de nouveauté','number',0.85]],
+  garde:'La mutation par agent est coupée : un agent qui écrit des fichiers n’entre pas dans la cage.'},
+ {id:'codeevolve', nom:'CodeEvolve', couleur:'var(--c4)', genre:'Code', etat:'prevu', existe:false, version:'0.1.x', licence:'Apache-2.0', runtime:'Python ≥ 3.13 : interpréteur séparé',
+  desc:'Meilleurs résultats publiés. Méta-prompts qui évoluent aussi, grille qualité-diversité par CVT. Exige Python 3.13 : il tourne dans son propre interpréteur, derrière le contrat.',
+  essais:12, adoptes:3, gain:41, jetons:3900, equiv:48, spark:[0,0,0,1,2,2,3,3,4,5,5,6],
+  reglages:[['meta','Méta-prompts évolutifs',true,'le prompt de mutation évolue avec les résultats'],['cvt','CVT-MAP-Elites',true,''],['inspi','Inspiration croisée entre îlots',false,'']],
+  champs:[['Interpréteur','text','/opt/python3.13/bin/python'],['Itérations','number',25]],
+  garde:'Interpréteur séparé : ses dépendances ne touchent jamais celles du serveur.'},
+ {id:'gepa', nom:'GEPA', couleur:'var(--c5)', genre:'Prompts · politiques', etat:'prevu', existe:false, version:'0.x', licence:'MIT', runtime:'Python 3.11, paquet gepa',
+  desc:'Fait évoluer les textes (prompts d’agents, politiques) par réflexion sur les traces et frontière de Pareto. La sécurité ne dépend jamais d’un prompt : droits, mandats et freins sont du code.',
+  essais:29, adoptes:5, gain:22, jetons:1800, equiv:72, spark:[0,1,2,2,3,5,6,6,8,9,9,11],
+  reglages:[['pareto','Frontière de Pareto (qualité, coût)',true,''],['trace','Réflexion sur les traces',true,'lit les traces d’appels du journal des agents'],['planchers','Planchers de politique du noyau',true,'une politique évoluée ne sort jamais de son intervalle autorisé']],
+  champs:[['Mini-lot de réflexion','number',8],['Générations','number',12]],
+  garde:'Cas piégés de sécurité rejoués à chaque promotion de prompt.'},
+ {id:'frugal', nom:'FrugalEvo', couleur:'var(--c6)', genre:'Code', etat:'etude', existe:false, version:'—', licence:'article seul', runtime:'pas de code publié',
+  desc:'Idée seulement : un modèle fort décide de la stratégie, un modèle économe l’écrit. Orfan sait déjà le faire (stratège puis exécutant) : pas d’adaptateur à écrire.',
+  essais:0, adoptes:0, gain:0, jetons:0, equiv:0, spark:[0,0,0,0,0,0,0,0,0,0,0,0],
+  reglages:[], champs:[], garde:'Rien à brancher : l’idée vit dans Orfan.'}
+];
+var POINTS = ['vue.verdict.composer','contacts.signaux','contacts.vcard_lire','dns.analyser','agenda.ical_lire','memoire.json_extraire','planifie.segments','flotte.lire_sortie','notes.md_vers_html','agents.resume_resultat','securite.analyse','mesures.moteur'];
+var AFF = {};
+POINTS.forEach(function(p,i){ AFF[p] = i%5===1 ? 'auto' : 'orfan'; });
+var CASCADE = [{id:'regles', nom:'Règles déterministes d’Orfan', cout:'zéro jeton', on:true},{id:'orfan-modele', nom:'Orfan avec modèle', cout:'jetons du rôle « evolution »', on:true},{id:'externe', nom:'Un moteur externe (course)', cout:'jetons + interpréteur', on:false}];
+var PIECES = [
+ {gid:'contacts.signaux', ec:'EC2', moteur:'orfan', etat:'palier_50', gain:49, distincts:88, ecart:0, servis:312, jours:3},
+ {gid:'vue.verdict.composer', ec:'EC1', moteur:'orfan', etat:'ombre', gain:12, distincts:19, ecart:0, servis:0, jours:0},
+ {gid:'dns.analyser', ec:'EC3', moteur:'openevolve', etat:'en_service', gain:38, distincts:140, ecart:0, servis:4120, jours:21},
+ {gid:'planifie.segments', ec:'EC1', moteur:'orfan', etat:'palier_10', gain:27, distincts:31, ecart:0, servis:64, jours:1},
+ {gid:'memoire.json_extraire', ec:'EC2', moteur:'orfan', etat:'visite', gain:33, distincts:210, ecart:0, servis:9800, jours:31},
+ {gid:'agenda.ical_lire', ec:'EC1', moteur:'shinka', etat:'retiree', gain:18, distincts:44, ecart:3, servis:0, jours:6, raison:'3 écarts en ombre, tombe gravée'}
+];
+var JOURNAL = [
+ ['il y a 4 min','proposee','contacts.signaux EC2 · Orfan (règles) · gain annoncé 49 %'],
+ ['il y a 31 min','palier_50','contacts.signaux EC2 : 200 appels servis par l’EC sans écart'],
+ ['il y a 2 h','course','dns.analyser : Orfan, OpenEvolve, CodeEvolve · vainqueur au gain brut OpenEvolve (−38 %), au rendement Orfan'],
+ ['il y a 5 h','retiree','agenda.ical_lire EC1 (ShinkaEvolve) · 3 écarts en ombre'],
+ ['hier','visite','memoire.json_extraire EC2 : gain annoncé 33 %, mesuré 30 % · tenu'],
+ ['hier','moteur','OpenEvolve : banc de conformité 14/14']
+];
+var ETAT = {vue:'parc', moteur:'orfan', onglet:'apercu', course:{points:'dns.analyser', actifs:{orfan:true,openevolve:true,codeevolve:true,shinka:false,gepa:false}, budget:'jetons', limite:20000, crit:'rendement', enCours:false, resultat:null, historique:[
+  ['dns.analyser','OpenEvolve · gain brut',38,'7,3'],['contacts.signaux','Orfan · rendement',49,'119'],['memoire.json_extraire','Orfan · rendement',33,'80']]},
+  wiz:{etape:0, choix:'openevolve', verifs:[]}, filtre:'tous'};
+
+/* ═════ utilitaires ═════ */
+function $(s,r){return (r||document).querySelector(s)}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function M(id){return MOTEURS.filter(function(m){return m.id===id})[0]}
+function toast(t){var e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(function(){e.classList.remove('on')},2600)}
+function journal(v,t){JOURNAL.unshift(['à l’instant',v,t])}
+function puceEtat(m){
+ if(m.etat==='defaut')return '<span class="puce ok"><i class="pt"></i>actif · défaut</span>';
+ if(m.etat==='prevu')return '<span class="puce al"><i class="pt"></i>adaptateur à construire</span>';
+ if(m.etat==='installe')return '<span class="puce"><i class="pt"></i>installé · désactivé</span>';
+ if(m.etat==='actif')return '<span class="puce ok"><i class="pt"></i>actif</span>';
+ return '<span class="puce gr"><i class="pt"></i>à l’étude</span>';
+}
+function puceExiste(m){return m.existe?'<span class="puce ok">construit</span>':'<span class="puce gr">à construire</span>'}
+function spark(m){
+ var d=m.spark,w=200,h=34,mx=Math.max.apply(null,d.concat([1])),p=d.map(function(v,i){return (i*(w/(d.length-1))).toFixed(1)+','+(h-3-(v/mx)*(h-8)).toFixed(1)}).join(' ');
+ return '<svg class="spark" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" role="img" aria-label="essais par semaine"><polyline points="'+p+'" fill="none" stroke="'+m.couleur+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+function fmtJ(n){return n>=1000?(n/1000).toFixed(1).replace('.',',')+' k':String(n)}
+function gpk(m){return m.jetons? (m.gain/(m.jetons/1000)).toFixed(1).replace('.',','):'—'}
+
+/* ═════ le rail ═════ */
+function rail(){
+ $('#nav').innerHTML=VUES.map(function(v){
+  var n=v.id==='pieces'?PIECES.filter(function(p){return p.etat!=='retiree'}).length:v.id==='parc'?MOTEURS.filter(function(m){return m.etat==='defaut'||m.etat==='actif'}).length+'/'+MOTEURS.length:'';
+  return '<button data-v="'+v.id+'"'+(ETAT.vue===v.id?' aria-current="page"':'')+'>'+ICONES[v.ic]+'<span>'+v.nom+'</span><span class="n">'+n+'</span></button>';
+ }).join('');
+ $$('#nav button').forEach(function(b){b.onclick=function(){ouvrir(b.dataset.v)}});
+}
+function ouvrir(v,opt){ETAT.vue=v;if(opt)for(var k in opt)ETAT[k]=opt[k];fermerTiroir();rendre();window.scrollTo({top:0});}
+
+/* ═════ squelette commun ═════ */
+function entete(titre,sous,actions){
+ return '<div class="tete"><div><h1>'+titre+'</h1><div class="note">'+sous+'</div></div><div class="d">'+(actions||'')+'</div></div>';
+}
+function legende(){
+ return '<div class="verre avis"><span class="puce al">maquette</span><div class="note" style="flex:1;min-width:220px">Chaque élément dit s’il <b>existe déjà</b> dans la V19 <span class="puce ok">construit</span> ou s’il reste <b>à construire</b> <span class="puce gr">à construire</span>. Aujourd’hui seul Orfan est branché ; les autres moteurs passent par un adaptateur qui n’est pas écrit.</div></div>';
+}
+function bandeau(){
+ var vivants=PIECES.filter(function(p){return p.etat!=='retiree'}).length,essais=MOTEURS.reduce(function(a,m){return a+m.essais},0),ad=MOTEURS.reduce(function(a,m){return a+m.adoptes},0);
+ var jt=MOTEURS.reduce(function(a,m){return a+m.essais*m.jetons},0);
+ return '<div class="verre bandeau">'+
+  '<div><span class="lib">Moteurs actifs</span><span class="v">'+MOTEURS.filter(function(m){return m.etat==='defaut'||m.etat==='actif'}).length+' / '+MOTEURS.length+'</span><span class="note">1 construit, 4 prévus, 1 à l’étude</span></div>'+
+  '<div><span class="lib">Essais · 30 jours</span><span class="v">'+essais+'</span><span class="note">'+ad+' variantes adoptées ('+Math.round(100*ad/essais)+' %)</span></div>'+
+  '<div><span class="lib">Jetons · 30 jours</span><span class="v">'+fmtJ(jt)+'</span><div class="barre"><i style="width:34%"></i></div><span class="note">34 % du plafond mensuel</span></div>'+
+  '<div><span class="lib">Pièces vivantes</span><span class="v">'+vivants+'</span><span class="note">ombre, paliers, service</span></div>'+
+  '<div><span class="lib">Chaîne</span><span class="v" style="color:var(--ok)">intacte</span><span class="note">1 284 mailles · tête scellée</span></div>'+
+ '</div>';
+}
+
+/* ═════ 1 · le parc ═════ */
+function vueParc(){
+ var cartes=MOTEURS.map(function(m){
+  var dis=!m.existe;
+  var act=m.etat==='defaut'?'<span class="note">moteur par défaut</span>':
+   (m.etat==='etude'?'<button class="btn" data-ouvrir="'+m.id+'">Lire la note</button>':
+   (m.existe?'<button class="btn" data-act="'+m.id+'">'+(m.etat==='actif'?'Désactiver':'Activer')+'</button>':'<button class="btn prim" data-brancher="'+m.id+'">Brancher</button>'));
+  return '<div class="carte" tabindex="0" role="button" data-ouvrir="'+m.id+'" aria-label="Ouvrir '+m.nom+'">'+
+   '<div class="ligne1"><div><h3><i class="coul" style="background:'+m.couleur+'"></i>'+m.nom+'</h3><div class="note" style="margin-top:3px">'+m.genre+'</div></div><div class="etiquettes" style="justify-content:flex-end">'+puceEtat(m)+puceExiste(m)+'</div></div>'+
+   '<div class="note">'+esc(m.desc)+'</div>'+
+   (m.essais?'<div class="mesures"><div class="mes"><span class="lib">Essais 30 j</span><b>'+m.essais+'</b></div><div class="mes"><span class="lib">Adoptés</span><b>'+m.adoptes+'</b></div><div class="mes"><span class="lib">Gain médian</span><b>−'+m.gain+' %</b></div></div>'+spark(m)+
+    '<div class="mesures"><div class="mes"><span class="lib">Jetons / essai</span><b>'+fmtJ(m.jetons)+'</b></div><div class="mes"><span class="lib">Pt / 1k jetons</span><b>'+gpk(m)+'</b></div><div class="mes"><span class="lib">Équivalentes</span><b>'+m.equiv+' %</b></div></div>':'<div class="vide" style="padding:10px">Aucune mesure : pas de code à brancher.</div>')+
+   '<div class="actions" data-stop="1">'+act+'<button class="btn" data-conf="'+m.id+'"'+(m.existe?'':' disabled')+'>Banc de conformité</button></div></div>';
+ }).join('');
+ return entete('Parc des moteurs','Qui cherche des variantes, avec quoi, à quel coût. Le moteur propose du texte ; le juge, la mise en ombre et la promotion restent au noyau.',
+  '<button class="btn" data-ouvrir-vue="course">Lancer une course</button><button class="btn prim" data-ouvrir-vue="brancher">Brancher un moteur</button>')+legende()+bandeau()+
+  '<section class="grille" aria-label="Moteurs">'+cartes+'</section>'+
+  '<section class="verre cadre"><h2>Ce qu’un moteur ne peut jamais faire</h2><div class="trois">'+
+   [['Écrire','Il rend des textes. Il n’écrit ni le disque, ni le stock d’EC, ni le noyau.'],['Juger','Équivalence, gain, jeu réservé, pièges : code déterministe du noyau, jamais une note de modèle.'],['Servir','Une variante prouvée passe d’abord en ombre, puis 10, 50, 100 % ; la référence répond tant que rien n’est prouvé.']].map(function(x){return '<div class="inter" style="flex-direction:column;gap:4px"><b class="mono" style="font-size:13px">'+x[0]+'</b><span class="note">'+x[1]+'</span></div>'}).join('')+'</div></section>';
+}
+
+/* ═════ 2 · la fiche d'un moteur (tiroir large = vue) ═════ */
+function vueFiche(){
+ var m=M(ETAT.moteur),o=ETAT.onglet;
+ var tabs=[['apercu','Aperçu'],['reglages','Réglages'],['isolation','Isolation'],['conformite','Conformité'],['historique','Historique']];
+ var corps='';
+ if(o==='apercu'){
+  corps='<div class="deux"><div class="liste"><p style="margin:0">'+esc(m.desc)+'</p>'+
+   '<dl class="cle"><dt>Genre</dt><dd>'+m.genre+'</dd><dt>Version</dt><dd class="mono">'+m.version+'</dd><dt>Licence</dt><dd>'+m.licence+'</dd><dt>Exécution</dt><dd>'+m.runtime+'</dd><dt>Garde</dt><dd>'+esc(m.garde)+'</dd><dt>Adaptateur</dt><dd>'+(m.existe?'natif : aucun adaptateur':'contrat <span class="mono">proposer(contexte) → candidats</span>, à écrire')+'</dd></dl></div>'+
+   '<div class="liste"><div class="trois" style="grid-template-columns:repeat(2,1fr)"><div class="mes"><span class="lib">Essais 30 j</span><b style="font-size:20px">'+m.essais+'</b></div><div class="mes"><span class="lib">Adoptés</span><b style="font-size:20px">'+m.adoptes+'</b></div><div class="mes"><span class="lib">Gain médian</span><b style="font-size:20px">−'+m.gain+' %</b></div><div class="mes"><span class="lib">Pt / 1k jetons</span><b style="font-size:20px">'+gpk(m)+'</b></div></div>'+spark(m)+'<span class="note">Essais par semaine, douze semaines.</span></div></div>';
+ } else if(o==='reglages'){
+  corps='<div class="liste">'+(m.reglages.length?m.reglages.map(function(r){return '<label class="inter"><input type="checkbox" '+(r[2]?'checked':'')+' data-reg="'+r[0]+'"><span class="t"><b class="mono" style="font-size:12.5px">'+r[1]+'</b><span class="note">'+r[3]+'</span></span></label>'}).join(''):'<div class="vide">Rien à régler : ce moteur n’existe qu’en idée.</div>')+'</div>'+
+   (m.champs.length?'<div class="champs">'+m.champs.map(function(c,i){return '<label class="champ"><span class="lib">'+c[0]+'</span><input type="'+c[1]+'" value="'+esc(c[2])+'"></label>'}).join('')+'</div>':'')+
+   '<div class="note">Les réglages d’un moteur ne touchent jamais les seuils du noyau (gain minimal, pièges, paliers) : ceux-là sont à Budget et modèles.</div>'+
+   '<div class="tete"><span>'+puceExiste(m)+'</span><button class="btn prim" data-enreg="1">Enregistrer</button></div>';
+ } else if(o==='isolation'){
+  corps='<div class="liste">'+
+   [['Processus à part','un par moteur, jamais dans le serveur',true],['Environnement vidé','aucune clé, aucun jeton, aucune variable du serveur',true],['Réseau','coupé dans le bac à sable (bwrap ou unshare)',m.id==='orfan'||!m.existe],['Système de fichiers','lecture seule, limité à Python et au moteur',true],['Interpréteur séparé','pour les moteurs qui exigent une autre version de Python',m.id==='codeevolve'],['Délai et mémoire','tué au délai ; plafond mémoire sous Linux',true]].map(function(x){return '<div class="verif '+(x[2]?'ok':'')+'"><span class="ic">'+(x[2]?'✓':'–')+'</span><div style="flex:1"><b class="mono" style="font-size:12.5px">'+x[0]+'</b><div class="note">'+x[1]+'</div></div></div>'}).join('')+'</div>'+
+   '<div class="champs"><label class="champ"><span class="lib">Mémoire maximale (Mo)</span><input type="number" value="1024"></label><label class="champ"><span class="lib">Délai d’un appel (ms)</span><input type="number" value="2000"></label><label class="champ"><span class="lib">Bac à sable système</span><select><option>requis</option><option selected>auto</option><option>aucun</option></select></label></div>'+
+   '<div class="note">Éprouvé ici par la logique de choix ; le bac réel se vérifie sous Linux.</div>';
+ } else if(o==='conformite'){
+  corps='<div class="note">Un moteur n’est branché qu’après avoir passé le même banc que les autres : contrat d’adaptateur, délai, pureté du texte rendu, respect de la partition visible.</div><div class="liste" id="verifs"></div><div class="tete"><span class="note" id="vbilan"></span><button class="btn prim" id="vrun"'+(m.existe?'':' disabled')+'>Lancer le banc</button></div>';
+ } else {
+  corps='<div class="tw"><table><thead><tr><th>Quand</th><th>Point</th><th>Verdict</th><th class="num">Gain</th><th class="num">Jetons</th></tr></thead><tbody>'+
+   [['il y a 4 min','contacts.signaux','adoptée en ombre',49,'0'],['il y a 1 j','vue.verdict.composer','corpus trop étroit','—','410'],['il y a 2 j','dns.analyser','divergente','—','1 900'],['il y a 3 j','memoire.json_extraire','équivalente · gain dans le bruit',2,'380'],['il y a 6 j','planifie.segments','adoptée en ombre',27,'0']].map(function(r){return '<tr><td>'+r[0]+'</td><td class="mono">'+r[1]+'</td><td>'+r[2]+'</td><td class="num">'+(r[3]==='—'?'—':'−'+r[3]+' %')+'</td><td class="num">'+r[4]+'</td></tr>'}).join('')+'</tbody></table></div><div class="note">Les variantes divergentes deviennent des tombes : un moteur ne les reproposera pas.</div>';
+ }
+ var pied=(m.id==='orfan')?'<span class="note">Le moteur par défaut ne se retire pas.</span>':(m.existe?'<button class="btn dng" data-retirer="'+m.id+'">Retirer ce moteur</button>':'');
+ return entete('<i class="coul" style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+m.couleur+';margin-right:8px"></i>'+m.nom,m.genre+' · '+m.licence,'<button class="btn" data-ouvrir-vue="parc">Tous les moteurs</button>'+puceEtat(m)+puceExiste(m))+
+  '<section class="verre cadre"><div class="onglets" role="tablist">'+tabs.map(function(t){return '<button role="tab" aria-selected="'+(t[0]===o)+'" data-tab="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div>'+corps+'<div>'+pied+'</div></section>';
+}
+function lancerBanc(){
+ var etapes=['Le moteur répond à proposer(contexte)','Il ne rend que des textes (ou des paires texte, hypothèse)','Il tient dans le délai','Il ne lit que la partition visible','Ses variantes passent l’analyse de pureté ou sont dites impures','Il redonne les tombes sans les rejouer','Il s’arrête seul sur son budget'];
+ var z=$('#verifs');z.innerHTML=etapes.map(function(e,i){return '<div class="verif" id="v'+i+'"><span class="ic">·</span><span>'+e+'</span></div>'}).join('');
+ var i=0;$('#vrun').disabled=true;$('#vbilan').textContent='';
+ (function pas(){if(i>=etapes.length){if(!$('#vbilan'))return;$('#vbilan').textContent=etapes.length+' / '+etapes.length+' · conforme';if($('#vrun'))$('#vrun').disabled=false;journal('moteur',M(ETAT.moteur).nom+' : banc de conformité '+etapes.length+'/'+etapes.length);return}
+  var e=$('#v'+i);if(!e)return;e.className='verif cours';setTimeout(function(){if(!e.isConnected)return;e.className='verif ok';e.querySelector('.ic').textContent='✓';i++;pas()},330)})();
+}
+
+/* ═════ 3 · la course ═════ */
+function vueCourse(){
+ var c=ETAT.course;
+ var moteursCourse=MOTEURS.filter(function(m){return m.existe||m.etat==='prevu'}).slice(0,5);
+ var cases=moteursCourse.map(function(m){return '<label class="inter"><input type="checkbox" data-cm="'+m.id+'" '+(c.actifs[m.id]?'checked':'')+(c.enCours?' disabled':'')+'><span class="t"><b class="mono" style="font-size:12.5px"><i class="coul" style="background:'+m.couleur+';display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px"></i>'+m.nom+'</b><span class="note">'+m.genre+' · '+fmtJ(m.jetons)+' jetons / essai</span></span></label>'}).join('');
+ var res='';
+ if(c.resultat){
+  var cle={rendement:function(x){return x.gpk},brut:function(x){return x.g},duree:function(x){return -x.d}}[c.crit];
+  var r=c.resultat.slice().sort(function(a,b){return cle(b)-cle(a)});
+  res='<div class="tw"><table><thead><tr><th>Moteur</th><th class="num">Variantes</th><th class="num">Équivalentes</th><th class="num">Meilleur gain</th><th class="num">Tient sur le réservé</th><th class="num">Jetons</th><th class="num">Pt / 1k jetons</th><th class="num">Durée</th></tr></thead><tbody>'+
+   r.map(function(x,i){return '<tr><td><b class="mono">'+x.nom+'</b>'+(i===0?' <span class="puce ok">vainqueur · '+{rendement:'rendement',brut:'gain brut',duree:'durée'}[c.crit]+'</span>':'')+'</td><td class="num">'+x.v+'</td><td class="num">'+x.e+'</td><td class="num">−'+x.g+' %</td><td class="num">'+(x.t?'oui':'non')+'</td><td class="num">'+fmtJ(x.j)+'</td><td class="num"><b>'+String(x.gpk).replace('.',',')+'</b></td><td class="num">'+x.d+' s</td></tr>'}).join('')+'</tbody></table></div>'+
+   '<div class="tete"><span class="note">Même corpus de rejeu, même partition réservée, même budget. Le classement suit le critère choisi : le rendement favorise les règles gratuites, le gain brut les moteurs à modèle.</span><div class="d"><button class="btn" data-garder="1">Garder pour comparaison</button><button class="btn prim" data-adopter="'+esc(r[0].nom)+'">Adopter '+esc(r[0].nom)+' pour ce point</button></div></div>';
+ }
+ var pistes=(c.enCours||c.resultat)?'<div class="course" id="pistes">'+moteursCourse.filter(function(m){return c.actifs[m.id]}).map(function(m){return '<div class="piste"><span class="nom"><i class="coul" style="background:'+m.couleur+';width:9px;height:9px;border-radius:3px"></i>'+m.nom+'</span><div class="rail2"><i id="pi-'+m.id+'" style="background:'+m.couleur+';width:'+(c.resultat?'100':'0')+'%"></i></div><span class="mono note" id="pt-'+m.id+'">'+(c.resultat?'terminé':'—')+'</span></div>'}).join('')+'</div>':'';
+ return entete('Course des moteurs','Plusieurs moteurs sur la même capacité, le même rejeu, le même budget. On garde celui qui rend le plus par jeton.',
+  '<span class="puce gr">à construire</span>')+legende()+
+  '<section class="deux"><div class="verre cadre"><h2>Préparer</h2>'+
+   '<label class="champ"><span class="lib">Point d’évolution</span><select id="cpoint"'+(c.enCours?' disabled':'')+'>'+POINTS.map(function(p){return '<option'+(p===c.points?' selected':'')+'>'+p+'</option>'}).join('')+'</select></label>'+
+   '<div class="liste">'+cases+'</div>'+
+   '<div class="champs"><label class="champ"><span class="lib">Budget par moteur</span><select id="cbud"'+(c.enCours?' disabled':'')+'><option value="jetons"'+(c.budget==='jetons'?' selected':'')+'>jetons</option><option value="essais"'+(c.budget==='essais'?' selected':'')+'>essais</option><option value="temps"'+(c.budget==='temps'?' selected':'')+'>temps</option></select></label><label class="champ"><span class="lib">Limite</span><input type="number" id="clim" value="'+c.limite+'"'+(c.enCours?' disabled':'')+'></label><label class="champ"><span class="lib">Classer par</span><select id="ccrit"'+(c.enCours?' disabled':'')+'><option value="rendement"'+(c.crit==='rendement'?' selected':'')+'>rendement (gain par jeton)</option><option value="brut"'+(c.crit==='brut'?' selected':'')+'>gain brut</option><option value="duree"'+(c.crit==='duree'?' selected':'')+'>durée</option></select></label></div>'+
+   '<div class="tete"><span class="note">Corpus : 140 entrées distinctes, 28 réservées. Pièges : 0,92.</span><button class="btn prim" id="clancer"'+(c.enCours?' disabled':'')+'>'+(c.enCours?'En cours…':'Lancer la course')+'</button></div></div>'+
+   '<div class="verre cadre"><h2>Ce qui est garanti</h2><div class="liste">'+
+   ['Les moteurs ne voient que la partition visible ; le réservé ne sert qu’au juge.','Chaque moteur tourne dans son processus, sans réseau, avec son délai.','Rien n’est écrit dans le stock : une course ne met aucune EC en service.','Le résultat est scellé dans la chaîne ; la décision d’adopter est un geste à part.'].map(function(t){return '<div class="verif ok"><span class="ic">✓</span><span class="note" style="color:var(--encre)">'+t+'</span></div>'}).join('')+'</div></div></section>'+
+  (pistes||res?'<section class="verre cadre"><h2>Course · '+esc(c.points)+'</h2>'+pistes+res+'</section>':'')+
+  '<section class="verre cadre"><h2>Courses précédentes</h2><div class="tw"><table><thead><tr><th>Point</th><th>Vainqueur</th><th class="num">Gain</th><th class="num">Rendement</th></tr></thead><tbody>'+c.historique.map(function(h){return '<tr><td class="mono">'+h[0]+'</td><td>'+h[1]+'</td><td class="num">−'+h[2]+' %</td><td class="num">'+h[3]+'</td></tr>'}).join('')+'</tbody></table></div></section>';
+}
+function lancerCourse(){
+ var c=ETAT.course;c.enCours=true;c.resultat=null;rendre();
+ var actifs=MOTEURS.filter(function(m){return c.actifs[m.id]&&(m.existe||m.etat==='prevu')});
+ var avance={};actifs.forEach(function(m){avance[m.id]=0});
+ var h=setInterval(function(){
+  var fini=true;
+  actifs.forEach(function(m){
+   if(avance[m.id]<100){avance[m.id]=Math.min(100,avance[m.id]+4+Math.random()*(m.id==='orfan'?13:7));fini=false}
+   var b=$('#pi-'+m.id),t=$('#pt-'+m.id);if(b)b.style.width=avance[m.id]+'%';if(t)t.textContent=Math.round(avance[m.id])+' %';
+  });
+  if(fini){clearInterval(h);c.enCours=false;
+   c.resultat=actifs.map(function(m,i){var g=Math.max(5,Math.round(m.gain+(Math.random()*8-4)));var j=Math.round(m.jetons*(c.budget==='essais'?3:2.4)*(0.85+Math.random()*0.3));return {nom:m.nom,v:m.id==='orfan'?4+i:10+i*3,e:m.id==='orfan'?3:5+i,g:g,t:m.id!=='shinka',j:j,gpk:Math.round(g/(Math.max(j,1)/1000)*10)/10,d:m.id==='orfan'?4+i:20+i*9}});
+   journal('course',c.points+' : '+actifs.map(function(m){return m.nom}).join(', '));toast('Course terminée');rendre()}
+ },220);
+}
+
+/* ═════ 4 · les affectations ═════ */
+function vueAff(){
+ var comptes={};POINTS.forEach(function(p){comptes[AFF[p]]=(comptes[AFF[p]]||0)+1});
+ var opts=function(v){return '<option value="auto"'+(v==='auto'?' selected':'')+'>cascade (par défaut)</option>'+MOTEURS.filter(function(m){return m.existe||m.etat==='prevu'}).map(function(m){return '<option value="'+m.id+'"'+(v===m.id?' selected':'')+(m.existe?'':' disabled')+'>'+m.nom+(m.existe?'':' (à construire)')+'</option>'}).join('')};
+ var lignes=POINTS.map(function(p){var mod=p.split('.')[0];return '<tr><td class="mono">'+p+'</td><td>'+mod+'</td><td><select data-aff="'+p+'">'+opts(AFF[p])+'</select></td><td>'+(AFF[p]==='auto'?'<span class="puce">cascade</span>':'<span class="puce ok">forcé</span>')+'</td></tr>'}).join('');
+ var casc=CASCADE.map(function(e,i){return '<div class="ordre"><span class="rg">'+(i+1)+'</span><label style="display:flex;gap:10px;align-items:center;flex:1;min-width:0"><input type="checkbox" data-cas="'+e.id+'" '+(e.on?'checked':'')+' style="accent-color:var(--accent)"><span style="display:flex;flex-direction:column"><b class="mono" style="font-size:12.5px">'+e.nom+'</b><span class="note">'+e.cout+'</span></span></label><button class="btn" data-mon="'+i+'" '+(i===0?'disabled':'')+' aria-label="Monter">↑</button><button class="btn" data-desc="'+i+'" '+(i===CASCADE.length-1?'disabled':'')+' aria-label="Descendre">↓</button></div>'}).join('');
+ return entete('Affectations','Quel moteur cherche pour quel point. Par défaut, une cascade : le gratuit d’abord, le coûteux seulement quand le profil montre un point chaud.',
+  '<span class="puce ok">choix du moteur à la proposition : construit</span><span class="puce gr">affectation par point : à construire</span>')+legende()+
+  '<section class="deux"><div class="verre cadre"><h2>La cascade</h2><div class="liste">'+casc+'</div>'+
+   '<div class="liste"><label class="inter"><input type="checkbox" checked><span class="t"><b class="mono" style="font-size:12.5px">S’arrêter à la première variante prouvée</b><span class="note">sinon, tous les étages sont essayés dans la limite du budget</span></span></label>'+
+   '<label class="inter"><input type="checkbox" checked><span class="t"><b class="mono" style="font-size:12.5px">Ne passer au modèle que si le profil montre un point chaud</b><span class="note">une ligne qui porte plus de 40 % du travail</span></span></label>'+
+   '<label class="inter"><input type="checkbox"><span class="t"><b class="mono" style="font-size:12.5px">Lancer une course quand deux étages ont réussi</b><span class="note">garde le meilleur rendement</span></span></label></div></div>'+
+   '<div class="verre cadre"><h2>Répartition</h2><div class="liste">'+Object.keys(comptes).map(function(k){var m=k==='auto'?null:M(k);return '<div><div style="display:flex;justify-content:space-between"><span class="mono">'+(m?m.nom:'cascade')+'</span><span class="mono">'+comptes[k]+' points</span></div><div class="barre"><i style="width:'+Math.round(100*comptes[k]/POINTS.length)+'%;background:'+(m?m.couleur:'var(--accent)')+'"></i></div></div>'}).join('')+'</div>'+
+   '<div class="note">Un moteur forcé sur un point ignore la cascade. Un moteur désactivé ou retiré renvoie ses points à la cascade, sans perdre les pièces en vol.</div></div></section>'+
+  '<section class="verre cadre"><h2>Par point d’évolution</h2><div class="tw"><table><thead><tr><th>Point</th><th>Module</th><th>Moteur</th><th>Mode</th></tr></thead><tbody>'+lignes+'</tbody></table></div></section>';
+}
+
+/* ═════ 5 · budget et modèles ═════ */
+function vueBudget(){
+ var mo=MOTEURS.filter(function(m){return m.essais>0});
+ return entete('Budget et modèles','Ce que la recherche a le droit de dépenser, et avec quels modèles. Le coût d’une recherche ne s’emballe pas.','<span class="puce ok">plafond par jour : construit</span><span class="puce gr">budget par moteur : à construire</span>')+legende()+
+  '<section class="deux"><div class="verre cadre"><h2>Plafonds</h2><div class="champs">'+
+   '<label class="champ"><span class="lib">Propositions par jour</span><input type="number" value="20"></label>'+
+   '<label class="champ"><span class="lib">Jetons par mois</span><input type="number" value="2000000"></label>'+
+   '<label class="champ"><span class="lib">Essais par proposition</span><input type="number" value="3"></label>'+
+   '<label class="champ"><span class="lib">Alerte à</span><select><option>70 %</option><option selected>80 %</option><option>90 %</option></select></label></div>'+
+   '<div class="liste"><label class="inter"><input type="checkbox" checked><span class="t"><b class="mono" style="font-size:12.5px">Fournisseurs gratuits d’abord</b><span class="note">la chaîne de secours passe par OmniRoute avant tout fournisseur payant</span></span></label><label class="inter"><input type="checkbox" checked><span class="t"><b class="mono" style="font-size:12.5px">Couper la recherche au plafond</b><span class="note">sinon seulement alerter</span></span></label></div>'+
+   '<div class="tete"><span class="note">Aujourd’hui : 11 propositions sur 20, 34 % des jetons du mois.</span><button class="btn prim" data-enreg="1">Enregistrer</button></div></div>'+
+   '<div class="verre cadre"><h2>Rôles de modèle</h2><div class="liste">'+
+   [['evolution','stratège','claude-fable-5-1','payant'],['evolution-exec','exécutant','qwen3:4b-instruct','local, gratuit'],['gepa-reflexion','réflexion','cc-gratuit-1','gratuit d’abord']].map(function(r){return '<div class="inter" style="align-items:center"><div class="t" style="flex:1"><b class="mono" style="font-size:12.5px">'+r[0]+'</b><span class="note">'+r[1]+' · '+r[3]+'</span></div><select aria-label="Modèle du rôle '+r[0]+'"><option>'+r[2]+'</option><option>claude-sonnet-5-5</option><option>qwen3:4b-instruct</option></select></div>'}).join('')+'</div><div class="note">Les rôles viennent du registre de modèles. Un rôle sans modèle donne un moteur qui le dit, jamais une réponse inventée.</div></div></section>'+
+  '<section class="verre cadre"><h2>Dépense par moteur · 30 jours</h2><div class="tw"><table><thead><tr><th>Moteur</th><th class="num">Essais</th><th class="num">Jetons</th><th>Part</th><th class="num">Plafond</th><th class="num">Gain obtenu</th><th class="num">Pt / 1k jetons</th></tr></thead><tbody>'+
+   mo.map(function(m){var t=m.essais*m.jetons,tot=mo.reduce(function(a,x){return a+x.essais*x.jetons},0);return '<tr><td><b class="mono"><i class="coul" style="background:'+m.couleur+';display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px"></i>'+m.nom+'</b></td><td class="num">'+m.essais+'</td><td class="num">'+fmtJ(t)+'</td><td style="min-width:120px"><div class="barre"><i style="width:'+Math.round(100*t/tot)+'%;background:'+m.couleur+'"></i></div></td><td class="num"><input type="number" value="'+(m.id==='orfan'?500000:300000)+'" style="width:96px" aria-label="Plafond '+m.nom+'"></td><td class="num">−'+m.gain+' %</td><td class="num">'+gpk(m)+'</td></tr>'}).join('')+'</tbody></table></div><div class="note">Le gain par jeton est la mesure de comparaison entre moteurs. Un moteur qui coûte dix fois plus doit rendre dix fois plus pour garder son plafond.</div></section>';
+}
+
+/* ═════ 6 · les pièces en vol ═════ */
+function vuePieces(){
+ var cols=[['ombre','Ombre'],['palier_10','10 %'],['palier_50','50 %'],['en_service','100 %'],['visite','Visitées'],['retiree','Retirées']];
+ var cartes=function(e){return PIECES.filter(function(p){return p.etat===e}).map(function(p){var m=M(p.moteur);return '<div class="piece"><div class="pr"><b class="mono" style="font-size:12px;overflow-wrap:anywhere">'+p.gid+'</b><span class="puce">'+p.ec+'</span></div>'+
+   '<div class="pr"><span class="note"><i class="coul" style="background:'+m.couleur+';display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px"></i>'+m.nom+'</span><span class="mono" style="color:var(--ok)">−'+p.gain+' %</span></div>'+
+   '<div class="note">'+p.distincts+' entrées distinctes · '+p.ecart+' écart · '+p.servis+' appels servis</div>'+
+   (p.raison?'<div class="note" style="color:var(--danger)">'+p.raison+'</div>':'')+
+   (p.etat!=='retiree'?'<button class="btn dng" data-retour="'+p.gid+'">Retour à la référence</button>':'')+'</div>'}).join('')||'<div class="vide" style="padding:12px">—</div>'};
+ return entete('Pièces en vol','Les variantes prouvées et leur chemin vers le service. Les preuves, pas l’humain, font avancer ; l’humain garde le retour.','<span class="puce ok">construit</span>')+
+  '<section class="verre cadre"><div class="pipe">'+cols.map(function(c){return '<div class="col"><h2>'+c[1]+' <span class="note">'+PIECES.filter(function(p){return p.etat===c[0]}).length+'</span></h2>'+cartes(c[0])+'</div>'}).join('')+'</div></section>'+
+  '<section class="trois">'+[['Ombre → 10 %','200 appels comparés sans un écart, dont 30 entrées distinctes.'],['10 % → 50 % → 100 %','200 appels servis par l’EC à chaque palier, aucune faute.'],['Visite','À 30 jours puis tous les 30 jours : le gain doit valoir la moitié de l’annoncé.']].map(function(x){return '<div class="verre cadre"><h2>'+x[0]+'</h2><span class="note">'+x[1]+'</span></div>'}).join('')+'</section>';
+}
+
+/* ═════ 7 · preuves et cage ═════ */
+function vuePreuves(){
+ var mailles=[['seq 1284','visite','memoire.json_extraire EC2 · tenu'],['seq 1283','palier_50','contacts.signaux EC2'],['seq 1282','proposee','contacts.signaux EC2 · gain 49 %'],['seq 1281','retiree','agenda.ical_lire EC1 · 3 écarts'],['seq 1280','ombre','agenda.ical_lire EC1']];
+ return entete('Preuves et cage','Ce qui permet de ne jamais croire un moteur sur parole : la chaîne, les sceaux, le bac à sable, le corpus.','<span class="puce ok">construit</span>')+
+  '<section class="deux"><div class="verre cadre"><h2>Chaîne d’événements</h2><div class="verif ok"><span class="ic">✓</span><div style="flex:1"><b class="mono" style="font-size:12.5px">Intacte · 1 284 mailles</b><div class="note">scellée par la clé de l’instance ; la tête vit hors de la base, une troncature se voit</div></div><button class="btn" id="vch">Vérifier</button></div>'+
+   '<div class="chaine">'+mailles.map(function(m){return '<div class="maille"><span class="h">'+m[0]+'</span><span>'+m[2]+'</span><span class="puce">'+m[1]+'</span></div>'}).join('')+'</div></div>'+
+   '<div class="verre cadre"><h2>Cage des EC</h2><div class="liste">'+
+   [['Sceau','une EC ne sert que scellée par l’évolution (HMAC) ; le routage non signé n’ouvre rien','ok','actif'],['Processus à part','python -I, environnement vidé, tué au délai','ok','actif'],['Bac à sable système','bwrap ou unshare, réseau et fichiers coupés','al','auto (linux : requis conseillé)'],['Comparaison à la référence','un appel servi sur 50 est confronté à la référence','ok','1 / 50'],['Disjoncteur','trois fautes en dix minutes suspendent l’EC','ok','3 / 10 min']].map(function(x){return '<div class="verif '+(x[2]==='ok'?'ok':'')+'"><span class="ic">'+(x[2]==='ok'?'✓':'!')+'</span><div style="flex:1"><b class="mono" style="font-size:12.5px">'+x[0]+'</b><div class="note">'+x[1]+'</div></div><span class="puce '+(x[2]==='ok'?'ok':'al')+'">'+x[3]+'</span></div>'}).join('')+'</div></div></section>'+
+  '<section class="deux"><div class="verre cadre"><h2>Corpus de rejeu et comptes</h2><div class="liste">'+
+   '<label class="inter"><input type="checkbox" checked><span class="t"><b class="mono" style="font-size:12.5px">Points à contenu privé : seule la mesure est gardée</b><span class="note">courrier, coffre, mémoire, notes, salon, ged, agenda, canvas</span></span></label>'+
+   '<label class="inter"><input type="checkbox"><span class="t"><b class="mono" style="font-size:12.5px">Garder aussi le contenu de contacts et d’agents</b><span class="note">choix de l’admin ; rattaché aux comptes, purgeable</span></span></label></div>'+
+   '<div class="tw"><table><thead><tr><th>Compte</th><th class="num">Entrées</th><th></th></tr></thead><tbody>'+[['bea@exemple.test',42],['leo@exemple.test',17],['(noyau)',210]].map(function(r){return '<tr><td class="mono">'+r[0]+'</td><td class="num">'+r[1]+'</td><td class="num">'+(r[0]==='(noyau)'?'':'<button class="btn dng" data-purge="'+r[0]+'">Purger</button>')+'</td></tr>'}).join('')+'</tbody></table></div></div>'+
+   '<div class="verre cadre"><h2>Tombes</h2><div class="note">Une variante fausse ou retirée est gravée par l’empreinte de son arbre syntaxique : aucun moteur ne la reproposera.</div><div class="tw"><table><thead><tr><th>Point</th><th class="num">Tombes</th><th>Dernière raison</th></tr></thead><tbody>'+[['contacts.signaux',4,'divergente'],['dns.analyser',2,'gain dans le bruit'],['agenda.ical_lire',1,'3 écarts en ombre']].map(function(r){return '<tr><td class="mono">'+r[0]+'</td><td class="num">'+r[1]+'</td><td>'+r[2]+'</td></tr>'}).join('')+'</tbody></table></div></div></section>';
+}
+
+/* ═════ 8 · brancher un moteur ═════ */
+function vueBrancher(){
+ var w=ETAT.wiz,E=['Choisir','Contrat','Isolation','Banc','Activer'];
+ var m=M(w.choix)||MOTEURS[1];
+ var corps='';
+ if(w.etape===0){
+  corps='<div class="grille">'+MOTEURS.filter(function(x){return !x.existe&&x.etat!=='etude'}).map(function(x){return '<label class="inter" style="cursor:pointer"><input type="radio" name="mch" value="'+x.id+'" '+(w.choix===x.id?'checked':'')+'><span class="t"><b class="mono" style="font-size:12.5px">'+x.nom+'</b><span class="note">'+x.genre+' · '+x.licence+'</span><span class="note">'+x.runtime+'</span></span></label>'}).join('')+
+   '<label class="inter" style="cursor:pointer"><input type="radio" name="mch" value="maison" '+(w.choix==='maison'?'checked':'')+'><span class="t"><b class="mono" style="font-size:12.5px">Mon propre moteur</b><span class="note">tout moteur qui respecte le contrat d’adaptateur peut être branché</span></span></label></div>';
+ } else if(w.etape===1){
+  corps='<div class="note">Le seul lien entre Cassandra et un moteur est ce contrat. L’adaptateur de '+(w.choix==='maison'?'votre moteur':m.nom)+' traduit son vocabulaire vers celui-ci.</div><div class="code"><span class="c"># le contrat d’adaptateur</span>\n<span class="k">class</span> Moteur:\n    nom = <span class="s">"'+(w.choix==='maison'?'mon-moteur':w.choix)+'"</span>\n\n    <span class="k">def</span> proposer(self, contexte):\n        <span class="c"># contexte = {point, source_reference, fonction, contrat,\n        #             entrees (partition VISIBLE seulement),\n        #             tombes, budget, seuils}</span>\n        <span class="k">return</span> [\n            {<span class="s">"texte"</span>: <span class="s">"def f(x): ..."</span>, <span class="s">"hypothese"</span>: <span class="s">"pourquoi c’est plus rapide"</span>},\n        ]</div>'+
+   '<div class="champs"><label class="champ"><span class="lib">Module de l’adaptateur</span><input type="text" value="orfan.adaptateurs.'+(w.choix==='maison'?'maison':w.choix)+'"></label><label class="champ"><span class="lib">Genre de ce qu’il fait évoluer</span><select><option>Code</option><option>Prompts</option><option>Politiques</option></select></label></div><div class="note">Un adaptateur vit dans le paquet <span class="mono">orfan</span> : un réglage ne peut pas importer un autre module du serveur.</div>';
+ } else if(w.etape===2){
+  corps='<div class="champs"><label class="champ"><span class="lib">Interpréteur</span><input type="text" value="'+(w.choix==='codeevolve'?'/opt/python3.13/bin/python':'python du serveur')+'"></label><label class="champ"><span class="lib">Mémoire (Mo)</span><input type="number" value="1024"></label><label class="champ"><span class="lib">Délai d’un appel (ms)</span><input type="number" value="2000"></label><label class="champ"><span class="lib">Bac à sable</span><select><option selected>requis</option><option>auto</option><option>aucun</option></select></label></div>'+
+   '<div class="liste"><label class="inter"><input type="checkbox" checked disabled><span class="t"><b class="mono" style="font-size:12.5px">Environnement vidé, aucune clé</b><span class="note">non réglable</span></span></label><label class="inter"><input type="checkbox" checked disabled><span class="t"><b class="mono" style="font-size:12.5px">Réseau coupé</b><span class="note">un moteur qui appelle un modèle le fait par le rôle de modèle de Cassandra, jamais seul</span></span></label></div>';
+ } else if(w.etape===3){
+  corps='<div class="liste" id="verifs"></div><div class="tete"><span class="note" id="vbilan"></span><button class="btn prim" id="vrun">Lancer le banc</button></div>';
+ } else {
+  corps='<div class="liste"><div class="verif ok"><span class="ic">✓</span><div style="flex:1"><b class="mono" style="font-size:12.5px">Banc de conformité passé</b><div class="note">7 / 7</div></div></div><label class="inter"><input type="checkbox" checked><span class="t"><b class="mono" style="font-size:12.5px">Mettre dans la cascade, après Orfan</b><span class="note">jamais en tête sans course gagnée</span></span></label><label class="inter"><input type="checkbox"><span class="t"><b class="mono" style="font-size:12.5px">Lancer une course d’essai sur dns.analyser</b><span class="note">compare avec Orfan avant toute adoption</span></span></label></div>';
+ }
+ return entete('Brancher un moteur','Un moteur ne s’installe pas à la volée : il passe un contrat, une cage et un banc, comme les autres.','<span class="puce gr">à construire</span>')+legende()+
+  '<section class="verre cadre"><div class="etapes">'+E.map(function(e,i){return '<span class="etape '+(i===w.etape?'on':i<w.etape?'fait':'')+'">'+(i<w.etape?'✓':i+1)+' · '+e+'</span>'}).join('')+'</div>'+corps+
+  '<div class="tete"><button class="btn" id="wpre"'+(w.etape===0?' disabled':'')+'>Précédent</button><button class="btn prim" id="wsui">'+(w.etape===4?'Activer le moteur':'Suivant')+'</button></div></section>';
+}
+
+/* ═════ 9 · journal ═════ */
+function vueJournal(){
+ var f=ETAT.filtre,verbes=['tous','proposee','palier','retiree','visite','course','moteur'];
+ var L=JOURNAL.filter(function(j){return f==='tous'||j[1].indexOf(f)===0});
+ return entete('Journal','Tout ce que les moteurs et le noyau ont fait, dans l’ordre. Les événements de la chaîne sont scellés.','<span class="puce ok">chaîne : construit</span><span class="puce gr">événements de moteur : à construire</span>')+
+  '<section class="verre cadre"><div class="onglets" role="tablist">'+verbes.map(function(v){return '<button role="tab" aria-selected="'+(v===f)+'" data-filtre="'+v+'">'+v+'</button>'}).join('')+'</div>'+
+  '<div class="tw"><table><thead><tr><th>Quand</th><th>Type</th><th>Détail</th></tr></thead><tbody>'+(L.length?L.map(function(j){return '<tr><td class="mono">'+j[0]+'</td><td><span class="puce">'+j[1]+'</span></td><td>'+esc(j[2])+'</td></tr>'}).join(''):'<tr><td colspan="3" class="vide">Rien pour ce filtre.</td></tr>')+'</tbody></table></div></section>';
+}
+
+/* ═════ tiroir (note d'un moteur à l'étude) ═════ */
+function ouvrirTiroir(html){$('#tiroir').innerHTML=html;$('#tiroir').classList.add('on');$('#voile').classList.add('on');var b=$('#tiroir button');if(b)b.focus()}
+function fermerTiroir(){$('#tiroir').classList.remove('on');$('#voile').classList.remove('on')}
+
+/* ═════ rendu et événements ═════ */
+function rendre(){
+ rail();
+ var f={parc:vueParc,fiche:vueFiche,course:vueCourse,aff:vueAff,budget:vueBudget,pieces:vuePieces,preuves:vuePreuves,brancher:vueBrancher,journal:vueJournal}[ETAT.vue];
+ $('#scene').innerHTML=f();
+ liens();
+}
+function liens(){
+ var s=$('#scene');
+ $$('[data-ouvrir]',s).forEach(function(e){e.onclick=function(ev){if(ev.target.closest('[data-stop]')&&!ev.target.closest('[data-ouvrir].btn'))return;var m=M(e.dataset.ouvrir);if(m.etat==='etude'){ouvrirTiroir('<div style="display:flex;justify-content:space-between;align-items:center"><h3>'+m.nom+'</h3><button class="btn" id="tfer">Fermer</button></div><p class="note" style="margin:0">'+esc(m.desc)+'</p><div class="verif"><span class="ic">i</span><span class="note" style="color:var(--encre)">Pas de code publié : rien à brancher aujourd’hui. Si un dépôt paraît, il suivra le chemin habituel (contrat, cage, banc).</span></div>');$('#tfer').onclick=fermerTiroir;return}ouvrir('fiche',{moteur:m.id,onglet:'apercu'})};e.onkeydown=function(ev){if((ev.key==='Enter'||ev.key===' ')&&ev.target===e){ev.preventDefault();e.onclick(ev)}}});
+ $$('[data-ouvrir-vue]',s).forEach(function(b){b.onclick=function(){ouvrir(b.dataset.ouvrirVue)}});
+ $$('[data-act]',s).forEach(function(b){b.onclick=function(ev){ev.stopPropagation();var m=M(b.dataset.act);m.etat=m.etat==='actif'?'installe':'actif';journal('moteur',m.nom+(m.etat==='actif'?' activé':' désactivé'));toast(m.nom+(m.etat==='actif'?' activé':' désactivé : ses points reviennent à la cascade'));rendre()}});
+ $$('[data-brancher]',s).forEach(function(b){b.onclick=function(ev){ev.stopPropagation();ouvrir('brancher',{wiz:{etape:0,choix:b.dataset.brancher,verifs:[]}})}});
+ $$('[data-conf]',s).forEach(function(b){b.onclick=function(ev){ev.stopPropagation();ouvrir('fiche',{moteur:b.dataset.conf,onglet:'conformite'})}});
+ $$('[data-tab]',s).forEach(function(b){b.onclick=function(){ETAT.onglet=b.dataset.tab;rendre()}});
+ $$('[data-enreg]',s).forEach(function(b){b.onclick=function(){journal('moteur','réglages enregistrés');toast('Enregistré. Le noyau garde ses seuils.')}});
+ $$('[data-retirer]',s).forEach(function(b){b.onclick=function(){var m=M(b.dataset.retirer);m.etat='prevu';m.existe=false;journal('moteur',m.nom+' retiré');toast(m.nom+' retiré : ses pièces en vol sont retirées, ses tombes restent');ouvrir('parc')}});
+ var vr=$('#vrun',s);if(vr&&!vr.disabled){vr.onclick=lancerBanc;if(ETAT.vue==='brancher')lancerBanc()}
+ if(vr&&ETAT.vue==='brancher'){vr.onclick=lancerBanc}
+ var ch=$('#vch',s);if(ch)ch.onclick=function(){toast('Chaîne vérifiée : 1 284 mailles, tête conforme')};
+ $$('[data-cm]',s).forEach(function(i){i.onchange=function(){ETAT.course.actifs[i.dataset.cm]=i.checked}});
+ var cp=$('#cpoint',s);if(cp)cp.onchange=function(){ETAT.course.points=cp.value};
+ var cb=$('#cbud',s);if(cb)cb.onchange=function(){ETAT.course.budget=cb.value};
+ var cc=$('#ccrit',s);if(cc)cc.onchange=function(){ETAT.course.crit=cc.value};
+ var cl=$('#clim',s);if(cl)cl.onchange=function(){ETAT.course.limite=+cl.value};
+ var cr=$('#clancer',s);if(cr)cr.onclick=function(){if(!Object.keys(ETAT.course.actifs).some(function(k){return ETAT.course.actifs[k]})){toast('Choisis au moins un moteur');return}lancerCourse()};
+ $$('[data-adopter]',s).forEach(function(b){b.onclick=function(){var nom=b.dataset.adopter,m=MOTEURS.filter(function(x){return x.nom===nom})[0];AFF[ETAT.course.points]=m.id;var gagnant=ETAT.course.resultat.filter(function(r){return r.nom===nom})[0];ETAT.course.historique.unshift([ETAT.course.points,nom+' · '+{rendement:'rendement',brut:'gain brut',duree:'durée'}[ETAT.course.crit],gagnant.g,String(gagnant.gpk).replace('.',',')]);journal('course',ETAT.course.points+' : '+nom+' adopté');toast(nom+' adopté pour '+ETAT.course.points);ETAT.course.resultat=null;ouvrir('aff')}});
+ $$('[data-garder]',s).forEach(function(b){b.onclick=function(){toast('Résultat gardé dans le journal')}});
+ $$('[data-aff]',s).forEach(function(sel){sel.onchange=function(){AFF[sel.dataset.aff]=sel.value;journal('moteur',sel.dataset.aff+' → '+sel.value);rendre()}});
+ $$('[data-mon]',s).forEach(function(b){b.onclick=function(){var i=+b.dataset.mon,t=CASCADE[i];CASCADE[i]=CASCADE[i-1];CASCADE[i-1]=t;rendre()}});
+ $$('[data-desc]',s).forEach(function(b){b.onclick=function(){var i=+b.dataset.desc,t=CASCADE[i];CASCADE[i]=CASCADE[i+1];CASCADE[i+1]=t;rendre()}});
+ $$('[data-cas]',s).forEach(function(c){c.onchange=function(){CASCADE.filter(function(e){return e.id===c.dataset.cas})[0].on=c.checked}});
+ $$('[data-retour]',s).forEach(function(b){b.onclick=function(){var p=PIECES.filter(function(x){return x.gid===b.dataset.retour})[0];p.etat='retiree';p.raison='retour demandé · tombe gravée';journal('retiree',p.gid+' '+p.ec+' · retour demandé');toast('Retour : la référence répond, la pièce est retirée');rendre()}});
+ $$('[data-purge]',s).forEach(function(b){b.onclick=function(){journal('moteur','corpus purgé pour '+b.dataset.purge);toast('Entrées de '+b.dataset.purge+' effacées du corpus')}});
+ $$('[data-filtre]',s).forEach(function(b){b.onclick=function(){ETAT.filtre=b.dataset.filtre;rendre()}});
+ $$('[name=mch]',s).forEach(function(r){r.onchange=function(){ETAT.wiz.choix=r.value}});
+ var pre=$('#wpre',s),sui=$('#wsui',s);
+ if(pre)pre.onclick=function(){ETAT.wiz.etape=Math.max(0,ETAT.wiz.etape-1);rendre()};
+ if(sui)sui.onclick=function(){if(ETAT.wiz.etape===4){var m=M(ETAT.wiz.choix);if(m){m.existe=true;m.etat='actif'}journal('moteur',(m?m.nom:'moteur maison')+' branché et activé');toast((m?m.nom:'Moteur')+' branché');ETAT.wiz={etape:0,choix:'openevolve',verifs:[]};ouvrir('parc')}else{ETAT.wiz.etape++;rendre()}};
+}
+$('#voile').onclick=fermerTiroir;
+document.addEventListener('keydown',function(e){if(e.key==='Escape')fermerTiroir()});
+$('#theme').onclick=function(){var r=document.documentElement,s=r.getAttribute('data-theme')==='dark'?'light':'dark';r.setAttribute('data-theme',s);$('#theme').textContent=s==='dark'?'Thème clair':'Thème sombre';try{localStorage.setItem('ev-theme',s)}catch(e){}};
+try{var t=localStorage.getItem('ev-theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');$('#theme').textContent='Thème clair'}}catch(e){}
+rendre();
+</script>
+</body>
+</html>
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est une maquette : aucune donnée réelle, aucun appel au serveur -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : docs/CN_maquette-evolution.html (cockpit et atelier), docs/CN_EVOLUTION.md, noyau/CN_evolution.py, orfan/CN_orfan.py -->
