@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #9f6dec
+// VERSION CN : 0.1.0  #36ff1b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Notes : /api/notes/* (V18, tout en POST) -> capacités notes.* du noyau.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=9f6dec ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=36ff1b ▼▼▼
 /* Notes : /api/notes/* (V18, tout en POST) -> capacités notes.* du noyau.
    Le noyau a gardé les formes de la V18 (titre, corps, refs…) ; il manque surtout `ok` et quelques noms d'arguments. */
 (function () {
@@ -55,6 +55,106 @@
   P("/api/notes/dossier/renommer", "notes.dossier_renommer", { args: (r) => ({ chemin: r.body.chemin || "", nom: r.body.nom || r.body.nouveau || "" }), sortie: ok });
   P("/api/notes/dossier/supprimer", "notes.dossier_supprimer", { args: (r) => ({ chemin: r.body.chemin || "" }), sortie: ok });
   P("/api/notes/menage", "notes.menage", { args: () => ({}), sortie: ok });
+
+  // ── Le carnet (V18 : /api/carnet/*) : les mêmes notes, rangées par projet et par étiquette ; chaque geste est une écriture de notes.ecrire.
+  const refCa = (b) => String(b.ref || b.id || "");
+  const projetDe = async (agir, nom) => {
+    const n = String(nom || "").trim();
+    if (!n) return null;
+    const t = (await agir("projets.trouver", { nom: n })).projet;
+    return t && t.nom.trim().toLowerCase() === n.toLowerCase() ? t : null;
+  };
+  P("/api/carnet/groupes", null, {
+    faire: async (req, agir) => {
+      const r = await agir("notes.lister", { limite: 1 });
+      const g = r.groupes || {};
+      return ok({ projets: g.projets || [], etiquettes: g.etiquettes || [], sans: g.sans || 0, postit: 0, total: r.total || 0 });
+    },
+  });
+  P("/api/carnet/lister", "notes.lister", {
+    args: (r) => ({ groupe: r.body.groupe || "*", q: r.body.q || "", tri: r.body.tri || "recent", filtre: r.body.filtre || "toutes" }),
+    sortie: (x) => ok({ notes: x.notes || [], total: (x.notes || []).length }),
+  });
+  P("/api/carnet/fiche", "notes.fiche", { args: (r) => ({ ref: refCa(r.body), marquer: false }), sortie: ok });
+  P("/api/carnet/ranger", null, {
+    faire: async (req, agir) => {
+      const b = req.body, a = { ref: refCa(b), motif: "rangée" };
+      if (b.etiquettes == null && b.projet == null) return { ok: false, reason: "rien à ranger" };
+      if (b.etiquettes != null) a.etiquettes = b.etiquettes;
+      if (b.projet != null) a.projet = b.projet;
+      const r = await agir("notes.ecrire", a);
+      return ok({ id: r.ref || a.ref });
+    },
+  });
+  const rattachements = async (agir, ref, fait) => {
+    const f = await agir("notes.fiche", { ref, marquer: false });
+    const liste = (f.rattache || []).map((x) => x.brut);
+    const neuve = fait(liste);
+    if (typeof neuve === "string") return { ok: false, reason: neuve };
+    await agir("notes.ecrire", { ref, rattache: neuve.liste, motif: neuve.motif });
+    const g = await agir("notes.fiche", { ref, marquer: false });
+    return ok({ id: g.id, rattache: g.rattache });
+  };
+  P("/api/carnet/rattacher", null, {
+    faire: (req, agir) => {
+      const b = req.body, nature = String(b.nature || "").trim(), cible = String(b.cible || "").trim();
+      if (!nature || !cible) return { ok: false, reason: "aucune cible" };
+      const t = nature + ":" + cible;
+      return rattachements(agir, refCa(b), (l) => (l.includes(t) ? "déjà rattachée" : { liste: l.concat([t]), motif: "rattachée à " + t }));
+    },
+  });
+  P("/api/carnet/detacher", null, {
+    faire: (req, agir) => {
+      const b = req.body, brut = String(b.brut || "");
+      return rattachements(agir, refCa(b), (l) => (l.includes(brut) ? { liste: l.filter((x) => x !== brut), motif: "détachée de " + brut } : "ce rattachement n'existe pas"));
+    },
+  });
+  P("/api/carnet/etat", null, {
+    faire: async (req, agir) => {
+      const etat = String(req.body.etat || "").trim();
+      const r = await agir("notes.ecrire", { ref: refCa(req.body), etat, motif: "état : " + etat });
+      return ok({ id: r.ref, etat });
+    },
+  });
+  P("/api/carnet/relire", null, {
+    faire: async (req, agir) => {
+      const quand = String(req.body.quand || "").trim().slice(0, 10);
+      const r = await agir("notes.ecrire", { ref: refCa(req.body), relire: quand, motif: quand ? "relecture au " + quand : "relecture retirée" });
+      return ok({ id: r.ref, relire: quand });
+    },
+  });
+  P("/api/carnet/tache", "notes.case_basculer", { args: (r) => ({ ref: refCa(r.body), ligne: +r.body.ligne }), sortie: (x) => ok({ id: x.ref, ligne: x.ligne, faite: x.faite }) });
+  P("/api/carnet/taches", null, {
+    faire: async (req, agir) => {
+      const e = await agir("notes.cases_etat", { ref: refCa(req.body) });
+      const p = await projetDe(agir, e.projet);
+      return ok(Object.assign({}, e, { projet_id: p ? p.id : null, sans_projet: !e.projet }));
+    },
+  });
+  P("/api/carnet/taches/projeter", null, {
+    faire: async (req, agir) => {
+      const ref = refCa(req.body), e = await agir("notes.cases_etat", { ref });
+      if (!e.projet) return { ok: false, reason: "cette note n'est rattachée à aucun projet" };
+      const p = await projetDe(agir, e.projet);
+      if (!p) return { ok: false, reason: "aucun projet ne porte le nom « " + e.projet + " »" };
+      const creees = [];
+      let deja = 0;
+      for (const c of e.cases) {
+        if (c.tache) { deja++; continue; }
+        const t = await agir("taches.creer", { texte: c.texte, projet_id: p.id, source: "note", origine: ref + ":" + c.ligne });
+        if (c.faite) await agir("taches.modifier", { id: t.id, statut: "fait" });
+        await agir("notes.case_lier", { ref, ligne: c.ligne, tache_id: t.id });
+        creees.push(c.texte);
+      }
+      return ok({ id: ref, creees, deja });
+    },
+  });
+  P("/api/carnet/taches/reprendre", "notes.cases_reprendre", { args: (r) => ({ ref: refCa(r.body) }), sortie: (x) => ok({ id: x.ref, reprises: x.reprises || [], note: x.note }) });
+  // Les post-it n'existent pas en V19 (la base repart vide, la note les remplace) : aucun à reprendre, rien à migrer.
+  P("/api/carnet/postit", null, { faire: async () => ok({ postit: [], restants: 0 }) });
+  P("/api/carnet/postit/reprendre", null, { faire: async () => ({ ok: false, reason: "ce post-it n'existe plus" }) });
+  P("/api/carnet/migrer", null, { faire: async () => ok({ migres: [], ignores: [], restants: 0 }) });
+  P("/api/notes/migration", null, { faire: async () => ok({ migration: null }) });
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
 
