@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #45a849
+// VERSION CN : 0.1.0  #00832f
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=45a849 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=00832f ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -141,7 +141,7 @@ async function loginPremier(){
     const dire = function(t){ if (e) { e.innerHTML = t ? (LOGIN_ALERTE + '<span>' + t + '</span>') : ''; e.classList.toggle('on', !!t); } };
     dire('');
     const compte = v('premier-compte').trim(), mdp = v('premier-mdp');
-    if (!v('premier-jeton').trim()) { dire('Le jeton d'installation est affiché à la fin de l'installation.'); return; }
+    if (!v('premier-jeton').trim()) { dire("Le jeton d'installation est affiché à la fin de l'installation."); return; }
     if (!compte) { dire('Entrez votre adresse e-mail.'); return; }
     if (mdp !== v('premier-mdp2')) { dire('Les deux mots de passe ne sont pas identiques.'); return; }
     if (go) { go.disabled = true; go.textContent = 'Création…'; }
