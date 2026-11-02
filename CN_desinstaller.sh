@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #177898
+# VERSION CN : 0.1.0  #65c549
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Retire Cassandra d'une machine, proprement : les modules par leur propre retrait, les services, puis le dossier ; sans toucher à FastPanel ni aux sites.
 # MÉTHODE    : chaque module se retire par SON CN_retirer.sh ; ce que l'installateur a posé AUTOUR (conteneurs, Ollama, outils de sécurité, swap) ne part qu'avec --tout.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=177898 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=65c549 ▼▼▼
 # CN_desinstaller.sh [--oui] [--tout] [--garder-donnees]
 #
 #   (sans option)        retire Cassandra : ses services, ses modules, son dossier (/var/cassandra) et son utilisateur ; DEMANDE confirmation
@@ -94,6 +94,9 @@ if [ "$TOUT" -eq 1 ]; then
     userdel ollama >/dev/null 2>&1 || true; groupdel ollama >/dev/null 2>&1 || true
   fi
   rm -f /usr/local/bin/bw
+  rm -f /etc/fail2ban/jail.d/cassandra.local
+  if [ -f "$CONFIG/pare-feu.pose" ] && command -v ufw >/dev/null 2>&1; then ufw --force disable >/dev/null 2>&1 || true; fi
+  if [ -f "$CONFIG/fail2ban.pose" ]; then DEBIAN_FRONTEND=noninteractive apt-get purge -y -qq fail2ban >/dev/null 2>&1 || true; else systemctl restart fail2ban >/dev/null 2>&1 || true; fi
   if command -v apt-get >/dev/null 2>&1; then
     DEBIAN_FRONTEND=noninteractive apt-get purge -y -qq lynis clamav clamav-daemon clamav-freshclam trivy >/dev/null 2>&1 || true
     DEBIAN_FRONTEND=noninteractive apt-get autoremove -y -qq >/dev/null 2>&1 || true

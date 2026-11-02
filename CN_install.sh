@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #108259
+# VERSION CN : 0.1.0  #0b295b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=108259 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=0b295b ▼▼▼
 # CN_install.sh : installe le NOYAU de Cassandra V19 et, à la demande, ses modules.
 #
 #   ./CN_install.sh                         le noyau seul, dans UN dossier : /var/cassandra
@@ -28,7 +28,7 @@
 #   ./CN_install.sh --desinstaller [--oui] [--tout] [--garder-donnees]    retire Cassandra (voir CN_desinstaller.sh --aide)
 #   --sans-services : le noyau et les modules seulement, sans Docker, coffre, recherche, IA locale ni outils de sécurité ;  --sans-controle
 #
-# Variables (1 par défaut, 0 coupe) : WITH_SWAP, WITH_VAULT, WITH_SEARXNG, WITH_SEMANTIQUE, WITH_OLLAMA ; WITH_SECU=defaut|aucun|lynis,trivy,clamav,crowdsec ;
+# Variables (1 par défaut, 0 coupe) : WITH_PROTECTION (fail2ban + pare-feu), WITH_PAREFEU (le pare-feu seul), WITH_SWAP, WITH_VAULT, WITH_SEARXNG, WITH_SEMANTIQUE, WITH_OLLAMA ; WITH_SECU=defaut|aucun|lynis,trivy,clamav,crowdsec ;
 # OLLAMA_MODELE (qwen2.5:3b), SWAP_SIZE (4G), TAILSCALE_AUTHKEY. Une machine petite ou à court de disque n'installe pas d'office le sens, Ollama et ClamAV.
 #
 # La disposition (un dossier pour Cassandra, les dossiers des utilisateurs à la manière de FastPanel) est décrite dans
