@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #cbdcb7
+# VERSION CN : 0.1.0  #f28d1f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'audit d'Évolution : chaque défaut trouvé à l'audit (deux passages) a ici le banc qui le rejoue.
 # MÉTHODE    : les bancs de l'évolution (Banc de CN_test_evolution) et des points (Banc de CN_test_points), un banc par défaut trouvé ; les EC qui bouclent sont de vraies EC dans de vrais processus.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=cbdcb7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=f28d1f ▼▼▼
 """Bancs de l'audit d'Évolution : chaque défaut trouvé à l'audit (deux passages) a ici le banc qui le rejoue.
 
 Isolation (le délai tue l'EC), échec fermé du routage, une seule pièce vivante par point, suspension qui ne tue pas le point, course entre deux propositions,
@@ -393,6 +393,14 @@ class BacOS(Banc):
     def sans_bac(self):
         P._BAC.clear()
         P._BAC["choisi"] = ([], "aucun")
+
+    def test_l_etat_d_un_ecran_n_eprouve_pas_le_bac(self):
+        P._BAC.clear()
+        self.assertEqual(self.svc._nom_bac(), "à éprouver")                                    # rien n'est lancé pour répondre à un écran
+        self.assertNotIn("choisi", P._BAC)
+        P.bac_os("auto")
+        self.assertIn("choisi", P._BAC)
+        self.assertNotEqual(self.svc._nom_bac(), "à éprouver")
 
     def test_un_mode_inconnu_est_refuse(self):
         with self.assertRaises(ValueError):

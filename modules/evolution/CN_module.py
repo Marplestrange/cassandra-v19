@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.4.0  #4733c6
+# VERSION CN : 0.4.1  #b45e7a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.0 empreinte=4733c6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=b45e7a ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -85,6 +85,7 @@ def brancher(ctx):
     # ── les gestes ───────────────────────────────────────────────────────
     def proposer(c, point="", moteur="", budget=0):
         m, p = decouper(point)
+        evo.seuils["propositions_par_jour"] = max(1, int(reglage("propositions_par_jour", evo.seuils.get("propositions_par_jour", 20))))      # le réglage de l'admin l'emporte sur la valeur du fichier
         choix = str(moteur or reglage("moteur_defaut", "deterministe"))
         if choix not in ("deterministe", "modele", "les_deux"):
             raise ValueError("moteur inconnu : « %s » (deterministe, modele, les_deux)" % choix)

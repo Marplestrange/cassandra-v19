@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #414649
+# VERSION CN : 0.1.0  #dfc824
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Évolution : ses capacités dans un vrai noyau, avec un module « labo » qui déclare un point d'évolution et un faux module « modeles ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=414649 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=dfc824 ▼▼▼
 """Bancs du module Évolution : ses capacités dans un vrai noyau, avec un module « labo » qui déclare un point d'évolution et un faux module « modeles »."""
 import json
 import shutil
@@ -129,6 +129,14 @@ class Lectures(Banc):
 
 
 class Gestes(Banc):
+    def test_le_plafond_de_propositions_est_un_reglage_de_l_admin(self):
+        self.n.reglages.poser("evolution.propositions_par_jour", 1, par="essai")
+        premiere = self.ex("proposer", {"point": "labo.somme_min", "moteur": "deterministe"})
+        seconde = self.ex("proposer", {"point": "labo.somme_min", "moteur": "deterministe"})
+        self.assertEqual(premiere["statut"], "faite", premiere)
+        self.assertFalse(seconde["resultat"]["ok"])
+        self.assertIn("plafond", seconde["resultat"]["raison"])
+
     def test_purger_un_compte_efface_ses_entrees_du_corpus(self):
         self.n.points.appeler("labo", "somme_min", {"v": [1, 2, 3]}, compte="bea@x.fr")
         self.n.points.appeler("labo", "somme_min", {"v": [4, 5, 6]}, compte="leo@x.fr")

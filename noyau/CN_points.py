@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #bb8a3a
+# VERSION CN : 0.1.0  #fd75c8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=bb8a3a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fd75c8 ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -334,6 +334,7 @@ class BacIndisponible(ErreurEC):
 
 
 _BAC: dict = {}
+_BAC_VERROU = threading.Lock()
 
 
 def _candidats_bac() -> list:
@@ -363,6 +364,10 @@ def _bac_marche(prefixe: list) -> bool:
         return False
 
 
+def bac_os_mode_valide(mode) -> bool:
+    return mode in ("aucun", "auto", "requis")
+
+
 def bac_os(mode: str = "auto") -> tuple:
     """(préfixe de commande, nom du bac). `mode` : « aucun » (rien), « auto » (le meilleur qui marche, sinon rien), « requis » (le meilleur qui marche, sinon BacIndisponible :
     l'EC ne s'exécute pas sans). Linux seulement ; ailleurs, seuls le processus à part, le délai et le plafond de ressources gardent."""
@@ -370,13 +375,15 @@ def bac_os(mode: str = "auto") -> tuple:
         raise ValueError("bac_os inconnu : %r (aucun, auto, requis)" % (mode,))
     if mode == "aucun":
         return [], "aucun"
-    if "choisi" not in _BAC:
-        _BAC["choisi"] = ([], "aucun")
-        if sys.platform.startswith("linux"):
-            for nom, prefixe in _candidats_bac():
-                if _bac_marche(prefixe):
-                    _BAC["choisi"] = (prefixe, nom)
-                    break
+    with _BAC_VERROU:                       # un seul essai à la fois : deux fils qui démarrent ensemble n'éprouvent pas le bac deux fois
+        if "choisi" not in _BAC:
+            choisi = ([], "aucun")
+            if sys.platform.startswith("linux"):
+                for nom, prefixe in _candidats_bac():
+                    if _bac_marche(prefixe):
+                        choisi = (prefixe, nom)
+                        break
+            _BAC["choisi"] = choisi
     prefixe, nom = _BAC["choisi"]
     if mode == "requis" and nom == "aucun":
         raise BacIndisponible("bac à sable requis, introuvable (bwrap ou unshare utilisables, sous Linux) : l'EC ne s'exécute pas")
@@ -624,12 +631,26 @@ class ServicePoints:
         self._vstat = threading.Lock()
         self._decisions: dict = {}
         self._routes: dict = {}
+        if self.isolation == "processus" and bac_os_mode_valide(self.bac_os) and self.bac_os != "aucun" and sys.platform.startswith("linux"):
+            threading.Thread(target=self._eprouver_bac, daemon=True, name="ec-bac").start()      # le bac s'éprouve au démarrage, pas au premier appel d'un utilisateur
+
+    def _eprouver_bac(self):
+        try:
+            bac_os(self.bac_os)
+        except Exception:
+            pass
 
     def fermer(self):
         """Arrête les processus d'EC (à l'arrêt du serveur, ou quand on veut repartir de zéro)."""
         for h in list(self._hotes_ec.values()):
             h.fermer()
         self._hotes_ec.clear()
+
+    def __del__(self):
+        try:
+            self.fermer()                                 # un service qu'on lâche (un banc, un rechargement) ne laisse pas ses processus d'EC derrière lui
+        except Exception:
+            pass
 
     # ── la clé et les sceaux : ce qui lie un fichier du stock à la décision de l'évolution ──
     def _cle(self):
@@ -1100,10 +1121,13 @@ class ServicePoints:
                 "routage": None if r is None else {"mode": r["mode"], "part": r["part"]}, "ombre": self._resume_ombre(cumul["ombre"])}
 
     def _nom_bac(self) -> str:
-        try:
-            return bac_os(self.bac_os)[1] if self.isolation == "processus" else "aucun"
-        except BacIndisponible:
-            return "indisponible"
+        """Le bac retenu, SANS l'éprouver : l'état d'un écran ne lance jamais un sous-processus. Tant qu'il n'est pas éprouvé (au démarrage, en arrière-plan), « à éprouver »."""
+        if self.isolation != "processus" or self.bac_os == "aucun":
+            return "aucun"
+        if "choisi" not in _BAC:
+            return "à éprouver"
+        nom = _BAC["choisi"][1]
+        return "indisponible" if (self.bac_os == "requis" and nom == "aucun") else nom
 
     @staticmethod
     def _resume_ombre(o):

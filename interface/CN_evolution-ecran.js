@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #ab6fa8
+// VERSION CN : 0.2.0  #536937
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Évolution à la ressemblance de la maquette : Cockpit (l'organisme vu de haut) et Atelier (une cible, ses pièces, ses preuves).
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.evolution) ; données par evolution.etat, gestes par evolution.proposer / retour / visiter ; tout texte dynamique est échappé ; ce qui n'est pas encore construit garde sa place, porte la pastille « non branché » et n'affiche aucun chiffre.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=ab6fa8 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=536937 ▼▼▼
 /* La mise en page est celle de docs/CN_maquette-evolution.html (bandeau, héros, cartes numérotées, trois colonnes, tiroir du moteur).
    Règle : un chiffre affiché vient de evolution.etat ; une carte dont le moteur n'existe pas encore garde sa phrase de conception et la pastille « non branché ». */
 (function () {
@@ -80,7 +80,7 @@
     proposer: { risque: "moyen", perimetre: "le stock d'EC du point visé : une variante prouvée y est écrite et mise en OMBRE ; rien n'est servi à personne",
                 preuve: "la pièce est dans le stock, en ombre, et la chaîne d'empreintes est intacte (ou rien n'a été écrit)", retour: "retirer la pièce : un aiguillage vers la référence ; l'EC reste dans le stock, jamais détruite" },
     retour: { risque: "moyen", perimetre: "le routage du point visé et ses pièces vivantes", preuve: "le routage du point est à l'arrêt", retour: "proposer de nouveau une variante : une pièce retirée ne se remet pas en service seule" },
-    visiter: { risque: "moyen", perimetre: "les pièces en service depuis plus de 30 jours, une fois chacune", preuve: "chaque pièce visitée porte son verdict", retour: "aucun : une pièce retirée à la visite se propose de nouveau" }
+    visiter: { risque: "moyen", perimetre: "les pièces en service, à chaque échéance (30 jours après la mise en service, puis après chaque visite)", preuve: "chaque pièce visitée porte son verdict", retour: "aucun : une pièce retirée à la visite se propose de nouveau" }
   };
   const ETATS = { ombre: ["en ombre", "al"], palier_10: ["10 % du trafic", "al"], palier_50: ["50 % du trafic", "al"], en_service: ["en service", "ok"], retiree: ["retirée", "dg"] };
   const VIVANTES = ["ombre", "palier_10", "palier_50", "en_service"];
@@ -336,7 +336,7 @@
       const sv = S.etat.seuils || {};
       if (p.suspendue) h += '<div class="verdict dg">EC suspendue par le disjoncteur : ' + esc(p.suspendue.raison) + ". La référence sert ; l'EC est conservée.</div>";
       else if (!v) h += '<div class="verdict mu">Aucune pièce : toute la charge passe par la référence du dépôt. Propose une variante pour produire des preuves.</div>';
-      else h += '<div class="verdict' + (v.etat === "ombre" ? " al" : "") + '">' + (v.etat === "ombre" ? "Verdict calculé : en ombre. La promotion à " + (sv.paliers || [10])[0] + " % attend " + (sv.ombre_appels || "?") + " appels sans écart." : "En " + (ETATS[v.etat] || [v.etat])[0] + ". Un écart suffit à renvoyer toute la charge à la référence.") + "</div>";
+      else h += '<div class="verdict' + (v.etat === "ombre" ? " al" : "") + '">' + (v.etat === "ombre" ? "Verdict calculé : en ombre. La promotion à " + (sv.paliers || [10])[0] + " % attend " + (sv.ombre_appels || "?") + " appels sans écart, dont " + (sv.ombre_distincts || "?") + " entrées distinctes." : "En " + (ETATS[v.etat] || [v.etat])[0] + ". Un écart suffit à renvoyer toute la charge à la référence.") + "</div>";
       const part = v ? PARTS[v.etat] : 0;
       h += '<div><span class="lib">Part du trafic réel</span><div class="routage" style="margin-top:6px">' + [0, 10, 50, 100].map((x) => '<button ' + (x === part ? 'class="on" ' : "") + (x === 0 && v && !S.occupe ? 'data-geste="retour"' : "disabled") + ">" + x + " %</button>").join("") + "</div>" +
         '<div class="note" style="margin-top:6px">' + (v ? (part ? part + " % des appels passent par l'EC, le reste par la référence. Seul le retour (0 %) se commande ici : la montée se fait seule, par paliers, tant que les preuves tiennent." : "En ombre : l'EC calcule à côté, la référence répond à tous.") : "Toute la charge passe par la référence.") + "</div></div>";
