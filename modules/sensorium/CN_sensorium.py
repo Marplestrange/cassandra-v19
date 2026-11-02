@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #fe9b54
+# VERSION CN : 0.1.12  #5e9591
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=fe9b54 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=5e9591 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -1427,6 +1427,7 @@ def collect_web_sites():
                     c = _sonde_http(st["domain"], st.get("listen_ip") or "")
                 return c
             for site, code in zip(sites, ex.map(_sonde_confirmee, sites)):
+                code = str(code) if code and str(code).isdigit() else "000"      # une sonde sans réponse lisible (None, vide) vaut « ne répond pas », pas une panne du capteur
                 site["http_code"] = code
                 # `status` reste « active » (le site est déclaré) : l'écran Sites et le tableau de bord le lisent
                 # ainsi. La MESURE va dans sa propre colonne.
