@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3db05d
+# VERSION CN : 0.1.0  #544d79
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le Sensorium voit la V19 elle-même (unité cassandra-noyau, sonde HTTP, bases, code scellé, courtier root) et que le module relève la santé de chaque module du noyau.
 # MÉTHODE    : charge CN_sensorium.py sur une base temporaire, simule systemctl et l'API HTTP (aucun réseau, aucune commande système), fabrique de vraies bases SQLite (saines, abîmées, tronquées) et une version scellée, puis monte un vrai noyau avec ses modules pour la santé de dedans.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3db05d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=544d79 ▼▼▼
 import importlib.util
 import json
 import os
@@ -444,6 +444,22 @@ class Courtier(Demon):
         self.pose("urgence", ["etat"])
         r = self.releve()
         self.assertIn("agir est déclarée mais pas posée", r["courtier.commandes"]["valeur"])
+
+    def test_un_sous_dossier_de_donnees_n_est_pas_une_commande(self):
+        """Argos (03-11) : voix/voix (les modèles de voix du module) était signalé « non déclaré, pas un programme »."""
+        self.manifeste("voix", ["parler"])
+        self.pose("voix", ["parler"])
+        (self.tmp / "libexec" / "voix" / "voix").mkdir()
+        r = self.releve()
+        self.assertEqual(r["courtier.commandes"]["severite"], "info", r)
+        self.assertIn("1 commande(s) root pour 1 module(s)", r["courtier.commandes"]["valeur"])
+
+    def test_un_sous_dossier_ouvert_a_d_autres_reste_une_alerte(self):
+        self.manifeste("voix", ["parler"])
+        self.pose("voix", ["parler"])
+        (self.tmp / "libexec" / "voix" / "voix").mkdir()
+        r = self.releve(sur="modifiable par un autre que root (mode 777)")
+        self.assertEqual(r["courtier.commandes"]["severite"], "warning")
 
     def test_un_module_sans_declaration_ne_peut_rien_poser(self):
         self.pose("fantome", ["x"])
