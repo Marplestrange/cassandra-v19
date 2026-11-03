@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : telegram
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ad5513
+# VERSION CN : 0.1.0  #ac7464
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le robot Telegram d'un compte.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ad5513 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ac7464 ▼▼▼
 """Le robot Telegram d'un compte.
 
 Porté de la V18 (`tg_*`), avec ses leçons :
@@ -132,6 +132,36 @@ def brancher(ctx):
                 "destinataire": destinataire(l), "origine": "declare" if l and l["cible"] else ("appris" if l and l["chat_id"] else ""),
                 "depuis": l["cree"] if l else None, "dernier": l["dernier"] if l else None, "messages": n,
                 "webhook": str(ctx.reglage("url_publique", "") or "").rstrip("/") + "/api/public/telegram.recevoir" if ctx.reglage("url_publique", "") else ""}
+
+    def portrait(c):
+        """La photo de profil Telegram de l'interlocuteur de MON robot (celui dont le /start a appris le chat_id) : getUserProfilePhotos, puis le fichier. {present: False} sans robot, sans photo ou si Telegram refuse."""
+        compte = compte_qui_agit()
+        l = lien(compte)
+        jeton = jeton_de(compte)
+        if not l or not l["actif"] or not l["chat_id"] or not jeton:
+            return {"present": False}
+        photos = appel(jeton, "getUserProfilePhotos", {"user_id": int(l["chat_id"]) if str(l["chat_id"]).lstrip("-").isdigit() else 0, "limit": 1})
+        liste = ((photos.get("result") or {}).get("photos") or []) if photos.get("ok") else []
+        if not liste or not liste[0]:
+            return {"present": False}
+        taille = sorted(liste[0], key=lambda p: p.get("width", 0))
+        choix = next((p for p in taille if p.get("width", 0) >= 160), taille[-1])          # la plus petite qui suffit à 160 px : l'image part dans une page, pas dans un poster
+        f = appel(jeton, "getFile", {"file_id": choix.get("file_id", "")})
+        chemin = str((f.get("result") or {}).get("file_path") or "") if f.get("ok") else ""
+        if not chemin or ".." in chemin:
+            return {"present": False}
+        try:
+            req = urllib.request.Request("%s/file/bot%s/%s" % (api().rstrip("/"), jeton, chemin))
+            with urllib.request.urlopen(req, timeout=10) as r:
+                brut = r.read(300 * 1024 + 1)
+        except Exception:
+            return {"present": False}
+        if not brut or len(brut) > 300 * 1024:
+            return {"present": False, "raison": "image absente ou trop lourde"}
+        type_ = "image/png" if brut.startswith(b"\x89PNG") else "image/jpeg" if brut.startswith(b"\xff\xd8") else "image/webp" if brut[:4] == b"RIFF" and brut[8:12] == b"WEBP" else ""
+        if not type_:
+            return {"present": False, "raison": "format non reconnu"}
+        return {"present": True, "type": type_, "base64": __import__("base64").b64encode(brut).decode("ascii")}
 
     def fil(c, limite=100):
         compte = compte_qui_agit()
@@ -300,6 +330,7 @@ def brancher(ctx):
     c = ctx
     c.implementer("etat", etat)
     c.implementer("fil", fil)
+    c.implementer("portrait", portrait)
     c.implementer("brancher", brancher_robot, prouver_brancher, defaire_brancher, simuler=lambda x, **_: "brancherait le robot Telegram de ce compte (webhook posé chez Telegram)")
     c.implementer("detacher", detacher, prouver_detache, defaire_detache, simuler=lambda x, **_: "débrancherait le robot (webhook retiré, jeton oublié)")
     c.implementer("cible_poser", cible_poser, prouver_cible, defaire_cible, simuler=lambda x, valeur="", **_: "déclarerait %s comme destinataire (après essai auprès de Telegram)" % (valeur or "aucun"))

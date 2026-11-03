@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #0d1a28
+// VERSION CN : 0.1.0  #9f8d3f
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine « Mon compte » : la fiche calquée sur celle de Dolibarr (avec son portrait), les branchements que les modules déclarent, la matrice de notifications, la sécurité (mot de passe, clés, sessions, appareils, journal) et mes droits.
 // MÉTHODE    : une scène du module comptes (CASS.monCompte, appelée par CN_comptes-ecran.js pour les écrans mc_*) ; chaque page lit les capacités du noyau (comptes.*, webauthn.*, notifications.*, dolibarr.*, droits.*) et n'écrit que par elles. Dolibarr est facultatif : sans son module, rien n'en est dit.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=0d1a28 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=9f8d3f ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -81,10 +81,8 @@
         lire("droits.mes_droits_a_moi"), lire("comptes.mon_journal", { limite: 5 })]);
       const f = (moi && moi.fiche) || {};
       const nbCles = cles ? (cles.cles || []).length : 0, nbSess = sess ? (sess.sessions || []).length : 0, nbDroits = droits ? (droits.droits || []).length : 0;
-      const afaire = [];
-      if (cles && cles.disponible !== false && nbCles < 2) afaire.push(["w", nbCles ? "Ajouter une seconde clé de sécurité" : "Poser une clé de sécurité", nbCles ? "Si la première est perdue, vous ne pouvez plus entrer." : "Votre mot de passe est aujourd'hui votre seul verrou.", "webauthn", "Ajouter", "mc_secu"]);
-      if (moi && !f.lastname) afaire.push(["i", "Compléter ma fiche", "Votre nom n'est pas renseigné : il s'affiche partout où l'on vous nomme.", "comptes", "Compléter", "mc_profil"]);
-      if (S.dolibarr === "non_lie") afaire.push(["i", "Relier ma fiche à Dolibarr", "Dolibarr est installé : le lien se confirme une fois, puis il est gardé.", "dolibarr", "Voir", "mc_profil"]);
+      const att = await lire("comptes.mes_attentes");
+      const afaire = ((att && att.attentes) || []).map((x) => [x.niveau === "warn" ? "w" : "i", x.titre, x.texte, x.par || x.module, x.action, x.vers]);
       return tete("Bonjour " + ((moi && (f.firstname || moi.nom_affiche)) || ""), "Une seule page pour savoir où en est votre compte : ce qui est protégé, ce qui attend une décision, et ce qui s'est passé.") +
         '<div class="cu-carte"><div class="cu-hero">' + portraitHtml(portrait, true) + '<div class="cu-m"><h2>' + esc((moi && moi.nom_affiche) || "") + "</h2><p style=\"margin:2px 0 0;color:var(--txt-soft)\">" + esc([f.job, moi && moi.societe_nom].filter(Boolean).join(" · ")) + "</p>" +
         '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">' + (moi && moi.admin ? chip("Administrateur", "acc") : "") + chip("Compte actif", "ok") + "</div></div>" +
@@ -97,7 +95,7 @@
 
     // ═════════ profil ═════════
     async function pProfil() {
-      const [moi, portrait] = await Promise.all([lire("comptes.moi"), lire("comptes.portrait", { detail: true })]);
+      const [moi, portrait, vis] = await Promise.all([lire("comptes.moi"), lire("comptes.portrait", { detail: true }), lire("comptes.fiche_visibilite")]);
       if (!moi || !moi.fiche) return tete("Profil et affichage", "") + '<div class="cu-note">' + esc(S.erreur || "Ce compte n'a pas de fiche : un agent ou un compte système n'en a pas.") + "</div>";
       S.moi = moi; S.fiche = moi.fiche; S.portrait = portrait;
       let cmp = null;
@@ -114,10 +112,22 @@
       const carteDoli = S.dolibarr === "absent" ? "" : S.dolibarr === "installe" ? '<div class="cu-carte"><h3>Dolibarr est installé, mais pas relié</h3><p class="sub">Ma fiche reste complète et utilisable ; le lien apparaîtra dès que l\'administrateur aura posé la clé de mandat (Branchements › Dolibarr).</p></div>' :
         S.dolibarr === "non_lie" ? '<div class="cu-carte"><h3>Lien avec ma fiche Dolibarr</h3><p class="sub">Le login Dolibarr est libre : le lien ne se devine pas, il se confirme une fois. Tant qu\'il n\'est pas confirmé, rien n\'est lu ni écrit.</p><div id="mc-cand"><button class="cu-btn" data-a="chercher">Chercher mon utilisateur Dolibarr</button></div></div>' :
         '<div class="cu-carte"><h3>Ma fiche Dolibarr ' + chip("lié · utilisateur n° " + S.doli.id_doli + " · login " + (S.doli.login || ""), "ok") + '</h3><p class="sub">Mêmes champs, mêmes noms : ma fiche Cassandra et ma fiche Dolibarr se superposent champ à champ.</p>' +
-        (cmp && cmp.differents && cmp.differents.length ? '<div class="cmp"><b>' + cmp.differents.length + " écart(s)</b>" + cmp.champs.filter((x) => !x.identique).map((x) => '<div class="row"><div class="t"><code>' + esc(x.champ) + "</code> Cassandra « " + esc(x.cassandra || "(vide)") + " » ≠ Dolibarr « " + esc(x.dolibarr || "(vide)") + ' »</div><span><button class="cu-btn sm" data-a="envoyer" data-c="' + esc(x.champ) + '">Envoyer</button> <button class="cu-btn sm" data-a="reprendre" data-c="' + esc(x.champ) + '">Reprendre</button></span></div>').join("") + "</div>" : '<div class="cu-note" style="margin-top:8px">Les deux fiches disent la même chose.</div>') +
-        (cmp && cmp.change_depuis_le_lien ? '<p class="sub" style="margin:8px 0 0">Dolibarr a changé depuis le dernier échange.</p>' : "") +
+        (cmp && cmp.differents && cmp.differents.length ? '<div class="cmp"><b>' + cmp.differents.length + " écart(s)</b>" + cmp.champs.filter((x) => !x.identique).map((x) => '<div class="row"><div class="t"><code>' + esc(x.champ) + "</code> Cassandra « " + esc(x.cassandra || "(vide)") + " » ≠ Dolibarr « " + esc(x.dolibarr || "(vide)") + ' » ' + (x.decision === "reprendre" ? chip("mes réglages : reprendre", "ok") : x.decision === "envoyer" ? chip("mes réglages : envoyer", "ok") : chip("à décider", "warn")) + '</div><span><button class="cu-btn sm" data-a="envoyer" data-c="' + esc(x.champ) + '">Envoyer</button> <button class="cu-btn sm" data-a="reprendre" data-c="' + esc(x.champ) + '">Reprendre</button></span></div>').join("") +
+          (cmp.champs.some((x) => x.decision === "reprendre" || x.decision === "envoyer") ? '<div style="margin-top:8px"><button class="cu-btn pri sm" data-a="synchroniser">Appliquer mes réglages</button></div>' : "") + "</div>" : '<div class="cu-note" style="margin-top:8px">Les deux fiches disent la même chose.</div>') +
+        (cmp && cmp.conflit ? '<p class="sub" style="margin:8px 0 0">' + chip("les deux côtés ont changé", "warn") + " depuis le dernier accord : personne n'écrase l'autre, on me demande champ par champ.</p>" : cmp && cmp.change_depuis_le_lien ? '<p class="sub" style="margin:8px 0 0">Dolibarr a changé depuis le dernier échange.</p>' : "") +
+        '<div class="row"><div class="t"><b>Tiers lié</b> <code>socid</code><small>' + esc(S.doli.socid || "(aucun)") + '</small></div></div><div class="row"><div class="t"><b>Contact lié</b> <code>contact_id</code><small>' + esc(S.doli.contact_id || "(aucun)") + " · en lecture : Dolibarr tient ces liens</small></div></div>" +
         '<div style="margin-top:10px"><button class="cu-btn sm dng" data-a="delier">Délier</button></div></div>';
-      return tete("Profil et affichage", "Qui je suis pour les autres, et comment l'interface se présente à moi. Rien d'autre ici.") + cartePortrait + carteDoli +
+      const QUI = [["civil", "État civil et emploi", "civilité, genre, nom, prénom, naissance, fonction, salarié, dates d'emploi"], ["coord", "Coordonnées", "courriels, téléphones, fax, adresse"], ["presentation", "Présentation", "langue, couleur, signature, réseaux sociaux, note publique"]];
+      const qui = (S.doli && S.doli.qui) || {};
+      const carteQui = S.dolibarr !== "lie" ? "" : '<div class="cu-carte"><h3>Qui l\'emporte quand les deux fiches diffèrent ?</h3><p class="sub">Un réglage par groupe de champs. Si les deux côtés ont changé depuis le dernier accord, personne n\'écrase l\'autre : on me demande, quel que soit le réglage.</p>' +
+        QUI.map((g) => '<div class="row"><div class="t"><b>' + g[1] + "</b><small>" + g[2] + '</small></div><span>' + [["dolibarr", "Dolibarr"], ["cassandra", "Cassandra"], ["demander", "Demander"]].map((o) => '<button class="cu-btn sm' + ((qui[g[0]] || "demander") === o[0] ? " pri" : "") + '" data-a="qui" data-g="' + g[0] + '" data-v="' + o[0] + '">' + o[1] + "</button>").join(" ") + "</span></div>").join("") +
+        '<p class="sub" style="margin:10px 0 0">' + chip("défaut recommandé", "ok") + " Dolibarr tient l'état civil (c'est lui qui paie, facture, déclare) ; Cassandra tient ce qui relève de l'usage de l'interface.</p></div>";
+      const GROUPES = [["identite", "Nom, prénom, fonction, civilité"], ["pro", "Courriel et téléphone professionnels, emploi"], ["presentation", "Langue, couleur, signature, réseaux, note publique"], ["perso", "Naissance, mobile et courriel personnels, adresse"]];
+      const carteVis = !vis ? "" : '<div class="cu-carte"><h3>Qui voit ma fiche</h3><p class="sub">Données personnelles : par défaut, seul moi les vois. Le privé demande en plus un droit à celui qui le lit.</p>' +
+        '<div class="grille3" style="grid-template-columns:minmax(150px,1.4fr) repeat(3,minmax(60px,1fr))"><span class="h">Champs</span><span class="h c">Moi</span><span class="h c">Collègues</span><span class="h c">Admins</span>' +
+        GROUPES.map((g) => '<span><b>' + g[1] + "</b>" + (g[0] === "perso" ? " " + chip("sensible", "warn") : "") + '</span><span class="c"><button class="tg on" disabled></button></span>' + ["collegues", "admins"].map((pub) => '<span class="c"><button class="tg' + (vis.groupes[g[0]][pub] ? " on" : "") + '" data-a="vis" data-g="' + g[0] + '" data-p="' + pub + '"></button></span>').join("")).join("") + "</div>" +
+        '<div class="row" style="margin-top:8px"><div class="t"><b>Journaliser les accès d\'autrui à ma fiche</b><small>Qui, quand : visible dans Sécurité › Journal de mon compte</small></div><button class="tg' + (vis.journaliser ? " on" : "") + '" data-a="journaliser"></button></div></div>';
+      return tete("Profil et affichage", "Qui je suis pour les autres, et comment l'interface se présente à moi. Rien d'autre ici.") + cartePortrait + carteDoli + carteQui + carteVis +
         '<div class="cu-carte"><h3>Identité</h3><div class="cu-g2">' + '<div><label class="f">Civilité <code>civility_code</code></label>' + select("civility_code", CIVILITES, v("civility_code")) + "</div>" + '<div><label class="f">Genre <code>gender</code></label>' + select("gender", GENRES, v("gender")) + "</div>" +
         entree("lastname", "Nom", v("lastname"), "text", ' maxlength="50"') + entree("firstname", "Prénom", v("firstname"), "text", ' maxlength="50"') + '<div><label class="f">Identifiant de connexion <code>login</code></label><input type="text" value="' + esc(moi.compte) + '" disabled></div>' + entree("birth", "Date de naissance", v("birth"), "date") +
         entree("job", "Fonction", v("job"), "text", ' maxlength="128"') + '<div><label class="f">Salarié <code>employee</code></label>' + select("employee", [["0", "Non"], ["1", "Oui"]], v("employee")) + "</div>" + entree("ref_employee", "Référence employé", v("ref_employee"), "text", ' maxlength="50"') +
@@ -145,9 +155,21 @@
       const parModule = {}; mes.forEach((r) => (parModule[r.module] = parModule[r.module] || []).push(r));
       const mods = Object.keys(parModule).sort();
       S.mods = mods;
+      const [ident, mandat] = await Promise.all([lire("comptes.identites"), S.dolibarr !== "absent" ? lire("dolibarr.mandat_etat") : null]);
+      S.ident = ident;
+      const ed = ident && ident.peut_modifier;
+      const carteIdent = !ident ? "" : '<div class="cu-carte"><h3>Mes identités liées</h3><p class="sub">Le compte Cassandra est le centre ; il peut se lier à un pseudo FastPanel, à un utilisateur système (bash) et, si Dolibarr est là, à sa fiche. ' + (ed ? "Lier FastPanel ou le système est réservé aux administrateurs." : "Seul un administrateur modifie ces liens.") + "</p>" +
+        '<div class="row"><div class="t"><b>Pseudo FastPanel</b><small>Ouvre mes sites d\'hébergement et mon portrait FastPanel</small></div>' + (ed ? '<span style="display:flex;gap:6px"><input type="text" id="mc-fp" value="' + esc(ident.fp_account) + '" placeholder="aucun" style="max-width:180px"></span>' : "<span>" + esc(ident.fp_account || "aucun") + "</span>") + "</div>" +
+        '<div class="row"><div class="t"><b>Utilisateur système (bash)</b><small>' + (ident.unix_user ? "État : " + ({ ok: "bash présent", absent: "l'utilisateur n'existe pas sur la machine", sans_shell: "sans interpréteur de commandes" }[ident.unix_etat] || ident.unix_etat) : "Aucun") + " · réservé aux administrateurs" + (ident.superadmin ? " (posé à la création du superadministrateur)" : "") + "</small></div>" +
+        (ed && !ident.superadmin && ident.bash_autorise ? '<span style="display:flex;gap:6px"><input type="text" id="mc-unix" value="' + esc(ident.unix_user) + '" placeholder="aucun" style="max-width:180px"></span>' : "<span>" + esc(ident.unix_user || "aucun") + "</span>") + "</div>" +
+        '<div class="row"><div class="t"><b>Fiche Dolibarr</b><small>' + (S.dolibarr === "absent" ? "Dolibarr n'est pas installé" : S.dolibarr === "lie" ? "Liée à l'utilisateur n° " + esc(S.doli.id_doli) + " (login " + esc(S.doli.login || "") + ")" : S.dolibarr === "non_lie" ? "Pas encore liée : Profil › Lien avec ma fiche Dolibarr" : "Dolibarr est installé, la clé de mandat n'est pas posée") + "</small></div>" + (S.dolibarr === "absent" ? "" : '<button class="cu-btn sm" data-a="aller" data-p="mc_profil">Profil</button>') + "</div>" +
+        (ed ? '<div style="margin-top:10px"><button class="cu-btn pri" data-a="identite-lier">Enregistrer les liens</button></div><div class="err" id="mc-id-err"></div>' : "") + "</div>";
+      const carteMandat = !(mandat && ident && ident.peut_modifier) ? "" : '<div class="cu-carte"><h3>Dolibarr — clé de mandat ' + chip(mandat.cle ? "posée" : "absente", mandat.cle ? "ok" : "warn") + chip(mandat.url ? "adresse posée" : "adresse absente", mandat.url ? "ok" : "warn") + '</h3><p class="sub">Un utilisateur Dolibarr dédié à Cassandra, aux droits limités : jamais un administrateur. Elle sert à lire et écrire les fiches utilisateurs et les portraits. La valeur ne s\'affiche jamais.</p>' +
+        '<div class="cu-g2"><div><label class="f">Adresse de l\'API Dolibarr</label><input type="text" id="mc-doli-url" placeholder="https://…/api/index.php"></div><div><label class="f">Clé de mandat</label><input type="password" id="mc-doli-cle" autocomplete="off" placeholder="' + (mandat.cle ? "laisser vide pour la garder" : "coller la clé") + '"></div></div>' +
+        '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="cu-btn pri" data-a="mandat-poser">Poser</button><button class="cu-btn" data-a="mandat-verifier">Vérifier les droits</button></div><div id="mc-mandat-res" style="margin-top:8px"></div></div>';
       const mir = await lire("canaux.miroir");                       // le miroir Telegram : ce que je dis à Cassandra sur Telegram se répète ici (absent sans le module des canaux)
       const carteMiroir = mir ? '<div class="cu-carte"><h3>Miroir Telegram</h3><div class="row"><div class="t"><b>Répéter mes échanges Telegram dans Cassandra</b><small>Éteint par défaut : rien ne sort de Telegram sans que vous l’ayez demandé.</small></div><button class="tg' + (mir.miroir ? " on" : "") + '" data-a="miroir"></button></div></div>' : "";
-      return tete("Mes branchements", "Chaque module déclare ses réglages de portée « compte » dans son manifeste ; le noyau les affiche ici, tous sur la même carte. Les secrets restent dans mon coffre.") + carteMiroir +
+      return tete("Mes branchements", "Chaque module déclare ses réglages de portée « compte » dans son manifeste ; le noyau les affiche ici, tous sur la même carte. Les secrets restent dans mon coffre.") + carteMiroir + carteIdent + carteMandat +
         (mods.length ? mods.map((m) => '<div class="cu-carte" data-mod="' + esc(m) + '"><h3>' + esc(U.nomDe(m)) + " <small>" + parModule[m].length + " réglage(s)</small></h3>" + parModule[m].map((r) => U.champ(r)).join("") + "</div>").join("") : '<div class="cu-carte"><div class="cu-vide">Aucun module ne vous laisse de réglage personnel.</div></div>');
     }
 
@@ -173,7 +195,11 @@
 
     // ═════════ sécurité ═════════
     async function pSecu() {
-      const [cles, sess, agents, journal, regles] = await Promise.all([lire("webauthn.etat"), lire("comptes.mes_sessions", { courant: jeton() }), lire("comptes.mes_agents"), lire("comptes.mon_journal", { limite: 30 }), lire("comptes.regles_mdp")]);
+      const [cles, sess, agents, journal, regles, app] = await Promise.all([lire("webauthn.etat"), lire("comptes.mes_sessions", { courant: jeton() }), lire("comptes.mes_agents"), lire("comptes.mon_journal", { limite: 30 }), lire("comptes.regles_mdp"), lire("comptes.appareils", { courant: jeton() })]);
+      const carteApp = !app ? "" : '<div class="cu-carte"><h3>Mes appareils</h3><p class="sub">Un appareil que je « me souviens » n\'est pas traité comme nouveau pendant ' + (app.jours || 30) + ' jours ; le mot de passe et le second facteur restent demandés à chaque connexion.</p>' +
+        ((app.appareils || []).map((a) => '<div class="row"><div class="t"><b>' + esc(a.agent || "Navigateur") + (a.courant ? " " + chip("cet appareil", "acc") : "") + (a.statut === "attente" ? " " + chip("en attente d\'approbation", "warn") : a.confiance_jusqua ? " " + chip("de confiance jusqu\'au " + new Date(a.confiance_jusqua * 1000).toLocaleDateString("fr-FR"), "ok") : "") + "</b><small>" + esc(a.reseau || "") + " · vu " + esc(quand(a.derniere)) + "</small></div>" +
+          (a.statut === "attente" ? '<span><button class="cu-btn sm pri" data-a="appareil-ok" data-c="' + esc(a.id) + '">Approuver</button> <button class="cu-btn sm dng" data-a="appareil-non" data-c="' + esc(a.id) + '">Refuser</button></span>' : '<button class="tg' + (a.confiance_jusqua ? " on" : "") + '" data-a="appareil-confiance" data-c="' + esc(a.id) + '" title="Se souvenir de cet appareil"></button>') + "</div>").join("") || '<div class="cu-vide">Aucun appareil.</div>') +
+        (app.admin ? '<div class="row" style="margin-top:8px"><div class="t"><b>Un administrateur sur un appareil jamais vu</b><small>Prévenir seulement, ou bloquer jusqu\'à l\'approbation d\'une session déjà ouverte. Le superadministrateur n\'est jamais bloqué.</small></div><select data-a="mode-appareil"><option value="alerter"' + (app.mode_admin === "alerter" ? " selected" : "") + '>Prévenir</option><option value="bloquer"' + (app.mode_admin === "bloquer" ? " selected" : "") + ">Bloquer</option></select></div>" : "") + "</div>";
       S.cles = cles;
       const ks = (cles && cles.cles) || [];
       return tete("Sécurité et sessions", "Comment j'entre, et qui est entré à mon nom. Les réglages de pare-feu et d'audit de la machine restent dans l'administration.") +
@@ -184,7 +210,7 @@
           '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center"><input type="text" id="mc-cle-nom" placeholder="Nom de la clé (facultatif)" style="max-width:240px"><button class="cu-btn pri" data-a="cle-ajouter">Ajouter une clé</button></div><div class="err" id="mc-cle-err"></div>' +
           '<div class="row" style="margin-top:8px"><div class="t"><b>Exiger la clé à chaque connexion</b><small>Le mot de passe ne suffit plus. Huit codes de secours s\'affichent à l\'activation : notez-les.</small></div><button class="tg' + (cles && cles.exigee ? " on" : "") + '" data-a="cle-exiger"' + (ks.length ? "" : " disabled") + '></button></div>' +
           '<div class="row"><div class="t"><b>Codes de secours</b><small>' + (cles ? cles.secours_restants || 0 : 0) + ' restant(s) sur 8. En générer de nouveaux efface les précédents.</small></div><button class="cu-btn sm" data-a="secours"' + (ks.length ? "" : " disabled") + '>Générer</button></div><div id="mc-codes"></div>') + "</div>" +
-        '<div class="cu-carte"><h3>Sessions ouvertes</h3>' + (((sess && sess.sessions) || []).map((s) => '<div class="row"><div class="t"><b>' + esc(s.agent || "Navigateur") + (s.current ? " " + chip("cette session", "acc") : "") + "</b><small>" + esc(s.ip || "") + " · ouverte " + esc(quand(s.created)) + " · dernier usage " + esc(quand(s.last_used)) + "</small></div>" + (s.current ? "" : '<button class="cu-btn sm dng" data-a="session-fermer" data-c="' + esc(s.id) + '">Fermer</button>') + "</div>").join("") || '<div class="cu-vide">Aucune session.</div>') +
+        carteApp + '<div class="cu-carte"><h3>Sessions ouvertes</h3>' + (((sess && sess.sessions) || []).map((s) => '<div class="row"><div class="t"><b>' + esc(s.agent || "Navigateur") + (s.current ? " " + chip("cette session", "acc") : "") + "</b><small>" + esc(s.ip || "") + " · ouverte " + esc(quand(s.created)) + " · dernier usage " + esc(quand(s.last_used)) + "</small></div>" + (s.current ? "" : '<button class="cu-btn sm dng" data-a="session-fermer" data-c="' + esc(s.id) + '">Fermer</button>') + "</div>").join("") || '<div class="cu-vide">Aucune session.</div>') +
           (((sess && sess.sessions) || []).length > 1 ? '<div style="margin-top:10px"><button class="cu-btn dng" data-a="sessions-autres">Fermer toutes les autres sessions</button></div>' : "") + '<p class="sub" style="margin:8px 0 0">Au plus dix sessions par compte : la plus ancienne se ferme à la onzième.</p></div>' +
         '<div class="cu-carte"><h3>Agents que j\'ai invités</h3>' + (((agents && agents.agents) || []).map((a) => '<div class="row"><div class="t"><b>' + esc(a.display_name || a.compte) + "</b><small>Dernier usage " + esc(a.dernier_vu ? quand(a.dernier_vu) : "jamais") + "</small></div>" + (a.actif ? chip("actif", "ok") + ' <button class="cu-btn sm dng" data-a="agent-revoquer" data-c="' + esc(a.compte) + '">Révoquer</button>' : chip("révoqué")) + "</div>").join("") || '<div class="cu-vide">Aucun agent invité.</div>') + "</div>" +
         '<div class="cu-carte"><h3>Journal de mon compte</h3><p class="sub">Les mêmes faits que le registre de la machine, filtrés sur moi : connexions, échecs, sessions fermées, mot de passe, et qui a consulté ma fiche.</p>' + ((journal && journal.evenements || []).length ? '<ul class="cu-tl">' + journal.evenements.map((e) => "<li><time>" + esc(quand(e.ts)) + "</time><span>" + esc(e.texte) + (e.ip ? " · " + esc(e.ip) : "") + "</span></li>").join("") + "</ul>" : '<div class="cu-vide">Rien encore.</div>') + "</div>";
@@ -263,6 +289,10 @@
         const sec = r && (r.secours || r.codes); if (sec && $("#mc-codes")) $("#mc-codes").innerHTML = '<p class="sub">Codes de secours : notez-les, ils ne seront plus montrés.</p><div class="codes">' + sec.map((x) => "<span>" + esc(x) + "</span>").join("") + "</div>";
       } catch (e) { err.textContent = "Clé non enregistrée" + (e && e.message ? " (" + e.message + ")" : ""); }
     }
+    async function accorderSiEgal() {                                 // quand plus rien ne diffère, c'est l'état convenu : un changement d'un seul côté s'appliquera selon mes réglages
+      const c = await lire("dolibarr.fiche_comparer");
+      if (c && c.lie && !(c.differents || []).length) await lire("dolibarr.fiche_accorder");
+    }
     async function agirSur(el) {
       const a = el.dataset.a, c = el.dataset.c;
       if (a === "aller") return ALLER(el.dataset.p)();
@@ -280,8 +310,40 @@
       }
       if (a === "lier") { if (await geste("dolibarr.fiche_lier", { id_doli: Number(c) }, "Fiche liée")) dessiner(); return; }
       if (a === "delier") { if (await CASS.kit.confirmer("Délier ma fiche de Dolibarr ?", "<p class=\"note\">Rien n'est effacé, ni d'un côté ni de l'autre.</p>", "Délier", true) && await geste("dolibarr.fiche_delier", {}, "Fiche déliée")) dessiner(); return; }
-      if (a === "envoyer") { const x = (S.cmp.champs || []).find((y) => y.champ === c); if (x && await geste("dolibarr.fiche_ecrire", { champs: { [c]: x.cassandra } }, "Envoyé vers Dolibarr")) dessiner(); return; }
-      if (a === "reprendre") { const x = (S.cmp.champs || []).find((y) => y.champ === c); if (x && await geste("comptes.modifier_moi", { [c]: x.dolibarr }, "Repris depuis Dolibarr")) dessiner(); return; }
+      if (a === "envoyer") { const x = (S.cmp.champs || []).find((y) => y.champ === c); if (x && await geste("dolibarr.fiche_ecrire", { champs: { [c]: x.cassandra } }, "Envoyé vers Dolibarr")) { await accorderSiEgal(); dessiner(); } return; }
+      if (a === "reprendre") { const x = (S.cmp.champs || []).find((y) => y.champ === c); if (x && await geste("comptes.modifier_moi", { [c]: x.dolibarr }, "Repris depuis Dolibarr")) { await accorderSiEgal(); dessiner(); } return; }
+      if (a === "vis") { if (await geste("comptes.fiche_visibilite_regler", { groupe: el.dataset.g, public: el.dataset.p, ouvert: !el.classList.contains("on") }, "Enregistré")) dessiner(); return; }
+      if (a === "journaliser") { if (await geste("comptes.fiche_visibilite_regler", { journaliser: !el.classList.contains("on") }, "Enregistré")) dessiner(); return; }
+      if (a === "qui") { if (await geste("dolibarr.fiche_regle", { groupe: el.dataset.g, qui: el.dataset.v }, "Enregistré")) dessiner(); return; }
+      if (a === "synchroniser") {
+        const cs = (S.cmp && S.cmp.champs) || [], rep = {}, env = {};
+        cs.forEach((x) => { if (x.decision === "reprendre") rep[x.champ] = x.dolibarr; else if (x.decision === "envoyer") env[x.champ] = x.cassandra; });
+        if (Object.keys(rep).length && !(await geste("comptes.modifier_moi", rep))) return;
+        if (Object.keys(env).length && !(await geste("dolibarr.fiche_ecrire", { champs: env }))) return;
+        await accorderSiEgal(); dire("Réglages appliqués", "ok"); dessiner(); return;
+      }
+      if (a === "identite-lier") {
+        const e = $("#mc-id-err"); e.textContent = "";
+        const args = { compte: S.ident.compte, fp_account: ($("#mc-fp") || {}).value || "" };
+        if ($("#mc-unix")) args.unix_user = $("#mc-unix").value;
+        try { await agir("comptes.identite_lier", args); dire("Liens enregistrés", "ok"); dessiner(); } catch (x) { e.textContent = x.message; }
+        return;
+      }
+      if (a === "mandat-poser") {
+        const url = ($("#mc-doli-url").value || "").trim(), cle = $("#mc-doli-cle").value;
+        if (!url && !cle) { dire("Rien à poser", "err"); return; }
+        if (url && !(await geste("reglages.regler", { cle: "dolibarr.url", valeur: url }))) return;
+        if (cle && !(await geste("reglages.regler_secret", { cle: "dolibarr.cle_mandat", valeur: cle }))) return;
+        dire("Posé", "ok"); await etatDolibarr(); dessiner(); return;
+      }
+      if (a === "mandat-verifier") {
+        const z = $("#mc-mandat-res"); z.innerHTML = '<div class="cu-note">Vérification en cours…</div>';
+        const r = await lire("dolibarr.mandat_verifier");
+        z.innerHTML = r ? '<div class="cu-note">' + r.etapes.map((x) => (x.ok ? "✓ " : "✗ ") + "<b>" + esc(x.nom) + "</b> — " + esc(x.detail)).join("<br>") + "</div>" : '<div class="cu-note">' + esc(S.erreur || "Vérification impossible") + "</div>";
+        return;
+      }
+      if (a === "appareil-confiance") { if (await geste("comptes.appareil_confiance", { appareil: c, oui: !el.classList.contains("on") }, "Enregistré")) dessiner(); return; }
+      if (a === "appareil-ok" || a === "appareil-non") { if (await geste("comptes.appareil_decider", { appareil: c, approuver: a === "appareil-ok" }, a === "appareil-ok" ? "Appareil approuvé" : "Appareil refusé")) dessiner(); return; }
       if (a === "canal") {
         const n = el.dataset.n, deja = ((S.pol.moi && S.pol.moi[n]) || ["cloche"]).slice(), i = deja.indexOf(c); if (i >= 0) deja.splice(i, 1); else deja.push(c);
         if (deja.indexOf("cloche") < 0) deja.unshift("cloche");
@@ -314,7 +376,8 @@
       if (a === "export-fiche") { const m = await lire("comptes.moi"); if (m) telecharger("fiche-" + new Date().toISOString().slice(0, 10) + ".json", m.fiche); return; }
     }
     racine.addEventListener("click", (e) => { const b = e.target.closest("[data-a]"); if (b && b.tagName !== "SELECT") { e.preventDefault(); agirSur(b); } });
-    racine.addEventListener("change", async (e) => { if (e.target.matches('select[data-a="source"]')) { if (await geste("comptes.portrait_source", { source: e.target.value }, "Source enregistrée")) dessiner(); } });
+    racine.addEventListener("change", async (e) => { if (e.target.matches('select[data-a="mode-appareil"]')) { if (await geste("reglages.regler", { cle: "comptes.admin_nouvel_appareil", valeur: e.target.value }, "Enregistré")) dessiner(); return; }
+      if (e.target.matches('select[data-a="source"]')) { if (await geste("comptes.portrait_source", { source: e.target.value }, "Source enregistrée")) dessiner(); } });
     await dessiner();
   };
 })();

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #37d7d2
+# VERSION CN : 0.4.1  #07ac68
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=37d7d2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=07ac68 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -377,6 +377,49 @@ preuve = "relire le lien : il n'existe plus"
 retour = "remettre le lien d'avant"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
+
+[[capacites]]
+id = "attente_lien"
+libelle = "Ce que ce module attend du compte : relier sa fiche à Dolibarr"
+risque = "lecture"
+
+[[attentes]]
+id = "lien"
+capacite = "attente_lien"
+vers = "mc_profil"
+action = "Voir"
+
+[[capacites]]
+id = "fiche_regle"
+libelle = "Qui l'emporte quand ma fiche Cassandra et ma fiche Dolibarr diffèrent : un choix par groupe de champs"
+risque = "faible"
+droit = "ma_fiche"
+perimetre = ["le réglage « qui l'emporte » gardé dans le lien de MA fiche ; aucun champ n'est copié"]
+preuve = "relire le lien : le choix est celui demandé"
+retour = "remettre le choix d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "fiche_accorder"
+libelle = "Noter que les deux fiches sont l'état convenu (le prochain changement des deux côtés se demandera)"
+risque = "faible"
+droit = "ma_fiche"
+perimetre = ["les empreintes gardées dans le lien de MA fiche"]
+preuve = "aucune : une simple note"
+retour = "remettre les empreintes d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "mandat_etat"
+libelle = "La clé de mandat de Dolibarr : l'adresse et la clé sont-elles posées (jamais leur valeur)"
+risque = "lecture"
+
+[[capacites]]
+id = "mandat_verifier"
+libelle = "Vérifier la clé de mandat par de vrais appels à Dolibarr (répond, clé reconnue, lecture des utilisateurs, pas administrateur) — rien n'est écrit"
+risque = "lecture"
 
 [[capacites]]
 id = "fiche_ecrire"

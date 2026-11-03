@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #64b03a
+# VERSION CN : 0.1.0  #9191fa
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=64b03a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9191fa ▼▼▼
 """L'exécuteur : la seule porte par laquelle une capacité s'exécute.
 
 Le contrat de souveraineté tient ici, en un seul endroit :
@@ -121,7 +121,9 @@ class Executeur:
 
         demande = self._evt("capacite.demandee", e, acteur, cause, {"args": self._masquer(args, c.masque), "essai": essai}, compte)
         ctx = self.contextes.get(e.module)
+        avant_ctx = (None, "", "", "")
         if ctx is not None:
+            avant_ctx = (ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur, ctx._societe.valeur)       # une capacité qui en appelle une autre du MÊME module la retrouve, elle, intacte au retour
             ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur, ctx._societe.valeur = demande, compte, acteur, soc
         try:
             if not c.ecrit:
@@ -149,7 +151,7 @@ class Executeur:
             return self._ecrire(e, acteur, args, demande, ctx, compte)
         finally:
             if ctx is not None:
-                ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur, ctx._societe.valeur = None, "", "", ""
+                ctx._cause.valeur, ctx._compte.valeur, ctx._acteur.valeur, ctx._societe.valeur = avant_ctx
 
     def _ecrire(self, e, acteur, args, demande, ctx, compte) -> dict:
         humain = acteur == "humain"

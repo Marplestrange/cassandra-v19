@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #c78719
+# VERSION CN : 0.4.1  #fe04ad
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=c78719 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=fe04ad ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -563,6 +563,15 @@ FICHE_BLANCHE = ("civility_code", "gender", "lastname", "firstname", "birth", "j
 FICHE_INTERDITS = ("pass", "pass_crypted", "pass_indatabase", "pass_temp", "api_key", "openid", "salary", "thm", "tjm", "national_registration_number", "accountancy_code",
                    "ref_employee", "weeklyhours", "note_private", "rights", "admin", "statut", "status", "login", "entity", "id", "socid", "contact_id", "fk_user")
 _DATES_FICHE = ("birth", "dateemployment", "dateemploymentend")
+# « Qui l'emporte quand les deux fiches diffèrent » : un réglage par groupe de champs. Dolibarr tient l'état civil (c'est lui qui paie, facture, déclare) ;
+# Cassandra tient ce qui relève de l'usage de l'interface. Un champ hors de tout groupe se demande toujours.
+GROUPES_SYNC = {
+    "civil": ("civility_code", "gender", "lastname", "firstname", "birth", "job", "employee", "dateemployment", "dateemploymentend"),
+    "coord": ("email", "personal_email", "office_phone", "user_mobile", "personal_mobile", "office_fax", "address", "zip", "town", "country_code", "state_code"),
+    "presentation": ("lang", "color", "signature", "socialnetworks", "note_public"),
+}
+QUI_DEFAUT = {"civil": "dolibarr", "coord": "dolibarr", "presentation": "cassandra"}
+QUI_VALEURS = ("dolibarr", "cassandra", "demander")
 
 
 def _iso_depuis_ts(v):
@@ -2648,6 +2657,14 @@ def brancher(ctx):
         f = moi["fiche"]
         return {a.strip().lower() for a in (moi.get("compte"), f.get("email"), f.get("personal_email")) if a}
 
+    def attente_lien(ctx):
+        """Ce que ce module attend du compte : relier sa fiche, quand le pont vers Dolibarr existe et qu'elle ne l'est pas encore."""
+        if lire_conf() is None or not (ctx.compte and (ctx.executer_lecture("comptes.moi") or {}).get("fiche")):
+            return False
+        if _lien_fiche(ctx):
+            return False
+        return {"titre": "Relier ma fiche à Dolibarr", "texte": "Dolibarr est installé : le lien se confirme une fois, puis il est gardé."}
+
     def fiche_chercher(ctx):
         """Les utilisateurs de Dolibarr qui pourraient être moi : même adresse que mon compte ou ma fiche. Une PROPOSITION : rien n'est lié tant que je n'ai pas confirmé."""
         moi = _ma_fiche(ctx)
@@ -2675,7 +2692,8 @@ def brancher(ctx):
             raise ValueError("cet utilisateur de Dolibarr n'a pas votre adresse : on ne lie pas la fiche d'un autre")
         f = fiche_depuis_doli(u)
         ctx.poser("dolibarr_lien", _id_lien(ctx), "utilisateur Dolibarr %s" % int(id_doli), etat="lie",
-                  donnees={"type": "utilisateur", "id": "moi", "id_doli": int(id_doli), "le": time.strftime("%Y-%m-%d"), "empreinte": empreinte_fiche(f), "maj": time.strftime("%Y-%m-%d %H:%M")})
+                  donnees={"type": "utilisateur", "id": "moi", "id_doli": int(id_doli), "le": time.strftime("%Y-%m-%d"), "empreinte": empreinte_fiche(f), "empreinte_c": empreinte_fiche(moi["fiche"]),
+                           "maj": time.strftime("%Y-%m-%d %H:%M")})
         return {"id_doli": int(id_doli), "login": str(u.get("login") or "")}
 
     def prouver_fiche_lier(ctx, res):
@@ -2710,10 +2728,21 @@ def brancher(ctx):
             return {"lie": False, "configure": lire_conf() is not None}          # « configure » : le pont vers Dolibarr existe ; sans lui, le lien ne peut pas se poser
         _, u = _fiche_doli(ctx)
         f = fiche_depuis_doli(u)
-        return {"lie": True, "id_doli": l["id_doli"], "login": str(u.get("login") or ""), "champs": f, "empreinte": empreinte_fiche(f), "empreinte_lien": l.get("empreinte", "")}
+        return {"lie": True, "id_doli": l["id_doli"], "login": str(u.get("login") or ""), "champs": f, "empreinte": empreinte_fiche(f), "empreinte_lien": l.get("empreinte", ""),
+                "qui": _qui(l), "socid": str(u.get("socid") or "") if str(u.get("socid") or "") not in ("0", "None") else "",
+                "contact_id": str(u.get("contact_id") or "") if str(u.get("contact_id") or "") not in ("0", "None") else ""}
+
+    def _qui(l):
+        q = dict(QUI_DEFAUT)
+        q.update({k: v for k, v in (l.get("qui") or {}).items() if k in QUI_DEFAUT and v in QUI_VALEURS})
+        return q
+
+    def _groupe_de(champ):
+        return next((g for g, cs in GROUPES_SYNC.items() if champ in cs), "")
 
     def fiche_comparer(ctx):
-        """Champ par champ : ma fiche Cassandra, ma fiche Dolibarr, et si elles disent la même chose. Rien n'est écrit."""
+        """Champ par champ : ma fiche Cassandra, ma fiche Dolibarr, si elles disent la même chose, et ce que mes réglages « qui l'emporte » décident
+        (reprendre depuis Dolibarr, envoyer vers Dolibarr, ou demander). Si les deux côtés ont changé depuis le dernier accord, on demande, quel que soit le réglage. Rien n'est écrit."""
         moi = _ma_fiche(ctx)
         l = _lien_fiche(ctx)
         if not l:
@@ -2721,9 +2750,94 @@ def brancher(ctx):
         _, u = _fiche_doli(ctx)
         d = fiche_depuis_doli(u)
         c = moi["fiche"]
-        lignes = [{"champ": k, "cassandra": c.get(k, ""), "dolibarr": d.get(k, ""), "identique": (c.get(k, "") or "") == (d.get(k, "") or "")} for k in FICHE_BLANCHE]
+        doli_change = empreinte_fiche(d) != l.get("empreinte", "")
+        cass_change = ("empreinte_c" in l) and empreinte_fiche(c) != l.get("empreinte_c", "")
+        conflit = doli_change and cass_change
+        qui = _qui(l)
+        lignes = []
+        for k in FICHE_BLANCHE:
+            ident = (c.get(k, "") or "") == (d.get(k, "") or "")
+            g = _groupe_de(k)
+            choix = qui.get(g, "demander")
+            decision = "" if ident else ("demander" if (conflit or choix == "demander") else ("reprendre" if choix == "dolibarr" else "envoyer"))
+            lignes.append({"champ": k, "cassandra": c.get(k, ""), "dolibarr": d.get(k, ""), "identique": ident, "groupe": g, "decision": decision})
         return {"lie": True, "id_doli": l["id_doli"], "champs": lignes, "differents": [x["champ"] for x in lignes if not x["identique"]],
-                "empreinte": empreinte_fiche(d), "change_depuis_le_lien": empreinte_fiche(d) != l.get("empreinte", "")}
+                "empreinte": empreinte_fiche(d), "change_depuis_le_lien": doli_change, "conflit": conflit, "qui": qui}
+
+    def fiche_regle(ctx, groupe="", qui=""):
+        """Qui l'emporte pour un groupe de champs : « dolibarr », « cassandra » ou « demander »."""
+        if groupe not in GROUPES_SYNC or qui not in QUI_VALEURS:
+            raise ValueError("groupe (%s) et choix (%s) attendus" % (", ".join(GROUPES_SYNC), ", ".join(QUI_VALEURS)))
+        l = _lien_fiche(ctx)
+        if not l:
+            raise ValueError("votre fiche n'est liée à aucun utilisateur de Dolibarr")
+        avant = _qui(l)
+        n = dict(avant)
+        n[groupe] = qui
+        ctx.poser("dolibarr_lien", _id_lien(ctx), "utilisateur Dolibarr %s" % l["id_doli"], etat="lie", donnees=dict(l, qui=n))
+        return {"groupe": groupe, "avant": avant, "apres": n}
+
+    def prouver_fiche_regle(ctx, res):
+        l = _lien_fiche(ctx)
+        return bool(l) and _qui(l) == res["apres"]
+
+    def defaire_fiche_regle(ctx, res):
+        l = _lien_fiche(ctx)
+        if l:
+            ctx.poser("dolibarr_lien", _id_lien(ctx), "utilisateur Dolibarr %s" % l["id_doli"], etat="lie", donnees=dict(l, qui=res["avant"]))
+
+    def fiche_accorder(ctx):
+        """Note que les deux fiches sont, à cet instant, l'état convenu : le prochain changement d'un côté seulement s'applique selon les réglages, des deux côtés il se demande."""
+        moi = _ma_fiche(ctx)
+        l, u = _fiche_doli(ctx)
+        ctx.poser("dolibarr_lien", _id_lien(ctx), "utilisateur Dolibarr %s" % l["id_doli"], etat="lie",
+                  donnees=dict(l, empreinte=empreinte_fiche(fiche_depuis_doli(u)), empreinte_c=empreinte_fiche(moi["fiche"]), maj=time.strftime("%Y-%m-%d %H:%M")))
+        return {"id_doli": l["id_doli"], "avant": {k: l.get(k, "") for k in ("empreinte", "empreinte_c")}}
+
+    def defaire_fiche_accorder(ctx, res):
+        l = _lien_fiche(ctx)
+        if l:
+            ctx.poser("dolibarr_lien", _id_lien(ctx), "utilisateur Dolibarr %s" % l["id_doli"], etat="lie", donnees=dict(l, **res["avant"]))
+
+    # ---- la clé de mandat (administrateur) : l'utilisateur Dolibarr dédié à Cassandra, aux droits limités ----
+    def _mandat_pose(conf):
+        """Une clé de mandat existe : le réglage secret, ou le fichier de clé (le repli de la V18). Jamais sa valeur."""
+        return bool(conf and (conf.get("cle_mandat") or os.path.isfile(conf.get("fichier_cle", ""))))
+
+    def mandat_etat(ctx):
+        conf = lire_conf()
+        return {"url": bool(conf), "cle": _mandat_pose(conf), "pour_tous": bool(conf and conf.get("mandat_pour_tous")), "pont": conf is not None}
+
+    def mandat_verifier(ctx):
+        """Vérifie la clé de mandat par de VRAIS appels : le pont répond, la clé est reconnue, l'utilisateur n'est pas administrateur, et il lit les utilisateurs.
+        Rien n'est écrit. Seul un vrai appel confirme les en-têtes et les droits ; les messages disent ce qui manque."""
+        if not (ctx.compte and ctx.est_admin(ctx.compte)):
+            raise PermissionError("vérifier la clé de mandat est réservé aux administrateurs")
+        conf = lire_conf()
+        if not conf:
+            return {"ok": False, "etapes": [{"nom": "Pont", "ok": False, "detail": "adresse de Dolibarr absente (réglage « url »)"}]}
+        if not _mandat_pose(conf):
+            return {"ok": False, "etapes": [{"nom": "Pont", "ok": True, "detail": "adresse présente"}, {"nom": "Clé de mandat", "ok": False, "detail": "aucune clé posée (réglage « cle_mandat » ou fichier de clé)"}]}
+        mandat = dict(conf, cle_perso="", compte="")
+        etapes = [{"nom": "Pont", "ok": True, "detail": "adresse présente"}]
+        try:
+            st = appeler(mandat, "/status")
+            etapes.append({"nom": "Dolibarr répond", "ok": True, "detail": "version %s" % str((st or {}).get("success", {}).get("dolibarr_version", "?")) if isinstance(st, dict) else "réponse reçue"})
+        except Exception as e:
+            etapes.append({"nom": "Dolibarr répond", "ok": False, "detail": str(e)[:160]})
+            return {"ok": False, "etapes": etapes}
+        try:
+            liste = appeler(mandat, "/users", {"limit": 1})
+            etapes.append({"nom": "Lecture des utilisateurs", "ok": isinstance(liste, list), "detail": "autorisée" if isinstance(liste, list) else "réponse inattendue"})
+        except Exception as e:
+            etapes.append({"nom": "Lecture des utilisateurs", "ok": False, "detail": str(e)[:160]})
+        try:
+            info = appeler(mandat, "/users/info")
+            adm = str((info or {}).get("admin", "0")) == "1" if isinstance(info, dict) else False
+            etapes.append({"nom": "Pas administrateur", "ok": not adm, "detail": "l'utilisateur du mandat est administrateur de Dolibarr : un utilisateur dédié, aux droits limités, est plus sûr" if adm else "droits limités"})
+        except Exception:
+            etapes.append({"nom": "Pas administrateur", "ok": True, "detail": "non vérifiable par l'API de cette version (ce n'est pas un refus)"})
+        return {"ok": all(e["ok"] for e in etapes), "etapes": etapes}
 
     def _pays_etat_ids(conf, champs):
         sortie = {}
@@ -2792,9 +2906,14 @@ def brancher(ctx):
         return {"present": True, "type": type_, "base64": base64.b64encode(brut).decode("ascii")}
 
     ctx.implementer("portrait", portrait)
+    ctx.implementer("attente_lien", attente_lien)
     ctx.implementer("fiche_chercher", fiche_chercher)
     ctx.implementer("fiche_lire", fiche_lire)
     ctx.implementer("fiche_comparer", fiche_comparer)
+    ctx.implementer("fiche_regle", fiche_regle, prouver_fiche_regle, defaire_fiche_regle, simuler=lambda ctx, groupe="", qui="", **_: "ferait l'emporter %s pour le groupe %s" % (qui, groupe))
+    ctx.implementer("fiche_accorder", fiche_accorder, lambda ctx, res: True, defaire_fiche_accorder)
+    ctx.implementer("mandat_etat", mandat_etat)
+    ctx.implementer("mandat_verifier", mandat_verifier)
     ctx.implementer("fiche_lier", fiche_lier, prouver_fiche_lier, defaire_fiche_lier, simuler=lambda ctx, id_doli="", **_: "lierait ma fiche à l'utilisateur Dolibarr %s" % id_doli)
     ctx.implementer("fiche_delier", fiche_delier, prouver_fiche_delier, defaire_fiche_delier, simuler=lambda ctx, **_: "délierait ma fiche de Dolibarr")
     ctx.implementer("fiche_ecrire", fiche_ecrire, prouver_fiche_ecrire, defaire_fiche_ecrire, simuler=lambda ctx, champs=None, **_: "enverrait %d champ(s) de ma fiche à Dolibarr" % len(champs or {}))

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #a018f3
+# VERSION CN : 0.1.0  #3d8585
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions, jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=a018f3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3d8585 ▼▼▼
 """L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions,
 jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt salé.
 
@@ -66,6 +66,8 @@ PORTRAIT_TYPES = {b"\x89PNG\r\n\x1a\n": "image/png", b"\xff\xd8\xff": "image/jpe
 SOURCES_PORTRAIT = ("", "propre", "dolibarr", "fastpanel", "telegram", "initiales")
 TENTATIVES_MAX, TENTATIVES_FENETRE = 10, 300       # comme la V18 : dix échecs en cinq minutes
 TTL_SESSION_HEURES = 24
+APPAREIL_CONFIANCE_JOURS = 30                  # « se souvenir de cet appareil »
+APPAREIL_OUBLI_JOURS = 30                      # un appareil non revu depuis autant de jours, et dont on ne s'est pas souvenu, redevient « nouveau »
 # Le coût du mot de passe : scrypt n=2**17, r=8, p=1 (la recommandation d'OWASP), soit 128 Mo de mémoire et ~0,5 s par hachage. hashlib plafonne la mémoire à
 # 32 Mo si on ne la lève pas (ValueError) : MAXMEM la lève, avec de la marge. Les paramètres VIVENT DANS L'EMPREINTE (« scrypt$n=..,r=..,p=..$sel$hash ») : une
 # empreinte plus ancienne reste vérifiable avec les siens, et se réécrit au paramètre courant à la connexion suivante.
@@ -167,6 +169,7 @@ def ip_nature(ip) -> str:
 
 
 RE_UNIX = re.compile(r"^[a-z_][a-z0-9_-]{0,31}$")
+RE_FP = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 
 
 def fastpanel_present() -> bool:
@@ -268,6 +271,10 @@ class Identite:
             c.execute("CREATE TABLE IF NOT EXISTS identite_etat(cle TEXT PRIMARY KEY, valeur REAL NOT NULL)")
             c.execute("CREATE TABLE IF NOT EXISTS sessions_mdp(id TEXT PRIMARY KEY, ts REAL NOT NULL)")
             c.execute("CREATE TABLE IF NOT EXISTS appareils(compte TEXT NOT NULL, empreinte TEXT NOT NULL, premiere REAL NOT NULL, derniere REAL NOT NULL, PRIMARY KEY(compte, empreinte))")
+            for col, defn in (("confiance", "REAL NOT NULL DEFAULT 0"), ("statut", "TEXT NOT NULL DEFAULT 'approuve'"), ("agent", "TEXT NOT NULL DEFAULT ''"), ("reseau", "TEXT NOT NULL DEFAULT ''")):
+                if col not in [r[1] for r in c.execute("PRAGMA table_info(appareils)")]:
+                    c.execute("ALTER TABLE appareils ADD COLUMN %s %s" % (col, defn))
+            c.execute("CREATE TABLE IF NOT EXISTS comptes_prefs(compte TEXT NOT NULL, cle TEXT NOT NULL, valeur TEXT NOT NULL, maj REAL NOT NULL, PRIMARY KEY(compte, cle))")
 
     def parametre(self, cle: str, defaut):
         """Un réglage de sécurité : `self.securite[cle]` s'il est posé (une valeur imposée par le code qui construit l'identité : les bancs d'essai), sinon `comptes.<cle>`
@@ -847,6 +854,8 @@ class Identite:
             cur = c.execute("INSERT INTO comptes_corbeille(compte, instantane, ts) VALUES(?,?,?)", (compte, json.dumps(instantane), time.time()))
             c.execute("DELETE FROM comptes_fiche WHERE compte=?", (compte,))
             c.execute("DELETE FROM comptes_portrait WHERE compte=?", (compte,))
+            c.execute("DELETE FROM comptes_prefs WHERE compte=?", (compte,))
+            c.execute("DELETE FROM appareils WHERE compte=?", (compte,))
             c.execute("DELETE FROM comptes WHERE compte=?", (compte,))
             c.execute("DELETE FROM sessions WHERE compte=?", (compte,))
             c.execute("DELETE FROM jetons_mdp WHERE compte=?", (compte,))
@@ -1002,21 +1011,116 @@ class Identite:
             c.execute("DELETE FROM sessions WHERE compte=? AND id NOT IN (SELECT id FROM sessions WHERE compte=? ORDER BY derniere DESC, cree DESC LIMIT ?)", (compte, compte, SESSIONS_MAX))
         return {"ok": True, "jeton": jeton, "id": jeton[-6:], "compte": compte}
 
-    def appareil_vu(self, compte: str, ip: str, agent: str) -> str:
-        """Note l'appareil (agent + réseau, sans les derniers chiffres de l'adresse) d'une connexion réussie. Rend « premier » pour la toute première
-        connexion du compte, « nouveau » si cet appareil n'a jamais servi à ce compte, « connu » sinon. Le premier n'alerte personne : il n'y a rien à comparer."""
-        compte = (compte or "").strip().lower()
+    @staticmethod
+    def _appareil(ip: str, agent: str):
         ip = (ip or "").strip()
         reseau = ".".join(ip.split(".")[:3]) if "." in ip else ":".join(ip.split(":")[:4])
         emp = hashlib.sha256(("%s|%s" % ((agent or "")[:60], reseau)).encode("utf-8")).hexdigest()[:16]
+        return emp, reseau
+
+    def appareil_vu(self, compte: str, ip: str, agent: str, bloquer: bool = False) -> str:
+        """Note l'appareil (agent + réseau, sans les derniers chiffres de l'adresse) d'une connexion réussie. Rend « premier » pour la toute première
+        connexion du compte, « nouveau » si cet appareil n'a jamais servi à ce compte (ou s'il n'est pas revenu depuis APPAREIL_OUBLI_JOURS sans qu'on s'en soit souvenu),
+        « attente » s'il attend l'approbation d'une session déjà ouverte (`bloquer`, pour un administrateur), « connu » sinon. Le premier n'alerte personne."""
+        compte = (compte or "").strip().lower()
+        emp, reseau = self._appareil(ip, agent)
         now = time.time()
         deja = self.base.lire("SELECT COUNT(*) AS n FROM appareils WHERE compte=?", (compte,))[0]["n"]
-        vu = self.base.lire("SELECT 1 FROM appareils WHERE compte=? AND empreinte=?", (compte, emp))
+        vu = self.base.lire("SELECT statut, confiance, derniere FROM appareils WHERE compte=? AND empreinte=?", (compte, emp))
         if vu:
-            self.base.ecrire("UPDATE appareils SET derniere=? WHERE compte=? AND empreinte=?", (now, compte, emp))
+            v = vu[0]
+            if v["statut"] == "attente":
+                return "attente"
+            self.base.ecrire("UPDATE appareils SET derniere=?, agent=?, reseau=? WHERE compte=? AND empreinte=?", (now, (agent or "")[:60], reseau, compte, emp))
+            if v["confiance"] <= now and now - v["derniere"] > APPAREIL_OUBLI_JOURS * 86400:
+                return "nouveau"                       # un appareil qu'on n'a plus vu depuis longtemps et dont on ne s'est pas souvenu : on le traite comme neuf
             return "connu"
-        self.base.ecrire("INSERT OR IGNORE INTO appareils(compte, empreinte, premiere, derniere) VALUES(?,?,?,?)", (compte, emp, now, now))
-        return "nouveau" if deja else "premier"
+        statut = "attente" if (deja and bloquer) else "approuve"
+        self.base.ecrire("INSERT OR IGNORE INTO appareils(compte, empreinte, premiere, derniere, statut, agent, reseau) VALUES(?,?,?,?,?,?,?)", (compte, emp, now, now, statut, (agent or "")[:60], reseau))
+        return "attente" if statut == "attente" else ("nouveau" if deja else "premier")
+
+    def appareils(self, compte: str, court: str = "") -> list:
+        """Les appareils connus du compte : approuvés, de confiance (jusqu'à quand), en attente. `courant` : celui de la session dont on donne l'identifiant court."""
+        compte = (compte or "").strip().lower()
+        courant = ""
+        if court:
+            s = self.base.lire("SELECT ip, agent FROM sessions WHERE court=? AND compte=?", (court, compte))
+            if s:
+                courant = self._appareil(s[0]["ip"], s[0]["agent"])[0]
+        now = time.time()
+        return [{"id": r["empreinte"], "agent": r["agent"], "reseau": r["reseau"], "premiere": r["premiere"], "derniere": r["derniere"], "statut": r["statut"],
+                 "confiance_jusqua": r["confiance"] if r["confiance"] > now else 0, "courant": r["empreinte"] == courant}
+                for r in self.base.lire("SELECT * FROM appareils WHERE compte=? ORDER BY derniere DESC", (compte,))]
+
+    def appareil_confiance(self, compte: str, appareil: str, oui: bool) -> dict:
+        """« Se souvenir de cet appareil » : APPAREIL_CONFIANCE_JOURS jours sans le traiter comme nouveau. Le mot de passe et le second facteur restent demandés à chaque connexion."""
+        compte = (compte or "").strip().lower()
+        r = self.base.lire("SELECT statut, confiance FROM appareils WHERE compte=? AND empreinte=?", (compte, appareil))
+        if not r or r[0]["statut"] != "approuve":
+            return {"ok": False, "error": "Cet appareil n'est pas connu du compte"}
+        jusqua = time.time() + APPAREIL_CONFIANCE_JOURS * 86400 if oui else 0
+        self.base.ecrire("UPDATE appareils SET confiance=? WHERE compte=? AND empreinte=?", (jusqua, compte, appareil))
+        return {"ok": True, "avant": r[0]["confiance"], "apres": jusqua}
+
+    def appareil_decider(self, compte: str, appareil: str, approuver: bool) -> dict:
+        """Approuve ou refuse (retire) un appareil en attente."""
+        compte = (compte or "").strip().lower()
+        r = self.base.lire("SELECT statut FROM appareils WHERE compte=? AND empreinte=?", (compte, appareil))
+        if not r:
+            return {"ok": False, "error": "Cet appareil n'existe pas"}
+        if approuver:
+            self.base.ecrire("UPDATE appareils SET statut='approuve' WHERE compte=? AND empreinte=?", (compte, appareil))
+        else:
+            self.base.ecrire("DELETE FROM appareils WHERE compte=? AND empreinte=?", (compte, appareil))
+        return {"ok": True, "avant": r[0]["statut"]}
+
+    # ---- les préférences d'un compte (qui voit ma fiche, qui l'emporte avec Dolibarr) : un petit dictionnaire JSON par clé ----
+    def pref(self, compte: str, cle: str, defaut=None):
+        r = self.base.lire("SELECT valeur FROM comptes_prefs WHERE compte=? AND cle=?", ((compte or "").strip().lower(), cle))
+        if not r:
+            return defaut
+        try:
+            return json.loads(r[0]["valeur"])
+        except ValueError:
+            return defaut
+
+    def pref_poser(self, compte: str, cle: str, valeur) -> None:
+        self.base.ecrire("INSERT OR REPLACE INTO comptes_prefs(compte, cle, valeur, maj) VALUES(?,?,?,?)", ((compte or "").strip().lower(), cle, json.dumps(valeur), time.time()))
+
+    # ---- les identités liées : le pseudo FastPanel, l'utilisateur système (bash) ----
+    def lier_fastpanel(self, compte: str, fp_account: str) -> dict:
+        compte = (compte or "").strip().lower()
+        fp = (fp_account or "").strip()
+        if fp and not RE_FP.match(fp):
+            return {"ok": False, "error": "Pseudo FastPanel : lettres, chiffres, point, tiret et soulignement (64 au plus)"}
+        r = self.base.lire("SELECT fp_account, type FROM comptes WHERE compte=?", (compte,))
+        if not r:
+            return {"ok": False, "error": "Ce compte n'existe pas"}
+        self.base.ecrire("UPDATE comptes SET fp_account=?, maj=? WHERE compte=?", (fp, time.time(), compte))
+        return {"ok": True, "avant": r[0]["fp_account"], "apres": fp}
+
+    def lier_unix(self, compte: str, unix_user: str) -> dict:
+        """Adosse un compte ADMINISTRATEUR (non superadministrateur) à un utilisateur système qui a un bash. Le bash est réservé aux administrateurs ; le superadministrateur
+        garde le sien, posé à sa création. Vider le lien retire l'adossement (pas l'utilisateur système)."""
+        compte = (compte or "").strip().lower()
+        unix = (unix_user or "").strip().lower()
+        r = self.base.lire("SELECT unix_user, superadmin, type FROM comptes WHERE compte=?", (compte,))
+        if not r:
+            return {"ok": False, "error": "Ce compte n'existe pas"}
+        if r[0]["superadmin"]:
+            return {"ok": False, "error": "L'utilisateur système du superadministrateur se pose à sa création et ne se change pas ici"}
+        if unix:
+            if not self.droits.est_admin(compte):
+                return {"ok": False, "error": "Le bash est réservé aux administrateurs : ce compte n'en est pas un"}
+            if not RE_UNIX.match(unix) or unix == "root":
+                return {"ok": False, "error": "Identifiant système : minuscules, chiffres, - et _ (pas root)"}
+            shell = self.unix(unix)
+            if shell is None or not shell_de_connexion(shell):
+                return {"ok": False, "error": "L'utilisateur système « %s » n'existe pas ou n'a pas d'interpréteur de commandes (bash)" % unix}
+            if self.base.lire("SELECT 1 FROM comptes WHERE unix_user=? AND compte<>?", (unix, compte)):
+                return {"ok": False, "error": "L'utilisateur système « %s » est déjà adossé à un autre compte" % unix}
+        self.base.ecrire("UPDATE comptes SET unix_user=?, maj=? WHERE compte=?", (unix, time.time(), compte))
+        return {"ok": True, "avant": r[0]["unix_user"], "apres": unix}
 
     def ouvrir(self, compte: str, mdp: str, ip: str = "", agent: str = "", preuve=None) -> dict:
         """Mot de passe, puis second facteur si un module en exige un POUR CE COMPTE. Sans preuve, on rend l'invitation (ce qu'il faut signer),

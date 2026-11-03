@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #dbaf9d
+# VERSION CN : 0.1.0  #a923bd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la fiche d'un compte : validation (refus, jamais de coupure), migration des anciens champs, colonnes anciennes dérivées, corbeille, agents sans fiche.
 # MÉTHODE    : un noyau jetable avec les modules droits et comptes ; les gestes passent par les capacités comptes.* comme à l'usage.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=dbaf9d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a923bd ▼▼▼
 """Bancs de la fiche d'un compte : validation, migration, colonnes anciennes dérivées, corbeille, agents sans fiche."""
 import json
 import shutil
@@ -180,6 +180,7 @@ class Capacites(Monde):
         r = self.ex("comptes.lire", au_nom_de="a@x.fr", compte="b@x.fr")["resultat"]
         self.assertEqual((r["fiche"]["job"], r["fiche"]["office_phone"]), ("Comptable", "0102"))          # le professionnel se voit
         self.assertEqual((r["fiche"]["personal_email"], r["fiche"]["personal_mobile"], r["fiche"]["birth"]), ("", "", ""))
+        self.ex("comptes.fiche_visibilite_regler", au_nom_de="b@x.fr", groupe="perso", public="collegues", ouvert=True)      # le droit ne suffit pas : il faut aussi que Bea ait ouvert son privé
         self.ex("droits.regler", sujet="a@x.fr", droit="comptes.fiche_voir_perso")
         r = self.ex("comptes.lire", au_nom_de="a@x.fr", compte="b@x.fr")["resultat"]
         self.assertEqual((r["fiche"]["personal_email"], r["fiche"]["birth"]), ("bea@maison.fr", "1990-01-02"))

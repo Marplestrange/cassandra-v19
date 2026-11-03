@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d23bb4
+# VERSION CN : 0.1.0  #4155e2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la fiche utilisateur échangée avec Dolibarr : liste blanche, conversions, lien confirmé, comparaison, envoi et retour arrière, champs interdits refusés.
 # MÉTHODE    : un Dolibarr de poche (utilisateurs, pays, départements) ; chaque compte agit avec sa propre clé ; aucune requête n'est faite hors de la machine.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d23bb4 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4155e2 ▼▼▼
 """Bancs de la fiche utilisateur échangée avec Dolibarr."""
 import gzip
 import importlib.util
@@ -56,6 +56,7 @@ class FauxUsers:
                 "note_private": "à ne jamais copier", "salary": "3000", "thm": "20", "rights": {"x": 1}, "statut": "1", "admin": "0", "entity": "1"},
             8: {"id": "8", "login": "autre", "lastname": "Autre", "firstname": "Un", "email": "autre@x.fr", "statut": "1"},
         }
+        self.mandat_admin = "0"
         self.pays = {"FR": 1, "BE": 2}
         self.deps = {"75": 75, "69": 69}
         self.cles = {CLE_MANDAT: "cassandra", CLE_A: "marie"}
@@ -87,6 +88,10 @@ class FauxUsers:
                     filtre = q.get("sqlfilters", "")
                     adresse = filtre.split(":=:'")[1].split("'")[0] if ":=:'" in filtre else ""
                     return self._rep(200, [u for u in faux.users.values() if u.get("email", "").lower() == adresse.lower()])
+                if methode == "GET" and chemin == "/status":
+                    return self._rep(200, {"success": {"code": 200, "dolibarr_version": "20.0.0"}})
+                if methode == "GET" and chemin == "/users/info":
+                    return self._rep(200, {"id": "3", "login": "cassandra", "admin": faux.mandat_admin})
                 if chemin.startswith("/users/") and chemin[7:].isdigit():
                     i = int(chemin[7:])
                     if i not in faux.users:
@@ -245,6 +250,48 @@ class Fiche(unittest.TestCase):
         self.assertFalse(r["change_depuis_le_lien"])
         self.faux.users[7]["town"] = "Lyon"                                              # quelqu'un change la fiche dans Dolibarr
         self.assertTrue(self.ex("fiche_comparer")["resultat"]["change_depuis_le_lien"])
+
+    def test_qui_l_emporte_decide_champ_par_champ_et_demande_si_les_deux_ont_change(self):
+        self.lier()
+        self.e("comptes.modifier_moi", "humain", {"job": "Directrice", "lang": "en_EN"}, compte="marie@x.fr")
+        r = self.ex("fiche_comparer")["resultat"]
+        dec = {x["champ"]: x["decision"] for x in r["champs"] if not x["identique"]}
+        self.assertEqual(dec["job"], "reprendre")                                       # l'état civil : Dolibarr l'emporte par défaut
+        self.assertEqual(dec["lang"], "envoyer")                                        # la présentation : Cassandra l'emporte par défaut
+        self.assertFalse(r["conflit"])
+        self.assertEqual(self.ex("fiche_regle", groupe="civil", qui="cassandra")["statut"], "faite")
+        self.assertEqual({x["champ"]: x["decision"] for x in self.ex("fiche_comparer")["resultat"]["champs"]}["job"], "envoyer")
+        self.ex("fiche_regle", groupe="civil", qui="demander")
+        self.assertEqual({x["champ"]: x["decision"] for x in self.ex("fiche_comparer")["resultat"]["champs"]}["job"], "demander")
+        self.assertEqual(self.ex("fiche_regle", groupe="inconnu", qui="dolibarr")["statut"], "echec")
+        self.assertEqual(self.ex("fiche_regle", groupe="civil", qui="peut-etre")["statut"], "echec")
+        self.ex("fiche_regle", groupe="civil", qui="dolibarr")
+        self.faux.users[7]["town"] = "Lyon"                                              # Dolibarr a changé ET Cassandra a changé depuis le lien : personne n'écrase l'autre
+        r = self.ex("fiche_comparer")["resultat"]
+        self.assertTrue(r["conflit"])
+        self.assertEqual({x["decision"] for x in r["champs"] if not x["identique"]}, {"demander"})
+        self.assertEqual(self.ex("fiche_accorder")["statut"], "faite")                                               # « c'est l'état convenu »
+        self.assertFalse(self.ex("fiche_comparer")["resultat"]["conflit"])
+
+    def test_le_tiers_et_le_contact_lies_se_lisent(self):
+        self.lier()
+        self.faux.users[7]["socid"] = "12"
+        self.faux.users[7]["contact_id"] = "0"
+        r = self.ex("fiche_lire")["resultat"]
+        self.assertEqual((r["socid"], r["contact_id"]), ("12", ""))
+        self.assertEqual(r["qui"], {"civil": "dolibarr", "coord": "dolibarr", "presentation": "cassandra"})
+
+    def test_la_cle_de_mandat_se_verifie_par_de_vrais_appels(self):
+        self.assertNotEqual(self.ex("mandat_verifier")["statut"], "faite")                  # un compte ordinaire ne vérifie pas le mandat
+        vue = lambda: self.e("dolibarr.mandat_verifier", "humain", {}, compte="root@x.fr")["resultat"]      # noqa: E731
+        self.assertTrue(self.e("dolibarr.mandat_etat", "humain", {}, compte="root@x.fr")["resultat"]["cle"])   # le fichier de clé compte
+        r = vue()
+        self.assertTrue(r["ok"], r)
+        self.assertEqual([x["nom"] for x in r["etapes"]], ["Pont", "Dolibarr répond", "Lecture des utilisateurs", "Pas administrateur"])
+        self.faux.mandat_admin = "1"
+        r = vue()
+        self.assertFalse(r["ok"])
+        self.assertIn("administrateur", [x for x in r["etapes"] if not x["ok"]][0]["detail"])
 
     def test_ecrire_envoie_avec_ma_cle_prouve_et_se_defait(self):
         self.lier()

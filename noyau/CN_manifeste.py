@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7f57ee
+# VERSION CN : 0.1.0  #6c8e75
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7f57ee ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6c8e75 ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -335,6 +335,17 @@ class Ecran:
 
 
 @dataclass(frozen=True)
+class Attente:
+    """Une chose qu'un module attend d'un compte (« À faire sur mon compte »). `capacite` : une LECTURE du module qui rend faux quand il n'y a rien à faire,
+    sinon un dictionnaire {titre, texte} (le module dit ce qu'il constate) ; l'écran n'affiche que ce qui lui est rendu."""
+    id: str
+    capacite: str
+    vers: str = ""             # la page de Mon compte où se règle l'attente (mc_profil, mc_secu…)
+    action: str = "Voir"
+    niveau: str = "info"       # info | warn
+
+
+@dataclass(frozen=True)
 class Installation:
     script: str = ""
     verification: str = ""
@@ -415,6 +426,7 @@ class Manifeste:
     widgets: tuple = ()
     theme: Theme = field(default_factory=Theme)
     ecrans: tuple = ()
+    attentes: tuple = ()
     installation: Installation = field(default_factory=Installation)
     source: str = ""
 
@@ -716,6 +728,18 @@ def valider(brut: dict) -> list:
                 e.append("ecrans[%d].gabarit : %s" % (i, " | ".join(GABARITS)))
 
     lectures = [c.get("id") for c in (brut.get("capacites", []) or []) if isinstance(c, dict) and c.get("risque") == "lecture"]
+    attentes_ids = []
+    for i, t in enumerate(brut.get("attentes", []) or []):
+        if not isinstance(t, dict) or not _ID.match(str(t.get("id", ""))):
+            e.append("attentes[%d].id : identifiant invalide" % i)
+            continue
+        if t["id"] in attentes_ids:
+            e.append("attentes[%d].id : « %s » est déclaré deux fois" % (i, t["id"]))
+        attentes_ids.append(t["id"])
+        if t.get("capacite") not in lectures:
+            e.append("attente « %s » : « capacite » doit être une capacité de lecture de ce module" % t["id"])
+        if t.get("niveau", "info") not in ("info", "warn"):
+            e.append("attente « %s » : niveau = info | warn" % t["id"])
     wids = []
     for i, w in enumerate(brut.get("widgets", []) or []):
         nom = "widgets[%d]" % i
@@ -1085,6 +1109,7 @@ def construire(brut: dict, source="") -> Manifeste:
                              w.get("role", "utilisateur"), w.get("composant", "nombre"), w.get("source", ""), w.get("rafraichir_s", 0), _qualifier(m["id"], w.get("droit")))
                       for w in brut.get("widgets", []) or []),
         theme=Theme(str((brut.get("theme") or {}).get("accent", "")), tuple(sorted(((brut.get("theme") or {}).get("tokens") or {}).items()))),
+        attentes=tuple(Attente(t["id"], t["capacite"], t.get("vers", ""), t.get("action", "Voir"), t.get("niveau", "info")) for t in brut.get("attentes", []) or []),
         ecrans=tuple(Ecran(s["id"], s["libelle"], s.get("domaine", ""), s.get("gabarit", "libre"), s.get("titre", "")) for s in brut.get("ecrans", []) or []),
         installation=Installation(ins.get("script", ""), ins.get("verification", ""), ins.get("retrait", ""), ins.get("migrations", "")),
         source=str(source),

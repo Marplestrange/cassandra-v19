@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #a249a7
+// VERSION CN : 0.2.0  #89a308
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Les pages « Utilisateurs et groupes » : listes, fiches, droits par utilisateur et par groupe, matrice, « qui peut… ? », journal.
 // MÉTHODE    : une seule scène (CASS.sceneSurMesure.comptes) ; la page vient de l'écran ouvert (u_liste, u_nouveau, g_liste, g_nouveau, matrice, qui, journal) et la navigation interne ne change que l'état.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=a249a7 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=89a308 ▼▼▼
 // Les données viennent des capacités comptes.* (lister, creer, modifier, desactiver, reactiver, creer_jeton, regles_mdp, moi) et droits.* (etat, catalogue, decisions, appliquer, groupe, membre, qui_peut, voir_comme, journal).
 // Un droit se règle en trois états (hérité, accordé, refusé) ; la décision et son pourquoi viennent du moteur (droits.decisions), jamais recalculés ici.
 (function () {
@@ -197,7 +197,7 @@
       if (tab === "fiche") {
         const champ = (cle, lib, type) => '<div><label class="cu-f">' + esc(lib) + '</label><input id="cf-' + cle + '" type="' + (type || "text") + '" value="' + esc(c[cle] || "") + '"></div>';
         h += '<div class="cu-carte"><h3>Identité</h3><div class="cu-g2">' + champ("display_name", "Nom affiché") + champ("role_label", "Fonction") + champ("contact_email", "Courriel de contact", "email") + champ("phone", "Téléphone", "tel") + champ("lang", "Langue") + '</div></div>' +
-          '<div class="cu-carte"><h3>Sites et hébergement</h3><label class="cu-f">Sites accessibles (séparés par des virgules)</label><input id="cf-sites" type="text" value="' + esc((c.sites || []).join(", ")) + '"><div class="cu-g2" style="margin-top:12px">' + champ("fp_account", "Compte FastPanel lié") + '<div><label class="cu-f">Utilisateur Unix</label><input type="text" value="' + esc(c.unix_user || "") + '" disabled></div></div></div><div class="cu-barre"><button class="cu-btn pri" data-a="profil" data-k="' + esc(c.compte) + '">Enregistrer</button></div>';
+          '<div class="cu-carte"><h3>Sites et hébergement</h3><label class="cu-f">Sites accessibles (séparés par des virgules)</label><input id="cf-sites" type="text" value="' + esc((c.sites || []).join(", ")) + '"><div class="cu-g2" style="margin-top:12px">' + champ("fp_account", "Compte FastPanel lié") + '<div><label class="cu-f">Utilisateur système (bash, réservé aux administrateurs)</label><input id="cf-unix_user" type="text" value="' + esc(c.unix_user || "") + '"' + (c.admin && !c.superadmin ? "" : " disabled") + '></div></div></div><div class="cu-barre"><button class="cu-btn pri" data-a="profil" data-k="' + esc(c.compte) + '">Enregistrer</button></div>';
       } else if (tab === "soc") {
         h += pFicheSocietes(c);
       } else if (tab === "groupes") {
@@ -365,7 +365,7 @@
       else if (k === "adm") { S.adm = !(S.adm == null ? estAdmin(S.fiche) : S.adm); dessiner(); }
       else if (k === "annuler-draft") { S.draft = {}; S.adm = null; dessiner(); }
       else if (k === "appliquer") await appliquer();
-      else if (k === "profil") { const d = { compte: cle }; ["display_name", "role_label", "contact_email", "phone", "lang", "fp_account"].forEach((c) => { d[c] = val("#cf-" + c); }); d.sites = val("#cf-sites").split(/[\s,;]+/).filter(Boolean); if (await geste("comptes.modifier", d, "Fiche enregistrée.")) recharger(); }
+      else if (k === "profil") { const d = { compte: cle }; ["display_name", "role_label", "contact_email", "phone", "lang", "fp_account"].forEach((c) => { d[c] = val("#cf-" + c); }); d.sites = val("#cf-sites").split(/[\s,;]+/).filter(Boolean); const ux = document.getElementById("cf-unix_user"); if (await geste("comptes.modifier", d, "Fiche enregistrée.")) { if (ux && !ux.disabled) await geste("comptes.identite_lier", { compte: cle, unix_user: ux.value }); recharger(); } }
       else if (k === "membre") { if (await geste("droits.membre", { compte: S.fiche, groupe: cle, present: a.dataset.p === "1" })) await recharger(); }
       else if (k === "jeton") { const r = await lire("comptes.creer_jeton", { compte: cle, heures: 72 }); if (r) { S.jeton = r; dessiner(); } else dire(S.erreur, "err"); }
       else if (k === "depart") depart(cle);

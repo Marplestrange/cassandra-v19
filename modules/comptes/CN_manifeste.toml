@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : comptes
 # ZONE       : CN
-# VERSION CN : 0.5.0  #a404fb
+# VERSION CN : 0.5.0  #f966c8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les comptes et la preuve qu'on en est : identifiant (une adresse e-mail), mot de passe (règles de la V18, scrypt salé), sessions, jetons de mise en place du mot de passe. Le rôle d'administrateur, lui, vit dans les droits.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=a404fb ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=f966c8 ▼▼▼
 [module]
 id = "comptes"
 nom = "Comptes"
@@ -76,6 +76,14 @@ defaut = 60
 minimum = 0
 maximum = 1440
 aide = "0 : jamais redemandé. Ne concerne que les comptes qui ont un second facteur."
+
+[[reglages]]
+id = "admin_nouvel_appareil"
+libelle = "Un administrateur sur un appareil jamais vu : prévenir seulement, ou bloquer jusqu'à l'approbation d'une session déjà ouverte"
+type = "choix"
+defaut = "alerter"
+choix = ["alerter", "bloquer"]
+aide = "Le superadministrateur n'est jamais bloqué : personne ne pourrait l'approuver. Bloquer sans session ouverte ailleurs enferme dehors : approuvez d'abord vos appareils."
 
 [[reglages]]
 id = "admin_second_facteur_obligatoire"
@@ -158,6 +166,103 @@ risque = "faible"
 perimetre = ["l'image propre du compte au nom duquel on agit"]
 preuve = "plus aucune image propre"
 retour = "remettre l'image retirée"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "attente_cle"
+libelle = "Ce que le compte attend : une (seconde) clé de sécurité, d'après le module webauthn"
+risque = "lecture"
+
+[[capacites]]
+id = "attente_fiche"
+libelle = "Ce que le compte attend : une fiche complétée (son nom)"
+risque = "lecture"
+
+[[capacites]]
+id = "attente_appareils"
+libelle = "Ce que le compte attend : l'approbation d'appareils neufs"
+risque = "lecture"
+
+[[capacites]]
+id = "mes_attentes"
+libelle = "« À faire sur mon compte » : ce que chaque module déclare attendre de moi (blocs [[attentes]] des manifestes)"
+risque = "lecture"
+
+[[attentes]]
+id = "cle"
+capacite = "attente_cle"
+vers = "mc_secu"
+action = "Ajouter"
+niveau = "warn"
+
+[[attentes]]
+id = "fiche"
+capacite = "attente_fiche"
+vers = "mc_profil"
+action = "Compléter"
+
+[[attentes]]
+id = "appareils"
+capacite = "attente_appareils"
+vers = "mc_secu"
+action = "Voir"
+niveau = "warn"
+
+[[capacites]]
+id = "fiche_visibilite"
+libelle = "Qui voit ma fiche : ce que j'ai ouvert à mes collègues et aux administrateurs, et si j'inscris les accès d'autrui à mon journal"
+risque = "lecture"
+
+[[capacites]]
+id = "fiche_visibilite_regler"
+libelle = "Ouvrir ou fermer un groupe de champs de ma fiche à un public, ou régler la journalisation des accès d'autrui"
+risque = "faible"
+perimetre = ["les préférences de visibilité de la fiche du compte au nom duquel on agit ; aucun champ n'est modifié"]
+preuve = "la visibilité relue est celle demandée"
+retour = "remettre la visibilité d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "identites"
+libelle = "Les identités liées d'un compte : pseudo FastPanel, utilisateur système (bash) et son état"
+risque = "lecture"
+
+[[capacites]]
+id = "identite_lier"
+confirmer = true
+libelle = "Lier un compte à un pseudo FastPanel et/ou à un utilisateur système avec bash (réservé aux administrateurs)"
+risque = "moyen"
+droit = "gerer"
+perimetre = ["les champs fp_account et unix_user de la ligne du compte ; aucun utilisateur système ni compte FastPanel n'est créé ou modifié"]
+preuve = "la ligne du compte relue porte les liens demandés"
+retour = "remettre les liens d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "appareils"
+libelle = "Mes appareils : connus, de confiance (30 jours), en attente d'approbation"
+risque = "lecture"
+
+[[capacites]]
+id = "appareil_confiance"
+libelle = "Se souvenir de cet appareil pendant 30 jours (le mot de passe et le second facteur restent demandés)"
+risque = "faible"
+perimetre = ["la date de confiance d'un appareil du compte au nom duquel on agit"]
+preuve = "l'appareil relu porte la confiance demandée"
+retour = "remettre la confiance d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "appareil_decider"
+libelle = "Approuver ou refuser un appareil neuf qui attend, pour un administrateur"
+risque = "moyen"
+perimetre = ["l'état d'un appareil du compte au nom duquel on agit (ou, pour un administrateur, d'un autre compte de sa société)"]
+preuve = "l'appareil est approuvé, ou n'existe plus"
+retour = "aucun : un appareil refusé se représente et attend de nouveau"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
 
@@ -411,6 +516,7 @@ masque = ["courant"]
 [permissions]
 identite = true
 lectures = true
+introspection = true
 [[ecrans]]
 id = "mc_accueil"
 libelle = "Mon compte : vue d'ensemble"

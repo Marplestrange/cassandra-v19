@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : comptes
 # ZONE       : CN
-# VERSION CN : 0.5.0  #26e956
+# VERSION CN : 0.5.0  #f5d069
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=26e956 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=f5d069 ▼▼▼
 """Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
 
 Règle de la V18 gardée : le compte d'une action de session n'est JAMAIS un paramètre libre. C'est `ctx.compte`, le compte au nom duquel
@@ -56,14 +56,67 @@ def brancher(ctx):
     # ---- lectures ----
     PERSONNELS = ("personal_email", "personal_mobile", "birth", "address", "zip", "town", "state_code", "country_code")      # les coordonnées PRIVÉES : le droit « fiche_voir_perso » pour celles d'un autre
 
+    # « Qui voit ma fiche » : quatre groupes de champs, trois publics. Moi voit tout ; mes collègues et les administrateurs voient ce que j'ai ouvert (par défaut : tout sauf le privé).
+    # Le privé demande en plus le droit « fiche_voir_perso » : l'ouverture par son titulaire ne suffit pas, le droit ne suffit pas non plus.
+    GROUPES_FICHE = {
+        "identite": ("civility_code", "gender", "lastname", "firstname", "job"),
+        "pro": ("email", "office_phone", "user_mobile", "office_fax", "employee", "ref_employee", "dateemployment", "dateemploymentend"),
+        "presentation": ("lang", "color", "tz", "signature", "socialnetworks", "note_public"),
+        "perso": PERSONNELS,
+    }
+    PUBLICS = ("collegues", "admins")
+    DEFAUT_VIS = {"identite": {"collegues": True, "admins": True}, "pro": {"collegues": True, "admins": True},
+                  "presentation": {"collegues": True, "admins": True}, "perso": {"collegues": False, "admins": False}}
+
+    def _visibilite(cible):
+        v = idt.pref(cible, "fiche_visibilite", {}) or {}
+        sortie = {}
+        for g, d in DEFAUT_VIS.items():
+            x = v.get(g) if isinstance(v.get(g), dict) else {}
+            sortie[g] = {a: bool(x.get(a, d[a])) for a in PUBLICS}
+        return {"groupes": sortie, "journaliser": bool(idt.pref(cible, "fiche_journaliser", True))}
+
     def _fiche_visible(ctx, cible, tout=False):
-        """La fiche de `cible` telle que `ctx.compte` a le droit de la voir : la sienne en entier ; celle d'un autre sans ses coordonnées privées, sauf droit « fiche_voir_perso »."""
+        """La fiche de `cible` telle que `ctx.compte` a le droit de la voir : la sienne en entier ; celle d'un autre selon ce que son titulaire a ouvert à ce public."""
         f = idt.fiche(cible)
         if f is None or tout or cible == ctx.compte:
             return f
-        if not (_large(ctx) or idt.droits.raison(ctx.compte, "comptes.fiche_voir_perso")["accord"]):
-            f = {k: ("" if k in PERSONNELS else v) for k, v in f.items()}
-        return f
+        public = "admins" if (_large(ctx) or idt.droits.est_admin(ctx.compte)) else "collegues"
+        vis = _visibilite(cible)["groupes"]
+        caches = set()
+        for g, champs in GROUPES_FICHE.items():
+            ouvert = vis[g][public]
+            if g == "perso":
+                ouvert = ouvert and (_large(ctx) or idt.droits.raison(ctx.compte, "comptes.fiche_voir_perso")["accord"])
+            if not ouvert:
+                caches.update(champs)
+        return {k: ("" if k in caches else v) for k, v in f.items()}
+
+    def fiche_visibilite(ctx):
+        return _visibilite(moi_ou_erreur(ctx))
+
+    def fiche_visibilite_regler(ctx, groupe="", public="", ouvert=True, journaliser=None):
+        c = moi_ou_erreur(ctx)
+        avant = _visibilite(c)
+        if journaliser is not None:
+            idt.pref_poser(c, "fiche_journaliser", bool(journaliser))
+        if groupe or public:
+            if groupe not in GROUPES_FICHE or public not in PUBLICS:
+                raise ValueError("groupe (%s) et public (%s) attendus" % (", ".join(GROUPES_FICHE), ", ".join(PUBLICS)))
+            v = dict(idt.pref(c, "fiche_visibilite", {}) or {})
+            g = dict(v.get(groupe) or {})
+            g[public] = bool(ouvert)
+            v[groupe] = g
+            idt.pref_poser(c, "fiche_visibilite", v)
+        ctx.emettre("compte.modifie", objet=("compte", c), donnees={"champs": ["visibilite_fiche"]})
+        return {"compte": c, "avant": avant, "apres": _visibilite(c)}
+
+    def prouver_visibilite(ctx, res):
+        return _visibilite(res["compte"]) == res["apres"]
+
+    def defaire_visibilite(ctx, res):
+        idt.pref_poser(res["compte"], "fiche_visibilite", res["avant"]["groupes"])
+        idt.pref_poser(res["compte"], "fiche_journaliser", res["avant"]["journaliser"])
 
     def moi(ctx):
         c = moi_ou_erreur(ctx)
@@ -80,7 +133,7 @@ def brancher(ctx):
             cible = d["compte"]
             d["fiche"] = _fiche_visible(ctx, cible)
             d["nom_affiche"] = idt.nom_affiche(cible)
-            if ctx.compte and cible != ctx.compte and d["fiche"] is not None:
+            if ctx.compte and cible != ctx.compte and d["fiche"] is not None and _visibilite(cible)["journaliser"]:
                 ctx.emettre("compte.fiche_vue", objet=("compte", cible), donnees={"par": ctx.compte})      # l'accès à la fiche d'un autre se journalise : elle le voit dans « Mon compte »
         return d
 
@@ -103,6 +156,123 @@ def brancher(ctx):
     def defaire_fiche_modifier(ctx, res):
         if res["fiche_avant"]:
             idt.fiche_ecrire(res["compte"], res["fiche_avant"])
+
+    # ---- les identités liées : le pseudo FastPanel et l'utilisateur système (bash). Réservées aux administrateurs : elles ouvrent l'hébergement et le shell ----
+    def _admin(ctx):
+        if not (_large(ctx) or idt.droits.est_admin(ctx.compte)):
+            raise PermissionError("lier une identité (FastPanel, système) est réservé aux administrateurs")
+
+    def identites(ctx, compte=""):
+        c = moi_ou_erreur(ctx)
+        cible = str(compte or c).strip().lower()
+        if cible != c:
+            _admin(ctx)
+            _meme_societe(ctx, cible)
+        d = idt.lire(cible)
+        if d is None:
+            raise ValueError("Ce compte n'existe pas")
+        peut = bool(_large(ctx) or idt.droits.est_admin(c))
+        return {"compte": cible, "fp_account": d.get("fp_account", ""), "unix_user": d.get("unix_user", ""), "unix_etat": d.get("unix_etat", ""),
+                "superadmin": bool(d.get("superadmin")), "admin": bool(d.get("admin")), "peut_modifier": peut,
+                "bash_autorise": bool(d.get("admin")) or bool(d.get("superadmin"))}
+
+    def identite_lier(ctx, compte="", fp_account=None, unix_user=None):
+        _admin(ctx)
+        cible = str(compte or "").strip().lower()
+        _meme_societe(ctx, cible)
+        avant, apres = {}, {}
+        if fp_account is not None:
+            r = ok_ou_erreur(idt.lier_fastpanel(cible, str(fp_account)))
+            avant["fp_account"], apres["fp_account"] = r["avant"], r["apres"]
+        if unix_user is not None:
+            r = ok_ou_erreur(idt.lier_unix(cible, str(unix_user)))
+            avant["unix_user"], apres["unix_user"] = r["avant"], r["apres"]
+        if not apres:
+            raise ValueError("rien à lier : fp_account et/ou unix_user")
+        ctx.emettre("compte.modifie", objet=("compte", cible), donnees={"champs": sorted(apres), "par": ctx.compte})
+        return {"compte": cible, "avant": avant, "apres": apres}
+
+    def prouver_identite_lier(ctx, res):
+        d = idt.lire(res["compte"]) or {}
+        return all(d.get(k) == v for k, v in res["apres"].items())
+
+    def defaire_identite_lier(ctx, res):
+        if "fp_account" in res["avant"]:
+            idt.lier_fastpanel(res["compte"], res["avant"]["fp_account"])
+        if "unix_user" in res["avant"]:
+            idt.base.ecrire("UPDATE comptes SET unix_user=? WHERE compte=?", (res["avant"]["unix_user"], res["compte"]))
+
+    # ---- les appareils : « se souvenir de cet appareil » (30 jours) et l'approbation d'un appareil neuf pour un administrateur ----
+    def appareils(ctx, courant=""):
+        c = moi_ou_erreur(ctx)
+        return {"appareils": idt.appareils(c, str(courant or "")), "mode_admin": str(idt.parametre("admin_nouvel_appareil", "alerter")),
+                "admin": bool(idt.droits.est_admin(c)), "jours": __import__("noyau.CN_identite", fromlist=["x"]).APPAREIL_CONFIANCE_JOURS}
+
+    def appareil_confiance(ctx, appareil="", oui=True):
+        c = moi_ou_erreur(ctx)
+        r = ok_ou_erreur(idt.appareil_confiance(c, str(appareil), bool(oui)))
+        return {"compte": c, "appareil": str(appareil), "avant": r["avant"], "apres": r["apres"]}
+
+    def prouver_confiance(ctx, res):
+        return any(a["id"] == res["appareil"] and bool(a["confiance_jusqua"]) == bool(res["apres"]) for a in idt.appareils(res["compte"]))
+
+    def defaire_confiance(ctx, res):
+        idt.base.ecrire("UPDATE appareils SET confiance=? WHERE compte=? AND empreinte=?", (res["avant"], res["compte"], res["appareil"]))
+
+    def appareil_decider(ctx, appareil="", approuver=True, compte=""):
+        c = moi_ou_erreur(ctx)
+        cible = str(compte or c).strip().lower()
+        if cible != c:
+            _admin(ctx)
+            _meme_societe(ctx, cible)
+        r = ok_ou_erreur(idt.appareil_decider(cible, str(appareil), bool(approuver)))
+        ctx.emettre("compte.modifie", objet=("compte", cible), donnees={"champs": ["appareil"], "par": c})
+        return {"compte": cible, "appareil": str(appareil), "approuve": bool(approuver), "avant": r["avant"]}
+
+    def prouver_decision(ctx, res):
+        ligne = [a for a in idt.appareils(res["compte"]) if a["id"] == res["appareil"]]
+        return (bool(ligne) and ligne[0]["statut"] == "approuve") if res["approuve"] else not ligne
+
+    def defaire_decision(ctx, res):
+        pass                      # un appareil refusé se retire ; il se représentera et attendra de nouveau
+
+    # ---- « À faire sur mon compte » : chaque module déclare ses attentes ([[attentes]], une lecture qui rend faux ou {titre, texte}) ; ici on les rassemble ----
+    def attente_cle(ctx):
+        """La seconde clé de sécurité, vue par le module webauthn (qui sait si une clé peut se poser ici)."""
+        e = ctx.executer_lecture("webauthn.etat")
+        if not e or e.get("disponible") is False:
+            return False
+        n = len(e.get("cles") or [])
+        if n >= 2:
+            return False
+        return {"titre": "Ajouter une seconde clé de sécurité" if n else "Poser une clé de sécurité",
+                "texte": "Si la première est perdue, vous ne pouvez plus entrer." if n else "Votre mot de passe est aujourd'hui votre seul verrou.", "par": "webauthn"}
+
+    def attente_fiche(ctx):
+        f = idt.fiche(moi_ou_erreur(ctx))
+        if f is None or f.get("lastname"):
+            return False
+        return {"titre": "Compléter ma fiche", "texte": "Votre nom n'est pas renseigné : il s'affiche partout où l'on vous nomme."}
+
+    def attente_appareils(ctx):
+        n = [a for a in idt.appareils(moi_ou_erreur(ctx)) if a["statut"] == "attente"]
+        if not n:
+            return False
+        return {"titre": "%d appareil(s) attendent votre approbation" % len(n), "texte": "Un administrateur ne peut entrer sur un appareil neuf que si une session déjà ouverte l'approuve."}
+
+    def mes_attentes(ctx):
+        sortie = []
+        for man in ctx.manifestes_actifs():
+            for a in getattr(man, "attentes", ()) or ():
+                try:
+                    r = ctx.executer_lecture("%s.%s" % (man.id, a.capacite))
+                except Exception:
+                    r = None
+                if r:
+                    r = r if isinstance(r, dict) else {}
+                    sortie.append({"module": man.id, "id": a.id, "titre": r.get("titre", a.id), "texte": r.get("texte", ""), "vers": a.vers, "action": a.action,
+                                   "niveau": a.niveau, "par": r.get("par", man.id)})
+        return {"attentes": sortie}
 
     # ---- le journal de MON compte : les mêmes événements que le registre de la machine, filtrés sur moi (connexions, sessions, mot de passe, fiche, droits) ----
     TEXTES = {"session.ouverte": "Connexion", "session.refusee": "Connexion refusée", "session.fermee": "Session fermée", "compte.mdp_change": "Mot de passe changé",
@@ -139,7 +309,7 @@ def brancher(ctx):
 
     # ---- le portrait : UN résolveur. La source choisie d'abord, puis le repli ; une image téléversée par le compte n'est jamais écrasée par une source externe ----
     SOURCES = ("propre", "dolibarr", "fastpanel", "telegram")
-    CAPACITE_SOURCE = {"dolibarr": "dolibarr.portrait", "fastpanel": "fastpanel.avatar"}      # Telegram n'a pas (encore) de source portée dans la V19
+    CAPACITE_SOURCE = {"dolibarr": "dolibarr.portrait", "fastpanel": "fastpanel.avatar", "telegram": "telegram.portrait"}
     CACHE = {}                                                                                 # (compte, source) -> (instant, image) : clé PAR COMPTE, jamais un global sans compte
     DUREE_CACHE = 300
 
@@ -473,7 +643,13 @@ def brancher(ctx):
         c = (compte or "").strip().lower()
         if r["ok"]:
             ctx.emettre("session.ouverte", objet=("session", r["id"]), donnees={"compte": c, "ip": ip, "nature": __import__("noyau.CN_identite", fromlist=["x"]).ip_nature(ip)})
-            if idt.appareil_vu(c, ip, agent) == "nouveau":      # un appareil jamais vu pour ce compte : le module des notifications en parle au titulaire
+            bloquer = str(idt.parametre("admin_nouvel_appareil", "alerter")) == "bloquer" and idt.droits.est_admin(c) and not idt.est_superadmin(c)      # jamais le superadministrateur : qui approuverait ?
+            vu = idt.appareil_vu(c, ip, agent, bloquer=bloquer)
+            if vu == "attente":                                  # un administrateur sur un appareil neuf : il attend l'approbation d'une session déjà ouverte
+                idt.fermer(r["jeton"])
+                ctx.emettre("compte.nouvel_appareil", objet=("compte", c), donnees={"ip": ip, "agent": (agent or "")[:60], "bloque": True})
+                return {"ok": False, "erreur": "Appareil jamais vu : un administrateur doit l'approuver depuis une session déjà ouverte (Mon compte › Sécurité › Appareils)", "appareil_attente": True}
+            if vu == "nouveau":                                  # un appareil jamais vu pour ce compte : le module des notifications en parle au titulaire
                 ctx.emettre("compte.nouvel_appareil", objet=("compte", c), donnees={"ip": ip, "agent": (agent or "")[:60], "session": r["id"]})
             return {"ok": True, "jeton": r["jeton"], "id": r["id"], "compte": c}
         if r.get("second_facteur"):
@@ -531,6 +707,17 @@ def brancher(ctx):
     ctx.implementer("fiche_modifier", fiche_modifier, prouver_fiche_modifier, defaire_fiche_modifier)
     ctx.implementer("portrait_source", portrait_source, prouver_portrait, defaire_portrait)
     ctx.implementer("mon_journal", mon_journal)
+    ctx.implementer("attente_cle", attente_cle)
+    ctx.implementer("attente_fiche", attente_fiche)
+    ctx.implementer("attente_appareils", attente_appareils)
+    ctx.implementer("mes_attentes", mes_attentes)
+    ctx.implementer("fiche_visibilite", fiche_visibilite)
+    ctx.implementer("fiche_visibilite_regler", fiche_visibilite_regler, prouver_visibilite, defaire_visibilite)
+    ctx.implementer("identites", identites)
+    ctx.implementer("identite_lier", identite_lier, prouver_identite_lier, defaire_identite_lier, simuler=lambda x, compte="", **_: "lierait les identités (FastPanel, système) du compte %s" % compte)
+    ctx.implementer("appareils", appareils)
+    ctx.implementer("appareil_confiance", appareil_confiance, prouver_confiance, defaire_confiance)
+    ctx.implementer("appareil_decider", appareil_decider, prouver_decision, defaire_decision)
     ctx.implementer("portrait", portrait)
     ctx.implementer("portrait_poser", portrait_poser, prouver_portrait_poser, defaire_portrait_poser)
     ctx.implementer("portrait_retirer", portrait_retirer, prouver_portrait_retire, defaire_portrait_retire)
