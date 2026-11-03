@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #7c4491
+// VERSION CN : 0.1.0  #04f37e
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La Proactivité : /api/pf/* (V18) -> capacités proactif.* du noyau.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=7c4491 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=04f37e ▼▼▼
 /* La Proactivité : /api/pf/* (V18) -> capacités proactif.* du noyau.
    Différé : tableau, projections, scans (métriques et la porte par domaine/geste). */
 (function () {
@@ -36,10 +36,14 @@
       const [cat, reg, disj, gov] = await Promise.all([
         agir("proactif.catalogue", {}), agir("proactif.reglages", {}), agir("proactif.disjoncteurs", {}), agir("proactif.gouvernance", {}),
       ]);
+      const pol = await agir("notifications.politique", {}).catch(() => null);            // le récit : par gravité, les canaux de la machine (la cloche reçoit toujours)
+      const dec = (pol && pol.canaux) || {};
       return ok({ familles: cat.familles, statuts: cat.statuts, choix: cat.choix, defauts: cat.defauts,
-                  reglages: reg.reglages, disjoncteurs: disj.disjoncteurs, gouvernance: gov });
+                  reglages: reg.reglages, disjoncteurs: disj.disjoncteurs, gouvernance: gov,
+                  recit: pol ? pol.machine : {}, canaux: { mail: !!(dec.mail && dec.mail.declare), telegram: !!(dec.telegram && dec.telegram.declare), webhook: !!(dec.webhook && dec.webhook.declare) } });
     },
   });
+  P("/api/autonomie/recit", "notifications.politique_ecrire", { args: (r) => ({ niveau: r.body.niveau || "", canaux: r.body.canaux || [], machine: true }), sortie: (x) => ok({ recit: x.apres }) });
   P("/api/autonomie/regler", "proactif.regler", { args: (r) => ({ cle: r.body.cle || "", reglages: r.body.reglages || {} }), sortie: (x) => ok(x) });
   P("/api/autonomie/remettre", "proactif.remettre", { args: (r) => ({ cle: r.body.cle || "" }), sortie: (x) => ok(x) });
   P("/api/autonomie/debloquer", "proactif.debloquer", { args: (r) => ({ cle: r.body.cle || "" }), sortie: (x) => ok(x) });

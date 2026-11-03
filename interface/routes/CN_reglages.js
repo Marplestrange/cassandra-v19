@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #8fce28
+// VERSION CN : 0.1.0  #fe381e
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran Réglages de la V18 : ses lectures et ses écritures sur les modules V19 (comptes, modèles, courrier, webauthn, coffre, mémoire, proactif).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=8fce28 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=fe381e ▼▼▼
 /* L'écran Réglages de la V18 : ses lectures et ses écritures sur les modules V19 (comptes, modèles, courrier, webauthn, coffre, mémoire, proactif).
    Ce que la V18 rangeait dans UN config.json, la V19 le range par module (reglages.*) : cette table traduit, et dit « non porté » quand un réglage n'a
    pas (ou plus) d'équivalent, au lieu d'écrire dans le vide. Les réglages de chaque module sont aussi dans Réglages › Modules (modules-ui.js). */
@@ -196,6 +196,24 @@
   });
 
   // ── Agenda distant, Telegram, canaux ────────────────────────────────
+  // La version à deux gestes de la même page : enregistrer l'agenda distant, ou le détacher (adresse, identifiant et mot de passe vidés).
+  P("/api/me/agenda/save", null, {
+    faire: async (req, agir) => {
+      const b = req.body;
+      await agir("reglages.regler", { cle: "agenda.caldav_url", valeur: String(b.url || "") });
+      await agir("reglages.regler", { cle: "agenda.caldav_identifiant", valeur: String(b.user || "") });
+      if (b.password) await agir("reglages.regler_secret", { cle: "agenda.caldav_mot_de_passe", valeur: String(b.password) });
+      return ok({});
+    },
+  });
+  P("/api/me/agenda/detach", null, {
+    faire: async (req, agir) => {
+      await agir("reglages.regler", { cle: "agenda.caldav_url", valeur: "" });
+      await agir("reglages.regler", { cle: "agenda.caldav_identifiant", valeur: "" });
+      await agir("reglages.regler_secret", { cle: "agenda.caldav_mot_de_passe", valeur: "" });
+      return ok({});
+    },
+  });
   P("/api/me/agenda", null, {
     faire: async (req, agir) => {
       const b = req.body;
@@ -209,7 +227,6 @@
       return ok({ url: e.url || "", user: e.identifiant || "", configuree: !!e.configuree });
     },
   });
-  P("/api/me/telegram", null, { faire: async (req, agir) => ok((await agir("telegram.etat", {})) || {}) });
   P("/api/tgc/etat", null, {
     faire: async (req, agir) => { const e = (await agir("canaux.etat", {})) || {}; return ok({ dispo: !!e.client, relie: !!e.connecte, attente: false, identifiants: false, raison: e.detail || "", qui: "" }); },
   });

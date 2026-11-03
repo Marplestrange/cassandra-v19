@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #36ff1b
+// VERSION CN : 0.1.0  #d8db67
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Notes : /api/notes/* (V18, tout en POST) -> capacités notes.* du noyau.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=36ff1b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=d8db67 ▼▼▼
 /* Notes : /api/notes/* (V18, tout en POST) -> capacités notes.* du noyau.
    Le noyau a gardé les formes de la V18 (titre, corps, refs…) ; il manque surtout `ok` et quelques noms d'arguments. */
 (function () {
@@ -155,6 +155,52 @@
   P("/api/carnet/postit/reprendre", null, { faire: async () => ({ ok: false, reason: "ce post-it n'existe plus" }) });
   P("/api/carnet/migrer", null, { faire: async () => ok({ migres: [], ignores: [], restants: 0 }) });
   P("/api/notes/migration", null, { faire: async () => ok({ migration: null }) });
+  // Un rappel lié à une case : le texte du rappel porte le renvoi vers la note (comme en V18), sans copie ; un rappel déjà posé pour ce texte et ce renvoi n'est pas doublé.
+  P("/api/notes/tache/rappel", null, {
+    faire: async (req, agir) => {
+      const r = ref(req.body), ligne = +req.body.ligne;
+      const e = await agir("notes.cases_etat", { ref: r });
+      const c = (e.cases || []).find((x) => x.ligne === ligne);
+      if (!c) return { ok: false, reason: "cette ligne n'est pas une case à cocher" };
+      const texte = c.texte + "  [[note:" + e.id + "]]";
+      const deja = ((await agir("agenda.rappels", { inclure_faits: false })) || {}).rappels || [];
+      const meme = deja.find((x) => x.texte === texte);
+      if (meme) return ok({ deja: true, rappel_id: meme.id });
+      const m = await agir("agenda.rappel_enregistrer", { texte, echeance: String(req.body.due || "") || undefined });
+      return ok({ rappel_id: m.id, note: e.id, ligne });
+    },
+  });
+  // Ce qui renvoie à une cible : les notes qui la citent. La table générique des liens de la V18 n'est pas portée ; les renvois des notes, eux, le sont.
+  P("/api/liens", null, {
+    faire: async (req, agir) => {
+      const nat = String(req.body.nat || ""), cible = String(req.body.ref || "");
+      if (!nat || !cible) return { ok: false, error: "objet inconnu" };
+      const d = await agir("notes.de", { kind: nat, ref: cible });
+      return ok({ liens: (d.notes || []).map((n) => ({ nat: "note", ref: n.id, nom: n.titre, role: n.inclus ? "inclusion" : "renvoi", sens: "entrant", a_nat: "note", a_ref: n.id, b_nat: nat, b_ref: cible })) });
+    },
+  });
+  P("/api/liens/graphe", null, {
+    faire: async (req, agir) => {
+      const veut = Array.isArray(req.body.natures) ? new Set(req.body.natures) : null;
+      const l = await agir("notes.liens", {});
+      const noeuds = {}, aretes = [], vus = new Set();
+      const n = (nat, ref, nom) => {
+        if (veut && !veut.has(nat)) return false;
+        const k = nat + ":" + ref;
+        if (!noeuds[k]) noeuds[k] = { nat, ref, nom: nom || ref };
+        else if (nom && noeuds[k].nom === ref) noeuds[k].nom = nom;
+        return true;
+      };
+      for (const x of l.liens || []) {
+        if (!n("note", x.src, x.src_titre) || !n(x.kind, x.ref, x.existe === false ? x.ref : x.titre)) continue;
+        const k = x.src + "|" + x.kind + "|" + x.ref;
+        if (vus.has(k)) continue;
+        vus.add(k);
+        aretes.push({ a: "note:" + x.src, b: x.kind + ":" + x.ref, role: x.inclus ? "inclusion" : "renvoi", fort: false });
+      }
+      return ok({ noeuds: Object.values(noeuds), aretes });
+    },
+  });
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
 
