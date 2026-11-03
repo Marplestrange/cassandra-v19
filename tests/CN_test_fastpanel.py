@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #653169
+# VERSION CN : 0.1.0  #9d114d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du pont FastPanel : un faux panneau (API HTTP avec état + base SQLite au schéma réel) et le module branché dans un vrai noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=653169 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=9d114d ▼▼▼
 """Bancs du pont FastPanel : un faux panneau (API HTTP avec état + base SQLite au schéma réel) et le module branché dans un vrai noyau."""
 import json
 import shutil
@@ -252,6 +252,7 @@ class Base(unittest.TestCase):
         shutil.copytree(RACINE / "modules" / "fastpanel", mods / "fastpanel", dirs_exist_ok=True)
         n = moteur.Noyau(self.base / "d", mods, {}, gerer_modules=True)
         n.brancher()
+        n.etat_modules.poser("fastpanel", installe=True, par="test")        # son installation (CN_installer.sh) est l'affaire de l'administrateur système
         self.assertTrue(n.activer("fastpanel")["ok"])
         valeurs = {"url": self.faux.url, "utilisateur": self.faux.utilisateur, "mot_de_passe": self.faux.mdp, "base_panneau": str(self.db)}
         valeurs.update(regl)

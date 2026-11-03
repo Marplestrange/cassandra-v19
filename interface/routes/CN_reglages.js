@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #30db5f
+// VERSION CN : 0.1.0  #8fce28
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran Réglages de la V18 : ses lectures et ses écritures sur les modules V19 (comptes, modèles, courrier, webauthn, coffre, mémoire, proactif).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=30db5f ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=8fce28 ▼▼▼
 /* L'écran Réglages de la V18 : ses lectures et ses écritures sur les modules V19 (comptes, modèles, courrier, webauthn, coffre, mémoire, proactif).
    Ce que la V18 rangeait dans UN config.json, la V19 le range par module (reglages.*) : cette table traduit, et dit « non porté » quand un réglage n'a
    pas (ou plus) d'équivalent, au lieu d'écrire dans le vide. Les réglages de chaque module sont aussi dans Réglages › Modules (modules-ui.js). */
@@ -223,8 +223,6 @@
   P("/api/ged/diag", null, { faire: async () => ({ ok: false }) });
   P("/api/fp/websocket", null, { faire: async () => ({ ok: true, conforme: false, vhosts: [], reason: "La connexion poussée (WebSocket) n'est pas portée dans cette version : l'écran se met à jour par lecture." }) });
   P("/api/service/status", null, { faire: async () => ({ statuses: {} }) });                           // l'état des services système passera par le courtier (systemd), pas par l'écran
-  P("/api/notif/politique", null, { faire: async () => ({ ok: false }) });
-  P("/api/notif/sources", null, { faire: async () => ({ ok: false }) });
 
   // ── La santé des réglages et le verdict de chaque famille ───────────
   const NOMS = { "moi-identite": "Identité", "moi-boite": "Ma boîte mail", "moi-agenda": "Mon agenda", "moi-itare": "Mon Itare", "moi-alertes": "Ce que je reçois", "moi-securite": "Sécurité", users: "Utilisateurs", agents: "Agents IA", tiers: "Services tiers", veille: "Surveillances", systeme: "Système", maintenance: "Maintenance", donnees: "Données", canaux: "Canaux", danger: "Danger" };
