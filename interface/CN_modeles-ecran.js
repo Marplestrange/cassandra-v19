@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #3b87cf
+// VERSION CN : 0.2.0  #55c7f5
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine la page « Modèles & clés » : la santé du cerveau, le choix d’un modèle par agent, les modèles en ligne (clé d’API), les modèles locaux (Ollama) avec ce que la machine supporte, les autres moteurs d’IA, un comparateur et l’usage par modèle.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) et CASS.monterModeles, monté aussi dans Agents IA ; les rôles du moteur restent cachés : choisir un modèle pour un agent crée le rôle « agent_<id> » qui le relie ; une clé saisie n’est jamais relue.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=3b87cf ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=55c7f5 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -285,7 +285,7 @@
       S.cmp.q = q; S.cmp.ra = S.cmp.rb = "Réponse en cours…"; S.occupe = true; dessiner();
       const un = async (id) => {
         const m = declares().find((x) => x.id === id), t = Date.now();
-        try { const r = await agir("modeles.completer", { messages: [{ role: "user", content: q }], modele_id: id, max_tokens: 500, timeout: 90 }); return (m ? m.nom + "\n\n" : "") + (r.ok ? (r.texte || "(réponse vide)") + "\n\n— " + ((Date.now() - t) / 1000).toFixed(1).replace(".", ",") + " s" : "Échec : " + (r.erreur || "aucune réponse")); }
+        try { const r = await agir("modeles.question_libre", { modele_id: id, question: q, max_tokens: 500 }); return (m ? m.nom + "\n\n" : "") + (r.ok ? (r.texte || "(réponse vide)") + "\n\n— " + ((Date.now() - t) / 1000).toFixed(1).replace(".", ",") + " s" : "Échec : " + (r.erreur || "aucune réponse")); }
         catch (e) { return (m ? m.nom + "\n\n" : "") + "Échec : " + (e.message || e); }
       };
       const [ra, rb] = await Promise.all([un(S.cmp.a), un(S.cmp.b)]);

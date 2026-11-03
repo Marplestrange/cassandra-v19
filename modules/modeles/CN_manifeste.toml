@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #49a7b0
+# VERSION CN : 0.1.0  #fbbd7c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le registre des modèles de langage : un modèle se déclare une fois (fournisseur, nom, adresse, clé chiffrée), les rôles de la maison et les comptes y puisent. La clé ne sort jamais du module : tout passe par `completer` (OpenAI-compatible ou Ollama natif, réflexion des modèles raisonneurs bornée, jetons comptés). Un compte n'utilise que SES modèles, jamais la clé du serveur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=49a7b0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=fbbd7c ▼▼▼
 [module]
 id = "modeles"
 nom = "Modèles"
@@ -88,6 +88,13 @@ id = "usage"
 libelle = "Les appels, échecs et jetons par jour, rôle et modèle"
 risque = "lecture"
 droit = "administrer"
+
+[[capacites]]
+id = "question_libre"
+libelle = "Poser une question à UN modèle déclaré pour l'instance, sans outil ni mémoire : de quoi comparer deux modèles (administrateur)"
+risque = "lecture"
+droit = "administrer"
+masque = ["question", "texte"]
 
 [[capacites]]
 id = "moteurs"

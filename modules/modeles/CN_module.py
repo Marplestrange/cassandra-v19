@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1ae878
+# VERSION CN : 0.1.0  #1f80ae
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les modèles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1ae878 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1f80ae ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -386,6 +386,19 @@ def brancher(ctx):
             return {"ok": False, "erreur": "outils invalides (200 au plus, nom de 1 à 64 caractères [A-Za-z0-9_-])"}
         return appeler(m, messages, systeme, mx, tp, bool(allow_reasoning), to, bool(reflexion), role, outils or None)
 
+    # ------------------------------------------------------------------ une question libre à un modèle de l'instance
+    def question_libre(c, modele_id="", question="", max_tokens=500):
+        """Pour l'écran « deux modèles, la même question » : un administrateur pose une question à UN modèle déclaré pour l'instance, sans outil ni mémoire. `completer` ne sert pas ici :
+        il refuse un modèle d'instance à quiconque n'est pas « la maison » (un agent), et un administrateur humain n'en est pas un."""
+        question = str(question or "").strip()
+        if not question or len(question) > 2000:
+            raise ValueError("une question de 1 à 2000 caractères")
+        m = brut(modele_id)
+        if m is None or m["portee"] != "instance":
+            raise ValueError("modèle d'instance introuvable")
+        r = appeler(m, [{"role": "user", "content": question}], "", max(16, min(int(max_tokens or 500), 1500)), None, True, 90.0, False, "comparaison")
+        return {"ok": r["ok"], "texte": r.get("texte", ""), "erreur": r.get("erreur", ""), "secondes": r.get("secondes", 0), "modele": m["id"], "nom": m["nom"], "local": not en_ligne(m)}
+
     # ------------------------------------------------------------------ essayer
     def essai(mid, compte, instance):
         m = exiger(mid, compte, instance)
@@ -629,7 +642,7 @@ def brancher(ctx):
     # ------------------------------------------------------------------ inscription
     c = ctx
     c.moteur("pulls", moteur_pulls)
-    for cid, f in (("fournisseurs", fournisseurs), ("lister", lister), ("locaux", locaux), ("usage", usage), ("completer", completer), ("moteurs", moteurs)):
+    for cid, f in (("fournisseurs", fournisseurs), ("lister", lister), ("locaux", locaux), ("usage", usage), ("completer", completer), ("moteurs", moteurs), ("question_libre", question_libre)):
         c.implementer(cid, f)
     c.implementer("ajouter", ajouter, prouver_ajoute, defaire_ajoute, simuler=lambda x, nom="", **_: "déclarerait le modèle « %s »" % nom)
     c.implementer("instance_ajouter", instance_ajouter, prouver_ajoute, defaire_ajoute, simuler=lambda x, nom="", **_: "déclarerait le modèle d'instance « %s »" % nom)

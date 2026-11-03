@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1b278a
+# VERSION CN : 0.1.0  #b43b2e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du cerveau : un agent peut-il répondre, qu'est-ce qui casse, le détecteur qui le dit, les économies suggérées, les moteurs d'IA de la machine.
 # MÉTHODE    : un vrai noyau avec les modules agents, modeles, memoire et notes ; aucun modèle réel (on lie des modèles déclarés, sans les appeler).
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1b278a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b43b2e ▼▼▼
 """Bancs du cerveau : un agent sans modèle ne répond pas, et le noyau le dit."""
 import shutil
 import sys
@@ -26,7 +26,7 @@ sys.path.insert(0, str(RACINE))
 
 import CN_main as moteur                      # noqa: E402
 from noyau.CN_bus import TOUT                 # noqa: E402
-from tests.CN_test_agents import Monde as MondeAgents, texte      # noqa: E402
+from tests.CN_test_agents import BEA, Monde as MondeAgents, texte      # noqa: E402
 
 ROOT = "root@x.fr"
 
@@ -182,6 +182,29 @@ class Gratuit(MondeAgents):
         self.causer("Bonjour", [texte("Salut.")], compte=ROOT, agent="cassandra")
         (ligne,) = self.cout()
         self.assertGreater(ligne["centimes"], 0)
+
+
+class Comparateur(MondeAgents):
+    """« Deux modèles, la même question » : un administrateur humain interroge un modèle d'instance (completer le refusait : « modèle introuvable »)."""
+
+    def modele(self):
+        return self.ex("modeles.lister", compte=ROOT)["resultat"]["modeles"][0]["id"]
+
+    def test_un_administrateur_interroge_un_modele_d_instance(self):
+        self.faux.reponses.append(texte("Bonjour, je suis le modèle."))
+        r = self.ex("modeles.question_libre", compte=ROOT, modele_id=self.modele(), question="Qui es-tu ?")
+        self.assertEqual(r["statut"], "faite", r)
+        self.assertTrue(r["resultat"]["ok"])
+        self.assertEqual(r["resultat"]["texte"], "Bonjour, je suis le modèle.")
+        self.assertTrue(r["resultat"]["local"])
+        self.assertEqual(self.faux.requetes[-1]["corps"]["messages"][-1], {"role": "user", "content": "Qui es-tu ?"})
+
+    def test_un_modele_inconnu_ou_une_question_vide_se_refusent(self):
+        self.assertEqual(self.ex("modeles.question_libre", compte=ROOT, modele_id="nexiste-pas", question="Salut")["statut"], "echec")
+        self.assertEqual(self.ex("modeles.question_libre", compte=ROOT, modele_id=self.modele(), question="  ")["statut"], "echec")
+
+    def test_un_compte_ordinaire_n_a_pas_ce_geste(self):
+        self.assertNotEqual(self.ex("modeles.question_libre", compte=BEA, modele_id=self.modele(), question="Salut")["statut"], "faite")
 
 
 if __name__ == "__main__":
