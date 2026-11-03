@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #af522d
+// VERSION CN : 0.1.0  #df25ff
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l’écran « Modèles et clés » du module modeles : les modèles en ligne (fournisseur, clé d’API, essai), le catalogue des modèles locaux (Ollama : installer, déclarer, supprimer) et les rôles.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) ; tout passe par les capacités modeles.* ; une clé saisie part au noyau et n’est jamais relue ni réaffichée.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=af522d ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=df25ff ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -72,11 +72,13 @@
 
     async function charger(tout) {
       try {
-        const [l, f, loc, eq] = await Promise.all([agir("modeles.lister"), S.f.length && !tout ? Promise.resolve({ fournisseurs: S.f, roles: S.roles }) : agir("modeles.fournisseurs"), agir("modeles.locaux").catch((e) => ({ repond: false, raison: e.message, modeles: [], telechargements: [] })), agir("agents.equipe").catch(() => ({ equipe: [] }))]);
-        S.eq = eq.equipe || []; S.l = l; S.f = f.fournisseurs || []; S.roles = f.roles || {}; S.loc = loc; S.erreur = "";
+        const [l, f, loc] = await Promise.all([agir("modeles.lister"), S.f.length && !tout ? Promise.resolve({ fournisseurs: S.f, roles: S.roles }) : agir("modeles.fournisseurs"), agir("modeles.locaux").catch((e) => ({ repond: false, raison: e.message, modeles: [], telechargements: [] }))]);
+        S.l = l; S.f = f.fournisseurs || []; S.roles = f.roles || {}; S.loc = loc; S.erreur = "";
         if (!S.prov && S.f.length) S.prov = S.f[0].id;
       } catch (e) { S.erreur = e.message || String(e); }
       dessiner(); armer();
+      // l’équipe se lit lentement à froid : la page est déjà là, la carte des agents s’y ajoute
+      if (!S.eq.length || tout) agir("agents.equipe").then((r) => { S.eq = r.equipe || []; if (document.body.contains(racine)) dessiner(); }).catch(() => {});
     }
     function armer() {
       if (minuterie) { clearTimeout(minuterie); minuterie = null; }
