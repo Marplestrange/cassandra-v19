@@ -6,16 +6,16 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #1e669f
+// VERSION CN : 0.1.0  #8e983b
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Sites : /api/sites/* (V18) -> capacités sites.* du noyau. Le module garde les formes de la V18 (sites, vigilances, portée) :
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=1e669f ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=8e983b ▼▼▼
 /* Sites : /api/sites/* (V18) -> capacités sites.* du noyau. Le module garde les formes de la V18 (sites, vigilances, portée) :
    la lecture passe telle quelle ; les gestes rendent {ok, reason} comme l'écran les lit.
-   /api/sites/act (redémarrer, vider le cache… un site, par FastPanel) attend le module fastpanel : il répond « pas encore porté ». */
+   /api/sites/act : vérifier (la sonde) et renouveler le certificat (par le panneau, accord exigé) ; redémarrer et journaux demandent la racine du panneau : dits tels quels. */
 (function () {
   const P = (c, cap, o) => CASS.route("POST", c, cap, o);
   const ok = (x) => Object.assign({ ok: true }, x);
@@ -54,6 +54,97 @@
   P("/api/site/accord", "sites.accorder", { args: (r) => ({ domaine: dom(r.body), geste: String(r.body.geste || "restaurer"), heures: +(r.body.heures || 24) }), sortie: (x) => ok(Object.assign({}, x, { jusqu_a: quand(x.jusqu_a) })) });
   P("/api/site/link/save", "sites.lier", { args: (r) => ({ domaine: dom(r.body), genre: String(r.body.kind || ""), ref: String(r.body.ref || ""), note: String(r.body.note || "") }), sortie: ok });
   P("/api/site/link/delete", "sites.delier", { args: (r) => ({ domaine: dom(r.body), genre: String(r.body.kind || ""), ref: String(r.body.ref || "") }), sortie: ok });
+
+  // ── les gestes lourds d'un site du panneau : copies, restauration, rapport, vérifier, renouveler le certificat ──────────
+  const echec = (e) => ({ ok: false, reason: (e && e.message) || String(e) });
+  const confirmer = (req, raison, plus) => (req.body.confirm ? null : new Response(JSON.stringify(Object.assign({ ok: false, needs_confirm: true, reason: raison }, plus || {})), { status: 409, headers: { "Content-Type": "application/json" } }));
+  const RACINE = "demande la racine du panneau (sa commande mogwai) : le courtier de la V19 n'a pas cette commande. La sauvegarde d'un site se fait par un plan (Sauvegardes), l'analyse d'un serveur par Sécurité › ClamAV.";
+  // La fiche dit si le site est au panneau, à qui, et si le propriétaire a donné son accord (la même règle que la V18 : propriétaire, ou administrateur avec accord).
+  async function sitePanneau(agir, d) {
+    const f = await agir("sites.fiche", { domaine: d });
+    if (f.hors_panneau) throw new Error("site hors panneau : aucune copie");
+    return f;
+  }
+  async function planDuCompte(agir, compte) {
+    const plans = ((await agir("fastpanel.plans", {})) || []);
+    if (!plans.length) throw new Error("aucun plan de sauvegarde dans le panneau");
+    const c = String(compte || "").toLowerCase();
+    return plans.find((p) => String(p.user_name || p.username || "").toLowerCase() === c) || plans[0];
+  }
+  P("/api/site/copies", null, { faire: async (req, agir) => {
+    const d = dom(req.body);
+    try {
+      if (!d) return { ok: false, reason: "domaine requis" };
+      const f = await sitePanneau(agir, d), compte = (f.site && f.site.proprietaire_panneau) || "";
+      const plan = await planDuCompte(agir, compte);
+      const c = await agir("fastpanel.copies_du_plan", { plan_id: +plan.id });
+      const copies = (c.copies || []).filter((x) => !x.compte || !compte || String(x.compte).toLowerCase() === String(compte).toLowerCase());
+      return ok({ copies, plan: { id: plan.id, name: plan.name } });
+    } catch (e) { return echec(e); }
+  } });
+  P("/api/site/restaurer", null, { faire: async (req, agir) => {
+    const d = dom(req.body), b = req.body;
+    try {
+      if (!d) return { ok: false, reason: "domaine requis" };
+      const f = await sitePanneau(agir, d), compte = (f.site && f.site.proprietaire_panneau) || "";
+      if (!f.mien && !f.accord) return new Response(JSON.stringify({ ok: false, reason: "accord du propriétaire requis : il l'autorise depuis sa fiche, pour 24 h" }), { status: 403, headers: { "Content-Type": "application/json" } });
+      const copie = String(b.copie || "").trim();
+      if (!copie) return { ok: false, reason: "copie requise" };
+      const c = confirmer(req, "Restaure la copie " + copie + " sur le compte " + (compte || "?") + " du panneau : les fichiers et bases actuels de CE COMPTE (tous ses sites) sont remplacés par ceux de la copie.");
+      if (c) return c;
+      const r = await agir("fastpanel.copie_restaurer", { copie_id: copie, compte, forcer: !!b.force_clear });
+      return ok({ copie: r.copie, compte: r.compte });
+    } catch (e) { return echec(e); }
+  } });
+  P("/api/site/sauvegarde", null, { faire: async () => ({ ok: false, reason: "lancer le plan de sauvegarde du panneau " + RACINE }) });
+  P("/api/site/scan", null, { faire: async () => ({ ok: false, reason: "l'analyse antivirus d'un site " + RACINE }) });
+  // L'aperçu du site est une vignette que FastPanel fabrique sur son disque (root) : la V19 ne la sert pas encore.
+  P("/api/site/thumb", null, { faire: async () => ({ ok: false, reason: "la vignette est un fichier du panneau, à root : la V19 ne la sert pas" }) });
+  // Le rapport du mois : la sonde, les coupures et les sauvegardes du compte, composés de ce que les modules savent.
+  P("/api/site/rapport", null, { faire: async (req, agir) => {
+    const d = dom(req.body);
+    try {
+      if (!d) return { ok: false, reason: "domaine requis" };
+      if (req.body.envoyer) return { ok: false, reason: "l'envoi du rapport par courrier n'est pas encore porté : le rapport s'affiche ici" };
+      const mois = String(req.body.mois || "").slice(0, 7) || new Date().toISOString().slice(0, 7);
+      const h = await agir("sites.historique", { domaine: d, heures: 24 * 31 });
+      const ev = (h.evenements || []).filter((e) => ts(e.ts).slice(0, 7) === mois);
+      let sauvegardes = [];
+      try {
+        const f = await agir("sites.fiche", { domaine: d }), compte = String((f.site && f.site.proprietaire_panneau) || "").toLowerCase();
+        if (compte) sauvegardes = ((await agir("fastpanel.sauvegardes", {})) || []).filter((s) => String(s.compte || "").toLowerCase() === compte && String(s.debut || "").slice(0, 7) === mois).map((s) => ({ at: s.debut, status: s.etat === "reussie" ? "success" : s.etat, size_mb: s.envoye_mo }));
+      } catch (e) {}
+      const pannes = ev.filter((e) => e.genre === "panne").length, retours = ev.filter((e) => e.genre === "retour");
+      const dispo = h.disponibilite;
+      const reussies = sauvegardes.filter((s) => s.status === "success").length;
+      return ok({ domain: d, mois, sonde: { mesures: h.mesures, disponibilite: dispo, reponse_moy_ms: h.reponse_moy_ms, reponse_max_ms: h.reponse_max_ms },
+        coupures: ev.map((e) => ({ ts: ts(e.ts), kind: e.genre, detail: e.detail, duree_min: e.duree_min })), pannes, retours: retours.length, indisponible_min: retours.reduce((a, e) => a + (e.duree_min || 0), 0),
+        gestes: {}, sauvegardes, analyses: [],
+        phrase: d + " en " + mois + " : " + (dispo == null ? "pas de sonde" : dispo.toFixed(2) + " % de disponibilité") + " sur " + (h.mesures || 0) + " mesures, " + pannes + " coupure(s) commencée(s), " + reussies + " sauvegarde(s) réussie(s)." });
+    } catch (e) { return echec(e); }
+  } });
+  // Les gestes d'un site : vérifier (la sonde dit l'état), renouveler le certificat (par le panneau, accord exigé : le quota de l'autorité s'épuise).
+  P("/api/sites/act", null, { faire: async (req, agir) => {
+    const d = dom(req.body), a = String(req.body.action || "").trim();
+    try {
+      if (!d) return { ok: false, error: "domaine requis" };
+      const f = await agir("sites.fiche", { domaine: d });
+      if (a === "status") {
+        const s = f.site || {}, up = s.up !== false && s.code != null && s.code < 500;
+        return { ok: !!s.code, message: d + (s.code ? " répond " + s.code + " en " + (s.ms == null ? "?" : s.ms) + " ms" : " ne répond pas") + (s.ssl_jours != null ? " · certificat : " + s.ssl_jours + " j" : ""), sonde: { code: s.code, ms: s.ms, ssl_days: s.ssl_jours } };
+      }
+      if (f.hors_panneau) return new Response(JSON.stringify({ ok: false, error: "hors panneau : ce geste n'existe pas pour un site déclaré à la main" }), { status: 400, headers: { "Content-Type": "application/json" } });
+      if (a === "ssl_renew") {
+        const c = confirmer(req, "Réémet le certificat SSL. L'autorité n'autorise qu'un nombre limité d'émissions par domaine et par semaine.");
+        if (c) return c;
+        const r = await agir("fastpanel.ssl_renouveler", { domaine: d });
+        return { ok: true, message: "Certificat renouvelé pour " + (r.domaine || d) + "." };
+      }
+      if (a === "restart") return { ok: false, error: "redémarrer le backend d'un site demande la racine du panneau : le courtier de la V19 n'a pas cette commande (le service concerné se relance depuis Hébergement › Services)" };
+      if (a === "logs") return { ok: false, error: "les journaux d'un site sont des fichiers de root : la V19 ne les lit pas encore" };
+      return new Response(JSON.stringify({ ok: false, error: "Action inconnue" }), { status: 400, headers: { "Content-Type": "application/json" } });
+    } catch (e) { return { ok: false, error: e.message }; }
+  } });
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
 

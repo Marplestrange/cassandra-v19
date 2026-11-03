@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.4  #53cf25
+# VERSION CN : 0.4.0  #86737e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.4 empreinte=53cf25 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=86737e ▼▼▼
 [module]
 id = "securite"
 nom = "Sécurité"
-version = "0.3.4"
+version = "0.4.0"
 noyau_min = "0.1.0"
 description = "La sécurité : les gestes (bannir une adresse, fermer un chemin, faire tourner une clé…), le journal de ce qui a été fait, et les audits. Différé : l'état de la machine (ports, SSH, nginx), l'exécution des gestes (Lynis/Trivy/ClamAV/CrowdSec par le courtier racine) et le pare-feu (par l'API FastPanel)."
 confiance = "interne"
@@ -216,6 +216,63 @@ preuve = "l'unité du passage est lancée"
 retour = "arrêter le passage en cours"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
+
+[[capacites]]
+id = "oom_acquits"
+libelle = "Les événements de mémoire saturée (OOM) déjà acquittés : leurs signatures (date + processus tué)"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "oom_acquitter"
+libelle = "Acquitter des événements de mémoire saturée : vus et acceptés, ils ne sont plus comptés comme alerte"
+risque = "faible"
+droit = "agir"
+perimetre = ["la table des OOM acquittés de ce module (aucun journal système n'est touché)"]
+preuve = "chaque signature est relue dans la table"
+retour = "retirer ces signatures de la table : les événements redeviennent des alertes"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "unites_reinitialiser"
+libelle = "Remettre à zéro les unités systemd en échec (systemctl reset-failed) : elles ne sont plus comptées en panne ; rien n'est redémarré"
+risque = "faible"
+droit = "agir"
+perimetre = ["l'état « échec » des unités systemd (le journal garde leur cause)"]
+preuve = "un nouveau relevé ne compte plus aucune unité en échec"
+retour = "AUCUN retour : un échec remis à zéro n'est plus compté (la cause reste dans le journal systemd)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "session_fermer"
+libelle = "Fermer UNE session de connexion (SSH) d'un utilisateur : son terminal est retrouvé par le courtier, jamais désigné par l'appelant"
+risque = "moyen"
+droit = "agir"
+perimetre = ["le terminal de la session désignée (utilisateur + adresse), pas ses autres sessions ni ses fichiers"]
+preuve = "le courtier relit la liste des sessions : celle-ci n'y est plus"
+retour = "AUCUN retour : une session fermée se rouvre en se reconnectant"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "systeme_geste"
+libelle = "Recharger nginx (sa configuration est testée d'abord), relancer Ollama ou relancer le noyau lui-même (en différé de trois secondes) : une table fermée de trois services"
+risque = "moyen"
+droit = "agir"
+perimetre = ["nginx (rechargement), ollama (relance), le noyau de Cassandra (relance différée) — aucun autre service"]
+preuve = "le courtier relit l'état de l'unité : elle doit être active (le noyau, qui se coupe lui-même, annonce sa relance)"
+retour = "rien à défaire : le service tourne comme avant"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "journal_service"
+libelle = "Lire les 200 dernières lignes du journal du noyau, du Sensorium, d'Ollama ou de nginx (lecture seule, table fermée)"
+risque = "lecture"
+droit = "agir"
+masque = ["texte"]
 
 [[capacites]]
 id = "images"

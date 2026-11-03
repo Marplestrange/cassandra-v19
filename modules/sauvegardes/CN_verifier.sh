@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sauvegardes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1d6d98
+# VERSION CN : 0.2.0  #1d6d98
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Sauvegardes vérifie, À ROOT : les trois commandes rclone sont-elles posées et exécutables ?
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1d6d98 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=1d6d98 ▼▼▼
 # Sauvegardes vérifie, À ROOT : les trois commandes rclone sont-elles posées et exécutables ?
 set -eu
 for c in copier lister purger; do

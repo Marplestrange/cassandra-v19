@@ -256,6 +256,72 @@ def debannir(verbe, args):
     echo({"ok": ok, "jail": jail, "ip": ip, "erreur": "" if ok else t[-200:]})
 
 
+SERVICES = {"nginx": ("nginx.service", ("reload",)), "ollama": ("ollama.service", ("restart",)), "noyau": ("cassandra-noyau.service", ("restart",))}
+JOURNAUX = {"noyau": "cassandra-noyau.service", "sensorium": "sensorium.service", "collector": "sensorium.service", "cassandra": "cassandra-noyau.service", "ollama": "ollama.service", "nginx": "nginx.service"}
+
+
+def service_agir(args):
+    """Recharger nginx (configuration testée d'abord), relancer Ollama, relancer le noyau lui-même (en différé : il coupe la réponse qui le demande). Table fermée de trois services."""
+    nom, action = str(args.get("service") or ""), str(args.get("action") or "")
+    if nom not in SERVICES or action not in SERVICES[nom][1]:
+        refus("service ou action hors de la table fermée")
+    unite = SERVICES[nom][0]
+    if nom == "nginx":
+        ok, t = run(["nginx", "-t"], 20)
+        if not ok:
+            echo({"ok": False, "erreur": "configuration nginx refusée, rien n'est rechargé : %s" % t[-300:]})
+    if nom == "noyau":
+        ok, t = run(["systemd-run", "--unit=cassandra-relance-noyau-%d" % int(time.time()), "--on-active=3", "--collect", "systemctl", "restart", unite], 20)
+        echo({"ok": ok, "unite": unite, "detail": "relance dans 3 secondes", "erreur": "" if ok else t[-200:]})
+    ok, t = run(["systemctl", action, unite], 60)
+    time.sleep(1)
+    if not ok or not actif(unite):
+        echo({"ok": False, "erreur": "%s : %s" % (unite, t[-300:] or "inactif après le geste")})
+    echo({"ok": True, "unite": unite, "detail": "%s %s, actif" % (action, unite)})
+
+
+def journal(args):
+    """Les 200 dernières lignes du journal d'UNE des unités de la table (lecture seule)."""
+    unite = JOURNAUX.get(str(args.get("service") or ""))
+    if not unite:
+        refus("service hors de la table des journaux")
+    ok, t = run(["journalctl", "-u", unite, "-n", "200", "--no-pager", "-o", "short-iso"], 25)
+    echo({"ok": ok, "service": str(args.get("service")), "texte": t[-60000:], "erreur": "" if ok else t[-200:]})
+
+
+RE_UTILISATEUR = re.compile(r"^[a-z_][a-z0-9_.-]{0,31}$")
+RE_TTY = re.compile(r"^pts/\d{1,4}$")
+
+
+def reset_failed():
+    """Remettre à zéro les unités systemd en échec : elles cessent d'être comptées en panne (rien n'est redémarré, rien n'est supprimé)."""
+    avant = [l.split()[1] if l.split()[:1] == ["●"] else l.split()[0] for l in run(["systemctl", "--failed", "--no-legend", "--plain"], 15)[1].splitlines() if l.strip()]
+    run(["systemctl", "reset-failed"], 20)
+    encore = [l for l in run(["systemctl", "--failed", "--no-legend", "--plain"], 15)[1].splitlines() if l.strip()]
+    echo({"ok": not encore, "avant": avant[:50], "erreur": "" if not encore else "des unités restent en échec"})
+
+
+def session_fermer(args):
+    """Fermer UNE session de connexion (SSH) : son terminal est identifié par `who` à partir de l'utilisateur et de l'adresse, jamais un nom de processus tapé par l'appelant."""
+    user, ip = str(args.get("user") or "").strip(), str(args.get("ip") or "").strip()
+    if not RE_UTILISATEUR.match(user):
+        refus("utilisateur illisible")
+    if ip and not re.match(r"^[0-9A-Fa-f:.\-]{1,64}$", ip):
+        refus("adresse illisible")
+    tty = ""
+    for ligne in run(["who"], 8)[1].splitlines():
+        parts = ligne.split()
+        if len(parts) >= 2 and parts[0] == user and (not ip or ip in ligne) and RE_TTY.match(parts[1]):
+            tty = parts[1]
+            break
+    if not tty:
+        echo({"ok": False, "erreur": "aucune session ouverte pour %s%s" % (user, " depuis " + ip if ip else "")})
+    run(["pkill", "-9", "-t", tty], 8)
+    time.sleep(0.5)
+    reste = any(l.split()[:2] == [user, tty] for l in run(["who"], 8)[1].splitlines() if l.strip())
+    echo({"ok": not reste, "tty": tty, "erreur": "" if not reste else "la session est toujours ouverte"})
+
+
 def main(argv):
     if len(argv) < 3 or argv[1] not in ("faire", "defaire"):
         refus("usage : agir <faire|defaire> <geste> [<json>]")
@@ -276,6 +342,14 @@ def main(argv):
         return mysql_faire() if verbe == "faire" else mysql_defaire(args)
     if geste == "debannir":
         return debannir(verbe, args)
+    if verbe == "faire" and geste == "service_agir":
+        return service_agir(args)
+    if verbe == "faire" and geste == "journal":
+        return journal(args)
+    if verbe == "faire" and geste == "reset_failed":
+        return reset_failed()
+    if verbe == "faire" and geste == "session_fermer":
+        return session_fermer(args)
     if verbe == "faire" and geste == "maj_securite":
         return maj_securite()
     if verbe == "faire" and geste == "maj_auto":

@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #500749
+// VERSION CN : 0.1.0  #d941e4
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Automatismes : /api/crons/* et /api/automatismes (V18) -> capacités planifie.* du noyau. Le noyau parle français (horaire, commande, actif…), l'écran V18 anglais.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=500749 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=d941e4 ▼▼▼
 /* Automatismes : /api/crons/* et /api/automatismes (V18) -> capacités planifie.* du noyau. Le noyau parle français (horaire, commande, actif…), l'écran V18 anglais. */
 (function () {
   const P = (c, cap, o) => CASS.route("POST", c, cap, o);
@@ -98,6 +98,28 @@
     faire: async (req, agir) => {
       const r = await agir("planifie.resume", {});
       return ok({ familles: [{ cle: "crons", nom: "Tâches planifiées", detail: "crontab du système et tâches de Cassandra", total: r.total, ennuis: r.ennuis, pire: r.pire, etat: r.etat, ou: "" }], maintenance: r.maintenance });
+    },
+  });
+
+  // Une phrase devient une tâche planifiée PROPOSÉE (le formulaire se remplit, rien n'est écrit) : le modèle de l'administrateur propose, l'aperçu du module valide l'expression, un motif destructeur est signalé.
+  const SYS = "Tu convertis une demande en tâche planifiée Linux pour un serveur Debian.\nRéponds UNIQUEMENT par un objet JSON, sans texte autour :\n{\"description\": \"...\", \"cron_expr\": \"m h jm mois js\", \"command\": \"...\", \"explication\": \"une phrase\"}\n"
+    + "Règles : expression cron à 5 champs ; chemins absolus ; commande non interactive ; pas de sudo (l'exécution a lieu en root) ; échapper % en \\% ; privilégier la commande la moins destructrice qui répond à la demande ; si la demande est ambiguë sur l'heure, choisis une heure creuse et dis-le dans l'explication.";
+  const DESTRUCTEUR = [[/\brm\s+(-[a-z]*[rf][a-z]*\s+)+\S*/i, "supprime des fichiers (rm -rf)"], [/\b(mkfs|dd\s+if=|shred)\b/i, "écrit sur un disque"], [/\b(drop\s+(table|database)|truncate)\b/i, "détruit une base"], [/>\s*\/dev\/sd/i, "écrit sur un disque"], [/\b(shutdown|reboot|halt|poweroff)\b/i, "arrête la machine"], [/\bchmod\s+-R\b|\bchown\s+-R\b/i, "change des droits en masse"]];
+  P("/api/crons/suggest", null, {
+    faire: async (req, agir) => {
+      const demande = String(req.body.text || "").trim();
+      if (!demande) return { ok: false, reason: "décris la tâche à planifier" };
+      let brut = "";
+      try { const r = await agir("modeles.completer", { messages: [{ role: "user", content: demande }], systeme: SYS, max_tokens: 800, temperature: 0.2, allow_reasoning: false }); brut = String((r && r.texte) || ""); if (!brut) return { ok: false, reason: "agent indisponible : " + ((r && r.erreur) || "aucune réponse") }; }
+      catch (e) { return { ok: false, reason: "agent indisponible : " + e.message }; }
+      const a = brut.indexOf("{"), z = brut.lastIndexOf("}");
+      if (a < 0 || z <= a) return { ok: false, reason: "réponse inexploitable de l'agent", raw: brut.slice(0, 400) };
+      let d; try { d = JSON.parse(brut.slice(a, z + 1)); } catch (e) { return { ok: false, reason: "JSON illisible : " + e.message, raw: brut.slice(a, z + 1).slice(0, 400) }; }
+      const expr = String(d.cron_expr || "").trim(), cmd = String(d.command || "").trim();
+      let valide = true, raison = "", humain = "", suivantes = [];
+      try { const p = await agir("planifie.apercu", { expression: expr, nombre: 3 }); humain = p.humain; suivantes = p.prochaines; } catch (e) { valide = false; raison = e.message; }
+      const danger = (DESTRUCTEUR.find((m) => m[0].test(cmd)) || [])[1] || "";
+      return { ok: true, valid: valide, reason: raison, description: String(d.description || "").slice(0, 200), cron_expr: expr, command: cmd, human: humain, explication: String(d.explication || "").slice(0, 400), risky: !!danger, risky_reason: danger, next: suivantes, agent: String(req.body.agent || "cassandra").toLowerCase() };
     },
   });
 })();

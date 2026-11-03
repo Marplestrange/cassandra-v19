@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : flotte
 # ZONE       : CN
-# VERSION CN : 0.1.1  #3b2c61
+# VERSION CN : 0.1.2  #dd3008
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le parc de machines : le registre déclaré, Tailscale et les relevés SSH côte à côte, la présence mesurée, la disponibilité, le verdict d'ouverture, les commandes nommées sur une machine. Réservé à l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=3b2c61 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=dd3008 ▼▼▼
 [module]
 id = "flotte"
 nom = "Flotte"
-version = "0.1.1"
+version = "0.1.2"
 noyau_min = "0.1.0"
 description = "Le parc de machines : le registre déclaré, Tailscale et les relevés SSH côte à côte, la présence mesurée, la disponibilité, le verdict d'ouverture, les commandes nommées sur une machine. Réservé à l'administrateur."
 confiance = "interne"
@@ -117,6 +117,12 @@ risque = "lecture"
 id = "actions"
 libelle = "Les commandes nommées qu'on peut lancer sur une machine, et lesquelles modifient"
 risque = "lecture"
+
+[[capacites]]
+id = "quickconnect"
+libelle = "Résoudre un identifiant QuickConnect Synology en adresse et port, auprès du service global de Synology (lecture seule)"
+risque = "lecture"
+externe = true
 
 [[capacites]]
 id = "ping"
@@ -300,7 +306,7 @@ description = "Machines tombées. Une seule occurrence mérite qu'on regarde."
 [permissions]
 stockage = true
 secrets = true
-reseau = ["Tailscale (binaire local), les machines déclarées par SSH, TCP ou HTTP"]
+reseau = ["Tailscale (binaire local), les machines déclarées par SSH, TCP ou HTTP", "global.quickconnect.to (résolution d'un identifiant QuickConnect Synology)"]
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

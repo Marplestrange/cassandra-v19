@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #26bb8b
+// VERSION CN : 0.1.0  #52f750
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'onglet Hébergement (V18 : /api/fp/*) -> capacités fastpanel.* du noyau.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=26bb8b ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=52f750 ▼▼▼
 /* L'onglet Hébergement (V18 : /api/fp/*) -> capacités fastpanel.* du noyau.
    Le module parle français (domaine, proprietaire, quota_go…), l'écran V18 anglais (domain, user, disk_quota_gb…) : ce fichier traduit, il n'invente rien.
    Une source qui ne répond pas rend {ok:false, reason} — l'écran en fait « Source injoignable », pas une liste vide.
@@ -157,6 +157,98 @@
       catch (e) { return echec(e); }
     },
   });
+
+  // ── la suite de l'onglet (V18) : l'accès, le contexte d'un domaine, les bases, les clés SSH, les analyses ────
+  const pas_porte = (raison) => ({ faire: async () => ({ ok: false, reason: raison }) });
+  const dom = (r) => String(r.body.domain || "").trim().toLowerCase();
+  // L'épreuve de l'accès : l'API répond-elle, la base du panneau se lit-elle. Les secrets ne repassent jamais dans la réponse.
+  P("/api/fp/api/test", { faire: async (req, agir) => {
+    try {
+      const s = await agir("fastpanel.sante", {}), a = s.api || {}, b = s.base_panneau || {};
+      if (a.ok) return ok({ endpoint: a.chemin, detail: "connexion établie sur " + a.chemin + " (" + a.elements + " élément(s)) ; base du panneau " + (b.ok ? "lue" : "illisible : " + (b.erreur || "?")) });
+      return { ok: false, reason: a.erreur || "le panneau ne répond pas", attempts: a.essais || [] };
+    } catch (e) { return echec(e); }
+  } });
+  // Les identifiants du panneau vont aux réglages (le jeton et le mot de passe sont des secrets : jamais relus, jamais renvoyés).
+  P("/api/fp/api/creds", { faire: async (req, agir) => {
+    const b = req.body, ou = [];
+    try {
+      if (String(b.token || "").trim()) { await agir("reglages.regler_secret", { cle: "fastpanel.jeton", valeur: String(b.token) }); ou.push("token → réglages (secret)"); }
+      if (String(b.user || "").trim()) { await agir("reglages.regler", { cle: "fastpanel.utilisateur", valeur: String(b.user) }); ou.push("user → réglages"); }
+      if (String(b.password || "")) { await agir("reglages.regler_secret", { cle: "fastpanel.mot_de_passe", valeur: String(b.password) }); ou.push("password → réglages (secret)"); }
+      return ok({ ranges: ou });
+    } catch (e) { return echec(e); }
+  } });
+  // Tout ce qu'on sait d'un domaine : sa ligne du panneau, sa fiche (liens, journal, accord).
+  P("/api/fp/domain/context", { faire: async (req, agir) => {
+    const d = dom(req);
+    if (!d) return { ok: false, reason: "domaine requis" };
+    let site = {}, fiche = null;
+    try { site = (await agir("fastpanel.sites", {})).find((s) => String(s.domaine).toLowerCase() === d) || {}; } catch (e) {}
+    try { fiche = await agir("sites.fiche", { domaine: d }); } catch (e) {}
+    const liens = (fiche && fiche.liens) || [];
+    const g = (k) => liens.filter((l) => l.genre === k || l.kind === k);
+    return ok({ domain: d, site: site.domaine ? domaine18(site) : {}, project: g("projet")[0] || null, contacts: g("contact"), tasks: g("tache"), crons: [], notes: g("note"), machines: g("machine"), backups: [], journal: (fiche && fiche.journal) || [] });
+  } });
+  // Rattacher un domaine à un projet : c'est un lien de la fiche du site.
+  P("/api/fp/domain/attach", { faire: async (req, agir) => {
+    const b = req.body, d = dom(req);
+    try {
+      if (!d) return { ok: false, reason: "domaine requis" };
+      const ref = String(b.project_id || b.project_name || "").trim();
+      if (!ref) return { ok: false, reason: "projet requis" };
+      await agir("sites.lier", { domaine: d, genre: "projet", ref, note: String(b.note || "") });
+      return ok({ domain: d, project: ref });
+    } catch (e) { return echec(e); }
+  } });
+  // Les bases : leurs utilisateurs viennent des lectures du panneau ; la suppression est un geste à part (élevé, sans retour).
+  P("/api/fp/db/users", { faire: async (req, agir) => {
+    try {
+      const [b, u] = await Promise.all([agir("fastpanel.bases", {}), agir("fastpanel.utilisateurs", {})]);
+      const vus = {}; (b || []).forEach((x) => String(x.utilisateurs || "").split(",").map((n) => n.trim()).filter(Boolean).forEach((n) => { vus[n] = (vus[n] || 0) + 1; }));
+      return ok({ serveurs: [], utilisateurs: Object.keys(vus).map((n) => ({ login: n, bases: vus[n] })), comptes: (u || []).map((x) => ({ id: x.compte, username: x.compte })) });
+    } catch (e) { return echec(e); }
+  } });
+  const exigerConfirm = (req, raison) => (req.body.confirm ? null : new Response(JSON.stringify({ ok: false, needs_confirm: true, reason: raison }), { status: 409, headers: { "Content-Type": "application/json" } }));
+  P("/api/fp/db/delete", { faire: async (req, agir) => {
+    const c = exigerConfirm(req, "SUPPRIME définitivement la base " + (req.body.id || "") + " et toutes ses données. Aucun retour possible sans sauvegarde.");
+    if (c) return c;
+    try { const r = await agir("fastpanel.base_supprimer", { id: +req.body.id || 0 }); return ok({ output: "Base « " + (r.nom || req.body.id) + " » supprimée." }); } catch (e) { return echec(e); }
+  } });
+  P("/api/fp/user/ssh", { faire: async (req, agir) => {
+    try { const r = await agir("fastpanel.utilisateur_cles", { compte: String(req.body.username || "") }); return ok({ username: r.compte, keys: r.cles || [] }); } catch (e) { return echec(e); }
+  } });
+  // Le diagnostic d'un service : son état est celui que le panneau en dit ; le journal et la vérification de configuration demandent la racine.
+  P("/api/fp/service/diagnose", { faire: async (req, agir) => {
+    const nom = String(req.body.name || "").trim();
+    try {
+      const l = await agir("fastpanel.services", {}), s = (l || []).find((x) => x.nom === nom || x.alias === nom);
+      if (!s) return { ok: false, reason: "service inconnu du panneau" };
+      return ok({ service: nom, state: { name: s.nom, state: s.etat, active: s.actif }, config_check: {}, recent_errors: [], logs: "", reason: "le journal du service et la vérification de sa configuration ne sont pas lus d'ici : ils demandent une commande racine que le courtier n'a pas" });
+    } catch (e) { return echec(e); }
+  } });
+  // Les analyses antivirus du panneau : la liste des sites vient de sa base ; lancer ou configurer une analyse (mogwai) et lire les rapports (fichiers de root) demandent la racine.
+  P("/api/fp/scans/targets", { faire: async (req, agir) => {
+    try {
+      const r = await agir("fastpanel.scans_cibles", {});
+      const sites = (r.sites || []).map((x) => ({ domain: x.domaine, site_id: x.site_id, config_id: x.config_id, enabled: x.actif, planning: x.planning, email: x.courriel, last_scan: x.dernier, reports: x.rapports }));
+      return ok({ sites, unconfigured: sites.filter((x) => !x.config_id).map((x) => x.domain) });
+    } catch (e) { return echec(e); }
+  } });
+  const RACINE = "Lancer, configurer ou relire une analyse du panneau demande la racine (la commande mogwai et les rapports sont à root) : le courtier de ce module n'a pas cette commande. La V19 lance l'analyse d'un serveur par « Sécurité › ClamAV » (securite.outil_lancer).";
+  P("/api/fp/scans/run", pas_porte(RACINE));
+  P("/api/fp/scans/configure", pas_porte(RACINE));
+  P("/api/fp/scans/reports", { faire: async () => ok({ rapports: [], total: 0, racine: "", reason: RACINE }) });
+  P("/api/fp/scans/report", pas_porte(RACINE));
+  // Les actions libres de la V18 (mogwai) : la V19 les a remplacées par un geste nommé chacune, jamais une ligne de commande tapée.
+  P("/api/fp/act", pas_porte("le catalogue d'actions libres de la V18 n'existe plus : chaque geste a sa capacité (services, SSL, bases, sauvegardes, pare-feu) et passe par la garde de l'administrateur"));
+  P("/api/fp/websocket/apply", pas_porte("la modification de la configuration nginx du panneau (proxy WebSocket) demande la racine : le courtier de ce module n'a pas cette commande"));
+  // La liaison d'un compte de l'application à un compte du panneau : le champ fp_account de sa fiche.
+  P("/api/fp/users/link", { faire: async (req, agir) => {
+    const b = req.body;
+    try { await agir("comptes.modifier", { compte: String(b.user || ""), fp_account: String(b.fp_account || "").trim() }); return ok({ output: "Compte lié." }); } catch (e) { return echec(e); }
+  } });
+  P("/api/fp/stats", pas_porte("les statistiques propres au panneau ne sont pas portées : voir Historique"));
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
 

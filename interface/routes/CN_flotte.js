@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #aba7ea
+// VERSION CN : 0.1.0  #251b26
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Flotte : /api/flotte/* et /api/multiserver/* (V18) -> capacités flotte.* du noyau. Le parc, le verdict et les engagements parlent déjà la même langue ;
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=aba7ea ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=251b26 ▼▼▼
 /* Flotte : /api/flotte/* et /api/multiserver/* (V18) -> capacités flotte.* du noyau. Le parc, le verdict et les engagements parlent déjà la même langue ;
    l'historique, la disponibilité et les actions changent de clés. Les types Synology et Proxmox du registre ne sont pas encore portés. */
 (function () {
@@ -71,6 +71,24 @@
   });
   P("/api/multiserver/remove", "flotte.machine_retirer", { args: (r) => ({ nom: nom(r.body) }), sortie: (x) => ok({ name: x.nom }) });
   P("/api/multiserver/toggle", "flotte.machine_basculer", { args: (r) => ({ nom: nom(r.body), actif: r.body.enabled !== false }), sortie: (x) => ok({ name: x.nom, enabled: !!x.actif }) });
+
+  // La vue d'ensemble de la flotte : le parc fusionné dit qui répond ; la V19 ne tient pas de moyenne de charge au parc (chaque machine a sa courbe), l'écran le dit (« 0 machine » sous les moyennes).
+  P("/api/multiserver/aggregate", null, {
+    faire: async (req, agir) => {
+      try {
+        const p = (await agir("flotte.parc", {})) || {}, l = (p.machines || p.parc || []).filter((m) => m.groupe !== "Disparues" && m.groupe !== "Retirées");
+        const nodes = l.map((m) => ({ name: m.nom, type: m.type || "ssh", online: !!m.en_ligne, cpu: 0, ram: 0, disk: 0, health_score: 0, error: m.en_ligne ? "" : (m.libelle || "hors ligne") }));
+        const on = nodes.filter((n) => n.online).length;
+        return { ok: true, total_servers: nodes.length, online_servers: on, offline_servers: nodes.length - on, avg_cpu: 0, avg_ram: 0, avg_disk: 0, avg_health: 0, avg_basis: { cpu: 0, ram: 0, disk: 0 }, nodes };
+      } catch (e) { return { ok: false, error: e.message, total_servers: 0, online_servers: 0, offline_servers: 0, nodes: [] }; }
+    },
+  });
+  P("/api/multiserver/resolve_quickconnect", null, {
+    faire: async (req, agir) => {
+      try { const r = await agir("flotte.quickconnect", { identifiant: String(req.body.qc_id || "") }); return { ok: true, host: r.hote, port: r.port }; }
+      catch (e) { return { ok: false, error: e.message }; }
+    },
+  });
 })();
 // ▲▲▲ FIN BORNE CN ▲▲▲
 

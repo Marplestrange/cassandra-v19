@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : securite
 # ZONE       : CN
-# VERSION CN : 0.3.4  #76bf52
+# VERSION CN : 0.4.0  #27237a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La sécurité : les gestes, le journal, les audits.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.4 empreinte=76bf52 ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.0 empreinte=27237a ▼▼▼
 """La sécurité : les gestes, le journal, les audits.
 
 Porté de la V18 (`securite_*`, `_sec_gestes`), avec ses leçons :
@@ -228,6 +228,58 @@ def brancher(ctx):
     def installation_sans_retour(c, res):
         raise ValueError("aucun retour automatique : les paquets installés restent (apt remove, à la main)")
 
+    # ── la machine : les OOM acquittés, les unités en échec remises à zéro, une session fermée ──
+    def oom_acquits(c):
+        return {"signatures": [r["sig"] for r in db.lire("SELECT sig FROM securite_oom_acquits ORDER BY ts DESC LIMIT 200")]}
+
+    def oom_acquitter(c, signatures=None):
+        sigs = [str(x)[:200] for x in (signatures or []) if str(x).strip()][:200]
+        if not sigs:
+            raise ValueError("rien à acquitter")
+        neufs = [x for x in sigs if not db.lire("SELECT 1 FROM securite_oom_acquits WHERE sig=?", (x,))]
+        for x in neufs:
+            db.ecrire("INSERT INTO securite_oom_acquits (sig, qui) VALUES (?,?)", (x, (ctx.compte or "")[:80]))
+        db.ecrire("DELETE FROM securite_oom_acquits WHERE sig NOT IN (SELECT sig FROM securite_oom_acquits ORDER BY ts DESC LIMIT 200)")
+        return {"signatures": sigs, "neufs": neufs}
+
+    def prouver_oom(c, res):
+        return all(db.lire("SELECT 1 FROM securite_oom_acquits WHERE sig=?", (x,)) for x in res["signatures"])
+
+    def defaire_oom(c, res):
+        for x in res["neufs"]:
+            db.ecrire("DELETE FROM securite_oom_acquits WHERE sig=?", (x,))
+
+    def unites_reinitialiser(c):
+        return dict(agir("faire", "reset_failed"), geste="reset_failed")
+
+    def prouver_unites(c, res):
+        return not (frais().get("maj") or {}).get("unites_en_echec")
+
+    def unites_sans_retour(c, res):
+        raise ValueError("aucun retour : l'échec remis à zéro n'est plus compté (le journal systemd garde sa cause)")
+
+    def session_fermer(c, user="", ip=""):
+        return dict(agir("faire", "session_fermer", {"user": str(user), "ip": str(ip)}), geste="session_fermer", user=str(user), ip=str(ip))
+
+    def prouver_session(c, res):
+        return bool(res.get("tty"))                                        # le courtier a relu `who` avant de répondre ok
+
+    def session_sans_retour(c, res):
+        raise ValueError("aucun retour : une session fermée se rouvre en se reconnectant")
+
+    def systeme_geste(c, service="", action=""):
+        return dict(agir("faire", "service_agir", {"service": str(service), "action": str(action)}), geste="service_agir", service=str(service), action=str(action))
+
+    def prouver_systeme(c, res):
+        return bool(res.get("unite"))                                          # le courtier a relu l'état de l'unité avant de répondre ok
+
+    def defaire_systeme(c, res):
+        raise ValueError("rien à défaire : le service %s a été %s, il tourne comme avant" % (res.get("service"), "rechargé" if res.get("action") == "reload" else "relancé"))
+
+    def journal_service(c, service=""):
+        r = agir("faire", "journal", {"service": str(service)}, delai=60)
+        return {"service": r.get("service"), "texte": r.get("texte") or ""}
+
     def gestes(c):
         return {"gestes": GESTES}
 
@@ -280,6 +332,15 @@ def brancher(ctx):
     ctx.implementer("annuler", annuler, prouver_annule, defaire_annule)
     ctx.implementer("outil_installer", installer_outil, prouver_lance, installation_sans_retour)
     ctx.implementer("outil_lancer", lancer_outil, prouver_lance, arreter_outil)
+    ctx.implementer("oom_acquits", oom_acquits)
+    ctx.implementer("systeme_geste", systeme_geste, prouver_systeme, defaire_systeme,
+                    simuler=lambda x, service="", action="", **_: "ferait « %s » sur le service %s" % (action, service))
+    ctx.implementer("journal_service", journal_service)
+    ctx.implementer("oom_acquitter", oom_acquitter, prouver_oom, defaire_oom,
+                    simuler=lambda x, signatures=None, **_: "acquitterait %d événement(s) de mémoire saturée" % len(signatures or []))
+    ctx.implementer("unites_reinitialiser", unites_reinitialiser, prouver_unites, unites_sans_retour)
+    ctx.implementer("session_fermer", session_fermer, prouver_session, session_sans_retour,
+                    simuler=lambda x, user="", **_: "fermerait la session de %s" % user)
     ctx.implementer("noter", noter, prouver_noter, defaire_noter,
                     simuler=lambda x, geste="", **_: "inscrirait le geste « %s » au journal de sécurité" % geste)
     ctx.implementer("audit_poser", audit_poser, prouver_audit, defaire_audit,

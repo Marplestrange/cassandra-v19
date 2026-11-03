@@ -12,7 +12,7 @@
 <!-- RÔLE       : Le relevé, par domaine, des routes V18 encore à porter en V19. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=70a816 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=449ab3 ▼▼▼ -->
 # Routes V18 sans équivalent branché en V19
 
 Relevé du 02-11-2026 : les écrans repris de la V18 (`interface/CN_app.js`) appellent des routes `/api/…` que la couche de compatibilité (`interface/CN_compat.js` + `interface/routes/CN_*.js`) ne branche pas encore ; elles répondent 501 « pas encore porté ».
@@ -32,34 +32,24 @@ Branchées avec une réserve, à reprendre :
 - @Itare dans le fil ou un commentaire : l'événement `projet.itare` est émis, mais le module des agents ne l'écoute pas encore (aucune réponse inventée). Les suites proposées (`/proposer`) sont calculées sur les faits du projet, sans modèle ; la relecture quotidienne d'Itare n'est pas reprise.
 - Non repris, hors des 44 routes : le tableau propre à la nature « livre » (chapitres, mots), les droits d'Itare par projet.
 
-## Hébergement et système — 57 routes
+## Hébergement et système — 57 routes : toutes branchées (03-11-2026)
 
-Modules V19 proches : fastpanel, sites, sauvegardes, securite, mesures, flotte. Fonctions : panneau, bases, FTP, mail, DNS, sauvegardes (purger, restaurer, vérifier), analyses, redémarrages, journal des échecs, shell.
+Aucune ne répond plus 501 : elles sont dans `CN_systeme.js`, `CN_fastpanel.js`, `CN_sites.js`, `CN_sauvegardes.js`, `CN_securite.js`, `CN_flotte.js` et `CN_crons.js`. Le banc `tests/CN_test_hebergement_systeme.py` garde la table.
 
-- `/api/crons` (1) : `/suggest`
-- `/api/dashboard` (1) : ``
-- `/api/docker` (1) : ``
-- `/api/exec` (2) : ``, `/stream`
-- `/api/fail2ban` (1) : ``
-- `/api/failed` (2) : ``, `/reset`
-- `/api/fp` (17) : `/act`, `/api/creds`, `/api/test`, `/db/delete`, `/db/users`, `/domain/attach`, `/domain/context`, `/scans/configure`, `/scans/report`, `/scans/reports`, `/scans/run`, `/scans/targets`, `/service/diagnose`, `/stats`, `/user/ssh`, `/users/link`, `/websocket/apply`
-- `/api/multiserver` (2) : `/aggregate`, `/resolve_quickconnect`
-- `/api/oom` (2) : ``, `/clear`
-- `/api/pf` (3) : `/scan`, `/scan/note`, `/scans`
-- `/api/ports` (1) : ``
-- `/api/remotes` (1) : ``
-- `/api/rollback` (1) : ``
-- `/api/sauv` (2) : `/purger`, `/restaurer`
-- `/api/securite` (3) : `/audit/rediger`, `/defaire`, `/direct`
-- `/api/service` (2) : `/restart/agent`, `/restart/collector`
-- `/api/session` (1) : `/kill`
-- `/api/sessions` (1) : ``
-- `/api/site` (6) : `/copies`, `/rapport`, `/restaurer`, `/sauvegarde`, `/scan`, `/thumb`
-- `/api/sites` (1) : `/act`
-- `/api/ssl` (1) : ``
-- `/api/system` (3) : ``, `/geste`, `/wipe`
-- `/api/tailscale` (1) : ``
-- `/api/upload` (1) : ``
+Branchées pour de bon, sur une capacité :
+- les tableaux de la machine (`/api/ports`, `sessions`, `failed`, `oom`, `docker`, `ssl`, `tailscale`, `fail2ban`, `remotes`, `dashboard`, `system`) : le collecteur du Sensorium (`sensorium.entite`) ; un collecteur muet rend une liste vide, jamais des chiffres inventés ;
+- les gestes de la machine, chacun avec sa preuve et son retour : `securite.oom_acquitter` (retour : retirer les signatures), `securite.unites_reinitialiser` et `securite.session_fermer` (sans retour, dit), `securite.systeme_geste` (recharger nginx après `nginx -t`, relancer Ollama ou le noyau, table fermée de trois services), `securite.journal_service` (lecture, table fermée), `sensorium.redemarrer` (le collecteur) ;
+- `/api/fp/*` : `api/test`, `api/creds` (aux réglages, secrets), `domain/context`, `domain/attach` (un lien de la fiche du site), `db/users`, `db/delete` (`fastpanel.base_supprimer`, sans retour, dit), `user/ssh` (`fastpanel.utilisateur_cles`), `users/link` (`comptes.modifier`), `scans/targets` (`fastpanel.scans_cibles`) ;
+- `/api/site/copies` et `restaurer` (`fastpanel.copies_du_plan`, `fastpanel.copie_restaurer` : le propriétaire, ou l'administrateur avec l'accord du propriétaire), `/api/site/rapport` (composé de l'historique de la sonde et des copies du compte), `/api/sites/act` (vérifier, renouveler le certificat) ;
+- `/api/sauv/purger`, `verifier`, `restaurer` (`sauvegardes.purger`, `verifier`, `restaurer` : rclone par le courtier ; la rotation ne touche que les dossiers datés AAAA-MM-JJ, la restauration est à blanc et « à côté » par défaut) ;
+- `/api/securite/direct`, `defaire`, `audit/rediger` (le modèle de l'administrateur rédige l'audit en arrière-plan) ; `/api/crons/suggest` ; `/api/multiserver/aggregate` et `resolve_quickconnect` (`flotte.quickconnect`) ; `/api/pf/scan`, `scans`, `scan/note` (la santé des modules relue à l'instant : les détecteurs de la V19 tournent en continu) ; `/api/upload` (texte et images ; le PDF et le bureautique attendent un extracteur).
+
+Dites telles quelles (la route répond, avec la raison — jamais un 501) :
+- `/api/exec`, `/api/exec/stream`, `/api/rollback` : la console de commandes libres n'existe plus en V19 (aucun shell libre ; chaque opération root est une commande nommée du courtier) ; sans commande libre, aucun instantané de fichier à restaurer ;
+- `/api/system/wipe` : le reset total n'est pas un bouton en V19 ; le retrait propre est `CN_desinstaller.sh`, à la main ;
+- `/api/fp/act`, `/api/fp/stats` : le catalogue d'actions libres (mogwai) est remplacé par un geste nommé chacun ; les statistiques du panneau par Historique ;
+- `/api/fp/scans/run`, `configure`, `reports`, `report`, `/api/site/scan`, `/api/site/sauvegarde`, `/api/fp/websocket/apply`, `/api/fp/service/diagnose` (journal et vérification de configuration), `/api/site/thumb`, `/api/sites/act` (redémarrer, journaux) : ils demandent la commande `mogwai` ou des fichiers de root ; le courtier du module `fastpanel` n'a pas encore ces commandes. Reste à faire : une commande racine `mogwai` à table fermée (scan, backup run), puis ces routes.
+- `/api/securite/direct` : bannir une adresse ou un pays, la liste blanche, fermer un chemin d'un site, freiner un robot — pas encore portés (pare-feu du noyau et nginx) ; débannir, arrêter un service et lancer un outil le sont.
 
 ## Bureau d'Itare, messagerie et outils — 170 routes
 

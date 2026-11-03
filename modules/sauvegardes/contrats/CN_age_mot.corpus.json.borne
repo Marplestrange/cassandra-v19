@@ -6,7 +6,7 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sauvegardes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #32c9a0
+# VERSION CN : 0.2.0  #32c9a0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : age_mot.corpus.json (fichier sans commentaires possibles ou immuable : en-tête porté ici)

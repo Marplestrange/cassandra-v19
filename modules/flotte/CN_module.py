@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : flotte
 # ZONE       : CN
-# VERSION CN : 0.1.1  #ee6d5c
+# VERSION CN : 0.1.2  #c292cc
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=ee6d5c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.2 empreinte=c292cc ▼▼▼
 """La flotte : le parc de machines, fusionné, avec ce qu'on peut en faire.
 
 Porté de la V18 (`flotte_*`, `fleet_*`, `ms_*`), avec ses leçons :
@@ -107,6 +107,26 @@ def brancher(ctx):
             n_p, minutes = pannes.get(r["nom"], (0, 0))
             out.append({"nom": r["nom"], "releves": r["n"], "disponibilite": round(100.0 * (r["en"] or 0) / r["n"], 2) if r["n"] else None, "pannes": n_p, "indispo_min": minutes, "indispo": o.duree(minutes)})
         return out
+
+    def quickconnect(c, identifiant=""):
+        """Résout un identifiant QuickConnect Synology en (hôte, port) auprès du service global de Synology. Lecture seule."""
+        qc = str(identifiant or "").strip()
+        if not re.match(r"^[A-Za-z0-9._-]{2,64}$", qc):
+            raise ValueError("identifiant QuickConnect illisible")
+        import json as _j
+        import urllib.request as _u
+        corps = _j.dumps({"version": "1", "command": "get_server_info", "stop_when_error": "false", "stop_when_success": "false", "id": "dsm_portal_v2", "serverID": qc}).encode()
+        try:
+            with _u.urlopen(_u.Request("https://global.quickconnect.to/Serv.php", data=corps, headers={"Content-Type": "application/json"}, method="POST"), timeout=10) as r:
+                d = _j.loads(r.read())
+        except Exception as ex:
+            raise ValueError("le service QuickConnect ne répond pas : %s" % str(ex)[:120])
+        srv = d.get("server") or {}
+        ifaces = srv.get("interface") or [{}]
+        hote = (ifaces[0] or {}).get("ip", "")
+        if not hote:
+            raise ValueError("QuickConnect ID introuvable")
+        return {"hote": hote, "port": int(srv.get("port") or 5001)}
 
     def parc(c):
         reservee()
@@ -701,7 +721,7 @@ def brancher(ctx):
     c.moteur("releve", releve)
     c.detecteur("machine_muette", det_muettes)
     for cid, f in (("parc", parc), ("verdict", verdict), ("machines", machines), ("historique", historique), ("disponibilite", disponibilite), ("serie", serie), ("evenements", evenements), ("liens", liens),
-                   ("actions", actions), ("ping", ping), ("diagnostic", diagnostic)):
+                   ("actions", actions), ("ping", ping), ("diagnostic", diagnostic), ("quickconnect", quickconnect)):
         c.implementer(cid, f)
     c.implementer("machine_ajouter", machine_ajouter, prouver_machine, defaire_machine_ajoutee, simuler=lambda x, nom="", **_: "déclarerait la machine « %s » au registre" % nom)
     c.implementer("machine_retirer", machine_retirer, prouver_retiree, defaire_retiree, simuler=lambda x, nom="", **_: "retirerait la machine « %s » du registre" % nom)

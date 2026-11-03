@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sauvegardes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #0ea40f
+# VERSION CN : 0.2.0  #eefa2d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les plans de sauvegarde : une portée décide du moteur (un site ou une base passe par FastPanel, le reste par rclone), la rotation par dossiers datés, la vérification par échantillon. Ici : les plans, l'historique des copies, les destinations et la couverture. Différé : l'exécution rclone, la restauration, la vérification (par le courtier racine), et la planification.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=0ea40f ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=eefa2d ▼▼▼
 [module]
 id = "sauvegardes"
 nom = "Sauvegardes"
-version = "0.1.0"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Les plans de sauvegarde : une portée décide du moteur (un site ou une base passe par FastPanel, le reste par rclone), la rotation par dossiers datés, la vérification par échantillon. Ici : les plans, l'historique des copies, les destinations et la couverture. Différé : l'exécution rclone, la restauration, la vérification (par le courtier racine), et la planification."
 confiance = "interne"
@@ -103,6 +103,36 @@ perimetre = ["un plan de sauvegarde et ses copies"]
 preuve = "le plan n'existe plus"
 retour = "remettre le plan"
 paliers = ["raconter", "auto", "maitre"]
+
+[[capacites]]
+id = "purger"
+libelle = "Ne garder que les N copies datées les plus récentes d'un plan (la rotation) : sans elle, la destination se remplit jusqu'au quota puis échoue en silence"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["les dossiers datés AAAA-MM-JJ de la destination du plan, jamais un autre dossier"]
+preuve = "la destination relue ne compte pas plus de copies que le plan en garde"
+retour = "AUCUN retour : les copies purgées sont supprimées de la destination"
+paliers = ["raconter"]
+
+[[capacites]]
+id = "verifier"
+libelle = "Vérifier qu'une copie est bien sur sa destination (présence du dossier daté ; l'empreinte d'un fichier n'est pas comparée) et inscrire le verdict"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["la ligne de copie (verdict et détail)"]
+preuve = "le verdict est relu sur la ligne de copie"
+retour = "remettre le verdict d'avant"
+paliers = ["raconter", "auto"]
+
+[[capacites]]
+id = "restaurer"
+libelle = "Restaurer une copie : à blanc d'abord (ce qui serait remplacé), puis « à côté » (un dossier daté, rien n'est écrasé) ou sur place (écrase)"
+risque = "eleve"
+droit = "utiliser"
+perimetre = ["le dossier source du plan, ou son dossier « -restauration » à côté"]
+preuve = "rclone rend 0 après avoir lu ce qu'il a écrit"
+retour = "à côté : retirer le dossier de restauration ; sur place : AUCUN retour (l'original est écrasé)"
+paliers = ["raconter"]
 
 [[capacites]]
 id = "plan_run"

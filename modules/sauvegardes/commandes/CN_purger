@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Ne garde que les N dossiers datés les plus récents. Usage : purger BASE GARDER."""
 import json
+import re
 import subprocess
 import sys
 
@@ -23,8 +24,12 @@ def main():
     except ValueError:
         print("réponse rclone illisible")
         sys.exit(3)
+    dossiers = [d for d in dossiers if re.match(r"^\d{4}-\d{2}-\d{2}$", str(d))]       # jamais un autre dossier que les copies datées
+    if garder < 1:
+        print("garder doit valoir au moins 1")
+        sys.exit(2)
     purges = max(0, len(dossiers) - garder)
-    for d in dossiers[:-garder] if garder else dossiers:
+    for d in dossiers[:-garder]:
         subprocess.run(["rclone", "purge", base + "/" + d], capture_output=True, text=True, timeout=300)
     print("purge %d dossier(s)" % purges)
 

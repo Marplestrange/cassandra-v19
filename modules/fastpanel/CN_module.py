@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #e6a597
+# VERSION CN : 0.2.0  #01795b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont FastPanel.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=e6a597 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=01795b ▼▼▼
 """Le pont FastPanel.
 
 Deux voies, chacune pour ce qu'elle fait de mieux :
@@ -1105,6 +1105,88 @@ def brancher(ctx):
         if res.get("id") is not None:
             appeler("DELETE", "/api/v2/backup/plans/%s" % int(res["id"]))
 
+    # ---- ce que la V18 savait lire en plus : les clés SSH d'un compte, les sites analysables ; et supprimer une base
+    def utilisateur_cles(c, compte=""):
+        u = str(compte or "").strip()
+        if not re.match(r"^[A-Za-z0-9_.@-]{1,64}$", u):
+            raise ValueError("compte illisible")
+        rows = en_valeur(lambda: _requete("SELECT id FROM panel_account WHERE username=? LIMIT 1", (u,)))
+        if not rows or rows[0][0] is None:
+            raise ValueError("compte inconnu du panneau")
+        d = en_valeur(lambda: appeler("GET", "/api/sshd/%s/auth_keys" % int(rows[0][0])))
+        d = d.get("data") if isinstance(d, dict) and isinstance(d.get("data"), list) else (d if isinstance(d, list) else [d] if isinstance(d, dict) else [])
+        return {"compte": u, "cles": [x for x in d if isinstance(x, dict)]}
+
+    def scans_cibles(c):
+        """Les sites analysables, avec la configuration d'analyse du panneau et la date de leur dernier rapport (lecture seule de sa base)."""
+        def lire():
+            cfgs, derniers = {}, {}
+            if "virtualhost_id" in _colonnes("scan_configuration"):
+                for r in _requete("SELECT id, virtualhost_id, COALESCE(enabled,0), COALESCE(minute,''), COALESCE(hour,''), COALESCE(day_of_week,''), COALESCE(email,'') FROM scan_configuration"):
+                    if r[1]:
+                        cfgs[r[1]] = {"config_id": r[0], "actif": int(r[2] or 0), "planning": ("%s %s * * %s" % (r[3], r[4], r[5])).strip(), "courriel": r[6]}
+            if "virtualhost_id" in _colonnes("scan_report"):
+                for r in _requete("SELECT virtualhost_id, MAX(created_at), COUNT(*) FROM scan_report GROUP BY virtualhost_id"):
+                    if r[0]:
+                        derniers[r[0]] = {"dernier": str(r[1] or "")[:19], "rapports": r[2]}
+            _exiger("site", "domain")
+            sortie = []
+            for sid, dom in _requete("SELECT id, domain FROM site ORDER BY domain"):
+                if dom:
+                    k, d = cfgs.get(sid) or {}, derniers.get(sid) or {}
+                    sortie.append({"domaine": dom, "site_id": sid, "config_id": k.get("config_id"), "actif": k.get("actif", 0), "planning": k.get("planning", ""),
+                                   "courriel": k.get("courriel", ""), "dernier": d.get("dernier", ""), "rapports": d.get("rapports", 0)})
+            return sortie
+        return {"sites": en_valeur(lire)}
+
+    def base_supprimer(c, id=0):
+        if not str(id).isdigit() or not int(id):
+            raise ValueError("identifiant de base invalide")
+        avant = next((b for b in _bases_panneau() if str(b.get("id")) == str(int(id))), None)
+        if not avant:
+            raise ValueError("base inconnue du panneau")
+        appeler("DELETE", "/api/databases/%s" % int(id))
+        return {"id": int(id), "nom": avant.get("name")}
+
+    def prouver_base_supprimee(c, res):
+        for _ in range(int(ATTENTE_SERVICE_S / PAS_ATTENTE_S)):
+            if not any(str(b.get("id")) == str(res["id"]) for b in _bases_panneau()):
+                return True
+            time.sleep(PAS_ATTENTE_S)
+        return False
+
+    def defaire_base_supprimee(c, res):
+        raise ValueError("aucun retour : la base « %s » est supprimée avec ses données — la dernière sauvegarde du panneau la contient" % res.get("nom"))
+
+    # ---- les copies d'un plan et leur restauration (le moteur v2 du panneau copie PAR COMPTE)
+    def copies_du_plan(c, plan_id=0):
+        if not str(plan_id).isdigit() or not int(plan_id):
+            raise ValueError("plan requis")
+        items = en_valeur(lambda: _liste(appeler("GET", "/api/v2/backup/plans/%s/copies" % int(plan_id))))
+        sortie = []
+        for x in items:
+            if isinstance(x, dict):
+                sortie.append({"id": x.get("id"), "debut": x.get("startedAt") or x.get("start_at") or "", "fin": x.get("endedAt") or x.get("end_at") or "",
+                               "compte": x.get("copiedUser") or x.get("copied_user") or "", "bases": [str(b.get("name") if isinstance(b, dict) else b) for b in (x.get("dbs") or []) if b],
+                               "partielle": bool(x.get("partial")), "octets": x.get("totalUploaded") or x.get("total_uploaded") or 0})
+        sortie.sort(key=lambda x: str(x.get("debut") or ""), reverse=True)
+        return {"plan": int(plan_id), "copies": sortie[:60]}
+
+    def copie_restaurer(c, copie_id="", compte="", forcer=False):
+        if not str(copie_id).isdigit():
+            raise ValueError("copie requise")
+        u = str(compte or "").strip()
+        if not re.match(r"^[A-Za-z0-9_.@-]{1,64}$", u):
+            raise ValueError("compte du panneau illisible")
+        appeler("PUT", "/api/v2/backup/copy/%s/restore" % int(copie_id), {"dstUser": u, "forceClearWebsites": bool(forcer), "dstPath": ""})
+        return {"copie": int(copie_id), "compte": u}
+
+    def prouver_restauration(c, res):
+        return True                                                    # le panneau a accepté la demande (il refuse en 400 sinon) ; la restauration elle-même est asynchrone et se lit dans ses journaux
+
+    def defaire_restauration(c, res):
+        raise ValueError("aucun retour : la restauration a remplacé les fichiers et bases du compte « %s » par ceux de la copie %s" % (res.get("compte"), res.get("copie")))
+
     # ---- inscription
     c = ctx
     c.moteur("releve", releve)
@@ -1117,7 +1199,7 @@ def brancher(ctx):
     c.detecteur("php_fin_support", det_php)
     for cid, f in (("sante", sante), ("resume", resume), ("utilisateurs", utilisateurs), ("sites", sites), ("bases", bases), ("ftp", ftp), ("mail", mail), ("dns", dns),
                    ("sauvegardes", sauvegardes), ("plans", plans), ("stockages", stockages), ("services", services), ("certificats", certificats),
-                   ("ssl_sonder", ssl_sonder), ("php", php), ("audit", audit), ("parefeu", parefeu)):
+                   ("ssl_sonder", ssl_sonder), ("utilisateur_cles", utilisateur_cles), ("scans_cibles", scans_cibles), ("copies_du_plan", copies_du_plan), ("php", php), ("audit", audit), ("parefeu", parefeu)):
         c.implementer(cid, f)
     c.implementer("service_relancer", relancer, prouver_service, defaire_service, simuler=lambda x, service="", action="restart", **_: "ferait « %s » sur le service %s" % (action, service))
     c.implementer("service_arreter", arreter, prouver_service, defaire_service, simuler=lambda x, service="", **_: "arrêterait le service %s (il serait relancé au retour arrière)" % service)
@@ -1127,6 +1209,8 @@ def brancher(ctx):
     c.implementer("parefeu_politique", parefeu_politique, prouver_politique, defaire_regle, simuler=lambda x, politique="", **_: "passerait la politique du pare-feu à %s" % politique)
     c.implementer("parefeu_trancher", trancher, prouver_tranche, defaire_tranche)
     c.implementer("base_creer", base_creer, prouver_base, defaire_base, simuler=lambda x, nom="", **_: "créerait la base %s avec son utilisateur" % nom)
+    c.implementer("base_supprimer", base_supprimer, prouver_base_supprimee, defaire_base_supprimee, simuler=lambda x, id=0, **_: "supprimerait définitivement la base %s du panneau" % id)
+    c.implementer("copie_restaurer", copie_restaurer, prouver_restauration, defaire_restauration, simuler=lambda x, copie_id="", compte="", **_: "restaurerait la copie %s sur le compte %s du panneau" % (copie_id, compte))
     c.implementer("stockage_local_creer", stockage_local_creer, prouver_stockage, defaire_stockage, simuler=lambda x, nom="", chemin="", **_: "déclarerait le dossier %s comme stockage « %s »" % (chemin, nom))
     c.implementer("plan_creer", plan_creer, prouver_plan, defaire_plan, simuler=lambda x, nom="", **_: "créerait le plan de sauvegarde « %s »" % nom)
 # ▲▲▲ FIN BORNE CN ▲▲▲

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sauvegardes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b1dff5
+# VERSION CN : 0.2.0  #9d95b0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sauvegardes : les plans, l'historique des copies, les destinations, la couverture.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b1dff5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=9d95b0 ▼▼▼
 """Les sauvegardes : les plans, l'historique des copies, les destinations, la couverture.
 
 Porté de la V18 (`sauv_*`), avec ses leçons :
@@ -25,6 +25,8 @@ passent par le courtier racine et les outils système, pas par ce module.
 """
 from __future__ import annotations
 
+import json
+import re
 from datetime import datetime
 
 PORTEES = ("doc", "site", "db", "systeme")
@@ -203,6 +205,90 @@ def brancher(ctx):
     def defaire_run(c, res):
         db.ecrire("DELETE FROM sauv_copies WHERE id=?", (res["copie_id"],))
 
+    # ── la rotation, la vérification, la restauration (rclone par le courtier) ───────────────────────────────
+    def _copie(cid):
+        r = db.lire("SELECT * FROM sauv_copies WHERE id=?", (int(cid),))
+        return dict(r[0]) if r else None
+
+    def _dossiers(base):
+        r = ctx.racine("lister", [base], delai=150)
+        if not r.get("ok"):
+            raise ValueError("destination illisible : " + ((r.get("sortie") or "") + (r.get("erreur") or "")).strip()[:160])
+        try:
+            return [x.get("Path") or x.get("Name") for x in json.loads(r.get("sortie") or "[]")]
+        except ValueError:
+            raise ValueError("réponse de rclone illisible")
+
+    def purger(c, pid=0):
+        p = _plan(int(pid))
+        if not p:
+            raise ValueError("plan introuvable")
+        garder = int(p.get("garder") or 0)
+        if garder < 1 or not p.get("date_dossier"):
+            return {"plan": int(pid), "purges": [], "detail": "pas de rotation sur ce plan"}
+        base = str(p["destination"]).rstrip("/")
+        avant = sorted(d for d in _dossiers(base) if d and re.match(r"^\d{4}-\d{2}-\d{2}$", d))
+        r = ctx.racine("purger", [base, str(garder)], delai=1200)
+        if not r.get("ok"):
+            raise ValueError("purge impossible : " + ((r.get("sortie") or "") + (r.get("erreur") or "")).strip()[-160:])
+        reste = sorted(d for d in _dossiers(base) if d and re.match(r"^\d{4}-\d{2}-\d{2}$", d))
+        return {"plan": int(pid), "gardes": len(reste), "purges": [d for d in avant if d not in reste], "reste": reste}
+
+    def prouver_purge(c, res):
+        return len(res.get("reste") or []) <= max(1, int((_plan(res["plan"]) or {}).get("garder") or 1))
+
+    def sans_retour_purge(c, res):
+        raise ValueError("aucun retour : les copies purgées sont supprimées de la destination (c'est le but de la rotation)")
+
+    def verifier(c, copie_id=0):
+        cp = _copie(copie_id)
+        if not cp:
+            raise ValueError("copie introuvable")
+        p = _plan(cp["plan_id"])
+        if not p or p.get("moteur") != "rclone":
+            raise ValueError("vérification réservée aux copies rclone")
+        dest = str(cp["destination"]).rstrip("/")
+        base, _, nom = dest.rpartition("/")
+        ok = bool(base) and nom in _dossiers(base)
+        detail = ("« %s » présent sur la destination (présence seulement : l'empreinte d'un fichier n'est pas comparée)" % nom) if ok else ("« %s » ABSENT de la destination" % nom)
+        db.ecrire("UPDATE sauv_copies SET verifie=?, verif_detail=? WHERE id=?", (1 if ok else 0, detail[:300], int(copie_id)))
+        return {"copie": int(copie_id), "ok": ok, "detail": detail, "avant": [cp["verifie"], cp["verif_detail"]]}
+
+    def prouver_verification(c, res):
+        cp = _copie(res["copie"])
+        return bool(cp) and bool(cp["verifie"]) == bool(res["ok"])
+
+    def defaire_verification(c, res):
+        db.ecrire("UPDATE sauv_copies SET verifie=?, verif_detail=? WHERE id=?", (res["avant"][0], res["avant"][1], res["copie"]))
+
+    def restaurer(c, copie_id=0, blanc=True, a_cote=True):
+        cp = _copie(copie_id)
+        if not cp:
+            raise ValueError("copie introuvable")
+        p = _plan(cp["plan_id"])
+        if not p or p.get("moteur") != "rclone":
+            raise ValueError("une copie FastPanel se restaure depuis le panneau")
+        cible = p["source"].rstrip("/")
+        if a_cote:
+            cible = cible + "-restauration/" + datetime.now().strftime("%Y-%m-%d_%H%M")
+        r = ctx.racine("copier", [cp["destination"], cible, "1" if blanc else "0"], delai=1800)
+        sortie = (r.get("sortie") or "") + (r.get("erreur") or "")
+        n = len(re.findall(r"(?mi)\bCopied\b", sortie))
+        if not r.get("ok"):
+            raise ValueError("restauration impossible : " + (sortie.strip().splitlines() or ["?"])[-1][:160])
+        return {"copie": int(copie_id), "blanc": bool(blanc), "a_cote": bool(a_cote), "cible": cible, "fichiers": n,
+                "detail": ("%d fichier(s) seraient restaurés dans %s" if blanc else "%d fichier(s) restaurés dans %s") % (n, cible)}
+
+    def prouver_restauration(c, res):
+        return True                                                     # le courtier a rendu un code 0 ; rclone relit ce qu'il écrit
+
+    def defaire_restauration(c, res):
+        if res.get("blanc"):
+            return                                                      # un essai à blanc n'a rien écrit
+        if res.get("a_cote"):
+            raise ValueError("retirer le dossier « %s » à la main : il est à côté de l'original, rien n'a été écrasé" % res["cible"])
+        raise ValueError("aucun retour : la restauration a écrasé l'original")
+
     # ── enregistrement ──────────────────────────────────────────────────────
     for cid, f in (("plans", plans), ("copies", copies), ("destinations", destinations), ("couverture", couverture)):
         ctx.implementer(cid, f)
@@ -210,6 +296,12 @@ def brancher(ctx):
                     simuler=lambda x, nom="", **_: "enregistrerait le plan « %s »" % nom)
     ctx.implementer("plan_delete", plan_delete, prouver_plan_delete, defaire_plan_delete,
                     simuler=lambda x, pid=0, **_: "supprimerait le plan %s" % pid)
+    ctx.implementer("purger", purger, prouver_purge, sans_retour_purge,
+                    simuler=lambda x, pid=0, **_: "ne garderait que les copies datées les plus récentes du plan %s" % pid)
+    ctx.implementer("verifier", verifier, prouver_verification, defaire_verification,
+                    simuler=lambda x, copie_id=0, **_: "vérifierait la présence de la copie %s sur sa destination" % copie_id)
+    ctx.implementer("restaurer", restaurer, prouver_restauration, defaire_restauration,
+                    simuler=lambda x, copie_id=0, blanc=True, **_: "%s la copie %s" % ("simulerait la restauration de" if blanc else "restaurerait", copie_id))
     ctx.implementer("plan_run", plan_run, prouver_run, defaire_run,
                     simuler=lambda x, pid=0, **_: "exécuterait le plan %s" % pid)
 # ▲▲▲ FIN BORNE CN ▲▲▲
