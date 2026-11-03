@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : coffre
 # ZONE       : CN
-# VERSION CN : 0.1.0  #bcf8fe
+# VERSION CN : 0.2.0  #cecdac
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le coffre Vaultwarden : le magasin de secrets de Cassandra (statut, liste des noms sans jamais les valeurs, lecture, écriture réversible, retrait). Un compte Cassandra = un compte Vault natif (même identifiant). Différé : la fiche complète d'un secret (chiffrement fin), le provisionnement des comptes, les clés d'API personnelles, le TOTP.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=bcf8fe ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=cecdac ▼▼▼
 [module]
 id = "coffre"
 nom = "Coffre fort"
-version = "0.1.0"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Le coffre Vaultwarden : le magasin de secrets de Cassandra (statut, liste des noms sans jamais les valeurs, lecture, écriture réversible, retrait). Un compte Cassandra = un compte Vault natif (même identifiant). Différé : la fiche complète d'un secret (chiffrement fin), le provisionnement des comptes, les clés d'API personnelles, le TOTP."
 confiance = "interne"
@@ -56,6 +56,14 @@ duree_max_s = 20
 
 [permissions]
 stockage = true
+secrets = true
+
+[[reglages]]
+id = "url_publique"
+libelle = "L'adresse du coffre que les personnes saisissent dans l'application Bitwarden (serveur auto-hébergé)"
+type = "texte"
+defaut = ""
+aide = "Vide : on propose l'adresse du serveur Vaultwarden. Elle sert au QR code de « Mon coffre-fort »."
 
 [[reglages]]
 id = "vault_url"
@@ -120,6 +128,49 @@ preuve = "le secret n'existe plus"
 retour = "remettre le secret"
 paliers = ["raconter", "auto", "maitre"]
 qui = ["humain", "compte", "cassandra"]
+
+[[capacites]]
+id = "fiche"
+libelle = "La fiche d'un secret, valeurs comprises, pour la personne qui l'ouvre (identifiant, note ou carte) : l'ouverture s'inscrit au journal"
+risque = "lecture"
+droit = "utiliser"
+qui = ["humain", "compte"]
+masque = ["detail"]
+
+[[capacites]]
+id = "totp"
+libelle = "Le code à usage unique courant d'un secret qui porte une clé TOTP (RFC 6238), et le temps qu'il lui reste"
+risque = "lecture"
+droit = "utiliser"
+qui = ["humain", "compte"]
+masque = ["code"]
+
+[[capacites]]
+id = "historique"
+libelle = "Les anciens mots de passe d'un identifiant, datés : révélés à la demande, l'ouverture s'inscrit au journal"
+risque = "lecture"
+droit = "utiliser"
+qui = ["humain", "compte"]
+masque = ["historique"]
+
+[[capacites]]
+id = "trace"
+libelle = "Inscrire au journal ce que l'écran fait d'une valeur déjà ouverte (la révéler, la copier) ; jamais la valeur"
+risque = "lecture"
+droit = "utiliser"
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "fiche_ecrire"
+libelle = "Créer une fiche (identifiant, note, carte), ou la modifier sans rien perdre (nom compris) ; un mot de passe remplacé va à l'historique"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un secret de l'espace du compte qui agit (ou d'un espace où son rôle écrit)", "un nom libre pour une création", "l'ancien mot de passe garde une copie chiffrée"]
+preuve = "relire la valeur du secret : c'est celle qui vient d'être écrite"
+retour = "remettre l'ancienne valeur et l'ancien nom (ou retirer la fiche si elle est neuve)"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+masque = ["valeurs", "patch", "avant", "apres"]
 
 [[capacites]]
 id = "journal"

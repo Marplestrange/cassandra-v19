@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : coffre
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b4ceec
+# VERSION CN : 0.2.0  #5fcc93
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le coffre Vaultwarden : le magasin de secrets de Cassandra.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b4ceec ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=5fcc93 ▼▼▼
 """Le coffre Vaultwarden : le magasin de secrets de Cassandra.
 
 Chaque compte ne voit QUE ses espaces : le sien (« u:<compte> »), puis ceux de société où on l'a fait entrer (« s:<société> »)
@@ -27,13 +27,19 @@ Porté de la V18 (`vault_*`, `_vault_req`), avec ses leçons :
   - le dernier échec est gardé un court instant et rendu tel quel (ne pas marteler un coffre verrouillé
     jusqu'au « Too many login requests »).
 
-Différé proprement : la fiche complète d'un secret (chiffrement fin par le client), le provisionnement
-des comptes (compte Cassandra = compte Vault natif), les clés d'API personnelles, le TOTP.
+Les fiches typées (identifiant, note, carte) sont des documents JSON marqués rangés dans la note sécurisée : l'application Bitwarden ne les verra pas comme des identifiants.
+Différé proprement : le provisionnement des comptes (compte Cassandra = compte Vault natif) et les clés d'API personnelles (une seule session sert tous les espaces).
 """
 from __future__ import annotations
 
+import base64
 import datetime
+import hashlib
+import hmac
 import json
+import re
+import struct
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -245,7 +251,7 @@ def brancher(ctx):
         m = _acces(ctx.compte, esp)
         if m is None:
             raise ValueError(REFUS)
-        rows = db.lire("SELECT nom, auteur, collection FROM vault_secrets WHERE espace=? ORDER BY nom", (esp,))
+        rows = db.lire("SELECT nom, auteur, collection, fiche, cree, maj FROM vault_secrets WHERE espace=? ORDER BY nom", (esp,))
         vus = [r for r in rows if _peut(m, "lire", r, "", ctx.compte) and (not prefix or r["nom"].startswith(prefix))]
         return {"noms": [r["nom"] for r in vus], "secrets": vus, "espace": esp, "role": m["role"]}
 
@@ -307,7 +313,7 @@ def brancher(ctx):
         avant = _lire_brut(esp, nom)
         _poser_brut(esp, nom, valeur)
         db.ecrire("INSERT INTO vault_secrets (espace, nom, auteur, collection) VALUES (?,?,?,?) "
-                  "ON CONFLICT(espace, nom) DO UPDATE SET collection=excluded.collection, maj=datetime('now')", (esp, nom, ctx.compte, col))
+                  "ON CONFLICT(espace, nom) DO UPDATE SET collection=excluded.collection, maj=datetime('now'), fiche=''", (esp, nom, ctx.compte, col))
         _audit("ecrire", nom, esp)
         return {"name": nom, "espace": esp, "avant": avant, "apres": valeur, "meta_avant": meta, "collection": col}
 
@@ -542,6 +548,221 @@ def brancher(ctx):
             if db.lire("SELECT 1 FROM vault_espaces WHERE id=?", ("s:" + soc,)):
                 espace_archiver(None, espace="s:" + soc)
 
+    # ── les fiches typées (identifiant, note, carte) : le même secret, sa valeur est alors un document JSON marqué ; ce qu'on peut AFFICHER sans l'ouvrir va dans `fiche` ─────
+    GENRES = ("login", "note", "card")
+    MARQUE = "cn_fiche"
+    CHAMPS_FICHE = ("username", "password", "uri", "totp", "notes", "value", "contexte", "card_name", "card_number", "card_exp", "card_cvv", "card_brand")
+
+    def decoder(valeur):
+        """Le document d'une fiche typée, ou None si la valeur est un texte simple (une note)."""
+        try:
+            d = json.loads(valeur) if isinstance(valeur, str) and valeur.startswith("{") else None
+        except ValueError:
+            return None
+        return d if isinstance(d, dict) and d.get(MARQUE) == 1 else None
+
+    def vue_fiche(nom, valeur, meta=None):
+        """Ce qu'une fiche montre : le document ouvert, ou une note simple."""
+        d = decoder(valeur)
+        if d is None:
+            return {"name": nom, "kind": "note", "value": valeur or "", "notes": "", "fields": [], "contexte": "", "favorite": False, "agent": False, "totp": ""}
+        sortie = {k: v for k, v in d.items() if k != MARQUE}
+        sortie["name"] = nom
+        sortie.setdefault("kind", "login")
+        sortie.setdefault("fields", [])
+        return sortie
+
+    def meta_fiche(d):
+        return json.dumps({"kind": d.get("kind", "login"), "username": str(d.get("username") or "")[:200], "uri": str(d.get("uri") or "")[:300], "favorite": bool(d.get("favorite")),
+                           "totp": bool(d.get("totp")), "champs": len(d.get("fields") or []), "agent": bool(d.get("agent")), "mdp_maj": d.get("mdp_maj", "")}, ensure_ascii=False)
+
+    def cible(name, espace, action):
+        nom = _nom(name)
+        esp = _espace(ctx.compte, espace)
+        m = _acces(ctx.compte, esp)
+        if m is None:
+            raise ValueError(REFUS)
+        meta = _meta(esp, nom)
+        if action == "lire":
+            if not meta or not _peut(m, "lire", meta, "", ctx.compte):
+                return nom, esp, m, None
+        elif not _peut(m, "ecrire", meta, meta["collection"] if meta else "", ctx.compte):
+            raise ValueError(REFUS)
+        return nom, esp, m, meta
+
+    def fiche(c, name="", espace="", motif="fiche"):
+        """La fiche d'un secret, valeurs comprises, pour la personne qui l'ouvre : l'ouverture s'inscrit au journal. Les anciens mots de passe ne sortent pas d'ici (voir `historique`)."""
+        nom, esp, m, meta = cible(name, espace, "lire")
+        if meta is None:
+            return {"detail": None, "espace": esp}
+        _exiger_ouvert(esp)
+        valeur = _lire_brut(esp, nom)
+        if valeur is None:
+            return {"detail": None, "espace": esp}
+        _audit("fiche" if motif == "fiche" else "reveal", nom, esp)
+        d = vue_fiche(nom, valeur, meta)
+        d["historique_n"] = db.lire("SELECT COUNT(*) AS n FROM vault_historique WHERE espace=? AND nom=?", (esp, nom))[0]["n"]
+        d["doublons"] = []
+        if d["kind"] == "login" and d.get("password"):
+            for r in db.lire("SELECT nom, fiche FROM vault_secrets WHERE espace=? AND nom<>? AND fiche LIKE '%\"login\"%' LIMIT 60", (esp, nom)):
+                autre = decoder(_lire_brut(esp, r["nom"]) or "")
+                if autre and autre.get("password") == d["password"]:
+                    d["doublons"].append(r["nom"])
+        return {"detail": d, "espace": esp}
+
+    def valider_valeurs(kind, v):
+        v = dict(v or {})
+        champs = []
+        for f in (v.get("fields") or []):
+            if isinstance(f, dict) and str(f.get("name") or "").strip():
+                champs.append({"name": str(f["name"]).strip()[:100], "value": str(f.get("value") or "")[:2000], "type": int(f.get("type") or 0) if str(f.get("type") or 0).isdigit() else 0})
+        doc = {MARQUE: 1, "kind": kind, "fields": champs[:40], "favorite": bool(v.get("favorite")), "agent": bool(v.get("agent"))}
+        for k in CHAMPS_FICHE:
+            if k in v:
+                doc[k] = str(v.get(k) or "")[:20000]
+        return doc
+
+    def historiser(esp, nom, ancien):
+        """Un mot de passe remplacé n'est pas perdu : il est gardé chiffré, daté, relisible à la demande (et inscrit au journal)."""
+        return db.ecrire("INSERT INTO vault_historique(espace, nom, ts, valeur_chiffree) VALUES(?,?,datetime('now'),?)", (esp, nom, ctx.chiffrer(ancien, "historique:%s:%s" % (esp, nom))))
+
+    def fiche_ecrire(c, name="", kind="login", valeurs=None, patch=None, creer=False, espace=""):
+        """Créer une fiche (identifiant, note ou carte), ou la modifier sans rien perdre : `patch` ne porte que ce qui change, y compris le nom."""
+        nom, esp, m, meta = cible(name, espace, "ecrire")
+        _exiger_ouvert(esp)
+        avant = _lire_brut(esp, nom) if meta else None
+        if creer:
+            if meta:
+                raise ValueError("un secret porte déjà ce nom")
+            kind = str(kind or "login").strip().lower()
+            if kind not in GENRES:
+                raise ValueError("genre : %s" % " | ".join(GENRES))
+            v = dict(valeurs or {})
+            if str(v.get("contexte") or "").strip() and kind == "note":
+                pass
+            doc = valider_valeurs(kind, v)
+            if kind == "login" and doc.get("password"):
+                doc["mdp_maj"] = _aujourdhui()
+            nouveau_nom = nom
+        else:
+            if not meta or avant is None:
+                raise ValueError("secret introuvable")
+            p = dict(patch or {})
+            if not p:
+                raise ValueError("rien à modifier")
+            actuel = vue_fiche(nom, avant)
+            nouveau_nom = str(p.pop("name", nom) or "").strip()
+            if not nouveau_nom:
+                raise ValueError("le nom ne peut pas être vide")
+            if nouveau_nom != nom and _meta(esp, nouveau_nom):
+                raise ValueError("un secret porte déjà ce nom")
+            actuel.pop("name", None)
+            actuel.update({k: v for k, v in p.items() if k in CHAMPS_FICHE or k in ("fields", "favorite", "agent")})
+            kind = actuel.get("kind", "note")
+            if kind == "note" and decoder(avant) is None:
+                # une note simple modifiée reste un texte simple tant qu'elle n'a ni champ ni drapeau
+                simple = actuel.get("value", "") if "value" in p or not p.get("notes") else p.get("notes")
+                if not actuel.get("fields") and not actuel.get("favorite") and not actuel.get("agent") and not str(actuel.get("contexte") or ""):
+                    doc = None
+                else:
+                    doc = valider_valeurs("note", dict(actuel, value=simple))
+            else:
+                doc = valider_valeurs(kind, actuel)
+            if doc is not None and kind == "login":
+                ancien = vue_fiche(nom, avant)
+                if "password" in p and str(p.get("password") or "") != str(ancien.get("password") or ""):
+                    if ancien.get("password"):
+                        historiser(esp, nouveau_nom, ancien["password"])
+                    doc["mdp_maj"] = _aujourdhui()
+                else:
+                    doc["mdp_maj"] = ancien.get("mdp_maj", "")
+        apres = json.dumps(doc, ensure_ascii=False) if doc is not None else str(actuel.get("value", "") if not creer else "")
+        _poser_brut(esp, nouveau_nom, apres)
+        if nouveau_nom != nom:
+            _effacer_brut(esp, nom)
+            db.ecrire("DELETE FROM vault_secrets WHERE espace=? AND nom=?", (esp, nom))
+            db.ecrire("UPDATE vault_historique SET nom=? WHERE espace=? AND nom=?", (nouveau_nom, esp, nom))
+        col = meta["collection"] if meta else ""
+        db.ecrire("INSERT INTO vault_secrets (espace, nom, auteur, collection, fiche) VALUES (?,?,?,?,?) "
+                  "ON CONFLICT(espace, nom) DO UPDATE SET maj=datetime('now'), fiche=excluded.fiche", (esp, nouveau_nom, meta["auteur"] if meta else ctx.compte, col, meta_fiche(doc) if doc is not None else ""))
+        _audit("creer" if creer else "update", nom + ((" → " + nouveau_nom) if nouveau_nom != nom else ""), esp)
+        return {"name": nouveau_nom, "ancien_nom": nom, "espace": esp, "avant": avant, "apres": apres, "meta_avant": meta, "cree": bool(creer)}
+
+    def prouver_fiche(c, res):
+        return _lire_brut(res["espace"], res["name"]) == res["apres"]
+
+    def defaire_fiche(c, res):
+        esp = res["espace"]
+        if res["cree"]:
+            _effacer_brut(esp, res["name"])
+            db.ecrire("DELETE FROM vault_secrets WHERE espace=? AND nom=?", (esp, res["name"]))
+            return
+        if res["name"] != res["ancien_nom"]:
+            _effacer_brut(esp, res["name"])
+            db.ecrire("DELETE FROM vault_secrets WHERE espace=? AND nom=?", (esp, res["name"]))
+            db.ecrire("UPDATE vault_historique SET nom=? WHERE espace=? AND nom=?", (res["ancien_nom"], esp, res["name"]))
+        _poser_brut(esp, res["ancien_nom"], res["avant"])
+        _remettre_meta(esp, res["ancien_nom"], res.get("meta_avant"))
+
+    def code_totp(graine, quand=None):
+        """Le code à usage unique courant (RFC 6238) : (code, secondes restantes, période). La clé est un `otpauth://totp/…` ou la seule graine base32 ; None si elle ne se lit pas."""
+        x = str(graine or "").strip()
+        if not x:
+            return None
+        graine, chiffres, periode, algo = x, 6, 30, "sha1"
+        if x.lower().startswith("otpauth://"):
+            try:
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(x).query)
+                graine = (q.get("secret") or [""])[0]
+                chiffres = max(4, min(int((q.get("digits") or ["6"])[0] or 6), 10))
+                periode = max(1, int((q.get("period") or ["30"])[0] or 30))
+                algo = ((q.get("algorithm") or ["SHA1"])[0] or "SHA1").lower().replace("-", "")
+            except ValueError:
+                return None
+        graine = re.sub(r"[\s\-]", "", graine).upper()
+        try:
+            cle = base64.b32decode(graine + "=" * (-len(graine) % 8), casefold=True)
+        except (ValueError, TypeError):
+            return None
+        if not cle:
+            return None
+        t = int(quand if quand is not None else time.time())
+        h = hmac.new(cle, struct.pack(">Q", t // periode), getattr(hashlib, algo if algo in ("sha1", "sha256", "sha512") else "sha1")).digest()
+        o = h[-1] & 0x0F
+        code = (struct.unpack(">I", h[o:o + 4])[0] & 0x7FFFFFFF) % (10 ** chiffres)
+        return str(code).zfill(chiffres), periode - (t % periode), periode
+
+    def totp(c, name="", espace=""):
+        nom, esp, m, meta = cible(name, espace, "lire")
+        if meta is None:
+            raise ValueError("secret introuvable")
+        _exiger_ouvert(esp)
+        d = vue_fiche(nom, _lire_brut(esp, nom))
+        if not d.get("totp"):
+            raise ValueError("pas de clé TOTP sur ce secret")
+        r = code_totp(d["totp"])
+        if not r:
+            raise ValueError("clé TOTP illisible")
+        _audit("totp", nom, esp)
+        return {"code": r[0], "reste": r[1], "periode": r[2]}
+
+    def historique(c, name="", espace=""):
+        nom, esp, m, meta = cible(name, espace, "lire")
+        if meta is None:
+            raise ValueError("secret introuvable")
+        _audit("historique", nom, esp)
+        return {"historique": [{"password": ctx.dechiffrer(r["valeur_chiffree"], "historique:%s:%s" % (esp, nom)), "ts": r["ts"]}
+                               for r in db.lire("SELECT ts, valeur_chiffree FROM vault_historique WHERE espace=? AND nom=? ORDER BY id DESC LIMIT 20", (esp, nom))]}
+
+    def trace(c, name="", action="", espace=""):
+        """Ce que l'écran fait d'une valeur déjà dans la page — la révéler, la copier — s'inscrit au journal ; jamais la valeur."""
+        nom, esp, m, meta = cible(name, espace, "lire")
+        if action not in ("reveal", "copie"):
+            raise ValueError("action inconnue")
+        if meta is not None:
+            _audit(action, nom, esp)
+        return {"name": nom, "action": action}
+
     ctx.moteur("espaces_societes", espaces_societes)
     for cid, f in (("status", status), ("available", available), ("get", lire), ("list", lister), ("journal", journal),
                    ("espaces", espaces), ("membres", membres)):
@@ -555,6 +776,11 @@ def brancher(ctx):
     ctx.implementer("retirer", retirer, prouver_retirer, defaire_retirer,
                     simuler=lambda x, utilisateur="", **_: "retirerait l'accès de %s" % utilisateur)
     ctx.implementer("regler", regler, prouver_regler, defaire_regler)
+    ctx.implementer("fiche", fiche)
+    ctx.implementer("totp", totp)
+    ctx.implementer("historique", historique)
+    ctx.implementer("trace", trace)
+    ctx.implementer("fiche_ecrire", fiche_ecrire, prouver_fiche, defaire_fiche, simuler=lambda x, name="", **_: "écrirait la fiche « %s »" % name)
     ctx.implementer("espace_creer", espace_creer, prouver_creer, defaire_creer)
     ctx.implementer("espace_archiver", espace_archiver, prouver_archiver, defaire_archiver)
 # ▲▲▲ FIN BORNE CN ▲▲▲
