@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #55c7f5
+// VERSION CN : 0.2.0  #4abe30
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine la page « Modèles & clés » : la santé du cerveau, le choix d’un modèle par agent, les modèles en ligne (clé d’API), les modèles locaux (Ollama) avec ce que la machine supporte, les autres moteurs d’IA, un comparateur et l’usage par modèle.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) et CASS.monterModeles, monté aussi dans Agents IA ; les rôles du moteur restent cachés : choisir un modèle pour un agent crée le rôle « agent_<id> » qui le relie ; une clé saisie n’est jamais relue.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=55c7f5 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=4abe30 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -31,13 +31,6 @@
     ollama: ["qwen2.5:3b", "qwen3:4b-instruct", "llama3.2:3b"],
   };
   const LIENS = { deepseek: "platform.deepseek.com", openrouter: "openrouter.ai/keys", openai: "platform.openai.com/api-keys", google: "aistudio.google.com/apikey", groq: "console.groq.com/keys" };
-  // [nom, taille en Go, ce qu’il vaut]
-  const CATALOGUE_LOCAL = [
-    ["qwen2.5:3b", 1.9, "léger, bon en français : le choix par défaut"], ["qwen3:4b-instruct", 2.5, "plus fin, répond sans réfléchir à voix haute"],
-    ["llama3.2:3b", 2.0, "polyvalent et rapide"], ["gemma2:2b", 1.6, "très léger, pour une petite machine"],
-    ["qwen2.5:7b", 4.7, "nettement meilleur, il faut de la mémoire"], ["mistral:7b", 4.1, "français correct"],
-    ["phi3.5", 2.2, "petit et bon en raisonnement court"], ["nomic-embed-text", 0.3, "recherche par le sens (pas de conversation)"],
-  ];
   const DEFAUTS = ["principal", "itare_citadelle"];                      // les rôles que prennent Cassandra, Amizo et Itare quand on ne leur en donne pas d’autre
 
   const CSS = ".md{display:flex;flex-direction:column;gap:16px;color:var(--txt);font-size:13.5px;line-height:1.5}.md *{box-sizing:border-box}.md h1,.md h2,.md h3,.md p{margin:0}.md .mono{font-family:" + MONO + "}" +
@@ -62,6 +55,14 @@
     ".md .etapes{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}.md .etape{border:1px solid var(--line);border-radius:13px;padding:13px 14px;background:var(--surface-solid,transparent);display:flex;flex-direction:column;gap:8px}" +
     ".md .rep{border:1px solid var(--line);border-radius:11px;padding:11px 13px;background:var(--surface-solid,transparent);min-height:90px;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}" +
     ".md .attente{padding:30px;text-align:center;color:var(--txt-soft)}.md .confirme{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px}.md .err{color:var(--danger)}.md .g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}" +
+    ".md .seg{display:inline-flex;border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px;background:var(--surface-solid,transparent)}.md .seg button{border:0;background:transparent;color:var(--txt-soft);border-radius:8px;padding:6px 12px;font:600 12.5px 'Inter',system-ui,sans-serif;cursor:pointer}.md .seg button[aria-selected=true]{background:var(--accent);color:var(--on-accent,#fff)}.md .seg .n{font:600 10.5px " + MONO + ";opacity:.75;margin-left:3px}" +
+    ".md .filtre{border:1px solid var(--line);background:var(--surface-solid,transparent);color:var(--txt-soft);border-radius:999px;padding:4px 11px;font:600 11.5px 'Inter',system-ui,sans-serif;cursor:pointer}.md .filtre:hover{border-color:var(--accent);color:var(--accent)}.md .filtre.on{background:var(--accent);border-color:transparent;color:var(--on-accent,#fff)}" +
+    ".md .grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}.md .fichette{border:1px solid var(--line);border-radius:14px;padding:13px 14px;background:var(--surface-solid,transparent);display:flex;flex-direction:column;gap:7px;min-width:0}.md .fichette:hover{border-color:var(--accent)}.md .fichette .puces{gap:5px}" +
+    ".md .fr{font-size:9px;letter-spacing:1px;color:var(--accent)}.md .fr i{font-style:normal;color:var(--line-strong,var(--line))}" +
+    ".md .fiche-fond{position:fixed;inset:0;background:rgba(10,16,24,.38);z-index:60}.md .fiche{position:fixed;top:0;right:0;bottom:0;width:min(540px,100vw);z-index:61;background:var(--surface-solid,#fff);border-left:1px solid var(--line);box-shadow:-18px 0 40px rgba(10,16,24,.18);padding:22px 24px 28px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}" +
+    ".md .fiche h2{font-size:19px}.md .fiche h3{margin-top:8px}.md .fiche ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}.md .fiche ul.plus li::marker{color:var(--ok)}.md .fiche ul.moins li::marker{color:var(--warn)}" +
+    ".md .verdict{border-radius:12px;padding:11px 14px;display:flex;flex-direction:column;gap:3px;border:1px solid var(--line)}.md .verdict.ok{background:color-mix(in srgb,var(--ok) 11%,transparent);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}.md .verdict.al{background:color-mix(in srgb,var(--warn) 12%,transparent);border-color:color-mix(in srgb,var(--warn) 32%,transparent)}.md .verdict.dg{background:color-mix(in srgb,var(--danger) 10%,transparent);border-color:color-mix(in srgb,var(--danger) 30%,transparent)}.md .verdict b{font:650 11px " + MONO + ";text-transform:uppercase;letter-spacing:.07em}" +
+    ".md .kvs{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}.md .kv{background:var(--surface-solid,#fff);padding:8px 12px;display:flex;flex-direction:column;gap:1px}.md .kv span{font:600 10px " + MONO + ";text-transform:uppercase;letter-spacing:.07em;color:var(--txt-faint)}.md .kv b{font-weight:600;font-size:13px}.md .sel{user-select:all;background:var(--line);padding:6px 10px;border-radius:8px;overflow-wrap:anywhere}" +
     ".sh-scene:has(>.sh-corps>.md)>.sh-titre{display:none}@media (max-width:820px){.md .rang{grid-template-columns:minmax(0,1fr) auto}.md .rang .m{grid-column:1 / -1}}";
 
   const octets = (n) => n >= 1e9 ? (n / 1e9).toFixed(1).replace(".", ",") + " Go" : n >= 1e6 ? Math.round(n / 1e6) + " Mo" : n > 0 ? Math.round(n / 1e3) + " Ko" : "—";
@@ -73,7 +74,7 @@
     const st = document.createElement("style"); st.id = "md-css"; st.textContent = CSS; document.head.appendChild(st);
     const racine = document.createElement("div"); racine.className = "md"; corps.appendChild(racine);
 
-    const S = { l: null, f: [], loc: null, mo: null, us: null, eq: [], cv: null, ep: [], occupe: false, erreur: "", prov: "", retirer: "", suppr: "", essais: {}, form: { nom: "", base: "" }, mini: "", cmp: { a: "", b: "", q: "Pourquoi le disque de cette machine a-t-il autant d’espace libre ?", ra: "", rb: "" } };
+    const S = { l: null, f: [], loc: null, mo: null, us: null, eq: [], cv: null, ep: [], occupe: false, erreur: "", prov: "", retirer: "", suppr: "", essais: {}, form: { nom: "", base: "" }, mini: "", cat: { onglet: "local", q: "", filtre: "tous" }, fiche: null, cmp: { a: "", b: "", q: "Pourquoi le disque de cette machine a-t-il autant d’espace libre ?", ra: "", rb: "" } };
     let minuterie = null;
     const vivant = () => document.body.contains(racine);
 
@@ -216,13 +217,95 @@
         (S.suppr === m.name ? '<span class="confirme">Supprimer ? <button class="btn mini dng" data-a="suppr-oui" data-n="' + esc(m.name) + '">Oui</button><button class="btn mini" data-a="suppr-non">Non</button></span>' : '<button class="btn mini dng" data-a="suppr" data-n="' + esc(m.name) + '">Supprimer</button>') + "</div></div>").join("")
         : (loc.repond ? '<p class="note">Aucun modèle installé.</p>' : "");
       if (pulls.length) h += "<h3>Téléchargements en cours</h3>" + pulls.map((p) => '<div><span class="mono">' + esc(p.nom) + '</span> <span class="note">' + esc(p.detail || p.etat) + '</span><div class="barre"><i style="width:' + Math.max(3, Math.min(100, p.pourcent || 3)) + '%"></i></div></div>').join("");
-      h += "<h3>Catalogue, avec ce que la machine supporte</h3>" + (total ? "" : '<p class="note">La mémoire de la machine se lit… les indications « tient » arrivent dans un instant.</p>') + '<div class="puces">' + CATALOGUE_LOCAL.map((c) => {
-        const aj = ajustement(c[1], total);
-        return '<div class="puce"><b>' + esc(c[0]) + '</b><span class="note">' + go(c[1]) + " · " + esc(c[2]) + "</span>" + (aj ? '<span class="pastille ' + aj[0] + '">' + aj[1] + "</span>" : "") +
-          (noms.has(c[0]) ? '<span class="pastille ok">installé</span>' : '<button class="btn mini" data-a="installer" data-n="' + esc(c[0]) + '"' + (S.occupe || !loc.repond || (aj && aj[0] === "dg") ? " disabled" : "") + ">Installer</button>") + "</div>";
-      }).join("") + "</div>" +
-        '<div class="acts" style="margin-top:4px"><input type="text" id="md-pull" value="' + esc(S.mini) + '" placeholder="un autre nom du catalogue ollama.com/library, ex. llama3.1:8b" style="flex:1 1 280px;width:auto" autocomplete="off" spellcheck="false"><button class="btn" data-a="installer-libre"' + (S.occupe || !loc.repond ? " disabled" : "") + ">Installer</button></div></div>";
       return h;
+    }
+
+
+    // ── le catalogue : des fiches ───────────────────────────────────────────
+    const CATA = () => window.CASS_CATALOGUE_MODELES || { local: [], enligne: [] };
+    const FILTRES = {
+      local: [["tous", "Tous"], ["agents", "Pour les agents"], ["fr", "Bon français"], ["leger", "Légers"], ["tient", "Tiennent ici"], ["raisonne", "Raisonnement"], ["code", "Code"], ["vision", "Images"], ["gros", "Gros"]],
+      enligne: [["tous", "Tous"], ["agents", "Pour les agents"], ["eco", "Économiques"], ["vision", "Images"], ["raisonne", "Raisonnement"], ["long", "Long contexte"]],
+    };
+    const installe = (nom) => { const n = ((S.loc || {}).modeles || []).map((m) => m.name); return n.indexOf(nom) >= 0 || n.indexOf(nom + ":latest") >= 0; };
+    const besoin = (go) => Math.round((go * 1.25 + 0.5) * 10) / 10;
+    function vitesse(go) { return go <= 2.5 ? ["ok", "rapide", "de l’ordre de la minute par tour d’agent sur processeur"] : go <= 5.5 ? ["al", "moyen", "plusieurs minutes par tour d’agent sur processeur"] : ["dg", "lent", "au-delà du délai d’un tour (2 min) sur processeur : réservé à une carte graphique"]; }
+    function verdictLocal(m, total) {
+      if (m.embed) return ["mu", "Ne converse pas : il sert à la recherche par le sens, pas aux agents."];
+      if (!m.outils) return ["dg", "Ne convient pas à un agent : il ne sait pas appeler d’outils. Il peut lire ou rédiger, pas agir."];
+      const aj = ajustement(m.go, total);
+      if (aj && aj[0] === "dg") return ["dg", "Trop lourd pour cette machine (" + go((total / 1e9).toFixed(1)) + " de mémoire, il en faut environ " + go(besoin(m.go)) + ")."];
+      const v = vitesse(m.go);
+      if (v[0] === "dg") return ["dg", "Appelle des outils, mais " + v[2] + "."];
+      if (aj && aj[0] === "al") return ["al", "Appelle des outils, mais la mémoire sera juste : le reste de la machine ralentira."];
+      return v[0] === "al" ? ["al", "Appelle des outils ; " + v[2] + "."] : ["ok", "Convient à un agent ; " + v[2] + "."];
+    }
+    function passe(m, f, total, enligne) {
+      if (f === "tous") return true;
+      if (enligne) return f === "agents" ? m.outils : f === "eco" ? m.prix === "€" : f === "vision" ? m.vision : f === "raisonne" ? m.raisonne : f === "long" ? m.ctx >= 1000 : true;
+      if (f === "agents") return m.outils;
+      if (f === "fr") return m.fr >= 3;
+      if (f === "leger") return m.go <= 3;
+      if (f === "tient") { const a = ajustement(m.go, total); return !!a && a[0] === "ok"; }
+      if (f === "raisonne") return m.raisonne;
+      if (f === "code") return m.code;
+      if (f === "vision") return m.vision;
+      if (f === "gros") return m.go >= 8;
+      return true;
+    }
+    const pointsFr = (n) => '<span class="fr" title="Appréciation du français : ' + n + ' sur 3">' + "●".repeat(n) + '<i>' + "●".repeat(3 - n) + "</i></span>";
+    function carteLocaleCatalogue(m, total) {
+      const ok = installe(m.nom), aj = ajustement(m.go, total), v = vitesse(m.go);
+      return '<div class="fichette"><div class="bar"><b class="mono">' + esc(m.nom) + '</b>' + (ok ? '<span class="pastille ok">installé</span>' : "") + '</div><span class="note">' + esc(m.famille) + " · " + esc(m.editeur) + " · " + esc(m.params) + " · " + go(m.go) + (m.ctx ? " · " + m.ctx + " k" : "") + "</span>" +
+        '<div class="puces">' + (m.embed ? '<span class="pastille mu">recherche</span>' : m.outils ? '<span class="pastille ok">outils</span>' : '<span class="pastille dg">sans outils</span>') + (m.vision ? '<span class="pastille mu">images</span>' : "") + (m.raisonne ? '<span class="pastille mu">raisonne</span>' : "") + (m.code ? '<span class="pastille mu">code</span>' : "") + (aj ? '<span class="pastille ' + aj[0] + '">' + aj[1] + "</span>" : "") + (m.embed || !m.outils ? "" : '<span class="pastille ' + v[0] + '" title="' + esc(v[2]) + '">' + v[1] + "</span>") + "</div>" +
+        '<p class="note" style="min-height:2.6em">' + esc(m.desc) + '</p><div class="bar"><span class="note">FR ' + pointsFr(m.fr) + '</span><div class="acts"><button class="btn mini" data-a="fiche" data-k="local" data-n="' + esc(m.nom) + '">Fiche</button>' +
+        (ok ? "" : '<button class="btn mini pri" data-a="installer" data-n="' + esc(m.nom) + '"' + (S.occupe || !(S.loc || {}).repond || (aj && aj[0] === "dg") ? " disabled" : "") + ">Installer</button>") + "</div></div></div>";
+    }
+    function carteEnLigneCatalogue(m) {
+      const deja = declares().some((x) => x.nom === m.nom && x.fournisseur === m.fournisseur);
+      return '<div class="fichette"><div class="bar"><b class="mono">' + esc(m.nom) + '</b>' + (deja ? '<span class="pastille ok">déclaré</span>' : "") + '</div><span class="note">' + esc(nomProv(m.fournisseur)) + " · " + (m.ctx >= 1000 ? Math.round(m.ctx / 1000) + " M" : m.ctx + " k") + " de contexte · " + m.prix + "</span>" +
+        '<div class="puces">' + (m.outils ? '<span class="pastille ok">outils</span>' : '<span class="pastille dg">outils peu fiables</span>') + (m.vision ? '<span class="pastille mu">images</span>' : "") + (m.raisonne ? '<span class="pastille mu">raisonne</span>' : "") + '<span class="pastille al" title="Ce modèle est chez un fournisseur : tes données y partent">en ligne</span></div>' +
+        '<p class="note" style="min-height:2.6em">' + esc(m.desc) + '</p><div class="bar"><span class="note">FR ' + pointsFr(m.fr) + '</span><div class="acts"><button class="btn mini" data-a="fiche" data-k="enligne" data-n="' + esc(m.fournisseur + "|" + m.nom) + '">Fiche</button><button class="btn mini pri" data-a="ajouter-ce" data-p="' + esc(m.fournisseur) + '" data-n="' + esc(m.nom) + '">Ajouter</button></div></div></div>';
+    }
+    function carteCatalogue() {
+      const cat = CATA(), c = S.cat, total = S.mo && S.mo.machine ? S.mo.machine.total : 0, enl = c.onglet === "enligne", q = c.q.trim().toLowerCase();
+      const liste = (enl ? cat.enligne : cat.local).filter((m) => passe(m, c.filtre, total, enl) && (!q || (m.nom + " " + (m.famille || "") + " " + (m.fournisseur || "") + " " + (m.editeur || "") + " " + m.desc).toLowerCase().indexOf(q) >= 0));
+      const loc = S.loc || {};
+      return '<div class="carte"><div class="bar"><div><h2>Catalogue des modèles</h2><p class="note">' + (enl ? "Les modèles des fournisseurs : tes données partent chez eux, l’appel se paie." : "Ceux qu’Ollama installe sur la machine : gratuits, privés, mais limités par la mémoire et le processeur.") + '</p></div>' +
+        '<div class="seg" role="tablist"><button role="tab" aria-selected="' + !enl + '" data-a="cat-onglet" data-o="local">Sur la machine <span class="n">' + cat.local.length + '</span></button><button role="tab" aria-selected="' + enl + '" data-a="cat-onglet" data-o="enligne">En ligne <span class="n">' + cat.enligne.length + "</span></button></div></div>" +
+        '<div class="acts"><input type="text" id="md-cat-q" value="' + esc(c.q) + '" placeholder="Chercher un modèle, une famille, un éditeur…" aria-label="Chercher dans le catalogue" style="flex:1 1 240px;width:auto" autocomplete="off" spellcheck="false"></div>' +
+        '<div class="puces">' + FILTRES[enl ? "enligne" : "local"].map((f) => '<button class="filtre' + (c.filtre === f[0] ? " on" : "") + '" data-a="cat-filtre" data-f="' + f[0] + '">' + f[1] + "</button>").join("") + "</div>" +
+        '<p class="note">' + liste.length + " modèle(s)" + (!enl && !total ? " · la mémoire de la machine se lit : les indications « tient » arrivent dans un instant" : "") + (!enl ? ' · <span class="mono">outils</span> = sait appeler des outils, indispensable pour un agent' : "") + "</p>" +
+        (liste.length ? '<div class="grille">' + liste.map((m) => (enl ? carteEnLigneCatalogue(m) : carteLocaleCatalogue(m, total))).join("") + "</div>" : '<div class="attente">Aucun modèle ne correspond. Essaie un autre filtre.</div>') +
+        (enl ? "" : '<div class="acts" style="margin-top:4px"><input type="text" id="md-pull" value="' + esc(S.mini) + '" placeholder="un autre nom du catalogue ollama.com/library, ex. llama3.1:8b" style="flex:1 1 280px;width:auto" autocomplete="off" spellcheck="false" aria-label="Un autre modèle Ollama"><button class="btn" data-a="installer-libre"' + (S.occupe || !loc.repond ? " disabled" : "") + ">Installer</button></div>") + "</div>";
+    }
+    function ficheHtml() {
+      const f = S.fiche; if (!f) return "";
+      const cat = CATA(), total = S.mo && S.mo.machine ? S.mo.machine.total : 0;
+      const ligne = (k, v) => '<div class="kv"><span>' + k + "</span><b>" + v + "</b></div>";
+      const liste = (t, a, cls) => a && a.length ? "<h3>" + t + '</h3><ul class="' + cls + '">' + a.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ul>" : "";
+      let h;
+      if (f.k === "local") {
+        const m = cat.local.find((x) => x.nom === f.n); if (!m) return "";
+        const v = verdictLocal(m, total), ok = installe(m.nom), aj = ajustement(m.go, total);
+        h = '<div class="bar"><div><span class="lib">' + esc(m.famille) + " · " + esc(m.editeur) + '</span><h2 class="mono">' + esc(m.nom) + '</h2></div><button class="btn mini" data-a="fiche-fermer" aria-label="Fermer la fiche">Fermer</button></div>' +
+          '<p>' + esc(m.desc) + '</p><div class="verdict ' + v[0] + '"><b>Pour tes agents</b><span>' + esc(v[1]) + "</span></div>" +
+          '<div class="kvs">' + ligne("Paramètres", esc(m.params)) + ligne("Taille sur le disque", go(m.go)) + ligne("Mémoire vive conseillée", m.embed ? "faible" : "environ " + go(besoin(m.go))) + ligne("Contexte maximal", m.ctx ? m.ctx + " k jetons" : "—") + ligne("Licence", esc(m.licence)) + ligne("Français", pointsFr(m.fr) + " (appréciation)") +
+          ligne("Appels d’outils", m.outils ? "oui" : "non") + ligne("Images", m.vision ? "oui" : "non") + ligne("Raisonnement", m.raisonne ? "oui" : "non") + (total ? ligne("Sur cette machine", aj ? aj[1] : "—") : "") + "</div>" +
+          liste("Ses forces", m.forces, "plus") + liste("Ses limites", m.limites, "moins") + (m.usage ? "<h3>À qui il convient</h3><p>" + esc(m.usage) + "</p>" : "") +
+          '<h3>En ligne de commande</h3><p class="mono sel">ollama pull ' + esc(m.nom) + "</p>" +
+          '<div class="acts">' + (ok ? '<button class="btn pri" data-a="brancher-local" data-n="' + esc(m.nom) + '"' + (S.occupe || !m.outils ? " disabled" : "") + ">Utiliser pour tous les agents</button>" + (m.outils ? "" : '<span class="note">Sans outils, il ne peut pas servir d’agent.</span>') : '<button class="btn pri" data-a="installer" data-n="' + esc(m.nom) + '"' + (S.occupe || !(S.loc || {}).repond || (aj && aj[0] === "dg") ? " disabled" : "") + ">Installer (" + go(m.go) + ")</button><span class=\"note\">Une fois installé, reviens ici : « Utiliser pour tous les agents ».</span>") + "</div>";
+      } else {
+        const [fo, no] = f.n.split("|"), m = cat.enligne.find((x) => x.fournisseur === fo && x.nom === no); if (!m) return "";
+        h = '<div class="bar"><div><span class="lib">' + esc(nomProv(m.fournisseur)) + '</span><h2 class="mono">' + esc(m.nom) + '</h2></div><button class="btn mini" data-a="fiche-fermer" aria-label="Fermer la fiche">Fermer</button></div>' +
+          "<p>" + esc(m.desc) + '</p><div class="verdict ' + (m.outils ? "al" : "dg") + '"><b>Pour tes agents</b><span>' + (m.outils ? "Appelle des outils. Chaque échange part chez le fournisseur et se paie : le coût du jour le montre." : "Ses appels d’outils ne sont pas fiables : à éviter pour un agent.") + "</span></div>" +
+          '<div class="kvs">' + ligne("Fournisseur", esc(nomProv(m.fournisseur))) + ligne("Contexte", (m.ctx >= 1000 ? Math.round(m.ctx / 1000) + " M" : m.ctx + " k") + " jetons") + ligne("Prix (ordre de grandeur)", m.prix + " — à vérifier chez le fournisseur") + ligne("Français", pointsFr(m.fr) + " (appréciation)") +
+          ligne("Appels d’outils", m.outils ? "oui" : "peu fiables") + ligne("Images", m.vision ? "oui" : "non") + ligne("Raisonnement", m.raisonne ? "oui" : "non") + ligne("Données", "partent chez le fournisseur") + "</div>" +
+          liste("Ses forces", m.forces, "plus") + liste("Ses limites", m.limites, "moins") + (m.usage ? "<h3>À qui il convient</h3><p>" + esc(m.usage) + "</p>" : "") +
+          (LIENS[m.fournisseur] ? '<h3>Clé d’API</h3><p class="mono sel">' + esc(LIENS[m.fournisseur]) + "</p>" : "") +
+          '<div class="acts"><button class="btn pri" data-a="ajouter-ce" data-p="' + esc(m.fournisseur) + '" data-n="' + esc(m.nom) + '">Ajouter ce modèle</button><span class="note">Le formulaire s’ouvre prérempli : il reste à coller ta clé.</span></div>';
+      }
+      return '<div class="fiche-fond" data-a="fiche-fermer"></div><aside class="fiche" role="dialog" aria-label="Fiche du modèle">' + h + "</aside>";
     }
 
     // ── les autres moteurs d’IA ─────────────────────────────────────────────
@@ -261,10 +344,10 @@
         '<p class="sous">Les modèles de langage qui font parler Cassandra, Itare et les autres : ceux des fournisseurs en ligne (avec ta clé d’API) et ceux que la machine fait tourner elle-même. Sans modèle, un agent ne répond pas.</p></div>';
       if (S.erreur) h += '<div class="carte err">' + esc(S.erreur) + "</div>";
       if (!S.l) { racine.innerHTML = h + '<div class="attente">Lecture des modèles…</div>'; return; }
-      h += carteSante() + carteAgents() + carteLigne() + carteAjout() + carteLocale() + carteMoteurs() + carteComparateur() + carteUsage();
+      h += carteSante() + carteAgents() + carteLigne() + carteAjout() + carteLocale() + carteCatalogue() + carteMoteurs() + carteComparateur() + carteUsage() + ficheHtml();
       const foc = document.activeElement && document.activeElement.id, val = foc ? document.activeElement.value : "";
       racine.innerHTML = h;
-      if (foc && racine.querySelector("#" + foc) && foc !== "md-cle") { const e = racine.querySelector("#" + foc); if (e.tagName === "INPUT") e.value = val; }
+      if (foc && racine.querySelector("#" + foc) && foc !== "md-cle") { const e = racine.querySelector("#" + foc); if (e.tagName === "INPUT") { e.value = val; if (foc === "md-cat-q") { e.focus(); e.setSelectionRange(val.length, val.length); } } }
       lier();
     }
 
@@ -274,6 +357,7 @@
       const n = racine.querySelector("#md-nom"); if (n) n.addEventListener("input", () => { S.form.nom = n.value; });
       const b = racine.querySelector("#md-base"); if (b) b.addEventListener("input", () => { S.form.base = b.value; });
       const m = racine.querySelector("#md-pull"); if (m) m.addEventListener("input", () => { S.mini = m.value; });
+      const cq = racine.querySelector("#md-cat-q"); if (cq) cq.addEventListener("input", () => { S.cat.q = cq.value; dessiner(); });
       const q = racine.querySelector("#md-cq"); if (q) q.addEventListener("input", () => { S.cmp.q = q.value; });
       racine.querySelectorAll("[data-cmp]").forEach((x) => x.addEventListener("change", () => { S.cmp[x.dataset.cmp] = x.value; }));
       racine.querySelectorAll("[data-ag]").forEach((x) => x.addEventListener("change", () => faire(() => choisirPourAgent(x.dataset.ag, x.dataset.champ, x.value), "Réglé : " + x.dataset.ag)));
@@ -294,6 +378,11 @@
 
     async function geste(b) {
       const a = b.dataset.a;
+      if (a === "cat-onglet") { S.cat = { onglet: b.dataset.o, q: S.cat.q, filtre: "tous" }; dessiner(); return; }
+      if (a === "cat-filtre") { S.cat.filtre = b.dataset.f; dessiner(); return; }
+      if (a === "fiche") { S.fiche = { k: b.dataset.k, n: b.dataset.n }; dessiner(); const z = racine.querySelector(".fiche"); if (z) z.focus(); return; }
+      if (a === "fiche-fermer") { S.fiche = null; dessiner(); return; }
+      if (a === "ajouter-ce") { S.fiche = null; S.prov = b.dataset.p; S.form = { nom: b.dataset.n, base: "" }; dessiner(); const z = racine.querySelector("#md-ajout"); if (z) z.scrollIntoView({ behavior: "smooth", block: "start" }); const c = racine.querySelector("#md-cle"); if (c) c.focus(); return; }
       if (a === "console") { racine.remove(); if (CASS.console) CASS.console("modeles", corps); return; }
       if (a === "vers-ajout") { const z = racine.querySelector("#md-ajout"); if (z) z.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
       if (a === "retirer") { S.retirer = b.dataset.id; dessiner(); return; }
