@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #c2f141
+// VERSION CN : 0.1.0  #4f0a45
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=c2f141 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=4f0a45 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -438,7 +438,17 @@
     if (gen) h += titre("Général") + gen;                  // hors de la société principale, rien de ce qui règle l'application : la section disparaît
     return h;
   }
-  function rendreGauche() {
+  // La colonne se redessine à chaque geste ; le bouton qui avait le focus disparaît avec elle. On le retrouve par ce qui l'identifie, pour que le clavier ne reparte pas du haut de la page.
+  function cleFocus() {
+    const a = document.activeElement; if (!a || !a.closest || !a.classList.contains("d19-si") || !a.closest("#d19-side")) return null;
+    const d = a.dataset; return { e: d.e, v: d.v, sw: d.sw, lat: d.lat, fm: d.fm };
+  }
+  function refocus(k) {
+    const m = Array.prototype.slice.call(document.querySelectorAll("#d19-side .d19-si")).find((n) => (k.sw ? n.dataset.sw === k.sw : k.lat ? n.dataset.lat === k.lat : k.fm ? n.dataset.fm === k.fm : k.e ? n.dataset.e === k.e && (n.dataset.v || "") === (k.v || "") : false));
+    if (m) m.focus({ preventScroll: true });
+  }
+  function rendreGauche() { const k = cleFocus(); rendreGaucheBrut(); if (k) refocus(k); }
+  function rendreGaucheBrut() {
     const g = ent(), sd = $("#d19-side"); rendreCapsule(E.side === "rail" && !isPetit()); if (!g) { sd.innerHTML = ""; return; }
     const rail = E.side === "rail" && !isPetit();
     sd.classList.toggle("ferme", !E.side);
