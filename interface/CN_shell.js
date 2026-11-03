@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #c39bcc
+// VERSION CN : 0.1.0  #1b339a
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=c39bcc ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=1b339a ▼▼▼
 /* Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 
    1. Les THÈMES : un module livre un thème complet ([[habillages]] : des variables CSS). Il apparaît dans le sélecteur d'apparence,
@@ -133,6 +133,7 @@
     "coffre:c_outils": "Le coffre de secrets de Cassandra, tenu par Vaultwarden.", "coffre:c_rapport": "Le coffre de secrets de Cassandra, tenu par Vaultwarden.",
     "journal:vue_journal": "Les consultations des agents et tous les journaux de la machine, au même endroit.",
     "salon:vue_salon": "Des fils où les personnes et les agents se parlent.",
+    "planifie:vue_taches": "Tout ce qui tourne tout seul sur la machine, et est-ce que ça va.",
     "menus:vue_mes_applications": "Les modules et applications auxquels ton compte a accès.",
     "dolibarr:d_capacites": "Ce que le pont Dolibarr sait faire pour Cassandra.", "dolibarr:d_instance": "L’instance Dolibarr à laquelle Cassandra est reliée.",
   };
