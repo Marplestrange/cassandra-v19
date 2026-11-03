@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #4f0a45
+// VERSION CN : 0.1.0  #3915b0
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=4f0a45 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=3915b0 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -527,7 +527,7 @@
     h.id = "d19-hist"; h.setAttribute("role", "menu"); h.setAttribute("aria-label", sens < 0 ? "Pages précédentes" : "Pages suivantes");
     h.innerHTML = '<div class="d19-hist-t">' + (sens < 0 ? "Pages précédentes" : "Pages suivantes") + "</div>" + idx.map((i) => '<button type="button" role="menuitem" data-hi="' + i + '">' + esc(nomPage(pile[i])) + "</button>").join("");
     h.style.left = Math.max(8, r.left) + "px"; h.style.top = (r.bottom + 6) + "px";
-    document.body.appendChild(h); b.setAttribute("aria-expanded", "true"); h.querySelector("button").focus();
+    ($("#app-container") || document.body).appendChild(h); b.setAttribute("aria-expanded", "true"); h.querySelector("button").focus();         // dans l'application : c'est là que les clics sont écoutés
   }
   function sauterA(i) {
     const N = navEtat(); if (!N || !N._navPile[i]) return;
