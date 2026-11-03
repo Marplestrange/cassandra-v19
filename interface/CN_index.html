@@ -13,7 +13,7 @@
 <!-- RÔLE       : la page unique de l'interface : le corps de la V18 et la liste des scripts. -->
 <!-- MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur. -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=5963d2 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=44c0fd ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -1042,8 +1042,9 @@
   <!-- ══ LE SALON ══ implémenté à l'identique de la maquette du 2026-09-04 -->
   <div id="tab-salon" class="tab-content" style="flex-direction:column;overflow:hidden">
     <div class="sl-head">
-      <div>
-        <h2>Le salon</h2>
+      <div class="pg-tete">
+        <h1>Le salon</h1>
+        <p class="sous">Des fils où les personnes et les agents se parlent.</p>
       </div>
       <span class="sl-pulse" id="sl-pulse"><i></i><span id="sl-pulse-txt">présence…</span></span>
       <div class="sl-sp"></div>
@@ -1157,10 +1158,9 @@
   <div id="tab-crons" class="tab-content" style="flex-direction:column;overflow:hidden">
     <div style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;
                 justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-      <div>
-        <h2 style="font-size:15px;color:var(--txt-strong);margin-bottom:4px;
-                   font-family:'JetBrains Mono',monospace;letter-spacing:.05em">Automatismes</h2>
-        <p style="font-size:11px;color:var(--txt-faint)">Ce qui tourne tout seul sur ce
+      <div class="pg-tete">
+        <h1>Automatismes</h1>
+        <p class="sous">Ce qui tourne tout seul sur ce
           serveur — et est-ce que ça va</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">

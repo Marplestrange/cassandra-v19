@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #ec913c
+// VERSION CN : 0.1.0  #c39bcc
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=ec913c ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=c39bcc ▼▼▼
 /* Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 
    1. Les THÈMES : un module livre un thème complet ([[habillages]] : des variables CSS). Il apparaît dans le sélecteur d'apparence,
@@ -116,12 +116,32 @@
   const nomOnglet = (ecran) => "mod-" + String(ecran).replace(/[^a-z0-9]+/gi, "-");
 
   // ── 3. la scène générique ──────────────────────────────────────────────────
+  // Une phrase sous le titre pour les pages qui n'ont pas de tête à elles (les autres l'ont déjà : h1 + phrase).
+  const SOUS = {
+    "societes:s_identite": "Le nom, la forme et les références officielles de la société.", "societes:s_etabs": "Les lieux où la société travaille.",
+    "societes:s_horaires": "Quand la société est ouverte, et son calendrier.", "societes:s_presence": "Où la société existe en ligne.",
+    "societes:s_equipe": "Les personnes qui répondent de la société.", "societes:s_fonctions": "Les fonctions de la société et les droits qu’elles donnent.",
+    "societes:s_pieces": "Les pièces officielles de la société et leurs échéances.", "societes:s_banque": "Les comptes bancaires et les informations de facturation.",
+    "societes:s_conformite": "Ce que la société doit respecter, et où elle en est.", "societes:s_habillage": "L’apparence de la société : couleurs, logo, modèles de documents.",
+    "societes:s_coffre": "Les secrets de la société, séparés de ceux des autres.", "societes:s_modules": "Les modules ouverts dans cette société.",
+    "societes:s_carnet": "Le carnet de notes de la société.", "societes:s_partages": "Ce que la société partage avec d’autres, et avec qui.",
+    "societes:s_reglages": "Les réglages propres à la société.", "societes:s_profil": "Ton rôle et tes droits dans cette société.",
+    "societes:s_sert": "Où la société est utilisée dans l’application.", "societes:s_multi": "Les sociétés de l’instance et le passage de l’une à l’autre.",
+    "societes:s_histo": "Ce qui a changé dans la fiche de la société.",
+    "flotte:vue_flotte": "Les machines du parc : leur présence, leur disponibilité, ce que Tailscale et SSH en disent.",
+    "coffre:c_tableau": "Le coffre de secrets de Cassandra, tenu par Vaultwarden.", "coffre:c_secrets": "Le coffre de secrets de Cassandra, tenu par Vaultwarden.",
+    "coffre:c_outils": "Le coffre de secrets de Cassandra, tenu par Vaultwarden.", "coffre:c_rapport": "Le coffre de secrets de Cassandra, tenu par Vaultwarden.",
+    "journal:vue_journal": "Les consultations des agents et tous les journaux de la machine, au même endroit.",
+    "salon:vue_salon": "Des fils où les personnes et les agents se parlent.",
+    "menus:vue_mes_applications": "Les modules et applications auxquels ton compte a accès.",
+    "dolibarr:d_capacites": "Ce que le pont Dolibarr sait faire pour Cassandra.", "dolibarr:d_instance": "L’instance Dolibarr à laquelle Cassandra est reliée.",
+  };
   function preparerScene(ecran, titre) {
     const nom = nomOnglet(ecran);
     if (document.getElementById("tab-" + nom)) return;
     const d = document.createElement("div");
     d.id = "tab-" + nom; d.className = "tab-content"; d.setAttribute("data-scene", ecran);
-    d.innerHTML = '<div class="sh-scene"><h2 class="sh-titre">' + esc(titre) + '</h2><div class="sh-corps"><div class="empty-state">Chargement…</div></div></div>';
+    d.innerHTML = '<div class="sh-scene"><h2 class="sh-titre">' + esc(titre) + '</h2>' + (SOUS[ecran] ? '<p class="sh-sous">' + esc(SOUS[ecran]) + "</p>" : "") + '<div class="sh-corps"><div class="empty-state">Chargement…</div></div></div>';
     const hote = document.querySelector(".app-main");
     (hote || document.body).appendChild(d);
     if (ALL_TABS.indexOf(nom) < 0) ALL_TABS.push(nom);

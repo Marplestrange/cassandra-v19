@@ -12,7 +12,7 @@
 /* RÔLE       : disposition.css */
 /* MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) */
 /* ══════════════════════════════════════════════════════════════════════════════ */
-/* ▼▼▼ BORNE CN version=0.1.0 empreinte=d85566 ▼▼▼ */
+/* ▼▼▼ BORNE CN version=0.1.0 empreinte=a901d4 ▼▼▼ */
 /* L'ancienne interface (V18) est dans la page dès le départ : tant que la disposition V19 n'a pas pris la main (body.d19), on la cache, pour qu'elle ne se montre pas quelques instants.
    Filet : si la disposition ne démarre jamais (script en erreur), l'ancienne interface réapparaît au bout de 6 secondes plutôt que de laisser une page vide. */
 body:not(.d19) #app-container{visibility:hidden;animation:d19-filet 0s 6s forwards}
@@ -391,6 +391,8 @@ body.d19 .tab-content h1::after,body.d19 .sh-scene h1::after,body.d19 .mx-head h
 body.d19 .sh-scene>.sh-titre{font:700 26px/1.15 'Inter',system-ui,sans-serif;letter-spacing:-.022em;color:var(--txt-strong);margin:0 0 18px;display:inline-block;padding-bottom:10px;position:relative}
 body.d19 .sh-scene>.sh-titre::after{content:"";position:absolute;left:0;bottom:0;width:44px;height:3px;border-radius:3px;background:linear-gradient(90deg,#2dd4bf,var(--accent));box-shadow:0 0 12px rgba(45,212,191,.55)}
 body.d19 .sh-scene:has(h1)>.sh-titre,body.d19 .sh-scene:has(.pg-tete)>.sh-titre{display:none}
+.sh-scene>.sh-sous{margin:-8px 0 18px;color:var(--txt-soft);font-size:14px;line-height:1.5;max-width:68ch}
+.sh-scene:has(h1)>.sh-sous,.sh-scene:has(.pg-tete)>.sh-sous{display:none}
 /* ---------- la capsule sous la barre : le groupe où l'on est, et l'état en un coup d'œil ---------- */
 .app-body{position:relative}
 #d19-cap{position:absolute;left:14px;top:12px;width:248px;height:54px;z-index:21;display:flex;align-items:center;gap:11px;padding:0 14px 0 10px;border-radius:18px;cursor:pointer;text-align:left;font:inherit;color:var(--txt-strong);
