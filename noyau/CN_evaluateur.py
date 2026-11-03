@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3be99a
+# VERSION CN : 0.1.0  #8e1e69
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : dit si une variante d'un point d'évolution est équivalente à la référence, plus rapide, et si son gain tient hors de ce que le générateur a vu.
 # MÉTHODE    : code déterministe (jamais un modèle) ; évaluation par paliers avec arrêt à la première divergence ; partition réservée ; contrôle de sa propre solidité par des variantes fausses.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3be99a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e1e69 ▼▼▼
 """L'évaluateur (docs/CN_EVOLUTION.md §2, docs/CN_NEXUS.md §4 : un juge ne s'évolue pas).
 
   - DÉTERMINISTE : aucune note donnée par un modèle ; une comparaison de données et des mesures de durée ;
@@ -203,9 +203,29 @@ class Evaluateur:
             res["gain_tient"] = res["gain_visible_pct"] > 0 and res["gain_reserve_pct"] >= 0.75 * res["gain_visible_pct"]
             if len(t_ref["reserve"]) < RESERVE_MIN:
                 res["gain_tient"] = None                          # un jeu réservé trop mince ne prouve rien : « tient » ne se dit pas sur quelques cas
+        res["objectifs"] = {"latence": res["gain_pct"], "memoire": None, "taille": None}
+        if cas_ok and not arret and chrono and ref["runtime"] == "python":
+            res["objectifs"].update(self._objectifs(ref, cand, candidat, cas_ok))
         if not res["verdict"]:
             res["verdict"] = "corpus_trop_etroit" if n < seuil else "equivalente"
         return res
+
+    @staticmethod
+    def _objectifs(ref: dict, cand, candidat: str, cas_ok: list) -> dict:
+        """La mémoire et la taille du candidat contre la référence (positif = mieux). Une mesure qui échoue reste None : elle ne ment pas, et ne bloque rien."""
+        from . import CN_objectifs as O
+        sortie = {"memoire": None, "taille": None}
+        source_ref = ref["fichier"].read_text(encoding="utf-8")
+        try:
+            sortie["taille"] = O.gain_pct(O.taille_ast(source_ref), O.taille_ast(candidat))
+        except (SyntaxError, ValueError):
+            pass
+        try:
+            m = cand.memoire(source_ref, candidat, ref["fonction"], [c["entree"] for c in cas_ok[:12]], 60.0)
+            sortie["memoire"] = O.gain_pct(sum(x[0] for x in m), sum(x[1] for x in m))
+        except (P.DelaiEC, P.ErreurEC, KeyError, TypeError):
+            pass
+        return sortie
 
     @staticmethod
     def _chronometrer(ref: dict, cand, candidat: str, cas_ok: list, passes: int):

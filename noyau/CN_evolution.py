@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #307ce7
+# VERSION CN : 0.1.0  #dccfa2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : reçoit des variantes d'un moteur de recherche, ne retient que celles que l'évaluateur prouve, les met en service sans risque et vérifie le gain plus tard.
 # MÉTHODE    : le moteur ne propose que du texte ; ici tout est déterministe : évaluation, pièges, écriture de l'EC, ombre, paliers, retour, chaîne d'empreintes, tombes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=307ce7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=dccfa2 ▼▼▼
 """L'évolution (docs/CN_EVOLUTION.md) : le côté NEXUS. Le moteur de recherche (Orfan, ou un autre par le contrat d'adaptateur) ne fait que PROPOSER du texte ;
 tout ce qui décide est ici, en code déterministe :
 
@@ -37,6 +37,17 @@ import threading
 import time
 from pathlib import Path
 
+class _Fixe:
+    """Un « moteur » qui ne cherche rien : il rend les variantes qu'on lui donne (adopter une variante déjà trouvée)."""
+    nom = "adoption"
+
+    def __init__(self, candidats):
+        self.candidats = candidats
+
+    def proposer(self, contexte: dict) -> list:
+        return list(self.candidats)
+
+
 SEUILS = {"gain_min_pct": 5.0,          # un gain en dessous n'en est pas un (le bruit de mesure)
           "pieges_min": 0.85,           # part des variantes fausses que le corpus doit attraper avant qu'on lui fasse confiance
           "ombre_appels": 200,          # appels comparés en ombre, sans un écart, avant le premier palier
@@ -45,7 +56,9 @@ SEUILS = {"gain_min_pct": 5.0,          # un gain en dessous n'en est pas un (le
           "appels_par_palier": 200,     # appels SERVIS PAR L'EC sur un palier avant le suivant (à 10 %, il faut donc dix fois plus de trafic)
           "visite_jours": 30,           # le gain est revérifié après ce délai de service complet, puis à chaque échéance
           "gain_confirme": 0.5,         # à la visite, le gain doit valoir au moins cette part du gain annoncé
-          "propositions_par_jour": 20}  # tentatives de proposition par jour et par instance (le coût d'un modèle ne s'emballe pas)
+          "propositions_par_jour": 20,
+          "objectifs": {"latence": 1.0, "memoire": 0.0, "taille": 0.0},      # les poids du choix entre variantes prouvées (CN_objectifs) : seule la latence pèse par défaut
+          "tolerance_objectif_pct": 25.0}  # une variante qui régresse d'autant sur un objectif pesé n'est pas adoptée  # tentatives de proposition par jour et par instance (le coût d'un modèle ne s'emballe pas)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS pieces(id INTEGER PRIMARY KEY AUTOINCREMENT, gid TEXT NOT NULL, num INTEGER NOT NULL, fichier TEXT NOT NULL, empreinte TEXT NOT NULL, ast TEXT NOT NULL,
@@ -198,7 +211,9 @@ class Evolution:
             self._compter_tentative(gid, moteur)
             return self._proposer(module, point, moteur, budget, ref)
 
-    def _proposer(self, module: str, point: str, moteur, budget: int, ref: dict) -> dict:
+    def _juger(self, module: str, point: str, moteur, budget: int, ref: dict) -> dict:
+        """La recherche ET le jugement des variantes, SANS rien écrire dans le stock (les variantes fausses laissent leur tombe, un fait). Rend
+        {erreur, essais, retenus, meilleur, frontiere, ecartes} : `retenus` = les variantes prouvées équivalentes dont le gain tient ; `meilleur` = celle que les objectifs pesés choisissent."""
         gid = ref["gid"]
         source = ref["fichier"].read_text(encoding="utf-8")
         visibles = self.rejeu.corpus(gid, "visible")
@@ -208,23 +223,25 @@ class Evolution:
         try:
             candidats = list(moteur.proposer(contexte))[:int(budget)]
         except Exception as e:
-            return {"ok": False, "raison": "le moteur a échoué : %s : %s" % (type(e).__name__, e), "essais": [], "piece": None}
+            return {"erreur": "le moteur a échoué : %s : %s" % (type(e).__name__, e), "essais": [], "retenus": [], "meilleur": None, "frontiere": [], "ecartes": []}
         reference_ast = empreinte_ast(source)
         tombes = self.tombes(gid)
-        essais, meilleur = [], None
+        essais, retenus = [], []
         for cand in candidats:
             texte = cand if isinstance(cand, str) else str(cand.get("texte", ""))
             hypothese = "" if isinstance(cand, str) else str(cand.get("hypothese", ""))
+            origine = "" if isinstance(cand, str) else str(cand.get("moteur", ""))
             try:
                 h = empreinte_ast(texte)
             except (SyntaxError, ValueError):
-                essais.append({"ast": None, "verdict": "illisible", "gain_pct": None})
+                essais.append({"ast": None, "verdict": "illisible", "gain_pct": None, "moteur": origine})
                 continue
             if h == reference_ast or h in tombes:
-                essais.append({"ast": h, "verdict": "deja_vue" if h in tombes else "identique", "gain_pct": None})
+                essais.append({"ast": h, "verdict": "deja_vue" if h in tombes else "identique", "gain_pct": None, "moteur": origine})
                 continue
             r = self.evaluateur.evaluer(module, point, texte)
-            essais.append({"ast": h, "verdict": r["verdict"], "gain_pct": r["gain_pct"], "gain_tient": r["gain_tient"], "divergence": r["divergence"]})
+            essais.append({"ast": h, "verdict": r["verdict"], "gain_pct": r["gain_pct"], "gain_tient": r["gain_tient"], "divergence": r["divergence"],
+                           "objectifs": r.get("objectifs"), "moteur": origine})
             if r["verdict"] in ("divergente", "erreur", "impure", "illisible"):
                 with self._con() as c:
                     self._tomber(c, gid, h, "%s : %s" % (r["verdict"], r.get("erreur") or r.get("divergence")))
@@ -239,11 +256,45 @@ class Evolution:
                 with self._con() as c:
                     self._tomber(c, gid, h, "gain insuffisant, dans le bruit de mesure (%s %%) ou qui ne tient pas hors du vu : %s %%" % (round(bruit, 1), r["gain_pct"]))
                 continue
-            if meilleur is None or r["gain_pct"] > meilleur["eval"]["gain_pct"]:
-                meilleur = {"texte": texte, "ast": h, "eval": r, "hypothese": hypothese}
+            retenus.append({"texte": texte, "ast": h, "eval": r, "hypothese": hypothese, "moteur": origine, "objectifs": r.get("objectifs") or {"latence": r["gain_pct"]}})
+        choix = self._choisir(retenus)
+        meilleur = retenus[choix["meilleur"]] if choix["meilleur"] is not None else None
+        return {"erreur": "", "essais": essais, "retenus": retenus, "meilleur": meilleur, "frontiere": [retenus[i]["ast"] for i in choix["frontiere"]], "ecartes": choix["ecartes"]}
+
+    def _choisir(self, retenus: list) -> dict:
+        """Parmi les variantes prouvées : la frontière de Pareto des objectifs pesés, puis le meilleur score pesé (voir CN_objectifs). Seule la latence pèse par défaut."""
+        try:
+            from . import CN_objectifs as O
+        except ImportError:                                              # chargé par son chemin
+            import CN_objectifs as O                                      # type: ignore
+        return O.choisir(retenus, self.seuils.get("objectifs"), float(self.seuils.get("tolerance_objectif_pct", O.TOLERANCE_DEFAUT)))
+
+    def essayer(self, module: str, point: str, moteur, budget: int = 5) -> dict:
+        """Une recherche jugée, SANS mise en place (la course des moteurs) : rend ce que les variantes ont donné, n'écrit aucune pièce. Compte comme une tentative (elle coûte)."""
+        ref = self.points.reference(module, point)
+        gid = ref["gid"]
+        with self._verrou_point(gid):
+            if self.tentatives_depuis() >= int(self.seuils["propositions_par_jour"]):
+                return {"erreur": "plafond de %d propositions par jour atteint" % int(self.seuils["propositions_par_jour"]), "essais": [], "retenus": [], "meilleur": None, "frontiere": [], "ecartes": []}
+            self._compter_tentative(gid, moteur)
+            return self._juger(module, point, moteur, budget, ref)
+
+    def adopter(self, module: str, point: str, texte: str, hypothese: str = "", moteur: str = "") -> dict:
+        """Met en place une variante déjà trouvée (celle qu'une course a gardée) : elle est REJUGÉE d'abord (le corpus a pu bouger), puis écrite en ombre comme toute pièce."""
+        ref = self.points.reference(module, point)
+        with self._verrou_point(ref["gid"]):
+            return self._proposer(module, point, _Fixe([{"texte": texte, "hypothese": hypothese, "moteur": moteur}]), 1, ref)
+
+    def _proposer(self, module: str, point: str, moteur, budget: int, ref: dict) -> dict:
+        gid = ref["gid"]
+        j = self._juger(module, point, moteur, budget, ref)
+        if j["erreur"]:
+            return {"ok": False, "raison": j["erreur"], "essais": [], "piece": None}
+        essais, meilleur = j["essais"], j["meilleur"]
         if meilleur is None:
             etroit = any(e["verdict"] == "corpus_trop_etroit" for e in essais)
-            return {"ok": False, "raison": "corpus trop étroit : aucune promotion sur un jeu mince" if etroit else "aucune variante prouvée et plus rapide", "essais": essais, "piece": None}
+            return {"ok": False, "raison": "corpus trop étroit : aucune promotion sur un jeu mince" if etroit else "aucune variante prouvée et plus rapide", "essais": essais, "piece": None,
+                    "ecartes": j["ecartes"]}
         # l'évaluateur est évalué avant qu'on lui fasse confiance
         cle = (gid, self.rejeu.stats(gid)["distincts"])
         if cle not in self._pieges:
@@ -254,7 +305,7 @@ class Evolution:
                     "essais": essais, "piece": None, "pieges": p}
         meilleur["eval"] = dict(meilleur["eval"], pieges={"score": p["score"], "mutants": p["mutants"]})
         piece = self._ecrire(module, point, ref, meilleur)
-        return {"ok": True, "raison": "", "essais": essais, "piece": piece, "pieges": {"score": p["score"], "mutants": p["mutants"]}}
+        return {"ok": True, "raison": "", "essais": essais, "piece": piece, "pieges": {"score": p["score"], "mutants": p["mutants"]}, "frontiere": j["frontiere"]}
 
     def _ecrire(self, module: str, point: str, ref: dict, meilleur: dict) -> dict:
         """Écrit la pièce dans cet ORDRE, pour qu'il n'existe jamais un instant où une EC non prouvée sert : le fichier, la ligne en base, le sceau, la fin d'une éventuelle suspension,
@@ -291,7 +342,7 @@ class Evolution:
                 c.execute("INSERT INTO pieces(gid,num,fichier,empreinte,ast,etat,gain_annonce,evaluation,cree,etape,appels_etape) VALUES(?,?,?,?,?,'ombre',?,?,?,?,?)",
                           (gid, num, nom, h, meilleur["ast"], meilleur["eval"]["gain_pct"], json.dumps({k: v for k, v in meilleur["eval"].items() if k != "fautes"}, default=str), now, now,
                            etat.get("ec_appels", 0)))
-                self._noter(c, gid, "proposee", {"ec": "EC%d" % num, "ast": meilleur["ast"], "gain_pct": meilleur["eval"]["gain_pct"], "empreinte": h})
+                self._noter(c, gid, "proposee", {"ec": "EC%d" % num, "ast": meilleur["ast"], "gain_pct": meilleur["eval"]["gain_pct"], "empreinte": h, "moteur": meilleur.get("moteur", "")})
             try:
                 if hasattr(self.points, "sceller"):
                     self.points.sceller(module, point, nom)
@@ -312,7 +363,7 @@ class Evolution:
                 raise
             with self._con() as c:
                 self._noter(c, gid, "ombre", {"ec": "EC%d" % num})
-        return {"gid": gid, "ec": "EC%d" % num, "num": num, "fichier": nom, "gain_annonce_pct": meilleur["eval"]["gain_pct"], "etat": "ombre"}
+        return {"gid": gid, "ec": "EC%d" % num, "num": num, "fichier": nom, "gain_annonce_pct": meilleur["eval"]["gain_pct"], "etat": "ombre", "moteur": meilleur.get("moteur", ""), "objectifs": meilleur.get("objectifs")}
 
     # ── la mise en service par paliers ───────────────────────────────────
     def pieces(self, gid: str | None = None, etats=None) -> list:

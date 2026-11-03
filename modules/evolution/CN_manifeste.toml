@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #0a3055
+# VERSION CN : 0.5.0  #cd53ce
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=0a3055 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=cd53ce ▼▼▼
 [module]
 id = "evolution"
 nom = "Évolution"
@@ -58,6 +58,144 @@ id = "moteurs"
 libelle = "Les moteurs de recherche connus : leur état, ce que chacun a coûté (essais, appels de modèle, jetons, refus du relais) et le nombre de pièces qu'il a fournies"
 risque = "lecture"
 droit = "voir"
+
+[[capacites]]
+id = "cascade_regler"
+libelle = "Régler la cascade des moteurs : l'ordre des étages, lesquels sont actifs, et les règles (s'arrêter à la première variante prouvée, ne dépenser un modèle que sur un point chaud, courir deux étages)"
+risque = "faible"
+droit = "agir"
+perimetre = ["le registre des moteurs : l'ordre et les options de la cascade"]
+preuve = "le registre dit le nouvel ordre et les nouvelles options"
+retour = "l'ordre et les options d'avant sont remis"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "affecter"
+libelle = "Forcer un étage sur un point d'évolution (ou rendre le point à la cascade avec « auto »)"
+risque = "faible"
+droit = "agir"
+perimetre = ["le registre des moteurs : une ligne par point"]
+preuve = "le registre dit l'étage du point"
+retour = "l'affectation d'avant est remise"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "budget_regler"
+libelle = "Régler le budget de la recherche : jetons par mois, seuil d'alerte, gratuits d'abord, couper au plafond"
+risque = "faible"
+droit = "agir"
+perimetre = ["le registre des moteurs : le budget"]
+preuve = "le registre dit le nouveau budget"
+retour = "le budget d'avant est remis"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "moteur_plafonner"
+libelle = "Plafonner un moteur : jetons par jour et essais par jour ; au plafond, l'étage est sauté et la raison dite"
+risque = "faible"
+droit = "agir"
+perimetre = ["le registre des moteurs : le plafond d'un moteur"]
+preuve = "le registre dit le nouveau plafond"
+retour = "le plafond d'avant est remis"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "objectifs_regler"
+libelle = "Régler les poids des objectifs (latence, mémoire, taille) et la tolérance de régression qui décident quelle variante prouvée est adoptée"
+risque = "faible"
+droit = "agir"
+perimetre = ["le registre des moteurs : les poids"]
+preuve = "le registre dit les nouveaux poids"
+retour = "les poids d'avant sont remis"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "course"
+libelle = "Lancer une course : plusieurs étages sur le même point, le même corpus, le même budget par moteur ; un tableau et un classement ; rien n'est mis en service"
+risque = "moyen"
+droit = "agir"
+perimetre = ["le registre des moteurs : l'historique des courses ; les variantes fausses laissent leur tombe ; aucune pièce n'est écrite"]
+preuve = "la course est dans l'historique avec son tableau"
+retour = "aucun : une course n'écrit aucune pièce"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "course_adopter"
+libelle = "Adopter la variante qu'une course a gardée pour un étage : elle est rejugée, puis mise en ombre comme toute pièce"
+risque = "moyen"
+droit = "agir"
+perimetre = ["le stock d'EC du point : une variante prouvée y est écrite et mise en OMBRE ; rien n'est servi à personne"]
+preuve = "la pièce est dans le stock, en ombre, et la chaîne d'empreintes est intacte (ou rien n'a été écrit)"
+retour = "retirer la pièce : un aiguillage vers la référence ; l'EC reste dans le stock"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "course_garder"
+libelle = "Garder une course pour comparaison dans l'historique"
+risque = "faible"
+droit = "agir"
+perimetre = ["le registre des moteurs : un drapeau sur la course"]
+preuve = "la course porte le drapeau « gardée »"
+retour = "aucun : un drapeau d'historique"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "juger_prompt"
+libelle = "Juger un prompt proposé : variables intactes, clauses d'interdiction conservées, longueur, schéma de réponse et cas piégés de sécurité (un canari planté dans la donnée)"
+risque = "faible"
+droit = "agir"
+perimetre = ["aucune écriture : des appels de modèle pour jouer les cas piégés"]
+preuve = "un verdict (accepté, refusé, indéterminé) et ses contrôles"
+retour = "aucun : un jugement n'écrit rien"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "juger_politique"
+libelle = "Juger une politique proposée : mêmes clés, valeurs dans leur intervalle, planchers du noyau tenus, rejeu des décisions passées"
+risque = "faible"
+droit = "agir"
+perimetre = ["aucune écriture"]
+preuve = "un verdict (accepté, refusé) et ses contrôles"
+retour = "aucun : un jugement n'écrit rien"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "cage"
+libelle = "L'état de la cage : isolation, bac du système, plafonds, et ce qui est garanti en ce moment"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "bac_eprouver"
+libelle = "Éprouver le bac du système maintenant : il fait tourner le vrai travailleur dedans"
+risque = "faible"
+droit = "agir"
+perimetre = ["un processus d'épreuve, aussitôt arrêté"]
+preuve = "le bac éprouvé est nommé (ou son absence dite)"
+retour = "aucun : une épreuve n'écrit rien"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "moteur_desinstaller"
+libelle = "Désinstaller un moteur externe : son environnement est supprimé, il repasse « prévu » ; ses pièces restent"
+risque = "moyen"
+droit = "agir"
+perimetre = ["le dossier du moteur dans les moteurs de l'instance"]
+preuve = "le dossier du moteur n'existe plus"
+retour = "réinstaller depuis le catalogue (evolution.moteur_installer)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
 
 [[capacites]]
 id = "moteur_installer"
@@ -150,8 +288,8 @@ duree_max_s = 120
 id = "moteur_defaut"
 libelle = "Le moteur de recherche par défaut"
 type = "choix"
-choix = ["deterministe", "modele", "les_deux"]
-defaut = "deterministe"
+choix = ["cascade", "deterministe", "modele", "les_deux"]
+defaut = "cascade"
 aide = "Déterministe : les optimisations connues, zéro jeton. Modèle : un modèle de langage guidé par le profil de l'appel (coûte des jetons). Les deux : les gratuites d'abord."
 
 [[reglages]]
@@ -179,11 +317,18 @@ maximum = 500
 aide = "Combien de recherches l'instance lance par jour, tous moteurs confondus : le coût d'une recherche ne s'emballe pas. Au-delà, la recherche reprend le lendemain."
 
 [[reglages]]
+id = "modele_role_strategie"
+libelle = "Le rôle de modèle fort (stratège)"
+type = "texte"
+defaut = ""
+aide = "Un rôle du registre de modèles pour les étages qui demandent un modèle plus fort (Frugal, dernier recours). Vide : le même rôle que celui des variantes."
+
+[[reglages]]
 id = "moteurs_isoles"
 libelle = "Le moteur de recherche dans son propre processus"
 type = "choix"
 choix = ["non", "oui"]
-defaut = "non"
+defaut = "oui"
 aide = "Oui : le moteur tourne dans un processus à part, sans clé, sans fichier écrit, mémoire plafonnée, tué au délai ; ses demandes de modèle passent par un relais qui compte les appels et les jetons et refuse au plafond. Non : il tourne dans le serveur, comme avant."
 
 [[reglages]]

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #9b1f07
+# VERSION CN : 0.1.0  #d8289a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le travailleur d'une EC : un processus à part, sans rien du serveur, qui charge UNE EC et répond à des lignes JSON.
 # MÉTHODE    : un processus lancé en mode isolé (-I), environnement vidé, mémoire plafonnée (POSIX), stdout détourné ; il relit la cage de CN_points (pureté, builtins restreints) et répond à des lignes JSON ; le serveur le tue au délai.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=9b1f07 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d8289a ▼▼▼
 """Le travailleur d'une EC : un processus à part, sans rien du serveur, qui charge UNE EC et répond à des lignes JSON.
 
 Lancé par noyau/CN_points.py avec `python -I CN_ec_worker.py <CN_points.py> <mémoire en octets>`. Il ne partage avec le serveur ni mémoire, ni clés, ni descripteurs :
@@ -22,6 +22,7 @@ Protocole (une ligne JSON par message, ASCII) :
   {"op":"charger","texte":…,"fonction":…}                 -> {"ok":true} | {"ok":false,"erreur":…}
   {"op":"appeler","entree":…}                              -> {"ok":true,"sortie":…} | {"ok":false,"erreur":…}
   {"op":"chrono","ref":…,"cand":…,"fonction":…,"entrees":[…],"passes":n} -> {"ok":true,"t":[[ref,cand,ref2] par entrée]}   (le chronométrage à froid, DANS ce processus)
+  {"op":"memoire","ref":…,"cand":…,"fonction":…,"entrees":[…]}           -> {"ok":true,"m":[[ref,cand] par entrée]}   (le pic d'allocation, en octets)
 """
 import importlib.util
 import io
@@ -88,6 +89,25 @@ def _chrono(P, msg):
     return [[meilleur[(i, "ref")], meilleur[(i, "cand")], meilleur[(i, "ref2")]] for i in range(len(entrees))]
 
 
+def _memoire(P, msg):
+    """Le pic d'allocation (octets) de la référence et du candidat sur quelques entrées : tracemalloc, dans CE processus, un appel à la fois."""
+    import tracemalloc
+    lignes = []
+    for entree in msg["entrees"][:12]:
+        ligne = []
+        for texte in (msg["ref"], msg["cand"]):
+            f = _charger(P, texte, msg["fonction"])
+            e = P._copie(entree)
+            tracemalloc.start()
+            try:
+                f(e)
+                ligne.append(tracemalloc.get_traced_memory()[1])
+            finally:
+                tracemalloc.stop()
+        lignes.append(ligne)
+    return lignes
+
+
 def main():
     sys.dont_write_bytecode = True                                # aucun fichier n'est écrit (la limite de taille de fichier est zéro)
     chemin_points, memoire = sys.argv[1], int(sys.argv[2])
@@ -119,6 +139,8 @@ def main():
                 repondre({"ok": True, "sortie": P._copie(f(P._copie(msg["entree"])))})
             elif op == "chrono":
                 repondre({"ok": True, "t": _chrono(P, msg)})
+            elif op == "memoire":
+                repondre({"ok": True, "m": _memoire(P, msg)})
             else:
                 repondre({"ok": False, "erreur": "opération inconnue"})
         except BaseException as e:                                # une faute de l'EC (jusqu'à un dépassement de mémoire) se dit, elle ne tue pas le travailleur

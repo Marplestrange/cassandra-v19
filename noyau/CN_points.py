@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #8577e0
+# VERSION CN : 0.1.0  #4d97c3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=8577e0 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4d97c3 ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -410,13 +410,15 @@ def bac_os(mode: str = "auto") -> tuple:
 class _Travailleur:
     """Un processus Python à part qui a chargé UNE EC. Un seul échange à la fois ; au délai, le processus est tué (jamais attendu)."""
 
-    def __init__(self, memoire_mo: int, bac: str = "auto", script: str = "", arguments: tuple = ()):
+    def __init__(self, memoire_mo: int, bac: str = "auto", script: str = "", arguments: tuple = (), executable: str = "", lecture: tuple = ()):
         racine = Path(__file__).resolve().parent
-        prefixe, self.bac = bac_os(bac)                                   # lève BacIndisponible AVANT de créer quoi que ce soit si le bac exigé manque
+        prefixe, self.bac = bac_os(bac)
+        if lecture and prefixe and os.path.basename(prefixe[0]) == "bwrap":          # un moteur externe vit dans son environnement : ce dossier-là, et lui seul, devient visible (lecture seule)
+            prefixe = list(prefixe) + [x for p in lecture if os.path.exists(p) for x in ("--ro-bind", str(p), str(p))]                                   # lève BacIndisponible AVANT de créer quoi que ce soit si le bac exigé manque
         self._dossier = tempfile.mkdtemp(prefix="cn_ec_")
         env = {k: v for k, v in os.environ.items() if k in ("SYSTEMROOT", "PATH", "TEMP", "TMP", "LANG", "LC_ALL")}      # rien d'autre du serveur : pas de clé, pas de jeton
         lancement = [script, *arguments] if script else [str(racine / "CN_ec_worker.py"), str(racine / "CN_points.py")]
-        self.proc = subprocess.Popen([*prefixe, sys.executable, "-I", *lancement, str(int(memoire_mo) * 1024 * 1024)],
+        self.proc = subprocess.Popen([*prefixe, executable or sys.executable, "-I", *lancement, str(int(memoire_mo) * 1024 * 1024)],
                                      stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, cwd=self._dossier, env=env, bufsize=0,
                                      start_new_session=(os.name == "posix"))       # son propre groupe : on tue aussi ce que l'enveloppe a lancé
         self._q: queue.Queue = queue.Queue()
@@ -605,6 +607,13 @@ class CandidatIsole:
         if not r.get("ok"):
             raise ErreurEC(r.get("erreur") or "chronométrage refusé")
         return r["t"]
+
+    def memoire(self, ref: str, cand: str, fonction: str, entrees: list, delai_total_s: float) -> list:
+        """Le pic d'allocation (octets) de la référence et du candidat sur chaque entrée, mesuré dans le processus du candidat."""
+        r = self._t.echange({"op": "memoire", "ref": ref, "cand": cand, "fonction": fonction, "entrees": entrees}, delai_total_s)
+        if not r.get("ok"):
+            raise ErreurEC(r.get("erreur") or "mesure de mémoire refusée")
+        return r["m"]
 
     def fermer(self):
         self._t.tuer()

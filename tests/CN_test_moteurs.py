@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #d7aa10
+# VERSION CN : 0.1.0  #8e7919
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du lot 1 de la maquette d'Évolution : le moteur dans son processus, le relais de modèles plafonné, le registre et l'attribution des pièces.
 # MÉTHODE    : un vrai processus de moteur (aucune doublure du protocole) ; le modèle est une fonction de banc ; le module Évolution est branché dans un vrai noyau comme au banc du module.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=d7aa10 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8e7919 ▼▼▼
 """Bancs des moteurs de recherche : le protocole de processus, le relais, le registre."""
 import json
 import sys
@@ -142,8 +142,8 @@ class DansLeModule(TM.Banc):
     def test_les_moteurs_se_lisent_et_orfan_y_est_declare(self):
         r = self.ex("moteurs")
         self.assertEqual(r["statut"], "faite", r)
-        self.assertEqual([m["id"] for m in r["resultat"]["moteurs"]], ["orfan"])
-        self.assertFalse(r["resultat"]["isoles"])
+        self.assertEqual([m["id"] for m in r["resultat"]["moteurs"]], ["evolutif", "frugal", "orfan"])
+        self.assertTrue(r["resultat"]["isoles"])                                                        # Orfan dans sa cage par défaut
 
     def test_une_proposition_est_comptee_et_sa_piece_attribuee(self):
         r = self.ex("proposer", {"point": "labo.somme_min", "moteur": "deterministe"})
@@ -151,22 +151,22 @@ class DansLeModule(TM.Banc):
         piece = r["resultat"]["piece"]
         self.assertEqual(piece["moteur"], "orfan")
         self.assertEqual(self.registre().moteur_de("labo.somme_min", piece["num"]), "orfan")
-        m = self.ex("moteurs")["resultat"]["moteurs"][0]
+        m = {x["id"]: x for x in self.ex("moteurs")["resultat"]["moteurs"]}["orfan"]
         self.assertEqual((m["pieces"], m["essais"] > 0), (1, True))
 
     def test_un_compte_ordinaire_ne_lit_pas_les_moteurs(self):
         self.assertEqual(self.ex("moteurs", compte=TM.SIMPLE)["statut"], "refuse")
 
     def test_le_moteur_isole_propose_par_le_relais_et_l_evaluateur_juge_toujours(self):
-        self.n.reglages.poser("evolution.moteurs_isoles", "oui", par="essai")
         r = self.ex("proposer", {"point": "labo.somme_min", "moteur": "modele"})
         self.assertEqual(r["statut"], "faite", r)
         self.assertFalse(r["resultat"]["ok"])                                   # la réponse du modèle de banc est fausse : jugée divergente, rien n'est écrit
         self.assertEqual(self.ex("etat")["resultat"]["pieces"], [])
         m = self.ex("moteurs")["resultat"]
         self.assertTrue(m["isoles"])
-        self.assertGreaterEqual(m["moteurs"][0]["appels_modele"], 1)
-        self.assertGreater(m["moteurs"][0]["jetons"], 0)
+        orfan = {x["id"]: x for x in m["moteurs"]}["orfan"]
+        self.assertGreaterEqual(orfan["appels_modele"], 1)
+        self.assertGreater(orfan["jetons"], 0)
 
     def test_le_moteur_isole_deterministe_ecrit_la_meme_piece_qu_en_ligne(self):
         self.n.reglages.poser("evolution.moteurs_isoles", "oui", par="essai")

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #5bab26
+# VERSION CN : 0.1.0  #076b39
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : propose des variantes d'une fonction pure : d'abord des optimisations déterministes gratuites, puis un modèle de langage guidé par le profil de l'appel.
 # MÉTHODE    : il ne connaît pas le noyau : il reçoit un contexte (source, entrées, contrat, tombes) et rend du texte ; il profile par comptage des lignes exécutées.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=5bab26 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=076b39 ▼▼▼
 """Orfan v1 (docs/CN_EVOLUTION.md, « Orfan est un projet à part entière » : v1 = ce que savait faire le moteur V18, amélioré).
 
 Contrat d'adaptateur, le seul lien avec Cassandra :   moteur.proposer(contexte) -> liste de textes (ou de {"texte", "hypothese"})
@@ -34,6 +34,7 @@ import copy
 import json
 import re
 import sys
+import time
 
 
 # ── le profil : où va le travail ? ───────────────────────────────────────────
@@ -66,7 +67,7 @@ def profil(source: str, fonction: str, entrees: list, maximum: int = 20, top: in
         sys.settrace(ancien)
     total = sum(compte.values())
     lignes = source.splitlines()
-    return [{"ligne": n, "part_pct": round(100 * c / total, 1), "texte": lignes[n - 1].strip()} for n, c in compte.most_common(top)] if total else []
+    return [{"ligne": n, "part_pct": round(100 * c / total, 1), "fois": c, "texte": lignes[n - 1].strip()} for n, c in compte.most_common(top)] if total else []
 
 
 # ── les optimisations déterministes : zéro jeton ─────────────────────────────
@@ -247,6 +248,62 @@ class MoteurComposite:
                     vus.add(h)
                     sortie.append(c)
         return sortie
+
+
+# ── la mesure locale : réservée aux moteurs qui tournent DANS LA CAGE ────────
+def charger_local(texte: str, fonction: str):
+    """Charge un candidat dans le processus courant. À N'APPELER QUE DANS le processus d'un moteur (CN_moteur_hote : sans clé, sans réseau, sans fichier, mémoire plafonnée,
+    tué au délai) : le texte vient d'un modèle que personne n'a relu. Le serveur, lui, ne l'exécute jamais (le juge du noyau le fait dans un travailleur)."""
+    ns: dict = {}
+    exec(compile(texte, "<orfan-candidat>", "exec"), ns)
+    return ns[fonction]
+
+
+def _canon(valeur) -> str:
+    return json.dumps(valeur, ensure_ascii=False, separators=(",", ":"))
+
+
+def comparer_local(source: str, texte: str, fonction: str, entrees: list, passes: int = 2, maximum: int = 24):
+    """(équivalent, rapport) sur les entrées VISIBLES : le candidat répond-il comme la référence (même texte JSON), et combien de fois plus vite (référence / candidat, passes à froid) ?
+    Un pré-filtre du moteur pour ne pas rendre au juge ce qui est faux ; le juge du noyau décide, ensuite, sur tout le corpus. Un candidat qui lève est faux."""
+    sujet = list(entrees)[:maximum]
+    if not sujet:
+        return False, 0.0
+    try:
+        ref, cand = charger_local(source, fonction), charger_local(texte, fonction)
+        for e in sujet:
+            if _canon(ref(copy.deepcopy(e))) != _canon(cand(copy.deepcopy(e))):
+                return False, 0.0
+    except Exception:
+        return False, 0.0
+
+    def mesure(f):
+        meilleur = None
+        for _ in range(max(1, passes)):
+            t = 0
+            for e in sujet:
+                x = copy.deepcopy(e)
+                d0 = time.perf_counter_ns()
+                f(x)
+                t += time.perf_counter_ns() - d0
+            meilleur = t if meilleur is None else min(meilleur, t)
+        return meilleur
+
+    try:
+        tr, tc = mesure(ref), mesure(cand)
+    except Exception:
+        return False, 0.0
+    return True, (tr / tc) if tc else 0.0
+
+
+def point_chaud(source: str, fonction: str, entrees: list, seuil_pct: float = 40.0, fois_min: int = 50):
+    """La ligne la plus exécutée si elle porte au moins `seuil_pct` % du travail ET a tourné au moins `fois_min` fois, sinon None : un point chaud justifie de dépenser un modèle ;
+    un profil étalé, ou une fonction d'une ligne qui ne tourne presque pas, n'en est pas un (sa seule ligne porterait « 100 % » de presque rien)."""
+    try:
+        p = profil(source, fonction, entrees)
+    except Exception:
+        return None
+    return p[0] if p and p[0]["part_pct"] >= seuil_pct and p[0].get("fois", 0) >= fois_min else None
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
