@@ -6,22 +6,22 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #b6473e
+// VERSION CN : 0.1.0  #7e70f7
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Projets : /api/pj/* (fiche, portefeuille, équipe, lignes) et /api/itare/projects (V18) -> capacités projets.* du noyau.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=b6473e ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=7e70f7 ▼▼▼
 /* Projets : /api/pj/* (fiche, portefeuille, équipe, lignes) et /api/itare/projects (V18) -> capacités projets.* du noyau.
    Branché : liste, archives, modèles, contexte, enregistrer, créer, supprimer, corbeille, équipe, invitations, lignes de la fiche, plan de référence.
-   Pas encore porté (réponse 501) : l'atelier et le coffre du projet (fichiers par SSH), le navigateur, le fil, le cadrage, le courrier rangé au projet, la présence. */
+   L'atelier, le coffre, le fil, le cadrage, le courrier rangé et le navigateur sont dans projets_pj.js ; le dossier du projet (dossier_vault) est branché ici, à la création et à l'enregistrement. */
 (function () {
   const P = (c, cap, o) => CASS.route("POST", c, cap, o);
   const ok = (x) => Object.assign({ ok: true }, x);
   const z = (n) => String(n).padStart(2, "0");
   const ts18 = (t) => { if (typeof t !== "number") return t || ""; const d = new Date(t * 1000); return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()) + " " + z(d.getHours()) + ":" + z(d.getMinutes()); };
-  const PJ = { nom: "name", statut: "status", domaine: "domain", serveur: "server", archive: "archived" };
+  const PJ = { nom: "name", statut: "status", domaine: "domain", serveur: "server", archive: "archived", dossier: "dossier_vault" };
   const TK = { texte: "text", statut: "status", echeance: "due_at", projet_id: "project_id", fait_le: "done_at", cree: "created_at", alarme: "alarm", priorite: "priority" };
   const EV = { titre: "summary", debut: "start_at", fin: "end_at", journee: "all_day", lieu: "location", alarme: "alarm", projet_id: "project_id" };
   const VERS19 = CASS.inverse(PJ);
@@ -44,7 +44,7 @@
   P("/api/pj/modeles", null, {
     faire: async (req, agir) => {
       const m = await agir("projets.modeles", {});
-      return ok({ modeles: m.modeles || [], questions: [], etats_phase: ["À venir", "En cours", "Terminée", "Suspendue"], statuts: ["actif", "en pause", "terminé"], priorites: ["Basse", "Normale", "Haute", "Critique"] });
+      return ok({ modeles: m.modeles || [], questions: m.questions || [], etats_phase: ["À venir", "En cours", "Terminée", "Suspendue"], statuts: ["actif", "en pause", "terminé"], priorites: ["Basse", "Normale", "Haute", "Critique"] });
     },
   });
   P("/api/pj/contexte", "projets.contexte", { args: (r) => ({ id: id(r.body) }), sortie: contexte18 });
@@ -57,6 +57,10 @@
     faire: async (req, agir) => {
       const b = req.body, pid = id(b), a = champs19(b);
       if (!pid) { const r = await agir("projets.creer", a); return ok({ id: r.id, cree: true }); }
+      if (typeof b.dossier_vault === "string") {
+        const v = await agir("projets.voir", { id: pid });
+        if (b.dossier_vault.trim() !== (v.projet.dossier || "")) await agir("projets.dossier_lier", { id: pid, dossier: b.dossier_vault.trim() });
+      }
       if (Object.keys(a).length) await agir("projets.modifier", Object.assign({ id: pid }, a));
       if (b.append_note) await agir("projets.noter", { id: pid, texte: String(b.append_note) });
       if (b.archive != null || b.archived != null) await agir("projets.archiver", { id: pid, archive: !!(b.archive != null ? b.archive : b.archived) });
@@ -69,7 +73,10 @@
       a.nom = a.nom || b.name || "";
       if (!a.modele) a.modele = "vide";
       const r = await agir("projets.creer", a);
-      return ok({ id: r.id, cree: true });
+      let dossier;
+      if (b.dossier === "local") dossier = await agir("projets.dossier_local", { id: r.id });
+      else if (b.dossier === "existant" && b.dossier_vault) dossier = await agir("projets.dossier_lier", { id: r.id, dossier: String(b.dossier_vault).trim() });
+      return ok({ id: r.id, cree: true, dossier });
     },
   });
   P("/api/pj/supprimer", "projets.supprimer", { args: (r) => ({ id: id(r.body) }), sortie: ok });

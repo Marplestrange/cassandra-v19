@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : projets
 # ZONE       : CN
-# VERSION CN : 0.1.1  #356458
+# VERSION CN : 0.2.0  #4d64d6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les projets d'un compte : fiche (objectif, périmètre, critères de réussite), phases, jalons, décisions, journal daté, plan de référence qui rend visible le glissement, équipe avec rôles (lecteur, auteur, co-propriétaire) et invitations, archive, corbeille. Un projet appartient à son propriétaire ; l'administrateur n'y a pas accès (administrer n'est pas voir). Les tâches, elles, restent à la personne (module des tâches) : un projet supprimé ne les emporte pas.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=356458 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=4d64d6 ▼▼▼
 [module]
 id = "projets"
 nom = "Projets"
-version = "0.1.1"
+version = "0.2.0"
 noyau_min = "0.1.0"
 description = "Les projets d'un compte : fiche (objectif, périmètre, critères de réussite), phases, jalons, décisions, journal daté, plan de référence qui rend visible le glissement, équipe avec rôles (lecteur, auteur, co-propriétaire) et invitations, archive, corbeille. Un projet appartient à son propriétaire ; l'administrateur n'y a pas accès (administrer n'est pas voir). Les tâches, elles, restent à la personne (module des tâches) : un projet supprimé ne les emporte pas."
 confiance = "interne"
@@ -41,7 +41,7 @@ type = "projet"
 libelle = "Un projet"
 
 [evenements]
-emet = ["projet.cree", "projet.modifie", "projet.supprime", "projet.restaure", "projet.invitation", "projet.reponse"]
+emet = ["projet.cree", "projet.modifie", "projet.supprime", "projet.restaure", "projet.invitation", "projet.reponse", "projet.mention", "projet.decision", "projet.arelire", "projet.itare"]
 
 [[detecteurs]]
 id = "jalon_depasse"
@@ -293,9 +293,340 @@ libelle = "Mes projets avec la santé et l'avancement de chacun, pour trier par 
 risque = "lecture"
 droit = "utiliser"
 
+# ------------------------------------------------------------------ l'atelier du projet (V19 : /api/pj/*)
+
+[[capacites]]
+id = "garde"
+libelle = "La porte des gestes de l'Atelier qui passent par plusieurs capacités : refuse en mots clairs un projet qu'on ne voit pas ou un geste que le rôle ne permet pas"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "coffre_lister"
+libelle = "Les fichiers et sous-dossiers d'un dossier du projet"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "coffre_lire"
+libelle = "Lire un fichier du dossier du projet (texte, empreinte pour détecter un conflit)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "coffre_etat"
+libelle = "La date et la taille d'un fichier du dossier, sans le lire"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "coffre_fichier"
+libelle = "Un média du dossier (image, PDF, son, vidéo) en base64 pour l'afficher"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "coffre_index"
+libelle = "Toutes les notes et tous les médias du dossier du projet (pour résoudre un [[lien]] comme Obsidian)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "coffre_versions"
+libelle = "Les versions gardées d'un fichier du dossier"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "coffre_version"
+libelle = "Le texte d'une version gardée d'un fichier"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "dossier_parcourir"
+libelle = "Les dossiers de mes dépôts sur ce serveur, pour choisir celui d'un projet"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "atelier_fiche"
+libelle = "La fiche d'un document du projet : qui le cite, qui l'a écrit, ses versions, les tâches qui le nomment, ses commentaires ouverts"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "atelier_sources"
+libelle = "Ce que l'Atelier réunit : les notes du Carnet rangées dans le projet, les documents de ma GED liés au projet, le courrier de ma boîte"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "courrier"
+libelle = "Les fils de ma boîte qui touchent le projet (personnes du projet, nom dans l'objet, fils rangés à la main), lus dans le cache"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "fil"
+libelle = "Le fil du projet : messages, décisions, journal, activité du dossier, courrier, file « à relire »"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "commentaires"
+libelle = "Les commentaires en marge d'un fichier du projet"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "presence"
+libelle = "Qui est dans l'Atelier du projet et sur quel fichier (en mémoire, une minute de vie)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "cadrage_proposer"
+libelle = "Le diff d'un cadrage : ce qui serait écrit dans la fiche d'après les réponses, et ce qui n'a pas été compris (rien n'est enregistré)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "coffre_ecrire"
+libelle = "Écrire un fichier texte du dossier du projet (l'état trouvé est gardé en version ; un fichier changé ailleurs n'est jamais écrasé)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet où mon rôle permet d'écrire (auteur au moins), non archivé", "un fichier texte (.md, .txt…) dans le dossier du projet"]
+preuve = "relire le fichier : son empreinte est celle du texte écrit"
+retour = "remettre l'état d'avant (version gardée), ou supprimer le fichier que l'acte a créé"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "coffre_deplacer"
+libelle = "Renommer ou déplacer un fichier ou un dossier du projet, et réécrire les [[liens]] qui le visaient"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet où je peux écrire", "les deux chemins dans le dossier du projet"]
+preuve = "la cible existe, la source n'existe plus"
+retour = "remettre au chemin d'avant et refaire les liens dans l'autre sens"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "coffre_dossier"
+libelle = "Créer un sous-dossier dans le dossier du projet"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet où je peux écrire", "un chemin dans le dossier du projet"]
+preuve = "le dossier existe"
+retour = "retirer le dossier créé s'il est vide"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "coffre_retirer"
+libelle = "Retirer un fichier du dossier (gardé en version) ou un sous-dossier (déplacé à la corbeille des dépôts, jamais effacé)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet où je peux écrire", "un chemin dans le dossier du projet, jamais la racine"]
+preuve = "le chemin n'existe plus"
+retour = "remettre le fichier depuis sa version, ou sortir le dossier de la corbeille des dépôts"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "coffre_remettre"
+libelle = "Remettre une version gardée à la place du fichier (l'état actuel devient une version)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet où je peux écrire", "une version gardée de ce fichier"]
+preuve = "l'empreinte du fichier est celle de la version"
+retour = "remettre l'état d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
+[[capacites]]
+id = "dossier_creer"
+libelle = "Créer un dossier dans mes dépôts sur ce serveur"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["mes dépôts, jamais ailleurs", "un nom sans séparateur"]
+preuve = "le dossier existe"
+retour = "retirer le dossier créé s'il est vide"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "dossier_corbeille"
+libelle = "Mettre un dossier de mes dépôts à la corbeille des dépôts (déplacé, jamais effacé)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["mes dépôts", "pas le dossier d'un projet encore rattaché"]
+preuve = "le dossier n'est plus à sa place"
+retour = "le sortir de la corbeille des dépôts"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "dossier_local"
+libelle = "Créer le dépôt d'un projet sur ce serveur (à son nom) et le lui rattacher"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet où je peux modifier la fiche", "un projet qui n'a pas encore de dossier"]
+preuve = "le projet porte ce dossier et il existe"
+retour = "détacher le dossier et le retirer s'il est vide"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "dossier_lier"
+libelle = "Rattacher à un projet un dépôt qui existe, ou le détacher"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet où je peux modifier la fiche", "un dépôt de ce serveur"]
+preuve = "le projet porte ce dossier"
+retour = "remettre le dossier d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "courrier_ranger"
+libelle = "Ranger un fil de ma boîte dans le projet, l'en écarter, ou le rendre au tri automatique"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet que je vois", "ma boîte seulement : rien ne change pour les autres"]
+preuve = "le mode du fil est celui demandé"
+retour = "remettre le mode d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "fil_publier"
+libelle = "Publier dans le fil : un message (un lecteur le peut), une décision à prendre ou une ligne de journal (auteur au moins)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet non archivé où mon rôle le permet"]
+preuve = "la ligne figure au fil"
+retour = "supprimer la ligne publiée (et remettre le journal tel qu'il était)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "fil_avis"
+libelle = "Donner son avis (pour, contre, neutre) sur une décision ouverte du fil"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet où je peux écrire", "une décision ouverte"]
+preuve = "mon avis figure sur la décision"
+retour = "remettre la décision telle qu'elle était"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "fil_trancher"
+libelle = "Trancher une décision ouverte du fil (ce qui est décidé, pourquoi, jusqu'à quand)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet où je peux écrire", "une décision ouverte"]
+preuve = "la décision est tranchée"
+retour = "rouvrir la décision"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "fil_relire"
+libelle = "Valider, ou annuler d'un clic, ce qu'Itare a écrit dans le dossier (la file « à relire »)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet où je peux écrire", "une ligne à relire"]
+preuve = "la ligne est validée ou annulée"
+retour = "remettre le fichier et la ligne comme avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "commenter"
+libelle = "Commenter un passage d'un fichier du projet (un lecteur le peut) ; @nom prévient, @Itare lui confie la question"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet non archivé que je vois"]
+preuve = "le commentaire figure sous le fichier"
+retour = "supprimer le commentaire"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "commentaire_resoudre"
+libelle = "Marquer un commentaire résolu, ou le rouvrir"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet où je peux écrire"]
+preuve = "l'état du commentaire est celui demandé"
+retour = "remettre l'état d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "proposer"
+libelle = "Calculer les suites proposées du projet (au plus trois, tirées de ses faits : jalons dépassés, décisions ouvertes, écritures à relire, tâches en retard)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet où je peux écrire"]
+preuve = "les suites rangées sont celles calculées"
+retour = "remettre les suites d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "nav_aller"
+libelle = "Ouvrir une page publique dans le navigateur partagé du compte (lue par le module web : texte seul, hôtes publics seulement)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["une adresse publique, jamais le réseau privé", "ma session de navigation seulement"]
+preuve = "une page est ouverte"
+retour = "revenir à la page d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "nav_retour"
+libelle = "Revenir à la page d'avant dans le navigateur partagé"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["ma session de navigation seulement"]
+preuve = "la page d'avant est affichée"
+retour = "aucun (une page se rouvre par son adresse)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "nav_fermer"
+libelle = "Fermer le navigateur partagé du compte"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["ma session de navigation seulement"]
+preuve = "aucune page ouverte"
+retour = "aucun (une page se rouvre par son adresse)"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "nav_clipper"
+libelle = "Ranger la page ouverte en note Markdown dans le dossier du projet (une version comme toute écriture)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un projet où je peux écrire", "un dossier du projet (Clips par défaut)"]
+preuve = "la note existe"
+retour = "supprimer la note rangée"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte", "cassandra", "itare"]
+
 [permissions]
 stockage = true
 lectures = true
+stockage_lecture = true
+espace_utilisateur = true
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : projets
 # ZONE       : CN
-# VERSION CN : 0.1.1  #1c82d8
+# VERSION CN : 0.2.0  #bef21c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les projets.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.1 empreinte=1c82d8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=bef21c ▼▼▼
 """Les projets.
 
 Porté de la V18 (`pj_*`, `projet_*`), avec ses leçons :
@@ -34,6 +34,7 @@ import json
 import re
 import time
 from datetime import datetime
+from types import SimpleNamespace
 
 MODELES = {
     "livre": {"nom": "Livre", "ic": "\U0001F4D6", "phases": ["Écriture", "Relecture", "Édition"]},
@@ -179,13 +180,14 @@ def brancher(ctx):
 
     def effacer(pid):
         with db.transaction() as cx:
-            for t in ("phases", "jalons", "decisions", "membres"):
+            for t in ("phases", "jalons", "decisions", "membres", "pj_versions", "pj_activite", "pj_fil", "pj_commentaires", "pj_courriers", "pj_propositions"):
                 cx.execute("DELETE FROM %s WHERE projet_id=?" % t, (pid,))
             cx.execute("DELETE FROM projets WHERE id=?", (pid,))
 
     # ------------------------------------------------------------------ lectures
     def modeles(c):
-        return {"modeles": [dict(v, cle=k) for k, v in MODELES.items()]}
+        from .CN_fil import CADRAGE_Q
+        return {"modeles": [dict(v, cle=k) for k, v in MODELES.items()], "questions": [{"cle": k, "question": q} for k, q in CADRAGE_Q]}
 
     def visibles(compte, archives=False):
         return db.lire("SELECT p.*, (CASE WHEN p.compte=? THEN 'proprietaire' ELSE m.role END) AS mon_role, "
@@ -755,6 +757,19 @@ def brancher(ctx):
     def defaire_retire(c, res):
         a = res["avant"]
         db.ecrire("INSERT OR REPLACE INTO membres(projet_id, compte, role, etat, invite_par, ts) VALUES (?,?,?,?,?,?)", (a["projet_id"], a["compte"], a["role"], a["etat"], a["invite_par"], a["ts"]))
+
+    # ------------------------------------------------------------------ l'atelier : dossier de fichiers, fil, commentaires, courrier rangé, cadrage, navigateur
+    def noms():
+        """{compte: nom affiché} : de quoi dire « Sandrine » plutôt que son adresse."""
+        try:
+            return {x["compte"].lower(): (x.get("display_name") or x["compte"]) for x in (ctx.executer_lecture("comptes.lister") or {}).get("comptes", [])}
+        except Exception:
+            return {}
+
+    aides = SimpleNamespace(db=db, compte_agit=compte_agit, entete=entete, exiger=exiger, role_de=role_de, equipe_de=equipe_de, ajouter_ligne=ajouter_ligne, noms=noms)
+    from . import CN_coffre, CN_fil
+    coffre = CN_coffre.brancher(ctx, aides)
+    CN_fil.brancher(ctx, aides, coffre)
 
     # ------------------------------------------------------------------ inscription
     c = ctx

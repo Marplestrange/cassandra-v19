@@ -12,7 +12,7 @@
 <!-- RÔLE       : Le relevé, par domaine, des routes V18 encore à porter en V19. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=174317 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=70a816 ▼▼▼ -->
 # Routes V18 sans équivalent branché en V19
 
 Relevé du 02-11-2026 : les écrans repris de la V18 (`interface/CN_app.js`) appellent des routes `/api/…` que la couche de compatibilité (`interface/CN_compat.js` + `interface/routes/CN_*.js`) ne branche pas encore ; elles répondent 501 « pas encore porté ».
@@ -20,11 +20,17 @@ Règle de la maison : la V19 est une évolution, pas une régression. Chaque rou
 
 Comment relever la liste : `python` sur `interface/CN_app.js` (toutes les chaînes `/api/…`) moins les chaînes présentes dans `interface/routes/*.js` et `CN_compat.js`.
 
-## Projets (espace de travail) — 44 routes
+## Projets (espace de travail) — 44 routes : toutes branchées (03-11-2026)
 
-Modules V19 proches : projets, ged, courrier, notes. Fonctions : atelier, cadrage, coffre de fichiers, commentaires, fil de discussion, présence, navigateur-clipper, courrier rangé au projet.
+Aucune ne répond plus 501 : elles sont dans `interface/routes/CN_projets_pj.js`, sur les capacités du module `projets` (`CN_coffre.py`, `CN_fil.py`, migration `CN_002_atelier.sql`), de la GED, des notes et du courrier. Bancs : `tests/CN_test_projets_atelier.py`. Détail du module : `modules/projets/CN_LISEZ-MOI.md`.
 
-- `/api/pj` (44) : `/atelier/fiche`, `/atelier/importer`, `/atelier/note`, `/atelier/sources`, `/atelier/verser`, `/cadrage/appliquer`, `/cadrage/proposer`, `/coffre/deplacer`, `/coffre/dossier`, `/coffre/ecrire`, `/coffre/etat`, `/coffre/fichier`, `/coffre/index`, `/coffre/lire`, `/coffre/lister`, `/coffre/remettre`, `/coffre/retirer`, `/coffre/version`, `/coffre/versions`, `/commentaire/resoudre`, `/commentaires`, `/commenter`, `/courrier`, `/courrier/piece`, `/courrier/ranger`, `/dossier/corbeille`, `/dossier/creer`, `/dossier/local`, `/dossier/parcourir`, `/fil`, `/fil/avis`, `/fil/publier`, `/fil/relire`, `/fil/trancher`, `/nav/aller`, `/nav/clic`, `/nav/clipper`, `/nav/defiler`, `/nav/fermer`, `/nav/image`, `/nav/retour`, `/nav/texte`, `/presence`, `/proposer`
+Branchées en entier : atelier (fiche, importer, note, sources, verser), cadrage (proposer, appliquer), dossier de fichiers (lister, lire, écrire, versions, déplacer, retirer, remettre, index, fichier, état), commentaires, fil (publier, relire, trancher, avis), courrier rangé au projet (lister, ranger, pièce), présence, suites proposées, choix du dossier (parcourir, créer, corbeille, local).
+
+Branchées avec une réserve, à reprendre :
+- `/api/pj/dossier/*` et le dossier de fichiers : seuls les **dépôts de ce serveur** sont portés (`local:/nom`, dans l'espace du propriétaire). Les machines distantes de la V18 (`machine:/chemin` par SFTP sur la flotte) ne le sont pas : la flotte ne donne aucun canal de fichiers.
+- `/api/pj/nav/aller`, `retour`, `fermer`, `clipper` : le navigateur partagé **lit** les pages (module web, texte) ; `/api/pj/nav/image`, `clic`, `defiler`, `texte` répondent `{ok:false}` avec la raison : la V18 pilotait un Chromium par tube derrière un relais anti-réseau privé, que la V19 n'a pas.
+- @Itare dans le fil ou un commentaire : l'événement `projet.itare` est émis, mais le module des agents ne l'écoute pas encore (aucune réponse inventée). Les suites proposées (`/proposer`) sont calculées sur les faits du projet, sans modèle ; la relecture quotidienne d'Itare n'est pas reprise.
+- Non repris, hors des 44 routes : le tableau propre à la nature « livre » (chapitres, mots), les droits d'Itare par projet.
 
 ## Hébergement et système — 57 routes
 
