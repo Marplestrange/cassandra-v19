@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #645a77
+# VERSION CN : 0.1.0  #b57319
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Un même identifiant de réglage ne se déclare pas dans deux modules, sauf exception écrite et justifiée : deux réglages de même nom qui disent des choses différentes finissent par être pris l'un pour l'autre.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=645a77 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=b57319 ▼▼▼
 """Un même identifiant de réglage ne se déclare pas dans deux modules, sauf exception écrite et justifiée : deux réglages de même nom qui disent des choses différentes finissent par être pris l'un pour l'autre."""
 import sys
 import tomllib
@@ -30,6 +30,7 @@ EXCEPTIONS = {
     "delai_s": ({"certificats", "courrier", "flotte", "web"}, "délai d'attente, en secondes, d'une connexion propre à chaque module (port 443, IMAP, SSH, page)"),
     "jeton": ({"fastpanel", "telegram"}, "jeton d'accès de deux services différents (API FastPanel, robot Telegram)"),
     "url": ({"dolibarr", "fastpanel"}, "adresse de deux services externes différents"),
+    "url_publique": ({"coffre", "telegram"}, "deux adresses publiques distinctes : celle du serveur Vaultwarden (QR de Mon coffre-fort) et celle de Cassandra où Telegram poste ses messages"),
 }
 
 
