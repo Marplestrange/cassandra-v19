@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #7c81a1
+# VERSION CN : 0.1.12  #1ab977
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=7c81a1 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.12 empreinte=1ab977 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -2686,6 +2686,8 @@ def collect_cassandra_config() -> list:
     try:
         st = os.stat(CASSANDRA_CONFIG)
     except OSError:
+        if _noyau_v19_present():
+            return []            # la V19 garde ses réglages module par module, dans ses bases : pas de config.json à attendre
         return [{"cle": "__fichier__", "etat": "absent", "valeur": "", "last_check": now}]
     if st.st_size == 0:
         return [{"cle": "__fichier__", "etat": "vide", "valeur": "0 octet", "last_check": now}]
@@ -4058,7 +4060,7 @@ def _url_noyau(unite) -> str:
     return "http://%s:%s" % (hote, port if port.isdigit() else "9000")
 
 
-def _sonde_http(url, timeout=5):
+def _sonde_noyau(url, timeout=5):
     """(code HTTP ou None, millisecondes, corps lu (64 Kio au plus), erreur)."""
     import urllib.request
     import urllib.error
@@ -4115,7 +4117,7 @@ def collect_noyau_v19() -> list:
                        "warning" if (not actif or nrest >= 3 or mo >= 4096) else "info"))
     if actif:
         url = _url_noyau(unite)
-        code, ms, corps, err = _sonde_http(url + "/api/sante")
+        code, ms, corps, err = _sonde_noyau(url + "/api/sante")
         version, ok = "", False
         if code == 200:
             try:
@@ -4131,7 +4133,7 @@ def collect_noyau_v19() -> list:
             out.append(_mesure("noyau.http", "application", "répond %s sur %s/api/sante, au lieu d'un 200 lisible" % (code, url), "warning"))
         rel = _release_courante()
         out.append(_mesure("noyau.version", "application", "noyau %s · version déployée %s" % (version or "inconnu", rel or "inconnue"), "info"))
-        code, ms, corps, err = _sonde_http(url + "/")
+        code, ms, corps, err = _sonde_noyau(url + "/")
         if code == 200 and b"<html" in corps.lower():
             out.append(_mesure("noyau.page", "application", "la page de connexion se sert en %d ms" % ms, "warning" if ms >= _seuil("lenteur_ms") else "info"))
         else:

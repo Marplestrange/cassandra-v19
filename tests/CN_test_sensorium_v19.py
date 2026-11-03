@@ -120,7 +120,7 @@ class Noyau(Demon):
     def sonde(self, sante=(200, 40, b'{"ok": true, "version": "0.1.0"}', ""), page=(200, 20, b"<!doctype html><html></html>", "")):
         def faux(url, timeout=5):
             return sante if url.endswith("/api/sante") else page
-        return mock.patch.object(self.m, "_sonde_http", faux)
+        return mock.patch.object(self.m, "_sonde_noyau", faux)
 
     def releve(self, props=None, **kw):
         with self.systemctl(props or self.PROPS), self.sonde(**kw), mock.patch.object(self.m, "_cassandra_demarrages", lambda: []):
@@ -1087,8 +1087,10 @@ class Lecture(unittest.TestCase):
         self.assertEqual(l("service.nginx"), "Service nginx")
         self.assertEqual(l("machine.nas.mises_a_jour"), "Nas — mises à jour")
         self.assertEqual(l("outil_secu.trivy"), "Trivy — failles des images Docker")
+        self.assertEqual(l("code.scelle"), "Code — écarts au scellé")        # Argos : « Code scelle » en clair à l'écran
+        self.assertEqual(l("courtier.commandes"), "Courtier — commandes root")
         self.assertEqual(l("store.module.agenda"), "Base du module agenda")
-        self.assertEqual(l("noyau.service"), "Noyau service")
+        self.assertEqual(l("noyau.service"), "Noyau — service")
 
     def test_chaque_mesure_a_sa_famille_et_son_domaine(self):
         f = self.lec.famille_de
@@ -1191,6 +1193,19 @@ class Lecture(unittest.TestCase):
 
 
 class MondeDuDemon(Demon):
+    def test_pas_de_config_json_attendu_sur_une_machine_v19(self):
+        """Argos (03-11) : « config.fichier absent » en alerte permanente, alors que la V19 n'a pas ce fichier."""
+        with mock.patch.object(self.m, "CASSANDRA_CONFIG", str(self.tmp / "absent.json")):
+            with mock.patch.object(self.m, "_noyau_v19_present", lambda: True):
+                self.assertEqual(self.m.collect_cassandra_config(), [])
+            with mock.patch.object(self.m, "_noyau_v19_present", lambda: False):
+                self.assertEqual(self.m.collect_cassandra_config()[0]["etat"], "absent")
+
+    def test_la_sonde_des_sites_garde_sa_signature(self):
+        """Argos (03-11) : deux fonctions s'appelaient _sonde_http ; la seconde (le noyau) masquait la première, et tous les sites « ne répondaient pas »."""
+        with mock.patch.object(self.m, "run_cmd", lambda cmd, timeout=10: "403"):
+            self.assertEqual(self.m._sonde_http("exemple.test", "10.0.0.1"), "403")
+
     def test_les_releves_v19_arrivent_dans_le_monde(self):
         """Argos (03-11) : le démon relevait noyau.*, store.*, code.*, courtier.* dans mesures_diverses, mais le modèle du monde
         ne relisait que ses préfixes V18 : l'écran et le module ne voyaient rien, sans erreur nulle part."""
@@ -1599,7 +1614,7 @@ class SeuilsDuDemon(Demon):
         self.racine.mkdir(parents=True, exist_ok=True)
         props = {"cassandra-noyau.service": {"ActiveState": "active", "SubState": "running", "Result": "success", "MainPID": "1", "MemoryCurrent": "1048576", "NRestarts": "0"}}
         sonde = lambda url, timeout=5: (200, 600, b'{"ok": true, "version": "x"}', "") if url.endswith("/api/sante") else (200, 10, b"<html>", "")
-        with self.systemctl(props), mock.patch.object(self.m, "_sonde_http", sonde), mock.patch.object(self.m, "_cassandra_demarrages", lambda: []):
+        with self.systemctl(props), mock.patch.object(self.m, "_sonde_noyau", sonde), mock.patch.object(self.m, "_cassandra_demarrages", lambda: []):
             with mock.patch.object(self.m, "SEUILS_FICHIER", str(self.tmp / "absent.json")):
                 self.assertEqual(self.valeurs(self.m.collect_noyau_v19())["noyau.http"]["severite"], "info")          # 600 ms : sous le seuil par défaut
             self._n = 1

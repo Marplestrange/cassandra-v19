@@ -89,9 +89,20 @@ def mots(t: str) -> str:
     return t
 
 
+EXACTS = {"noyau.service": "Noyau — service", "noyau.http": "Noyau — réponse HTTP", "noyau.version": "Noyau — version déployée", "noyau.page": "Noyau — page de connexion",
+          "noyau.demarrages": "Noyau — démarrages dans l'heure", "noyau.activite": "Noyau — activité de sa base", "noyau.espace": "Noyau — place sur le disque",
+          "noyau.sauvegarde": "Noyau — copie des données", "code.scelle": "Code — écarts au scellé", "courtier.commandes": "Courtier — commandes root",
+          "courtier.etat": "Courtier — déclencheur", "courtier.file": "Courtier — demandes en attente", "store.total": "Bases de Cassandra — total",
+          "store.noyau": "Base du noyau", "store.rejeu": "Base du rejeu", "store.evolution": "Base d'Évolution", "store.societes": "Bases de sociétés",
+          "store.utilisateurs": "Bases d'utilisateurs", "config.fichier": "Réglages — fichier de configuration", "health.score": "Santé — score",
+          "system.tailscale": "Tailscale — connexion de la machine", "sauvegarde.hors_machine": "Sauvegarde hors de la machine"}
+
+
 def libelle(wkey) -> str:
     """Le nom d'une mesure en français : « Athena — services en échec », « Pare-feu IPv4 »."""
     wkey = str(wkey or "")
+    if wkey in EXACTS:
+        return EXACTS[wkey]
     fam, _, reste = wkey.partition(".")
     if not reste:
         return NOMS.get(fam, wkey)
