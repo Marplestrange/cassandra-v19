@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #4abe30
+// VERSION CN : 0.2.0  #427e92
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine la page « Modèles & clés » : la santé du cerveau, le choix d’un modèle par agent, les modèles en ligne (clé d’API), les modèles locaux (Ollama) avec ce que la machine supporte, les autres moteurs d’IA, un comparateur et l’usage par modèle.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) et CASS.monterModeles, monté aussi dans Agents IA ; les rôles du moteur restent cachés : choisir un modèle pour un agent crée le rôle « agent_<id> » qui le relie ; une clé saisie n’est jamais relue.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=4abe30 ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=427e92 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -217,7 +217,7 @@
         (S.suppr === m.name ? '<span class="confirme">Supprimer ? <button class="btn mini dng" data-a="suppr-oui" data-n="' + esc(m.name) + '">Oui</button><button class="btn mini" data-a="suppr-non">Non</button></span>' : '<button class="btn mini dng" data-a="suppr" data-n="' + esc(m.name) + '">Supprimer</button>') + "</div></div>").join("")
         : (loc.repond ? '<p class="note">Aucun modèle installé.</p>' : "");
       if (pulls.length) h += "<h3>Téléchargements en cours</h3>" + pulls.map((p) => '<div><span class="mono">' + esc(p.nom) + '</span> <span class="note">' + esc(p.detail || p.etat) + '</span><div class="barre"><i style="width:' + Math.max(3, Math.min(100, p.pourcent || 3)) + '%"></i></div></div>').join("");
-      return h;
+      return h + "</div>";
     }
 
 
