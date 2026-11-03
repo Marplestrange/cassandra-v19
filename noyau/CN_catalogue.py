@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3dc8df
+# VERSION CN : 0.1.0  #49b0ea
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le catalogue unifié des capacités, et le savoir-faire qui grandit avec elles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3dc8df ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=49b0ea ▼▼▼
 """Le catalogue unifié des capacités, et le savoir-faire qui grandit avec elles.
 
 Une capacité est décrite UNE fois (dans un manifeste). Ses « portes » (outil d'agent, geste, tâche,
@@ -83,6 +83,10 @@ class Catalogue:
     def savoir(self, cle: str) -> dict:
         r = self.base.lire("SELECT * FROM savoir WHERE capacite=?", (cle,))
         return r[0] if r else {"capacite": cle, "palier": "raconter", "reussites": 0, "echecs_de_suite": 0}
+
+    def paliers(self) -> dict:
+        """Le palier courant de TOUTES les capacités, en une lecture : qui dresse la liste des outils d'un agent n'ouvre pas une connexion par capacité."""
+        return {r["capacite"]: r["palier"] for r in self.base.lire("SELECT capacite, palier FROM savoir")}
 
     def regler_palier(self, cle: str, palier: str) -> None:
         """Voie parallèle : un humain peut fixer un palier. Le noyau n'attend jamais qu'il le fasse."""
