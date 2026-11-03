@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #56d05e
+# VERSION CN : 0.2.0  #2fdebd
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont FastPanel.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=56d05e ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=2fdebd ▼▼▼
 """Le pont FastPanel.
 
 Deux voies, chacune pour ce qu'elle fait de mieux :
@@ -1261,7 +1261,7 @@ def brancher(ctx):
     c.detecteur("php_fin_support", det_php)
     for cid, f in (("sante", sante), ("resume", resume), ("utilisateurs", utilisateurs), ("sites", sites), ("bases", bases), ("ftp", ftp), ("mail", mail), ("dns", dns),
                    ("sauvegardes", sauvegardes), ("plans", plans), ("stockages", stockages), ("services", services), ("certificats", certificats),
-                   ("ssl_sonder", ssl_sonder), ("utilisateur_cles", utilisateur_cles), ("scans_cibles", scans_cibles), ("copies_du_plan", copies_du_plan), ("php", php), ("audit", audit), ("parefeu", parefeu)):
+                   ("ssl_sonder", ssl_sonder), ("utilisateur_cles", utilisateur_cles), ("scans_cibles", scans_cibles), ("copies_du_plan", copies_du_plan), ("php", php), ("audit", audit), ("parefeu", parefeu), ("avatar", avatar)):
         c.implementer(cid, f)
     c.implementer("service_relancer", relancer, prouver_service, defaire_service, simuler=lambda x, service="", action="restart", **_: "ferait « %s » sur le service %s" % (action, service))
     c.implementer("service_arreter", arreter, prouver_service, defaire_service, simuler=lambda x, service="", **_: "arrêterait le service %s (il serait relancé au retour arrière)" % service)

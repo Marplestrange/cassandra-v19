@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4424fc
+# VERSION CN : 0.1.0  #37742a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4424fc ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=37742a ▼▼▼
 """La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 
 Un module n'écrit aucune route. Il déclare des capacités, et la passerelle les rend toutes joignables par la même URL :
@@ -185,7 +185,7 @@ class Passerelle:
         if self.proxy:
             xff = h.headers.get("X-Forwarded-For", "")
             if xff:
-                return xff.split(",")[0].strip()[:45]
+                return xff.split(",")[-1].strip()[:45]       # le DERNIER : celui que notre proxy a ajouté ; le premier est ce que le client a écrit, donc falsifiable
         return h.client_address[0][:45]
 
     def _nom_cookie(self):

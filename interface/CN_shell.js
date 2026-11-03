@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #3f2a85
+// VERSION CN : 0.1.0  #a389b9
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=3f2a85 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=a389b9 ▼▼▼
 /* Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 
    1. Les THÈMES : un module livre un thème complet ([[habillages]] : des variables CSS). Il apparaît dans le sélecteur d'apparence,
@@ -33,14 +33,17 @@
   CASS.societe = (function () { try { return localStorage.getItem("cn.societe") || ""; } catch (e) { return ""; } })();
   CASS.choisirSociete = function (id) { try { if (id) localStorage.setItem("cn.societe", id); else localStorage.removeItem("cn.societe"); } catch (e) { /* sans mémoire locale, le choix ne survit pas au rechargement */ } CASS.societe = id || ""; location.reload(); };
   // Un geste sensible demande le mot de passe de la session (réponse 401 « confirmation ») : une boîte le réclame, la confirmation part au noyau, le geste se redemande.
+  let confirmationOuverte = null;                                  // une seule fenêtre à la fois : deux gestes sensibles de suite attendent la même réponse
   CASS.confirmerMdp = function () {
-    return new Promise((fin) => {
-      const v = document.createElement("div"); v.style.cssText = "position:fixed;inset:0;background:rgba(10,20,30,.45);z-index:10000";
+    if (confirmationOuverte) return confirmationOuverte;
+    confirmationOuverte = new Promise((fin) => {
+      if (CASS.kit && CASS.kit.injecter) CASS.kit.injecter();      // le style de la fenêtre (kit-m) n'est posé qu'au premier usage du kit
+      const v = document.createElement("div"); v.className = "kit-v"; v.style.zIndex = 9999;
       const m = document.createElement("div"); m.setAttribute("role", "dialog"); m.setAttribute("aria-modal", "true"); m.setAttribute("aria-label", "Confirmer votre mot de passe"); m.className = "kit-m"; m.style.zIndex = "10001";
       m.innerHTML = "<h2>Confirmez votre mot de passe</h2><p class=\"note\">Ce geste est sensible : redonnez votre mot de passe pour continuer. Il ne sera pas redemandé pendant quelques minutes.</p>" +
         "<input type=\"password\" autocomplete=\"current-password\" aria-label=\"Mot de passe\" style=\"padding:9px 11px;border-radius:10px;border:1px solid var(--line-strong,var(--line));font:inherit\"><p class=\"note\" data-e style=\"color:var(--danger);min-height:1em;margin:0\"></p>" +
         "<div class=\"acts\"><button class=\"btn\" data-c=\"non\">Annuler</button><button class=\"btn pri\" data-c=\"oui\">Confirmer</button></div>";
-      const clore = (r) => { v.remove(); m.remove(); fin(r); };
+      const clore = (r) => { v.remove(); m.remove(); confirmationOuverte = null; fin(r); };
       const champ = m.querySelector("input"), err = m.querySelector("[data-e]");
       const valider = async () => {
         const r = await fetch("/api/confirmer", { method: "POST", headers: { "X-Session-Token": token(), "X-Cassandra": "1" }, body: JSON.stringify({ mot_de_passe: champ.value }) });
@@ -53,6 +56,7 @@
       m.addEventListener("keydown", (e) => { if (e.key === "Escape") clore(false); if (e.key === "Enter") valider(); });
       document.body.appendChild(v); document.body.appendChild(m); champ.focus();
     });
+    return confirmationOuverte;
   };
   CASS.agir = async function (cap, args, _redemande) {
     const h = { "X-Session-Token": token() }; if (CASS.societe) h["X-Societe"] = CASS.societe;

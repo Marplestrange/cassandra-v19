@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : comptes
 # ZONE       : CN
-# VERSION CN : 0.5.0  #c273c3
+# VERSION CN : 0.5.0  #26e956
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=c273c3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=26e956 ▼▼▼
 """Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
 
 Règle de la V18 gardée : le compte d'une action de session n'est JAMAIS un paramètre libre. C'est `ctx.compte`, le compte au nom duquel
@@ -22,6 +22,11 @@ l'exécuteur fait agir, sinon six caractères devinés fermeraient la session de
 
 import json
 import time
+
+
+def _b64(octets):
+    """Une image défaite part dans le résultat (donc au journal) en texte, jamais en octets bruts."""
+    return __import__("base64").b64encode(octets).decode("ascii") if octets else None
 
 
 def brancher(ctx):
@@ -192,7 +197,7 @@ def brancher(ctx):
         idt.portrait_source_poser(c, "propre")           # téléverser, c'est choisir : la source repasse sur l'image propre
         CACHE.pop((c, "propre"), None)
         ctx.emettre("compte.modifie", objet=("compte", c), donnees={"champs": ["portrait"]})
-        return {"compte": c, "type": r["type"], "octets": r["octets"], "avant": r["avant"], "avant_source": avant_source}
+        return {"compte": c, "type": r["type"], "octets": r["octets"], "avant": _b64(r["avant"]), "avant_source": avant_source}
 
     def prouver_portrait_poser(ctx, res):
         p = idt.portrait_lire(res["compte"])
@@ -200,7 +205,7 @@ def brancher(ctx):
 
     def defaire_portrait_poser(ctx, res):
         if res["avant"]:
-            idt.portrait_poser(res["compte"], res["avant"])
+            idt.portrait_poser(res["compte"], __import__("base64").b64decode(res["avant"]))
         else:
             idt.portrait_retirer(res["compte"])
         idt.portrait_source_poser(res["compte"], res["avant_source"])
@@ -212,14 +217,14 @@ def brancher(ctx):
         if source == "propre":
             idt.portrait_source_poser(c, "")
         ctx.emettre("compte.modifie", objet=("compte", c), donnees={"champs": ["portrait"]})
-        return {"compte": c, "avant": r["avant"], "avant_source": source}
+        return {"compte": c, "avant": _b64(r["avant"]), "avant_source": source}
 
     def prouver_portrait_retire(ctx, res):
         return idt.portrait_lire(res["compte"]) is None
 
     def defaire_portrait_retire(ctx, res):
         if res["avant"]:
-            idt.portrait_poser(res["compte"], res["avant"])
+            idt.portrait_poser(res["compte"], __import__("base64").b64decode(res["avant"]))
             idt.portrait_source_poser(res["compte"], res["avant_source"])
 
     def portrait_source(ctx, source=""):

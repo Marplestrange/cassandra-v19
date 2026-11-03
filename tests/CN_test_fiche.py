@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #98da90
+# VERSION CN : 0.1.0  #dbaf9d
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de la fiche d'un compte : validation (refus, jamais de coupure), migration des anciens champs, colonnes anciennes dérivées, corbeille, agents sans fiche.
 # MÉTHODE    : un noyau jetable avec les modules droits et comptes ; les gestes passent par les capacités comptes.* comme à l'usage.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=98da90 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=dbaf9d ▼▼▼
 """Bancs de la fiche d'un compte : validation, migration, colonnes anciennes dérivées, corbeille, agents sans fiche."""
 import json
 import shutil
@@ -270,6 +270,16 @@ class Portrait(Monde):
 
 
 class AvatarFastPanel(unittest.TestCase):
+    def test_la_capacite_avatar_est_branchee_et_pas_seulement_declaree(self):
+        with tempfile.TemporaryDirectory() as d:
+            mods = Path(d) / "modules"
+            shutil.copytree(RACINE / "modules" / "fastpanel", mods / "fastpanel")
+            n = moteur.Noyau(Path(d) / "d", mods, {}, gerer_modules=True)
+            n.brancher()
+            n.etat_modules.poser("fastpanel", installe=True, par="test")
+            self.assertTrue(n.activer("fastpanel")["ok"])
+            self.assertTrue(n.catalogue.get("fastpanel.avatar").implementee, "fastpanel.avatar est déclarée au manifeste mais le module ne l'enregistre pas")
+
     def test_le_fichier_se_trouve_par_identifiant_puis_par_login_sans_jamais_prendre_celui_d_un_autre(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("mod_fastpanel_avatar", RACINE / "modules" / "fastpanel" / "CN_module.py")
