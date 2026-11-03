@@ -13,7 +13,7 @@
 <!-- RÔLE       : la maquette de l'écran Évolution pensé pour quelqu'un qui n'est pas ingénieur : une phrase d'état, des résultats, trois réglages en mots simples, et tout le reste (chercheurs, comparaison, sécurité, carnet) rangé « sous le capot » -->
 <!-- MÉTHODE    : une page autonome, données de démonstration ; le vocabulaire interne (ombre, paliers, tombes, moteur, cage…) n'apparaît pas à l'écran, il est traduit dans l'onglet Vocabulaire -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=267153 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d3b27e ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -211,10 +211,8 @@ function log(g, x) { JOURNAL.unshift({ t: "à l'instant", g: g, x: x }); }
 function entete() {
   var essai = AMELIO.filter(function (a) { return a.etat === "essai"; }).length;
   var phrase = S.pauseEvo ? "L'évolution est en pause." : essai ? essai + " amélioration à l'essai : rien n'a changé pour personne." : "Rien n'est en cours.";
-  var nav = [["aujourdhui", "Aujourd'hui"], ["amelio", "Améliorations"], ["reglages", "Réglages"], ["consignes", "Consignes et alertes"], ["capot", "Sous le capot"]];
   return '<div class="entete"><div><h1>Évolution</h1><div class="note" style="font-size:13px;margin-top:2px">Cassandra rend ses propres fonctions plus rapides, seulement quand elle peut le prouver. Tout est annulable.</div></div>' +
     '<div class="d">' + puce(S.pauseEvo ? "en pause" : "active", S.pauseEvo ? "al" : "ok") + '<button class="btn" data-a="pause">' + (S.pauseEvo ? "Reprendre" : "Mettre en pause") + "</button></div></div>" +
-    '<nav class="verre vues" aria-label="Sections">' + nav.map(function (n) { return '<button data-vue="' + n[0] + '" class="' + (S.vue === n[0] ? "on" : "") + '">' + n[1] + "</button>"; }).join("") + "</nav>" +
     '<div class="phrase">' + esc(phrase) + "</div>";
 }
 
@@ -408,11 +406,29 @@ function pVocab() {
   return '<div class="note">Les mots de l\'évolution, et ce qu\'ils veulent dire. La colonne de droite donne l\'ancien terme technique, au cas où tu le croiserais.</div><div class="tw"><table><thead><tr><th>Mot</th><th>Ce que ça veut dire</th><th>Ancien terme</th></tr></thead><tbody>' + VOCAB.map(function (v) { return "<tr><td><b>" + esc(v[0]) + "</b></td><td>" + esc(v[1]) + '</td><td class="note">' + esc(v[2]) + "</td></tr>"; }).join("") + "</tbody></table></div>";
 }
 
+/* ── le menu vertical de gauche : Évolution déplié, ses sections en sous-menu ── */
+var SECTIONS = [["aujourdhui", "Aujourd'hui"], ["amelio", "Améliorations"], ["reglages", "Réglages"], ["consignes", "Consignes et alertes"], ["capot", "Sous le capot"]];
+function chev(ouv) { return '<svg class="d-i car' + (ouv ? " ouv" : "") + '" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>'; }
+function menu() {
+  var h = '<button class="d19-si ent" data-tip="Agents IA" data-autre="1"><i class="d19-gl" aria-hidden="true">▣</i><span>Agents IA</span>' + chev(false) + "</button>";
+  h += '<button class="d19-si ent" data-tip="Évolution" aria-expanded="true" data-sec-parent="1"><i class="d19-gl" aria-hidden="true">⚘</i><span>Évolution</span>' + chev(true) + "</button>";
+  h += SECTIONS.map(function (x) { return '<button class="d19-si sub' + (S.vue === x[0] ? " on" : "") + '" data-sec="' + x[0] + '"' + (S.vue === x[0] ? ' aria-current="page"' : "") + '><span class="pt"></span><span>' + x[1] + "</span></button>"; }).join("");
+  h += '<button class="d19-si ent" data-tip="Proactivité" data-autre="1"><i class="d19-gl" aria-hidden="true">ϟ</i><span>Proactivité</span></button>';
+  h += '<button class="d19-si ent" data-tip="Mémoire" data-autre="1"><i class="d19-gl" aria-hidden="true">◐</i><span>Mémoire</span>' + chev(false) + "</button>";
+  return h;
+}
+
 /* ── rendu et événements ── */
 function rendre() {
   var corps = { aujourdhui: aujourdhui, amelio: amelio, reglages: reglages, consignes: consignes, capot: capot }[S.vue]();
   var y = window.scrollY;
   $("#ev").innerHTML = entete() + corps;
+  var cote = $("#d19-side");
+  if (cote) {
+    cote.innerHTML = menu();
+    $$("[data-sec]", cote).forEach(function (b) { b.onclick = function () { S.vue = b.dataset.sec; rendre(); window.scrollTo(0, 0); }; });
+    $$("[data-autre]", cote).forEach(function (b) { b.onclick = function () { toast("Maquette : seule la partie Évolution est interactive"); }; });
+  }
   lier();
   window.scrollTo(0, y);
 }
