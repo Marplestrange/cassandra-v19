@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : taches
 # ZONE       : CN
-# VERSION CN : 0.2.0  #f81a8f
+# VERSION CN : 0.2.0  #25dc2a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les tâches d'un compte : statut, échéance, priorité, sous-tâches, récurrence (l'occurrence suivante repart de l'échéance précédente), avancement, responsable (soi-même, un membre du projet, ou Itare), liens vers ce qu'elles concernent, journal de chaque mouvement, provenance (une tâche née d'une détection ne ressemble pas à une tâche saisie). Elles sont à la personne : un projet supprimé ne les emporte pas. Une détection ne crée pas de tâche d'elle-même : la tâche naît du geste « en faire une tâche » (ou du palier que l'administrateur a choisi).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=f81a8f ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=25dc2a ▼▼▼
 [module]
 id = "taches"
 nom = "Tâches"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Les tâches d'un compte : statut, échéance, priorité, sous-tâches, récurrence (l'occurrence suivante repart de l'échéance précédente), avancement, responsable (soi-même, un membre du projet, ou Itare), liens vers ce qu'elles concernent, journal de chaque mouvement, provenance (une tâche née d'une détection ne ressemble pas à une tâche saisie). Elles sont à la personne : un projet supprimé ne les emporte pas. Une détection ne crée pas de tâche d'elle-même : la tâche naît du geste « en faire une tâche » (ou du palier que l'administrateur a choisi)."
 confiance = "interne"
 famille = "gestion"
+groupe = "desk"
+proprietaire = "itare"
 importance = "optionnel"
 sans = "Plus de tâches : statuts, échéances et récurrences ne sont plus accessibles ; elles restent enregistrées."
 auteur = "Drisse ATEK"

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : voix
 # ZONE       : CN
-# VERSION CN : 0.2.0  #6a2f6b
+# VERSION CN : 0.2.0  #cf8cf1
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La voix : ce qui est installé (l'écoute par faster-whisper, la parole par piper), le catalogue des voix, et le choix par compte. Différé : l'écoute (transcription), la parole (synthèse) et le téléchargement des voix — des modèles de plusieurs centaines de mégaoctets, par le courtier.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=6a2f6b ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=cf8cf1 ▼▼▼
 [module]
 id = "voix"
 nom = "Voix"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "La voix : ce qui est installé (l'écoute par faster-whisper, la parole par piper), le catalogue des voix, et le choix par compte. L'écoute, la parole et le téléchargement des voix sont des modèles de plusieurs centaines de mégaoctets : ils passent par le courtier. Le modèle de dictée et le lexique (les mots propres à la maison) se règlent."
 confiance = "interne"
 famille = "echanges"
+groupe = "desk"
+proprietaire = "itare"
 importance = "optionnel"
 sans = "Plus d'écoute ni de parole : la voix n'est plus disponible."
 

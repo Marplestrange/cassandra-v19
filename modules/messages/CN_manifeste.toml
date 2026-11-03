@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : messages
 # ZONE       : CN
-# VERSION CN : 0.1.0  #30e659
+# VERSION CN : 0.1.0  #66fe1c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les messages en cours et programmés : rédiger, enregistrer, envoyer à la main, programmer un départ.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=30e659 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=66fe1c ▼▼▼
 [module]
 id = "messages"
 nom = "Messages"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Les messages qu'une personne rédige : enregistrés, relus, envoyés à la main, ou programmés pour partir seuls à l'heure dite. Un message est à sa personne et à elle seule. Ce qui part est ce qu'elle a enregistré ; le courrier ne reçoit qu'un numéro. Un message tiré d'un courrier reçu ne part jamais seul."
 confiance = "interne"
 famille = "echanges"
+groupe = "desk"
+proprietaire = "itare"
 importance = "optionnel"
 sans = "Plus de messages en cours ni de départ programmé : ce qui est enregistré reste, et rien ne part seul."
 requiert = ["courrier"]

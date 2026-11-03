@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6c8e75
+# VERSION CN : 0.1.0  #3a0f07
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6c8e75 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3a0f07 ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -406,6 +406,8 @@ class Manifeste:
     famille_icone: str = ""    # l'icône (une clé de l'interface, en trait) de cette famille ; vide : l'icône générique
     importance: str = ""       # ce que la maison perd sans ce module : « vital » (elle ne tient plus), « important » (une fonction s'arrête), « optionnel » (on s'en passe) ; vide = non déclaré
     sans: str = ""             # une phrase : ce qui s'arrête, concrètement, quand ce module est désactivé
+    groupe: str = ""           # la tuile de la barre du haut où le module se range (« desk », « parc »…) ; vide : l'affichage range selon la famille. Les entrées de menu qui n'ont pas la leur héritent de celle-ci
+    proprietaire: str = ""     # qui répond du module (un compte, un groupe ou un agent : un identifiant, lu tel quel par l'affichage) ; vide = non déclaré
     objets: tuple = ()
     droits: tuple = ()         # les droits que ce module déclare ([[droits]])
     reglages: tuple = ()       # les réglages que ce module déclare ([[reglages]])
@@ -520,6 +522,10 @@ def valider(brut: dict) -> list:
         e.append("module.importance : %s" % " ou ".join("« %s »" % x for x in IMPORTANCES))
     if "sans" in m and (not isinstance(m["sans"], str) or len(m["sans"]) > 300):
         e.append("module.sans : une phrase de 300 caractères au plus (ce qui s'arrête quand le module est désactivé)")
+    if "groupe" in m and (not isinstance(m["groupe"], str) or not re.match(r"^[a-z][a-z0-9_]{1,20}$", m["groupe"])):
+        e.append("module.groupe : l'identifiant d'une tuile (lettres minuscules, chiffres, _ ; 21 caractères au plus)")
+    if "proprietaire" in m and (not isinstance(m["proprietaire"], str) or not m["proprietaire"].strip() or len(m["proprietaire"]) > 80):
+        e.append("module.proprietaire : un identifiant de 80 caractères au plus (un compte, un groupe ou un agent)")
     if m.get("essentiel") is True and m.get("importance", "vital") != "vital":
         e.append("module.importance : un module essentiel est « vital »")
     requiert = []
@@ -1059,6 +1065,7 @@ def construire(brut: dict, source="") -> Manifeste:
         famille_libelle=str(m.get("famille_libelle", "")).strip(), famille_icone=str(m.get("famille_icone", "")),
         icone_trace=str(m.get("icone_trace", "")), famille_icone_trace=str(m.get("famille_icone_trace", "")),
         importance=str(m.get("importance", "vital" if m.get("essentiel") else "")), sans=str(m.get("sans", "")).strip(),
+        groupe=str(m.get("groupe", "")), proprietaire=str(m.get("proprietaire", "")).strip(),
         auteur=str(m.get("auteur", "")), licence=str(m.get("licence", "")), site=str(m.get("site", "")), api=str(m.get("api", "1")),
         permissions=Permissions(bool((brut.get("permissions") or {}).get("espace_utilisateur", False)),
                                 tuple((brut.get("permissions") or {}).get("reseau", ())),

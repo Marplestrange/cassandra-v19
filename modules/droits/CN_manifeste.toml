@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : droits
 # ZONE       : CN
-# VERSION CN : 0.2.0  #3798ca
+# VERSION CN : 0.2.0  #479377
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Qui, parmi les comptes, peut utiliser quoi : les modules déclarent leurs droits, on les attribue à des comptes et à des groupes, l'exécuteur les vérifie.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=3798ca ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=479377 ▼▼▼
 [module]
 id = "droits"
 nom = "Droits"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Qui, parmi les comptes, peut utiliser quoi : les modules déclarent leurs droits, on les attribue à des comptes et à des groupes, l'exécuteur les vérifie."
 confiance = "interne"
 famille = "securite"
+groupe = "parametres"
+proprietaire = "cassandra"
 importance = "vital"
 sans = "Plus personne n'a de droit sur rien : Cassandra ne peut plus rien autoriser. Il ne se désactive pas."
 essentiel = true

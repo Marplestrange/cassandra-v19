@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : projets
 # ZONE       : CN
-# VERSION CN : 0.2.0  #4d64d6
+# VERSION CN : 0.2.0  #13478a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les projets d'un compte : fiche (objectif, périmètre, critères de réussite), phases, jalons, décisions, journal daté, plan de référence qui rend visible le glissement, équipe avec rôles (lecteur, auteur, co-propriétaire) et invitations, archive, corbeille. Un projet appartient à son propriétaire ; l'administrateur n'y a pas accès (administrer n'est pas voir). Les tâches, elles, restent à la personne (module des tâches) : un projet supprimé ne les emporte pas.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=4d64d6 ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=13478a ▼▼▼
 [module]
 id = "projets"
 nom = "Projets"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Les projets d'un compte : fiche (objectif, périmètre, critères de réussite), phases, jalons, décisions, journal daté, plan de référence qui rend visible le glissement, équipe avec rôles (lecteur, auteur, co-propriétaire) et invitations, archive, corbeille. Un projet appartient à son propriétaire ; l'administrateur n'y a pas accès (administrer n'est pas voir). Les tâches, elles, restent à la personne (module des tâches) : un projet supprimé ne les emporte pas."
 confiance = "interne"
 famille = "gestion"
+groupe = "desk"
+proprietaire = "itare"
 importance = "optionnel"
 sans = "Plus de gestion de projets : fiches, phases et jalons ne sont plus accessibles ; ils restent enregistrés."
 auteur = "Drisse ATEK"

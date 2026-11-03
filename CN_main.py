@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : (racine)
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4b231a
+# VERSION CN : 0.1.0  #c23dd9
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra V19 : le moteur central.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4b231a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=c23dd9 ▼▼▼
 """Cassandra V19 : le moteur central.
 
 Ce fichier ASSEMBLE, il ne fait pas de métier. Le métier vit dans modules/<id>/ ; les pièces communes
@@ -242,6 +242,7 @@ class Noyau:
         import inspect
         sorties = []
         accords = {}
+        paliers = self.catalogue.paliers()                          # une seule lecture pour toutes les capacités (une par capacité coûtait plusieurs secondes)
         for e in self.catalogue.lister():
             c = e.capacite
             if not e.actif or not e.implementee or acteur not in c.qui or c.qui == ("anonyme",) or (e.module == "agents" and e.cle not in OUTILS_DU_MODULE_AGENTS):
@@ -266,7 +267,7 @@ class Noyau:
                 props[p.name] = {"type": typ} if typ else {}
                 if p.default is p.empty:
                     requis.append(p.name)
-            palier = self.catalogue.savoir(e.cle).get("palier", "raconter") if c.ecrit else ""
+            palier = paliers.get(e.cle, "raconter") if c.ecrit else ""
             sorties.append({"nom": e.cle.replace(".", "__"), "cle": e.cle, "description": c.libelle, "risque": c.risque, "palier": palier, "externe": c.externe, "sortant": c.sortant, "partage": c.partage,
                             "parametres": {"type": "object", "properties": props, "required": requis}})
         return sorties
@@ -472,7 +473,7 @@ class Noyau:
                 "auteur": m.auteur, "licence": m.licence, "api": m.api,
                 "permissions": {"espace_utilisateur": m.permissions.espace_utilisateur, "reseau": list(m.permissions.reseau),
                                 "ecritures": list(m.permissions.ecritures), "privileges": list(m.permissions.privileges)},
-                "confiance": m.confiance, "essentiel": m.essentiel, "importance": m.importance, "sans": m.sans, "famille_libelle": m.famille_libelle, "famille_icone": m.famille_icone, "icone_trace": m.icone_trace, "famille_icone_trace": m.famille_icone_trace, "conflits": list(m.conflits), "suggere": list(m.suggere), "fournit": list(m.fournit),
+                "confiance": m.confiance, "essentiel": m.essentiel, "importance": m.importance, "sans": m.sans, "groupe": m.groupe, "proprietaire": m.proprietaire, "famille_libelle": m.famille_libelle, "famille_icone": m.famille_icone, "icone_trace": m.icone_trace, "famille_icone_trace": m.famille_icone_trace, "conflits": list(m.conflits), "suggere": list(m.suggere), "fournit": list(m.fournit),
                 "contraintes": [list(c) for c in m.contraintes], "points_extension": [px.id for px in m.points_extension],
                 "contributions": [{"point": c.point, "id": c.id} for c in m.contributions], "extension": ext, "etat": etat,
                 "remplace": (getattr(self, "_remplaces", {}).get(mid).version if getattr(self, "_remplaces", {}).get(mid) else ""),

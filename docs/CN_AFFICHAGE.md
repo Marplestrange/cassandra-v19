@@ -12,7 +12,7 @@
 <!-- RÔLE       : Module affichage : la disposition (menus du haut, colonne de gauche, menu avatar) -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d5cc28 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=ab50b2 ▼▼▼ -->
 # Module affichage : la disposition (menus du haut, colonne de gauche, menu avatar)
 
 Note de conception, 18-10. Maquette de référence (interactive) : `docs/maquettes/CN_maquette-menus-artifact.html`, publiée en page privée.
@@ -50,6 +50,7 @@ Répartition validée le 18-10, groupée par intention (travailler, vendre, fair
 |---|---|---|
 | `desk` | Desk | Accueil (Aujourd'hui, Suivre, Courrier, Répertoire, Documents), Agenda. Le Salon n'est plus une page : il vit dans le panneau conversationnel (§7 ter) |
 | `metier` | Métier | Billetterie, puis les modules métier futurs |
+| `bibliotheque` | Bibliothèque | Bibliothèque (bibliotheque) : la connaissance d'Amizo, qui en est le responsable (décision 03-11 ; placée entre Métier et Parc, ordre 25 ; l'entrée n'a pas d'écran sur mesure : elle montre la console du module) |
 | `parc` | Parc | Panorama (vue), Flotte, Sites, Hébergement et DNS (fastpanel, dns), Automatismes (planifie) |
 | `secu` | Sécurité | Sécurité (securite), Certificats, Sauvegardes, Urgence |
 | `obs` | Observatoire | Sensorium, Historique (mesures), Journaux |

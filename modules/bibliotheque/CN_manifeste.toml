@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : bibliotheque
 # ZONE       : CN
-# VERSION CN : 0.1.0  #99124f
+# VERSION CN : 0.1.0  #751f6b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La bibliothèque.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=99124f ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=751f6b ▼▼▼
 [module]
 id = "bibliotheque"
 nom = "Bibliothèque"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "La connaissance d'Amizo : des fiches sourcées (adresse, date de lecture) découpées en passages, sur deux étagères (interne : espaces partagés de la société ; externe : lu sur le web, en quarantaine jusqu'à vérification), recherche plein texte classée par pertinence, fraîcheur et confiance de la source. Seul Amizo écrit une fiche ; vérifier, bloquer et retirer sont des gestes d'utilisateur."
 confiance = "interne"
 famille = "agents"
+groupe = "bibliotheque"
+proprietaire = "amizo"
 importance = "optionnel"
 sans = "Amizo ne retrouve plus ce qu'il a lu : la bibliothèque n'est plus consultable ni alimentée ; les fiches restent enregistrées."
 auteur = "Drisse ATEK"
@@ -145,6 +147,20 @@ qui = ["humain", "compte"]
 
 [permissions]
 stockage = true
+
+[[ecrans]]
+id = "vue_bibliotheque"
+libelle = "Bibliothèque"
+domaine = "agents"
+gabarit = "tableau"
+
+[[menus]]
+id = "bibliotheque"
+libelle = "Bibliothèque"
+ecran = "vue_bibliotheque"
+ordre = 10
+role = "admin"
+icone = "library"
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

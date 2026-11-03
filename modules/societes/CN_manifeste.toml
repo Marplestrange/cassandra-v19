@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : societes
 # ZONE       : CN
-# VERSION CN : 0.1.0  #3c4a5c
+# VERSION CN : 0.1.0  #24345f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sociétés de l'instance et la fiche de chacune. Socle du multi-sociétés.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=3c4a5c ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=24345f ▼▼▼
 [module]
 id = "societes"
 nom = "Sociétés"
@@ -21,6 +21,8 @@ noyau_min = "0.1.0"
 description = "Les sociétés de l'instance et la fiche de chacune (identité, siège, horaires, établissements, pièces, banque, conformité, habillage, responsables). Tout compte appartient à une société ; une société principale existe toujours. Seul le superadministrateur crée, archive et administre l'ensemble des sociétés ; l'administrateur d'une société ne gère que la sienne."
 confiance = "interne"
 famille = "socle"
+groupe = "parametres"
+proprietaire = "cassandra"
 importance = "vital"
 sans = "Plus de fiche société : les en-têtes, signatures et mentions légales perdent leur source ; le rattachement des comptes à une société reste garanti par le noyau."
 

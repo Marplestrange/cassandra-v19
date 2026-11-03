@@ -8,17 +8,18 @@
 # ZONE       : EC
 # RUNTIME    : python
 # VERSION CN : néant
-# VERSION EC : EC0 (référence 0.7.0)  #b553af
+# VERSION EC : EC0 (référence 0.7.0)  #4c84b2
 # HÔTE CN    : CN_module.py · disposition @1.0
 # RÔLE       : range les entrées de menu que les modules déclarent en groupes (barre du haut), entrées et sous-entrées (colonne de gauche), et en entrées du menu de l'avatar ; dit le pire niveau d'alerte de chaque entrée, de chaque groupe et du tout.
 # MÉTHODE    : fonction pure : une table de groupes, un repli par famille, un pont vers les onglets de l'ancienne interface ; chaque entrée reçue paraît une seule fois, rien n'est inventé, un groupe sans entrée n'existe pas.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=b553af ▼▼▼
+# ▼▼▼ BORNE EC point=disposition contrat=@1.0 version=EC0 empreinte=4c84b2 ▼▼▼
 
 # Les groupes de la barre du haut : (id, libellé, icône, ordre, interlocuteur par défaut du panneau).
 GROUPES = (
     ("desk", "Desk", "desk", 10, "itare"),
     ("metier", "Métier", "chart", 20, "cassandra"),
+    ("bibliotheque", "Bibliothèque", "library", 25, "cassandra"),
     ("parc", "Parc", "fleet", 30, "cassandra"),
     ("secu", "Sécurité", "shield", 40, "cassandra"),
     ("obs", "Observatoire", "eye", 50, "cassandra"),
@@ -27,7 +28,7 @@ GROUPES = (
     ("modules", "Modules", "puzzle", 90, "cassandra"),
 )
 GROUPE_REPLI = "modules"
-MAX_GROUPES = 8
+MAX_GROUPES = 9
 
 # Un module qui ne dit pas son groupe est rangé selon sa famille ; une famille inconnue va au groupe de repli.
 REPLI_FAMILLE = {"securite": "secu", "supervision": "obs", "reseau": "parc", "hebergement": "parc", "sites": "parc", "systeme": "parc",
