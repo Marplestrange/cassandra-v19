@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #b78d06
+// VERSION CN : 0.1.0  #0d1a28
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine « Mon compte » : la fiche calquée sur celle de Dolibarr (avec son portrait), les branchements que les modules déclarent, la matrice de notifications, la sécurité (mot de passe, clés, sessions, appareils, journal) et mes droits.
 // MÉTHODE    : une scène du module comptes (CASS.monCompte, appelée par CN_comptes-ecran.js pour les écrans mc_*) ; chaque page lit les capacités du noyau (comptes.*, webauthn.*, notifications.*, dolibarr.*, droits.*) et n'écrit que par elles. Dolibarr est facultatif : sans son module, rien n'en est dit.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=b78d06 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=0d1a28 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -40,7 +40,7 @@
     ".mc .savebar{position:sticky;bottom:10px;display:none;gap:12px;align-items:center;flex-wrap:wrap;background:var(--txt);color:var(--bg);border-radius:14px;padding:9px 14px;z-index:5}.mc .savebar.on{display:flex}.mc .savebar .grow{flex:1}.mc .savebar .cu-btn{color:var(--txt)}" +
     ".mc .err{color:var(--danger);font-size:12.5px;margin:6px 0 0}.mc .ok{color:var(--ok)}.mc .mono{font-family:'JetBrains Mono',monospace;font-size:12px}.mc .codes{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin:8px 0;font:600 13px 'JetBrains Mono',monospace}.mc .codes span{border:1px dashed var(--line-strong,var(--line));border-radius:8px;padding:5px 8px;text-align:center}" +
     ".mc .portrait{width:84px;height:84px;border-radius:50%;object-fit:cover;flex:none;border:1px solid var(--line)}.mc .cmp{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);margin-top:10px}" +
-    "@media (max-width:760px){.mc .grille3{grid-template-columns:minmax(110px,1.4fr) repeat(3,minmax(54px,1fr))}}";
+    "@media (max-width:760px){.mc .grille3{grid-template-columns:minmax(110px,1.4fr) repeat(3,minmax(54px,1fr))}.mc .grille3.q4{grid-template-columns:minmax(80px,1.3fr) repeat(4,minmax(46px,1fr))!important;gap:6px 4px}.mc .grille3 .h{font-size:9px;letter-spacing:0}}";
 
   const ico = (d) => '<svg class="cu-i" viewBox="0 0 24 24"><path d="' + d + '"/></svg>';
   const b64u = (s) => { s = (s || "").replace(/-/g, "+").replace(/_/g, "/"); const b = atob(s + "=".repeat((4 - s.length % 4) % 4)); const o = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) o[i] = b.charCodeAt(i); return o; };
@@ -159,7 +159,7 @@
       const canal = (c) => (p.canaux && p.canaux[c] && p.canaux[c].declare) || c === "cloche";
       const navigateur = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return ""; } })();
       return tete("Notifications", "Une seule matrice : pour chaque gravité, par où je veux être prévenu. La cloche reçoit toujours ; les canaux viennent de mes branchements et un canal non branché est grisé.") +
-        '<div class="cu-carte"><h3>Par gravité</h3><div class="grille3" style="grid-template-columns:minmax(150px,1.4fr) repeat(' + CANAUX.length + ',minmax(60px,1fr))"><span></span>' + CANAUX.map((c) => '<span class="h c">' + c[1] + "</span>").join("") +
+        '<div class="cu-carte"><h3>Par gravité</h3><div class="grille3 q' + CANAUX.length + '" style="grid-template-columns:minmax(150px,1.4fr) repeat(' + CANAUX.length + ',minmax(60px,1fr))"><span></span>' + CANAUX.map((c) => '<span class="h c">' + c[1] + "</span>").join("") +
         NIVEAUX.map((n) => '<span><b>' + n[1] + '</b><br><small style="color:var(--txt-faint)">' + n[2] + "</small></span>" + CANAUX.map((c) => { const on = c[0] === "cloche" || ((p.moi && p.moi[n[0]]) || []).indexOf(c[0]) >= 0; return '<span class="c"><button class="tg' + (on ? " on" : "") + '" data-a="canal" data-n="' + n[0] + '" data-c="' + c[0] + '"' + (c[0] === "cloche" || !canal(c[0]) ? " disabled" : "") + ' title="' + (c[0] !== "cloche" && !canal(c[0]) ? "canal non branché" : "") + '"></button></span>'; }).join("")).join("") + "</div>" +
         '<p class="sub" style="margin:10px 0 0">' + esc((p.canaux && p.canaux.portes) || "") + "</p></div>" +
         '<div class="cu-carte"><h3>Heures calmes et fuseau</h3><div class="cu-g2"><div><label class="f">Fuseau horaire</label><input type="text" id="mc-fz" value="' + esc(p.prefs.fuseau) + '" placeholder="' + esc(navigateur) + '" list="mc-tz2"><datalist id="mc-tz2">' + ((typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : []).map((z) => '<option value="' + esc(z) + '">').join("")) + "</datalist>" +
