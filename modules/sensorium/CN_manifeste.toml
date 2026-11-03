@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #94f89a
+# VERSION CN : 0.1.13  #f01067
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=94f89a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.13 empreinte=f01067 ▼▼▼
 [module]
 id = "sensorium"
 nom = "Sensorium"
-version = "0.1.12"
+version = "0.1.13"
 noyau_min = "0.1.0"
 description = "Les sens de Cassandra. Le collecteur (CN_sensorium.py, gardé entier) mesure la machine et son monde ; ce module le relie au noyau : santé, ressources, constats, tuiles."
 confiance = "interne"
@@ -164,6 +164,11 @@ libelle = "Plus aucun administrateur : personne ne peut plus administrer Cassand
 frequence_s = 300
 
 [[detecteurs]]
+id = "erreurs_navigateur"
+libelle = "Des erreurs JavaScript se répètent dans les écrans des utilisateurs"
+frequence_s = 300
+
+[[detecteurs]]
 id = "collecteur_muet"
 libelle = "Le collecteur ne répond plus"
 frequence_s = 30
@@ -230,6 +235,22 @@ qui = ["humain", "compte", "cassandra"]
 [[capacites]]
 id = "etat"
 libelle = "Tout ce que l'écran du Sensorium lit : les mesures nommées en français (famille, objet, alerte acceptée, maintenance), les changements, les corrélations, les fenêtres"
+risque = "lecture"
+
+[[capacites]]
+id = "erreur_navigateur"
+libelle = "Signaler une erreur JavaScript d'un écran : une ligne dédoublonnée (message, fichier, ligne, page), plafonnée à 300 lignes et 14 jours"
+risque = "faible"
+droit = "signaler"
+perimetre = ["une ligne du journal des erreurs d'écran (message, fichier, ligne, page)"]
+preuve = "la ligne existe"
+retour = "rien à défaire : c'est un compteur de signalements"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "erreurs_navigateur"
+libelle = "Les erreurs JavaScript signalées par les écrans (les trente dernières, avec leur nombre)"
 risque = "lecture"
 
 [[capacites]]
@@ -469,6 +490,11 @@ description = "Processus tués faute de mémoire. Une seule occurrence est déj�
 id = "agir"
 libelle = "Agir depuis le Sensorium : accepter une alerte, poser une fenêtre de maintenance, redémarrer le démon"
 sensible = true
+
+[[droits]]
+id = "signaler"
+libelle = "Signaler au Sensorium une erreur JavaScript de son écran (message, fichier, ligne : rien d'autre)"
+defaut = true
 
 [[droits]]
 id = "voir_securite"

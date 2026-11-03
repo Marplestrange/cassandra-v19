@@ -6,18 +6,19 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #2d405b
+# VERSION CN : 0.1.13  #570201
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=2d405b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.13 empreinte=570201 ▼▼▼
 """Le module Sensorium : relie le noyau au collecteur (CN_sensorium.py), qui reste entier et tourne à part, en service root.
 
 Le collecteur mesure la machine et son monde. Ce module ne mesure rien : il le questionne par son socket (une requête texte, une réponse
 JSON), en fait des objets, des constats et des tuiles, et le tient à l'oeil. Un collecteur muet se voit : c'est un constat, jamais un silence.
 """
+import hashlib
 import html
 import json
 import os
@@ -487,6 +488,40 @@ def brancher(ctx):
             return [{"objet": MACHINE, "titre": "%d unité%s systemd en échec" % (n, "s" if n > 1 else ""), "detail": "systemctl --failed"}]
         return []
 
+    def erreurs_navigateur(ctx):
+        """Des erreurs JavaScript qui se répètent dans les écrans : trois erreurs distinctes dans l'heure, ou dix occurrences. Une seule n'est pas un constat."""
+        try:
+            l = ctx.stockage.lire("SELECT COUNT(*) AS d, COALESCE(SUM(n), 0) AS t FROM sensorium_erreurs_js WHERE derniere > datetime('now', '-1 hour')")[0]
+        except Exception:
+            return []
+        if l["d"] >= 3 or l["t"] >= 10:
+            return [{"objet": ("module_noyau", "navigateur"), "titre": "%d erreur%s JavaScript dans les écrans (%d fois) depuis une heure" % (l["d"], "s" if l["d"] > 1 else "", l["t"]),
+                     "detail": "Voir Sensorium › Les capteurs.", "niveau": "avoir"}]
+        return []
+
+    def erreur_navigateur(ctx, message="", source="", ligne=0, page=""):
+        """Un écran signale une erreur JavaScript. Dédoublonnée (même message, même fichier, même ligne : un compteur), plafonnée (300 lignes, 14 jours)."""
+        message = html.unescape(str(message or ""))[:300].strip()
+        if not message:
+            raise ValueError("une erreur sans message n'est pas retenue")
+        source = str(source or "")[:200]
+        try:
+            ligne = max(0, min(10 ** 7, int(ligne or 0)))
+        except (TypeError, ValueError):
+            ligne = 0
+        empreinte = hashlib.sha1(("%s|%s|%d" % (message, source, ligne)).encode("utf-8")).hexdigest()[:20]
+        db = ctx.stockage
+        db.ecrire("INSERT INTO sensorium_erreurs_js(empreinte, message, source, ligne, page, qui) VALUES (?,?,?,?,?,?) ON CONFLICT(empreinte) DO UPDATE SET n = n + 1, derniere = datetime('now'), page = excluded.page",
+                  (empreinte, message, source, ligne, str(page or "")[:120], ctx.compte or ctx.acteur or ""))
+        db.ecrire("DELETE FROM sensorium_erreurs_js WHERE derniere < datetime('now', '-14 days') OR id NOT IN (SELECT id FROM sensorium_erreurs_js ORDER BY derniere DESC LIMIT 300)")
+        return {"empreinte": empreinte}
+
+    def erreur_prouvee(ctx, res):
+        return bool(ctx.stockage.lire("SELECT 1 FROM sensorium_erreurs_js WHERE empreinte=?", (res["empreinte"],)))
+
+    def erreurs_lues(ctx):
+        return {"erreurs": [dict(x) for x in ctx.stockage.lire("SELECT message, source, ligne, page, qui, n, premiere, derniere FROM sensorium_erreurs_js ORDER BY derniere DESC LIMIT 30")]}
+
     # ------------------------------------------------------------------ lectures
     def sante_lue(ctx):
         m = machine(ctx)
@@ -550,6 +585,7 @@ def brancher(ctx):
     ctx.detecteur("sans_administrateur", sans_administrateur)
     ctx.detecteur("collecteur_muet", collecteur_muet)
     ctx.detecteur("unites_en_echec", unites_en_echec)
+    ctx.detecteur("erreurs_navigateur", erreurs_navigateur)
     ctx.implementer("sante", sante_lue)
     ctx.implementer("metriques", metriques)
     ctx.implementer("modules", modules_lus)
@@ -565,6 +601,8 @@ def brancher(ctx):
     ctx.implementer("retirer_acceptation", retirer_acceptation, retire_prouve, retire_defait)
     ctx.implementer("fenetre_poser", fenetre_poser, fenetre_prouvee, fenetre_defaite)
     ctx.implementer("fenetre_annuler", fenetre_annuler, annulee_prouvee, annulee_defaite)
+    ctx.implementer("erreur_navigateur", erreur_navigateur, erreur_prouvee, lambda ctx, res: None)
+    ctx.implementer("erreurs_navigateur", erreurs_lues)
     ctx.implementer("monde", monde)
     ctx.implementer("entite", entite)
     ctx.implementer("historique", historique)

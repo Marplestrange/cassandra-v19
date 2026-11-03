@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #544d79
+# VERSION CN : 0.1.0  #27c150
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le Sensorium voit la V19 elle-même (unité cassandra-noyau, sonde HTTP, bases, code scellé, courtier root) et que le module relève la santé de chaque module du noyau.
 # MÉTHODE    : charge CN_sensorium.py sur une base temporaire, simule systemctl et l'API HTTP (aucun réseau, aucune commande système), fabrique de vraies bases SQLite (saines, abîmées, tronquées) et une version scellée, puis monte un vrai noyau avec ses modules pour la santé de dedans.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=544d79 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=27c150 ▼▼▼
 import importlib.util
 import json
 import os
@@ -31,6 +31,11 @@ RACINE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RACINE))
 DOSSIER = RACINE / "modules" / "sensorium"
 PYTHON = sys.executable
+
+
+def datetime_utc(*a):
+    import datetime as _d
+    return _d.datetime(*a, tzinfo=_d.timezone.utc).timestamp()
 
 
 def charger_demon(tmp):
@@ -954,6 +959,24 @@ class ModuleDansUnNoyau(unittest.TestCase):
         self.assertEqual(j[0]["ok"], 0)
         self.assertIn("unexpected end of file", j[0]["sortie"])
 
+    def test_une_erreur_javascript_se_signale_se_dedoublonne_et_se_relit(self):
+        for _ in range(2):
+            r = self.ex("sensorium.erreur_navigateur", message="TypeError: x is undefined", source="/app.js", ligne=12, page="#/sensorium")
+            self.assertEqual(r["statut"], "faite", r)
+        l = self.ex("sensorium.erreurs_navigateur")["resultat"]["erreurs"]
+        e = next(x for x in l if x["message"] == "TypeError: x is undefined")
+        self.assertEqual((e["n"], e["source"], e["ligne"]), (2, "/app.js", 12))
+        self.assertNotEqual(self.ex("sensorium.erreur_navigateur", message="  ")["statut"], "faite")      # sans message : refusée
+
+    def test_trois_erreurs_distinctes_dans_l_heure_ouvrent_un_constat(self):
+        self.n.base.ecrire("DELETE FROM constats WHERE module='sensorium' AND detecteur='erreurs_navigateur'") if hasattr(self.n.base, "ecrire") else None
+        for i in range(3):
+            self.ex("sensorium.erreur_navigateur", message="Erreur d'essai %d" % i, source="/x.js", ligne=i + 1)
+        self.tick()
+        ouvert = self.n.base.lire("SELECT titre FROM constats WHERE module='sensorium' AND detecteur='erreurs_navigateur' AND etat='ouvert'")
+        self.assertTrue(ouvert, "trois erreurs distinctes doivent ouvrir un constat")
+        self.assertIn("JavaScript", ouvert[0]["titre"])
+
     def test_une_alerte_acceptee_n_a_plus_de_geste(self):
         self.monde(avec([{"wkey": "service.nginx", "value": "failed", "severity": "warning", "observed_at": "x", "detail": ""}]))
         try:
@@ -1193,6 +1216,41 @@ class Lecture(unittest.TestCase):
 
 
 class MondeDuDemon(Demon):
+    LIGNE = '1.2.3.4 - - [%s +0000] "GET / HTTP/2.0" 200 5 "-" "cassandra-temoin/%s"'
+
+    def test_le_temoin_vu_se_dit(self):
+        t, nom = self.m._temoin_vu_dans([self.LIGNE % ("03/Nov/2026:18:00:00", "maison"), self.LIGNE % ("03/Nov/2026:18:05:00", "maison"), 'x - - [03/Nov/2026:19:00:00 +0000] "GET / HTTP/2.0" 200 5 "-" "curl"'])
+        self.assertEqual(nom, "maison")
+        self.assertEqual(t, datetime_utc(2026, 11, 3, 18, 5, 0))
+
+    def test_aucun_temoin_jamais_vu_n_est_pas_une_panne(self):
+        self.m.init_all_tables()
+        with mock.patch.object(self.m, "_journaux_acces", lambda: {}):
+            r = self.m.collect_temoin_v19()[0]
+        self.assertEqual((r["cle"], r["severite"]), ("temoin.exterieur", "info"))
+
+    def test_un_temoin_tu_depuis_longtemps_est_une_alerte(self):
+        self.m.init_all_tables()
+        journal = self.tmp / "acces.log"
+        vieux = time.time() - 3 * 3600
+        journal.write_text(self.LIGNE % (time.strftime("%d/%b/%Y:%H:%M:%S", time.gmtime(vieux)), "maison") + "\n", encoding="utf-8")
+        with mock.patch.object(self.m, "_journaux_acces", lambda: {"site": str(journal)}):
+            r = self.m.collect_temoin_v19()[0]
+            self.assertEqual(r["severite"], "warning", r)
+            journal.write_text("", encoding="utf-8")                     # le journal tourne : le dernier signe de vie reste connu
+            self.assertEqual(self.m.collect_temoin_v19()[0]["severite"], "warning")
+            journal.write_text(self.LIGNE % (time.strftime("%d/%b/%Y:%H:%M:%S", time.gmtime()), "maison") + "\n", encoding="utf-8")
+            self.assertEqual(self.m.collect_temoin_v19()[0]["severite"], "info")
+
+    def test_chaque_cle_relevee_a_un_prefixe_que_le_monde_relit(self):
+        """Le défaut d'Argos, une fois pour toutes : une clé relevée dont le préfixe n'est pas dans PREFIXES_DIVERSES n'arrive jamais à l'écran."""
+        self.m.init_all_tables()
+        with self.systemctl({"cassandra-noyau.service": {"ActiveState": "active", "SubState": "running", "MainPID": "1"}}),                 mock.patch.object(self.m, "_journaux_acces", lambda: {}):
+            cles = [r["cle"] for r in self.m.collect_cassandra_v19()]
+        self.assertTrue(cles)
+        for c in cles:
+            self.assertTrue(c.startswith(self.m.PREFIXES_DIVERSES), c)
+
     def test_pas_de_config_json_attendu_sur_une_machine_v19(self):
         """Argos (03-11) : « config.fichier absent » en alerte permanente, alors que la V19 n'a pas ce fichier."""
         with mock.patch.object(self.m, "CASSANDRA_CONFIG", str(self.tmp / "absent.json")):
@@ -1468,11 +1526,18 @@ class CommandeReparer(unittest.TestCase):
         self.assertFalse(d["ok"])
         self.assertEqual([a[0][0] for a in self.appels], ["nginx"], "le test seul : rien n'est redémarré")
 
-    def test_nginx_redemarre_apres_son_test(self):
+    def test_nginx_est_recharge_apres_son_test(self):
         self.reponses = [(0, "syntax is ok"), (0, ""), (0, "active")]
         code, d = self.lance("nginx")
         self.assertEqual(code, 0, d)
-        self.assertEqual([a[0][:2] for a in self.appels], [["nginx", "-t"], ["systemctl", "restart"], ["systemctl", "is-active"]])
+        self.assertEqual([a[0][:2] for a in self.appels], [["nginx", "-t"], ["systemctl", "reload"], ["systemctl", "is-active"]])
+        self.assertIn("rechargé", d["sortie"])
+
+    def test_nginx_redemarre_si_le_rechargement_echoue(self):
+        self.reponses = [(0, "syntax is ok"), (1, "reload failed"), (0, ""), (0, "active")]
+        code, d = self.lance("nginx")
+        self.assertEqual(code, 0, d)
+        self.assertEqual([a[0][:2] for a in self.appels], [["nginx", "-t"], ["systemctl", "reload"], ["systemctl", "restart"], ["systemctl", "is-active"]])
 
     def test_un_conteneur_hors_compose_est_refuse_et_son_nom_est_valide(self):
         self.c.os = mock.Mock(path=mock.Mock(isabs=lambda p: p.startswith("/"), isdir=lambda p: True), environ={})

@@ -5,7 +5,7 @@ Usage : reparer <service|nginx|compose|journal|maj> [<argument>]   ->   une lign
 Ce programme ne fait confiance à rien de ce qu'on lui passe : l'opération est dans une table de cinq mots, chaque argument est validé ici (nom d'unité, nom de conteneur),
 rien ne passe par un shell. Chaque geste se VÉRIFIE avant de répondre ok :
   - service : l'unité doit exister ; sshd, le réseau, systemd, le noyau de Cassandra et le démon du Sensorium sont REFUSÉS (on ne se coupe pas la branche) ; elle doit être « active » ensuite ;
-  - nginx : la configuration est testée (nginx -t) AVANT de redémarrer ; il doit être actif ensuite ;
+  - nginx : la configuration est testée (nginx -t) AVANT ; il est rechargé (les connexions restent), redémarré seulement si le rechargement échoue ; il doit être actif ensuite ;
   - compose : le dossier du projet est lu sur le conteneur lui-même (jamais fourni), « docker compose up -d » y est lancé, le conteneur doit tourner ensuite ;
   - journal : le journal système est réduit à 200 Mo ;
   - maj : « apt-get update » puis « apt-get upgrade » sans question, les fichiers de configuration modifiés sont gardés."""
@@ -74,10 +74,14 @@ def op_nginx():
     rc, out = run(["nginx", "-t"], 20)
     if rc != 0:
         echo({"ok": False, "op": "nginx", "erreur": "la configuration de nginx ne passe pas son test, rien n'est redémarré : " + queue(out, 300)})
+    # D'abord un rechargement : il garde les connexions ouvertes, dont celle de la page qui demande le geste (un redémarrage la coupait : « Failed to fetch » alors que le geste avait réussi, et le navigateur le rejouait).
+    rc, out = run(["systemctl", "reload", "nginx.service"], 60)
+    if rc == 0 and actif("nginx.service"):
+        echo({"ok": True, "op": "nginx", "verifie": True, "sortie": "nginx rechargé (configuration testée)"})
     rc, out = run(["systemctl", "restart", "nginx.service"], 60)
     if rc != 0:
-        echo({"ok": False, "op": "nginx", "erreur": "systemctl restart nginx a échoué : " + queue(out, 300)})
-    echo({"ok": True, "op": "nginx", "verifie": actif("nginx.service"), "sortie": "nginx redémarré (configuration testée)"})
+        echo({"ok": False, "op": "nginx", "erreur": "ni le rechargement ni le redémarrage de nginx n'ont réussi : " + queue(out, 300)})
+    echo({"ok": True, "op": "nginx", "verifie": actif("nginx.service"), "sortie": "nginx redémarré (le rechargement n'avait pas suffi)"})
 
 
 def op_compose(arg):

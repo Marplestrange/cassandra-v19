@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #1ab977
+# VERSION CN : 0.1.13  #c33012
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=1ab977 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.13 empreinte=c33012 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -4511,12 +4511,72 @@ def collect_courtier_v19() -> list:
     return out
 
 
+# LE TÉMOIN EXTÉRIEUR : un petit script, posé sur une AUTRE machine, appelle l'adresse publique de Cassandra toutes les minutes avec cette signature. Le démon n'a donc qu'à lire
+# ses journaux d'accès : quand le témoin s'est montré pour la dernière fois, et s'il s'est tu. Un témoin qu'on n'a jamais vu n'est pas une panne (il est facultatif).
+TEMOIN_SIGNATURE = "cassandra-temoin"
+TEMOIN_SILENCE_S = 15 * 60
+
+
+def _temoin_vu_dans(lignes) -> tuple:
+    """(instant UNIX, nom) de la dernière visite du témoin dans ces lignes de journal, ou (None, "")."""
+    meilleur, nom = None, ""
+    for l in lignes:
+        i = l.find(TEMOIN_SIGNATURE)
+        if i < 0:
+            continue
+        m = re.search(r"\[(\d\d/\w{3}/\d{4}:\d\d:\d\d:\d\d) ([+-]\d{4})\]", l)
+        if not m:
+            continue
+        try:
+            t = datetime.strptime(m.group(1) + " " + m.group(2), "%d/%b/%Y:%H:%M:%S %z").timestamp()
+        except ValueError:
+            continue
+        if meilleur is None or t > meilleur:
+            meilleur, nom = t, (re.match(r"cassandra-temoin/([\w.-]{1,40})", l[i:]) or [None, ""])[1]
+    return meilleur, nom
+
+
+def collect_temoin_v19() -> list:
+    """Le témoin extérieur a-t-il appelé récemment ? Rien à dire tant qu'aucun n'a jamais appelé ; un témoin vu puis tu depuis 15 minutes est une alerte."""
+    meilleur, nom = None, ""
+    for chemin in set(_journaux_acces().values()):
+        try:
+            taille = os.path.getsize(chemin)
+            with open(chemin, "rb") as f:
+                f.seek(max(0, taille - 2 * 1048576))
+                t, n = _temoin_vu_dans(f.read().decode("utf-8", "replace").splitlines())
+        except OSError:
+            continue
+        if t is not None and (meilleur is None or t > meilleur):
+            meilleur, nom = t, n
+    conn = get_conn()
+    try:
+        conn.execute("CREATE TABLE IF NOT EXISTS world_meta (cle TEXT PRIMARY KEY, valeur TEXT)")
+        if meilleur is not None:
+            conn.execute("INSERT OR REPLACE INTO world_meta (cle, valeur) VALUES ('temoin:vu', ?)", ("%d|%s" % (meilleur, nom),))
+            conn.commit()
+        else:
+            r = conn.execute("SELECT valeur FROM world_meta WHERE cle='temoin:vu'").fetchone()
+            if r and "|" in r[0]:
+                a, _, b = r[0].partition("|")
+                meilleur, nom = (float(a) if a.isdigit() else None), b
+    except Exception as e:
+        print(f"[TEMOIN] {e}", file=sys.stderr)
+    if meilleur is None:
+        return [_mesure("temoin.exterieur", "application", "aucun témoin extérieur ne s'est encore signalé (facultatif : il prévient quand Cassandra ne répond plus du dehors)", "info")]
+    age = time.time() - meilleur
+    qui = (" (%s)" % nom) if nom else ""
+    if age > TEMOIN_SILENCE_S:
+        return [_mesure("temoin.exterieur", "application", "le témoin extérieur%s ne s'est pas montré depuis %s : est-il arrêté, ou Cassandra injoignable du dehors ?" % (qui, _v19_age(age)), "warning")]
+    return [_mesure("temoin.exterieur", "application", "vu il y a %s%s" % (_v19_age(age), qui), "info")]
+
+
 def collect_cassandra_v19() -> list:
     """Tout ce que le démon voit de Cassandra V19. Une panne d'un relevé se dit, elle n'efface pas les autres."""
     out = []
     if not _noyau_v19_present() and not os.path.isdir(RACINE_V19):
         return out                       # une machine sans Cassandra : rien à dire
-    for fn in (collect_noyau_v19, collect_stores_v19, collect_code_v19, collect_courtier_v19):
+    for fn in (collect_noyau_v19, collect_stores_v19, collect_code_v19, collect_courtier_v19, collect_temoin_v19):
         try:
             out.extend(fn() or [])
         except Exception as e:
@@ -5006,6 +5066,11 @@ def collect_box() -> list:
         except Exception:
             pass
     return out
+
+
+# Les préfixes de mesures_diverses que le modèle du monde relit : une clé d'un autre préfixe est relevée, stockée, et jamais montrée (Argos, 03-11 : noyau., store., code. et courtier. manquaient).
+PREFIXES_DIVERSES = ("courriel.", "ssh.", "conteneur_ressources.", "certbot.", "journaux.", "trafic.", "mysql.", "cassandra.", "box.", "tailnet.", "prison.", "domaine_courriel.", "image.", "dns_local",
+                     "outil_secu.", "noyau.", "store.", "code.", "courtier.", "temoin.")
 
 
 def collect_mesures_diverses() -> list:
@@ -5607,7 +5672,7 @@ def _construire_world_model():
         def _diverses(lignes, vus):
             for r in lignes:
                 U(r["cle"], r["categorie"] or "divers", r["valeur"], vus, r["severite"] or "info")
-        for _pref in ("courriel.", "ssh.", "conteneur_ressources.", "certbot.", "journaux.", "trafic.", "mysql.", "cassandra.", "box.", "tailnet.", "prison.", "domaine_courriel.", "image.", "dns_local", "outil_secu.", "noyau.", "store.", "code.", "courtier."):
+        for _pref in PREFIXES_DIVERSES:
             _famille(_pref, _q("SELECT cle, categorie, valeur, severite FROM mesures_diverses WHERE cle LIKE ?", _pref + "%"), _diverses)
 
         # Clés SSH autorisées, une par une : une clé ajoutée ou retirée entre au journal des changements

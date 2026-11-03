@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.12  #a70920
+# VERSION CN : 0.1.13  #c16817
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La lecture du Sensorium, sans contexte : le nom d'une mesure en français, son domaine et son objet, les alertes acceptées, les fenêtres de maintenance.
 # MÉTHODE    : des fonctions pures sur des listes de lignes {wkey, value, severity…} : le module (CN_module.py) leur donne les lignes du collecteur et les lignes de sa base ; rien ici ne touche au disque, au réseau ni à l'horloge.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.12 empreinte=a70920 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.13 empreinte=c16817 ▼▼▼
 """La lecture du Sensorium : tout ce que l'écran dit d'une mesure vient d'ici, et rien ici n'a d'effet de bord.
 
 Une ligne du collecteur est {wkey, value, severity, observed_at, detail}. Sa clé (« ssl.exemple.org », « service.nginx ») dit sa famille ; la famille dit son domaine ;
@@ -33,7 +33,7 @@ FAMILLES = (
     ("certbot", "Renouvellement des certificats", ("certbot.",)), ("box", "La box", ("box.", "dns_local")), ("outils", "Outils de sécurité", ("outil_secu.",)),
     ("tailnet", "Tailnet", ("tailnet.",)), ("capteur", "Capteurs", ("capteur.",)), ("sante", "Santé", ("health.",)),
     ("noyau", "Noyau de Cassandra", ("noyau.", "module_noyau.", "cassandra.")), ("store", "Bases de Cassandra", ("store.",)),
-    ("code", "Code scellé", ("code.",)), ("courtier", "Courtier racine", ("courtier.",)),
+    ("code", "Code scellé", ("code.",)), ("courtier", "Courtier racine", ("courtier.",)), ("temoin", "Témoin extérieur", ("temoin.",)),
 )
 # Les domaines : ce que l'écran propose pour parcourir (six, au lieu de trente familles à plat).
 DOMAINES = (
@@ -42,7 +42,7 @@ DOMAINES = (
     ("securite", "Sécurité et accès", ("securite", "acces", "outils")),
     ("certificats", "Certificats et sauvegardes", ("ssl", "certbot", "sauvegarde")),
     ("reseau", "Réseau et flotte", ("reseau", "box", "tailnet", "flotte", "courriel")),
-    ("cassandra", "Cassandra elle-même", ("config", "capteur", "sante", "noyau", "store", "code", "courtier")),
+    ("cassandra", "Cassandra elle-même", ("config", "capteur", "sante", "noyau", "store", "code", "courtier", "temoin")),
 )
 
 
@@ -76,7 +76,7 @@ NOMS = {"service": "Service", "docker": "Conteneur", "web": "Site", "ssl": "Cert
         "port": "Port", "interface": "Interface", "logiciel": "Logiciel", "config": "Réglage", "cle_ssh": "Clé SSH", "fail2ban": "Fail2ban", "cron": "Tâche planifiée",
         "fastpanel": "FastPanel", "journaux": "Journaux", "mysql": "MySQL", "cassandra": "Cassandra", "certbot": "Certbot", "exposition": "Exposition",
         "disque_sante": "Santé du disque", "php_fpm": "PHP-FPM", "box": "Box", "tailnet": "Tailnet", "prison": "Prison fail2ban", "domaine_courriel": "Courriel du domaine",
-        "image": "Image du conteneur", "dns_local": "DNS local de la maison", "noyau": "Noyau", "store": "Base", "code": "Code", "courtier": "Courtier"}
+        "image": "Image du conteneur", "dns_local": "DNS local de la maison", "noyau": "Noyau", "store": "Base", "code": "Code", "courtier": "Courtier", "temoin": "Témoin"}
 
 
 def mots(t: str) -> str:
@@ -94,7 +94,7 @@ EXACTS = {"noyau.service": "Noyau — service", "noyau.http": "Noyau — répons
           "noyau.sauvegarde": "Noyau — copie des données", "code.scelle": "Code — écarts au scellé", "courtier.commandes": "Courtier — commandes root",
           "courtier.etat": "Courtier — déclencheur", "courtier.file": "Courtier — demandes en attente", "store.total": "Bases de Cassandra — total",
           "store.noyau": "Base du noyau", "store.rejeu": "Base du rejeu", "store.evolution": "Base d'Évolution", "store.societes": "Bases de sociétés",
-          "store.utilisateurs": "Bases d'utilisateurs", "config.fichier": "Réglages — fichier de configuration", "health.score": "Santé — score",
+          "store.utilisateurs": "Bases d'utilisateurs", "temoin.exterieur": "Témoin extérieur — dernier signe de vie", "config.fichier": "Réglages — fichier de configuration", "health.score": "Santé — score",
           "system.tailscale": "Tailscale — connexion de la machine", "sauvegarde.hors_machine": "Sauvegarde hors de la machine"}
 
 
@@ -153,8 +153,8 @@ def objet_de(wkey, hote="") -> tuple:
         return ("Comptes et clés SSH", reste.split(".", 1)[0])
     if fam == "domaine_courriel" and reste:
         return ("Domaines de courriel", reste)
-    if fam in ("noyau", "module_noyau", "store", "code", "courtier", "cassandra"):
-        return ("Cassandra", {"noyau": "le noyau", "module_noyau": "les modules", "store": "les bases", "code": "le code", "courtier": "le courtier", "cassandra": "le noyau"}[fam])
+    if fam in ("noyau", "module_noyau", "store", "code", "courtier", "cassandra", "temoin"):
+        return ("Cassandra", {"noyau": "le noyau", "module_noyau": "les modules", "store": "les bases", "code": "le code", "courtier": "le courtier", "cassandra": "le noyau", "temoin": "le témoin"}[fam])
     if famille_de(w) in LOCALES and hote:
         return ("Machines", hote)
     return None
@@ -254,7 +254,7 @@ def gestes(row: dict) -> list:
         u = wk[8:]
         return [{"id": "redemarrer", "libelle": "Redémarrer %s" % u, "op": "service", "arg": u}]
     if wk.startswith("web.") and ("ne répond" in val or val.startswith("erreur")):
-        return [{"id": "nginx", "libelle": "Redémarrer nginx", "op": "nginx", "arg": ""}]
+        return [{"id": "nginx", "libelle": "Recharger nginx", "op": "nginx", "arg": ""}]
     if wk.startswith("docker."):
         return [{"id": "relancer", "libelle": "Relancer le conteneur (docker compose up)", "op": "compose", "arg": wk[7:]}]
     if wk == "journaux.journald":
@@ -274,7 +274,7 @@ etat=ok; depuis=0
 while true; do
   date +%s > "$D/battement"
   ok=0
-  for u in $URLS; do curl -sfk -o /dev/null --max-time 10 "$u" && ok=1 && break; done
+  for u in $URLS; do curl -sfk -A "cassandra-temoin/$TEMOIN" -o /dev/null --max-time 10 "$u" && ok=1 && break; done
   maint=$(date +%s)
   if [ "$ok" = 0 ]; then
     [ "$depuis" = 0 ] && depuis=$maint

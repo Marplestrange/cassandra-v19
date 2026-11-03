@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #dd7b28
+// VERSION CN : 0.1.0  #f4c478
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine l'écran du module Sensorium à la ressemblance de docs/maquettes/CN_maquette-sensorium.html : une seule colonne de menu (celle de l'application), une recherche, des pages.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.sensorium) qui remplace l'onglet V18 ; tout vient des capacités sensorium.* (etat, demon, modules, fenetres, changements, historique, accepter, retirer_acceptation, fenetre_poser, fenetre_annuler, redemarrer) ; tout texte dynamique est échappé ; ce qui n'est pas encore branché le dit.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=dd7b28 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f4c478 ▼▼▼
 /* La navigation est celle de la maquette validée : le menu vertical est celui de l'application (les vues du Sensorium en sont les sous-entrées), la page a une recherche et un
    bloc « Parcourir ». Aucune colonne de familles, aucune rangée de pilules. Règle : un chiffre affiché vient de sensorium.etat ; ce qui n'a pas de moteur garde la pastille « non branché ». */
 (function () {
@@ -63,6 +63,21 @@
 
   function css() { if (document.getElementById("sx-css")) return; const st = document.createElement("style"); st.id = "sx-css"; st.textContent = CSS; document.head.appendChild(st); }
   const agir = (c, a) => CASS.agir(c, a || {});
+  // Les erreurs JavaScript de cet écran sont signalées au Sensorium (dédoublonnées côté serveur ; ici : au plus 5 par minute, jamais deux fois la même, et rien de réseau).
+  // Posé dès le chargement du fichier, pas à l'ouverture de l'onglet : une erreur d'un autre écran se signale aussi.
+  const SIGNALEES = {}; let fenetreErr = { t: 0, n: 0 };
+  function signaler(message, source, ligne) {
+    try {
+      const m = String(message || "").slice(0, 300);
+      if (!m || /ResizeObserver loop|^Failed to fetch|^NetworkError|^Load failed|^Script error\.?$/i.test(m)) return;
+      const cle = m + "|" + source + "|" + ligne; if (SIGNALEES[cle]) return; SIGNALEES[cle] = 1;
+      const t = Date.now(); if (t - fenetreErr.t > 60000) fenetreErr = { t: t, n: 0 }; if (++fenetreErr.n > 5) return;
+      const p = CASS && CASS.agir && CASS.agir("sensorium.erreur_navigateur", { message: m, source: String(source || "").replace(location.origin, "").slice(0, 200), ligne: ligne || 0, page: String(location.hash || location.pathname).slice(0, 120) });
+      if (p && p.catch) p.catch(() => {});
+    } catch (e) { /* signaler une erreur ne doit jamais en faire une */ }
+  }
+  window.addEventListener("error", (e) => signaler(e.message, e.filename, e.lineno));
+  window.addEventListener("unhandledrejection", (e) => { const r = e.reason; signaler("Promesse rejetée : " + ((r && r.message) || r), "", 0); });
 
   // ── l'état de l'écran ─────────────────────────────────────────────────────────
   const S = { vue: "maintenant", fam: null, obj: null, histo: null, dom: null, gen: null, etat: null, demon: null, modules: null, fen: null, comp: null, avant: "24h", filtre: "tous",
@@ -93,6 +108,7 @@
     try { S.etat = await agir("sensorium.etat"); S.erreur = ""; } catch (e) { S.erreur = e.message || String(e); }
     try {
       if (S.vue === "demon") { S.demon = await agir("sensorium.demon").catch((e) => ({ muet: true, erreur: e.message })); S.modules = await agir("sensorium.modules").catch(() => null); }
+      if (S.vue === "capteurs") S.erreursJs = await agir("sensorium.erreurs_navigateur").catch(() => null);
       if (S.vue === "maintenance" || S.vue === "alertes") S.fen = await agir("sensorium.fenetres").catch(() => null);
       if (S.vue === "comparer") await chargerComparaison();
     } catch (e) { /* une page qui n'a pas ses données le dit, elle ne tombe pas */ }
@@ -213,7 +229,13 @@
   function pCapteurs() {
     const cap = rows().filter((r) => r.famille === "capteur"), ko = cap.filter(alerte).length;
     return section("Les capteurs eux-mêmes · " + ko + " en défaut", '<p class="vs">Un capteur en panne ou muet ne mesure plus : ce qu\'il avait relevé vieillit sans le dire. On le dit ici.</p>' +
-      (cap.length ? liste(cap) : '<div class="note">Pas encore de santé des capteurs (premier cycle en cours).</div>'));
+      (cap.length ? liste(cap) : '<div class="note">Pas encore de santé des capteurs (premier cycle en cours).</div>')) + pErreursJs();
+  }
+  function pErreursJs() {
+    const l = (S.erreursJs && S.erreursJs.erreurs) || [];
+    return section("Erreurs JavaScript des écrans · " + l.length, '<p class="vs">Ce que les écrans des utilisateurs ont signalé : un message, un fichier, une ligne. Trois erreurs distinctes dans l\'heure ouvrent un constat.</p>' +
+      (l.length ? '<div class="rows">' + l.map((e) => '<div class="row"><span class="dot warn"></span><div class="rt"><b>' + esc(e.message) + '</b><span>' + esc(e.source || "?") + (e.ligne ? ":" + e.ligne : "") + " · " + esc(e.page || "") +
+        "</span></div><span class=\"age\">" + (e.n > 1 ? e.n + " fois · " : "") + esc(quand(e.derniere)) + "</span></div>").join("") + "</div>" : '<div class="note">Aucune erreur signalée.</div>'));
   }
   function tuilesFam(ids) {
     const parFam = {}; rows().forEach((r) => { const f = parFam[r.famille] = parFam[r.famille] || { n: 0, w: 0 }; f.n++; if (alerte(r)) f.w++; });
@@ -318,7 +340,7 @@
   function pGravites() {
     const gr = (S.etat && S.etat.gravites) || [];
     return section("Qui est prévenu, et comment", '<p class="vs">Une mesure en alerte ouvre un <b>constat</b> (la cloche le montre, le badge du menu le compte) quand sa gravité le permet, après le nombre de relevés réglé ci-dessus ; accepter l\'alerte ou poser une fenêtre le referme. ' +
-      "Où la notification part ensuite (Telegram, courriel…) se règle par compte, dans les canaux : le Sensorium ne choisit que la gravité.</p>" +
+      "Où la notification part ensuite (Telegram, courriel…) se règle par compte et par gravité, dans Mon compte › Notifications (la politique y existe déjà ; l'envoi par courriel et Telegram viendra avec le module des canaux) : le Sensorium ne choisit que la gravité.</p>" +
       '<div class="rows">' + gr.map((g) => '<div class="row"><span class="dot ' + (g.id === "critique" ? "dg" : g.id === "avoir" ? "warn" : "ok") + '"></span><div class="rt"><b>' + esc(g.libelle) + "</b><span>" + esc(g.dit) + '</span></div><div class="gest"><label class="chip' + (g.ouvre ? " on" : "") + '" style="cursor:pointer"><input type="checkbox" data-grav="' + esc(g.id) + '" ' + (g.ouvre ? "checked" : "") + ' style="margin-right:6px">ouvre un constat</label></div></div>').join("") + "</div>");
   }
 
