@@ -12,7 +12,7 @@
 <!-- RÔLE       : Les modules -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=e4ed3c ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=bdcfb9 ▼▼▼ -->
 # Les modules
 
 Ce catalogue est **généré** depuis les manifestes (`python outils/CN_catalogue_modules.py`) ; un banc vérifie qu'il est à jour. Chaque module est un dossier
@@ -22,7 +22,7 @@ indépendant de `modules/` : son manifeste déclare ses droits, ses capacités, 
 - **instance** : n'existe que dans la société principale (sécurité, observabilité, sauvegardes, gestion des modules…).
 - **base par société** : les données du module sont séparées société par société.
 
-48 modules.
+49 modules.
 
 ## Socle
 
@@ -109,6 +109,7 @@ indépendant de `modules/` : son manifeste déclare ses droits, ses capacités, 
 | Module | Importance | Ce qu'il fait |
 |---|---|---|
 | `mandats` — Mandats | important | Les mandats d'envoi : l'autorisation d'envoyer, avec ses bornes (à qui, quand, combien, sous quel contrôle). |
+| `messages` — Messages | optionnel | Les messages qu'une personne rédige : enregistrés, relus, envoyés à la main, ou programmés pour partir seuls à l'heure dite. |
 | `salon` — Le Salon | optionnel | Des fils de travail où les personnes et les agents se parlent : un message a un auteur, des destinataires et un corps ; adresser un agent résident (Cassandra, Itare) le… |
 | `voix` — Voix | optionnel | La voix : ce qui est installé (l'écoute par faster-whisper, la parole par piper), le catalogue des voix, et le choix par compte. |
 
