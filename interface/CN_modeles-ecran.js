@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #fdfc3e
+// VERSION CN : 0.2.0  #3b87cf
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : dessine la page « Modèles & clés » : la santé du cerveau, le choix d’un modèle par agent, les modèles en ligne (clé d’API), les modèles locaux (Ollama) avec ce que la machine supporte, les autres moteurs d’IA, un comparateur et l’usage par modèle.
 // MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) et CASS.monterModeles, monté aussi dans Agents IA ; les rôles du moteur restent cachés : choisir un modèle pour un agent crée le rôle « agent_<id> » qui le relie ; une clé saisie n’est jamais relue.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=fdfc3e ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=3b87cf ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -113,7 +113,12 @@
       await agir("modeles.role_lier", { role, modele_id: modeleId });
       await agir("agents.agent_regler", { id: agent, champs: { [champ]: role } });
     }
-    const lierDefauts = async (modeleId) => { for (const r of DEFAUTS) await agir("modeles.role_lier", { role: r, modele_id: modeleId }); };
+    // Un modèle local sur processeur lit lentement : avec les 60 outils décrits à chaque tour, un tour de Cassandra dépasse 2 minutes (mesuré sur Argos : 52 s avec 12 outils).
+    // Les autres outils restent trouvables par « outil_cherche » : on en présente 12 d'emblée.
+    const lierDefauts = async (modeleId, local) => {
+      for (const r of DEFAUTS) await agir("modeles.role_lier", { role: r, modele_id: modeleId });
+      if (local) await agir("reglages.regler", { cle: "agents.max_outils", valeur: 12 });
+    };
 
     const declares = () => (S.l.modeles || []);
     const enLigne = () => declares().filter((m) => m.en_ligne);
@@ -140,7 +145,7 @@
           const inst = (S.loc && S.loc.modeles) || [];
           return '<div class="carte al"><div class="bar"><div><h2>Cassandra ne peut pas penser pour l’instant</h2><p class="note">Aucun modèle n’est déclaré : ' + esc(sans) + ' répondent « aucun modèle ». Choisis un cerveau, deux minutes.</p></div><span class="pastille dg">0 agent sur ' + cv.total + " répond</span></div>" +
             '<div class="etapes"><div class="etape"><span class="lib">Sur la machine</span><b>Gratuit et privé</b>' +
-            (inst.length ? '<p class="note">Ollama a déjà ' + (inst.length > 1 ? "des modèles installés" : "un modèle installé") + " : " + inst.map((m) => esc(m.name)).join(", ") + ".</p>" + inst.slice(0, 3).map((m) => '<button class="btn pri" data-a="brancher-local" data-n="' + esc(m.name) + '"' + (S.occupe ? " disabled" : "") + ">Utiliser " + esc(m.name) + " pour tous les agents</button>").join("")
+            (inst.length ? '<p class="note">Ollama a déjà ' + (inst.length > 1 ? "des modèles installés" : "un modèle installé") + " : " + inst.map((m) => esc(m.name)).join(", ") + ".</p>" + inst.slice(0, 3).map((m) => '<button class="btn pri" data-a="brancher-local" data-n="' + esc(m.name) + '"' + (S.occupe ? " disabled" : "") + ">Utiliser " + esc(m.name) + " pour tous les agents</button>").join("") + '<p class="note">Sur processeur, un modèle local lit lentement : on présente alors 12 outils aux agents au lieu de 60 (les autres se trouvent à la demande), sinon un tour dépasse deux minutes.</p>'
               : '<p class="note">Aucun modèle installé. Le plus léger qui parle bien français pèse 1,9 Go.</p><button class="btn pri" data-a="installer" data-n="qwen2.5:3b"' + (S.occupe || !(S.loc || {}).repond ? " disabled" : "") + ">Installer qwen2.5:3b</button>") + "</div>" +
             '<div class="etape"><span class="lib">Chez un fournisseur</span><b>Plus fin, payant à l’usage</b><p class="note">Il faut une clé d’API. Le formulaire est juste en dessous : fournisseur, modèle, clé.</p><button class="btn" data-a="vers-ajout">Ajouter une clé</button></div></div></div>';
         }
@@ -299,8 +304,8 @@
       if (a === "suppr-oui") return faire(() => agir("modeles.ollama_supprimer", { nom: b.dataset.n }), "Modèle local supprimé.");
       if (a === "essayer") return faire(async () => { const r = await essayer(b.dataset.id); S.essais[b.dataset.id] = r.ok ? { ok: true, secondes: r.secondes } : { ok: false, erreur: r.erreur }; return r; }, (r) => (r.ok === false ? "Le modèle n’a pas répondu." : "Le modèle a répondu."));
       if (a === "declarer") return faire(() => ajouterModele({ fournisseur: "ollama", nom: b.dataset.n }), "Modèle local déclaré : " + b.dataset.n);
-      if (a === "brancher-local") return faire(async () => { const r = await ajouterModele({ fournisseur: "ollama", nom: b.dataset.n }); await lierDefauts(r.id); try { await essayer(r.id); } catch (e) { /* l’essai se refait à la main */ } }, "Cassandra, Amizo et Itare utilisent maintenant " + b.dataset.n + ".");
-      if (a === "lier-defauts") { const id = String((racine.querySelector("#md-tout") || {}).value || ""); if (!id) return; return faire(() => lierDefauts(id), "Cassandra, Amizo et Itare sont reliés."); }
+      if (a === "brancher-local") return faire(async () => { const r = await ajouterModele({ fournisseur: "ollama", nom: b.dataset.n }); await lierDefauts(r.id, true); try { await essayer(r.id); } catch (e) { /* l’essai se refait à la main */ } }, "Cassandra, Amizo et Itare utilisent maintenant " + b.dataset.n + ".");
+      if (a === "lier-defauts") { const id = String((racine.querySelector("#md-tout") || {}).value || ""); if (!id) return; const m = declares().find((x) => x.id === id); return faire(() => lierDefauts(id, !!m && !m.en_ligne), "Cassandra, Amizo et Itare sont reliés."); }
       if (a === "installer") return faire(() => agir("modeles.ollama_telecharger", { nom: b.dataset.n }), "Téléchargement demandé : " + b.dataset.n);
       if (a === "installer-libre") {
         const n = String((racine.querySelector("#md-pull") || {}).value || "").trim();
