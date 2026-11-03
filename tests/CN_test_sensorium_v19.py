@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #27c150
+# VERSION CN : 0.1.0  #20044b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : prouve que le Sensorium voit la V19 elle-même (unité cassandra-noyau, sonde HTTP, bases, code scellé, courtier root) et que le module relève la santé de chaque module du noyau.
 # MÉTHODE    : charge CN_sensorium.py sur une base temporaire, simule systemctl et l'API HTTP (aucun réseau, aucune commande système), fabrique de vraies bases SQLite (saines, abîmées, tronquées) et une version scellée, puis monte un vrai noyau avec ses modules pour la santé de dedans.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=27c150 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=20044b ▼▼▼
 import importlib.util
 import json
 import os
@@ -1216,6 +1216,15 @@ class Lecture(unittest.TestCase):
 
 
 class MondeDuDemon(Demon):
+    def test_la_vieille_ligne_config_fichier_absent_disparait(self):
+        """Argos (03-11, après déploiement) : collect_cassandra_config rendait [], mais l'ancienne ligne « absent » restait en table et en alerte."""
+        self.m.init_all_tables()
+        conn = self.m.get_conn()
+        conn.execute("INSERT INTO cassandra_config (cle, etat, valeur, last_check) VALUES ('__fichier__', 'absent', '', 'x')")
+        conn.commit()
+        self.m.save_many("cassandra_config", [])
+        self.assertEqual(self.m.get_conn().execute("SELECT COUNT(*) FROM cassandra_config").fetchone()[0], 0)
+
     LIGNE = '1.2.3.4 - - [%s +0000] "GET / HTTP/2.0" 200 5 "-" "cassandra-temoin/%s"'
 
     def test_le_temoin_vu_se_dit(self):

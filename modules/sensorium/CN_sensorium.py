@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.13  #c33012
+# VERSION CN : 0.1.14  #4b7433
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : CASSANDRA — Sensorium v6.1 ===================================================================== Optimisations appliquées (6 majeures) :   [O1] _fp_available()  → lru_cache(maxsize=1) — élimine les stat() répétés   [O2] _read_meminfo()  → l
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.13 empreinte=c33012 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.14 empreinte=4b7433 ▼▼▼
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Drisse ATEK
 """
@@ -5098,7 +5098,7 @@ def collect_mesures_diverses() -> list:
 # LES RELEVÉS D'ÉTAT INSTANTANÉ, où « vide » est une vraie réponse (24-09) : sans cette liste, un relevé vide ne
 # touchait pas la table, et le dernier service en échec (ou la dernière adresse bannie) y restait pour toujours —
 # openipmi, désactivé à 05:00, rouvrait « Service en échec » toute la journée sur Orion.
-_TABLES_INSTANTANE = {"failed_units", "fail2ban_banned_ips"}
+_TABLES_INSTANTANE = {"failed_units", "fail2ban_banned_ips", "cassandra_config"}      # cassandra_config : sur une machine V19, « rien » est la réponse, et l'ancienne ligne « fichier absent » doit partir
 
 
 def save_many(table: str, rows: list):

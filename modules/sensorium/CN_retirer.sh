@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.13  #a87f56
+# VERSION CN : 0.1.14  #a87f56
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Retire le Sensorium : arrête et défait son unité. Ses données restent (sensorium/ dans le dossier de données) : rien n'est supprimé sans demande.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.13 empreinte=a87f56 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.14 empreinte=a87f56 ▼▼▼
 # Retire le Sensorium : arrête et défait son unité. Ses données restent (sensorium/ dans le dossier de données) : rien n'est supprimé sans demande.
 set -u
 unite="sensorium.service"

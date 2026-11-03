@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : sensorium
 # ZONE       : CN
-# VERSION CN : 0.1.13  #c16817
+# VERSION CN : 0.1.14  #c16817
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La lecture du Sensorium, sans contexte : le nom d'une mesure en français, son domaine et son objet, les alertes acceptées, les fenêtres de maintenance.
 # MÉTHODE    : des fonctions pures sur des listes de lignes {wkey, value, severity…} : le module (CN_module.py) leur donne les lignes du collecteur et les lignes de sa base ; rien ici ne touche au disque, au réseau ni à l'horloge.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.13 empreinte=c16817 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.14 empreinte=c16817 ▼▼▼
 """La lecture du Sensorium : tout ce que l'écran dit d'une mesure vient d'ici, et rien ici n'a d'effet de bord.
 
 Une ligne du collecteur est {wkey, value, severity, observed_at, detail}. Sa clé (« ssl.exemple.org », « service.nginx ») dit sa famille ; la famille dit son domaine ;
