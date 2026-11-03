@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6230bc
+# VERSION CN : 0.1.0  #170c51
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'équipe d'agents : droits, capacités de lecture et de réglage, coût par jour, plafonds, cloisonnement, et l'absence d'outil de secret chez Itare et les agents invités.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6230bc ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=170c51 ▼▼▼
 """Bancs de l'équipe d'agents : droits, capacités de lecture et de réglage, coût par jour, plafonds, cloisonnement, et l'absence d'outil de secret chez Itare et les agents invités."""
 import shutil
 import sys
@@ -33,9 +33,27 @@ CAPS_ECRITURE = ("agent_regler", "palier_regler", "niveau_regler", "plafond_regl
 CAPS_LECTURE = ("equipe", "agent", "couts", "paliers")
 
 
+class SansLocal:
+    """Le faux serveur écoute en 127.0.0.1, donc « local », donc gratuit. Les bancs de coût et de plafond jouent un fournisseur EN LIGNE : on le fait passer pour tel
+    (un modèle local ne coûte rien : tests/CN_test_cerveau.py::Gratuit)."""
+
+    def __init__(self, vrai):
+        self._vrai = vrai
+
+    def __getattr__(self, nom):
+        return getattr(self._vrai, nom)
+
+    def match(self, motif, texte_, *a):
+        return None if "127" in motif else self._vrai.match(motif, texte_, *a)
+
+
 class Equipe(base.Monde):
     def setUp(self):
         super().setUp()
+        g = self.n.catalogue.get("modeles.completer").faire.__globals__
+        vrai = g["re"]
+        g["re"] = SansLocal(vrai)
+        self.addCleanup(g.__setitem__, "re", vrai)
         self.jour = [1_800_000_000.0]
         mod = sys.modules[self.n.catalogue.get("agents.equipe").faire.__module__].eq          # CN_equipe, tel que le noyau l'a chargé
         self.eq = mod

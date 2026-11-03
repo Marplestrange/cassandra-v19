@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.1  #ca9e06
+# VERSION CN : 0.5.1  #cf74e0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.1 empreinte=ca9e06 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=cf74e0 ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -226,7 +226,7 @@ def brancher(ctx):
             if isinstance(r, dict):
                 try:
                     if r.get("usage"):
-                        E.compter(agent, compte, r["usage"])            # le coût du jour, par agent
+                        E.compter(agent, compte, r["usage"], local=bool(r.get("local")))            # le coût du jour, par agent ; un modèle local est gratuit
                 except Exception:
                     pass
             if isinstance(r, dict) and r.get("ok"):

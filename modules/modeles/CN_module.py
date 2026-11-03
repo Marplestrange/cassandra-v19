@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6d3cb8
+# VERSION CN : 0.1.0  #1ae878
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les modèles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6d3cb8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1ae878 ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -117,12 +117,16 @@ def brancher(ctx):
             raise ValueError("modèle introuvable")
         return m
 
+    def en_ligne(m):
+        """Un modèle part chez un fournisseur, sauf Ollama et un serveur personnalisé qui écoute sur cette machine : ceux-là sont gratuits et ne sortent pas."""
+        return m["fournisseur"] != "ollama" and not (m["fournisseur"] == "personnalise" and re.match(r"https?://(127\.|localhost|\[::1\])", m["base_url"] or ""))
+
     def publique(m, roles=None, choisi=""):
         return {"id": m["id"], "fournisseur": m["fournisseur"], "nom": m["nom"], "base_url": m["base_url"], "a_cle": bool(m["cle"]), "portee": m["portee"],
                 "ajoute_par": m["ajoute_par"], "cree": datetime.fromtimestamp(m["cree"]).strftime("%Y-%m-%d %H:%M"),
                 "essai": None if m["essai_ts"] is None else {"quand": datetime.fromtimestamp(m["essai_ts"]).strftime("%Y-%m-%d %H:%M"), "ok": bool(m["essai_ok"]), "secondes": m["essai_s"], "message": m["essai_msg"]},
                 "roles": (roles or {}).get(m["id"], []), "choisi": m["id"] == choisi,
-                "en_ligne": m["fournisseur"] != "ollama" and not (m["fournisseur"] == "personnalise" and re.match(r"https?://(127\.|localhost|\[::1\])", m["base_url"] or ""))}
+                "en_ligne": en_ligne(m)}
 
     def creds(m):
         """(clé, modèle, base, fournisseur). Sans clé : « ollama » pour le local, « none » ailleurs (le client exige une valeur non vide)."""
@@ -348,7 +352,7 @@ def brancher(ctx):
             return {"ok": False, "texte": "", "erreur": panne_texte(nom, base, e).replace(cle, "***") if cle not in ("none", "ollama", "") else panne_texte(nom, base, e), "secondes": dt, "modele": m["id"]}
         dt = round(time.time() - t0, 1)
         ajouter_usage(role, m["id"], bool(txt or appels), dt, usage)
-        return {"ok": bool(txt or appels), "texte": txt, "appels": appels, "message": message, "avertissement": avert, "erreur": "" if (txt or appels) else (avert or "aucune réponse"), "secondes": dt, "modele": m["id"],
+        return {"ok": bool(txt or appels), "texte": txt, "appels": appels, "message": message, "avertissement": avert, "erreur": "" if (txt or appels) else (avert or "aucune réponse"), "secondes": dt, "modele": m["id"], "local": not en_ligne(m),
                 "usage": {k: v for k, v in usage.items() if isinstance(v, int)}}
 
     def completer(c, messages=None, systeme="", max_tokens=1400, temperature=None, role="", modele_id="", reflexion=False, timeout=75.0, allow_reasoning=True, outils=None):

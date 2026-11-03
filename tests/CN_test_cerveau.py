@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7d589b
+# VERSION CN : 0.1.0  #1b278a
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du cerveau : un agent peut-il répondre, qu'est-ce qui casse, le détecteur qui le dit, les économies suggérées, les moteurs d'IA de la machine.
 # MÉTHODE    : un vrai noyau avec les modules agents, modeles, memoire et notes ; aucun modèle réel (on lie des modèles déclarés, sans les appeler).
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7d589b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=1b278a ▼▼▼
 """Bancs du cerveau : un agent sans modèle ne répond pas, et le noyau le dit."""
 import shutil
 import sys
@@ -26,6 +26,7 @@ sys.path.insert(0, str(RACINE))
 
 import CN_main as moteur                      # noqa: E402
 from noyau.CN_bus import TOUT                 # noqa: E402
+from tests.CN_test_agents import Monde as MondeAgents, texte      # noqa: E402
 
 ROOT = "root@x.fr"
 
@@ -150,6 +151,37 @@ class Moteurs(Monde):
         mid = self.modele()
         self.lire("modeles.role_lier", role="vision", modele_id=mid)
         self.assertEqual(next(m for m in self.lire("modeles.moteurs")["moteurs"] if m["id"] == "vision")["etat"], "pose")
+
+
+class Gratuit(MondeAgents):
+    """Un modèle local est gratuit : ses appels et ses jetons se comptent, pas ses centimes. Un modèle en ligne se paie au tarif de l'agent."""
+
+    def cout(self):
+        return [dict(r) for r in self.db.lire("SELECT agent, appels, entrees, sorties, centimes FROM agent_couts")]
+
+    def test_un_modele_local_ne_coute_rien_mais_se_compte(self):
+        self.causer("Bonjour", [texte("Salut.")], compte=ROOT, agent="cassandra")
+        (ligne,) = self.cout()
+        self.assertEqual((ligne["agent"], ligne["appels"], ligne["centimes"]), ("cassandra", 1, 0))
+        self.assertGreater(ligne["entrees"], 0)
+
+    def test_un_modele_en_ligne_se_paie_au_tarif_de_l_agent(self):
+        g = self.n.catalogue.get("modeles.completer").faire.__globals__
+        vrai = g["re"]
+
+        class SansLocal:                                         # le faux serveur écoute en 127.0.0.1 : on fait comme s'il était chez un fournisseur
+            def __getattr__(self, nom):
+                return getattr(vrai, nom)
+
+            @staticmethod
+            def match(motif, texte_, *a):
+                return None if "127" in motif else vrai.match(motif, texte_, *a)
+
+        g["re"] = SansLocal()
+        self.addCleanup(g.__setitem__, "re", vrai)
+        self.causer("Bonjour", [texte("Salut.")], compte=ROOT, agent="cassandra")
+        (ligne,) = self.cout()
+        self.assertGreater(ligne["centimes"], 0)
 
 
 if __name__ == "__main__":

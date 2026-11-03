@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.1  #89cd65
+# VERSION CN : 0.5.1  #03fa78
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents, et les services que le tour de conversation emploie (réglage effec
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.1 empreinte=89cd65 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=03fa78 ▼▼▼
 """L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents,
 et les services que le tour de conversation emploie (réglage effectif, palier par outil, coût du jour, plafond).
 
@@ -142,15 +142,16 @@ def brancher_equipe(ctx, reglage):
             a.append(compte)
         return dict(db.lire(sql, a)[0])
 
-    def compter(agent, compte, usage):
-        """Le coût d'un échange avec le modèle, ajouté au jour : par agent, et par compte pour Itare."""
+    def compter(agent, compte, usage, local=False):
+        """Le coût d'un échange avec le modèle, ajouté au jour : par agent, et par compte pour Itare. Un modèle local est GRATUIT : ses appels et ses jetons se comptent, jamais des centimes
+        (le tarif d'un agent est celui d'un fournisseur en ligne ; l'appliquer au modèle de la machine faussait le vrai coût et les plafonds)."""
         d = definition(agent)
         e, s = int((usage or {}).get("prompt_tokens") or 0), int((usage or {}).get("completion_tokens") or 0)
         te, ts = tarifs(effectif(agent, compte if d["portee"] == "compte" else ""))
         cle = compte if d["portee"] == "compte" else ""
         db.ecrire("INSERT INTO agent_couts(jour, agent, compte, appels, entrees, sorties, centimes) VALUES (?,?,?,1,?,?,?) ON CONFLICT(jour, agent, compte) DO UPDATE SET "
                   "appels=appels+1, entrees=entrees+excluded.entrees, sorties=sorties+excluded.sorties, centimes=centimes+excluded.centimes",
-                  (eq.jour(), d["id"], cle, e, s, eq.cout_centimes(e, s, te, ts)))
+                  (eq.jour(), d["id"], cle, e, s, 0 if local else eq.cout_centimes(e, s, te, ts)))
 
     def plafonds():
         return {r["portee"]: dict(r) for r in db.lire("SELECT * FROM agent_plafonds")}
