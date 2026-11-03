@@ -12,7 +12,7 @@
 <!-- RÔLE       : Le relevé, par domaine, des routes V18 encore à porter en V19. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=449ab3 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=c15ab0 ▼▼▼ -->
 # Routes V18 sans équivalent branché en V19
 
 Relevé du 02-11-2026 : les écrans repris de la V18 (`interface/CN_app.js`) appellent des routes `/api/…` que la couche de compatibilité (`interface/CN_compat.js` + `interface/routes/CN_*.js`) ne branche pas encore ; elles répondent 501 « pas encore porté ».
@@ -51,28 +51,33 @@ Dites telles quelles (la route répond, avec la raison — jamais un 501) :
 - `/api/fp/scans/run`, `configure`, `reports`, `report`, `/api/site/scan`, `/api/site/sauvegarde`, `/api/fp/websocket/apply`, `/api/fp/service/diagnose` (journal et vérification de configuration), `/api/site/thumb`, `/api/sites/act` (redémarrer, journaux) : ils demandent la commande `mogwai` ou des fichiers de root ; le courtier du module `fastpanel` n'a pas encore ces commandes. Reste à faire : une commande racine `mogwai` à table fermée (scan, backup run), puis ces routes.
 - `/api/securite/direct` : bannir une adresse ou un pays, la liste blanche, fermer un chemin d'un site, freiner un robot — pas encore portés (pare-feu du noyau et nginx) ; débannir, arrêter un service et lancer un outil le sont.
 
-## Bureau d'Itare, messagerie et outils — 170 routes
+## Bureau d'Itare, messagerie et outils — 127 routes
 
 Modules V19 proches : notes, canaux, telegram, canvas, coffre, notifications, journal, proactif, comptes. Fonctions : contacts (CardDAV, photos, documents), laboratoire, messages programmés, Telegram, Canva, carnet, préférences de notification, coffre personnel, agenda externe.
+
+**Porté dans cette section** (la V19 y répond autrement que par 501) : le carnet (`/api/carnet/*`, par le module notes), les réglages de la cloche (`/api/notif/*` : préférences, politique de canaux, sourdines, essai, webhook chiffré ; notifications 0.3.0),
+Mon coffre-fort (`/api/vault/mine/*` ; coffre 0.2.0 : fiches typées, TOTP, historique chiffré), les messages en cours et programmés (`/api/msg/*` ; module messages 0.1.0, courrier 0.1.4 `envoyer_programme`),
+les portraits, documents et vie privée d'une fiche du carnet (`/api/itare/contact/photos|documents|privacy` ; contacts 0.3.4, GED 0.1.2).
+Honnêtement, **ce qui reste est ci-dessous**. Limites connues de ce qui est porté : les canaux de la cloche (courriel, Telegram, webhook) n'envoient pas encore (la politique est enregistrée pour eux, l'essai le dit) ; `/api/notif/agir` répond qu'aucune action n'est attachée à une notification ;
+les fiches du coffre sont des documents JSON rangés dans la note sécurisée (l'application Bitwarden ne les voit pas comme des identifiants) et il n'y a plus de clé d'API personnelle ; `bcc` d'un message est enregistré mais le courrier ne le pose pas (comme en V18) ; `/api/msg/relire` et `/api/msg/fait` (relecture et faits relevés par un modèle) restent à porter.
 
 - `/api/autonomie` (1) : `/recit`
 - `/api/canva` (6) : `/brancher`, `/creer`, `/debrancher`, `/designs`, `/etat`, `/reconcilier`
 - `/api/canvas` (14) : `/amorcer`, `/ext/apercu`, `/ext/etat`, `/ext/lister`, `/geste`, `/importer`, `/itare`, `/portes`, `/registre`, `/relier`, `/sorties`, `/sortir`, `/vivante/poser`, `/vivante/rejouer`
-- `/api/carnet` (15) : `/detacher`, `/etat`, `/fiche`, `/groupes`, `/lister`, `/migrer`, `/postit`, `/postit/reprendre`, `/ranger`, `/rattacher`, `/relire`, `/tache`, `/taches`, `/taches/projeter`, `/taches/reprendre`
 - `/api/comptes` (2) : `/dossier/supprimer`, `/dossiers`
 - `/api/conv` (1) : `/ecrire`
 - `/api/iso` (1) : `/orphelines`
 - `/api/ita` (7) : `/basculer`, `/commencer`, `/delier`, `/ident`, `/reconnaitre`, `/relancer`, `/valider`
-- `/api/itare` (38) : `/bureau/suggestions`, `/contact/autolink`, `/contact/carddav`, `/contact/carddav/delier`, `/contact/carddav/importer`, `/contact/carddav/relier`, `/contact/documents`, `/contact/photos`, `/contact/privacy`, `/contact/propositions`, `/contact/site/apercu`, `/contact/site/importer`, `/contact/sites`, `/draft/compose`, `/event/prep`, `/mail/avatars`, `/mail/avatars/oublier`, `/mail/chercher`, `/mail/link`, `/mail/media`, `/mail/media/index`, `/mail/media/texte`, `/mail/piece/ged`, `/mail/projet/suggerer`, `/mail/relance`, `/mail/rule/delete`, `/mail/rule/save`, `/mail/rule/suggest`, `/mail/rules`, `/mail/rules/apply`, `/mail/schedule`, `/mail/summary`, `/mail/thread`, `/project/ask`, `/project/search`, `/project/suggest`, `/task/creneau`, `/task/from`
+- `/api/itare` (35) : `/bureau/suggestions`, `/contact/autolink`, `/contact/carddav`, `/contact/carddav/delier`, `/contact/carddav/importer`, `/contact/carddav/relier`, `/contact/propositions`, `/contact/site/apercu`, `/contact/site/importer`, `/contact/sites`, `/draft/compose`, `/event/prep`, `/mail/avatars`, `/mail/avatars/oublier`, `/mail/chercher`, `/mail/link`, `/mail/media`, `/mail/media/index`, `/mail/media/texte`, `/mail/piece/ged`, `/mail/projet/suggerer`, `/mail/relance`, `/mail/rule/delete`, `/mail/rule/save`, `/mail/rule/suggest`, `/mail/rules`, `/mail/rules/apply`, `/mail/schedule`, `/mail/summary`, `/mail/thread`, `/project/ask`, `/project/search`, `/project/suggest`, `/task/creneau`, `/task/from`
 - `/api/journal` (5) : `/act`, `/anomalies`, `/postmortem`, `/postmortem/save`, `/purge`
 - `/api/lab` (14) : `/assign`, `/chat`, `/contexte`, `/delete`, `/etabli`, `/modes`, `/piece`, `/piece/ged`, `/piece/oter`, `/pieces`, `/pull`, `/pull_status`, `/setmodel`, `/sources`
 - `/api/liens` (2) : ``, `/graphe`
 - `/api/mail` (3) : `/recap_now`, `/settings`, `/test`
 - `/api/me` (9) : `/agenda/detach`, `/agenda/save`, `/deverrouiller`, `/history`, `/photo`, `/telegram/brancher`, `/telegram/cible`, `/telegram/detacher`, `/telegram/envoyer`
 - `/api/modeles` (1) : `/migrer`
-- `/api/msg` (8) : `/destinataires`, `/envoyer`, `/fait`, `/liste`, `/programmer`, `/reecrire`, `/relire`, `/save`
-- `/api/notes` (2) : `/migration`, `/tache/rappel`
-- `/api/notif` (6) : `/agir`, `/essai`, `/passe`, `/prefs`, `/sourdine`, `/webhook`
+- `/api/msg` (2) : `/fait`, `/relire`
+- `/api/notes` (1) : `/tache/rappel`
+- `/api/notif` (1) : `/agir`
 - `/api/proactive` (3) : `/act`, `/investigate`, `/snooze`
 - `/api/ranger` (1) : ``
 - `/api/rappel` (1) : `/comprendre`
@@ -80,7 +85,6 @@ Modules V19 proches : notes, canaux, telegram, canvas, coffre, notifications, jo
 - `/api/settings` (5) : `/api-key`, `/password`, `/relecteur`, `/relecteur/essai`, `/vision`
 - `/api/telegram` (2) : `/adopter`, `/proposes`
 - `/api/tgc` (9) : `/commencer`, `/delier`, `/dire`, `/ident`, `/importer`, `/lire`, `/piece`, `/valider`, `/visage`
-- `/api/vault` (13) : `/mine/audit`, `/mine/cle_api`, `/mine/creer`, `/mine/delete`, `/mine/get`, `/mine/historique`, `/mine/list`, `/mine/qr`, `/mine/status`, `/mine/totp`, `/mine/trace`, `/mine/update`, `/mine/url`
 
 ## Évolution et GED distante — 41 routes
 
