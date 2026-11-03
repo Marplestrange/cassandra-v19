@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #56636b
+# VERSION CN : 0.1.0  #aaef52
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Héberge un moteur de recherche dans un processus à part (protocole + relais de modèles plafonné) et tient le registre des moteurs et l'attribution des pièces.
 # MÉTHODE    : le moteur parle par lignes JSON ; ses demandes de modèle passent par un relais qui compte appels et jetons et refuse au plafond ; le registre est un fichier JSON écrit par remplacement.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=56636b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=aaef52 ▼▼▼
 """Lot 1 de la maquette d'Évolution : la frontière de processus, le relais de modèles, le registre des moteurs.
 
 `MoteurProcessus` a le contrat de tout moteur (`proposer(contexte) -> liste de textes`) : le service d'évolution ne voit pas la différence entre Orfan en ligne, Orfan dans
@@ -79,6 +79,22 @@ class MoteurProcessus:
         self.max_appels, self.max_jetons = int(max_appels), int(max_jetons)
         self.stats = {"propositions": 0, "appels_modele": 0, "refus": 0, "jetons": 0, "duree_s": 0.0}
 
+    def _lecture(self) -> tuple:
+        """Ce que le bac doit rendre visible (lecture seule) pour un moteur externe : son environnement (…/venv) et, si son interpréteur n'est pas celui du système (un Python 3.13 posé par l'admin),
+        le dossier d'installation de cet interpréteur, lu dans le `pyvenv.cfg` de l'environnement."""
+        venv = Path(self.python).parent.parent
+        visibles = [str(venv)]
+        try:
+            for ligne in (venv / "pyvenv.cfg").read_text(encoding="utf-8").splitlines():
+                cle, _, val = ligne.partition("=")
+                if cle.strip() == "home" and val.strip():
+                    home = Path(val.strip())
+                    if not home.as_posix().startswith(("/usr", "/bin", "/lib")):
+                        visibles.append(str(home.parent))
+        except OSError:
+            pass
+        return tuple(visibles)
+
     def _relais(self, role: str, modele: str, haut: int, bas: int, resultat: str) -> None:
         if self.on_relais is not None:
             try:
@@ -88,7 +104,7 @@ class MoteurProcessus:
 
     def proposer(self, contexte: dict) -> list:
         debut = time.monotonic()
-        lecture = (str(Path(self.python).parent.parent),) if self.python else ()          # le dossier de l'environnement du moteur externe (…/venv)
+        lecture = self._lecture() if self.python else ()
         t = _Travailleur(self.memoire_mo, self.bac, script=self.hote, arguments=(self.orfan, self.choix), executable=self.python, lecture=lecture)
         appels = jetons = 0
         try:

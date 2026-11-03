@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #e68ea5
+# VERSION CN : 0.1.0  #df60a0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Résout un paquet de moteur dans un environnement neuf, télécharge chaque dépendance, calcule son empreinte sha256 et écrit l'entrée du catalogue des moteurs (et son sceau si on donne la clé).
 # MÉTHODE    : un venv jetable ; `pip install` pour résoudre, `pip freeze` pour figer, `pip download --no-deps` paquet par paquet pour empreinter ; les empreintes sont celles des fichiers de CETTE plateforme.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=e68ea5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=df60a0 ▼▼▼
 """Usage :
   python outils/CN_moteurs_epingler.py --id openevolve --nom OpenEvolve --paquet openevolve==0.4.1 --adaptateur CN_adaptateur_openevolve \\
          --catalogue <données>/moteurs-catalogue.json [--cle <fichier de la clé de l'instance>]
@@ -56,6 +56,9 @@ def epingler(paquet: str, ident: str, nom: str, adaptateur: str, version: str = 
         py = _python(venv)
         _lancer([py, "-m", "pip", "install", "--disable-pip-version-check", "--no-input", paquet])
         gel = [l.strip() for l in _lancer([py, "-m", "pip", "freeze", "--disable-pip-version-check"]).splitlines() if "==" in l and not l.startswith("-e")]
+        if " @ " in paquet:                                                  # le paquet donné par son archive : pip freeze le montre sous une adresse de fichier local, on garde l'adresse DONNÉE
+            nom_archive = paquet.split(" @ ", 1)[0].strip().lower().replace("_", "-")
+            gel = [paquet.strip()] + [l for l in gel if l.split("==")[0].strip().lower().replace("_", "-") != nom_archive]
         paquets = []
         for requis in gel:
             if " @ " in requis:                                                  # un paquet installé depuis une archive : son empreinte est celle de l'archive
@@ -68,7 +71,7 @@ def epingler(paquet: str, ident: str, nom: str, adaptateur: str, version: str = 
             if not fichiers:
                 raise SystemExit("rien de téléchargé pour %s" % requis)
             paquets.append({"requis": requis, "empreintes": ["sha256:" + hashlib.sha256(open(os.path.join(dossier, f), "rb").read()).hexdigest() for f in fichiers]})
-    entree = {"id": ident, "nom": nom, "version": version or paquet.split("==")[-1].split(" @ ")[0], "adaptateur": adaptateur, "paquets": paquets, "plateforme": sys.platform}
+    entree = {"id": ident, "nom": nom, "version": version or (paquet.rsplit("/", 1)[-1][:12] if " @ " in paquet else paquet.split("==")[-1]), "adaptateur": adaptateur, "paquets": paquets, "plateforme": sys.platform}
     if interpreteur:
         entree["interpreteur"] = interpreteur
     return entree

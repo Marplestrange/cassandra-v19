@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution V19 — note de conception -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=722c7d ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=179b10 ▼▼▼ -->
 # Évolution V19 — note de conception
 
 Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le moteur V18 (diff d'un fichier unique `cassandra.py`), qui n'a plus d'objet.
@@ -198,7 +198,7 @@ Tout ce que la maquette `docs/CN_maquette-evolution-moteurs.html` montrait exist
 - **L'installateur accepte un interpréteur propre à un moteur** (`interpreteur`, chemin absolu posé par l'admin, par ex. `uv python install 3.13`) et un paquet en archive (`nom @ https://…`, toujours avec ses empreintes) ; l'outil d'épinglage sait les écrire.
 
 **Reste, à dire franchement** :
-- **CodeEvolve** (le vrai, `inter-co/science-codeevolve`, Python ≥ 3.13.5 ; le paquet « codeevolve » de PyPI est un autre projet) : l'adaptateur `CN_adaptateur_codeevolve.py` est écrit d'après son interface de ligne de commande (dossier d'entrée, configuration, `API_BASE`/`API_KEY`), l'installateur sait lui donner son interpréteur et l'épingler par archive, mais il n'a JAMAIS tourné : installer son code depuis GitHub sur Orion a été refusé par la garde de la session, à valider par Drisse.
+- **CodeEvolve** (le vrai, `inter-co/science-codeevolve`, Python ≥ 3.13.5 ; le paquet « codeevolve » de PyPI est un autre projet) : éprouvé le 03-11 avec l'accord de Drisse. Installé depuis l'archive du commit `9897ef16` épinglée par empreinte (21 paquets, dans un Python 3.13 posé par `uv python install 3.13`), exécuté sous bubblewrap, 4 appels de modèle par le relais, une variante rendue. Il parle en blocs SEARCH/REPLACE : le modèle de banc répond dans ce format. Le bac rend visibles l'environnement du moteur ET le dossier de son interpréteur (lu dans `pyvenv.cfg`).
 - Aucun moteur externe n'a tourné avec un vrai modèle du registre (un modèle de banc seulement).
 - Le plafond mémoire d'un moteur externe est quatre fois celui d'un moteur de la maison.
 

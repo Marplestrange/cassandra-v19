@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #552739
+# VERSION CN : 0.1.0  #cf6c53
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des lots 3 et 4 de la maquette d'Évolution : cascade, affectations, plafonds, course, juge des prompts et des politiques, objectifs multiples, moteurs évolutif et frugal.
 # MÉTHODE    : de vrais processus de moteur et un vrai noyau ; le modèle est une fonction de banc ; le temps du registre est une horloge de banc.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=552739 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=cf6c53 ▼▼▼
 """Bancs du lot 3 (course, cascade, affectations, budget par moteur) et du lot 4 (juges, objectifs multiples)."""
 import json
 import sys
@@ -282,6 +282,17 @@ class MoteursNatifs(unittest.TestCase):
         self.assertEqual(roles, ["executant", "strategie"])                                       # la fausse variante du petit n'est pas rendue : le fort est appelé
         self.assertEqual(len(r), 1)
         self.assertIn("sum(x)", r[0]["texte"])
+
+    def test_le_bac_rend_visible_l_environnement_et_l_interpreteur_non_systeme(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            venv = Path(tmp) / "venv"
+            (venv / "bin").mkdir(parents=True)
+            (venv / "pyvenv.cfg").write_text("home = /opt/python-3.13/bin\ninclude-system-site-packages = false\n", encoding="utf-8")
+            m = MO.MoteurProcessus("adaptateur:x", python=str(venv / "bin" / "python"))
+            self.assertEqual(m._lecture(), (str(venv), str(Path("/opt/python-3.13"))))
+            (venv / "pyvenv.cfg").write_text("home = /usr/bin\n", encoding="utf-8")
+            self.assertEqual(m._lecture(), (str(venv),))                                          # l'interpréteur du système est déjà visible : rien à ajouter
 
     def test_un_choix_externe_se_valide_par_son_nom(self):
         MO.MoteurProcessus("adaptateur:CN_adaptateur_openevolve")
