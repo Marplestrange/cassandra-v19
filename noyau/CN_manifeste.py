@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1ec156
+# VERSION CN : 0.1.0  #7f57ee
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1ec156 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7f57ee ▼▼▼
 """Le manifeste : le contrat qu'un module signe pour se brancher sur le noyau.
 
 Un module n'existe pour le noyau que par son manifeste (CN_manifeste.toml). Le noyau le lit,
@@ -132,6 +132,7 @@ class Capacite:
     masque: tuple = ()         # noms d'arguments et de résultats qui ne vont JAMAIS au journal (mot de passe, jeton de session...)
     externe: bool = False      # ce qu'elle lit vient de l'EXTÉRIEUR (un message reçu, une page web) : du texte étranger entre dans le tour, et l'agent ne le tient pas pour des instructions
     partage: str = ""          # « societe » : lecture seule de données partagées de la société active (jamais le bureau d'un compte) ; seule condition pour qu'« amizo » la nomme
+    confirmer: bool = False    # geste sensible : une session d'utilisateur doit avoir confirmé son mot de passe depuis peu (voir Identite.confirmation_requise) ; ne concerne ni agents ni Cassandra
     sortant: bool = False      # ce qu'elle fait SORT de la maison (un message envoyé, un lien public) : après une lecture externe dans le même tour, elle ne part pas toute seule
 
     @property
@@ -1022,7 +1023,7 @@ def construire(brut: dict, source="") -> Manifeste:
         id=c["id"], libelle=c["libelle"], risque=c["risque"],
         perimetre=tuple(c.get("perimetre", ())), preuve=str(c.get("preuve", "")).strip(), retour=str(c.get("retour", "")).strip(),
         paliers=tuple(c.get("paliers", ("raconter",))), qui=tuple(c.get("qui", ("cassandra", "itare", "humain", "agent"))),
-        droit=_qualifier(m["id"], c.get("droit")), masque=tuple(c.get("masque", ())), externe=bool(c.get("externe", False)), sortant=bool(c.get("sortant", False)), partage=str(c.get("partage", "")),
+        droit=_qualifier(m["id"], c.get("droit")), masque=tuple(c.get("masque", ())), externe=bool(c.get("externe", False)), sortant=bool(c.get("sortant", False)), confirmer=bool(c.get("confirmer", False)), partage=str(c.get("partage", "")),
     ) for c in brut.get("capacites", []) or [])
     return Manifeste(
         id=m["id"], nom=m["nom"], version=m["version"], noyau_min=m["noyau_min"], description=m["description"].strip(),

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #2af425
+# VERSION CN : 0.1.0  #da6f41
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=2af425 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=da6f41 ▼▼▼
 """La base du noyau : un fichier SQLite, des connexions courtes, des écritures qui réessaient.
 
 Leçon de la V18 : un verrou SQLite vient presque toujours d'une connexion laissée ouverte.
@@ -74,6 +74,17 @@ CREATE TABLE IF NOT EXISTS reglages_poses(cle TEXT NOT NULL, compte TEXT NOT NUL
 CREATE TABLE IF NOT EXISTS agents_jetons(
   id TEXT PRIMARY KEY, compte TEXT NOT NULL, cree REAL NOT NULL, dernier_vu REAL, actif INTEGER NOT NULL DEFAULT 1);
 CREATE TABLE IF NOT EXISTS comptes_corbeille(id INTEGER PRIMARY KEY AUTOINCREMENT, compte TEXT NOT NULL, instantane TEXT NOT NULL, ts REAL NOT NULL);
+-- La fiche d'un compte (les champs de la fiche utilisateur de Dolibarr) : voir noyau/CN_fiche.py. Un agent ou un compte système n'en a pas.
+-- L'image propre d'un compte (téléversée par lui) : jamais écrasée par une source externe.
+CREATE TABLE IF NOT EXISTS comptes_portrait(compte TEXT PRIMARY KEY, type TEXT NOT NULL, donnees BLOB NOT NULL, maj REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS comptes_fiche(
+  compte TEXT PRIMARY KEY, civility_code TEXT NOT NULL DEFAULT '', gender TEXT NOT NULL DEFAULT '', lastname TEXT NOT NULL DEFAULT '', firstname TEXT NOT NULL DEFAULT '',
+  birth TEXT NOT NULL DEFAULT '', job TEXT NOT NULL DEFAULT '', employee TEXT NOT NULL DEFAULT '0', ref_employee TEXT NOT NULL DEFAULT '',
+  dateemployment TEXT NOT NULL DEFAULT '', dateemploymentend TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '', personal_email TEXT NOT NULL DEFAULT '',
+  office_phone TEXT NOT NULL DEFAULT '', user_mobile TEXT NOT NULL DEFAULT '', personal_mobile TEXT NOT NULL DEFAULT '', office_fax TEXT NOT NULL DEFAULT '',
+  address TEXT NOT NULL DEFAULT '', zip TEXT NOT NULL DEFAULT '', town TEXT NOT NULL DEFAULT '', country_code TEXT NOT NULL DEFAULT '', state_code TEXT NOT NULL DEFAULT '',
+  lang TEXT NOT NULL DEFAULT '', color TEXT NOT NULL DEFAULT '', tz TEXT NOT NULL DEFAULT '', signature TEXT NOT NULL DEFAULT '', socialnetworks TEXT NOT NULL DEFAULT '',
+  note_public TEXT NOT NULL DEFAULT '', photo_source TEXT NOT NULL DEFAULT '', maj REAL NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS sessions(
   id TEXT PRIMARY KEY, compte TEXT NOT NULL, court TEXT NOT NULL, cree REAL NOT NULL, derniere REAL NOT NULL,
   ip TEXT NOT NULL DEFAULT '', agent TEXT NOT NULL DEFAULT '');

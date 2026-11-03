@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #8bc505
+// VERSION CN : 0.1.0  #9ce270
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=8bc505 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=9ce270 ▼▼▼
 /* Les modules dans les Réglages : la gestion des modules et leurs réglages, sans qu'aucun écran ne soit écrit à la main.
 
    Réglages a maintenant trois visions :
@@ -138,7 +138,7 @@
   };
 
   // Ce que la page « Modules et Applications » (disposition.js) emprunte à cet écran : le catalogue, la fiche d'un module, ses gestes et ses champs.
-  CASS.modulesUi = { lire: lire, fiche: (m, p, c) => fiche(m, p, c), gestes: (r, a) => gestes(r, a), lierChamps: lierChamps, familles: familles, famLib: famLib, famIcone: famIcone, famTrace: famTrace, trace: trace, catalogue: () => catalogue, gere: () => gere, nomDe: nomDe };
+  CASS.modulesUi = { reglages: () => reglages, champ: champ, lire: lire, fiche: (m, p, c) => fiche(m, p, c), gestes: (r, a) => gestes(r, a), lierChamps: lierChamps, familles: familles, famLib: famLib, famIcone: famIcone, famTrace: famTrace, trace: trace, catalogue: () => catalogue, gere: () => gere, nomDe: nomDe };
 
   // ── la fiche d'un module ────────────────────────────────────────────
   function fiche(m, portee, compact) {

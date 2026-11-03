@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.2.0  #e2fc4a
+// VERSION CN : 0.2.0  #a249a7
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Les pages « Utilisateurs et groupes » : listes, fiches, droits par utilisateur et par groupe, matrice, « qui peut… ? », journal.
 // MÉTHODE    : une seule scène (CASS.sceneSurMesure.comptes) ; la page vient de l'écran ouvert (u_liste, u_nouveau, g_liste, g_nouveau, matrice, qui, journal) et la navigation interne ne change que l'état.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.2.0 empreinte=e2fc4a ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=a249a7 ▼▼▼
 // Les données viennent des capacités comptes.* (lister, creer, modifier, desactiver, reactiver, creer_jeton, regles_mdp, moi) et droits.* (etat, catalogue, decisions, appliquer, groupe, membre, qui_peut, voir_comme, journal).
 // Un droit se règle en trois états (hérité, accordé, refusé) ; la décision et son pourquoi viennent du moteur (droits.decisions), jamais recalculés ici.
 (function () {
@@ -55,6 +55,7 @@
     ".cu .cu-vide{color:var(--txt-faint);padding:18px;text-align:center}.cu .cu-bad{outline:2px solid var(--danger)}.cu .cu-note{border:1px dashed var(--line-strong,var(--line));border-radius:12px;padding:9px 12px;font-size:12.5px;color:var(--txt-soft)}" +
     "@media (max-width:900px){.cu .cu-split{grid-template-columns:1fr}.cu .cu-rt{grid-template-columns:1fr}.cu .cu-rt .eff{justify-content:flex-start}}";
 
+  CASS.comptesCSS = CSS;                                           // « Mon compte » (CN_moncompte-ecran.js) porte les mêmes cartes, puces et tableaux
   const initiales = (c) => String((c && (c.display_name || c.compte)) || "?").replace(/^agent:/, "").trim().split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0].toUpperCase()).join("") || "?";
   const nomDe = (c) => (c && (c.display_name || c.compte)) || "?";
   const ico = (d) => '<svg class="cu-i" viewBox="0 0 24 24"><path d="' + d + '"/></svg>';
@@ -66,6 +67,7 @@
   CASS.sceneSurMesure = CASS.sceneSurMesure || {};
   CASS.sceneSurMesure.comptes = async function (corps, ctx) {
     if (ctx && /:console$/.test(String(ctx.ecran || ""))) { if (CASS.console) CASS.console("comptes", corps); return; }
+    if (ctx && /:mc_/.test(String(ctx.ecran || "")) && CASS.monCompte) return CASS.monCompte(corps, ctx);       // les six pages de « Mon compte » ont leur fichier
     K.injecter();
     if (!document.getElementById("cu-css")) { const st = document.createElement("style"); st.id = "cu-css"; st.textContent = CSS; document.head.appendChild(st); }
     corps.innerHTML = ""; const racine = document.createElement("div"); racine.className = "cu"; corps.appendChild(racine);

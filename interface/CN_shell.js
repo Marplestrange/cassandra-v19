@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #1b339a
+// VERSION CN : 0.1.0  #3f2a85
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=1b339a ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=3f2a85 ▼▼▼
 /* Le squelette : ce que les modules déclarent se branche sur l'interface V18, sans que celle-ci le sache.
 
    1. Les THÈMES : un module livre un thème complet ([[habillages]] : des variables CSS). Il apparaît dans le sélecteur d'apparence,
@@ -32,11 +32,34 @@
   // La société choisie (le sélecteur à côté de l'avatar) : tout l'écran travaille dans celle-là. Vide : celle du compte. Le serveur vérifie qu'elle est bien l'une des siennes.
   CASS.societe = (function () { try { return localStorage.getItem("cn.societe") || ""; } catch (e) { return ""; } })();
   CASS.choisirSociete = function (id) { try { if (id) localStorage.setItem("cn.societe", id); else localStorage.removeItem("cn.societe"); } catch (e) { /* sans mémoire locale, le choix ne survit pas au rechargement */ } CASS.societe = id || ""; location.reload(); };
-  CASS.agir = async function (cap, args) {
+  // Un geste sensible demande le mot de passe de la session (réponse 401 « confirmation ») : une boîte le réclame, la confirmation part au noyau, le geste se redemande.
+  CASS.confirmerMdp = function () {
+    return new Promise((fin) => {
+      const v = document.createElement("div"); v.style.cssText = "position:fixed;inset:0;background:rgba(10,20,30,.45);z-index:10000";
+      const m = document.createElement("div"); m.setAttribute("role", "dialog"); m.setAttribute("aria-modal", "true"); m.setAttribute("aria-label", "Confirmer votre mot de passe"); m.className = "kit-m"; m.style.zIndex = "10001";
+      m.innerHTML = "<h2>Confirmez votre mot de passe</h2><p class=\"note\">Ce geste est sensible : redonnez votre mot de passe pour continuer. Il ne sera pas redemandé pendant quelques minutes.</p>" +
+        "<input type=\"password\" autocomplete=\"current-password\" aria-label=\"Mot de passe\" style=\"padding:9px 11px;border-radius:10px;border:1px solid var(--line-strong,var(--line));font:inherit\"><p class=\"note\" data-e style=\"color:var(--danger);min-height:1em;margin:0\"></p>" +
+        "<div class=\"acts\"><button class=\"btn\" data-c=\"non\">Annuler</button><button class=\"btn pri\" data-c=\"oui\">Confirmer</button></div>";
+      const clore = (r) => { v.remove(); m.remove(); fin(r); };
+      const champ = m.querySelector("input"), err = m.querySelector("[data-e]");
+      const valider = async () => {
+        const r = await fetch("/api/confirmer", { method: "POST", headers: { "X-Session-Token": token(), "X-Cassandra": "1" }, body: JSON.stringify({ mot_de_passe: champ.value }) });
+        if (r.ok) return clore(true);
+        let d = {}; try { d = await r.json(); } catch (e) {}
+        err.textContent = d.erreur || "Mot de passe incorrect"; champ.select();
+      };
+      v.addEventListener("click", () => clore(false));
+      m.addEventListener("click", (e) => { const b = e.target.closest("[data-c]"); if (b) { if (b.dataset.c === "oui") valider(); else clore(false); } });
+      m.addEventListener("keydown", (e) => { if (e.key === "Escape") clore(false); if (e.key === "Enter") valider(); });
+      document.body.appendChild(v); document.body.appendChild(m); champ.focus();
+    });
+  };
+  CASS.agir = async function (cap, args, _redemande) {
     const h = { "X-Session-Token": token() }; if (CASS.societe) h["X-Societe"] = CASS.societe;
     const r = await fetch("/api/agir/" + cap, { method: "POST", headers: h, body: JSON.stringify({ args: args || {} }) });
     let d = {};
     try { d = await r.json(); } catch (e) {}
+    if (r.status === 401 && d.confirmation && !_redemande && await CASS.confirmerMdp()) return CASS.agir(cap, args, true);
     if (!r.ok || (d.statut !== "faite" && d.statut !== "racontee" && d.statut !== "simulee")) {
       const msg = d.erreur || d.raison || d.statut || ("HTTP " + r.status);
       if (CASS.societe && /n'a pas accès à la société/.test(String(msg))) { CASS.choisirSociete(""); }      // un accès retiré entre-temps : retour à sa propre société

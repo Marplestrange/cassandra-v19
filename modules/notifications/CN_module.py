@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : notifications
 # ZONE       : CN
-# VERSION CN : 0.3.0  #e3e3c9
+# VERSION CN : 0.3.0  #39c92c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le Centre de notifications, portée de la V18 (notif, notif_resoudre, notif_vu, notif_acquitter, _nt_filtre_dest, _nt_expiration).
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.3.0 empreinte=e3e3c9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.3.0 empreinte=39c92c ▼▼▼
 """Le Centre de notifications, portée de la V18 (notif, notif_resoudre, notif_vu, notif_acquitter, _nt_filtre_dest, _nt_expiration).
 
 Ce qui change, et pourquoi :
@@ -245,6 +245,17 @@ def brancher(ctx):
                          "evenement", [d["sujet"]], ev.get("compte") or "noyau", "evenement")
         dire_emise(r, "droits", "avoir", "Vos droits ont changé", [d["sujet"]], "evenement")
 
+    def appareils_prevenus(ctx, ev):
+        d = ev["donnees"]
+        compte = ev.get("objet_id") or ""
+        if not compte:
+            return
+        corps = ("Une connexion vient d'avoir lieu depuis un appareil jamais vu pour ce compte (%s, adresse %s). "
+                 "Si ce n'est pas vous : fermez les autres sessions et changez votre mot de passe." % (d.get("agent") or "navigateur inconnu", d.get("ip") or "inconnue"))
+        r = ecrire_notif("comptes", "avoir", "Nouvel appareil sur votre compte", corps, "comptes:appareil:%s:%s" % (compte, d.get("session", ev["id"])), "compte:%s" % compte,
+                         "evenement", [compte], "noyau", "evenement")
+        dire_emise(r, "comptes", "avoir", "Nouvel appareil sur votre compte", [compte], "evenement")
+
     def constats_resolus(ctx, ev):
         cle = ev["donnees"].get("cle", "")
         r = db.lire("SELECT id FROM notifs WHERE cle=? AND resolue=0 AND supprimee=0", (cle,)) if cle else []
@@ -261,6 +272,7 @@ def brancher(ctx):
 
     ctx.moteur("constats_ouverts", constats_ouverts)
     ctx.moteur("droits_prevenus", droits_prevenus)
+    ctx.moteur("appareils_prevenus", appareils_prevenus)
     ctx.moteur("constats_resolus", constats_resolus)
     ctx.moteur("expirer", expirer)
     def jours_de(quand):

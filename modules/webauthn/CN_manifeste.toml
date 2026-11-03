@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : webauthn
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7d6448
+# VERSION CN : 0.1.0  #7ddc70
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les clés de sécurité WebAuthn des comptes : enregistrer et retirer une clé, l'exiger pour entrer (second facteur, avec huit codes de secours), ou entrer sans mot de passe avec une clé d'accès (passkey, code PIN ou empreinte exigés). La signature est vérifiée ici (ES256 et RS256), le défi vit en mémoire et ne sert qu'une fois, l'origine doit être celle du domaine réglé.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7d6448 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7ddc70 ▼▼▼
 [module]
 id = "webauthn"
 nom = "Clé de sécurité"
@@ -70,6 +70,7 @@ droit = "utiliser"
 
 [[capacites]]
 id = "enregistrer"
+confirmer = true
 libelle = "Enregistrer une clé de sécurité après vérification de son attestation"
 risque = "moyen"
 droit = "utiliser"
@@ -82,6 +83,7 @@ masque = ["client_data", "attestation"]
 
 [[capacites]]
 id = "supprimer"
+confirmer = true
 libelle = "Retirer une de mes clés (désignée par les huit derniers caractères de son identifiant)"
 risque = "moyen"
 droit = "utiliser"
@@ -93,6 +95,7 @@ qui = ["humain", "compte"]
 
 [[capacites]]
 id = "exiger"
+confirmer = true
 libelle = "Exiger la clé pour entrer (ou cesser de l'exiger). À l'activation, huit codes de secours sont rendus, une seule fois"
 risque = "moyen"
 droit = "utiliser"
@@ -105,6 +108,7 @@ masque = ["secours", "avant_codes"]
 
 [[capacites]]
 id = "secours_regenerer"
+confirmer = true
 libelle = "Remplacer mes codes de secours par huit nouveaux (rendus une seule fois)"
 risque = "moyen"
 droit = "utiliser"

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #01795b
+# VERSION CN : 0.2.0  #56d05e
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont FastPanel.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=01795b ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=56d05e ▼▼▼
 """Le pont FastPanel.
 
 Deux voies, chacune pour ce qu'elle fait de mieux :
@@ -33,6 +33,7 @@ Leçons de la V18 gardées ici :
 """
 from __future__ import annotations
 
+import base64
 import json
 import os
 import re
@@ -396,6 +397,35 @@ def _lecture(op, tables, **options):
     return _point("lecture", {"phase": "forme", "op": op, "schema": schema, "options": options, "jeux": jeux})["valeur"]
 
 
+_AVATAR_DOSSIERS = ("/usr/local/fastpanel2/web/public/avatar", "/usr/local/fastpanel/web/public/avatar")
+_AVATAR_EXT = (".png", ".jpg", ".jpeg", ".webp", ".gif", "")
+AVATAR_MAX = 300 * 1024
+
+
+def _avatar_fichier(uid, username, dossiers=None):
+    """Le fichier portrait d'un compte du panneau, ou "". FastPanel n'a AUCUNE colonne d'avatar : les images sont des fichiers de web/public/avatar, que l'on rapproche par identifiant
+    puis par login (porté de la V18). Au-delà, rien : on ne montre jamais le portrait de quelqu'un d'autre ; un dossier d'une seule image et un panneau d'un seul compte se déduisent."""
+    dossiers = dossiers or tuple(d for d in os.environ.get("CASSANDRA_FP_AVATAR", "").split(os.pathsep) if d) or _AVATAR_DOSSIERS
+    candidats = [c for c in (str(uid or ""), (username or "").strip()) if c]
+    if not candidats:
+        return ""
+    for racine in dossiers:
+        if os.path.isfile(racine):
+            return racine
+        if not os.path.isdir(racine):
+            continue
+        try:
+            images = [(os.path.splitext(n)[0], os.path.join(racine, n)) for n in sorted(os.listdir(racine))
+                      if os.path.isfile(os.path.join(racine, n)) and os.path.splitext(n)[1].lower() in _AVATAR_EXT]
+        except OSError:
+            continue
+        for cle in candidats:
+            for base, chemin in images:
+                if base == cle:
+                    return chemin
+    return ""
+
+
 def lire_utilisateurs():
     _exiger("panel_account", "username")
     return _lecture("utilisateurs", ("panel_account",))
@@ -682,6 +712,38 @@ def brancher(ctx):
 
     def utilisateurs(c):
         return en_valeur(lire_utilisateurs)
+
+    def avatar(c, utilisateur=""):
+        """Le portrait d'un compte du panneau : le mien (celui que mon fp_account désigne), ou n'importe lequel pour un administrateur. {present: False} s'il n'y en a pas."""
+        moi = c.executer_lecture("comptes.moi") or {}
+        propre = str(moi.get("fp_account") or "").strip()
+        cible = str(utilisateur or propre).strip()
+        if not cible:
+            return {"present": False}
+        if cible != propre and not c.est_admin(c.compte):
+            raise PermissionError("le portrait d'un autre compte du panneau est réservé aux administrateurs")
+        uid = ""
+        try:
+            for u in lire_utilisateurs() or []:
+                if str(u.get("username") or u.get("login") or "") == cible:
+                    uid = str(u.get("id") or "")
+                    break
+        except PontErreur:
+            pass                                       # le panneau ne répond pas : on cherche tout de même par le nom
+        chemin = _avatar_fichier(uid, cible)
+        if not chemin:
+            return {"present": False}
+        try:
+            if os.path.getsize(chemin) > AVATAR_MAX:
+                return {"present": False, "raison": "image trop lourde"}
+            with open(chemin, "rb") as fh:
+                brut = fh.read()
+        except OSError:
+            return {"present": False}
+        type_ = "image/png" if brut.startswith(b"\x89PNG") else "image/jpeg" if brut.startswith(b"\xff\xd8") else "image/webp" if brut[:4] == b"RIFF" and brut[8:12] == b"WEBP" else ""
+        if not type_:
+            return {"present": False, "raison": "format non reconnu"}
+        return {"present": True, "type": type_, "base64": base64.b64encode(brut).decode("ascii")}
 
     def sites(c):
         return en_valeur(lire_sites, seuil_ssl())

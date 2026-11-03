@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #fa3b1b
+# VERSION CN : 0.1.0  #a018f3
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions, jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt 
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=fa3b1b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=a018f3 ▼▼▼
 """L'identité des comptes : qui est qui, et la preuve qu'on l'est. Portée de la V18 (load_users, set_user, verify_user, sessions,
 jetons de mot de passe), à une différence près, voulue : le mot de passe n'est plus un SHA-256 nu mais un scrypt salé.
 
@@ -34,6 +34,8 @@ import os
 import secrets
 import subprocess
 import time
+
+from noyau import CN_fiche as _fiche
 
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MDP_MIN, MDP_MAX = 9, 20
@@ -58,7 +60,10 @@ COMPTES_SYSTEME = {
     "second_avis": ("Second avis (Proactivité, règles) : un modèle relit les gestes qui ne sont pas pleinement réversibles", False),
 }
 RE_AGENT = re.compile(r"^agent:[a-z][a-z0-9_-]{1,30}$")
-CHAMPS_PROFIL = ("display_name", "role_label", "contact_email", "phone", "lang", "fp_account")
+CHAMPS_PROFIL = ("display_name", "role_label", "contact_email", "phone", "lang", "fp_account")      # les anciens champs de profil (colonnes de comptes) : la fiche les dérive
+PORTRAIT_MAX = 300 * 1024      # l'image propre d'un compte : 300 Ko au plus (l'écran la recadre en carré de 256 px avant de l'envoyer)
+PORTRAIT_TYPES = {b"\x89PNG\r\n\x1a\n": "image/png", b"\xff\xd8\xff": "image/jpeg", b"RIFF": "image/webp"}
+SOURCES_PORTRAIT = ("", "propre", "dolibarr", "fastpanel", "telegram", "initiales")
 TENTATIVES_MAX, TENTATIVES_FENETRE = 10, 300       # comme la V18 : dix échecs en cinq minutes
 TTL_SESSION_HEURES = 24
 # Le coût du mot de passe : scrypt n=2**17, r=8, p=1 (la recommandation d'OWASP), soit 128 Mo de mémoire et ~0,5 s par hachage. hashlib plafonne la mémoire à
@@ -73,6 +78,8 @@ MAXMEM = 2 ** 29
 INACTIVITE_HEURES, INACTIVITE_ADMIN_HEURES = 8, 2
 REVERIF_ADMIN_MINUTES = 60
 GRACE_SECOND_FACTEUR_JOURS = 7
+CONFIRMATION_MINUTES = 10  # un geste sensible demande le mot de passe s'il n'a pas été confirmé depuis ce délai (réglage « confirmation_minutes », 0 : jamais demandé)
+SESSIONS_MAX = 10          # par compte : la onzième ouverte ferme la plus ancienne
 
 
 def norm_domain(d) -> str:
@@ -245,6 +252,7 @@ class Identite:
         self._faux_h = None                           # le leurre : un compte inconnu coûte le même temps qu'un mauvais mot de passe (calculé au premier besoin : 0,5 s)
         self.securite = {}                            # valeurs de départ des réglages de sécurité (clé courte -> valeur) quand le service des réglages ne les porte pas
         self._tables_securite()
+        self.migrer_fiches()
         self.amorcer_systeme()
 
     @property
@@ -258,16 +266,21 @@ class Identite:
         with self.base.transaction() as c:
             c.execute("CREATE TABLE IF NOT EXISTS sessions_verif(id TEXT PRIMARY KEY, ts REAL NOT NULL)")
             c.execute("CREATE TABLE IF NOT EXISTS identite_etat(cle TEXT PRIMARY KEY, valeur REAL NOT NULL)")
+            c.execute("CREATE TABLE IF NOT EXISTS sessions_mdp(id TEXT PRIMARY KEY, ts REAL NOT NULL)")
+            c.execute("CREATE TABLE IF NOT EXISTS appareils(compte TEXT NOT NULL, empreinte TEXT NOT NULL, premiere REAL NOT NULL, derniere REAL NOT NULL, PRIMARY KEY(compte, empreinte))")
 
     def parametre(self, cle: str, defaut):
-        """Un réglage de sécurité : `comptes.<cle>` dans les réglages s'il y est déclaré, sinon `self.securite[cle]`, sinon la valeur de départ."""
+        """Un réglage de sécurité : `self.securite[cle]` s'il est posé (une valeur imposée par le code qui construit l'identité : les bancs d'essai), sinon `comptes.<cle>`
+        dans les réglages (sa valeur posée, ou son défaut déclaré au manifeste), sinon la valeur de départ."""
+        if cle in self.securite:
+            return self.securite[cle]
         try:
             v = self.reglages.valeur("comptes." + cle)
             if v is not None:
                 return v
         except Exception:
             pass
-        return self.securite.get(cle, defaut)
+        return defaut
 
     def verrou_superadmin(self, compte: str) -> str:
         """Pourquoi on ne retire pas l'administration à ce compte ("" : on peut). Conditionnel : seul le superadmin ET seulement si FastPanel est là."""
@@ -564,6 +577,147 @@ class Identite:
         return [dict(self._ligne(r), admin=r["compte"] in admins, superadmin=bool(r["superadmin"]), unix_etat=self.unix_etat(r["unix_user"]))
                 for r in self.base.lire("SELECT * FROM comptes ORDER BY compte")]
 
+    # ---- la fiche : l'état civil et les coordonnées d'un compte humain (noyau/CN_fiche.py) ----
+    def fiche(self, compte: str):
+        """La fiche d'un compte humain, avec la source de son portrait ; None pour un agent, un compte système ou un compte inconnu.
+        Un compte d'avant la fiche et pas encore migré se lit comme sa migration le donnerait (rien n'est écrit en lisant)."""
+        compte = (compte or "").strip().lower()
+        c = self.base.lire("SELECT * FROM comptes WHERE compte=?", (compte,))
+        if not c or c[0]["type"] != "humain":
+            return None
+        r = self.base.lire("SELECT * FROM comptes_fiche WHERE compte=?", (compte,))
+        if r:
+            f = {k: r[0][k] for k in _fiche.ORDRE}
+            f["photo_source"] = r[0]["photo_source"]
+            return f
+        f = dict(_fiche.DEFAUTS)
+        f.update(_fiche.depuis_ancien(c[0]["display_name"], c[0]["role_label"], c[0]["contact_email"], c[0]["phone"], c[0]["lang"]))
+        f["photo_source"] = ""
+        return f
+
+    def nom_affiche(self, compte: str) -> str:
+        """LE nom affiché d'un compte : prénom nom pour un humain, sinon son nom d'affichage ancien, sinon l'identifiant. Une seule règle pour tous les écrans."""
+        compte = (compte or "").strip().lower()
+        f = self.fiche(compte)
+        n = _fiche.nom_affiche(f) if f else ""
+        if n:
+            return n
+        r = self.base.lire("SELECT display_name FROM comptes WHERE compte=?", (compte,))
+        return (r[0]["display_name"] if r and r[0]["display_name"] else "") or compte
+
+    @staticmethod
+    def _vers_fiche(profil: dict) -> dict:
+        """Les champs de fiche contenus dans une saisie : les noms de la fiche passent tels quels, les anciens (display_name, role_label, contact_email, phone, lang) se convertissent."""
+        out = {k: v for k, v in profil.items() if k in _fiche.CHAMPS and v is not None}
+        if profil.get("display_name") is not None:
+            out["firstname"], out["lastname"] = _fiche.couper_nom(str(profil["display_name"]))
+        for ancien, nouveau in (("role_label", "job"), ("contact_email", "email"), ("phone", "office_phone"), ("lang", "lang")):
+            if profil.get(ancien) is not None and nouveau not in out:
+                out[nouveau] = profil[ancien]
+        return out
+
+    def _sync_ancien(self, compte: str) -> None:
+        """Les colonnes d'avant la fiche (display_name, role_label, contact_email, phone, lang) restent écrites, DÉRIVÉES de la fiche : ce qui les lit encore n'est pas cassé."""
+        r = self.base.lire("SELECT * FROM comptes_fiche WHERE compte=?", (compte,))
+        if r:
+            f = r[0]
+            self.base.ecrire("UPDATE comptes SET display_name=?, role_label=?, contact_email=?, phone=?, lang=?, maj=? WHERE compte=?",
+                             (_fiche.nom_affiche(f), f["job"], f["email"], f["office_phone"], _fiche.langue_courte(f["lang"]), time.time(), compte))
+
+    def _poser_fiche(self, compte: str) -> None:
+        """Écrit la ligne de la fiche d'un compte qui n'en a pas encore (pour la lire telle que la migration la donne), sans rien changer à ce qu'elle dit."""
+        if self.base.lire("SELECT 1 FROM comptes_fiche WHERE compte=?", (compte,)):
+            return
+        f = self.fiche(compte)
+        cols = list(_fiche.ORDRE)
+        self.base.ecrire("INSERT OR IGNORE INTO comptes_fiche(compte, %s, photo_source, maj) VALUES(?, %s, ?, ?)" % (", ".join(cols), ", ".join("?" * len(cols))),
+                         (compte,) + tuple(f[k] for k in cols) + (f["photo_source"], time.time()))
+
+    def fiche_ecrire(self, compte: str, champs: dict) -> dict:
+        """Écrit des champs de la fiche (les autres ne bougent pas). Une valeur trop longue ou mal formée est REFUSÉE, jamais coupée. Rend ce qui a changé, avant et après."""
+        compte = (compte or "").strip().lower()
+        if self.fiche(compte) is None:
+            return {"ok": False, "error": "Cette fiche n'existe pas : un agent ou un compte système n'en a pas"}
+        propres, erreurs = _fiche.valider(champs)
+        if erreurs:
+            return {"ok": False, "error": " ; ".join(erreurs), "erreurs": erreurs}
+        avant = self.fiche(compte)
+        changes = {k: v for k, v in propres.items() if avant.get(k) != v}
+        self._poser_fiche(compte)
+        if changes:
+            cols = list(changes)
+            self.base.ecrire("UPDATE comptes_fiche SET " + ", ".join("%s=?" % k for k in cols) + ", maj=? WHERE compte=?", tuple(changes[k] for k in cols) + (time.time(), compte))
+        self._sync_ancien(compte)
+        return {"ok": True, "avant": {k: avant[k] for k in changes}, "apres": changes}
+
+    def portrait_source_poser(self, compte: str, source: str) -> dict:
+        """Le choix de la source du portrait (propre, dolibarr, fastpanel, telegram, initiales ; vide : le défaut). Ne touche à aucune image."""
+        compte = (compte or "").strip().lower()
+        source = (source or "").strip().lower()
+        if self.fiche(compte) is None:
+            return {"ok": False, "error": "Cette fiche n'existe pas"}
+        if source not in SOURCES_PORTRAIT:
+            return {"ok": False, "error": "Source de portrait inconnue : %s" % source}
+        avant = self.fiche(compte)["photo_source"]
+        self._poser_fiche(compte)
+        self.base.ecrire("UPDATE comptes_fiche SET photo_source=?, maj=? WHERE compte=?", (source, time.time(), compte))
+        return {"ok": True, "avant": avant, "apres": source}
+
+    def portrait_poser(self, compte: str, donnees: bytes) -> dict:
+        """Garde l'image propre d'un compte humain. Le type se lit dans les octets (PNG, JPEG, WebP), jamais dans ce que dit l'appelant ; au-delà de PORTRAIT_MAX, refusée."""
+        compte = (compte or "").strip().lower()
+        if self.fiche(compte) is None:
+            return {"ok": False, "error": "Cette fiche n'existe pas"}
+        if not donnees or len(donnees) > PORTRAIT_MAX:
+            return {"ok": False, "error": "Image vide ou trop lourde (%d Ko au plus)" % (PORTRAIT_MAX // 1024)}
+        type_ = next((t for sig, t in PORTRAIT_TYPES.items() if donnees.startswith(sig)), "")
+        if type_ == "image/webp" and donnees[8:12] != b"WEBP":
+            type_ = ""
+        if not type_:
+            return {"ok": False, "error": "Image PNG, JPEG ou WebP attendue"}
+        avant = self.base.lire("SELECT type, donnees FROM comptes_portrait WHERE compte=?", (compte,))
+        self.base.ecrire("INSERT OR REPLACE INTO comptes_portrait(compte, type, donnees, maj) VALUES(?,?,?,?)", (compte, type_, donnees, time.time()))
+        return {"ok": True, "type": type_, "octets": len(donnees), "avant": (bytes(avant[0]["donnees"]) if avant else None)}
+
+    def portrait_lire(self, compte: str):
+        """(type, octets) de l'image propre du compte, ou None."""
+        r = self.base.lire("SELECT type, donnees FROM comptes_portrait WHERE compte=?", ((compte or "").strip().lower(),))
+        return (r[0]["type"], bytes(r[0]["donnees"])) if r else None
+
+    def portrait_retirer(self, compte: str) -> dict:
+        compte = (compte or "").strip().lower()
+        avant = self.portrait_lire(compte)
+        self.base.ecrire("DELETE FROM comptes_portrait WHERE compte=?", (compte,))
+        return {"ok": True, "avant": avant[1] if avant else None}
+
+    def migrer_fiches(self) -> dict:
+        """Crée la fiche des comptes humains qui n'en ont pas, à partir des anciens champs (règles de CN_fiche.depuis_ancien). Idempotent : un compte qui a sa fiche n'est pas retouché.
+        Rend (et garde dans etat_noyau « fiches_migration ») le rapport : comptes lus, fiches créées, valeurs trop longues pour la fiche (gardées en entier dans le rapport),
+        noms de plus de deux mots (le découpage prénom / nom est à relire)."""
+        rapport = {"lus": 0, "creees": 0, "tronques": [], "noms_a_relire": []}
+        for c in self.base.lire("SELECT * FROM comptes WHERE type='humain' AND compte NOT IN (SELECT compte FROM comptes_fiche)"):
+            rapport["lus"] += 1
+            brut = _fiche.depuis_ancien(c["display_name"], c["role_label"], c["contact_email"], c["phone"], c["lang"])
+            vals = dict(_fiche.DEFAUTS)
+            for k, v in brut.items():
+                maxi = _fiche.CHAMPS[k][1]
+                if len(v) > maxi:
+                    rapport["tronques"].append({"compte": c["compte"], "champ": k, "original": v})
+                    v = v[:maxi]
+                vals[k] = v
+            if len((c["display_name"] or "").split()) > 2:
+                rapport["noms_a_relire"].append({"compte": c["compte"], "nom": c["display_name"], "prenom": brut["firstname"], "nom_famille": brut["lastname"]})
+            cols = list(vals)
+            self.base.ecrire("INSERT OR IGNORE INTO comptes_fiche(compte, %s, maj) VALUES(?, %s, ?)" % (", ".join(cols), ", ".join("?" * len(cols))),
+                             (c["compte"],) + tuple(vals[k] for k in cols) + (time.time(),))
+            rapport["creees"] += 1
+        if rapport["creees"]:
+            try:
+                self.base.ecrire("INSERT OR REPLACE INTO etat_noyau(cle, valeur) VALUES('fiches_migration', ?)", (json.dumps(rapport, ensure_ascii=False),))
+            except Exception:
+                pass
+        return rapport
+
     def creer(self, compte: str, mdp: str, sites=None, superadmin: bool = False, unix_user: str = "", societe: str = "", **profil) -> dict:
         compte = (compte or "").strip().lower()
         if not EMAIL.match(compte):
@@ -596,6 +750,9 @@ class Identite:
         else:
             superadmin = False
         now = time.time()
+        fiche_saisie, erreurs = _fiche.valider(self._vers_fiche(profil))
+        if erreurs:
+            return {"ok": False, "error": " ; ".join(erreurs), "erreurs": erreurs}
         champs = {k: str(profil.get(k) or "").strip() for k in CHAMPS_PROFIL}
         champs["lang"] = (champs["lang"].lower()[:5] or "fr")
         self.base.ecrire("INSERT INTO comptes(compte, hash, display_name, role_label, contact_email, phone, lang, fp_account, sites, cree, maj, unix_user, superadmin, societe) "
@@ -603,6 +760,9 @@ class Identite:
                          (compte, hacher(mdp), champs["display_name"], champs["role_label"], champs["contact_email"], champs["phone"],
                           champs["lang"], champs["fp_account"] or unix, json.dumps(sorted({norm_domain(s) for s in (sites or []) if s})), now, now,
                           unix, 1 if (premier or superadmin) else 0, soc))
+        self._poser_fiche(compte)                                    # la fiche naît avec le compte, des anciens champs saisis ; le reste se complète ensuite
+        if fiche_saisie:
+            self.fiche_ecrire(compte, fiche_saisie)
         demande = False
         if superadmin and not premier:
             self.droits.regler_admin(compte, True)
@@ -626,13 +786,27 @@ class Identite:
         champs = {k: str(profil[k]).strip() for k in CHAMPS_PROFIL if k in profil and profil[k] is not None}
         if "lang" in champs:
             champs["lang"] = champs["lang"].lower()[:5] or "fr"
+        fiche_saisie = {}
+        if self.fiche(avant["compte"]) is not None:             # un humain : nom, fonction, courriel, téléphone, langue vivent dans sa fiche ; les colonnes anciennes en sont dérivées
+            fiche_saisie = self._vers_fiche({k: v for k, v in profil.items() if v is not None})
+            propres, erreurs = _fiche.valider(fiche_saisie)
+            if erreurs:
+                return {"ok": False, "error": " ; ".join(erreurs), "erreurs": erreurs}
+            for k in ("display_name", "role_label", "contact_email", "phone", "lang"):
+                champs.pop(k, None)
         nouveaux = {k: avant[k] for k in CHAMPS_PROFIL}
         nouveaux.update(champs)
         s = avant["sites"] if sites is None else sorted({norm_domain(x) for x in sites if x})
         self.base.ecrire("UPDATE comptes SET display_name=?, role_label=?, contact_email=?, phone=?, lang=?, fp_account=?, sites=?, maj=? WHERE compte=?",
                          (nouveaux["display_name"], nouveaux["role_label"], nouveaux["contact_email"], nouveaux["phone"], nouveaux["lang"],
                           nouveaux["fp_account"], json.dumps(s), time.time(), avant["compte"]))
-        return {"ok": True, "avant": {k: avant[k] for k in CHAMPS_PROFIL} | {"sites": avant["sites"]}, "apres": nouveaux | {"sites": s}}
+        fiche_avant = {}
+        if fiche_saisie:
+            r = self.fiche_ecrire(avant["compte"], fiche_saisie)
+            fiche_avant = r.get("avant", {})
+            nouveaux = {k: self.lire(avant["compte"])[k] for k in CHAMPS_PROFIL}
+        return {"ok": True, "avant": {k: avant[k] for k in CHAMPS_PROFIL} | {"sites": avant["sites"]}, "apres": nouveaux | {"sites": s},
+                "fiche_avant": fiche_avant, "fiche_apres": {k: v for k, v in (self.fiche(avant["compte"]) or {}).items() if k in fiche_avant}}
 
     def hash_de(self, compte: str):
         r = self.base.lire("SELECT hash FROM comptes WHERE compte=?", (compte,))
@@ -666,8 +840,13 @@ class Identite:
         if self.droits.dernier_admin_humain(compte):
             return {"ok": False, "error": "« %s » est le dernier administrateur : nommez-en un autre d'abord" % compte}
         instantane = dict(r[0]) | {"admin": self.droits.est_admin(compte), "groupes": self.droits.groupes_de(compte)}
+        f = self.base.lire("SELECT * FROM comptes_fiche WHERE compte=?", (compte,))
+        if f:
+            instantane["fiche"] = dict(f[0])                          # sans elle, une restauration perdrait l'état civil
         with self.base.transaction() as c:
             cur = c.execute("INSERT INTO comptes_corbeille(compte, instantane, ts) VALUES(?,?,?)", (compte, json.dumps(instantane), time.time()))
+            c.execute("DELETE FROM comptes_fiche WHERE compte=?", (compte,))
+            c.execute("DELETE FROM comptes_portrait WHERE compte=?", (compte,))
             c.execute("DELETE FROM comptes WHERE compte=?", (compte,))
             c.execute("DELETE FROM sessions WHERE compte=?", (compte,))
             c.execute("DELETE FROM jetons_mdp WHERE compte=?", (compte,))
@@ -764,6 +943,12 @@ class Identite:
             if s.get("type", "humain") != "humain":
                 c.execute("UPDATE comptes SET type=? WHERE compte=?", (s["type"], s["compte"]))
             c.execute("DELETE FROM comptes_corbeille WHERE id=?", (corbeille,))
+            fs = s.get("fiche")
+            if fs:
+                cols = [k for k in fs if k != "compte"]
+                c.execute("INSERT OR REPLACE INTO comptes_fiche(compte, %s) VALUES(?, %s)" % (", ".join(cols), ", ".join("?" * len(cols))), (s["compte"],) + tuple(fs[k] for k in cols))
+        if not s.get("fiche"):
+            self.migrer_fiches()                                       # une corbeille d'avant la fiche : elle se déduit des anciens champs
         if s.get("admin"):
             self.droits.regler_admin(s["compte"], True)
         for g in s.get("groupes", []):
@@ -813,7 +998,25 @@ class Identite:
         self.base.ecrire("INSERT INTO sessions(id, compte, court, cree, derniere, ip, agent) VALUES(?,?,?,?,?,?,?)",
                          (_empreinte(jeton), compte, jeton[-6:], now, now, (ip or "")[:45], (agent or "")[:60]))
         self.base.ecrire("DELETE FROM sessions WHERE cree<?", (now - self.ttl,))
+        with self.base.transaction() as c:                    # au plus SESSIONS_MAX par compte : la plus ancienne (la moins récemment servie) cède la place
+            c.execute("DELETE FROM sessions WHERE compte=? AND id NOT IN (SELECT id FROM sessions WHERE compte=? ORDER BY derniere DESC, cree DESC LIMIT ?)", (compte, compte, SESSIONS_MAX))
         return {"ok": True, "jeton": jeton, "id": jeton[-6:], "compte": compte}
+
+    def appareil_vu(self, compte: str, ip: str, agent: str) -> str:
+        """Note l'appareil (agent + réseau, sans les derniers chiffres de l'adresse) d'une connexion réussie. Rend « premier » pour la toute première
+        connexion du compte, « nouveau » si cet appareil n'a jamais servi à ce compte, « connu » sinon. Le premier n'alerte personne : il n'y a rien à comparer."""
+        compte = (compte or "").strip().lower()
+        ip = (ip or "").strip()
+        reseau = ".".join(ip.split(".")[:3]) if "." in ip else ":".join(ip.split(":")[:4])
+        emp = hashlib.sha256(("%s|%s" % ((agent or "")[:60], reseau)).encode("utf-8")).hexdigest()[:16]
+        now = time.time()
+        deja = self.base.lire("SELECT COUNT(*) AS n FROM appareils WHERE compte=?", (compte,))[0]["n"]
+        vu = self.base.lire("SELECT 1 FROM appareils WHERE compte=? AND empreinte=?", (compte, emp))
+        if vu:
+            self.base.ecrire("UPDATE appareils SET derniere=? WHERE compte=? AND empreinte=?", (now, compte, emp))
+            return "connu"
+        self.base.ecrire("INSERT OR IGNORE INTO appareils(compte, empreinte, premiere, derniere) VALUES(?,?,?,?)", (compte, emp, now, now))
+        return "nouveau" if deja else "premier"
 
     def ouvrir(self, compte: str, mdp: str, ip: str = "", agent: str = "", preuve=None) -> dict:
         """Mot de passe, puis second facteur si un module en exige un POUR CE COMPTE. Sans preuve, on rend l'invitation (ce qu'il faut signer),
@@ -922,6 +1125,28 @@ class Identite:
                 return {"methodes": [module], "invite": {}}
         return None
 
+    def confirmation_requise(self, compte: str, jeton: str) -> bool:
+        """Vrai si cette session n'a pas confirmé son mot de passe depuis `confirmation_minutes` (la connexion compte comme une confirmation)."""
+        try:
+            minutes = float(self.parametre("confirmation_minutes", CONFIRMATION_MINUTES))
+        except (TypeError, ValueError):
+            minutes = CONFIRMATION_MINUTES
+        if minutes <= 0:
+            return False
+        s = self.base.lire("SELECT s.cree AS cree, v.ts AS ts FROM sessions s LEFT JOIN sessions_mdp v ON v.id=s.id WHERE s.id=? AND s.compte=?", (_empreinte(jeton), compte))
+        return bool(s) and time.time() - max(s[0]["cree"], s[0]["ts"] or 0) > minutes * 60
+
+    def confirmer_mdp(self, jeton: str, compte: str, mdp: str, ip: str = "") -> dict:
+        """Ressaisie du mot de passe sur une session ouverte : remet à zéro l'âge de la dernière confirmation. Les essais comptent comme à la connexion."""
+        attente = self.bloque(compte, ip)
+        if attente:
+            return {"ok": False, "limite": True, "attente_s": attente, "error": "Trop d'essais : réessayez dans %d s" % attente}
+        if not self.base.lire("SELECT 1 FROM sessions WHERE id=? AND compte=?", (_empreinte(jeton), compte)) or not hash_ok(mdp or "", self.hash_de(compte) or ""):
+            self._echec(compte, ip)
+            return {"ok": False, "error": "Mot de passe incorrect"}
+        self.base.ecrire("INSERT OR REPLACE INTO sessions_mdp(id, ts) VALUES(?,?)", (_empreinte(jeton), time.time()))
+        return {"ok": True}
+
     def reverifier(self, jeton: str, compte: str, preuve, ip: str = "") -> dict:
         """Ressaisie du second facteur sur une session ouverte : remet à zéro l'âge de la dernière preuve. Les essais comptent comme à la connexion."""
         attente = self.bloque(compte, ip)
@@ -944,7 +1169,7 @@ class Identite:
 
     def _obligation_depuis(self) -> float:
         """Depuis quand l'obligation est active (0 : elle ne l'est pas). Observée à la première lecture : c'est de là que court la période de grâce."""
-        actif = bool(self.parametre("admin_second_facteur_obligatoire", False))
+        actif = bool(self.parametre("admin_second_facteur_obligatoire", True))
         r = self.base.lire("SELECT valeur FROM identite_etat WHERE cle='mfa_admin_depuis'")
         if not actif:
             if r:
@@ -992,9 +1217,21 @@ class Identite:
         return 1
 
     def sessions(self, compte: str, courant: str = "") -> list:
-        return [{"id": r["court"], "created": r["cree"], "last_used": r["derniere"], "ip": r["ip"], "agent": r["agent"],
-                 "nature": ip_nature(r["ip"]), "current": bool(courant) and r["id"] == _empreinte(courant)}
-                for r in self.base.lire("SELECT * FROM sessions WHERE compte=? ORDER BY derniere DESC", (compte,))]
+        """Les sessions VIVANTES du compte : ni expirées (durée de vie), ni restées sans servir au-delà du délai d'inactivité.
+        Celles qui sont mortes sont purgées à la lecture, pour que la liste ne montre jamais une session qui ne s'ouvrirait plus."""
+        now = time.time()
+        delai = self.inactivite(self.droits.est_admin(compte))
+        vivantes, mortes = [], []
+        for r in self.base.lire("SELECT * FROM sessions WHERE compte=? ORDER BY derniere DESC", (compte,)):
+            if r["cree"] <= now - self.ttl or (delai and now - r["derniere"] > delai):
+                mortes.append(r["id"])
+            else:
+                vivantes.append({"id": r["court"], "created": r["cree"], "last_used": r["derniere"], "ip": r["ip"], "agent": r["agent"],
+                                 "nature": ip_nature(r["ip"]), "current": bool(courant) and r["id"] == _empreinte(courant)})
+        if mortes:
+            with self.base.transaction() as c:
+                c.executemany("DELETE FROM sessions WHERE id=?", [(i,) for i in mortes])
+        return vivantes
 
     def revoquer(self, compte: str, court: str) -> dict:
         """Ferme UNE session de ce compte, désignée par six caractères. Le compte est celui de l'appelant, jamais un paramètre libre."""

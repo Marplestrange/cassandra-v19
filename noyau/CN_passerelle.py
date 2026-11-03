@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #6e2c0a
+# VERSION CN : 0.1.0  #4424fc
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=6e2c0a ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4424fc ▼▼▼
 """La passerelle : l'API HTTP du noyau. UNE porte pour tous les modules, présents et à venir.
 
 Un module n'écrit aucune route. Il déclare des capacités, et la passerelle les rend toutes joignables par la même URL :
@@ -54,6 +54,7 @@ TYPES_STATIQUES = {".html": "text/html; charset=utf-8", ".js": "text/javascript;
                    ".json": "application/json; charset=utf-8", ".png": "image/png", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json", ".woff2": "font/woff2"}
 RE_CAPACITE = re.compile(r"^[a-z][a-z0-9_]{1,40}\.[a-z][a-z0-9_]{1,40}$")
 COOKIE = "cassandra_session"
+COOKIE_HOTE = "__Host-cassandra_session"      # le préfixe oblige le navigateur à exiger Secure, Path=/ et aucun Domain : un sous-domaine ne peut plus réécrire la session
 HSTS = "max-age=31536000; includeSubDomains"
 BOUCLES = ("127.0.0.1", "::1", "localhost")
 
@@ -187,6 +188,30 @@ class Passerelle:
                 return xff.split(",")[0].strip()[:45]
         return h.client_address[0][:45]
 
+    def _nom_cookie(self):
+        return COOKIE_HOTE if self.cookie_secure else COOKIE      # sans Secure (http local) le préfixe serait refusé par le navigateur
+
+    def _cookie_session(self, jeton):
+        return "%s=%s; Path=/; Max-Age=%d; HttpOnly; SameSite=Strict%s" % (self._nom_cookie(), jeton, self.noyau.identite.ttl, "; Secure" if self.cookie_secure else "")
+
+    def _cookie_vide(self):
+        return "%s=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict%s" % (self._nom_cookie(), "; Secure" if self.cookie_secure else "")
+
+    def _origine_etrangere(self, h):
+        """True si la requête dit venir d'un autre site : un en-tête Origin présent dont l'hôte n'est pas celui auquel on s'adresse.
+        Seconde barrière derrière SameSite=Strict ; un client sans Origin (curl, un agent) n'est pas concerné."""
+        o = h.headers.get("Origin", "")
+        if not o:
+            return False
+        hotes = {(h.headers.get("Host", "") or "").lower()}
+        if self.proxy:                                        # derrière notre reverse proxy, l'hôte demandé par le navigateur peut arriver dans X-Forwarded-Host
+            hotes.add((h.headers.get("X-Forwarded-Host", "") or "").split(",")[0].strip().lower())
+        o = o.lower()
+        for pre in ("https://", "http://"):
+            if o.startswith(pre):
+                return o[len(pre):].rstrip("/") not in hotes
+        return True                                           # « null » ou un schéma inconnu : refusé
+
     def _jeton(self, h):
         """(jeton, venait_du_cookie)."""
         a = h.headers.get("Authorization", "")
@@ -194,7 +219,7 @@ class Passerelle:
             return a[7:].strip(), False
         for part in h.headers.get("Cookie", "").split(";"):
             k, _, v = part.strip().partition("=")
-            if k == COOKIE and v:
+            if k in (COOKIE, COOKIE_HOTE) and v:
                 return v, True
         return "", False
 
@@ -256,13 +281,17 @@ class Passerelle:
             compte, acteur, admin, jeton = qui
             h._jeton_session = jeton
             venait_cookie = self._jeton(h)[1]
+            if methode == "POST" and venait_cookie and self._origine_etrangere(h):
+                return self._repondre(h, 403, {"erreur": "requête venue d'un autre site (en-tête Origin)"})
             if methode == "POST" and venait_cookie and h.headers.get("X-Cassandra") != "1":
                 return self._repondre(h, 403, {"erreur": "en-tête X-Cassandra: 1 exigé (protection contre les requêtes d'un autre site)"})
             if methode == "GET" and chemin == "/api/moi":
                 return self._repondre(h, 200, {"compte": compte, "acteur": acteur, "admin": admin})
             if methode == "POST" and chemin == "/api/deconnexion":
                 r = self.noyau.executeur.executer("comptes.fermer_session", acteur, {"jeton": jeton}, compte=compte)
-                return self._repondre(h, 200, {"ok": True}, cookie="%s=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict" % COOKIE)
+                return self._repondre(h, 200, {"ok": True}, cookie=self._cookie_vide())
+            if methode == "POST" and chemin == "/api/confirmer":
+                return self._confirmer(h, compte, acteur, jeton)
             if methode == "POST" and chemin == "/api/reverifier":
                 return self._reverifier(h, compte, acteur, jeton)
             if methode == "GET" and chemin == "/api/menu":
@@ -324,7 +353,7 @@ class Passerelle:
             return self._repondre(h, 401, {"erreur": res["erreur"], "second_facteur": True, "methodes": res["methodes"], "invite": res["invite"]})
         if not res.get("ok"):
             return self._repondre(h, 429 if res.get("limite") else 401, {"erreur": res.get("erreur", "refusé"), "attente_s": res.get("attente_s", 0)})
-        cookie = "%s=%s; Path=/; Max-Age=%d; HttpOnly; SameSite=Strict%s" % (COOKIE, res["jeton"], self.noyau.identite.ttl, "; Secure" if self.cookie_secure else "")
+        cookie = self._cookie_session(res["jeton"])
         corps = {"ok": True, "compte": res["compte"], "jeton": res["jeton"]}
         avert = self.noyau.identite.avertissement_connexion(res["compte"])         # un administrateur encore dans sa période de grâce est prévenu, avec la date
         if avert:
@@ -408,6 +437,26 @@ class Passerelle:
                                 "methodes": demande["methodes"], "invite": demande["invite"]})
         return True
 
+    def _exiger_confirmation(self, h, e, compte, acteur) -> bool:
+        """Vrai si la requête a reçu sa réponse (401 « confirmation ») : un geste déclaré `confirmer` demande le mot de passe de la session d'un utilisateur."""
+        jeton = getattr(h, "_jeton_session", "")
+        if not jeton or acteur != "humain" or not e.capacite.confirmer:
+            return False
+        if not self.noyau.identite.confirmation_requise(compte, jeton):
+            return False
+        self._repondre(h, 401, {"erreur": "Geste sensible : confirmez votre mot de passe", "confirmation": True})
+        return True
+
+    def _confirmer(self, h, compte, acteur, jeton):
+        """POST /api/confirmer {"mot_de_passe": "..."} : la session ouverte confirme son mot de passe, puis le geste sensible se redemande."""
+        corps = self._corps(h)
+        if acteur != "humain":
+            return self._repondre(h, 403, {"erreur": "réservé à la session d'un utilisateur"})
+        r = self.noyau.identite.confirmer_mdp(jeton, compte, str(corps.get("mot_de_passe") or ""), self._ip(h))
+        if r.get("ok"):
+            return self._repondre(h, 200, {"ok": True})
+        return self._repondre(h, 429 if r.get("limite") else 401, {"erreur": r.get("error", "refusé"), "attente_s": r.get("attente_s", 0)})
+
     def _reverifier(self, h, compte, acteur, jeton):
         """POST /api/reverifier {"preuve": {...}} : la session ouverte prouve de nouveau son second facteur, puis le geste sensible se redemande."""
         corps = self._corps(h)
@@ -442,7 +491,7 @@ class Passerelle:
         r = self.noyau.executeur.executer(cle, "anonyme", args, compte="")
         res = r.get("resultat") if r.get("statut") == "faite" else None
         if isinstance(res, dict) and res.get("ouvre_session") and res.get("jeton"):        # une capacité publique qui PROUVE un compte (clé d'accès) ouvre la session
-            cookie = "%s=%s; Path=/; Max-Age=%d; HttpOnly; SameSite=Strict%s" % (COOKIE, res["jeton"], self.noyau.identite.ttl, "; Secure" if self.cookie_secure else "")
+            cookie = self._cookie_session(res["jeton"])
             return self._repondre(h, 200, {"ok": True, "compte": res["compte"], "jeton": res["jeton"]}, cookie=cookie)
         if isinstance(res, dict) and res.get("ok") is False:                               # un refus rendu comme résultat (jamais une exception : voir webauthn)
             code = res.get("code") if res.get("code") in (401, 404, 410, 429) else (429 if res.get("limite") else 401)
@@ -485,7 +534,7 @@ class Passerelle:
         e = self.noyau.catalogue.get(cle)
         if e is None:
             return self._repondre(h, 404, {"erreur": "capacité inconnue : %s" % cle})
-        if self._exiger_reverification(h, e, compte, acteur):
+        if self._exiger_reverification(h, e, compte, acteur) or self._exiger_confirmation(h, e, compte, acteur):
             return
         if methode == "GET":
             if e.capacite.ecrit:

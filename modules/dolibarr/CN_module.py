@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #68178e
+# VERSION CN : 0.4.1  #c78719
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=68178e ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=c78719 ▼▼▼
 """Le pont Dolibarr : Cassandra pilote une instance Dolibarr par son API REST.
 
 Dolibarr garde son PHP et sa base ; il fait son métier. Ce module lit (GET, par `appeler`) et écrit (POST / PUT / DELETE, par `ecrire`, la seule porte
@@ -36,6 +36,7 @@ La clé elle-même n'est JAMAIS dans la configuration, ne se logue pas, ne figur
 import base64
 import calendar
 import gzip
+import hashlib
 import json
 import os
 import re
@@ -552,6 +553,78 @@ def _champs(objet, champs):
     if not liste or any(not _CHAMP.match(c) or c not in CHAMPS_OK for c in liste):
         raise ValueError("champs permis : " + ", ".join(sorted(CHAMPS_OK)))
     return ",".join(liste)
+
+
+# ------------------------------------------------------------------ la fiche d'utilisateur : ce qui passe entre Cassandra et Dolibarr
+# La fiche d'un compte de Cassandra (noyau/CN_fiche.py) a les noms de la fiche utilisateur de Dolibarr. Entre les deux, une LISTE BLANCHE : seuls ces champs voyagent.
+# Dolibarr rend plus que cela (numéro de sécurité sociale, code comptable, heures hebdomadaires, notes privées, droits, salaires) : l'API ne le retire pas, c'est CETTE liste qui l'arrête.
+FICHE_BLANCHE = ("civility_code", "gender", "lastname", "firstname", "birth", "job", "employee", "dateemployment", "dateemploymentend", "email", "personal_email", "office_phone",
+                 "user_mobile", "personal_mobile", "office_fax", "address", "zip", "town", "country_code", "state_code", "lang", "color", "signature", "socialnetworks", "note_public")
+FICHE_INTERDITS = ("pass", "pass_crypted", "pass_indatabase", "pass_temp", "api_key", "openid", "salary", "thm", "tjm", "national_registration_number", "accountancy_code",
+                   "ref_employee", "weeklyhours", "note_private", "rights", "admin", "statut", "status", "login", "entity", "id", "socid", "contact_id", "fk_user")
+_DATES_FICHE = ("birth", "dateemployment", "dateemploymentend")
+
+
+def _iso_depuis_ts(v):
+    """Un horodatage de Dolibarr (entier ou texte) -> « AAAA-MM-JJ ». Midi décalé : une date posée à minuit dans un fuseau ne bascule pas d'un jour dans l'autre."""
+    try:
+        return time.strftime("%Y-%m-%d", time.gmtime(int(float(v)) + 12 * 3600)) if str(v).strip() not in ("", "None", "null") else ""
+    except (TypeError, ValueError, OverflowError, OSError):
+        return ""
+
+
+def _minuit_utc(iso):
+    """« AAAA-MM-JJ » -> l'horodatage de minuit UTC ce jour-là. À la lecture on ajoute douze heures : toute date posée à minuit, dans n'importe quel fuseau, retombe sur son jour."""
+    return calendar.timegm(time.strptime(iso, "%Y-%m-%d"))
+
+
+def fiche_depuis_doli(u):
+    """La réponse de GET /users/{id} -> la fiche au format de Cassandra, LISTE BLANCHE seulement. Les dates (horodatages) deviennent des jours ISO, les réseaux sociaux un JSON."""
+    u = u if isinstance(u, dict) else {}
+    f = {}
+    for k in FICHE_BLANCHE:
+        v = u.get(k)
+        if k in _DATES_FICHE:
+            f[k] = _iso_depuis_ts(v)
+        elif k == "socialnetworks":
+            if isinstance(v, str) and v.strip().startswith("{"):
+                try:
+                    v = json.loads(v)
+                except ValueError:
+                    v = {}
+            f[k] = json.dumps({str(a): str(b) for a, b in v.items() if b}, ensure_ascii=False, sort_keys=True) if isinstance(v, dict) and v else ""
+        elif k == "employee":
+            f[k] = "1" if str(v) in ("1", "True", "true") else "0"
+        elif k == "color":
+            f[k] = str(v or "").lstrip("#")
+        else:
+            f[k] = "" if v is None else str(v)
+    return f
+
+
+def corps_vers_doli(champs):
+    """Des champs de fiche (format de Cassandra, déjà validés) -> le corps d'un PUT /users/{id}. Un champ hors liste blanche est refusé, jamais ignoré en silence."""
+    sortie = {}
+    for k, v in champs.items():
+        if k in FICHE_INTERDITS:
+            raise ValueError("« %s » ne passe jamais entre Cassandra et Dolibarr" % k)
+        if k not in FICHE_BLANCHE:
+            raise ValueError("« %s » n'est pas un champ de la fiche échangée avec Dolibarr" % k)
+        if k in _DATES_FICHE:
+            sortie[k] = _minuit_utc(v) if v else ""
+        elif k == "socialnetworks":
+            sortie[k] = json.loads(v) if v else {}
+        elif k == "employee":
+            sortie[k] = 1 if str(v) == "1" else 0
+        elif k in ("country_code", "state_code"):
+            continue                                   # Dolibarr veut un identifiant : voir _pays_etat_ids
+        else:
+            sortie[k] = v
+    return sortie
+
+
+def empreinte_fiche(f):
+    return hashlib.sha256(json.dumps({k: f.get(k, "") for k in FICHE_BLANCHE}, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[:12]
 
 
 # ------------------------------------------------------------------ le module
@@ -2555,6 +2628,176 @@ def brancher(ctx):
     ctx.implementer("lister", lister)
     ctx.implementer("lire", lire)
     ctx.implementer("impayees", impayees)
+
+    # ------------------------------------------------------------------ « Mon compte » : ma fiche utilisateur Dolibarr (liée, comparée, envoyée)
+    # Le lien est PROPRE au compte (« dolibarr_lien », id « compte:utilisateur:moi ») : un compte ne touche que sa fiche, avec SA clé quand il en a une.
+    def _id_lien(ctx):
+        return "%s:utilisateur:moi" % (ctx.compte or "-")
+
+    def _lien_fiche(ctx):
+        o = ctx.lire("dolibarr_lien", _id_lien(ctx), portee=ctx.compte or ctx.TOUT)
+        return o["donnees"] if o and o.get("etat") == "lie" else None
+
+    def _ma_fiche(ctx):
+        r = ctx.executer_lecture("comptes.moi")
+        if not r or not r.get("fiche"):
+            raise ValueError("ce compte n'a pas de fiche (un agent ou un compte système n'en a pas)")
+        return r
+
+    def _adresses(moi):
+        f = moi["fiche"]
+        return {a.strip().lower() for a in (moi.get("compte"), f.get("email"), f.get("personal_email")) if a}
+
+    def fiche_chercher(ctx):
+        """Les utilisateurs de Dolibarr qui pourraient être moi : même adresse que mon compte ou ma fiche. Une PROPOSITION : rien n'est lié tant que je n'ai pas confirmé."""
+        moi = _ma_fiche(ctx)
+        conf = _conf()
+        trouves = {}
+        for a in sorted(_adresses(moi)):
+            if not re.match(r"^[^'\s]+$", a):
+                continue
+            liste = appeler(conf, "/users", {"limit": 5, "sqlfilters": "(t.email:=:'%s')" % a})
+            for u in (liste if isinstance(liste, list) else []):
+                trouves[str(u.get("id"))] = {"id": int(u.get("id")), "login": str(u.get("login") or ""), "firstname": str(u.get("firstname") or ""),
+                                             "lastname": str(u.get("lastname") or ""), "email": str(u.get("email") or ""), "actif": str(u.get("statut", u.get("status", "1"))) == "1"}
+        return {"candidats": sorted(trouves.values(), key=lambda c: c["id"]), "lie": (_lien_fiche(ctx) or {}).get("id_doli")}
+
+    def fiche_lier(ctx, id_doli=0):
+        moi = _ma_fiche(ctx)
+        if not _ID.match(str(id_doli)):
+            raise ValueError("id_doli : l'identifiant de l'utilisateur dans Dolibarr")
+        if _lien_fiche(ctx):
+            raise ValueError("votre fiche est déjà liée : déliez-la d'abord")
+        u = appeler(_conf(), "/users/%s" % int(id_doli))
+        if not isinstance(u, dict) or not u.get("id"):
+            raise ValueError("cet utilisateur n'existe pas dans Dolibarr")
+        if str(u.get("email") or "").strip().lower() not in _adresses(moi):
+            raise ValueError("cet utilisateur de Dolibarr n'a pas votre adresse : on ne lie pas la fiche d'un autre")
+        f = fiche_depuis_doli(u)
+        ctx.poser("dolibarr_lien", _id_lien(ctx), "utilisateur Dolibarr %s" % int(id_doli), etat="lie",
+                  donnees={"type": "utilisateur", "id": "moi", "id_doli": int(id_doli), "le": time.strftime("%Y-%m-%d"), "empreinte": empreinte_fiche(f), "maj": time.strftime("%Y-%m-%d %H:%M")})
+        return {"id_doli": int(id_doli), "login": str(u.get("login") or "")}
+
+    def prouver_fiche_lier(ctx, res):
+        return (_lien_fiche(ctx) or {}).get("id_doli") == res["id_doli"]
+
+    def defaire_fiche_lier(ctx, res):
+        ctx.retirer("dolibarr_lien", _id_lien(ctx))
+
+    def fiche_delier(ctx):
+        l = _lien_fiche(ctx)
+        if not l:
+            raise ValueError("votre fiche n'est liée à aucun utilisateur de Dolibarr")
+        ctx.retirer("dolibarr_lien", _id_lien(ctx))
+        return {"id_doli": l["id_doli"], "empreinte": l.get("empreinte", "")}
+
+    def prouver_fiche_delier(ctx, res):
+        return _lien_fiche(ctx) is None
+
+    def defaire_fiche_delier(ctx, res):
+        ctx.poser("dolibarr_lien", _id_lien(ctx), "utilisateur Dolibarr %s" % res["id_doli"], etat="lie",
+                  donnees={"type": "utilisateur", "id": "moi", "id_doli": res["id_doli"], "le": time.strftime("%Y-%m-%d"), "empreinte": res.get("empreinte", ""), "maj": time.strftime("%Y-%m-%d %H:%M")})
+
+    def _fiche_doli(ctx):
+        l = _lien_fiche(ctx)
+        if not l:
+            raise ValueError("votre fiche n'est liée à aucun utilisateur de Dolibarr (Mon compte › Profil › Lien)")
+        return l, appeler(_conf(), "/users/%s" % l["id_doli"])
+
+    def fiche_lire(ctx):
+        l = _lien_fiche(ctx)
+        if not l:
+            return {"lie": False, "configure": lire_conf() is not None}          # « configure » : le pont vers Dolibarr existe ; sans lui, le lien ne peut pas se poser
+        _, u = _fiche_doli(ctx)
+        f = fiche_depuis_doli(u)
+        return {"lie": True, "id_doli": l["id_doli"], "login": str(u.get("login") or ""), "champs": f, "empreinte": empreinte_fiche(f), "empreinte_lien": l.get("empreinte", "")}
+
+    def fiche_comparer(ctx):
+        """Champ par champ : ma fiche Cassandra, ma fiche Dolibarr, et si elles disent la même chose. Rien n'est écrit."""
+        moi = _ma_fiche(ctx)
+        l = _lien_fiche(ctx)
+        if not l:
+            return {"lie": False}
+        _, u = _fiche_doli(ctx)
+        d = fiche_depuis_doli(u)
+        c = moi["fiche"]
+        lignes = [{"champ": k, "cassandra": c.get(k, ""), "dolibarr": d.get(k, ""), "identique": (c.get(k, "") or "") == (d.get(k, "") or "")} for k in FICHE_BLANCHE]
+        return {"lie": True, "id_doli": l["id_doli"], "champs": lignes, "differents": [x["champ"] for x in lignes if not x["identique"]],
+                "empreinte": empreinte_fiche(d), "change_depuis_le_lien": empreinte_fiche(d) != l.get("empreinte", "")}
+
+    def _pays_etat_ids(conf, champs):
+        sortie = {}
+        if champs.get("country_code"):
+            r = appeler(conf, "/setup/dictionary/countries", {"limit": 3, "sqlfilters": "(t.code:=:'%s')" % champs["country_code"]})
+            if not (isinstance(r, list) and r):
+                raise ValueError("pays « %s » inconnu de Dolibarr" % champs["country_code"])
+            sortie["country_id"] = int(r[0]["id"])
+        if champs.get("state_code"):
+            r = appeler(conf, "/setup/dictionary/states", {"limit": 3, "sqlfilters": "(t.code_departement:=:'%s')" % champs["state_code"]})
+            if not (isinstance(r, list) and r):
+                raise ValueError("département « %s » inconnu de Dolibarr" % champs["state_code"])
+            sortie["state_id"] = int(r[0]["id"])
+        return sortie
+
+    def fiche_ecrire(ctx, champs=None):
+        """Envoie des champs de MA fiche à Dolibarr (liste blanche, longueurs de Dolibarr). Rend ce qui était avant, pour s'en défaire."""
+        champs = dict(champs or {})
+        if not champs:
+            raise ValueError("aucun champ à envoyer")
+        for k in champs:
+            if k in FICHE_INTERDITS:
+                raise ValueError("« %s » ne passe jamais entre Cassandra et Dolibarr" % k)
+        import importlib
+        valider = importlib.import_module("noyau.CN_fiche").valider
+        propres, erreurs = valider(champs)
+        if erreurs:
+            raise ValueError(" ; ".join(erreurs))
+        l, u = _fiche_doli(ctx)
+        conf = _conf()
+        avant = fiche_depuis_doli(u)
+        corps = corps_vers_doli(propres)
+        corps.update(_pays_etat_ids(conf, propres))
+        ecrire(conf, "PUT", "/users/%s" % l["id_doli"], corps)
+        _, u2 = _fiche_doli(ctx)
+        apres = fiche_depuis_doli(u2)
+        ctx.poser("dolibarr_lien", _id_lien(ctx), "utilisateur Dolibarr %s" % l["id_doli"], etat="lie",
+                  donnees=dict(l, empreinte=empreinte_fiche(apres), maj=time.strftime("%Y-%m-%d %H:%M")))
+        return {"id_doli": l["id_doli"], "champs": sorted(propres), "avant": {k: avant.get(k, "") for k in propres}, "envoye": {k: propres[k] for k in propres}}
+
+    def prouver_fiche_ecrire(ctx, res):
+        _, u = _fiche_doli(ctx)
+        f = fiche_depuis_doli(u)
+        return all(f.get(k, "") == v for k, v in res["envoye"].items() if k not in ("country_code", "state_code"))
+
+    def defaire_fiche_ecrire(ctx, res):
+        conf = _conf()
+        ecrire(conf, "PUT", "/users/%s" % res["id_doli"], corps_vers_doli({k: v for k, v in res["avant"].items()}))
+
+    def portrait(ctx):
+        """La photo de ma fiche Dolibarr (par l'API des documents : elle respecte les droits et marche aussi si Dolibarr est ailleurs). {present: False} sans lien ou sans photo."""
+        l = _lien_fiche(ctx)
+        if not l:
+            return {"present": False}
+        _, u = _fiche_doli(ctx)
+        photo = str(u.get("photo") or "").strip()
+        if not photo or "/" in photo or ".." in photo:
+            return {"present": False}
+        d = appeler(_conf(), "/documents/download", {"modulepart": "user", "original_file": "%s/%s" % (l["id_doli"], photo)})
+        brut = base64.b64decode((d or {}).get("content") or "") if isinstance(d, dict) else b""
+        if not brut or len(brut) > 300 * 1024:
+            return {"present": False, "raison": "image absente ou trop lourde"}
+        type_ = "image/png" if brut.startswith(b"\x89PNG") else "image/jpeg" if brut.startswith(b"\xff\xd8") else "image/webp" if brut[:4] == b"RIFF" and brut[8:12] == b"WEBP" else ""
+        if not type_:
+            return {"present": False, "raison": "format non reconnu"}
+        return {"present": True, "type": type_, "base64": base64.b64encode(brut).decode("ascii")}
+
+    ctx.implementer("portrait", portrait)
+    ctx.implementer("fiche_chercher", fiche_chercher)
+    ctx.implementer("fiche_lire", fiche_lire)
+    ctx.implementer("fiche_comparer", fiche_comparer)
+    ctx.implementer("fiche_lier", fiche_lier, prouver_fiche_lier, defaire_fiche_lier, simuler=lambda ctx, id_doli="", **_: "lierait ma fiche à l'utilisateur Dolibarr %s" % id_doli)
+    ctx.implementer("fiche_delier", fiche_delier, prouver_fiche_delier, defaire_fiche_delier, simuler=lambda ctx, **_: "délierait ma fiche de Dolibarr")
+    ctx.implementer("fiche_ecrire", fiche_ecrire, prouver_fiche_ecrire, defaire_fiche_ecrire, simuler=lambda ctx, champs=None, **_: "enverrait %d champ(s) de ma fiche à Dolibarr" % len(champs or {}))
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

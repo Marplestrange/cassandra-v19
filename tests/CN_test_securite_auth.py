@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #56a7d9
+# VERSION CN : 0.1.0  #509fb8
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs de l'authentification : cookie Secure et HSTS, coût de scrypt et réécriture des empreintes, inactivité des sessions, ressaisie du second facteur pour un geste sensible, second facteur obligatoire pour les administrateurs (avec période
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=56a7d9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=509fb8 ▼▼▼
 """Bancs de l'authentification : cookie Secure et HSTS, coût de scrypt et réécriture des empreintes, inactivité des sessions, ressaisie du second facteur
 pour un geste sensible, second facteur obligatoire pour les administrateurs (avec période de grâce)."""
 import hashlib
@@ -261,8 +261,12 @@ class Reverification(Monde):
 
 
 class Obligation(Monde):
-    def test_desactivee_par_defaut_personne_n_est_touche(self):
-        self.assertEqual(self.entrer("chef@x.fr")[0], 200)
+    def test_activee_par_defaut_l_administrateur_entre_en_grace_et_est_prevenu(self):
+        st, r = self.entrer("chef@x.fr")
+        self.assertEqual(st, 200, r)
+        self.assertEqual(r["avertissement"]["code"], "second_facteur_requis_bientot")
+        self.assertEqual(self.entrer("bea@x.fr")[0], 200)                                       # un simple utilisateur n'est pas concerné
+        self.idt.securite["admin_second_facteur_obligatoire"] = False                           # et l'administrateur de la machine peut l'éteindre
         self.assertEqual(self.idt.avertissement_connexion("chef@x.fr"), {})
 
     def test_en_grace_l_administrateur_entre_et_est_prevenu_avec_la_date(self):
@@ -312,6 +316,78 @@ class Obligation(Monde):
 
 if __name__ == "__main__":
     unittest.main()
+class Etape0(Monde):
+    """La sécurité des sessions : origine, cookie, plafond, nouvel appareil, confirmation du mot de passe."""
+    def req_cookie(self, chemin, corps, jeton, origine=None, hote=None):
+        c = http.client.HTTPConnection("127.0.0.1", self.g.port, timeout=10)
+        h = {"Content-Type": "application/json", "X-Cassandra": "1", "Cookie": "cassandra_session=" + jeton}
+        if origine is not None:
+            h["Origin"] = origine
+        c.request("POST", chemin, body=json.dumps(corps).encode(), headers=h)
+        r = c.getresponse()
+        txt = r.read().decode()
+        c.close()
+        return r.status, json.loads(txt)
+
+    def test_une_requete_a_cookie_venue_d_un_autre_site_est_refusee(self):
+        jeton = self.entrer("bea@x.fr")[1]["jeton"]
+        hote = "127.0.0.1:%d" % self.g.port
+        self.assertEqual(self.req_cookie("/api/agir/comptes.moi", {"args": {}}, jeton)[0], 200)                         # sans Origin (curl, un agent) : passe
+        self.assertEqual(self.req_cookie("/api/agir/comptes.moi", {"args": {}}, jeton, "http://" + hote)[0], 200)       # le même hôte : passe
+        self.assertEqual(self.req_cookie("/api/agir/comptes.moi", {"args": {}}, jeton, "https://mechant.example")[0], 403)
+        self.assertEqual(self.req_cookie("/api/agir/comptes.moi", {"args": {}}, jeton, "null")[0], 403)
+        st, _ = self.req("POST", "/api/agir/comptes.moi", {"args": {}}, jeton)                                           # un jeton en en-tête n'est pas ambiant : pas concerné
+        self.assertEqual(st, 200)
+
+    def test_le_cookie_prend_le_prefixe_host_des_qu_il_est_secure(self):
+        class H:
+            pass
+        sur = Passerelle(self.n, "127.0.0.1", 0, cookie_secure=True)
+        self.assertTrue(sur._cookie_session("abc").startswith("__Host-cassandra_session=abc; Path=/;"))
+        self.assertIn("; Secure", sur._cookie_session("abc"))
+        self.assertNotIn("Domain", sur._cookie_session("abc"))
+        self.assertTrue(self.g._cookie_session("abc").startswith("cassandra_session=abc;"))                              # http local : sans préfixe
+        h = H()
+        h.headers = {"Cookie": "autre=1; __Host-cassandra_session=%s" % ("a" * 64)}
+        self.assertEqual(sur._jeton(h), ("a" * 64, True))                                                               # les deux noms se lisent
+
+    def test_au_plus_dix_sessions_par_compte(self):
+        ouvertes = [self.idt.ouvrir("bea@x.fr", MDP, "203.0.113.5", "navigateur") for _ in range(12)]
+        vivantes = self.idt.sessions("bea@x.fr")
+        self.assertEqual(len(vivantes), 10)
+        self.assertTrue(self.idt.valider(ouvertes[-1]["jeton"])["ok"])                                                   # la plus récente reste
+        self.assertFalse(self.idt.valider(ouvertes[0]["jeton"])["ok"])                                                   # la plus ancienne a cédé la place
+        self.assertEqual(len(self.idt.sessions("chef@x.fr")), 0)                                                         # un autre compte n'est pas touché
+
+    def test_un_appareil_jamais_vu_est_reconnu_comme_nouveau(self):
+        self.assertEqual(self.idt.appareil_vu("bea@x.fr", "203.0.113.5", "Firefox"), "premier")                          # rien à comparer
+        self.assertEqual(self.idt.appareil_vu("bea@x.fr", "203.0.113.5", "Firefox"), "connu")
+        self.assertEqual(self.idt.appareil_vu("bea@x.fr", "203.0.113.99", "Firefox"), "connu")                           # même réseau, dernier chiffre différent
+        self.assertEqual(self.idt.appareil_vu("bea@x.fr", "198.51.100.7", "Firefox"), "nouveau")
+        self.assertEqual(self.idt.appareil_vu("bea@x.fr", "203.0.113.5", "Chrome"), "nouveau")
+        self.assertEqual(self.idt.appareil_vu("chef@x.fr", "198.51.100.7", "Firefox"), "premier")                        # un autre compte repart de zéro
+
+    def test_un_geste_sensible_demande_le_mot_de_passe_puis_passe(self):
+        jeton = self.entrer("chef@x.fr")[1]["jeton"]
+        desactiver = {"args": {"compte": "bea@x.fr"}}
+        self.assertEqual(self.req("POST", "/api/agir/comptes.moi", {"args": {}}, jeton)[0], 200)                         # un geste ordinaire ne demande rien
+        self.vieillir(jeton, 11 * 60)                                                                                    # la dernière confirmation date de plus de dix minutes
+        st, r = self.req("POST", "/api/agir/comptes.desactiver", desactiver, jeton)
+        self.assertEqual((st, r.get("confirmation")), (401, True), r)
+        self.assertEqual(self.req("POST", "/api/agir/comptes.moi", {"args": {}}, jeton)[0], 200)                         # le reste ne bouge pas
+        self.assertEqual(self.req("POST", "/api/confirmer", {"mot_de_passe": "Mauvais1!x"}, jeton)[0], 401)
+        self.assertEqual(self.req("POST", "/api/confirmer", {"mot_de_passe": MDP}, jeton)[0], 200)
+        st, r = self.req("POST", "/api/agir/comptes.desactiver", desactiver, jeton)
+        self.assertEqual((st, r.get("statut")), (200, "faite"), r)
+        self.assertEqual(self.req("POST", "/api/confirmer", {"mot_de_passe": MDP}, "")[0], 401)                          # sans session : rien
+
+    def test_la_confirmation_ne_concerne_pas_un_agent_ni_un_reglage_a_zero(self):
+        jeton = self.entrer("chef@x.fr")[1]["jeton"]
+        self.vieillir(jeton, 11 * 60)
+        self.idt.securite["confirmation_minutes"] = 0
+        st, r = self.req("POST", "/api/agir/comptes.desactiver", {"args": {"compte": "bea@x.fr"}}, jeton)
+        self.assertEqual((st, r.get("statut")), (200, "faite"), r)
+
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

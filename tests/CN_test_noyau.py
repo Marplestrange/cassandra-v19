@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #423823
+# VERSION CN : 0.1.0  #eb37a4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=423823 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=eb37a4 ▼▼▼
 """Bancs du noyau. Stdlib seule : python -m unittest discover -s tests -p "CN_test*.py" -v"""
 import os
 import sys
@@ -3019,6 +3019,26 @@ class ComptesEtSessions(unittest.TestCase):
         self.assertEqual(self.ex("comptes.reinitialiser_mot_de_passe", jeton=j, nouveau=MDP)["statut"], "echec")           # usage unique
         self.assertFalse(self.ex("comptes.valider_session", jeton=s["jeton"])["resultat"]["ok"])
         self.assertTrue(self.ouvrir("a@x.fr", MDP2)["ok"])
+
+    def test_changer_son_mot_de_passe_ferme_les_autres_sessions_et_garde_la_courante(self):
+        self.creer("a@x.fr")
+        self.creer("b@x.fr")
+        s1, s2 = self.ouvrir("a@x.fr"), self.ouvrir("a@x.fr")
+        sb = self.ouvrir("b@x.fr")
+        r = self.ex("comptes.changer_mon_mot_de_passe", au_nom_de="a@x.fr", actuel=MDP, nouveau=MDP2, courant=s2["jeton"])
+        self.assertEqual(r["statut"], "faite")
+        self.assertEqual(r["resultat"]["sessions_fermees"], 1)
+        self.assertTrue(self.ex("comptes.valider_session", jeton=s2["jeton"])["resultat"]["ok"])
+        self.assertFalse(self.ex("comptes.valider_session", jeton=s1["jeton"])["resultat"]["ok"])
+        self.assertTrue(self.ex("comptes.valider_session", jeton=sb["jeton"])["resultat"]["ok"])      # le voisin n'est pas touché
+
+    def test_la_liste_des_sessions_ne_montre_que_les_vivantes(self):
+        self.creer("a@x.fr")
+        vieille, vive = self.ouvrir("a@x.fr"), self.ouvrir("a@x.fr")
+        self.n.base.ecrire("UPDATE sessions SET derniere=derniere-? WHERE court=?", (30 * 3600, vieille["id"]))      # restée sans servir bien au-delà du délai
+        mes = self.ex("comptes.mes_sessions", au_nom_de="a@x.fr", courant=vive["jeton"])["resultat"]["sessions"]
+        self.assertEqual([s["id"] for s in mes], [vive["id"]])
+        self.assertEqual(self.n.base.lire("SELECT COUNT(*) AS n FROM sessions WHERE court=?", (vieille["id"],))[0]["n"], 0)   # purgée à la lecture
 
     def test_un_jeton_expire_ne_sert_plus(self):
         self.creer("a@x.fr")

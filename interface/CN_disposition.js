@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #3915b0
+// VERSION CN : 0.1.0  #0f7cc5
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=3915b0 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=0f7cc5 ▼▼▼
 /* La disposition V19 : barre du haut (groupes), colonne de gauche, menu de l'avatar conservé, panneau conversationnel (Itare, Cassandra, invités).
    Tout ce qui est CHOISI (groupes, ordre, interlocuteur, idées) vient du serveur : affichage.lire_disposition, lire_idees, lire_fils. Ce fichier dessine et relie à l'ancienne interface
    (onglets V18) ; il ne décide d'aucun accès : le serveur filtre, l'exécuteur refait chaque vérification. Retour à l'ancienne disposition : ?disposition=v18. */
@@ -421,11 +421,11 @@
       return h;
     };
     // trois sections, dans l'ordre voulu ; ce qui n'est pas nommé ici (une page d'un autre module) rejoint la section qui lui ressemble
-    const PERSO_AV = ["menus:mes_applications"], PERSO_E = ["coffre:mon_coffre"], INST_AV = ["menus:logitheque"], INST_E = ["societes:societe", "comptes:utilisateurs", "comptes:groupes"];
+    const PERSO_AV = ["menus:mes_applications"], PERSO_E = ["comptes:mon_compte", "coffre:mon_coffre"], INST_AV = ["menus:logitheque"], INST_E = ["societes:societe", "comptes:utilisateurs", "comptes:groupes"];
     const GEN_E = ["reg-maintenance", "reg-donnees", "reg-tiers", "reg-canaux", "reg-veille", "reg-danger"];
     const avPar = (id) => av.find((a) => a.id === id), ePar = (id) => pe.find((e) => e.id === id);
     const titre = (t) => '<h2 class="d19-pgrp">' + esc(t) + "</h2>";          // le titre de section des autres colonnes (accent, filet) ; « Paramètres » est déjà dans l'en-tête
-    let h = titre("Personnel") + bouton('data-sw="moi"', reglages === "moi", "contacts", "Mon compte");
+    let h = titre("Personnel");
     PERSO_E.forEach((id) => { if (ePar(id)) h += dEntree(ePar(id)); });
     PERSO_AV.forEach((id) => { if (avPar(id)) h += dAvatar(avPar(id)); });
     h += titre("Institutionnel");
@@ -810,6 +810,11 @@
     const um = $("#usermenu"); if (!um) return;
     $$("[data-d19-av]", um).forEach((x) => x.remove());
     const machine = $('[data-um="machine"]', um); if (machine) machine.style.display = (typeof setEstAdmin === "function" && !setEstAdmin()) ? "none" : "";
+    const compte = $('[data-um="compte"]', um);                      // « Mon compte » : les six pages de CN_moncompte-ecran.js, plus l'ancienne rubrique de Paramètres
+    if (compte && !compte.dataset.mc) {
+      compte.dataset.mc = "1"; compte.removeAttribute("onclick");
+      compte.addEventListener("click", function () { if (typeof window.fermerCompte === "function") window.fermerCompte(); if (CASS.ouvrirEcran) CASS.ouvrirEcran("comptes:mc_accueil", "Mon compte"); });
+    }
     const seg = $("#um-seg", um), ancien = seg && seg.closest(".um-sec");
     if (ancien) ancien.style.display = "none";                       // l'ancien sélecteur (initiales) cède la place
     const hote = $(".um-acts", um); if (!hote) return;

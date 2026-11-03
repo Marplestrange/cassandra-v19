@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : comptes
 # ZONE       : CN
-# VERSION CN : 0.5.0  #229ee7
+# VERSION CN : 0.5.0  #a404fb
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les comptes et la preuve qu'on en est : identifiant (une adresse e-mail), mot de passe (règles de la V18, scrypt salé), sessions, jetons de mise en place du mot de passe. Le rôle d'administrateur, lui, vit dans les droits.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=229ee7 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=a404fb ▼▼▼
 [module]
 id = "comptes"
 nom = "Comptes"
@@ -31,6 +31,16 @@ id = "gerer"
 libelle = "Gérer les comptes : créer, modifier, supprimer, inviter"
 sensible = true
 
+[[droits]]
+id = "fiche_voir_perso"
+libelle = "Voir les coordonnées privées de la fiche des autres (courriel et mobile personnels, naissance, adresse)"
+sensible = true
+
+[[droits]]
+id = "fiche_modifier_autres"
+libelle = "Modifier la fiche d'un autre compte"
+sensible = true
+
 [[reglages]]
 id = "session_heures"
 libelle = "Durée d'une session, en heures (au-delà, il faut se reconnecter)"
@@ -39,6 +49,57 @@ defaut = 24
 minimum = 1
 maximum = 720
 aide = "S'applique tout de suite, aux sessions déjà ouvertes aussi."
+
+[[reglages]]
+id = "inactivite_heures"
+libelle = "Une session inactive se ferme après (heures, utilisateur)"
+type = "entier"
+defaut = 8
+minimum = 0
+maximum = 720
+aide = "0 : pas de délai d'inactivité. Compte seulement le temps passé sans servir."
+
+[[reglages]]
+id = "inactivite_admin_heures"
+libelle = "Une session inactive se ferme après (heures, administrateur)"
+type = "entier"
+defaut = 2
+minimum = 0
+maximum = 720
+aide = "Plus court que pour un utilisateur : le compte d'un administrateur ouvre plus de portes."
+
+[[reglages]]
+id = "admin_reverif_minutes"
+libelle = "Un administrateur ressaisit son second facteur pour un geste sensible après (minutes)"
+type = "entier"
+defaut = 60
+minimum = 0
+maximum = 1440
+aide = "0 : jamais redemandé. Ne concerne que les comptes qui ont un second facteur."
+
+[[reglages]]
+id = "admin_second_facteur_obligatoire"
+libelle = "Second facteur obligatoire pour les administrateurs"
+type = "booleen"
+defaut = true
+aide = "Les administrateurs sans clé de sécurité sont prévenus à chaque connexion, puis refusés une fois la période de grâce écoulée. Sans module de second facteur branché, rien n'est exigé."
+
+[[reglages]]
+id = "admin_second_facteur_grace_jours"
+libelle = "Période de grâce du second facteur, en jours"
+type = "entier"
+defaut = 7
+minimum = 0
+maximum = 90
+
+[[reglages]]
+id = "confirmation_minutes"
+libelle = "Un geste sensible redemande le mot de passe après (minutes)"
+type = "entier"
+defaut = 10
+minimum = 0
+maximum = 240
+aide = "0 : jamais redemandé. Concerne les gestes marqués « confirmer » (clés de sécurité, désactiver ou supprimer un compte, exporter la mémoire…)."
 
 [[objets]]
 type = "compte"
@@ -49,13 +110,66 @@ type = "session"
 libelle = "Une session ouverte par un compte"
 
 [evenements]
-emet = ["compte.cree", "compte.modifie", "compte.supprime", "compte.restaure", "compte.desactive", "compte.reactive", "compte.mdp_change", "session.ouverte", "session.fermee", "session.refusee"]
+emet = ["compte.cree", "compte.modifie", "compte.supprime", "compte.restaure", "compte.desactive", "compte.reactive", "compte.mdp_change", "session.ouverte", "session.fermee", "session.refusee", "compte.nouvel_appareil", "compte.fiche_vue"]
 
 # ---------- lectures ----------
 [[capacites]]
 id = "moi"
 libelle = "Le profil du compte au nom duquel on agit"
 risque = "lecture"
+
+[[capacites]]
+id = "fiche_modifier"
+libelle = "Modifier des champs de la fiche d'un autre compte (une valeur trop longue est refusée, jamais coupée)"
+risque = "moyen"
+droit = "fiche_modifier_autres"
+confirmer = true
+perimetre = ["la fiche du compte visé : les champs donnés, pas les autres"]
+preuve = "la fiche relue porte les valeurs écrites"
+retour = "remettre les valeurs d'avant"
+paliers = ["raconter"]
+qui = ["humain"]
+
+[[capacites]]
+id = "mon_journal"
+libelle = "Le journal de mon compte : connexions, sessions fermées, mot de passe, fiche (et qui l'a consultée), droits"
+risque = "lecture"
+
+[[capacites]]
+id = "portrait"
+libelle = "Mon portrait : l'image de la source choisie, sinon la première qui en a une, sinon mes initiales"
+risque = "lecture"
+
+[[capacites]]
+id = "portrait_poser"
+libelle = "Téléverser mon image propre (PNG, JPEG ou WebP, 300 Ko au plus) ; elle n'est jamais écrasée par une source externe"
+risque = "faible"
+perimetre = ["l'image propre du compte au nom duquel on agit, et sa source de portrait"]
+preuve = "l'image relue a la taille de celle envoyée"
+retour = "remettre l'image d'avant (ou aucune) et la source d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+masque = ["image"]
+
+[[capacites]]
+id = "portrait_retirer"
+libelle = "Retirer mon image propre (la source repasse au défaut)"
+risque = "faible"
+perimetre = ["l'image propre du compte au nom duquel on agit"]
+preuve = "plus aucune image propre"
+retour = "remettre l'image retirée"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "portrait_source"
+libelle = "Choisir la source de son portrait (image propre, Dolibarr, FastPanel, Telegram, initiales)"
+risque = "faible"
+perimetre = ["la source de portrait de la fiche du compte au nom duquel on agit ; aucune image n'est touchée"]
+preuve = "la fiche relue porte la source choisie"
+retour = "remettre la source d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
 
 [[capacites]]
 id = "lire"
@@ -150,6 +264,7 @@ masque = ["jeton"]
 
 [[capacites]]
 id = "modifier"
+confirmer = true
 libelle = "Modifier le profil ou les sites d'un compte"
 risque = "faible"
 droit = "gerer"
@@ -174,11 +289,11 @@ id = "changer_mon_mot_de_passe"
 libelle = "Changer son propre mot de passe (l'actuel est exigé)"
 risque = "moyen"
 perimetre = ["l'empreinte du mot de passe du compte au nom duquel on agit"]
-preuve = "le nouveau mot de passe ouvre le compte"
-retour = "remettre l'ancienne empreinte"
+preuve = "le nouveau mot de passe ouvre le compte, et aucune autre session du compte ne reste ouverte"
+retour = "remettre l'ancienne empreinte ; les sessions fermées ne se rouvrent pas (une connexion les remplace)"
 paliers = ["raconter", "auto"]
 qui = ["humain", "compte"]
-masque = ["actuel", "nouveau", "ancien_hash"]
+masque = ["actuel", "nouveau", "ancien_hash", "courant"]
 
 [[capacites]]
 id = "creer_jeton"
@@ -194,6 +309,7 @@ masque = ["jeton"]
 
 [[capacites]]
 id = "reinitialiser_mot_de_passe"
+confirmer = true
 libelle = "Poser un nouveau mot de passe avec un jeton (le jeton est consommé, les sessions du compte sont fermées)"
 risque = "moyen"
 perimetre = ["l'empreinte du mot de passe du compte du jeton, et ses sessions"]
@@ -205,6 +321,7 @@ masque = ["jeton", "nouveau", "ancien_hash"]
 
 [[capacites]]
 id = "supprimer"
+confirmer = true
 libelle = "Supprimer un compte (copie entière en corbeille, sessions fermées)"
 risque = "eleve"
 droit = "gerer"
@@ -216,6 +333,7 @@ qui = ["humain", "compte", "cassandra", "itare"]
 
 [[capacites]]
 id = "desactiver"
+confirmer = true
 libelle = "Désactiver un compte : il n'entre plus, ses sessions se ferment, rien n'est supprimé. Ses sites peuvent passer à un autre compte, et ses agents invités être révoqués ou réattribués"
 risque = "moyen"
 droit = "gerer"
@@ -292,6 +410,43 @@ masque = ["courant"]
 
 [permissions]
 identite = true
+lectures = true
+[[ecrans]]
+id = "mc_accueil"
+libelle = "Mon compte : vue d'ensemble"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "mc_profil"
+libelle = "Mon compte : profil et affichage"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "mc_liens"
+libelle = "Mon compte : mes branchements"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "mc_alertes"
+libelle = "Mon compte : notifications"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "mc_secu"
+libelle = "Mon compte : sécurité et sessions"
+domaine = "socle"
+gabarit = "liste_detail"
+
+[[ecrans]]
+id = "mc_donnees"
+libelle = "Mon compte : mes droits et mes données"
+domaine = "socle"
+gabarit = "liste_detail"
+
 [[ecrans]]
 id = "vue_utilisateurs"
 libelle = "Utilisateurs et groupes"
@@ -339,6 +494,69 @@ id = "journal"
 libelle = "Journal des droits"
 domaine = "socle"
 gabarit = "liste_detail"
+
+# Mon compte : un regroupement dans Paramètres (section Personnel), puis ses six pages. Tout compte y entre : on ne lit et ne règle que le sien.
+[[menus]]
+id = "mon_compte"
+libelle = "Mon compte"
+groupe = "parametres"
+ordre = 2
+role = "utilisateur"
+icone = "contacts"
+
+[[menus]]
+id = "mc_accueil"
+libelle = "Vue d'ensemble"
+ecran = "mc_accueil"
+parent = "mon_compte"
+ordre = 10
+role = "utilisateur"
+icone = "panorama"
+
+[[menus]]
+id = "mc_profil"
+libelle = "Profil et affichage"
+ecran = "mc_profil"
+parent = "mon_compte"
+ordre = 20
+role = "utilisateur"
+icone = "contacts"
+
+[[menus]]
+id = "mc_liens"
+libelle = "Mes branchements"
+ecran = "mc_liens"
+parent = "mon_compte"
+ordre = 30
+role = "utilisateur"
+icone = "puzzle"
+
+[[menus]]
+id = "mc_alertes"
+libelle = "Notifications"
+ecran = "mc_alertes"
+parent = "mon_compte"
+ordre = 40
+role = "utilisateur"
+icone = "bell"
+
+[[menus]]
+id = "mc_secu"
+libelle = "Sécurité et sessions"
+ecran = "mc_secu"
+parent = "mon_compte"
+ordre = 50
+role = "utilisateur"
+icone = "shield"
+
+[[menus]]
+id = "mc_donnees"
+libelle = "Mes droits et mes données"
+ecran = "mc_donnees"
+parent = "mon_compte"
+ordre = 60
+role = "utilisateur"
+icone = "key"
 
 # Utilisateurs : un regroupement, puis ses pages. Groupes : idem (avec la matrice, « qui peut… ? » et le journal des droits).
 [[menus]]

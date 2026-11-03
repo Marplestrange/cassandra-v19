@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : dolibarr
 # ZONE       : CN
-# VERSION CN : 0.4.1  #2a751f
+# VERSION CN : 0.4.1  #37d7d2
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers une instance Dolibarr, par son API REST. Lit (santé, comptes, impayés, objets) et agit : créer et modifier des tiers, contacts, produits, projets, des brouillons de documents, avec preuve et retour arrière. Supprimer passe par une corbeille. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=2a751f ▼▼▼
+# ▼▼▼ BORNE CN version=0.4.1 empreinte=37d7d2 ▼▼▼
 [module]
 id = "dolibarr"
 nom = "Dolibarr"
@@ -326,6 +326,68 @@ id = "base_etat"
 libelle = "Vérifier la lecture de la base de Dolibarr : connexion, version, tables attendues, et que l'utilisateur SQL n'a que le droit de lire"
 risque = "lecture"
 droit = "administrer"
+
+[[droits]]
+id = "ma_fiche"
+libelle = "Lier, comparer et envoyer MA fiche utilisateur à Dolibarr (la mienne seulement, avec ma clé quand j'en ai une)"
+defaut = true
+
+[[capacites]]
+id = "portrait"
+libelle = "La photo de ma fiche utilisateur Dolibarr (si elle est liée et en porte une)"
+risque = "lecture"
+droit = "ma_fiche"
+
+[[capacites]]
+id = "fiche_chercher"
+libelle = "Les utilisateurs de Dolibarr qui portent mon adresse : une proposition de lien, jamais un lien"
+risque = "lecture"
+droit = "ma_fiche"
+
+[[capacites]]
+id = "fiche_lire"
+libelle = "Ma fiche utilisateur telle que Dolibarr la porte (liste blanche, au format de Cassandra)"
+risque = "lecture"
+droit = "ma_fiche"
+
+[[capacites]]
+id = "fiche_comparer"
+libelle = "Ma fiche Cassandra et ma fiche Dolibarr, champ par champ : lesquels diffèrent"
+risque = "lecture"
+droit = "ma_fiche"
+
+[[capacites]]
+id = "fiche_lier"
+libelle = "Lier ma fiche à un utilisateur de Dolibarr (qui doit porter mon adresse)"
+risque = "faible"
+droit = "ma_fiche"
+perimetre = ["le lien de MA fiche : une ligne du registre du module"]
+preuve = "relire le lien : il porte l'identifiant donné"
+retour = "retirer le lien"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "fiche_delier"
+libelle = "Délier ma fiche de Dolibarr (rien n'est effacé, ni d'un côté ni de l'autre)"
+risque = "faible"
+droit = "ma_fiche"
+perimetre = ["le lien de MA fiche : une ligne du registre du module"]
+preuve = "relire le lien : il n'existe plus"
+retour = "remettre le lien d'avant"
+paliers = ["raconter", "auto"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "fiche_ecrire"
+libelle = "Envoyer des champs de ma fiche à Dolibarr (liste blanche ; les mots de passe, clés, salaires et notes privées ne passent jamais)"
+risque = "moyen"
+droit = "ma_fiche"
+perimetre = ["ma fiche utilisateur dans Dolibarr : les champs donnés, de la liste blanche, pas les autres"]
+preuve = "relire la fiche dans Dolibarr : les champs envoyés portent les valeurs envoyées"
+retour = "remettre les valeurs d'avant, relevées juste avant l'envoi"
+paliers = ["raconter"]
+qui = ["humain"]
 
 [[capacites]]
 id = "mon_acces"
@@ -913,12 +975,6 @@ domaine = "gestion"
 gabarit = "libre"
 
 [[ecrans]]
-id = "d_itare"
-libelle = "Itare"
-domaine = "gestion"
-gabarit = "libre"
-
-[[ecrans]]
 id = "d_acces"
 libelle = "Mon accès"
 domaine = "gestion"
@@ -1105,16 +1161,6 @@ parent = "dolibarr"
 ordre = 120
 role = "utilisateur"
 icone = "contacts"
-droit = "consulter"
-
-[[menus]]
-id = "m_d_itare"
-libelle = "Itare"
-ecran = "d_itare"
-parent = "dolibarr"
-ordre = 130
-role = "utilisateur"
-icone = "spark"
 droit = "consulter"
 
 [[menus]]

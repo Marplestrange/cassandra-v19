@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #432d49
+// VERSION CN : 0.1.0  #e495f2
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Pont V18 -> noyau V19.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=432d49 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=e495f2 ▼▼▼
 /* Pont V18 -> noyau V19.
 
 L'interface V18 parle à ~615 routes (/api/...). Le noyau V19 n'en a qu'une porte : POST /api/agir/<module>.<capacité>.
@@ -73,6 +73,14 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
   const LECTURES = new Map(), LECTURE_SEC = 3000;
   const EST_LECTURE = /^(\/api\/agir\/[a-z_]+\.(lister|lire|lire_[a-z_]+|etat|moi|compteurs|calendrier|evenements|caldav_etat|aujourdhui|fournisseurs|locaux|mes_droits_a_moi|metriques|sante)|\/api\/moi|\/api\/menu)(\?|$)/;
   async function v19(methode, chemin, corps, init) {
+    const r = await v19brut(methode, chemin, corps, init);
+    if (r.status === 401 && chemin.indexOf("/api/agir/") === 0 && CASS.confirmerMdp) {        // un geste sensible : le mot de passe de la session, puis on redemande UNE fois
+      const d = await r.clone().json().catch(() => null);
+      if (d && d.confirmation && await CASS.confirmerMdp()) return v19brut(methode, chemin, corps, init);
+    }
+    return r;
+  }
+  async function v19brut(methode, chemin, corps, init) {
     const opt = { method: methode, headers: entetesV19(init), credentials: "same-origin" };
     if (methode !== "GET") opt.body = JSON.stringify(corps || {});
     if (!EST_LECTURE.test(chemin)) { if (chemin.indexOf("/api/agir/") === 0 || chemin.indexOf("/api/deconnexion") === 0) LECTURES.clear(); return natif(chemin, opt); }
@@ -171,6 +179,7 @@ Une route que personne n'a branchée répond 501 {error:"pas encore porté: ..."
       return reponse(200, d);
     }
     if (chemin.indexOf("/api/agir/") === 0 || chemin === "/api/menu" || chemin === "/api/moi") return v19(methode, u.pathname + u.search, corps, init);
+    if (methode === "POST" && chemin === "/api/confirmer") return v19brut("POST", "/api/confirmer", corps, init);     // la confirmation du mot de passe d'une session (geste sensible)
     if (chemin === "/api/premier") return natif(entree, init);                     // l'assistant du premier compte : avant toute session, tel quel
     if (chemin.indexOf("/api/televerser/") === 0) return natif(entree, init);       // des octets (une archive de module) : le corps passe tel quel, jamais relu en JSON ; la page porte son jeton
     if (methode === "POST" && chemin === "/api/login") return login(corps);

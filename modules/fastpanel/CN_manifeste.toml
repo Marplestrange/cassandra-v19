@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : fastpanel
 # ZONE       : CN
-# VERSION CN : 0.2.0  #2d971e
+# VERSION CN : 0.2.0  #18a637
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pont vers le panneau d'hébergement FastPanel. Lit le parc (comptes, sites, certificats, bases, FTP, courrier, DNS, sauvegardes, services) dans la base du panneau, ouverte en lecture seule, et agit par son API : services, certificats, bases, stockages et plans de sauvegarde, avec preuve et retour arrière. Surveille les services tombés, les certificats proches de l'échéance, les sauvegardes absentes ou périmées et les versions de PHP en fin de support. Le plafond d'autonomie est le choix de l'administrateur.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.2.0 empreinte=2d971e ▼▼▼
+# ▼▼▼ BORNE CN version=0.2.0 empreinte=18a637 ▼▼▼
 [module]
 id = "fastpanel"
 nom = "FastPanel"
@@ -162,6 +162,11 @@ id = "resume"
 libelle = "La dernière relève : état du panneau, services, audits"
 risque = "lecture"
 droit = "voir"
+
+[[capacites]]
+id = "avatar"
+libelle = "Le portrait d'un compte du panneau (le mien ; celui d'un autre pour un administrateur)"
+risque = "lecture"
 
 [[capacites]]
 id = "utilisateurs"

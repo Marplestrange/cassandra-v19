@@ -1,0 +1,684 @@
+<!doctype html>
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- TITRE      : maquette-mon-compte.html -->
+<!-- LICENCE    : AGPL-3.0 -->
+<!-- AUTEUR     : Atek Drisse -->
+<!-- GIT        : github.com/Marplestrange -->
+<!-- MAIL       : marplestrange@cassandra.center -->
+<!-- MODULE     : docs -->
+<!-- ZONE       : CN -->
+<!-- VERSION CN : 0.1.0  #000000 -->
+<!-- VERSION EC : néant -->
+<!-- EC LIÉES   : néant -->
+<!-- RÔLE       : maquette-mon-compte.html -->
+<!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=b4af21 ▼▼▼ -->
+<!-- TITRE : maquette-mon-compte.html — refonte de « Mon compte » (V19) — données fictives, maquette autonome -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon compte</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+:root{
+--bg:#eef1f5;--halo:#e3ecee;--glass:rgba(255,255,255,.66);--glass2:rgba(255,255,255,.92);--surface:#fff;--sunk:#f4f7f8;
+--txt:#101828;--txt2:#5a6675;--txt3:#76808e;--line:rgba(16,24,40,.09);--line2:rgba(16,24,40,.15);
+--accent:#0a726b;--acc10:rgba(10,114,107,.10);--acc20:rgba(10,114,107,.2);--on-accent:#fff;
+--ok:#047857;--ok10:rgba(4,120,87,.11);--warn:#b45309;--warn10:rgba(180,83,9,.12);--danger:#be123c;--danger10:rgba(190,18,60,.10);--info:#2f5fd0;--info10:rgba(47,95,208,.10);
+--shadow:0 1px 2px rgba(15,27,38,.05),0 10px 28px -10px rgba(15,27,38,.14);
+--sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+--bg:#0c1318;--halo:#0f2a2a;--glass:rgba(24,33,41,.74);--glass2:rgba(28,38,47,.94);--surface:#16212a;--sunk:#101a21;
+--txt:#e6edf2;--txt2:#a9b6c2;--txt3:#6f7d8b;--line:rgba(230,237,242,.09);--line2:rgba(230,237,242,.18);
+--accent:#38b9ae;--acc10:rgba(56,185,174,.13);--acc20:rgba(56,185,174,.26);--on-accent:#04201d;
+--ok:#3ecf9a;--ok10:rgba(62,207,154,.13);--warn:#e7a14c;--warn10:rgba(231,161,76,.14);--danger:#ff6b8b;--danger10:rgba(255,107,139,.13);--info:#7ea3ff;--info10:rgba(126,163,255,.13);
+--shadow:0 1px 2px rgba(0,0,0,.35),0 10px 28px -10px rgba(0,0,0,.55);color-scheme:dark}}
+:root[data-theme="dark"]{
+--bg:#0c1318;--halo:#0f2a2a;--glass:rgba(24,33,41,.74);--glass2:rgba(28,38,47,.94);--surface:#16212a;--sunk:#101a21;
+--txt:#e6edf2;--txt2:#a9b6c2;--txt3:#6f7d8b;--line:rgba(230,237,242,.09);--line2:rgba(230,237,242,.18);
+--accent:#38b9ae;--acc10:rgba(56,185,174,.13);--acc20:rgba(56,185,174,.26);--on-accent:#04201d;
+--ok:#3ecf9a;--ok10:rgba(62,207,154,.13);--warn:#e7a14c;--warn10:rgba(231,161,76,.14);--danger:#ff6b8b;--danger10:rgba(255,107,139,.13);--info:#7ea3ff;--info10:rgba(126,163,255,.13);
+--shadow:0 1px 2px rgba(0,0,0,.35),0 10px 28px -10px rgba(0,0,0,.55);color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(900px 420px at 15% -10%,var(--halo),transparent 70%),var(--bg);color:var(--txt);font:14px/1.45 var(--sans);padding-block:18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer}
+svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.app>*{min-width:0}.app{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:248px minmax(0,1fr);gap:16px;align-items:start}
+.note{max-width:1280px;margin:0 auto 14px;font-size:12.5px;color:var(--txt2);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.note b{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.note .th{margin-left:auto;border:1px solid var(--line2);background:var(--glass);border-radius:999px;padding:5px 12px;font-size:12px}
+
+.side{background:var(--glass);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:12px 8px 14px;position:sticky;top:12px;backdrop-filter:blur(14px)}
+.side .head{display:flex;gap:10px;align-items:center;padding:6px 8px 12px}
+.side .head .ic{width:32px;height:32px;border-radius:10px;background:var(--acc10);color:var(--accent);display:grid;place-items:center}
+.side .head b{display:block;font-size:13.5px}.side .head small{color:var(--txt3);font-size:11.5px}
+.side h2{font:600 10.5px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--accent);opacity:.85;margin:0;padding:12px 10px 6px;display:flex;gap:8px;align-items:center}
+.side h2:after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.si{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;text-align:left;padding:7px 10px;border-radius:10px;color:var(--txt2);font-size:13.5px}
+.si:hover{background:var(--acc10)}.si.on{background:var(--surface);color:var(--txt);font-weight:600;box-shadow:var(--shadow)}
+.si .nb{margin-left:auto;font:600 10.5px var(--mono);color:var(--txt3)}
+.si .dot{margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--warn)}
+.si.ext{color:var(--txt3)}.si.ext .nb{font-weight:500}
+
+.page{display:none}.page.on{display:block}
+.crumbs{font-size:12px;color:var(--txt3);margin-bottom:10px}.crumbs b{color:var(--txt2);font-weight:600}
+h1{font:700 26px/1.15 var(--sans);letter-spacing:-.022em;color:var(--txt);margin:0;display:inline-block;padding-bottom:10px;position:relative}
+h1::after{content:"";position:absolute;left:0;bottom:0;width:44px;height:3px;border-radius:3px;background:linear-gradient(90deg,#2dd4bf,var(--accent));box-shadow:0 0 12px rgba(45,212,191,.55)}
+h1+.lead{color:var(--txt2);margin:8px 0 16px;font-size:14px;line-height:1.5;max-width:68ch;font-weight:400}
+.card{background:var(--glass);border:1px solid var(--line);border-radius:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(16,24,40,.05),0 14px 32px -16px rgba(15,70,66,.25);backdrop-filter:blur(18px) saturate(1.5);padding:16px 18px;margin-bottom:14px}
+.card h3{margin:0 0 4px;font-size:14px;display:flex;gap:8px;align-items:center}
+.card .sub{color:var(--txt3);font-size:12.5px;margin:0 0 12px}
+.btn{border:1px solid var(--line2);background:var(--surface);border-radius:10px;padding:7px 12px;font-size:13px;display:inline-flex;gap:7px;align-items:center;font-weight:500}
+.btn:hover{border-color:var(--accent)}.btn.pri{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+.btn.dng{color:var(--danger)}.btn.sm{padding:4px 9px;font-size:12px;border-radius:8px}
+input[type=text],input[type=email],select{font:inherit;color:var(--txt);background:var(--surface);border:1px solid var(--line2);border-radius:10px;padding:8px 11px;width:100%}
+input:focus,select:focus{outline:2px solid var(--acc20);border-color:var(--accent)}
+label.f{display:block;font:650 10.5px var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);margin:0 0 5px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 9px;background:var(--sunk);color:var(--txt2);border:1px solid var(--line);white-space:nowrap}
+.chip.ok{background:var(--ok10);color:var(--ok);border-color:transparent}.chip.warn{background:var(--warn10);color:var(--warn);border-color:transparent}
+.chip.dng{background:var(--danger10);color:var(--danger);border-color:transparent}.chip.acc{background:var(--acc10);color:var(--accent);border-color:transparent}.chip.info{background:var(--info10);color:var(--info);border-color:transparent}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:600 12px var(--mono);background:var(--acc10);color:var(--accent);flex:none}
+.av.big{width:72px;height:72px;font-size:22px}
+.hero{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.hero .meta{flex:1;min-width:200px}.hero h2{margin:0;font-size:20px}.hero p{margin:2px 0 0;color:var(--txt2)}
+.kpis{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.kpi{flex:1;min-width:120px;border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:var(--surface)}
+.kpi b{font:600 18px var(--mono);display:block}.kpi span{font-size:11.5px;color:var(--txt3)}
+.kpi.ok b{color:var(--ok)}.kpi.warn b{color:var(--warn)}
+.todo{display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:8px}
+.todo .t{flex:1;min-width:0}.todo .t b{font-weight:600}.todo .t small{display:block;color:var(--txt3)}
+.ico{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:var(--acc10);color:var(--accent);flex:none}
+.ico.w{background:var(--warn10);color:var(--warn)}.ico.o{background:var(--ok10);color:var(--ok)}.ico.i{background:var(--info10);color:var(--info)}
+
+/* branchements */
+.link{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-bottom:10px}
+.link .t b{font-weight:600}.link .t small{display:block;color:var(--txt3);font-size:12px}
+.link .acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.renvoi{font-size:11.5px;color:var(--info);font-family:var(--mono)}
+/* matrice */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.2px}
+th{font:600 10.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--txt3);text-align:left;padding:10px 12px;background:var(--sunk);white-space:nowrap}
+td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:middle}
+th.c,td.c{text-align:center}
+.tg{width:34px;height:20px;border-radius:99px;background:var(--line2);border:0;position:relative;padding:0;transition:background .15s}
+.tg:after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.tg.on{background:var(--accent)}.tg.on:after{transform:translateX(14px)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:5px 11px;font-size:12px;font-weight:500;color:var(--txt2);border-left:1px solid var(--line)}
+.seg button:first-child{border-left:0}.seg button.on{background:var(--acc10);color:var(--accent);font-weight:600}
+.row{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}.row .t{flex:1;min-width:0}.row .t small{display:block;color:var(--txt3);font-size:12px}
+.tl{border-left:2px solid var(--line);margin-left:6px;padding-left:14px}
+.tl div{position:relative;padding:5px 0;font-size:13px}.tl div:before{content:"";position:absolute;left:-19px;top:11px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.tl small{color:var(--txt3);font-family:var(--mono);font-size:11px;margin-right:8px}
+.savebar{position:sticky;bottom:12px;display:none;gap:12px;align-items:center;flex-wrap:wrap;background:var(--txt);color:var(--bg);border-radius:14px;padding:10px 14px;box-shadow:var(--shadow);margin-top:12px;z-index:5}
+.savebar.on{display:flex}.savebar .grow{flex:1}.savebar .btn{color:var(--txt)}
+/* audit */
+.aud{display:grid;grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+.aud:first-of-type{border-top:0}.aud .ar{color:var(--txt3);text-align:center}
+.aud code{font:500 11.5px var(--mono);color:var(--txt3)}
+/* états, tests, fenêtres */
+.test{display:none;margin:-4px 0 10px;padding:9px 12px;border-radius:12px;font-size:12.5px;border:1px solid transparent}
+.test.on{display:block}.test.ok{background:var(--ok10);color:var(--ok)}.test.err{background:var(--danger10);color:var(--danger)}.test.run{background:var(--sunk);color:var(--txt2);border-color:var(--line)}
+.test code{font:500 11.5px var(--mono)}
+.form{display:none;margin:-4px 0 10px;padding:12px;border:1px dashed var(--line2);border-radius:14px;background:var(--sunk)}.form.on{display:block}
+.form .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.form .secret{display:flex;gap:6px}.form .secret input{flex:1}
+.ghost{border-style:dashed;background:transparent;box-shadow:none}
+.lockbar{display:none;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:14px;background:var(--warn10);color:var(--warn);margin-bottom:14px;font-weight:500}
+body.ferme .lockbar{display:flex}
+body.ferme .needs-coffre .acts .btn:not(.unlock){opacity:.4;pointer-events:none}
+.unlock{display:none}body.ferme .needs-coffre .unlock{display:inline-flex}
+body.simple .adm{display:none!important}
+.d-non{display:none}
+body.dl-absent #p-profil label .df{display:none}
+body.dl-absent .d-any,body.dl-absent .d-lie,body.dl-non .d-lie{display:none!important}
+body.dl-non .d-non{display:block}
+body:not(.simple) .non-adm{display:none!important}
+.modal{position:fixed;inset:0;background:rgba(15,27,38,.45);display:none;place-items:center;z-index:40;padding:16px}
+.modal.on{display:grid}.modal .box{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);width:min(440px,100%);padding:20px;border:1px solid var(--line)}
+.modal h3{margin:0 0 4px;font-size:16px}.modal .sub{color:var(--txt3);font-size:12.5px;margin:0 0 14px}
+.steps{display:flex;gap:6px;margin-bottom:14px}.steps i{flex:1;height:4px;border-radius:99px;background:var(--line2)}.steps i.on{background:var(--accent)}
+.meter{height:6px;border-radius:99px;background:var(--line2);overflow:hidden;margin-top:6px}.meter i{display:block;height:100%;width:0;background:var(--danger);transition:width .2s,background .2s}
+.touch{display:grid;place-items:center;padding:18px;border:1px dashed var(--line2);border-radius:14px;color:var(--txt2);text-align:center;gap:6px}
+.touch .pulse{width:46px;height:46px;border-radius:50%;background:var(--acc10);color:var(--accent);display:grid;place-items:center;animation:pl 1.4s infinite}
+@keyframes pl{50%{box-shadow:0 0 0 12px transparent;box-shadow:0 0 0 12px var(--acc10)}}
+.src{font:500 10.5px var(--mono);color:var(--txt3);margin-left:4px}
+code.df{font:500 10.5px var(--mono);color:var(--txt3);background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:0 5px;margin-left:4px;text-transform:none;letter-spacing:0}
+label.f code.df{font-weight:500}
+@media(max-width:860px){.side{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:8px}.side .head,.side h2{display:none}.si{width:auto;white-space:nowrap;flex:none}.si .nb,.si .dot{margin-left:6px}}
+@media(max-width:860px){.app{grid-template-columns:minmax(0,1fr)}.side{position:static}.aud{grid-template-columns:1fr}.aud .ar{display:none}.link{grid-template-columns:auto 1fr}.link .acts{grid-column:1/-1;justify-content:flex-start}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></symbol>
+<symbol id="plug" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol>
+<symbol id="shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
+<symbol id="key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/></symbol>
+<symbol id="db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></symbol>
+<symbol id="mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 7l9 6 9-6"/></symbol>
+<symbol id="cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+<symbol id="spark" viewBox="0 0 24 24"><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></symbol>
+<symbol id="send" viewBox="0 0 24 24"><path d="M21 3L3 11l7 2 2 7z"/></symbol>
+<symbol id="puzzle" viewBox="0 0 24 24"><path d="M10 4a2 2 0 1 1 4 0v2h4v4h-2a2 2 0 1 0 0 4h2v4h-4v-2a2 2 0 1 0-4 0v2H6v-4h2a2 2 0 1 0 0-4H6V6h4z"/></symbol>
+<symbol id="out" viewBox="0 0 24 24"><path d="M14 4h6v16h-6M10 8l-4 4 4 4M6 12h10"/></symbol>
+<symbol id="pal" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 1.5-2s0-2 1.5-2h2a3 3 0 0 0 3-3c0-6-4-11-8-11z"/><circle cx="7.5" cy="11" r="1"/><circle cx="11" cy="7" r="1"/><circle cx="16" cy="8" r="1"/></symbol>
+</defs></svg>
+
+<div class="note"><b>Maquette · Mon compte</b> Données fictives · cinq pages au lieu de six rubriques · chaque réglage a UN seul foyer, ailleurs on ne met qu'un renvoi (liseré bleu).
+<span class="seg" id="vue-seg" title="Voir comme"><button class="on" data-v="admin">Administrateur</button><button data-v="simple">Compte simple</button></span>
+<span class="seg" id="doli-seg" title="État de Dolibarr sur l'instance"><button data-d="lie" class="on">Dolibarr relié</button><button data-d="non">Installé, non relié</button><button data-d="absent">Absent</button></span><span class="seg" id="coffre-seg" title="État du coffre"><button class="on" data-c="ouvert">Coffre ouvert</button><button data-c="ferme">Coffre verrouillé</button></span>
+<button class="th" style="margin-left:0" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">Clair / sombre</button></div>
+
+<div class="app">
+<nav class="side">
+  <div class="head"><span class="ic"><svg class="i"><use href="#user"/></svg></span><div><b>Mon compte</b><small>Ce qui n'est qu'à moi</small></div></div>
+  <h2>Moi</h2>
+  <button class="si on" data-p="accueil"><svg class="i"><use href="#home"/></svg>Vue d'ensemble<span class="dot"></span></button>
+  <button class="si" data-p="profil"><svg class="i"><use href="#user"/></svg>Profil &amp; affichage</button>
+  <h2>Mes branchements</h2>
+  <button class="si" data-p="liens"><svg class="i"><use href="#plug"/></svg>Boîte, agenda, messageries<span class="nb">4/5</span></button>
+  <button class="si" data-p="alertes"><svg class="i"><use href="#bell"/></svg>Notifications</button>
+  <h2>Protection</h2>
+  <button class="si" data-p="secu"><svg class="i"><use href="#shield"/></svg>Sécurité &amp; sessions<span class="dot"></span></button>
+  <button class="si" data-p="donnees"><svg class="i"><use href="#db"/></svg>Mes droits &amp; mes données</button>
+  <h2 class="adm">Ailleurs (non dupliqué)</h2>
+  <button class="si ext adm" data-p="maj"><svg class="i"><use href="#db"/></svg>Mise à niveau<span class="nb">chantier</span></button>
+  <button class="si ext adm" data-p="audit"><svg class="i"><use href="#out"/></svg>Carte des renvois<span class="nb">audit</span></button>
+</nav>
+
+<main>
+<!-- ═════ VUE D'ENSEMBLE ═════ -->
+<section class="page on" id="p-accueil">
+  <div class="crumbs">Paramètres › <b>Mon compte</b></div>
+  <h1>Bonjour Drisse</h1><p class="lead">Une seule page pour savoir où en est votre compte : ce qui est branché, ce qui est protégé, et les deux choses qui attendent une décision.</p>
+  <div class="card">
+    <div class="hero"><div class="av big">DA</div>
+      <div class="meta"><h2>Drisse ATEK</h2><p>Fondateur · Maison Bohème (société principale)</p>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><span class="chip acc">Administrateur</span><span class="chip ok">Compte actif</span><span class="chip">Dernière connexion · aujourd'hui 09:12</span></div></div>
+      <button class="btn" onclick="go('profil')">Modifier mon profil</button></div>
+    <div class="kpis">
+      <div class="kpi ok"><b>4 / 5</b><span>branchements actifs</span></div>
+      <div class="kpi warn"><b>1 clé</b><span>de sécurité (2 conseillées)</span></div>
+      <div class="kpi"><b>3</b><span>sessions ouvertes</span></div>
+      <div class="kpi"><b>41</b><span>droits détenus · 6 sensibles</span></div>
+    </div>
+  </div>
+  <div class="card"><h3>À faire sur mon compte</h3><p class="sub">Chaque module signale ce qu'il attend de moi ; le serveur rassemble, et la ligne disparaît quand c'est réglé. Un point en suspens se signale une fois, pas à chaque visite.</p>
+    <div class="todo"><span class="ico w"><svg class="i"><use href="#key"/></svg></span><div class="t"><b>Ajouter une seconde clé de sécurité</b><small>Si la première est perdue, vous ne pouvez plus entrer. <span class="src">signalé par webauthn</span></small></div><button class="btn sm pri" onclick="go('secu');openKey()">Ajouter</button></div>
+    <div class="todo"><span class="ico i"><svg class="i"><use href="#send"/></svg></span><div class="t"><b>Telegram : le robot ne vous a pas encore écrit</b><small>Envoyez-lui /start pour qu'il sache où vous joindre. <span class="src">signalé par telegram</span></small></div><button class="btn sm" onclick="go('liens')">Voir</button></div>
+    <div class="todo needs-coffre" id="todo-coffre" style="display:none"><span class="ico w"><svg class="i"><use href="#key"/></svg></span><div class="t"><b>Coffre verrouillé</b><small>Courrier et Agenda ne peuvent plus lire vos identifiants. <span class="src">signalé par coffre</span></small></div><button class="btn sm pri" onclick="coffre('ouvert')">Déverrouiller</button></div>
+    <pre style="margin:10px 0 0;padding:10px 12px;background:var(--sunk);border:1px solid var(--line);border-radius:10px;font:500 11.5px/1.5 var(--mono);color:var(--txt2);overflow-x:auto">[[attentes]]            # proposition : nouveau bloc du manifeste
+id      = "seconde_cle"
+libelle = "Ajouter une seconde clé de sécurité"
+test    = "webauthn.nb_cles"      # capacité qui répond {a_faire: bool}
+ouvre   = "mon-compte/secu"</pre></div>
+  <div class="card"><h3>Dernière activité sur mon compte</h3><p class="sub">Le journal complet est dans Sécurité ; ici, les cinq derniers faits.</p>
+    <div class="tl"><div><small>09:12</small>Connexion depuis Firefox · Paris</div><div><small>hier</small>Boîte mail testée : réception OK</div><div><small>hier</small>Notifications : heures calmes 22h–7h activées</div><div><small>31-10</small>Droit « Administrer Sensorium » accordé par superadmin</div><div><small>30-10</small>Mot de passe changé</div></div>
+  </div>
+</section>
+
+<!-- ═════ PROFIL ═════ -->
+<section class="page" id="p-profil">
+  <div class="crumbs">Mon compte › <b>Profil &amp; affichage</b></div>
+  <h1>Profil &amp; affichage</h1><p class="lead">Qui je suis pour les autres, et comment l'interface se présente à moi. Rien d'autre ici.</p>
+  <div class="card d-non"><h3><svg class="i"><use href="#db"/></svg>Dolibarr est installé, mais pas relié</h3><p class="sub">Ma fiche reste complète et utilisable ; le lien, la comparaison, « qui l'emporte » et le portrait Dolibarr apparaîtront dès que l'administrateur aura posé la clé de mandat. <span class="adm">Le bouton est dans Branchements › « Dolibarr — clé de mandat ».</span></p></div>
+  <div class="card"><div class="hero"><span class="ico o"><svg class="i"><use href="#db"/></svg></span><div class="meta"><h3 style="margin:0">Ma fiche<span class="d-any"> calquée sur la fiche utilisateur Dolibarr</span></h3>
+    <p style="margin:2px 0 0;color:var(--txt2);font-size:12.5px">Mêmes champs, mêmes noms (<code class="df">lastname</code>), mêmes valeurs possibles : <span class="d-any">ma fiche Cassandra et ma fiche Dolibarr se superposent champ à champ. </span><span class="chip ok d-lie" id="hero-lien">lié à Dolibarr · utilisateur n° 6959 · login Marple</span></p></div>
+    <button class="btn sm d-lie" id="cmp-btn" onclick="document.getElementById('cmp').classList.toggle('on')">Comparer avec Dolibarr</button></div>
+    <div class="test d-lie" id="cmp" style="margin-top:12px"><b>2 écarts</b> · <code>office_phone</code> : Cassandra « +33 1 •• •• •• 40 » ≠ Dolibarr « (vide) » <button class="btn sm" onclick="toast('Envoyé vers Dolibarr')">Envoyer</button> · <code>job</code> : Cassandra « Fondateur » ≠ Dolibarr « Président » <button class="btn sm" onclick="toast('Repris depuis Dolibarr')">Reprendre</button></div></div>
+  <div class="card d-lie"><h3>Lien avec ma fiche Dolibarr</h3><p class="sub">Le login Dolibarr est libre (« Marple », « Yapadsushi »…) : le lien ne se devine pas, il se confirme une fois, puis il est gardé (<code class="df">id_doli</code>). Tant qu'il n'est pas confirmé, rien n'est lu ni écrit.</p>
+    <div class="seg" id="lk-seg" style="margin-bottom:12px"><button data-l="prop">Proposé</button><button data-l="ok" class="on">Confirmé</button><button data-l="none">Non lié</button></div><div id="lk-body"></div></div>
+  <div class="card d-lie"><h3>Qui l'emporte quand les deux fiches diffèrent ?</h3><p class="sub">Réglage par groupe de champs. Si les deux côtés ont changé depuis le dernier échange (empreinte <code class="df">doli_empreinte</code>), personne n'écrase l'autre : on me demande, quel que soit le réglage.</p>
+    <div class="row"><div class="t"><b>État civil et emploi</b><small>civilité, genre, nom, prénom, naissance, fonction, salarié, dates d'emploi, référence</small></div><div class="seg"><button class="on">Dolibarr</button><button>Cassandra</button><button>Demander</button></div></div>
+    <div class="row"><div class="t"><b>Coordonnées professionnelles</b><small>courriels, téléphones, fax, adresse</small></div><div class="seg"><button class="on">Dolibarr</button><button>Cassandra</button><button>Demander</button></div></div>
+    <div class="row"><div class="t"><b>Présentation</b><small>langue, couleur, signature, réseaux sociaux, note publique, portrait</small></div><div class="seg"><button>Dolibarr</button><button class="on">Cassandra</button><button>Demander</button></div></div>
+    <p class="sub" style="margin:10px 0 0"><span class="chip ok">défaut recommandé</span> Dolibarr tient l'état civil (c'est lui qui paie, facture, déclare) ; Cassandra tient ce qui relève de l'usage de l'interface.</p></div>
+  <div class="card"><h3>Qui voit ma fiche</h3><p class="sub">Données personnelles : par défaut, seul moi les vois. Chaque lecture ou modification par un autre compte est inscrite au journal de mon compte.</p>
+    <div class="tw"><table><tr><th>Champs</th><th class="c">Moi</th><th class="c">Mes collègues</th><th class="c">Administrateurs</th></tr>
+      <tr><td><b>Nom, prénom, fonction, portrait</b></td><td class="c"><button class="tg on" disabled style="opacity:.5"></button></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td></tr>
+      <tr><td><b>Courriel et téléphone professionnels</b></td><td class="c"><button class="tg on" disabled style="opacity:.5"></button></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td></tr>
+      <tr><td><b>Naissance, mobile et courriel personnels, adresse</b> <span class="chip warn">sensible</span></td><td class="c"><button class="tg on" disabled style="opacity:.5"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td></tr>
+    </table></div>
+    <div class="row" style="margin-top:8px"><div class="t"><b>Journaliser les accès d'autrui à ma fiche</b><small>Qui, quand, quel champ : visible dans Sécurité › Journal de mon compte</small></div><button class="tg on" onclick="tg(this)"></button></div>
+    <p class="sub" style="margin:8px 0 0">Deux droits nouveaux, sensibles : <code class="df">comptes.fiche_voir_perso</code> (lire les données personnelles d'un autre) et <code class="df">comptes.fiche_modifier_autres</code> (modifier la fiche d'un autre). Ni l'un ni l'autre n'est donné par « utiliser ».</p></div>
+  <div class="card"><h3>Identité</h3><p class="sub d-any">Onglet « Utilisateur » de Dolibarr. Les étiquettes grises sont les propriétés de l'API Dolibarr.</p>
+    <div class="grid2">
+      <div><label class="f">Civilité <code class="df">civility_code</code></label><select onchange="dirty()"><option>M.</option><option>Mme</option><option>Mlle</option><option>Dr</option><option>—</option></select></div>
+      <div><label class="f">Genre <code class="df">gender</code></label><select onchange="dirty()"><option>Homme</option><option>Femme</option><option>—</option></select></div>
+      <div><label class="f">Nom <code class="df">lastname</code></label><input type="text" value="ATEK" oninput="dirty()"></div>
+      <div><label class="f">Prénom <code class="df">firstname</code></label><input type="text" value="Drisse" oninput="dirty()"></div>
+      <div><label class="f">Identifiant de connexion <code class="df">login</code></label><input type="text" value="drisse" disabled></div>
+      <div><label class="f">Date de naissance <code class="df">birth</code></label><input type="text" value="••/••/••••" oninput="dirty()"></div>
+      <div><label class="f">Fonction <code class="df">job</code></label><input type="text" value="Fondateur" oninput="dirty()"></div>
+      <div><label class="f">Salarié <code class="df">employee</code></label><select onchange="dirty()"><option>Oui</option><option>Non</option></select></div>
+      <div><label class="f">Référence employé <code class="df">ref_employee</code></label><input type="text" value="" oninput="dirty()"></div>
+      <div><label class="f">Entrée en fonction <code class="df">dateemployment</code></label><input type="text" value="" placeholder="AAAA-MM-JJ" oninput="dirty()"></div>
+      <div><label class="f">Sortie de fonction <code class="df">dateemploymentend</code></label><input type="text" value="" placeholder="AAAA-MM-JJ" oninput="dirty()"></div>
+    </div>
+    <p class="sub d-any" style="margin:12px 0 0">Longueurs identiques à celles de la base Dolibarr (nom et prénom 50, fonction 128, téléphones 30, code postal 25, adresse 255) : un champ trop long est refusé ici, jamais tronqué en silence là-bas.</p></div>
+  <div class="card d-lie"><h3>Liens dans Dolibarr</h3><p class="sub">Lecture seule : ce que Dolibarr rattache à ma fiche. Rien ne se saisit ici.</p>
+    <div class="row"><div class="t"><b>Tiers lié</b> <code class="df">socid</code><small>(aucun)</small></div></div>
+    <div class="row"><div class="t"><b>Contact lié</b> <code class="df">contact_id</code><small>(aucun) · rattachable à ma fiche du module Contacts</small></div><button class="btn sm">Rattacher</button></div>
+    <div class="row"><div class="t"><b>Statut</b> <code class="df">statut</code><small>Actif dans Dolibarr · la désactivation passe par Utilisateurs</small></div><span class="chip ok">actif</span></div></div>
+  <div class="grid2">
+    <div class="card"><h3>Coordonnées</h3><p class="sub">Vues par mes collègues et utilisées en signature.</p>
+      <label class="f">Courriel professionnel <code class="df">email</code></label><input type="email" value="drisse@cassandra.center" oninput="dirty()"><div style="height:10px"></div>
+      <label class="f">Courriel personnel <code class="df">personal_email</code></label><input type="email" value="atek.drisse@gmail.com" oninput="dirty()"><div style="height:10px"></div>
+      <label class="f">Téléphone professionnel <code class="df">office_phone</code></label><input type="text" value="+33 1 •• •• •• 40" oninput="dirty()"><div style="height:10px"></div>
+      <label class="f">Mobile professionnel <code class="df">user_mobile</code></label><input type="text" value="+33 6 •• •• •• 12" oninput="dirty()"><div style="height:10px"></div>
+      <label class="f">Mobile personnel <code class="df">personal_mobile</code></label><input type="text" value="" oninput="dirty()"><div style="height:10px"></div>
+      <label class="f">Fax <code class="df">office_fax</code></label><input type="text" value="" oninput="dirty()"></div>
+    <div class="card"><h3>Adresse</h3><p class="sub">Adresse professionnelle.</p>
+      <label class="f">Adresse <code class="df">address</code></label><input type="text" value="12 rue de la Bohème" oninput="dirty()"><div style="height:10px"></div>
+      <label class="f">Code postal <code class="df">zip</code></label><input type="text" value="75011" oninput="dirty()"><div style="height:10px"></div>
+      <label class="f">Ville <code class="df">town</code></label><input type="text" value="Paris" oninput="dirty()"><div style="height:10px"></div>
+      <label class="f">Pays <code class="df">country_id</code></label><select onchange="dirty()"><option>France</option></select><div style="height:10px"></div>
+      <label class="f">Département <code class="df">state_id</code></label><select onchange="dirty()"><option>Paris (75)</option></select></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Portrait &amp; apparence</h3><p class="sub">Je choisis d'où vient ma photo ; elle se met à jour toute seule tant que je « suis » une source.</p>
+      <div class="hero"><div class="av big" id="ph-av">DA</div><div style="flex:1;min-width:0"><div class="seg" id="ph-seg" style="flex-wrap:wrap"><button data-s="cass">Ma propre image</button><button data-s="doli" class="on d-lie">Suivre Dolibarr</button><button data-s="fp">Suivre FastPanel</button><button data-s="tg">Suivre Telegram</button><button data-s="init">Initiales</button></div>
+        <div id="ph-info" class="sub" style="margin:8px 0 0"></div></div></div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn sm" id="ph-up">Choisir une image</button><button class="btn sm" onclick="toast('Photo relue depuis la source')">Relire maintenant</button></div>
+      <div class="tw" style="margin-top:12px"><table><tr><th>Source</th><th>Disponible</th><th>Dernière lecture</th></tr>
+        <tr class="d-lie"><td><b>Dolibarr</b> <code class="df">photo</code></td><td><span class="chip ok">missfit.jpeg</span></td><td>il y a 6 min</td></tr>
+        <tr><td><b>FastPanel</b> <span class="src">fichier du compte</span></td><td><span class="chip ok">drisse.png · 5,1 Mo → réduite</span></td><td>il y a 6 min</td></tr>
+        <tr><td><b>Telegram</b> <span class="src">photo de profil, cache 30 jours</span></td><td><span class="chip warn">si Telegram relié</span></td><td>—</td></tr>
+        <tr><td><b>Ma propre image</b></td><td><span class="chip">aucune</span></td><td>—</td></tr></table></div>
+      <p class="sub" style="margin:8px 0 0">Même logique que les portraits du Répertoire (V18 : <code>mail_avatars_resoudre</code>) : une seule fonction, deux usages. Gravatar reste écarté.</p>
+      <div style="height:12px"></div>
+      <label class="f">Langue <code class="df">lang</code></label><select onchange="dirty()"><option>fr_FR</option><option>en_US</option></select><div style="height:10px"></div>
+      <label class="f">Couleur de la fiche <code class="df">color</code></label><input type="text" value="0b7c74" maxlength="6" oninput="dirty()"><small style="color:var(--txt3)">6 caractères hexadécimaux<span class="d-any">, sans « # » (Dolibarr)</span></small><div style="height:10px"></div>
+      <label class="f">Fuseau horaire <span class="src">propre à Cassandra</span></label><select onchange="dirty()"><option>Europe/Paris</option></select></div>
+    <div class="card"><h3>Signature &amp; notes</h3><p class="sub">Signature ajoutée aux courriels envoyés en mon nom.</p>
+      <label class="f">Signature <code class="df">signature</code></label><textarea style="width:100%;min-height:76px;font:inherit;color:var(--txt);background:var(--surface);border:1px solid var(--line2);border-radius:10px;padding:8px 11px" oninput="dirty()">Drisse ATEK
+Fondateur · La Maison Bohème</textarea><div style="height:10px"></div>
+      <label class="f">Réseaux sociaux <code class="df">socialnetworks</code></label><input type="text" value="linkedin : drisse-atek" oninput="dirty()"><div style="height:10px"></div>
+      <label class="f">Note publique <code class="df">note_public</code></label><input type="text" value="" oninput="dirty()"></div>
+  </div>
+  <div class="card ghost d-any"><h3><svg class="i"><use href="#shield"/></svg>Ce qui reste dans Dolibarr, jamais copié ici</h3><p class="sub">Droits, argent et clés : le mandat de Cassandra s'arrête avant. Ces propriétés ne s'affichent pas, ne se synchronisent pas, ne passent jamais par l'API.</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><code class="df">admin</code><code class="df">entity</code><code class="df">pass / pass_crypted / pass_temp</code><code class="df">api_key</code><code class="df">openid</code><code class="df">email_oauth2</code><code class="df">datestartvalidity / dateendvalidity</code><code class="df">access_hours</code><code class="df">default_range</code><code class="df">fk_warehouse</code><code class="df">salary · thm · tjm</code><code class="df">weeklyhours</code><code class="df">accountancy_code</code><code class="df">national_registration_number</code><code class="df">fk_user (responsable)</code><code class="df">validateurs de congés et de frais</code><code class="df">droits</code><code class="df">note_private</code></div></div>
+  <div class="card"><h3>Affichage</h3><p class="sub">S'applique à ce navigateur et suit mon compte sur mes autres appareils.</p>
+    <div class="row"><div class="t"><b>Thème</b><small>Clair porcelaine, sombre, ou celui du système</small></div><div class="seg"><button class="on">Clair</button><button>Sombre</button><button>Système</button></div></div>
+    <div class="row"><div class="t"><b>Densité</b><small>Espacement des listes et des tableaux</small></div><div class="seg"><button>Aérée</button><button class="on">Normale</button><button>Compacte</button></div></div>
+    <div class="row"><div class="t"><b>Ma page d'accueil</b><small>Ce qui s'ouvre après la connexion</small></div><select style="width:200px"><option>Aujourd'hui</option><option>Mon Bureau</option><option>Dernier écran</option></select></div>
+    <div class="row"><div class="t"><b>Mes applications du menu</b><small>Réorganisées depuis la Logithèque, pas ici</small></div><span class="renvoi">→ Mes applications</span></div>
+  </div>
+</section>
+
+<!-- ═════ BRANCHEMENTS ═════ -->
+<section class="page" id="p-liens">
+  <div class="crumbs">Mon compte › <b>Mes branchements</b></div>
+  <h1>Mes branchements</h1><p class="lead">Chaque module <b>déclare</b> ses réglages de portée « compte » dans son manifeste ; le noyau les <b>affiche ici</b>, tous sur la même carte (état, Tester, Modifier). Aucune page à écrire pour un nouveau module. Les secrets restent dans mon coffre.</p>
+  <div class="lockbar"><svg class="i"><use href="#key"/></svg>Votre coffre est verrouillé : les identifiants de la boîte mail et de l'agenda sont illisibles. Rien n'est perdu.<button class="btn sm pri" style="margin-left:auto" onclick="coffre('ouvert')">Déverrouiller</button></div>
+  <div class="link needs-coffre" id="c-mail"><span class="ico"><svg class="i"><use href="#mail"/></svg></span><div class="t"><b>Boîte mail</b> <span class="chip ok" data-etat>connectée</span> <span class="chip info">déclaré par Courrier</span><small>drisse@cassandra.center · IMAP 993 SSL · SMTP 465 · identifiants dans mon coffre</small></div><div class="acts"><button class="btn sm unlock" onclick="coffre('ouvert')">Déverrouiller le coffre</button><button class="btn sm" onclick="tester('mail','ok')">Tester</button><button class="btn sm" onclick="forme('mail')">Modifier</button><span class="renvoi">Courrier › « Régler la boîte » ouvre cette carte</span></div></div>
+  <div class="test" id="t-mail"></div>
+  <div class="form" id="f-mail"><div class="fg">
+    <div><label class="f">Serveur IMAP</label><input type="text" value="imap.cassandra.center"></div>
+    <div><label class="f">Port IMAP</label><input type="text" value="993"></div>
+    <div><label class="f">Identifiant</label><input type="text" value="drisse@cassandra.center"></div>
+    <div><label class="f">Mot de passe <span class="src">type « secret » → coffre</span></label><div class="secret"><input type="text" value="" placeholder="•••••• défini — saisir pour remplacer"><button class="btn sm" onclick="tester('mail','err')">Essayer avec</button></div></div>
+    <div><label class="f">Serveur d'envoi (SMTP)</label><input type="text" value="smtp.cassandra.center"></div>
+    <div><label class="f">Port SMTP</label><input type="text" value="465"></div></div>
+    <div style="margin-top:10px;display:flex;gap:8px"><button class="btn pri" onclick="forme('mail');tester('mail','ok')">Enregistrer et tester</button><button class="btn" onclick="forme('mail')">Fermer</button></div></div>
+  <div class="link needs-coffre" id="c-cal"><span class="ico"><svg class="i"><use href="#cal"/></svg></span><div class="t"><b>Agenda distant (CalDAV)</b> <span class="chip ok" data-etat>connecté</span> <span class="chip info">déclaré par Agenda</span><small>3 calendriers · dernière synchro il y a 4 min</small></div><div class="acts"><button class="btn sm unlock" onclick="coffre('ouvert')">Déverrouiller le coffre</button><button class="btn sm" onclick="tester('cal','err')">Tester</button><button class="btn sm">Modifier</button><span class="renvoi">Mon Bureau › Agenda › « Brancher » ouvre cette carte</span></div></div>
+  <div class="test" id="t-cal"></div>
+  <div class="link"><span class="ico i"><svg class="i"><use href="#send"/></svg></span><div class="t"><b>Telegram</b> <span class="chip warn">à finir</span> <span class="chip info">déclaré par Telegram</span><small>Compte relié ; le robot attend votre /start pour pouvoir écrire</small></div><div class="acts"><button class="btn sm pri">Renvoyer le lien</button><button class="btn sm dng">Délier</button><span class="renvoi adm">adresse publique et API (global) → Paramètres généraux</span></div></div>
+  <div class="link"><span class="ico"><svg class="i"><use href="#send"/></svg></span><div class="t"><b>Miroir Telegram</b> <span class="chip">éteint par défaut</span> <span class="chip info">déclaré par Canaux</span><small>Relier Telegram pour recevoir des alertes ne vaut pas consentement à y voir surgir mes conversations. Je l'allume moi-même, pour mon compte seulement.</small></div><div class="acts"><button class="tg" onclick="tg(this)"></button><span class="renvoi">capacités <code class="df">canaux.miroir</code> / <code class="df">miroir_ecrire</code> · V18 : <code class="df">tg_miroir</code></span></div></div>
+  <div class="link"><span class="ico"><svg class="i"><use href="#spark"/></svg></span><div class="t"><b>Itare — mon assistant</b> <span class="chip ok">actif</span> <span class="chip info">déclaré par Agents IA</span><small>Mes sources, mon ton, mes modes ; plafonds choisis par l'administrateur</small></div><div class="acts"><button class="btn sm">Mes préférences</button></div></div>
+  <div class="link needs-coffre"><span class="ico"><svg class="i"><use href="#spark"/></svg></span><div class="t"><b>Mes modèles</b> <span class="chip ok">1 modèle à moi</span> <span class="chip info">déclaré par Modèles</span><small>Un compte n'utilise que <b>ses</b> modèles et ceux de l'instance, jamais la clé du serveur. Choix actuel : <b>local (Ollama)</b> · ma clé en ligne reste dans mon coffre.</small></div><div class="acts"><button class="btn sm unlock" onclick="coffre('ouvert')">Déverrouiller le coffre</button><button class="btn sm">Choisir mon modèle</button><button class="btn sm">Ajouter un modèle</button><span class="renvoi">V18 : <code class="df">modele</code> + <code class="df">fournisseur</code> de <code class="df">user_prefs</code> · les modèles de l'instance → Agents IA (admin)</span></div></div>
+  <div class="link d-lie"><span class="ico"><svg class="i"><use href="#db"/></svg></span><div class="t"><b>Dolibarr — mon Itare agit sous ma clé</b> <span class="chip info">déclaré par Dolibarr</span><small>Trois réglages de portée « compte » : <code class="df">itare_ecrire</code> (mon Itare écrit dans Dolibarr : <b>non</b>), <code class="df">prudence</code> (gestes qu'il prépare sans jamais les faire seul), <code class="df">itare_seuil</code> (au-dessus de <b>500 €</b>, il ne règle, ne vire, ne cotise ni ne saisit un don).</small></div><div class="acts"><button class="btn sm">Modifier</button><span class="renvoi">carte visible seulement avec le droit « utiliser » Dolibarr</span></div></div>
+  <div class="link"><span class="ico"><svg class="i"><use href="#puzzle"/></svg></span><div class="t"><b>Mon affichage</b> <span class="chip info">déclaré par Affichage</span><small>Thème, densité, accent (déjà dans Profil) · tuiles masquées ou déplacées · pages épinglées en tête de ma colonne · organisation de mes menus · « Aujourd'hui » : début et fin de journée, durée de concentration, durée des tâches.</small></div><div class="acts"><button class="btn sm">Mes tuiles</button><button class="btn sm">Mes pages épinglées</button><button class="btn sm">Ma journée</button><span class="renvoi">capacités <code class="df">personnaliser_theme</code>, <code class="df">personnaliser_widget</code>, <code class="df">epingler</code>, <code class="df">modifier_organisation</code>, <code class="df">modifier_reglage_jour</code></span></div></div>
+
+  <div class="link ghost adm d-lie"><span class="ico"><svg class="i"><use href="#puzzle"/></svg></span><div class="t"><b>Dolibarr — ma clé d'API</b> <span class="chip warn">droit « utiliser » refusé</span><small>Cette carte n'existe tout simplement pas pour un compte qui n'a pas le droit d'utiliser Dolibarr. Elle est montrée ici en pointillés pour l'administrateur qui prépare les droits.</small></div><div class="acts"><span class="renvoi">Groupes › Qui peut… ?</span></div></div>
+  <div class="link adm d-any" id="c-mandat"><span class="ico"><svg class="i"><use href="#db"/></svg></span><div class="t"><b>Dolibarr — clé de mandat</b> <span class="chip warn" data-etat>absente</span> <span class="chip info">déclaré par Dolibarr</span><small>Un utilisateur Dolibarr dédié à Cassandra, aux droits limités : jamais un administrateur. Elle sert à lire et écrire les fiches utilisateurs et les portraits.</small></div><div class="acts"><button class="btn sm" onclick="mandat()">Vérifier les droits</button><button class="btn sm pri">Poser la clé</button><span class="renvoi">réglage « clé de mandat » du module Dolibarr</span></div></div>
+  <div class="test" id="t-mandat"></div>
+  <div class="card" style="margin-top:16px"><h3><svg class="i"><use href="#puzzle"/></svg>Déclarés par d'autres modules <span class="chip">généré automatiquement</span></h3><p class="sub">Ces cartes n'ont demandé aucune page : le module a écrit trois lignes dans son manifeste.</p>
+    <div class="link"><span class="ico"><svg class="i"><use href="#puzzle"/></svg></span><div class="t"><b>Voix et lecture à voix haute</b> <span class="chip ok">actif</span> <span class="chip info">déclaré par Voix</span><small>Voix : Claire · locuteur 0 · lecture automatique : non · débit 1,0 · mode vocal : non — par compte (<code class="df">voix.choisir</code>)</small></div><div class="acts"><button class="btn sm">Modifier</button></div></div>
+    <div class="link"><span class="ico"><svg class="i"><use href="#puzzle"/></svg></span><div class="t"><b>Dossier de dépôt des notes</b> <span class="chip">défaut</span> <span class="chip info">déclaré par Notes</span><small>Carnet › Inbox</small></div><div class="acts"><button class="btn sm">Modifier</button></div></div>
+    <pre style="margin:10px 0 0;padding:10px 12px;background:var(--sunk);border:1px solid var(--line);border-radius:10px;font:500 11.5px/1.5 var(--mono);color:var(--txt2);overflow-x:auto">[[reglages]]
+id      = "depot_notes"
+libelle = "Dossier de dépôt des notes"
+type    = "texte"       # texte | entier | booleen | choix | secret
+portee  = "compte"      # global | compte | societe  (déjà dans noyau/CN_manifeste.py)</pre></div>
+</section>
+
+<!-- ═════ NOTIFICATIONS ═════ -->
+<section class="page" id="p-alertes">
+  <div class="crumbs">Mon compte › <b>Notifications</b></div>
+  <h1>Notifications</h1><p class="lead">Une seule matrice : pour chaque sujet, par où je veux être prévenu. Les canaux viennent de mes branchements ; un canal non branché est grisé avec le lien pour le brancher.</p>
+  <div class="card"><h3>Par niveau <span class="chip info">modèle de la V18</span></h3><p class="sub">Chaque sujet porte un niveau ; ce tableau dit où va chaque niveau. L'instance fixe un défaut (compte « * »), je le surcharge pour moi. <b>La cloche reçoit toujours.</b></p>
+    <div class="tw"><table>
+      <tr><th>Niveau</th><th class="c">Cloche</th><th class="c">Courriel</th><th class="c">Telegram</th><th class="c">Webhook</th></tr>
+      <tr><td><b>Critique</b><span class="src">réveille la nuit</span></td><td class="c"><button class="tg on" disabled style="opacity:.6"></button></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td></tr>
+      <tr><td><b>À voir</b><span class="src">attend la fin des heures calmes</span></td><td class="c"><button class="tg on" disabled style="opacity:.6"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td></tr>
+      <tr><td><b>Info</b></td><td class="c"><button class="tg on" disabled style="opacity:.6"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td></tr>
+    </table></div>
+    <div class="row"><div class="t"><b>Ne plus recevoir de courriels de Cassandra</b><small>Refus global des courriels sortants (V18 : <code class="df">email_opt_out</code>) ; la cloche et Telegram restent</small></div><button class="tg" onclick="tg(this)"></button></div>
+    <div class="row"><div class="t"><b>Mon fuseau horaire</b><small>Lu de mon navigateur, jamais deviné : <b>Europe/Paris</b>. Sans lui, les heures calmes comptent en UTC et l'écran le dit.</small></div><span class="chip ok">posé</span></div></div>
+  <div class="card"><div class="tw"><table>
+    <tr><th>Sujet <span class="src">module émetteur</span></th><th class="c">Cloche</th><th class="c">Courriel</th><th class="c">Telegram</th><th class="c">Urgent</th></tr>
+    <tr><td><b>Mes droits ont changé</b><span class="src">droits</span></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td><td class="c">—</td></tr>
+    <tr><td><b>Alerte de sécurité</b> <span class="chip warn">sensible</span><span class="src">securite</span></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td></tr>
+    <tr><td><b>Courrier important</b><span class="src">courrier</span></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c">—</td></tr>
+    <tr><td><b>Rendez-vous qui approche</b><span class="src">agenda</span></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c">—</td></tr>
+    <tr><td><b>Ce que fait Itare pour moi</b><span class="src">agents</span></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td><td class="c">—</td></tr>
+    <tr><td><b>Mon Telegram n'est pas relié</b> <span class="chip">canal grisé</span></td><td class="c"><button class="tg on" onclick="tg(this)"></button></td><td class="c"><button class="tg" onclick="tg(this)"></button></td><td class="c"><a href="#" class="renvoi" onclick="go('liens');return false">brancher</a></td><td class="c">—</td></tr>
+  </table></div>
+  <pre style="margin:12px 0 0;padding:10px 12px;background:var(--sunk);border:1px solid var(--line);border-radius:10px;font:500 11.5px/1.5 var(--mono);color:var(--txt2);overflow-x:auto">[[sujets]]              # proposition : à confronter aux évènements déjà émis (notifications)
+id = "rdv_proche"   libelle = "Rendez-vous qui approche"   defaut = ["cloche","telegram"]</pre></div>
+  <div class="card"><h3>Heures calmes</h3><p class="sub">Pendant ces heures, tout est mis en attente, sauf la colonne « Urgent ».</p>
+    <div class="row"><div class="t"><b>Ne pas déranger</b><small>de 22:00 à 07:00, tous les jours</small></div><button class="tg on" onclick="tg(this)"></button></div>
+    <div class="row"><div class="t"><b>Résumé du matin</b><small>Un seul message à 08:00 au lieu de plusieurs</small></div><button class="tg" onclick="tg(this)"></button></div>
+    <div class="row adm"><div class="t"><b>Alertes de la machine</b><small>Réservées à l'administrateur : elles restent dans Notifications de la société</small></div><span class="renvoi">→ Société › Alertes</span></div></div>
+</section>
+
+<!-- ═════ SÉCURITÉ ═════ -->
+<section class="page" id="p-secu">
+  <div class="crumbs">Mon compte › <b>Sécurité &amp; sessions</b></div>
+  <h1>Sécurité &amp; sessions</h1><p class="lead">Comment j'entre, et qui est entré à mon nom. Les réglages de pare-feu et d'audit de la machine restent dans l'onglet Sécurité de l'administration.</p>
+  <div class="card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px"><span class="ico o"><svg class="i"><use href="#shield"/></svg></span><div style="flex:1;min-width:200px"><b>Gestes sensibles</b><div class="sub" style="margin:0">Ajouter ou retirer une clé, fermer des sessions, exporter, désactiver : je ressaisis mon mot de passe, puis je reste confirmé 5 minutes.</div></div><span class="chip" id="su-etat">non confirmé</span></div>
+  <div class="grid2">
+    <div class="card"><h3>Mot de passe</h3><p class="sub">Changé le 30-10 · robuste. En le changeant, <b>toutes les autres sessions sont fermées</b> ; celle-ci reste ouverte.</p><button class="btn" onclick="openPw()">Changer le mot de passe</button></div>
+    <div class="card"><h3>Clés de sécurité <span class="chip warn" id="nb-cles">1</span></h3><p class="sub">Second facteur matériel (WebAuthn). Deux clés sont conseillées.</p>
+      <div class="row"><div class="t"><b>YubiKey 5C</b><small>ajoutée le 12-09 · utilisée hier</small></div><button class="btn sm dng" onclick="stepup(()=>toast('Retrait d’une clé : refusé tant qu’il n’en reste qu’une'))">Retirer</button></div>
+      <button class="btn pri" style="margin-top:6px" onclick="stepup(openKey)">Ajouter une clé</button></div>
+    <div class="card"><h3>Entrer avec une clé</h3><p class="sub">Deux usages distincts de la même clé (module WebAuthn).</p>
+      <div class="row"><div class="t"><b>Clé d'accès (passkey)</b><small>Entrer sans mot de passe : le compte se déduit de la clé, PIN ou empreinte obligatoires. <code class="df">passkey_ouvrir</code></small></div><button class="tg on" onclick="tg(this)"></button></div>
+      <div class="row"><div class="t"><b>Exiger ma clé pour entrer</b><small>Second facteur sur mon compte ; il faut déjà une clé enregistrée. <code class="df">exiger</code></small></div><button class="tg on" onclick="stepup(()=>tg(this))"></button></div>
+      <div class="row"><div class="t"><b>Codes de secours</b><small>Huit codes, montrés <b>une seule fois</b> à l'activation. 7 restants. <code class="df">secours_regenerer</code></small></div><button class="btn sm" onclick="stepup(function(){toast('Nouveaux codes : les anciens sont invalidés')})">Régénérer</button></div></div>
+  </div>
+  <div class="card"><h3>Second facteur</h3><p class="sub">Pour les administrateurs, le second facteur est <b>obligatoire par défaut</b>. Sans lui, la connexion d'un administrateur est refusée une fois le délai de grâce écoulé.</p>
+    <div class="row"><div class="t"><b>Mon statut</b><small>Administrateur · clé enregistrée · conforme</small></div><span class="chip ok">conforme</span></div>
+    <div class="row adm"><div class="t"><b>Obligatoire pour tous les administrateurs</b><small>Réglage <code class="df">admin_second_facteur_obligatoire</code> · aujourd'hui <b>désactivé par défaut</b> dans le noyau ; la maquette propose « activé »</small></div><button class="tg on" onclick="tg(this)"></button></div>
+    <div class="row adm"><div class="t"><b>Délai de grâce</b><small>Pour qu'un administrateur sans clé en enregistre une</small></div><select style="width:130px"><option>7 jours</option><option>3 jours</option><option>0 jour</option></select></div></div>
+
+  <div class="card"><h3>Sessions ouvertes</h3><p class="sub">Si l'une n'est pas la vôtre, fermez-la et changez le mot de passe. Les sessions expirées ou fermées pour inactivité n'apparaissent plus ici.</p>
+    <div class="test err" id="nv-alerte" style="display:none;margin:0 0 10px"><b>Nouvelle connexion depuis un appareil inconnu</b> · Edge · Windows · Marseille · à l'instant. Une alerte a été envoyée sur la cloche et Telegram. <button class="btn sm dng" onclick="stepup(function(){fermer1('s-nv');toast('Session fermée')})">Ce n'est pas moi : fermer</button> <button class="btn sm" onclick="document.getElementById('nv-alerte').style.display='none';document.getElementById('s-nv-ch').remove()">C'est moi</button></div>
+    <div class="row" id="s-1"><span class="ico o"><svg class="i"><use href="#home"/></svg></span><div class="t"><b>Firefox · Windows <span class="chip ok">cet appareil</span></b><small>Paris · première connexion 30-10 · ouverte aujourd'hui 09:12 · active à l'instant</small></div></div>
+    <div class="row" id="s-2"><span class="ico"><svg class="i"><use href="#home"/></svg></span><div class="t"><b>Safari · iPhone</b><small>Paris · ouverte hier 21:40 · active il y a 3 h</small></div><button class="btn sm" onclick="stepup(function(){fermer1('s-2')})">Fermer</button></div>
+    <div class="row" id="s-3"><span class="ico"><svg class="i"><use href="#home"/></svg></span><div class="t"><b>Chrome · Linux</b> <span class="chip warn">inactive depuis 5 jours</span><small>Lyon · ouverte il y a 5 jours · se fermera seule</small></div><button class="btn sm" onclick="stepup(function(){fermer1('s-3')})">Fermer</button></div>
+    <div class="row" id="s-nv" style="display:none"><span class="ico w"><svg class="i"><use href="#home"/></svg></span><div class="t"><b>Edge · Windows <span class="chip warn" id="s-nv-ch">nouvel appareil</span></b><small>Marseille · ouverte à l'instant</small></div><button class="btn sm" onclick="stepup(function(){fermer1('s-nv');document.getElementById('nv-alerte').style.display='none'})">Fermer</button></div>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn dng" onclick="stepup(function(){['s-2','s-3','s-nv'].forEach(fermer1);toast('Autres sessions fermées')})">Fermer toutes les autres sessions</button><button class="btn sm" onclick="simNv()">Simuler une connexion inconnue</button><span class="src">au plus 10 sessions à la fois ; la plus ancienne se ferme à la onzième</span></div></div>
+
+  <div class="card"><h3>Jetons d'agents</h3><p class="sub">Les agents que j'ai invités : chacun a son propre jeton, distinct d'une session. Je peux le révoquer à tout moment.</p>
+    <div class="row" id="ag-1"><span class="ico i"><svg class="i"><use href="#spark"/></svg></span><div class="t"><b>agent:itare-lecture</b><small>créé le 12-10 · dernier appel il y a 20 min · lecture seule</small></div><button class="btn sm dng" onclick="stepup(function(){fermer1('ag-1');toast('Jeton révoqué')})">Révoquer</button></div>
+    <div class="row" id="ag-2"><span class="ico i"><svg class="i"><use href="#spark"/></svg></span><div class="t"><b>agent:salon-trio</b><small>créé le 29-10 · dernier appel hier · expire dans 2 jours</small></div><button class="btn sm dng" onclick="stepup(function(){fermer1('ag-2');toast('Jeton révoqué')})">Révoquer</button></div></div>
+
+  <div class="card adm"><h3>Durée des sessions <span class="chip">administrateur</span></h3><p class="sub">Valeurs d'exemple. Les défauts du noyau sont 24 h au maximum, plus une durée d'inactivité propre aux administrateurs.</p>
+    <div class="row"><div class="t"><b>Durée maximale d'une session</b><small>quelle que soit l'activité</small></div><select style="width:130px"><option>24 h</option><option>12 h</option><option>8 h</option></select></div>
+    <div class="row"><div class="t"><b>Inactivité · administrateurs</b><small>réglage <code class="df">inactivite_admin_heures</code></small></div><select style="width:130px"><option>2 h</option><option>1 h</option><option>30 min</option></select></div>
+    <div class="row"><div class="t"><b>Inactivité · autres comptes</b><small>réglage <code class="df">inactivite_heures</code></small></div><select style="width:130px"><option>12 h</option><option>8 h</option><option>4 h</option></select></div>
+    <div class="row"><div class="t"><b>« Se souvenir de cet appareil »</b><small>30 jours, avec le second facteur à chaque ouverture</small></div><button class="tg" onclick="tg(this)"></button></div></div>
+
+  <div class="card"><h3>Journal de mon compte</h3><p class="sub">Connexions, échecs, sessions fermées, changements de droits et de mot de passe, et accès d'autrui à ma fiche. Même registre que le journal de la machine, filtré sur moi.</p>
+    <div class="seg" id="jr-seg" style="margin-bottom:10px;flex-wrap:wrap"><button class="on" data-j="tout">Tout</button><button data-j="co">Connexions</button><button data-j="ech">Échecs</button><button data-j="ses">Sessions fermées</button><button data-j="fic">Accès à ma fiche</button></div>
+    <div class="tl" id="jr"><div data-j="co"><small>09:12</small>Connexion réussie · Firefox · Paris</div><div data-j="ses"><small>hier 22:05</small>Session « Edge · Windows » fermée à distance depuis Firefox</div><div data-j="co"><small>hier 21:40</small>Connexion réussie · Safari</div><div data-j="fic"><small>31-10</small>Fiche lue par Sandrine (champs professionnels)</div><div data-j="ses"><small>30-10</small>Mot de passe changé · 2 autres sessions fermées</div><div data-j="ech"><small>29-10</small>Échec de connexion · adresse inconnue · 1 sur 10 avant blocage</div></div></div>
+</section>
+<div class="modal" id="m-su"><div class="box">
+  <h3>Confirmer votre mot de passe</h3><p class="sub">Geste sensible. Vous resterez confirmé 5 minutes.</p>
+  <label class="f">Mot de passe</label><input type="text" id="su-pw" placeholder="••••••••" style="-webkit-text-security:disc" onkeydown="if(event.key==='Enter')suOk()">
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button class="btn" onclick="fermer('m-su')">Annuler</button><button class="btn pri" onclick="suOk()">Confirmer</button></div></div></div>
+
+<!-- ═════ DROITS & DONNÉES ═════ -->
+<section class="page" id="p-donnees">
+  <div class="crumbs">Mon compte › <b>Mes droits &amp; mes données</b></div>
+  <h1>Mes droits &amp; mes données</h1><p class="lead">Ce que je peux faire, et d'où cela me vient. C'est la vue « Qui peut… ? » des Groupes, retournée vers moi — pas une seconde matrice.</p>
+  <div class="card"><h3>Mes droits</h3><p class="sub">41 droits détenus · 6 sensibles · par 3 groupes</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"><span class="chip acc">Administrateurs</span><span class="chip">Direction</span><span class="chip">Éditeurs de contenu</span></div>
+    <div class="row"><div class="t"><b>Administrer Sensorium</b> <span class="chip warn">sensible</span><small>accordé directement par superadmin · 31-10</small></div></div>
+    <div class="row"><div class="t"><b>Utiliser Courrier</b><small>hérité du groupe Direction</small></div></div>
+    <div class="row"><div class="t"><b>Voir les droits d'un autre compte</b><small>refusé</small></div><span class="chip dng">refusé</span></div>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn">Tout voir avec le pourquoi</button><span class="renvoi" style="align-self:center">→ Groupes › Qui peut… ?</span></div></div>
+  <div class="card"><h3>Mon coffre</h3><p class="sub">Mes identifiants et secrets personnels. Il s'ouvre dans son propre écran ; je n'en recopie rien ici.</p>
+    <div class="row"><div class="t"><b>Coffre personnel</b> <span class="chip ok">déverrouillé</span><small>14 éléments · verrouillage auto après 15 min</small></div><span class="renvoi">→ Mon coffre</span></div></div>
+  <div class="card"><h3>Mes données</h3><p class="sub">Je garde la main sur ce qui m'appartient.</p>
+    <div class="row"><div class="t"><b>Exporter mes données</b><small>Profil, notes, agenda, carnet — une archive que je télécharge</small></div><button class="btn sm" onclick="stepup(function(){toast('Archive en préparation')})">Préparer l'archive</button></div>
+    <div class="row"><div class="t"><b>Ce que l'archive contient</b><small>Profil · notes · agenda · carnet · <b>mémoire</b> (<code class="df">memoire.exporter</code> : JSON de ma portée avec l'empreinte de l'ensemble) · <b>conversations avec Itare</b> (<code class="df">agents.conversations</code>) · tâches confiées · plan de mes journées</small></div><span class="chip info">complète</span></div>
+    <div class="row"><div class="t"><b>Ma mémoire — oublier, corriger, donner</b><small>Oublier expire le souvenir avec sa raison (jamais de suppression silencieuse) ; corriger crée une version liée ; donner au partagé copie sans transférer, et se retire (<code class="df">don_retirer</code>)</small></div><button class="btn sm" onclick="toast('Ouvre l’écran Mémoire, déjà codé')">Ouvrir ma mémoire</button></div>
+    <div class="row"><div class="t"><b>Un secret entré par erreur</b><small>Expiré tout de suite <i>et</i> sa valeur retirée de la ligne, de la pièce et de l'index (<code class="df">purger_secret</code>) — la seule réécriture en place que la mémoire admet</small></div><button class="btn sm dng" onclick="stepup(function(){toast('Purge : choisir le souvenir')})">Purger…</button></div>
+    <div class="row"><div class="t"><b>Désactiver mon compte</b><small>Réversible par un administrateur. Les automatismes sont transférés ou arrêtés.</small></div><button class="btn sm dng" onclick="stepup(function(){toast('Désactivation : confirmation finale à venir')})">Désactiver…</button></div></div>
+</section>
+
+<!-- ═════ MISE À NIVEAU ═════ -->
+<section class="page" id="p-maj">
+  <div class="crumbs">Mon compte › <b>Mise à niveau</b></div>
+  <h1>Mise à niveau : tout ce qui touche un « utilisateur »</h1><p class="lead">Écran de maquette. Les faits viennent de l'instance Dolibarr d'Orion, lue en lecture seule le 02-11-2026 ; la liste des endroits à changer vient d'une recherche dans le dépôt Cassandra-V19.</p>
+  <div class="card"><h3>Ce que l'instance d'Orion a confirmé</h3>
+    <div class="row"><div class="t"><b>Version</b><small>Dolibarr 24.0.2 (installée en 23.0.2, mise à niveau le 01-11) · base <code>dolibarr</code>, préfixe <code>llx_</code></small></div><span class="chip ok">lu</span></div>
+    <div class="row"><div class="t"><b>Table <code>llx_user</code> : 82 colonnes</b><small>61 utilisateurs, dont 9 administrateurs et 58 actifs. Un seul champ complémentaire : <code>news_viewed</code> (« Nouveautés vues », interne à Dolibarr) : ignoré.</small></div><span class="chip ok">lu</span></div>
+    <div class="row"><div class="t"><b>Noms qui diffèrent entre l'API et la base</b><small><code>civility_code</code> ↔ colonne <code>civility</code> (et <code>civilite</code>, ancienne) · <code>country_id</code> ↔ <code>fk_country</code> · <code>state_id</code> ↔ <code>fk_state</code> · <code>status</code> ↔ <code>statut</code></small></div><span class="chip warn">à respecter</span></div>
+    <div class="row"><div class="t"><b>Longueurs</b><small>lastname, firstname, town 50 · job 128 · phones 30 · zip 25 · address, email 255 · lang 6 · <b>color 6 (sans « # »)</b> · gender 10</small></div><span class="chip warn">à respecter</span></div>
+    <div class="row"><div class="t"><b>Ce que Dolibarr refuse lui-même</b><small>Via l'API, <code>pass_crypted</code>, <code>pass_indatabase</code>, <code>pass_temp</code>, <code>api_key</code>, <code>openid</code> répondent 405 ; <code>pass</code> est réservé à un administrateur ; salaires et taux refusés sans le droit « salaries ». La liste « reste dans Dolibarr » de la maquette est donc confirmée.</small></div><span class="chip ok">lu dans le code</span></div>
+    <div class="row"><div class="t"><b>Droit d'écriture</b><small>Une mise à jour d'une fiche exige le droit utilisateur « créer », ou « self » pour sa propre fiche, ou le statut admin. La clé de mandat de Cassandra doit en disposer ; sinon l'envoi est refusé en 403.</small></div><span class="chip warn">à vérifier à la mise en œuvre</span></div>
+    <div class="row"><div class="t"><b>Réponse de <code>GET /users/{id}</code></b><small>Le code retire seulement <code>pass*</code>, <code>api_key</code>, <code>openid</code>, <code>clicktodial_password</code>, <code>model_pdf</code>, <code>ldap_sid</code> et quelques champs internes. <code>civility_code</code>, <code>country_id</code>, <code>state_id</code>, <code>note_public</code> sont donc rendus. <b>Attention</b> : <code>salary</code>, <code>thm</code>, <code>tjm</code> sont rendus si la clé peut lire les salaires : la liste blanche du module doit les retirer elle-même.</small></div><span class="chip ok">lu dans le code</span></div>
+    <div class="row"><div class="t"><b>Photo d'un utilisateur par l'API</b><small><code>GET /documents/download</code> existe, avec une branche « user » : lisible avec le droit de lire les utilisateurs, ou pour sa propre fiche. Les photos sont de plus lisibles sur disque (dossier en 755, propriétaire fastuser).</small></div><span class="chip ok">lu dans le code</span></div>
+    <div class="row"><div class="t"><b>Portrait FastPanel : droits de lecture</b><small>Dossier <code>avatar</code> : <code>root</code>, groupe <code>www-data</code>, mode 750 ; la V19 en <code>root</code> le lit.</small></div><span class="chip ok">lu</span></div>
+    <div class="row"><div class="t"><b>Fiche chargée par la classe de Dolibarr (02-11)</b><small>Aucune clé d'API n'existe sur Orion : ni la V18 ni la V19 n'en rangent une pour Dolibarr. J'ai donc chargé une fiche par la classe <code>User</code> elle-même (la même que l'API sérialise), sans valeurs, en lecture seule. C'est le contenu de la réponse, pas l'appel HTTP.</small></div><span class="chip ok">lu</span></div>
+    <div class="row"><div class="t"><b>Types réels dans la réponse</b><small><code>birth</code>, <code>dateemployment</code>, <code>datelastlogin</code> : <b>entiers (horodatages)</b>, pas des dates ISO · <code>socialnetworks</code> : tableau · <code>id</code>, <code>entity</code>, <code>employee</code>, <code>admin</code>, <code>statut</code> : chaînes · <code>country_code</code>, <code>state_code</code> rendus avec les identifiants · <code>color</code>, <code>lang</code>, <code>photo</code> : chaînes.</small></div><span class="chip warn">à convertir</span></div>
+    <div class="row"><div class="t"><b>Colonnes sans propriété : hors API</b><small><code>birth_place</code> et <code>access_hours</code> existent dans la base mais la classe ne les porte pas : l'API ne les lit ni ne les écrit. « Lieu de naissance » est retiré de la fiche. Les liens se nomment <code>socid</code> (tiers) et <code>contact_id</code> (contact), pas <code>fk_soc</code> ni <code>fk_socpeople</code>.</small></div><span class="chip warn">corrigé</span></div>
+    <div class="row"><div class="t"><b>Rendus par l'API mais à ne jamais copier</b><small><code>national_registration_number</code>, <code>accountancy_code</code>, <code>ref_employee</code>, <code>weeklyhours</code>, <code>note_private</code>, <code>rights</code> sont dans l'objet. L'API ne les retire pas : seule la liste blanche du module Dolibarr les arrête.</small></div><span class="chip warn">liste blanche obligatoire</span></div>
+    <div class="row"><div class="t"><b>Mode d'exécution</b><small>Décidé : la V19 tourne en <code>root</code>, comme le service actuel d'Orion. Le dossier des portraits FastPanel est donc lisible directement.</small></div><span class="chip ok">tranché</span></div>
+    <div class="row"><div class="t"><b>Reste à faire</b><small>Un vrai appel HTTP, quand le module Dolibarr de la V19 aura sa clé de mandat (utilisateur Dolibarr dédié, droits limités) : il confirmera les en-têtes, la pagination et les erreurs, pas le contenu.</small></div><span class="chip">ouvert</span></div></div>
+
+  <div class="card"><h3>Sécurité des sessions : correctifs et ajouts</h3><p class="sub">Indépendants du reste : ils peuvent partir avant la fiche. Constats lus dans <code>noyau/CN_identite.py</code>, <code>CN_passerelle.py</code> et <code>modules/comptes</code>.</p>
+    <div class="aud"><div><b>Défaut</b> · <code>changer_mon_mot_de_passe</code> (<code>modules/comptes/CN_module.py</code> l. 183) ne ferme pas les autres sessions ; seule <code>reinitialiser</code> le fait (<code>CN_identite.py</code> l. 1042)</div><div class="ar">→</div><div>Fermer toutes les sessions du compte sauf la courante, dans la capacité ; ajouter la preuve (« aucune autre session ») et le retour arrière sans rouvrir les sessions.</div></div>
+    <div class="aud"><div><b>Défaut</b> · <code>sessions()</code> (<code>CN_identite.py</code> l. 994) lit toutes les lignes, sans filtre de durée ni d'inactivité ; le ménage n'a lieu qu'à la prochaine connexion, tous comptes confondus</div><div class="ar">→</div><div>Filtrer sur <code>cree &gt; maintenant − ttl</code> et sur l'inactivité ; purger aussi à la lecture.</div></div>
+    <div class="aud"><div><b>Réglage</b> · <code>admin_second_facteur_obligatoire</code> vaut <code>False</code> (l. 947)</div><div class="ar">→</div><div>Défaut à <code>True</code> avec le délai de grâce existant (7 jours) ; migration : les administrateurs actuels bénéficient du délai.</div></div>
+    <div class="aud"><div><b>Ajout</b> · confirmation par mot de passe pour les gestes sensibles</div><div class="ar">→</div><div>Un « récemment confirmé » par session (table <code>sessions_verif</code> existe déjà pour le second facteur) ; exigé par <code>webauthn</code> (ajout/retrait), <code>comptes</code> (désactiver, exporter, modifier la fiche d'un autre), coffre. Déclaré dans le manifeste d'une capacité, pas codé à la main.</div></div>
+    <div class="aud"><div><b>Ajout</b> · alerte « nouvel appareil »</div><div class="ar">→</div><div>Comparer adresse et agent (déjà enregistrés) à l'historique du compte ; notification sur la cloche et Telegram ; blocage seulement pour un administrateur. Sujet déclaré par le module <code>comptes</code>.</div></div>
+    <div class="aud"><div><b>Ajout</b> · contrôle de l'en-tête <code>Origin</code> sur les requêtes qui modifient (<code>CN_passerelle.py</code>)</div><div class="ar">→</div><div>Seconde barrière derrière <code>SameSite=Strict</code> ; refuser si <code>Origin</code> est présent et différent de l'hôte.</div></div>
+    <div class="aud"><div><b>Ajout</b> · cookie nommé <code>__Host-cassandra_session</code> (<code>CN_passerelle.py</code> l. 56, aujourd'hui <code>cassandra_session</code>)</div><div class="ar">→</div><div>Exige <code>Secure</code>, <code>Path=/</code> et aucun <code>Domain</code> : un sous-domaine ne peut plus le réécrire. À garder sans préfixe en http local.</div></div>
+    <div class="aud"><div><b>Ajout</b> · au plus 10 sessions par compte ; « se souvenir de cet appareil »</div><div class="ar">→</div><div>La plus ancienne se ferme à la onzième ; l'option garde 30 jours mais redemande le second facteur à chaque ouverture.</div></div>
+    <div class="aud"><div><b>Ajout</b> · jetons d'agents visibles dans Mon compte</div><div class="ar">→</div><div><code>agents_jetons</code> garde déjà <code>dernier_vu</code> et <code>actif</code> : lister et révoquer ceux que j'ai invités (<code>invite_par</code>).</div></div>
+    <div class="aud"><div><b>Ajout</b> · journal de mon compte : échecs, sessions fermées à distance, accès d'autrui à ma fiche</div><div class="ar">→</div><div>Mêmes évènements que le registre de la machine, filtrés sur le compte ; l'accès à la fiche vient du réglage « journaliser ».</div></div>
+    <div class="aud"><div><b>Non vérifié</b> · valeurs par défaut de <code>INACTIVITE_HEURES</code> et <code>INACTIVITE_ADMIN_HEURES</code></div><div class="ar">→</div><div>Les listes déroulantes de la maquette sont des exemples, à caler sur les constantes réelles.</div></div></div>
+
+  <div class="card"><h3>Ordre de livraison</h3><p class="sub">Chaque étape se livre seule, avec ses tests, et laisse l'application en état de marche.</p>
+    <div class="row"><span class="chip">0</span><div class="t"><b>Sécurité des sessions</b><small>les deux défauts d'abord (mot de passe qui ne ferme pas les sessions, liste des sessions mortes), puis second facteur par défaut et confirmation des gestes sensibles · indépendant de la fiche</small></div><span class="chip warn">à faire</span></div>
+    <div class="row"><span class="chip">1</span><div class="t"><b>Table <code>comptes_fiche</code> et migration</b><small>essai sur une copie de la base d'abord (voir plus bas) · aucune interface encore</small></div><span class="chip warn">à faire</span></div>
+    <div class="row"><span class="chip">2</span><div class="t"><b>Clé de mandat Dolibarr</b><small>créer l'utilisateur dédié, poser la clé, « Vérifier les droits » · seul le vrai appel HTTP confirme en-têtes, pagination, erreurs</small></div><span class="chip warn">à faire</span></div>
+    <div class="row"><span class="chip">3</span><div class="t"><b>Capacités Dolibarr <code>fiche_lire / comparer / ecrire</code></b><small>liste blanche, conversions (horodatages ↔ ISO, tableau ↔ JSON), longueurs, champs interdits refusés</small></div><span class="chip warn">à faire</span></div>
+    <div class="row"><span class="chip">4</span><div class="t"><b>Noyau et module <code>comptes</code></b><small>fiche lue et écrite, nom affiché unique, corbeille avec fiche, droits <code>fiche_voir_perso</code> et <code>fiche_modifier_autres</code>, journal des accès</small></div><span class="chip warn">à faire</span></div>
+    <div class="row"><span class="chip">5</span><div class="t"><b>Résolveur de portrait</b><small>réutilise la logique du Répertoire ; ajoute les sources Dolibarr et FastPanel</small></div><span class="chip warn">à faire</span></div>
+    <div class="row"><span class="chip">6</span><div class="t"><b>Écrans</b><small>un composant de fiche pour Mon compte et Utilisateurs · lien Dolibarr · « Qui l'emporte » · « Qui voit ma fiche »</small></div><span class="chip warn">à faire</span></div>
+    <div class="row"><span class="chip">7</span><div class="t"><b>Nettoyage de <code>CN_app.js</code> et des tests</b><small>les 27 lignes du compte, une par une</small></div><span class="chip warn">à faire</span></div></div>
+
+  <div class="card"><h3>Migration des comptes existants</h3><p class="sub">Les six champs actuels vont dans la fiche. Rien ne se fait sur la vraie base avant un essai sur une copie.</p>
+    <div class="tw"><table><tr><th>Avant (<code>comptes</code>)</th><th>Après (<code>comptes_fiche</code>)</th><th>Règle</th></tr>
+      <tr><td><code>display_name</code></td><td><code>firstname</code> + <code>lastname</code></td><td>dernier mot = nom, le reste = prénom ; si un seul mot, tout va dans <code>lastname</code> ; vérifiable à la main</td></tr>
+      <tr><td><code>role_label</code></td><td><code>job</code></td><td>copie (128 caractères max : le reste est signalé, pas coupé)</td></tr>
+      <tr><td><code>contact_email</code></td><td><code>email</code></td><td>copie</td></tr>
+      <tr><td><code>phone</code></td><td><code>office_phone</code></td><td>copie (30 max)</td></tr>
+      <tr><td><code>lang</code></td><td><code>lang</code></td><td>« fr » devient « fr_FR » (forme Dolibarr)</td></tr>
+      <tr><td><code>fp_account</code></td><td>reste dans <code>comptes</code></td><td>lien FastPanel, pas un champ Dolibarr</td></tr></table></div>
+    <div class="test on ok" style="margin-top:10px"><b>Rapport attendu de l'essai (exemple, pas un résultat)</b> : N comptes lus · N fiches créées · 0 champ tronqué · liste des noms coupés en deux à relire · restauration depuis la corbeille d'un compte migré : fiche retrouvée. <b>Condition pour passer à la vraie base</b> : zéro perte, et un humain a relu la liste des noms.</div></div>
+
+  <div class="card"><h3>Correspondance de chaque champ</h3><p class="sub">API Dolibarr · colonne <code>llx_user</code> · colonne <code>comptes_fiche</code>.</p>
+    <div class="tw"><table>
+      <tr><th>API</th><th>Colonne Dolibarr</th><th>Cassandra</th><th>Note</th></tr>
+      <tr><td><code>civility_code</code></td><td>civility</td><td>civility_code</td><td>M. / Mme / Dr… (dictionnaire)</td></tr>
+      <tr><td><code>country_id</code> / <code>state_id</code></td><td>fk_country / fk_state</td><td>country_code / state_code</td><td>ISO côté Cassandra, id côté Dolibarr</td></tr>
+      <tr><td><code>status</code></td><td>statut</td><td>(comptes.desactive)</td><td>lecture seule ici</td></tr>
+      <tr><td><code>birth</code>, <code>dateemployment</code></td><td>date</td><td>texte ISO</td><td>AAAA-MM-JJ</td></tr>
+      <tr><td><code>socialnetworks</code></td><td>text (JSON)</td><td>texte JSON</td><td>même forme</td></tr>
+      <tr><td><code>color</code></td><td>varchar(6)</td><td>texte 6</td><td>sans « # »</td></tr>
+      <tr><td>14 autres (nom, prénom, job, phones, email, adresse…)</td><td>identiques</td><td>identiques</td><td>mêmes longueurs</td></tr>
+    </table></div></div>
+
+  <div class="card"><h3>Où changer dans Cassandra-V19</h3><p class="sub">Chaque ligne : le fichier, et le geste. Rien n'est modifié aujourd'hui.</p>
+    <h3 style="margin-top:6px"><span class="chip acc">Noyau</span></h3>
+    <div class="aud"><div><code>noyau/CN_base.py</code> ligne 59 — table <code>comptes</code> (6 champs de profil)</div><div class="ar">→</div><div>Ajouter <code>comptes_fiche</code> par le mécanisme de colonnes de la ligne ~139 ; les 6 champs restent, copiés à la migration.</div></div>
+    <div class="aud"><div><code>noyau/CN_identite.py</code> l. 61 — <code>CHAMPS_PROFIL</code></div><div class="ar">→</div><div>Remplacer par la liste de la fiche (≈ 30 champs) avec leurs longueurs maximales ; refuser, pas tronquer.</div></div>
+    <div class="aud"><div><code>noyau/CN_identite.py</code> l. 295, 507, 538 — comptes système et agents, listes</div><div class="ar">→</div><div>Un agent ou un compte système n'a pas de fiche : <code>display_name</code> y reste le nom, sans ligne dans la fiche.</div></div>
+    <div class="aud"><div><code>noyau/CN_identite.py</code> l. 599–604 (créer) et 626–635 (modifier)</div><div class="ar">→</div><div>Écrire dans <code>comptes_fiche</code> ; <code>display_name</code> et <code>role_label</code> deviennent dérivés (prénom nom, fonction).</div></div>
+    <div class="aud"><div><code>noyau/CN_identite.py</code> l. 760–762 — restauration depuis la corbeille</div><div class="ar">→</div><div>L'instantané de <code>comptes_corbeille</code> doit contenir la fiche, sinon une restauration perd l'état civil.</div></div>
+    <h3 style="margin-top:14px"><span class="chip acc">Modules</span></h3>
+    <div class="aud"><div><code>modules/comptes/CN_module.py</code> l. 166 et manifeste l. 163 — <code>modifier_moi</code>, <code>creer</code>, <code>modifier</code>, <code>lister</code></div><div class="ar">→</div><div>Accepter et rendre la fiche ; <code>prouver_modifier</code> et <code>defaire_modifier</code> doivent couvrir les nouveaux champs.</div></div>
+    <div class="aud"><div><code>modules/dolibarr/CN_module.py</code> (lectures sans les utilisateurs, <code>_SECRET</code> l. 121)</div><div class="ar">→</div><div>Nouvelles capacités <code>fiche_lire</code>, <code>fiche_comparer</code>, <code>fiche_ecrire</code> sur une liste blanche de champs ; contrat dans <code>contrats/CN_regles_dolibarr.corpus.json</code>.</div></div>
+    <div class="aud"><div><b>Portrait : source au choix</b> — <code>modules/fastpanel</code> (« avatars : non porté », <code>CN_LISEZ-MOI.md</code> l. 36)</div><div class="ar">→</div><div>Porter <code>_fp_avatar_fichier</code> de la V18 (<code>V18/cassandra.py</code> l. 10433) : FastPanel n'a aucune colonne d'avatar, les images sont des fichiers de <code>web/public/avatar</code>, rapprochés par identifiant puis par login. Capacité <code>fastpanel.avatar</code>.</div></div>
+    <div class="aud"><div><b>Portrait Dolibarr</b> — <code>modules/dolibarr</code></div><div class="ar">→</div><div>Lire <code>photo</code> de la fiche, puis le fichier. Sur Orion : <code>…/dolibarr-documents/users/&lt;rowid&gt;/&lt;photo&gt;</code>, 15 utilisateurs sur 61 en ont une. Transport : l'API <code>GET /documents/download</code> (respecte les droits, marche aussi si Dolibarr est ailleurs), la lecture du dossier seulement en repli sur la même machine.</div></div>
+    <div class="aud"><div><b>Portrait</b> — <code>comptes_fiche.photo_source</code> + une capacité <code>comptes.portrait</code></div><div class="ar">→</div><div>Un seul résolveur : source choisie → image réduite et mise en cache ; jamais d'écrasement d'une image téléversée à la main. Remplace <code>photo: false</code> de <code>CN_moi.js</code>.</div></div>
+    <div class="aud"><div><code>modules/societes/CN_module.py</code> l. 797 · <code>modules/ged</code> l. 603 · <code>modules/droits</code> l. 131</div><div class="ar">→</div><div>Ils lisent <code>display_name</code> pour afficher un nom : passer par une seule fonction « nom affiché ».</div></div>
+    <div class="aud"><div><code>modules/sites</code> (<code>fp_account</code>, 3 endroits)</div><div class="ar">→</div><div>Inchangé : <code>fp_account</code> est un lien FastPanel propre à Cassandra, pas un champ Dolibarr. Il reste dans <code>comptes</code>.</div></div>
+    <h3 style="margin-top:14px"><span class="chip acc">Interface</span></h3>
+    <div class="aud"><div><code>interface/routes/CN_moi.js</code> l. 21–24 — <code>/api/me</code> et <code>/api/me/profile</code></div><div class="ar">→</div><div>Rendre et recevoir la fiche entière ; <code>photo: false</code> devient la vraie photo.</div></div>
+    <div class="aud"><div><code>interface/CN_comptes-ecran.js</code> l. 58–59, 106, 112, 191, 197, 366, 376–385</div><div class="ar">→</div><div>Initiales, recherche, liste, fiche, création : un seul composant de fiche, partagé avec Mon compte (même carte « Identité »).</div></div>
+    <div class="aud"><div><code>interface/routes/CN_reglages.js</code> l. 31, 128, 168, 211 · <code>CN_projets.js</code> l. 111</div><div class="ar">→</div><div>Remplacer les lectures directes par le « nom affiché » et le courriel de contact (<code>email</code> de la fiche).</div></div>
+    <div class="aud"><div><code>interface/CN_dolibarr-ecran.js</code> l. 297</div><div class="ar">→</div><div>Le rapprochement comptes ↔ utilisateurs Dolibarr passe par <code>id_doli</code>, plus par l'adresse seule.</div></div>
+    <div class="aud"><div><code>interface/CN_app.js</code> — 58 occurrences, <b>inventoriées</b> : 31 sont des contacts du Répertoire (hors périmètre), <b>27 concernent le compte</b></div><div class="ar">→</div><div>Les 27 tiennent en 8 blocs, ci-dessous. Les 31 autres ne bougent pas.</div></div>
+    <div class="aud"><div>l. 1666–1677 · menu de l'avatar : fonction, lien FastPanel, portrait FastPanel (<code>/api/fp/user/avatar</code>)</div><div class="ar">→</div><div>Fonction ← <code>job</code> ; portrait ← le résolveur. <b>La V18 sait déjà suivre FastPanel ici</b> : on déplace la logique, on ne la réécrit pas.</div></div>
+    <div class="aud"><div>l. 12979–12980 · portrait FastPanel si aucune photo</div><div class="ar">→</div><div>Remplacé par le résolveur (une seule règle de repli).</div></div>
+    <div class="aud"><div>l. 17632, 17652 · fiche de « Mon compte » retiré et nom d'un enregistrement</div><div class="ar">→</div><div>Nom affiché unique.</div></div>
+    <div class="aud"><div>l. 32573–32576 · liste de comptes (nom, fonction)</div><div class="ar">→</div><div>Nom affiché unique ; fonction ← <code>job</code>.</div></div>
+    <div class="aud"><div>l. 33001–33027 · panneau photo de Mon compte (portrait FastPanel, initiales)</div><div class="ar">→</div><div>Remplacé par le sélecteur de source de la maquette.</div></div>
+    <div class="aud"><div>l. 33407–33412 et 33681 · formulaire et enregistrement de Mon compte (<code>/api/me/profile</code>)</div><div class="ar">→</div><div>La fiche entière, avec longueurs et conversions.</div></div>
+    <div class="aud"><div>l. 33849–33876 et 37349–37396 · rattachement compte ↔ compte FastPanel (propositions, <code>/api/fp/users/link</code>)</div><div class="ar">→</div><div>Inchangé dans son principe : <code>fp_account</code> reste. <b>Le même geste de « proposition à confirmer » sert au lien Dolibarr</b> : à réutiliser.</div></div>
+    <h3 style="margin-top:14px"><span class="chip acc">Tests et documents</span></h3>
+    <div class="aud"><div><code>tests/CN_test_noyau.py</code> (4), <code>CN_test_societes.py</code> (8), <code>CN_test_agenda.py</code>, <code>CN_test_sites.py</code>, <code>comptes.spec.js</code>, <code>partages.spec.js</code></div><div class="ar">→</div><div>Mettre à jour les attendus ; ajouter : longueurs, aller-retour Dolibarr, champs interdits refusés, restauration avec fiche.</div></div>
+    <div class="aud"><div><code>docs/CN_UTILISATEURS.md</code> · <code>docs/CN_maquette-utilisateurs.html</code></div><div class="ar">→</div><div>Aligner la fiche d'un utilisateur sur celle de Mon compte, puisque c'est la même.</div></div>
+    <h3 style="margin-top:14px"><span class="chip acc">Une seule logique de portrait</span></h3>
+    <div class="aud"><div>V18 : huit sources pour les portraits du Répertoire (vCard, Telegram <code>tgc_visage</code>, signature de courriel, FastPanel <code>_fp_avatar_fichier</code>, BIMI, favicon…), et <b>aucune n'écrit dans la fiche</b></div><div class="ar">→</div><div>Un résolveur unique <code>portrait.resoudre(sujet, sources)</code>. Pour un compte, les sources valables sont : image propre, Dolibarr, FastPanel, Telegram, initiales. Pour un contact : les huit actuelles, plus Dolibarr. Mêmes garde-fous : une image posée à la main n'est jamais écrasée, un favicon cède devant une vraie photo, Gravatar écarté.</div></div>
+    <h3 style="margin-top:14px"><span class="chip">Hors périmètre, mais à surveiller</span></h3>
+    <div class="aud"><div>Module <b>Contacts</b> (<code>display_name</code>, <code>job_title</code>, <code>phone</code>…) : ce sont des contacts, pas des utilisateurs</div><div class="ar">→</div><div>Un chantier voisin pour les aligner sur les contacts Dolibarr (<code>lastname</code>, <code>poste</code>, <code>phone_pro</code>). Seul le lien <code>contact_id</code> est dans celui-ci.</div></div>
+    <div class="aud"><div>Billetterie, profil revendeur (<code>CN_espaces.py</code> l. 91)</div><div class="ar">→</div><div>Même principe pour les tiers Dolibarr, plus tard.</div></div></div>
+</section>
+
+<!-- ═════ AUDIT ═════ -->
+<section class="page" id="p-audit">
+  <div class="crumbs">Mon compte › <b>Carte des renvois</b></div>
+  <h1>Carte des renvois</h1><p class="lead">Écran de maquette, pas du produit : pour chaque réglage, son foyer unique. À gauche ce qui existe aujourd'hui, à droite ce que devient la V19. Rien n'est copié : un renvoi ouvre le foyer.</p>
+  <div class="card">
+    <div class="aud"><div><b>6 rubriques</b> Identité · Boîte · Agenda · Itare · Alertes · Sécurité</div><div class="ar">→</div><div><b>5 pages</b> Vue d'ensemble · Profil · Branchements · Notifications · Sécurité · Droits &amp; données</div></div>
+    <div class="aud"><div>Profil à 6 champs (<code>display_name, role_label, contact_email, phone, lang, fp_account</code>)</div><div class="ar">→</div><div><b>Fiche calquée sur Dolibarr</b> (≈ 25 champs, mêmes noms) ; les 6 anciens se rangent sur <code>lastname+firstname, job, email, office_phone, lang</code>.</div></div>
+    <div class="aud"><div>Ma boîte mail (Mon compte) <i>et</i> réglage Mail dans Courrier</div><div class="ar">→</div><div>Foyer : <b>Branchements</b>. Courrier garde un bouton qui ouvre cette carte.</div></div>
+    <div class="aud"><div>Mon agenda (Mon compte) <i>et</i> Mon Bureau › Agenda</div><div class="ar">→</div><div>Foyer : <b>Branchements</b>. Mon Bureau renvoie, ne duplique plus le formulaire.</div></div>
+    <div class="aud"><div>Telegram : une carte dans « Alertes » <i>et</i> une section dans Réglages</div><div class="ar">→</div><div>Compte relié : <b>Branchements</b>. Robot et jeton : <b>Société › Canaux</b> (admin).</div></div>
+    <div class="aud"><div>Mon Itare (Mon compte) <i>et</i> module Agents IA</div><div class="ar">→</div><div>Préférences perso : <b>Branchements</b>. Modèles et plafonds : <b>Agents IA</b> (admin).</div></div>
+    <div class="aud"><div>Alertes personnelles <i>et</i> centre de notifications (cloche)</div><div class="ar">→</div><div>Une <b>matrice sujets × canaux</b> ; la cloche n'en garde que la lecture.</div></div>
+    <div class="aud"><div>Clé de sécurité + sessions dans Mon compte <i>et</i> onglet Sécurité de la machine</div><div class="ar">→</div><div>Mon accès : <b>Sécurité &amp; sessions</b>. Pare-feu, audit : onglet Sécurité (admin).</div></div>
+    <div class="aud"><div><b>Dolibarr optionnel</b> : trois états</div><div class="ar">→</div><div><b>Absent</b> (module désactivé) : rien ne s'affiche, la base ne contient aucune colonne de liaison. <b>Installé, non relié</b> : une seule carte « pas relié » et, pour l'administrateur, la carte de la clé de mandat. <b>Relié</b> : lien, comparaison, « qui l'emporte », portrait Dolibarr.</div></div>
+    <div class="aud"><div>Colonnes <code>id_doli</code>, <code>doli_empreinte</code>, <code>doli_maj</code></div><div class="ar">→</div><div>Créées par le module <code>dolibarr</code> à son activation (même mécanisme <code>ALTER TABLE</code> que le noyau), jamais par le noyau. La fiche garde les champs au format Dolibarr : c'est son format de profil, pas une dépendance.</div></div>
+    <div class="aud"><div>Synchronisation et source du portrait</div><div class="ar">→</div><div>Capacités fournies par le module <code>dolibarr</code> ; le résolveur de portrait demande leurs sources aux modules actifs (Dolibarr, FastPanel, Telegram) au lieu de les connaître. Même règle pour FastPanel et Telegram.</div></div>
+    <div class="aud"><div>Test de sortie</div><div class="ar">→</div><div>Instance sans le module : le texte « Dolibarr » ne figure nulle part dans « Mon compte » (<code>tests-ui</code>).</div></div>
+    <div class="aud"><div><b>Audit complémentaire</b> : 10 fonctions déjà codées, d'abord oubliées</div><div class="ar">→</div><div>Données (mémoire, conversations, oubli) · clé d'accès, exiger la clé, codes de secours · miroir Telegram · mes modèles · niveaux × canaux (webhook, cloche toujours, refus des courriels, fuseau) · affichage (tuiles, épingles, menus, journée) · règles du mot de passe · prudence Dolibarr · voix détaillée. Chacune est une capacité ou un réglage existant : rien à inventer, seulement à afficher.</div></div>
+    <div class="aud"><div>Thème, mes applications : dispersés (Habillage, Logithèque)</div><div class="ar">→</div><div>Thème et densité : <b>Profil</b>. Mes applications : renvoi vers la Logithèque.</div></div>
+    <div class="aud"><div>Mes droits : visibles seulement par l'admin (Groupes)</div><div class="ar">→</div><div>Vue <b>personnelle</b> des mêmes décisions (moteur <code>decisions_de</code>).</div></div>
+    <div class="aud"><div>Mes modules (famille auto) — déjà là</div><div class="ar">→</div><div>Devient le <b>mécanisme général</b> : tout réglage de portée compte, y compris boîte mail et agenda, passe par un <code>[[reglages]]</code> du manifeste.</div></div>
+  </div>
+  <div class="card"><h3><svg class="i"><use href="#db"/></svg>Dans la base : une table-fiche aux noms de Dolibarr</h3><p class="sub">Proposition. <code>comptes</code> reste étroite (identifiant, empreinte du mot de passe, type, société) ; la fiche vit à côté, colonne pour colonne comme <code>llx_user</code>. Les 6 anciens champs restent lisibles : <code>display_name</code> est dérivé.</p>
+    <pre style="margin:0;padding:10px 12px;background:var(--sunk);border:1px solid var(--line);border-radius:10px;font:500 11.5px/1.5 var(--mono);color:var(--txt2);overflow-x:auto">CREATE TABLE comptes_fiche(
+  compte TEXT PRIMARY KEY REFERENCES comptes(compte),
+  civility_code TEXT, gender TEXT, lastname TEXT, firstname TEXT, birth TEXT,   -- ISO 8601
+  job TEXT, employee INTEGER, ref_employee TEXT,
+  dateemployment TEXT, dateemploymentend TEXT,
+  email TEXT, personal_email TEXT, office_phone TEXT, office_fax TEXT,
+  user_mobile TEXT, personal_mobile TEXT,
+  address TEXT, zip TEXT, town TEXT, country_code TEXT, state_code TEXT,        -- ISO, pas les id Dolibarr
+  photo TEXT, photo_source TEXT,   -- 'cassandra' | 'dolibarr' | 'fastpanel' | 'initiales'
+  lang TEXT, color TEXT, signature TEXT,
+  socialnetworks TEXT,                                                           -- JSON, comme Dolibarr
+  note_public TEXT,
+  id_doli INTEGER, doli_empreinte TEXT, doli_maj REAL, maj REAL NOT NULL);</pre>
+    <div class="aud" style="border-top:0"><div><b>Pourquoi une table à part</b> : <code>comptes_corbeille</code> et le rejeu copient la ligne entière ; y mettre 25 colonnes d'état civil mélange l'authentification et l'identité.</div><div class="ar">→</div><div><b>Pourquoi ces noms</b> : copier un champ vers Dolibarr ou en reprendre un n'est plus une traduction, juste une lecture de clé.</div></div>
+    <div class="aud"><div><code>country_code</code> et <code>state_code</code> en ISO</div><div class="ar">→</div><div>Dolibarr stocke un <code>country_id</code> propre à chaque instance ; on traduit à la frontière par son dictionnaire.</div></div>
+    <div class="aud"><div><code>doli_empreinte</code></div><div class="ar">→</div><div>Empreinte des valeurs au dernier échange : permet de dire « qui a changé quoi » dans « Comparer », sans écraser.</div></div></div>
+  <div class="card"><h3>Règle de la refonte : le module déclare, le noyau affiche</h3><p class="sub">Le foyer d'un réglage dépend de sa <b>portée</b>, pas du module qui l'a créé. Le module garde un bouton de raccourci qui ouvre la carte, jamais une copie du formulaire.</p>
+    <div class="tw"><table>
+      <tr><th>Portée</th><th>Qui la voit</th><th>Foyer unique</th><th>Exemples</th></tr>
+      <tr><td><span class="chip acc">compte</span></td><td>Moi seul</td><td><b>Mon compte › Branchements</b></td><td>boîte mail, CalDAV, Telegram, voix, préférences Itare</td></tr>
+      <tr><td><span class="chip info">société</span></td><td>Admins de la société</td><td><b>Société › Réglages</b></td><td>canaux partagés, signature, fuseau de la société</td></tr>
+      <tr><td><span class="chip warn">global</span></td><td>Administrateurs</td><td><b>Paramètres généraux</b></td><td>maintenance, jetons du robot, modèles et plafonds, pare-feu</td></tr>
+      <tr><td><span class="chip">technique</span></td><td>Admin du module</td><td><b>L'écran du module lui-même</b></td><td>seuils, moteur, paramètres qui n'ont de sens qu'avec ses données</td></tr>
+    </table></div></div>
+</section>
+
+<div class="modal" id="m-pw"><div class="box">
+  <h3>Changer le mot de passe</h3><p class="sub">Les autres sessions seront fermées après le changement.</p>
+  <label class="f">Mot de passe actuel</label><input type="text" placeholder="••••••••" style="-webkit-text-security:disc"><div style="height:10px"></div>
+  <label class="f">Nouveau mot de passe</label><input type="text" id="pw-new" placeholder="12 caractères au moins" style="-webkit-text-security:disc" oninput="pwForce(this.value)">
+  <div class="meter"><i id="pw-m"></i></div><small id="pw-t" style="color:var(--txt3)">Trop court</small>
+  <small style="display:block;margin-top:4px;color:var(--txt3)">Règles et légende rendues par le noyau (<code class="df">comptes.regles_mdp</code>), jamais écrites en dur dans l'écran.</small><div style="height:10px"></div>
+  <label class="f">Confirmer</label><input type="text" id="pw-c" placeholder="••••••••" style="-webkit-text-security:disc" oninput="pwForce(document.getElementById('pw-new').value)">
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button class="btn" onclick="fermer('m-pw')">Annuler</button><button class="btn pri" id="pw-go" disabled onclick="fermer('m-pw');['s-2','s-3','s-nv'].forEach(fermer1);toast('Mot de passe changé · autres sessions fermées')">Changer</button></div></div></div>
+<div class="modal" id="m-key"><div class="box">
+  <h3>Ajouter une clé de sécurité</h3><p class="sub">Étape <span id="k-n">1</span> sur 3</p>
+  <div class="steps"><i class="on" id="ks1"></i><i id="ks2"></i><i id="ks3"></i></div>
+  <div id="k1"><div class="touch"><div class="pulse"><svg class="i"><use href="#key"/></svg></div><b>Branchez la clé puis touchez-la</b><small>Le navigateur vous demandera de confirmer.</small></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button class="btn" onclick="fermer('m-key')">Annuler</button><button class="btn pri" onclick="kStep(2)">C'est fait</button></div></div>
+  <div id="k2" style="display:none"><label class="f">Nom de la clé</label><input type="text" value="Clé de secours"><small style="color:var(--txt3)">Pour la reconnaître dans la liste.</small>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button class="btn" onclick="kStep(1)">Retour</button><button class="btn pri" onclick="kStep(3)">Enregistrer</button></div></div>
+  <div id="k3" style="display:none"><div class="touch"><span class="chip ok">Clé enregistrée</span><b>2 clés protègent maintenant votre compte</b></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn pri" onclick="fermer('m-key');toast('Seconde clé ajoutée')">Terminer</button></div></div>
+</div></div>
+<div class="savebar" id="toast" style="position:fixed;left:50%;bottom:20px;transform:translateX(-50%);margin:0"><b id="toast-t"></b></div>
+<div class="savebar" id="sb"><b>Modifications non enregistrées</b><span class="grow"></span><button class="btn" onclick="sbOff()">Annuler</button><button class="btn pri" onclick="sbOff()">Enregistrer</button></div>
+</main>
+</div>
+<script>
+function go(p){document.querySelectorAll('.page').forEach(e=>e.classList.toggle('on',e.id==='p-'+p));document.querySelectorAll('.si').forEach(b=>b.classList.toggle('on',b.dataset.p===p));window.scrollTo(0,0)}
+document.querySelectorAll('.si').forEach(b=>b.onclick=()=>go(b.dataset.p));
+const PH={cass:'Image téléversée ici, jamais écrasée par une autre source.',doli:'Suit la photo de ma fiche Dolibarr (<code class="df">photo</code>). Si elle disparaît là-bas, je passe aux initiales — jamais à une autre source sans que je le dise.',fp:'Suit l’image de mon compte FastPanel. Réduite à 512 px à la lecture (le fichier d’origine pèse plusieurs Mo).',tg:'Suit la photo de profil de mon compte Telegram relié (relue au plus une fois par 30 jours).',init:'Mes initiales sur la couleur de ma fiche.'};
+const LK={prop:()=>'<div class="todo" style="margin:0"><span class="ico w"><svg class="i"><use href="#db"/></svg></span><div class="t"><b>Proposition : Marple (n° 6959)</b><small>Trouvée par courriel identique (drisse@cassandra.center) · confiance forte · aucun autre candidat</small></div><button class="btn sm pri" onclick="lien(\'ok\')">Confirmer</button><select style="width:170px"><option>Choisir un autre…</option><option>Missy (n° 6915)</option><option>sandrine (n° 6960)</option></select><button class="btn sm" onclick="lien(\'none\')">Ne pas lier</button></div>',
+ ok:()=>'<div class="row" style="border:0;padding:0"><div class="t"><b>Lié à Marple (n° 6959)</b><small>Confirmé le 02-11 par moi · dernier échange il y a 6 min · empreinte à jour</small></div><button class="btn sm dng" onclick="lien(\'none\')">Délier</button></div>',
+ none:()=>'<div class="row" style="border:0;padding:0"><div class="t"><b>Aucune fiche Dolibarr liée</b><small>« Comparer », la synchronisation et le portrait Dolibarr sont désactivés.</small></div><button class="btn sm pri" onclick="lien(\'prop\')">Chercher une fiche</button></div>'};
+function lien(s){document.querySelectorAll('#lk-seg button').forEach(b=>b.classList.toggle('on',b.dataset.l===s));document.getElementById('lk-body').innerHTML=LK[s]();
+  const ok=s==='ok';document.getElementById('cmp-btn').disabled=!ok;document.getElementById('cmp-btn').style.opacity=ok?1:.4;
+  const h=document.getElementById('hero-lien');h.className='chip d-lie '+(ok?'ok':s==='prop'?'warn':'');h.textContent=ok?'lié à Dolibarr · utilisateur n° 6959 · login Marple':s==='prop'?'lien à confirmer':'non lié à Dolibarr';
+  const sd=document.querySelector('#ph-seg [data-s=doli]');if(sd){sd.disabled=!ok;sd.style.opacity=ok?1:.4}}
+document.querySelectorAll('#lk-seg button').forEach(b=>b.onclick=()=>lien(b.dataset.l));lien('ok');
+document.querySelectorAll('#ph-seg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#ph-seg button').forEach(x=>x.classList.toggle('on',x===b));document.getElementById('ph-info').innerHTML=PH[b.dataset.s];document.getElementById('ph-info').classList.toggle('d-lie',b.dataset.s==='doli');document.getElementById('ph-up').style.display=b.dataset.s==='cass'?'':'none';dirty()});
+document.getElementById("ph-info").innerHTML=PH.doli;document.getElementById("ph-info").classList.add("d-lie");document.getElementById('ph-up').style.display='none';
+let suJusqua=0,suCb=null,suTimer=null;
+function suMaj(){const e=document.getElementById('su-etat'),r=Math.round((suJusqua-Date.now())/1000);if(r>0){e.className='chip ok';e.textContent='confirmé · '+Math.floor(r/60)+':'+String(r%60).padStart(2,'0')}else{e.className='chip';e.textContent='non confirmé';clearInterval(suTimer)}}
+function stepup(cb){if(Date.now()<suJusqua){cb();return}suCb=cb;document.getElementById('su-pw').value='';document.getElementById('m-su').classList.add('on');setTimeout(()=>document.getElementById('su-pw').focus(),50)}
+function suOk(){fermer('m-su');suJusqua=Date.now()+5*60*1000;clearInterval(suTimer);suTimer=setInterval(suMaj,1000);suMaj();const c=suCb;suCb=null;if(c)c()}
+function fermer1(id){const e=document.getElementById(id);if(e)e.remove()}
+function simNv(){if(document.getElementById('s-nv')){document.getElementById('s-nv').style.display='';document.getElementById('nv-alerte').style.display='block'}else toast('Déjà traitée')}
+document.querySelectorAll('#jr-seg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#jr-seg button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('#jr > div').forEach(d=>d.style.display=(b.dataset.j==='tout'||d.dataset.j===b.dataset.j)?'':'none')});
+function mandat(){const t=document.getElementById('t-mandat');t.className='test on run';t.textContent='Vérification en cours…';
+  setTimeout(()=>{t.className='test on ok';t.innerHTML='<b>Exemple de rapport attendu</b> (la clé n’existe pas encore) :<br>✓ lire les utilisateurs · ✓ modifier les utilisateurs · ✓ lire les documents des utilisateurs (portraits)<br>✓ <b>pas</b> administrateur · ✓ <b>pas</b> le droit « salaires » · ✓ <b>pas</b> le droit de changer un mot de passe'},700)}
+function forme(k){document.getElementById('f-'+k).classList.toggle('on')}
+function tester(k,res){const t=document.getElementById('t-'+k),c=document.getElementById('c-'+k),e=c.querySelector('[data-etat]');
+  if(document.body.classList.contains('ferme')){t.className='test on err';t.innerHTML='Coffre verrouillé : <code>coffre.verrouille</code> — déverrouillez-le pour tester.';return}
+  t.className='test on run';t.textContent='Test en cours…';
+  setTimeout(()=>{if(res==='ok'){t.className='test on ok';t.innerHTML='Réception OK (12 ms) · envoi OK · '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});e.className='chip ok';e.textContent='connectée'}
+    else{t.className='test on err';t.innerHTML='Échec : <code>authentification refusée (535)</code>. Le serveur répond, mais l’identifiant ou le mot de passe est faux. Rien n’a été modifié.';e.className='chip dng';e.textContent='en échec'}},700)}
+function doli(s){if(s!=="lie"){const a=document.querySelector("#ph-seg .on");if(a&&a.dataset.s==="doli")document.querySelector("#ph-seg [data-s=fp]").click()}document.body.classList.toggle("dl-absent",s==="absent");document.body.classList.toggle("dl-non",s==="non");document.querySelectorAll("#doli-seg button").forEach(b=>b.classList.toggle("on",b.dataset.d===s))}
+function coffre(s){document.body.classList.toggle('ferme',s==='ferme');document.querySelectorAll('#coffre-seg button').forEach(b=>b.classList.toggle('on',b.dataset.c===s));
+  document.getElementById('todo-coffre').style.display=s==='ferme'?'flex':'none';
+  document.querySelectorAll('.needs-coffre [data-etat]').forEach(e=>{e.className=s==='ferme'?'chip warn':'chip ok';e.textContent=s==='ferme'?'illisible':'connectée'})}
+document.querySelectorAll('#doli-seg button').forEach(b=>b.onclick=()=>doli(b.dataset.d));
+document.querySelectorAll('#coffre-seg button').forEach(b=>b.onclick=()=>coffre(b.dataset.c));
+document.querySelectorAll('#vue-seg button').forEach(b=>b.onclick=()=>{document.body.classList.toggle('simple',b.dataset.v==='simple');document.querySelectorAll('#vue-seg button').forEach(x=>x.classList.toggle('on',x===b));if(b.dataset.v==='simple'&&document.getElementById('p-audit').classList.contains('on'))go('accueil')});
+function openPw(){document.getElementById('m-pw').classList.add('on')}
+function openKey(){kStep(1);document.getElementById('m-key').classList.add('on')}
+function fermer(id){document.getElementById(id).classList.remove('on')}
+function kStep(n){[1,2,3].forEach(i=>{document.getElementById('k'+i).style.display=i===n?'block':'none';document.getElementById('ks'+i).classList.toggle('on',i<=n)});document.getElementById('k-n').textContent=n}
+function pwForce(v){const c=document.getElementById('pw-c').value;let s=0;if(v.length>=12)s++;if(/[A-Z]/.test(v)&&/[a-z]/.test(v))s++;if(/\d/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;
+  const m=document.getElementById('pw-m');m.style.width=(v?(s+(v.length>=12?0:0))*25:0)+'%';m.style.background=s<2?'var(--danger)':s<4?'var(--warn)':'var(--ok)';
+  document.getElementById('pw-t').textContent=v.length<12?'Trop court (12 minimum)':s<4?'Correct — ajoutez majuscule, chiffre ou symbole':'Robuste';
+  document.getElementById('pw-go').disabled=!(v.length>=12&&s>=3&&v===c)}
+function toast(t){const e=document.getElementById('toast');document.getElementById('toast-t').textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2600)}
+function tg(b){b.classList.toggle('on');dirty()}
+function dirty(){document.getElementById('sb').classList.add('on')}
+function sbOff(){document.getElementById('sb').classList.remove('on')}
+document.querySelectorAll('.seg:not([id])').forEach(s=>s.querySelectorAll('button').forEach(b=>b.onclick=()=>{s.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');dirty()}));
+</script>
+</body>
+</html>
+<!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
+
+<!-- ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════ -->
+<!-- CN : tout ce fichier est du nexus : à compléter -->
+<!-- EC : néant (aucun point d'évolution déclaré pour l'instant) -->
+<!-- LIEN : à compléter (contrat, fichiers voisins) -->
