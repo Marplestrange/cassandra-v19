@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #ca84ff
+# VERSION CN : 0.1.0  #3d4aff
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du lot 2 de la maquette d'Évolution : catalogue scellé, paquets épinglés par empreinte, retour arrière, jamais actif d'office.
 # MÉTHODE    : un exécuteur de banc pour le réseau (aucun paquet n'est téléchargé) ; un vrai environnement virtuel pour la mécanique.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=ca84ff ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=3d4aff ▼▼▼
 """Bancs de l'installateur : ce qu'il refuse, l'ordre de ses étapes, ce qu'il défait."""
 import json
 import sys
@@ -158,6 +158,32 @@ class Installation(Banc):
         self.assertEqual([m["installe"] for m in i.disponibles()], [False])
         i.installer("openevolve")
         self.assertEqual([m["installe"] for m in i.disponibles()], [True])
+
+
+class ArchiveEtInterpreteur(Banc):
+    def test_une_archive_https_avec_son_empreinte_est_un_paquet_valide(self):
+        I.verifier_entree(entree(paquets=[{"requis": "codeevolve @ https://codeload.github.com/inter-co/science-codeevolve/tar.gz/abc123", "empreintes": [H]}]))
+
+    def test_une_archive_http_ou_sans_empreinte_est_refusee(self):
+        for p in ({"requis": "x @ http://exemple.fr/x.tgz", "empreintes": [H]}, {"requis": "x @ https://exemple.fr/x.tgz", "empreintes": []}, {"requis": "x @ file:///etc/passwd", "empreintes": [H]},
+                  {"requis": "x @ https://exemple.fr/x.tgz; rm -rf /", "empreintes": [H]}):
+            with self.assertRaises(I.InstallationRefusee, msg=p):
+                I.verifier_entree(entree(paquets=[p]))
+
+    def test_l_interpreteur_du_moteur_sert_a_creer_son_venv(self):
+        faux_python = str(self.base / "python3.13")
+        Path(faux_python).write_text("", encoding="utf-8")
+        r = self.inst(self.catalogue(entree(interpreteur=faux_python)), executer=self.faux()).installer("openevolve")
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(self.journal[0][0], faux_python)
+
+    def test_un_interpreteur_absent_ou_dangereux_est_refuse(self):
+        r = self.inst(self.catalogue(entree(interpreteur=str(self.base / "absent-python"))), executer=self.faux()).installer("openevolve")
+        self.assertFalse(r["ok"])
+        self.assertIn("absent", r["etapes"][-2]["detail"])
+        for mauvais in ("python3", "/usr/bin/python3; rm -rf /", "/usr/bin/py thon", 3):
+            with self.assertRaises(I.InstallationRefusee, msg=mauvais):
+                I.verifier_entree(entree(interpreteur=mauvais))
 
 
 class VraiEnvironnement(Banc):

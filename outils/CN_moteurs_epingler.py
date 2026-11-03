@@ -7,13 +7,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : outils
 # ZONE       : CN
-# VERSION CN : 0.1.0  #b8b82b
+# VERSION CN : 0.1.0  #e68ea5
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Résout un paquet de moteur dans un environnement neuf, télécharge chaque dépendance, calcule son empreinte sha256 et écrit l'entrée du catalogue des moteurs (et son sceau si on donne la clé).
 # MÉTHODE    : un venv jetable ; `pip install` pour résoudre, `pip freeze` pour figer, `pip download --no-deps` paquet par paquet pour empreinter ; les empreintes sont celles des fichiers de CETTE plateforme.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=b8b82b ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=e68ea5 ▼▼▼
 """Usage :
   python outils/CN_moteurs_epingler.py --id openevolve --nom OpenEvolve --paquet openevolve==0.4.1 --adaptateur CN_adaptateur_openevolve \\
          --catalogue <données>/moteurs-catalogue.json [--cle <fichier de la clé de l'instance>]
@@ -43,15 +43,24 @@ def _python(venv):
     return str(Path(venv) / ("Scripts" if sys.platform.startswith("win") else "bin") / ("python.exe" if sys.platform.startswith("win") else "python"))
 
 
-def epingler(paquet: str, ident: str, nom: str, adaptateur: str, version: str = "") -> dict:
+def _empreinte_url(url: str) -> str:
+    import urllib.request
+    with urllib.request.urlopen(url, timeout=120) as r:
+        return "sha256:" + hashlib.sha256(r.read()).hexdigest()
+
+
+def epingler(paquet: str, ident: str, nom: str, adaptateur: str, version: str = "", interpreteur: str = "") -> dict:
     with tempfile.TemporaryDirectory(prefix="cn_epingler_") as tmp:
         venv = os.path.join(tmp, "v")
-        _lancer([sys.executable, "-m", "venv", venv])
+        _lancer([interpreteur or sys.executable, "-m", "venv", venv])
         py = _python(venv)
         _lancer([py, "-m", "pip", "install", "--disable-pip-version-check", "--no-input", paquet])
         gel = [l.strip() for l in _lancer([py, "-m", "pip", "freeze", "--disable-pip-version-check"]).splitlines() if "==" in l and not l.startswith("-e")]
         paquets = []
         for requis in gel:
+            if " @ " in requis:                                                  # un paquet installé depuis une archive : son empreinte est celle de l'archive
+                paquets.append({"requis": requis, "empreintes": [_empreinte_url(requis.split(" @ ", 1)[1])]})
+                continue
             dossier = os.path.join(tmp, "dl", requis.replace("==", "-").replace("/", "_"))
             os.makedirs(dossier)
             _lancer([py, "-m", "pip", "download", "--disable-pip-version-check", "--no-input", "--no-deps", "-d", dossier, requis])
@@ -59,21 +68,25 @@ def epingler(paquet: str, ident: str, nom: str, adaptateur: str, version: str = 
             if not fichiers:
                 raise SystemExit("rien de téléchargé pour %s" % requis)
             paquets.append({"requis": requis, "empreintes": ["sha256:" + hashlib.sha256(open(os.path.join(dossier, f), "rb").read()).hexdigest() for f in fichiers]})
-    return {"id": ident, "nom": nom, "version": version or paquet.split("==")[-1], "adaptateur": adaptateur, "paquets": paquets, "plateforme": sys.platform}
+    entree = {"id": ident, "nom": nom, "version": version or paquet.split("==")[-1].split(" @ ")[0], "adaptateur": adaptateur, "paquets": paquets, "plateforme": sys.platform}
+    if interpreteur:
+        entree["interpreteur"] = interpreteur
+    return entree
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--id", required=True)
     ap.add_argument("--nom", required=True)
-    ap.add_argument("--paquet", required=True, help="un paquet épinglé, par ex. openevolve==0.4.1")
+    ap.add_argument("--paquet", required=True, help="un paquet épinglé, par ex. openevolve==0.4.1, ou une archive : 'codeevolve @ https://codeload.github.com/…/tar.gz/<commit>'")
+    ap.add_argument("--interpreteur", default="", help="un autre Python que celui de Cassandra (chemin absolu), pour un moteur qui l'exige")
     ap.add_argument("--adaptateur", required=True, help="le module d'adaptateur (orfan/adaptateurs/)")
     ap.add_argument("--catalogue", required=True)
     ap.add_argument("--cle", help="le fichier de la clé de l'instance : si donné, le catalogue est scellé")
     a = ap.parse_args()
-    if "==" not in a.paquet:
-        raise SystemExit("le paquet doit être épinglé (nom==version)")
-    entree = epingler(a.paquet, a.id, a.nom, a.adaptateur)
+    if "==" not in a.paquet and " @ https://" not in a.paquet:
+        raise SystemExit("le paquet doit être épinglé (nom==version, ou nom @ https://archive)")
+    entree = epingler(a.paquet, a.id, a.nom, a.adaptateur, interpreteur=a.interpreteur)
     chemin = Path(a.catalogue)
     cat = json.loads(chemin.read_text(encoding="utf-8")) if chemin.exists() else {"moteurs": []}
     cat["moteurs"] = [m for m in cat.get("moteurs", []) if m.get("id") != a.id] + [entree]

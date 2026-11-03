@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #4d97c3
+# VERSION CN : 0.1.0  #483fb4
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=4d97c3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=483fb4 ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -417,6 +417,11 @@ class _Travailleur:
             prefixe = list(prefixe) + [x for p in lecture if os.path.exists(p) for x in ("--ro-bind", str(p), str(p))]                                   # lève BacIndisponible AVANT de créer quoi que ce soit si le bac exigé manque
         self._dossier = tempfile.mkdtemp(prefix="cn_ec_")
         env = {k: v for k, v in os.environ.items() if k in ("SYSTEMROOT", "PATH", "TEMP", "TMP", "LANG", "LC_ALL")}      # rien d'autre du serveur : pas de clé, pas de jeton
+        if script:                                                                  # un moteur externe attend un « domicile » (Shinka y range un cache) : le dossier privé du processus, jamais celui de l'utilisateur
+            if prefixe and os.path.basename(prefixe[0]) == "bwrap":
+                prefixe = list(prefixe) + ["--setenv", "HOME", "/tmp", "--setenv", "PATH", "/usr/bin:/bin"]       # le bac vide l'environnement : le domicile et le chemin se redonnent par lui
+            else:
+                env["HOME"] = self._dossier
         lancement = [script, *arguments] if script else [str(racine / "CN_ec_worker.py"), str(racine / "CN_points.py")]
         self.proc = subprocess.Popen([*prefixe, executable or sys.executable, "-I", *lancement, str(int(memoire_mo) * 1024 * 1024)],
                                      stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, cwd=self._dossier, env=env, bufsize=0,

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #f91790
+# VERSION CN : 0.1.0  #d0ad39
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Installe un moteur externe d'Évolution depuis un catalogue scellé : environnement à part, paquets épinglés par empreinte, banc d'import, retour arrière complet au moindre échec.
 # MÉTHODE    : catalogue JSON scellé par HMAC (la clé de l'instance) ; un venv par moteur ; `pip --require-hashes` ; chaque étape est journalisée ; un échec défait tout ce qui précède.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=f91790 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d0ad39 ▼▼▼
 """Lot 2 de la maquette d'Évolution : installer un moteur autre qu'Orfan sans lui faire confiance.
 
 Rien ne s'installe qui ne soit dans le CATALOGUE, et le catalogue n'est cru que scellé (HMAC de la clé de l'instance) : un catalogue modifié ou sans sceau est refusé.
@@ -26,6 +26,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -34,7 +35,7 @@ import time
 from pathlib import Path
 
 _IDENT = re.compile(r"^[a-z][a-z0-9_-]{1,40}$")
-_REQ = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*==[A-Za-z0-9._+!-]+$")
+_REQ = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*(==[A-Za-z0-9._+!-]+| @ https://[A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]+)$")       # « nom==version » ou « nom @ https://archive » (toujours avec ses empreintes)
 _ADAPTATEUR = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")
 _EMPREINTE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
@@ -70,9 +71,11 @@ def verifier_entree(e: dict) -> dict:
         raise InstallationRefusee("identifiant de moteur invalide dans le catalogue")
     if not _ADAPTATEUR.match(str(e.get("adaptateur", ""))):
         raise InstallationRefusee("adaptateur invalide : %r" % (e.get("adaptateur"),))
+    if e.get("interpreteur") is not None and (not isinstance(e["interpreteur"], str) or not os.path.isabs(e["interpreteur"]) or re.search(r"[\s;&|`$<>]", e["interpreteur"])):
+        raise InstallationRefusee("interpréteur invalide : un chemin absolu, sans espace ni caractère de commande (%r)" % (e.get("interpreteur"),))
     for p in e.get("paquets", []):
         if not _REQ.match(str(p.get("requis", ""))):
-            raise InstallationRefusee("paquet non épinglé (« nom==version » exigé) : %r" % (p.get("requis"),))
+            raise InstallationRefusee("paquet non épinglé (« nom==version » ou « nom @ https://… » exigé) : %r" % (p.get("requis"),))
         emps = p.get("empreintes") or []
         if not emps or not all(_EMPREINTE.match(str(h)) for h in emps):
             raise InstallationRefusee("paquet sans empreinte (sha256 exigée) : %s" % p["requis"])
@@ -129,7 +132,10 @@ class Installateur:
             return {"ok": False, "etapes": etapes}
         try:
             racine.mkdir(parents=True)
-            code, sortie = self._exec([sys.executable, "-m", "venv", str(racine / "venv")], self.delai_s, None)
+            interpreteur = entree.get("interpreteur") or sys.executable                  # un moteur peut exiger un autre Python (CodeEvolve : 3.13.5) que l'admin a posé
+            if entree.get("interpreteur") and not os.path.isfile(interpreteur):
+                raise InstallationRefusee("l'interpréteur du moteur est absent : %s (le poser d'abord, par exemple `uv python install`)" % interpreteur)
+            code, sortie = self._exec([interpreteur, "-m", "venv", str(racine / "venv")], self.delai_s, None)
             if not etape("environnement à part", code == 0, sortie if code else str(racine / "venv")):
                 raise InstallationRefusee("environnement non créé")
             python = racine / "venv" / ("Scripts" if sys.platform.startswith("win") else "bin") / ("python.exe" if sys.platform.startswith("win") else "python")

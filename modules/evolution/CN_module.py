@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #82b789
+# VERSION CN : 0.5.0  #2daf12
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : expose l'évolution du noyau comme capacités de Cassandra : cibles, état, proposer, retour, visiter, et un moteur qui fait avancer les paliers.
 # MÉTHODE    : une coquille mince : tout ce qui décide vit dans noyau/CN_evolution.py ; le moteur de recherche est chargé par son chemin d'import (le contrat d'adaptateur).
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=82b789 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=2daf12 ▼▼▼
 """Le module « Évolution » : la coquille entre Cassandra (droits, paliers, preuves, retours, réglages) et le service d'évolution du noyau.
 
 Il ne propose rien lui-même et ne juge rien : le moteur de recherche (Orfan) rend du texte, l'évaluateur du noyau le juge, le routage du noyau le met en service.
@@ -304,6 +304,30 @@ def brancher(ctx):
     def prouver_jugement(c, res):
         return res.get("verdict") in ("accepte", "refuse", "indetermine")
 
+    def proposer_prompt(c, reference="", consigne="", contrat=None, valeurs=None, poison="", combien=2):
+        """Un moteur de genome texte : le modèle (rôle stratège) réécrit un prompt, le juge des prompts décide de chaque réécriture. Rien n'est écrit : des propositions jugées."""
+        gn = importlib.import_module("noyau.CN_genomes")
+        return gn.proposer_prompt(str(reference), str(consigne), lambda p: appeler_modele(p, "strategie"), contrat_sortie=contrat, valeurs=dict(valeurs or {}), poison=str(poison or "") or None,
+                                  combien=int(combien))
+
+    def prouver_proposition_texte(c, res):
+        return isinstance(res.get("propositions"), list) and isinstance(res.get("refusees"), list)
+
+    def proposer_politique(c, reference=None, intervalles=None, planchers=None, historique=None):
+        """Une recherche locale sur un seuil, d'après ce que l'utilisateur a acquitté sans agir. Aucun modèle, aucune écriture."""
+        gn = importlib.import_module("noyau.CN_genomes")
+        return gn.proposer_politique(dict(reference or {}), dict(intervalles or {}) or None, dict(planchers or {}) or None, [dict(h) for h in (historique or [])])
+
+    def prouver_politique(c, res):
+        return isinstance(res.get("politique"), dict) and res.get("jugement", {}).get("verdict") in ("accepte", "refuse")
+
+    # ── un compte supprimé emporte ses entrées du corpus de rejeu (le corpus ne garde pas ce qu'un utilisateur parti a fait) ──
+    def purge_sur_suppression(c2, ev):
+        compte = str(ev.get("objet_id") or (ev.get("donnees") or {}).get("compte") or "").strip().lower()
+        if compte:
+            r = evo.rejeu.purger_compte(compte)
+            registre().journaliser("purge", "compte supprimé « %s » : %s entrée(s) retirée(s) du corpus" % (compte, r.get("entrees", 0)))
+
     # ── la cage ──
     def cage(c):
         P = importlib.import_module("noyau.CN_points")
@@ -415,6 +439,9 @@ def brancher(ctx):
     ctx.implementer("course_garder", course_garder, prouver_gardee, sans_retour)
     ctx.implementer("juger_prompt", juger_prompt, prouver_jugement, sans_retour)
     ctx.implementer("juger_politique", juger_politique, prouver_jugement, sans_retour)
+    ctx.implementer("proposer_prompt", proposer_prompt, prouver_proposition_texte, sans_retour)
+    ctx.implementer("proposer_politique", proposer_politique, prouver_politique, sans_retour)
+    ctx.moteur("purge_comptes", purge_sur_suppression)
     ctx.implementer("cage", cage)
     ctx.implementer("bac_eprouver", bac_eprouver, prouver_bac, sans_retour)
     ctx.implementer("moteur_desinstaller", moteur_desinstaller, prouver_desinstallation, sans_retour)

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #99062d
+# VERSION CN : 0.1.0  #552739
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs des lots 3 et 4 de la maquette d'Évolution : cascade, affectations, plafonds, course, juge des prompts et des politiques, objectifs multiples, moteurs évolutif et frugal.
 # MÉTHODE    : de vrais processus de moteur et un vrai noyau ; le modèle est une fonction de banc ; le temps du registre est une horloge de banc.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=99062d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=552739 ▼▼▼
 """Bancs du lot 3 (course, cascade, affectations, budget par moteur) et du lot 4 (juges, objectifs multiples)."""
 import json
 import sys
@@ -298,7 +298,7 @@ class DansLeModule(TM.Banc):
         return self.ex("moteurs")["resultat"]
 
     def test_la_cascade_propose_par_le_premier_etage_et_attribue_la_piece(self):
-        r = self.ex("proposer", {"point": "labo.somme_min", "moteur": "cascade"})
+        r = self.proposer_stable({"point": "labo.somme_min", "moteur": "cascade"})
         self.assertEqual(r["statut"], "faite", r)
         res = r["resultat"]
         self.assertTrue(res["ok"], res)
@@ -311,7 +311,7 @@ class DansLeModule(TM.Banc):
     def test_un_plafond_atteint_saute_l_etage_et_le_dit(self):
         self.ex("moteur_plafonner", {"moteur": "orfan", "jetons_jour": 10})
         self.registre().compter("orfan", {"jetons": 50})
-        res = self.ex("proposer", {"point": "labo.somme_min", "moteur": "cascade"})["resultat"]
+        res = self.proposer_stable({"point": "labo.somme_min", "moteur": "cascade"})["resultat"]
         sautes = [e for e in res["etages"] if e["id"] == "orfan/deterministe"]
         self.assertTrue(sautes[0]["saute"])
         self.assertIn("plafond de 10 jetons", sautes[0]["raison"])
@@ -321,7 +321,7 @@ class DansLeModule(TM.Banc):
     def test_un_etage_force_ignore_la_cascade_et_un_point_se_rend_a_la_cascade(self):
         a = self.ex("affecter", {"point": "labo.somme_min", "etage": "frugal"})
         self.assertEqual(a["statut"], "faite", a)
-        res = self.ex("proposer", {"point": "labo.somme_min", "moteur": "cascade"})["resultat"]
+        res = self.proposer_stable({"point": "labo.somme_min", "moteur": "cascade"})["resultat"]
         self.assertEqual([e["id"] for e in res["etages"]], ["frugal"])
         self.assertEqual(res["moteur"], "frugal")
         self.assertNotEqual(self.ex("affecter", {"point": "labo.somme_min", "etage": "magie"})["statut"], "faite")

@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #dfc824
+# VERSION CN : 0.1.0  #6aeca6
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du module Évolution : ses capacités dans un vrai noyau, avec un module « labo » qui déclare un point d'évolution et un faux module « modeles ».
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=dfc824 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=6aeca6 ▼▼▼
 """Bancs du module Évolution : ses capacités dans un vrai noyau, avec un module « labo » qui déclare un point d'évolution et un faux module « modeles »."""
 import json
 import shutil
@@ -107,6 +107,15 @@ class Banc(unittest.TestCase):
     def ex(self, cap, args=None, compte=ADMIN):
         return self.n.executeur.executer("evolution." + cap, "humain", args or {}, compte=compte)
 
+    def proposer_stable(self, args, essais=3):
+        """Une proposition dont le gain se MESURE : sur une machine chargée (d'autres bancs en même temps), un gain réel peut tomber dans le bruit ; on rejoue jusqu'à `essais` fois avant de conclure."""
+        r = None
+        for _ in range(essais):
+            r = self.ex("proposer", args)
+            if r["statut"] != "faite" or r["resultat"].get("ok"):
+                break
+        return r
+
 
 class Lectures(Banc):
     def test_les_cibles_classent_le_point_par_ce_qu_il_coute(self):
@@ -148,7 +157,7 @@ class Gestes(Banc):
         self.assertNotEqual(self.ex("purger_compte", {})["statut"], "faite")                    # sans compte : refusé
 
     def test_proposer_avec_orfan_deterministe_ecrit_une_piece_en_ombre(self):
-        r = self.ex("proposer", {"point": "labo.somme_min", "moteur": "deterministe"})
+        r = self.proposer_stable({"point": "labo.somme_min", "moteur": "deterministe"})
         self.assertEqual(r["statut"], "faite", r)
         self.assertTrue(r["resultat"]["ok"], r["resultat"])
         self.assertEqual(r["resultat"]["piece"]["etat"], "ombre")

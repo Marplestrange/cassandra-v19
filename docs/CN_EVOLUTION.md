@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution V19 — note de conception -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=c9407b ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=722c7d ▼▼▼ -->
 # Évolution V19 — note de conception
 
 Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le moteur V18 (diff d'un fichier unique `cassandra.py`), qui n'a plus d'objet.
@@ -190,7 +190,17 @@ Tout ce que la maquette `docs/CN_maquette-evolution-moteurs.html` montrait exist
 - **Objectifs multiples** (`noyau/CN_objectifs.py`) : latence, mémoire (pic d'allocation, mesuré dans le travailleur), taille du code ; poids et tolérance réglables ; frontière de Pareto puis meilleur score pesé. Par défaut seule la latence pèse : le choix est celui d'avant.
 - **Orfan dans la cage par défaut** (`moteurs_isoles` = oui). La cascade est le moteur par défaut (`moteur_defaut` = cascade) ; les valeurs d'avant (`deterministe`, `modele`, `les_deux`) marchent encore.
 
-**Reste, à dire franchement** : OpenEvolve n'a tourné qu'avec un modèle de banc (aucun vrai modèle du registre) ; les autres moteurs externes de la maquette (ShinkaEvolve, CodeEvolve, GEPA) n'ont pas d'adaptateur : le relais « OpenAI » de la cage et l'installateur sont prêts à les recevoir, il manque leur code d'adaptateur ; un genome prompt/politique n'a pas encore de moteur qui en propose (les juges existent, rien ne les appelle seul) ; le plafond mémoire d'un moteur externe est quatre fois celui d'un moteur de la maison ; la purge d'un compte supprimé n'est toujours pas branchée.
+**Ajouts du même jour (3 novembre, suite)** :
+- **GEPA et ShinkaEvolve réels, de bout en bout comme OpenEvolve** : adaptateurs `CN_adaptateur_gepa.py` (la réflexion de GEPA est une fonction qui appelle le relais) et `CN_adaptateur_shinka.py` (Shinka parle au serveur « OpenAI » local par son identifiant `local/<modèle>@<url>`, son script d'évaluation est écrit à la volée, ses programmes sont relus dans sa base). Installés depuis un catalogue scellé (GEPA 1 paquet ; ShinkaEvolve 102 paquets épinglés par empreinte), exécutés sous bubblewrap sur Orion, avec un modèle de banc.
+- **Un moteur externe a son domicile** : le bac vide l'environnement (`--clearenv`), donc `HOME` et `PATH` se redonnent par `--setenv` ; sans cela Shinka mourait sur `~/docker_cache`.
+- **Genomes texte** (`noyau/CN_genomes.py`) : `proposer_prompt` (un modèle réécrit, le juge des prompts décide de chaque réécriture, seules les acceptées sont proposées) et `proposer_politique` (recherche locale sur un seuil d'après ce que l'utilisateur a acquitté sans agir : le meilleur seuil qui garde toutes les alertes suivies d'une action, dans l'intervalle et au-dessus du plancher du noyau). Dans la vue Juges de l'écran.
+- **La purge d'un compte supprimé est branchée** : le module écoute `compte.supprime` et retire les entrées de ce compte du corpus de rejeu (un compte restauré ne retrouve pas ce corpus).
+- **L'installateur accepte un interpréteur propre à un moteur** (`interpreteur`, chemin absolu posé par l'admin, par ex. `uv python install 3.13`) et un paquet en archive (`nom @ https://…`, toujours avec ses empreintes) ; l'outil d'épinglage sait les écrire.
+
+**Reste, à dire franchement** :
+- **CodeEvolve** (le vrai, `inter-co/science-codeevolve`, Python ≥ 3.13.5 ; le paquet « codeevolve » de PyPI est un autre projet) : l'adaptateur `CN_adaptateur_codeevolve.py` est écrit d'après son interface de ligne de commande (dossier d'entrée, configuration, `API_BASE`/`API_KEY`), l'installateur sait lui donner son interpréteur et l'épingler par archive, mais il n'a JAMAIS tourné : installer son code depuis GitHub sur Orion a été refusé par la garde de la session, à valider par Drisse.
+- Aucun moteur externe n'a tourné avec un vrai modèle du registre (un modèle de banc seulement).
+- Le plafond mémoire d'un moteur externe est quatre fois celui d'un moteur de la maison.
 
 ## 3. Rôles (pas de nouvel agent)
 

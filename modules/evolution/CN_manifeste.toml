@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.5.0  #cd53ce
+# VERSION CN : 0.5.0  #811e24
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=cd53ce ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=811e24 ▼▼▼
 [module]
 id = "evolution"
 nom = "Évolution"
@@ -159,6 +159,28 @@ paliers = ["raconter", "auto"]
 qui = ["humain", "cassandra", "itare"]
 
 [[capacites]]
+id = "proposer_prompt"
+libelle = "Proposer des réécritures d'un prompt selon une consigne : un modèle réécrit, le juge des prompts décide de chacune (variables, interdits, longueur, schéma, cas piégés) ; rien n'est écrit"
+risque = "faible"
+droit = "agir"
+perimetre = ["aucune écriture : des appels de modèle ; le résultat est une liste de propositions jugées"]
+preuve = "chaque réécriture rendue porte son jugement"
+retour = "aucun : une proposition n'écrit rien"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
+id = "proposer_politique"
+libelle = "Proposer un réglage de seuil d'après ce que l'utilisateur a acquitté sans agir : le meilleur seuil qui garde toutes les alertes suivies d'une action, dans l'intervalle et au-dessus du plancher du noyau ; rien n'est écrit"
+risque = "faible"
+droit = "agir"
+perimetre = ["aucune écriture, aucun modèle"]
+preuve = "la politique proposée porte son jugement"
+retour = "aucun : une proposition n'écrit rien"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra", "itare"]
+
+[[capacites]]
 id = "juger_politique"
 libelle = "Juger une politique proposée : mêmes clés, valeurs dans leur intervalle, planchers du noyau tenus, rejeu des décisions passées"
 risque = "faible"
@@ -276,6 +298,16 @@ ecran = "cockpit"
 ordre = 20
 role = "admin"
 icone = "dna"
+
+[evenements]
+ecoute = ["compte.supprime"]
+
+[[moteurs]]
+id = "purge_comptes"
+libelle = "Retire du corpus de rejeu les entrées d'un compte supprimé : le corpus ne garde pas ce qu'un utilisateur parti a fait"
+mode = "evenement"
+sur = ["compte.supprime"]
+duree_max_s = 20
 
 [[moteurs]]
 id = "tick"
