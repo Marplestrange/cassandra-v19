@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #6a28ff
+// VERSION CN : 0.1.0  #f3fa37
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : tout le code de l'interface extrait de la V18, versionné.
 // MÉTHODE    : GÉNÉRÉ par outils/ui/CN_assembler.py à partir de docs/v18/CN_interface_v18.html : ne pas modifier à la main, modifier la source ou l'assembleur.
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=6a28ff ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f3fa37 ▼▼▼
 
 // LOT 8 (B31) : UN ÉTAT PAR ÉCRAN. Ce que chaque écran retient vit ici, sous son nom — plus une
 // globale `window._…` par variable. Le préfixe du nom dit l'écran ; `divers` garde ce qui n'en a pas.
@@ -1808,6 +1808,7 @@ function _navEgal(a,b){
     return a.sub.f===b.sub.f && String(a.sub.a)===String(b.sub.a);
 }
 function navPousser(e){
+    if(!e || !e.tab) return;                       // une entrée sans page ne mène nulle part : elle faisait un « précédent » sans nom
     if(_navEgal(ETAT.navigation._navPile[ETAT.navigation._navPos], e)) return;
     ETAT.navigation._navPile=ETAT.navigation._navPile.slice(0, ETAT.navigation._navPos+1);
     ETAT.navigation._navPile.push(e);
