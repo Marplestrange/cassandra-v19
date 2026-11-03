@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : courrier
 # ZONE       : CN
-# VERSION CN : 0.1.3  #82028d
+# VERSION CN : 0.1.4  #dfa26f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.3 empreinte=82028d ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.4 empreinte=dfa26f ▼▼▼
 """Le courrier : la boîte IMAP de chaque compte, son cache, ses gestes, l'envoi.
 
 Porté de la V18 (`_imap_*`, `itare_mail_*`, `mail_*`, `_courrier_*`), avec ses leçons :
@@ -846,6 +846,20 @@ def brancher(ctx):
             pieces.append((d["chemin"], d.get("nom") or "piece"))
         return poster(e["destinataire"], e["objet"], e["corps"], "", "", "", pieces)
 
+    def envoyer_programme(c, message=0):
+        """Poste, tel quel, un message que sa personne a enregistré et qui est en partance (à la main, ou à l'heure dite). L'appelant ne fournit AUCUN contenu : seulement le numéro.
+        Le destinataire, l'objet, le texte et les pièces viennent du module des messages ; chaque pièce est relue par le carnet de fichiers (confinement des racines)."""
+        e = ctx.executer_lecture("messages.envoi_a_poster", message=int(message or 0))
+        if not e:
+            raise ValueError("ce message n'est pas en partance")
+        pieces = []
+        for p in (e.get("pieces") or []):
+            d = ctx.executer_lecture("ged.telecharger", source=p.get("source", ""), chemin=p.get("chemin", ""))
+            if not d or not d.get("chemin"):
+                raise ValueError("la pièce jointe « %s » n'existe plus" % str(p.get("nom") or p.get("chemin") or "")[:60])
+            pieces.append((d["chemin"], d.get("nom") or p.get("nom") or "piece"))
+        return poster(e["a"], e["objet"], e["corps"], e["cc"], e["repond_a_message"], e["references"], pieces)
+
     def poster(a, objet, texte, cc, repond_a_message, references, pieces=()):
         compte = compte_agit()
         hote = str(reglage("smtp_hote", compte)).strip()
@@ -1018,6 +1032,7 @@ def brancher(ctx):
     c.implementer("brouillon_creer", brouillon_creer, prouver_brouillon, defaire_brouillon, simuler=lambda x, objet="", **_: "préparerait le brouillon « %s »" % objet)
     c.implementer("envoyer", envoyer, prouver_envoye, defaire_envoye, simuler=lambda x, a="", objet="", **_: "enverrait « %s » à %s" % (objet, a))
     c.implementer("envoyer_mandat", envoyer_mandat, prouver_envoye, defaire_envoye, simuler=lambda x, envoi=0, **_: "posterait l'envoi autorisé n° %s" % envoi)
+    c.implementer("envoyer_programme", envoyer_programme, prouver_envoye, defaire_envoye, simuler=lambda x, message=0, **_: "posterait le message n° %s" % message)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

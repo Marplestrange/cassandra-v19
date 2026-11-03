@@ -1,0 +1,136 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# TITRE      : Manifeste du module Messages
+# LICENCE    : AGPL-3.0
+# AUTEUR     : Atek Drisse
+# GIT        : github.com/Marplestrange
+# MAIL       : marplestrange@cassandra.center
+# MODULE     : messages
+# ZONE       : CN
+# VERSION CN : 0.1.0  #30e659
+# VERSION EC : néant
+# EC LIÉES   : néant
+# RÔLE       : Les messages en cours et programmés : rédiger, enregistrer, envoyer à la main, programmer un départ.
+# MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
+# ══════════════════════════════════════════════════════════════════════════════
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=30e659 ▼▼▼
+[module]
+id = "messages"
+nom = "Messages"
+version = "0.1.0"
+noyau_min = "0.1.0"
+description = "Les messages qu'une personne rédige : enregistrés, relus, envoyés à la main, ou programmés pour partir seuls à l'heure dite. Un message est à sa personne et à elle seule. Ce qui part est ce qu'elle a enregistré ; le courrier ne reçoit qu'un numéro. Un message tiré d'un courrier reçu ne part jamais seul."
+confiance = "interne"
+famille = "echanges"
+importance = "optionnel"
+sans = "Plus de messages en cours ni de départ programmé : ce qui est enregistré reste, et rien ne part seul."
+requiert = ["courrier"]
+
+[[droits]]
+id = "utiliser"
+libelle = "Utiliser Messages : rédiger, enregistrer, envoyer, programmer"
+defaut = true
+
+[[objets]]
+type = "message"
+libelle = "Un message en cours de rédaction ou programmé"
+
+[permissions]
+stockage = true
+lectures = true
+agir = true
+
+[[moteurs]]
+id = "minuterie"
+libelle = "Fait partir les messages programmés dont l'heure est venue (le courrier poste, sur le serveur d'envoi de la personne) ; un échec retire la programmation et laisse le message intact"
+mode = "periodique"
+toutes_les_s = 60
+duree_max_s = 120
+
+[[capacites]]
+id = "liste"
+libelle = "Mes messages en cours : ceux qui sont prêts, ceux qui sont à finir"
+risque = "lecture"
+droit = "utiliser"
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "voir"
+libelle = "Un de mes messages en entier"
+risque = "lecture"
+droit = "utiliser"
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "destinataires"
+libelle = "Les correspondants de mon carnet qu'on peut proposer en écrivant (pour la personne qui écrit ; jamais pour un modèle)"
+risque = "lecture"
+droit = "utiliser"
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "envoi_a_poster"
+libelle = "Le message tel qu'il doit partir : réservé au courrier, qui ne reçoit de l'appelant qu'un numéro"
+risque = "lecture"
+droit = "utiliser"
+qui = ["humain", "compte", "cassandra"]
+
+[[capacites]]
+id = "save"
+libelle = "Enregistrer un message (le créer ou le remplacer) ; le modifier retire sa programmation"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un message de mon compte", "20 destinataires au plus", "rien ne part"]
+preuve = "relire le message : il appartient à mon compte"
+retour = "retirer le message neuf, ou remettre le message tel qu'il était"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "supprimer"
+libelle = "Supprimer un message en cours (il se restaure)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un message de mon compte qui n'est pas en train de partir"]
+preuve = "le message n'existe plus"
+retour = "remettre le message tel qu'il était"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "programmer"
+libelle = "Fixer l'heure de départ d'un message (il part seul, page fermée), ou la retirer en la laissant vide ; refusé pour un message tiré d'un courrier reçu"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["un message de mon compte, complet", "une heure AAAA-MM-JJ HH:MM"]
+preuve = "relire l'état et l'heure du message"
+retour = "remettre l'état et l'heure d'avant (un message déjà parti ne se rappelle pas)"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "preparer_envoi"
+libelle = "Mettre un message complet en partance, une fois relu et confirmé par sa personne : le courrier le postera sur son seul numéro"
+risque = "moyen"
+droit = "utiliser"
+perimetre = ["un message de mon compte, complet"]
+preuve = "relire l'état du message : en partance"
+retour = "remettre l'état d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+
+[[capacites]]
+id = "sortie"
+libelle = "Déclarer l'issue d'un envoi fait à la main : parti (avec son Message-ID) ou échoué (avec la raison)"
+risque = "faible"
+droit = "utiliser"
+perimetre = ["un message de mon compte"]
+preuve = "relire l'état du message"
+retour = "remettre l'état d'avant"
+paliers = ["raconter", "auto", "maitre"]
+qui = ["humain", "compte"]
+# ▲▲▲ FIN BORNE CN ▲▲▲
+
+# ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
+# CN : tout ce fichier est du nexus : à compléter
+# EC : néant (aucun point d'évolution déclaré pour l'instant)
+# LIEN : à compléter (contrat, fichiers voisins)
