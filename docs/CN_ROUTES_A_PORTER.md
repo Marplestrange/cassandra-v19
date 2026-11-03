@@ -12,7 +12,7 @@
 <!-- RÔLE       : Le relevé, par domaine, des routes V18 encore à porter en V19. -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=c15ab0 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=3bba0e ▼▼▼ -->
 # Routes V18 sans équivalent branché en V19
 
 Relevé du 02-11-2026 : les écrans repris de la V18 (`interface/CN_app.js`) appellent des routes `/api/…` que la couche de compatibilité (`interface/CN_compat.js` + `interface/routes/CN_*.js`) ne branche pas encore ; elles répondent 501 « pas encore porté ».
@@ -51,8 +51,7 @@ Dites telles quelles (la route répond, avec la raison — jamais un 501) :
 - `/api/fp/scans/run`, `configure`, `reports`, `report`, `/api/site/scan`, `/api/site/sauvegarde`, `/api/fp/websocket/apply`, `/api/fp/service/diagnose` (journal et vérification de configuration), `/api/site/thumb`, `/api/sites/act` (redémarrer, journaux) : ils demandent la commande `mogwai` ou des fichiers de root ; le courtier du module `fastpanel` n'a pas encore ces commandes. Reste à faire : une commande racine `mogwai` à table fermée (scan, backup run), puis ces routes.
 - `/api/securite/direct` : bannir une adresse ou un pays, la liste blanche, fermer un chemin d'un site, freiner un robot — pas encore portés (pare-feu du noyau et nginx) ; débannir, arrêter un service et lancer un outil le sont.
 
-## Bureau d'Itare, messagerie et outils — 127 routes
-
+## Bureau d'Itare, messagerie et outils — 104 routes
 Modules V19 proches : notes, canaux, telegram, canvas, coffre, notifications, journal, proactif, comptes. Fonctions : contacts (CardDAV, photos, documents), laboratoire, messages programmés, Telegram, Canva, carnet, préférences de notification, coffre personnel, agenda externe.
 
 **Porté dans cette section** (la V19 y répond autrement que par 501) : le carnet (`/api/carnet/*`, par le module notes), les réglages de la cloche (`/api/notif/*` : préférences, politique de canaux, sourdines, essai, webhook chiffré ; notifications 0.3.0),
@@ -61,30 +60,116 @@ les portraits, documents et vie privée d'une fiche du carnet (`/api/itare/conta
 Honnêtement, **ce qui reste est ci-dessous**. Limites connues de ce qui est porté : les canaux de la cloche (courriel, Telegram, webhook) n'envoient pas encore (la politique est enregistrée pour eux, l'essai le dit) ; `/api/notif/agir` répond qu'aucune action n'est attachée à une notification ;
 les fiches du coffre sont des documents JSON rangés dans la note sécurisée (l'application Bitwarden ne les voit pas comme des identifiants) et il n'y a plus de clé d'API personnelle ; `bcc` d'un message est enregistré mais le courrier ne le pose pas (comme en V18) ; `/api/msg/relire` et `/api/msg/fait` (relecture et faits relevés par un modèle) restent à porter.
 
-- `/api/autonomie` (1) : `/recit`
-- `/api/canva` (6) : `/brancher`, `/creer`, `/debrancher`, `/designs`, `/etat`, `/reconcilier`
-- `/api/canvas` (14) : `/amorcer`, `/ext/apercu`, `/ext/etat`, `/ext/lister`, `/geste`, `/importer`, `/itare`, `/portes`, `/registre`, `/relier`, `/sorties`, `/sortir`, `/vivante/poser`, `/vivante/rejouer`
-- `/api/comptes` (2) : `/dossier/supprimer`, `/dossiers`
-- `/api/conv` (1) : `/ecrire`
-- `/api/iso` (1) : `/orphelines`
-- `/api/ita` (7) : `/basculer`, `/commencer`, `/delier`, `/ident`, `/reconnaitre`, `/relancer`, `/valider`
-- `/api/itare` (35) : `/bureau/suggestions`, `/contact/autolink`, `/contact/carddav`, `/contact/carddav/delier`, `/contact/carddav/importer`, `/contact/carddav/relier`, `/contact/propositions`, `/contact/site/apercu`, `/contact/site/importer`, `/contact/sites`, `/draft/compose`, `/event/prep`, `/mail/avatars`, `/mail/avatars/oublier`, `/mail/chercher`, `/mail/link`, `/mail/media`, `/mail/media/index`, `/mail/media/texte`, `/mail/piece/ged`, `/mail/projet/suggerer`, `/mail/relance`, `/mail/rule/delete`, `/mail/rule/save`, `/mail/rule/suggest`, `/mail/rules`, `/mail/rules/apply`, `/mail/schedule`, `/mail/summary`, `/mail/thread`, `/project/ask`, `/project/search`, `/project/suggest`, `/task/creneau`, `/task/from`
-- `/api/journal` (5) : `/act`, `/anomalies`, `/postmortem`, `/postmortem/save`, `/purge`
-- `/api/lab` (14) : `/assign`, `/chat`, `/contexte`, `/delete`, `/etabli`, `/modes`, `/piece`, `/piece/ged`, `/piece/oter`, `/pieces`, `/pull`, `/pull_status`, `/setmodel`, `/sources`
-- `/api/liens` (2) : ``, `/graphe`
-- `/api/mail` (3) : `/recap_now`, `/settings`, `/test`
-- `/api/me` (9) : `/agenda/detach`, `/agenda/save`, `/deverrouiller`, `/history`, `/photo`, `/telegram/brancher`, `/telegram/cible`, `/telegram/detacher`, `/telegram/envoyer`
-- `/api/modeles` (1) : `/migrer`
-- `/api/msg` (2) : `/fait`, `/relire`
-- `/api/notes` (1) : `/tache/rappel`
-- `/api/notif` (1) : `/agir`
-- `/api/proactive` (3) : `/act`, `/investigate`, `/snooze`
-- `/api/ranger` (1) : ``
-- `/api/rappel` (1) : `/comprendre`
-- `/api/reglages` (1) : `/veille/set`
-- `/api/settings` (5) : `/api-key`, `/password`, `/relecteur`, `/relecteur/essai`, `/vision`
-- `/api/telegram` (2) : `/adopter`, `/proposes`
-- `/api/tgc` (9) : `/commencer`, `/delier`, `/dire`, `/ident`, `/importer`, `/lire`, `/piece`, `/valider`, `/visage`
+**Greffe du 03-11 (deuxième passe).** Avant de coder, chaque route restante a été rapprochée des capacités qui existent déjà. Sont maintenant servies, sans toucher à un module : le robot Telegram du compte (`/api/me/telegram/*`, `/api/telegram/proposes|adopter`), le rappel lié à une case, les liens et leur graphe (renvois des notes seulement : la table générique de liens de la V18 n'est pas portée), le récit de l'autonomie (politique de la machine), les anomalies du journal (silences seulement : les pics dans les lignes ne sont pas relevés), le post-mortem (ligne du temps + modèle, enregistré comme note), le portrait (poser, retirer), le verrou d'écran, l'agenda distant (enregistrer, détacher), `/api/conv/ecrire` (l'adresse est lue sur la fiche, jamais sur la requête), `/api/itare/task/from` et `/api/mail/test` (l'essai part à l'adresse du compte, jamais à une adresse de la requête). Les dossiers de comptes et les lignes sans propriétaire sont des notions de la V18 (dossiers sur disque, lignes sans compte) : la V19 répond « rien à inventorier » plutôt que d'inventer.
+
+Ce qui reste (104 routes) : **40 à compléter** (une capacité existante, plus une composition ou un argument facultatif) et **64 à créer** (aucune capacité ne couvre). Le classement vient des manifestes et des noms de routes ; chaque ligne se relit dans la V18 avant d'être codée.
+
+| Route | Reste | Ce qui existe, ou ce qu'il faut |
+|---|---|---|
+| `/api/canva/brancher` | À créer | intégration Canva (OAuth + jeton à ranger comme secret) : aucun module ne la porte |
+| `/api/canva/creer` | À créer | intégration Canva (OAuth + jeton à ranger comme secret) : aucun module ne la porte |
+| `/api/canva/debrancher` | À créer | intégration Canva (OAuth + jeton à ranger comme secret) : aucun module ne la porte |
+| `/api/canva/designs` | À créer | intégration Canva (OAuth + jeton à ranger comme secret) : aucun module ne la porte |
+| `/api/canva/etat` | À créer | intégration Canva (OAuth + jeton à ranger comme secret) : aucun module ne la porte |
+| `/api/canva/reconcilier` | À créer | intégration Canva (OAuth + jeton à ranger comme secret) : aucun module ne la porte |
+| `/api/canvas/amorcer` | À compléter | canvas.departs + modeles.completer : le départ choisi, les sources lues, le modèle propose, la personne décide |
+| `/api/canvas/ext/apercu` | À créer | section vivante, sorties, portes, liaison, import et sources externes du canvas : différés par le manifeste de canvas |
+| `/api/canvas/ext/etat` | À créer | section vivante, sorties, portes, liaison, import et sources externes du canvas : différés par le manifeste de canvas |
+| `/api/canvas/ext/lister` | À créer | section vivante, sorties, portes, liaison, import et sources externes du canvas : différés par le manifeste de canvas |
+| `/api/canvas/geste` | À compléter | canvas.gestes + modeles.completer : reformuler, resserrer, développer… sur un passage |
+| `/api/canvas/importer` | À créer | section vivante, sorties, portes, liaison, import et sources externes du canvas : différés par le manifeste de canvas |
+| `/api/canvas/itare` | À compléter | même chaîne que geste, avec la persona d'Itare |
+| `/api/canvas/portes` | À créer | section vivante, sorties, portes, liaison, import et sources externes du canvas : différés par le manifeste de canvas |
+| `/api/canvas/registre` | À compléter | canvas.departs et canvas.gestes en un seul inventaire |
+| `/api/canvas/relier` | À créer | section vivante, sorties, portes, liaison, import et sources externes du canvas : différés par le manifeste de canvas |
+| `/api/canvas/sorties` | À créer | section vivante, sorties, portes, liaison, import et sources externes du canvas : différés par le manifeste de canvas |
+| `/api/canvas/sortir` | À créer | section vivante, sorties, portes, liaison, import et sources externes du canvas : différés par le manifeste de canvas |
+| `/api/canvas/vivante/poser` | À créer | section vivante, sorties, portes, liaison, import et sources externes du canvas : différés par le manifeste de canvas |
+| `/api/canvas/vivante/rejouer` | À créer | section vivante, sorties, portes, liaison, import et sources externes du canvas : différés par le manifeste de canvas |
+| `/api/ita/basculer` | À créer | client MTProto d'Itare (Telethon) : canaux l'a différé ; la session ne doit vivre que dans le coffre |
+| `/api/ita/commencer` | À créer | client MTProto d'Itare (Telethon) : canaux l'a différé ; la session ne doit vivre que dans le coffre |
+| `/api/ita/delier` | À créer | client MTProto d'Itare (Telethon) : canaux l'a différé ; la session ne doit vivre que dans le coffre |
+| `/api/ita/ident` | À créer | client MTProto d'Itare (Telethon) : canaux l'a différé ; la session ne doit vivre que dans le coffre |
+| `/api/ita/reconnaitre` | À créer | client MTProto d'Itare (Telethon) : canaux l'a différé ; la session ne doit vivre que dans le coffre |
+| `/api/ita/relancer` | À créer | client MTProto d'Itare (Telethon) : canaux l'a différé ; la session ne doit vivre que dans le coffre |
+| `/api/ita/valider` | À créer | client MTProto d'Itare (Telethon) : canaux l'a différé ; la session ne doit vivre que dans le coffre |
+| `/api/itare/bureau/suggestions` | À compléter | agents.propositions + taches.lister : ce que le bureau propose d'abord |
+| `/api/itare/contact/autolink` | À compléter | contacts.lier + projets.courrier : rapprochement adresse → projet |
+| `/api/itare/contact/carddav` | À créer | client CardDAV : réseau + secret (contacts n'a pas encore `[permissions] secrets`) |
+| `/api/itare/contact/carddav/delier` | À créer | idem |
+| `/api/itare/contact/carddav/importer` | À créer | idem |
+| `/api/itare/contact/carddav/relier` | À créer | idem |
+| `/api/itare/contact/propositions` | À compléter | contacts.lister + courrier.lister : les expéditeurs sans fiche |
+| `/api/itare/contact/site/apercu` | À compléter | sites.fiche + contacts.voir |
+| `/api/itare/contact/site/importer` | À compléter | sites.fiche + contacts.creer |
+| `/api/itare/contact/sites` | À compléter | sites.liens + contacts.pour_cible |
+| `/api/itare/draft/compose` | À compléter | modeles.completer + messages.save : un brouillon rédigé, enregistré dans messages |
+| `/api/itare/event/prep` | À compléter | agenda.evenement + modeles.completer : la préparation d'un rendez-vous |
+| `/api/itare/mail/avatars` | À compléter | contacts.photos + courrier : vignettes des correspondants |
+| `/api/itare/mail/avatars/oublier` | À compléter | idem |
+| `/api/itare/mail/chercher` | À compléter | courrier.lister avec un terme (argument facultatif à ajouter) |
+| `/api/itare/mail/link` | À compléter | courrier + ged_liens : lier un message à une fiche ou à un projet |
+| `/api/itare/mail/media` | À créer | index des pièces jointes (texte extrait, vignettes) : ged propose l'extraction, pas l'index du courrier |
+| `/api/itare/mail/media/index` | À créer | idem |
+| `/api/itare/mail/media/texte` | À créer | idem |
+| `/api/itare/mail/piece/ged` | À compléter | courrier.piece + ged.deposer : composition |
+| `/api/itare/mail/projet/suggerer` | À compléter | projets.courrier + projets.trouver |
+| `/api/itare/mail/relance` | À compléter | taches.creer + courrier.lire : relance d'un message sans réponse |
+| `/api/itare/mail/rule/delete` | À créer | règles de tri du courrier : aucune capacité |
+| `/api/itare/mail/rule/save` | À créer | idem |
+| `/api/itare/mail/rule/suggest` | À créer | idem |
+| `/api/itare/mail/rules` | À créer | idem |
+| `/api/itare/mail/rules/apply` | À créer | idem |
+| `/api/itare/mail/schedule` | À compléter | courrier.lire + modeles.completer + agenda.evenement_enregistrer : un message devient un rendez-vous |
+| `/api/itare/mail/summary` | À compléter | courrier.lire + modeles.completer |
+| `/api/itare/mail/thread` | À compléter | courrier.lire : le fil n'est pas rendu par la capacité (clé de fil à ajouter, en argument facultatif) |
+| `/api/itare/project/ask` | À compléter | projets.contexte + modeles.completer |
+| `/api/itare/project/search` | À compléter | projets.trouver + notes.lister |
+| `/api/itare/project/suggest` | À compléter | projets.cadrage_proposer |
+| `/api/itare/task/creneau` | À compléter | taches.fiche + agenda.agenda : un créneau libre pour une tâche |
+| `/api/journal/act` | À créer | actions sur un relevé (relancer un service…) : elles passent par le courtier, pas par le journal |
+| `/api/journal/purge` | À créer | purge irréversible : refusée tant qu'elle n'a pas de retour (defaire) |
+| `/api/lab/assign` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/lab/chat` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/lab/contexte` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/lab/delete` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/lab/etabli` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/lab/modes` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/lab/piece` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/lab/piece/ged` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/lab/piece/oter` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/lab/pieces` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/lab/pull` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/lab/pull_status` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/lab/setmodel` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/lab/sources` | À créer | laboratoire de modèles (conversations d'essai, sources, pièces, tirage de modèles) : aucun module ; modeles couvre les moteurs, pas le banc |
+| `/api/mail/recap_now` | À compléter | notifications + journal.resume : le récapitulatif hebdomadaire envoyé à la demande |
+| `/api/mail/settings` | À compléter | réglages courrier : adresse publique, jour et heure du récapitulatif (à déclarer) |
+| `/api/me/history` | À compléter | sans appelant dans l'écran V19 (la carte d'activité lit /api/me/activity) : à rendre vide ou à retirer |
+| `/api/modeles/migrer` | À compléter | modeles.role_lier : migration d'un rôle vers un autre moteur |
+| `/api/msg/fait` | À compléter | modeles.completer + faits des modules certificats, sauvegardes, dns |
+| `/api/msg/relire` | À compléter | modeles.completer : relecture d'un message |
+| `/api/notif/agir` | À créer | une action attachée à une notification : la notification n'en porte pas encore |
+| `/api/proactive/act` | À compléter | proactif.incidents : l'incident V19 a une cause et une fin prouvée, pas d'action à la demande |
+| `/api/proactive/investigate` | À compléter | proactif.incidents + journal.timeline |
+| `/api/proactive/snooze` | À créer | mettre une alerte en sommeil : pas de capacité (la sourdine des notifications est à relier) |
+| `/api/ranger` | À compléter | classement du carnet (notes.menage) : comportement V18 à relire avant |
+| `/api/rappel/comprendre` | À compléter | agenda : lire_instant est une fonction du module, pas une capacité — exposer `agenda.comprendre` (lecture) |
+| `/api/reglages/veille/set` | À créer | interrupteurs de surveillance : portés par les détecteurs de chaque module, sans réglage commun |
+| `/api/settings/api-key` | À créer | clé d'API de l'administrateur : plus de clé personnelle en V19 |
+| `/api/settings/password` | À compléter | comptes.changer_mon_mot_de_passe (déjà servi par /api/me/password) |
+| `/api/settings/relecteur` | À compléter | modeles.role_lier (rôle relecteur) |
+| `/api/settings/relecteur/essai` | À compléter | modeles.essayer |
+| `/api/settings/vision` | À compléter | modeles.role_lier (rôle vision) |
+| `/api/tgc/commencer` | À créer | client MTProto du compte (Telethon) : canaux l'a différé ; lire, écrire, importer exigent la session au coffre |
+| `/api/tgc/delier` | À créer | client MTProto du compte (Telethon) : canaux l'a différé ; lire, écrire, importer exigent la session au coffre |
+| `/api/tgc/dire` | À créer | client MTProto du compte (Telethon) : canaux l'a différé ; lire, écrire, importer exigent la session au coffre |
+| `/api/tgc/ident` | À créer | client MTProto du compte (Telethon) : canaux l'a différé ; lire, écrire, importer exigent la session au coffre |
+| `/api/tgc/importer` | À créer | client MTProto du compte (Telethon) : canaux l'a différé ; lire, écrire, importer exigent la session au coffre |
+| `/api/tgc/lire` | À créer | client MTProto du compte (Telethon) : canaux l'a différé ; lire, écrire, importer exigent la session au coffre |
+| `/api/tgc/piece` | À créer | client MTProto du compte (Telethon) : canaux l'a différé ; lire, écrire, importer exigent la session au coffre |
+| `/api/tgc/valider` | À créer | client MTProto du compte (Telethon) : canaux l'a différé ; lire, écrire, importer exigent la session au coffre |
+| `/api/tgc/visage` | À créer | client MTProto du compte (Telethon) : canaux l'a différé ; lire, écrire, importer exigent la session au coffre |
 
 ## Évolution et GED distante — 41 routes
 

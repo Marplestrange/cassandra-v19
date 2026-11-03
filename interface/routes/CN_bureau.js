@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #b235f0
+// VERSION CN : 0.1.0  #f31af8
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Le Bureau d'Itare, les routes greffées : post-mortem, anomalies, dossiers de comptes (V18) -> capacités existantes.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=b235f0 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=f31af8 ▼▼▼
 /* Le Bureau d'Itare, les routes greffées : chaque route enchaîne des capacités qui existent déjà, rien de neuf côté noyau.
    Les dossiers de comptes et les lignes sans propriétaire sont des notions de la V18 (des dossiers sur disque, des lignes sans compte) : en V19 tout est rangé par compte dans la base, il n'y a donc rien à inventorier. */
 (function () {
@@ -49,6 +49,37 @@
       const corps = String(b.summary || "").slice(0, 20000) + (b.lessons ? "\n\n## À retenir\n" + String(b.lessons).slice(0, 4000) : "");
       const n = await agir("notes.creer", { titre, corps, etiquettes: ["post-mortem"], source: "journal" });
       return ok({ id: n.ref || n.id });
+    },
+  });
+
+  // Une tâche née d'une détection ou d'un message : la tâche refuse de naître deux fois pour la même origine ; « force » en refait une, sans origine.
+  P("/api/itare/task/from", null, {
+    faire: async (req, agir) => {
+      const b = req.body, kind = String(b.kind || "manuel-conv"), a = { texte: String(b.text || ""), source: kind, origine: String(b.ref || "") };
+      if (b.due) a.echeance = b.due;
+      if (b.project_id) a.projet_id = +b.project_id;
+      if (b.force) a.origine = "";
+      try { const r = await agir("taches.creer", a); return ok({ created: true, task_id: r.id }); }
+      catch (e) { if (/déjà devenue une tâche/.test((e && e.message) || "")) return ok({ created: false, reason: "déjà traité" }); throw e; }
+    },
+  });
+  // L'essai d'envoi : le message part à l'adresse du compte qui l'essaie, jamais à une adresse de la requête ; la raison exacte d'un échec remonte.
+  P("/api/mail/test", null, {
+    faire: async (req, agir) => {
+      const m = (await agir("comptes.moi", {})) || {};
+      const to = String(m.contact_email || (String(m.compte || "").indexOf("@") > 0 ? m.compte : "")).trim();
+      if (!to) return { ok: false, to: "", error: "Ce compte n'a pas d'adresse : renseignez-la dans Mon compte." };
+      const msg = await agir("messages.save", { to, subject: "Test e-mail Cassandra", body: "Si vous lisez ceci, l'envoi d'e-mails de Cassandra fonctionne." });
+      await agir("messages.preparer_envoi", { id: msg.id });
+      try {
+        const r = await agir("courrier.envoyer_programme", { message: msg.id });
+        await agir("messages.sortie", { id: msg.id, message_id: (r && r.message_id) || "" });
+        return ok({ to, error: null });
+      } catch (e) {
+        const raison = (e && e.message) || "Échec d'envoi, sans erreur remontée par le serveur SMTP — hôte ou port injoignable ?";
+        try { await agir("messages.sortie", { id: msg.id, erreur: raison }); } catch (e2) {}
+        return { ok: false, to, error: raison };
+      }
     },
   });
 

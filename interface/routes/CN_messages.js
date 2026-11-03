@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #808e3a
+// VERSION CN : 0.1.0  #033b35
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : Les messages en cours et programmés : /api/msg/* (V18) -> capacités messages.* du noyau.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=808e3a ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=033b35 ▼▼▼
 /* Les messages en cours et programmés : /api/msg/* (V18) -> capacités messages.* du noyau.
    L'envoi à la main fait trois gestes qui se suivent : mettre le message en partance (messages.preparer_envoi, qui relit qu'il est complet), le faire poster par le courrier
    (courrier.envoyer_programme, qui ne reçoit qu'un numéro : l'adresse est celle ENREGISTRÉE dans le message, jamais celle de la demande), puis déclarer l'issue (messages.sortie).
@@ -76,6 +76,28 @@
       const t = String((r && r.texte) || "").trim();
       if (!t) return { ok: false, reason: (r && r.erreur) || "pas de sortie du modèle" };
       return { ok: true, texte: t, avant: passage };
+    },
+  });
+
+  // Écrire à une fiche du carnet, par courriel : l'adresse est lue sur la fiche (la requête ne donne que son numéro), le message passe par la même chaîne que tout envoi.
+  P("/api/conv/ecrire", null, {
+    faire: async (req, agir) => {
+      const txt = String(req.body.corps || "").trim();
+      if (!txt) return { ok: false, error: "message vide" };
+      let f;
+      try { f = await agir("contacts.voir", { id: +req.body.id }); } catch (e) { return { ok: false, error: "fiche introuvable" }; }
+      const adr = ((f.emails || [])[0] || "");
+      if (!adr) return { ok: false, cause: "sans-adresse", error: "Ce contact n'a aucune adresse : ajoutez-en une sur sa fiche." };
+      const m = await agir("messages.save", { to: adr, subject: txt.split("\n")[0].slice(0, 78) || "Message", body: txt });
+      await agir("messages.preparer_envoi", { id: m.id });
+      let r;
+      try { r = await agir("courrier.envoyer_programme", { message: m.id }); }
+      catch (e) {
+        try { await agir("messages.sortie", { id: m.id, erreur: (e && e.message) || "envoi impossible" }); } catch (e2) {}
+        return { ok: false, cause: "sans-smtp", error: (e && e.message) || "le serveur de courriel a refusé l'envoi" };
+      }
+      await agir("messages.sortie", { id: m.id, message_id: (r && r.message_id) || "" });
+      return ok({ adresse: adr });
     },
   });
 })();
