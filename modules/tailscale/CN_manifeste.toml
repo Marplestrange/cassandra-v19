@@ -6,17 +6,17 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.0  #7382f8
+# VERSION CN : 0.1.1  #5a9283
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale.
 # MÉTHODE    : le client `tailscale` local, par son socket ; l'installateur donne à l'utilisateur de Cassandra le droit de le piloter (--operator), jamais de root.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=7382f8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=5a9283 ▼▼▼
 [module]
 id = "tailscale"
 nom = "Tailscale"
-version = "0.1.0"
+version = "0.1.1"
 noyau_min = "0.1.0"
 description = "Le réseau privé Tailscale de la machine, piloté depuis l'interface : voir où elle en est, la connecter (par un lien à ouvrir ou par une clé), la déconnecter, activer SSH par Tailscale."
 confiance = "interne"
@@ -121,3 +121,19 @@ ordre = 20
 role = "admin"
 icone = "globe"
 # ▲▲▲ FIN BORNE CN ▲▲▲
+
+[[points_evolution]]
+id = "erreur"
+libelle = "Une sortie du client, rendue lisible : sans la clé, avec la commande qui règle un refus d'accès (extrait automatiquement de CN_module.py)"
+contrat = "1.0"
+reference = "points/EC_erreur"
+fonction = "point_erreur"
+runtime = "python"
+
+[[points_evolution]]
+id = "resume"
+libelle = "Le statut du client, aplati pour l'écran : état en clair, la machine, ses adresses, les autres machines du réseau (extrait automatiquement de CN_module.py)"
+contrat = "1.0"
+reference = "points/EC_resume"
+fonction = "point_resume"
+runtime = "python"

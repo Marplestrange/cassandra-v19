@@ -1,0 +1,674 @@
+{
+ "point": "tailscale.resume",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de tailscale, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "d": {
+     "Version": "1.80.0",
+     "BackendState": "Running",
+     "AuthURL": "",
+     "TailscaleIPs": [
+      "100.64.0.7",
+      "fd7a::7"
+     ],
+     "Health": [],
+     "Self": {
+      "HostName": "argos",
+      "DNSName": "argos.tail1.ts.net."
+     },
+     "Peer": {
+      "a": {
+       "HostName": "orion",
+       "DNSName": "orion.tail1.ts.net.",
+       "TailscaleIPs": [
+        "100.64.0.2"
+       ],
+       "OS": "linux",
+       "Online": true,
+       "LastSeen": "2026-11-02T10:00:00Z"
+      },
+      "b": {
+       "HostName": "hermes",
+       "DNSName": "hermes.tail1.ts.net.",
+       "TailscaleIPs": [
+        "100.64.0.3"
+       ],
+       "OS": "windows",
+       "Online": false,
+       "LastSeen": "2026-10-30T08:00:00Z"
+      }
+     },
+     "CurrentTailnet": {
+      "Name": "drisse@example.org",
+      "MagicDNSSuffix": "tail1.ts.net"
+     }
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "connecte",
+     "brut": "Running",
+     "lien": "",
+     "nom": "argos",
+     "dns": "argos.tail1.ts.net",
+     "ip4": "100.64.0.7",
+     "ip6": "fd7a::7",
+     "reseau": "drisse@example.org",
+     "suffixe": "tail1.ts.net",
+     "version": "1.80.0",
+     "sante": [],
+     "pairs": [
+      {
+       "nom": "orion",
+       "ip": "100.64.0.2",
+       "os": "linux",
+       "en_ligne": true,
+       "vu": "2026-11-02 10:00",
+       "sortie": false,
+       "offre_sortie": false
+      },
+      {
+       "nom": "hermes",
+       "ip": "100.64.0.3",
+       "os": "windows",
+       "en_ligne": false,
+       "vu": "2026-10-30 08:00",
+       "sortie": false,
+       "offre_sortie": false
+      }
+     ],
+     "en_ligne": 1,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "d": {
+     "Version": "1.80.0",
+     "BackendState": "Stopped",
+     "AuthURL": "",
+     "TailscaleIPs": [],
+     "Health": [],
+     "Self": {},
+     "Peer": {},
+     "CurrentTailnet": {}
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "deconnecte",
+     "brut": "Stopped",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "1.80.0",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "d": {
+     "Version": "1.80.0",
+     "BackendState": "NeedsLogin",
+     "AuthURL": "https://login.tailscale.com/a/abc123",
+     "TailscaleIPs": [],
+     "Health": [],
+     "Self": {},
+     "Peer": {},
+     "CurrentTailnet": {}
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "a_identifier",
+     "brut": "NeedsLogin",
+     "lien": "https://login.tailscale.com/a/abc123",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "1.80.0",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "d": {
+     "Version": "1.80.0",
+     "BackendState": "NeedsLogin",
+     "AuthURL": "",
+     "TailscaleIPs": [],
+     "Health": [],
+     "Self": {},
+     "Peer": {},
+     "CurrentTailnet": {}
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "a_identifier",
+     "brut": "NeedsLogin",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "1.80.0",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "d": {
+     "AuthURL": "tskey-auth-kAbCdEfGh12345-ZyXwVuTsRqPoNmLkJiHg"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "",
+     "lien": "tskey-auth-kAbCdEfGh12345-ZyXwVuTsRqPoNmLkJiHg",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "d": {
+     "proc": null
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "d": {
+     "TailscaleIPs": "Running"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "R",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "d": {
+     "AuthURL": "DNSName",
+     "TailscaleIPs": ""
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "",
+     "lien": "DNSName",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "d": {
+     "Version": "Starting",
+     "TailscaleIPs": "suffixe",
+     "BackendState": "ExitNode"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "ExitNode",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "s",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "Starting",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "d": {
+     "Health": {},
+     "Version": "0001",
+     "BackendState": "Bonjour le monde"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "Bonjour le monde",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "0001",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "d": {
+     "Health": "Online"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "",
+     "sante": [
+      "O",
+      "n",
+      "l",
+      "i",
+      "n"
+     ],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "d": {
+     "Health": "ip4",
+     "BackendState": "Bancs du module tailscale : le client est simulé, le reste tourne dans un vrai noyau."
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "Bancs du module tailscale : le client est simulé, le reste tourne dans un vrai noyau.",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "",
+     "sante": [
+      "i",
+      "p",
+      "4"
+     ],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "d": {
+     "Version": " ",
+     "Health": "TailscaleIPs"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": " ",
+     "sante": [
+      "T",
+      "a",
+      "i",
+      "l",
+      "s"
+     ],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "d": {
+     "Version": "ssh",
+     "BackendState": "Capabilities",
+     "CurrentTailnet": []
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "Capabilities",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "ssh",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "d": {
+     "AuthURL": "Peer",
+     "TailscaleIPs": "Bancs du module tailscale : le client est simulé, le reste tourne dans un vrai noyau.",
+     "Version": "ExitNodeOption"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "",
+     "lien": "Peer",
+     "nom": "",
+     "dns": "",
+     "ip4": "B",
+     "ip6": ":",
+     "reseau": "",
+     "suffixe": "",
+     "version": "ExitNodeOption",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "d": {
+     "BackendState": "argos.tail1.ts.net."
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "argos.tail1.ts.net.",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 17",
+   "entree": {
+    "d": {
+     "Version": "HostName",
+     "CurrentTailnet": null
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "HostName",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 18",
+   "entree": {
+    "d": {
+     "TailscaleIPs": "Name",
+     "AuthURL": "Starting",
+     "Version": "BackendState"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "",
+     "lien": "Starting",
+     "nom": "",
+     "dns": "",
+     "ip4": "N",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "BackendState",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 19",
+   "entree": {
+    "d": {
+     "Version": "Name"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "Name",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 20",
+   "entree": {
+    "d": {
+     "HostName": "hermes",
+     "DNSName": "hermes.tail1.ts.net.",
+     "TailscaleIPs": [
+      "100.64.0.3"
+     ],
+     "OS": "windows",
+     "Online": false,
+     "LastSeen": "2026-10-30T08:00:00Z"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "100.64.0.3",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  },
+  {
+   "cas": "cas 21",
+   "entree": {
+    "d": {
+     "HostName": "orion",
+     "DNSName": "orion.tail1.ts.net.",
+     "TailscaleIPs": [
+      "100.64.0.2"
+     ],
+     "OS": "linux",
+     "Online": true,
+     "LastSeen": "2026-11-02T10:00:00Z"
+    }
+   },
+   "sortie": {
+    "valeur": {
+     "etat": "demarrage",
+     "brut": "",
+     "lien": "",
+     "nom": "",
+     "dns": "",
+     "ip4": "100.64.0.2",
+     "ip6": "",
+     "reseau": "",
+     "suffixe": "",
+     "version": "",
+     "sante": [],
+     "pairs": [],
+     "en_ligne": 0,
+     "ssh": false
+    }
+   }
+  }
+ ]
+}

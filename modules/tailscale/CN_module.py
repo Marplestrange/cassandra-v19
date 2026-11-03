@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tailscale
 # ZONE       : CN
-# VERSION CN : 0.1.0  #998435
+# VERSION CN : 0.1.1  #dba004
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le réseau privé Tailscale de la machine, piloté depuis l'interface.
 # MÉTHODE    : le client `tailscale` local ; l'état se lit dans `status --json`, jamais déduit.
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=998435 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.1 empreinte=dba004 ▼▼▼
 """Tailscale : voir où en est le réseau privé de la machine et le connecter depuis l'interface.
 
 Deux façons de connecter, comme sur tailscale.com :
@@ -38,6 +38,25 @@ NOM = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
 _EN_ATTENTE = {"proc": None}                       # le `tailscale up` sans clé, en attente d'identification
 
 
+_point = None          # posé par brancher() : les points d'évolution du module (ctx.point)
+_REFERENCES = {}
+
+
+def _appeler_point(point, entree):
+    """Appelle le point d'évolution du module. Sans brancher() (un banc qui appelle la fonction seule), la RÉFÉRENCE du dépôt répond : points/EC_<point>.py, chargée par son chemin."""
+    if _point is not None:
+        return _point(point, entree)
+    if point not in _REFERENCES:
+        import importlib.util as _iu
+        import pathlib as _pl
+        chemin = _pl.Path(__file__).resolve().parent / "points" / ("EC_%s.py" % point)
+        spec = _iu.spec_from_file_location("ec_ref_" + point, str(chemin))
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _REFERENCES[point] = getattr(mod, "point_" + point)
+    return _REFERENCES[point](entree)
+
+
 def _lancer(args, delai=DELAI):
     """(code, sortie) ; (None, raison) si le client est absent ou n'a pas répondu à temps."""
     try:
@@ -51,18 +70,9 @@ def _lancer(args, delai=DELAI):
         return None, str(e)[:200]
 
 
-def _erreur(sortie, cle=""):
-    """Une sortie du client, rendue lisible : sans la clé, avec la commande qui règle un refus d'accès."""
-    t = str(sortie or "").strip()
-    if cle:
-        t = t.replace(cle, "tskey-…")
-    t = re.sub(r"tskey-[A-Za-z0-9_-]+", "tskey-…", t)
-    if re.search(r"access denied|profiles access denied|use 'sudo tailscale'|permission denied", t, re.I):
-        return "Cassandra n'a pas le droit de piloter Tailscale : sur la machine, `sudo tailscale set --operator=cassandra` (l'installateur du module le fait)."
-    if re.search(r"failed to connect to local tailscaled|tailscaled.*not running|connect: no such file", t, re.I):
-        return "tailscaled ne tourne pas : `sudo systemctl enable --now tailscaled`."
-    lignes = [x for x in t.splitlines() if x.strip()]
-    return (lignes[-1] if lignes else "le client n'a rien répondu")[:300]
+def _erreur(sortie, cle=''):
+    """Une sortie du client, rendue lisible : sans la clé, avec la commande qui règle un refus d'accès. Le calcul est un POINT D'ÉVOLUTION : points/EC_erreur.py."""
+    return _appeler_point("erreur", {"sortie": sortie, "cle": cle})["valeur"]
 
 
 def utilisateur():
@@ -89,22 +99,8 @@ ETATS = {"Running": "connecte", "NeedsLogin": "a_identifier", "NeedsMachineAuth"
 
 
 def resume(d):
-    """Le statut du client, aplati pour l'écran : état en clair, la machine, ses adresses, les autres machines du réseau."""
-    moi = d.get("Self") or {}
-    etat = ETATS.get(str(d.get("BackendState") or ""), "demarrage")
-    reseau = d.get("CurrentTailnet") or {}
-    pairs = []
-    for p in (d.get("Peer") or {}).values():
-        ls = str(p.get("LastSeen") or "")
-        pairs.append({"nom": (p.get("HostName") or str(p.get("DNSName") or "").split(".")[0]), "ip": (p.get("TailscaleIPs") or [""])[0], "os": p.get("OS", ""),
-                      "en_ligne": bool(p.get("Online")), "vu": "" if ls.startswith("0001") else ls[:16].replace("T", " "), "sortie": bool(p.get("ExitNode")),
-                      "offre_sortie": bool(p.get("ExitNodeOption"))})
-    pairs.sort(key=lambda x: (not x["en_ligne"], x["nom"].lower()))
-    ips = [x for x in (d.get("TailscaleIPs") or []) if x]
-    return {"etat": etat, "brut": d.get("BackendState") or "", "lien": d.get("AuthURL") or "", "nom": moi.get("HostName") or "", "dns": str(moi.get("DNSName") or "").rstrip("."),
-            "ip4": next((x for x in ips if ":" not in x), ""), "ip6": next((x for x in ips if ":" in x), ""), "reseau": reseau.get("Name") or "", "suffixe": reseau.get("MagicDNSSuffix") or "",
-            "version": d.get("Version") or "", "sante": [str(x)[:200] for x in (d.get("Health") or [])][:5], "pairs": pairs,
-            "en_ligne": sum(1 for x in pairs if x["en_ligne"]), "ssh": bool(moi.get("sshHostKeys")) or "ssh" in str(moi.get("Capabilities") or "").lower()}
+    """Le statut du client, aplati pour l'écran : état en clair, la machine, ses adresses, les autres machines du réseau. Le calcul est un POINT D'ÉVOLUTION : points/EC_resume.py."""
+    return _appeler_point("resume", {"d": d})["valeur"]
 
 
 def lire_ssh():
@@ -119,6 +115,8 @@ def lire_ssh():
 
 
 def brancher(ctx):
+    global _point
+    _point = ctx.point
     def etat(c):
         d, raison = lire_statut()
         if d is None:

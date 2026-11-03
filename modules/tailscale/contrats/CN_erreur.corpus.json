@@ -1,0 +1,367 @@
+{
+ "point": "tailscale.erreur",
+ "contrat": "1.0",
+ "origine": "sorties de la référence copiée mot pour mot de l'ancien code de tailscale, données synthétiques",
+ "cas": [
+  {
+   "cas": "cas 01",
+   "entree": {
+    "sortie": "invalid key: tskey-auth-kAbCdEfGh12345-ZyXwVuTsRqPoNmLkJiHg is expired",
+    "cle": "tskey-auth-kAbCdEfGh12345-ZyXwVuTsRqPoNmLkJiHg"
+   },
+   "sortie": {
+    "valeur": "invalid key: tskey-… is expired"
+   }
+  },
+  {
+   "cas": "cas 02",
+   "entree": {
+    "sortie": "Access denied: checkprefs access denied\nUse 'sudo tailscale ...' to perform this operation",
+    "cle": ""
+   },
+   "sortie": {
+    "valeur": "Cassandra n'a pas le droit de piloter Tailscale : sur la machine, `sudo tailscale set --operator=cassandra` (l'installateur du module le fait)."
+   }
+  },
+  {
+   "cas": "cas 03",
+   "entree": {
+    "sortie": "1.80.0",
+    "cle": "--reset sans --operator ferait perdre à Cassandra le droit de piloter Tailscale"
+   },
+   "sortie": {
+    "valeur": "1.80.0"
+   }
+  },
+  {
+   "cas": "cas 04",
+   "entree": {
+    "sortie": "exemple.test",
+    "cle": "--ssh="
+   },
+   "sortie": {
+    "valeur": "exemple.test"
+   }
+  },
+  {
+   "cas": "cas 05",
+   "entree": {
+    "sortie": "faite",
+    "cle": "erreur"
+   },
+   "sortie": {
+    "valeur": "faite"
+   }
+  },
+  {
+   "cas": "cas 06",
+   "entree": {
+    "sortie": "https://exemple.test/x?y=1",
+    "cle": "DNSName"
+   },
+   "sortie": {
+    "valeur": "https://exemple.test/x?y=1"
+   }
+  },
+  {
+   "cas": "cas 07",
+   "entree": {
+    "sortie": "tailscale",
+    "cle": "statut"
+   },
+   "sortie": {
+    "valeur": "tailscale"
+   }
+  },
+  {
+   "cas": "cas 08",
+   "entree": {
+    "sortie": "abc",
+    "cle": "Version"
+   },
+   "sortie": {
+    "valeur": "abc"
+   }
+  },
+  {
+   "cas": "cas 09",
+   "entree": {
+    "sortie": "etat",
+    "cle": "orion"
+   },
+   "sortie": {
+    "valeur": "etat"
+   }
+  },
+  {
+   "cas": "cas 10",
+   "entree": {
+    "sortie": " tskey-[A-Za-z0-9_-]+ ",
+    "cle": "# titre\ntexte"
+   },
+   "sortie": {
+    "valeur": "tskey-[A-Za-z0-9_-]+"
+   }
+  },
+  {
+   "cas": "cas 11",
+   "entree": {
+    "sortie": "a",
+    "cle": "Peer"
+   },
+   "sortie": {
+    "valeur": "a"
+   }
+  },
+  {
+   "cas": "cas 12",
+   "entree": {
+    "sortie": "Online",
+    "cle": "deconnecte"
+   },
+   "sortie": {
+    "valeur": "Online"
+   }
+  },
+  {
+   "cas": "cas 13",
+   "entree": {
+    "sortie": "pairs",
+    "cle": "pairs"
+   },
+   "sortie": {
+    "valeur": "tskey-…"
+   }
+  },
+  {
+   "cas": "cas 14",
+   "entree": {
+    "sortie": "é à ü",
+    "cle": "100.64.0.2"
+   },
+   "sortie": {
+    "valeur": "é à ü"
+   }
+  },
+  {
+   "cas": "cas 15",
+   "entree": {
+    "sortie": "2026-10-17",
+    "cle": "status"
+   },
+   "sortie": {
+    "valeur": "2026-10-17"
+   }
+  },
+  {
+   "cas": "cas 16",
+   "entree": {
+    "sortie": "CLE=valeur\n#c\nAUTRE=2",
+    "cle": "a/b/c"
+   },
+   "sortie": {
+    "valeur": "AUTRE=2"
+   }
+  },
+  {
+   "cas": "cas 17",
+   "entree": {
+    "sortie": "AuthURL",
+    "cle": "le fichier de la clé doit disparaître"
+   },
+   "sortie": {
+    "valeur": "AuthURL"
+   }
+  },
+  {
+   "cas": "cas 18",
+   "entree": {
+    "sortie": "statut",
+    "cle": "faite"
+   },
+   "sortie": {
+    "valeur": "statut"
+   }
+  },
+  {
+   "cas": "cas 19",
+   "entree": {
+    "sortie": "ligne1\nligne2\n",
+    "cle": "orion"
+   },
+   "sortie": {
+    "valeur": "ligne2"
+   }
+  },
+  {
+   "cas": "cas 20",
+   "entree": {
+    "sortie": "127.0.0.1",
+    "cle": "hermes.tail1.ts.net."
+   },
+   "sortie": {
+    "valeur": "127.0.0.1"
+   }
+  },
+  {
+   "cas": "cas 21",
+   "entree": {
+    "sortie": "up",
+    "cle": "<b>gras</b> et <i>x</i>"
+   },
+   "sortie": {
+    "valeur": "up"
+   }
+  },
+  {
+   "cas": "cas 22",
+   "entree": {
+    "sortie": "https://login.tailscale.com/a/abc123",
+    "cle": "down"
+   },
+   "sortie": {
+    "valeur": "https://login.tailscale.com/a/abc123"
+   }
+  },
+  {
+   "cas": "cas 23",
+   "entree": {
+    "sortie": "Peer",
+    "cle": "ok"
+   },
+   "sortie": {
+    "valeur": "Peer"
+   }
+  },
+  {
+   "cas": "cas 24",
+   "entree": {
+    "sortie": "quitter",
+    "cle": "^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$"
+   },
+   "sortie": {
+    "valeur": "quitter"
+   }
+  },
+  {
+   "cas": "cas 25",
+   "entree": {
+    "sortie": "a@exemple.test",
+    "cle": "--operator=cassandra"
+   },
+   "sortie": {
+    "valeur": "a@exemple.test"
+   }
+  },
+  {
+   "cas": "cas 26",
+   "entree": {
+    "sortie": "2026-10-17T12:00:00",
+    "cle": "argos"
+   },
+   "sortie": {
+    "valeur": "2026-10-17T12:00:00"
+   }
+  },
+  {
+   "cas": "cas 27",
+   "entree": {
+    "sortie": "status",
+    "cle": "--hostname=argos"
+   },
+   "sortie": {
+    "valeur": "status"
+   }
+  },
+  {
+   "cas": "cas 28",
+   "entree": {
+    "sortie": "prefs",
+    "cle": "(statut_json, None) ou (None, raison). `status --json` rend du JSON même quand il faut s'identifier."
+   },
+   "sortie": {
+    "valeur": "prefs"
+   }
+  },
+  {
+   "cas": "cas 29",
+   "entree": {
+    "sortie": "oui",
+    "cle": "Le statut du client, aplati pour l'écran : état en clair, la machine, ses adresses, les autres machines du réseau."
+   },
+   "sortie": {
+    "valeur": "oui"
+   }
+  },
+  {
+   "cas": "cas 30",
+   "entree": {
+    "sortie": "b",
+    "cle": "logout"
+   },
+   "sortie": {
+    "valeur": "b"
+   }
+  },
+  {
+   "cas": "cas 31",
+   "entree": {
+    "sortie": "a/b/c",
+    "cle": "humain"
+   },
+   "sortie": {
+    "valeur": "a/b/c"
+   }
+  },
+  {
+   "cas": "cas 32",
+   "entree": {
+    "sortie": "logout",
+    "cle": "Self"
+   },
+   "sortie": {
+    "valeur": "logout"
+   }
+  },
+  {
+   "cas": "cas 33",
+   "entree": {
+    "sortie": "^tskey-[A-Za-z0-9_-]{8,200}$",
+    "cle": "C:\\x"
+   },
+   "sortie": {
+    "valeur": "^tskey-[A-Za-z0-9_-]{8,200}$"
+   }
+  },
+  {
+   "cas": "cas 34",
+   "entree": {
+    "sortie": "argos",
+    "cle": "100.64.0.2"
+   },
+   "sortie": {
+    "valeur": "argos"
+   }
+  },
+  {
+   "cas": "cas 35",
+   "entree": {
+    "sortie": "--ssh=",
+    "cle": "mauvais nom; rm -rf /"
+   },
+   "sortie": {
+    "valeur": "--ssh="
+   }
+  },
+  {
+   "cas": "cas 36",
+   "entree": {
+    "sortie": "argos.tail1.ts.net.",
+    "cle": "https://login.tailscale.com/a/abc123"
+   },
+   "sortie": {
+    "valeur": "argos.tail1.ts.net."
+   }
+  }
+ ]
+}
