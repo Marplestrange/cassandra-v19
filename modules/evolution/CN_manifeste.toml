@@ -6,21 +6,23 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : evolution
 # ZONE       : CN
-# VERSION CN : 0.4.1  #4196e3
+# VERSION CN : 0.5.0  #0a3055
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.4.1 empreinte=4196e3 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=0a3055 ▼▼▼
 [module]
 id = "evolution"
 nom = "Évolution"
-version = "0.4.1"
+version = "0.5.0"
 noyau_min = "0.1.0"
 description = "Le pilotage de l'évolution : quels points d'évolution méritent d'être optimisés (par ce qu'ils coûtent réellement), proposer une variante (Orfan ou un modèle) que le noyau juge sur le corpus de rejeu avant de la mettre en OMBRE, la faire monter par paliers (10, 50, 100 % du trafic), la retirer en un geste, et vérifier un mois plus tard que le gain est resté. Le moteur de recherche ne fait que proposer du texte : tout ce qui décide est du noyau."
 confiance = "interne"
 famille = "evolution"
+groupe = "auto"
+proprietaire = "cassandra"
 importance = "optionnel"
 instance = true
 sans = "Cassandra cesse d'améliorer ses propres fonctions ; tout continue de fonctionner à l'identique."
@@ -50,6 +52,34 @@ id = "etat"
 libelle = "L'état de l'évolution : cibles, pièces (ombre, paliers, en service, retirées), routage et suspensions de chaque point, tombes, seuils, et la vérification de la chaîne d'empreintes (une rupture arrête tout)"
 risque = "lecture"
 droit = "voir"
+
+[[capacites]]
+id = "moteurs"
+libelle = "Les moteurs de recherche connus : leur état, ce que chacun a coûté (essais, appels de modèle, jetons, refus du relais) et le nombre de pièces qu'il a fournies"
+risque = "lecture"
+droit = "voir"
+
+[[capacites]]
+id = "moteur_installer"
+libelle = "Installer un moteur de recherche du catalogue scellé : un environnement à part, des paquets épinglés par empreinte, un banc d'import ; le moteur est installé, jamais actif d'office"
+risque = "moyen"
+droit = "agir"
+perimetre = ["le dossier des moteurs de l'instance : un environnement par moteur ; rien du serveur ni des données"]
+preuve = "le moteur est installé au registre et son environnement répond (l'adaptateur se charge) ; au moindre échec, l'environnement est supprimé et le registre n'est pas touché"
+retour = "désinstaller : l'environnement est supprimé, le moteur repasse « prévu » ; les pièces qu'il a fournies restent, elles vivent par leur preuve"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
+
+[[capacites]]
+id = "moteur_etat"
+libelle = "Activer ou désactiver un moteur de recherche installé (actif, installé, prévu)"
+risque = "faible"
+droit = "agir"
+perimetre = ["le registre des moteurs : une ligne"]
+preuve = "le registre dit le nouvel état"
+retour = "l'état d'avant est remis"
+paliers = ["raconter", "auto"]
+qui = ["humain", "cassandra"]
 
 [[capacites]]
 id = "proposer"
@@ -147,6 +177,14 @@ defaut = 20
 minimum = 1
 maximum = 500
 aide = "Combien de recherches l'instance lance par jour, tous moteurs confondus : le coût d'une recherche ne s'emballe pas. Au-delà, la recherche reprend le lendemain."
+
+[[reglages]]
+id = "moteurs_isoles"
+libelle = "Le moteur de recherche dans son propre processus"
+type = "choix"
+choix = ["non", "oui"]
+defaut = "non"
+aide = "Oui : le moteur tourne dans un processus à part, sans clé, sans fichier écrit, mémoire plafonnée, tué au délai ; ses demandes de modèle passent par un relais qui compte les appels et les jetons et refuse au plafond. Non : il tourne dans le serveur, comme avant."
 
 [[reglages]]
 id = "moteur_orfan"

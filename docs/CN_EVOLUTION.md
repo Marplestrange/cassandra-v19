@@ -12,7 +12,7 @@
 <!-- RÔLE       : Évolution V19 — note de conception -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=f3224e ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=c9407b ▼▼▼ -->
 # Évolution V19 — note de conception
 
 Statut : conception (17-10-2026). Rien n'est construit. Ce document remplace le moteur V18 (diff d'un fichier unique `cassandra.py`), qui n'a plus d'objet.
@@ -165,7 +165,19 @@ Deux passages d'audit sur `CN_points`, `CN_evaluateur`, `CN_evolution`, `CN_reje
 
 **La maquette des moteurs** (`docs/CN_maquette-evolution-moteurs.html`, dans le style de la V19, servie depuis la racine du dépôt) montre ce qui reste à construire pour gérer plusieurs moteurs : protocole de processus, relais de modèles, registre et installation (source signée, fichier verrouillé, venv, courtier, cage, banc, course d'essai), juges des prompts, objectifs multiples, bac éprouvé, Orfan dans la cage. Chaque élément y dit s'il est construit ou non branché.
 
-**Reste, à dire franchement :** le bac à sable n'a pas été éprouvé sous Linux ; le plafond mémoire n'existe que sous POSIX ; la suppression d'un compte n'appelle pas encore `purger_compte` toute seule (à brancher dans le module des comptes) ; le démon du Sensorium doit pouvoir lire `<stock>.cle`, sinon ses EC sont refusées (la référence sert) ; l'ombre reste synchrone et l'écriture du corpus se fait à chaque appel.
+**Éprouvé sous Linux le 03-11 (Orion, Debian 12, bubblewrap 0.8) :** les bancs d'audit passent (48/48) et ont trouvé deux défauts que Windows ne pouvait pas montrer : le `/tmp` vide du bac recouvrait le code du travailleur quand il vivait sous `/tmp` (il mourait sans un mot), et l'épreuve du bac ne lançait que `print(42)`, ce qu'un bac qui cache le travailleur passait. Corrigé : `/tmp` vide posé AVANT les liaisons, et un bac n'est cru qu'après avoir fait tourner le vrai travailleur. **Reste, à dire franchement :** le plafond mémoire n'existe que sous POSIX ; la suppression d'un compte n'appelle pas encore `purger_compte` toute seule (à brancher dans le module des comptes) ; le démon du Sensorium doit pouvoir lire `<stock>.cle`, sinon ses EC sont refusées (la référence sert) ; l'ombre reste synchrone et l'écriture du corpus se fait à chaque appel.
+
+## 2 decies. Les moteurs de recherche : frontière de processus, relais, registre, installateur (03-11)
+
+Lots 1 et 2 de la maquette `docs/CN_maquette-evolution-moteurs.html`, construits.
+
+- **`orfan/CN_moteur_hote.py` + `noyau/CN_moteurs.py` (`MoteurProcessus`)** : un moteur de recherche tourne dans un processus à part (le même `_Travailleur` que les EC : environnement vidé, mémoire plafonnée, aucun fichier écrit, bac Linux, tué au délai). Même contrat que tout moteur (`proposer(contexte) -> textes`) : le service d'évolution ne voit pas la différence. Le contexte envoyé ne contient que du texte et des données (une fonction ne traverse pas).
+- **Le relais de modèles** : le moteur n'a jamais de jeton ; il demande « un modèle », le serveur choisit, compte appels et jetons, et refuse au plafond (`max_appels`, `max_jetons`). Un refus ou un modèle muet est une erreur dite au moteur. Le délai court sur toute la recherche, relais compris.
+- **Le registre (`Registre`, `moteurs.json`)** : moteurs connus, état (actif, installé, prévu), coût (essais, appels, jetons, refus) et attribution des pièces (`gid#num` → moteur ; sans trace, « inconnu »). Écrit par remplacement ; un fichier illisible se dit et n'est pas écrasé. Orfan y est toujours déclaré.
+- **`noyau/CN_installateur.py`** : un moteur externe ne s'installe que depuis un catalogue SCELLÉ (HMAC de la clé de l'instance), paquets épinglés par version ET empreinte (`pip --require-hashes`), un venv par moteur, banc d'import de l'adaptateur, retour arrière complet au moindre échec, « installé » jamais « actif » d'office.
+- **Dans le module** : réglage `moteurs_isoles` (non par défaut : à passer à « oui » quand l'exploitation l'aura vu tourner), capacités `moteurs` (lecture), `moteur_installer`, `moteur_etat` (avec preuve et retour).
+
+**Reste (lots 3 et 4)** : la course et les affectations par moteur, le budget par moteur, l'écran réel, le juge des prompts (GEPA), les objectifs multiples ; **et un moteur externe de bout en bout** (OpenEvolve : paquet réel, réseau, adaptateur au contrat) : l'installateur est éprouvé avec un vrai venv et un exécuteur de banc, jamais avec un vrai paquet téléchargé.
 
 ## 3. Rôles (pas de nouvel agent)
 

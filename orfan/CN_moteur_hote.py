@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : orfan
 # ZONE       : CN
-# VERSION CN : 0.1.0  #000000
+# VERSION CN : 0.1.0  #8ee9be
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Fait tourner un moteur de recherche d'Évolution (Orfan, ou un moteur externe derrière le même contrat) dans un processus à part, sans clé, sans réseau, avec un relais pour parler à un modèle.
 # MÉTHODE    : une ligne JSON par message sur l'entrée et la sortie standard ; le moteur ne voit jamais un jeton : il demande un modèle au serveur, qui compte et plafonne.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8ee9be ▼▼▼
 """Le protocole de processus d'un moteur de recherche (docs/CN_EVOLUTION.md, « moteurs »).
 
 Lancé par noyau/CN_moteurs.py : `python -I CN_moteur_hote.py <chemin de CN_orfan.py> <choix> <mémoire en octets>`.

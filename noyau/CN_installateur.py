@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #000000
+# VERSION CN : 0.1.0  #4c212b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Installe un moteur externe d'Évolution depuis un catalogue scellé : environnement à part, paquets épinglés par empreinte, banc d'import, retour arrière complet au moindre échec.
 # MÉTHODE    : catalogue JSON scellé par HMAC (la clé de l'instance) ; un venv par moteur ; `pip --require-hashes` ; chaque étape est journalisée ; un échec défait tout ce qui précède.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=4c212b ▼▼▼
 """Lot 2 de la maquette d'Évolution : installer un moteur autre qu'Orfan sans lui faire confiance.
 
 Rien ne s'installe qui ne soit dans le CATALOGUE, et le catalogue n'est cru que scellé (HMAC de la clé de l'instance) : un catalogue modifié ou sans sceau est refusé.

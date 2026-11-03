@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #000000
+# VERSION CN : 0.1.0  #ca84ff
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du lot 2 de la maquette d'Évolution : catalogue scellé, paquets épinglés par empreinte, retour arrière, jamais actif d'office.
 # MÉTHODE    : un exécuteur de banc pour le réseau (aucun paquet n'est téléchargé) ; un vrai environnement virtuel pour la mécanique.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=ca84ff ▼▼▼
 """Bancs de l'installateur : ce qu'il refuse, l'ordre de ses étapes, ce qu'il défait."""
 import json
 import sys

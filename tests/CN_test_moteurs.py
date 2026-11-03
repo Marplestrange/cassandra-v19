@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #000000
+# VERSION CN : 0.1.0  #d7aa10
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du lot 1 de la maquette d'Évolution : le moteur dans son processus, le relais de modèles plafonné, le registre et l'attribution des pièces.
 # MÉTHODE    : un vrai processus de moteur (aucune doublure du protocole) ; le modèle est une fonction de banc ; le module Évolution est branché dans un vrai noyau comme au banc du module.
 # ══════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=000000 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=d7aa10 ▼▼▼
 """Bancs des moteurs de recherche : le protocole de processus, le relais, le registre."""
 import json
 import sys

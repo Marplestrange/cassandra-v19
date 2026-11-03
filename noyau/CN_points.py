@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : noyau
 # ZONE       : CN
-# VERSION CN : 0.1.0  #310ef2
+# VERSION CN : 0.1.0  #8577e0
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : appelle un point d'évolution (données en entrée, données en sortie), sert l'EC en service si elle est saine, sinon la référence du dépôt.
 # MÉTHODE    : valide l'entrée et la sortie par le contrat, copie les données à chaque frontière, compte les fautes d'une EC et la suspend au troisième écart en dix minutes.
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=310ef2 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=8577e0 ▼▼▼
 """Les points d'évolution (docs/CN_NEXUS.md, docs/CN_FORMAT.md, docs/CN_EVOLUTION.md §2 sexies).
 
 Un module déclare des points ([[points_evolution]]) : des fonctions PURES dont le dépôt écrit la RÉFÉRENCE. Une EC (évoluée, rangée dans le stock, jamais dans
@@ -344,7 +344,7 @@ def _candidats_bac() -> list:
     b = shutil.which("bwrap")
     if b:
         lie, vus = ["--tmpfs", "/tmp"], set()                   # le /tmp vide d'abord : un dossier lié PLUS BAS (le code lui-même sous /tmp) reste visible, jamais recouvert
-        for p in (sys.base_prefix, sys.prefix, sys.exec_prefix, "/usr", "/lib", "/lib64", "/bin", "/etc/alternatives", racine):
+        for p in (sys.base_prefix, sys.prefix, sys.exec_prefix, "/usr", "/lib", "/lib64", "/bin", "/etc/alternatives", racine, str(Path(racine).parent / "orfan")):
             if p not in vus and os.path.exists(p):
                 vus.add(p)
                 lie += ["--ro-bind", p, p]
@@ -410,12 +410,13 @@ def bac_os(mode: str = "auto") -> tuple:
 class _Travailleur:
     """Un processus Python à part qui a chargé UNE EC. Un seul échange à la fois ; au délai, le processus est tué (jamais attendu)."""
 
-    def __init__(self, memoire_mo: int, bac: str = "auto"):
+    def __init__(self, memoire_mo: int, bac: str = "auto", script: str = "", arguments: tuple = ()):
         racine = Path(__file__).resolve().parent
         prefixe, self.bac = bac_os(bac)                                   # lève BacIndisponible AVANT de créer quoi que ce soit si le bac exigé manque
         self._dossier = tempfile.mkdtemp(prefix="cn_ec_")
         env = {k: v for k, v in os.environ.items() if k in ("SYSTEMROOT", "PATH", "TEMP", "TMP", "LANG", "LC_ALL")}      # rien d'autre du serveur : pas de clé, pas de jeton
-        self.proc = subprocess.Popen([*prefixe, sys.executable, "-I", str(racine / "CN_ec_worker.py"), str(racine / "CN_points.py"), str(int(memoire_mo) * 1024 * 1024)],
+        lancement = [script, *arguments] if script else [str(racine / "CN_ec_worker.py"), str(racine / "CN_points.py")]
+        self.proc = subprocess.Popen([*prefixe, sys.executable, "-I", *lancement, str(int(memoire_mo) * 1024 * 1024)],
                                      stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, cwd=self._dossier, env=env, bufsize=0,
                                      start_new_session=(os.name == "posix"))       # son propre groupe : on tue aussi ce que l'enveloppe a lancé
         self._q: queue.Queue = queue.Queue()
@@ -432,6 +433,25 @@ class _Travailleur:
 
     def vivant(self) -> bool:
         return self.proc.poll() is None
+
+    def envoyer(self, msg: dict) -> None:
+        """Une ligne vers le processus, sans attendre de réponse (un moteur de recherche parle plusieurs fois avant de conclure)."""
+        try:
+            self.proc.stdin.write((json.dumps(msg) + "\n").encode("ascii"))
+        except (OSError, ValueError) as e:
+            self.tuer()
+            raise ErreurEC("le processus ne répond plus (%s)" % e)
+
+    def recevoir(self, delai_s: float) -> dict:
+        """La prochaine ligne du processus ; au délai, il est tué."""
+        try:
+            ligne = self._q.get(timeout=max(0.05, delai_s))
+        except queue.Empty:
+            self.tuer()
+            raise DelaiEC("délai de %.1f s dépassé : processus tué" % delai_s)
+        if ligne is None:
+            raise ErreurEC("le processus s'est arrêté (mémoire épuisée ou fin brutale)")
+        return json.loads(ligne.decode("utf-8"))
 
     def echange(self, msg: dict, delai_s: float) -> dict:
         with self._verrou:
