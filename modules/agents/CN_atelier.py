@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.1  #ed1bd8
+# VERSION CN : 0.5.1  #3b821c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents, et les services que le tour de conversation emploie (réglage effec
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.1 empreinte=ed1bd8 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=3b821c ▼▼▼
 """L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents,
 et les services que le tour de conversation emploie (réglage effectif, palier par outil, coût du jour, plafond).
 
@@ -390,9 +390,83 @@ def brancher_equipe(ctx, reglage):
     ctx.implementer("palier_regler", palier_regler, prouver_palier, defaire_palier, simuler=lambda x, agent="", outil="", palier="", **_: "poserait le palier « %s » à %s pour %s" % (palier or "inchangé", outil, agent))
     ctx.implementer("plafond_regler", plafond_regler, prouver_plafond, defaire_plafond, simuler=lambda x, portee="", euros=None, **_: "poserait un plafond de %s € par jour sur %s" % (euros, portee))
 
+    # ------------------------------------------------------------------ le cerveau : chaque agent peut-il répondre ?
+    # Le moteur des modèles ne connaît que des RÔLES (un rôle est lié à un modèle déclaré, ou il ne répond pas). Cette lecture suit la chaîne d'un agent
+    # jusqu'au modèle, et dit ce qui casse : « aucun modèle n'est lié au rôle principal ». Elle sert l'écran Modèles & clés, le bandeau de L'équipe et un détecteur.
+    ORIGINE = {"cassandra": ("role_cassandra", "principal"), "itare": ("role_itare", "itare_citadelle"), "amizo": ("role_amizo", "principal")}
+
+    def chaine_de(d, cfg):
+        """Les rôles qu'un agent essaie, dans l'ordre : son modèle (à défaut le rôle de la maison pour lui), puis son secours."""
+        principal = cfg["modele"] or (str(reglage(*ORIGINE[d["id"]])) if d["id"] in ORIGINE else "")
+        return [r for r in (principal, cfg["secours"]) if r]
+
+    def calcul_cerveau(lister, compte=""):
+        modeles = {m["id"]: m for m in (lister.get("modeles") or [])}
+        roles = lister.get("roles") or {}
+        propre = modeles.get(lister.get("choix") or "")
+        sortie = []
+        for d in definitions().values():
+            cfg = effectif(d["id"], compte if d["portee"] == "compte" else "")
+            etapes = []
+            for r in chaine_de(d, cfg):
+                m = modeles.get(roles.get(r, ""))
+                etapes.append({"role": r, "modele_id": m["id"] if m else "", "modele": m["nom"] if m else "", "en_ligne": bool(m and m.get("en_ligne")), "essai": (m or {}).get("essai")})
+            premier = next((e for e in etapes if e["modele_id"]), None)
+            if d["genre"] != "agent":
+                peut, raison = (None, "règles internes : le modèle est facultatif") if not etapes else ((True, "") if premier else (False, "le rôle « %s » n'est lié à aucun modèle" % etapes[0]["role"]))
+            elif premier or (d["portee"] == "compte" and propre):
+                peut, raison = True, ""
+            elif etapes:
+                peut, raison = False, "aucun modèle n'est lié au rôle « %s »" % etapes[0]["role"]
+            else:
+                peut, raison = False, "aucun modèle"
+            sortie.append({"id": d["id"], "genre": d["genre"], "nom": cfg["nom_affiche"], "portee": d["portee"], "chaine": [e["role"] for e in etapes], "modele": (premier or {}).get("modele") or (propre or {}).get("nom", ""),
+                           "modele_id": (premier or {}).get("modele_id") or (propre or {}).get("id", ""), "en_ligne": bool((premier or {}).get("en_ligne")) if premier else bool(propre and propre.get("en_ligne")),
+                           "secours": next((e["modele"] for e in etapes[1:] if e["modele_id"]), ""), "essai": (premier or {}).get("essai") or (propre or {}).get("essai"), "peut": peut, "raison": raison})
+        return sortie
+
+    def cerveau(c):
+        compte = compte_agit()
+        ags = {a["id"]: a for a in calcul_cerveau(ctx.executer_lecture("modeles.lister") or {}, compte)}
+        vus = [ags[d["id"]] for d in visibles(compte) if d["id"] in ags]
+        agents = [a for a in vus if a["genre"] == "agent"]
+        return {"agents": vus, "repondent": sum(1 for a in agents if a["peut"]), "total": len(agents), "sans": [a["nom"] for a in agents if not a["peut"]]}
+
+    def economies(c):
+        """Des suggestions calculées sur les coûts des 14 derniers jours, jamais appliquées d'elles-mêmes : un agent qui paie un modèle en ligne pour de courts échanges alors qu'un modèle local a répondu à
+        son essai ; l'absence de plafond global quand de l'argent se dépense."""
+        compte = compte_agit()
+        if not admin(compte):
+            return {"suggestions": []}
+        lister = ctx.executer_lecture("modeles.lister") or {}
+        ags = {a["id"]: a for a in calcul_cerveau(lister, compte)}
+        locaux = [m for m in (lister.get("modeles") or []) if not m.get("en_ligne") and m.get("portee") == "instance" and (m.get("essai") or {}).get("ok")]
+        depuis = eq.jour_moins(14) if hasattr(eq, "jour_moins") else time.strftime("%Y-%m-%d", time.localtime(time.time() - 14 * 86400))
+        sug = []
+        for d in definitions().values():
+            if d["genre"] != "agent":
+                continue
+            r = db.lire("SELECT COALESCE(SUM(centimes),0) AS c, COALESCE(SUM(appels),0) AS n, COALESCE(SUM(entrees),0) AS e, COALESCE(SUM(sorties),0) AS s FROM agent_couts WHERE agent=? AND jour>=?", (d["id"], depuis))[0]
+            a = ags.get(d["id"])
+            if not a or not a["en_ligne"] or not locaux or r["n"] < 5 or r["c"] <= 0:
+                continue
+            moyen = (r["e"] + r["s"]) / r["n"]
+            if moyen < 1500:
+                sug.append({"id": "local-" + d["id"], "agent": d["id"], "titre": "%s paie %s pour de courts échanges" % (a["nom"], a["modele"]),
+                            "detail": "%d appels en 14 jours, %d jetons en moyenne. Le modèle local %s a répondu à son essai (%s s)." % (r["n"], moyen, locaux[0]["nom"], (locaux[0].get("essai") or {}).get("secondes", "?")),
+                            "euros": eq.euros(r["c"]), "action": {"type": "modele", "agent": d["id"], "modele_id": locaux[0]["id"]}})
+        if not plafonds().get("global") and depense()["c"] + sum(x["euros"] for x in sug) > 0:
+            tot = db.lire("SELECT COALESCE(SUM(centimes),0) AS c FROM agent_couts WHERE jour>=?", (depuis,))[0]["c"]
+            if tot > 0:
+                sug.append({"id": "plafond", "agent": "", "titre": "Aucun plafond global de coût", "detail": "%s € dépensés en 14 jours, sans limite posée : un modèle en ligne qui s'emballe ne serait arrêté par rien." % eq.euros(tot), "euros": 0, "action": {"type": "plafond"}})
+        return {"suggestions": sug}
+
+    ctx.implementer("cerveau", cerveau)
+    ctx.implementer("economies", economies)
+
     # ce que le tour de conversation emploie
     return SimpleNamespace(effectif=effectif, limite=limite, surcharges=surcharges, outils_de=outils_de, dans_sa_famille=dans_sa_famille, repartition=lambda: D.get("repartition", {}), compter=compter, verdict=verdict, retenir=retenir, definitions=definitions, palier_outil=palier_outil,
-                           cible=cible, definition=definition, admin=admin)
+                           cible=cible, definition=definition, admin=admin, calcul_cerveau=calcul_cerveau)
 # ▲▲▲ FIN BORNE CN ▲▲▲
 
 # ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════

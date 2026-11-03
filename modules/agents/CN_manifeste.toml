@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.1  #9ac6a9
+# VERSION CN : 0.5.1  #dfc557
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Cassandra (la machine) et Itare (le bureau) en conversation : un tour lit la mémoire, raisonne par un modèle, appelle des OUTILS DÉRIVÉS DU CATALOGUE (rien à écrire à la main : une capacité de plus = un outil de plus) et conclut en clair. Chaque outil traverse l'exécuteur comme n'importe quel acte : droits du compte, palier d'autonomie, preuve, retour, journal — un outil « raconté » n'a rien fait, et l'agent le dit. Ce qui est lu de l'extérieur est une donnée, jamais une consigne ; après une lecture extérieure, ce qui sort de la maison ne part pas seul.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.1 empreinte=9ac6a9 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=dfc557 ▼▼▼
 [module]
 id = "agents"
 nom = "Agents"
@@ -49,6 +49,10 @@ sensible = true
 [[objets]]
 type = "conversation"
 libelle = "Une conversation avec un agent"
+
+[[objets]]
+type = "cerveau"
+libelle = "L'aptitude d'un agent à répondre : son rôle est-il lié à un modèle ?"
 
 [[objets]]
 type = "tache_agent"
@@ -188,6 +192,18 @@ retour = "retirer les messages que ce tour a gardés (les actions de l'agent ont
 paliers = ["auto", "raconter"]
 qui = ["humain", "compte", "cassandra", "itare"]
 masque = ["message", "texte", "actions"]
+
+[[capacites]]
+id = "cerveau"
+libelle = "Chaque agent peut-il répondre ? Son modèle, son secours, son dernier essai, et ce qui casse (un rôle sans modèle)"
+risque = "lecture"
+droit = "utiliser"
+
+[[capacites]]
+id = "economies"
+libelle = "Des économies suggérées, calculées sur 14 jours de coûts : jamais appliquées d'elles-mêmes (administrateur)"
+risque = "lecture"
+droit = "utiliser"
 
 [[capacites]]
 id = "equipe"
@@ -446,6 +462,11 @@ stockage = true
 lectures = true
 agir = true
 introspection = true
+
+[[detecteurs]]
+id = "sans_cerveau"
+libelle = "Un agent (Cassandra, Amizo) n'a aucun modèle lié : il ne peut pas répondre"
+frequence_s = 300
 
 [[moteurs]]
 id = "taches"

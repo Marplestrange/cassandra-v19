@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #df25ff
+// VERSION CN : 0.2.0  #37c6f8
 // VERSION EC : néant
 // EC LIÉES   : néant
-// RÔLE       : dessine l’écran « Modèles et clés » du module modeles : les modèles en ligne (fournisseur, clé d’API, essai), le catalogue des modèles locaux (Ollama : installer, déclarer, supprimer) et les rôles.
-// MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) ; tout passe par les capacités modeles.* ; une clé saisie part au noyau et n’est jamais relue ni réaffichée.
+// RÔLE       : dessine la page « Modèles & clés » : la santé du cerveau, le choix d’un modèle par agent, les modèles en ligne (clé d’API), les modèles locaux (Ollama) avec ce que la machine supporte, les autres moteurs d’IA, un comparateur et l’usage par modèle.
+// MÉTHODE    : un crochet de la scène (CASS.sceneSurMesure.modeles) et CASS.monterModeles, monté aussi dans Agents IA ; les rôles du moteur restent cachés : choisir un modèle pour un agent crée le rôle « agent_<id> » qui le relie ; une clé saisie n’est jamais relue.
 // ═════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=df25ff ▼▼▼
+// ▼▼▼ BORNE CN version=0.2.0 empreinte=37c6f8 ▼▼▼
 (function () {
   "use strict";
   const CASS = window.CASS;
@@ -31,119 +31,163 @@
     ollama: ["qwen2.5:3b", "qwen3:4b-instruct", "llama3.2:3b"],
   };
   const LIENS = { deepseek: "platform.deepseek.com", openrouter: "openrouter.ai/keys", openai: "platform.openai.com/api-keys", google: "aistudio.google.com/apikey", groq: "console.groq.com/keys" };
+  // [nom, taille en Go, ce qu’il vaut]
   const CATALOGUE_LOCAL = [
-    ["qwen2.5:3b", "1,9 Go", "léger, bon en français : le choix par défaut"], ["qwen3:4b-instruct", "2,5 Go", "plus fin, répond sans réfléchir à voix haute"],
-    ["llama3.2:3b", "2,0 Go", "polyvalent et rapide"], ["gemma2:2b", "1,6 Go", "très léger, pour une petite machine"],
-    ["qwen2.5:7b", "4,7 Go", "nettement meilleur, demande 8 Go de mémoire"], ["mistral:7b", "4,1 Go", "français correct, 8 Go de mémoire"],
-    ["phi3.5", "2,2 Go", "petit et bon en raisonnement court"], ["nomic-embed-text", "0,3 Go", "recherche par le sens (pas de conversation)"],
+    ["qwen2.5:3b", 1.9, "léger, bon en français : le choix par défaut"], ["qwen3:4b-instruct", 2.5, "plus fin, répond sans réfléchir à voix haute"],
+    ["llama3.2:3b", 2.0, "polyvalent et rapide"], ["gemma2:2b", 1.6, "très léger, pour une petite machine"],
+    ["qwen2.5:7b", 4.7, "nettement meilleur, il faut de la mémoire"], ["mistral:7b", 4.1, "français correct"],
+    ["phi3.5", 2.2, "petit et bon en raisonnement court"], ["nomic-embed-text", 0.3, "recherche par le sens (pas de conversation)"],
   ];
+  const DEFAUTS = ["principal", "itare_citadelle"];                      // les rôles que prennent Cassandra, Amizo et Itare quand on ne leur en donne pas d’autre
 
   const CSS = ".md{display:flex;flex-direction:column;gap:16px;color:var(--txt);font-size:13.5px;line-height:1.5}.md *{box-sizing:border-box}.md h1,.md h2,.md h3,.md p{margin:0}.md .mono{font-family:" + MONO + "}" +
-    ".md .carte{background:var(--surface);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}" +
+    ".md .carte{background:var(--surface);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}" +
+    ".md .carte.al{border-left:4px solid var(--danger);background:color-mix(in srgb,var(--danger) 7%,var(--surface))}" +
     ".md .tete h1{font:650 22px/1.2 'Inter',system-ui,sans-serif;color:var(--txt-strong,var(--txt))}.md .sous,.md .note{color:var(--txt-soft);font-size:12.5px}.md .sous{font-size:13px;margin-top:3px;max-width:68ch}" +
-    ".md h2{font:650 16px 'Inter',system-ui,sans-serif}.md .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.md .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}" +
+    ".md h2{font:650 16px 'Inter',system-ui,sans-serif}.md h3{font:650 12.5px 'Inter',system-ui,sans-serif;margin-top:4px}.md .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.md .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}" +
     ".md .btn{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,var(--surface));color:var(--txt);border-radius:10px;padding:7px 13px;font:600 12.5px 'Inter',system-ui,sans-serif;cursor:pointer}" +
     ".md .btn:hover:not([disabled]){border-color:var(--accent);color:var(--accent)}.md .btn.pri{background:var(--accent);color:var(--on-accent,#fff);border-color:transparent}.md .btn.pri:hover:not([disabled]){filter:brightness(1.08);color:var(--on-accent,#fff)}" +
     ".md .btn.dng{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,transparent)}.md .btn[disabled]{opacity:.45;cursor:not-allowed}.md .btn.mini{padding:4px 9px;font-size:11.5px}" +
     ".md .pastille{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 9px;font:600 11px 'Inter',system-ui,sans-serif;white-space:nowrap;border:1px solid var(--line)}.md .pastille::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}" +
     ".md .pastille.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}.md .pastille.al{color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)}.md .pastille.dg{color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}.md .pastille.mu{color:var(--txt-soft)}" +
+    ".md .sante{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}.md .sante>div{background:var(--surface-solid,var(--surface));padding:12px 14px;display:flex;flex-direction:column;gap:4px}" +
+    ".md .sante b{font:600 19px/1.1 " + MONO + ";font-variant-numeric:tabular-nums}.md .lib{font:600 10px " + MONO + ";letter-spacing:.08em;text-transform:uppercase;color:var(--txt-faint)}" +
     ".md .rang{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) auto;gap:8px 14px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.md .rang .nom{font:600 13px " + MONO + ";overflow-wrap:anywhere}" +
+    ".md .sc{overflow-x:auto}.md table{border-collapse:collapse;width:100%;font-size:13px}.md th{font:600 10px " + MONO + ";letter-spacing:.08em;text-transform:uppercase;color:var(--txt-faint);text-align:left;padding:6px 10px 8px;white-space:nowrap}.md td{padding:9px 10px;border-top:1px solid var(--line);vertical-align:middle}.md td.n{font-family:" + MONO + ";font-variant-numeric:tabular-nums;white-space:nowrap}" +
     ".md .champs{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px 16px}.md label.ch{display:flex;flex-direction:column;gap:5px}.md label.ch b{font-weight:650;font-size:12.5px}" +
-    ".md input[type=text],.md input[type=password],.md select{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,#fff);color:var(--txt);border-radius:10px;padding:8px 12px;font:13px " + MONO + ";min-width:0;width:100%}" +
+    ".md input[type=text],.md input[type=password],.md select{border:1px solid var(--line-strong,var(--line));background:var(--surface-solid,#fff);color:var(--txt);border-radius:10px;padding:7px 10px;font:12.5px " + MONO + ";min-width:0;width:100%}" +
     ".md input:focus,.md select:focus{outline:2px solid color-mix(in srgb,var(--accent) 40%,transparent);outline-offset:1px}" +
-    ".md .puces{display:flex;gap:8px;flex-wrap:wrap}.md .puce{border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--surface-solid,transparent);display:flex;flex-direction:column;gap:3px;min-width:170px;max-width:240px}" +
-    ".md .puce b{font:650 12.5px " + MONO + "}.md .barre{height:5px;border-radius:99px;background:var(--line);overflow:hidden}.md .barre i{display:block;height:100%;background:var(--accent)}" +
-    ".md .attente{padding:30px;text-align:center;color:var(--txt-soft)}.md .confirme{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px}.md .err{color:var(--danger)}" +
+    ".md .puces{display:flex;gap:8px;flex-wrap:wrap}.md .puce{border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--surface-solid,transparent);display:flex;flex-direction:column;gap:4px;min-width:170px;max-width:240px}" +
+    ".md .puce b{font:650 12.5px " + MONO + "}.md .barre{height:6px;border-radius:99px;background:var(--line);overflow:hidden}.md .barre i{display:block;height:100%;background:var(--accent)}.md .barre i.al{background:var(--warn)}" +
+    ".md .etapes{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}.md .etape{border:1px solid var(--line);border-radius:13px;padding:13px 14px;background:var(--surface-solid,transparent);display:flex;flex-direction:column;gap:8px}" +
+    ".md .rep{border:1px solid var(--line);border-radius:11px;padding:11px 13px;background:var(--surface-solid,transparent);min-height:90px;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}" +
+    ".md .attente{padding:30px;text-align:center;color:var(--txt-soft)}.md .confirme{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px}.md .err{color:var(--danger)}.md .g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}" +
     ".sh-scene:has(>.sh-corps>.md)>.sh-titre{display:none}@media (max-width:820px){.md .rang{grid-template-columns:minmax(0,1fr) auto}.md .rang .m{grid-column:1 / -1}}";
 
-  const octets = (n) => n >= 1e9 ? (n / 1e9).toFixed(1).replace(".", ",") + " Go" : Math.round((n || 0) / 1e6) + " Mo";
-  const RANG = { principal: "le modèle principal de Cassandra", itare_citadelle: "Itare, la passerelle", vision: "la lecture d’images", relecteur: "la relecture", second_avis: "le second avis" };
+  const octets = (n) => n >= 1e9 ? (n / 1e9).toFixed(1).replace(".", ",") + " Go" : n >= 1e6 ? Math.round(n / 1e6) + " Mo" : n > 0 ? Math.round(n / 1e3) + " Ko" : "—";
+  const go = (n) => String(n).replace(".", ",") + " Go";
+  const entier = (n) => String(Math.round(n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-  const DEFAUT = { cassandra: "principal", itare: "itare_citadelle", amizo: "principal", relecteur: "relecteur", vision: "vision" };      // le rôle que prend un agent sans modèle à lui (le module agents)
-
-  // Monté deux fois : comme console du module (Console technique) et comme page « Modèles & clés » des agents.
-  async function monter(corps, ctx) {
+  async function monter(corps) {
     const anc = document.getElementById("md-css"); if (anc) anc.remove();
     const st = document.createElement("style"); st.id = "md-css"; st.textContent = CSS; document.head.appendChild(st);
     const racine = document.createElement("div"); racine.className = "md"; corps.appendChild(racine);
 
-    const S = { eq: [], l: null, f: [], loc: null, occupe: false, erreur: "", prov: "", retirer: "", suppr: "", essais: {}, form: { nom: "", cle: "", base: "" }, mini: "" };
+    const S = { l: null, f: [], loc: null, mo: null, us: null, eq: [], cv: null, ep: [], occupe: false, erreur: "", prov: "", retirer: "", suppr: "", essais: {}, form: { nom: "", base: "" }, mini: "", cmp: { a: "", b: "", q: "Pourquoi le disque de cette machine a-t-il autant d’espace libre ?", ra: "", rb: "" } };
     let minuterie = null;
+    const vivant = () => document.body.contains(racine);
 
     async function charger(tout) {
       try {
-        const [l, f, loc] = await Promise.all([agir("modeles.lister"), S.f.length && !tout ? Promise.resolve({ fournisseurs: S.f, roles: S.roles }) : agir("modeles.fournisseurs"), agir("modeles.locaux").catch((e) => ({ repond: false, raison: e.message, modeles: [], telechargements: [] }))]);
-        S.l = l; S.f = f.fournisseurs || []; S.roles = f.roles || {}; S.loc = loc; S.erreur = "";
+        const [l, f, loc, cv] = await Promise.all([agir("modeles.lister"), S.f.length && !tout ? Promise.resolve({ fournisseurs: S.f }) : agir("modeles.fournisseurs"),
+          agir("modeles.locaux").catch((e) => ({ repond: false, raison: e.message, modeles: [], telechargements: [] })), agir("agents.cerveau").catch(() => null)]);
+        S.l = l; S.f = f.fournisseurs || []; S.loc = loc; S.cv = cv; S.erreur = "";
         if (!S.prov && S.f.length) S.prov = S.f[0].id;
       } catch (e) { S.erreur = e.message || String(e); }
       dessiner(); armer();
-      // l’équipe se lit lentement à froid : la page est déjà là, la carte des agents s’y ajoute
-      if (!S.eq.length || tout) agir("agents.equipe").then((r) => { S.eq = r.equipe || []; if (document.body.contains(racine)) dessiner(); }).catch(() => {});
+      // ce qui se lit lentement arrive ensuite : la page est déjà là
+      const apres = (cap, cle, args) => agir(cap, args).then((r) => { S[cle] = r; if (vivant()) dessiner(); }).catch(() => {});
+      apres("modeles.moteurs", "mo"); apres("modeles.usage", "us", { jours: 14 });
+      agir("agents.equipe").then((r) => { S.eq = r.equipe || []; if (vivant()) dessiner(); }).catch(() => {});
+      agir("agents.epreuves_resultats").then((r) => { S.ep = r.resultats || []; if (vivant()) dessiner(); }).catch(() => {});
     }
     function armer() {
       if (minuterie) { clearTimeout(minuterie); minuterie = null; }
       const actifs = S.loc && (S.loc.telechargements || []).some((p) => p.etat === "attente" || p.etat === "en cours");
-      if (actifs && document.body.contains(racine)) minuterie = setTimeout(() => { if (document.body.contains(racine) && !S.occupe) charger(); }, 3000);
+      if (actifs && vivant()) minuterie = setTimeout(() => { if (vivant() && !S.occupe) charger(); }, 3000);
     }
     const faire = async (f, ok) => {
       if (S.occupe) return; S.occupe = true; dessiner();
       try { const r = await f(); if (ok) dire(typeof ok === "function" ? ok(r) : ok); } catch (e) { dire(e.message || String(e), "err"); }
-      finally { S.occupe = false; S.retirer = ""; S.suppr = ""; await charger(); }
+      finally { S.occupe = false; S.retirer = ""; S.suppr = ""; window.dispatchEvent(new Event("cassandra:agents-change")); await charger(); }
     };
     // L’administrateur déclare pour l’instance ; un compte ordinaire pour lui seul.
-    const ajouterModele = async (a) => { try { return await agir("modeles.instance_ajouter", a); } catch (e) { if (/droit|autoris/i.test(e.message || "")) return agir("modeles.ajouter", a); throw e; } };
-    const essayer = async (id) => { try { return await agir("modeles.instance_essayer", { id }); } catch (e) { if (/droit|autoris/i.test(e.message || "")) return agir("modeles.essayer", { id }); throw e; } };
-    const retirerModele = async (id) => { try { return await agir("modeles.instance_retirer", { id }); } catch (e) { if (/droit|autoris/i.test(e.message || "")) return agir("modeles.retirer", { id }); throw e; } };
+    const droit = (e) => /droit|autoris/i.test((e && e.message) || "");
+    const ajouterModele = async (a) => { try { return await agir("modeles.instance_ajouter", a); } catch (e) { if (droit(e)) return agir("modeles.ajouter", a); throw e; } };
+    const essayer = async (id) => { try { return await agir("modeles.instance_essayer", { id }); } catch (e) { if (droit(e)) return agir("modeles.essayer", { id }); throw e; } };
+    const retirerModele = async (id) => { try { return await agir("modeles.instance_retirer", { id }); } catch (e) { if (droit(e)) return agir("modeles.retirer", { id }); throw e; } };
+    // Un choix par agent : le moteur ne connaît que des rôles, on crée donc le rôle de cet agent et on le lie.
+    async function choisirPourAgent(agent, champ, modeleId) {
+      const role = (champ === "secours" ? "secours_" : "agent_") + agent;
+      if (!modeleId) { await agir("agents.agent_regler", { id: agent, champs: { [champ]: "" } }); try { await agir("modeles.role_lier", { role, modele_id: "" }); } catch (e) { /* pas de rôle à délier */ } return; }
+      await agir("modeles.role_lier", { role, modele_id: modeleId });
+      await agir("agents.agent_regler", { id: agent, champs: { [champ]: role } });
+    }
+    const lierDefauts = async (modeleId) => { for (const r of DEFAUTS) await agir("modeles.role_lier", { role: r, modele_id: modeleId }); };
 
-    const prov = () => S.f.find((x) => x.id === S.prov) || {};
     const declares = () => (S.l.modeles || []);
     const enLigne = () => declares().filter((m) => m.en_ligne);
-    const localDecl = () => declares().filter((m) => !m.en_ligne);
-
-    function essaiPastille(m) {
-      const e = S.essais[m.id] || m.essai;
-      return e ? (e.ok ? '<span class="pastille ok">a répondu en ' + esc(e.secondes) + " s</span>" : '<span class="pastille dg" title="' + esc(e.message || e.erreur) + '">a échoué</span>') : "";
+    const locauxDecl = () => declares().filter((m) => !m.en_ligne);
+    const prov = () => S.f.find((x) => x.id === S.prov) || {};
+    const nomProv = (id) => (S.f.find((x) => x.id === id) || {}).nom || id;
+    const eqDe = (id) => S.eq.find((a) => a.id === id) || {};
+    const essaiDe = (m) => S.essais[m.id] || m.essai;
+    function pastilleEssai(m) {
+      const e = essaiDe(m);
+      return e ? (e.ok ? '<span class="pastille ok">a répondu en ' + esc(e.secondes) + " s</span>" : '<span class="pastille dg" title="' + esc(e.message || e.erreur) + '">a échoué</span>') : '<span class="pastille mu">pas encore essayé</span>';
     }
+    function epreuves(m) {
+      const noms = [m.id].concat(m.roles || []), r = (S.ep || []).find((x) => noms.indexOf(x.modele) >= 0);
+      return r ? ' <span class="pastille ' + (r.ok ? "ok" : "al") + '" title="Épreuves de sûreté">épreuves ' + r.reussies + "/" + r.total + "</span>" : "";
+    }
+
+    // ── la santé du cerveau ─────────────────────────────────────────────────
+    function carteSante() {
+      const cv = S.cv, ms = declares();
+      if (cv && cv.sans && cv.sans.length) {
+        const sans = cv.sans.join(", ");
+        if (!ms.length) {
+          const inst = (S.loc && S.loc.modeles) || [];
+          return '<div class="carte al"><div class="bar"><div><h2>Cassandra ne peut pas penser pour l’instant</h2><p class="note">Aucun modèle n’est déclaré : ' + esc(sans) + ' répondent « aucun modèle ». Choisis un cerveau, deux minutes.</p></div><span class="pastille dg">0 agent sur ' + cv.total + " répond</span></div>" +
+            '<div class="etapes"><div class="etape"><span class="lib">Sur la machine</span><b>Gratuit et privé</b>' +
+            (inst.length ? '<p class="note">Ollama a déjà ' + (inst.length > 1 ? "des modèles installés" : "un modèle installé") + " : " + inst.map((m) => esc(m.name)).join(", ") + ".</p>" + inst.slice(0, 3).map((m) => '<button class="btn pri" data-a="brancher-local" data-n="' + esc(m.name) + '"' + (S.occupe ? " disabled" : "") + ">Utiliser " + esc(m.name) + " pour tous les agents</button>").join("")
+              : '<p class="note">Aucun modèle installé. Le plus léger qui parle bien français pèse 1,9 Go.</p><button class="btn pri" data-a="installer" data-n="qwen2.5:3b"' + (S.occupe || !(S.loc || {}).repond ? " disabled" : "") + ">Installer qwen2.5:3b</button>") + "</div>" +
+            '<div class="etape"><span class="lib">Chez un fournisseur</span><b>Plus fin, payant à l’usage</b><p class="note">Il faut une clé d’API. Le formulaire est juste en dessous : fournisseur, modèle, clé.</p><button class="btn" data-a="vers-ajout">Ajouter une clé</button></div></div></div>';
+        }
+        return '<div class="carte al"><div class="bar"><div><h2>' + esc(sans) + (cv.sans.length > 1 ? " ne peuvent pas répondre" : " ne peut pas répondre") + '</h2><p class="note">Un modèle est déclaré, mais ces agents n’y sont reliés par aucun rôle. Un clic suffit.</p></div><span class="pastille dg">' + cv.repondent + " agent(s) sur " + cv.total + " répondent</span></div>" +
+          '<div class="acts"><select id="md-tout" style="width:auto;flex:1 1 220px">' + ms.map((m) => '<option value="' + esc(m.id) + '">' + esc(m.nom) + " (" + esc(nomProv(m.fournisseur)) + ")</option>").join("") + '</select><button class="btn pri" data-a="lier-defauts"' + (S.occupe ? " disabled" : "") + ">Relier Cassandra, Amizo et Itare à ce modèle</button></div></div>";
+      }
+      const us = S.us, lignes = (us && us.lignes) || [], aujourdhui = new Date().toISOString().slice(0, 10), jour = lignes.filter((x) => x.jour === aujourdhui);
+      const appels = jour.reduce((n, x) => n + x.appels, 0), echecs = jour.reduce((n, x) => n + x.echecs, 0), secondes = jour.reduce((n, x) => n + x.secondes, 0);
+      const locaux = new Set(locauxDecl().map((m) => m.id)), appelsLocaux = jour.filter((x) => locaux.has(x.modele_id)).reduce((n, x) => n + x.appels, 0);
+      const cout = S.eq.reduce((n, a) => n + ((a.cout_jour || {}).euros || 0), 0);
+      return '<div class="sante"><div><span class="lib">Agents qui répondent</span><b>' + (cv ? cv.repondent + " / " + cv.total : "…") + '</b><span class="pastille ok">tous reliés</span></div>' +
+        '<div><span class="lib">Appels aujourd’hui</span><b>' + (us ? entier(appels) : "…") + '</b><span class="note">' + (us ? echecs + " échec(s)" + (appels ? " · " + (secondes / appels).toFixed(1).replace(".", ",") + " s en moyenne" : "") : "") + "</span></div>" +
+        '<div><span class="lib">Coût du jour</span><b>' + (S.eq.length ? cout.toFixed(2).replace(".", ",") + " €" : "…") + '</b><span class="note">détail dans chaque fiche, onglet Coût</span></div>' +
+        '<div><span class="lib">Resté sur la machine</span><b>' + (us && appels ? Math.round(100 * appelsLocaux / appels) + " %" : "—") + '</b><span class="note">des appels du jour</span></div></div>';
+    }
+
+    // ── un choix par agent ──────────────────────────────────────────────────
+    function options(courant, vide) {
+      return '<option value="">' + esc(vide) + "</option>" + declares().map((m) => '<option value="' + esc(m.id) + '"' + (m.id === courant ? " selected" : "") + ">" + esc(m.nom) + " (" + esc(nomProv(m.fournisseur)) + ")</option>").join("");
+    }
+    function carteAgents() {
+      const cv = S.cv; if (!cv) return "";
+      const rows = cv.agents.map((a) => {
+        const e = eqDe(a.id), perso = a.chaine.length && /^(agent_|secours_)/.test(a.chaine[0]) ? a.modele_id : "", secours = a.chaine.length > 1 ? (declares().find((m) => m.nom === a.secours) || {}).id || "" : "";
+        const defaut = a.modele ? "par défaut : " + a.modele : "— aucun —";
+        const sante = a.peut === false ? '<span class="pastille dg" title="' + esc(a.raison) + '">ne répondra pas</span>' : a.peut === null ? '<span class="pastille mu" title="' + esc(a.raison) + '">règles internes</span>' : (a.essai ? (a.essai.ok ? '<span class="pastille ok">' + esc(a.essai.secondes) + " s</span>" : '<span class="pastille dg">dernier essai raté</span>') : '<span class="pastille mu">pas essayé</span>');
+        const sort = a.peut ? '<span class="pastille ' + (a.en_ligne ? "al" : "mu") + '">' + (a.en_ligne ? "part chez un fournisseur" : "reste ici") + "</span>" : '<span class="pastille mu">—</span>';
+        return "<tr><td><b>" + esc(a.nom) + '</b><br><span class="note">' + (a.genre === "agent" ? "agent" : "service agentique") + (e.niveau ? " · " + esc(e.niveau) : "") + '</span></td><td><select data-ag="' + esc(a.id) + '" data-champ="modele" aria-label="Modèle de ' + esc(a.nom) + '">' + options(perso, defaut) + '</select></td><td><select data-ag="' + esc(a.id) + '" data-champ="secours" aria-label="Secours de ' + esc(a.nom) + '">' + options(secours, "— aucun —") + "</select></td><td>" + sante + "</td><td>" + sort + '</td><td class="n">' + (e.cout_jour ? e.cout_jour.euros.toFixed(2).replace(".", ",") + " €" : "—") + '</td><td><button class="btn mini" data-a="essayer" data-id="' + esc(a.modele_id) + '"' + (!a.modele_id || S.occupe ? " disabled" : "") + ">Essayer</button></td></tr>";
+      }).join("");
+      return '<div class="carte"><div class="bar"><h2>Qui pense avec quoi</h2></div><div class="sc"><table><thead><tr><th>Agent</th><th>Modèle</th><th>Secours</th><th>Santé</th><th>Ce qui sort</th><th>Coût du jour</th><th></th></tr></thead><tbody>' + rows + "</tbody></table></div>" +
+        '<p class="note">Vide : l’agent prend le modèle par défaut de la maison. Un choix ici est propre à cet agent. Les services agentiques ont des règles internes : un modèle leur est facultatif.</p></div>';
+    }
+
+    // ── en ligne et local ──────────────────────────────────────────────────
     function ligneModele(m) {
-      const e = S.essais[m.id] || m.essai;
-      const essai = e ? (e.ok ? '<span class="pastille ok">a répondu en ' + esc(e.secondes) + " s</span>" : '<span class="pastille dg" title="' + esc(e.message || e.erreur) + '">a échoué</span>') + ' <span class="note">' + esc(e.quand || "") + "</span>" : '<span class="pastille mu">pas encore essayé</span>';
-      return '<div class="rang"><div><span class="nom">' + esc(m.nom) + '</span><br><span class="note">' + esc((S.f.find((x) => x.id === m.fournisseur) || {}).nom || m.fournisseur) + (m.base_url ? " · " + esc(m.base_url) : "") + "</span></div>" +
-        '<div class="m">' + (m.a_cle ? '<span class="pastille ok">clé enregistrée</span> ' : '<span class="pastille mu">sans clé</span> ') + (m.roles || []).map((r) => '<span class="pastille al">' + esc(r) + "</span>").join(" ") + "<br>" + essai + "</div>" +
+      return '<div class="rang"><div><span class="nom">' + esc(m.nom) + '</span><br><span class="note">' + esc(nomProv(m.fournisseur)) + (m.base_url ? " · " + esc(m.base_url) : "") + "</span></div>" +
+        '<div class="m">' + (m.a_cle ? '<span class="pastille ok">clé enregistrée</span> ' : '<span class="pastille mu">sans clé</span> ') + pastilleEssai(m) + epreuves(m) + "</div>" +
         '<div class="acts"><button class="btn mini" data-a="essayer" data-id="' + esc(m.id) + '"' + (S.occupe ? " disabled" : "") + ">Essayer</button>" +
         (S.retirer === m.id ? '<span class="confirme">Retirer ? <button class="btn mini dng" data-a="retirer-oui" data-id="' + esc(m.id) + '">Oui</button><button class="btn mini" data-a="retirer-non">Non</button></span>' : '<button class="btn mini dng" data-a="retirer" data-id="' + esc(m.id) + '">Retirer</button>') + "</div></div>";
     }
-
-    // Ce que dit un réglage « modèle » d’agent : un rôle (principal…), un modèle déclaré (son identifiant), ou rien (le rôle par défaut de l’agent).
-    function etatAgent(a) {
-      const v = a.modele || DEFAUT[a.id] || "", roles = S.l.roles || {}, ms = declares();
-      if (!v) return ["mu", "rôle par défaut"];
-      if (ms.some((m) => m.id === v)) return ["ok", "répond"];
-      if (roles[v]) return ["ok", "répond"];
-      return ["dg", "ne répondra pas : rôle sans modèle"];
-    }
-    function options(courant, vide) {
-      const ms = declares(), roles = Object.assign({}, RANG, S.roles || {});
-      let h = '<option value="">' + esc(vide) + "</option><optgroup label=\"Un rôle\">" + Object.keys(roles).map((r) => '<option value="' + esc(r) + '"' + (r === courant ? " selected" : "") + ">" + esc(r) + "</option>").join("") + "</optgroup>";
-      if (ms.length) h += '<optgroup label="Un modèle déclaré">' + ms.map((m) => '<option value="' + esc(m.id) + '"' + (m.id === courant ? " selected" : "") + ">" + esc(m.nom) + " (" + esc(m.fournisseur) + ")</option>").join("") + "</optgroup>";
-      if (courant && !roles[courant] && !ms.some((m) => m.id === courant)) h += '<option value="' + esc(courant) + '" selected>' + esc(courant) + " (inconnu)</option>";
-      return h;
-    }
-    function carteAgents() {
-      if (!S.eq.length) return "";
-      return '<div class="carte"><h2>Les agents</h2><p class="note">Le modèle de chaque agent, et celui qui prend le relais s’il échoue. Vide : l’agent prend son rôle par défaut (' + esc(Object.keys(DEFAUT).map((k) => k + " → " + DEFAUT[k]).slice(0, 3).join(", ")) + ").</p>" +
-        S.eq.map((a) => { const e = etatAgent(a); return '<div class="rang" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1.6fr) minmax(0,1.6fr)"><div><span class="nom" style="font-family:inherit">' + esc(a.nom) + '</span> <span class="pastille ' + e[0] + '">' + esc(e[1]) + '</span><br><span class="note">' + esc(a.genre === "agent" ? "agent" : "service agentique") + (a.cout_jour && a.cout_jour.euros ? " · " + a.cout_jour.euros + " € aujourd’hui" : " · gratuit aujourd’hui") + "</span></div>" +
-          '<label class="ch m"><span class="note">Modèle</span><select data-ag="' + esc(a.id) + '" data-champ="modele">' + options(a.modele, DEFAUT[a.id] ? "par défaut : " + DEFAUT[a.id] : "— rôle par défaut —") + "</select></label>" +
-          '<label class="ch m"><span class="note">Secours</span><select data-ag="' + esc(a.id) + '" data-champ="secours">' + options(a.secours, "— aucun —") + "</select></label></div>"; }).join("") + "</div>";
-    }
-
     function carteLigne() {
       const l = enLigne();
-      return '<div class="carte"><div class="bar"><h2>Modèles en ligne</h2></div>' + (l.length ? l.map(ligneModele).join("") : '<p class="note">Aucun modèle en ligne déclaré. Ajoute-en un ci-dessous : fournisseur, nom du modèle, clé d’API.</p>') + "</div>";
+      return '<div class="carte"><h2>Modèles en ligne</h2>' + (l.length ? l.map(ligneModele).join("") : '<p class="note">Aucun modèle en ligne déclaré. Ajoute-en un ci-dessous : fournisseur, nom du modèle, clé d’API.</p>') + "</div>";
     }
-
     function carteAjout() {
       const p = prov(), sug = SUGGEST[S.prov] || [], besoin = p.cle !== "aucune", perso = S.prov === "personnalise";
-      return '<div class="carte"><h2>Ajouter un modèle</h2><p class="note">La clé est chiffrée dans le coffre du noyau dès l’envoi ; elle n’est jamais relue ni réaffichée, ni écrite dans le journal.</p>' +
+      return '<div class="carte" id="md-ajout"><h2>Ajouter un modèle</h2><p class="note">La clé est chiffrée dans le coffre du noyau dès l’envoi ; elle n’est jamais relue ni réaffichée, ni écrite dans le journal.</p>' +
         '<div class="champs"><label class="ch"><b>Fournisseur</b><select id="md-prov">' + S.f.map((x) => '<option value="' + esc(x.id) + '"' + (x.id === S.prov ? " selected" : "") + ">" + esc(x.nom) + "</option>").join("") + "</select>" +
         (LIENS[S.prov] ? '<span class="note">Créer une clé : ' + esc(LIENS[S.prov]) + "</span>" : "") + "</label>" +
         '<label class="ch"><b>Nom du modèle</b><input type="text" id="md-nom" list="md-sug" value="' + esc(S.form.nom) + '" placeholder="' + esc(p.defaut || "nom du modèle") + '" autocomplete="off" spellcheck="false"><datalist id="md-sug">' + sug.map((x) => '<option value="' + esc(x) + '">').join("") + "</datalist><span class=\"note\">Vide : " + esc(p.defaut || "à saisir") + "</span></label>" +
@@ -151,39 +195,68 @@
         (perso ? '<label class="ch"><b>Adresse de l’API</b><input type="text" id="md-base" value="' + esc(S.form.base) + '" placeholder="https://… ou http://127.0.0.1:8000/v1" autocomplete="off" spellcheck="false"></label>' : "") + "</div>" +
         '<div class="acts"><button class="btn pri" data-a="ajouter"' + (S.occupe ? " disabled" : "") + ">" + (S.occupe ? "Un instant…" : "Ajouter et essayer") + "</button></div></div>";
     }
-
+    function ajustement(taille, total) {      // ce que la machine supporte : le modèle, son contexte, et de quoi laisser vivre le reste
+      if (!total) return null;
+      const besoin = taille * 1.25 + 0.5, t = total / 1e9;
+      return besoin <= t * 0.5 ? ["ok", "tient"] : besoin <= t * 0.8 ? ["al", "juste, ralentit le reste"] : ["dg", "trop lourd"];
+    }
     function carteLocale() {
-      const loc = S.loc || {}, inst = loc.modeles || [], dm = {}, decl = new Set(localDecl().map((m) => { dm[m.nom] = m; return m.nom; })), pulls = (loc.telechargements || []).filter((p) => p.etat === "attente" || p.etat === "en cours");
-      const noms = new Set(inst.map((m) => m.name));
-      let h = '<div class="carte"><div class="bar"><h2>Modèles locaux (Ollama)</h2>' + (loc.repond ? '<span class="pastille ok">Ollama répond</span>' : '<span class="pastille dg" title="' + esc(loc.raison || "") + '">Ollama ne répond pas</span>') + "</div>";
+      const loc = S.loc || {}, inst = loc.modeles || [], dm = {}, decl = new Set(locauxDecl().map((m) => { dm[m.nom] = m; return m.nom; })), pulls = (loc.telechargements || []).filter((p) => p.etat === "attente" || p.etat === "en cours");
+      const noms = new Set(inst.map((m) => m.name)), total = S.mo && S.mo.machine ? S.mo.machine.total : 0, dispo = S.mo && S.mo.machine ? S.mo.machine.disponible : 0;
+      let h = '<div class="carte"><div class="bar"><h2>Modèles sur cette machine (Ollama)</h2>' + (loc.repond ? '<span class="pastille ok">Ollama répond</span>' : '<span class="pastille dg" title="' + esc(loc.raison || "") + '">Ollama ne répond pas</span>') + "</div>";
+      if (total) h += '<div><div class="bar note"><span class="mono">Mémoire de la machine : ' + go((total / 1e9).toFixed(1)) + "</span>" + (dispo ? "<span>" + go((dispo / 1e9).toFixed(1)) + " disponibles</span>" : "") + '</div><div class="barre" style="margin-top:6px"><i class="' + (dispo && dispo / total < 0.15 ? "al" : "") + '" style="width:' + (dispo ? Math.round(100 * (1 - dispo / total)) : 0) + '%"></i></div></div>';
       if (!loc.repond) h += '<p class="note err">' + esc(loc.raison || "Ollama est arrêté") + ' — sur la machine : <span class="mono">systemctl start ollama</span> (ou relancer l’installateur avec WITH_OLLAMA=1).</p>';
-      h += inst.length ? inst.map((m) => '<div class="rang"><div><span class="nom">' + esc(m.name) + '</span><br><span class="note">' + octets(m.taille) + " sur le disque</span></div><div class=\"m\">" + (decl.has(m.name) ? '<span class="pastille ok">déclaré</span> ' + essaiPastille(dm[m.name]) : '<span class="pastille mu">installé, pas déclaré</span>') + '</div><div class="acts">' +
+      h += inst.length ? inst.map((m) => '<div class="rang"><div><span class="nom">' + esc(m.name) + '</span><br><span class="note">' + octets(m.taille) + " sur le disque</span></div><div class=\"m\">" + (decl.has(m.name) ? '<span class="pastille ok">déclaré</span> ' + pastilleEssai(dm[m.name]) + epreuves(dm[m.name]) : '<span class="pastille mu">installé, pas déclaré</span>') + '</div><div class="acts">' +
         (decl.has(m.name) ? '<button class="btn mini" data-a="essayer" data-id="' + esc(dm[m.name].id) + '"' + (S.occupe ? " disabled" : "") + ">Essayer</button>" : '<button class="btn mini pri" data-a="declarer" data-n="' + esc(m.name) + '"' + (S.occupe ? " disabled" : "") + ">Utiliser</button>") +
         (S.suppr === m.name ? '<span class="confirme">Supprimer ? <button class="btn mini dng" data-a="suppr-oui" data-n="' + esc(m.name) + '">Oui</button><button class="btn mini" data-a="suppr-non">Non</button></span>' : '<button class="btn mini dng" data-a="suppr" data-n="' + esc(m.name) + '">Supprimer</button>') + "</div></div>").join("")
         : (loc.repond ? '<p class="note">Aucun modèle installé.</p>' : "");
-      if (pulls.length) h += '<h3 style="font:650 13px Inter,sans-serif;margin-top:6px">Téléchargements en cours</h3>' + pulls.map((p) => '<div><span class="mono">' + esc(p.nom) + '</span> <span class="note">' + esc(p.detail || p.etat) + '</span><div class="barre"><i style="width:' + Math.max(3, Math.min(100, p.pourcent || 3)) + '%"></i></div></div>').join("");
-      h += '<h3 style="font:650 13px Inter,sans-serif;margin-top:6px">Catalogue : à installer en un clic</h3><div class="puces">' + CATALOGUE_LOCAL.map((c) => '<div class="puce"><b>' + esc(c[0]) + '</b><span class="note">' + esc(c[1]) + " · " + esc(c[2]) + "</span>" +
-        (noms.has(c[0]) ? '<span class="pastille ok">installé</span>' : '<button class="btn mini" data-a="installer" data-n="' + esc(c[0]) + '"' + (S.occupe || !loc.repond ? " disabled" : "") + ">Installer</button>") + "</div>").join("") + "</div>" +
+      if (pulls.length) h += "<h3>Téléchargements en cours</h3>" + pulls.map((p) => '<div><span class="mono">' + esc(p.nom) + '</span> <span class="note">' + esc(p.detail || p.etat) + '</span><div class="barre"><i style="width:' + Math.max(3, Math.min(100, p.pourcent || 3)) + '%"></i></div></div>').join("");
+      h += "<h3>Catalogue, avec ce que la machine supporte</h3>" + (total ? "" : '<p class="note">La mémoire de la machine se lit… les indications « tient » arrivent dans un instant.</p>') + '<div class="puces">' + CATALOGUE_LOCAL.map((c) => {
+        const aj = ajustement(c[1], total);
+        return '<div class="puce"><b>' + esc(c[0]) + '</b><span class="note">' + go(c[1]) + " · " + esc(c[2]) + "</span>" + (aj ? '<span class="pastille ' + aj[0] + '">' + aj[1] + "</span>" : "") +
+          (noms.has(c[0]) ? '<span class="pastille ok">installé</span>' : '<button class="btn mini" data-a="installer" data-n="' + esc(c[0]) + '"' + (S.occupe || !loc.repond || (aj && aj[0] === "dg") ? " disabled" : "") + ">Installer</button>") + "</div>";
+      }).join("") + "</div>" +
         '<div class="acts" style="margin-top:4px"><input type="text" id="md-pull" value="' + esc(S.mini) + '" placeholder="un autre nom du catalogue ollama.com/library, ex. llama3.1:8b" style="flex:1 1 280px;width:auto" autocomplete="off" spellcheck="false"><button class="btn" data-a="installer-libre"' + (S.occupe || !loc.repond ? " disabled" : "") + ">Installer</button></div></div>";
       return h;
     }
 
-    function carteRoles() {
-      const ms = declares().filter((m) => m.portee === "instance"), roles = (S.l.roles || {}), dico = Object.assign({}, RANG, S.roles || {}), noms = Object.keys(dico), vides = noms.filter((r) => !roles[r]);
-      if (!Object.prototype.hasOwnProperty.call(S.l, "roles") || !ms.length) return "";
-      return '<div class="carte"><h2>Qui parle avec quoi</h2><p class="note">Chaque agent et chaque service cherche son modèle par son rôle. <b>Un rôle sans modèle ne répond pas</b> : lie chacun à l’un des modèles déclarés ci-dessus.</p>' +
-        (vides.length ? '<div class="acts"><span class="pastille al">' + vides.length + " rôle(s) sans modèle</span><select id=\"md-tout\" style=\"width:auto;flex:1 1 220px\">" + ms.map((m) => '<option value="' + esc(m.id) + '">' + esc(m.nom) + " (" + esc(m.fournisseur) + ")</option>").join("") + '</select><button class="btn pri" data-a="tout-lier"' + (S.occupe ? " disabled" : "") + ">Lier tous les rôles sans modèle à celui-ci</button></div>" : "") +
-        noms.map((r) => '<div class="rang"><div><span class="nom">' + esc(r) + '</span><br><span class="note">' + esc(dico[r] || "") + '</span></div><div class="m"><select data-role="' + esc(r) + '"><option value="">— aucun : ce rôle ne répond pas —</option>' +
-          ms.map((m) => '<option value="' + esc(m.id) + '"' + (roles[r] === m.id ? " selected" : "") + ">" + esc(m.nom) + " (" + esc(m.fournisseur) + ")</option>").join("") + '</select></div><div></div></div>').join("") + "</div>";
+    // ── les autres moteurs d’IA ─────────────────────────────────────────────
+    function carteMoteurs() {
+      const mo = S.mo; if (!mo) return '<div class="carte"><h2>Les autres moteurs d’IA de la machine</h2><div class="attente">Lecture…</div></div>';
+      const ms = declares().filter((m) => m.portee === "instance");
+      const rows = mo.moteurs.map((x) => '<tr><td><b class="mono">' + esc(x.nom) + "</b></td><td>" + esc(x.role) + '</td><td><span class="pastille ' + (x.etat === "pose" ? "ok" : x.etat === "partiel" ? "al" : x.id === "vision" ? "mu" : "dg") + '">' + (x.etat === "pose" ? "prêt" : x.etat === "partiel" ? "incomplet" : x.id === "vision" ? "facultatif" : "absent") + '</span><br><span class="note">' + esc(x.detail) + '</span></td><td class="n">' + octets(x.octets) + '</td><td class="note">' + esc(x.utilise_par) + "</td><td>" +
+        (x.id === "vision" ? '<select data-vision="1" aria-label="Modèle de vision" style="width:auto"><option value="">— aucun —</option>' + ms.map((m) => '<option value="' + esc(m.id) + '"' + ((m.roles || []).indexOf("vision") >= 0 ? " selected" : "") + ">" + esc(m.nom) + "</option>").join("") + "</select>" : "") + "</td></tr>").join("");
+      return '<div class="carte"><div><h2>Les autres moteurs d’IA de la machine</h2><p class="note">Posés par l’installateur : la bibliothèque, la mémoire, la voix et les pièces jointes en dépendent. Rien n’est chargé pour afficher cette liste.</p></div><div class="sc"><table><thead><tr><th>Moteur</th><th>Rôle</th><th>État</th><th>Poids</th><th>Utilisé par</th><th></th></tr></thead><tbody>' + rows + "</tbody></table></div></div>";
+    }
+
+    // ── comparateur et usage ────────────────────────────────────────────────
+    function carteComparateur() {
+      const ms = declares().filter((m) => m.portee === "instance"); if (ms.length < 1) return "";
+      if (!S.cmp.a || !ms.some((m) => m.id === S.cmp.a)) S.cmp.a = ms[0].id;
+      if (!S.cmp.b || !ms.some((m) => m.id === S.cmp.b)) S.cmp.b = (ms[1] || ms[0]).id;
+      const sel = (id, cle) => '<select data-cmp="' + cle + '" aria-label="Modèle ' + cle.toUpperCase() + '">' + ms.map((m) => '<option value="' + esc(m.id) + '"' + (m.id === id ? " selected" : "") + ">" + esc(m.nom) + (m.en_ligne ? "" : " (local)") + "</option>").join("") + "</select>";
+      return '<div class="carte"><div><h2>Deux modèles, la même question</h2><p class="note">Avant de confier un agent à un modèle, voir comment il répond comparé à l’autre. Aucun outil ne s’exécute : c’est une conversation, rien d’autre.</p></div>' +
+        '<div class="g2" style="gap:10px">' + sel(S.cmp.a, "a") + sel(S.cmp.b, "b") + '</div><input type="text" id="md-cq" value="' + esc(S.cmp.q) + '" aria-label="La question" autocomplete="off">' +
+        '<div class="acts"><button class="btn pri" data-a="comparer"' + (S.occupe ? " disabled" : "") + ">Comparer</button></div>" +
+        '<div class="g2" style="gap:10px"><div class="rep" id="md-ra">' + esc(S.cmp.ra || "…") + '</div><div class="rep" id="md-rb">' + esc(S.cmp.rb || "…") + "</div></div></div>";
+    }
+    function carteUsage() {
+      const us = S.us; if (!us) return "";
+      const par = {};
+      us.lignes.forEach((x) => { const o = par[x.modele_id] = par[x.modele_id] || { appels: 0, echecs: 0, e: 0, s: 0, sec: 0 }; o.appels += x.appels; o.echecs += x.echecs; o.e += x.entrees; o.s += x.sorties; o.sec += x.secondes; });
+      const ids = Object.keys(par); if (!ids.length) return '<div class="carte"><h2>Ce que chaque modèle a fait</h2><p class="note">Aucun appel en 14 jours.</p></div>';
+      return '<div class="carte"><h2>Ce que chaque modèle a fait <span class="note">(14 jours)</span></h2><div class="sc"><table><thead><tr><th>Modèle</th><th>Appels</th><th>Échecs</th><th>Jetons entrée</th><th>Jetons sortie</th><th>Durée moyenne</th></tr></thead><tbody>' + ids.map((id) => {
+        const m = declares().find((x) => x.id === id), o = par[id];
+        return '<tr><td><b class="mono">' + esc(m ? m.nom : id) + "</b> " + (m ? '<span class="pastille ' + (m.en_ligne ? "al" : "mu") + '">' + (m.en_ligne ? "en ligne" : "local") + "</span>" : '<span class="pastille mu">retiré</span>') + '</td><td class="n">' + entier(o.appels) + '</td><td class="n">' + entier(o.echecs) + '</td><td class="n">' + entier(o.e) + '</td><td class="n">' + entier(o.s) + '</td><td class="n">' + (o.appels ? (o.sec / o.appels).toFixed(1).replace(".", ",") + " s" : "—") + "</td></tr>";
+      }).join("") + "</tbody></table></div></div>";
     }
 
     function dessiner() {
       let h = '<div class="tete"><div class="bar"><h1>Modèles et clés</h1><div class="acts"><button class="btn mini" data-a="console" title="La console technique du module (réglages, gestes, journal)">Console technique</button></div></div>' +
-        '<p class="sous">Les modèles de langage qui font parler Cassandra, Itare et les autres : ceux des fournisseurs en ligne (avec ta clé d’API) et ceux que la machine fait tourner elle-même.</p></div>';
+        '<p class="sous">Les modèles de langage qui font parler Cassandra, Itare et les autres : ceux des fournisseurs en ligne (avec ta clé d’API) et ceux que la machine fait tourner elle-même. Sans modèle, un agent ne répond pas.</p></div>';
       if (S.erreur) h += '<div class="carte err">' + esc(S.erreur) + "</div>";
       if (!S.l) { racine.innerHTML = h + '<div class="attente">Lecture des modèles…</div>'; return; }
-      h += carteAgents() + carteLigne() + carteAjout() + carteLocale() + carteRoles();
-      // on garde ce qui se tape pendant qu’on redessine
+      h += carteSante() + carteAgents() + carteLigne() + carteAjout() + carteLocale() + carteMoteurs() + carteComparateur() + carteUsage();
       const foc = document.activeElement && document.activeElement.id, val = foc ? document.activeElement.value : "";
       racine.innerHTML = h;
       if (foc && racine.querySelector("#" + foc) && foc !== "md-cle") { const e = racine.querySelector("#" + foc); if (e.tagName === "INPUT") e.value = val; }
@@ -192,36 +265,49 @@
 
     function lier() {
       racine.querySelectorAll("[data-a]").forEach((b) => b.addEventListener("click", () => geste(b)));
-      const p = racine.querySelector("#md-prov"); if (p) p.addEventListener("change", () => { S.prov = p.value; S.form = { nom: "", cle: "", base: "" }; dessiner(); });
+      const p = racine.querySelector("#md-prov"); if (p) p.addEventListener("change", () => { S.prov = p.value; S.form = { nom: "", base: "" }; dessiner(); });
       const n = racine.querySelector("#md-nom"); if (n) n.addEventListener("input", () => { S.form.nom = n.value; });
       const b = racine.querySelector("#md-base"); if (b) b.addEventListener("input", () => { S.form.base = b.value; });
       const m = racine.querySelector("#md-pull"); if (m) m.addEventListener("input", () => { S.mini = m.value; });
-      racine.querySelectorAll("[data-ag]").forEach((x) => x.addEventListener("change", () => { const c = {}; c[x.dataset.champ] = x.value; faire(async () => { await agir("agents.agent_regler", { id: x.dataset.ag, champs: c }); window.dispatchEvent(new Event("cassandra:agents-change")); }, "Réglé : " + x.dataset.ag); }));
-      racine.querySelectorAll("[data-role]").forEach((s) => s.addEventListener("change", () => faire(() => agir("modeles.role_lier", { role: s.dataset.role, modele_id: s.value }), "Rôle mis à jour : " + s.dataset.role)));
+      const q = racine.querySelector("#md-cq"); if (q) q.addEventListener("input", () => { S.cmp.q = q.value; });
+      racine.querySelectorAll("[data-cmp]").forEach((x) => x.addEventListener("change", () => { S.cmp[x.dataset.cmp] = x.value; }));
+      racine.querySelectorAll("[data-ag]").forEach((x) => x.addEventListener("change", () => faire(() => choisirPourAgent(x.dataset.ag, x.dataset.champ, x.value), "Réglé : " + x.dataset.ag)));
+      racine.querySelectorAll("[data-vision]").forEach((x) => x.addEventListener("change", () => faire(() => agir("modeles.role_lier", { role: "vision", modele_id: x.value }), "Rôle vision mis à jour.")));
+    }
+
+    async function comparer() {
+      const q = String((racine.querySelector("#md-cq") || {}).value || S.cmp.q || "").trim(); if (!q) { dire("Une question à poser aux deux modèles.", "err"); return; }
+      S.cmp.q = q; S.cmp.ra = S.cmp.rb = "Réponse en cours…"; S.occupe = true; dessiner();
+      const un = async (id) => {
+        const m = declares().find((x) => x.id === id), t = Date.now();
+        try { const r = await agir("modeles.completer", { messages: [{ role: "user", content: q }], modele_id: id, max_tokens: 500, timeout: 90 }); return (m ? m.nom + "\n\n" : "") + (r.ok ? (r.texte || "(réponse vide)") + "\n\n— " + ((Date.now() - t) / 1000).toFixed(1).replace(".", ",") + " s" : "Échec : " + (r.erreur || "aucune réponse")); }
+        catch (e) { return (m ? m.nom + "\n\n" : "") + "Échec : " + (e.message || e); }
+      };
+      const [ra, rb] = await Promise.all([un(S.cmp.a), un(S.cmp.b)]);
+      S.cmp.ra = ra; S.cmp.rb = rb; S.occupe = false; dessiner();
     }
 
     async function geste(b) {
       const a = b.dataset.a;
       if (a === "console") { racine.remove(); if (CASS.console) CASS.console("modeles", corps); return; }
-      if (a === "tout-lier") {
-        const id = String((racine.querySelector("#md-tout") || {}).value || ""), vides = Object.keys(Object.assign({}, RANG, S.roles || {})).filter((r) => !(S.l.roles || {})[r]);
-        if (!id) return;
-        return faire(async () => { for (const r of vides) await agir("modeles.role_lier", { role: r, modele_id: id }); }, "Rôles liés : " + vides.join(", "));
-      }
+      if (a === "vers-ajout") { const z = racine.querySelector("#md-ajout"); if (z) z.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
       if (a === "retirer") { S.retirer = b.dataset.id; dessiner(); return; }
       if (a === "retirer-non") { S.retirer = ""; dessiner(); return; }
       if (a === "retirer-oui") return faire(() => retirerModele(b.dataset.id), "Modèle retiré.");
       if (a === "suppr") { S.suppr = b.dataset.n; dessiner(); return; }
       if (a === "suppr-non") { S.suppr = ""; dessiner(); return; }
       if (a === "suppr-oui") return faire(() => agir("modeles.ollama_supprimer", { nom: b.dataset.n }), "Modèle local supprimé.");
-      if (a === "essayer") return faire(async () => { const r = await essayer(b.dataset.id); S.essais[b.dataset.id] = r.essai || r; return r; }, (r) => ((r.essai || r).ok === false ? "Le modèle n’a pas répondu." : "Le modèle a répondu."));
+      if (a === "essayer") return faire(async () => { const r = await essayer(b.dataset.id); S.essais[b.dataset.id] = r.ok ? { ok: true, secondes: r.secondes } : { ok: false, erreur: r.erreur }; return r; }, (r) => (r.ok === false ? "Le modèle n’a pas répondu." : "Le modèle a répondu."));
       if (a === "declarer") return faire(() => ajouterModele({ fournisseur: "ollama", nom: b.dataset.n }), "Modèle local déclaré : " + b.dataset.n);
+      if (a === "brancher-local") return faire(async () => { const r = await ajouterModele({ fournisseur: "ollama", nom: b.dataset.n }); await lierDefauts(r.id); try { await essayer(r.id); } catch (e) { /* l’essai se refait à la main */ } }, "Cassandra, Amizo et Itare utilisent maintenant " + b.dataset.n + ".");
+      if (a === "lier-defauts") { const id = String((racine.querySelector("#md-tout") || {}).value || ""); if (!id) return; return faire(() => lierDefauts(id), "Cassandra, Amizo et Itare sont reliés."); }
       if (a === "installer") return faire(() => agir("modeles.ollama_telecharger", { nom: b.dataset.n }), "Téléchargement demandé : " + b.dataset.n);
       if (a === "installer-libre") {
         const n = String((racine.querySelector("#md-pull") || {}).value || "").trim();
         if (!n) { dire("Un nom de modèle, comme llama3.1:8b", "err"); return; }
         S.mini = ""; return faire(() => agir("modeles.ollama_telecharger", { nom: n }), "Téléchargement demandé : " + n);
       }
+      if (a === "comparer") return comparer();
       if (a === "ajouter") {
         const nom = String((racine.querySelector("#md-nom") || {}).value || "").trim() || prov().defaut || "";
         const cle = String((racine.querySelector("#md-cle") || {}).value || "").trim();
@@ -230,9 +316,9 @@
         if (prov().cle === "requise" && !cle) { dire("Ce fournisseur demande une clé d’API.", "err"); return; }
         return faire(async () => {
           const r = await ajouterModele({ fournisseur: S.prov, nom, cle, base_url: base });
-          S.form = { nom: "", cle: "", base: "" };
+          S.form = { nom: "", base: "" };
           const id = (r && (r.id || (r.modele && r.modele.id))) || "";
-          if (id) { try { const e = await essayer(id); S.essais[id] = e.essai || e; } catch (e) { S.essais[id] = { ok: false, erreur: e.message }; } }
+          if (id) { try { const e = await essayer(id); S.essais[id] = e.ok ? { ok: true, secondes: e.secondes } : { ok: false, erreur: e.erreur }; } catch (e) { S.essais[id] = { ok: false, erreur: e.message }; } }
           return r;
         }, "Modèle ajouté : " + nom);
       }
@@ -250,4 +336,4 @@
 // ═══ EXPLICATIF CN / EC ═══════════════════════════════════════════════════════
 // CN : tout ce fichier est du nexus : le dessin de l’écran et ses gestes.
 // EC : néant.
-// LIEN : modules/modeles (le module et ses capacités), interface/CN_shell.js (le crochet CASS.sceneSurMesure), outils/ui/CN_assembler.py (qui charge ce fichier).
+// LIEN : modules/modeles et modules/agents (cerveau), interface/CN_shell.js (le crochet CASS.sceneSurMesure), interface/CN_agents-ecran.js (qui le monte dans Agents IA).

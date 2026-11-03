@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.1  #ce7c0d
+# VERSION CN : 0.5.1  #ca9e06
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.1 empreinte=ce7c0d ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=ca9e06 ▼▼▼
 """Les agents : Cassandra (la machine) et Itare (le bureau) en conversation.
 
 Porté de la V18 (`call_deepseek_stream`, `_tool_loop`, `_handle_tool`, `build_system_prompt`, le fil solo), avec ses leçons :
@@ -451,6 +451,17 @@ def brancher(ctx):
     c = ctx
     for cid, f in (("conversations", conversations), ("conversation", conversation), ("outils", outils)):
         c.implementer(cid, f)
+    # Un agent sans modèle ne répond pas, et rien ne le disait : le verdict affichait « tout va bien ». Cassandra et Amizo se jugent sur leur chaîne (Itare peut avoir le modèle de chaque compte).
+    def det_sans_cerveau(c):
+        sortie = []
+        for a in E.calcul_cerveau(lecture("modeles.lister") or {}):
+            if a["genre"] != "agent" or a["peut"] or a["id"] == "itare":
+                continue
+            sortie.append({"objet": ("cerveau", a["id"]), "titre": "%s ne peut pas répondre" % a["nom"], "detail": "%s. Écran Modèles & clés : choisir un modèle pour cet agent." % a["raison"],
+                           "niveau": "critique" if a["id"] == "cassandra" else "attention"})
+        return sortie
+
+    c.detecteur("sans_cerveau", det_sans_cerveau)
     c.implementer("conversation_creer", conversation_creer, prouver_creee, defaire_creee, simuler=lambda x, agent="cassandra", **_: "ouvrirait une conversation avec %s" % agent)
     c.implementer("conversation_renommer", conversation_renommer, prouver_renomme, defaire_renomme, simuler=lambda x, id="", titre="", **_: "renommerait la conversation %s en « %s »" % (id, titre))
     c.implementer("conversation_supprimer", conversation_supprimer, prouver_supprimee, defaire_supprimee, simuler=lambda x, id="", **_: "supprimerait la conversation %s et ses messages" % id)

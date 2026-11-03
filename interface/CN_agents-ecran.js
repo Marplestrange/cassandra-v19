@@ -6,13 +6,13 @@
 // MAIL       : marplestrange@cassandra.center
 // MODULE     : interface
 // ZONE       : CN
-// VERSION CN : 0.1.0  #6c2884
+// VERSION CN : 0.1.0  #a7c886
 // VERSION EC : néant
 // EC LIÉES   : néant
 // RÔLE       : L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 // ══════════════════════════════════════════════════════════════════════════════
-// ▼▼▼ BORNE CN version=0.1.0 empreinte=6c2884 ▼▼▼
+// ▼▼▼ BORNE CN version=0.1.0 empreinte=a7c886 ▼▼▼
 // L'écran « Agents IA » : l'équipe, la fiche d'un agent et ses onglets, les conversations, ce qui attend l'utilisateur, le journal, les modèles.
 // Les données viennent du module agents (equipe, agent, paliers, couts, conversations, conversation, converser, propositions) ; le journal vient du module journal.
 // Un propriétaire par donnée : Mémoire, Journaux, Canaux, Voix et Proactivité restent chez eux, la fiche les ouvre (jamais de copie).
@@ -31,6 +31,10 @@
   };
   const API = {
     equipe: () => A("equipe"),
+    cerveau: () => A("cerveau"),
+    economies: () => A("economies"),
+    senApprendre: (e, v) => K.agir("agents.sentinelle_apprendre", { etiquette: e, valeur: v }),          // pas par A : la valeur ne doit pas rester dans le cache des lectures
+    senOublier: (e) => K.agir("agents.sentinelle_oublier", { etiquette: e }),
     agent: (id) => A("agent", { id: id }),
     paliers: (id) => A("paliers", { id: id }),
     couts: (id, jours) => A("couts", { id: id || "", jours: jours || 14 }),
@@ -190,13 +194,14 @@
     async function vEquipe() {
       const eq = S.eq.equipe, agents = eq.filter((a) => a.genre === "agent"), services = eq.filter((a) => a.genre === "service");
       const pR = carteRapport(), pP = cartePassations(), pT = carteTaches();
-      const [cout, ret] = await Promise.all([API.couts("", 1).catch(() => null), API.retenus(1).catch(() => null)]);
+      const [cout, ret, cv] = await Promise.all([API.couts("", 1).catch(() => null), API.retenus(1).catch(() => null), API.cerveau().catch(() => null)]);
+      const sans = cv && cv.sans && cv.sans.length ? cv.sans : null;
       const glob = cout && cout.plafonds && cout.plafonds.global;
       const auj = cout ? cout.aujourdhui_euros : null;
       const retenu = eq.some((a) => a.plafond_atteint);
       const pct = glob && glob.euros ? Math.min(100, (auj || 0) / glob.euros * 100) : 0;
-      return '<section class="carte"><div class="ag-etat"><div class="ag-rond' + (retenu ? " al" : "") + '">' + (retenu ? "⚠" : "✓") + '</div><div class="sp"><h3>' + (retenu ? "Un plafond de coût retient un agent" : "Tout va bien") + "</h3>" +
-        '<p class="note">' + (retenu ? "Voir « Coût » dans la fiche de l'agent concerné pour lever, relever ou accorder pour aujourd'hui." : "Les agents agissent seuls dans leurs paliers ; chaque geste garde sa preuve et son retour.") + '</p></div><button class="btn pri" data-agent="cassandra" data-onglet="essai">Demander à un agent…</button></div></section>' +
+      return '<section class="carte"><div class="ag-etat"><div class="ag-rond' + (retenu || sans ? " al" : "") + '">' + (retenu || sans ? "⚠" : "✓") + '</div><div class="sp"><h3>' + (sans ? sans.join(", ") + (sans.length > 1 ? " ne peuvent pas répondre" : " ne peut pas répondre") : retenu ? "Un plafond de coût retient un agent" : "Tout va bien") + "</h3>" +
+        '<p class="note">' + (sans ? "Aucun modèle n\'est relié à " + (sans.length > 1 ? "ces agents" : "cet agent") + ". Sans modèle, un agent ne répond pas. <button class=\"btn mini pri\" data-vue=\"modeles\">Ouvrir Modèles &amp; clés</button>" : retenu ? "Voir « Coût » dans la fiche de l'agent concerné pour lever, relever ou accorder pour aujourd'hui." : "Les agents agissent seuls dans leurs paliers ; chaque geste garde sa preuve et son retour.") + '</p></div><button class="btn pri" data-agent="cassandra" data-onglet="essai">Demander à un agent…</button></div></section>' +
         '<section class="stats"><div class="stat"><b>' + eq.length + "</b><span>agents et services</span></div>" +
         '<div class="stat ' + (pct > 85 ? "al" : "") + '"><b>' + eur(auj) + "</b><span>dépensé aujourd'hui" + (glob ? " sur " + eur(glob.euros) + " de plafond global" : " · aucun plafond global") + "</span>" + (glob ? '<div class="jauge"><i style="width:' + pct + '%"></i></div>' : "") + "</div>" +
         '<div class="stat"><b>' + (ret ? ret.retenus + ret.refuses : "—") + "</b><span>retenus ou refusés aujourd\'hui · par la règle, pas par oubli</span></div>" +
@@ -414,6 +419,8 @@
     }
     async function oCout(f) {
       const a = f.agent, c = await API.couts(a.id, S.jours), jours = {};
+      let eco = []; if (S.admin) { try { eco = ((await API.economies()).suggestions || []).filter((x) => x.agent === a.id || x.id === "plafond"); } catch (e) { eco = []; } }
+      const carteEco = eco.length ? '<section class="carte"><h3>Économies suggérées</h3><p class="note">Calculées sur les 14 derniers jours de coûts. Rien ne s\'applique sans ton clic.</p><div class="liste">' + eco.map((x) => '<div class="li"><div class="sp"><b>' + esc(x.titre) + '</b><div class="note">' + esc(x.detail) + (x.euros ? " Gain possible : environ " + eur(x.euros) + " sur 14 jours." : "") + '</div></div><button class="btn mini pri" data-eco="' + esc(x.id) + '" data-agent-eco="' + esc(x.agent) + '" data-modele-eco="' + esc((x.action || {}).modele_id || "") + '" data-type-eco="' + esc((x.action || {}).type || "") + '">' + ((x.action || {}).type === "plafond" ? "Poser un plafond" : "Passer au modèle local") + "</button></div>").join("") + "</div></section>" : "";
       c.jours.forEach((x) => { jours[x.jour] = (jours[x.jour] || 0) + x.euros; });
       const cles = Object.keys(jours).sort(), max = Math.max.apply(null, [0.0001].concat(cles.map((k) => jours[k])));
       const pl = (c.plafonds || {})[a.id], glob = (c.plafonds || {}).global;
@@ -426,7 +433,7 @@
           '<div class="ag-champs"><label class="ag-f"><span>Montant par jour (€)</span><input type="number" min="0.01" step="0.01" id="ag-pl-e" value="' + (pl ? pl.euros : "") + '"></label>' +
           '<label class="ag-f"><span>À l\'atteinte</span><select id="ag-pl-a">' + ACTIONS.map(([k, l]) => '<option value="' + k + '"' + (pl && pl.action === k ? " selected" : "") + ">" + esc(l) + "</option>").join("") + "</select></label></div>" +
           '<div class="ag-puces"><button class="btn pri" id="ag-pl-poser">Poser le plafond de ' + esc(a.nom) + '</button><button class="btn" id="ag-pl-g">Poser le plafond global</button>' + (pl ? '<button class="btn" data-plaf="accorder">Accorder pour aujourd\'hui</button><button class="btn dng" data-plaf="lever">Lever</button>' : "") + "</div></section>" :
-          '<section class="carte"><h3>Ton plafond</h3><p class="note">Les plafonds de coût se posent depuis l\'administration. Si l\'un retient Itare, la fiche te le dit.</p></section>');
+          '<section class="carte"><h3>Ton plafond</h3><p class="note">Les plafonds de coût se posent depuis l\'administration. Si l\'un retient Itare, la fiche te le dit.</p></section>') + carteEco;
     }
     const MATRICE = [
       ["Cassandra", "la machine, ses sites, ses certificats", "gère le Coffre (jamais la valeur dans un modèle)", "non", "non"],
@@ -457,7 +464,8 @@
         '<div class="note" style="margin:10px 2px 2px"><b>Derniers passages</b></div>' + hist +
         '<details style="border-top:1px solid var(--line);padding:7px 0;margin-top:8px"><summary style="cursor:pointer;font-weight:600">Les huit cas</summary>' + cor.map((c) => '<p class="note"><b>' + esc(c.titre) + "</b><br>" + esc(c.attendu || "") + "</p>").join("") + "</details></section>";
       const sent = sen ? '<section class="carte"><h3>La sentinelle anti-fuite</h3><p class="note">Le Relecteur retient toute réponse qui contient un secret connu ou un ordre caché. Seules l\'étiquette et la longueur d\'un secret sont gardées, jamais sa valeur.</p><div class="ag-puces">' + pill((sen.secrets || []).length + " secrets connus") + pill((sen.relectures_retenues || 0) + " réponses retenues", sen.relectures_retenues ? "al" : "") + "</div>" +
-        ((sen.secrets || []).length ? '<div class="liste">' + sen.secrets.map((x) => '<div class="li"><div class="sp"><b>' + esc(x.etiquette) + '</b></div><span class="note">' + esc(x.longueur) + " caractères</span></div>").join("") + "</div>" : "") + "</section>" : "";
+        ((sen.secrets || []).length ? '<div class="liste">' + sen.secrets.map((x) => '<div class="li"><div class="sp"><b>' + esc(x.etiquette) + '</b></div><span class="note">' + esc(x.longueur) + " caractères</span>" + (S.admin ? '<button class="btn mini dng" data-sen-oublier="' + esc(x.etiquette) + '">Oublier</button>' : "") + "</div>").join("") + "</div>" : "") +
+        (S.admin ? '<div class="ag-ecrire" style="margin-top:8px"><input type="text" id="ag-sen-e" maxlength="60" placeholder="un nom, ex. jeton-cloudflare" autocomplete="off"><input type="password" id="ag-sen-v" placeholder="la valeur : elle ne sera pas gardée" autocomplete="off"><button class="btn pri" id="ag-sen-ap">Apprendre</button></div><p class="note">La valeur sert à calculer une empreinte, puis disparaît : ni la base ni le journal ne la gardent.</p>' : "") + "</section>" : "";
       return regles + matrice + epr + sent;
     }
     async function oMemoire(f) {
@@ -587,6 +595,7 @@
 
     function brancher() {
       peindreGestes();
+      sur("[data-vue]", "click", (b) => aller(b.dataset.vue));
       sur("[data-agent]", "click", (b) => (b.dataset.agent === "auditeur" ? aller("auditeur") : aller("fiche", b.dataset.agent, b.dataset.onglet || "apercu")));
       sur("#ag-ong [data-o]", "click", (b) => { S.onglet = b.dataset.o; dessiner(); });
       sur("[data-onglet-vers]", "click", (b) => { S.onglet = b.getAttribute("data-onglet-vers"); dessiner(); });
@@ -621,6 +630,17 @@
         await API.regler(S.agent, { limites: lim }); await recharger(true);
       }, "Limites enregistrées"));
       sur("#ag-pl-poser", "click", () => lancer(async () => { const e = parseFloat(racine.querySelector("#ag-pl-e").value); if (!(e > 0)) throw new Error("un montant positif est requis"); await API.plafond(S.agent, e, racine.querySelector("#ag-pl-a").value); await recharger(true); }, "Plafond posé"));
+      sur("[data-eco]", "click", (b) => lancer(async () => {
+        if (b.dataset.typeEco === "plafond") { aller("maison"); return; }
+        await K.agir("modeles.role_lier", { role: "agent_" + b.dataset.agentEco, modele_id: b.dataset.modeleEco });
+        await API.regler(b.dataset.agentEco, { modele: "agent_" + b.dataset.agentEco }); MEM.eq = null; LECT.clear(); await dessiner();
+      }, "Agent passé au modèle local"));
+      sur("[data-sen-oublier]", "click", (b) => lancer(async () => { await API.senOublier(b.dataset.senOublier); await dessiner(); }, "Secret oublié"));
+      sur("#ag-sen-ap", "click", () => lancer(async () => {
+        const e = racine.querySelector("#ag-sen-e"), v = racine.querySelector("#ag-sen-v");
+        if (!e.value.trim() || !v.value) throw new Error("un nom et la valeur du secret");
+        await API.senApprendre(e.value.trim(), v.value); v.value = ""; await dessiner();
+      }, "Secret appris : seule son empreinte est gardée"));
       sur("[data-mj]", "click", (b) => lancer(async () => { if (!(await confirmer("Passer en mauvais jour ?", '<p class="note">Tous les agents racontent au lieu de faire, ' + (b.dataset.mj === "0" ? "jusqu\'à ce que tu lèves." : "pendant " + b.dataset.mj + " h, puis reviennent seuls.") + "</p>", "Passer en mauvais jour", true))) return; await API.mauvaisJour(Number(b.dataset.mj)); MEM.regles = null; S.bilanMJ = null; await dessiner(); }, "Mauvais jour posé"));
       sur("[data-mj-lever]", "click", () => lancer(async () => { const r = await API.mauvaisJourLever(); S.bilanMJ = (r && (r.raconte || (r.mauvais_jour && r.mauvais_jour.raconte))) || []; MEM.regles = null; await dessiner(); }, "Mauvais jour levé"));
       sur("[data-rgp]", "click", (b) => lancer(async () => { await API.reglesRegler({ palier_defaut: b.dataset.rgp }); MEM.regles = null; await dessiner(); }, "Réglage posé"));

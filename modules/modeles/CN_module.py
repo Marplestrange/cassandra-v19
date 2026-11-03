@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : modeles
 # ZONE       : CN
-# VERSION CN : 0.1.0  #57cf37
+# VERSION CN : 0.1.0  #7aea2f
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Les modèles.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=57cf37 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7aea2f ▼▼▼
 """Les modèles.
 
 Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_itare_ollama_texte`, `it_modele_*`, `ollama_*`), avec ses leçons :
@@ -31,9 +31,13 @@ Porté de la V18 (registre `modele_*`, `FOURNISSEURS`, `_itare_agent_text`, `_it
 """
 from __future__ import annotations
 
+import importlib.util
 import json
+import os
 import re
 import secrets
+import shutil
+import subprocess
 import threading
 import time
 import urllib.error
@@ -93,7 +97,8 @@ def brancher(ctx):
         return c
 
     def maison():
-        return (ctx.acteur or "") in ACTEURS_MAISON
+        # la maison : les acteurs de la maison, et le noyau lui-même (un détecteur, un moteur : ni acteur ni compte). Un visiteur anonyme a un acteur : il n'en fait pas partie.
+        return (ctx.acteur or "") in ACTEURS_MAISON or (not ctx.acteur and not ctx.compte)
 
     def hote_ollama():
         return str(ctx.reglage("ollama_hote") or "http://127.0.0.1:11434").rstrip("/")
@@ -133,7 +138,7 @@ def brancher(ctx):
         return {"fournisseurs": [{"id": k, "nom": v["nom"], "defaut": v["defaut"], "cle": v["cle"], "raisonneur": v["raisonneur"]} for k, v in FOURNISSEURS.items()], "roles": ROLES_CONNUS}
 
     def lister(c):
-        compte = compte_agit()
+        compte = "" if (maison() and not ctx.compte) else compte_agit()         # le noyau (un détecteur) lit les modèles de l'instance : aucun compte n'agit, et ce n'est pas une erreur
         roles = {}
         for r in db.lire("SELECT role, modele_id FROM roles"):
             roles.setdefault(r["modele_id"], []).append(r["role"])
@@ -551,10 +556,74 @@ def brancher(ctx):
         if not db.lire("SELECT 1 FROM pulls WHERE nom=? AND etat IN ('attente','en cours')", (res["nom"],)):
             db.ecrire("INSERT INTO pulls(nom, demande_par, ts) VALUES (?,?,?)", (res["nom"], ctx.compte or "", time.time()))
 
+    # ------------------------------------------------------------------ les autres moteurs d'IA de la machine
+    # L'installateur pose le modèle de sens, la dictée, la lecture à voix haute et l'OCR ; aucun écran ne les montrait. Cette lecture ne charge RIEN (find_spec, pas import : importer faster-whisper
+    # coûte des secondes et de la mémoire) et ne touche pas au réseau.
+    def memoire_machine():
+        try:
+            total = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+        except (ValueError, OSError, AttributeError):
+            total = 0
+        libre = 0
+        try:
+            for ligne in open("/proc/meminfo", encoding="utf-8"):                  # absent sous ProcSubset=pid : la machine totale suffit alors à juger de ce qui tient
+                if ligne.startswith("MemAvailable:"):
+                    libre = int(ligne.split()[1]) * 1024
+        except OSError:
+            pass
+        return {"total": total, "disponible": libre}
+
+    def taille_dossier(chemin):
+        t = 0
+        for racine, _, fichiers in os.walk(chemin):
+            for f in fichiers:
+                try:
+                    t += os.path.getsize(os.path.join(racine, f))
+                except OSError:
+                    pass
+        return t
+
+    def module_present(nom):
+        try:
+            return importlib.util.find_spec(nom) is not None
+        except (ImportError, ValueError):
+            return False
+
+    def moteurs(c):
+        donnees = os.environ.get("CASSANDRA_DONNEES", "")
+        nom = os.environ.get("CASSANDRA_EMBED_MODEL", "").strip() or "intfloat/multilingual-e5-large"
+        dossier_sens = os.path.join(donnees, "huggingface", "hub", "models--" + nom.replace("/", "--"))
+        sens_pose = bool(donnees) and os.path.isdir(dossier_sens)
+        voix_dir = "/usr/libexec/cassandra/voix/voix"
+        voix = sorted(x for x in (os.listdir(voix_dir) if os.path.isdir(voix_dir) else []) if os.path.isdir(os.path.join(voix_dir, x)))
+        piper = bool(shutil.which("piper")) or module_present("piper")
+        tess = shutil.which("tesseract")
+        langues = []
+        if tess:
+            try:
+                r = subprocess.run([tess, "--list-langs"], capture_output=True, text=True, timeout=5)
+                langues = [x.strip() for x in r.stdout.splitlines()[1:] if x.strip()]
+            except (OSError, subprocess.SubprocessError):
+                pass
+        roles = {r["role"]: r["modele_id"] for r in db.lire("SELECT role, modele_id FROM roles")}
+        liste = [
+            {"id": "sens", "nom": nom.split("/")[-1], "role": "Recherche par le sens", "etat": "pose" if sens_pose else "absent", "octets": taille_dossier(dossier_sens) if sens_pose else 0,
+             "utilise_par": "la bibliothèque d'Amizo, la mémoire", "detail": "chargé en mémoire au premier usage" if sens_pose else "le modèle se télécharge au premier usage (2,2 Go)"},
+            {"id": "dictee", "nom": "faster-whisper", "role": "Dictée", "etat": "pose" if module_present("faster_whisper") else "absent", "octets": 0, "utilise_par": "la voix, le chat",
+             "detail": "" if module_present("faster_whisper") else "pip install faster-whisper"},
+            {"id": "lecture", "nom": "piper", "role": "Lecture à voix haute", "etat": "pose" if piper and voix else ("partiel" if piper else "absent"), "octets": 0, "utilise_par": "la voix",
+             "detail": ("voix posées : " + ", ".join(voix)) if voix else ("piper est là, aucune voix posée" if piper else "pip install piper-tts")},
+            {"id": "ocr", "nom": "tesseract", "role": "Texte des images et des scans", "etat": "pose" if tess else "absent", "octets": 0, "utilise_par": "les documents (GED), le courrier",
+             "detail": ("langues : " + ", ".join(langues[:8])) if langues else "apt install tesseract-ocr tesseract-ocr-fra"},
+            {"id": "vision", "nom": "vision", "role": "Lire une image", "etat": "pose" if roles.get("vision") else "absent", "octets": 0, "utilise_par": "l'agent Vision",
+             "detail": "un modèle est lié au rôle vision" if roles.get("vision") else "facultatif : lie un modèle qui lit les images au rôle vision"},
+        ]
+        return {"machine": memoire_machine(), "moteurs": liste}
+
     # ------------------------------------------------------------------ inscription
     c = ctx
     c.moteur("pulls", moteur_pulls)
-    for cid, f in (("fournisseurs", fournisseurs), ("lister", lister), ("locaux", locaux), ("usage", usage), ("completer", completer)):
+    for cid, f in (("fournisseurs", fournisseurs), ("lister", lister), ("locaux", locaux), ("usage", usage), ("completer", completer), ("moteurs", moteurs)):
         c.implementer(cid, f)
     c.implementer("ajouter", ajouter, prouver_ajoute, defaire_ajoute, simuler=lambda x, nom="", **_: "déclarerait le modèle « %s »" % nom)
     c.implementer("instance_ajouter", instance_ajouter, prouver_ajoute, defaire_ajoute, simuler=lambda x, nom="", **_: "déclarerait le modèle d'instance « %s »" % nom)
