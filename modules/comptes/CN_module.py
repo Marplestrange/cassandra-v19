@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : comptes
 # ZONE       : CN
-# VERSION CN : 0.5.0  #f5d069
+# VERSION CN : 0.5.0  #f2851c
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.0 empreinte=f5d069 ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.0 empreinte=f2851c ▼▼▼
 """Le module des comptes : l'identité et ses preuves. La logique vit dans noyau/CN_identite.py (portée de la V18) ; ici, les capacités.
 
 Règle de la V18 gardée : le compte d'une action de session n'est JAMAIS un paramètre libre. C'est `ctx.compte`, le compte au nom duquel
@@ -205,7 +205,7 @@ def brancher(ctx):
     # ---- les appareils : « se souvenir de cet appareil » (30 jours) et l'approbation d'un appareil neuf pour un administrateur ----
     def appareils(ctx, courant=""):
         c = moi_ou_erreur(ctx)
-        return {"appareils": idt.appareils(c, str(courant or "")), "mode_admin": str(idt.parametre("admin_nouvel_appareil", "alerter")),
+        return {"appareils": idt.appareils(c, str(courant or "")[-6:]), "mode_admin": str(idt.parametre("admin_nouvel_appareil", "alerter")),
                 "admin": bool(idt.droits.est_admin(c)), "jours": __import__("noyau.CN_identite", fromlist=["x"]).APPAREIL_CONFIANCE_JOURS}
 
     def appareil_confiance(ctx, appareil="", oui=True):

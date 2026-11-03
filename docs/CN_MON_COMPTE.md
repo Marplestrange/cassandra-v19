@@ -12,7 +12,7 @@
 <!-- RÔLE       : Mon compte (V19) -->
 <!-- MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend) -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=098b08 ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=38bdd1 ▼▼▼ -->
 # Mon compte (V19)
 
 L'écran personnel d'un compte : six pages, une fiche, un portrait. La maquette validée est `docs/CN_maquette-mon-compte.html` (sa page « Mise à niveau » dit pourquoi chaque choix).
@@ -42,12 +42,19 @@ L'écran personnel d'un compte : six pages, une fiche, un portrait. La maquette 
 
 Voir `CHANGELOG.md` : mot de passe qui ferme les autres sessions, dix sessions au plus, nouvel appareil, Origin, cookie `__Host-`, second facteur des administrateurs par défaut, et `confirmer = true` dans le manifeste d'une capacité pour redemander le mot de passe d'un geste sensible.
 
+## Ce que la suite a ajouté
+
+- **Qui voit ma fiche** : quatre groupes de champs (identité, professionnel, présentation, privé) et deux publics (collègues, administrateurs). Le privé demande l'ouverture par son titulaire ET le droit `comptes.fiche_voir_perso`. La journalisation des accès d'autrui se coupe.
+- **Identités liées** : pseudo FastPanel et utilisateur système (bash). Seul un administrateur les pose ; le bash n'est lié qu'à un administrateur, jamais au superadministrateur (le sien se pose à sa création). Carte dans Branchements, champ dans Utilisateurs.
+- **Dolibarr** : « qui l'emporte » par groupe (état civil, coordonnées, présentation) ; si les deux côtés ont changé depuis le dernier accord, on demande quel que soit le réglage. Le tiers (`socid`) et le contact (`contact_id`) liés se lisent. La carte de la clé de mandat (administrateur) pose l'adresse et la clé et les vérifie par de vrais appels.
+- **Appareils** : « se souvenir de cet appareil » 30 jours (le mot de passe et le second facteur restent demandés) ; un appareil non revu depuis 30 jours et dont on ne s'est pas souvenu redevient « nouveau ». Réglage `comptes.admin_nouvel_appareil` : « alerter » (défaut) ou « bloquer » jusqu'à l'approbation d'une session déjà ouverte — jamais pour le superadministrateur.
+- **À faire sur mon compte** : chaque module déclare ses attentes dans son manifeste (`[[attentes]]`, une lecture qui rend faux ou `{titre, texte}`) ; le noyau les rassemble (`comptes.mes_attentes`).
+- **Portrait Telegram** : la photo de profil de l'interlocuteur du robot du compte (`telegram.portrait`).
+
 ## Ce qui n'est pas encore là
 
-- « Qui l'emporte quand les deux fiches diffèrent » (réglage par groupe de champs) et « Qui voit ma fiche » (matrice par audience) : aujourd'hui, la comparaison se fait champ par champ, et le privé n'est visible qu'avec le droit.
-- Les liens que Dolibarr rattache à la fiche (`socid`, `contact_id`), l'envoi automatique de la fiche, l'essai contre un vrai Dolibarr (les bancs utilisent un faux).
-- « À faire sur mon compte » est calculé par l'écran ; le bloc `[[attentes]]` des manifestes reste à définir.
-- « Se souvenir de cet appareil » (30 jours), le blocage d'un nouvel appareil pour un administrateur, la source de portrait Telegram.
+- L'essai contre un vrai Dolibarr (les bancs utilisent un faux serveur) ; le rattachement du `contact_id` à la fiche du module Contacts.
+- Les cartes « Mes modèles », « Voix » et « Mon affichage » détaillées de la maquette : les modules qui déclarent des réglages de portée « compte » apparaissent déjà dans Branchements, mais pas ces trois cartes à gestes.
 - Le nettoyage des 27 lignes de `interface/CN_app.js` qui servent encore l'ancienne rubrique « Mon compte » des Paramètres (les liens « Réglage agenda » et « Réglage Mail » s'y ouvrent toujours).
 <!-- ▲▲▲ FIN BORNE CN ▲▲▲ -->
 
