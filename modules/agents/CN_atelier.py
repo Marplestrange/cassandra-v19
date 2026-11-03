@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : agents
 # ZONE       : CN
-# VERSION CN : 0.5.1  #3b821c
+# VERSION CN : 0.5.1  #89cd65
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents, et les services que le tour de conversation emploie (réglage effec
 # MÉTHODE    : à compléter par l'auteur (comment le fichier s'y prend)
 # ══════════════════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.5.1 empreinte=3b821c ▼▼▼
+# ▼▼▼ BORNE CN version=0.5.1 empreinte=89cd65 ▼▼▼
 """L'atelier de l'équipe : les capacités de lecture (equipe, agent, couts, paliers) et de réglage (agent_regler, palier_regler, niveau_regler, plafond_regler) du module agents,
 et les services que le tour de conversation emploie (réglage effectif, palier par outil, coût du jour, plafond).
 
@@ -455,9 +455,9 @@ def brancher_equipe(ctx, reglage):
                 sug.append({"id": "local-" + d["id"], "agent": d["id"], "titre": "%s paie %s pour de courts échanges" % (a["nom"], a["modele"]),
                             "detail": "%d appels en 14 jours, %d jetons en moyenne. Le modèle local %s a répondu à son essai (%s s)." % (r["n"], moyen, locaux[0]["nom"], (locaux[0].get("essai") or {}).get("secondes", "?")),
                             "euros": eq.euros(r["c"]), "action": {"type": "modele", "agent": d["id"], "modele_id": locaux[0]["id"]}})
-        if not plafonds().get("global") and depense()["c"] + sum(x["euros"] for x in sug) > 0:
+        if not plafonds().get("global"):
             tot = db.lire("SELECT COALESCE(SUM(centimes),0) AS c FROM agent_couts WHERE jour>=?", (depuis,))[0]["c"]
-            if tot > 0:
+            if tot >= 100:                                   # moins d'un euro en quinze jours : un plafond n'apporterait que du bruit
                 sug.append({"id": "plafond", "agent": "", "titre": "Aucun plafond global de coût", "detail": "%s € dépensés en 14 jours, sans limite posée : un modèle en ligne qui s'emballe ne serait arrêté par rien." % eq.euros(tot), "euros": 0, "action": {"type": "plafond"}})
         return {"suggestions": sug}
 

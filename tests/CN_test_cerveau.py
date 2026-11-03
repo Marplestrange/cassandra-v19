@@ -6,13 +6,13 @@
 # MAIL       : marplestrange@cassandra.center
 # MODULE     : tests
 # ZONE       : CN
-# VERSION CN : 0.1.0  #1670e5
+# VERSION CN : 0.1.0  #7d589b
 # VERSION EC : néant
 # EC LIÉES   : néant
 # RÔLE       : Bancs du cerveau : un agent peut-il répondre, qu'est-ce qui casse, le détecteur qui le dit, les économies suggérées, les moteurs d'IA de la machine.
 # MÉTHODE    : un vrai noyau avec les modules agents, modeles, memoire et notes ; aucun modèle réel (on lie des modèles déclarés, sans les appeler).
 # ══════════════════════════════════════════════════════════════════
-# ▼▼▼ BORNE CN version=0.1.0 empreinte=1670e5 ▼▼▼
+# ▼▼▼ BORNE CN version=0.1.0 empreinte=7d589b ▼▼▼
 """Bancs du cerveau : un agent sans modèle ne répond pas, et le noyau le dit."""
 import shutil
 import sys
@@ -130,9 +130,14 @@ class Economies(Monde):
         self.assertEqual(sug[0]["action"], {"type": "modele", "agent": "cassandra", "modele_id": local})
         self.assertAlmostEqual(sug[0]["euros"], 1.2)
 
+    def test_une_depense_negligeable_ne_propose_pas_de_plafond(self):
+        ctx = self.n.executeur.contextes["agents"]
+        ctx.stockage.ecrire("INSERT INTO agent_couts(jour, agent, compte, appels, entrees, sorties, centimes) VALUES (date('now'), 'cassandra', '', 3, 100, 100, 5)")
+        self.assertFalse([s for s in self.lire("agents.economies")["suggestions"] if s["id"] == "plafond"])
+
     def test_une_depense_sans_plafond_global_propose_d_en_poser_un(self):
         ctx = self.n.executeur.contextes["agents"]
-        ctx.stockage.ecrire("INSERT INTO agent_couts(jour, agent, compte, appels, entrees, sorties, centimes) VALUES (date('now'), 'cassandra', '', 3, 100, 100, 50)")
+        ctx.stockage.ecrire("INSERT INTO agent_couts(jour, agent, compte, appels, entrees, sorties, centimes) VALUES (date('now'), 'cassandra', '', 3, 100, 100, 150)")
         self.assertTrue([s for s in self.lire("agents.economies")["suggestions"] if s["id"] == "plafond"])
 
 
