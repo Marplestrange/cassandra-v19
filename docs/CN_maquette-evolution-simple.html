@@ -13,7 +13,7 @@
 <!-- RÔLE       : la maquette de l'écran Évolution pensé pour quelqu'un qui n'est pas ingénieur : une phrase d'état, des résultats, trois réglages en mots simples, et tout le reste (chercheurs, comparaison, sécurité, carnet) rangé « sous le capot » -->
 <!-- MÉTHODE    : une page autonome, données de démonstration ; le vocabulaire interne (ombre, paliers, tombes, moteur, cage…) n'apparaît pas à l'écran, il est traduit dans l'onglet Vocabulaire -->
 <!-- ══════════════════════════════════════════════════════════════════════════════ -->
-<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=d3b27e ▼▼▼ -->
+<!-- ▼▼▼ BORNE CN version=0.1.0 empreinte=761a0f ▼▼▼ -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -407,12 +407,12 @@ function pVocab() {
 }
 
 /* ── le menu vertical de gauche : Évolution déplié, ses sections en sous-menu ── */
-var SECTIONS = [["aujourdhui", "Aujourd'hui"], ["amelio", "Améliorations"], ["reglages", "Réglages"], ["consignes", "Consignes et alertes"], ["capot", "Sous le capot"]];
+var SECTIONS = [["aujourdhui", "Aujourd'hui", "☼"], ["amelio", "Améliorations", "↗"], ["reglages", "Réglages", "◈"], ["consignes", "Consignes et alertes", "✎"], ["capot", "Sous le capot", "⚙"]];
 function chev(ouv) { return '<svg class="d-i car' + (ouv ? " ouv" : "") + '" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>'; }
 function menu() {
   var h = '<button class="d19-si ent" data-tip="Agents IA" data-autre="1"><i class="d19-gl" aria-hidden="true">▣</i><span>Agents IA</span>' + chev(false) + "</button>";
   h += '<button class="d19-si ent" data-tip="Évolution" aria-expanded="true" data-sec-parent="1"><i class="d19-gl" aria-hidden="true">⚘</i><span>Évolution</span>' + chev(true) + "</button>";
-  h += SECTIONS.map(function (x) { return '<button class="d19-si sub' + (S.vue === x[0] ? " on" : "") + '" data-sec="' + x[0] + '"' + (S.vue === x[0] ? ' aria-current="page"' : "") + '><span class="pt"></span><span>' + x[1] + "</span></button>"; }).join("");
+  h += SECTIONS.map(function (x) { return '<button class="d19-si sub ic' + (S.vue === x[0] ? " on" : "") + '" data-sec="' + x[0] + '"' + (S.vue === x[0] ? ' aria-current="page"' : "") + '><i class="d19-gl" aria-hidden="true">' + x[2] + "</i><span>" + x[1] + "</span></button>"; }).join("");
   h += '<button class="d19-si ent" data-tip="Proactivité" data-autre="1"><i class="d19-gl" aria-hidden="true">ϟ</i><span>Proactivité</span></button>';
   h += '<button class="d19-si ent" data-tip="Mémoire" data-autre="1"><i class="d19-gl" aria-hidden="true">◐</i><span>Mémoire</span>' + chev(false) + "</button>";
   return h;
